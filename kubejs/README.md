@@ -1,11 +1,16 @@
-# KubeJS (Forge 1.20.1)
+# KubeJS (pulled from live Mohist test server)
 
-Installed mods:
+Scripts under `server_scripts/` were pulled via SFTP from the DBZ Legacy Reborn test server.
 
-- `kubejs-forge-2001.6.5-build.26.jar`
-- `rhino-forge-2001.2.3-build.10.jar`
-- `architectury-9.2.14-forge.jar`
+CustomNPCs gameplay scripts are **not** here — those live in `customnpcs/scripts/` (local upload is treated as newest).
 
-Put new **KubeJS** scripts here (`server_scripts/`, `startup_scripts/`, `client_scripts/`).
+## Live server scripts
 
-Your uploaded `.js` files are **CustomNPCs** scripts and live in `../customnpcs/scripts/` — do not move them here unless you rewrite them for the KubeJS API.
+| File | Role |
+|------|------|
+| `Apotheoisis_nerf.js` | Apotheosis gem/affix balance overrides |
+| `apotheosis_armor_health_nerf.js` | Blessed armor health affix nerf |
+| `disable_capsule_blueprints.js` | Remove Capsule blueprint recipes + purge |
+| `remove_existing_blueprints.js` | Strip blueprint capsules from player inv |
+
+`server_scripts/examples/dmz_bridge_example.js` is local reference only (not on the live server).
