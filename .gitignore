@@ -1,0 +1,15 @@
+# Forge installer leftovers
+forge-*-installer.jar
+forge-*-installer.jar.log
+*.log
+
+# Runtime / world data (regenerated)
+world/
+logs/
+crash-reports/
+.cache/
+local/
+
+# OS junk
+.DS_Store
+Thumbs.db
