@@ -1,5 +1,7 @@
 # DMZServer
 
+Client modpack: **[DMZ Legacy Reborn 2.1.3 Testing Phase](https://www.curseforge.com/minecraft/modpacks/testing-dmzlegacy)** (`docs/MODPACK.md`).
+
 Forge **1.20.1** server pack for **DragonMineZ 2.1.3** + your CustomNPCs script pack, with **KubeJS** installed for Forge-side scripting.
 
 ## Important: hybrid runtime
