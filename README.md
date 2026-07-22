@@ -1,28 +1,42 @@
 # DMZServer
 
-Fresh Minecraft **Forge 1.20.1** server pack for **DragonMineZ 2.1.3** (CurseForge file `8469416`).
+Forge **1.20.1** server pack for **DragonMineZ 2.1.3** + your CustomNPCs script pack, with **KubeJS** installed for Forge-side scripting.
 
-## Mods (verified)
+## Important: hybrid runtime
 
-| Jar | Role |
-|-----|------|
-| `mods/dragonminez-2.1.3.jar` | DragonMineZ 2.1.3 (SHA-256 matches Modrinth) |
-| `mods/geckolib-forge-1.20.1-4.8.4.jar` | required |
-| `mods/TerraBlender-forge-1.20.1-3.0.1.10.jar` | required |
-| `mods/curios-forge-5.14.1+1.20.1.jar` | required |
+Most uploaded scripts call `org.bukkit.Bukkit` and Fabled/CMI. They need a **hybrid** jar (Arclight / Mohist / similar) that loads both `mods/` and `plugins/`. Plain Forge will run DMZ + CustomNPCs + KubeJS, but Fabled/CMI bridges will no-op or error.
+
+## Mods (`mods/`)
+
+- DragonMineZ 2.1.3 + GeckoLib + TerraBlender + Curios
+- CustomNPCs (GBPort Unofficial 1.20.1)
+- KubeJS + Rhino + Architectury
+
+## Plugins (`plugins/`) — hybrid only
+
+- CMI 9.8.9.4 (**needs CMILib** — not uploaded yet)
+- Fabled 1.0.4 (**needs CodexCore** — not uploaded yet)
+
+## Scripts
+
+| Location | Engine |
+|----------|--------|
+| `customnpcs/scripts/` | CustomNPCs Nashorn (your uploaded pack) |
+| `kubejs/` | KubeJS (starter example only) |
+
+Inventory + DMZ call patterns: [`docs/SCRIPT_INVENTORY.md`](docs/SCRIPT_INVENTORY.md)  
+Java event/API map: [`docs/DMZ_API_REFERENCE.md`](docs/DMZ_API_REFERENCE.md)
 
 ## Run
 
 ```bash
-./run.sh nogui
+./run.sh nogui   # plain Forge — CNPC/DMZ/KubeJS only
+# or your hybrid server start script for full Fabled/CMI support
 ```
 
-Tune RAM in `user_jvm_args.txt` (recommend at least `-Xmx4G` for DMZ).
+## Still needed from you
 
-## Scripts / API work
-
-- API + event/method reference: [`docs/DMZ_API_REFERENCE.md`](docs/DMZ_API_REFERENCE.md)
-- Drop your existing scripts/jars: [`uploads/`](uploads/)
-- **Upload to this agent:** https://cursor.com/agents/bc-65345b36-ca27-45d9-b51d-6a16f547c766
-
-DMZ scripting is primarily **Java Forge event hooks** on `com.dragonminez.common.events.DMZEvent` plus the `StatsProvider` / `StatsData` capability API. There is no built-in KubeJS/CraftTweaker bridge.
+1. Hybrid server jar (if not already elsewhere)
+2. `CMILib` + `CodexCore` jars → `plugins/`
+3. Apotheosis AttributesLib if you use KiWeapons/Piercing Apoth hooks
+4. Any existing `kubejs/` scripts you still have (these uploads were CNPC-only)
