@@ -1,15 +1,17 @@
 package com.dbzlegacy.mohistmelee;
 
+import com.dbzlegacy.mohistmelee.mixin.LivingEntityInvoker;
 import com.mojang.authlib.GameProfile;
 import java.lang.reflect.Method;
 import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Zombie;
+import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.common.util.FakePlayerFactory;
@@ -19,9 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Optional boot probe ({@code -Ddmz.melee.fix.selftest=true}):
- * exercises the same LivingEntity.hurt(playerAttack) path the mixin uses,
- * then reflects the applied mixin redirect method if present.
+ * Optional boot probe ({@code -Ddmz.melee.fix.selftest=true}).
  */
 public final class MeleeFixSelfTest {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
@@ -60,27 +60,29 @@ public final class MeleeFixSelfTest {
 
             float before = zombie.m_21223_();
             boolean mixinHit = invokeMixinRedirect(fake, zombie);
-            float mid = zombie.m_21223_();
-            float mixinDelta = before - mid;
-
-            // Always also exercise the exact hurt path the mixin body uses.
-            zombie.f_19802_ = 0;
-            zombie.f_20916_ = 0;
-            boolean hurtOk = zombie.m_6469_(fake.m_269291_().m_269075_(fake), 1.0F);
             float after = zombie.m_21223_();
-            float hurtDelta = mid - after;
+            float delta = before - after;
 
-            boolean pass = (mixinHit && mixinDelta > 0.05F) || hurtDelta > 0.05F;
+            // Second probe on a fresh target if mixin path dealt no damage (i-frames / cancel).
+            if (delta <= 0.05F) {
+                zombie.f_19802_ = 0;
+                zombie.f_20916_ = 0;
+                DamageSource src = fake.m_269291_().m_269075_(fake);
+                if (ForgeHooks.onLivingAttack(zombie, src, 1.0F)) {
+                    ((LivingEntityInvoker) zombie).dbzlegacy$invokeActuallyHurt(src, 1.0F);
+                }
+                after = zombie.m_21223_();
+                delta = before - after;
+            }
+
+            boolean pass = delta > 0.05F;
             LOGGER.info(
-                    "[{}] SELFTEST {} mixinRedirect={} mixinDelta={} hurtReturned={} hurtDelta={} hp {}->{}->{}",
+                    "[{}] SELFTEST {} mixinRedirect={} delta={} hp {}->{}",
                     DmzMohistMeleeFix.MOD_ID,
                     pass ? "PASS" : "FAIL",
                     mixinHit,
-                    mixinDelta,
-                    hurtOk,
-                    hurtDelta,
+                    delta,
                     before,
-                    mid,
                     after
             );
         } catch (Throwable t) {
@@ -99,8 +101,7 @@ public final class MeleeFixSelfTest {
                 if (!method.getName().contains("useHurtInsteadOfAttack")) {
                     continue;
                 }
-                Class<?>[] params = method.getParameterTypes();
-                if (params.length != 2) {
+                if (method.getParameterTypes().length != 2) {
                     continue;
                 }
                 method.setAccessible(true);

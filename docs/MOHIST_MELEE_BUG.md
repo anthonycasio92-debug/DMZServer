@@ -2,19 +2,22 @@
 
 ## Symptom
 
-On Mohist + DragonMineZ, **some players** deal **no melee damage** until they **die once**. Others are fine. KubeJS login sync / attack fallbacks were not reliable.
+On Mohist + DragonMineZ, **some players** deal **no melee damage** until they **die once**. Others are fine. KubeJS login sync / attack fallbacks were not reliable. Calling `LivingEntity.hurt` alone is also not enough — Mohist often routes that through the same broken Bukkit `EntityDamageEvent` bridge.
 
 ## Cause
 
-DMZ melee is applied in `CombatAttackRequestC2S` by calling `ServerPlayer.attack` (`m_5706_`). Mohist’s Bukkit bridge on that method is flaky until the player entity is recreated by death. DMZ’s real damage rewrite happens later in `CombatEvent.onLivingHurt` via `getMeleeDamage()`.
+DMZ melee is applied in `CombatAttackRequestC2S` by calling `ServerPlayer.attack` (`m_5706_`). Mohist’s Bukkit bridge on attack/hurt is flaky until the player entity is recreated by death. DMZ’s real damage rewrite happens later in `CombatEvent.onLivingHurt` via `getMeleeDamage()`.
 
 ## Fix (use this)
 
-**Forge mixin mod** (not a KubeJS script):
+**Forge mixin mod** (server-side only):
 
-`mods/dmz_mohist_melee_fix-1.0.0.jar`
+`mods/dmz_mohist_melee_fix-1.0.1.jar`
 
-It redirects DMZ’s `ServerPlayer.attack(...)` call on living targets to `LivingEntity.hurt(playerAttack, 1.0F)`. DMZ’s existing `LivingHurt` handler still converts that into full melee damage.
+It redirects DMZ’s `ServerPlayer.attack(...)` on living targets to:
+
+1. Forge `LivingHurtEvent` (so DMZ still rewrites to `getMeleeDamage()`)
+2. `LivingEntity.actuallyHurt` (`m_6475_`) — **bypasses** Mohist’s Bukkit `EntityDamageEvent` bridge
 
 - No gamemode flicker  
 - No teleport  
@@ -24,36 +27,38 @@ It redirects DMZ’s `ServerPlayer.attack(...)` call on living targets to `Livin
 ### Install on main server
 
 1. Download:  
-   https://github.com/anthonycasio92-debug/DMZServer/blob/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-1.0.0.jar  
+   https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-1.0.1.jar  
 2. Put in `mods/`  
-3. **Remove** any old `kubejs/server_scripts/mohist_melee_combat_fix.js`  
-4. Restart the server (mixins do not hot-reload)
+3. **Delete** any older `dmz_mohist_melee_fix-1.0.0.jar`  
+4. **Remove** any old `kubejs/server_scripts/mohist_melee_combat_fix.js`  
+5. Restart the server (mixins do not hot-reload)
 
-### Verify
+### Verify (required)
 
-On startup, log should include:
-
-```text
-[dmz_mohist_melee_fix] DMZ CombatAttackRequest LivingEntity hits use hurt() instead of Player.attack()
-```
-
-Also check mixin apply (no `@Redirect` failure for `CombatAttackRequestC2SMixin`).
-
-Optional automated proof (local/test JVM only):
+After restart, `logs/latest.log` / `debug.log` **must** contain:
 
 ```text
--Ddmz.melee.fix.selftest=true
+[dmz_mohist_melee_fix] v1.0.1 CombatAttackRequest uses Forge LivingHurt + actuallyHurt (Bukkit bypass)
 ```
 
-Expect:
+and:
 
 ```text
-[dmz_mohist_melee_fix] SELFTEST PASS mixinRedirect=true mixinDelta=...
+Selecting config dmz_mohist_melee_fix.mixins.json
+Mixing CombatAttackRequestC2SMixin from dmz_mohist_melee_fix.mixins.json into com.dragonminez.common.network.C2S.CombatAttackRequestC2S
 ```
 
-Verified on this environment (Forge 1.20.1 + DMZ 2.1.3): mixin selected/applied into `CombatAttackRequestC2S`, redirect calls `LivingEntity.m_6469_`, self-test **PASS** with zombie HP drop via the injected redirect.
+If those lines are missing, the jar is not loading (wrong folder, not restarted, or duplicate/corrupt jar).
 
-Then join **without dying** and melee a mob — all players should deal damage.
+On the first successful melee after install you should also see:
+
+```text
+[dmz_mohist_melee_fix] Melee redirect active: Forge LivingHurt + actuallyHurt ...
+```
+
+Then join **without dying** and melee a mob.
+
+Optional local probe: `-Ddmz.melee.fix.selftest=true` → `SELFTEST PASS ...`
 
 ## Source / rebuild
 
@@ -61,6 +66,7 @@ Then join **without dying** and melee a mob — all players should deal damage.
 
 ## If it still fails
 
-1. Confirm the jar is loaded and mixin applied  
-2. Update Mohist, or leave Mohist (pure Forge / other hybrid)  
-3. Binary-search damage/PvP plugins (WorldGuard, CMI, Fabled)
+1. Confirm the **v1.0.1** log line and mixin apply lines above  
+2. Confirm only one `dmz_mohist_melee_fix-*.jar` is in `mods/`  
+3. Update Mohist, or leave Mohist (pure Forge / other hybrid)  
+4. Binary-search damage/PvP plugins (WorldGuard, CMI, Fabled)

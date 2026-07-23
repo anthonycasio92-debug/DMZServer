@@ -1,8 +1,10 @@
 # dmz_mohist_melee_fix
 
-Tiny Forge 1.20.1 mixin mod. Redirects DragonMineZ `CombatAttackRequestC2S` from `ServerPlayer.attack` to `LivingEntity.hurt` so Mohist melee works without a death first.
+Tiny Forge 1.20.1 mixin mod for Mohist + DragonMineZ.
 
-Built jar is committed at `mods/dmz_mohist_melee_fix-1.0.0.jar`.
+Redirects `CombatAttackRequestC2S` away from `ServerPlayer.attack` / `LivingEntity.hurt` (Bukkit bridge) to Forge `LivingHurtEvent` + `actuallyHurt`.
+
+Built jar: `mods/dmz_mohist_melee_fix-1.0.1.jar` (server-side only).
 
 ## Rebuild
 
@@ -14,15 +16,10 @@ Requires local `libraries/` (Forge + `server-*-srg.jar`) and `mods/dragonminez-2
 
 ## Optional boot self-test
 
-Add JVM arg `-Ddmz.melee.fix.selftest=true`, then restart. On `ServerStarted` the mod:
-
-1. Reflectively invokes the applied mixin redirect on a FakePlayer → zombie
-2. Confirms HP drops
-
-Look for:
+Add JVM arg `-Ddmz.melee.fix.selftest=true`, then restart. Look for:
 
 ```text
-[dmz_mohist_melee_fix] SELFTEST PASS mixinRedirect=true ...
+[dmz_mohist_melee_fix] SELFTEST PASS ...
 ```
 
 Leave this flag off on production hosts.

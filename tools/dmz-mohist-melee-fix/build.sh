@@ -7,7 +7,9 @@ DMZ="$ROOT/mods/dragonminez-2.1.3.jar"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
-JAR="$ROOT/mods/dmz_mohist_melee_fix-1.0.0.jar"
+JAR="$ROOT/mods/dmz_mohist_melee_fix-1.0.1.jar"
+# Remove older copies so Forge does not load duplicate modIds.
+rm -f "$ROOT/mods/dmz_mohist_melee_fix-1.0.0.jar"
 
 CP="$SRG:$FORGE_U:\
 $ROOT/libraries/net/minecraftforge/fmlcore/1.20.1-47.4.10/fmlcore-1.20.1-47.4.10.jar:\
@@ -26,7 +28,8 @@ mkdir -p "$OUT"
 javac --release 17 -proc:none -cp "$CP" -d "$OUT" \
   "$SRC/com/dbzlegacy/mohistmelee/DmzMohistMeleeFix.java" \
   "$SRC/com/dbzlegacy/mohistmelee/MeleeFixSelfTest.java" \
-  "$SRC/com/dbzlegacy/mohistmelee/mixin/CombatAttackRequestC2SMixin.java"
+  "$SRC/com/dbzlegacy/mohistmelee/mixin/CombatAttackRequestC2SMixin.java" \
+  "$SRC/com/dbzlegacy/mohistmelee/mixin/LivingEntityInvoker.java"
 
 echo '{}' > /tmp/dmz_mohist_melee_fix.refmap.json
 cd "$OUT"
@@ -34,6 +37,7 @@ jar cvmf "$RES/META-INF/MANIFEST.MF" "$JAR" \
   com/dbzlegacy/mohistmelee/DmzMohistMeleeFix.class \
   com/dbzlegacy/mohistmelee/MeleeFixSelfTest.class \
   com/dbzlegacy/mohistmelee/mixin/CombatAttackRequestC2SMixin.class \
+  com/dbzlegacy/mohistmelee/mixin/LivingEntityInvoker.class \
   -C "$RES" META-INF/mods.toml \
   -C "$RES" dmz_mohist_melee_fix.mixins.json \
   -C "$RES" pack.mcmeta

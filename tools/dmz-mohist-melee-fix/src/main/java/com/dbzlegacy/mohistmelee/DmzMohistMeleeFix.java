@@ -6,9 +6,9 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Mohist breaks DragonMineZ melee because DMZ calls {@code Player.attack}, which
- * Mohist routes through a flaky Bukkit bridge. This mod's mixin redirects that
- * call to {@code LivingEntity.hurt} so DMZ's LivingHurt handler can apply
- * getMeleeDamage() reliably — without login kills, teleports, or keepInventory.
+ * Mohist routes through a flaky Bukkit EntityDamage bridge (and {@code hurt()}
+ * often hits the same bridge). This mixin fires Forge LivingHurt then applies
+ * damage via {@code actuallyHurt}, bypassing Bukkit — no login kills/teleports/keepInventory.
  */
 @Mod(DmzMohistMeleeFix.MOD_ID)
 public final class DmzMohistMeleeFix {
@@ -16,7 +16,7 @@ public final class DmzMohistMeleeFix {
     private static final Logger LOGGER = LogManager.getLogger(MOD_ID);
 
     public DmzMohistMeleeFix() {
-        LOGGER.info("[{}] DMZ CombatAttackRequest LivingEntity hits use hurt() instead of Player.attack()", MOD_ID);
+        LOGGER.info("[{}] v1.0.1 CombatAttackRequest → actuallyHurt Bukkit-bypass (single LivingHurt)", MOD_ID);
         MeleeFixSelfTest.registerIfEnabled();
     }
 }
