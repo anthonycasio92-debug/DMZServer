@@ -21,7 +21,7 @@ Mohist heavily patches the same path:
 | `PlayerList.respawn` | Log warning: DMZ `PlayerListMixin#onPlayerRespawn` LVT incompatible with Mohist’s respawn method |
 | Forge ↔ Bukkit damage | Known Mohist gaps where `LivingHurtEvent` / entity damage bridging misbehaves until the player entity is recreated |
 
-Respawn recreates the `ServerPlayer` / Craft wrapper and re-runs DMZ clone/cap sync (`PlayerEvent.Clone` + `m_6210_()` attribute refresh), which is why **dying “fixes” melee for that session**.
+Respawn recreates the `ServerPlayer` / Craft wrapper and re-runs DMZ clone/cap sync (`PlayerEvent.Clone` + `refreshAttributes` / `m_6210_()`), which is why **dying “fixes” melee for that session**.
 
 Evidence already on the test server log:
 
@@ -39,21 +39,14 @@ This server is running Mohist version 1.20.1-46ca7304 ... Forge version 47.4.13
 2. **Update Mohist** to the newest 1.20.1 build and retest with only DMZ + GeckoLib + TerraBlender + Curios
 3. **Binary-search plugins** that touch damage/PvP (WorldGuard, CMI combat/god, Fabled damage skills, ProtocolLib listeners) — hybrids often cancel Forge damage after the mod applies it
 4. **Workaround in this pack**: `kubejs/server_scripts/mohist_melee_combat_fix.js`  
-   Soft-primes combat on login; optional hard prime (silent keep-inventory death once per login) if soft mode is not enough
-
-## Workaround flags
-
-In `kubejs/server_scripts/mohist_melee_combat_fix.js`:
-
-| Persistent / config knobs | Meaning |
-|---------------------------|---------|
-| Soft prime (default) | Delayed attribute refresh, clear join invuln, tiny gamemode flicker |
-| `HARD_PRIME = true` | One keep-inventory kill→respawn per login (matches the manual fix, with a short flash) |
-
-Disable the script entirely once Mohist/DMZ no longer needs it.
+   On login, calls the same `refreshAttributes` DMZ uses after respawn, clears join i-frames, and resets attack strength.  
+   **Does not** gamemode-flicker, teleport, kill, or change `keepInventory`.
 
 ## How to verify
 
-1. Fresh login (no death yet), punch a mob / dummy / player → **no damage** (bug present)
-2. With workaround enabled, wait ~2s after login, punch again → damage applies
-3. Confirm `logs/latest.log` still shows the PlayerListMixin LVT warning (workaround does not remove the Mohist/DMZ mixin conflict; it only primes the entity)
+1. Fresh login (no death yet), punch a mob / dummy / player
+2. With workaround loaded, wait ~2s after login, punch again — expect damage without dying
+3. Confirm console: `[mohist-melee-fix] Primed melee for <name> via ...`
+4. `keepInventory` must remain **false** / off — this script never touches that gamerule
+
+If attribute refresh alone is not enough, the real fix is leaving/updating Mohist; there is no safe kill-based prime while keepInventory stays off.
