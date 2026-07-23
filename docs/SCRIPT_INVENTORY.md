@@ -120,6 +120,6 @@ Install player scripts via CustomNPCs **Global Player Scripts** UI (or equivalen
 
 A starter DMZ helper for KubeJS is in `kubejs/server_scripts/examples/dmz_bridge_example.js` (disabled by default — rename/enable when ready).
 
-**Mohist melee-until-death:** see [`MOHIST_MELEE_BUG.md`](MOHIST_MELEE_BUG.md) and `kubejs/server_scripts/mohist_melee_combat_fix.js`.
+**Mohist melee-until-death:** see [`MOHIST_MELEE_BUG.md`](MOHIST_MELEE_BUG.md) and `mods/dmz_mohist_melee_fix-1.0.0.jar`.
 
 Full Java event/method map: [`DMZ_API_REFERENCE.md`](DMZ_API_REFERENCE.md).
