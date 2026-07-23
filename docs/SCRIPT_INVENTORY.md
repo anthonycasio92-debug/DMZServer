@@ -118,6 +118,8 @@ Install player scripts via CustomNPCs **Global Player Scripts** UI (or equivalen
 | Where scripts live | `customnpcs/scripts/` | `kubejs/server_scripts/` etc. |
 | Fabled/CMI | Works on hybrid via `Bukkit` | Same if hybrid; pure Forge cannot load those plugins |
 
-A starter DMZ helper for KubeJS is in `kubejs/server_scripts/dmz_bridge_example.js` (disabled by default — rename/enable when ready).
+A starter DMZ helper for KubeJS is in `kubejs/server_scripts/examples/dmz_bridge_example.js` (disabled by default — rename/enable when ready).
+
+**Mohist melee-until-death:** see [`MOHIST_MELEE_BUG.md`](MOHIST_MELEE_BUG.md) and `kubejs/server_scripts/mohist_melee_combat_fix.js`.
 
 Full Java event/method map: [`DMZ_API_REFERENCE.md`](DMZ_API_REFERENCE.md).
