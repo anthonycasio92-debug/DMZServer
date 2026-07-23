@@ -17,5 +17,6 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info("[{}] DMZ CombatAttackRequest LivingEntity hits use hurt() instead of Player.attack()", MOD_ID);
+        MeleeFixSelfTest.registerIfEnabled();
     }
 }

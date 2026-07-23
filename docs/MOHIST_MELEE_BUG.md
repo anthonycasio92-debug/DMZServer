@@ -39,6 +39,20 @@ On startup, log should include:
 
 Also check mixin apply (no `@Redirect` failure for `CombatAttackRequestC2SMixin`).
 
+Optional automated proof (local/test JVM only):
+
+```text
+-Ddmz.melee.fix.selftest=true
+```
+
+Expect:
+
+```text
+[dmz_mohist_melee_fix] SELFTEST PASS mixinRedirect=true mixinDelta=...
+```
+
+Verified on this environment (Forge 1.20.1 + DMZ 2.1.3): mixin selected/applied into `CombatAttackRequestC2S`, redirect calls `LivingEntity.m_6469_`, self-test **PASS** with zombie HP drop via the injected redirect.
+
 Then join **without dying** and melee a mob — all players should deal damage.
 
 ## Source / rebuild
