@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+SRG="$ROOT/libraries/net/minecraft/server/1.20.1-20230612.114412/server-1.20.1-20230612.114412-srg.jar"
+FORGE_U="$ROOT/libraries/net/minecraftforge/forge/1.20.1-47.4.10/forge-1.20.1-47.4.10-universal.jar"
+DMZ="$ROOT/mods/dragonminez-2.1.3.jar"
+SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
+RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
+OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
+JAR="$ROOT/mods/dmz_mohist_melee_fix-1.0.0.jar"
+
+CP="$SRG:$FORGE_U:\
+$ROOT/libraries/net/minecraftforge/fmlcore/1.20.1-47.4.10/fmlcore-1.20.1-47.4.10.jar:\
+$ROOT/libraries/net/minecraftforge/fmlloader/1.20.1-47.4.10/fmlloader-1.20.1-47.4.10.jar:\
+$ROOT/libraries/net/minecraftforge/forgespi/7.0.1/forgespi-7.0.1.jar:\
+$ROOT/libraries/net/minecraftforge/javafmllanguage/1.20.1-47.4.10/javafmllanguage-1.20.1-47.4.10.jar:\
+$ROOT/libraries/org/spongepowered/mixin/0.8.5/mixin-0.8.5.jar:\
+$ROOT/libraries/org/apache/logging/log4j/log4j-api/2.19.0/log4j-api-2.19.0.jar:\
+$DMZ"
+
+rm -rf "$OUT"
+mkdir -p "$OUT"
+javac --release 17 -proc:none -cp "$CP" -d "$OUT" \
+  "$SRC/com/dbzlegacy/mohistmelee/DmzMohistMeleeFix.java" \
+  "$SRC/com/dbzlegacy/mohistmelee/mixin/CombatAttackRequestC2SMixin.java"
+
+echo '{}' > /tmp/dmz_mohist_melee_fix.refmap.json
+cd "$OUT"
+jar cvmf "$RES/META-INF/MANIFEST.MF" "$JAR" \
+  com/dbzlegacy/mohistmelee/DmzMohistMeleeFix.class \
+  com/dbzlegacy/mohistmelee/mixin/CombatAttackRequestC2SMixin.class \
+  -C "$RES" META-INF/mods.toml \
+  -C "$RES" dmz_mohist_melee_fix.mixins.json \
+  -C "$RES" pack.mcmeta
+cd /tmp && jar uf "$JAR" dmz_mohist_melee_fix.refmap.json
+echo "Built $JAR"

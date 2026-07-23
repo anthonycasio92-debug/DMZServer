@@ -2,49 +2,51 @@
 
 ## Symptom
 
-On Mohist hybrid (`1.20.1-46ca7304` / Forge 47.4.x + DragonMineZ 2.1.3), **some players** deal **no melee damage** until they **die and respawn once**. Others are fine. Soft “attribute refresh” alone does not fix everyone.
+On Mohist + DragonMineZ, **some players** deal **no melee damage** until they **die once**. Others are fine. KubeJS login sync / attack fallbacks were not reliable.
 
-## Why it happens
+## Cause
 
-DragonMineZ melee path:
+DMZ melee is applied in `CombatAttackRequestC2S` by calling `ServerPlayer.attack` (`m_5706_`). Mohist’s Bukkit bridge on that method is flaky until the player entity is recreated by death. DMZ’s real damage rewrite happens later in `CombatEvent.onLivingHurt` via `getMeleeDamage()`.
 
-1. Client cancels vanilla `startAttack`
-2. Client sends `CombatAttackRequestC2S`
-3. Server calls `ServerPlayer.attack(target)`
-4. `CombatEvent.onLivingHurt` rewrites damage to `getMeleeDamage()`
+## Fix (use this)
 
-Mohist patches `Player.attack` / damage bridging. For affected players the attack starts (or is accepted) but **damage never lands** until the `ServerPlayer` is recreated by death. Login sync timing also varies, so the bug is **intermittent per player**.
+**Forge mixin mod** (not a KubeJS script):
 
-Server log evidence:
+`mods/dmz_mohist_melee_fix-1.0.0.jar`
 
-```text
-Injection warning: LVT in ...PlayerList::respawn... has incompatible changes
-  dragonminez.mixins.json:common.PlayerListMixin->...onPlayerRespawn
-This server is running Mohist version 1.20.1-46ca7304 ... Forge 47.4.13
-```
+It redirects DMZ’s `ServerPlayer.attack(...)` call on living targets to `LivingEntity.hurt(playerAttack, 1.0F)`. DMZ’s existing `LivingHurt` handler still converts that into full melee damage.
 
-## What we will not do
+- No gamemode flicker  
+- No teleport  
+- No kill / Otherworld side effects  
+- Does not touch `keepInventory`
 
-- Gamemode flicker / micro-teleport
-- Toggle `keepInventory`
-- Auto-kill on login (unsafe: DMZ Otherworld treats death as story state)
+### Install on main server
 
-## Workaround (`kubejs/server_scripts/mohist_melee_combat_fix.js`)
+1. Download:  
+   https://github.com/anthonycasio92-debug/DMZServer/blob/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-1.0.0.jar  
+2. Put in `mods/`  
+3. **Remove** any old `kubejs/server_scripts/mohist_melee_combat_fix.js`  
+4. Restart the server (mixins do not hot-reload)
 
-1. **Login sync (~1.25s):** clear DMZ stun/block/knockdown locks, `refreshAttributes`, re-send `StatsSyncS2C` + weapon registry  
-2. **Attack fallback:** on `AttackEntityEvent`, wait 2 ticks — if `LivingHurt` did not apply damage / HP unchanged, call `hurt()` with DMZ melee damage (bypasses the broken `Player.attack` Bukkit bridge)
+### Verify
 
-Watch console for:
+On startup, log should include:
 
 ```text
-[mohist-melee-fix] Login sync for <name> (caps ok)
-[mohist-melee-fix] Forced melee for <name> → #<id>
+[dmz_mohist_melee_fix] DMZ CombatAttackRequest LivingEntity hits use hurt() instead of Player.attack()
 ```
 
-If you never see `Forced melee` for a broken player, Mohist is dropping the attack before `AttackEntityEvent` — then only a Mohist update / non-Mohist host fully fixes it.
+Also check mixin apply (no `@Redirect` failure for `CombatAttackRequestC2SMixin`).
 
-## Real fixes (preferred)
+Then join **without dying** and melee a mob — all players should deal damage.
 
-1. Newer Mohist 1.20.1 build, or leave Mohist (pure Forge / other hybrid)  
-2. Binary-search damage/PvP plugins (WorldGuard, CMI, Fabled, etc.)  
-3. Minimal mod set test: DMZ + GeckoLib + TerraBlender + Curios only
+## Source / rebuild
+
+`tools/dmz-mohist-melee-fix/` — see `README.md` there.
+
+## If it still fails
+
+1. Confirm the jar is loaded and mixin applied  
+2. Update Mohist, or leave Mohist (pure Forge / other hybrid)  
+3. Binary-search damage/PvP plugins (WorldGuard, CMI, Fabled)

@@ -1,0 +1,36 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "MIT"
+
+[[mods]]
+modId = "dmz_mohist_melee_fix"
+version = "1.0.0"
+displayName = "DMZ Mohist Melee Fix"
+authors = "DBZ Legacy Reborn"
+description = '''
+Redirects DragonMineZ CombatAttackRequest from Player.attack to LivingEntity.hurt so melee works on Mohist without requiring a death first.
+'''
+
+[[mixins]]
+config = "dmz_mohist_melee_fix.mixins.json"
+
+[[dependencies.dmz_mohist_melee_fix]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.dmz_mohist_melee_fix]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.20.2)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.dmz_mohist_melee_fix]]
+modId = "dragonminez"
+mandatory = true
+versionRange = "[2.1,)"
+ordering = "AFTER"
+side = "BOTH"
