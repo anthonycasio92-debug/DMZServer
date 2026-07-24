@@ -1,12 +1,10 @@
 # Mohist M1: animation but no damage
 
-## Fix v2.12.0-fixed
+## Fix v2.12.0
 
-`mods/dmz_mohist_melee_fix-2.12.0-fixed.jar`
+`mods/dmz_mohist_melee_fix-2.12.0.jar`
 
-https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.12.0-fixed.jar
-
-Built on the reviewed **2.11.0-fixed** optimized rewrite (`CombatRepair` / `RepairEvents` / `MeleeRescue`), plus the **2.12** intentional DMZ stat-reset changes.
+https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.12.0.jar
 
 ### Stat reset fix
 Primary snapshot restore was treating intentional DMZ resets (`resetPlayerProgress` /
@@ -15,16 +13,14 @@ Primary snapshot restore was treating intentional DMZ resets (`resetPlayerProgre
 - Record intentional `Stats.setAttributeBaseValue` writes into the snapshot (including 0)
 - On `resetPlayerProgress`: clear snapshot, suppress restore briefly, adopt post-reset values
 - Read-side STR fallback / tick ensure skip while suppress is active
-- Periodic snapshot skips while suppress is active (avoids re-capturing wiped zeros incorrectly after reset)
 
-### Still included (2.11.0-fixed)
+### Still included (2.11)
 - Empty/stale entity-ID M1 rescue with AABB fall-through
-- Clamp >64 entity ID packets
-- Reach / primary sanitize + respawn-like recovery
-- No raid-mixin coupling or live selftests (lean fixed rewrite)
+- Clamp >64 entity ID packets, Shurui raid teleport mixin, respawn-like recovery
+- Live `FALLBACK SELFTEST` + new `RESET SELFTEST`
 
 ### Install
 
-1. Only **2.12.0-fixed** in `mods/`
-2. Delete older `dmz_mohist_melee_fix-*.jar` (including `2.11.0-fixed` and plain `2.12.0`)
-3. Restart — log: `v2.12.0-fixed`
+1. Only **2.12.0** in `mods/`
+2. Delete older `dmz_mohist_melee_fix-*.jar`
+3. Restart — log: `v2.12.0` + `SELFTEST PASS` + `FALLBACK SELFTEST PASS` + `RESET SELFTEST PASS`

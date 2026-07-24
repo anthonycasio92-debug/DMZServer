@@ -10,10 +10,10 @@
     "CombatAttackRequestDecodeMixin",
     "ServerPlayerTeleportUnlockMixin",
     "ServerPlayerChangeDimensionMixin",
+    "StatsDataSecondaryAttrMixin",
     "StatsPrimaryAttrMixin",
     "StatsSetPrimaryMixin",
     "StatsDataResetMixin",
-    "StatsDataSecondaryAttrMixin",
     "FixVanillaEventsNaNMixin",
     "CombatEventHurtSanitizeMixin"
   ],

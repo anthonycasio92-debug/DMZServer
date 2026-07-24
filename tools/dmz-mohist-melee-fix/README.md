@@ -1,7 +1,7 @@
 # DMZ Mohist Melee Fix
 
-**v2.12.0-fixed** — 2.11.0-fixed optimized base + intentional DMZ stat-reset snapshot adopt
+**v2.12.0** — intentional DMZ stat resets no longer undone by primary snapshot restore
 
-Jar: `mods/dmz_mohist_melee_fix-2.12.0-fixed.jar`
+Jar: `mods/dmz_mohist_melee_fix-2.12.0.jar`
 
 See `docs/MOHIST_MELEE_BUG.md`.

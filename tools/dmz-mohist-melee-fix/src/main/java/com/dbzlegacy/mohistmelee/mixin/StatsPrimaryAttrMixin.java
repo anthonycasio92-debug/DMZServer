@@ -1,6 +1,6 @@
 package com.dbzlegacy.mohistmelee.mixin;
 
-import com.dbzlegacy.mohistmelee.CombatRepair;
+import com.dbzlegacy.mohistmelee.PrimaryStatRepair;
 import com.dragonminez.common.stats.character.Stats;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.player.Player;
@@ -10,24 +10,40 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(value={Stats.class}, remap=false)
+/**
+ * After a cross-world teleport Mohist can zero {@code dragonminez:strength} (etc.) bases.
+ * Empty-hand melee reads those via {@code getMeleeDamage()} → {@code getStrength()}.
+ * If the live attribute base is 0/missing but we still have a spawn-world snapshot, use it
+ * (and try to write the attribute back). Does not touch {@code ki_damage}.
+ * <p>
+ * Intentional resets clear/update the snapshot (and suppress restore), so this must not
+ * resurrect pre-reset stats.
+ */
+@Mixin(value = Stats.class, remap = false)
 public abstract class StatsPrimaryAttrMixin {
+
     @Shadow
     private Player player;
 
-    @Inject(method={"getAttributeBaseValue"}, at={@At(value="RETURN")}, cancellable=true, remap=false)
-    private void dmzmmf$primaryFallback(Attribute attribute, int fallback, CallbackInfoReturnable<Integer> cir) {
-        if (CombatRepair.isSuppressed(this.player)) {
+    @Inject(method = "getAttributeBaseValue", at = @At("RETURN"), cancellable = true, remap = false)
+    private void dbzlegacy$primaryFallback(
+            Attribute attribute,
+            int fallback,
+            CallbackInfoReturnable<Integer> cir
+    ) {
+        if (PrimaryStatRepair.isSuppressed(this.player)) {
             return;
         }
-        if (cir.getReturnValueI() > 0) {
+        int live = cir.getReturnValueI();
+        if (live > 0) {
             return;
         }
-        int saved = CombatRepair.savedFor(this.player, attribute);
+        int saved = PrimaryStatRepair.savedFor(this.player, attribute);
         if (saved <= 0) {
             return;
         }
         cir.setReturnValue(saved);
-        CombatRepair.restoreOnly(this.player, "stats-read");
+        // Best-effort write-back so other systems see the restored base too.
+        PrimaryStatRepair.restore(this.player, "stats-read");
     }
 }
