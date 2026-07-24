@@ -126,8 +126,41 @@ public final class MeleeFixSelfTest {
                     lockedBefore,
                     lockedAfter
             );
+
+            runShuruiFullHealProbe(fake);
         } catch (Throwable t) {
             LOGGER.error("[{}] SELFTEST FAIL {}", DmzMohistMeleeFix.MOD_ID, t.toString(), t);
+        }
+    }
+
+    /** Verify Shurui {@code DmzHooks.fullHeal} mixin clears strikeLocked. */
+    private static void runShuruiFullHealProbe(FakePlayer fake) {
+        try {
+            Class<?> hooks = Class.forName("net.shurui.dev.shuruis_raid_bosses.dmz.DmzHooks");
+            StatsProvider.get(StatsCapability.INSTANCE, (Entity) fake).ifPresent(data -> {
+                data.getStatus().setStrikeLocked(true);
+                data.getStatus().setKnockedDown(true);
+                data.getStatus().setStunEffect(true);
+            });
+            boolean lockedBefore = StatsProvider.get(StatsCapability.INSTANCE, (Entity) fake)
+                    .map(d -> d.getStatus().isStrikeLocked())
+                    .orElse(false);
+            hooks.getMethod("fullHeal", Player.class).invoke(null, fake);
+            boolean lockedAfter = StatsProvider.get(StatsCapability.INSTANCE, (Entity) fake)
+                    .map(d -> d.getStatus().isStrikeLocked())
+                    .orElse(true);
+            boolean pass = lockedBefore && !lockedAfter;
+            LOGGER.info(
+                    "[{}] RAIDHEAL SELFTEST {} lockedBefore={} lockedAfter={}",
+                    DmzMohistMeleeFix.MOD_ID,
+                    pass ? "PASS" : "FAIL",
+                    lockedBefore,
+                    lockedAfter
+            );
+        } catch (ClassNotFoundException e) {
+            LOGGER.info("[{}] RAIDHEAL SELFTEST SKIP (shuruis_raid_bosses not present)", DmzMohistMeleeFix.MOD_ID);
+        } catch (Throwable t) {
+            LOGGER.error("[{}] RAIDHEAL SELFTEST FAIL {}", DmzMohistMeleeFix.MOD_ID, t.toString(), t);
         }
     }
 

@@ -20,12 +20,10 @@ public final class OptionalRaidMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        try {
-            Class.forName(targetClassName, false, getClass().getClassLoader());
-            return true;
-        } catch (Throwable t) {
-            return false;
-        }
+        // Config is required=false: if Shurui is absent the whole optional config is discarded.
+        // Do not Class.forName here — the target may not be visible on this loader yet even when
+        // the mod is installed, which would silently skip the raid unlock mixins.
+        return true;
     }
 
     @Override
