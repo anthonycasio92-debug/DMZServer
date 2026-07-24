@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.ForgeMod;
 import org.apache.logging.log4j.LogManager;
@@ -42,9 +43,95 @@ public final class ReachAttributeFix {
             if (blockReach != null) {
                 changed |= repairReach(player, blockReach, "forge:block_reach", 4.5D, reason);
             }
+            // Vanilla attack damage NaN makes LivingAttackEvent amount NaN; DMZ FixVanillaEvents
+            // then cancels the hit (animation already played). Repair base only when non-finite.
+            changed |= repairFiniteBaseOnly(
+                    player,
+                    Attributes.f_22281_,
+                    "minecraft:generic.attack_damage",
+                    1.0D,
+                    reason
+            );
         } catch (Throwable t) {
             if (LOGS.get() < 5) {
                 LOGGER.warn("[{}] reach repair failed: {}", DmzMohistMeleeFix.MOD_ID, t.toString());
+            }
+        }
+        return changed;
+    }
+
+    /** Only rewrite attribute base when it is non-finite — never strip modifiers. */
+    private static boolean repairFiniteBaseOnly(
+            Player player,
+            Attribute attribute,
+            String label,
+            double fallbackDefault,
+            String reason
+    ) {
+        if (attribute == null) {
+            return false;
+        }
+        AttributeInstance inst = player.m_21051_(attribute);
+        if (inst == null) {
+            return false;
+        }
+        double oldBase = inst.m_22115_();
+        if (Double.isFinite(oldBase)) {
+            // Still strip NaN modifiers only.
+            return stripNaNModifiers(inst, player, label, oldBase, reason);
+        }
+        double def = attribute.m_22082_();
+        if (!Double.isFinite(def) || def < 0.0D) {
+            def = fallbackDefault;
+        }
+        inst.m_22100_(def);
+        stripNaNModifiers(inst, player, label, oldBase, reason);
+        int n = LOGS.incrementAndGet();
+        if (n <= 40) {
+            LOGGER.info(
+                    "[{}] repaired {} player={} base={}->{} value={} reason={}",
+                    DmzMohistMeleeFix.MOD_ID,
+                    label,
+                    playerName(player),
+                    oldBase,
+                    inst.m_22115_(),
+                    inst.m_22135_(),
+                    reason
+            );
+        }
+        return true;
+    }
+
+    private static boolean stripNaNModifiers(
+            AttributeInstance inst,
+            Player player,
+            String label,
+            double oldBase,
+            String reason
+    ) {
+        boolean changed = false;
+        List<UUID> badMods = new ArrayList<>();
+        for (AttributeModifier mod : inst.m_22122_()) {
+            if (!Double.isFinite(mod.m_22218_())) {
+                badMods.add(mod.m_22209_());
+            }
+        }
+        for (UUID id : badMods) {
+            inst.m_22120_(id);
+            changed = true;
+        }
+        if (changed) {
+            int n = LOGS.incrementAndGet();
+            if (n <= 40) {
+                LOGGER.info(
+                        "[{}] stripped NaN modifiers {} player={} base={} value={} reason={}",
+                        DmzMohistMeleeFix.MOD_ID,
+                        label,
+                        playerName(player),
+                        oldBase,
+                        inst.m_22135_(),
+                        reason
+                );
             }
         }
         return changed;
@@ -149,7 +236,9 @@ public final class ReachAttributeFix {
      * usable range. Does not alter damage attributes.
      */
     public static double sanitizeEffectiveRange(Player player, double weaponAttackRange, double computed) {
-        if (Double.isFinite(computed) && computed > 0.05D) {
+        // Also treat absurdly low finite ranges as broken (collapsed reach can yield ~0.1).
+        double minUsable = Math.max(0.75D, weaponAttackRange > 0.0D ? weaponAttackRange * 0.5D : 0.75D);
+        if (Double.isFinite(computed) && computed >= minUsable) {
             return computed;
         }
         repair(player, "sanitize-range");
@@ -166,7 +255,7 @@ public final class ReachAttributeFix {
                     }
                     if (Double.isFinite(cur)) {
                         double fixed = weaponAttackRange + (cur - def);
-                        if (Double.isFinite(fixed) && fixed > 0.05D) {
+                        if (Double.isFinite(fixed) && fixed >= minUsable) {
                             return fixed;
                         }
                     }

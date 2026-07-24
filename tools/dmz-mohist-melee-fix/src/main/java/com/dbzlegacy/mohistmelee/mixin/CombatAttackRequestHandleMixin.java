@@ -1,6 +1,7 @@
 package com.dbzlegacy.mohistmelee.mixin;
 
 import com.dbzlegacy.mohistmelee.CombatUnlock;
+import com.dbzlegacy.mohistmelee.ReachAttributeFix;
 import com.dragonminez.common.network.C2S.CombatAttackRequestC2S;
 import java.util.function.Supplier;
 import net.minecraft.server.level.ServerPlayer;
@@ -30,7 +31,8 @@ public abstract class CombatAttackRequestHandleMixin {
                 return;
             }
             CombatUnlock.clearStaleStrikeLock(player, "melee-packet");
-            // Reach only when needed — do not rewrite DMZ damage attributes every punch.
+            // Reach + NaN attack_damage only — never rewrite dragonminez damage attrs.
+            ReachAttributeFix.repair(player, "melee-packet");
             if (CombatUnlock.hasRealStunPotion(player)) {
                 return;
             }

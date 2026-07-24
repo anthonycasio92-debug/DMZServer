@@ -1,33 +1,35 @@
-# Mohist M1 brick — reach collapse + raid teleport lock
+# Mohist M1: swing animation but no damage
 
-## Cause
+## What players see
 
-1. **Forge `ENTITY_REACH`** — DMZ range = `weaponRange + (reach - default)`. NaN → silent miss.
-2. **Stale `strikeLocked`** — `CombatAttackRequestC2S.handle` drops M1 while `Status.isStunned()`.
-3. **Shurui Raid Bosses** — arena teleport + `DmzHooks.fullHeal` leaves `strikeLocked` set.
-4. **NaN secondary attrs** — `StatsData.getSecondaryAttributeValue` returns raw `getValue()` with no NaN check (poisoned hurt amounts).
+The melee swing / combo animation plays, but the target takes **no damage**.
 
-## Fix v2.4.0
+## Why
 
-`mods/dmz_mohist_melee_fix-2.4.0.jar`
+DMZ sends `MeleeAnimationS2C` **before** the server range check and `ServerPlayer.attack`.
 
-https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.4.0.jar
+Then one of these silently drops the hit:
 
-- Repairs Forge `ENTITY_REACH` / `BLOCK_REACH` only (never wipes all modifiers)
-- **Does not write** `dragonminez:ki_damage` / `melee_damage` / `strike_damage` (v2.2–2.3 could reset those to 0 / strip gear mods)
-- NaN on DMZ secondaries is guarded **on read** via mixin
-- Clears stale `strikeLocked` after teleports / Shurui `fullHeal`
-- No damage redirects
+1. **Stale `strikeLocked`** — packet handler returns early (no animation in that path).
+2. **Collapsed `ENTITY_REACH`** — animation still sent; distance check fails → no `attack()`.
+3. **NaN damage amount** — `FixVanillaEvents` **cancels** `LivingAttack` / `LivingHurt` / `LivingDamage` when amount is NaN, so animation already played but hurt never applies. Common when vanilla `generic.attack_damage` or DMZ `getMeleeDamage()` goes non-finite on Mohist.
+
+## Fix v2.5.0
+
+`mods/dmz_mohist_melee_fix-2.5.0.jar`
+
+https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.5.0.jar
+
+- Unlock stale `strikeLocked`; repair Forge reach + NaN `attack_damage` base only
+- Sanitize DMZ effective attack range (including absurdly low finite ranges)
+- **Do not cancel** NaN attacks in `FixVanillaEvents` — sanitize amounts instead
+- Sanitize non-finite amounts after `CombatEvent.onLivingHurt`
+- Raid teleport / Shurui `fullHeal` unlock (unchanged)
+- **Still does not rewrite** `dragonminez:ki_damage` / melee / strike attrs
+- **No damage redirects / setHealth**
 
 ### Install
 
-1. Put **2.4.0** in `mods/`
+1. Put **2.5.0** in `mods/`
 2. Delete older `dmz_mohist_melee_fix-*.jar`
-3. Restart
-
-### Verify
-
-```text
-[dmz_mohist_melee_fix] v2.4.0 reach repair + raid unlock; no DMZ damage-attr writes
-[dmz_mohist_melee_fix] SELFTEST PASS ... kiPreserved=true ...
-```
+3. Restart — look for `v2.5.0` and `SELFTEST PASS`

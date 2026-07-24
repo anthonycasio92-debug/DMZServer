@@ -18,7 +18,7 @@ public final class DmzMohistMeleeFix {
     private static final Logger LOGGER = LogManager.getLogger(MOD_ID);
 
     public DmzMohistMeleeFix() {
-        LOGGER.info("[{}] v2.4.0 reach repair + raid unlock; no DMZ damage-attr writes", MOD_ID);
+        LOGGER.info("[{}] v2.5.0 swing-no-damage fix: skip NaN cancel + reach/attack_damage sanitize", MOD_ID);
         ReachRepairEvents.register();
         MeleeFixSelfTest.registerIfEnabled();
     }
