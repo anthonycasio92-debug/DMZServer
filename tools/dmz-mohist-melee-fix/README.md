@@ -1,10 +1,10 @@
 # dmz_mohist_melee_fix
 
-Tiny Forge 1.20.1 mixin mod for Mohist + DragonMineZ.
+Forge 1.20.1 mixin mod for Mohist + DragonMineZ.
 
-Redirects `CombatAttackRequestC2S` away from `ServerPlayer.attack` / `hurt` / `actuallyHurt` to Forge `LivingHurtEvent` + `setHealth` (full Bukkit bypass).
+Fixes M1 breaking after cancelled ki blasts / no-PvP hits by probing Bukkit cancels, applying damage via LivingHurt + setHealth, and repairing attacker state.
 
-Built jar: `mods/dmz_mohist_melee_fix-1.0.2.jar` (server-side only).
+Jar: `mods/dmz_mohist_melee_fix-1.0.3.jar` (server-side only).
 
 ## Rebuild
 
@@ -12,14 +12,6 @@ Built jar: `mods/dmz_mohist_melee_fix-1.0.2.jar` (server-side only).
 ./tools/dmz-mohist-melee-fix/build.sh
 ```
 
-Requires local `libraries/` (Forge + `server-*-srg.jar`) and `mods/dragonminez-2.1.3.jar` from this pack.
+## Optional self-test
 
-## Optional boot self-test
-
-Add JVM arg `-Ddmz.melee.fix.selftest=true`, then restart. Look for:
-
-```text
-[dmz_mohist_melee_fix] SELFTEST PASS ...
-```
-
-Leave this flag off on production hosts.
+`-Ddmz.melee.fix.selftest=true` → `SELFTEST PASS`

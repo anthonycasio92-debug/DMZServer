@@ -6,7 +6,9 @@
   "refmap": "dmz_mohist_melee_fix.refmap.json",
   "mixins": [
     "CombatAttackRequestC2SMixin",
-    "AbstractKiProjectileMixin"
+    "CombatAttackRequestHandleMixin",
+    "AbstractKiProjectileMixin",
+    "StrikeAttackHandlerMixin"
   ],
   "client": [],
   "server": [],

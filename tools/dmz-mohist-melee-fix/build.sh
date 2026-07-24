@@ -7,10 +7,8 @@ DMZ="$ROOT/mods/dragonminez-2.1.3.jar"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
-JAR="$ROOT/mods/dmz_mohist_melee_fix-1.0.3.jar"
-rm -f "$ROOT/mods/dmz_mohist_melee_fix-1.0.0.jar" \
-      "$ROOT/mods/dmz_mohist_melee_fix-1.0.1.jar" \
-      "$ROOT/mods/dmz_mohist_melee_fix-1.0.2.jar"
+JAR="$ROOT/mods/dmz_mohist_melee_fix-1.0.4.jar"
+rm -f "$ROOT/mods"/dmz_mohist_melee_fix-1.0.[0-3].jar
 
 CP="$SRG:$FORGE_U:\
 $ROOT/libraries/net/minecraftforge/fmlcore/1.20.1-47.4.10/fmlcore-1.20.1-47.4.10.jar:\
@@ -27,25 +25,16 @@ $DMZ"
 rm -rf "$OUT"
 mkdir -p "$OUT"
 javac --release 17 -proc:none -cp "$CP" -d "$OUT" \
-  "$SRC/com/dbzlegacy/mohistmelee/DmzMohistMeleeFix.java" \
-  "$SRC/com/dbzlegacy/mohistmelee/DamageBridge.java" \
-  "$SRC/com/dbzlegacy/mohistmelee/MeleeFixJoinProbe.java" \
-  "$SRC/com/dbzlegacy/mohistmelee/MeleeFixSelfTest.java" \
-  "$SRC/com/dbzlegacy/mohistmelee/mixin/CombatAttackRequestC2SMixin.java" \
-  "$SRC/com/dbzlegacy/mohistmelee/mixin/AbstractKiProjectileMixin.java"
+  "$SRC"/com/dbzlegacy/mohistmelee/*.java \
+  "$SRC"/com/dbzlegacy/mohistmelee/mixin/*.java
 
 echo '{}' > /tmp/dmz_mohist_melee_fix.refmap.json
 cd "$OUT"
-jar cvmf "$RES/META-INF/MANIFEST.MF" "$JAR" \
-  com/dbzlegacy/mohistmelee/DmzMohistMeleeFix.class \
-  com/dbzlegacy/mohistmelee/DamageBridge.class \
-  com/dbzlegacy/mohistmelee/DamageBridge\$Result.class \
-  com/dbzlegacy/mohistmelee/MeleeFixJoinProbe.class \
-  com/dbzlegacy/mohistmelee/MeleeFixSelfTest.class \
-  com/dbzlegacy/mohistmelee/mixin/CombatAttackRequestC2SMixin.class \
-  com/dbzlegacy/mohistmelee/mixin/AbstractKiProjectileMixin.class \
+CLASSES=$(find com -name '*.class' | tr '\n' ' ')
+jar cvmf "$RES/META-INF/MANIFEST.MF" "$JAR" $CLASSES \
   -C "$RES" META-INF/mods.toml \
   -C "$RES" dmz_mohist_melee_fix.mixins.json \
   -C "$RES" pack.mcmeta
 cd /tmp && jar uf "$JAR" dmz_mohist_melee_fix.refmap.json
 echo "Built $JAR"
+jar tf "$JAR"

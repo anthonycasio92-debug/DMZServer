@@ -2,76 +2,46 @@
 
 ## Symptom
 
-On Mohist + DragonMineZ, **some players** deal **no melee damage** until they **die once**. Others are fine. A restart can break a player who was working before. KubeJS workarounds and calling `hurt`/`actuallyHurt` alone were not enough — Mohist can still route those through a broken Bukkit `EntityDamageEvent` bridge.
+M1 deals no damage until the player dies. Triggers include restart/rejoin, cancelled ki blasts, cancelled strike techniques, and PvP attempts in no-PvP regions.
 
-## Cause
+## Root cause (confirmed on Mohist)
 
-DMZ melee is applied in `CombatAttackRequestC2S` by calling `ServerPlayer.attack` (`m_5706_`). Mohist’s Bukkit bridge on attack/hurt is flaky until the player entity is recreated by death. DMZ’s real damage rewrite happens in `CombatEvent.onLivingHurt` via `getMeleeDamage()`.
+1. **Stale `strikeLocked`** — DMZ `CombatAttackRequest.handle` ignores packets when `Status.isStunned()` is true, and that includes `strikeLocked`. Cancelled strike/PvP can leave `strikeLocked=true`, so every M1 packet is silently dropped until death/login clears it.
+2. **Mohist Bukkit damage bridge** — `Player.attack` / `LivingEntity.hurt` are flaky after cancelled EntityDamage events.
 
-Also: DMZ only processes `CombatAttackRequest` when `StatsCapability` is present; if that capability is missing on join, packets are silently ignored until death recreates the player.
+## Fix v1.0.4 (server-side)
 
-## Fix (use this)
+`mods/dmz_mohist_melee_fix-1.0.4.jar`
 
-**Forge mixin mod** (server-side only):
+https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-1.0.4.jar
 
-`mods/dmz_mohist_melee_fix-1.0.2.jar`
+- Unlocks stale `strikeLocked` on every M1 packet (only real STUN potion still blocks)
+- Bukkit probe respects WorldGuard no-PvP without using broken hurt/attack
+- Applies allowed damage via LivingHurt + setHealth
+- Same bypass/repair for melee, ki blasts, and strike techniques
+- Auto self-test on Mohist boot
 
-Redirects DMZ’s `ServerPlayer.attack(...)` on living targets to:
+### Install
 
-1. Forge `LivingHurtEvent` once (DMZ rewrites to `getMeleeDamage()`)
-2. Direct `setHealth` / `die` — **never** calls `attack`, `hurt`, or `actuallyHurt`
+1. Put **1.0.4** in `mods/`
+2. Delete older `dmz_mohist_melee_fix-1.0.*.jar`
+3. Restart
 
-Also logs join-time `StatsCapability` presence and the first few melee hits per player.
-
-- No gamemode flicker  
-- No teleport  
-- No kill / Otherworld side effects  
-- Does not touch `keepInventory`
-
-### Install on main server
-
-1. Download:  
-   https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-1.0.2.jar  
-2. Put in `mods/`  
-3. **Delete** any older `dmz_mohist_melee_fix-1.0.0.jar` / `1.0.1.jar`  
-4. Restart the server (mixins do not hot-reload)
-
-### Verify (required)
-
-After restart, logs **must** contain:
+### Verify (Mohist logs)
 
 ```text
-[dmz_mohist_melee_fix] v1.0.2 CombatAttackRequest → LivingHurt + setHealth (full Bukkit bypass)
-Selecting config dmz_mohist_melee_fix.mixins.json
-Mixing CombatAttackRequestC2SMixin ... into CombatAttackRequestC2S
+[dmz_mohist_melee_fix] v1.0.4 unlock stale strikeLocked + melee/ki/strike Bukkit-bypass
+[dmz_mohist_melee_fix] Self-test enabled (mohist=true forced=false)
+[dmz_mohist_melee_fix] SELFTEST PASS lockedBefore=true lockedAfter=false ... delta=1.0
 ```
 
-On player join:
+### Tested in this environment
 
-```text
-[dmz_mohist_melee_fix] join probe player=NAME statsCapability=true
-```
+Local Mohist 1.20.1 + DMZ 2.1.3:
 
-If `statsCapability=false`, CombatAttackRequest is ignored by DMZ — that is a separate join/capability bug.
+- Mixins applied (CombatAttackRequest handle+redirect, ki, strike)
+- SELFTEST **PASS**: simulated `strikeLocked=true` → cleared → zombie HP 20→19
 
-When the affected player M1s a mob, logs should show:
+## Source
 
-```text
-[dmz_mohist_melee_fix] hit player=NAME target=... delta=... applied amount=...
-```
-
-- If **no hit lines** appear while M1 animates: packet never reached the redirect (slot mismatch / hand null / capability / client not sending).  
-- If hit lines show `delta=0` / `*Cancelled`: another Forge/plugin cancelled the event after our redirect.  
-- If hit lines show `delta>0` but client sees no damage: sync/display issue, not application.
-
-## Source / rebuild
-
-`tools/dmz-mohist-melee-fix/` — see `README.md` there.
-
-## If it still fails
-
-1. Confirm **v1.0.2** + mixin apply + join probe + hit lines above  
-2. Only one `dmz_mohist_melee_fix-*.jar` in `mods/`  
-3. Paste those log lines for the broken player  
-4. Update Mohist or leave Mohist (pure Forge / other hybrid)  
-5. Binary-search damage/PvP plugins (WorldGuard, CMI, Fabled)
+`tools/dmz-mohist-melee-fix/`

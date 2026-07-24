@@ -16,7 +16,7 @@ public final class DmzMohistMeleeFix {
     private static final Logger LOGGER = LogManager.getLogger(MOD_ID);
 
     public DmzMohistMeleeFix() {
-        LOGGER.info("[{}] v1.0.3 melee+ki Bukkit probe, setHealth apply, attacker repair after deny", MOD_ID);
+        LOGGER.info("[{}] v1.0.4 unlock stale strikeLocked + melee/ki/strike Bukkit-bypass", MOD_ID);
         MeleeFixJoinProbe.register();
         MeleeFixSelfTest.registerIfEnabled();
     }

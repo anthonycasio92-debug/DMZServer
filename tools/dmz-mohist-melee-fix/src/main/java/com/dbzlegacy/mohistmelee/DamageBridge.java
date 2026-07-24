@@ -109,7 +109,38 @@ public final class DamageBridge {
     /**
      * Clear stuck combat locks that cancelled ki/PvP can leave behind on Mohist.
      */
+    /** Unconditionally clear DMZ locks that gate CombatAttackRequest (isStunned). */
+    public static void forceClearCombatLocks(ServerPlayer player, String reason) {
+        StatsProvider.get(StatsCapability.INSTANCE, (Entity) player).ifPresent(data -> {
+            boolean locked = data.getStatus().isStrikeLocked()
+                    || data.getStatus().isKnockedDown()
+                    || data.getStatus().isStunEffect();
+            data.getStatus().setStrikeLocked(false);
+            data.getStatus().setKnockedDown(false);
+            data.getStatus().setStunEffect(false);
+            if (locked) {
+                int n = GLOBAL_LOGS.incrementAndGet();
+                if (n <= 40) {
+                    LOGGER.info(
+                            "[{}] cleared combat locks player={} reason={}",
+                            DmzMohistMeleeFix.MOD_ID,
+                            player.m_36316_().getName(),
+                            reason
+                    );
+                }
+            }
+        });
+        try {
+            MobEffect stun = MainEffects.STUN.get();
+            if (stun != null) {
+                player.m_21195_(stun);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
     public static void repairAttacker(ServerPlayer player, String reason) {
+        forceClearCombatLocks(player, reason);
         long now = System.currentTimeMillis();
         Long prev = LAST_REPAIR_MS.put(player.m_20148_(), now);
         if (prev != null && now - prev < 250L) {
@@ -120,24 +151,10 @@ public final class DamageBridge {
         player.f_20916_ = 0;
         player.f_20917_ = 0;
 
-        try {
-            MobEffect stun = MainEffects.STUN.get();
-            if (stun != null) {
-                player.m_21195_(stun);
-            }
-        } catch (Throwable ignored) {
-            // MainEffects may be unavailable during very early boot
-        }
-
         StatsProvider.get(StatsCapability.INSTANCE, (Entity) player).ifPresent(data -> {
-            data.getStatus().setStunEffect(false);
-            data.getStatus().setStrikeLocked(false);
-            data.getStatus().setKnockedDown(false);
-            // Do not force-clear blocking — player may still hold block.
             try {
                 if (data.getTechniques().isTechniqueCharging() || data.getTechniques().isTechniqueChargeActive()) {
-                    // Only clear charge when repairing after a denied projectile/hit, not every melee.
-                    if (reason != null && (reason.contains("bukkit") || reason.contains("ki") || reason.contains("Cancelled"))) {
+                    if (reason != null && (reason.contains("bukkit") || reason.contains("ki") || reason.contains("Cancelled") || reason.contains("strike"))) {
                         data.getTechniques().clearTechniqueCharge();
                     }
                 }
@@ -164,15 +181,16 @@ public final class DamageBridge {
      */
     public static boolean isBukkitDamageDenied(ServerPlayer attacker, LivingEntity target, float amount) {
         try {
-            Method getBukkitEntity = findMethod(attacker.getClass(), "getBukkitEntity");
-            if (getBukkitEntity == null) {
-                getBukkitEntity = findMethod(Entity.class, "getBukkitEntity");
-            }
+            Method getBukkitEntity = findPublicNoArg(attacker.getClass(), "getBukkitEntity");
             if (getBukkitEntity == null) {
                 return false; // pure Forge — no Bukkit bridge
             }
             Object bukkitAttacker = getBukkitEntity.invoke(attacker);
-            Object bukkitTarget = getBukkitEntity.invoke(target);
+            Method targetBukkit = findPublicNoArg(target.getClass(), "getBukkitEntity");
+            if (targetBukkit == null) {
+                return false;
+            }
+            Object bukkitTarget = targetBukkit.invoke(target);
             if (bukkitAttacker == null || bukkitTarget == null) {
                 return false;
             }
@@ -209,7 +227,7 @@ public final class DamageBridge {
 
     private static void rebindBukkitHandle(ServerPlayer player) {
         try {
-            Method getBukkitEntity = findMethod(player.getClass(), "getBukkitEntity");
+            Method getBukkitEntity = findPublicNoArg(player.getClass(), "getBukkitEntity");
             if (getBukkitEntity == null) {
                 return;
             }
@@ -225,6 +243,14 @@ public final class DamageBridge {
                 setHandle.invoke(craft, player);
             }
         } catch (Throwable ignored) {
+        }
+    }
+
+    private static Method findPublicNoArg(Class<?> type, String name) {
+        try {
+            return type.getMethod(name);
+        } catch (NoSuchMethodException e) {
+            return null;
         }
     }
 
