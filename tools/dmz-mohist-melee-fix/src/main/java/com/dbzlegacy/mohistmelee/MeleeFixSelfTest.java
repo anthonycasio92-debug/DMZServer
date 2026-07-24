@@ -1,17 +1,14 @@
 package com.dbzlegacy.mohistmelee;
 
-import com.dbzlegacy.mohistmelee.mixin.LivingEntityInvoker;
 import com.mojang.authlib.GameProfile;
 import java.lang.reflect.Method;
 import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.monster.Zombie;
-import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.common.util.FakePlayerFactory;
@@ -62,18 +59,6 @@ public final class MeleeFixSelfTest {
             boolean mixinHit = invokeMixinRedirect(fake, zombie);
             float after = zombie.m_21223_();
             float delta = before - after;
-
-            // Second probe on a fresh target if mixin path dealt no damage (i-frames / cancel).
-            if (delta <= 0.05F) {
-                zombie.f_19802_ = 0;
-                zombie.f_20916_ = 0;
-                DamageSource src = fake.m_269291_().m_269075_(fake);
-                if (ForgeHooks.onLivingAttack(zombie, src, 1.0F)) {
-                    ((LivingEntityInvoker) zombie).dbzlegacy$invokeActuallyHurt(src, 1.0F);
-                }
-                after = zombie.m_21223_();
-                delta = before - after;
-            }
 
             boolean pass = delta > 0.05F;
             LOGGER.info(

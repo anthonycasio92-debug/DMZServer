@@ -4,11 +4,11 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "1.0.1"
+version = "1.0.2"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
-Redirects DragonMineZ CombatAttackRequest away from Player.attack/hurt (Mohist Bukkit bridge) through Forge LivingHurt + actuallyHurt so melee works without requiring a death first.
+Redirects DragonMineZ CombatAttackRequest away from Player.attack/hurt/actuallyHurt (Mohist Bukkit bridge) through Forge LivingHurt + setHealth so melee works without requiring a death first.
 '''
 
 [[mixins]]

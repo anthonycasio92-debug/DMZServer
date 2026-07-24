@@ -14,10 +14,10 @@ DMZ melee is applied in `CombatAttackRequestC2S` by calling `ServerPlayer.attack
 
 `mods/dmz_mohist_melee_fix-1.0.1.jar`
 
-It redirects DMZ’s `ServerPlayer.attack(...)` on living targets to:
-
-1. Forge `LivingHurtEvent` (so DMZ still rewrites to `getMeleeDamage()`)
-2. `LivingEntity.actuallyHurt` (`m_6475_`) — **bypasses** Mohist’s Bukkit `EntityDamageEvent` bridge
+It redirects DMZ’s `ServerPlayer.attack(...)` on living targets to Forge’s patched
+`LivingEntity.actuallyHurt` (`m_6475_`). That fires `LivingHurtEvent` once (DMZ
+rewrites to `getMeleeDamage()`) while **skipping** Mohist’s Bukkit
+`EntityDamageEvent` bridge on `attack`/`hurt`.
 
 - No gamemode flicker  
 - No teleport  
@@ -38,7 +38,7 @@ It redirects DMZ’s `ServerPlayer.attack(...)` on living targets to:
 After restart, `logs/latest.log` / `debug.log` **must** contain:
 
 ```text
-[dmz_mohist_melee_fix] v1.0.1 CombatAttackRequest uses Forge LivingHurt + actuallyHurt (Bukkit bypass)
+[dmz_mohist_melee_fix] v1.0.1 CombatAttackRequest → actuallyHurt Bukkit-bypass (single LivingHurt)
 ```
 
 and:
@@ -53,7 +53,7 @@ If those lines are missing, the jar is not loading (wrong folder, not restarted,
 On the first successful melee after install you should also see:
 
 ```text
-[dmz_mohist_melee_fix] Melee redirect active: Forge LivingHurt + actuallyHurt ...
+[dmz_mohist_melee_fix] Melee redirect active: actuallyHurt Bukkit-bypass delta=...
 ```
 
 Then join **without dying** and melee a mob.
