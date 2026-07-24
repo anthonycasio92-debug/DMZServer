@@ -1,38 +1,45 @@
-# Mohist “must die to melee” (DMZ combat)
+# Mohist “must die to melee” — ENTITY_REACH collapse
 
 ## Symptom
 
-M1 deals no damage until the player dies. Triggers include restart/rejoin, cancelled ki blasts, cancelled strike techniques, and PvP attempts in no-PvP regions.
+M1 deals no damage until the player dies/respawns.
 
-## Root cause
+## Cause (this fix)
 
-1. **Forge `ENTITY_REACH` corruption** — DMZ computes hit range as `weaponRange + (entityReach - default)`. If reach base/modifiers go NaN or collapse on Mohist, server range checks fail while the client still targets. Death rebuilds the AttributeMap.
-2. **Stale `strikeLocked`** — DMZ drops CombatAttackRequest when `Status.isStunned()` (includes `strikeLocked`).
-3. **Client charge/block desync** — cancelled ki clears charge on the server without syncing; client `MinecraftMixin` keeps cancelling M1.
-4. **Stuck client upswing** / Mohist CraftPlayer state until respawn.
+DMZ computes hit range as:
 
-## Fix v1.0.6
+```text
+weaponRange + (Forge ENTITY_REACH - default)
+```
 
-`mods/dmz_mohist_melee_fix-1.0.6.jar`
+On Mohist, `ENTITY_REACH` can collapse (NaN / invalid base). Server range checks then fail while the client still targets. Death rebuilds the AttributeMap, which is why suicide “fixed” it.
 
-https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-1.0.6.jar
+## Fix v2.0.0 (reach only)
 
-- Repairs Forge `ENTITY_REACH` / `BLOCK_REACH` (NaN/collapsed) and sanitizes `getEffectiveAttackRange`
-- Clears locks + charge/block flags and syncs to client
-- Client upswing flush + soft player recreate on Mohist join
-- Bukkit-bypass damage for melee / ki / strike
+`mods/dmz_mohist_melee_fix-2.0.0.jar`
+
+https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.0.0.jar
+
+**Only** repairs Forge `ENTITY_REACH` / `BLOCK_REACH` and sanitizes DMZ `getEffectiveAttackRange`.
+
+Removed (broke NPC kills in 1.0.x):
+
+- DamageBridge / LivingHurt+setHealth redirects
+- CombatAttackRequest / ki / strike mixins
+- Soft player recreate
+- Client upswing / charge-sync combat hooks
 
 ### Install
 
-1. Put **1.0.6** in `mods/` (server **and** clients)
-2. Delete older `dmz_mohist_melee_fix-1.0.*.jar`
+1. Put **2.0.0** in `mods/`
+2. Delete **all** older `dmz_mohist_melee_fix-1.*.jar`
 3. Restart
 
 ### Verify
 
 ```text
-[dmz_mohist_melee_fix] v1.0.6 repair Forge ENTITY_REACH + client sync + soft refresh
-[dmz_mohist_melee_fix] SELFTEST PASS ... reachAfter=... fixedRange=...
+[dmz_mohist_melee_fix] v2.0.0 ENTITY_REACH collapse repair only
+[dmz_mohist_melee_fix] SELFTEST PASS reachBefore=... reachAfter=3.0 sanitizedRange=2.0
 ```
 
 ## Source

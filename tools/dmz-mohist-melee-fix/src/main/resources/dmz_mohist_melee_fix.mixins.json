@@ -5,15 +5,9 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "dmz_mohist_melee_fix.refmap.json",
   "mixins": [
-    "CombatAttackRequestC2SMixin",
-    "CombatAttackRequestHandleMixin",
-    "AbstractKiProjectileMixin",
-    "StrikeAttackHandlerMixin",
     "PlayerAttackHelperReachMixin"
   ],
-  "client": [
-    "ClientMinecraftCombatMixin"
-  ],
+  "client": [],
   "server": [],
   "injectors": {
     "defaultRequire": 1

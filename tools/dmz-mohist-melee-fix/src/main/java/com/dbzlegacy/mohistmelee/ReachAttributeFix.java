@@ -14,10 +14,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Mohist/DMZ can leave Forge {@code ENTITY_REACH}/{@code BLOCK_REACH} in a bad state
- * (NaN base, collapsed base, non-finite modifiers). DMZ melee then computes
- * {@code getEffectiveAttackRange} as NaN/0 and silently drops every hit until
- * death recreates the AttributeMap.
+ * Repairs collapsed Forge {@code ENTITY_REACH} / {@code BLOCK_REACH}.
+ *
+ * <p>DMZ melee range is {@code weaponRange + (entityReach - default)}. When reach
+ * base/modifiers become NaN or collapse on Mohist, server range checks fail and
+ * M1 does nothing until death rebuilds the AttributeMap.
+ *
+ * <p>This class only touches reach attributes — no damage redirects, no combat locks.
  */
 public final class ReachAttributeFix {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
@@ -25,6 +28,7 @@ public final class ReachAttributeFix {
 
     private ReachAttributeFix() {}
 
+    /** @return true if any attribute was changed */
     public static boolean repair(Player player, String reason) {
         if (player == null) {
             return false;
@@ -34,10 +38,10 @@ public final class ReachAttributeFix {
             Attribute entityReach = ForgeMod.ENTITY_REACH.get();
             Attribute blockReach = ForgeMod.BLOCK_REACH.get();
             if (entityReach != null) {
-                changed |= repairOne(player, entityReach, "ENTITY_REACH", reason);
+                changed |= repairOne(player, entityReach, "ENTITY_REACH", 3.0D, reason);
             }
             if (blockReach != null) {
-                changed |= repairOne(player, blockReach, "BLOCK_REACH", reason);
+                changed |= repairOne(player, blockReach, "BLOCK_REACH", 4.5D, reason);
             }
         } catch (Throwable t) {
             if (LOGS.get() < 5) {
@@ -47,13 +51,19 @@ public final class ReachAttributeFix {
         return changed;
     }
 
-    private static boolean repairOne(Player player, Attribute attribute, String label, String reason) {
+    private static boolean repairOne(
+            Player player,
+            Attribute attribute,
+            String label,
+            double fallbackDefault,
+            String reason
+    ) {
         AttributeInstance inst = player.m_21051_(attribute);
         if (inst == null) {
             int n = LOGS.incrementAndGet();
             if (n <= 20) {
                 LOGGER.warn(
-                        "[{}] missing {} attribute player={} reason={}",
+                        "[{}] missing {} player={} reason={}",
                         DmzMohistMeleeFix.MOD_ID,
                         label,
                         playerName(player),
@@ -66,19 +76,18 @@ public final class ReachAttributeFix {
         boolean changed = false;
         double def = attribute.m_22082_();
         if (!Double.isFinite(def) || def <= 0.0D) {
-            def = "ENTITY_REACH".equals(label) ? 3.0D : 4.5D;
+            def = fallbackDefault;
         }
 
-        double base = inst.m_22115_();
-        if (!Double.isFinite(base) || base < 0.25D) {
+        double oldBase = inst.m_22115_();
+        if (!Double.isFinite(oldBase) || oldBase < 0.25D) {
             inst.m_22100_(def);
             changed = true;
         }
 
         List<UUID> badMods = new ArrayList<>();
         for (AttributeModifier mod : inst.m_22122_()) {
-            double amt = mod.m_22218_();
-            if (!Double.isFinite(amt)) {
+            if (!Double.isFinite(mod.m_22218_())) {
                 badMods.add(mod.m_22209_());
             }
         }
@@ -89,7 +98,8 @@ public final class ReachAttributeFix {
 
         double value = inst.m_22135_();
         if (!Double.isFinite(value) || value < 0.25D) {
-            // Nuclear: strip all modifiers and restore default base (form reach reapplied by DMZ tick).
+            // Last resort: clear modifiers and restore default base.
+            // DMZ form-reach tick will re-apply its bonus afterward.
             inst.m_22132_();
             inst.m_22100_(def);
             changed = true;
@@ -104,7 +114,7 @@ public final class ReachAttributeFix {
                         DmzMohistMeleeFix.MOD_ID,
                         label,
                         playerName(player),
-                        base,
+                        oldBase,
                         inst.m_22115_(),
                         value,
                         reason
@@ -115,16 +125,15 @@ public final class ReachAttributeFix {
     }
 
     /**
-     * Sanitize DMZ range: if reach math produced NaN/non-positive, repair attrs and
-     * fall back to a usable melee range so hits are not silently dropped.
+     * If DMZ range math produced NaN / non-positive, repair attrs and return a
+     * usable range. Does not alter damage application.
      */
     public static double sanitizeEffectiveRange(Player player, double weaponAttackRange, double computed) {
         if (Double.isFinite(computed) && computed > 0.05D) {
             return computed;
         }
         repair(player, "sanitize-range");
-        double fallback = Math.max(2.0D, weaponAttackRange > 0.0D ? weaponAttackRange : 2.0D);
-        // Prefer live attribute if repair restored it.
+
         try {
             Attribute entityReach = ForgeMod.ENTITY_REACH.get();
             if (entityReach != null) {
@@ -132,7 +141,10 @@ public final class ReachAttributeFix {
                 if (inst != null) {
                     double cur = inst.m_22135_();
                     double def = entityReach.m_22082_();
-                    if (Double.isFinite(cur) && Double.isFinite(def)) {
+                    if (!Double.isFinite(def) || def <= 0.0D) {
+                        def = 3.0D;
+                    }
+                    if (Double.isFinite(cur)) {
                         double fixed = weaponAttackRange + (cur - def);
                         if (Double.isFinite(fixed) && fixed > 0.05D) {
                             return fixed;
@@ -142,10 +154,12 @@ public final class ReachAttributeFix {
             }
         } catch (Throwable ignored) {
         }
+
+        double fallback = Math.max(2.0D, weaponAttackRange > 0.0D ? weaponAttackRange : 2.0D);
         int n = LOGS.incrementAndGet();
         if (n <= 30) {
             LOGGER.info(
-                    "[{}] sanitized attack range player={} weapon={} computed={} -> {}",
+                    "[{}] sanitized range player={} weapon={} computed={} -> {}",
                     DmzMohistMeleeFix.MOD_ID,
                     playerName(player),
                     weaponAttackRange,

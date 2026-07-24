@@ -5,10 +5,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Mohist + DMZ melee fix: cancelled ki/strike/no-PvP can brick M1 until death.
- * v1.0.5 clears charge/block flags and syncs them to the client, flushes stuck
- * client upswing state, and soft-recreates the player once on Mohist join
- * (same recovery as suicide, without dying or keepInventory).
+ * Minimal Mohist + DMZ fix: repair collapsed Forge ENTITY_REACH only.
+ * No damage redirects, soft-respawn, or combat-lock changes.
  */
 @Mod(DmzMohistMeleeFix.MOD_ID)
 public final class DmzMohistMeleeFix {
@@ -16,9 +14,8 @@ public final class DmzMohistMeleeFix {
     private static final Logger LOGGER = LogManager.getLogger(MOD_ID);
 
     public DmzMohistMeleeFix() {
-        LOGGER.info("[{}] v1.0.6 repair Forge ENTITY_REACH + client sync + soft refresh", MOD_ID);
-        ClientCombatReset.registerIfClient();
-        MeleeFixJoinProbe.register();
+        LOGGER.info("[{}] v2.0.0 ENTITY_REACH collapse repair only", MOD_ID);
+        ReachRepairEvents.register();
         MeleeFixSelfTest.registerIfEnabled();
     }
 }
