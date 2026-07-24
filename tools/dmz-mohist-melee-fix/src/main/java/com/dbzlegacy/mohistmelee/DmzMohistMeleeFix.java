@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.9.0: clamp oversized M1 entity-id packets + fixed Shurui raid teleport mixin",
+                "[{}] v2.10.0: server-side M1 target rescue when client sends empty/stale entity IDs",
                 MOD_ID
         );
         ReachRepairEvents.register();

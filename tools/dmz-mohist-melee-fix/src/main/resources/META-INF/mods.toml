@@ -4,13 +4,13 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.9.0"
+version = "2.10.0"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
-Fixes M1 drop: clamps CombatAttackRequest entity-id overflow (>64 was discarding the packet),
-fixes Shurui raid teleport mixin apply, plus respawn-like recovery after world changes.
-Does not write ki_damage. No damage redirects.
+Fixes M1 animation-with-no-hit: when the client sends empty/stale entity IDs after a world
+change, server rescues a valid target in front and attacks. Also clamps >64 ID packets,
+Shurui raid teleport unlock, respawn-like attribute recovery. No ki_damage writes / redirects.
 '''
 
 [[mixins]]
