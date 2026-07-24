@@ -2,9 +2,9 @@
 
 Forge 1.20.1 mixin mod for Mohist + DragonMineZ.
 
-Fixes M1 breaking after cancelled ki blasts / no-PvP hits by probing Bukkit cancels, applying damage via LivingHurt + setHealth, and repairing attacker state.
+**v1.0.4** clears stale `strikeLocked` (which made DMZ drop all M1 packets) and applies melee/ki/strike damage via LivingHurt + setHealth.
 
-Jar: `mods/dmz_mohist_melee_fix-1.0.3.jar` (server-side only).
+Jar: `mods/dmz_mohist_melee_fix-1.0.4.jar` (server-side only).
 
 ## Rebuild
 
@@ -12,6 +12,10 @@ Jar: `mods/dmz_mohist_melee_fix-1.0.3.jar` (server-side only).
 ./tools/dmz-mohist-melee-fix/build.sh
 ```
 
-## Optional self-test
+## Self-test
 
-`-Ddmz.melee.fix.selftest=true` → `SELFTEST PASS`
+Auto-runs on Mohist. Expect:
+
+```text
+SELFTEST PASS lockedBefore=true lockedAfter=false ... delta=1.0
+```
