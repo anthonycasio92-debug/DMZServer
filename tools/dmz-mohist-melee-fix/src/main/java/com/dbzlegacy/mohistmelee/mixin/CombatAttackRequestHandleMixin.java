@@ -7,11 +7,11 @@ import com.dragonminez.common.stats.StatsCapability;
 import com.dragonminez.common.stats.StatsProvider;
 import java.lang.reflect.Field;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Supplier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.Entity;
+// Entity used by StatsProvider cast in clearStaleStrikeLock
 import net.minecraftforge.network.NetworkEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,7 +24,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * hits on Mohist can leave {@code strikeLocked=true}, permanently eating all M1 packets
  * until death/login clears it.
  *
- * Replace handle: clear stale strike locks, only block on real STUN mob effect.
+ * Replace handle: clear stale strike locks, only block on real STUN potion, always process
+ * even if StatsCapability lookup glitches (Mohist).
  */
 @Mixin(value = CombatAttackRequestC2S.class, remap = false)
 public abstract class CombatAttackRequestHandleMixin {
@@ -40,14 +41,14 @@ public abstract class CombatAttackRequestHandleMixin {
                 return;
             }
             clearStaleStrikeLock(player);
-            DamageBridge.repairAttacker(player, "melee-packet");
+            DamageBridge.forceClearCombatLocks(player, "melee-packet");
 
             // Only real STUN potion blocks M1 — not stale strikeLocked/knockedDown.
             if (hasRealStun(player)) {
                 return;
             }
-            StatsProvider.get(StatsCapability.INSTANCE, (Entity) player).ifPresent(stats ->
-                    CombatAttackRequestC2S.processAttackRequest(player, self));
+            // Always process — missing capability must not silently eat M1 until death.
+            CombatAttackRequestC2S.processAttackRequest(player, self);
         });
         context.setPacketHandled(true);
     }

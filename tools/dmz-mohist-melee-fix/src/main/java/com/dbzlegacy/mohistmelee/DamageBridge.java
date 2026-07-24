@@ -1,6 +1,8 @@
 package com.dbzlegacy.mohistmelee;
 
 import com.dragonminez.common.init.MainEffects;
+import com.dragonminez.common.network.NetworkHandler;
+import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsCapability;
 import com.dragonminez.common.stats.StatsProvider;
 import java.lang.reflect.Constructor;
@@ -26,14 +28,18 @@ import org.apache.logging.log4j.Logger;
  * <ul>
  *   <li>Ask Bukkit/WorldGuard if damage is denied without using the broken attack/hurt bridge</li>
  *   <li>Apply allowed damage via Forge LivingHurt + setHealth</li>
- *   <li>Repair attacker combat state after denied/cancelled hits (ki blast / no-PvP triggers)</li>
+ *   <li>Repair attacker combat state and <b>sync to client</b> after denied/cancelled hits</li>
  * </ul>
+ *
+ * Client M1 is cancelled while {@code isChargingTechnique}/{@code isBlocking} stay true locally.
+ * Clearing those server-side without {@link StatsSyncS2C} leaves players needing death to recover.
  */
 public final class DamageBridge {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
     private static final AtomicInteger GLOBAL_LOGS = new AtomicInteger();
     private static final Map<UUID, Integer> PLAYER_LOGS = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> LAST_REPAIR_MS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Integer> DENY_STREAK = new ConcurrentHashMap<>();
 
     private DamageBridge() {}
 
@@ -55,12 +61,14 @@ public final class DamageBridge {
 
         if (isBukkitDamageDenied(attacker, target, seedAmount)) {
             repairAttacker(attacker, "bukkitDenied");
+            maybeSoftRefreshAfterDeny(attacker, "bukkitDenied");
             logHit(attacker, target, 0.0F, "bukkitDenied");
             return Result.DENIED_BUKKIT;
         }
 
         if (!ForgeHooks.onLivingAttack(target, source, seedAmount)) {
             repairAttacker(attacker, "livingAttackCancelled");
+            maybeSoftRefreshAfterDeny(attacker, "livingAttackCancelled");
             logHit(attacker, target, 0.0F, "livingAttackCancelled");
             return Result.ATTACK_CANCELLED;
         }
@@ -68,12 +76,14 @@ public final class DamageBridge {
         LivingHurtEvent hurtEvent = new LivingHurtEvent(target, source, seedAmount);
         if (MinecraftForge.EVENT_BUS.post(hurtEvent)) {
             repairAttacker(attacker, "livingHurtCancelled");
+            maybeSoftRefreshAfterDeny(attacker, "livingHurtCancelled");
             logHit(attacker, target, 0.0F, "livingHurtCancelled");
             return Result.CANCELLED_FORGE;
         }
         float amount = hurtEvent.getAmount();
         if (amount <= 0.0F) {
             repairAttacker(attacker, "livingHurtZero");
+            maybeSoftRefreshAfterDeny(attacker, "livingHurtZero");
             logHit(attacker, target, 0.0F, "livingHurtZero");
             return Result.ZERO_AMOUNT;
         }
@@ -81,12 +91,14 @@ public final class DamageBridge {
         LivingDamageEvent damageEvent = new LivingDamageEvent(target, source, amount);
         if (MinecraftForge.EVENT_BUS.post(damageEvent)) {
             repairAttacker(attacker, "livingDamageCancelled");
+            maybeSoftRefreshAfterDeny(attacker, "livingDamageCancelled");
             logHit(attacker, target, 0.0F, "livingDamageCancelled");
             return Result.CANCELLED_FORGE;
         }
         amount = damageEvent.getAmount();
         if (amount <= 0.0F) {
             repairAttacker(attacker, "livingDamageZero");
+            maybeSoftRefreshAfterDeny(attacker, "livingDamageZero");
             logHit(attacker, target, 0.0F, "livingDamageZero");
             return Result.ZERO_AMOUNT;
         }
@@ -101,14 +113,21 @@ public final class DamageBridge {
             target.m_6667_(source);
         }
 
+        DENY_STREAK.remove(attacker.m_20148_());
         float delta = before - target.m_21223_();
         logHit(attacker, target, delta, "applied amount=" + amount);
         return Result.APPLIED;
     }
 
-    /**
-     * Clear stuck combat locks that cancelled ki/PvP can leave behind on Mohist.
-     */
+    private static void maybeSoftRefreshAfterDeny(ServerPlayer attacker, String reason) {
+        int streak = DENY_STREAK.merge(attacker.m_20148_(), 1, Integer::sum);
+        // After repeated cancels (no-PvP / broken ki), soft-recreate once — same as suicide without death.
+        if (streak >= 2 && !SoftPlayerRefresh.alreadyRefreshed(attacker.m_20148_())) {
+            SoftPlayerRefresh.recreateAtPlace(attacker, "deny-streak:" + reason);
+            DENY_STREAK.remove(attacker.m_20148_());
+        }
+    }
+
     /** Unconditionally clear DMZ locks that gate CombatAttackRequest (isStunned). */
     public static void forceClearCombatLocks(ServerPlayer player, String reason) {
         StatsProvider.get(StatsCapability.INSTANCE, (Entity) player).ifPresent(data -> {
@@ -143,19 +162,44 @@ public final class DamageBridge {
         forceClearCombatLocks(player, reason);
         long now = System.currentTimeMillis();
         Long prev = LAST_REPAIR_MS.put(player.m_20148_(), now);
-        if (prev != null && now - prev < 250L) {
-            return;
-        }
+        boolean throttled = prev != null && now - prev < 250L;
 
         player.f_19802_ = 0;
         player.f_20916_ = 0;
         player.f_20917_ = 0;
 
+        boolean[] dirty = {false};
         StatsProvider.get(StatsCapability.INSTANCE, (Entity) player).ifPresent(data -> {
             try {
                 if (data.getTechniques().isTechniqueCharging() || data.getTechniques().isTechniqueChargeActive()) {
-                    if (reason != null && (reason.contains("bukkit") || reason.contains("ki") || reason.contains("Cancelled") || reason.contains("strike"))) {
-                        data.getTechniques().clearTechniqueCharge();
+                    data.getTechniques().clearTechniqueCharge();
+                    dirty[0] = true;
+                }
+            } catch (Throwable ignored) {
+            }
+            try {
+                // Stuck client charge/block flags cancel all M1 in MinecraftMixin.startAttack.
+                if (data.getStatus().isChargingKi()) {
+                    data.getStatus().setChargingKi(false);
+                    dirty[0] = true;
+                }
+                if (data.getStatus().isActionCharging()) {
+                    data.getStatus().setActionCharging(false);
+                    dirty[0] = true;
+                }
+                // Only clear blocking on deny/cancel/repair paths — not mid intentional block from packet.
+                if (reason != null && (reason.contains("bukkit")
+                        || reason.contains("ki")
+                        || reason.contains("Cancelled")
+                        || reason.contains("cancel")
+                        || reason.contains("strike")
+                        || reason.contains("join")
+                        || reason.contains("soft-refresh")
+                        || reason.contains("selftest")
+                        || reason.contains("deny"))) {
+                    if (data.getStatus().isBlocking()) {
+                        data.getStatus().setBlocking(false);
+                        dirty[0] = true;
                     }
                 }
             } catch (Throwable ignored) {
@@ -163,15 +207,30 @@ public final class DamageBridge {
         });
 
         rebindBukkitHandle(player);
+        // Always sync after repair so client drops isChargingTechnique / isBlocking.
+        syncStats(player);
 
-        int n = GLOBAL_LOGS.incrementAndGet();
-        if (n <= 30) {
-            LOGGER.info(
-                    "[{}] repaired attacker={} reason={}",
-                    DmzMohistMeleeFix.MOD_ID,
-                    player.m_36316_().getName(),
-                    reason
-            );
+        if (!throttled) {
+            int n = GLOBAL_LOGS.incrementAndGet();
+            if (n <= 30) {
+                LOGGER.info(
+                        "[{}] repaired attacker={} reason={} synced={}",
+                        DmzMohistMeleeFix.MOD_ID,
+                        player.m_36316_().getName(),
+                        reason,
+                        dirty[0]
+                );
+            }
+        }
+    }
+
+    public static void syncStats(ServerPlayer player) {
+        try {
+            NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), (Entity) player);
+        } catch (Throwable t) {
+            if (GLOBAL_LOGS.get() < 5) {
+                LOGGER.warn("[{}] stats sync failed: {}", DmzMohistMeleeFix.MOD_ID, t.toString());
+            }
         }
     }
 

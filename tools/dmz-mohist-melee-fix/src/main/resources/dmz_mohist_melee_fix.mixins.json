@@ -10,7 +10,9 @@
     "AbstractKiProjectileMixin",
     "StrikeAttackHandlerMixin"
   ],
-  "client": [],
+  "client": [
+    "ClientMinecraftCombatMixin"
+  ],
   "server": [],
   "injectors": {
     "defaultRequire": 1
