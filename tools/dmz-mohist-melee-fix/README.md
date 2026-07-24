@@ -1,7 +1,7 @@
 # DMZ Mohist Melee Fix
 
-**v2.11.0** — M1 target rescue hardened (AABB fall-through for stale IDs + live fallback selftest)
+**v2.12.0** — intentional DMZ stat resets no longer undone by primary snapshot restore
 
-Jar: `mods/dmz_mohist_melee_fix-2.11.0.jar`
+Jar: `mods/dmz_mohist_melee_fix-2.12.0.jar`
 
 See `docs/MOHIST_MELEE_BUG.md`.

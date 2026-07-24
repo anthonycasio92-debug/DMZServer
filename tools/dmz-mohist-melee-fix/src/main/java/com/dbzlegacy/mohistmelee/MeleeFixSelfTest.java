@@ -188,8 +188,61 @@ public final class MeleeFixSelfTest {
 
             runShuruiFullHealProbe(fake);
             runEmptyIdFallbackProbe(level, fake);
+            runStatResetProbe(fake);
         } catch (Throwable t) {
             LOGGER.error("[{}] SELFTEST FAIL {}", DmzMohistMeleeFix.MOD_ID, t.toString(), t);
+        }
+    }
+
+    /**
+     * Prove intentional primary zeros (stat reset) are not resurrected by snapshot restore.
+     */
+    private static void runStatResetProbe(FakePlayer fake) {
+        try {
+            Attribute strAttr = MainAttributes.STRENGTH.get();
+            AttributeInstance strInst = strAttr == null ? null : fake.m_21051_(strAttr);
+            if (strAttr != null && strInst == null) {
+                strInst = PrimaryStatRepair.injectAttribute(fake, strAttr, 250.0D);
+            }
+            if (strInst == null) {
+                LOGGER.info("[{}] RESET SELFTEST SKIP (no STR attr)", DmzMohistMeleeFix.MOD_ID);
+                return;
+            }
+            strInst.m_22100_(250.0D);
+            PrimaryStatRepair.snapshot(fake);
+            // Simulate DMZ setStrength(0) path: write attr + record
+            strInst.m_22100_(0.0D);
+            PrimaryStatRepair.record(fake, strAttr, 0);
+            PrimaryStatRepair.suppressRestore(fake, 5);
+            PrimaryStatRepair.adoptCurrent(fake);
+
+            boolean restoredWhileSuppressed =
+                    PrimaryStatRepair.ensure(fake, "selftest-reset-should-not-restore");
+            // Expire suppress window, then confirm snapshot stays at 0 and ensure still no-ops.
+            for (int i = 0; i < 8; i++) {
+                PrimaryStatRepair.tickSuppress(fake);
+            }
+            boolean restoredAfter = PrimaryStatRepair.ensure(fake, "selftest-reset-after-suppress");
+            int saved = PrimaryStatRepair.savedFor(fake, strAttr);
+            double live = strInst.m_22115_();
+            int read = StatsProvider.get(StatsCapability.INSTANCE, (Entity) fake)
+                    .map(d -> d.getStats().getStrength())
+                    .orElse(-1);
+
+            boolean pass = !restoredWhileSuppressed && !restoredAfter
+                    && saved <= 0 && live <= 0.0D && read <= 0;
+            LOGGER.info(
+                    "[{}] RESET SELFTEST {} restoredWhile={} restoredAfter={} saved={} live={} read={}",
+                    DmzMohistMeleeFix.MOD_ID,
+                    pass ? "PASS" : "FAIL",
+                    restoredWhileSuppressed,
+                    restoredAfter,
+                    saved,
+                    live,
+                    read
+            );
+        } catch (Throwable t) {
+            LOGGER.error("[{}] RESET SELFTEST FAIL {}", DmzMohistMeleeFix.MOD_ID, t.toString(), t);
         }
     }
 

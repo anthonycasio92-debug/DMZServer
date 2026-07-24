@@ -15,6 +15,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Empty-hand melee reads those via {@code getMeleeDamage()} → {@code getStrength()}.
  * If the live attribute base is 0/missing but we still have a spawn-world snapshot, use it
  * (and try to write the attribute back). Does not touch {@code ki_damage}.
+ * <p>
+ * Intentional resets clear/update the snapshot (and suppress restore), so this must not
+ * resurrect pre-reset stats.
  */
 @Mixin(value = Stats.class, remap = false)
 public abstract class StatsPrimaryAttrMixin {
@@ -28,6 +31,9 @@ public abstract class StatsPrimaryAttrMixin {
             int fallback,
             CallbackInfoReturnable<Integer> cir
     ) {
+        if (PrimaryStatRepair.isSuppressed(this.player)) {
+            return;
+        }
         int live = cir.getReturnValueI();
         if (live > 0) {
             return;

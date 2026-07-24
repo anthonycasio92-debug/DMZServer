@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.11.0: M1 target rescue hardened (AABB fall-through for stale IDs, live fallback selftest)",
+                "[{}] v2.12.0: intentional stat resets no longer resurrected by primary snapshot restore",
                 MOD_ID
         );
         ReachRepairEvents.register();

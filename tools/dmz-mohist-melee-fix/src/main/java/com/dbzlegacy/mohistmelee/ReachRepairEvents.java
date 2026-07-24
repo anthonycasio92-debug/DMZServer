@@ -61,12 +61,13 @@ public final class ReachRepairEvents {
             return;
         }
         CombatUnlock.tickFollowups(sp);
+        PrimaryStatRepair.tickSuppress(sp);
         // ~every 1 second: clear stale strike lock if ACTIVE map is empty
         if (player.f_19797_ % 20 == 0) {
             CombatUnlock.clearStaleStrikeLock(sp, "tick");
             PrimaryStatRepair.snapshot(sp);
         }
-        // ~every 5 seconds: reach check + primary restore if wiped
+        // ~every 5 seconds: reach check + primary restore if wiped (skipped during stat-reset suppress)
         if (player.f_19797_ % 100 == 0) {
             ReachAttributeFix.repair(sp, "tick");
             PrimaryStatRepair.ensure(sp, "tick");

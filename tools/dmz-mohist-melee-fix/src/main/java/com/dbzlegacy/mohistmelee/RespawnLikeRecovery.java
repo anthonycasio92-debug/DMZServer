@@ -48,6 +48,14 @@ public final class RespawnLikeRecovery {
         if (player == null || player.m_9236_().f_46443_) {
             return;
         }
+        // Intentional stat reset in progress — do not rewrite primaries from an old snapshot.
+        if (PrimaryStatRepair.isSuppressed(player)) {
+            try {
+                ReachAttributeFix.repair(player, reason + "-respawn-like-suppressed");
+            } catch (Throwable ignored) {
+            }
+            return;
+        }
         try {
             PrimaryStatRepair.snapshot(player);
             ensureReachInstances(player);

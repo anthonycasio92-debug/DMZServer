@@ -12,6 +12,8 @@
     "ServerPlayerChangeDimensionMixin",
     "StatsDataSecondaryAttrMixin",
     "StatsPrimaryAttrMixin",
+    "StatsSetPrimaryMixin",
+    "StatsDataResetMixin",
     "FixVanillaEventsNaNMixin",
     "CombatEventHurtSanitizeMixin"
   ],
