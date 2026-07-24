@@ -48,6 +48,7 @@ public final class ReachRepairEvents {
         if (player.m_9236_().f_46443_ || !(player instanceof ServerPlayer sp)) {
             return;
         }
+        CombatUnlock.tickFollowups(sp);
         // ~every 1 second: clear stale strike lock if ACTIVE map is empty
         if (player.f_19797_ % 20 == 0) {
             CombatUnlock.clearStaleStrikeLock(sp, "tick");

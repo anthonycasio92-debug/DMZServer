@@ -6,7 +6,8 @@
   "refmap": "dmz_mohist_melee_fix.refmap.json",
   "mixins": [
     "PlayerAttackHelperReachMixin",
-    "CombatAttackRequestHandleMixin"
+    "CombatAttackRequestHandleMixin",
+    "ServerPlayerTeleportUnlockMixin"
   ],
   "client": [],
   "server": [],

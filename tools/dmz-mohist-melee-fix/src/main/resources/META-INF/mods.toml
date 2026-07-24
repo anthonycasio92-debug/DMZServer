@@ -4,15 +4,19 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.2.0"
+version = "2.3.0"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
-Repairs collapsed Forge ENTITY_REACH and dragonminez:ki_damage/melee_damage/strike_damage. No damage redirects.
+Repairs collapsed Forge ENTITY_REACH and dragonminez:ki_damage/melee_damage/strike_damage.
+Also unlocks stale strikeLocked after mod teleports / Shurui raid fullHeal. No damage redirects.
 '''
 
 [[mixins]]
 config = "dmz_mohist_melee_fix.mixins.json"
+
+[[mixins]]
+config = "dmz_mohist_melee_fix.raid.mixins.json"
 
 [[dependencies.dmz_mohist_melee_fix]]
 modId = "forge"
