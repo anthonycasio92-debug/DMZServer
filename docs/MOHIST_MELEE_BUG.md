@@ -1,47 +1,29 @@
-# Mohist “must die to melee” — ENTITY_REACH collapse
+# Mohist M1 brick — attribute collapse
 
-## Symptom
+## Cause
 
-M1 deals no damage until the player dies/respawns.
+1. **Forge `ENTITY_REACH`** — DMZ range = `weaponRange + (reach - default)`. NaN → silent miss.
+2. **`dragonminez:ki_damage`** (also `melee_damage` / `strike_damage`) — `StatsData.getSecondaryAttributeValue` returns raw `getValue()` with no NaN check, so NaN poisons `getMeleeDamage` / `getKiDamage` and LivingHurt amount until death rebuilds attributes.
 
-## Cause (this fix)
+## Fix v2.2.0 (attributes only — no damage redirects)
 
-DMZ computes hit range as:
+`mods/dmz_mohist_melee_fix-2.2.0.jar`
 
-```text
-weaponRange + (Forge ENTITY_REACH - default)
-```
+https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.2.0.jar
 
-On Mohist, `ENTITY_REACH` can collapse (NaN / invalid base). Server range checks then fail while the client still targets. Death rebuilds the AttributeMap, which is why suicide “fixed” it.
-
-## Fix v2.0.0 (reach only)
-
-`mods/dmz_mohist_melee_fix-2.0.0.jar`
-
-https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.0.0.jar
-
-**Only** repairs Forge `ENTITY_REACH` / `BLOCK_REACH` and sanitizes DMZ `getEffectiveAttackRange`.
-
-Removed (broke NPC kills in 1.0.x):
-
-- DamageBridge / LivingHurt+setHealth redirects
-- CombatAttackRequest / ki / strike mixins
-- Soft player recreate
-- Client upswing / charge-sync combat hooks
+- Repairs Forge `ENTITY_REACH` / `BLOCK_REACH`
+- Repairs `dragonminez:ki_damage`, `melee_damage`, `strike_damage` when non-finite
+- Clears stale `strikeLocked` (packet gate) without redirecting hurt/attack
 
 ### Install
 
-1. Put **2.0.0** in `mods/`
-2. Delete **all** older `dmz_mohist_melee_fix-1.*.jar`
+1. Put **2.2.0** in `mods/`
+2. Delete older `dmz_mohist_melee_fix-*.jar`
 3. Restart
 
 ### Verify
 
 ```text
-[dmz_mohist_melee_fix] v2.0.0 ENTITY_REACH collapse repair only
-[dmz_mohist_melee_fix] SELFTEST PASS reachBefore=... reachAfter=3.0 sanitizedRange=2.0
+[dmz_mohist_melee_fix] v2.2.0 repair ENTITY_REACH + dragonminez:ki_damage (no damage redirect)
+[dmz_mohist_melee_fix] SELFTEST PASS ... kiAfter=0.0 ...
 ```
-
-## Source
-
-`tools/dmz-mohist-melee-fix/`

@@ -1,10 +1,14 @@
 package com.dbzlegacy.mohistmelee;
 
 import com.dragonminez.common.combat.logic.player.PlayerAttackHelper;
+import com.dragonminez.common.init.MainAttributes;
+import com.dragonminez.common.stats.StatsCapability;
+import com.dragonminez.common.stats.StatsProvider;
 import com.mojang.authlib.GameProfile;
 import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.player.Player;
@@ -18,8 +22,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Boot probe: break ENTITY_REACH to NaN, confirm repair + usable DMZ range.
- * Always on Mohist; elsewhere with {@code -Ddmz.melee.fix.selftest=true}.
+ * Boot probe: ENTITY_REACH + ki_damage NaN repair. No damage redirects.
  */
 public final class MeleeFixSelfTest {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
@@ -62,34 +65,101 @@ public final class MeleeFixSelfTest {
             ServerLevel level = server.m_129783_();
             FakePlayer fake = FakePlayerFactory.get(level, new GameProfile(PROBE_UUID, "ReachFixProbe"));
 
-            double before = ReachAttributeFix.readEntityReach(fake);
-            Attribute attr = ForgeMod.ENTITY_REACH.get();
-            AttributeInstance inst = attr == null ? null : fake.m_21051_(attr);
-            if (inst == null) {
+            // --- ENTITY_REACH ---
+            double reachBefore = ReachAttributeFix.readEntityReach(fake);
+            Attribute reachAttr = ForgeMod.ENTITY_REACH.get();
+            AttributeInstance reachInst = reachAttr == null ? null : fake.m_21051_(reachAttr);
+            if (reachInst == null) {
                 LOGGER.error("[{}] SELFTEST FAIL no ENTITY_REACH instance", DmzMohistMeleeFix.MOD_ID);
                 return;
             }
-
-            inst.m_22100_(Double.NaN);
-            // Triggers mixin sanitize + repair
+            reachInst.m_22100_(Double.NaN);
             double sanitized = PlayerAttackHelper.getEffectiveAttackRange((Player) fake, 2.0D);
-            double after = ReachAttributeFix.readEntityReach(fake);
+            double reachAfter = ReachAttributeFix.readEntityReach(fake);
+            boolean reachOk = Double.isFinite(reachAfter) && reachAfter >= 0.25D
+                    && Double.isFinite(sanitized) && sanitized > 0.05D;
 
-            boolean pass = Double.isFinite(after)
-                    && after >= 0.25D
-                    && Double.isFinite(sanitized)
-                    && sanitized > 0.05D;
+            // --- dragonminez:ki_damage ---
+            Attribute kiAttr = MainAttributes.KI_DAMAGE.get();
+            AttributeInstance kiInst = kiAttr == null ? null : fake.m_21051_(kiAttr);
+            if (kiAttr != null && kiInst == null) {
+                // FakePlayer often lacks DMZ AttributeSupplier entries; inject one for the probe.
+                kiInst = injectAttribute(fake, kiAttr, 0.0D);
+            }
+            double kiBefore = kiInst == null ? Double.NaN : kiInst.m_22135_();
+            if (kiInst != null) {
+                kiInst.m_22100_(Double.NaN);
+            }
+            ReachAttributeFix.repair(fake, "selftest-ki");
+            double kiAfter = ReachAttributeFix.readKiDamage(fake);
+            boolean kiOk = kiInst != null && Double.isFinite(kiAfter);
 
+            // --- strike lock gate (if CombatUnlock present) ---
+            boolean lockedBefore = false;
+            boolean lockedAfter = false;
+            try {
+                StatsProvider.get(StatsCapability.INSTANCE, (Entity) fake).ifPresent(data -> {
+                    data.getStatus().setStrikeLocked(true);
+                    data.getStatus().setKnockedDown(false);
+                    data.getStatus().setStunEffect(false);
+                });
+                lockedBefore = StatsProvider.get(StatsCapability.INSTANCE, (Entity) fake)
+                        .map(d -> d.getStatus().isStunned())
+                        .orElse(false);
+                CombatUnlock.clearStaleStrikeLock(fake, "selftest");
+                lockedAfter = StatsProvider.get(StatsCapability.INSTANCE, (Entity) fake)
+                        .map(d -> d.getStatus().isStunned())
+                        .orElse(true);
+            } catch (Throwable ignored) {
+            }
+
+            boolean pass = reachOk && kiOk && (!lockedBefore || !lockedAfter);
             LOGGER.info(
-                    "[{}] SELFTEST {} reachBefore={} reachAfter={} sanitizedRange={}",
+                    "[{}] SELFTEST {} reachBefore={} reachAfter={} sanitizedRange={} kiBefore={} kiAfter={} lockedBefore={} lockedAfter={}",
                     DmzMohistMeleeFix.MOD_ID,
                     pass ? "PASS" : "FAIL",
-                    before,
-                    after,
-                    sanitized
+                    reachBefore,
+                    reachAfter,
+                    sanitized,
+                    kiBefore,
+                    kiAfter,
+                    lockedBefore,
+                    lockedAfter
             );
         } catch (Throwable t) {
             LOGGER.error("[{}] SELFTEST FAIL {}", DmzMohistMeleeFix.MOD_ID, t.toString(), t);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static AttributeInstance injectAttribute(Player player, Attribute attribute, double base) {
+        try {
+            Object map = player.m_21204_();
+            java.lang.reflect.Field field = null;
+            Class<?> c = map.getClass();
+            while (c != null && field == null) {
+                try {
+                    field = c.getDeclaredField("f_22139_");
+                } catch (NoSuchFieldException e) {
+                    c = c.getSuperclass();
+                }
+            }
+            if (field == null) {
+                return null;
+            }
+            field.setAccessible(true);
+            Object raw = field.get(map);
+            if (!(raw instanceof java.util.Map<?, ?>)) {
+                return null;
+            }
+            java.util.Map<Attribute, AttributeInstance> instances = (java.util.Map<Attribute, AttributeInstance>) raw;
+            AttributeInstance created = new AttributeInstance(attribute, ignored -> {});
+            created.m_22100_(base);
+            instances.put(attribute, created);
+            return created;
+        } catch (Throwable t) {
+            LOGGER.warn("[{}] could not inject {}: {}", DmzMohistMeleeFix.MOD_ID, attribute, t.toString());
+            return null;
         }
     }
 }

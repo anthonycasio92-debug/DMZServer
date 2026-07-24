@@ -1,5 +1,6 @@
 package com.dbzlegacy.mohistmelee;
 
+import com.dragonminez.common.init.MainAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -14,13 +15,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Repairs collapsed Forge {@code ENTITY_REACH} / {@code BLOCK_REACH}.
- *
- * <p>DMZ melee range is {@code weaponRange + (entityReach - default)}. When reach
- * base/modifiers become NaN or collapse on Mohist, server range checks fail and
- * M1 does nothing until death rebuilds the AttributeMap.
- *
- * <p>This class only touches reach attributes — no damage redirects, no combat locks.
+ * Repairs collapsed attributes that brick DMZ combat on Mohist:
+ * <ul>
+ *   <li>Forge {@code ENTITY_REACH} / {@code BLOCK_REACH} — NaN makes range checks fail</li>
+ *   <li>{@code dragonminez:ki_damage} / {@code melee_damage} / {@code strike_damage} —
+ *       {@code StatsData.getSecondaryAttributeValue} returns raw getValue with no NaN guard,
+ *       so NaN poisons {@code getMeleeDamage}/{@code getKiDamage} and LivingHurt amount</li>
+ * </ul>
+ * Attribute repair only — no damage redirects.
  */
 public final class ReachAttributeFix {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
@@ -38,25 +40,61 @@ public final class ReachAttributeFix {
             Attribute entityReach = ForgeMod.ENTITY_REACH.get();
             Attribute blockReach = ForgeMod.BLOCK_REACH.get();
             if (entityReach != null) {
-                changed |= repairOne(player, entityReach, "ENTITY_REACH", 3.0D, reason);
+                changed |= repairReach(player, entityReach, "forge:entity_reach", 3.0D, reason);
             }
             if (blockReach != null) {
-                changed |= repairOne(player, blockReach, "BLOCK_REACH", 4.5D, reason);
+                changed |= repairReach(player, blockReach, "forge:block_reach", 4.5D, reason);
             }
         } catch (Throwable t) {
             if (LOGS.get() < 5) {
                 LOGGER.warn("[{}] reach repair failed: {}", DmzMohistMeleeFix.MOD_ID, t.toString());
             }
         }
+        try {
+            // 0.0 is a valid base for ki_damage — only repair non-finite collapse.
+            changed |= repairFiniteOnly(player, MainAttributes.KI_DAMAGE.get(), "dragonminez:ki_damage", 0.0D, reason);
+            changed |= repairFiniteOnly(player, MainAttributes.MELEE_DAMAGE.get(), "dragonminez:melee_damage", 1.0D, reason);
+            changed |= repairFiniteOnly(player, MainAttributes.STRIKE_DAMAGE.get(), "dragonminez:strike_damage", 1.0D, reason);
+        } catch (Throwable t) {
+            if (LOGS.get() < 5) {
+                LOGGER.warn("[{}] dmz damage-attr repair failed: {}", DmzMohistMeleeFix.MOD_ID, t.toString());
+            }
+        }
         return changed;
     }
 
-    private static boolean repairOne(
+    /** Reach: NaN / non-finite / collapsed below 0.25. */
+    private static boolean repairReach(
             Player player,
             Attribute attribute,
             String label,
             double fallbackDefault,
             String reason
+    ) {
+        return repairInternal(player, attribute, label, fallbackDefault, reason, true);
+    }
+
+    /** Damage attrs: only non-finite (0 is valid for ki_damage). */
+    private static boolean repairFiniteOnly(
+            Player player,
+            Attribute attribute,
+            String label,
+            double fallbackDefault,
+            String reason
+    ) {
+        if (attribute == null) {
+            return false;
+        }
+        return repairInternal(player, attribute, label, fallbackDefault, reason, false);
+    }
+
+    private static boolean repairInternal(
+            Player player,
+            Attribute attribute,
+            String label,
+            double fallbackDefault,
+            String reason,
+            boolean rejectLow
     ) {
         AttributeInstance inst = player.m_21051_(attribute);
         if (inst == null) {
@@ -75,12 +113,17 @@ public final class ReachAttributeFix {
 
         boolean changed = false;
         double def = attribute.m_22082_();
-        if (!Double.isFinite(def) || def <= 0.0D) {
+        if (!Double.isFinite(def)) {
+            def = fallbackDefault;
+        }
+        // For reach, default must be positive; for damage attrs 0 is fine.
+        if (rejectLow && def <= 0.0D) {
             def = fallbackDefault;
         }
 
         double oldBase = inst.m_22115_();
-        if (!Double.isFinite(oldBase) || oldBase < 0.25D) {
+        boolean badBase = !Double.isFinite(oldBase) || (rejectLow && oldBase < 0.25D);
+        if (badBase) {
             inst.m_22100_(def);
             changed = true;
         }
@@ -97,9 +140,8 @@ public final class ReachAttributeFix {
         }
 
         double value = inst.m_22135_();
-        if (!Double.isFinite(value) || value < 0.25D) {
-            // Last resort: clear modifiers and restore default base.
-            // DMZ form-reach tick will re-apply its bonus afterward.
+        boolean badValue = !Double.isFinite(value) || (rejectLow && value < 0.25D);
+        if (badValue) {
             inst.m_22132_();
             inst.m_22100_(def);
             changed = true;
@@ -171,8 +213,19 @@ public final class ReachAttributeFix {
     }
 
     public static double readEntityReach(Player player) {
+        return readAttr(player, ForgeMod.ENTITY_REACH.get());
+    }
+
+    public static double readKiDamage(Player player) {
         try {
-            Attribute attr = ForgeMod.ENTITY_REACH.get();
+            return readAttr(player, MainAttributes.KI_DAMAGE.get());
+        } catch (Throwable t) {
+            return Double.NaN;
+        }
+    }
+
+    private static double readAttr(Player player, Attribute attr) {
+        try {
             if (attr == null) {
                 return Double.NaN;
             }

@@ -5,8 +5,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Minimal Mohist + DMZ fix: repair collapsed Forge ENTITY_REACH only.
- * No damage redirects, soft-respawn, or combat-lock changes.
+ * Mohist + DMZ M1 fix without damage redirects:
+ * <ul>
+ *   <li>Repair collapsed Forge ENTITY_REACH</li>
+ *   <li>Clear stale strikeLocked that eats CombatAttackRequest packets</li>
+ *   <li>Leave vanilla ServerPlayer.attack intact (NPCs die normally)</li>
+ * </ul>
  */
 @Mod(DmzMohistMeleeFix.MOD_ID)
 public final class DmzMohistMeleeFix {
@@ -14,7 +18,7 @@ public final class DmzMohistMeleeFix {
     private static final Logger LOGGER = LogManager.getLogger(MOD_ID);
 
     public DmzMohistMeleeFix() {
-        LOGGER.info("[{}] v2.0.0 ENTITY_REACH collapse repair only", MOD_ID);
+        LOGGER.info("[{}] v2.2.0 repair ENTITY_REACH + dragonminez:ki_damage (no damage redirect)", MOD_ID);
         ReachRepairEvents.register();
         MeleeFixSelfTest.registerIfEnabled();
     }

@@ -8,8 +8,8 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /**
- * Light touch: repair reach on login / respawn / dimension change, and every
- * few seconds while online. No soft-respawn, no damage changes.
+ * Join/respawn/tick maintenance for reach + stale strike locks.
+ * No soft-respawn, no damage redirects.
  */
 public final class ReachRepairEvents {
     private ReachRepairEvents() {}
@@ -20,17 +20,23 @@ public final class ReachRepairEvents {
 
     @SubscribeEvent
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        repairIfServer(event.getEntity(), "join");
+        if (event.getEntity() instanceof ServerPlayer sp) {
+            CombatUnlock.unlockForLogin(sp, "join");
+        }
     }
 
     @SubscribeEvent
     public void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
-        repairIfServer(event.getEntity(), "respawn");
+        if (event.getEntity() instanceof ServerPlayer sp) {
+            CombatUnlock.unlockForLogin(sp, "respawn");
+        }
     }
 
     @SubscribeEvent
     public void onDim(PlayerEvent.PlayerChangedDimensionEvent event) {
-        repairIfServer(event.getEntity(), "dimension");
+        if (event.getEntity() instanceof ServerPlayer sp) {
+            CombatUnlock.unlockForLogin(sp, "dimension");
+        }
     }
 
     @SubscribeEvent
@@ -39,19 +45,16 @@ public final class ReachRepairEvents {
             return;
         }
         Player player = event.player;
-        if (player.m_9236_().f_46443_) {
+        if (player.m_9236_().f_46443_ || !(player instanceof ServerPlayer sp)) {
             return;
         }
-        // ~every 5 seconds
-        if (player.f_19797_ % 100 != 0) {
-            return;
+        // ~every 1 second: clear stale strike lock if ACTIVE map is empty
+        if (player.f_19797_ % 20 == 0) {
+            CombatUnlock.clearStaleStrikeLock(sp, "tick");
         }
-        ReachAttributeFix.repair(player, "tick");
-    }
-
-    private static void repairIfServer(Player player, String reason) {
-        if (player instanceof ServerPlayer) {
-            ReachAttributeFix.repair(player, reason);
+        // ~every 5 seconds: reach check
+        if (player.f_19797_ % 100 == 0) {
+            ReachAttributeFix.repair(sp, "tick");
         }
     }
 }

@@ -4,11 +4,11 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.0.0"
+version = "2.2.0"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
-Repairs collapsed Forge ENTITY_REACH so DMZ M1 range checks work on Mohist. No damage redirects.
+Repairs collapsed Forge ENTITY_REACH and dragonminez:ki_damage/melee_damage/strike_damage. No damage redirects.
 '''
 
 [[mixins]]
