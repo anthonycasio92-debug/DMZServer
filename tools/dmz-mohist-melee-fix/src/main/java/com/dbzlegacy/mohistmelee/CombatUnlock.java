@@ -76,8 +76,8 @@ public final class CombatUnlock {
      */
     public static void unlockForLogin(ServerPlayer player, String reason) {
         clearStaleStrikeLock(player, reason);
-        ReachAttributeFix.repair(player, reason);
-        PrimaryStatRepair.ensure(player, reason);
+        // Same recovery death/respawn effectively performs — safe on join/respawn too.
+        RespawnLikeRecovery.apply(player, reason);
         clearChargeFlags(player);
         clearStunPotion(player);
         sync(player);
@@ -146,18 +146,14 @@ public final class CombatUnlock {
             stats.getStatus().setStrikeLocked(false);
             stats.getStatus().setKnockedDown(false);
             stats.getStatus().setStunEffect(false);
-            // Keep Stats bound to the live player after Mohist dim moves.
-            try {
-                stats.getStats().setPlayer(player);
-            } catch (Throwable ignored) {
-            }
             cleared[0] = locked;
         });
         if (cleared[0]) {
             logClear(player, reason);
         }
-        ReachAttributeFix.repair(player, reason);
-        PrimaryStatRepair.ensure(player, reason);
+        // Death fixes melee by cloning onto a fresh AttributeMap + applyHealthBonus +
+        // refreshDimensions. Replay that on the live player for every dim/teleport recovery.
+        RespawnLikeRecovery.apply(player, reason);
         clearChargeFlags(player);
         clearStunPotion(player);
         sync(player);

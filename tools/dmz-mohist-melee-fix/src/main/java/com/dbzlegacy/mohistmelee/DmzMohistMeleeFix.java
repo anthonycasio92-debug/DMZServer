@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.7.0 cross-world melee fix: STR read-fallback + dim follow-ups (spawn works, other worlds broke)",
+                "[{}] v2.8.0 respawn-like recovery: replay death AttributeMap rebuild on every world change",
                 MOD_ID
         );
         ReachRepairEvents.register();

@@ -121,6 +121,16 @@ public final class MeleeFixSelfTest {
                 strOk = strAfter == 250;
             }
 
+            // --- Respawn-like recovery (what death does) after STR wipe ---
+            boolean respawnLikeOk = true;
+            int strAfterRespawnLike = -1;
+            if (strInst != null) {
+                strInst.m_22100_(0.0D);
+                RespawnLikeRecovery.apply(fake, "selftest-respawn-like");
+                strAfterRespawnLike = (int) Math.round(strInst.m_22115_());
+                respawnLikeOk = strAfterRespawnLike == 250;
+            }
+
             // --- Fist range must not shrink below weapon attack_range ---
             double fistSanitized = ReachAttributeFix.sanitizeEffectiveRange(fake, 2.0D, 1.0D);
             boolean fistRangeOk = Double.isFinite(fistSanitized) && fistSanitized >= 2.0D;
@@ -155,10 +165,11 @@ public final class MeleeFixSelfTest {
             } catch (Throwable ignored) {
             }
 
-            boolean pass = reachOk && kiPreserved && secondaryOk && strOk && strReadOk && fistRangeOk
+            boolean pass = reachOk && kiPreserved && secondaryOk && strOk && strReadOk
+                    && respawnLikeOk && fistRangeOk
                     && (!lockedBefore || !lockedAfter);
             LOGGER.info(
-                    "[{}] SELFTEST {} reachBefore={} reachAfter={} sanitizedRange={} fistSanitized={} kiPreserved={} kiAfterRepair={} strRead={} strAfter={} secondaryRead={} lockedBefore={} lockedAfter={}",
+                    "[{}] SELFTEST {} reachBefore={} reachAfter={} sanitizedRange={} fistSanitized={} kiPreserved={} kiAfterRepair={} strRead={} strAfter={} respawnLikeStr={} secondaryRead={} lockedBefore={} lockedAfter={}",
                     DmzMohistMeleeFix.MOD_ID,
                     pass ? "PASS" : "FAIL",
                     reachBefore,
@@ -169,6 +180,7 @@ public final class MeleeFixSelfTest {
                     kiAfterRepair,
                     strRead,
                     strAfter,
+                    strAfterRespawnLike,
                     secondaryRead,
                     lockedBefore,
                     lockedAfter

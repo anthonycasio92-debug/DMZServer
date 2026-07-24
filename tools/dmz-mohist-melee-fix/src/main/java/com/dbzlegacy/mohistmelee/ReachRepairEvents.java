@@ -37,6 +37,8 @@ public final class ReachRepairEvents {
     @SubscribeEvent
     public void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
+            // Real death already rebuilt AttributeMap; still snapshot + unlock.
+            PrimaryStatRepair.snapshot(sp);
             CombatUnlock.unlockForLogin(sp, "respawn");
         }
     }

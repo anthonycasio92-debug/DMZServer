@@ -4,12 +4,12 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.7.0"
+version = "2.8.0"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
-Fixes M1 that works in spawn world but breaks after changing worlds: STR read-side fallback,
-delayed dim-change restores, fist range floor, reach repair, stale strikeLocked unlock.
+Fixes M1 that works in spawn but breaks after world change. Death fixed it by rebuilding
+AttributeMap + Stats.copyFrom — this replays that recovery on every dim/teleport (no soft-respawn).
 Does not write ki_damage. No damage redirects.
 '''
 
