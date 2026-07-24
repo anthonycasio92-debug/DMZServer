@@ -2,9 +2,9 @@
 
 Tiny Forge 1.20.1 mixin mod for Mohist + DragonMineZ.
 
-Redirects `CombatAttackRequestC2S` away from `ServerPlayer.attack` / `LivingEntity.hurt` (Bukkit bridge) to Forge `LivingHurtEvent` + `actuallyHurt`.
+Redirects `CombatAttackRequestC2S` away from `ServerPlayer.attack` / `hurt` / `actuallyHurt` to Forge `LivingHurtEvent` + `setHealth` (full Bukkit bypass).
 
-Built jar: `mods/dmz_mohist_melee_fix-1.0.1.jar` (server-side only).
+Built jar: `mods/dmz_mohist_melee_fix-1.0.2.jar` (server-side only).
 
 ## Rebuild
 
