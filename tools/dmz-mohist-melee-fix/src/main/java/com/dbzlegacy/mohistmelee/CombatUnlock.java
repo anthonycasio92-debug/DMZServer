@@ -75,6 +75,9 @@ public final class CombatUnlock {
     public static void unlockForLogin(ServerPlayer player, String reason) {
         clearStaleStrikeLock(player, reason);
         ReachAttributeFix.repair(player, reason);
+        // Cross-dim raid teleports can zero dragonminez:strength etc.; empty-hand melee
+        // reads those via getMeleeDamage(), while held non-DMZ items keep vanilla damage.
+        PrimaryStatRepair.ensure(player, reason);
         clearChargeFlags(player);
         clearStunPotion(player);
         sync(player);
@@ -133,6 +136,7 @@ public final class CombatUnlock {
             logClear(player, reason);
         }
         ReachAttributeFix.repair(player, reason);
+        PrimaryStatRepair.ensure(player, reason);
         clearChargeFlags(player);
         clearStunPotion(player);
         sync(player);

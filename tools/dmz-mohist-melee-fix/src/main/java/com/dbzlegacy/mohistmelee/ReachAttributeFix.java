@@ -236,8 +236,11 @@ public final class ReachAttributeFix {
      * usable range. Does not alter damage attributes.
      */
     public static double sanitizeEffectiveRange(Player player, double weaponAttackRange, double computed) {
-        // Also treat absurdly low finite ranges as broken (collapsed reach can yield ~0.1).
-        double minUsable = Math.max(0.75D, weaponAttackRange > 0.0D ? weaponAttackRange * 0.5D : 0.75D);
+        // Fist attack_range is 2; swords ~2.5. Collapsed ENTITY_REACH subtracts from that, so
+        // empty-hand fails first after cross-dim. Never allow effective range below the weapon's
+        // own attack_range (half-range floors still left fists unusable at ~1.0).
+        double minUsable = weaponAttackRange > 0.0D ? weaponAttackRange : 2.0D;
+        minUsable = Math.max(2.0D, minUsable);
         if (Double.isFinite(computed) && computed >= minUsable) {
             return computed;
         }
@@ -253,6 +256,11 @@ public final class ReachAttributeFix {
                     if (!Double.isFinite(def) || def <= 0.0D) {
                         def = 3.0D;
                     }
+                    // If reach still sits below default after repair, treat delta as 0 so fists
+                    // keep their configured attack_range instead of shrinking further.
+                    if (!Double.isFinite(cur) || cur < def) {
+                        cur = def;
+                    }
                     if (Double.isFinite(cur)) {
                         double fixed = weaponAttackRange + (cur - def);
                         if (Double.isFinite(fixed) && fixed >= minUsable) {
@@ -264,7 +272,7 @@ public final class ReachAttributeFix {
         } catch (Throwable ignored) {
         }
 
-        double fallback = Math.max(2.0D, weaponAttackRange > 0.0D ? weaponAttackRange : 2.0D);
+        double fallback = minUsable;
         int n = LOGS.incrementAndGet();
         if (n <= 30) {
             LOGGER.info(

@@ -18,7 +18,10 @@ public final class DmzMohistMeleeFix {
     private static final Logger LOGGER = LogManager.getLogger(MOD_ID);
 
     public DmzMohistMeleeFix() {
-        LOGGER.info("[{}] v2.5.0 swing-no-damage fix: skip NaN cancel + reach/attack_damage sanitize", MOD_ID);
+        LOGGER.info(
+                "[{}] v2.6.0 empty-hand/cross-dim fix: restore primary STR + fist range floor (no ki_damage writes)",
+                MOD_ID
+        );
         ReachRepairEvents.register();
         MeleeFixSelfTest.registerIfEnabled();
     }

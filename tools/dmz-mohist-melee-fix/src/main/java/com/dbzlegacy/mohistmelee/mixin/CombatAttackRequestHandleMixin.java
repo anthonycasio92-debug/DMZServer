@@ -1,6 +1,7 @@
 package com.dbzlegacy.mohistmelee.mixin;
 
 import com.dbzlegacy.mohistmelee.CombatUnlock;
+import com.dbzlegacy.mohistmelee.PrimaryStatRepair;
 import com.dbzlegacy.mohistmelee.ReachAttributeFix;
 import com.dragonminez.common.network.C2S.CombatAttackRequestC2S;
 import java.util.function.Supplier;
@@ -31,8 +32,9 @@ public abstract class CombatAttackRequestHandleMixin {
                 return;
             }
             CombatUnlock.clearStaleStrikeLock(player, "melee-packet");
-            // Reach + NaN attack_damage only — never rewrite dragonminez damage attrs.
+            // Reach + NaN attack_damage + primary STR restore — never rewrite ki_damage/etc.
             ReachAttributeFix.repair(player, "melee-packet");
+            PrimaryStatRepair.ensure(player, "melee-packet");
             if (CombatUnlock.hasRealStunPotion(player)) {
                 return;
             }

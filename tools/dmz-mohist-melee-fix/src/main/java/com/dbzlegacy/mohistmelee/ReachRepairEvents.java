@@ -21,7 +21,16 @@ public final class ReachRepairEvents {
     @SubscribeEvent
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
+            // Primaries are usually intact on join; snapshot after a moment via tick.
             CombatUnlock.unlockForLogin(sp, "join");
+            PrimaryStatRepair.snapshot(sp);
+        }
+    }
+
+    @SubscribeEvent
+    public void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer sp) {
+            PrimaryStatRepair.clear(sp.m_20148_());
         }
     }
 
@@ -52,10 +61,12 @@ public final class ReachRepairEvents {
         // ~every 1 second: clear stale strike lock if ACTIVE map is empty
         if (player.f_19797_ % 20 == 0) {
             CombatUnlock.clearStaleStrikeLock(sp, "tick");
+            PrimaryStatRepair.snapshot(sp);
         }
-        // ~every 5 seconds: reach check
+        // ~every 5 seconds: reach check + primary restore if wiped
         if (player.f_19797_ % 100 == 0) {
             ReachAttributeFix.repair(sp, "tick");
+            PrimaryStatRepair.ensure(sp, "tick");
         }
     }
 }

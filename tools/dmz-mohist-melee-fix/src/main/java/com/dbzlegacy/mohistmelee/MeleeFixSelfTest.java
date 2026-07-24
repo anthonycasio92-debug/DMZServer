@@ -85,16 +85,38 @@ public final class MeleeFixSelfTest {
             Attribute kiAttr = MainAttributes.KI_DAMAGE.get();
             AttributeInstance kiInst = kiAttr == null ? null : fake.m_21051_(kiAttr);
             if (kiAttr != null && kiInst == null) {
-                kiInst = injectAttribute(fake, kiAttr, 42.0D);
+                kiInst = PrimaryStatRepair.injectAttribute(fake, kiAttr, 42.0D);
             }
             boolean kiPreserved = true;
             double kiAfterRepair = Double.NaN;
             if (kiInst != null) {
                 kiInst.m_22100_(42.0D);
                 ReachAttributeFix.repair(fake, "selftest-preserve-ki");
+                PrimaryStatRepair.ensure(fake, "selftest-preserve-ki");
                 kiAfterRepair = kiInst.m_22135_();
                 kiPreserved = Math.abs(kiAfterRepair - 42.0D) < 1.0E-6D;
             }
+
+            // --- Primary STR wipe after "cross-dim" must restore (empty-hand path) ---
+            boolean strOk = true;
+            int strAfter = -1;
+            Attribute strAttr = MainAttributes.STRENGTH.get();
+            AttributeInstance strInst = strAttr == null ? null : fake.m_21051_(strAttr);
+            if (strAttr != null && strInst == null) {
+                strInst = PrimaryStatRepair.injectAttribute(fake, strAttr, 250.0D);
+            }
+            if (strInst != null) {
+                strInst.m_22100_(250.0D);
+                PrimaryStatRepair.snapshot(fake);
+                strInst.m_22100_(0.0D); // simulate Mohist dim-change wipe
+                PrimaryStatRepair.restore(fake, "selftest-str");
+                strAfter = (int) Math.round(strInst.m_22115_());
+                strOk = strAfter == 250;
+            }
+
+            // --- Fist range must not shrink below weapon attack_range ---
+            double fistSanitized = ReachAttributeFix.sanitizeEffectiveRange(fake, 2.0D, 1.0D);
+            boolean fistRangeOk = Double.isFinite(fistSanitized) && fistSanitized >= 2.0D;
 
             // --- Read-side NaN guard on StatsData ---
             boolean secondaryOk = true;
@@ -126,16 +148,19 @@ public final class MeleeFixSelfTest {
             } catch (Throwable ignored) {
             }
 
-            boolean pass = reachOk && kiPreserved && secondaryOk && (!lockedBefore || !lockedAfter);
+            boolean pass = reachOk && kiPreserved && secondaryOk && strOk && fistRangeOk
+                    && (!lockedBefore || !lockedAfter);
             LOGGER.info(
-                    "[{}] SELFTEST {} reachBefore={} reachAfter={} sanitizedRange={} kiPreserved={} kiAfterRepair={} secondaryRead={} lockedBefore={} lockedAfter={}",
+                    "[{}] SELFTEST {} reachBefore={} reachAfter={} sanitizedRange={} fistSanitized={} kiPreserved={} kiAfterRepair={} strAfter={} secondaryRead={} lockedBefore={} lockedAfter={}",
                     DmzMohistMeleeFix.MOD_ID,
                     pass ? "PASS" : "FAIL",
                     reachBefore,
                     reachAfter,
                     sanitized,
+                    fistSanitized,
                     kiPreserved,
                     kiAfterRepair,
+                    strAfter,
                     secondaryRead,
                     lockedBefore,
                     lockedAfter
@@ -198,35 +223,4 @@ public final class MeleeFixSelfTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static AttributeInstance injectAttribute(Player player, Attribute attribute, double base) {
-        try {
-            Object map = player.m_21204_();
-            java.lang.reflect.Field field = null;
-            Class<?> c = map.getClass();
-            while (c != null && field == null) {
-                try {
-                    field = c.getDeclaredField("f_22139_");
-                } catch (NoSuchFieldException e) {
-                    c = c.getSuperclass();
-                }
-            }
-            if (field == null) {
-                return null;
-            }
-            field.setAccessible(true);
-            Object raw = field.get(map);
-            if (!(raw instanceof java.util.Map<?, ?>)) {
-                return null;
-            }
-            java.util.Map<Attribute, AttributeInstance> instances = (java.util.Map<Attribute, AttributeInstance>) raw;
-            AttributeInstance created = new AttributeInstance(attribute, ignored -> {});
-            created.m_22100_(base);
-            instances.put(attribute, created);
-            return created;
-        } catch (Throwable t) {
-            LOGGER.warn("[{}] could not inject {}: {}", DmzMohistMeleeFix.MOD_ID, attribute, t.toString());
-            return null;
-        }
-    }
 }
