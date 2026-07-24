@@ -12,9 +12,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Join diagnostics: DMZ only runs CombatAttackRequest when StatsCapability is present.
- * If Mohist drops that capability on join, melee packets are silently ignored until death
- * recreates the player entity.
+ * Join diagnostics + soft combat repair. Cancelled ki/PvP on Mohist can leave
+ * attackers unable to M1 until death; repairing on login reduces that window.
  */
 public final class MeleeFixJoinProbe {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
@@ -32,14 +31,9 @@ public final class MeleeFixJoinProbe {
             return;
         }
         boolean hasStats = StatsProvider.get(StatsCapability.INSTANCE, (Entity) serverPlayer).isPresent();
-        StatsProvider.get(StatsCapability.INSTANCE, (Entity) serverPlayer).ifPresent(data -> {
-            // Mirror DMZ login cleanup — stuck stun would drop all CombatAttackRequests.
-            data.getStatus().setStunEffect(false);
-            data.getStatus().setStrikeLocked(false);
-            data.getStatus().setKnockedDown(false);
-        });
+        DamageBridge.repairAttacker(serverPlayer, "join");
         LOGGER.info(
-                "[{}] join probe player={} statsCapability={} (CombatAttackRequest ignored if false)",
+                "[{}] join probe player={} statsCapability={}",
                 DmzMohistMeleeFix.MOD_ID,
                 serverPlayer.m_36316_().getName(),
                 hasStats
