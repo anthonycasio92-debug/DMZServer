@@ -1,10 +1,9 @@
 # dmz_mohist_melee_fix
 
-**v2.6.0** — empty-hand / cross-dimension raid teleport fix: restores wiped primary STR (fist
-`getMeleeDamage` path), floors fist attack range, plus prior reach / strikeLocked / NaN fixes.
-Does not rewrite `dragonminez:ki_damage`. No damage redirects.
+**v2.7.0** — melee works in spawn but breaks after changing worlds: STR read-side fallback,
+delayed dim restores, fist range floor. Does not rewrite `ki_damage`. No damage redirects.
 
-Jar: `mods/dmz_mohist_melee_fix-2.6.0.jar`
+Jar: `mods/dmz_mohist_melee_fix-2.7.0.jar`
 
 ```bash
 ./tools/dmz-mohist-melee-fix/build.sh

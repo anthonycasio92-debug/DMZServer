@@ -8,7 +8,9 @@
     "PlayerAttackHelperReachMixin",
     "CombatAttackRequestHandleMixin",
     "ServerPlayerTeleportUnlockMixin",
+    "ServerPlayerChangeDimensionMixin",
     "StatsDataSecondaryAttrMixin",
+    "StatsPrimaryAttrMixin",
     "FixVanillaEventsNaNMixin",
     "CombatEventHurtSanitizeMixin"
   ],

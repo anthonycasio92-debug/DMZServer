@@ -99,7 +99,9 @@ public final class MeleeFixSelfTest {
 
             // --- Primary STR wipe after "cross-dim" must restore (empty-hand path) ---
             boolean strOk = true;
+            boolean strReadOk = true;
             int strAfter = -1;
+            int strRead = -1;
             Attribute strAttr = MainAttributes.STRENGTH.get();
             AttributeInstance strInst = strAttr == null ? null : fake.m_21051_(strAttr);
             if (strAttr != null && strInst == null) {
@@ -109,6 +111,11 @@ public final class MeleeFixSelfTest {
                 strInst.m_22100_(250.0D);
                 PrimaryStatRepair.snapshot(fake);
                 strInst.m_22100_(0.0D); // simulate Mohist dim-change wipe
+                // Read-side fallback via Stats.getStrength() before explicit restore
+                strRead = StatsProvider.get(StatsCapability.INSTANCE, (Entity) fake)
+                        .map(d -> d.getStats().getStrength())
+                        .orElse(-1);
+                strReadOk = strRead == 250;
                 PrimaryStatRepair.restore(fake, "selftest-str");
                 strAfter = (int) Math.round(strInst.m_22115_());
                 strOk = strAfter == 250;
@@ -148,10 +155,10 @@ public final class MeleeFixSelfTest {
             } catch (Throwable ignored) {
             }
 
-            boolean pass = reachOk && kiPreserved && secondaryOk && strOk && fistRangeOk
+            boolean pass = reachOk && kiPreserved && secondaryOk && strOk && strReadOk && fistRangeOk
                     && (!lockedBefore || !lockedAfter);
             LOGGER.info(
-                    "[{}] SELFTEST {} reachBefore={} reachAfter={} sanitizedRange={} fistSanitized={} kiPreserved={} kiAfterRepair={} strAfter={} secondaryRead={} lockedBefore={} lockedAfter={}",
+                    "[{}] SELFTEST {} reachBefore={} reachAfter={} sanitizedRange={} fistSanitized={} kiPreserved={} kiAfterRepair={} strRead={} strAfter={} secondaryRead={} lockedBefore={} lockedAfter={}",
                     DmzMohistMeleeFix.MOD_ID,
                     pass ? "PASS" : "FAIL",
                     reachBefore,
@@ -160,6 +167,7 @@ public final class MeleeFixSelfTest {
                     fistSanitized,
                     kiPreserved,
                     kiAfterRepair,
+                    strRead,
                     strAfter,
                     secondaryRead,
                     lockedBefore,

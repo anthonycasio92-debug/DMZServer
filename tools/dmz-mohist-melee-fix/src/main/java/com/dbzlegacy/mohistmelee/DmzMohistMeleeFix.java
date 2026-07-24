@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.6.0 empty-hand/cross-dim fix: restore primary STR + fist range floor (no ki_damage writes)",
+                "[{}] v2.7.0 cross-world melee fix: STR read-fallback + dim follow-ups (spawn works, other worlds broke)",
                 MOD_ID
         );
         ReachRepairEvents.register();

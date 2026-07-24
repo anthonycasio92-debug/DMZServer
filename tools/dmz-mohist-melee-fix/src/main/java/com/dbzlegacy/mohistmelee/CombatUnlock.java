@@ -6,6 +6,8 @@ import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsCapability;
 import com.dragonminez.common.stats.StatsProvider;
 import java.lang.reflect.Field;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,11 +26,11 @@ import org.apache.logging.log4j.Logger;
 public final class CombatUnlock {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
     private static final AtomicInteger LOGS = new AtomicInteger();
-    /** uuid -> ticks remaining until next follow-up force unlock */
+    /** uuid -> remaining ticks until next follow-up */
     private static final Map<UUID, Integer> FOLLOWUP_TICKS = new ConcurrentHashMap<>();
     private static final Map<UUID, String> FOLLOWUP_REASON = new ConcurrentHashMap<>();
-    /** when true, after the +5t follow-up schedule another at +15t (total +20 from teleport) */
-    private static final Map<UUID, Boolean> FOLLOWUP_NEED_SECOND = new ConcurrentHashMap<>();
+    /** uuid -> extra relative delays (ticks) after the current countdown */
+    private static final Map<UUID, Deque<Integer>> FOLLOWUP_QUEUE = new ConcurrentHashMap<>();
 
     private CombatUnlock() {}
 
@@ -75,8 +77,6 @@ public final class CombatUnlock {
     public static void unlockForLogin(ServerPlayer player, String reason) {
         clearStaleStrikeLock(player, reason);
         ReachAttributeFix.repair(player, reason);
-        // Cross-dim raid teleports can zero dragonminez:strength etc.; empty-hand melee
-        // reads those via getMeleeDamage(), while held non-DMZ items keep vanilla damage.
         PrimaryStatRepair.ensure(player, reason);
         clearChargeFlags(player);
         clearStunPotion(player);
@@ -84,18 +84,33 @@ public final class CombatUnlock {
     }
 
     /**
-     * Raid / mod teleports: abort leftover strike maps, force-clear strikeLocked even if
-     * ACTIVE still references this player, repair attributes, and schedule short follow-ups
-     * (Shurui {@code fullHeal} sync can race the first unlock).
+     * Cross-world / raid teleports: force unlock now, then re-apply at +5/+20/+60/+100 ticks.
+     * Mohist often rematerializes AttributeMap <em>after</em> the dim-change event, which is
+     * why spawn-world combat works and other-world combat dies until a delayed restore runs.
      */
     public static void unlockAfterTeleport(ServerPlayer player, String reason) {
         if (player == null || player.m_9236_().f_46443_) {
             return;
         }
+        // Capture primaries from the world they left before Mohist finishes wiping them.
+        PrimaryStatRepair.snapshot(player);
         forceUnlockCombat(player, reason);
-        FOLLOWUP_TICKS.put(player.m_20148_(), 5);
-        FOLLOWUP_REASON.put(player.m_20148_(), reason);
-        FOLLOWUP_NEED_SECOND.put(player.m_20148_(), Boolean.TRUE);
+        scheduleFollowups(player, reason, 5, 15, 40, 40);
+    }
+
+    private static void scheduleFollowups(ServerPlayer player, String reason, int firstDelay, int... moreGaps) {
+        UUID id = player.m_20148_();
+        FOLLOWUP_TICKS.put(id, Math.max(1, firstDelay));
+        FOLLOWUP_REASON.put(id, reason);
+        Deque<Integer> queue = new ArrayDeque<>();
+        if (moreGaps != null) {
+            for (int gap : moreGaps) {
+                if (gap > 0) {
+                    queue.addLast(gap);
+                }
+            }
+        }
+        FOLLOWUP_QUEUE.put(id, queue);
     }
 
     /** Called from player tick for delayed post-teleport unlocks. */
@@ -108,12 +123,13 @@ public final class CombatUnlock {
         if (left <= 1) {
             String reason = FOLLOWUP_REASON.getOrDefault(id, "teleport-followup");
             forceUnlockCombat(player, reason + "-followup");
-            if (Boolean.TRUE.equals(FOLLOWUP_NEED_SECOND.remove(id))) {
-                FOLLOWUP_TICKS.put(id, 15);
-                FOLLOWUP_REASON.put(id, reason);
+            Deque<Integer> queue = FOLLOWUP_QUEUE.get(id);
+            if (queue != null && !queue.isEmpty()) {
+                FOLLOWUP_TICKS.put(id, queue.removeFirst());
             } else {
                 FOLLOWUP_TICKS.remove(id);
                 FOLLOWUP_REASON.remove(id);
+                FOLLOWUP_QUEUE.remove(id);
             }
             return;
         }
@@ -130,6 +146,11 @@ public final class CombatUnlock {
             stats.getStatus().setStrikeLocked(false);
             stats.getStatus().setKnockedDown(false);
             stats.getStatus().setStunEffect(false);
+            // Keep Stats bound to the live player after Mohist dim moves.
+            try {
+                stats.getStats().setPlayer(player);
+            } catch (Throwable ignored) {
+            }
             cleared[0] = locked;
         });
         if (cleared[0]) {

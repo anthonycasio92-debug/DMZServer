@@ -128,6 +128,26 @@ public final class PrimaryStatRepair {
         return restore(player, reason);
     }
 
+    /** Last-known-good base for a primary attribute, or 0 if none. */
+    public static int savedFor(Player player, Attribute attribute) {
+        if (player == null || attribute == null) {
+            return 0;
+        }
+        int[] saved = SNAPSHOTS.get(player.m_20148_());
+        if (saved == null) {
+            return 0;
+        }
+        for (int i = 0; i < ATTRS.length; i++) {
+            try {
+                if (ATTRS[i].get() == attribute) {
+                    return saved[i];
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        return 0;
+    }
+
     public static void clear(UUID id) {
         if (id != null) {
             SNAPSHOTS.remove(id);

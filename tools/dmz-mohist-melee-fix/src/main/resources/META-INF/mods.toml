@@ -4,14 +4,13 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.6.0"
+version = "2.7.0"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
-Fixes M1 swing-with-no-damage on Mohist, especially empty-hand after cross-dimension raid
-teleports: restores wiped dragonminez primary stats (STR), floors fist attack range, repairs
-ENTITY_REACH, clears stale strikeLocked, skips NaN cancel. Does not write ki_damage.
-No damage redirects.
+Fixes M1 that works in spawn world but breaks after changing worlds: STR read-side fallback,
+delayed dim-change restores, fist range floor, reach repair, stale strikeLocked unlock.
+Does not write ki_damage. No damage redirects.
 '''
 
 [[mixins]]

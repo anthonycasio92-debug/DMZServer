@@ -44,7 +44,8 @@ public final class ReachRepairEvents {
     @SubscribeEvent
     public void onDim(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
-            CombatUnlock.unlockForLogin(sp, "dimension");
+            // Same path as raids: delayed follow-ups — Mohist often wipes attrs after this event.
+            CombatUnlock.unlockAfterTeleport(sp, "dimension");
         }
     }
 
