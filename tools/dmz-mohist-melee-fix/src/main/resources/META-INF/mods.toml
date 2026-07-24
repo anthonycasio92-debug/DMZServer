@@ -4,39 +4,38 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.12.0"
+version = "2.12.0-fixed"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
-Fixes M1 animation-with-no-hit after world changes (empty/stale entity ID rescue),
-clamps >64 ID packets, Shurui raid unlock, respawn-like attribute recovery.
-Intentional DMZ stat resets update/clear the primary snapshot so restore cannot
-resurrect old STR/etc. No ki_damage writes / damage redirects.
+2.11.0-fixed optimized base + 2.12.0 intentional DMZ stat-reset fix.
+
+Repairs Mohist cross-dimension melee (NaN reach, wiped primaries, strike-lock) and
+M1 animation-but-no-hit (empty/stale packet IDs via AABB fall-through rescue).
+Intentional resetPlayerProgress / setStrength(0) update the primary snapshot so
+restore cannot resurrect old STR/etc. Drop-in same modid. No ki_damage redirects.
 '''
 
 [[mixins]]
 config = "dmz_mohist_melee_fix.mixins.json"
 
-[[mixins]]
-config = "dmz_mohist_melee_fix.raid.mixins.json"
+[[dependencies.dmz_mohist_melee_fix]]
+    modId = "forge"
+    mandatory = true
+    versionRange = "[47,)"
+    ordering = "NONE"
+    side = "BOTH"
 
 [[dependencies.dmz_mohist_melee_fix]]
-modId = "forge"
-mandatory = true
-versionRange = "[47,)"
-ordering = "NONE"
-side = "BOTH"
+    modId = "minecraft"
+    mandatory = true
+    versionRange = "[1.20.1,1.21)"
+    ordering = "NONE"
+    side = "BOTH"
 
 [[dependencies.dmz_mohist_melee_fix]]
-modId = "minecraft"
-mandatory = true
-versionRange = "[1.20.1,1.20.2)"
-ordering = "NONE"
-side = "BOTH"
-
-[[dependencies.dmz_mohist_melee_fix]]
-modId = "dragonminez"
-mandatory = true
-versionRange = "[2.1,)"
-ordering = "AFTER"
-side = "BOTH"
+    modId = "dragonminez"
+    mandatory = true
+    versionRange = "[2.1,)"
+    ordering = "AFTER"
+    side = "BOTH"
