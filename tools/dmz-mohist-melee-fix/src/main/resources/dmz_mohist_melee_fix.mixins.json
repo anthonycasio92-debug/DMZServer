@@ -7,7 +7,8 @@
   "mixins": [
     "PlayerAttackHelperReachMixin",
     "CombatAttackRequestHandleMixin",
-    "ServerPlayerTeleportUnlockMixin"
+    "ServerPlayerTeleportUnlockMixin",
+    "StatsDataSecondaryAttrMixin"
   ],
   "client": [],
   "server": [],

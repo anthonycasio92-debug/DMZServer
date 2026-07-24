@@ -3,8 +3,10 @@ package com.dbzlegacy.mohistmelee;
 import com.dragonminez.common.combat.logic.player.PlayerAttackHelper;
 import com.dragonminez.common.init.MainAttributes;
 import com.dragonminez.common.stats.StatsCapability;
+import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.StatsProvider;
 import com.mojang.authlib.GameProfile;
+import java.lang.reflect.Method;
 import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -22,7 +24,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Boot probe: ENTITY_REACH + ki_damage NaN repair. No damage redirects.
+ * Boot probe: ENTITY_REACH repair + prove we do not wipe DMZ damage attributes.
  */
 public final class MeleeFixSelfTest {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
@@ -79,22 +81,33 @@ public final class MeleeFixSelfTest {
             boolean reachOk = Double.isFinite(reachAfter) && reachAfter >= 0.25D
                     && Double.isFinite(sanitized) && sanitized > 0.05D;
 
-            // --- dragonminez:ki_damage ---
+            // --- Prove repair does NOT wipe dragonminez:ki_damage ---
             Attribute kiAttr = MainAttributes.KI_DAMAGE.get();
             AttributeInstance kiInst = kiAttr == null ? null : fake.m_21051_(kiAttr);
             if (kiAttr != null && kiInst == null) {
-                // FakePlayer often lacks DMZ AttributeSupplier entries; inject one for the probe.
-                kiInst = injectAttribute(fake, kiAttr, 0.0D);
+                kiInst = injectAttribute(fake, kiAttr, 42.0D);
             }
-            double kiBefore = kiInst == null ? Double.NaN : kiInst.m_22135_();
+            boolean kiPreserved = true;
+            double kiAfterRepair = Double.NaN;
+            if (kiInst != null) {
+                kiInst.m_22100_(42.0D);
+                ReachAttributeFix.repair(fake, "selftest-preserve-ki");
+                kiAfterRepair = kiInst.m_22135_();
+                kiPreserved = Math.abs(kiAfterRepair - 42.0D) < 1.0E-6D;
+            }
+
+            // --- Read-side NaN guard on StatsData ---
+            boolean secondaryOk = true;
+            double secondaryRead = Double.NaN;
             if (kiInst != null) {
                 kiInst.m_22100_(Double.NaN);
+                secondaryRead = readSecondaryViaStats(fake, kiAttr, 0.0D);
+                secondaryOk = Double.isFinite(secondaryRead) && Math.abs(secondaryRead - 0.0D) < 1.0E-9D;
+                // restore a sane value so we don't leave the probe poisoned
+                kiInst.m_22100_(42.0D);
             }
-            ReachAttributeFix.repair(fake, "selftest-ki");
-            double kiAfter = ReachAttributeFix.readKiDamage(fake);
-            boolean kiOk = kiInst != null && Double.isFinite(kiAfter);
 
-            // --- strike lock gate (if CombatUnlock present) ---
+            // --- strike lock gate ---
             boolean lockedBefore = false;
             boolean lockedAfter = false;
             try {
@@ -113,16 +126,17 @@ public final class MeleeFixSelfTest {
             } catch (Throwable ignored) {
             }
 
-            boolean pass = reachOk && kiOk && (!lockedBefore || !lockedAfter);
+            boolean pass = reachOk && kiPreserved && secondaryOk && (!lockedBefore || !lockedAfter);
             LOGGER.info(
-                    "[{}] SELFTEST {} reachBefore={} reachAfter={} sanitizedRange={} kiBefore={} kiAfter={} lockedBefore={} lockedAfter={}",
+                    "[{}] SELFTEST {} reachBefore={} reachAfter={} sanitizedRange={} kiPreserved={} kiAfterRepair={} secondaryRead={} lockedBefore={} lockedAfter={}",
                     DmzMohistMeleeFix.MOD_ID,
                     pass ? "PASS" : "FAIL",
                     reachBefore,
                     reachAfter,
                     sanitized,
-                    kiBefore,
-                    kiAfter,
+                    kiPreserved,
+                    kiAfterRepair,
+                    secondaryRead,
                     lockedBefore,
                     lockedAfter
             );
@@ -130,6 +144,26 @@ public final class MeleeFixSelfTest {
             runShuruiFullHealProbe(fake);
         } catch (Throwable t) {
             LOGGER.error("[{}] SELFTEST FAIL {}", DmzMohistMeleeFix.MOD_ID, t.toString(), t);
+        }
+    }
+
+    private static double readSecondaryViaStats(FakePlayer fake, Attribute attr, double fallback) {
+        try {
+            StatsData data = StatsProvider.get(StatsCapability.INSTANCE, (Entity) fake).orElse(null);
+            if (data == null) {
+                return Double.NaN;
+            }
+            Method m = StatsData.class.getDeclaredMethod(
+                    "getSecondaryAttributeValue",
+                    Attribute.class,
+                    double.class
+            );
+            m.setAccessible(true);
+            Object out = m.invoke(data, attr, fallback);
+            return out instanceof Double d ? d : Double.NaN;
+        } catch (Throwable t) {
+            LOGGER.warn("[{}] secondary read probe failed: {}", DmzMohistMeleeFix.MOD_ID, t.toString());
+            return Double.NaN;
         }
     }
 

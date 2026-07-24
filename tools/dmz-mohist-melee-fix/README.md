@@ -1,8 +1,8 @@
 # dmz_mohist_melee_fix
 
-**v2.3.0** — repairs collapsed Forge `ENTITY_REACH` and `dragonminez:ki_damage` / `melee_damage` / `strike_damage`, and unlocks stale `strikeLocked` after mod teleports / Shurui raid `fullHeal`. No damage redirects.
+**v2.4.0** — repairs Forge `ENTITY_REACH`, unlocks stale `strikeLocked` after teleports / Shurui raids, guards NaN DMZ secondaries on **read**. Does **not** rewrite `dragonminez:ki_damage` / melee / strike attribute instances.
 
-Jar: `mods/dmz_mohist_melee_fix-2.3.0.jar`
+Jar: `mods/dmz_mohist_melee_fix-2.4.0.jar`
 
 ```bash
 ./tools/dmz-mohist-melee-fix/build.sh
