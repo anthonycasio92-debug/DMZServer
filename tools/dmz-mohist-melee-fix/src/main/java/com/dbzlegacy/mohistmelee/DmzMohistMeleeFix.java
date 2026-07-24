@@ -16,7 +16,7 @@ public final class DmzMohistMeleeFix {
     private static final Logger LOGGER = LogManager.getLogger(MOD_ID);
 
     public DmzMohistMeleeFix() {
-        LOGGER.info("[{}] v1.0.5 client sync + soft refresh (no-suicide recovery)", MOD_ID);
+        LOGGER.info("[{}] v1.0.6 repair Forge ENTITY_REACH + client sync + soft refresh", MOD_ID);
         ClientCombatReset.registerIfClient();
         MeleeFixJoinProbe.register();
         MeleeFixSelfTest.registerIfEnabled();

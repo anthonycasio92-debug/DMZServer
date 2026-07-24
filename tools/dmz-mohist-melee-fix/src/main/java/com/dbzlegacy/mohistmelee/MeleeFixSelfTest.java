@@ -1,5 +1,6 @@
 package com.dbzlegacy.mohistmelee;
 
+import com.dragonminez.common.combat.logic.player.PlayerAttackHelper;
 import com.dragonminez.common.stats.StatsCapability;
 import com.dragonminez.common.stats.StatsProvider;
 import com.mojang.authlib.GameProfile;
@@ -10,7 +11,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.common.util.FakePlayerFactory;
@@ -21,7 +26,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Boot probe. Always runs on Mohist; on Forge only with {@code -Ddmz.melee.fix.selftest=true}.
- * Verifies: mixin redirect, setHealth apply, and strikeLocked no longer blocks M1 path.
+ * Verifies: strikeUnlocked, ENTITY_REACH repair, mixin redirect damage.
  */
 public final class MeleeFixSelfTest {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
@@ -81,6 +86,22 @@ public final class MeleeFixSelfTest {
                     .map(d -> d.getStatus().isStunned())
                     .orElse(false);
 
+            // Simulate corrupted Forge ENTITY_REACH (NaN) — DMZ range checks then always fail.
+            double reachBeforeBreak = ReachAttributeFix.readEntityReach(fake);
+            Attribute entityReach = ForgeMod.ENTITY_REACH.get();
+            AttributeInstance reachInst = entityReach == null ? null : fake.m_21051_(entityReach);
+            if (reachInst != null) {
+                reachInst.m_22100_(Double.NaN);
+            }
+            double brokenRange = PlayerAttackHelper.getEffectiveAttackRange((Player) fake, 2.0D);
+            ReachAttributeFix.repair(fake, "selftest-reach");
+            double reachAfter = ReachAttributeFix.readEntityReach(fake);
+            double fixedRange = PlayerAttackHelper.getEffectiveAttackRange((Player) fake, 2.0D);
+            boolean reachOk = Double.isFinite(reachAfter)
+                    && reachAfter >= 0.25D
+                    && Double.isFinite(fixedRange)
+                    && fixedRange > 0.05D;
+
             zombie = EntityType.f_20501_.m_20615_(level);
             if (zombie == null) {
                 LOGGER.error("[{}] SELFTEST FAIL could not create zombie", DmzMohistMeleeFix.MOD_ID);
@@ -90,7 +111,6 @@ public final class MeleeFixSelfTest {
             level.m_7967_(zombie);
 
             float before = zombie.m_21223_();
-            // Same unlock path the handle mixin uses before processAttackRequest.
             DamageBridge.forceClearCombatLocks(fake, "selftest");
             DamageBridge.repairAttacker(fake, "selftest");
             boolean lockedAfter = StatsProvider.get(StatsCapability.INSTANCE, (Entity) fake)
@@ -101,9 +121,9 @@ public final class MeleeFixSelfTest {
             float after = zombie.m_21223_();
             float delta = before - after;
 
-            boolean pass = delta > 0.05F && !lockedAfter;
+            boolean pass = delta > 0.05F && !lockedAfter && reachOk;
             LOGGER.info(
-                    "[{}] SELFTEST {} lockedBefore={} lockedAfter={} mixinRedirect={} delta={} hp {}->{}",
+                    "[{}] SELFTEST {} lockedBefore={} lockedAfter={} mixinRedirect={} delta={} hp {}->{} reachBefore={} brokenRange={} reachAfter={} fixedRange={}",
                     DmzMohistMeleeFix.MOD_ID,
                     pass ? "PASS" : "FAIL",
                     lockedBefore,
@@ -111,7 +131,11 @@ public final class MeleeFixSelfTest {
                     mixinHit,
                     delta,
                     before,
-                    after
+                    after,
+                    reachBeforeBreak,
+                    brokenRange,
+                    reachAfter,
+                    fixedRange
             );
         } catch (Throwable t) {
             LOGGER.error("[{}] SELFTEST FAIL {}", DmzMohistMeleeFix.MOD_ID, t.toString(), t);
@@ -136,7 +160,6 @@ public final class MeleeFixSelfTest {
                 method.invoke(null, player, target);
                 return true;
             }
-            // Fallback: call DamageBridge directly if redirect name differs
             if (target instanceof net.minecraft.world.entity.LivingEntity living) {
                 DamageBridge.applyPlayerDamage(
                         player,

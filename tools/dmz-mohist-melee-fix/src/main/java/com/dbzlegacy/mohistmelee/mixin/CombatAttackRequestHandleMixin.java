@@ -1,6 +1,7 @@
 package com.dbzlegacy.mohistmelee.mixin;
 
 import com.dbzlegacy.mohistmelee.DamageBridge;
+import com.dbzlegacy.mohistmelee.ReachAttributeFix;
 import com.dragonminez.common.init.MainEffects;
 import com.dragonminez.common.network.C2S.CombatAttackRequestC2S;
 import com.dragonminez.common.stats.StatsCapability;
@@ -42,6 +43,8 @@ public abstract class CombatAttackRequestHandleMixin {
             }
             clearStaleStrikeLock(player);
             DamageBridge.forceClearCombatLocks(player, "melee-packet");
+            // Broken Forge ENTITY_REACH makes DMZ range checks fail until respawn.
+            ReachAttributeFix.repair(player, "melee-packet");
 
             // Only real STUN potion blocks M1 — not stale strikeLocked/knockedDown.
             if (hasRealStun(player)) {

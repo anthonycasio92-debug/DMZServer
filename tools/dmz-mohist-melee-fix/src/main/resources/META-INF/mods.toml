@@ -4,11 +4,11 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "1.0.5"
+version = "1.0.6"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
-Fixes Mohist M1 brick until death: syncs cleared charge/block flags to client, flushes stuck upswing, soft-recreates player once on join, Bukkit-bypass damage for melee/ki/strike.
+Fixes Mohist M1 brick until death: repairs Forge ENTITY_REACH, syncs charge/block flags, flushes client upswing, soft-recreates on join, Bukkit-bypass damage.
 '''
 
 [[mixins]]

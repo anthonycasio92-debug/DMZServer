@@ -8,7 +8,8 @@
     "CombatAttackRequestC2SMixin",
     "CombatAttackRequestHandleMixin",
     "AbstractKiProjectileMixin",
-    "StrikeAttackHandlerMixin"
+    "StrikeAttackHandlerMixin",
+    "PlayerAttackHelperReachMixin"
   ],
   "client": [
     "ClientMinecraftCombatMixin"

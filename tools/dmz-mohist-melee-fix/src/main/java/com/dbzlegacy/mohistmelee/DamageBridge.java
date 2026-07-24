@@ -160,6 +160,7 @@ public final class DamageBridge {
 
     public static void repairAttacker(ServerPlayer player, String reason) {
         forceClearCombatLocks(player, reason);
+        ReachAttributeFix.repair(player, reason);
         long now = System.currentTimeMillis();
         Long prev = LAST_REPAIR_MS.put(player.m_20148_(), now);
         boolean throttled = prev != null && now - prev < 250L;

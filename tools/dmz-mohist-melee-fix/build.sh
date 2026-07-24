@@ -7,8 +7,8 @@ DMZ="$ROOT/mods/dragonminez-2.1.3.jar"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
-JAR="$ROOT/mods/dmz_mohist_melee_fix-1.0.5.jar"
-rm -f "$ROOT/mods"/dmz_mohist_melee_fix-1.0.[0-4].jar
+JAR="$ROOT/mods/dmz_mohist_melee_fix-1.0.6.jar"
+rm -f "$ROOT/mods"/dmz_mohist_melee_fix-1.0.[0-5].jar
 
 CP="$SRG:$FORGE_U:\
 $ROOT/libraries/net/minecraftforge/fmlcore/1.20.1-47.4.10/fmlcore-1.20.1-47.4.10.jar:\

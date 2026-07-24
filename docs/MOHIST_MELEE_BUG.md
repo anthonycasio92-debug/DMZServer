@@ -6,35 +6,33 @@ M1 deals no damage until the player dies. Triggers include restart/rejoin, cance
 
 ## Root cause
 
-1. **Stale `strikeLocked`** — DMZ drops CombatAttackRequest when `Status.isStunned()` (includes `strikeLocked`).
-2. **Client charge/block desync** — cancelled ki clears charge on the server but without `StatsSyncS2C` the client still thinks `isChargingTechnique`/`isBlocking`, so `MinecraftMixin.startAttack` cancels all M1 until death recreates the player.
-3. **Stuck client upswing** — `attackCooldown=10000` / upswing flags on `Minecraft` can stick when the local player is briefly null.
-4. **Mohist Bukkit damage bridge** — `Player.attack` / `LivingEntity.hurt` stay flaky after cancelled EntityDamage events until the player entity is recreated.
+1. **Forge `ENTITY_REACH` corruption** — DMZ computes hit range as `weaponRange + (entityReach - default)`. If reach base/modifiers go NaN or collapse on Mohist, server range checks fail while the client still targets. Death rebuilds the AttributeMap.
+2. **Stale `strikeLocked`** — DMZ drops CombatAttackRequest when `Status.isStunned()` (includes `strikeLocked`).
+3. **Client charge/block desync** — cancelled ki clears charge on the server without syncing; client `MinecraftMixin` keeps cancelling M1.
+4. **Stuck client upswing** / Mohist CraftPlayer state until respawn.
 
-## Fix v1.0.5 (server + client)
+## Fix v1.0.6
 
-`mods/dmz_mohist_melee_fix-1.0.5.jar`
+`mods/dmz_mohist_melee_fix-1.0.6.jar`
 
-https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-1.0.5.jar
+https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-1.0.6.jar
 
-- Clears stale locks + technique charge / stuck ki-charge / block flags, then **syncs stats to the client**
-- Client mixin + login hooks cancel stuck DMZ upswing (no more relying on death)
-- Soft player recreate once on Mohist join (and after repeated denied hits) — same recovery as suicide, without dying or enabling `keepInventory`
-- Bukkit probe + LivingHurt + setHealth for melee / ki / strike
+- Repairs Forge `ENTITY_REACH` / `BLOCK_REACH` (NaN/collapsed) and sanitizes `getEffectiveAttackRange`
+- Clears locks + charge/block flags and syncs to client
+- Client upswing flush + soft player recreate on Mohist join
+- Bukkit-bypass damage for melee / ki / strike
 
 ### Install
 
-1. Put **1.0.5** in `mods/` (clients need it too for the upswing flush)
+1. Put **1.0.6** in `mods/` (server **and** clients)
 2. Delete older `dmz_mohist_melee_fix-1.0.*.jar`
 3. Restart
 
-### Verify (Mohist logs)
+### Verify
 
 ```text
-[dmz_mohist_melee_fix] v1.0.5 client sync + soft refresh (no-suicide recovery)
-[dmz_mohist_melee_fix] Self-test enabled (mohist=true forced=false)
-[dmz_mohist_melee_fix] SELFTEST PASS lockedBefore=true lockedAfter=false ... delta=1.0
-[dmz_mohist_melee_fix] soft player refresh player=... reason=join
+[dmz_mohist_melee_fix] v1.0.6 repair Forge ENTITY_REACH + client sync + soft refresh
+[dmz_mohist_melee_fix] SELFTEST PASS ... reachAfter=... fixedRange=...
 ```
 
 ## Source
