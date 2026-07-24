@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.8.0 respawn-like recovery: replay death AttributeMap rebuild on every world change",
+                "[{}] v2.9.0: clamp oversized M1 entity-id packets + fixed Shurui raid teleport mixin",
                 MOD_ID
         );
         ReachRepairEvents.register();

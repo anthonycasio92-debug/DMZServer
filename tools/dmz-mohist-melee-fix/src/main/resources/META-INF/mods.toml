@@ -4,12 +4,12 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.8.0"
+version = "2.9.0"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
-Fixes M1 that works in spawn but breaks after world change. Death fixed it by rebuilding
-AttributeMap + Stats.copyFrom — this replays that recovery on every dim/teleport (no soft-respawn).
+Fixes M1 drop: clamps CombatAttackRequest entity-id overflow (>64 was discarding the packet),
+fixes Shurui raid teleport mixin apply, plus respawn-like recovery after world changes.
 Does not write ki_damage. No damage redirects.
 '''
 
