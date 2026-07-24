@@ -4,13 +4,14 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.10.0"
+version = "2.11.0"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
 Fixes M1 animation-with-no-hit: when the client sends empty/stale entity IDs after a world
-change, server rescues a valid target in front and attacks. Also clamps >64 ID packets,
-Shurui raid teleport unlock, respawn-like attribute recovery. No ki_damage writes / redirects.
+change, server rescues a valid target in front and attacks (AABB fall-through if stale IDs
+resolve but miss). Also clamps >64 ID packets, Shurui raid teleport unlock, respawn-like
+attribute recovery. No ki_damage writes / redirects.
 '''
 
 [[mixins]]

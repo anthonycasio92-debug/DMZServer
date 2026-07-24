@@ -1,10 +1,7 @@
-# dmz_mohist_melee_fix
+# DMZ Mohist Melee Fix
 
-**v2.10.0** — server-side M1 target rescue when the client sends empty/stale entity IDs
-(animation plays, no `attack()`). Plus prior packet clamp / raid mixin / respawn-like recovery.
+**v2.11.0** — M1 target rescue hardened (AABB fall-through for stale IDs + live fallback selftest)
 
-Jar: `mods/dmz_mohist_melee_fix-2.10.0.jar`
+Jar: `mods/dmz_mohist_melee_fix-2.11.0.jar`
 
-```bash
-./tools/dmz-mohist-melee-fix/build.sh
-```
+See `docs/MOHIST_MELEE_BUG.md`.

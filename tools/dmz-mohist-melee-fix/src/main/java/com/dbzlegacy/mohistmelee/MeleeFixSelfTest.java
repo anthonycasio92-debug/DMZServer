@@ -187,8 +187,164 @@ public final class MeleeFixSelfTest {
             );
 
             runShuruiFullHealProbe(fake);
+            runEmptyIdFallbackProbe(level, fake);
         } catch (Throwable t) {
             LOGGER.error("[{}] SELFTEST FAIL {}", DmzMohistMeleeFix.MOD_ID, t.toString(), t);
+        }
+    }
+
+    /**
+     * Live repro of post-dim empty/stale entity-ID packets: spawn a zombie in front of the probe,
+     * call {@link ServerMeleeFallback#maybeRescue} with no IDs, assert the mob took damage.
+     */
+    private static void runEmptyIdFallbackProbe(ServerLevel level, FakePlayer fake) {
+        net.minecraft.world.entity.monster.Zombie zombie = null;
+        net.minecraft.world.entity.monster.Zombie far = null;
+        try {
+            net.minecraft.core.BlockPos spawn = level.m_220360_();
+            double x = spawn.m_123341_() + 0.5D;
+            double y = Math.max(spawn.m_123342_(), 64) + 1.0D;
+            double z = spawn.m_123343_() + 0.5D;
+            // Force spawn chunks loaded so AABB entity queries work.
+            level.m_46745_(spawn);
+            level.m_46745_(spawn.m_7918_(0, 0, 2));
+            level.m_46745_(spawn.m_7918_(0, 0, 8));
+
+            fake.m_146884_(new net.minecraft.world.phys.Vec3(x, y, z));
+            fake.m_146922_(0.0F); // yaw facing south (+Z)
+            fake.m_146926_(0.0F);
+            fake.m_21008_(
+                    net.minecraft.world.InteractionHand.MAIN_HAND,
+                    net.minecraft.world.item.ItemStack.f_41583_
+            );
+
+            Attribute strAttr = MainAttributes.STRENGTH.get();
+            AttributeInstance strInst = strAttr == null ? null : fake.m_21051_(strAttr);
+            if (strAttr != null && strInst == null) {
+                strInst = PrimaryStatRepair.injectAttribute(fake, strAttr, 250.0D);
+            }
+            if (strInst != null) {
+                strInst.m_22100_(250.0D);
+                PrimaryStatRepair.snapshot(fake);
+            }
+            ReachAttributeFix.repair(fake, "selftest-fallback");
+
+            zombie = new net.minecraft.world.entity.monster.Zombie(level);
+            zombie.m_146884_(new net.minecraft.world.phys.Vec3(x, y, z + 1.5D));
+            zombie.m_21153_(zombie.m_21233_());
+            boolean addedNear = level.m_7967_(zombie);
+            int nearId = zombie.m_19879_();
+            final net.minecraft.world.entity.monster.Zombie nearRef = zombie;
+
+            java.util.List<net.minecraft.world.entity.LivingEntity> preScan =
+                    level.m_45976_(
+                            net.minecraft.world.entity.LivingEntity.class,
+                            fake.m_20191_().m_82400_(5.0D)
+                    );
+            boolean inScan = false;
+            for (net.minecraft.world.entity.LivingEntity e : preScan) {
+                if (e == nearRef) {
+                    inScan = true;
+                    break;
+                }
+            }
+            boolean canAtk = com.dragonminez.common.combat.logic.player.TargetHelper.canAttack(
+                    (Player) fake, (Entity) zombie, 6.0D
+            );
+            var relation = com.dragonminez.common.combat.logic.player.TargetHelper.getRelation(
+                    (Player) fake, (Entity) zombie
+            );
+            LOGGER.info(
+                    "[{}] FALLBACK SELFTEST setup addedNear={} id={} inScan={} scanSize={} canAttack={} relation={} pos={}/{}/{}",
+                    DmzMohistMeleeFix.MOD_ID,
+                    addedNear,
+                    nearId,
+                    inScan,
+                    preScan.size(),
+                    canAtk,
+                    relation,
+                    x,
+                    y,
+                    z
+            );
+            if (!addedNear || !inScan) {
+                LOGGER.error(
+                        "[{}] FALLBACK SELFTEST FAIL could not place/query zombie in world",
+                        DmzMohistMeleeFix.MOD_ID
+                );
+                return;
+            }
+
+            float healthBefore = zombie.m_21223_();
+            long hitBefore = PersistentDataAccess.get(fake).m_128454_(
+                    com.dragonminez.server.events.players.combat.CombatEvent.DMZ_LAST_HIT_TARGET_TIME_TAG
+            );
+
+            com.dragonminez.common.network.C2S.CombatAttackRequestC2S empty =
+                    new com.dragonminez.common.network.C2S.CombatAttackRequestC2S(0, false, 0, new int[0]);
+            ServerMeleeFallback.maybeRescue(fake, empty, hitBefore, 0);
+
+            float healthAfter = zombie.m_21223_();
+            long hitAfter = PersistentDataAccess.get(fake).m_128454_(
+                    com.dragonminez.server.events.players.combat.CombatEvent.DMZ_LAST_HIT_TARGET_TIME_TAG
+            );
+            boolean emptyOk = healthAfter < healthBefore || zombie.f_20916_ > 0 || hitAfter > hitBefore;
+
+            // Stale far ID must not block nearby rescue: heal zombie, clear i-frames,
+            // put a far-but-resolved mob id in the packet.
+            zombie.m_21153_(zombie.m_21233_());
+            zombie.f_20916_ = 0; // hurtTime
+            zombie.f_19802_ = 0; // invulnerableTime
+            float health2Before = zombie.m_21223_();
+            long hit2Before = PersistentDataAccess.get(fake).m_128454_(
+                    com.dragonminez.server.events.players.combat.CombatEvent.DMZ_LAST_HIT_TARGET_TIME_TAG
+            );
+
+            far = new net.minecraft.world.entity.monster.Zombie(level);
+            far.m_146884_(new net.minecraft.world.phys.Vec3(x, y, z + 8.0D));
+            far.m_21153_(far.m_21233_());
+            boolean addedFar = level.m_7967_(far);
+            int farId = far.m_19879_();
+            Entity resolvedFar = level.m_143317_(farId);
+
+            com.dragonminez.common.network.C2S.CombatAttackRequestC2S stale =
+                    new com.dragonminez.common.network.C2S.CombatAttackRequestC2S(
+                            0, false, 0, new int[]{farId}
+                    );
+            ServerMeleeFallback.maybeRescue(fake, stale, hit2Before, 1);
+
+            float health2After = zombie.m_21223_();
+            boolean staleOk = health2After < health2Before || zombie.f_20916_ > 0;
+
+            boolean pass = emptyOk && staleOk;
+            LOGGER.info(
+                    "[{}] FALLBACK SELFTEST {} emptyOk={} staleOk={} emptyHealth={}->{} staleHealth={}->{} addedFar={} farResolved={}",
+                    DmzMohistMeleeFix.MOD_ID,
+                    pass ? "PASS" : "FAIL",
+                    emptyOk,
+                    staleOk,
+                    healthBefore,
+                    healthAfter,
+                    health2Before,
+                    health2After,
+                    addedFar,
+                    resolvedFar != null
+            );
+        } catch (Throwable t) {
+            LOGGER.error("[{}] FALLBACK SELFTEST FAIL {}", DmzMohistMeleeFix.MOD_ID, t.toString(), t);
+        } finally {
+            if (zombie != null) {
+                try {
+                    zombie.m_146870_();
+                } catch (Throwable ignored) {
+                }
+            }
+            if (far != null) {
+                try {
+                    far.m_146870_();
+                } catch (Throwable ignored) {
+                }
+            }
         }
     }
 

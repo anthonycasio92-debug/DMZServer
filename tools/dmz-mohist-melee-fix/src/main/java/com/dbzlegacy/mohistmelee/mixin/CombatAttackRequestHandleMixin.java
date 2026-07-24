@@ -54,9 +54,13 @@ public abstract class CombatAttackRequestHandleMixin {
 
             CombatAttackRequestC2S.processAttackRequest(player, self);
 
+            // processAttackRequest itself server.execute()'s the real work — queue rescue
+            // after that runnable so hit-time / LivingHurt from the packet path is visible.
             MinecraftServer server = player.m_20194_();
             if (server != null) {
                 server.execute(() -> ServerMeleeFallback.maybeRescue(player, self, hitTimeBefore, packetIds));
+            } else {
+                ServerMeleeFallback.maybeRescue(player, self, hitTimeBefore, packetIds);
             }
         });
         context.setPacketHandled(true);
