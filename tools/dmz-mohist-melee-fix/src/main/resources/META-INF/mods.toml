@@ -4,15 +4,16 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.12.4"
+version = "2.12.5"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
 Fixes M1 animation-with-no-hit after world changes (empty/stale entity ID rescue),
 clamps >64 ID packets, Shurui raid unlock, respawn-like attribute recovery.
 Intentional DMZ stat resets update/clear the primary snapshot so restore cannot
-resurrect old STR/etc. Master shadow-dummy sparring (any master UI → NPCAction popo/1) and Guru
-potential unlock (NPCAction guru/1) are disabled.
+resurrect old STR/etc. Master shadow-dummy sparring (NPCAction popo/1), Guru potential unlock
+(NPCAction guru/1), and Dr. Gero android conversion (NPCAction gero/1)
+are disabled.
 No ki_damage writes / damage redirects.
 '''
 

@@ -21,6 +21,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *       {@code isAnyMasterInRange} → {@code handlePopo(1)}. Player minigame summons untouched.</li>
  *   <li>Guru potential unlock: {@code NPCActionC2S("guru", 1)} → {@code handleGuru(1)} →
  *       {@code Skills.addSkillLevel("potentialunlock", 1)}. Other skill sources untouched.</li>
+ *   <li>Dr. Gero android conversion: {@code NPCActionC2S("gero", 1)} → {@code handleGero(1)} →
+ *       {@code Status.setAndroidUpgraded(true)} + androidforms. Also blocks CNPC/script reflection
+ *       calls into {@code handleGero}.</li>
  * </ul>
  */
 @Mixin(value = NPCActionC2S.class, remap = false)
@@ -30,6 +33,8 @@ public abstract class NpcActionDisableMixin {
             "\u00A7cMaster shadow dummy sparring is disabled on this server.";
     private static final String MSG_GURU_POTENTIAL =
             "\u00A7cGuru potential unlock is disabled on this server.";
+    private static final String MSG_GERO_ANDROID =
+            "\u00A7cDr. Gero android conversion is disabled on this server.";
 
     @Shadow
     @Final
@@ -50,12 +55,15 @@ public abstract class NpcActionDisableMixin {
             return;
         }
         NpcActionDisableMixin self = (NpcActionDisableMixin) (Object) packet;
-        if (self.actionId == 1 && "popo".equals(self.npcName)) {
-            deny(player, ci, MSG_SHADOW, "shadow-protocol");
+        if (self.actionId != 1 || self.npcName == null) {
             return;
         }
-        if (self.actionId == 1 && "guru".equals(self.npcName)) {
-            deny(player, ci, MSG_GURU_POTENTIAL, "guru-potential-protocol");
+        switch (self.npcName) {
+            case "popo" -> deny(player, ci, MSG_SHADOW, "shadow-protocol");
+            case "guru" -> deny(player, ci, MSG_GURU_POTENTIAL, "guru-potential-protocol");
+            case "gero" -> deny(player, ci, MSG_GERO_ANDROID, "gero-android-protocol");
+            default -> {
+            }
         }
     }
 
@@ -83,6 +91,19 @@ public abstract class NpcActionDisableMixin {
             return;
         }
         deny(player, ci, MSG_GURU_POTENTIAL, "handleGuru");
+    }
+
+    @Inject(method = "handleGero", at = @At("HEAD"), cancellable = true, remap = false)
+    private static void dbzlegacy$blockGeroAndroidConversion(
+            ServerPlayer player,
+            StatsData stats,
+            int actionId,
+            CallbackInfo ci
+    ) {
+        if (actionId != 1) {
+            return;
+        }
+        deny(player, ci, MSG_GERO_ANDROID, "handleGero");
     }
 
     private static void deny(ServerPlayer player, CallbackInfo ci, String message, String where) {

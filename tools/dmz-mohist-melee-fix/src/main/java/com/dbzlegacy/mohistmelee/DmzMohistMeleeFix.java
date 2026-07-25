@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.4: M1 rescue + hardened resets; master shadow spar + Guru potential unlock disabled",
+                "[{}] v2.12.5: M1 rescue + hardened resets; shadow spar / Guru potential / Gero android disabled",
                 MOD_ID
         );
         ReachRepairEvents.register();
