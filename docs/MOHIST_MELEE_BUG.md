@@ -1,27 +1,30 @@
 # Mohist M1: animation but no damage
 
-## Fix v2.12.1
+## Fix v2.12.2
 
-`mods/dmz_mohist_melee_fix-2.12.1.jar`
+`mods/dmz_mohist_melee_fix-2.12.2.jar`
 
-https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.12.1.jar
+https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.12.2.jar
 
-Optimized layout from the reviewed 2.11.0-fixed cleanup, with hardened intentional DMZ stat-reset handling.
+Restores the proven **2.12.0** melee rescue path (`ServerMeleeFallback` + conservative strike unlock). **2.12.1** regressed punches by clearing strike maps / charge flags / syncing on every M1 packet.
 
-### Cleanup kept from fixed jar
-- Combined classes: `CombatRepair`, `RepairEvents`, `MeleeRescue`, `RateLog`
-- Removed raid mixin layer, `PersistentDataAccess`, zombie-spawn self-tests
-- Dropped redundant `PlayerChangedDimensionEvent` (teleport/dim mixins cover it)
-- Teleport follow-ups trimmed to `5, 15, 40`
+### Melee (same as working 2.12.0)
+- Decode cap raise 64→256 then truncate to 64
+- Handle mixin unlocks only **stale** strike locks, then `processAttackRequest`, then server-side AABB rescue
+- Persistent-data hit-time gate via `PersistentDataAccess` + `CombatEvent.DMZ_LAST_HIT_TARGET_TIME_TAG`
+- No damage redirects / `setHealth` / `ki_damage` rewrites
 
-### Stat reset fix (hardened)
+### Stat reset (hardened, kept from 2.12.1)
 - Record intentional primary writes (public setters + `setAttributeBaseValue`), including 0
-- On `resetPlayerProgress`: cancel delayed repairs, clear snapshot, suppress restore (~10s)
+- On `resetPlayerProgress`: cancel delayed teleport follow-ups, clear snapshot, suppress restore (~10s)
 - Full resets force a zero snapshot; percentage resets adopt live post-reset values
-- Read-side STR fallback / tick ensure skip while suppress is active
+
+### Master shadow dummies
+- Popo `actionId=1` shadow-clone spawn is cancelled server-side
+- Player minigame `SummonPlayerShadowDummyC2S` is unchanged
 
 ### Install
 
-1. Only **2.12.1** in `mods/`
+1. Only **2.12.2** in `mods/`
 2. Delete older `dmz_mohist_melee_fix-*.jar`
-3. Restart — log: `v2.12.1` + `RESET SELFTEST PASS`
+3. Restart — log: `v2.12.2`

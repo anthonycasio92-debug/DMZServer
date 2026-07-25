@@ -1,18 +1,28 @@
 package com.dbzlegacy.mohistmelee;
 
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+/**
+ * Mohist + DMZ M1 fix without damage redirects:
+ * <ul>
+ *   <li>Repair collapsed Forge ENTITY_REACH</li>
+ *   <li>Clear stale strikeLocked that eats CombatAttackRequest packets</li>
+ *   <li>Leave vanilla ServerPlayer.attack intact (NPCs die normally)</li>
+ * </ul>
+ */
 @Mod(DmzMohistMeleeFix.MOD_ID)
 public final class DmzMohistMeleeFix {
     public static final String MOD_ID = "dmz_mohist_melee_fix";
+    private static final Logger LOGGER = LogManager.getLogger(MOD_ID);
 
     public DmzMohistMeleeFix() {
-        MinecraftForge.EVENT_BUS.register(new RepairEvents());
-        ResetSelfTest.registerIfEnabled();
-        RateLog.logger().info(
-                "[{}] v2.12.1: optimized 2.11.0-fixed layout + hardened intentional DMZ stat-reset adopt",
+        LOGGER.info(
+                "[{}] v2.12.2: restore proven M1 rescue + hardened resets; master shadow dummies disabled",
                 MOD_ID
         );
+        ReachRepairEvents.register();
+        MeleeFixSelfTest.registerIfEnabled();
     }
 }

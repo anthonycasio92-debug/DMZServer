@@ -4,40 +4,40 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.12.1"
+version = "2.12.2"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
-Optimized layout (2.11.0-fixed cleanup) with hardened 2.12 intentional DMZ stat-reset handling.
-
-- Combined repair into CombatRepair / RepairEvents / MeleeRescue / RateLog
-- Removed raid mixin layer, PersistentDataAccess, zombie spawn self-tests, redundant dim event
-- Teleport follow-ups: 5, 15, 40
-- resetPlayerProgress / setStrength(0) update the primary snapshot so restore cannot resurrect old STR
-
-Drop-in same modid. No ki_damage redirects.
+Fixes M1 animation-with-no-hit after world changes (empty/stale entity ID rescue),
+clamps >64 ID packets, Shurui raid unlock, respawn-like attribute recovery.
+Intentional DMZ stat resets update/clear the primary snapshot so restore cannot
+resurrect old STR/etc. Master Popo shadow-dummy sparring is disabled.
+No ki_damage writes / damage redirects.
 '''
 
 [[mixins]]
 config = "dmz_mohist_melee_fix.mixins.json"
 
-[[dependencies.dmz_mohist_melee_fix]]
-    modId = "forge"
-    mandatory = true
-    versionRange = "[47,)"
-    ordering = "NONE"
-    side = "BOTH"
+[[mixins]]
+config = "dmz_mohist_melee_fix.raid.mixins.json"
 
 [[dependencies.dmz_mohist_melee_fix]]
-    modId = "minecraft"
-    mandatory = true
-    versionRange = "[1.20.1,1.21)"
-    ordering = "NONE"
-    side = "BOTH"
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
 
 [[dependencies.dmz_mohist_melee_fix]]
-    modId = "dragonminez"
-    mandatory = true
-    versionRange = "[2.1,)"
-    ordering = "AFTER"
-    side = "BOTH"
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.20.2)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.dmz_mohist_melee_fix]]
+modId = "dragonminez"
+mandatory = true
+versionRange = "[2.1,)"
+ordering = "AFTER"
+side = "BOTH"
