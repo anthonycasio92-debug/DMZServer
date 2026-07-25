@@ -15,20 +15,21 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Jar fact (DragonMineZ 2.1.3):
+ * Server-side disables for selected DMZ master NPC actions (DragonMineZ 2.1.3 jar):
  * <ul>
- *   <li>Only {@code NPCActionC2S} + {@code SummonPlayerShadowDummyC2S} create ShadowDummyEntity</li>
- *   <li>Master spar from <b>any</b> master/quest-NPC training UI sends
- *       {@code new NPCActionC2S("popo", 1)} (MasterTextScreen + QuestNPCDialogueScreen)</li>
- *   <li>Server treats that as shadow-spar: {@code isAnyMasterInRange()} then {@code handlePopo(actionId=1)}</li>
- *   <li>Player minigame uses {@code SummonPlayerShadowDummyC2S} (left alone)</li>
+ *   <li>Master shadow spar: every master UI sends {@code NPCActionC2S("popo", 1)} →
+ *       {@code isAnyMasterInRange} → {@code handlePopo(1)}. Player minigame summons untouched.</li>
+ *   <li>Guru potential unlock: {@code NPCActionC2S("guru", 1)} → {@code handleGuru(1)} →
+ *       {@code Skills.addSkillLevel("potentialunlock", 1)}. Other skill sources untouched.</li>
  * </ul>
  */
 @Mixin(value = NPCActionC2S.class, remap = false)
-public abstract class NpcActionShadowDummyBlockMixin {
+public abstract class NpcActionDisableMixin {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
-    private static final String BLOCK_MSG =
+    private static final String MSG_SHADOW =
             "\u00A7cMaster shadow dummy sparring is disabled on this server.";
+    private static final String MSG_GURU_POTENTIAL =
+            "\u00A7cGuru potential unlock is disabled on this server.";
 
     @Shadow
     @Final
@@ -38,21 +39,26 @@ public abstract class NpcActionShadowDummyBlockMixin {
     @Final
     private int actionId;
 
-    /** Protocol entry used by every master UI that offers shadow spar. */
     @Inject(method = "lambda$handle$0", at = @At("HEAD"), cancellable = true, remap = false)
-    private static void dbzlegacy$blockMasterShadowSparProtocol(
+    private static void dbzlegacy$blockDisabledNpcActions(
             NPCActionC2S packet,
             ServerPlayer player,
             StatsData stats,
             CallbackInfo ci
     ) {
-        if (packet == null || !isMasterShadowSparPacket(packet)) {
+        if (packet == null) {
             return;
         }
-        deny(player, ci, "protocol");
+        NpcActionDisableMixin self = (NpcActionDisableMixin) (Object) packet;
+        if (self.actionId == 1 && "popo".equals(self.npcName)) {
+            deny(player, ci, MSG_SHADOW, "shadow-protocol");
+            return;
+        }
+        if (self.actionId == 1 && "guru".equals(self.npcName)) {
+            deny(player, ci, MSG_GURU_POTENTIAL, "guru-potential-protocol");
+        }
     }
 
-    /** Spawn body — backup if the protocol inject misses a remap/name change. */
     @Inject(method = "handlePopo", at = @At("HEAD"), cancellable = true, remap = false)
     private static void dbzlegacy$blockMasterShadowDummySpawn(
             ServerPlayer player,
@@ -63,15 +69,23 @@ public abstract class NpcActionShadowDummyBlockMixin {
         if (actionId != 1) {
             return;
         }
-        deny(player, ci, "handlePopo");
+        deny(player, ci, MSG_SHADOW, "handlePopo");
     }
 
-    private static boolean isMasterShadowSparPacket(NPCActionC2S packet) {
-        NpcActionShadowDummyBlockMixin self = (NpcActionShadowDummyBlockMixin) (Object) packet;
-        return self.actionId == 1 && "popo".equals(self.npcName);
+    @Inject(method = "handleGuru", at = @At("HEAD"), cancellable = true, remap = false)
+    private static void dbzlegacy$blockGuruPotentialUnlock(
+            ServerPlayer player,
+            StatsData stats,
+            int actionId,
+            CallbackInfo ci
+    ) {
+        if (actionId != 1) {
+            return;
+        }
+        deny(player, ci, MSG_GURU_POTENTIAL, "handleGuru");
     }
 
-    private static void deny(ServerPlayer player, CallbackInfo ci, String where) {
+    private static void deny(ServerPlayer player, CallbackInfo ci, String message, String where) {
         ci.cancel();
         if (player == null) {
             return;
@@ -79,13 +93,13 @@ public abstract class NpcActionShadowDummyBlockMixin {
         try {
             Class<?> component = Class.forName("net.minecraft.network.chat.Component");
             Method literal = component.getMethod("m_237113_", String.class);
-            Object msg = literal.invoke(null, BLOCK_MSG);
+            Object msg = literal.invoke(null, message);
             Method send = ServerPlayer.class.getMethod("m_5661_", component, boolean.class);
             send.invoke(player, msg, true);
         } catch (Throwable ignored) {
         }
         LOGGER.info(
-                "[{}] blocked master shadow dummy ({}) for {}",
+                "[{}] blocked NPC action ({}) for {}",
                 DmzMohistMeleeFix.MOD_ID,
                 where,
                 player.m_36316_().getName()

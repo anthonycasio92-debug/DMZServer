@@ -14,7 +14,7 @@
     "StatsPrimaryAttrMixin",
     "StatsSetPrimaryMixin",
     "StatsDataResetMixin",
-    "NpcActionShadowDummyBlockMixin",
+    "NpcActionDisableMixin",
     "FixVanillaEventsNaNMixin",
     "CombatEventHurtSanitizeMixin"
   ],
