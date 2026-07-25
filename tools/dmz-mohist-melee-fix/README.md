@@ -1,7 +1,7 @@
 # DMZ Mohist Melee Fix
 
-**v2.12.2** — restore proven M1 rescue from 2.12.0, keep hardened intentional resets, disable master Popo shadow dummies
+**v2.12.3** — proven M1 rescue, hardened resets, block master shadow spar from every master UI
 
-Jar: `mods/dmz_mohist_melee_fix-2.12.2.jar`
+Jar: `mods/dmz_mohist_melee_fix-2.12.3.jar`
 
 Build: `./tools/dmz-mohist-melee-fix/build.sh`

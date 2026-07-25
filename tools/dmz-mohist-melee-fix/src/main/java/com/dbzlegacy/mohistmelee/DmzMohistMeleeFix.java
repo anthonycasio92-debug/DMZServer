@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.2: restore proven M1 rescue + hardened resets; master shadow dummies disabled",
+                "[{}] v2.12.3: restore proven M1 rescue + hardened resets; all-master shadow spar disabled",
                 MOD_ID
         );
         ReachRepairEvents.register();
