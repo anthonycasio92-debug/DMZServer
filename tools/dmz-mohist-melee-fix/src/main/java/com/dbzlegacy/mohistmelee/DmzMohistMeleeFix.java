@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.5: M1 rescue + hardened resets; shadow spar / Guru potential / Gero android disabled",
+                "[{}] v2.12.6: M1 rescue + NPC disables; Old Kai challenge skips Precision (client mixin)",
                 MOD_ID
         );
         ReachRepairEvents.register();

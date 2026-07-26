@@ -18,7 +18,9 @@
     "FixVanillaEventsNaNMixin",
     "CombatEventHurtSanitizeMixin"
   ],
-  "client": [],
+  "client": [
+    "UltimateChallengeNoPrecisionMixin"
+  ],
   "server": [],
   "injectors": {
     "defaultRequire": 1

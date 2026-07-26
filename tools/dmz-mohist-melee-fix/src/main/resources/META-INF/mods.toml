@@ -4,7 +4,7 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.12.5"
+version = "2.12.6"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
@@ -13,7 +13,8 @@ clamps >64 ID packets, Shurui raid unlock, respawn-like attribute recovery.
 Intentional DMZ stat resets update/clear the primary snapshot so restore cannot
 resurrect old STR/etc. Master shadow-dummy sparring (NPCAction popo/1), Guru potential unlock
 (NPCAction guru/1), and Dr. Gero android conversion (NPCAction gero/1)
-are disabled.
+are disabled. Old Kai UltimateChallenge skips Precision (client mixin —
+install this jar on clients too).
 No ki_damage writes / damage redirects.
 '''
 
