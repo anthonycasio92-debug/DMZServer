@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.6: M1 rescue + NPC disables; Old Kai challenge skips Precision (client mixin)",
+                "[{}] v2.12.7: M1 rescue + NPC disables; priceless (-1) skills stay unbuyable; Old Kai skips Precision",
                 MOD_ID
         );
         ReachRepairEvents.register();

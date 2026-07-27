@@ -15,6 +15,7 @@
     "StatsSetPrimaryMixin",
     "StatsDataResetMixin",
     "NpcActionDisableMixin",
+    "UpdateSkillPricelessMixin",
     "FixVanillaEventsNaNMixin",
     "CombatEventHurtSanitizeMixin"
   ],

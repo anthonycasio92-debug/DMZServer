@@ -1,10 +1,10 @@
 # Mohist M1: animation but no damage
 
-## Fix v2.12.6
+## Fix v2.12.7
 
-`mods/dmz_mohist_melee_fix-2.12.6.jar`
+`mods/dmz_mohist_melee_fix-2.12.7.jar`
 
-https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.12.6.jar
+https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.12.7.jar
 
 Restores the proven **2.12.0** melee rescue path (`ServerMeleeFallback` + conservative strike unlock). **2.12.1** regressed punches by clearing strike maps / charge flags / syncing on every M1 packet.
 
@@ -24,6 +24,11 @@ Restores the proven **2.12.0** melee rescue path (`ServerMeleeFallback` + conser
 - **Guru potential unlock:** `NPCActionC2S("guru", 1)` cancelled.
 - **Dr. Gero android conversion:** `NPCActionC2S("gero", 1)` / `handleGero` cancelled.
 
+### Priceless skills stay unbuyable (server)
+- DMZ `UpdateSkillC2S.computeTpCost` does `Math.max(0, cost)`, so config `-1` (UI “Priceless”) became free
+- SDU stack-skill double-click (Ultimate / Kaioken) does the same client clamp
+- Mixin restores negative costs after compute so purchase/upgrade is rejected
+
 ### Old Kai UltimateChallenge (client)
 - Hardcoded stages: Control → Gravity → Memory → **Precision** → Rhythm
 - Client mixin drops Precision → Control → Gravity → Memory → Rhythm (still level 5 each)
@@ -31,6 +36,6 @@ Restores the proven **2.12.0** melee rescue path (`ServerMeleeFallback` + conser
 
 ### Install
 
-1. Only **2.12.6** in server `mods/` **and** client/modpack `mods/`
+1. Only **2.12.7** in server `mods/` **and** client/modpack `mods/`
 2. Delete older `dmz_mohist_melee_fix-*.jar`
-3. Restart — server log: `v2.12.6`; client log once: `skipping Precision stage`
+3. Restart — server log: `v2.12.7`; client log once: `skipping Precision stage`
