@@ -32,9 +32,9 @@
       "buyFromMaster": false,
       "prices": [
         -1,
-        42000,
-        65000,
-        104000
+        75000,
+        200000,
+        500000
       ]
     },
     "legendaryforms": {

@@ -34,9 +34,9 @@
       "buyFromMaster": false,
       "prices": [
         -1,
-        42000,
-        65000,
-        104000
+        75000,
+        200000,
+        500000
       ]
     },
     "legendaryforms": {
@@ -50,8 +50,8 @@
     "androidforms": {
       "buyFromMaster": false,
       "prices": [
-        50000,
-        50000
+        100000,
+        350000
       ]
     },
     "droid_gforms": {
