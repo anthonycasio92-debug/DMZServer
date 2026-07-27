@@ -15,13 +15,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * {@code StatsData.resetPlayerProgress} sets primaries to 0 (or a %). Our snapshot/restore
  * must not treat that like a Mohist dim-wipe and put the old stats back.
- * Cancel delayed teleport follow-ups, suppress restore, and adopt/force-zero the snapshot.
+ * <p>
+ * Also: vanilla DMZ {@code Status.reset()} clears {@code hasCreatedCharacter}. After sync the
+ * client reopens race selection; recreating the character wipes skills/forms/level. Preserve the
+ * flag across reset so {@code keepSkills}/percentage resets stay usable.
  */
 @Mixin(value = StatsData.class, remap = false)
 public abstract class StatsDataResetMixin {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
     private static final AtomicInteger LOGS = new AtomicInteger();
     private static final int SUPPRESS_TICKS = 200;
+    private static final ThreadLocal<Boolean> HAD_CREATED_CHARACTER = new ThreadLocal<>();
 
     @Inject(method = "resetPlayerProgress", at = @At("HEAD"), remap = false)
     private void dbzlegacy$suppressBeforeReset(
@@ -31,17 +35,27 @@ public abstract class StatsDataResetMixin {
             boolean keepTail,
             CallbackInfo ci
     ) {
-        if (player == null) {
-            return;
+        StatsData self = (StatsData) (Object) this;
+        boolean hadCreated = false;
+        try {
+            hadCreated = self.getStatus() != null && self.getStatus().isHasCreatedCharacter();
+        } catch (Throwable ignored) {
         }
-        PrimaryStatRepair.beginIntentionalReset(player, SUPPRESS_TICKS);
+        HAD_CREATED_CHARACTER.set(hadCreated);
+
+        if (player != null) {
+            PrimaryStatRepair.beginIntentionalReset(player, SUPPRESS_TICKS);
+        }
         int n = LOGS.incrementAndGet();
         if (n <= 40) {
+            String name = player != null ? player.m_36316_().getName() : "?";
             LOGGER.info(
-                    "[{}] stat reset: cleared primary snapshot player={} keepPercent={}",
+                    "[{}] stat reset: player={} keepPercent={} keepSkills={} hadCreatedChar={}",
                     DmzMohistMeleeFix.MOD_ID,
-                    player.m_36316_().getName(),
-                    keepPercent
+                    name,
+                    keepPercent,
+                    keepSkills,
+                    hadCreated
             );
         }
     }
@@ -54,9 +68,25 @@ public abstract class StatsDataResetMixin {
             boolean keepTail,
             CallbackInfo ci
     ) {
-        if (player == null) {
-            return;
+        StatsData self = (StatsData) (Object) this;
+        Boolean hadCreated = HAD_CREATED_CHARACTER.get();
+        HAD_CREATED_CHARACTER.remove();
+        if (Boolean.TRUE.equals(hadCreated)) {
+            try {
+                // DMZ Status.reset() always clears this; restore so keepSkills/forms survive.
+                self.getStatus().setHasCreatedCharacter(true);
+            } catch (Throwable t) {
+                if (LOGS.get() < 5) {
+                    LOGGER.warn(
+                            "[{}] failed to restore hasCreatedCharacter: {}",
+                            DmzMohistMeleeFix.MOD_ID,
+                            t.toString()
+                    );
+                }
+            }
         }
-        PrimaryStatRepair.endIntentionalReset(player, keepPercent, SUPPRESS_TICKS);
+        if (player != null) {
+            PrimaryStatRepair.endIntentionalReset(player, keepPercent, SUPPRESS_TICKS);
+        }
     }
 }

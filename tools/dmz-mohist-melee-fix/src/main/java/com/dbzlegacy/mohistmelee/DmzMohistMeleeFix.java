@@ -19,10 +19,11 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.7: M1 rescue + NPC disables; priceless (-1) skills stay unbuyable; Old Kai skips Precision",
+                "[{}] v2.12.8: M1 rescue + reset keepSkills/keepPercentage fix (preserve character + self /dmzstats reset <%> [true])",
                 MOD_ID
         );
         ReachRepairEvents.register();
+        StatsResetCommands.register();
         MeleeFixSelfTest.registerIfEnabled();
     }
 }

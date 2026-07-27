@@ -31,9 +31,6 @@ public abstract class StatsPrimaryAttrMixin {
             int fallback,
             CallbackInfoReturnable<Integer> cir
     ) {
-        if (PrimaryStatRepair.isSuppressed(this.player)) {
-            return;
-        }
         int live = cir.getReturnValueI();
         if (live > 0) {
             return;
@@ -42,8 +39,11 @@ public abstract class StatsPrimaryAttrMixin {
         if (saved <= 0) {
             return;
         }
+        // Always allow read-side fallback (needed for percentage reset math when live is 0).
         cir.setReturnValue(saved);
-        // Best-effort write-back so other systems see the restored base too.
-        PrimaryStatRepair.restore(this.player, "stats-read");
+        // Write-back restore stays blocked during intentional reset suppress windows.
+        if (!PrimaryStatRepair.isSuppressed(this.player)) {
+            PrimaryStatRepair.restore(this.player, "stats-read");
+        }
     }
 }

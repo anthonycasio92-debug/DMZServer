@@ -4,18 +4,17 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.12.7"
+version = "2.12.8"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
 Fixes M1 animation-with-no-hit after world changes (empty/stale entity ID rescue),
 clamps >64 ID packets, Shurui raid unlock, respawn-like attribute recovery.
 Intentional DMZ stat resets update/clear the primary snapshot so restore cannot
-resurrect old STR/etc. Master shadow-dummy sparring (NPCAction popo/1), Guru potential unlock
-(NPCAction guru/1), and Dr. Gero android conversion (NPCAction gero/1)
-are disabled. Priceless skill costs (-1), including stack skills like Ultimate,
-stay unbuyable (DMZ/SDU otherwise clamp -1 to free). Old Kai UltimateChallenge
-skips Precision (client mixin — install this jar on clients too).
+resurrect old STR/etc. Preserves hasCreatedCharacter on reset (DMZ Status.reset
+cleared it, forcing race re-create and wiping skills). Adds self
+/dmzstats reset <keepPercentage> [keepSkills]. Master NPC disables, priceless
+(-1) skill costs, Old Kai skips Precision (client mixin too).
 No ki_damage writes / damage redirects.
 '''
 

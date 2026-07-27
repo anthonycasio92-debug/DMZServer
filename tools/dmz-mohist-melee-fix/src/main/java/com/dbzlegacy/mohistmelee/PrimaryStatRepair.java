@@ -241,9 +241,13 @@ public final class PrimaryStatRepair {
         return restore(player, reason);
     }
 
-    /** Last-known-good base for a primary attribute, or 0 if none / suppressed. */
+    /**
+     * Last-known-good base for a primary attribute, or 0 if none.
+     * Readable even while restore is suppressed — percentage resets need accurate
+     * pre-reset values when live attribute bases are briefly 0/missing.
+     */
     public static int savedFor(Player player, Attribute attribute) {
-        if (player == null || attribute == null || isSuppressed(player)) {
+        if (player == null || attribute == null) {
             return 0;
         }
         int[] saved = SNAPSHOTS.get(player.m_20148_());
@@ -270,8 +274,12 @@ public final class PrimaryStatRepair {
     }
 
     /**
-     * Start an intentional DMZ reset: cancel delayed teleport repairs, clear snapshot,
-     * and suppress restore/read-fallback for {@code suppressTicks}.
+     * Start an intentional DMZ reset: cancel delayed teleport repairs and suppress
+     * write-back restore for {@code suppressTicks}.
+     * <p>
+     * Keeps the existing snapshot so percentage resets can still read last-known
+     * primaries if Mohist briefly reports 0 during {@code getStrength()} etc.
+     * {@link #endIntentionalReset} adopts/zeros the snapshot after DMZ finishes.
      */
     public static void beginIntentionalReset(Player player, int suppressTicks) {
         if (player == null) {
@@ -280,7 +288,30 @@ public final class PrimaryStatRepair {
         if (player instanceof ServerPlayer sp) {
             CombatUnlock.cancelFollowups(sp);
         }
-        clear(player.m_20148_());
+        // Capture current live bases before DMZ mutates them (ignore suppress).
+        try {
+            int[] next = new int[ATTRS.length];
+            boolean any = false;
+            for (int i = 0; i < ATTRS.length; i++) {
+                Attribute attr = ATTRS[i].get();
+                if (attr == null) {
+                    continue;
+                }
+                AttributeInstance inst = player.m_21051_(attr);
+                if (inst == null) {
+                    continue;
+                }
+                double base = inst.m_22115_();
+                if (Double.isFinite(base) && base > 0.0D) {
+                    next[i] = (int) Math.round(base);
+                    any = true;
+                }
+            }
+            if (any) {
+                SNAPSHOTS.put(player.m_20148_(), next);
+            }
+        } catch (Throwable ignored) {
+        }
         suppressRestore(player, suppressTicks);
     }
 
