@@ -28,6 +28,15 @@
   "defaultEye2Color": "#F06F6E",
   "defaultAuraColor": "#1AA700",
   "formSkillsCosts": {
+    "superforms": {
+      "buyFromMaster": false,
+      "prices": [
+        -1,
+        42000,
+        65000,
+        104000
+      ]
+    },
     "legendaryforms": {
       "buyFromMaster": false,
       "prices": [
@@ -41,15 +50,6 @@
       "prices": [
         -1,
         -1
-      ]
-    },
-    "superforms": {
-      "buyFromMaster": false,
-      "prices": [
-        -1,
-        42000,
-        65000,
-        104000
       ]
     },
     "uniquegforms": {

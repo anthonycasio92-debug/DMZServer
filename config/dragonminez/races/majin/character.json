@@ -32,21 +32,6 @@
   "defaultEye2Color": "#B40000",
   "defaultAuraColor": "#FF6DFF",
   "formSkillsCosts": {
-    "legendaryforms": {
-      "buyFromMaster": false,
-      "prices": [
-        -1,
-        -1,
-        -1
-      ]
-    },
-    "godforms": {
-      "buyFromMaster": false,
-      "prices": [
-        -1,
-        -1
-      ]
-    },
     "superforms": {
       "buyFromMaster": false,
       "prices": [
@@ -56,15 +41,15 @@
         114000
       ]
     },
-    "androidforms": {
+    "legendaryforms": {
       "buyFromMaster": false,
       "prices": [
-        1000,
-        5000,
-        5000
+        -1,
+        -1,
+        -1
       ]
     },
-    "uniquegforms": {
+    "godforms": {
       "buyFromMaster": false,
       "prices": [
         -1,

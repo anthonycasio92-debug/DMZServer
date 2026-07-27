@@ -1,5 +1,5 @@
 {
-  "configVersion": "2.1.2",
+  "configVersion": "2.1.3",
   "kiSkills": [
     "spiritbomb",
     "supernova",
@@ -27,8 +27,9 @@
     "legendaryforms",
     "godforms",
     "androidforms",
-    "ultrainstinct",
-    "ultraego"
+    "uniquegforms",
+    "droid_gforms",
+    "salt"
   ],
   "stackSkills": [
     "kaioken",
@@ -147,12 +148,6 @@
     "burning_attack": {
       "costs": [
         -1
-      ],
-      "allowedRaces": []
-    },
-    "ultraego": {
-      "costs": [
-        100000
       ],
       "allowedRaces": []
     },
@@ -427,12 +422,6 @@
       ],
       "allowedRaces": []
     },
-    "ultrainstinct": {
-      "costs": [
-        100000
-      ],
-      "allowedRaces": []
-    },
     "kisense": {
       "costs": [
         -1,
@@ -457,6 +446,18 @@
     "masenko": {
       "costs": [
         -1
+      ],
+      "allowedRaces": []
+    },
+    "ultraego": {
+      "costs": [
+        100000
+      ],
+      "allowedRaces": []
+    },
+    "ultrainstinct": {
+      "costs": [
+        100000
       ],
       "allowedRaces": []
     }
