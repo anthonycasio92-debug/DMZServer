@@ -1,5 +1,5 @@
 {
-  "configVersion": "2.1.3",
+  "configVersion": "2.1.2",
   "classes": {
     "cleric": {
       "baseStats": {
@@ -46,16 +46,16 @@
         "ENE": 0
       },
       "statScaling": {
-        "STR_scaling": 3.4,
-        "SKP_scaling": 2.0,
-        "STM_scaling": 2.6,
-        "DEF_scaling": 0.44,
-        "VIT_scaling": 3.8,
-        "PWR_scaling": 0.0,
+        "STR_scaling": 1.6,
+        "SKP_scaling": 1.0,
+        "STM_scaling": 1.6,
+        "DEF_scaling": 0.24,
+        "VIT_scaling": 1.8,
+        "PWR_scaling": 0.3,
         "ENE_scaling": 1.2
       },
       "baseHp5": 1.75,
-      "hp5VitScaling": 0.05,
+      "hp5VitScaling": 0.06,
       "baseEp5": 4.0,
       "ep5EneScaling": 0.08,
       "baseSp5": 12.0,
@@ -84,12 +84,12 @@
         "ENE": 0
       },
       "statScaling": {
-        "STR_scaling": 4.2,
-        "SKP_scaling": 1.2,
-        "STM_scaling": 3.1,
-        "DEF_scaling": 0.38,
-        "VIT_scaling": 4.0,
-        "PWR_scaling": 0.0,
+        "STR_scaling": 1.9,
+        "SKP_scaling": 0.8,
+        "STM_scaling": 1.1,
+        "DEF_scaling": 0.18,
+        "VIT_scaling": 3.0,
+        "PWR_scaling": 0.2,
         "ENE_scaling": 1.1
       },
       "baseHp5": 1.0,
@@ -157,12 +157,12 @@
         "ENE": 0
       },
       "statScaling": {
-        "STR_scaling": 1.8,
-        "SKP_scaling": 3.8,
-        "STM_scaling": 3.3,
-        "DEF_scaling": 0.38,
-        "VIT_scaling": 3.2,
-        "PWR_scaling": 0.0,
+        "STR_scaling": 1.0,
+        "SKP_scaling": 1.8,
+        "STM_scaling": 1.3,
+        "DEF_scaling": 0.18,
+        "VIT_scaling": 2.2,
+        "PWR_scaling": 0.6,
         "ENE_scaling": 1.3
       },
       "baseHp5": 1.5,
@@ -226,18 +226,18 @@
         "ENE": 0
       },
       "statScaling": {
-        "STR_scaling": 1.6,
-        "SKP_scaling": 1.6,
-        "STM_scaling": 2.5,
-        "DEF_scaling": 0.584,
-        "VIT_scaling": 6.5,
-        "PWR_scaling": 0.0,
-        "ENE_scaling": 0.6
+        "STR_scaling": 0.8,
+        "SKP_scaling": 0.7,
+        "STM_scaling": 1.5,
+        "DEF_scaling": 0.28,
+        "VIT_scaling": 2.5,
+        "PWR_scaling": 0.5,
+        "ENE_scaling": 0.8
       },
       "baseHp5": 2.25,
       "hp5VitScaling": 0.075,
       "baseEp5": 5.0,
-      "ep5EneScaling": 0.2,
+      "ep5EneScaling": 0.1,
       "baseSp5": 9.0,
       "sp5StmScaling": 0.09,
       "tpCostMultiplier": 1.0,
