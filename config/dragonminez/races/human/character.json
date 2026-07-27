@@ -1,9 +1,9 @@
 {
-  "configVersion": "2.1.2",
+  "configVersion": "2.1.3",
   "raceName": "human",
   "hasGender": true,
   "useVanillaSkin": true,
-  "customModel": "",
+  "customModel": "human",
   "isLayered": true,
   "headBones": [
     "hair"
@@ -40,12 +40,15 @@
     },
     "godforms": {
       "buyFromMaster": false,
-      "prices": []
+      "prices": [
+        -1,
+        -1
+      ]
     },
     "superforms": {
       "buyFromMaster": false,
       "prices": [
-        21000,
+        -1,
         42000,
         65000,
         104000
@@ -54,8 +57,22 @@
     "androidforms": {
       "buyFromMaster": false,
       "prices": [
-        42000,
-        104000
+        100000,
+        300000
+      ]
+    },
+    "uniquegforms": {
+      "buyFromMaster": false,
+      "prices": [
+        -1,
+        -1
+      ]
+    },
+    "droid_gforms": {
+      "buyFromMaster": false,
+      "prices": [
+        -1,
+        -1
       ]
     }
   }

@@ -1,12 +1,12 @@
 {
-  "configVersion": "2.1.2",
+  "configVersion": "2.1.3",
   "raceName": "bioandroid",
   "hasGender": false,
   "useVanillaSkin": false,
-  "customModel": "",
+  "customModel": "bioandroid",
   "isLayered": true,
   "headBones": [],
-  "racialSkill": "bioandroid",
+  "racialSkill": "biostockpiling",
   "hasSaiyanTail": false,
   "auraType": "kakarot",
   "defaultModelScaling": [
@@ -38,15 +38,25 @@
     },
     "godforms": {
       "buyFromMaster": false,
-      "prices": []
+      "prices": [
+        -1,
+        -1
+      ]
     },
     "superforms": {
       "buyFromMaster": false,
       "prices": [
-        26000,
-        57000,
-        88000,
-        125000
+        -1,
+        42000,
+        65000,
+        104000
+      ]
+    },
+    "uniquegforms": {
+      "buyFromMaster": false,
+      "prices": [
+        -1,
+        -1
       ]
     }
   }

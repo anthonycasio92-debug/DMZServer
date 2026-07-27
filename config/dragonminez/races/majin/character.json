@@ -1,5 +1,5 @@
 {
-  "configVersion": "2.1.2",
+  "configVersion": "2.1.3",
   "raceName": "majin",
   "hasGender": true,
   "useVanillaSkin": false,
@@ -42,15 +42,33 @@
     },
     "godforms": {
       "buyFromMaster": false,
-      "prices": []
+      "prices": [
+        -1,
+        -1
+      ]
     },
     "superforms": {
       "buyFromMaster": false,
       "prices": [
-        23000,
+        -1,
         47000,
         78000,
         114000
+      ]
+    },
+    "androidforms": {
+      "buyFromMaster": false,
+      "prices": [
+        1000,
+        5000,
+        5000
+      ]
+    },
+    "uniquegforms": {
+      "buyFromMaster": false,
+      "prices": [
+        -1,
+        -1
       ]
     }
   }

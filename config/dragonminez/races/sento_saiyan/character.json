@@ -1,0 +1,63 @@
+{
+  "configVersion": "2.1.3",
+  "raceName": "sento_saiyan",
+  "hasGender": true,
+  "useVanillaSkin": true,
+  "customModel": "saiyan",
+  "isLayered": true,
+  "headBones": [
+    "hair"
+  ],
+  "racialSkill": "sento_saiyan",
+  "hasSaiyanTail": true,
+  "auraType": "kakarot",
+  "defaultModelScaling": [
+    0.9375,
+    0.9375,
+    0.9375
+  ],
+  "defaultBodyType": 0,
+  "defaultHairType": 0,
+  "defaultEyesType": 0,
+  "defaultNoseType": 0,
+  "defaultMouthType": 0,
+  "defaultTattooType": 0,
+  "defaultBodyColor": "#FFD3C9",
+  "defaultBodyColor2": "#FFCE43",
+  "defaultBodyColor3": "#FFD3C9",
+  "defaultHairColor": "#FFFFFF",
+  "defaultEye1Color": "#222629",
+  "defaultEye2Color": "#222629",
+  "defaultAuraColor": "#7FFFFF",
+  "auraWidth": 1.0,
+  "auraHeight": 1.0,
+  "formSkillsCosts": {
+    "superforms": [
+      -1,
+      10000000,
+      100000000,
+      -1,
+      1000000000
+    ],
+    "brilliance": [
+      -1,
+      5000000
+    ],
+
+    "darkness": [
+      -1,
+      5000000
+    ],
+    "godforms": {
+      "buyFromMaster": false,
+      "prices": [
+        -1,
+        -1
+      ]
+    }
+  },
+  "sduDisplayName": "&eSento Saiyan",
+  "sduDescription": "A saiyan race that evolved on a hot water planet",
+  "sduRacialName": "&eAncestral Lineage",
+  "sduRacialDesc": "Your race survived for centuries in harsh conditions, causing you to adapt to most physical phenomena"
+}
