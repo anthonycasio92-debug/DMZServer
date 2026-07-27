@@ -12,9 +12,9 @@
   "hasSaiyanTail": false,
   "auraType": "kakarot",
   "defaultModelScaling": [
-    0.9375,
-    0.9375,
-    0.9375
+    1.0,
+    1.0,
+    1.0
   ],
   "defaultBodyType": 0,
   "defaultHairType": 1,
@@ -25,10 +25,10 @@
   "defaultBodyColor": "#FFD3C9",
   "defaultBodyColor2": "#FFD3C9",
   "defaultBodyColor3": "#FFD3C9",
-  "defaultHairColor": "#222629",
-  "defaultEye1Color": "#222629",
-  "defaultEye2Color": "#222629",
-  "defaultAuraColor": "#7FFFFF",
+  "defaultHairColor": "#1C1917",
+  "defaultEye1Color": "#1C1917",
+  "defaultEye2Color": "#1C1917",
+  "defaultAuraColor": "#B91C1C",
   "formSkillsCosts": {
     "superforms": {
       "buyFromMaster": false,
