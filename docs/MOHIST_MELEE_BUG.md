@@ -1,15 +1,18 @@
 # Mohist M1: animation but no damage
 
-## Fix v2.12.9
+## Fix v2.12.10
 
-`mods/dmz_mohist_melee_fix-2.12.9.jar`
+`mods/dmz_mohist_melee_fix-2.12.10.jar`
 
-https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.12.9.jar
+https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.12.10.jar
+
+### Instant Transmission to players disabled (2.12.10)
+- Blocks `InstantTransmissionTravelToPlayerC2S` (party + external players)
+- IT menu only lists masters; master teleport still works
 
 ### Stat reset / race selection (2.12.9)
 - Vanilla DMZ clears `hasCreatedCharacter` on every reset → client race select (`forceCharacterCreation`)
-- 2.12.8 wrongly kept that flag; 2.12.9 leaves it to DMZ again
-- Soft `/dmzstats reset 100 true` still keeps stats/% + skills through recreate (DMZ only applies base stats when all primaries are 0, and does not wipe kept skills)
+- Soft `/dmzstats reset 100 true` still keeps stats/% + skills through recreate
 - Percentage snapshot math + self `/dmzstats reset <%> [keepSkills]` still patched
 
 ### Melee (same as working 2.12.0)
@@ -40,8 +43,8 @@ https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-s
 
 ### Install
 
-1. Only **2.12.9** in server `mods/` **and** client/modpack `mods/`
+1. Only **2.12.10** in server `mods/` (client too if using Precision skip)
 2. Delete older `dmz_mohist_melee_fix-*.jar`
-3. Restart — server log: `v2.12.9`; client log once: `skipping Precision stage`
+3. Restart — server log: `v2.12.10`
 4. Full reset → race select: `/dmzstats reset` (requires `gameplay.forceCharacterCreation=true`)
 5. Soft-reset example: `/dmzstats reset 100 true` (self) or `/dmzstats reset <player> 100 true`

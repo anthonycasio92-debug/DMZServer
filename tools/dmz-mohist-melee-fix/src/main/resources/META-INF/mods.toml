@@ -4,7 +4,7 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.12.9"
+version = "2.12.10"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
@@ -14,8 +14,9 @@ Intentional DMZ stat resets update/clear the primary snapshot so restore cannot
 resurrect old STR/etc. Does not override hasCreatedCharacter — vanilla DMZ
 clears it so reset reopens race select. Soft keepPercentage/keepSkills still
 work (recreate only applies base stats when primaries are 0). Adds self
-/dmzstats reset <keepPercentage> [keepSkills]. Master NPC disables, priceless
-(-1) skill costs, Old Kai skips Precision (client mixin too).
+/dmzstats reset <keepPercentage> [keepSkills]. Instant Transmission to players
+(party/external) is disabled; master IT still works. Master NPC disables,
+priceless (-1) skill costs, Old Kai skips Precision (client mixin too).
 No ki_damage writes / damage redirects.
 '''
 

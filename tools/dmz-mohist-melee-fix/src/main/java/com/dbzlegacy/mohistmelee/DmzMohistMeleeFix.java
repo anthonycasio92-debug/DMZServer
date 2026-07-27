@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.9: M1 rescue + reset snapshot fix; DMZ hasCreatedCharacter left alone (race select on reset)",
+                "[{}] v2.12.10: M1 rescue + reset snapshot fix; IT-to-player disabled (masters OK)",
                 MOD_ID
         );
         ReachRepairEvents.register();
