@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.8: M1 rescue + reset keepSkills/keepPercentage fix (preserve character + self /dmzstats reset <%> [true])",
+                "[{}] v2.12.9: M1 rescue + reset snapshot fix; DMZ hasCreatedCharacter left alone (race select on reset)",
                 MOD_ID
         );
         ReachRepairEvents.register();
