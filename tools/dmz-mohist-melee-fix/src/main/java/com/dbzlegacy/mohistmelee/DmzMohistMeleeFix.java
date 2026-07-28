@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.12: block priceless form/skill purchase; IT-to-player disabled",
+                "[{}] v2.12.13: block priceless Ultimate/forms (Math.max + handle guard)",
                 MOD_ID
         );
         ReachRepairEvents.register();
