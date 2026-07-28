@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.15: block priceless stack-form spam buys via lambda$handle$0 + computeTpCost",
+                "[{}] v2.12.16: block priceless stack buys (UpdateSkillC2S + SDU BuyStackSkillC2S)",
                 MOD_ID
         );
         ReachRepairEvents.register();

@@ -1,10 +1,10 @@
 # Mohist M1: animation but no damage
 
-## Fix v2.12.15
+## Fix v2.12.16
 
-`mods/dmz_mohist_melee_fix-2.12.15.jar`
+`mods/dmz_mohist_melee_fix-2.12.16.jar`
 
-https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/priceless-stack-spam-fix-c766/mods/dmz_mohist_melee_fix-2.12.15.jar
+https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/priceless-stack-spam-fix-c766/mods/dmz_mohist_melee_fix-2.12.16.jar
 
 ### Skill set maxLevel refresh (2.12.11)
 - `/dmzskill set` refreshes skill `maxLevel` from `skills.json` costs before applying the level
@@ -34,11 +34,12 @@ https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/priceless-stack-spa
 - **Guru potential unlock:** `NPCActionC2S("guru", 1)` cancelled.
 - **Dr. Gero android conversion:** `NPCActionC2S("gero", 1)` / `handleGero` cancelled.
 
-### Priceless skills/forms stay unbuyable (server) — hardened in 2.12.15
-- Cancels `UpdateSkillC2S.lambda$handle$0` for PURCHASE/UPGRADE when configured cost is `-1` (stops SDU spam/double-click free stack-form buys)
-- Preserves negatives in `computeTpCost` (`Math.max(0, -1)` otherwise makes Kaioken/Ultimate free)
+### Priceless skills/forms stay unbuyable (server) — hardened in 2.12.16
+- Cancels DMZ `UpdateSkillC2S.lambda$handle$0` for PURCHASE/UPGRADE when cost is `-1`
+- **SDU 3.0.5+:** also cancels `DmzSkills.buyStackSkill` (own `BuyStackSkillC2S` path that did `Math.max(0, -1)` and free-unlocked stack forms on spam/double-click)
+- Preserves negatives in DMZ `computeTpCost`
 - Guards `Skills.setSkillLevel` / `Skill.addLevel` during menu purchase packets only
-- Log lines: `skill packet purchase/upgrade '…' rawCost=` and `blocked priceless …`
+- Log lines: `blocked priceless …` / `blocked priceless sdu buyStackSkill …`
 
 
 ### Old Kai UltimateChallenge (client)
@@ -48,8 +49,8 @@ https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/priceless-stack-spa
 
 ### Install
 
-1. Only **2.12.15** in server `mods/` (client too if using Precision skip)
+1. Only **2.12.16** in server `mods/` (client too if using Precision skip)
 2. Delete older `dmz_mohist_melee_fix-*.jar`
-3. Restart — server log: `v2.12.15`
+3. Restart — server log: `v2.12.16`
 4. Full reset → race select: `/dmzstats reset` (requires `gameplay.forceCharacterCreation=true`)
 5. Soft-reset example: `/dmzstats reset 100 true` (self) or `/dmzstats reset <player> 100 true`
