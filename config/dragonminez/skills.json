@@ -235,6 +235,7 @@
     },
     "ultimate": {
       "costs": [
+        -1,
         -1
       ],
       "allowedRaces": []
