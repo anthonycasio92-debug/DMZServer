@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.13: block priceless Ultimate/forms (Math.max + handle guard)",
+                "[{}] v2.12.14: block priceless buys via handle enqueueWork + level guards",
                 MOD_ID
         );
         ReachRepairEvents.register();

@@ -18,6 +18,8 @@
     "InstantTransmissionBlockPlayerTravelMixin",
     "InstantTransmissionFilterMenuMixin",
     "UpdateSkillPricelessMixin",
+    "SkillsBlockPricelessLevelMixin",
+    "SkillBlockPricelessAddLevelMixin",
     "SkillsSetSkillLevelMixin",
     "FixVanillaEventsNaNMixin",
     "CombatEventHurtSanitizeMixin"
