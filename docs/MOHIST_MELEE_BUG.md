@@ -6,12 +6,8 @@
 
 https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.12.11.jar
 
-### Beast (Ultimate tier) showing (2.12.11)
-- Beast is a second form in `config/dragonminez/forms/ultimate.json`
-- Unlocks at **Ultimate skill level 1** (same as base Ultimate) — previously gated behind level 2, but Ultimate costs are `-1` (priceless / unbuyable) so level 2 never arrived from the menu
-- `/dmzskill set` now refreshes skill `maxLevel` from `skills.json` costs before applying the level (old NBT max=1 no longer clamps forever)
-- Use: have Ultimate → open stack-form select → pick **Beast**, or transform again while already in Ultimate
-- After pulling configs: `/dmzreload` (or restart)
+### Skill set maxLevel refresh (2.12.11)
+- `/dmzskill set` refreshes skill `maxLevel` from `skills.json` costs before applying the level
 
 ### Instant Transmission to players disabled (2.12.10)
 - Blocks `InstantTransmissionTravelToPlayerC2S` (party + external players)
