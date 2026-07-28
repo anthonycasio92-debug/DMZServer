@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.10: M1 rescue + reset snapshot fix; IT-to-player disabled (masters OK)",
+                "[{}] v2.12.11: skill set refreshes maxLevel; Beast unlock fix; IT-to-player disabled",
                 MOD_ID
         );
         ReachRepairEvents.register();

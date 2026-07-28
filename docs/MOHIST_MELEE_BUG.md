@@ -1,10 +1,17 @@
 # Mohist M1: animation but no damage
 
-## Fix v2.12.10
+## Fix v2.12.11
 
-`mods/dmz_mohist_melee_fix-2.12.10.jar`
+`mods/dmz_mohist_melee_fix-2.12.11.jar`
 
-https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.12.10.jar
+https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.12.11.jar
+
+### Beast (Ultimate tier) showing (2.12.11)
+- Beast is a second form in `config/dragonminez/forms/ultimate.json`
+- Unlocks at **Ultimate skill level 1** (same as base Ultimate) — previously gated behind level 2, but Ultimate costs are `-1` (priceless / unbuyable) so level 2 never arrived from the menu
+- `/dmzskill set` now refreshes skill `maxLevel` from `skills.json` costs before applying the level (old NBT max=1 no longer clamps forever)
+- Use: have Ultimate → open stack-form select → pick **Beast**, or transform again while already in Ultimate
+- After pulling configs: `/dmzreload` (or restart)
 
 ### Instant Transmission to players disabled (2.12.10)
 - Blocks `InstantTransmissionTravelToPlayerC2S` (party + external players)
@@ -43,8 +50,8 @@ https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-s
 
 ### Install
 
-1. Only **2.12.10** in server `mods/` (client too if using Precision skip)
+1. Only **2.12.11** in server `mods/` (client too if using Precision skip)
 2. Delete older `dmz_mohist_melee_fix-*.jar`
-3. Restart — server log: `v2.12.10`
+3. Restart — server log: `v2.12.11`
 4. Full reset → race select: `/dmzstats reset` (requires `gameplay.forceCharacterCreation=true`)
 5. Soft-reset example: `/dmzstats reset 100 true` (self) or `/dmzstats reset <player> 100 true`
