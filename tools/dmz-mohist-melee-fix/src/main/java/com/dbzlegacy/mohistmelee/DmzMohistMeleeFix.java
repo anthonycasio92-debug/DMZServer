@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.11: skill set refreshes maxLevel; IT-to-player disabled (masters OK)",
+                "[{}] v2.12.12: block priceless form/skill purchase; IT-to-player disabled",
                 MOD_ID
         );
         ReachRepairEvents.register();
