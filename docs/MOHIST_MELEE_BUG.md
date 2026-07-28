@@ -1,10 +1,10 @@
 # Mohist M1: animation but no damage
 
-## Fix v2.12.14
+## Fix v2.12.15
 
-`mods/dmz_mohist_melee_fix-2.12.14.jar`
+`mods/dmz_mohist_melee_fix-2.12.15.jar`
 
-https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-setup-c766/mods/dmz_mohist_melee_fix-2.12.14.jar
+https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/priceless-stack-spam-fix-c766/mods/dmz_mohist_melee_fix-2.12.15.jar
 
 ### Skill set maxLevel refresh (2.12.11)
 - `/dmzskill set` refreshes skill `maxLevel` from `skills.json` costs before applying the level
@@ -34,9 +34,9 @@ https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-s
 - **Guru potential unlock:** `NPCActionC2S("guru", 1)` cancelled.
 - **Dr. Gero android conversion:** `NPCActionC2S("gero", 1)` / `handleGero` cancelled.
 
-### Priceless skills/forms stay unbuyable (server) — hardened in 2.12.14
-- Redirects `UpdateSkillC2S.handle` → `enqueueWork` (stable on Mohist) and skips apply when cost is `-1`
-- Also preserves negatives in `computeTpCost` (`Math.max(0, -1)` otherwise makes Ultimate free)
+### Priceless skills/forms stay unbuyable (server) — hardened in 2.12.15
+- Cancels `UpdateSkillC2S.lambda$handle$0` for PURCHASE/UPGRADE when configured cost is `-1` (stops SDU spam/double-click free stack-form buys)
+- Preserves negatives in `computeTpCost` (`Math.max(0, -1)` otherwise makes Kaioken/Ultimate free)
 - Guards `Skills.setSkillLevel` / `Skill.addLevel` during menu purchase packets only
 - Log lines: `skill packet purchase/upgrade '…' rawCost=` and `blocked priceless …`
 
@@ -48,8 +48,8 @@ https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/dragonminez-fresh-s
 
 ### Install
 
-1. Only **2.12.14** in server `mods/` (client too if using Precision skip)
+1. Only **2.12.15** in server `mods/` (client too if using Precision skip)
 2. Delete older `dmz_mohist_melee_fix-*.jar`
-3. Restart — server log: `v2.12.14`
+3. Restart — server log: `v2.12.15`
 4. Full reset → race select: `/dmzstats reset` (requires `gameplay.forceCharacterCreation=true`)
 5. Soft-reset example: `/dmzstats reset 100 true` (self) or `/dmzstats reset <player> 100 true`

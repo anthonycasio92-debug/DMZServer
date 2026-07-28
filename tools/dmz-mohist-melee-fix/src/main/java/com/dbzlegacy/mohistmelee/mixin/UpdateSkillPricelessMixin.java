@@ -4,29 +4,30 @@ import com.dbzlegacy.mohistmelee.DmzMohistMeleeFix;
 import com.dbzlegacy.mohistmelee.PricelessPurchaseGuard;
 import com.dbzlegacy.mohistmelee.SkillTpCostHelper;
 import com.dragonminez.common.network.C2S.UpdateSkillC2S;
-import com.dragonminez.common.stats.StatsCapability;
 import com.dragonminez.common.stats.StatsData;
-import com.dragonminez.common.stats.StatsProvider;
 import com.dragonminez.common.stats.skills.Skill;
-import java.util.concurrent.CompletableFuture;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraftforge.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Block menu/packet purchase of priceless ({@code -1}) skills and forms.
+ * Block menu/packet purchase of priceless ({@code -1}) skills and stack forms.
  * <p>
- * Primary hook redirects {@code handle}'s {@code enqueueWork} (stable method name on Mohist)
- * and skips the original work when the configured cost is priceless. Also preserves negatives
- * in {@code computeTpCost} ({@code Math.max(0, cost)} otherwise turns Ultimate free).
+ * SDU double-click / spam-click sends {@code PURCHASE} with {@code Math.max(0, cost)},
+ * so {@code -1} arrives as free {@code 0}. Vanilla DMZ {@code computeTpCost} also clamps
+ * with {@code Math.max(0, …)}, which would make the server accept that free buy.
+ * <p>
+ * Primary hook: cancel {@code lambda$handle$0} (same pattern as NPCAction disables) before
+ * any TP spend / level grant. Also force {@code computeTpCost} to keep negatives so DMZ's
+ * own {@code if (cost < 0) skip} checks fire.
  */
 @Mixin(value = UpdateSkillC2S.class, priority = 2000, remap = false)
 public abstract class UpdateSkillPricelessMixin {
@@ -34,58 +35,47 @@ public abstract class UpdateSkillPricelessMixin {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
 
     @Shadow
+    @Final
     private String skillName;
 
     @Shadow
+    @Final
     private UpdateSkillC2S.SkillAction action;
 
     /**
-     * Wrap packet work so priceless PURCHASE/UPGRADE never reaches DMZ apply logic.
-     * {@code handle} is a public stable name — unlike {@code lambda$handle$*}.
+     * Hard cancel on the actual apply lambda (runs on server thread after enqueueWork).
+     * Covers stack-form spam buys even if Math.max redirects miss.
      */
-    @Redirect(
-            method = "handle(Ljava/util/function/Supplier;)V",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraftforge/network/NetworkEvent$Context;enqueueWork(Ljava/lang/Runnable;)Ljava/util/concurrent/CompletableFuture;"
-            ),
-            remap = false,
-            require = 0
-    )
-    private CompletableFuture<Void> dbzlegacy$wrapEnqueueWork(
-            NetworkEvent.Context ctx,
-            Runnable original
-    ) {
-        return ctx.enqueueWork(() -> {
-            StatsData data = null;
-            try {
-                ServerPlayer player = ctx.getSender();
-                if (player != null) {
-                    data = StatsProvider.get(StatsCapability.INSTANCE, (Entity) player).orElse(null);
-                }
-            } catch (Throwable ignored) {
-                // Fall through and run original if stats unavailable.
-            }
-            if (data != null && dbzlegacy$shouldBlockPriceless(data)) {
-                return;
-            }
-            if (data != null) {
-                PricelessPurchaseGuard.enter(data);
-            }
-            try {
-                original.run();
-            } finally {
-                PricelessPurchaseGuard.exit();
-            }
-        });
+    @Inject(method = "lambda$handle$0", at = @At("HEAD"), cancellable = true, remap = false)
+    private void dbzlegacy$blockPricelessApply(ServerPlayer player, StatsData data, CallbackInfo ci) {
+        if (data == null || !dbzlegacy$isBuyAction()) {
+            return;
+        }
+        if (dbzlegacy$shouldBlockPriceless(data)) {
+            ci.cancel();
+            return;
+        }
+        PricelessPurchaseGuard.enter(data);
+    }
+
+    /**
+     * Always clear the packet-scoped guard after apply (success or early return inside DMZ).
+     */
+    @Inject(method = "lambda$handle$0", at = @At("RETURN"), remap = false)
+    private void dbzlegacy$clearPricelessGuard(ServerPlayer player, StatsData data, CallbackInfo ci) {
+        PricelessPurchaseGuard.exit();
+    }
+
+    private boolean dbzlegacy$isBuyAction() {
+        return this.action == UpdateSkillC2S.SkillAction.PURCHASE
+                || this.action == UpdateSkillC2S.SkillAction.UPGRADE;
     }
 
     private boolean dbzlegacy$shouldBlockPriceless(StatsData data) {
         if (this.action == null || this.skillName == null || this.skillName.isEmpty()) {
             return false;
         }
-        if (this.action != UpdateSkillC2S.SkillAction.PURCHASE
-                && this.action != UpdateSkillC2S.SkillAction.UPGRADE) {
+        if (!dbzlegacy$isBuyAction()) {
             return false;
         }
         try {
@@ -122,16 +112,29 @@ public abstract class UpdateSkillPricelessMixin {
                     this.skillName,
                     t.toString()
             );
-            return false;
+            // Fail closed for menu buys: never let a broken cost lookup become a free unlock.
+            return true;
         }
     }
 
     @Redirect(
             method = "computeTpCost(Lcom/dragonminez/common/stats/StatsData;Ljava/lang/String;I)I",
-            at = @At(value = "INVOKE", target = "Ljava/lang/Math;max(II)I"),
-            remap = false,
-            require = 0
+            at = @At(value = "INVOKE", target = "Ljava/lang/Math;max(II)I", ordinal = 0),
+            remap = false
     )
+    private static int dbzlegacy$preservePricelessMathMax0(int a, int b) {
+        return dbzlegacy$preservePricelessMathMax(a, b);
+    }
+
+    @Redirect(
+            method = "computeTpCost(Lcom/dragonminez/common/stats/StatsData;Ljava/lang/String;I)I",
+            at = @At(value = "INVOKE", target = "Ljava/lang/Math;max(II)I", ordinal = 1),
+            remap = false
+    )
+    private static int dbzlegacy$preservePricelessMathMax1(int a, int b) {
+        return dbzlegacy$preservePricelessMathMax(a, b);
+    }
+
     private static int dbzlegacy$preservePricelessMathMax(int a, int b) {
         if (b < 0) {
             return b;
@@ -143,8 +146,7 @@ public abstract class UpdateSkillPricelessMixin {
             method = "computeTpCost(Lcom/dragonminez/common/stats/StatsData;Ljava/lang/String;I)I",
             at = @At("RETURN"),
             cancellable = true,
-            remap = false,
-            require = 0
+            remap = false
     )
     private static void dbzlegacy$preservePricelessCost(
             StatsData data,
