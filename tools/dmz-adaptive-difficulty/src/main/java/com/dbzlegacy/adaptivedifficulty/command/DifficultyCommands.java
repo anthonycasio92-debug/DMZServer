@@ -397,6 +397,9 @@ public final class DifficultyCommands {
                 case "mobscaleradius" -> cfg.mobScaleRadius = Double.parseDouble(value);
                 case "purchasecurrency" -> cfg.purchaseCurrency = value.trim();
                 case "enablemobscaling" -> cfg.enableMobScaling = Boolean.parseBoolean(value);
+                case "scalehostileonly" -> cfg.scaleHostileOnly = Boolean.parseBoolean(value);
+                case "applydmzextratoallhostiles", "dmzextrasall", "dmzstyleallhostiles" ->
+                        cfg.applyDmzExtrasToAllHostiles = Boolean.parseBoolean(value);
                 case "enablerewardscaling" -> cfg.enableRewardScaling = Boolean.parseBoolean(value);
                 case "enableelites" -> cfg.enableElites = Boolean.parseBoolean(value);
                 case "elitechance", "elitechancepercent" -> cfg.eliteChancePercent = Double.parseDouble(value);

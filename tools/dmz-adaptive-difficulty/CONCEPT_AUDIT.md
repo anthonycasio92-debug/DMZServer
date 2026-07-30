@@ -1,6 +1,6 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.7.13** (server-side only; CMI GUI, no DeluxeMenus)  
+Mod version: **1.7.14** (server-side only; CMI GUI, no DeluxeMenus)  
 Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
 Reaudited against live Java sources (not prior audit claims).
@@ -48,6 +48,11 @@ Mobs scale once at spawn from nearby **active** difficulty (area mode). Evolutio
 | **1000+** | **Master** | Berserk / **Charged Beams**; warden teleport |
 
 Raise active difficulty via `/difficulty` → **Adjust**, then fight **newly spawned** hostiles (already-spawned mobs keep their old cached difficulty).
+
+## v1.7.14 — all hostiles get DMZ-style scaling
+- Hostile detection no longer limited to `MobCategory.MONSTER` (includes Hoglin / Enemy / Raider / modded)
+- `dmzExtra*` health/defense/damage/ki extras apply to **all hostiles** by default (`applyDmzExtrasToAllHostiles`)
+- Scaling + evolution share the same `HostileMobs` helper
 
 ## v1.7.13 — tiers through Zenith (P10 theoretical max)
 - Added Transcendent → Zenith (250k … 10M)

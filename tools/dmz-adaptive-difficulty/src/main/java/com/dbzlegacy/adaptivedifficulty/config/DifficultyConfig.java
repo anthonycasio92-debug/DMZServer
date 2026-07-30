@@ -98,6 +98,12 @@ public final class DifficultyConfig {
      */
     public String purchaseCurrency = "lightmans";
     public boolean scaleHostileOnly = true;
+    /**
+     * Apply DMZ extra health/defense/damage/ki percents to <b>all</b> hostiles
+     * (not only {@code dragonminez:} mobs). Default true so vanilla/modded
+     * hostiles scale the same way as DMZ enemies.
+     */
+    public boolean applyDmzExtrasToAllHostiles = true;
     public boolean enableRewardScaling = true;
     public boolean enableMobScaling = true;
 

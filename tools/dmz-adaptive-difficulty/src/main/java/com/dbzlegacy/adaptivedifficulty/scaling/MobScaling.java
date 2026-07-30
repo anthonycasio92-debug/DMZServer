@@ -11,7 +11,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -19,12 +18,13 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Apply scaling once at spawn and cache difficulty on the mob (concept §9 / §17).
- * Uses SRG attribute/entity accessors to match this repo's Mohist compile classpath.
+ * All hostiles receive the same DMZ-style extras (health / defense / damage / ki).
  */
 public final class MobScaling {
     public static final String TAG_DIFFICULTY = "dmz_ad_difficulty";
     public static final String TAG_SCALED = "dmz_ad_scaled";
     public static final String TAG_DMG_MULT = "dmz_ad_dmg_mult";
+    public static final String TAG_DMZ_STYLE = "dmz_ad_dmz_mob";
 
     /** Vanilla generic.max_health upper bound — never push past this. */
     private static final double VANILLA_MAX_HEALTH_CAP = 1024.0;
@@ -62,8 +62,10 @@ public final class MobScaling {
         if (tag.m_128471_(TAG_SCALED)) {
             return;
         }
-        if (cfg.scaleHostileOnly && entity instanceof Mob mob) {
-            if (mob.m_6095_().m_20674_() != MobCategory.MONSTER) {
+
+        // Skip non-hostiles when scaleHostileOnly (animals, villagers, etc.).
+        if (cfg.scaleHostileOnly) {
+            if (!(entity instanceof Mob mob) || !HostileMobs.isHostile(mob)) {
                 tag.m_128379_(TAG_SCALED, true);
                 tag.m_128356_(TAG_DIFFICULTY, 0L);
                 return;
@@ -81,14 +83,18 @@ public final class MobScaling {
             return;
         }
 
+        boolean dmzStyle = shouldApplyDmzStyleExtras(entity, cfg);
+        if (dmzStyle) {
+            tag.m_128379_(TAG_DMZ_STYLE, true);
+        }
+
         double healthMult = 1.0 + (difficulty * (cfg.healthPercentPerDifficulty / 100.0));
         double armorBonus = difficulty * (cfg.defensePercentPerDifficulty / 100.0);
         double moveMult = 1.0 + ((difficulty / 100.0) * (cfg.movementPercentPer100Difficulty / 100.0));
 
-        if (isDragonMineZMob(entity)) {
+        if (dmzStyle) {
             healthMult += difficulty * (cfg.dmzExtraHealthPercent / 100.0);
             armorBonus += difficulty * (cfg.dmzExtraDefensePercent / 100.0);
-            tag.m_128379_("dmz_ad_dmz_mob", true);
         }
 
         healthMult = clamp(healthMult, 1.0, Math.max(1.0, cfg.maxHealthMultiplier));
@@ -96,7 +102,7 @@ public final class MobScaling {
         armorBonus = Math.min(armorBonus, Math.max(0.0, cfg.maxArmorBonus));
 
         double dmgMult = 1.0 + difficulty * (cfg.damagePercentPerDifficulty / 100.0);
-        if (isDragonMineZMob(entity) || tag.m_128471_("dmz_ad_dmz_mob")) {
+        if (dmzStyle) {
             dmgMult += difficulty * (cfg.dmzExtraDamagePercent / 100.0);
             dmgMult += difficulty * (cfg.dmzExtraKiDamagePercent / 100.0);
         }
@@ -105,6 +111,7 @@ public final class MobScaling {
 
         scaleMaxHealth(entity, healthMult, cfg.maxScaledHealth);
         scaleAttribute(entity, Attributes.f_22279_, moveMult); // MOVEMENT_SPEED
+        // Damage uses TAG_DMG_MULT via LivingEntityHurtScaleMixin (avoid double-scaling ATTACK_DAMAGE).
         AttributeInstance armor = entity.m_21051_(Attributes.f_22284_); // ARMOR
         if (armor != null && armorBonus > 0) {
             double next = Math.min(30.0, armor.m_22115_() + armorBonus);
@@ -116,6 +123,20 @@ public final class MobScaling {
         }
         EliteSystem.maybePromote(entity, difficulty);
         MutationSystem.maybeMutate(entity, difficulty);
+    }
+
+    /**
+     * DMZ-style extras (extra HP/DEF/DMG/ki) apply to every hostile by default,
+     * matching how DragonMineZ mobs were scaled.
+     */
+    private static boolean shouldApplyDmzStyleExtras(LivingEntity entity, DifficultyConfig cfg) {
+        if (isDragonMineZMob(entity)) {
+            return true;
+        }
+        if (!cfg.applyDmzExtrasToAllHostiles) {
+            return false;
+        }
+        return HostileMobs.isHostile(entity);
     }
 
     public static boolean isDragonMineZMob(LivingEntity entity) {
@@ -175,7 +196,6 @@ public final class MobScaling {
         if (!(entity.m_9236_() instanceof ServerLevel level)) {
             return 0L;
         }
-        // Scaling Health-style area difficulty at the mob's block position.
         return AreaDifficulty.at(level, entity.m_20183_());
     }
 
@@ -194,7 +214,10 @@ public final class MobScaling {
         }
         DifficultyConfig cfg = DifficultyConfig.get();
         double mult = 1.0 + d * (cfg.damagePercentPerDifficulty / 100.0);
-        if (tag.m_128471_("dmz_ad_dmz_mob") || isDragonMineZMob(attacker)) {
+        boolean dmzStyle = tag.m_128471_(TAG_DMZ_STYLE)
+                || isDragonMineZMob(attacker)
+                || (cfg.applyDmzExtrasToAllHostiles && HostileMobs.isHostile(attacker));
+        if (dmzStyle) {
             mult += d * (cfg.dmzExtraDamagePercent / 100.0);
             mult += d * (cfg.dmzExtraKiDamagePercent / 100.0);
         }

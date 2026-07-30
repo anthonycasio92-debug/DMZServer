@@ -4,6 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationType;
+import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
 import com.dbzlegacy.adaptivedifficulty.util.EntityDisplayNames;
@@ -19,15 +20,12 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Blaze;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.EnderMan;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Ghast;
 import net.minecraft.world.entity.monster.Guardian;
-import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.monster.Shulker;
 import net.minecraft.world.entity.monster.Witch;
@@ -51,22 +49,7 @@ public final class EnemyEvolution {
     private EnemyEvolution() {}
 
     public static boolean isEvolvable(Mob mob) {
-        if (mob == null) {
-            return false;
-        }
-        if (mob instanceof Monster
-                || mob instanceof Enemy
-                || mob instanceof Warden
-                || mob instanceof AbstractPiglin
-                || mob instanceof Hoglin
-                || mob instanceof Raider) {
-            return true;
-        }
-        try {
-            return mob.m_6095_().m_20674_() == MobCategory.MONSTER;
-        } catch (Throwable t) {
-            return false;
-        }
+        return HostileMobs.isHostile(mob);
     }
 
     public static void tick(LivingEntity entity) {
