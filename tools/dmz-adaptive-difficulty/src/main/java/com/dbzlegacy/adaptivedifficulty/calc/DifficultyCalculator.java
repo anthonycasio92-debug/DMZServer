@@ -9,14 +9,19 @@ import net.minecraft.server.level.ServerPlayer;
 public final class DifficultyCalculator {
     private DifficultyCalculator() {}
 
+    /**
+     * Theoretical max from DMZ progression (level × prestige formula).
+     * Prestige 0: level × levelMultiplier
+     * Prestige 1+: level × levelMultiplier × (prestige × prestigeMultiplier)
+     */
     public static long calculatedDifficulty(int dmzLevel, int prestige) {
         DifficultyConfig cfg = DifficultyConfig.get();
-        long levelPart = Math.round(Math.max(1, dmzLevel) * cfg.levelMultiplier);
+        long levelPart = Math.round(Math.max(1, dmzLevel) * Math.max(0.0, cfg.levelMultiplier));
         if (prestige <= 0) {
-            return clamp(levelPart);
+            return clampNonNegative(levelPart);
         }
-        long prestigeFactor = Math.round(prestige * cfg.prestigeMultiplier);
-        return clamp(levelPart * Math.max(1L, prestigeFactor));
+        long prestigeFactor = Math.round(prestige * Math.max(0.0, cfg.prestigeMultiplier));
+        return clampNonNegative(safeMul(levelPart, Math.max(1L, prestigeFactor)));
     }
 
     public static DifficultySnapshot snapshot(ServerPlayer player, PlayerDifficultyData data) {
@@ -24,7 +29,8 @@ public final class DifficultyCalculator {
         int prestige = DmzProgression.prestige(player);
         long calculated = calculatedDifficulty(level, prestige);
         long purchased = data.getPurchasedDifficulty();
-        long personalMax = clamp(calculated + purchased);
+        // Personal max = theoretical (stats) + purchased unlocks — no artificial hardcap by default.
+        long personalMax = clampNonNegative(safeAdd(calculated, purchased));
 
         TeamMode mode = data.getTeamMode();
         long thresholdBonus = 0L;
@@ -32,11 +38,11 @@ public final class DifficultyCalculator {
         if (mode != TeamMode.PERSONAL_ONLY) {
             thresholdBonus = TeamScaling.thresholdBonus(player, personalMax);
         }
-        long afterThreshold = clamp(personalMax + thresholdBonus);
+        long afterThreshold = clampNonNegative(safeAdd(personalMax, thresholdBonus));
         if (mode == TeamMode.FULL_TEAM_SCALING) {
             contribution = TeamScaling.contributionBonus(player, afterThreshold);
         }
-        long availableMax = clamp(afterThreshold + contribution);
+        long availableMax = clampNonNegative(safeAdd(afterThreshold, contribution));
 
         long active = Math.min(data.getActiveDifficulty(), availableMax);
         if (active < 0) {
@@ -98,11 +104,34 @@ public final class DifficultyCalculator {
         return 1.0 + (activeDifficulty / cfg.rewardScaling);
     }
 
-    private static long clamp(long value) {
-        long cap = Math.max(1L, DifficultyConfig.get().hardCapDifficulty);
-        if (value < 0) {
-            return 0;
+    /**
+     * Floor at 0. Optional admin hardcap only when {@code hardCapDifficulty > 0}.
+     * Default 0 = unlimited (ceiling is stats / purchased / team only).
+     */
+    private static long clampNonNegative(long value) {
+        if (value < 0L) {
+            return 0L;
         }
-        return Math.min(value, cap);
+        long cap = DifficultyConfig.get().hardCapDifficulty;
+        if (cap > 0L) {
+            return Math.min(value, cap);
+        }
+        return value;
+    }
+
+    private static long safeAdd(long a, long b) {
+        try {
+            return Math.addExact(a, b);
+        } catch (ArithmeticException e) {
+            return Long.MAX_VALUE / 4L;
+        }
+    }
+
+    private static long safeMul(long a, long b) {
+        try {
+            return Math.multiplyExact(a, b);
+        } catch (ArithmeticException e) {
+            return Long.MAX_VALUE / 4L;
+        }
     }
 }

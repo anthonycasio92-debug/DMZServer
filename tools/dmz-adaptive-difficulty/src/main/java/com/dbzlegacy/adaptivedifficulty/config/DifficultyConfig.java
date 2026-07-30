@@ -60,7 +60,11 @@ public final class DifficultyConfig {
     public double areaGroupBonusPercent = 5.0;
     /** Random variance applied to area difficulty when scaling a mob (percent, e.g. 5 => 0.95–1.05). */
     public double areaDifficultyVariancePercent = 5.0;
-    public long hardCapDifficulty = 1_000_000L;
+    /**
+     * Absolute ceiling on difficulty values. {@code 0} = no hardcap
+     * (max is only calculated from DMZ stats + purchased + team bonuses).
+     */
+    public long hardCapDifficulty = 0L;
 
     // Concept §10 / §7 — ability unlock tier thresholds (admin-editable)
     public long tierAwakened = 10L;
@@ -203,6 +207,17 @@ public final class DifficultyConfig {
         }
         if (cfg.areaDifficultyMode == null || cfg.areaDifficultyMode.isBlank()) {
             cfg.areaDifficultyMode = "weighted";
+        }
+        if (cfg.hardCapDifficulty < 0L) {
+            cfg.hardCapDifficulty = 0L;
+        }
+        // Legacy default was an artificial 1_000_000 ceiling — disable so max follows stats.
+        if (cfg.hardCapDifficulty == 1_000_000L) {
+            cfg.hardCapDifficulty = 0L;
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] hardCapDifficulty 1000000 → 0 (no hardcap; max from DMZ stats)",
+                    AdaptiveDifficultyMod.MOD_ID
+            );
         }
     }
 

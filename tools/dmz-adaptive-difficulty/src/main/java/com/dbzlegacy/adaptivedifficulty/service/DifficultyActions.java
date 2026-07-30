@@ -73,8 +73,9 @@ public final class DifficultyActions {
         long room = Math.max(0L, before.availableMax - before.active);
         if (room <= 0) {
             openGui(player, page);
-            return Result.fail("Already at max (" + before.availableMax
-                    + "). Buy more max first, or raise calculated difficulty.");
+            return Result.fail("Already at your max (" + before.availableMax
+                    + "). Theoretical (stats): " + before.calculated
+                    + ". Buy more max, level up / prestige, or enable team scaling.");
         }
         long raiseBy = Math.min(amount, room);
         return chargeAndRaise(player, before.active, raiseBy, page);

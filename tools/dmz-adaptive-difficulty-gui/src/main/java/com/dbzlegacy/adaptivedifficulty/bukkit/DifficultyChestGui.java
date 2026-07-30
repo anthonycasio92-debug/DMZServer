@@ -212,7 +212,7 @@ public final class DifficultyChestGui implements Listener {
                 "",
                 "&7Active      &f" + ph.getOrDefault("active", "?"),
                 "&7Available   &f" + ph.getOrDefault("available", "?"),
-                "&7Calculated  &f" + ph.getOrDefault("calculated", "?"),
+                "&7Theoretical &f" + ph.getOrDefault("calculated", "?"),
                 "&7Purchased   &f" + ph.getOrDefault("purchased", "?"),
                 "&7Personal    &f" + ph.getOrDefault("personal_max", "?"),
                 "",
@@ -256,7 +256,7 @@ public final class DifficultyChestGui implements Listener {
                 "&7Tier   &f" + ph.getOrDefault("tier", "?"),
                 "&7Inv    &f" + ph.getOrDefault("balance", "?"),
                 "",
-                "&8Calc " + ph.getOrDefault("calculated", "?")
+                "&8Theoretical " + ph.getOrDefault("calculated", "?")
                         + "  ·  Bought " + ph.getOrDefault("purchased", "?"),
                 "&8Open Adjust to raise / lower"
         );

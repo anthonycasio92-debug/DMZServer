@@ -50,7 +50,7 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_("§f" + snap.active + " §8/ §7" + snap.availableMax
                 + "  §8·  §" + color + snap.state()
                 + "  §8·  §7" + DifficultyTier.of(snap.active).display));
-        send(player, Component.m_237113_("§8Calc §f" + snap.calculated
+        send(player, Component.m_237113_("§8Theoretical §f" + snap.calculated
                 + "  §8Bought §f" + snap.purchased
                 + "  §8Inv §f" + CurrencyBridge.balanceText(player)));
         send(player, Component.m_237113_(""));

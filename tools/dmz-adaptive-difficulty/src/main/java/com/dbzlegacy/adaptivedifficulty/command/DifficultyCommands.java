@@ -319,9 +319,10 @@ public final class DifficultyCommands {
                         + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased\n"
                         + "§e/difficulty admin set <key> <value>\n"
                         + "§8areaDifficultyMode=weighted|average|max (Scaling Health-style)\n"
+                        + "§8hardCapDifficulty — 0 = no hardcap (max from DMZ stats)\n"
                         + "§8tierAwakened|tierEnhanced|…|tierImpossible — ability unlock thresholds\n"
                         + "§8baseCostIronCoins|costScalePerDifficulty|costCoinItem\n"
-                        + "§8movement|dmzExtraHealth|dmzExtraDamage|dmzExtraDefense|dmzExtraKiDamage"
+                        + "§8levelMultiplier|prestigeMultiplier|movement|dmzExtra*"
         ), false);
         return 1;
     }
@@ -382,7 +383,8 @@ public final class DifficultyCommands {
                 case "tiergod" -> cfg.tierGod = Long.parseLong(value);
                 case "tierdivine" -> cfg.tierDivine = Long.parseLong(value);
                 case "tierimpossible" -> cfg.tierImpossible = Long.parseLong(value);
-                case "hardcap", "hardcapdifficulty" -> cfg.hardCapDifficulty = Long.parseLong(value);
+                case "hardcap", "hardcapdifficulty" ->
+                        cfg.hardCapDifficulty = Math.max(0L, Long.parseLong(value)); // 0 = no hardcap
                 case "mobscaleradius" -> cfg.mobScaleRadius = Double.parseDouble(value);
                 case "purchasecurrency" -> cfg.purchaseCurrency = value.trim();
                 case "enablemobscaling" -> cfg.enableMobScaling = Boolean.parseBoolean(value);

@@ -43,7 +43,7 @@ public final class DifficultySnapshot {
     /**
      * Concept §8 state colors:
      * Green below progression, Yellow balanced, Orange personal max,
-     * Purple team-boosted, Red extreme (full team ceiling or hard-cap band).
+     * Purple team-boosted, Red extreme (full team ceiling or optional admin hardcap).
      */
     public String stateColorCode() {
         return switch (state()) {
@@ -69,7 +69,8 @@ public final class DifficultySnapshot {
         if (active > personalMax) {
             return "Team Boosted";
         }
-        if (active == personalMax) {
+        // At theoretical (stats) + purchased ceiling
+        if (active >= personalMax && personalMax > 0) {
             return "Personal Max";
         }
         return "Balanced";

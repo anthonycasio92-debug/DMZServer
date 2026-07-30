@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.11)
+# DMZ Adaptive Difficulty (v1.7.12)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -22,19 +22,29 @@ Clients do **not** need this jar to join.
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.11.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.12.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
    - `CMILib*.jar` (required by CMI)
    - `CMI-*.jar`
-   - `dmz_adaptive_difficulty_gui-1.7.6.jar` (**registers Bukkit `/difficulty`**)
+   - `dmz_adaptive_difficulty_gui-1.7.7.jar` (**registers Bukkit `/difficulty`**)
    - Optional: `PlaceholderAPI-*.jar`
 5. Optionally set `guiBackend` in `config/dmz_adaptive_difficulty.json`:
    - `cmi` (default), `auto`, `chest`, or `chat`
 6. Restart the server
 
 > DeluxeMenus is **not** used. Remove any old `DeluxeMenus` DMZ difficulty menus if present.
+
+## Max difficulty (no artificial hardcap)
+
+**Theoretical max** comes from DMZ stats:
+
+- Prestige 0: `level × levelMultiplier`
+- Prestige 1+: `level × levelMultiplier × (prestige × prestigeMultiplier)` (default prestige ×10)
+
+Available max = theoretical + purchased + optional team bonuses.  
+`hardCapDifficulty` defaults to **0** (disabled). Set a positive value only if you want an admin ceiling.
 
 ## Commands
 

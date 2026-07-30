@@ -1,6 +1,6 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.7.11** (server-side only; CMI GUI, no DeluxeMenus)  
+Mod version: **1.7.12** (server-side only; CMI GUI, no DeluxeMenus)  
 Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
 Reaudited against live Java sources (not prior audit claims).
@@ -48,6 +48,11 @@ Mobs scale once at spawn from nearby **active** difficulty (area mode). Evolutio
 | **1000+** | **Master** | Berserk / **Charged Beams**; warden teleport |
 
 Raise active difficulty via `/difficulty` → **Adjust**, then fight **newly spawned** hostiles (already-spawned mobs keep their old cached difficulty).
+
+## v1.7.12 — max from theoretical stats (no hardcap)
+- Removed default 1,000,000 hardcap (`hardCapDifficulty = 0`)
+- Existing configs with legacy `1000000` auto-migrate to `0` on load
+- Ceiling is calculated DMZ level/prestige (+ purchased + team), not an artificial cap
 
 ## v1.7.11 — per-mob kits + stacked gravity
 - Endermen/Wardens apply real DMZ gravity-chamber pressure; more aggro = heavier gravity

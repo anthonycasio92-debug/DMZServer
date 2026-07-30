@@ -253,7 +253,7 @@ public final class CmiDifficultyGui {
                 "",
                 "&7Active      &f" + ph.getOrDefault("active", "?"),
                 "&7Available   &f" + ph.getOrDefault("available", "?"),
-                "&7Calculated  &f" + ph.getOrDefault("calculated", "?"),
+                "&7Theoretical &f" + ph.getOrDefault("calculated", "?"),
                 "&7Purchased   &f" + ph.getOrDefault("purchased", "?"),
                 "&7Personal    &f" + ph.getOrDefault("personal_max", "?"),
                 "",
@@ -308,7 +308,7 @@ public final class CmiDifficultyGui {
         lore.add("&7Tier   &f" + ph.getOrDefault("tier", "?"));
         lore.add("&7Inv    &f" + ph.getOrDefault("balance", "?"));
         lore.add("");
-        lore.add("&8Calc " + ph.getOrDefault("calculated", "?")
+        lore.add("&8Theoretical " + ph.getOrDefault("calculated", "?")
                 + "  ·  Bought " + ph.getOrDefault("purchased", "?"));
         lore.add("&8Open Adjust to raise / lower");
         return lore;
