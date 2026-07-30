@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.6)
+# DMZ Adaptive Difficulty (v1.7.9)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -16,13 +16,13 @@ Clients do **not** need this jar to join.
 - FTB Teams teammate scaling (scoreboard fallback)
 - Raising difficulty always costs **Lightman's iron coins** (scaled); lowering/reset is free
 - Payments take coins from the **player inventory only** (not wallet/bank)
-- Spawn mob scaling (capped), elites, mutations, enemy evolution (real DMZ ki blasts/lasers/beams), adaptive AI, boss phases
+- Spawn mob scaling (capped), elites, mutations, **enemy evolution on all hostiles** (real DMZ ki + melee kits), adaptive AI, boss phases
 - Scaling Health-inspired area difficulty (`weighted` / `average` / `max`)
 - Optimized tick path: unmarked mobs exit immediately; AI/evolution staggered
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.6.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.9.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
