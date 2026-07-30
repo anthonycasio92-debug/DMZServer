@@ -3,13 +3,14 @@ package com.dbzlegacy.adaptivedifficulty.mixin;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 /**
- * Apply cached mob difficulty to outgoing damage when attributes alone are insufficient.
+ * Optional backup for outgoing damage scaling.
+ * Primary path is Forge {@code LivingHurtEvent} + ATTACK_DAMAGE attribute
+ * (see {@link MobScaling#scaleOutgoingHurt}) — more reliable on Mohist.
  */
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityHurtScaleMixin {
@@ -22,19 +23,8 @@ public abstract class LivingEntityHurtScaleMixin {
             require = 0
     )
     private float dmzad$scaleOutgoing(float amount, DamageSource source) {
-        if (amount <= 0.0f || source == null) {
-            return amount;
-        }
-        if (!(source.m_7639_() instanceof LivingEntity attacker)) {
-            return amount;
-        }
-        if (attacker instanceof Player) {
-            return amount;
-        }
-        float mult = MobScaling.outgoingDamageMultiplier(attacker);
-        if (mult <= 1.0f) {
-            return amount;
-        }
-        return amount * mult;
+        // Disabled: LivingHurtEvent handles this. Kept so older mixin configs don't crash.
+        // Returning amount unchanged avoids double-scaling with the Forge event.
+        return amount;
     }
 }

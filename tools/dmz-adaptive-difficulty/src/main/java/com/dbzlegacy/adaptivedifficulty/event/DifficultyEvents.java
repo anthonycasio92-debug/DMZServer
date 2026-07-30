@@ -22,14 +22,14 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Blaze;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Ghast;
-import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.entity.projectile.SmallFireball;
 import net.minecraft.world.entity.projectile.LargeFireball;
+import net.minecraft.world.entity.projectile.SmallFireball;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
@@ -168,8 +168,19 @@ public final class DifficultyEvents {
         }
     }
 
-    @SubscribeEvent
+    /**
+     * Primary damage scaling path (Forge event — reliable on Mohist).
+     * Melee uses scaled ATTACK_DAMAGE; this multiplies projectiles / custom hits.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGH)
     public void onHurt(LivingHurtEvent event) {
+        float amount = event.getAmount();
+        if (amount > 0.0f) {
+            float scaled = MobScaling.scaleOutgoingHurt(amount, event.getSource());
+            if (scaled != amount) {
+                event.setAmount(scaled);
+            }
+        }
         AdaptiveAiSystem.onHurt(event);
         LivingEntity entity = event.getEntity();
         if (entity != null && event.getAmount() > 0.0f) {

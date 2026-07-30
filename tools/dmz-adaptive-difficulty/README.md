@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.14)
+# DMZ Adaptive Difficulty (v1.7.15)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -22,7 +22,7 @@ Clients do **not** need this jar to join.
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.14.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.15.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:

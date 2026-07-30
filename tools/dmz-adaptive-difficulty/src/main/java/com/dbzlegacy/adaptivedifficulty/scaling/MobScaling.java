@@ -9,22 +9,33 @@ import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Apply scaling once at spawn and cache difficulty on the mob (concept §9 / §17).
  * All hostiles receive the same DMZ-style extras (health / defense / damage / ki).
+ * <p>
+ * Damage is applied two ways for Mohist reliability:
+ * <ul>
+ *   <li>{@link Attributes#ATTACK_DAMAGE} multiplied at spawn (melee)</li>
+ *   <li>{@link #scaleOutgoingHurt} via Forge {@code LivingHurtEvent} (projectiles / custom hits)</li>
+ * </ul>
  */
 public final class MobScaling {
     public static final String TAG_DIFFICULTY = "dmz_ad_difficulty";
     public static final String TAG_SCALED = "dmz_ad_scaled";
     public static final String TAG_DMG_MULT = "dmz_ad_dmg_mult";
     public static final String TAG_DMZ_STYLE = "dmz_ad_dmz_mob";
+    /** True when ATTACK_DAMAGE was multiplied at spawn — melee must not be event-multiplied again. */
+    public static final String TAG_ATTR_DMG_SCALED = "dmz_ad_attr_dmg";
 
     /** Vanilla generic.max_health upper bound — never push past this. */
     private static final double VANILLA_MAX_HEALTH_CAP = 1024.0;
@@ -111,7 +122,10 @@ public final class MobScaling {
 
         scaleMaxHealth(entity, healthMult, cfg.maxScaledHealth);
         scaleAttribute(entity, Attributes.f_22279_, moveMult); // MOVEMENT_SPEED
-        // Damage uses TAG_DMG_MULT via LivingEntityHurtScaleMixin (avoid double-scaling ATTACK_DAMAGE).
+        // Melee damage attribute — primary path (mixin alone was unreliable on Mohist).
+        if (scaleAttribute(entity, Attributes.f_22281_, dmgMult)) { // ATTACK_DAMAGE
+            tag.m_128379_(TAG_ATTR_DMG_SCALED, true);
+        }
         AttributeInstance armor = entity.m_21051_(Attributes.f_22284_); // ARMOR
         if (armor != null && armorBonus > 0) {
             double next = Math.min(30.0, armor.m_22115_() + armorBonus);
@@ -172,20 +186,22 @@ public final class MobScaling {
         }
     }
 
-    private static void scaleAttribute(LivingEntity entity, Attribute attribute, double multiplier) {
+    /** @return true if the attribute existed and was multiplied */
+    private static boolean scaleAttribute(LivingEntity entity, Attribute attribute, double multiplier) {
         AttributeInstance instance = entity.m_21051_(attribute);
         if (instance == null || multiplier <= 1.0) {
-            return;
+            return false;
         }
         double base = instance.m_22115_();
         if (!(base > 0.0) || Double.isNaN(base) || Double.isInfinite(base)) {
-            return;
+            return false;
         }
         double next = base * multiplier;
         if (!(next > 0.0) || Double.isNaN(next) || Double.isInfinite(next)) {
-            return;
+            return false;
         }
         instance.m_22100_(next);
+        return true;
     }
 
     private static double clamp(double value, double min, double max) {
@@ -226,5 +242,35 @@ public final class MobScaling {
             tag.m_128350_(TAG_DMG_MULT, (float) mult);
         }
         return (float) mult;
+    }
+
+    /**
+     * Scale hurt amount from a hostile attacker.
+     * Skips melee when {@link #TAG_ATTR_DMG_SCALED} is set (already on ATTACK_DAMAGE).
+     * Still scales projectiles / indirect damage.
+     *
+     * @return scaled amount (unchanged if no boost applies)
+     */
+    public static float scaleOutgoingHurt(float amount, DamageSource source) {
+        if (amount <= 0.0f || source == null) {
+            return amount;
+        }
+        Entity causing = source.m_7639_(); // getEntity
+        if (!(causing instanceof LivingEntity attacker) || attacker instanceof Player) {
+            return amount;
+        }
+        float mult = outgoingDamageMultiplier(attacker);
+        if (mult <= 1.0f) {
+            return amount;
+        }
+        CompoundTag tag = PersistentDataAccess.get(attacker);
+        boolean attrScaled = tag.m_128471_(TAG_ATTR_DMG_SCALED);
+        Entity direct = source.m_7640_(); // getDirectEntity
+        boolean indirect = direct != null && direct != attacker;
+        // Melee already boosted via ATTACK_DAMAGE — don't multiply again.
+        if (attrScaled && !indirect) {
+            return amount;
+        }
+        return amount * mult;
     }
 }

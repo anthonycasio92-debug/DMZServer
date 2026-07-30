@@ -1,6 +1,6 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.7.14** (server-side only; CMI GUI, no DeluxeMenus)  
+Mod version: **1.7.15** (server-side only; CMI GUI, no DeluxeMenus)  
 Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
 Reaudited against live Java sources (not prior audit claims).
@@ -48,6 +48,11 @@ Mobs scale once at spawn from nearby **active** difficulty (area mode). Evolutio
 | **1000+** | **Master** | Berserk / **Charged Beams**; warden teleport |
 
 Raise active difficulty via `/difficulty` → **Adjust**, then fight **newly spawned** hostiles (already-spawned mobs keep their old cached difficulty).
+
+## v1.7.15 — damage scaling fixed (attribute + Forge event)
+- Melee: multiply `ATTACK_DAMAGE` at spawn (same as health/defense path)
+- Projectiles / custom hits: Forge `LivingHurtEvent` applies cached damage multiplier
+- Mixin-only path was unreliable on Mohist and often never applied
 
 ## v1.7.14 — all hostiles get DMZ-style scaling
 - Hostile detection no longer limited to `MobCategory.MONSTER` (includes Hoglin / Enemy / Raider / modded)
