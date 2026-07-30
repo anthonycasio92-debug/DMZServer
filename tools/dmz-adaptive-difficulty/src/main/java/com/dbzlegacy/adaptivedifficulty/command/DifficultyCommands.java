@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
+import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
@@ -17,9 +18,9 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /**
- * Players: only {@code /difficulty} (opens the Screen GUI).
- * Staff: {@code /difficulty admin} toggles access to config/reload/settings commands.
- * All gameplay actions (up/down/buy/team) are GUI-only via packets.
+ * Players: {@code /difficulty} opens the chat GUI.
+ * GUI buttons use {@code /difficulty do ...} (not for normal player use).
+ * Staff: {@code /difficulty admin} toggles config commands.
  */
 public final class DifficultyCommands {
     private DifficultyCommands() {}
@@ -32,6 +33,18 @@ public final class DifficultyCommands {
     public void onRegister(RegisterCommandsEvent event) {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.m_82127_("difficulty")
                 .executes(ctx -> openGui(ctx.getSource()))
+                // Hidden GUI action handler used by clickable chat buttons
+                .then(Commands.m_82127_("do")
+                        .then(Commands.m_82129_("action", StringArgumentType.word())
+                                .executes(ctx -> guiDo(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "action"),
+                                        null))
+                                .then(Commands.m_82129_("arg", StringArgumentType.word())
+                                        .executes(ctx -> guiDo(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "action"),
+                                                StringArgumentType.getString(ctx, "arg"))))))
                 .then(Commands.m_82127_("admin")
                         .requires(DifficultyCommands::canUseAdminToggle)
                         .executes(ctx -> toggleAdmin(ctx.getSource()))
@@ -55,7 +68,7 @@ public final class DifficultyCommands {
 
         event.getDispatcher().register(root);
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] registered /difficulty (GUI-only for players; /difficulty admin toggle for staff)",
+                "[{}] registered /difficulty (server-only chat GUI; admin toggle for staff)",
                 AdaptiveDifficultyMod.MOD_ID
         );
     }
@@ -67,16 +80,39 @@ public final class DifficultyCommands {
         }
     }
 
-    /** Op / permission holders may run the admin toggle. */
+    private static int guiDo(CommandSourceStack source, String action, String arg) {
+        ServerPlayer player = source.m_230896_();
+        if (player == null) {
+            return 0;
+        }
+        String act = action == null ? "" : action.toLowerCase();
+        if ("page".equals(act)) {
+            String targetPage = arg == null || arg.isBlank() ? "main" : arg;
+            DifficultyActions.Result result =
+                    DifficultyActions.handle(player, DifficultyActions.ACT_PAGE, 0L, targetPage);
+            result.tell(player);
+            return 1;
+        }
+        long amount = 0L;
+        if (arg != null && !arg.isBlank()) {
+            try {
+                amount = Long.parseLong(arg);
+            } catch (NumberFormatException ignored) {
+                amount = 0L;
+            }
+        }
+        DifficultyActions.Result result = DifficultyActions.handle(player, act, amount, "main");
+        result.tell(player);
+        return result.ok() ? 1 : 0;
+    }
+
     private static boolean canUseAdminToggle(CommandSourceStack src) {
-        // Console always allowed
         if (src.m_230896_() == null) {
             return src.m_6761_(2);
         }
         return isStaff(src);
     }
 
-    /** Admin subcommands require staff + session toggle (console skips toggle). */
     private static boolean hasAdminMode(CommandSourceStack src) {
         ServerPlayer player = src.m_230896_();
         if (player == null) {
@@ -116,7 +152,6 @@ public final class DifficultyCommands {
     private static int toggleAdmin(CommandSourceStack source) {
         ServerPlayer player = source.m_230896_();
         if (player == null) {
-            // Console: always "on" — print help
             return adminHelp(source);
         }
         boolean enabled = AdminCommandAccess.toggle(player);
@@ -151,17 +186,11 @@ public final class DifficultyCommands {
 
     private static int adminHelp(CommandSourceStack source) {
         source.m_288197_(() -> Component.m_237113_(
-                "§6Adaptive Difficulty — admin\n"
-                        + "§e/difficulty §7— open player GUI (everyone)\n"
+                "§6Adaptive Difficulty — admin (server-side only mod)\n"
+                        + "§e/difficulty §7— open player chat GUI\n"
                         + "§e/difficulty admin §7— toggle admin command access\n"
-                        + "§e/difficulty admin reload\n"
-                        + "§e/difficulty admin settings\n"
-                        + "§e/difficulty admin set <key> <value>\n"
-                        + "§7Keys: prestigeMultiplier, levelMultiplier, teamBonusPercent, contributionPercent,\n"
-                        + "§7baseCost, costScaling, rewardScaling, health/damage/defense percents,\n"
-                        + "§7purchaseCurrency (lightmans|training_points|free),\n"
-                        + "§7enableElites, eliteChancePercent, enableMutations, mutationChancePercent,\n"
-                        + "§7enableAdaptiveAi, enableBossScaling, bossStatMultiplier, bossHealthThreshold"
+                        + "§e/difficulty admin reload|settings\n"
+                        + "§e/difficulty admin set <key> <value>"
         ), false);
         return 1;
     }

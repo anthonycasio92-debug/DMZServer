@@ -4,13 +4,15 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_adaptive_difficulty"
-version = "1.3.3"
+version = "1.4.0"
 displayName = "DMZ Adaptive Difficulty"
 authors = "DBZ Legacy Reborn"
+displayTest = "IGNORE_SERVER_VERSION"
 description = '''
-Personal + team-scaled adaptive difficulty for DragonMineZ.
-Standalone Screen GUI, FTB Teams, Lightman's wallet/bank/inventory coins,
-enemy evolution, elites, mutations, adaptive AI, boss phases, rewards.
+Server-side adaptive difficulty for DragonMineZ.
+Clients do not need this mod. Chat GUI via /difficulty.
+FTB Teams, Lightman's wallet/bank/inventory coins,
+enemy scaling, elites, mutations, AI, boss phases, rewards.
 '''
 
 [[mixins]]
@@ -21,33 +23,32 @@ modId = "forge"
 mandatory = true
 versionRange = "[47,)"
 ordering = "NONE"
-side = "BOTH"
+side = "SERVER"
 
 [[dependencies.dmz_adaptive_difficulty]]
 modId = "minecraft"
 mandatory = true
 versionRange = "[1.20.1,1.20.2)"
 ordering = "NONE"
-side = "BOTH"
+side = "SERVER"
 
 [[dependencies.dmz_adaptive_difficulty]]
 modId = "dragonminez"
 mandatory = true
 versionRange = "[2.1,)"
 ordering = "AFTER"
-side = "BOTH"
+side = "SERVER"
 
 [[dependencies.dmz_adaptive_difficulty]]
 modId = "lightmanscurrency"
 mandatory = false
-# Lightman's versions are MC-prefixed (e.g. 1.20.1-2.3.0.5); [2.0,) falsely rejects them.
 versionRange = "[0,)"
 ordering = "AFTER"
-side = "BOTH"
+side = "SERVER"
 
 [[dependencies.dmz_adaptive_difficulty]]
 modId = "ftbteams"
 mandatory = false
 versionRange = "[0,)"
 ordering = "AFTER"
-side = "BOTH"
+side = "SERVER"

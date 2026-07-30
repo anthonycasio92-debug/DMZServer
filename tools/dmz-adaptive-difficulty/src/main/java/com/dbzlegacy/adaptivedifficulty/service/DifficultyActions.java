@@ -6,11 +6,11 @@ import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
-import com.dbzlegacy.adaptivedifficulty.network.DifficultyNet;
+import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Shared server-side actions used by commands and GUI packets. */
+/** Shared server-side actions used by chat GUI click handlers. */
 public final class DifficultyActions {
     public static final String ACT_UP = "up";
     public static final String ACT_DOWN = "down";
@@ -19,18 +19,25 @@ public final class DifficultyActions {
     public static final String ACT_SET = "set";
     public static final String ACT_SET_MAX = "set_max";
     public static final String ACT_REFRESH = "refresh";
+    public static final String ACT_PAGE = "page";
 
     private DifficultyActions() {}
 
     public static void openGui(ServerPlayer player, String page) {
-        DifficultyNet.openScreen(player, page == null || page.isBlank() ? "main" : page);
+        DifficultyMenu.open(player, page == null || page.isBlank() ? "main" : page);
     }
 
     public static Result handle(ServerPlayer player, String action, long amount, String page) {
         if (player == null || action == null) {
             return Result.fail("Invalid action.");
         }
-        return switch (action.toLowerCase()) {
+        String act = action.toLowerCase();
+        if (ACT_PAGE.equals(act)) {
+            // amount unused; page argument carries the target page name via page param
+            openGui(player, page);
+            return Result.ok("");
+        }
+        return switch (act) {
             case ACT_UP -> adjust(player, Math.max(1L, amount <= 0 ? 100L : amount), page);
             case ACT_DOWN -> adjust(player, -Math.max(1L, amount <= 0 ? 100L : amount), page);
             case ACT_BUY -> buy(player, Math.max(1L, amount <= 0 ? 100L : amount), page);
@@ -41,7 +48,7 @@ public final class DifficultyActions {
                 openGui(player, page);
                 yield Result.ok("");
             }
-            default -> Result.fail("Unknown action: " + action);
+            default -> Result.fail("Unknown action.");
         };
     }
 
