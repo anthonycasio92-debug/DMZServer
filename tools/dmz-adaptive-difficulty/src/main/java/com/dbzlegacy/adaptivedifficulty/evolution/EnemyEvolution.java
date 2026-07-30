@@ -9,25 +9,61 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.monster.AbstractSkeleton;
+import net.minecraft.world.entity.monster.Blaze;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.EnderMan;
-import net.minecraft.world.entity.monster.Skeleton;
+import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.monster.Ghast;
+import net.minecraft.world.entity.monster.Guardian;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.monster.RangedAttackMob;
+import net.minecraft.world.entity.monster.Shulker;
+import net.minecraft.world.entity.monster.Witch;
 import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.entity.monster.warden.Warden;
+import net.minecraft.world.entity.raid.Raider;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 
 /**
- * Concept §11 — per-mob-type evolution abilities unlocked by difficulty tiers.
+ * Concept §11 — enemy evolution unlocked by difficulty tiers.
+ * <p>
+ * Specific kits for creepers / zombies / skeletons / endermen / wardens,
+ * plus shared melee / ranged packages so <b>all hostiles</b> evolve.
  */
 public final class EnemyEvolution {
+    public static final String TAG_EVOLVED = "dmz_ad_evolved";
+
     private EnemyEvolution() {}
+
+    /** Any hostile the system should evolve (vanilla + modded MONSTER / Enemy). */
+    public static boolean isEvolvable(Mob mob) {
+        if (mob == null) {
+            return false;
+        }
+        if (mob instanceof Monster
+                || mob instanceof Enemy
+                || mob instanceof Warden
+                || mob instanceof AbstractPiglin
+                || mob instanceof Raider) {
+            return true;
+        }
+        try {
+            return mob.m_6095_().m_20674_() == MobCategory.MONSTER;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
 
     public static void tick(LivingEntity entity) {
         if (!(entity instanceof Mob mob)) {
@@ -36,7 +72,7 @@ public final class EnemyEvolution {
         tick(mob, MobScaling.difficultyOf(entity), EliteSystem.isElite(entity));
     }
 
-    /** Prefer this when the caller already resolved difficulty / elite and type-filtered. */
+    /** Prefer this when the caller already resolved difficulty / elite. */
     public static void tick(Mob mob, long difficulty, boolean elite) {
         DifficultyConfig cfg = DifficultyConfig.get();
         if (!cfg.enableEnemyEvolution || mob == null || !mob.m_6084_()) {
@@ -56,27 +92,64 @@ public final class EnemyEvolution {
             return;
         }
 
+        markEvolved(mob, tier);
+
         LivingEntity target = mob.m_5448_();
         if (mob instanceof Creeper creeper) {
             creeperTick(creeper, level, target, tier);
         } else if (mob instanceof Zombie zombie) {
-            zombieTick(zombie, target, tier);
-        } else if (mob instanceof Skeleton skeleton) {
-            skeletonTick(skeleton, target, tier);
+            // Husk / Drowned / Zombie Villager / Zombified Piglin
+            meleeTick(zombie, target, tier);
+        } else if (mob instanceof AbstractSkeleton skeleton) {
+            // Skeleton / Stray / Wither Skeleton
+            rangedKiTick(skeleton, target, tier);
         } else if (mob instanceof EnderMan enderMan) {
             endermanTick(enderMan, level, target, tier);
         } else if (mob instanceof Warden warden) {
             wardenTick(warden, level, target, tier);
+        } else if (isRangedStyle(mob)) {
+            rangedKiTick(mob, target, tier);
+        } else {
+            meleeTick(mob, target, tier);
+        }
+    }
+
+    private static boolean isRangedStyle(Mob mob) {
+        return mob instanceof RangedAttackMob
+                || mob instanceof Witch
+                || mob instanceof Blaze
+                || mob instanceof Ghast
+                || mob instanceof Guardian
+                || mob instanceof Shulker
+                || mob instanceof Raider && !(mob instanceof net.minecraft.world.entity.monster.Vindicator)
+                        && !(mob instanceof net.minecraft.world.entity.monster.Ravager);
+    }
+
+    /** One-time mark so players can tell the mob is evolved (glow pulse + name hint). */
+    private static void markEvolved(Mob mob, DifficultyTier tier) {
+        if (tier.ordinalPower() < DifficultyTier.ENHANCED.ordinalPower()) {
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(mob);
+        if (tag.m_128471_(TAG_EVOLVED)) {
+            return;
+        }
+        tag.m_128379_(TAG_EVOLVED, true);
+        // Brief glow so evolution is visible in the field
+        mob.m_7292_(new MobEffectInstance(MobEffects.f_19619_, 100, 0, false, false)); // GLOWING
+        if (!mob.m_8077_()) { // hasCustomName
+            String typeName = String.valueOf(mob.m_6095_().m_20675_());
+            mob.m_6593_(Component.m_237113_("§6" + tier.display + " §f" + typeName));
+            mob.m_20340_(true); // setCustomNameVisible
         }
     }
 
     private static void creeperTick(Creeper creeper, ServerLevel level, LivingEntity target, DifficultyTier tier) {
         scaleCreeperBlast(creeper, tier);
-        // Faster fuse / primed when close
-        if (target != null && creeper.m_20270_(target) < 4.0f && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
+        if (target != null && creeper.m_20270_(target) < 4.0f
+                && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
             creeper.m_32314_(); // ignite
         }
-        // Tracking: keep chasing aggressively
         if (target != null && tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()) {
             creeper.m_21573_().m_26519_(target.m_20185_(), target.m_20186_(), target.m_20189_(), 1.35);
         }
@@ -94,7 +167,6 @@ public final class EnemyEvolution {
         }
     }
 
-    /** Concept §11 Larger Blast — bump creeper explosionRadius + shorten fuse by tier. */
     private static void scaleCreeperBlast(Creeper creeper, DifficultyTier tier) {
         if (tier.ordinalPower() < DifficultyTier.ENHANCED.ordinalPower()) {
             return;
@@ -106,7 +178,6 @@ public final class EnemyEvolution {
         tag.m_128379_("dmz_ad_blast_scaled", true);
         int bonus = Math.max(0, tier.ordinalPower() - DifficultyTier.AWAKENED.ordinalPower());
         try {
-            // SRG: explosionRadius -> bV, maxSwell -> bU
             Field radius = Creeper.class.getDeclaredField("bV");
             radius.setAccessible(true);
             int base = radius.getInt(creeper);
@@ -115,79 +186,82 @@ public final class EnemyEvolution {
             Field swell = Creeper.class.getDeclaredField("bU");
             swell.setAccessible(true);
             int maxSwell = swell.getInt(creeper);
-            int faster = Math.max(10, maxSwell - (bonus * 4));
-            swell.setInt(creeper, faster);
+            swell.setInt(creeper, Math.max(10, maxSwell - (bonus * 4)));
         } catch (Throwable ignored) {
-            // Field names differ on non-SRG runtimes; final-boom path still scales power.
         }
     }
 
-    private static void zombieTick(Zombie zombie, LivingEntity target, DifficultyTier tier) {
+    /** Shared melee kit: leap / rush / ground slam / berserker (concept zombie examples). */
+    private static void meleeTick(Mob mob, LivingEntity target, DifficultyTier tier) {
         if (target == null) {
             return;
         }
-        CompoundTag tag = PersistentDataAccess.get(zombie);
-        long last = tag.m_128454_("dmz_ad_leap");
-        double dist = zombie.m_20270_(target);
-        // Leap
-        if (dist > 3.0 && dist < 10.0 && zombie.f_19797_ - last > 60
+        CompoundTag tag = PersistentDataAccess.get(mob);
+        long age = mob.f_19797_;
+        double dist = mob.m_20270_(target);
+
+        if (dist > 3.0 && dist < 12.0 && age - tag.m_128454_("dmz_ad_leap") > 60
                 && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
-            tag.m_128356_("dmz_ad_leap", zombie.f_19797_);
-            double dx = target.m_20185_() - zombie.m_20185_();
-            double dz = target.m_20189_() - zombie.m_20189_();
+            tag.m_128356_("dmz_ad_leap", age);
+            double dx = target.m_20185_() - mob.m_20185_();
+            double dz = target.m_20189_() - mob.m_20189_();
             double len = Math.sqrt(dx * dx + dz * dz);
             if (len > 0.001) {
-                zombie.m_5997_((dx / len) * 1.1, 0.55, (dz / len) * 1.1);
+                mob.m_5997_((dx / len) * 1.15, 0.55, (dz / len) * 1.15);
             }
         }
-        // Rush
         if (dist < 16.0 && tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()) {
-            zombie.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, 1, false, false)); // SPEED
+            mob.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, 1, false, false)); // SPEED
         }
-        // Ground slam AOE slow
-        if (dist < 3.0 && tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
-                && zombie.f_19797_ % 80 == 0) {
+        if (dist < 3.5 && tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower() && age % 80 == 0) {
             target.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 60, 1, false, true)); // SLOWNESS
             target.m_5997_(0, 0.35, 0);
+            AABB box = mob.m_20191_().m_82400_(3.0);
+            if (mob.m_9236_() instanceof ServerLevel level) {
+                for (ServerPlayer p : level.m_45976_(ServerPlayer.class, box)) {
+                    if (p != target) {
+                        p.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 40, 0, false, true));
+                    }
+                }
+            }
         }
-        // Berserker
-        if (zombie.m_21223_() < zombie.m_21233_() * 0.35f
+        if (mob.m_21223_() < mob.m_21233_() * 0.35f
                 && tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()) {
-            zombie.m_7292_(new MobEffectInstance(MobEffects.f_19600_, 80, 1, false, true)); // STRENGTH
-            zombie.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 80, 2, false, false));
+            mob.m_7292_(new MobEffectInstance(MobEffects.f_19600_, 80, 1, false, true)); // STRENGTH
+            mob.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 80, 2, false, false));
         }
     }
 
-    private static void skeletonTick(Skeleton skeleton, LivingEntity target, DifficultyTier tier) {
+    /** Shared ranged kit: real DMZ ki blast / laser / beam / charged beam. */
+    private static void rangedKiTick(Mob mob, LivingEntity target, DifficultyTier tier) {
         if (target == null) {
             return;
         }
-        float dist = skeleton.m_20270_(target);
+        float dist = mob.m_20270_(target);
         if (dist > 28.0f) {
             return;
         }
-        CompoundTag tag = PersistentDataAccess.get(skeleton);
-        long age = skeleton.f_19797_;
+        CompoundTag tag = PersistentDataAccess.get(mob);
+        long age = mob.f_19797_;
 
-        // Concept §11 Skeletons: Ki Blast → Laser → Beam → Charged Beam (real DMZ projectiles)
         if (tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_ki_blast") >= 45
                 && dist < 18.0f) {
-            if (KiAttackHelper.fireKiBlast(skeleton, target, tier)) {
+            if (KiAttackHelper.fireKiBlast(mob, target, tier)) {
                 tag.m_128356_("dmz_ad_ki_blast", age);
             }
         }
         if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_ki_laser") >= 70
                 && dist < 22.0f) {
-            if (KiAttackHelper.fireKiLaser(skeleton, target, tier)) {
+            if (KiAttackHelper.fireKiLaser(mob, target, tier)) {
                 tag.m_128356_("dmz_ad_ki_laser", age);
             }
         }
         if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()) {
-            skeleton.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, 0, false, false)); // SPEED
+            mob.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, 0, false, false));
             if (age - tag.m_128454_("dmz_ad_ki_beam") >= 100 && dist < 24.0f) {
-                if (KiAttackHelper.fireKiBeam(skeleton, target, tier, false)) {
+                if (KiAttackHelper.fireKiBeam(mob, target, tier, false)) {
                     tag.m_128356_("dmz_ad_ki_beam", age);
                 }
             }
@@ -195,7 +269,7 @@ public final class EnemyEvolution {
         if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_ki_charged") >= 140
                 && dist < 26.0f) {
-            if (KiAttackHelper.fireKiBeam(skeleton, target, tier, true)) {
+            if (KiAttackHelper.fireKiBeam(mob, target, tier, true)) {
                 tag.m_128356_("dmz_ad_ki_charged", age);
             }
         }
@@ -206,13 +280,11 @@ public final class EnemyEvolution {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(ender);
-        // Gravity
         if (tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower() && ender.f_19797_ % 50 == 0
                 && ender.m_20270_(target) < 12.0f) {
-            target.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 40, 2, false, true)); // SLOWNESS heavy
-            target.m_7292_(new MobEffectInstance(MobEffects.f_19610_, 40, 0, false, true)); // BLINDNESS "solar flare"
+            target.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 40, 2, false, true));
+            target.m_7292_(new MobEffectInstance(MobEffects.f_19610_, 40, 0, false, true));
         }
-        // Teleport combo toward player
         if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
                 && ender.f_19797_ - tag.m_128454_("dmz_ad_tp") > 80) {
             tag.m_128356_("dmz_ad_tp", ender.f_19797_);
@@ -220,7 +292,6 @@ public final class EnemyEvolution {
             double oz = (ThreadLocalRandom.current().nextDouble() - 0.5) * 2.5;
             ender.m_6021_(target.m_20185_() + ox, target.m_20186_(), target.m_20189_() + oz);
         }
-        // Counter teleport when hurt recently handled in onHurt
     }
 
     private static void wardenTick(Warden warden, ServerLevel level, LivingEntity target, DifficultyTier tier) {
@@ -231,7 +302,6 @@ public final class EnemyEvolution {
         long age = warden.f_19797_;
         float dist = warden.m_20270_(target);
 
-        // Concept §11 Wardens: Ki Barrage / Beam (real DMZ projectiles)
         if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_ki_barrage") >= 70
                 && dist < 20.0f) {
@@ -240,7 +310,7 @@ public final class EnemyEvolution {
                 tag.m_128356_("dmz_ad_ki_barrage", age);
             }
             if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()) {
-                target.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 40, 1, false, true)); // SLOWNESS
+                target.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 40, 1, false, true));
             }
         }
         if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
@@ -251,7 +321,6 @@ public final class EnemyEvolution {
                 tag.m_128356_("dmz_ad_ki_beam", age);
             }
         }
-        // Gravity pulse (nearby pull / slow) when Advanced+
         if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower() && age % 80 == 0) {
             AABB box = warden.m_20191_().m_82400_(8.0);
             List<ServerPlayer> players = level.m_45976_(ServerPlayer.class, box);
@@ -259,7 +328,6 @@ public final class EnemyEvolution {
                 p.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 40, 1, false, true));
             }
         }
-        // Teleport hop
         if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_tp") >= 120
                 && dist > 6.0f) {

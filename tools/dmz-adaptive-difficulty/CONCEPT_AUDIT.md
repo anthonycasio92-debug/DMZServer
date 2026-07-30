@@ -1,6 +1,6 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.7.8** (server-side only; CMI GUI, no DeluxeMenus)  
+Mod version: **1.7.9** (server-side only; CMI GUI, no DeluxeMenus)  
 Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
 Reaudited against live Java sources (not prior audit claims).
@@ -49,7 +49,7 @@ Mobs scale once at spawn from nearby **active** difficulty (area mode). Evolutio
 
 Raise active difficulty via `/difficulty` → **Adjust**, then fight freshly spawned skeletons (already-spawned mobs keep their old cached difficulty).
 
-## v1.7.8 — real DMZ ki projectiles
+## v1.7.9 — real DMZ ki projectiles
 - Replaced skeleton/warden effect stand-ins with `KiBlastEntity` / `KiLaserEntity` / `KiWaveEntity`
 - Homing aimed shots; damage scales with tier + mob difficulty
 

@@ -20,11 +20,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.EnderMan;
-import net.minecraft.world.entity.monster.Skeleton;
-import net.minecraft.world.entity.monster.Zombie;
-import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
@@ -137,17 +133,9 @@ public final class DifficultyEvents {
         if (age % 20 == stagger) {
             AdaptiveAiSystem.tick(mob, difficulty, elite);
         }
-        if (isEvolvable(mob) && age % 20 == ((stagger + 10) % 20)) {
+        if (EnemyEvolution.isEvolvable(mob) && age % 20 == ((stagger + 10) % 20)) {
             EnemyEvolution.tick(mob, difficulty, elite);
         }
-    }
-
-    private static boolean isEvolvable(Mob mob) {
-        return mob instanceof Creeper
-                || mob instanceof Zombie
-                || mob instanceof Skeleton
-                || mob instanceof EnderMan
-                || mob instanceof Warden;
     }
 
     @SubscribeEvent
