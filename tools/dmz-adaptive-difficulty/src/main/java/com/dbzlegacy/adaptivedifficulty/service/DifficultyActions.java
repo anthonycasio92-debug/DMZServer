@@ -35,17 +35,16 @@ public final class DifficultyActions {
         }
         String act = action.toLowerCase();
         if (ACT_PAGE.equals(act)) {
-            // amount unused; page argument carries the target page name via page param
             openGui(player, page);
             return Result.ok("");
         }
         return switch (act) {
-            case ACT_UP -> adjust(player, Math.max(1L, amount <= 0 ? 100L : amount), page);
-            case ACT_DOWN -> adjust(player, -Math.max(1L, amount <= 0 ? 100L : amount), page);
+            case ACT_UP -> raise(player, Math.max(1L, amount <= 0 ? 100L : amount), page);
+            case ACT_DOWN -> lower(player, Math.max(1L, amount <= 0 ? 100L : amount), page);
             case ACT_BUY -> buy(player, Math.max(1L, amount <= 0 ? 100L : amount), page);
             case ACT_TEAM -> cycleTeam(player, page);
-            case ACT_SET -> setActive(player, Math.max(0L, amount), page);
-            case ACT_SET_MAX -> setActive(player, Long.MAX_VALUE, page);
+            case ACT_SET -> setActivePaid(player, Math.max(0L, amount), page);
+            case ACT_SET_MAX -> setActivePaid(player, Long.MAX_VALUE, page);
             case ACT_RESET, "zero", "clear" -> resetActive(player, page);
             case ACT_REFRESH -> {
                 openGui(player, page);
@@ -55,31 +54,82 @@ public final class DifficultyActions {
         };
     }
 
-    private static Result adjust(ServerPlayer player, long delta, String page) {
+    /** Lowering is always free. */
+    private static Result lower(ServerPlayer player, long amount, String page) {
         PlayerDifficultyData data = DifficultyCache.data(player);
         DifficultySnapshot before = DifficultyCache.refresh(player);
-        long next = Math.max(0L, before.active + delta);
-        next = Math.min(next, before.availableMax);
-        data.setActiveDifficulty(next);
-        DifficultyCache.save(player);
-        DifficultySnapshot snap = DifficultyCache.refresh(player);
-        openGui(player, page);
-        return Result.ok("Active difficulty set to " + snap.active + " (max " + snap.availableMax + ")");
-    }
-
-    private static Result setActive(ServerPlayer player, long amount, String page) {
-        PlayerDifficultyData data = DifficultyCache.data(player);
-        DifficultySnapshot bounds = DifficultyCache.refresh(player);
-        long next = amount == Long.MAX_VALUE ? bounds.availableMax : Math.max(0L, Math.min(amount, bounds.availableMax));
+        long next = Math.max(0L, before.active - amount);
         data.setActiveDifficulty(next);
         DifficultyCache.save(player);
         DifficultyCache.refresh(player);
         AreaDifficulty.clearCache();
         openGui(player, page);
-        return Result.ok("Active difficulty set to " + next);
+        return Result.ok("Active difficulty set to " + next + " (free).");
     }
 
-    /** Free — concept: lowering difficulty is always free. Does not refund purchases. */
+    /** Raising always costs Lightman's iron coins (scaled). */
+    private static Result raise(ServerPlayer player, long amount, String page) {
+        DifficultySnapshot before = DifficultyCache.refresh(player);
+        long room = Math.max(0L, before.availableMax - before.active);
+        if (room <= 0) {
+            openGui(player, page);
+            return Result.fail("Already at max (" + before.availableMax
+                    + "). Buy more max first, or raise calculated difficulty.");
+        }
+        long raiseBy = Math.min(amount, room);
+        return chargeAndRaise(player, before.active, raiseBy, page);
+    }
+
+    private static Result setActivePaid(ServerPlayer player, long amount, String page) {
+        DifficultySnapshot bounds = DifficultyCache.refresh(player);
+        long target = amount == Long.MAX_VALUE
+                ? bounds.availableMax
+                : Math.max(0L, Math.min(amount, bounds.availableMax));
+        if (target <= bounds.active) {
+            // Lower or no-op — free
+            PlayerDifficultyData data = DifficultyCache.data(player);
+            data.setActiveDifficulty(target);
+            DifficultyCache.save(player);
+            DifficultyCache.refresh(player);
+            AreaDifficulty.clearCache();
+            openGui(player, page);
+            return Result.ok("Active difficulty set to " + target + (target < bounds.active ? " (free)." : "."));
+        }
+        long raiseBy = target - bounds.active;
+        return chargeAndRaise(player, bounds.active, raiseBy, page);
+    }
+
+    private static Result chargeAndRaise(ServerPlayer player, long fromActive, long raiseBy, String page) {
+        if (raiseBy <= 0) {
+            openGui(player, page);
+            return Result.ok("Already at that difficulty.");
+        }
+        if (!CurrencyBridge.lightmansAvailable()) {
+            openGui(player, page);
+            return Result.fail("Lightman's Currency is required to raise difficulty.");
+        }
+        long cost = DifficultyCalculator.raiseCostIronCoins(fromActive, raiseBy);
+        if (!CurrencyBridge.canAfford(player, cost)) {
+            openGui(player, page);
+            return Result.fail("Need " + CurrencyBridge.formatCost(cost)
+                    + ". Balance: " + CurrencyBridge.balanceText(player));
+        }
+        if (!CurrencyBridge.charge(player, cost)) {
+            openGui(player, page);
+            return Result.fail("Payment failed. Balance: " + CurrencyBridge.balanceText(player));
+        }
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        long next = fromActive + raiseBy;
+        data.setActiveDifficulty(next);
+        DifficultyCache.save(player);
+        DifficultySnapshot snap = DifficultyCache.refresh(player);
+        AreaDifficulty.clearCache();
+        openGui(player, page);
+        return Result.ok("Raised +" + raiseBy + " for " + CurrencyBridge.formatCost(cost)
+                + ". Active: " + snap.active + " / " + snap.availableMax);
+    }
+
+    /** Free — does not refund purchases or spent raise costs. */
     private static Result resetActive(ServerPlayer player, String page) {
         PlayerDifficultyData data = DifficultyCache.data(player);
         data.setActiveDifficulty(0L);
@@ -90,13 +140,18 @@ public final class DifficultyActions {
         return Result.ok("Active difficulty reset to 0 (purchased max unchanged).");
     }
 
+    /** Unlock more max difficulty (purchased). Always Lightman's iron coins. */
     private static Result buy(ServerPlayer player, long amount, String page) {
+        if (!CurrencyBridge.lightmansAvailable()) {
+            openGui(player, page);
+            return Result.fail("Lightman's Currency is required to buy difficulty.");
+        }
         PlayerDifficultyData data = DifficultyCache.data(player);
         long cost = DifficultyCalculator.purchaseCost(data.getPurchasedDifficulty(), amount);
         if (!CurrencyBridge.canAfford(player, cost)) {
             openGui(player, page);
-            return Result.fail("Need " + CurrencyBridge.formatCost(cost) + " (" + CurrencyBridge.currencyLabel()
-                    + "). Balance: " + CurrencyBridge.balanceText(player));
+            return Result.fail("Need " + CurrencyBridge.formatCost(cost)
+                    + ". Balance: " + CurrencyBridge.balanceText(player));
         }
         if (!CurrencyBridge.charge(player, cost)) {
             openGui(player, page);
@@ -105,9 +160,10 @@ public final class DifficultyActions {
         data.setPurchasedDifficulty(data.getPurchasedDifficulty() + amount);
         DifficultyCache.save(player);
         DifficultySnapshot snap = DifficultyCache.refresh(player);
+        AreaDifficulty.clearCache();
         openGui(player, page);
-        return Result.ok("Purchased +" + amount + " for " + CurrencyBridge.formatCost(cost)
-                + ". Purchased total: " + snap.purchased + " | Available max: " + snap.availableMax);
+        return Result.ok("Purchased +" + amount + " max for " + CurrencyBridge.formatCost(cost)
+                + ". Purchased: " + snap.purchased + " | Available max: " + snap.availableMax);
     }
 
     private static Result cycleTeam(ServerPlayer player, String page) {

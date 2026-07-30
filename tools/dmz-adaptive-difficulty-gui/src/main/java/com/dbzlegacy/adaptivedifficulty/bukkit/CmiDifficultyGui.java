@@ -65,19 +65,20 @@ public final class CmiDifficultyGui {
         gui.addButton(actionBtn(21, Material.WHITE_CONCRETE, "&fReset", "reset", "0",
                 List.of("&7Set active to &f0", "&8Purchased max kept")));
         gui.addButton(actionBtn(22, Material.LIME_CONCRETE, "&a+ 100", "up", "100",
-                List.of("&7Raise active difficulty")));
+                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_100", "?"))));
         gui.addButton(actionBtn(23, Material.ORANGE_CONCRETE, "&6Max", "set_max", "0",
-                List.of("&7Jump to available max", "&f" + ph.getOrDefault("available", "?"))));
+                List.of("&7Jump to available max", "&f" + ph.getOrDefault("available", "?"),
+                        "&8Cost &e" + ph.getOrDefault("cost_max", "?"))));
         gui.addButton(actionBtn(24, Material.COMPASS, "&bTeam", "team", "0",
                 List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
 
-        // Purchase row (row index 3 → slots 27–35)
-        gui.addButton(actionBtn(29, Material.GOLD_NUGGET, "&eBuy +100", "buy", "100",
-                List.of("&7Unlock more max difficulty", "&8Cost &f" + ph.getOrDefault("cost_100", "?"))));
-        gui.addButton(actionBtn(31, Material.GOLD_INGOT, "&eBuy +1,000", "buy", "1000",
-                List.of("&7Unlock more max difficulty", "&8Cost &f" + ph.getOrDefault("cost_1000", "?"))));
-        gui.addButton(actionBtn(33, Material.GOLD_BLOCK, "&eBuy +10,000", "buy", "10000",
-                List.of("&7Unlock more max difficulty", "&8Cost &f" + ph.getOrDefault("cost_10000", "?"))));
+        // Unlock more max (also Lightman's iron coins)
+        gui.addButton(actionBtn(29, Material.GOLD_NUGGET, "&eBuy +100 max", "buy", "100",
+                List.of("&7Unlock more max difficulty", "&8Cost &e" + ph.getOrDefault("cost_100", "?"))));
+        gui.addButton(actionBtn(31, Material.GOLD_INGOT, "&eBuy +1,000 max", "buy", "1000",
+                List.of("&7Unlock more max difficulty", "&8Cost &e" + ph.getOrDefault("cost_1000", "?"))));
+        gui.addButton(actionBtn(33, Material.GOLD_BLOCK, "&eBuy +10,000 max", "buy", "10000",
+                List.of("&7Unlock more max difficulty", "&8Cost &e" + ph.getOrDefault("cost_10000", "?"))));
 
         // Footer (row index 5 → slots 45–53)
         gui.addButton(pageBtn(45, Material.EXPERIENCE_BOTTLE, "&fRewards", "rewards",

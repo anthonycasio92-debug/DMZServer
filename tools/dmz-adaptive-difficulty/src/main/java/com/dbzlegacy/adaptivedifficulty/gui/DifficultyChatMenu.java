@@ -49,14 +49,21 @@ public final class DifficultyChatMenu {
                 + "  §8Wallet §f" + CurrencyBridge.balanceText(player)));
         send(player, Component.m_237113_(""));
 
+        long room = Math.max(0L, snap.availableMax - snap.active);
+        long upAmt = Math.min(100L, room);
+        long upCost = upAmt <= 0 ? 0L : DifficultyCalculator.raiseCostIronCoins(snap.active, upAmt);
+        long maxCost = room <= 0 ? 0L : DifficultyCalculator.raiseCostIronCoins(snap.active, room);
+
         MutableComponent controls = Component.m_237113_("")
                 .m_7220_(btn("§c−100", "/difficulty do down 100", "Lower (free)"))
                 .m_7220_(Component.m_237113_(" §8· "))
                 .m_7220_(btn("§fReset", "/difficulty do reset 0", "Active → 0"))
                 .m_7220_(Component.m_237113_(" §8· "))
-                .m_7220_(btn("§a+100", "/difficulty do up 100", "Raise"))
+                .m_7220_(btn("§a+100", "/difficulty do up 100",
+                        upAmt <= 0 ? "At max" : "Raise — " + CurrencyBridge.formatCost(upCost)))
                 .m_7220_(Component.m_237113_(" §8· "))
-                .m_7220_(btn("§6Max", "/difficulty do set_max 0", "Set to max"))
+                .m_7220_(btn("§6Max", "/difficulty do set_max 0",
+                        room <= 0 ? "At max" : "Max — " + CurrencyBridge.formatCost(maxCost)))
                 .m_7220_(Component.m_237113_(" §8· "))
                 .m_7220_(btn("§bTeam", "/difficulty do team 0", "Mode: " + snap.teamMode));
         send(player, controls);
@@ -64,7 +71,7 @@ public final class DifficultyChatMenu {
         long buy100 = DifficultyCalculator.purchaseCost(snap.purchased, 100);
         long buy1k = DifficultyCalculator.purchaseCost(snap.purchased, 1_000);
         long buy10k = DifficultyCalculator.purchaseCost(snap.purchased, 10_000);
-        MutableComponent buy = Component.m_237113_("§7Buy  ")
+        MutableComponent buy = Component.m_237113_("§7Buy max  ")
                 .m_7220_(btn("§e+100", "/difficulty do buy 100", CurrencyBridge.formatCost(buy100)))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§e+1k", "/difficulty do buy 1000", CurrencyBridge.formatCost(buy1k)))
@@ -126,8 +133,9 @@ public final class DifficultyChatMenu {
     private static void settings(ServerPlayer player) {
         DifficultyConfig cfg = DifficultyConfig.get();
         send(player, Component.m_237113_("§8──────── §fAdmin §8────────"));
-        send(player, Component.m_237113_("§7currency §f" + cfg.purchaseCurrency
-                + "  §7baseCost §f" + cfg.baseCost));
+        send(player, Component.m_237113_("§7ironBase §f" + cfg.baseCostIronCoins
+                + "  §7scale §f" + cfg.costScalePerDifficulty
+                + "  §7coin §f" + cfg.costCoinItem));
         send(player, Component.m_237113_("§8/difficulty admin set <key> <value>"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }

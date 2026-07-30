@@ -22,8 +22,25 @@ public final class DifficultyConfig {
     public double levelMultiplier = 1.0;
     public double teamBonusPercent = 10.0;
     public double contributionPercent = 25.0;
-    public long baseCost = 100_000L;
-    public long costScaling = 1_000L;
+    /**
+     * Legacy fields kept for old configs; pricing now uses iron-coin fields below.
+     * {@code baseCost}/{@code costScaling} are ignored for difficulty payments.
+     */
+    public long baseCost = 1L;
+    public long costScaling = 100L;
+    /**
+     * Iron coins charged per difficulty level at active/purchased = 0.
+     * Example: 1 → first +1 costs 1 iron coin.
+     */
+    public long baseCostIronCoins = 1L;
+    /**
+     * Extra cost growth per current difficulty level.
+     * Formula: cost ≈ amount × base × (1 + scale × (from + (amount-1)/2)).
+     * Default 0.01 → at difficulty 100, each +1 costs ~2× base.
+     */
+    public double costScalePerDifficulty = 0.01;
+    /** Lightman's coin item used as the unit price (default iron coin). */
+    public String costCoinItem = "lightmanscurrency:coin_iron";
     public double rewardScaling = 1_000.0;
     public double healthPercentPerDifficulty = 1.0;
     public double damagePercentPerDifficulty = 1.0;
@@ -56,7 +73,8 @@ public final class DifficultyConfig {
     public long tierDivine = 50_000L;
     public long tierImpossible = 100_000L;
     /**
-     * {@code lightmans} (preferred when mod present), {@code training_points}, or {@code free}.
+     * Difficulty payments always use Lightman's Currency (iron coins).
+     * Kept for config compatibility; non-lightmans values are forced back to lightmans.
      */
     public String purchaseCurrency = "lightmans";
     public boolean scaleHostileOnly = true;
@@ -172,8 +190,16 @@ public final class DifficultyConfig {
         if (cfg.adminPermission == null || cfg.adminPermission.isBlank()) {
             cfg.adminPermission = "difficulty.admin";
         }
-        if (cfg.purchaseCurrency == null || cfg.purchaseCurrency.isBlank()) {
-            cfg.purchaseCurrency = "lightmans";
+        // Always Lightman's for difficulty payments
+        cfg.purchaseCurrency = "lightmans";
+        if (cfg.costCoinItem == null || cfg.costCoinItem.isBlank()) {
+            cfg.costCoinItem = "lightmanscurrency:coin_iron";
+        }
+        if (cfg.baseCostIronCoins < 0L) {
+            cfg.baseCostIronCoins = 1L;
+        }
+        if (cfg.costScalePerDifficulty < 0.0) {
+            cfg.costScalePerDifficulty = 0.01;
         }
         if (cfg.areaDifficultyMode == null || cfg.areaDifficultyMode.isBlank()) {
             cfg.areaDifficultyMode = "weighted";

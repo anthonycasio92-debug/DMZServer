@@ -141,6 +141,16 @@ public final class ForgeBridge {
             out.put("cost_100", String.valueOf(formatCost.invoke(null, c100)));
             out.put("cost_1000", String.valueOf(formatCost.invoke(null, c1k)));
             out.put("cost_10000", String.valueOf(formatCost.invoke(null, c10k)));
+
+            Method raiseCost = calcCls.getMethod("raiseCostIronCoins", long.class, long.class);
+            long room = Math.max(0L, available - active);
+            long upAmt = Math.min(100L, room);
+            long upCost = upAmt <= 0 ? 0L : (Long) raiseCost.invoke(null, active, upAmt);
+            long maxCost = room <= 0 ? 0L : (Long) raiseCost.invoke(null, active, room);
+            out.put("cost_up_100", upAmt <= 0 ? "at max" : String.valueOf(formatCost.invoke(null, upCost)));
+            out.put("cost_max", room <= 0 ? "at max" : String.valueOf(formatCost.invoke(null, maxCost)));
+            out.put("raise_room", String.valueOf(room));
+
             double mult = (Double) rewardMult.invoke(null, active);
             out.put("reward_mult", String.format(Locale.US, "%.2f", mult));
 

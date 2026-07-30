@@ -42,7 +42,6 @@ public final class DifficultyCalculator {
         if (active < 0) {
             active = 0;
         }
-        // Keep stored active within bounds when progression drops.
         if (active != data.getActiveDifficulty()) {
             data.setActiveDifficulty(active);
         }
@@ -61,18 +60,34 @@ public final class DifficultyCalculator {
         );
     }
 
-    public static long purchaseCost(long currentPurchased, long amountToBuy) {
-        DifficultyConfig cfg = DifficultyConfig.get();
-        if (amountToBuy <= 0) {
+    /**
+     * Iron-coin cost to raise difficulty by {@code amount} levels starting from {@code fromLevel}.
+     * <p>
+     * Default: 1 iron coin per level at 0, scaling by {@code costScalePerDifficulty}
+     * so higher difficulty is more expensive per level.
+     * <pre>
+     * cost(level) = baseIron × (1 + level × scale)
+     * total ≈ amount × baseIron × (1 + scale × (from + (amount-1)/2))
+     * </pre>
+     */
+    public static long raiseCostIronCoins(long fromLevel, long amount) {
+        if (amount <= 0) {
             return 0L;
         }
-        // Concept §6: Cost = Base Cost × (Purchased Difficulty / Cost Scaling)
-        // Applied per costScaling-sized chunk being bought (min 1 chunk).
-        double purchasedRatio = cfg.costScaling <= 0
-                ? 1.0
-                : Math.max(1.0, (double) Math.max(1L, currentPurchased) / (double) cfg.costScaling);
-        long chunks = Math.max(1L, (amountToBuy + Math.max(1L, cfg.costScaling) - 1L) / Math.max(1L, cfg.costScaling));
-        return Math.max(1L, Math.round(cfg.baseCost * purchasedRatio) * chunks);
+        DifficultyConfig cfg = DifficultyConfig.get();
+        double base = Math.max(0.0, cfg.baseCostIronCoins);
+        if (base <= 0.0) {
+            return 0L;
+        }
+        double scale = Math.max(0.0, cfg.costScalePerDifficulty);
+        double from = Math.max(0L, fromLevel);
+        double total = amount * base * (1.0 + scale * (from + (amount - 1L) / 2.0));
+        return Math.max(1L, Math.round(total));
+    }
+
+    /** Cost to unlock more purchased max (same iron-coin scaling, keyed off current purchased). */
+    public static long purchaseCost(long currentPurchased, long amountToBuy) {
+        return raiseCostIronCoins(Math.max(0L, currentPurchased), amountToBuy);
     }
 
     public static double rewardMultiplier(long activeDifficulty) {

@@ -1,12 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.currency;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
-import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
-import com.dragonminez.common.network.NetworkHandler;
-import com.dragonminez.common.network.S2C.StatsSyncS2C;
-import com.dragonminez.common.stats.StatsData;
-import com.dragonminez.common.stats.character.Resources;
 import io.github.lightman314.lightmanscurrency.api.capability.money.IMoneyHandler;
 import io.github.lightman314.lightmanscurrency.api.capability.money.MoneyHandler;
 import io.github.lightman314.lightmanscurrency.api.money.MoneyAPI;
@@ -19,15 +14,17 @@ import io.github.lightman314.lightmanscurrency.api.money.value.builtin.CoinValue
 import io.github.lightman314.lightmanscurrency.api.money.value.holder.IMoneyHolder;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Item;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * Payment for purchased difficulty.
- * Modes: {@code lightmans} (default when mod present), {@code training_points}, {@code free}.
- *
- * <p>Lightman's path combines equipped wallet + bank account + inventory coins.
- * {@link MoneyAPI#GetPlayersMoneyHandler} alone only sees the equipped wallet.
+ * Difficulty increases are always paid in Lightman's Currency.
+ * Costs are priced in iron coins (configurable item id).
+ * <p>
+ * Combines equipped wallet + bank account + inventory coins.
  */
 public final class CurrencyBridge {
     private static final boolean LIGHTMANS_LOADED = ModList.get().isLoaded("lightmanscurrency");
@@ -38,69 +35,63 @@ public final class CurrencyBridge {
         return LIGHTMANS_LOADED;
     }
 
+    /** Always Lightman's for difficulty payments. */
     public static String activeMode() {
-        String mode = DifficultyConfig.get().purchaseCurrency;
-        if ("lightmans".equalsIgnoreCase(mode) && !LIGHTMANS_LOADED) {
-            return "training_points";
-        }
-        return mode == null ? "training_points" : mode;
+        return "lightmans";
     }
 
-    public static boolean canAfford(ServerPlayer player, long cost) {
-        if (cost <= 0) {
+    public static boolean canAfford(ServerPlayer player, long ironCoins) {
+        if (ironCoins <= 0) {
             return true;
         }
-        String mode = activeMode();
-        if ("free".equalsIgnoreCase(mode)) {
-            return true;
-        }
-        if ("lightmans".equalsIgnoreCase(mode)) {
-            return canAffordLightmans(player, cost);
-        }
-        StatsData data = DmzProgression.stats(player);
-        if (data == null) {
+        if (!LIGHTMANS_LOADED) {
             return false;
         }
-        Resources resources = data.getResources();
-        return resources != null && resources.getTrainingPoints() >= cost;
+        return canAffordLightmans(player, ironCoins);
     }
 
-    public static boolean charge(ServerPlayer player, long cost) {
-        if (cost <= 0) {
+    public static boolean charge(ServerPlayer player, long ironCoins) {
+        if (ironCoins <= 0) {
             return true;
         }
-        String mode = activeMode();
-        if ("free".equalsIgnoreCase(mode)) {
-            return true;
-        }
-        if ("lightmans".equalsIgnoreCase(mode)) {
-            return chargeLightmans(player, cost);
-        }
-        StatsData data = DmzProgression.stats(player);
-        if (data == null) {
+        if (!LIGHTMANS_LOADED) {
             return false;
         }
-        Resources resources = data.getResources();
-        if (resources == null || resources.getTrainingPoints() < cost) {
-            return false;
+        return chargeLightmans(player, ironCoins);
+    }
+
+    /** Build a Lightman's price of {@code ironCoins} iron coins (or configured coin item). */
+    private static MoneyValue coinPrice(long ironCoins) {
+        long count = Math.max(1L, ironCoins);
+        Item coin = resolveCostCoin();
+        if (coin != null) {
+            try {
+                // fromItemOrValue(Item,long) is always count=1 — use (Item,int,long) for N coins.
+                int coinCount = (int) Math.min(Integer.MAX_VALUE, count);
+                MoneyValue priced = CoinValue.fromItemOrValue(coin, coinCount, count);
+                if (priced != null && !priced.isEmpty() && !priced.isInvalid()) {
+                    return priced;
+                }
+            } catch (Throwable ignored) {
+            }
         }
-        resources.removeTrainingPoints((float) cost);
+        // Fallback: treat number as main-chain core value
+        return CoinValue.fromNumber(CoinAPI.MAIN_CHAIN, count);
+    }
+
+    private static Item resolveCostCoin() {
+        String id = DifficultyConfig.get().costCoinItem;
+        if (id == null || id.isBlank()) {
+            id = "lightmanscurrency:coin_iron";
+        }
         try {
-            NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
-        } catch (Throwable ignored) {
+            ResourceLocation rl = new ResourceLocation(id.trim());
+            return ForgeRegistries.ITEMS.getValue(rl);
+        } catch (Throwable t) {
+            return null;
         }
-        return true;
     }
 
-    private static MoneyValue coinPrice(long coreValue) {
-        long value = Math.max(1L, coreValue);
-        return CoinValue.fromNumber(CoinAPI.MAIN_CHAIN, value);
-    }
-
-    /**
-     * Combined money source: wallet + bank + loose inventory coins.
-     * Returns null when nothing usable is available.
-     */
     private static IMoneyHandler combinedHandler(ServerPlayer player) {
         List<IMoneyHandler> handlers = new ArrayList<>(3);
 
@@ -125,7 +116,6 @@ public final class CurrencyBridge {
         }
 
         try {
-            // Inventory coins (not just equipped wallet)
             IMoneyHandler inventory = MoneyAPI.getApi().GetContainersMoneyHandler(player.m_150109_(), player);
             if (inventory != null) {
                 handlers.add(inventory);
@@ -144,12 +134,12 @@ public final class CurrencyBridge {
         return MoneyHandler.combine(handlers);
     }
 
-    private static boolean canAffordLightmans(ServerPlayer player, long cost) {
+    private static boolean canAffordLightmans(ServerPlayer player, long ironCoins) {
         try {
-            MoneyValue price = coinPrice(cost);
+            MoneyValue price = coinPrice(ironCoins);
             if (price == null || price.isEmpty() || price.isInvalid()) {
                 AdaptiveDifficultyMod.LOGGER.warn(
-                        "[{}] Lightman's price invalid for cost {}", AdaptiveDifficultyMod.MOD_ID, cost);
+                        "[{}] Lightman's price invalid for {} iron coins", AdaptiveDifficultyMod.MOD_ID, ironCoins);
                 return false;
             }
             IMoneyHandler handler = combinedHandler(player);
@@ -165,9 +155,9 @@ public final class CurrencyBridge {
         }
     }
 
-    private static boolean chargeLightmans(ServerPlayer player, long cost) {
+    private static boolean chargeLightmans(ServerPlayer player, long ironCoins) {
         try {
-            MoneyValue price = coinPrice(cost);
+            MoneyValue price = coinPrice(ironCoins);
             if (price == null || price.isEmpty() || price.isInvalid()) {
                 return false;
             }
@@ -179,7 +169,6 @@ public final class CurrencyBridge {
             if (stored == null || !stored.containsValue(price)) {
                 return false;
             }
-            // Simulate first so we never partially drain across sources on failure.
             MoneyValue simulated = handler.extractMoney(price, true);
             if (simulated != null && !simulated.isEmpty() && !simulated.isFree()) {
                 return false;
@@ -193,64 +182,48 @@ public final class CurrencyBridge {
         }
     }
 
-    /** Human-readable balance for GUI / chat. */
     public static String balanceText(ServerPlayer player) {
-        String mode = activeMode();
-        if ("free".equalsIgnoreCase(mode)) {
-            return "free";
+        if (!LIGHTMANS_LOADED) {
+            return "Lightman's missing";
         }
-        if ("lightmans".equalsIgnoreCase(mode)) {
-            try {
-                IMoneyHandler handler = combinedHandler(player);
-                if (handler == null) {
-                    return "0";
-                }
-                MoneyView view = handler.getStoredMoney();
-                if (view == null || view.isEmpty()) {
-                    return "0";
-                }
-                MoneyValue main = view.valueOf(CoinAPI.MAIN_CHAIN);
-                if (main != null && !main.isEmpty()) {
-                    return main.getString();
-                }
-                return view.getString();
-            } catch (Throwable t) {
-                return "?";
+        try {
+            IMoneyHandler handler = combinedHandler(player);
+            if (handler == null) {
+                return "0";
             }
+            MoneyView view = handler.getStoredMoney();
+            if (view == null || view.isEmpty()) {
+                return "0";
+            }
+            MoneyValue main = view.valueOf(CoinAPI.MAIN_CHAIN);
+            if (main != null && !main.isEmpty()) {
+                return main.getString();
+            }
+            return view.getString();
+        } catch (Throwable t) {
+            return "?";
         }
-        StatsData data = DmzProgression.stats(player);
-        if (data == null || data.getResources() == null) {
-            return "0 TP";
-        }
-        return Math.round(data.getResources().getTrainingPoints()) + " TP";
     }
 
-    /** Format a purchase cost in the active currency. */
-    public static String formatCost(long cost) {
-        if ("free".equalsIgnoreCase(activeMode())) {
+    /** Format an iron-coin cost for GUI / chat. */
+    public static String formatCost(long ironCoins) {
+        if (ironCoins <= 0) {
             return "free";
         }
-        if ("lightmans".equalsIgnoreCase(activeMode()) && LIGHTMANS_LOADED) {
-            try {
-                MoneyValue price = coinPrice(cost);
-                if (price != null && !price.isEmpty()) {
-                    return price.getString();
-                }
-            } catch (Throwable ignored) {
-            }
-            return cost + " coins";
+        if (!LIGHTMANS_LOADED) {
+            return ironCoins + " iron coins";
         }
-        return cost + " TP";
+        try {
+            MoneyValue price = coinPrice(ironCoins);
+            if (price != null && !price.isEmpty()) {
+                return price.getString();
+            }
+        } catch (Throwable ignored) {
+        }
+        return ironCoins + " iron";
     }
 
     public static String currencyLabel() {
-        String mode = activeMode();
-        if ("free".equalsIgnoreCase(mode)) {
-            return "free";
-        }
-        if ("lightmans".equalsIgnoreCase(mode)) {
-            return LIGHTMANS_LOADED ? "Lightman's Coins" : "Training Points (Lightman's missing)";
-        }
-        return "Training Points";
+        return LIGHTMANS_LOADED ? "Lightman's Coins" : "Lightman's Currency (missing)";
     }
 }

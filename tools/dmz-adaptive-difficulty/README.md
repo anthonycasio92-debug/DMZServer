@@ -12,7 +12,8 @@ Clients do **not** need this jar to join.
   3. Clickable chat fallback
 - Bukkit `/difficulty` registered by the companion plugin so **all players** can use it on Mohist
 - FTB Teams teammate scaling (scoreboard fallback)
-- Lightman's wallet + bank + inventory coin purchases
+- Raising difficulty always costs **Lightman's iron coins** (scaled); lowering/reset is free
+- Buy-max also uses Lightman's (wallet + bank + inventory)
 - Spawn mob scaling (capped), elites, mutations, enemy evolution, adaptive AI, boss phases
 - Scaling Health-inspired area difficulty (`weighted` / `average` / `max`)
 - Optimized tick path: unmarked mobs exit immediately; AI/evolution staggered
@@ -44,6 +45,30 @@ Clients do **not** need this jar to join.
 | Ops | `/difficulty hard\|normal\|easy\|peaceful` | Vanilla world difficulty |
 | Staff | `/difficulty admin` | Toggle admin command access (shows errors if no perm) |
 | Staff (toggled on) | `/difficulty admin help\|reload\|settings\|area\|resetpurchased\|gamedifficulty\|set` | Config tools |
+
+## Pricing (Lightman's iron coins)
+
+Raising active difficulty and buying more max **always** costs Lightman's Currency.
+
+Default formula (iron coins):
+
+```
+cost ≈ amount × baseCostIronCoins × (1 + costScalePerDifficulty × (from + (amount-1)/2))
+```
+
+Defaults:
+- `baseCostIronCoins = 1` → first levels cost ~1 iron coin each
+- `costScalePerDifficulty = 0.01` → at difficulty 100, each +1 costs ~2 iron
+- `costCoinItem = lightmanscurrency:coin_iron`
+
+Tune live:
+```
+/difficulty admin set baseCostIronCoins 1
+/difficulty admin set costScalePerDifficulty 0.01
+/difficulty admin set costCoinItem lightmanscurrency:coin_iron
+```
+
+Lowering and Reset are free. No refunds.
 
 ## Area difficulty
 

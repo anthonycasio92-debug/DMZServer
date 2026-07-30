@@ -53,18 +53,19 @@ public final class DifficultyChestGui implements Listener {
         inv.setItem(21, button(Material.WHITE_CONCRETE, "&fReset", "reset", "0",
                 List.of("&7Set active to &f0", "&8Purchased max kept")));
         inv.setItem(22, button(Material.LIME_CONCRETE, "&a+ 100", "up", "100",
-                List.of("&7Raise active difficulty")));
+                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_100", "?"))));
         inv.setItem(23, button(Material.ORANGE_CONCRETE, "&6Max", "set_max", "0",
-                List.of("&7Jump to available max", "&f" + ph.getOrDefault("available", "?"))));
+                List.of("&7Jump to available max", "&f" + ph.getOrDefault("available", "?"),
+                        "&8Cost &e" + ph.getOrDefault("cost_max", "?"))));
         inv.setItem(24, button(Material.COMPASS, "&bTeam", "team", "0",
                 List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
 
-        inv.setItem(29, button(Material.GOLD_NUGGET, "&eBuy +100", "buy", "100",
-                List.of("&7Unlock more max difficulty", "&8Cost &f" + ph.getOrDefault("cost_100", "?"))));
-        inv.setItem(31, button(Material.GOLD_INGOT, "&eBuy +1,000", "buy", "1000",
-                List.of("&7Unlock more max difficulty", "&8Cost &f" + ph.getOrDefault("cost_1000", "?"))));
-        inv.setItem(33, button(Material.GOLD_BLOCK, "&eBuy +10,000", "buy", "10000",
-                List.of("&7Unlock more max difficulty", "&8Cost &f" + ph.getOrDefault("cost_10000", "?"))));
+        inv.setItem(29, button(Material.GOLD_NUGGET, "&eBuy +100 max", "buy", "100",
+                List.of("&7Unlock more max difficulty", "&8Cost &e" + ph.getOrDefault("cost_100", "?"))));
+        inv.setItem(31, button(Material.GOLD_INGOT, "&eBuy +1,000 max", "buy", "1000",
+                List.of("&7Unlock more max difficulty", "&8Cost &e" + ph.getOrDefault("cost_1000", "?"))));
+        inv.setItem(33, button(Material.GOLD_BLOCK, "&eBuy +10,000 max", "buy", "10000",
+                List.of("&7Unlock more max difficulty", "&8Cost &e" + ph.getOrDefault("cost_10000", "?"))));
 
         inv.setItem(45, pageBtn(Material.EXPERIENCE_BOTTLE, "&fRewards", "rewards", "&7TP multiplier details"));
         inv.setItem(46, pageBtn(Material.IRON_SWORD, "&fTiers", "tiers", "&7Enemy tier unlocks"));

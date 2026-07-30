@@ -304,6 +304,7 @@ public final class DifficultyCommands {
                         + "§e/difficulty admin set <key> <value>\n"
                         + "§8areaDifficultyMode=weighted|average|max (Scaling Health-style)\n"
                         + "§8tierAwakened|tierEnhanced|…|tierImpossible — ability unlock thresholds\n"
+                        + "§8baseCostIronCoins|costScalePerDifficulty|costCoinItem\n"
                         + "§8movement|dmzExtraHealth|dmzExtraDamage|dmzExtraDefense|dmzExtraKiDamage"
         ), false);
         return 1;
@@ -340,6 +341,11 @@ public final class DifficultyCommands {
                 case "contribution", "contributionpercent" -> cfg.contributionPercent = Double.parseDouble(value);
                 case "basecost" -> cfg.baseCost = Long.parseLong(value);
                 case "costscaling" -> cfg.costScaling = Long.parseLong(value);
+                case "basecostironcoins", "baseiron", "ironbase" ->
+                        cfg.baseCostIronCoins = Math.max(0L, Long.parseLong(value));
+                case "costscaleperdifficulty", "costscale", "ironscale" ->
+                        cfg.costScalePerDifficulty = Math.max(0.0, Double.parseDouble(value));
+                case "costcoinitem", "coinitem" -> cfg.costCoinItem = value.trim();
                 case "rewardscaling" -> cfg.rewardScaling = Double.parseDouble(value);
                 case "health", "healthpercentperdifficulty" -> cfg.healthPercentPerDifficulty = Double.parseDouble(value);
                 case "damage", "damagepercentperdifficulty" -> cfg.damagePercentPerDifficulty = Double.parseDouble(value);
