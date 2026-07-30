@@ -3,7 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.bukkit;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.entity.Player;
 
-/** PlaceholderAPI: {@code %dmzdiff_<id>%} for DeluxeMenus lore. */
+/** PlaceholderAPI: {@code %dmzdiff_<id>%} for CMI lore / scoreboards. */
 public final class DmzDiffExpansion extends PlaceholderExpansion {
     private final AdaptiveDifficultyGuiPlugin plugin;
 

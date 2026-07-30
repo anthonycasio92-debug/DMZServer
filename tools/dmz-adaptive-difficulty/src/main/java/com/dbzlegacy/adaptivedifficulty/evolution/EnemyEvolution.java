@@ -30,22 +30,26 @@ public final class EnemyEvolution {
     private EnemyEvolution() {}
 
     public static void tick(LivingEntity entity) {
+        if (!(entity instanceof Mob mob)) {
+            return;
+        }
+        tick(mob, MobScaling.difficultyOf(entity), EliteSystem.isElite(entity));
+    }
+
+    /** Prefer this when the caller already resolved difficulty / elite and type-filtered. */
+    public static void tick(Mob mob, long difficulty, boolean elite) {
         DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableEnemyEvolution || entity == null || !(entity instanceof Mob mob)) {
+        if (!cfg.enableEnemyEvolution || mob == null || !mob.m_6084_()) {
             return;
         }
-        if (!(entity.m_9236_() instanceof ServerLevel level) || !entity.m_6084_()) {
+        if (!(mob.m_9236_() instanceof ServerLevel level)) {
             return;
         }
-        if (entity.f_19797_ % 10 != 0) {
-            return;
-        }
-        long difficulty = MobScaling.difficultyOf(entity);
-        if (difficulty <= 0 && !EliteSystem.isElite(entity)) {
+        if (difficulty <= 0 && !elite) {
             return;
         }
         DifficultyTier tier = DifficultyTier.of(difficulty);
-        if (EliteSystem.isElite(entity) && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
+        if (elite && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
             tier = DifficultyTier.ELITE;
         }
         if (tier.ordinalPower() < DifficultyTier.AWAKENED.ordinalPower()) {
@@ -53,15 +57,15 @@ public final class EnemyEvolution {
         }
 
         LivingEntity target = mob.m_5448_();
-        if (entity instanceof Creeper creeper) {
+        if (mob instanceof Creeper creeper) {
             creeperTick(creeper, level, target, tier);
-        } else if (entity instanceof Zombie zombie) {
+        } else if (mob instanceof Zombie zombie) {
             zombieTick(zombie, target, tier);
-        } else if (entity instanceof Skeleton skeleton) {
+        } else if (mob instanceof Skeleton skeleton) {
             skeletonTick(skeleton, target, tier);
-        } else if (entity instanceof EnderMan enderMan) {
+        } else if (mob instanceof EnderMan enderMan) {
             endermanTick(enderMan, level, target, tier);
-        } else if (entity instanceof Warden warden) {
+        } else if (mob instanceof Warden warden) {
             wardenTick(warden, level, target, tier);
         }
     }

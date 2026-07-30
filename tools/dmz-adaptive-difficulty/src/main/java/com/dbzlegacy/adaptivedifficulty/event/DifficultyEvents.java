@@ -7,16 +7,24 @@ import com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.reward.RewardSystem;
+import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.dragonminez.common.events.DMZEvent;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.entity.monster.Skeleton;
+import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
@@ -35,11 +43,11 @@ public final class DifficultyEvents {
     public void onServerStarting(ServerStartingEvent event) {
         DifficultyConfig.load();
         DifficultyCache.invalidateAll();
+        AreaDifficulty.clearCache();
     }
 
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
-        // Peaceful kills hostile spawns — restore so adaptive scaling can run.
         VanillaDifficultyGuard.restoreIfPeaceful(event.getServer());
     }
 
@@ -56,7 +64,8 @@ public final class DifficultyEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             DifficultyCache.save(player);
             DifficultyCache.remove(player.m_20148_());
-            DifficultyCache.invalidateAll();
+            // Only drop this player's cache — do not wipe everyone on leave.
+            AreaDifficulty.clearCache();
         }
     }
 
@@ -74,33 +83,73 @@ public final class DifficultyEvents {
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public void onFinalizeSpawn(MobSpawnEvent.FinalizeSpawn event) {
-        // Scale only — never cancel / deny spawn from this handler.
         LivingEntity entity = event.getEntity();
         if (entity != null && !event.isCanceled() && !event.isSpawnCancelled()) {
             MobScaling.scaleIfNeeded(entity);
         }
     }
 
+    /**
+     * Concept §17 — only touch mobs that need work.
+     * Unscaled hostiles get sparse spawn-retry; unmarked vanilla mobs exit immediately.
+     */
     @SubscribeEvent
     public void onLivingTick(LivingEvent.LivingTickEvent event) {
         LivingEntity entity = event.getEntity();
-        if (entity == null || entity.m_9236_().f_46443_ || entity instanceof Player) {
+        if (!(entity instanceof Mob mob) || entity.m_9236_().f_46443_ || entity instanceof Player) {
             return;
         }
-        // Scaling Health pattern: process a few ticks after spawn if FinalizeSpawn missed
-        // (common on hybrid Mohist stacks).
-        if (entity instanceof Mob && entity.f_19797_ > 2 && entity.f_19797_ < 40) {
+
+        int age = entity.f_19797_;
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        boolean scaled = tag.m_128471_(MobScaling.TAG_SCALED);
+
+        // Sparse deferred scale if FinalizeSpawn missed (Mohist).
+        if (!scaled && age > 2 && age < 40 && (age == 5 || age == 15 || age == 30)) {
             MobScaling.scaleIfNeeded(entity);
+            tag = PersistentDataAccess.get(entity);
+            scaled = tag.m_128471_(MobScaling.TAG_SCALED);
         }
-        MutationSystem.tick(entity);
-        AdaptiveAiSystem.tick(entity);
-        EnemyEvolution.tick(entity);
-        BossScaling.tickPhases(entity);
+        if (!scaled) {
+            return;
+        }
+
+        boolean elite = tag.m_128471_(EliteSystem.TAG_ELITE);
+        boolean boss = tag.m_128471_(BossScaling.TAG_BOSS);
+        boolean mutated = tag.m_128441_(MutationSystem.TAG_MUTATION)
+                && !tag.m_128461_(MutationSystem.TAG_MUTATION).isEmpty();
+        long difficulty = tag.m_128441_(MobScaling.TAG_DIFFICULTY) ? tag.m_128454_(MobScaling.TAG_DIFFICULTY) : 0L;
+
+        // Plain scaled-zero hostiles need no AI/evolution/phases.
+        if (difficulty <= 0 && !elite && !boss && !mutated) {
+            return;
+        }
+
+        if (mutated && age % 20 == 0) {
+            MutationSystem.tick(entity, tag);
+        }
+        if (boss && age % 10 == 0) {
+            BossScaling.tickPhases(entity, tag);
+        }
+
+        // Stagger AI / evolution across entity ids to smooth TPS.
+        int stagger = Math.floorMod(entity.m_19879_(), 20);
+        if (age % 20 == stagger) {
+            AdaptiveAiSystem.tick(mob, difficulty, elite);
+        }
+        if (isEvolvable(mob) && age % 20 == ((stagger + 10) % 20)) {
+            EnemyEvolution.tick(mob, difficulty, elite);
+        }
     }
 
-    /**
-     * Concept §17 — refresh cached difficulty when level/prestige changes (throttled).
-     */
+    private static boolean isEvolvable(Mob mob) {
+        return mob instanceof Creeper
+                || mob instanceof Zombie
+                || mob instanceof Skeleton
+                || mob instanceof EnderMan
+                || mob instanceof Warden;
+    }
+
     @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)) {
@@ -114,6 +163,7 @@ public final class DifficultyEvents {
         int prestige = DmzProgression.prestige(player);
         if (before.dmzLevel != level || before.prestige != prestige) {
             DifficultyCache.refresh(player);
+            AreaDifficulty.clearCache();
         }
     }
 
@@ -121,7 +171,7 @@ public final class DifficultyEvents {
     public void onHurt(LivingHurtEvent event) {
         AdaptiveAiSystem.onHurt(event);
         LivingEntity entity = event.getEntity();
-        if (entity != null && event.getAmount() > 0.0f) {
+        if (entity instanceof EnderMan && event.getAmount() > 0.0f) {
             EnemyEvolution.onHurt(entity);
         }
     }
@@ -145,7 +195,8 @@ public final class DifficultyEvents {
         if (!(event.getPlayer() instanceof ServerPlayer player)) {
             return;
         }
-        DifficultySnapshot snap = DifficultyCache.refresh(player);
+        // Display/combat cache is enough — avoid full team recompute every TP tick.
+        DifficultySnapshot snap = DifficultyCache.get(player);
         double mult = DifficultyCalculator.rewardMultiplier(snap.active);
         if (mult > 1.0) {
             int gained = event.getTpGain();

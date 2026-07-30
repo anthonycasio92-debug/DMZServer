@@ -1,6 +1,6 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.6.2** (server-side only)  
+Mod version: **1.7.0** (server-side only; CMI GUI, no DeluxeMenus)  
 Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
 Reaudited against live Java sources (not prior audit claims).
@@ -36,7 +36,7 @@ Reaudited against live Java sources (not prior audit claims).
 - **Admin command shape**: nested under `/difficulty admin` with toggle (ops / `difficulty.admin`)
 - **Phys vs Ki DMZ extras**: folded into shared outgoing damage multiplier for mobs
 
-## v1.6.2 reaudit fixes
+## v1.7.0 reaudit fixes
 - Anti-flight now disables DMZ `fly` skill + removes `MainEffects.FLY` (not only creative fly)
 - Red / Extreme state is reachable (full team ceiling or hard-cap band) and shown in GUIs
 - Unlocked titles listed on Statistics (chat / CMI / chest)

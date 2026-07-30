@@ -70,7 +70,21 @@ public final class MutationSystem {
     }
 
     public static void tick(LivingEntity entity) {
-        MutationType type = get(entity);
+        if (entity == null) {
+            return;
+        }
+        tick(entity, PersistentDataAccess.get(entity));
+    }
+
+    /** Prefer this when the caller already loaded the entity tag. */
+    public static void tick(LivingEntity entity, CompoundTag tag) {
+        if (entity == null || tag == null || !PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
+        if (!tag.m_128441_(TAG_MUTATION)) {
+            return;
+        }
+        MutationType type = MutationType.fromString(tag.m_128461_(TAG_MUTATION));
         if (type != null) {
             type.tick(entity);
         }

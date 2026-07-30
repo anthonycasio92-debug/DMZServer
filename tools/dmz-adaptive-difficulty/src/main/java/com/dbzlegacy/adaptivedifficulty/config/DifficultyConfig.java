@@ -89,8 +89,7 @@ public final class DifficultyConfig {
     public String adminPermission = "difficulty.admin";
     /**
      * Player UI backend for {@code /difficulty}:
-     * {@code auto} (CMI/CMILib → chest → DeluxeMenus → chat), {@code cmi}, {@code chest},
-     * {@code deluxemenus}, or {@code chat}.
+     * {@code cmi} (default), {@code auto} (CMI → chest → chat), {@code chest}, or {@code chat}.
      */
     public String guiBackend = "cmi";
     /**
@@ -159,7 +158,13 @@ public final class DifficultyConfig {
             cfg.bossIdContains = new ArrayList<>();
         }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
-            cfg.guiBackend = "auto";
+            cfg.guiBackend = "cmi";
+        } else {
+            String gui = cfg.guiBackend.trim().toLowerCase();
+            // Legacy DeluxeMenus configs → CMI
+            if (gui.equals("deluxemenus") || gui.equals("deluxe") || gui.equals("dm")) {
+                cfg.guiBackend = "cmi";
+            }
         }
         if (cfg.vanillaDifficulty == null || cfg.vanillaDifficulty.isBlank()) {
             cfg.vanillaDifficulty = "hard";
@@ -182,6 +187,8 @@ public final class DifficultyConfig {
             try (Writer writer = Files.newBufferedWriter(file)) {
                 GSON.toJson(INSTANCE, writer);
             }
+            com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier.invalidateThresholdCache();
+            com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty.clearCache();
         } catch (IOException e) {
             AdaptiveDifficultyMod.LOGGER.warn("[{}] failed to save config: {}", AdaptiveDifficultyMod.MOD_ID, e.toString());
         }
@@ -189,5 +196,7 @@ public final class DifficultyConfig {
 
     public static void reload() {
         load();
+        com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier.invalidateThresholdCache();
+        com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty.clearCache();
     }
 }

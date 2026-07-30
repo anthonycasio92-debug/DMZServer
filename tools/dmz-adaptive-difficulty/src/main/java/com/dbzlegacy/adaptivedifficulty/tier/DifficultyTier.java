@@ -19,14 +19,35 @@ public enum DifficultyTier {
     public final long threshold;
     public final String display;
 
+    private static volatile long[] CACHED_THRESHOLDS;
+
     DifficultyTier(long threshold, String display) {
         this.threshold = threshold;
         this.display = display;
     }
 
+    public static void invalidateThresholdCache() {
+        CACHED_THRESHOLDS = null;
+    }
+
     /** Live threshold from config (falls back to concept default). */
     public long threshold() {
-        return DifficultyConfig.get().tierThreshold(this);
+        long[] cached = CACHED_THRESHOLDS;
+        if (cached == null) {
+            cached = buildCache();
+            CACHED_THRESHOLDS = cached;
+        }
+        return cached[ordinal()];
+    }
+
+    private static long[] buildCache() {
+        DifficultyTier[] values = values();
+        long[] out = new long[values.length];
+        DifficultyConfig cfg = DifficultyConfig.get();
+        for (DifficultyTier tier : values) {
+            out[tier.ordinal()] = cfg.tierThreshold(tier);
+        }
+        return out;
     }
 
     public static DifficultyTier of(long difficulty) {

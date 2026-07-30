@@ -9,32 +9,93 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.entity.Player;
 
 /** Reflects into the Forge mod for live values / actions (Mohist shared JVM). */
 public final class ForgeBridge {
     private static final Set<UUID> ADMIN = new HashSet<>();
+    private static final long PLACEHOLDER_TTL_MS = 200L;
+    private static final Map<UUID, CachedPlaceholders> PLACEHOLDER_CACHE = new ConcurrentHashMap<>();
+
+    private static volatile boolean resolved;
+    private static Class<?> serverPlayerCls;
+    private static Class<?> cacheCls;
+    private static Class<?> tierCls;
+    private static Class<?> teamCls;
+    private static Class<?> currencyCls;
+    private static Class<?> calcCls;
+    private static Class<?> dataCls;
+    private static Class<?> actionsCls;
+    private static Method getHandle;
+    private static Method cacheGet;
+    private static Method cacheRefresh;
+    private static Method cacheData;
+    private static Method tierOf;
+    private static Method tierValues;
+    private static Method tierThreshold;
+    private static Method teamName;
+    private static Method teamSource;
+    private static Method teammates;
+    private static Method balanceText;
+    private static Method currencyLabel;
+    private static Method purchaseCost;
+    private static Method formatCost;
+    private static Method rewardMult;
+    private static Method dataTitles;
+    private static Method snapshotState;
+    private static Method snapshotStateColor;
+    private static Method actionsHandle;
+    private static Method resultMessage;
 
     private ForgeBridge() {}
 
     public static Object nmsPlayer(Player player) {
+        if (player == null) {
+            return null;
+        }
         try {
-            return player.getClass().getMethod("getHandle").invoke(player);
+            ensureResolved();
+            if (getHandle == null) {
+                getHandle = player.getClass().getMethod("getHandle");
+            }
+            return getHandle.invoke(player);
         } catch (Throwable t) {
             return null;
         }
     }
 
     public static Map<String, String> placeholders(Player player) {
+        if (player == null) {
+            return Map.of();
+        }
+        long now = System.currentTimeMillis();
+        CachedPlaceholders cached = PLACEHOLDER_CACHE.get(player.getUniqueId());
+        if (cached != null && now - cached.atMs <= PLACEHOLDER_TTL_MS) {
+            return cached.map;
+        }
+        Map<String, String> built = buildPlaceholders(player);
+        PLACEHOLDER_CACHE.put(player.getUniqueId(), new CachedPlaceholders(built, now));
+        return built;
+    }
+
+    public static String placeholder(Player player, String id) {
+        if (id == null) {
+            return "";
+        }
+        return placeholders(player).getOrDefault(id.toLowerCase(Locale.ROOT), "");
+    }
+
+    private static Map<String, String> buildPlaceholders(Player player) {
         Map<String, String> out = new HashMap<>();
         Object nms = nmsPlayer(player);
         if (nms == null) {
             return out;
         }
         try {
-            Class<?> sp = Class.forName("net.minecraft.server.level.ServerPlayer");
-            Class<?> cache = Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache");
-            Object snap = cache.getMethod("refresh", sp).invoke(null, nms);
+            ensureResolved();
+            // Prefer cached snapshot for display — actions call refresh themselves.
+            Object snap = cacheGet.invoke(null, nms);
             if (snap == null) {
                 return out;
             }
@@ -63,40 +124,34 @@ public final class ForgeBridge {
             out.put("prestige", String.valueOf(prestige));
             out.put("team_mode", teamMode == null ? "?" : String.valueOf(teamMode));
 
-            Class<?> tierCls = Class.forName("com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier");
-            Object tier = tierCls.getMethod("of", long.class).invoke(null, active);
+            Object tier = tierOf.invoke(null, active);
             out.put("tier", String.valueOf(field(tier, "display")));
 
-            Class<?> team = Class.forName("com.dbzlegacy.adaptivedifficulty.team.TeamScaling");
-            out.put("team_name", String.valueOf(team.getMethod("teamName", sp).invoke(null, nms)));
-            out.put("team_source", String.valueOf(team.getMethod("teamSourceLabel").invoke(null)));
-            Object mates = team.getMethod("teammates", sp).invoke(null, nms);
+            out.put("team_name", String.valueOf(teamName.invoke(null, nms)));
+            out.put("team_source", String.valueOf(teamSource.invoke(null)));
+            Object mates = teammates.invoke(null, nms);
             out.put("team_size", mates instanceof List<?> list ? String.valueOf(list.size()) : "0");
 
-            Class<?> currency = Class.forName("com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge");
-            out.put("balance", String.valueOf(currency.getMethod("balanceText", sp).invoke(null, nms)));
-            out.put("currency", String.valueOf(currency.getMethod("currencyLabel").invoke(null)));
+            out.put("balance", String.valueOf(balanceText.invoke(null, nms)));
+            out.put("currency", String.valueOf(currencyLabel.invoke(null)));
 
-            Class<?> calc = Class.forName("com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator");
-            long c100 = (Long) calc.getMethod("purchaseCost", long.class, long.class).invoke(null, purchased, 100L);
-            long c1k = (Long) calc.getMethod("purchaseCost", long.class, long.class).invoke(null, purchased, 1000L);
-            long c10k = (Long) calc.getMethod("purchaseCost", long.class, long.class).invoke(null, purchased, 10000L);
-            Method format = currency.getMethod("formatCost", long.class);
-            out.put("cost_100", String.valueOf(format.invoke(null, c100)));
-            out.put("cost_1000", String.valueOf(format.invoke(null, c1k)));
-            out.put("cost_10000", String.valueOf(format.invoke(null, c10k)));
-            double mult = (Double) calc.getMethod("rewardMultiplier", long.class).invoke(null, active);
+            long c100 = (Long) purchaseCost.invoke(null, purchased, 100L);
+            long c1k = (Long) purchaseCost.invoke(null, purchased, 1000L);
+            long c10k = (Long) purchaseCost.invoke(null, purchased, 10000L);
+            out.put("cost_100", String.valueOf(formatCost.invoke(null, c100)));
+            out.put("cost_1000", String.valueOf(formatCost.invoke(null, c1k)));
+            out.put("cost_10000", String.valueOf(formatCost.invoke(null, c10k)));
+            double mult = (Double) rewardMult.invoke(null, active);
             out.put("reward_mult", String.format(Locale.US, "%.2f", mult));
 
-            Object state = snap.getClass().getMethod("state").invoke(snap);
-            Object stateColor = snap.getClass().getMethod("stateColorCode").invoke(snap);
+            Object state = snapshotState.invoke(snap);
+            Object stateColor = snapshotStateColor.invoke(snap);
             out.put("state", state == null ? "?" : String.valueOf(state));
             out.put("state_color", stateColor == null ? "f" : String.valueOf(stateColor));
 
-            Class<?> dataCls = Class.forName("com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData");
-            Object data = cache.getMethod("data", sp).invoke(null, nms);
+            Object data = cacheData.invoke(null, nms);
             if (data != null) {
-                Object titlesObj = dataCls.getMethod("getTitles").invoke(data);
+                Object titlesObj = dataTitles.invoke(data);
                 if (titlesObj instanceof List<?> titles && !titles.isEmpty()) {
                     StringBuilder sb = new StringBuilder();
                     for (Object t : titles) {
@@ -113,26 +168,18 @@ public final class ForgeBridge {
                 out.put("titles", "none");
             }
 
-            // Live concept §10 thresholds for tiers GUI
-            for (Object t : (Object[]) tierCls.getMethod("values").invoke(null)) {
+            for (Object t : (Object[]) tierValues.invoke(null)) {
                 String name = String.valueOf(t);
                 if ("NONE".equals(name)) {
                     continue;
                 }
-                Object thr = tierCls.getMethod("threshold").invoke(t);
+                Object thr = tierThreshold.invoke(t);
                 out.put("tier_" + name.toLowerCase(Locale.ROOT), String.valueOf(thr));
             }
         } catch (Throwable ignored) {
             // Forge mod not loaded
         }
         return out;
-    }
-
-    public static String placeholder(Player player, String id) {
-        if (id == null) {
-            return "";
-        }
-        return placeholders(player).getOrDefault(id.toLowerCase(Locale.ROOT), "");
     }
 
     /** Runs a GUI action through the Forge mod and returns the result message. */
@@ -142,8 +189,7 @@ public final class ForgeBridge {
             return "§cCould not reach adaptive difficulty mod.";
         }
         try {
-            Class<?> sp = Class.forName("net.minecraft.server.level.ServerPlayer");
-            Class<?> actions = Class.forName("com.dbzlegacy.adaptivedifficulty.service.DifficultyActions");
+            ensureResolved();
             String act = action == null ? "" : action.toLowerCase(Locale.ROOT);
             String page = "main";
             long amount = 0L;
@@ -156,13 +202,12 @@ public final class ForgeBridge {
                     amount = 0L;
                 }
             }
-            Object result = actions.getMethod("handle", sp, String.class, long.class, String.class)
-                    .invoke(null, nms, act, amount, page);
+            Object result = actionsHandle.invoke(null, nms, act, amount, page);
+            PLACEHOLDER_CACHE.remove(player.getUniqueId());
             if (result == null) {
                 return "";
             }
-            Method message = result.getClass().getMethod("message");
-            Object msg = message.invoke(result);
+            Object msg = resultMessage.invoke(result);
             return msg == null ? "" : String.valueOf(msg);
         } catch (Throwable t) {
             return "§cAction failed: " + t.getClass().getSimpleName();
@@ -215,8 +260,6 @@ public final class ForgeBridge {
         try {
             Class<?> cfgCls = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig");
             Object cfg = cfgCls.getMethod("get").invoke(null);
-            // Prefer the Forge command path for full key coverage when possible is hard;
-            // set common fields reflectively + save.
             Field field = findConfigField(cfgCls, key);
             if (field == null) {
                 return "Unknown key: " + key;
@@ -227,6 +270,7 @@ public final class ForgeBridge {
             cfgCls.getMethod("save").invoke(null);
             Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache")
                     .getMethod("invalidateAll").invoke(null);
+            PLACEHOLDER_CACHE.clear();
             return "Set " + key + " = " + value;
         } catch (Throwable t) {
             return "Failed: " + t.getMessage();
@@ -239,6 +283,7 @@ public final class ForgeBridge {
                     .getMethod("reload").invoke(null);
             Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache")
                     .getMethod("invalidateAll").invoke(null);
+            PLACEHOLDER_CACHE.clear();
         } catch (Throwable ignored) {
         }
     }
@@ -249,12 +294,11 @@ public final class ForgeBridge {
             return "§cCould not reach adaptive difficulty mod.";
         }
         try {
-            Class<?> sp = Class.forName("net.minecraft.server.level.ServerPlayer");
-            Object snap = Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache")
-                    .getMethod("refresh", sp).invoke(null, nms);
+            ensureResolved();
+            Object snap = cacheRefresh.invoke(null, nms);
             long active = ((Number) snap.getClass().getField("active").get(snap)).longValue();
             long available = ((Number) snap.getClass().getField("availableMax").get(snap)).longValue();
-            Object level = sp.getMethod("m_284548_").invoke(nms);
+            Object level = serverPlayerCls.getMethod("m_284548_").invoke(nms);
             Object pos = nms.getClass().getMethod("m_20183_").invoke(nms);
             long area = 0L;
             if (level != null && pos != null) {
@@ -289,7 +333,6 @@ public final class ForgeBridge {
             }
             Object server = Class.forName("org.bukkit.Bukkit")
                     .getMethod("getServer").invoke(null);
-            // Mohist CraftServer -> getServer() NMS
             Object nmsServer = server.getClass().getMethod("getServer").invoke(server);
             return Boolean.TRUE.equals(
                     Class.forName("com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard")
@@ -301,11 +344,52 @@ public final class ForgeBridge {
         }
     }
 
+    private static void ensureResolved() throws Exception {
+        if (resolved) {
+            return;
+        }
+        synchronized (ForgeBridge.class) {
+            if (resolved) {
+                return;
+            }
+            serverPlayerCls = Class.forName("net.minecraft.server.level.ServerPlayer");
+            cacheCls = Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache");
+            tierCls = Class.forName("com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier");
+            teamCls = Class.forName("com.dbzlegacy.adaptivedifficulty.team.TeamScaling");
+            currencyCls = Class.forName("com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge");
+            calcCls = Class.forName("com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator");
+            dataCls = Class.forName("com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData");
+            actionsCls = Class.forName("com.dbzlegacy.adaptivedifficulty.service.DifficultyActions");
+
+            cacheGet = cacheCls.getMethod("get", serverPlayerCls);
+            cacheRefresh = cacheCls.getMethod("refresh", serverPlayerCls);
+            cacheData = cacheCls.getMethod("data", serverPlayerCls);
+            tierOf = tierCls.getMethod("of", long.class);
+            tierValues = tierCls.getMethod("values");
+            tierThreshold = tierCls.getMethod("threshold");
+            teamName = teamCls.getMethod("teamName", serverPlayerCls);
+            teamSource = teamCls.getMethod("teamSourceLabel");
+            teammates = teamCls.getMethod("teammates", serverPlayerCls);
+            balanceText = currencyCls.getMethod("balanceText", serverPlayerCls);
+            currencyLabel = currencyCls.getMethod("currencyLabel");
+            purchaseCost = calcCls.getMethod("purchaseCost", long.class, long.class);
+            formatCost = currencyCls.getMethod("formatCost", long.class);
+            rewardMult = calcCls.getMethod("rewardMultiplier", long.class);
+            dataTitles = dataCls.getMethod("getTitles");
+            Class<?> snapCls = Class.forName("com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot");
+            snapshotState = snapCls.getMethod("state");
+            snapshotStateColor = snapCls.getMethod("stateColorCode");
+            actionsHandle = actionsCls.getMethod("handle", serverPlayerCls, String.class, long.class, String.class);
+            resultMessage = Class.forName("com.dbzlegacy.adaptivedifficulty.service.DifficultyActions$Result")
+                    .getMethod("message");
+            resolved = true;
+        }
+    }
+
     private static void tryEnableForgeAdmin(Player player) {
         try {
             Object nms = nmsPlayer(player);
             Class<?> access = Class.forName("com.dbzlegacy.adaptivedifficulty.command.AdminCommandAccess");
-            // enable by toggling until enabled
             Method isEnabled = access.getMethod("isEnabled", Class.forName("net.minecraft.server.level.ServerPlayer"));
             Method toggle = access.getMethod("toggle", Class.forName("net.minecraft.server.level.ServerPlayer"));
             if (!Boolean.TRUE.equals(isEnabled.invoke(null, nms))) {
@@ -389,4 +473,6 @@ public final class ForgeBridge {
     private static int intField(Object obj, String name) throws Exception {
         return ((Number) field(obj, name)).intValue();
     }
+
+    private record CachedPlaceholders(Map<String, String> map, long atMs) {}
 }

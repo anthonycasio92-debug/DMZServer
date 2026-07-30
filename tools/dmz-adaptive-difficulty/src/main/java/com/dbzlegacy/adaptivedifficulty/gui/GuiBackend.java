@@ -6,20 +6,20 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 public enum GuiBackend {
     AUTO,
     CMI,
-    DELUXEMENUS,
     CHEST,
     CHAT;
 
     public static GuiBackend fromConfig() {
         String raw = DifficultyConfig.get().guiBackend;
         if (raw == null || raw.isBlank()) {
-            return AUTO;
+            return CMI;
         }
         return switch (raw.trim().toLowerCase()) {
             case "cmi", "cmilib", "cmigui" -> CMI;
-            case "deluxemenus", "deluxe", "dm" -> DELUXEMENUS;
             case "chest", "bukkit", "inventory", "gui" -> CHEST;
             case "chat" -> CHAT;
+            // Legacy DeluxeMenus configs fall back to CMI
+            case "deluxemenus", "deluxe", "dm" -> CMI;
             default -> AUTO;
         };
     }

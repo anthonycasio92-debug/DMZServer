@@ -24,6 +24,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 public final class MobScaling {
     public static final String TAG_DIFFICULTY = "dmz_ad_difficulty";
     public static final String TAG_SCALED = "dmz_ad_scaled";
+    public static final String TAG_DMG_MULT = "dmz_ad_dmg_mult";
 
     /** Vanilla generic.max_health upper bound — never push past this. */
     private static final double VANILLA_MAX_HEALTH_CAP = 1024.0;
@@ -93,6 +94,14 @@ public final class MobScaling {
         healthMult = clamp(healthMult, 1.0, Math.max(1.0, cfg.maxHealthMultiplier));
         moveMult = clamp(moveMult, 1.0, Math.max(1.0, cfg.maxMoveMultiplier));
         armorBonus = Math.min(armorBonus, Math.max(0.0, cfg.maxArmorBonus));
+
+        double dmgMult = 1.0 + difficulty * (cfg.damagePercentPerDifficulty / 100.0);
+        if (isDragonMineZMob(entity) || tag.m_128471_("dmz_ad_dmz_mob")) {
+            dmgMult += difficulty * (cfg.dmzExtraDamagePercent / 100.0);
+            dmgMult += difficulty * (cfg.dmzExtraKiDamagePercent / 100.0);
+        }
+        dmgMult = Math.min(dmgMult, Math.max(1.0, cfg.maxDamageMultiplier));
+        tag.m_128350_(TAG_DMG_MULT, (float) dmgMult); // putFloat
 
         scaleMaxHealth(entity, healthMult, cfg.maxScaledHealth);
         scaleAttribute(entity, Attributes.f_22279_, moveMult); // MOVEMENT_SPEED
@@ -171,18 +180,28 @@ public final class MobScaling {
     }
 
     public static float outgoingDamageMultiplier(LivingEntity attacker) {
-        long d = difficultyOf(attacker);
+        if (attacker == null) {
+            return 1.0f;
+        }
+        CompoundTag tag = PersistentDataAccess.get(attacker);
+        if (tag.m_128441_(TAG_DMG_MULT)) {
+            float cached = tag.m_128457_(TAG_DMG_MULT); // getFloat
+            return cached > 0.0f ? cached : 1.0f;
+        }
+        long d = tag.m_128441_(TAG_DIFFICULTY) ? tag.m_128454_(TAG_DIFFICULTY) : 0L;
         if (d <= 0) {
             return 1.0f;
         }
         DifficultyConfig cfg = DifficultyConfig.get();
         double mult = 1.0 + d * (cfg.damagePercentPerDifficulty / 100.0);
-        if (isDragonMineZMob(attacker) || PersistentDataAccess.get(attacker).m_128471_("dmz_ad_dmz_mob")) {
+        if (tag.m_128471_("dmz_ad_dmz_mob") || isDragonMineZMob(attacker)) {
             mult += d * (cfg.dmzExtraDamagePercent / 100.0);
             mult += d * (cfg.dmzExtraKiDamagePercent / 100.0);
         }
-        // Keep damage sane so one hit doesn't break combat systems
         mult = Math.min(mult, Math.max(1.0, cfg.maxDamageMultiplier));
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128350_(TAG_DMG_MULT, (float) mult);
+        }
         return (float) mult;
     }
 }

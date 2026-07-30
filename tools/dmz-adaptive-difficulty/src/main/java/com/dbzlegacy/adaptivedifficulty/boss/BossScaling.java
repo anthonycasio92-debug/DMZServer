@@ -110,16 +110,19 @@ public final class BossScaling {
 
     /** Advance combat phases at HP thresholds (concept warden-style). */
     public static void tickPhases(LivingEntity entity) {
-        DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableBossScaling || entity == null) {
+        if (entity == null || !DifficultyConfig.get().enableBossScaling) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);
-        // Only tick entities already marked as bosses — never promote via post-scale HP.
         if (!tag.m_128471_(TAG_BOSS)) {
             return;
         }
-        if (entity.f_19797_ % 10 != 0) {
+        tickPhases(entity, tag);
+    }
+
+    /** Prefer this when the caller already verified the boss flag and loaded the tag. */
+    public static void tickPhases(LivingEntity entity, CompoundTag tag) {
+        if (!DifficultyConfig.get().enableBossScaling || entity == null || tag == null) {
             return;
         }
         float max = entity.m_21233_();

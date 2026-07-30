@@ -5,8 +5,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Player UI entrypoint for {@code /difficulty}.
- * Prefers CMI/CMILib inventory GUI, then chest companion, then chat.
- * DeluxeMenus is optional/legacy only.
+ * Prefers CMI/CMILib inventory GUI, then Bukkit chest companion, then chat.
  */
 public final class DifficultyMenu {
     private DifficultyMenu() {}
@@ -24,22 +23,9 @@ public final class DifficultyMenu {
         GuiBackend backend = GuiBackend.fromConfig();
         boolean opened = switch (backend) {
             case CMI -> CmiGuiBridge.open(player, target);
-            case DELUXEMENUS -> DeluxeMenusBridge.open(player, target);
             case CHEST -> BukkitGuiBridge.open(player, target);
             case CHAT -> false;
-            case AUTO -> {
-                if (CmiGuiBridge.open(player, target)) {
-                    yield true;
-                }
-                if (BukkitGuiBridge.open(player, target)) {
-                    yield true;
-                }
-                // DeluxeMenus last — dispatchCommand often returns true even when menu fails.
-                if (DeluxeMenusBridge.open(player, target)) {
-                    yield true;
-                }
-                yield false;
-            }
+            case AUTO -> CmiGuiBridge.open(player, target) || BukkitGuiBridge.open(player, target);
         };
 
         if (!opened) {

@@ -63,31 +63,38 @@ public final class AdaptiveAiSystem {
     }
 
     public static void tick(LivingEntity entity) {
-        DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableAdaptiveAi || entity == null || !(entity instanceof Mob mob)) {
-            return;
-        }
-        if (!(entity.m_9236_() instanceof ServerLevel level) || !entity.m_6084_()) {
-            return;
-        }
-        // Throttle: every 20 ticks
-        if (entity.f_19797_ % 20 != 0) {
+        if (!(entity instanceof Mob mob)) {
             return;
         }
         long difficulty = MobScaling.difficultyOf(entity);
-        if (difficulty <= 0 && !EliteSystem.isElite(entity)) {
+        boolean elite = EliteSystem.isElite(entity);
+        tick(mob, difficulty, elite);
+    }
+
+    /** Prefer this when the caller already resolved difficulty / elite. */
+    public static void tick(Mob mob, long difficulty, boolean elite) {
+        DifficultyConfig cfg = DifficultyConfig.get();
+        if (!cfg.enableAdaptiveAi || mob == null || !mob.m_6084_()) {
+            return;
+        }
+        if (!(mob.m_9236_() instanceof ServerLevel level)) {
+            return;
+        }
+        if (difficulty <= 0 && !elite) {
             return;
         }
         DifficultyTier tier = DifficultyTier.of(difficulty);
-        if (EliteSystem.isElite(entity) && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
+        if (elite && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
             tier = DifficultyTier.ELITE;
+        }
+        if (tier.ordinalPower() < DifficultyTier.ENHANCED.ordinalPower()) {
+            return;
         }
 
         LivingEntity target = mob.m_5448_();
-        if (tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
-            focusWeakest(mob, level, cfg.mobScaleRadius);
-            target = mob.m_5448_();
-        }
+        // Cap focus radius — scale radius is for spawn area, not AI scans.
+        focusWeakest(mob, level, Math.min(24.0, cfg.mobScaleRadius));
+        target = mob.m_5448_();
         if (target instanceof Player player && tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()) {
             antiFlight(mob, player);
         }
@@ -95,7 +102,7 @@ public final class AdaptiveAiSystem {
             maybeRetreat(mob, target);
         }
         if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()) {
-            coordinate(mob, level, cfg.mobScaleRadius);
+            coordinate(mob, level, Math.min(24.0, cfg.mobScaleRadius));
         }
     }
 
@@ -227,18 +234,18 @@ public final class AdaptiveAiSystem {
         List<Mob> allies = level.m_45976_(Mob.class, box);
         int shared = 0;
         for (Mob ally : allies) {
-            if (ally == mob || !ally.m_6084_()) {
+            if (ally == mob || !ally.m_6084_() || ally.m_5448_() != null) {
                 continue;
             }
-            if (MobScaling.difficultyOf(ally) <= 0 && !EliteSystem.isElite(ally)) {
+            // Cheap scaled/elite flag check — skip unprocessed allies.
+            if (!PersistentDataAccess.flag(ally, MobScaling.TAG_SCALED)
+                    && !PersistentDataAccess.flag(ally, EliteSystem.TAG_ELITE)) {
                 continue;
             }
-            if (ally.m_5448_() == null) {
-                ally.m_6710_(target);
-                shared++;
-                if (shared >= 4) {
-                    break;
-                }
+            ally.m_6710_(target);
+            shared++;
+            if (shared >= 4) {
+                break;
             }
         }
     }

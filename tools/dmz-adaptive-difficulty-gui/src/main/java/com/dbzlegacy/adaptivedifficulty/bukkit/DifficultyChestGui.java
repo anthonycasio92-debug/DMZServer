@@ -16,7 +16,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-/** Native Bukkit chest GUI fallback when DeluxeMenus is unavailable. */
+/** Native Bukkit chest GUI fallback when CMI/CMILib is unavailable. */
 public final class DifficultyChestGui implements Listener {
     private final AdaptiveDifficultyGuiPlugin plugin;
 
