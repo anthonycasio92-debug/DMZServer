@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.scaling;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.boss.BossScaling;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
@@ -29,6 +30,9 @@ public final class MobScaling {
     public static final String TAG_DIFFICULTY = "dmz_ad_difficulty";
     public static final String TAG_SCALED = "dmz_ad_scaled";
 
+    /** Vanilla generic.max_health upper bound — never push past this. */
+    private static final double VANILLA_MAX_HEALTH_CAP = 1024.0;
+
     private MobScaling() {}
 
     public static long difficultyOf(LivingEntity entity) {
@@ -40,23 +44,42 @@ public final class MobScaling {
     }
 
     public static void scaleIfNeeded(LivingEntity entity) {
+        try {
+            scaleIfNeededInternal(entity);
+        } catch (Throwable t) {
+            // Never let scaling abort FinalizeSpawn — that kills natural spawns.
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] mob scaling failed for {}: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    entity == null ? "?" : entity.m_6095_().toString(),
+                    t.toString()
+            );
+        }
+    }
+
+    private static void scaleIfNeededInternal(LivingEntity entity) {
         DifficultyConfig cfg = DifficultyConfig.get();
         if (!cfg.enableMobScaling || entity == null || entity.m_9236_().f_46443_) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);
-        if (tag.m_128471_(TAG_SCALED)) { // getBoolean
+        if (tag.m_128471_(TAG_SCALED)) {
             return;
         }
         if (cfg.scaleHostileOnly && entity instanceof Mob mob) {
             if (mob.m_6095_().m_20674_() != MobCategory.MONSTER) {
-                tag.m_128379_(TAG_SCALED, true); // putBoolean
-                tag.m_128356_(TAG_DIFFICULTY, 0L); // putLong
+                tag.m_128379_(TAG_SCALED, true);
+                tag.m_128356_(TAG_DIFFICULTY, 0L);
                 return;
             }
         }
 
+        // Detect bosses BEFORE health scaling. Post-scale HP>=threshold was marking
+        // every high-difficulty zombie as a boss and re-multiplying stats into oblivion.
+        boolean boss = BossScaling.isNaturalBoss(entity);
+
         long difficulty = resolveNearbyDifficulty(entity);
+        difficulty = Math.min(difficulty, Math.max(0L, cfg.hardCapDifficulty));
         tag.m_128356_(TAG_DIFFICULTY, difficulty);
         tag.m_128379_(TAG_SCALED, true);
         if (difficulty <= 0) {
@@ -67,24 +90,27 @@ public final class MobScaling {
         double armorBonus = difficulty * (cfg.defensePercentPerDifficulty / 100.0);
         double moveMult = 1.0 + ((difficulty / 100.0) * (cfg.movementPercentPer100Difficulty / 100.0));
 
-        // Concept §9: DragonMineZ mobs get additional health/defense (ki/physical via damage mixin)
         if (isDragonMineZMob(entity)) {
             healthMult += difficulty * (cfg.dmzExtraHealthPercent / 100.0);
             armorBonus += difficulty * (cfg.dmzExtraDefensePercent / 100.0);
             tag.m_128379_("dmz_ad_dmz_mob", true);
         }
 
-        // Health / move / armor via attributes once at spawn.
-        // Attack damage (+ DMZ ki/physical extras) applied via LivingEntityHurtScaleMixin.
-        scaleAttribute(entity, Attributes.f_22276_, healthMult, true); // MAX_HEALTH
-        scaleAttribute(entity, Attributes.f_22279_, moveMult, false); // MOVEMENT_SPEED
+        healthMult = clamp(healthMult, 1.0, Math.max(1.0, cfg.maxHealthMultiplier));
+        moveMult = clamp(moveMult, 1.0, Math.max(1.0, cfg.maxMoveMultiplier));
+        armorBonus = Math.min(armorBonus, Math.max(0.0, cfg.maxArmorBonus));
+
+        scaleMaxHealth(entity, healthMult, cfg.maxScaledHealth);
+        scaleAttribute(entity, Attributes.f_22279_, moveMult); // MOVEMENT_SPEED
         AttributeInstance armor = entity.m_21051_(Attributes.f_22284_); // ARMOR
         if (armor != null && armorBonus > 0) {
-            armor.m_22100_(armor.m_22115_() + Math.min(30.0, armorBonus));
+            double next = Math.min(30.0, armor.m_22115_() + armorBonus);
+            armor.m_22100_(next);
         }
 
-        // Phase 2: boss → elite → mutation (order matters for naming)
-        BossScaling.scaleIfBoss(entity, difficulty);
+        if (boss) {
+            BossScaling.scaleIfBoss(entity, difficulty);
+        }
         EliteSystem.maybePromote(entity, difficulty);
         MutationSystem.maybeMutate(entity, difficulty);
     }
@@ -94,28 +120,52 @@ public final class MobScaling {
             return false;
         }
         ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entity.m_6095_());
-        if (id != null && "dragonminez".equals(id.m_135827_())) { // getNamespace
+        if (id != null && "dragonminez".equals(id.m_135827_())) {
             return true;
         }
         String cn = entity.getClass().getName().toLowerCase();
         return cn.contains("dragonminez") || cn.contains("shurui");
     }
 
-    private static void scaleAttribute(
-            LivingEntity entity,
-            Attribute attribute,
-            double multiplier,
-            boolean healToFull
-    ) {
+    private static void scaleMaxHealth(LivingEntity entity, double multiplier, double hardCap) {
+        AttributeInstance instance = entity.m_21051_(Attributes.f_22276_);
+        if (instance == null || multiplier <= 1.0) {
+            return;
+        }
+        double cap = hardCap > 0 ? Math.min(hardCap, VANILLA_MAX_HEALTH_CAP) : VANILLA_MAX_HEALTH_CAP;
+        double base = instance.m_22115_();
+        if (!(base > 0.0) || Double.isNaN(base) || Double.isInfinite(base)) {
+            return;
+        }
+        double next = Math.min(cap, base * multiplier);
+        if (!(next > 0.0) || Double.isNaN(next) || Double.isInfinite(next)) {
+            return;
+        }
+        instance.m_22100_(next);
+        float max = entity.m_21233_();
+        if (max > 0.0f && !Float.isNaN(max) && !Float.isInfinite(max)) {
+            entity.m_21153_(max);
+        }
+    }
+
+    private static void scaleAttribute(LivingEntity entity, Attribute attribute, double multiplier) {
         AttributeInstance instance = entity.m_21051_(attribute);
         if (instance == null || multiplier <= 1.0) {
             return;
         }
-        double next = instance.m_22115_() * multiplier;
-        instance.m_22100_(next);
-        if (healToFull && attribute == Attributes.f_22276_) {
-            entity.m_21153_(entity.m_21233_());
+        double base = instance.m_22115_();
+        if (!(base > 0.0) || Double.isNaN(base) || Double.isInfinite(base)) {
+            return;
         }
+        double next = base * multiplier;
+        if (!(next > 0.0) || Double.isNaN(next) || Double.isInfinite(next)) {
+            return;
+        }
+        instance.m_22100_(next);
+    }
+
+    private static double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private static long resolveNearbyDifficulty(LivingEntity entity) {
@@ -140,11 +190,12 @@ public final class MobScaling {
         }
         DifficultyConfig cfg = DifficultyConfig.get();
         double mult = 1.0 + d * (cfg.damagePercentPerDifficulty / 100.0);
-        // Concept §9 / §16: DMZ mobs also gain physical + ki damage extras
         if (isDragonMineZMob(attacker) || PersistentDataAccess.get(attacker).m_128471_("dmz_ad_dmz_mob")) {
             mult += d * (cfg.dmzExtraDamagePercent / 100.0);
             mult += d * (cfg.dmzExtraKiDamagePercent / 100.0);
         }
+        // Keep damage sane so one hit doesn't break combat systems
+        mult = Math.min(mult, Math.max(1.0, cfg.maxDamageMultiplier));
         return (float) mult;
     }
 }

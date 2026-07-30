@@ -54,10 +54,17 @@ public final class DifficultyConfig {
     public boolean enableEnemyEvolution = true;
     public boolean enableBossScaling = true;
     public double bossStatMultiplier = 1.5;
-    public double bossHealthThreshold = 100.0;
+    /** Natural (pre-scale) max-health at/above this marks a boss. Default keeps wardens/etc. */
+    public double bossHealthThreshold = 300.0;
     public List<String> bossIdContains = new ArrayList<>(Arrays.asList(
-            "boss", "warden", "wither", "ender_dragon", "raid"
+            "boss", "warden", "wither", "ender_dragon", "raid_boss", "raidboss"
     ));
+    /** Caps so high difficulty cannot explode attributes / break spawns. */
+    public double maxHealthMultiplier = 50.0;
+    public double maxScaledHealth = 1024.0;
+    public double maxMoveMultiplier = 1.75;
+    public double maxArmorBonus = 20.0;
+    public double maxDamageMultiplier = 50.0;
     /** Admin permission node (Forge PermissionAPI / LuckPerms). Ops always allowed. */
     public String adminPermission = "difficulty.admin";
 

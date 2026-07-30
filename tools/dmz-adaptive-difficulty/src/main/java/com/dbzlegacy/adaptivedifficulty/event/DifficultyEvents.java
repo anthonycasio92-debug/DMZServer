@@ -65,8 +65,9 @@ public final class DifficultyEvents {
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public void onFinalizeSpawn(MobSpawnEvent.FinalizeSpawn event) {
+        // Scale only — never cancel / deny spawn from this handler.
         LivingEntity entity = event.getEntity();
-        if (entity != null) {
+        if (entity != null && !event.isCanceled() && !event.isSpawnCancelled()) {
             MobScaling.scaleIfNeeded(entity);
         }
     }

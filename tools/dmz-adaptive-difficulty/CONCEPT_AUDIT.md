@@ -1,6 +1,6 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.3.2**
+Mod version: **1.3.3**
 
 | § | Concept | Status | Notes |
 |---|---------|--------|-------|

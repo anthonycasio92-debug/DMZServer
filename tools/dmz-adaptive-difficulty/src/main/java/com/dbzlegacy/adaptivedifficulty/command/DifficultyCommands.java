@@ -193,6 +193,11 @@ public final class DifficultyCommands {
                 case "enablebossscaling" -> cfg.enableBossScaling = Boolean.parseBoolean(value);
                 case "bossstatmultiplier" -> cfg.bossStatMultiplier = Double.parseDouble(value);
                 case "bosshealththreshold" -> cfg.bossHealthThreshold = Double.parseDouble(value);
+                case "maxhealthmultiplier" -> cfg.maxHealthMultiplier = Double.parseDouble(value);
+                case "maxscaledhealth" -> cfg.maxScaledHealth = Double.parseDouble(value);
+                case "maxmovemultiplier" -> cfg.maxMoveMultiplier = Double.parseDouble(value);
+                case "maxarmorbonus" -> cfg.maxArmorBonus = Double.parseDouble(value);
+                case "maxdamagemultiplier" -> cfg.maxDamageMultiplier = Double.parseDouble(value);
                 case "adminpermission" -> cfg.adminPermission = value.trim();
                 default -> {
                     source.m_81352_(Component.m_237113_("Unknown key: " + key));

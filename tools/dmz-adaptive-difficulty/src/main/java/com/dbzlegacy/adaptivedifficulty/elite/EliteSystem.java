@@ -42,11 +42,16 @@ public final class EliteSystem {
         CompoundTag tag = PersistentDataAccess.get(entity);
         tag.m_128379_(TAG_ELITE, true);
 
-        double mult = DifficultyConfig.get().eliteStatMultiplier;
+        DifficultyConfig cfg = DifficultyConfig.get();
+        double mult = Math.min(cfg.eliteStatMultiplier, cfg.maxHealthMultiplier);
         AttributeInstance health = entity.m_21051_(Attributes.f_22276_);
-        if (health != null) {
-            health.m_22100_(health.m_22115_() * mult);
-            entity.m_21153_(entity.m_21233_());
+        if (health != null && mult > 1.0) {
+            double cap = cfg.maxScaledHealth > 0 ? Math.min(cfg.maxScaledHealth, 1024.0) : 1024.0;
+            double next = Math.min(cap, health.m_22115_() * mult);
+            if (next > 0 && !Double.isNaN(next) && !Double.isInfinite(next)) {
+                health.m_22100_(next);
+                entity.m_21153_(entity.m_21233_());
+            }
         }
         AttributeInstance armor = entity.m_21051_(Attributes.f_22284_);
         if (armor != null) {

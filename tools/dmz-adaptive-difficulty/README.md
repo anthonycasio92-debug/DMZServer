@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.3.2)
+# DMZ Adaptive Difficulty (v1.3.3)
 
 Server + client Forge mixin mod for Mohist/Forge 1.20.1.
 
@@ -23,14 +23,15 @@ Server + client Forge mixin mod for Mohist/Forge 1.20.1.
 bash tools/dmz-adaptive-difficulty/build.sh
 ```
 
-Outputs `mods/dmz_adaptive_difficulty-1.3.2.jar`.
+Outputs `mods/dmz_adaptive_difficulty-1.3.3.jar`.
 
 ## Install
 
-1. Put `dmz_adaptive_difficulty-1.3.2.jar` in **server and client** `mods/`
+1. Put `dmz_adaptive_difficulty-1.3.3.jar` in **server and client** `mods/`
 2. Remove any older `dmz_adaptive_difficulty-*.jar`
-3. Ensure `lightmanscurrency` and `ftbteams` are installed on the server (optional but expected)
-4. Restart
+3. If `config/dmz_adaptive_difficulty.json` already exists, delete it (or add the new cap fields) so spawn caps apply
+4. Ensure `lightmanscurrency` and `ftbteams` are installed on the server (optional but expected)
+5. Restart
 
 ## Commands
 
