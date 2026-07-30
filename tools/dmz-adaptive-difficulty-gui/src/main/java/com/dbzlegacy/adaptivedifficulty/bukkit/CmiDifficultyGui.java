@@ -41,6 +41,8 @@ public final class CmiDifficultyGui {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         try {
             switch (p) {
+                case "adjust", "change", "set" -> openAdjust(player);
+                case "buy", "purchase", "unlock" -> openBuy(player);
                 case "rewards" -> openRewards(player);
                 case "tiers", "enemies" -> openTiers(player);
                 case "stats", "statistics" -> openStats(player);
@@ -53,75 +55,128 @@ public final class CmiDifficultyGui {
         }
     }
 
+    /** Hub: status + navigation into Adjust / Buy / info pages. */
     private static void openMain(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
-        CMIGui gui = base(player, "&8Difficulty", 6);
+        CMIGui gui = base(player, "&8Difficulty", 4);
 
         String stateColor = ph.getOrDefault("state_color", "f");
-        CMIGuiButton status = new CMIGuiButton(4, Material.NETHER_STAR, "&f&lDifficulty");
+        CMIGuiButton status = new CMIGuiButton(13, Material.NETHER_STAR, "&f&lDifficulty");
         status.lockField();
         status.addLore(statusLore(ph, stateColor));
         gui.addButton(status);
 
-        gui.addButton(actionBtn(6, Material.ORANGE_CONCRETE, "&6Max", "set_max", "0",
+        gui.addButton(pageBtn(20, Material.LIME_CONCRETE, "&aAdjust", "adjust",
+                "&7Raise / lower active difficulty",
+                "&8Steps +1 / +5 / +25 / +100"));
+        gui.addButton(pageBtn(22, Material.GOLD_INGOT, "&eBuy Max", "buy",
+                "&7Unlock more available max",
+                "&8Paid from inventory coins"));
+        gui.addButton(actionBtn(24, Material.COMPASS, "&bTeam", "team", "0", "main",
+                List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
+
+        gui.addButton(pageBtn(27, Material.EXPERIENCE_BOTTLE, "&fRewards", "rewards",
+                "&7TP multiplier details"));
+        gui.addButton(pageBtn(28, Material.IRON_SWORD, "&fTiers", "tiers",
+                "&7Enemy tier unlocks"));
+        gui.addButton(pageBtn(29, Material.BOOK, "&fDetails", "stats",
+                "&7Team, titles, full breakdown"));
+        gui.addButton(actionBtn(31, Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
+                List.of("&7Reload this menu")));
+        gui.addButton(closeBtn(35));
+        fillEmpty(gui, 4);
+        gui.open();
+    }
+
+    /** Dedicated raise / lower page. */
+    private static void openAdjust(Player player) {
+        Map<String, String> ph = ForgeBridge.placeholders(player);
+        CMIGui gui = base(player, "&8Adjust Difficulty", 5);
+
+        String stateColor = ph.getOrDefault("state_color", "f");
+        CMIGuiButton status = new CMIGuiButton(4, Material.NETHER_STAR, "&f&lActive");
+        status.lockField();
+        status.addLore(List.of(
+                "",
+                "&f" + ph.getOrDefault("active", "?") + " &8/ &7" + ph.getOrDefault("available", "?"),
+                "&7Active / Available",
+                "",
+                "&7State  &" + stateColor + ph.getOrDefault("state", "?"),
+                "&7Inv    &f" + ph.getOrDefault("balance", "?"),
+                "",
+                "&8Raising costs inventory coins"
+        ));
+        gui.addButton(status);
+
+        gui.addButton(actionBtn(6, Material.ORANGE_CONCRETE, "&6Max", "set_max", "0", "adjust",
                 List.of("&7Jump to available max", "&f" + ph.getOrDefault("available", "?"),
                         "&8Cost &e" + ph.getOrDefault("cost_max", "?"),
                         "&8Paid from inventory coins")));
-        gui.addButton(actionBtn(7, Material.COMPASS, "&bTeam", "team", "0",
-                List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
+        gui.addButton(actionBtn(7, Material.WHITE_CONCRETE, "&fReset", "reset", "0", "adjust",
+                List.of("&7Set active to &f0", "&8Purchased max kept", "&8Always free")));
 
-        // Adjust row: -100 -25 -5 -1 | Reset | +1 +5 +25 +100
-        gui.addButton(actionBtn(18, Material.RED_CONCRETE, "&c−100", "down", "100",
+        // Lower row
+        gui.addButton(actionBtn(19, Material.RED_CONCRETE, "&c−100", "down", "100", "adjust",
                 List.of("&7Lower active difficulty", "&8Always free")));
-        gui.addButton(actionBtn(19, Material.RED_TERRACOTTA, "&c−25", "down", "25",
+        gui.addButton(actionBtn(20, Material.RED_TERRACOTTA, "&c−25", "down", "25", "adjust",
                 List.of("&7Lower active difficulty", "&8Always free")));
-        gui.addButton(actionBtn(20, Material.PINK_CONCRETE, "&c−5", "down", "5",
+        gui.addButton(actionBtn(21, Material.PINK_CONCRETE, "&c−5", "down", "5", "adjust",
                 List.of("&7Lower active difficulty", "&8Always free")));
-        gui.addButton(actionBtn(21, Material.PINK_TERRACOTTA, "&c−1", "down", "1",
+        gui.addButton(actionBtn(22, Material.PINK_TERRACOTTA, "&c−1", "down", "1", "adjust",
                 List.of("&7Lower active difficulty", "&8Always free")));
-        gui.addButton(actionBtn(22, Material.WHITE_CONCRETE, "&fReset", "reset", "0",
-                List.of("&7Set active to &f0", "&8Purchased max kept")));
-        gui.addButton(actionBtn(23, Material.LIME_TERRACOTTA, "&a+1", "up", "1",
+
+        // Raise row
+        gui.addButton(actionBtn(28, Material.LIME_TERRACOTTA, "&a+1", "up", "1", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_1", "?"),
                         "&8Paid from inventory coins")));
-        gui.addButton(actionBtn(24, Material.LIME_CONCRETE, "&a+5", "up", "5",
+        gui.addButton(actionBtn(29, Material.LIME_CONCRETE, "&a+5", "up", "5", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_5", "?"),
                         "&8Paid from inventory coins")));
-        gui.addButton(actionBtn(25, Material.GREEN_TERRACOTTA, "&a+25", "up", "25",
+        gui.addButton(actionBtn(30, Material.GREEN_TERRACOTTA, "&a+25", "up", "25", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_25", "?"),
                         "&8Paid from inventory coins")));
-        gui.addButton(actionBtn(26, Material.GREEN_CONCRETE, "&a+100", "up", "100",
+        gui.addButton(actionBtn(31, Material.GREEN_CONCRETE, "&a+100", "up", "100", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_100", "?"),
                         "&8Paid from inventory coins")));
 
-        // Unlock more max (same increments)
-        CMIGuiButton buyLabel = new CMIGuiButton(31, Material.GOLD_INGOT, "&eBuy max");
-        buyLabel.lockField();
-        buyLabel.addLore(List.of(
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
+        gui.addButton(pageBtn(40, Material.GOLD_INGOT, "&eBuy Max", "buy", "&7Unlock more available max"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    /** Dedicated buy-max unlock page. */
+    private static void openBuy(Player player) {
+        Map<String, String> ph = ForgeBridge.placeholders(player);
+        CMIGui gui = base(player, "&8Buy Max Difficulty", 4);
+
+        CMIGuiButton info = new CMIGuiButton(13, Material.GOLD_INGOT, "&e&lBuy Max");
+        info.lockField();
+        info.addLore(List.of(
                 "",
-                "&7Unlock more available max",
+                "&7Purchased  &f" + ph.getOrDefault("purchased", "?"),
+                "&7Available  &f" + ph.getOrDefault("available", "?"),
+                "&7Inv coins  &f" + ph.getOrDefault("balance", "?"),
+                "",
+                "&8Unlock more max difficulty",
                 "&8Paid from inventory coins"
         ));
-        gui.addButton(buyLabel);
-        gui.addButton(actionBtn(29, Material.GOLD_NUGGET, "&e+1 max", "buy", "1",
+        gui.addButton(info);
+
+        gui.addButton(actionBtn(19, Material.GOLD_NUGGET, "&e+1 max", "buy", "1", "buy",
                 List.of("&7Unlock +1 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_1", "?"))));
-        gui.addButton(actionBtn(30, Material.GOLD_NUGGET, "&e+5 max", "buy", "5",
+        gui.addButton(actionBtn(21, Material.GOLD_NUGGET, "&e+5 max", "buy", "5", "buy",
                 List.of("&7Unlock +5 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_5", "?"))));
-        gui.addButton(actionBtn(32, Material.GOLD_INGOT, "&e+25 max", "buy", "25",
+        gui.addButton(actionBtn(23, Material.GOLD_INGOT, "&e+25 max", "buy", "25", "buy",
                 List.of("&7Unlock +25 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_25", "?"))));
-        gui.addButton(actionBtn(33, Material.GOLD_BLOCK, "&e+100 max", "buy", "100",
+        gui.addButton(actionBtn(25, Material.GOLD_BLOCK, "&e+100 max", "buy", "100", "buy",
                 List.of("&7Unlock +100 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_100", "?"))));
 
-        gui.addButton(pageBtn(45, Material.EXPERIENCE_BOTTLE, "&fRewards", "rewards",
-                "&7TP multiplier details"));
-        gui.addButton(pageBtn(46, Material.IRON_SWORD, "&fTiers", "tiers",
-                "&7Enemy tier unlocks"));
-        gui.addButton(pageBtn(47, Material.BOOK, "&fDetails", "stats",
-                "&7Team, titles, full breakdown"));
-        gui.addButton(actionBtn(49, Material.SUNFLOWER, "&7Refresh", "refresh", "0",
-                List.of("&7Reload this menu")));
-        gui.addButton(closeBtn(53));
-        fillEmpty(gui, 6);
+        gui.addButton(pageBtn(27, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
+        gui.addButton(pageBtn(31, Material.LIME_CONCRETE, "&aAdjust", "adjust", "&7Raise / lower active"));
+        gui.addButton(closeBtn(35));
+        fillEmpty(gui, 4);
         gui.open();
     }
 
@@ -255,14 +310,10 @@ public final class CmiDifficultyGui {
         lore.add("");
         lore.add("&8Calc " + ph.getOrDefault("calculated", "?")
                 + "  ·  Bought " + ph.getOrDefault("purchased", "?"));
-        lore.add("&8Steps +1 / +5 / +25 / +100");
+        lore.add("&8Open Adjust to raise / lower");
         return lore;
     }
 
-    /**
-     * Fill only unoccupied slots. Must run <b>after</b> real buttons are added —
-     * CMILib refuses to replace an existing button at the same slot.
-     */
     private static void fillEmpty(CMIGui gui, int rows) {
         int size = rows * 9;
         Map<Integer, CMIGuiButton> existing = gui.getButtons();
@@ -285,21 +336,27 @@ public final class CmiDifficultyGui {
         return gui;
     }
 
-    private static CMIGuiButton actionBtn(int slot, Material mat, String name, String action, String arg, List<String> tip) {
+    private static CMIGuiButton actionBtn(
+            int slot, Material mat, String name, String action, String arg, String returnPage, List<String> tip) {
         CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
         btn.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");
         lore.addAll(tip);
         btn.addLore(lore);
-        btn.addCommand("difficulty do " + action + " " + arg);
+        btn.addCommand("difficulty do " + action + " " + arg + " " + returnPage);
         return btn;
     }
 
-    private static CMIGuiButton pageBtn(int slot, Material mat, String name, String page, String tip) {
+    private static CMIGuiButton pageBtn(int slot, Material mat, String name, String page, String... tips) {
         CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
         btn.lockField();
-        btn.addLore(List.of("", tip));
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        for (String tip : tips) {
+            lore.add(tip);
+        }
+        btn.addLore(lore);
         btn.addCommand("difficulty do page " + page);
         return btn;
     }

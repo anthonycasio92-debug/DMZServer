@@ -30,6 +30,8 @@ public final class DifficultyChestGui implements Listener {
     public void open(Player player, String page) {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         Inventory inv = switch (p) {
+            case "adjust", "change", "set" -> adjust(player);
+            case "buy", "purchase", "unlock" -> buy(player);
             case "rewards" -> rewards(player);
             case "tiers", "enemies" -> tiers(player);
             case "stats", "statistics" -> stats(player);
@@ -41,58 +43,109 @@ public final class DifficultyChestGui implements Listener {
     private Inventory main(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         Holder holder = new Holder("main");
-        Inventory inv = Bukkit.createInventory(holder, 54, color("&8Difficulty"));
+        Inventory inv = Bukkit.createInventory(holder, 36, color("&8Difficulty"));
         holder.bind(inv);
-        frame(inv, 54);
+        frame(inv, 36);
 
         String stateColor = ph.getOrDefault("state_color", "f");
-        inv.setItem(4, item(Material.NETHER_STAR, "&f&lDifficulty", statusLore(ph, stateColor)));
-        inv.setItem(6, button(Material.ORANGE_CONCRETE, "&6Max", "set_max", "0",
+        inv.setItem(13, item(Material.NETHER_STAR, "&f&lDifficulty", statusLore(ph, stateColor)));
+        inv.setItem(20, pageBtn(Material.LIME_CONCRETE, "&aAdjust", "adjust",
+                "&7Raise / lower active difficulty", "&8Steps +1 / +5 / +25 / +100"));
+        inv.setItem(22, pageBtn(Material.GOLD_INGOT, "&eBuy Max", "buy",
+                "&7Unlock more available max", "&8Paid from inventory coins"));
+        inv.setItem(24, button(Material.COMPASS, "&bTeam", "team", "0", "main",
+                List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
+
+        inv.setItem(27, pageBtn(Material.EXPERIENCE_BOTTLE, "&fRewards", "rewards", "&7TP multiplier details"));
+        inv.setItem(28, pageBtn(Material.IRON_SWORD, "&fTiers", "tiers", "&7Enemy tier unlocks"));
+        inv.setItem(29, pageBtn(Material.BOOK, "&fDetails", "stats", "&7Team, titles, full breakdown"));
+        inv.setItem(31, button(Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
+                List.of("&7Reload this menu")));
+        inv.setItem(35, closeBtn());
+        return inv;
+    }
+
+    private Inventory adjust(Player player) {
+        Map<String, String> ph = ForgeBridge.placeholders(player);
+        Holder holder = new Holder("adjust");
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Adjust Difficulty"));
+        holder.bind(inv);
+        frame(inv, 45);
+
+        String stateColor = ph.getOrDefault("state_color", "f");
+        inv.setItem(4, item(Material.NETHER_STAR, "&f&lActive", List.of(
+                "",
+                "&f" + ph.getOrDefault("active", "?") + " &8/ &7" + ph.getOrDefault("available", "?"),
+                "&7Active / Available",
+                "",
+                "&7State  &" + stateColor + ph.getOrDefault("state", "?"),
+                "&7Inv    &f" + ph.getOrDefault("balance", "?"),
+                "",
+                "&8Raising costs inventory coins"
+        )));
+        inv.setItem(6, button(Material.ORANGE_CONCRETE, "&6Max", "set_max", "0", "adjust",
                 List.of("&7Jump to available max", "&f" + ph.getOrDefault("available", "?"),
                         "&8Cost &e" + ph.getOrDefault("cost_max", "?"),
                         "&8Paid from inventory coins")));
-        inv.setItem(7, button(Material.COMPASS, "&bTeam", "team", "0",
-                List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
+        inv.setItem(7, button(Material.WHITE_CONCRETE, "&fReset", "reset", "0", "adjust",
+                List.of("&7Set active to &f0", "&8Purchased max kept", "&8Always free")));
 
-        inv.setItem(18, button(Material.RED_CONCRETE, "&c−100", "down", "100",
+        inv.setItem(19, button(Material.RED_CONCRETE, "&c−100", "down", "100", "adjust",
                 List.of("&7Lower active difficulty", "&8Always free")));
-        inv.setItem(19, button(Material.RED_TERRACOTTA, "&c−25", "down", "25",
+        inv.setItem(20, button(Material.RED_TERRACOTTA, "&c−25", "down", "25", "adjust",
                 List.of("&7Lower active difficulty", "&8Always free")));
-        inv.setItem(20, button(Material.PINK_CONCRETE, "&c−5", "down", "5",
+        inv.setItem(21, button(Material.PINK_CONCRETE, "&c−5", "down", "5", "adjust",
                 List.of("&7Lower active difficulty", "&8Always free")));
-        inv.setItem(21, button(Material.PINK_TERRACOTTA, "&c−1", "down", "1",
+        inv.setItem(22, button(Material.PINK_TERRACOTTA, "&c−1", "down", "1", "adjust",
                 List.of("&7Lower active difficulty", "&8Always free")));
-        inv.setItem(22, button(Material.WHITE_CONCRETE, "&fReset", "reset", "0",
-                List.of("&7Set active to &f0", "&8Purchased max kept")));
-        inv.setItem(23, button(Material.LIME_TERRACOTTA, "&a+1", "up", "1",
+
+        inv.setItem(28, button(Material.LIME_TERRACOTTA, "&a+1", "up", "1", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_1", "?"),
                         "&8Paid from inventory coins")));
-        inv.setItem(24, button(Material.LIME_CONCRETE, "&a+5", "up", "5",
+        inv.setItem(29, button(Material.LIME_CONCRETE, "&a+5", "up", "5", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_5", "?"),
                         "&8Paid from inventory coins")));
-        inv.setItem(25, button(Material.GREEN_TERRACOTTA, "&a+25", "up", "25",
+        inv.setItem(30, button(Material.GREEN_TERRACOTTA, "&a+25", "up", "25", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_25", "?"),
                         "&8Paid from inventory coins")));
-        inv.setItem(26, button(Material.GREEN_CONCRETE, "&a+100", "up", "100",
+        inv.setItem(31, button(Material.GREEN_CONCRETE, "&a+100", "up", "100", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_100", "?"),
                         "&8Paid from inventory coins")));
 
-        inv.setItem(31, item(Material.GOLD_INGOT, "&eBuy max", List.of(
-                "", "&7Unlock more available max", "&8Paid from inventory coins")));
-        inv.setItem(29, button(Material.GOLD_NUGGET, "&e+1 max", "buy", "1",
+        inv.setItem(36, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
+        inv.setItem(40, pageBtn(Material.GOLD_INGOT, "&eBuy Max", "buy", "&7Unlock more available max"));
+        inv.setItem(44, closeBtn());
+        return inv;
+    }
+
+    private Inventory buy(Player player) {
+        Map<String, String> ph = ForgeBridge.placeholders(player);
+        Holder holder = new Holder("buy");
+        Inventory inv = Bukkit.createInventory(holder, 36, color("&8Buy Max Difficulty"));
+        holder.bind(inv);
+        frame(inv, 36);
+
+        inv.setItem(13, item(Material.GOLD_INGOT, "&e&lBuy Max", List.of(
+                "",
+                "&7Purchased  &f" + ph.getOrDefault("purchased", "?"),
+                "&7Available  &f" + ph.getOrDefault("available", "?"),
+                "&7Inv coins  &f" + ph.getOrDefault("balance", "?"),
+                "",
+                "&8Unlock more max difficulty",
+                "&8Paid from inventory coins"
+        )));
+        inv.setItem(19, button(Material.GOLD_NUGGET, "&e+1 max", "buy", "1", "buy",
                 List.of("&7Unlock +1 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_1", "?"))));
-        inv.setItem(30, button(Material.GOLD_NUGGET, "&e+5 max", "buy", "5",
+        inv.setItem(21, button(Material.GOLD_NUGGET, "&e+5 max", "buy", "5", "buy",
                 List.of("&7Unlock +5 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_5", "?"))));
-        inv.setItem(32, button(Material.GOLD_INGOT, "&e+25 max", "buy", "25",
+        inv.setItem(23, button(Material.GOLD_INGOT, "&e+25 max", "buy", "25", "buy",
                 List.of("&7Unlock +25 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_25", "?"))));
-        inv.setItem(33, button(Material.GOLD_BLOCK, "&e+100 max", "buy", "100",
+        inv.setItem(25, button(Material.GOLD_BLOCK, "&e+100 max", "buy", "100", "buy",
                 List.of("&7Unlock +100 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_100", "?"))));
 
-        inv.setItem(45, pageBtn(Material.EXPERIENCE_BOTTLE, "&fRewards", "rewards", "&7TP multiplier details"));
-        inv.setItem(46, pageBtn(Material.IRON_SWORD, "&fTiers", "tiers", "&7Enemy tier unlocks"));
-        inv.setItem(47, pageBtn(Material.BOOK, "&fDetails", "stats", "&7Team, titles, full breakdown"));
-        inv.setItem(49, button(Material.SUNFLOWER, "&7Refresh", "refresh", "0", List.of("&7Reload this menu")));
-        inv.setItem(53, closeBtn());
+        inv.setItem(27, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
+        inv.setItem(31, pageBtn(Material.LIME_CONCRETE, "&aAdjust", "adjust", "&7Raise / lower active"));
+        inv.setItem(35, closeBtn());
         return inv;
     }
 
@@ -205,7 +258,7 @@ public final class DifficultyChestGui implements Listener {
                 "",
                 "&8Calc " + ph.getOrDefault("calculated", "?")
                         + "  ·  Bought " + ph.getOrDefault("purchased", "?"),
-                "&8Steps +1 / +5 / +25 / +100"
+                "&8Open Adjust to raise / lower"
         );
     }
 
@@ -232,6 +285,7 @@ public final class DifficultyChestGui implements Listener {
         String action = null;
         String arg = null;
         String page = null;
+        String returnPage = null;
         for (String line : clicked.getItemMeta().getLore()) {
             String plain = strip(line);
             if (plain.startsWith("ACTION:")) {
@@ -240,6 +294,8 @@ public final class DifficultyChestGui implements Listener {
                 arg = plain.substring("ARG:".length());
             } else if (plain.startsWith("PAGE:")) {
                 page = plain.substring("PAGE:".length());
+            } else if (plain.startsWith("RETURN:")) {
+                returnPage = plain.substring("RETURN:".length());
             } else if (plain.equals("CLOSE")) {
                 player.closeInventory();
                 return;
@@ -253,7 +309,10 @@ public final class DifficultyChestGui implements Listener {
         if (action == null) {
             return;
         }
-        final String cmd = "difficulty do " + action + (arg == null || arg.isBlank() ? "" : " " + arg);
+        final String ret = returnPage == null || returnPage.isBlank() ? "main" : returnPage;
+        final String cmd = "difficulty do " + action
+                + (arg == null || arg.isBlank() ? " 0" : " " + arg)
+                + " " + ret;
         Bukkit.getScheduler().runTask(plugin, () -> {
             player.closeInventory();
             player.performCommand(cmd);
@@ -267,17 +326,25 @@ public final class DifficultyChestGui implements Listener {
         }
     }
 
-    private static ItemStack button(Material mat, String name, String action, String arg, List<String> tip) {
+    private static ItemStack button(
+            Material mat, String name, String action, String arg, String returnPage, List<String> tip) {
         List<String> lore = new ArrayList<>();
         lore.add("");
         lore.addAll(tip);
         lore.add("&8ACTION:" + action);
         lore.add("&8ARG:" + arg);
+        lore.add("&8RETURN:" + returnPage);
         return item(mat, name, lore);
     }
 
-    private static ItemStack pageBtn(Material mat, String name, String page, String tip) {
-        return item(mat, name, List.of("", tip, "&8PAGE:" + page));
+    private static ItemStack pageBtn(Material mat, String name, String page, String... tips) {
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        for (String tip : tips) {
+            lore.add(tip);
+        }
+        lore.add("&8PAGE:" + page);
+        return item(mat, name, lore);
     }
 
     private static ItemStack closeBtn() {

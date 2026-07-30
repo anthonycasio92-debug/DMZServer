@@ -46,15 +46,23 @@ public final class DifficultyCommands {
                                 .executes(ctx -> guiDo(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "action"),
+                                        null,
                                         null))
                                 .then(Commands.m_82129_("arg", StringArgumentType.word())
                                         .executes(ctx -> guiDo(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "action"),
-                                                StringArgumentType.getString(ctx, "arg"))))))
+                                                StringArgumentType.getString(ctx, "arg"),
+                                                null))
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> guiDo(
+                                                        ctx.getSource(),
+                                                        StringArgumentType.getString(ctx, "action"),
+                                                        StringArgumentType.getString(ctx, "arg"),
+                                                        StringArgumentType.getString(ctx, "page")))))))
                 // Player: reset active difficulty to 0 (free; purchased max kept)
                 .then(Commands.m_82127_("reset")
-                        .executes(ctx -> guiDo(ctx.getSource(), DifficultyActions.ACT_RESET, "0")))
+                        .executes(ctx -> guiDo(ctx.getSource(), DifficultyActions.ACT_RESET, "0", "main")))
                 // Vanilla world difficulty (replaces overwritten /difficulty <level>)
                 .then(vanillaDifficultyLiteral("peaceful"))
                 .then(vanillaDifficultyLiteral("easy"))
@@ -105,7 +113,7 @@ public final class DifficultyCommands {
         }
     }
 
-    private static int guiDo(CommandSourceStack source, String action, String arg) {
+    private static int guiDo(CommandSourceStack source, String action, String arg, String page) {
         ServerPlayer player = source.m_230896_();
         if (player == null) {
             return 0;
@@ -126,7 +134,15 @@ public final class DifficultyCommands {
                 amount = 0L;
             }
         }
-        DifficultyActions.Result result = DifficultyActions.handle(player, act, amount, "main");
+        String returnPage = page;
+        if (returnPage == null || returnPage.isBlank()) {
+            returnPage = switch (act) {
+                case "up", "down", "reset", "zero", "clear", "set_max", "set" -> "adjust";
+                case "buy" -> "buy";
+                default -> "main";
+            };
+        }
+        DifficultyActions.Result result = DifficultyActions.handle(player, act, amount, returnPage);
         result.tell(player);
         return result.ok() ? 1 : 0;
     }

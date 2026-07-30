@@ -203,6 +203,13 @@ public final class ForgeBridge {
 
     /** Runs a GUI action through the Forge mod and returns the result message. */
     public static String handleAction(Player player, String action, String arg) {
+        return handleAction(player, action, arg, null);
+    }
+
+    /**
+     * @param returnPage GUI page to reopen after the action (e.g. {@code adjust}, {@code buy}).
+     */
+    public static String handleAction(Player player, String action, String arg, String returnPage) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
             return "§cCould not reach adaptive difficulty mod.";
@@ -210,7 +217,7 @@ public final class ForgeBridge {
         try {
             ensureResolved();
             String act = action == null ? "" : action.toLowerCase(Locale.ROOT);
-            String page = "main";
+            String page = resolveReturnPage(act, arg, returnPage);
             long amount = 0L;
             if ("page".equals(act)) {
                 page = arg == null || arg.isBlank() ? "main" : arg;
@@ -231,6 +238,20 @@ public final class ForgeBridge {
         } catch (Throwable t) {
             return "§cAction failed: " + t.getClass().getSimpleName();
         }
+    }
+
+    /** Default page to reopen for an action when none is supplied. */
+    public static String resolveReturnPage(String action, String arg, String explicitPage) {
+        if (explicitPage != null && !explicitPage.isBlank()) {
+            return explicitPage.toLowerCase(Locale.ROOT);
+        }
+        String act = action == null ? "" : action.toLowerCase(Locale.ROOT);
+        return switch (act) {
+            case "page" -> arg == null || arg.isBlank() ? "main" : arg.toLowerCase(Locale.ROOT);
+            case "up", "down", "reset", "zero", "clear", "set_max", "set" -> "adjust";
+            case "buy" -> "buy";
+            default -> "main";
+        };
     }
 
     public static boolean forgeAvailable() {

@@ -87,14 +87,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
                 }
                 String action = args.length > 1 ? args[1] : "";
                 String arg = args.length > 2 ? args[2] : null;
-                String msg = ForgeBridge.handleAction(player, action, arg);
+                String returnPage = args.length > 3 ? args[3] : null;
+                String reopen = ForgeBridge.resolveReturnPage(action, arg, returnPage);
+                String msg = ForgeBridge.handleAction(player, action, arg, reopen);
                 if (msg != null && !msg.isBlank()) {
                     player.sendMessage(msg.startsWith("§") ? msg : "§e" + msg);
                 }
                 // Actions already reopen the Forge GUI path; reopen CMI/chest here too.
-                getServer().getScheduler().runTask(this, () -> openMenu(player, "page".equalsIgnoreCase(action)
-                        ? (arg == null ? "main" : arg)
-                        : "main"));
+                getServer().getScheduler().runTask(this, () -> openMenu(player, reopen));
                 return true;
             }
             case "admin" -> {

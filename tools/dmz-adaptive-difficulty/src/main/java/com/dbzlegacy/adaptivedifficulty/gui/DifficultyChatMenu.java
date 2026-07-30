@@ -25,6 +25,10 @@ public final class DifficultyChatMenu {
     public static void open(ServerPlayer player, String page) {
         if (page == null || page.isBlank() || "main".equalsIgnoreCase(page)) {
             main(player);
+        } else if ("adjust".equalsIgnoreCase(page) || "change".equalsIgnoreCase(page) || "set".equalsIgnoreCase(page)) {
+            adjust(player);
+        } else if ("buy".equalsIgnoreCase(page) || "purchase".equalsIgnoreCase(page) || "unlock".equalsIgnoreCase(page)) {
+            buy(player);
         } else if ("rewards".equalsIgnoreCase(page)) {
             rewards(player);
         } else if ("tiers".equalsIgnoreCase(page) || "enemies".equalsIgnoreCase(page)) {
@@ -51,8 +55,34 @@ public final class DifficultyChatMenu {
                 + "  §8Inv §f" + CurrencyBridge.balanceText(player)));
         send(player, Component.m_237113_(""));
 
+        MutableComponent hub = Component.m_237113_("§7")
+                .m_7220_(btn("§aAdjust", "/difficulty do page adjust", "Raise / lower active"))
+                .m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn("§eBuy Max", "/difficulty do page buy", "Unlock more max"))
+                .m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn("§bTeam", "/difficulty do team 0 main", "Mode: " + snap.teamMode));
+        send(player, hub);
+
+        MutableComponent pages = Component.m_237113_("§7More  ")
+                .m_7220_(btn("§fRewards", "/difficulty do page rewards", "TP multiplier"))
+                .m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn("§fTiers", "/difficulty do page tiers", "Enemy tiers"))
+                .m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn("§fDetails", "/difficulty do page stats", "Full breakdown"))
+                .m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn("§7↻", "/difficulty", "Refresh"));
+        send(player, pages);
+        send(player, Component.m_237113_("§8────────────────────────"));
+    }
+
+    private static void adjust(ServerPlayer player) {
+        DifficultySnapshot snap = DifficultyCache.refresh(player);
         long room = Math.max(0L, snap.availableMax - snap.active);
         long maxCost = room <= 0 ? 0L : DifficultyCalculator.raiseCostIronCoins(snap.active, room);
+
+        send(player, Component.m_237113_("§8──────── §fAdjust Difficulty §8────────"));
+        send(player, Component.m_237113_("§f" + snap.active + " §8/ §7" + snap.availableMax
+                + "  §8Inv §f" + CurrencyBridge.balanceText(player)));
 
         MutableComponent down = Component.m_237113_("§7Lower  ");
         for (int i = STEPS.length - 1; i >= 0; i--) {
@@ -60,10 +90,10 @@ public final class DifficultyChatMenu {
             if (i < STEPS.length - 1) {
                 down.m_7220_(Component.m_237113_(" "));
             }
-            down.m_7220_(btn("§c−" + step, "/difficulty do down " + step, "Lower (free)"));
+            down.m_7220_(btn("§c−" + step, "/difficulty do down " + step + " adjust", "Lower (free)"));
         }
         down.m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§fReset", "/difficulty do reset 0", "Active → 0"));
+                .m_7220_(btn("§fReset", "/difficulty do reset 0 adjust", "Active → 0"));
         send(player, down);
 
         MutableComponent up = Component.m_237113_("§7Raise  ");
@@ -78,37 +108,44 @@ public final class DifficultyChatMenu {
                     : "Raise — " + CurrencyBridge.formatCost(
                             DifficultyCalculator.raiseCostIronCoins(snap.active, amt))
                     + " (inventory)";
-            up.m_7220_(btn("§a+" + step, "/difficulty do up " + step, tip));
+            up.m_7220_(btn("§a+" + step, "/difficulty do up " + step + " adjust", tip));
         }
         up.m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§6Max", "/difficulty do set_max 0",
-                        room <= 0 ? "At max" : "Max — " + CurrencyBridge.formatCost(maxCost)))
-                .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§bTeam", "/difficulty do team 0", "Mode: " + snap.teamMode));
+                .m_7220_(btn("§6Max", "/difficulty do set_max 0 adjust",
+                        room <= 0 ? "At max" : "Max — " + CurrencyBridge.formatCost(maxCost)));
         send(player, up);
 
-        MutableComponent buy = Component.m_237113_("§7Buy max  ");
+        MutableComponent nav = Component.m_237113_("")
+                .m_7220_(btn("§7« Back", "/difficulty do page main", "Return"))
+                .m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn("§eBuy Max", "/difficulty do page buy", "Unlock more max"));
+        send(player, nav);
+    }
+
+    private static void buy(ServerPlayer player) {
+        DifficultySnapshot snap = DifficultyCache.refresh(player);
+        send(player, Component.m_237113_("§8──────── §fBuy Max Difficulty §8────────"));
+        send(player, Component.m_237113_("§7Purchased §f" + snap.purchased
+                + "  §7Available §f" + snap.availableMax
+                + "  §8Inv §f" + CurrencyBridge.balanceText(player)));
+
+        MutableComponent row = Component.m_237113_("§7Buy  ");
         for (int i = 0; i < STEPS.length; i++) {
             long step = STEPS[i];
             if (i > 0) {
-                buy.m_7220_(Component.m_237113_(" "));
+                row.m_7220_(Component.m_237113_(" "));
             }
             long cost = DifficultyCalculator.purchaseCost(snap.purchased, step);
-            buy.m_7220_(btn("§e+" + step, "/difficulty do buy " + step,
+            row.m_7220_(btn("§e+" + step, "/difficulty do buy " + step + " buy",
                     CurrencyBridge.formatCost(cost) + " (inventory)"));
         }
-        send(player, buy);
+        send(player, row);
 
-        MutableComponent pages = Component.m_237113_("§7More  ")
-                .m_7220_(btn("§fRewards", "/difficulty do page rewards", "TP multiplier"))
+        MutableComponent nav = Component.m_237113_("")
+                .m_7220_(btn("§7« Back", "/difficulty do page main", "Return"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§fTiers", "/difficulty do page tiers", "Enemy tiers"))
-                .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§fDetails", "/difficulty do page stats", "Full breakdown"))
-                .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§7↻", "/difficulty", "Refresh"));
-        send(player, pages);
-        send(player, Component.m_237113_("§8────────────────────────"));
+                .m_7220_(btn("§aAdjust", "/difficulty do page adjust", "Raise / lower"));
+        send(player, nav);
     }
 
     private static void rewards(ServerPlayer player) {
