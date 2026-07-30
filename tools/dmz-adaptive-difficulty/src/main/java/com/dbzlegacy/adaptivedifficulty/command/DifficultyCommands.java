@@ -6,9 +6,11 @@ import com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge;
-import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
+import com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
+import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
+import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -35,21 +37,23 @@ public final class DifficultyCommands {
                         .executes(ctx -> openGui(ctx.getSource(), "main"))
                         .then(Commands.m_82129_("page", StringArgumentType.word())
                                 .executes(ctx -> openGui(ctx.getSource(), StringArgumentType.getString(ctx, "page")))))
+                .then(Commands.m_82127_("chat")
+                        .executes(ctx -> openChat(ctx.getSource(), "main"))
+                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                .executes(ctx -> openChat(ctx.getSource(), StringArgumentType.getString(ctx, "page")))))
                 .then(Commands.m_82127_("show")
                         .executes(ctx -> show(ctx.getSource())))
                 .then(Commands.m_82127_("up")
-                        .executes(ctx -> adjust(ctx.getSource(), 100))
+                        .executes(ctx -> act(ctx.getSource(), DifficultyActions.ACT_UP, 100))
                         .then(Commands.m_82129_("amount", LongArgumentType.longArg(1))
-                                .executes(ctx -> adjust(ctx.getSource(), LongArgumentType.getLong(ctx, "amount")))))
+                                .executes(ctx -> act(ctx.getSource(), DifficultyActions.ACT_UP, LongArgumentType.getLong(ctx, "amount")))))
                 .then(Commands.m_82127_("down")
-                        .executes(ctx -> adjust(ctx.getSource(), -100))
+                        .executes(ctx -> act(ctx.getSource(), DifficultyActions.ACT_DOWN, 100))
                         .then(Commands.m_82129_("amount", LongArgumentType.longArg(1))
-                                .executes(ctx -> adjust(ctx.getSource(), -LongArgumentType.getLong(ctx, "amount")))))
+                                .executes(ctx -> act(ctx.getSource(), DifficultyActions.ACT_DOWN, LongArgumentType.getLong(ctx, "amount")))))
                 .then(Commands.m_82127_("set")
-                        // Player: /difficulty set <amount>
                         .then(Commands.m_82129_("amount", LongArgumentType.longArg(0))
-                                .executes(ctx -> setActive(ctx.getSource(), LongArgumentType.getLong(ctx, "amount"))))
-                        // Admin concept alias: /difficulty set prestigeMultiplier 10
+                                .executes(ctx -> act(ctx.getSource(), DifficultyActions.ACT_SET, LongArgumentType.getLong(ctx, "amount"))))
                         .then(Commands.m_82129_("key", StringArgumentType.word())
                                 .requires(DifficultyCommands::isAdmin)
                                 .then(Commands.m_82129_("value", StringArgumentType.greedyString())
@@ -59,14 +63,14 @@ public final class DifficultyCommands {
                                                 StringArgumentType.getString(ctx, "value"))))))
                 .then(Commands.m_82127_("buy")
                         .then(Commands.m_82129_("amount", LongArgumentType.longArg(1))
-                                .executes(ctx -> buy(ctx.getSource(), LongArgumentType.getLong(ctx, "amount")))))
+                                .executes(ctx -> act(ctx.getSource(), DifficultyActions.ACT_BUY, LongArgumentType.getLong(ctx, "amount")))))
                 .then(Commands.m_82127_("team")
-                        .executes(ctx -> cycleTeam(ctx.getSource()))
+                        .executes(ctx -> act(ctx.getSource(), DifficultyActions.ACT_TEAM, 0))
                         .then(Commands.m_82129_("mode", StringArgumentType.word())
                                 .executes(ctx -> setTeam(ctx.getSource(), StringArgumentType.getString(ctx, "mode")))))
                 .then(Commands.m_82127_("settings")
                         .requires(DifficultyCommands::isAdmin)
-                        .executes(ctx -> openGui(ctx.getSource(), "settings"))
+                        .executes(ctx -> openChat(ctx.getSource(), "settings"))
                         .then(Commands.m_82129_("key", StringArgumentType.word())
                                 .then(Commands.m_82129_("value", StringArgumentType.greedyString())
                                         .executes(ctx -> adminSet(
@@ -101,7 +105,6 @@ public final class DifficultyCommands {
         }
         String node = DifficultyConfig.get().adminPermission;
         try {
-            // Mohist/Bukkit: CommandSender#hasPermission(String)
             var method = player.getClass().getMethod("hasPermission", String.class);
             Object result = method.invoke(player, node);
             return result instanceof Boolean b && b;
@@ -120,6 +123,26 @@ public final class DifficultyCommands {
         return 1;
     }
 
+    private static int openChat(CommandSourceStack source, String page) {
+        ServerPlayer player = source.m_230896_();
+        if (player == null) {
+            source.m_81352_(Component.m_237113_("Players only."));
+            return 0;
+        }
+        DifficultyChatMenu.open(player, page);
+        return 1;
+    }
+
+    private static int act(CommandSourceStack source, String action, long amount) {
+        ServerPlayer player = source.m_230896_();
+        if (player == null) {
+            return 0;
+        }
+        DifficultyActions.Result result = DifficultyActions.handle(player, action, amount, "main");
+        result.tell(player);
+        return result.ok() ? 1 : 0;
+    }
+
     private static int show(CommandSourceStack source) {
         ServerPlayer player = source.m_230896_();
         if (player == null) {
@@ -135,89 +158,18 @@ public final class DifficultyCommands {
                         + ", prestige " + snap.prestige + ")\n"
                         + "§ePurchased: §f" + snap.purchased + "\n"
                         + "§ePersonal Max: §f" + snap.personalMax + "\n"
+                        + "§eTeam: §f" + TeamScaling.teamName(player)
+                        + " §7(" + TeamScaling.teammates(player).size() + " online via "
+                        + TeamScaling.teamSourceLabel() + ")\n"
                         + "§eTeam Threshold Bonus: §f" + snap.teamThresholdBonus + "\n"
                         + "§eTeam Contribution: §f" + snap.teamContribution + "\n"
                         + "§eAvailable Max: §f" + snap.availableMax + "\n"
                         + "§eTeam Mode: §f" + snap.teamMode + "\n"
                         + "§7Currency: §f" + CurrencyBridge.currencyLabel()
-                        + " §8| next +100 cost ~ §f"
-                        + DifficultyCalculator.purchaseCost(snap.purchased, 100)
+                        + " §8| Balance: §f" + CurrencyBridge.balanceText(player) + "\n"
+                        + "§7Next +100 cost: §f" + CurrencyBridge.formatCost(
+                        DifficultyCalculator.purchaseCost(snap.purchased, 100))
         ), false);
-        return 1;
-    }
-
-    private static int adjust(CommandSourceStack source, long delta) {
-        ServerPlayer player = source.m_230896_();
-        if (player == null) {
-            return 0;
-        }
-        PlayerDifficultyData data = DifficultyCache.data(player);
-        DifficultySnapshot before = DifficultyCache.refresh(player);
-        long next = Math.max(0L, before.active + delta);
-        next = Math.min(next, before.availableMax);
-        data.setActiveDifficulty(next);
-        DifficultyCache.save(player);
-        DifficultySnapshot snap = DifficultyCache.refresh(player);
-        source.m_288197_(() -> Component.m_237113_("§aActive difficulty set to §f" + snap.active
-                + " §7(max " + snap.availableMax + ")"), false);
-        DifficultyMenu.open(player, "main");
-        return 1;
-    }
-
-    private static int setActive(CommandSourceStack source, long amount) {
-        ServerPlayer player = source.m_230896_();
-        if (player == null) {
-            return 0;
-        }
-        PlayerDifficultyData data = DifficultyCache.data(player);
-        DifficultySnapshot bounds = DifficultyCache.refresh(player);
-        long next = Math.max(0L, Math.min(amount, bounds.availableMax));
-        data.setActiveDifficulty(next);
-        DifficultyCache.save(player);
-        DifficultyCache.refresh(player);
-        source.m_288197_(() -> Component.m_237113_("§aActive difficulty set to §f" + next), false);
-        return 1;
-    }
-
-    private static int buy(CommandSourceStack source, long amount) {
-        ServerPlayer player = source.m_230896_();
-        if (player == null) {
-            return 0;
-        }
-        PlayerDifficultyData data = DifficultyCache.data(player);
-        long cost = DifficultyCalculator.purchaseCost(data.getPurchasedDifficulty(), amount);
-        if (!CurrencyBridge.canAfford(player, cost)) {
-            source.m_81352_(Component.m_237113_("§cNeed " + cost + " " + CurrencyBridge.currencyLabel() + "."));
-            return 0;
-        }
-        if (!CurrencyBridge.charge(player, cost)) {
-            source.m_81352_(Component.m_237113_("§cPayment failed."));
-            return 0;
-        }
-        data.setPurchasedDifficulty(data.getPurchasedDifficulty() + amount);
-        DifficultyCache.save(player);
-        DifficultySnapshot snap = DifficultyCache.refresh(player);
-        source.m_288197_(() -> Component.m_237113_(
-                "§aPurchased §f+" + amount + " §adifficulty for §f" + cost + " §a"
-                        + CurrencyBridge.currencyLabel() + ".\n§ePurchased total: §f" + snap.purchased
-                        + " §7| Available max: §f" + snap.availableMax
-        ), false);
-        DifficultyMenu.open(player, "main");
-        return 1;
-    }
-
-    private static int cycleTeam(CommandSourceStack source) {
-        ServerPlayer player = source.m_230896_();
-        if (player == null) {
-            return 0;
-        }
-        PlayerDifficultyData data = DifficultyCache.data(player);
-        data.cycleTeamMode();
-        DifficultyCache.save(player);
-        DifficultyCache.invalidateAll();
-        DifficultySnapshot snap = DifficultyCache.refresh(player);
-        source.m_288197_(() -> Component.m_237113_("§aTeam mode: §f" + snap.teamMode), false);
-        DifficultyMenu.open(player, "main");
         return 1;
     }
 
@@ -226,13 +178,9 @@ public final class DifficultyCommands {
         if (player == null) {
             return 0;
         }
-        PlayerDifficultyData data = DifficultyCache.data(player);
-        data.setTeamMode(TeamMode.fromString(mode));
-        DifficultyCache.save(player);
-        DifficultyCache.invalidateAll();
-        DifficultySnapshot snap = DifficultyCache.refresh(player);
-        source.m_288197_(() -> Component.m_237113_("§aTeam mode: §f" + snap.teamMode), false);
-        return 1;
+        DifficultyActions.Result result = DifficultyActions.setTeam(player, TeamMode.fromString(mode), "main");
+        result.tell(player);
+        return result.ok() ? 1 : 0;
     }
 
     private static int reload(CommandSourceStack source) {

@@ -4,13 +4,13 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_adaptive_difficulty"
-version = "1.2.1"
+version = "1.3.0"
 displayName = "DMZ Adaptive Difficulty"
 authors = "DBZ Legacy Reborn"
 description = '''
 Personal + team-scaled adaptive difficulty for DragonMineZ.
-Lightman's purchases, GUI, enemy evolution, elites, mutations,
-adaptive AI, boss phases, and full reward scaling.
+SDU-style GUI, FTB Teams, Lightman's wallet/bank/inventory coins,
+enemy evolution, elites, mutations, adaptive AI, boss phases, rewards.
 '''
 
 [[mixins]]
@@ -41,6 +41,20 @@ side = "BOTH"
 modId = "lightmanscurrency"
 mandatory = false
 # Lightman's versions are MC-prefixed (e.g. 1.20.1-2.3.0.5); [2.0,) falsely rejects them.
+versionRange = "[0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.dmz_adaptive_difficulty]]
+modId = "ftbteams"
+mandatory = false
+versionRange = "[0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.dmz_adaptive_difficulty]]
+modId = "sdu"
+mandatory = false
 versionRange = "[0,)"
 ordering = "AFTER"
 side = "BOTH"

@@ -10,16 +10,46 @@ LIGHTMANS="$ROOT/libraries/lightmanscurrency-1.20.1-2.3.0.5.jar"
 if [[ ! -f "$LIGHTMANS" ]]; then
   LIGHTMANS="$ROOT/mods/lightmanscurrency-1.20.1-2.3.0.5.jar"
 fi
-VERSION="1.2.1"
+FTB="$ROOT/libraries/ftb-teams-forge-2001.3.1.jar"
+if [[ ! -f "$FTB" ]]; then
+  echo "Downloading FTB Teams for compile..."
+  curl -fsSL -o "$FTB" \
+    "https://maven.ftb.dev/releases/dev/ftb/mods/ftb-teams-forge/2001.3.1/ftb-teams-forge-2001.3.1.jar"
+fi
+SDU="$ROOT/mods/sdu-3.0.0.jar"
+if [[ ! -f "$SDU" ]]; then
+  SDU="$ROOT/sdu-3.0.5.jar"
+fi
+VERSION="1.3.0"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
 JAR="$ROOT/mods/dmz_adaptive_difficulty-${VERSION}.jar"
+STUBS="$ROOT/libraries/dmz-client-compile-stubs.jar"
+NETTY_BUF="$ROOT/libraries/io/netty/netty-buffer/4.1.82.Final/netty-buffer-4.1.82.Final.jar"
+NETTY_COMMON="$ROOT/libraries/io/netty/netty-common/4.1.82.Final/netty-common-4.1.82.Final.jar"
+MERGETOOL="$ROOT/libraries/net/minecraftforge/mergetool/1.1.5/mergetool-1.1.5-api.jar"
+STUB_SRC="$(cd "$(dirname "$0")" && pwd)/stubs/src"
+
+if [[ ! -f "$STUBS" ]]; then
+  echo "Building client compile stubs..."
+  STUB_OUT="$(cd "$(dirname "$0")" && pwd)/build/stubs"
+  rm -rf "$STUB_OUT"
+  mkdir -p "$STUB_OUT"
+  javac --release 17 -cp "$FORGE_S:$SRG" -d "$STUB_OUT" $(find "$STUB_SRC" -name '*.java' | sort)
+  if [[ -f "$MERGETOOL" ]]; then
+    TMPDIST="$(mktemp -d)"
+    (cd "$TMPDIST" && jar xf "$MERGETOOL")
+    cp -a "$TMPDIST"/net "$STUB_OUT/" 2>/dev/null || true
+    rm -rf "$TMPDIST"
+  fi
+  jar cf "$STUBS" -C "$STUB_OUT" .
+fi
 
 rm -f "$ROOT"/mods/dmz_adaptive_difficulty-*.jar
 rm -f "$ROOT"/dmz_adaptive_difficulty-*.jar
 
-CP="$SRG:$FORGE_S:$FORGE_U:$GSON:$LIGHTMANS:\
+CP="$STUBS:$SRG:$FORGE_S:$FORGE_U:$GSON:$LIGHTMANS:$FTB:$SDU:$NETTY_BUF:$NETTY_COMMON:$MERGETOOL:\
 $ROOT/libraries/net/minecraftforge/fmlcore/1.20.1-47.4.10/fmlcore-1.20.1-47.4.10.jar:\
 $ROOT/libraries/net/minecraftforge/fmlloader/1.20.1-47.4.10/fmlloader-1.20.1-47.4.10.jar:\
 $ROOT/libraries/net/minecraftforge/forgespi/7.0.1/forgespi-7.0.1.jar:\

@@ -1,27 +1,22 @@
-# DMZ Adaptive Difficulty (v1.2.1)
+# DMZ Adaptive Difficulty (v1.3.0)
 
-Server-side Forge/Mohist 1.20.1 mod implementing the Adaptive Difficulty concept.
+Server + client Forge mixin mod for Mohist/Forge 1.20.1.
+
+## What's new in 1.3.0
+
+- **Real GUI** (SDU-style screen) — `/difficulty` opens a clickable panel, not chat
+- **SDU hub entry** when SDU is installed (Difficulty → Adaptive Difficulty)
+- **FTB Teams** for teammate detection (falls back to scoreboard if FTB missing)
+- **Lightman's fix** — checks/charges **wallet + bank + inventory coins** (was wallet-only)
 
 ## Features
 
-### Phase 1
-- Personal **Calculated / Purchased / Active** difficulty
-- Prestige-aware calculated difficulty (`prestige` DMZ skill × multiplier)
-- Team modes via vanilla scoreboard teams
-- Mob scaling once at spawn
-- TP reward multiplier via `DMZEvent.TPGainEvent`
-
-### Phase 2 / concept-complete (1.2.0)
-- **Lightman's Currency** purchases (`MoneyAPI` / `CoinValue.fromNumber("main", cost)`)
-- Clickable **difficulty GUI** (`/difficulty`) — up/down/buy/team + Rewards/Tiers/Stats/Settings
-- **Enemy evolution** (creeper/zombie/skeleton/enderman/warden abilities by tier)
-- **Elite** spawns (glowing named elites, size stand-in, higher stats/rewards)
-- **Mutations** (Burning, Electric, Gravity, Titan, Berserker, Shadow, Vampiric)
-- **Adaptive AI** (focus weakest, dodge, retreat, anti-flight, coordinated, ki-charge counter)
-- **Boss scaling** + HP phases (75% / 50% / 25%)
-- **Rewards**: TP, XP, Potential progress, rare drops, capsules, titles
-
-See `CONCEPT_AUDIT.md` for the section-by-section checklist.
+- Personal Calculated / Purchased / Active difficulty
+- Prestige via DMZ skill `"prestige"`
+- Team modes: personal / threshold / full
+- Lightman's purchases (Training Points / free fallbacks)
+- Spawn mob scaling, elites, mutations, enemy evolution, adaptive AI, boss phases
+- Reward multipliers (TP, XP, capsules, rare drops, titles)
 
 ## Build
 
@@ -29,35 +24,30 @@ See `CONCEPT_AUDIT.md` for the section-by-section checklist.
 bash tools/dmz-adaptive-difficulty/build.sh
 ```
 
-Requires `libraries/lightmanscurrency-1.20.1-2.3.0.5.jar` (or same file under `mods/`) on the compile classpath.
-
-Outputs `mods/dmz_adaptive_difficulty-1.2.1.jar`.
+Outputs `mods/dmz_adaptive_difficulty-1.3.0.jar`.
 
 ## Install
 
-1. Put `dmz_adaptive_difficulty-1.2.1.jar` in `mods/` (remove any older `dmz_adaptive_difficulty-*.jar`)
-2. Put `lightmanscurrency-1.20.1-2.3.0.5.jar` in `mods/` (optional but recommended)
-3. Restart → config at `config/dmz_adaptive_difficulty.json`
+1. Put `dmz_adaptive_difficulty-1.3.0.jar` in **server and client** `mods/`
+2. Remove any older `dmz_adaptive_difficulty-*.jar`
+3. Ensure `lightmanscurrency` and `ftbteams` are installed on the server (optional but expected)
+4. Restart
 
-If Lightman's is missing, purchases automatically fall back to Training Points.
+Clients need the jar for the Screen GUI. Chat fallback: `/difficulty chat`.
 
 ## Commands
 
-| Command | Description |
+| Command | Action |
 |---|---|
-| `/difficulty` | Open clickable GUI |
-| `/difficulty gui [main\|rewards\|tiers\|stats]` | Open a GUI page |
-| `/difficulty show` | Plain text snapshot |
-| `/difficulty up\|down [n]` | Change **active** difficulty (free) |
-| `/difficulty set <n>` | Set active within available max |
-| `/difficulty buy <amount>` | Buy purchased difficulty (Lightman's / TP) |
-| `/difficulty team [personal\|threshold\|full]` | Team scaling mode |
-| `/difficulty reload` | Reload config (op) |
-| `/difficulty admin set <key> <value>` | Edit config (op) |
+| `/difficulty` / `/difficulty gui` | Open Screen GUI |
+| `/difficulty chat` | Legacy clickable chat menu |
+| `/difficulty up/down [n]` | Adjust active difficulty |
+| `/difficulty buy <n>` | Purchase difficulty |
+| `/difficulty team [mode]` | Cycle/set team mode |
+| `/difficulty show` | Text snapshot |
 
-## Config highlights
+## Notes
 
-- `purchaseCurrency`: `lightmans` (default) \| `training_points` \| `free`
-- `eliteChancePercent`, `mutationChancePercent`
-- `enableAdaptiveAi`, `enableBossScaling`, `bossHealthThreshold`
-- Scaling percents + reward/cost formulas from the concept doc
+- Purchase costs use `baseCost` / `costScaling` from `config/dmz_adaptive_difficulty.json` (default base 100000 core coin value).
+- Balance shown in GUI is combined wallet + bank + inventory.
+- Team scaling uses FTB party/server teams; solo personal teams count as no teammates.
