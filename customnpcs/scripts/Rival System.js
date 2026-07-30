@@ -1,7 +1,7 @@
 /*
 ============================================================
  DBZ Legacy Reborn - Rival System V4
- Version: 4.6.12
+ Version: 4.7.7
 
  Combined Global Player gameplay modules (like Sparring TP System).
 
@@ -20,8 +20,32 @@
  - trigger   (admin refresh id 240 only)
 
  COMMANDS:
- Use Rival Command Handler.js in the script-slot
- (same place as Sparring Command Handler / SkillCheck).
+ Rival Command Handler.js (script-slot) owns ALL player commands.
+ This file owns gameplay only: proximity TP, challenges, death
+ Nemesis tracking, Instinct, progression.
+
+ Intended rivalry path:
+   /rival <player>           silent Unknown (they see nothing)
+   both silent               Declared (both see each other)
+   /rival declare <player>   visible notify; accept/decline/ignore
+   both declare or accept    Mutual (benefits both ways)
+   Mutual + 3+ death/KO      Nemesis (timer/damage wins do NOT count)
+
+ Changelog (4.7.7):
+ - Personal cooldown between official challenges (default 2 minutes)
+   after a battle ends; blocks send and accept for both fighters.
+
+ Changelog (4.7.6):
+ - Battle report delivered once (broadcast OR private DM), so fighters
+   no longer see the full report twice.
+
+ Changelog (4.7.2 consolidate):
+ - Keeps declare-status path: silent Unknown, declare Mutual,
+   Nemesis after 3+ mutual death/KO losses only.
+ - Nearby rival TP capped at 2 + requires recent mob kill (30s).
+ - Rival TP awards scaled to 60%.
+ - Challenge planned-duration helpers + long-fight live score cadence.
+ - tpmsg kill-chat toggle + HP-based challenge damage retained.
 
  NPC:
  Use RivalNPC_v4.js on the Rival Master NPC.
@@ -29,9 +53,6 @@
  This file merges:
   Core, Proximity, Challenge, Instinct, Progression,
   Spectator, DMZ/Fusion hooks.
-
- Disable old V3 and the separate Rival*_v4 Global Player
- scripts while using this combined file.
 ============================================================
 */
 
@@ -60,15 +81,16 @@ var RC_VERSION = 4;
 var RC_COLOR = "\u00A7";
 
 /*
- Rival relationship statuses (per-link):
-  unknown  - you silently rivaled them (they are not told); unlimited
-  declared - both silently rivaled each other (not Mutual yet); unlimited
-  mutual   - both accepted Mutual; max RC_MAX_MUTUAL_RIVALS
-  nemesis  - your single greatest mutual rival (history-chosen, only ONE)
+ Rival relationship statuses (per-link) - must match Command Handler:
+  unknown  - silent /rival one-sided, or pending visible declare
+  declared - both players silently /rival each other
+  mutual   - both /rival declare (or accept); max RC_MAX_MUTUAL_RIVALS
+  nemesis  - mutual + 3 or more DEATH losses to that rival (one per player)
 
- If a 3rd mutual would form, the oldest mutual is demoted automatically.
- Nemesis is recomputed from battles / wins / losses / rivalry age - not an RP gate.
+ Benefits require declaredByMe (you rivaled them). Incoming-only links
+ get no presence TP. Damage/timer losses never crown a Nemesis.
 */
+var RC_NEMESIS_DEATH_LOSSES = 3;
 var RC_MAX_MUTUAL_RIVALS = 2;
 var RC_REQUEST_EXPIRE_MS = 7 * 24 * 60 * 60 * 1000;
 var RC_DECLARE_COOLDOWN_MS = 30 * 1000;
@@ -78,12 +100,13 @@ var RC_MS_PER_DAY = 24 * 60 * 60 * 1000;
 var RC_DATABASE_KEY = "dlr.rivalry.v4.database";
 var RC_BACKUP_KEY = "dlr.rivalry.v4.database.backup";
 
+/* RP rank tiers (NOT the Mutual "Nemesis" relationship status). */
 var RC_TIERS = [
     { min: 0,     name: "Acquaintance",  color: "7" },
     { min: 100,   name: "Competitor",    color: "a" },
     { min: 300,   name: "Adversary",     color: "2" },
     { min: 700,   name: "Rival",         color: "e" },
-    { min: 1500,  name: "Nemesis",       color: "6" },
+    { min: 1500,  name: "Vendetta",      color: "6" },
     { min: 3000,  name: "Legendary",     color: "c" },
     { min: 5000,  name: "Arch Rival",    color: "d" },
     { min: 7500,  name: "Mortal Enemy",  color: "5" },
@@ -321,8 +344,7 @@ function rcFreshPlayerRecord(uuid, name) {
             declarationsAccepted: 0,
             declarationsDeclined: 0,
             rivalsRemoved: 0
-        },
-        pastRivals: {}
+        }
     };
 }
 
@@ -350,12 +372,27 @@ function rcNormalizeCareer(career) {
 function rcLinkStatus(link) {
     if (link === null || link === undefined) return "none";
     if (link.mutual === true) {
-        if (link.isNemesis === true) return "nemesis";
+        /*
+         * Never trust a stale isNemesis flag from older history-based
+         * builds. Nemesis requires Mutual + 3 death losses.
+         */
+        if (link.isNemesis === true &&
+            rcNumber(link.deathLosses, 0) >= RC_NEMESIS_DEATH_LOSSES) {
+            return "nemesis";
+        }
         return "mutual";
     }
-    if (link.declaredByMe === true && link.declaredByThem === true) return "declared";
-    if (link.declaredByMe === true || link.declaredByThem === true ||
-        link.inviteSent === true || link.inviteReceived === true) {
+    /* Declared = both silent, with no visible declare still in flight. */
+    if (link.declaredByMe === true && link.declaredByThem === true &&
+        link.inviteSent !== true && link.inviteReceived !== true) {
+        return "declared";
+    }
+    /* Visible /rival declare pending (sent or received). */
+    if (link.inviteSent === true || link.inviteReceived === true) {
+        return "pending";
+    }
+    /* Silent one-sided Unknown. */
+    if (link.declaredByMe === true || link.declaredByThem === true) {
         return "unknown";
     }
     return "none";
@@ -365,6 +402,7 @@ function rcLinkStatusLabel(status) {
     if (status === "nemesis") return RC_COLOR + "c" + RC_COLOR + "lNemesis" + RC_COLOR + "r";
     if (status === "mutual") return RC_COLOR + "6Mutual" + RC_COLOR + "r";
     if (status === "declared") return RC_COLOR + "eDeclared" + RC_COLOR + "r";
+    if (status === "pending") return RC_COLOR + "dPending" + RC_COLOR + "r";
     if (status === "unknown") return RC_COLOR + "7Unknown" + RC_COLOR + "r";
     return RC_COLOR + "8None" + RC_COLOR + "r";
 }
@@ -383,10 +421,6 @@ function rcNormalizeRivalLink(link, uuid, name) {
     link.mutual = link.mutual === true;
     link.declaredByMe = link.declaredByMe === true;
     link.declaredByThem = link.declaredByThem === true;
-    link.inviteSent = link.inviteSent === true;
-    link.inviteReceived = link.inviteReceived === true;
-    link.mutualAccepted = link.mutualAccepted === true;
-    link.isNemesis = link.isNemesis === true && link.mutual === true;
     link.points = Math.max(0, rcNumber(link.points, 0));
     link.wins = rcNumber(link.wins, 0);
     link.losses = rcNumber(link.losses, 0);
@@ -397,6 +431,12 @@ function rcNormalizeRivalLink(link, uuid, name) {
     link.damageTaken = rcNumber(link.damageTaken, 0);
     link.timeFoughtMs = rcNumber(link.timeFoughtMs, 0);
     link.battles = rcNumber(link.battles, link.wins + link.losses + link.draws);
+    link.deathLosses = rcNumber(link.deathLosses, 0);
+    link.deathWins = rcNumber(link.deathWins, 0);
+    /* Drop legacy random/history Nemesis unless death threshold is met. */
+    link.isNemesis = link.mutual === true &&
+        link.deathLosses >= RC_NEMESIS_DEATH_LOSSES &&
+        link.isNemesis === true;
     link.presenceMs = rcNumber(link.presenceMs, 0);
     link.createdAt = rcNumber(link.createdAt, rcNow());
     link.firstMetAt = rcNumber(link.firstMetAt, link.createdAt);
@@ -425,10 +465,8 @@ var PG_ON_GROUNDS_RP_BONUS = 12;
 var PG_RECLAIM_TP = 12000;
 var PG_RECLAIM_RP = 45;
 var PG_CHALLENGE_TP_BONUS = 0.40;
-var PG_UNDERDOG_STAT_MULT = 1.12; /* all stats while reclaiming grounds */
-var PG_UNDERDOG_OFFENSE = PG_UNDERDOG_STAT_MULT; /* legacy alias */
+var PG_UNDERDOG_OFFENSE = 1.12;
 var PG_UNDERDOG_BONUS_NAME = "RivalProvingUnderdog";
-var PG_UNDERDOG_STAT_KEYS = ["STR", "SKP", "VIT", "PWR", "ENE"];
 
 function pgFresh() {
     return {
@@ -590,17 +628,8 @@ function pgClearUnderdogBonus(player) {
     try {
         var data = rpGetDMZ(player);
         if (data == null) return;
-        var bonus = data.getBonusStats();
-        for (var i = 0; i < PG_UNDERDOG_STAT_KEYS.length; i++) {
-            try { bonus.removeBonus(PG_UNDERDOG_STAT_KEYS[i], PG_UNDERDOG_BONUS_NAME); } catch (e1) {}
-        }
-        try { bonus.removeBonusSplit("RES", PG_UNDERDOG_BONUS_NAME); } catch (e2) {}
-        try {
-            rpNetwork().sendToTrackingEntityAndSelf(
-                new (rpSyncPacket())(player.getMCEntity()),
-                player.getMCEntity()
-            );
-        } catch (e3) {}
+        data.getBonusStats().removeBonus("STR", PG_UNDERDOG_BONUS_NAME);
+        data.getBonusStats().removeBonus("SKP", PG_UNDERDOG_BONUS_NAME);
     } catch (e) {}
 }
 
@@ -609,22 +638,16 @@ function pgApplyUnderdogBonus(player) {
         var data = rpGetDMZ(player);
         if (data == null) return;
         var bonus = data.getBonusStats();
-        var mult = PG_UNDERDOG_STAT_MULT;
-
-        for (var i = 0; i < PG_UNDERDOG_STAT_KEYS.length; i++) {
-            var key = PG_UNDERDOG_STAT_KEYS[i];
-            try { bonus.removeBonus(key, PG_UNDERDOG_BONUS_NAME); } catch (e1) {}
-            try { bonus.addBonus(key, PG_UNDERDOG_BONUS_NAME, "*", mult); } catch (e2) {}
-        }
-        try { bonus.removeBonusSplit("RES", PG_UNDERDOG_BONUS_NAME); } catch (e3) {}
-        try { bonus.addBonusSplit("RES", PG_UNDERDOG_BONUS_NAME, "*", mult, false); } catch (e4) {}
-
+        try { bonus.removeBonus("STR", PG_UNDERDOG_BONUS_NAME); } catch (e1) {}
+        try { bonus.removeBonus("SKP", PG_UNDERDOG_BONUS_NAME); } catch (e2) {}
+        var offense = rpHighestOffense(data);
+        bonus.addBonus(offense.key, PG_UNDERDOG_BONUS_NAME, "*", PG_UNDERDOG_OFFENSE);
         try {
             rpNetwork().sendToTrackingEntityAndSelf(
                 new (rpSyncPacket())(player.getMCEntity()),
                 player.getMCEntity()
             );
-        } catch (e5) {}
+        } catch (e3) {}
     } catch (e) {}
 }
 
@@ -818,7 +841,6 @@ function rcEnsurePlayer(database, player) {
     record.nameLower = rcLower(name);
     record.lastSeenAt = rcNow();
     if (record.rivals === null || typeof record.rivals !== "object") record.rivals = {};
-    if (record.pastRivals === null || typeof record.pastRivals !== "object") record.pastRivals = {};
     record.career = rcNormalizeCareer(record.career);
     if (record.totals === null || typeof record.totals !== "object") {
         record.totals = {
@@ -902,20 +924,12 @@ function rcCountByStatus(record, status) {
     return count;
 }
 
-/* History score: fight most, beat most, lose most, longest rivalry. */
+/* Nemesis requires Mutual + enough DEATH losses to that rival. */
 function rcNemesisScore(link) {
     if (link === null || link.mutual !== true) return -1;
-    var battles = rcNumber(link.battles, 0);
-    if (battles <= 0) battles = rcNumber(link.wins, 0) + rcNumber(link.losses, 0) + rcNumber(link.draws, 0);
-    var ageMs = Math.max(0, rcNow() - rcNumber(link.mutualSince, link.firstMetAt || link.createdAt || 0));
-    var ageDays = ageMs / RC_MS_PER_DAY;
-    var foughtMin = rcNumber(link.timeFoughtMs, 0) / 60000.0;
-    return battles * 10 +
-        rcNumber(link.wins, 0) * 5 +
-        rcNumber(link.losses, 0) * 3 +
-        rcNumber(link.points, 0) * 0.05 +
-        ageDays * 2 +
-        foughtMin;
+    var deathLosses = rcNumber(link.deathLosses, 0);
+    if (deathLosses < RC_NEMESIS_DEATH_LOSSES) return -1;
+    return deathLosses * 1000 + rcNumber(link.deathWins, 0);
 }
 
 function rcRecomputeNemesis(record) {
@@ -927,6 +941,8 @@ function rcRecomputeNemesis(record) {
     for (var uuid in record.rivals) {
         if (!record.rivals.hasOwnProperty(uuid)) continue;
         var link = record.rivals[uuid];
+        link.deathLosses = rcNumber(link.deathLosses, 0);
+        link.deathWins = rcNumber(link.deathWins, 0);
         link.isNemesis = false;
         if (link.mutual !== true) continue;
         var score = rcNemesisScore(link);
@@ -936,19 +952,12 @@ function rcRecomputeNemesis(record) {
         }
     }
 
-    /* Need real history before crowning a Nemesis (at least one official battle). */
-    if (bestUuid !== null) {
-        var best = record.rivals[bestUuid];
-        var fights = rcNumber(best.battles, 0);
-        if (fights <= 0) fights = rcNumber(best.wins, 0) + rcNumber(best.losses, 0) + rcNumber(best.draws, 0);
-        if (fights <= 0) bestUuid = null;
-    }
-
-    if (bestUuid !== null) {
+    if (bestUuid !== null && bestScore >= 0) {
         record.rivals[bestUuid].isNemesis = true;
         record.nemesisUuid = bestUuid;
         rcRefreshLinkStatus(record.rivals[bestUuid]);
     } else {
+        bestUuid = null;
         record.nemesisUuid = "";
     }
 
@@ -962,10 +971,42 @@ function rcRecomputeNemesis(record) {
         if (online !== null) {
             rcMessage(online, RC_COLOR + "c" + RC_COLOR + "lNEMESIS! " +
                 RC_COLOR + "e" + record.rivals[bestUuid].name +
-                RC_COLOR + "7 is now your greatest rival.");
+                RC_COLOR + "7 - fallen to them " +
+                rcNumber(record.rivals[bestUuid].deathLosses, 0) +
+                " times by death (need " + RC_NEMESIS_DEATH_LOSSES + ").");
         }
     }
     return bestUuid;
+}
+
+/*
+ * Record a real death to a Mutual rival for Nemesis progress.
+ * Returns true when deathLosses were incremented.
+ */
+function rcRegisterMutualDeathLoss(database, victimRecord, killerRecord, note) {
+    if (database == null || victimRecord == null || killerRecord == null) return false;
+    if (victimRecord.uuid === killerRecord.uuid) return false;
+
+    var vLink = victimRecord.rivals[killerRecord.uuid];
+    var kLink = killerRecord.rivals[victimRecord.uuid];
+    if (vLink == null || kLink == null) return false;
+    if (vLink.mutual !== true || kLink.mutual !== true) return false;
+
+    vLink.deathLosses = rcNumber(vLink.deathLosses, 0) + 1;
+    kLink.deathWins = rcNumber(kLink.deathWins, 0) + 1;
+    vLink.updatedAt = rcNow();
+    kLink.updatedAt = rcNow();
+    if (!(vLink.history instanceof Array)) vLink.history = [];
+    vLink.history.push({
+        time: rcNow(),
+        type: "death_loss",
+        note: rcString(note || ("Fallen to mutual rival " + killerRecord.name))
+    });
+    while (vLink.history.length > 30) vLink.history.shift();
+
+    rcRecomputeNemesis(victimRecord);
+    rcRecomputeNemesis(killerRecord);
+    return true;
 }
 
 function rcFindOldestMutualUuid(record, excludeUuid) {
@@ -994,6 +1035,10 @@ function rcDemoteMutualPair(database, ownerRecord, rivalUuid, reason) {
     link.mutual = false;
     link.isNemesis = false;
     link.mutualSince = 0;
+    link.inviteSent = false;
+    link.inviteReceived = false;
+    link.mutualAccepted = false;
+    /* Keep declaredByMe/Them so status falls back to Declared. */
     rcRefreshLinkStatus(link);
     rcPushHistory(link, "demoted", reason || "Oldest mutual demoted for a new rivalry");
 
@@ -1003,6 +1048,9 @@ function rcDemoteMutualPair(database, ownerRecord, rivalUuid, reason) {
         ol.mutual = false;
         ol.isNemesis = false;
         ol.mutualSince = 0;
+        ol.inviteSent = false;
+        ol.inviteReceived = false;
+        ol.mutualAccepted = false;
         rcRefreshLinkStatus(ol);
         rcPushHistory(ol, "demoted", reason || "Mutual demoted");
         rcRecomputeNemesis(other);
@@ -1031,71 +1079,11 @@ function rcEnsureMutualRoom(database, record, excludeUuid) {
     }
 }
 
-function rcCloneLink(link) {
-    try {
-        return JSON.parse(JSON.stringify(link));
-    } catch (e) {
-        return null;
-    }
-}
-
-function rcArchiveRivalLink(ownerRecord, rivalUuid) {
-    if (ownerRecord === null || rivalUuid === null || rivalUuid === "") return;
-    if (ownerRecord.pastRivals === null || typeof ownerRecord.pastRivals !== "object") {
-        ownerRecord.pastRivals = {};
-    }
-    var link = ownerRecord.rivals[rivalUuid];
-    if (link === null || link === undefined) return;
-    var snap = rcCloneLink(link);
-    if (snap === null) return;
-    snap.mutual = false;
-    snap.isNemesis = false;
-    snap.declaredByMe = false;
-    snap.declaredByThem = false;
-    snap.inviteSent = false;
-    snap.inviteReceived = false;
-    snap.mutualAccepted = false;
-    snap.mutualSince = 0;
-    snap.status = "archived";
-    snap.archivedAt = rcNow();
-    if (!(snap.history instanceof Array)) snap.history = [];
-    snap.history.push({ time: rcNow(), type: "archived", note: "Rivalry removed" });
-    while (snap.history.length > RC_HISTORY_LIMIT) snap.history.shift();
-    ownerRecord.pastRivals[rivalUuid] = snap;
-}
-
-function rcRestorePastRival(ownerRecord, targetRecord) {
-    if (ownerRecord === null || targetRecord === null) return null;
-    if (ownerRecord.pastRivals === null || typeof ownerRecord.pastRivals !== "object") return null;
-    var past = ownerRecord.pastRivals[targetRecord.uuid];
-    if (past === null || past === undefined) return null;
-    var link = rcCloneLink(past);
-    if (link === null) return null;
-    link = rcNormalizeRivalLink(link, targetRecord.uuid, targetRecord.name);
-    link.mutual = false;
-    link.isNemesis = false;
-    link.declaredByMe = false;
-    link.declaredByThem = false;
-    link.inviteSent = false;
-    link.inviteReceived = false;
-    link.mutualAccepted = false;
-    link.mutualSince = 0;
-    link.updatedAt = rcNow();
-    rcPushHistory(link, "restored", "Previous rivalry history restored");
-    ownerRecord.rivals[targetRecord.uuid] = link;
-    delete ownerRecord.pastRivals[targetRecord.uuid];
-    rcRefreshLinkStatus(link);
-    return link;
-}
-
 function rcGetOrCreateRival(ownerRecord, targetRecord) {
     var rival = ownerRecord.rivals[targetRecord.uuid];
     if (rival === null || rival === undefined) {
-        rival = rcRestorePastRival(ownerRecord, targetRecord);
-        if (rival === null) {
-            rival = rcNormalizeRivalLink({}, targetRecord.uuid, targetRecord.name);
-            ownerRecord.rivals[targetRecord.uuid] = rival;
-        }
+        rival = rcNormalizeRivalLink({}, targetRecord.uuid, targetRecord.name);
+        ownerRecord.rivals[targetRecord.uuid] = rival;
     }
     rival.name = targetRecord.name;
     rival.nameLower = rcLower(targetRecord.name);
@@ -1163,44 +1151,20 @@ function rcAwardRivalPoints(database, ownerRecord, rivalUuid, amount, reason) {
 
 /* ========================= REQUESTS ========================= */
 
-function rcRequestKey(fromUuid, toUuid) {
-    return fromUuid + ">" + toUuid;
-}
-
-function rcGetRequest(database, fromUuid, toUuid) {
-    var key = rcRequestKey(fromUuid, toUuid);
-    var request = database.requests[key];
-    if (request === null || request === undefined) return null;
-
-    var createdAt = rcNumber(request.createdAt, 0);
-    if (createdAt <= 0 || rcNow() - createdAt > RC_REQUEST_EXPIRE_MS) {
-        rcClearInviteFlags(database, fromUuid, toUuid);
-        delete database.requests[key];
-        return null;
-    }
-    return request;
-}
-
-function rcCleanupExpiredRequests(database) {
-    var now = rcNow();
-    for (var key in database.requests) {
-        if (!database.requests.hasOwnProperty(key)) continue;
-        var req = database.requests[key];
-        var createdAt = rcNumber(req.createdAt, 0);
-        if (createdAt <= 0 || now - createdAt > RC_REQUEST_EXPIRE_MS) {
-            rcClearInviteFlags(database, req.fromUuid, req.toUuid);
-            delete database.requests[key];
-        }
-    }
-}
-
+/*
+ * Match Handler clearInviteFlags so Global Player expiry cannot leave
+ * orphan inviteSent / inviteReceived after deleting db.requests.
+ */
 function rcClearInviteFlags(database, fromU, toU) {
+    if (database == null || database.players == null) return;
     var from = database.players[fromU];
     var to = database.players[toU];
-    if (from !== null && from !== undefined && from.rivals[toU] !== undefined) {
+    if (from != null && from.rivals != null && from.rivals[toU] != null) {
         var fl = from.rivals[toU];
         fl.inviteSent = false;
-        if (fl.declaredByMe !== true) fl.inviteReceived = false;
+        if (fl.declaredByMe !== true) {
+            fl.inviteReceived = false;
+        }
         if (fl.declaredByMe !== true && fl.declaredByThem !== true &&
             fl.inviteReceived !== true && fl.mutual !== true) {
             delete from.rivals[toU];
@@ -1208,10 +1172,12 @@ function rcClearInviteFlags(database, fromU, toU) {
             rcRefreshLinkStatus(fl);
         }
     }
-    if (to !== null && to !== undefined && to.rivals[fromU] !== undefined) {
+    if (to != null && to.rivals != null && to.rivals[fromU] != null) {
         var tl = to.rivals[fromU];
         tl.inviteReceived = false;
-        if (tl.declaredByMe !== true) tl.declaredByThem = false;
+        if (tl.declaredByMe !== true) {
+            tl.declaredByThem = false;
+        }
         if (tl.declaredByMe !== true && tl.declaredByThem !== true &&
             tl.inviteSent !== true && tl.mutual !== true) {
             delete to.rivals[fromU];
@@ -1221,612 +1187,24 @@ function rcClearInviteFlags(database, fromU, toU) {
     }
 }
 
-function rcRemoveRequestsBetween(database, uuidA, uuidB) {
-    if (database.requests[rcRequestKey(uuidA, uuidB)] !== undefined ||
-        database.requests[rcRequestKey(uuidB, uuidA)] !== undefined) {
-        rcClearInviteFlags(database, uuidA, uuidB);
-        rcClearInviteFlags(database, uuidB, uuidA);
-    }
-    delete database.requests[rcRequestKey(uuidA, uuidB)];
-    delete database.requests[rcRequestKey(uuidB, uuidA)];
-}
-
-/* ========================= CORE OPERATIONS ========================= */
-
-function rcFormDeclared(database, playerRecord, targetRecord, note) {
+/* Expire pending visible /rival declare entries. Commands live in Handler. */
+function rcCleanupExpiredRequests(database) {
+    if (database == null || database.requests == null) return;
     var now = rcNow();
-    var playerRival = rcGetOrCreateRival(playerRecord, targetRecord);
-    var targetRival = rcGetOrCreateRival(targetRecord, playerRecord);
-
-    playerRival.mutual = false;
-    playerRival.declaredByMe = true;
-    playerRival.declaredByThem = true;
-    playerRival.inviteSent = false;
-    playerRival.inviteReceived = false;
-    playerRival.mutualAccepted = false;
-    if (rcNumber(playerRival.firstMetAt, 0) <= 0) playerRival.firstMetAt = now;
-    rcRefreshLinkStatus(playerRival);
-    rcPushHistory(playerRival, "declared", note);
-
-    targetRival.mutual = false;
-    targetRival.declaredByMe = true;
-    targetRival.declaredByThem = true;
-    targetRival.inviteSent = false;
-    targetRival.inviteReceived = false;
-    targetRival.mutualAccepted = false;
-    if (rcNumber(targetRival.firstMetAt, 0) <= 0) targetRival.firstMetAt = now;
-    rcRefreshLinkStatus(targetRival);
-    rcPushHistory(targetRival, "declared", note);
-}
-
-function rcFormMutual(database, playerRecord, targetRecord, note) {
-    /* Max 2 mutuals - demote oldest automatically if needed. */
-    rcEnsureMutualRoom(database, playerRecord, targetRecord.uuid);
-    rcEnsureMutualRoom(database, targetRecord, playerRecord.uuid);
-
-    var now = rcNow();
-    var playerRival = rcGetOrCreateRival(playerRecord, targetRecord);
-    var targetRival = rcGetOrCreateRival(targetRecord, playerRecord);
-
-    playerRival.mutual = true;
-    playerRival.declaredByMe = true;
-    playerRival.declaredByThem = true;
-    playerRival.inviteSent = false;
-    playerRival.inviteReceived = false;
-    playerRival.mutualAccepted = false;
-    playerRival.mutualSince = now;
-    if (rcNumber(playerRival.firstMetAt, 0) <= 0) playerRival.firstMetAt = now;
-    rcRefreshLinkStatus(playerRival);
-    rcPushHistory(playerRival, "mutual", note);
-
-    targetRival.mutual = true;
-    targetRival.declaredByMe = true;
-    targetRival.declaredByThem = true;
-    targetRival.inviteSent = false;
-    targetRival.inviteReceived = false;
-    targetRival.mutualAccepted = false;
-    targetRival.mutualSince = now;
-    if (rcNumber(targetRival.firstMetAt, 0) <= 0) targetRival.firstMetAt = now;
-    rcRefreshLinkStatus(targetRival);
-    rcPushHistory(targetRival, "mutual", note);
-
-    rcRecomputeNemesis(playerRecord);
-    rcRecomputeNemesis(targetRecord);
-    rcRecalcCareerRp(playerRecord);
-    rcRecalcCareerRp(targetRecord);
-    rcUpdateLeaderboard(database, playerRecord);
-    rcUpdateLeaderboard(database, targetRecord);
-}
-
-function rcDeclare(player, targetName) {
-    var cleanName = rcString(targetName).replace(/^\s+|\s+$/g, "");
-    if (cleanName === "") {
-        rcMessage(player, RC_COLOR + "cUsage: /rival <player>");
-        return;
-    }
-
-    var target = rcFindOnlinePlayerAnyWorld(cleanName);
-    if (target === null) {
-        rcMessage(player, RC_COLOR + "cThat player must be online.");
-        return;
-    }
-
-    var playerUuid = rcUuid(player);
-    var targetUuid = rcUuid(target);
-    if (playerUuid === targetUuid) {
-        rcMessage(player, RC_COLOR + "cYou cannot rival yourself.");
-        return;
-    }
-
-    var database = rcLoadDatabase(player);
-    rcCleanupExpiredRequests(database);
-
-    var playerRecord = rcEnsurePlayer(database, player);
-    var targetRecord = rcEnsurePlayer(database, target);
-
-    var current = playerRecord.rivals[targetUuid];
-    if (current !== null && current !== undefined && current.mutual === true) {
-        var curStatus = rcLinkStatus(current);
-        rcMessage(player, RC_COLOR + "e" + targetRecord.name + " is already your " +
-            (curStatus === "nemesis" ? "Nemesis" : "mutual rival") + ".");
-        return;
-    }
-
-    if (current !== null && current !== undefined && current.declaredByMe === true &&
-        current.declaredByThem === true && current.mutual !== true) {
-        rcMessage(player, RC_COLOR + "eAlready Declared with " + targetRecord.name +
-            RC_COLOR + "8. Propose Mutual:  " + RC_COLOR + "f/rival request " + targetRecord.name);
-        return;
-    }
-
-    if (current !== null && current !== undefined && current.declaredByMe === true && current.mutual !== true) {
-        rcMessage(player, RC_COLOR + "eAlready rivaled " + targetRecord.name + RC_COLOR + "8 (Unknown)");
-        return;
-    }
-
-    var cooldownKey = rcRequestKey(playerUuid, targetUuid);
-    var lastDeclaration = rcNumber(database.cooldowns[cooldownKey], 0);
-    var remaining = RC_DECLARE_COOLDOWN_MS - (rcNow() - lastDeclaration);
-    if (remaining > 0) {
-        rcMessage(player, RC_COLOR + "cWait " + Math.ceil(remaining / 1000) + "s.");
-        return;
-    }
-
-    var reverseRequest = rcGetRequest(database, targetUuid, playerUuid);
-    if (reverseRequest !== null) {
-        rcFormMutual(database, playerRecord, targetRecord, "Accepted their Mutual request.");
-        rcRemoveRequestsBetween(database, playerUuid, targetUuid);
-        database.cooldowns[cooldownKey] = rcNow();
-        playerRecord.totals.declarationsAccepted++;
-        targetRecord.totals.declarationsAccepted++;
-        rcSaveDatabase(player, database);
-        rcMessage(player, RC_COLOR + "6" + RC_COLOR + "lMUTUAL RIVAL! " + RC_COLOR + "e" + targetRecord.name);
-        rcMessage(player, RC_COLOR + "7Official battles now write your history. Fight for Nemesis.");
-        rcMessage(target, RC_COLOR + "6" + RC_COLOR + "lMUTUAL RIVAL! " + RC_COLOR + "e" + playerRecord.name);
-        rcMessage(target, RC_COLOR + "7Official battles now write your history. Fight for Nemesis.");
-        return;
-    }
-
-    /* Cancel my own pending Mutual invite if I switch to silent rival. */
-    if (rcGetRequest(database, playerUuid, targetUuid) !== null) {
-        rcRemoveRequestsBetween(database, playerUuid, targetUuid);
-    }
-
-    var theirLink = targetRecord.rivals[playerUuid];
-    var theyRivaledMe = theirLink !== null && theirLink !== undefined &&
-        theirLink.declaredByMe === true && theirLink.mutual !== true;
-    if (theyRivaledMe) {
-        rcFormDeclared(database, playerRecord, targetRecord, "Crossed silent rivals.");
-        rcRemoveRequestsBetween(database, playerUuid, targetUuid);
-        database.cooldowns[cooldownKey] = rcNow();
-        playerRecord.totals.declarationsSent++;
-        rcRecalcCareerRp(playerRecord);
-        rcRecalcCareerRp(targetRecord);
-        rcSaveDatabase(player, database);
-        rcMessage(player, RC_COLOR + "e" + RC_COLOR + "lDECLARED! " + RC_COLOR + "e" + targetRecord.name);
-        rcMessage(player, RC_COLOR + "8You both rivaled each other. Propose Mutual with  " +
-            RC_COLOR + "f/rival request " + targetRecord.name);
-        rcMessage(target, RC_COLOR + "e" + RC_COLOR + "lDECLARED! " + RC_COLOR + "e" + playerRecord.name);
-        rcMessage(target, RC_COLOR + "8You both rivaled each other. Propose Mutual with  " +
-            RC_COLOR + "f/rival request " + playerRecord.name);
-        return;
-    }
-
-    var playerRival = rcGetOrCreateRival(playerRecord, targetRecord);
-    playerRival.declaredByMe = true;
-    playerRival.declaredByThem = false;
-    playerRival.inviteSent = false;
-    playerRival.inviteReceived = false;
-    playerRival.mutual = false;
-    rcRefreshLinkStatus(playerRival);
-    rcPushHistory(playerRival, "declare", "Silent rivalry.");
-
-    database.cooldowns[cooldownKey] = rcNow();
-    playerRecord.totals.declarationsSent++;
-    rcRecalcCareerRp(playerRecord);
-    rcSaveDatabase(player, database);
-
-    rcMessage(player, RC_COLOR + "7Unknown Rival: " + RC_COLOR + "e" + targetRecord.name);
-    rcMessage(player, RC_COLOR + "8Silent  " + RC_COLOR + "7they are not notified and do not see you");
-    rcMessage(player, RC_COLOR + "8If they rival you back, you both become Declared.");
-}
-
-function rcRequest(player, targetName) {
-    var cleanName = rcString(targetName).replace(/^\s+|\s+$/g, "");
-    if (cleanName === "") {
-        rcMessage(player, RC_COLOR + "cUsage: /rival request <player>");
-        return;
-    }
-
-    var target = rcFindOnlinePlayerAnyWorld(cleanName);
-    if (target === null) {
-        rcMessage(player, RC_COLOR + "cThat player must be online.");
-        return;
-    }
-
-    var playerUuid = rcUuid(player);
-    var targetUuid = rcUuid(target);
-    if (playerUuid === targetUuid) {
-        rcMessage(player, RC_COLOR + "cYou cannot request yourself.");
-        return;
-    }
-
-    var database = rcLoadDatabase(player);
-    rcCleanupExpiredRequests(database);
-
-    var playerRecord = rcEnsurePlayer(database, player);
-    var targetRecord = rcEnsurePlayer(database, target);
-
-    var current = playerRecord.rivals[targetUuid];
-    if (current !== null && current !== undefined && current.mutual === true) {
-        var curStatus = rcLinkStatus(current);
-        rcMessage(player, RC_COLOR + "e" + targetRecord.name + " is already your " +
-            (curStatus === "nemesis" ? "Nemesis" : "mutual rival") + ".");
-        return;
-    }
-
-    if (rcGetRequest(database, playerUuid, targetUuid) !== null) {
-        rcMessage(player, RC_COLOR + "eMutual request already pending for " + targetRecord.name);
-        return;
-    }
-
-    var cooldownKey = rcRequestKey(playerUuid, targetUuid);
-    var lastDeclaration = rcNumber(database.cooldowns[cooldownKey], 0);
-    var remaining = RC_DECLARE_COOLDOWN_MS - (rcNow() - lastDeclaration);
-    if (remaining > 0) {
-        rcMessage(player, RC_COLOR + "cWait " + Math.ceil(remaining / 1000) + "s.");
-        return;
-    }
-
-    var reverseRequest = rcGetRequest(database, targetUuid, playerUuid);
-    if (reverseRequest !== null) {
-        rcFormMutual(database, playerRecord, targetRecord, "Crossed Mutual requests.");
-        rcRemoveRequestsBetween(database, playerUuid, targetUuid);
-        database.cooldowns[cooldownKey] = rcNow();
-        playerRecord.totals.declarationsAccepted++;
-        targetRecord.totals.declarationsAccepted++;
-        rcSaveDatabase(player, database);
-        rcMessage(player, RC_COLOR + "6" + RC_COLOR + "lMUTUAL RIVAL! " + RC_COLOR + "e" + targetRecord.name);
-        rcMessage(player, RC_COLOR + "7Official battles now write your history. Fight for Nemesis.");
-        rcMessage(target, RC_COLOR + "6" + RC_COLOR + "lMUTUAL RIVAL! " + RC_COLOR + "e" + playerRecord.name);
-        rcMessage(target, RC_COLOR + "7Official battles now write your history. Fight for Nemesis.");
-        return;
-    }
-
-    var playerRival = rcGetOrCreateRival(playerRecord, targetRecord);
-    playerRival.inviteSent = true;
-    playerRival.mutual = false;
-    rcRefreshLinkStatus(playerRival);
-    rcPushHistory(playerRival, "request", "Sent Mutual request.");
-
-    var targetRival = rcGetOrCreateRival(targetRecord, playerRecord);
-    targetRival.inviteReceived = true;
-    targetRival.mutual = false;
-    rcRefreshLinkStatus(targetRival);
-    rcPushHistory(targetRival, "requested_by", "Received Mutual request.");
-
-    database.requests[rcRequestKey(playerUuid, targetUuid)] = {
-        fromUuid: playerUuid,
-        fromName: playerRecord.name,
-        toUuid: targetUuid,
-        toName: targetRecord.name,
-        createdAt: rcNow()
-    };
-    database.cooldowns[cooldownKey] = rcNow();
-    playerRecord.totals.declarationsSent++;
-    rcSaveDatabase(player, database);
-
-    rcMessage(player, RC_COLOR + "aMutual requested: " + RC_COLOR + "e" + targetRecord.name);
-    rcMessage(player, RC_COLOR + "8Waiting for them to accept.");
-    rcMessage(target, RC_COLOR + "6" + playerRecord.name + RC_COLOR + "e wants Mutual rivalry!");
-    rcMessage(target, RC_COLOR + "7Accept: " + RC_COLOR + "f/rival accept " + playerRecord.name);
-    rcMessage(target, RC_COLOR + "7Decline: " + RC_COLOR + "f/rival decline " + playerRecord.name);
-}
-
-function rcAccept(player, targetName) {
-    var cleanName = rcString(targetName).replace(/^\s+|\s+$/g, "");
-    if (cleanName === "") {
-        rcMessage(player, RC_COLOR + "cUsage: /rival accept <player>");
-        return;
-    }
-
-    var database = rcLoadDatabase(player);
-    rcCleanupExpiredRequests(database);
-
-    var playerRecord = rcEnsurePlayer(database, player);
-    var fromRecord = rcFindPlayerRecordByName(database, cleanName);
-    if (fromRecord === null) {
-        rcMessage(player, RC_COLOR + "cNo rivalry with that player.");
-        return;
-    }
-
-    var request = rcGetRequest(database, fromRecord.uuid, playerRecord.uuid);
-    if (request !== null) {
-        rcFormMutual(database, playerRecord, fromRecord, "Accepted Mutual request.");
-        rcRemoveRequestsBetween(database, fromRecord.uuid, playerRecord.uuid);
-        playerRecord.totals.declarationsAccepted++;
-        fromRecord.totals.declarationsAccepted++;
-        rcSaveDatabase(player, database);
-
-        rcMessage(player, RC_COLOR + "6" + RC_COLOR + "lMUTUAL RIVAL! " + RC_COLOR + "e" + fromRecord.name);
-        rcMessage(player, RC_COLOR + "7Official battles forge history. Your greatest rival becomes Nemesis.");
-
-        var online = rcFindOnlinePlayerAnyWorld(fromRecord.name);
-        if (online !== null) {
-            rcMessage(online, RC_COLOR + "6" + RC_COLOR + "lMUTUAL RIVAL! " +
-                RC_COLOR + "e" + playerRecord.name + RC_COLOR + "a accepted!");
-            rcMessage(online, RC_COLOR + "7Official battles forge history. Your greatest rival becomes Nemesis.");
-        }
-        return;
-    }
-
-    var link = playerRecord.rivals[fromRecord.uuid];
-    var their = fromRecord.rivals[playerRecord.uuid];
-    if (link !== null && link !== undefined && their !== null && their !== undefined &&
-        link.mutual !== true &&
-        link.declaredByMe === true && link.declaredByThem === true &&
-        their.declaredByMe === true && their.declaredByThem === true) {
-        link.mutualAccepted = true;
-        rcRefreshLinkStatus(link);
-        if (their.mutualAccepted === true) {
-            rcFormMutual(database, playerRecord, fromRecord, "Both accepted Declared rivalry.");
-            rcRemoveRequestsBetween(database, fromRecord.uuid, playerRecord.uuid);
-            playerRecord.totals.declarationsAccepted++;
-            fromRecord.totals.declarationsAccepted++;
-            rcSaveDatabase(player, database);
-            rcMessage(player, RC_COLOR + "6" + RC_COLOR + "lMUTUAL RIVAL! " + RC_COLOR + "e" + fromRecord.name);
-            rcMessage(player, RC_COLOR + "7Official battles forge history. Your greatest rival becomes Nemesis.");
-            var onlineDec = rcFindOnlinePlayerAnyWorld(fromRecord.name);
-            if (onlineDec !== null) {
-                rcMessage(onlineDec, RC_COLOR + "6" + RC_COLOR + "lMUTUAL RIVAL! " + RC_COLOR + "e" + playerRecord.name);
-                rcMessage(onlineDec, RC_COLOR + "7Official battles forge history. Your greatest rival becomes Nemesis.");
-            }
-            return;
-        }
-        rcSaveDatabase(player, database);
-        rcMessage(player, RC_COLOR + "aAccepted Declared rivalry with " + RC_COLOR + "e" + fromRecord.name);
-        rcMessage(player, RC_COLOR + "8Waiting for them to  " + RC_COLOR + "f/rival accept " + playerRecord.name);
-        var onlineWait = rcFindOnlinePlayerAnyWorld(fromRecord.name);
-        if (onlineWait !== null) {
-            rcMessage(onlineWait, RC_COLOR + "e" + playerRecord.name + RC_COLOR + "7 accepted Declared rivalry.");
-            rcMessage(onlineWait, RC_COLOR + "8Accept Mutual with  " + RC_COLOR + "f/rival accept " + playerRecord.name);
-        }
-        return;
-    }
-
-    rcMessage(player, RC_COLOR + "cNo Mutual request or Declared rivalry with " + fromRecord.name);
-}
-
-function rcDecline(player, targetName) {
-    var cleanName = rcString(targetName).replace(/^\s+|\s+$/g, "");
-    if (cleanName === "") {
-        rcMessage(player, RC_COLOR + "cUsage: /rival decline <player>");
-        return;
-    }
-
-    var database = rcLoadDatabase(player);
-    rcCleanupExpiredRequests(database);
-
-    var playerRecord = rcEnsurePlayer(database, player);
-    var fromRecord = rcFindPlayerRecordByName(database, cleanName);
-    if (fromRecord === null) {
-        rcMessage(player, RC_COLOR + "cNo rivalry request found from that player.");
-        return;
-    }
-
-    var request = rcGetRequest(database, fromRecord.uuid, playerRecord.uuid);
-    if (request === null) {
-        rcMessage(player, RC_COLOR + "cNo active rivalry request from " + fromRecord.name + ".");
-        return;
-    }
-
-    rcRemoveRequestsBetween(database, fromRecord.uuid, playerRecord.uuid);
-    if (playerRecord.rivals[fromRecord.uuid] !== undefined) {
-        var unk = playerRecord.rivals[fromRecord.uuid];
-        unk.declaredByThem = false;
-        if (unk.declaredByMe !== true && unk.mutual !== true && unk.inviteSent !== true) {
-            delete playerRecord.rivals[fromRecord.uuid];
-        } else {
-            rcRefreshLinkStatus(unk);
-        }
-    }
-    if (fromRecord.rivals[playerRecord.uuid] !== undefined) {
-        var sent = fromRecord.rivals[playerRecord.uuid];
-        sent.inviteSent = false;
-        if (sent.declaredByMe !== true && sent.mutual !== true && sent.declaredByThem !== true) {
-            delete fromRecord.rivals[playerRecord.uuid];
-        } else {
-            rcRefreshLinkStatus(sent);
-        }
-    }
-    playerRecord.totals.declarationsDeclined++;
-    rcSaveDatabase(player, database);
-
-    rcMessage(player, RC_COLOR + "eDeclined rivalry request from " + fromRecord.name + ".");
-    var online = rcFindOnlinePlayerAnyWorld(fromRecord.name);
-    if (online !== null) {
-        rcMessage(online, RC_COLOR + "c" + playerRecord.name + " declined your rivalry request.");
-    }
-}
-
-function rcRemove(player, targetName) {
-    var cleanName = rcString(targetName).replace(/^\s+|\s+$/g, "");
-    if (cleanName === "") {
-        rcMessage(player, RC_COLOR + "cUsage: /rival remove <player>");
-        return;
-    }
-
-    var database = rcLoadDatabase(player);
-    var playerRecord = rcEnsurePlayer(database, player);
-    var targetRecord = rcFindPlayerRecordByName(database, cleanName);
-    if (targetRecord === null || playerRecord.rivals[targetRecord.uuid] === undefined) {
-        rcMessage(player, RC_COLOR + "cYou do not have that rival.");
-        return;
-    }
-
-    var link = playerRecord.rivals[targetRecord.uuid];
-    var st = rcLinkStatus(link);
-    var wasShared = (st === "mutual" || st === "nemesis");
-    var wasDeclared = (st === "declared");
-    var notifyThem = wasShared || wasDeclared;
-
-    rcArchiveRivalLink(playerRecord, targetRecord.uuid);
-    delete playerRecord.rivals[targetRecord.uuid];
-
-    if (wasShared) {
-        if (targetRecord.rivals[playerRecord.uuid] !== undefined) {
-            rcArchiveRivalLink(targetRecord, playerRecord.uuid);
-            delete targetRecord.rivals[playerRecord.uuid];
-        }
-        rcRecomputeNemesis(playerRecord);
-        rcRecomputeNemesis(targetRecord);
-    } else if (wasDeclared) {
-        if (targetRecord.rivals[playerRecord.uuid] !== undefined) {
-            var kept = targetRecord.rivals[playerRecord.uuid];
-            kept.mutual = false;
-            kept.isNemesis = false;
-            kept.declaredByThem = false;
-            kept.inviteSent = false;
-            kept.inviteReceived = false;
-            kept.mutualAccepted = false;
-            kept.mutualSince = 0;
-            if (kept.declaredByMe === true) {
-                rcRefreshLinkStatus(kept);
-                rcPushHistory(kept, "demoted", playerRecord.name + " ended Declared rivalry");
-            } else {
-                delete targetRecord.rivals[playerRecord.uuid];
-            }
-        }
-    } else if (targetRecord.rivals[playerRecord.uuid] !== undefined) {
-        var theirLink = targetRecord.rivals[playerRecord.uuid];
-        theirLink.declaredByThem = false;
-        theirLink.inviteReceived = false;
-        theirLink.inviteSent = false;
-        if (theirLink.declaredByMe !== true && theirLink.mutual !== true) {
-            delete targetRecord.rivals[playerRecord.uuid];
-        } else {
-            rcRefreshLinkStatus(theirLink);
-        }
-    }
-
-    rcRemoveRequestsBetween(database, playerRecord.uuid, targetRecord.uuid);
-    playerRecord.totals.rivalsRemoved++;
-    rcRecalcCareerRp(playerRecord);
-    rcRecalcCareerRp(targetRecord);
-    rcUpdateLeaderboard(database, playerRecord);
-    rcUpdateLeaderboard(database, targetRecord);
-    rcSaveDatabase(player, database);
-
-    rcMessage(player, RC_COLOR + "eRemoved rivalry with " + targetRecord.name + ".");
-    if (wasShared) {
-        rcMessage(player, RC_COLOR + "8History saved. Rematch keeps prior record.");
-    } else if (wasDeclared) {
-        rcMessage(player, RC_COLOR + "8History saved. They may still have you as Unknown.");
-    }
-    if (notifyThem) {
-        var online = rcFindOnlinePlayerAnyWorld(targetRecord.name);
-        if (online !== null) {
-            if (wasShared) {
-                rcMessage(online, RC_COLOR + "c" + playerRecord.name + " ended their rivalry with you.");
-                rcMessage(online, RC_COLOR + "8History saved if you rival again later.");
-            } else if (wasDeclared) {
-                rcMessage(online, RC_COLOR + "e" + playerRecord.name + " ended Declared rivalry with you.");
-                rcMessage(online, RC_COLOR + "8You still have them as a one-way Unknown rival.");
-            }
-        }
-    }
-}
-
-function rcUiLine(player) {
-    rcMessage(player, RC_COLOR + "8--------------------------------");
-}
-
-function rcList(player) {
-    var database = rcLoadDatabase(player);
-    var record = rcEnsurePlayer(database, player);
-    rcSaveDatabase(player, database);
-
-    var nemName = "-";
-    if (record.nemesisUuid && record.rivals[record.nemesisUuid]) {
-        nemName = record.rivals[record.nemesisUuid].name;
-    }
-
-    rcUiLine(player);
-    rcMessage(player, RC_COLOR + "6" + RC_COLOR + "l YOUR RIVALS " + RC_COLOR + "r");
-    rcUiLine(player);
-    rcMessage(player, RC_COLOR + "8Career  " + RC_COLOR + "f" + rcCommas(record.career.rivalPointsTotal) +
-        RC_COLOR + "7 RP" + RC_COLOR + "8   " + RC_COLOR + "a" + record.career.officialWins +
-        RC_COLOR + "8-" + RC_COLOR + "c" + record.career.officialLosses);
-    rcMessage(player, RC_COLOR + "8Mutual  " + RC_COLOR + "f" + rcCountMutual(record) + "/" + RC_MAX_MUTUAL_RIVALS +
-        RC_COLOR + "8   Nemesis  " + RC_COLOR + "c" + nemName);
-
-    var groups = { nemesis: [], mutual: [], declared: [], unknown: [] };
-    for (var uuid in record.rivals) {
-        if (!record.rivals.hasOwnProperty(uuid)) continue;
-        var link = record.rivals[uuid];
-        var st = rcRefreshLinkStatus(link);
-        if (groups[st] != null) groups[st].push(link);
-    }
-
-    function printGroup(title, color, arr, showPg) {
-        if (arr.length === 0) return;
-        rcMessage(player, " ");
-        rcMessage(player, RC_COLOR + color + RC_COLOR + "l" + title + RC_COLOR + "r" +
-            RC_COLOR + "8  (" + arr.length + ")");
-        for (var i = 0; i < arr.length; i++) {
-            var L = arr[i];
-            var tier = rcGetTier(L.points);
-            rcMessage(player, RC_COLOR + "f  " + L.name + "  " + rcLinkStatusLabel(rcLinkStatus(L)));
-            rcMessage(player, RC_COLOR + "8    Rank  " + RC_COLOR + tier.color + tier.name +
-                RC_COLOR + "8   RP  " + RC_COLOR + "f" + rcCommas(L.points));
-            rcMessage(player, RC_COLOR + "8    Record  " + RC_COLOR + "a" + L.wins +
-                RC_COLOR + "8-" + RC_COLOR + "c" + L.losses +
-                RC_COLOR + "8   Streak  " + RC_COLOR + "a" + rcNumber(L.currentStreak, 0));
-            if (showPg) pgListLines(player, L);
-            if (i < arr.length - 1) rcMessage(player, RC_COLOR + "8  .");
-        }
-    }
-
-    printGroup("NEMESIS", "c", groups.nemesis, true);
-    printGroup("MUTUAL", "6", groups.mutual, true);
-    printGroup("DECLARED", "e", groups.declared, false);
-    printGroup("UNKNOWN", "7", groups.unknown, false);
-
-    if (groups.nemesis.length + groups.mutual.length + groups.declared.length + groups.unknown.length === 0) {
-        rcMessage(player, " ");
-        rcMessage(player, RC_COLOR + "8No rivals yet. Use  " + RC_COLOR + "e/rival <player>");
-    }
-
-    rcCleanupExpiredRequests(database);
-    var pending = 0;
     for (var key in database.requests) {
         if (!database.requests.hasOwnProperty(key)) continue;
         var req = database.requests[key];
-        if (rcString(req.toUuid) === record.uuid) {
-            if (pending === 0) {
-                rcMessage(player, " ");
-                rcMessage(player, RC_COLOR + "6Pending");
+        var createdAt = rcNumber(req == null ? 0 : req.createdAt, 0);
+        if (createdAt <= 0 || now - createdAt > RC_REQUEST_EXPIRE_MS) {
+            if (req != null) {
+                rcClearInviteFlags(database, req.fromUuid, req.toUuid);
             }
-            pending++;
-            rcMessage(player, RC_COLOR + "d  > " + RC_COLOR + "f" + req.fromName +
-                RC_COLOR + "8  /rival accept " + req.fromName);
+            delete database.requests[key];
         }
     }
-    rcUiLine(player);
 }
 
-function rcHelp(player) {
-    rcUiLine(player);
-    rcMessage(player, RC_COLOR + "6" + RC_COLOR + "l RIVAL SYSTEM " + RC_COLOR + "r");
-    rcUiLine(player);
-    rcMessage(player, RC_COLOR + "8Path  " + RC_COLOR + "7Unknown " + RC_COLOR + "8> " +
-        RC_COLOR + "eDeclared " + RC_COLOR + "8> " + RC_COLOR + "6Mutual " + RC_COLOR + "8> " +
-        RC_COLOR + "cNemesis");
-    rcMessage(player, RC_COLOR + "8Slots  " + RC_COLOR + "f2 Mutual max" + RC_COLOR + "8  |  " +
-        RC_COLOR + "7Nemesis from history");
-    rcMessage(player, " ");
-    rcMessage(player, RC_COLOR + "6Rivalry");
-    rcMessage(player, RC_COLOR + "e  /rival <player>" + RC_COLOR + "8  silent rival (Unknown)");
-    rcMessage(player, RC_COLOR + "e  /rival request <player>" + RC_COLOR + "8  propose Mutual");
-    rcMessage(player, RC_COLOR + "e  /rival accept|decline|remove <player>");
-    rcMessage(player, RC_COLOR + "e  /rival list" + RC_COLOR + "8  rivals + proving grounds");
-    rcMessage(player, RC_COLOR + "e  /rival stats [player]");
-    rcMessage(player, " ");
-    rcMessage(player, RC_COLOR + "8Unknown = you rivaled them silently. Declared = you both did.");
-    rcMessage(player, RC_COLOR + "8Mutual: request+accept, or both accept when Declared.");
-    rcMessage(player, " ");
-    rcMessage(player, RC_COLOR + "6Battle");
-    rcMessage(player, RC_COLOR + "e  /challenge <player> [1-10]" + RC_COLOR + "8  official fight (minutes)");
-    rcMessage(player, RC_COLOR + "e  /spectaterival <player>");
-    rcMessage(player, " ");
-    rcMessage(player, RC_COLOR + "6Progress");
-    rcMessage(player, RC_COLOR + "e  /rival top | title | journal | hof");
-    rcMessage(player, " ");
-    rcMessage(player, RC_COLOR + "8Defeat marks Proving Grounds. Return there for bonus rewards.");
-    rcUiLine(player);
-}
-
-/* ========================= EVENTS ========================= */
+/* ========================= EVENTS (core DB touch) ========================= */
 
 function rivalCoreInit(event) {
     try {
@@ -1857,7 +1235,8 @@ function rivalCoreLogin(event) {
             if (rcString(database.requests[key].toUuid) === record.uuid) incoming++;
         }
         if (incoming > 0) {
-            rcMessage(player, RC_COLOR + "6[Rival] " + RC_COLOR + "eYou have " + incoming + " pending rivalry request(s). /rival list");
+            rcMessage(player, RC_COLOR + "6[Rival] " + RC_COLOR + "eYou have " + incoming +
+                " pending rival declare(s). /rival list");
         }
         if (record.nemesisUuid && record.rivals[record.nemesisUuid]) {
             rcMessage(player, RC_COLOR + "c[Rival] Nemesis: " + RC_COLOR + "e" +
@@ -1870,22 +1249,10 @@ function rivalCoreLogin(event) {
 
 function rcTriggerPlayer(event) {
     /*
-     Verified from CustomNPCs ScriptTriggerEvent:
-     Global Player triggers use event.entity, not event.player.
-     Keep event.player as a fallback for other script slots.
-    */
-    if (event === null || event === undefined) return null;
-    if (rcIsPlayer(event.entity)) return event.entity;
-    if (rcIsPlayer(event.player)) return event.player;
-    return null;
-}
-
-/*
- Commands live in Rival Command Handler.js (script-slot),
- matching Sparring Command Handler. Global Player trigger unused.
-*/
-function rivalCoreTriggerUnused(event) {
-    return;
+     * Player commands are handled by Rival Command Handler.js.
+     * Global Player trigger is reserved for progression admin refresh.
+     */
+    return rcIsPlayer(event && event.player ? event.player : null) ? event.player : null;
 }
 
 /* ========================= PROXIMITY ========================= */
@@ -1958,20 +1325,47 @@ var RP_PRESENCE_RP_INTERVAL_MS = 60 * 1000;
 var RP_PRESENCE_RP_MUTUAL = 4;          // unused while RP_PRESENCE_RP_ENABLED is false
 var RP_PRESENCE_RP_ONE_SIDED = 3;       // unused while RP_PRESENCE_RP_ENABLED is false
 var RP_PRESENCE_TP_ENABLED = true;
+/*
+ * Presence TP:
+ *  - You declared them (Unknown / Declared / Mutual / Nemesis) -> YES
+ *  - Incoming-only / invite-only (they declared you, you did not) -> NO
+ * Mutual / Nemesis earn for both sides (both declared).
+ */
+var RP_PRESENCE_TP_UNKNOWN = false;
 var RP_PRESENCE_TP_ONE_SIDED = 180;
 var RP_PRESENCE_TP_MUTUAL = 280;
 var RP_PRESENCE_TP_NEMESIS = 360;
-/*
- * Cap presence drip awards per interval so teleporting a crowd
- * of rivals onto one player cannot stack many TP grants at once.
- */
-var RP_PRESENCE_MAX_AWARDS_PER_INTERVAL = 1;
 
-/* Kill TP near rival (50% of original rates - mob farms) */
-var RP_KILL_TP_BASE = 200;
-var RP_KILL_TP_PER_TIER = 60;
+/* Kill TP near rival */
+var RP_KILL_TP_BASE = 400;
+var RP_KILL_TP_PER_TIER = 120;
 var RP_KILL_TP_MUTUAL_MULT = 1.45;
 var RP_SHOW_KILL_TP = true;
+/*
+ * Max nearby rivals that can grant presence/kill TP or feed the
+ * proximity offense pick. Extra rivals in range are ignored for rewards.
+ */
+var RP_NEAR_RIVAL_TP_CAP = 2;
+/*
+ * AFK gate: a rival only counts for nearby rewards if they have killed
+ * a non-player mob within this window.
+ */
+var RP_NEAR_ACTIVE_KILL_MS = 30 * 1000;
+var RP_LAST_MOB_KILL_KEY = "rival.v4.lastMobKillAt";
+
+/*
+ * Global Rival System TP scale (presence, kill, challenge, surpass, etc.)
+ * Applied inside rivalScaleTpByLevel before DMZ STORY multipliers.
+ */
+var RIVAL_TP_GAIN_SCALE = 0.60;
+
+
+/*
+ * Per-player kill TP chat preference (storeddata).
+ * /rival tpmsg [on|off] â€” default ON.
+ * Shared with End Dimension Strength kill-settle messages.
+ */
+var KILL_TP_CHAT_KEY = "dmz_kill_tp_chat";
 
 /*
  * Level-based TP scaling (DMZ StatsData.getLevel()).
@@ -2050,7 +1444,7 @@ var RP_UNDERDOG_WIN_RP = 45;
 
 /* Anti-gank: weaker declarers (<= 40% of your released BP) */
 var RP_ANTIGANK_RATIO = 0.40;
-var RP_ANTIGANK_WITNESS_KILL_TP = 175;   // strong player kill TP bonus while watched (50% of prior)
+var RP_ANTIGANK_WITNESS_KILL_TP = 350;   // strong player kill TP bonus while watched
 var RP_ANTIGANK_WITNESS_RP = 5;         // weak rival RP for witnessing kills
 var RP_ANTIGANK_HIT_TP = 140;           // weak rival TP when strong takes damage
 var RP_ANTIGANK_HIT_RP = 3;
@@ -2058,20 +1452,17 @@ var RP_ANTIGANK_HIT_COOLDOWN_MS = 15000;
 var RP_ANTIGANK_OFFENSE_BONUS = 0.12;   // weak rival offense near strong target
 
 var RP_TIERS = [
-    { min: 0,     name: "Acquaintance",  tpMult: 1.00 },
-    { min: 100,   name: "Competitor",    tpMult: 1.05 },
-    { min: 300,   name: "Adversary",     tpMult: 1.10 },
-    { min: 700,   name: "Rival",         tpMult: 1.15 },
-    { min: 1500,  name: "Nemesis",       tpMult: 1.25 },
-    { min: 3000,  name: "Legendary",     tpMult: 1.35 },
-    { min: 5000,  name: "Arch Rival",    tpMult: 1.45 },
-    { min: 7500,  name: "Mortal Enemy",  tpMult: 1.55 },
-    { min: 10000, name: "Eternal Rival", tpMult: 1.70 },
-    { min: 15000, name: "Mythic Rival",  tpMult: 2.00 }
+    { min: 0,     name: "Acquaintance" },
+    { min: 100,   name: "Competitor" },
+    { min: 300,   name: "Adversary" },
+    { min: 700,   name: "Rival" },
+    { min: 1500,  name: "Vendetta" },
+    { min: 3000,  name: "Legendary" },
+    { min: 5000,  name: "Arch Rival" },
+    { min: 7500,  name: "Mortal Enemy" },
+    { min: 10000, name: "Eternal Rival" },
+    { min: 15000, name: "Mythic Rival" }
 ];
-
-/* Career-title TP perk (stacks with level scaling). Set false to disable. */
-var RIVAL_TITLE_TP_ENABLED = true;
 
 /* ========================= HELPERS ========================= */
 
@@ -2139,52 +1530,6 @@ function rpTierIndex(points) {
         if (rp >= RP_TIERS[i].min) index = i;
     }
     return index;
-}
-
-function rpGetTitleTier(points) {
-    return RP_TIERS[rpTierIndex(points)];
-}
-
-/*
- * Career title TP multiplier from total Rival Points.
- * Applied to all rival TP awards (presence, kills, challenges, fusion).
- */
-function rivalTitleTpMultiplier(player) {
-    if (RIVAL_TITLE_TP_ENABLED !== true) return 1.0;
-    if (player === null || player === undefined) return 1.0;
-    try {
-        var database = rpLoadDatabase(player);
-        if (database === null) return 1.0;
-        var uuid = rpUuid(player);
-        if (uuid === "") return 1.0;
-        var record = database.players[uuid];
-        if (record === null || record === undefined) {
-            /* Name fallback if UUID key missing */
-            var pname = rpLower(rpName(player));
-            for (var u in database.players) {
-                if (!database.players.hasOwnProperty(u)) continue;
-                if (rpLower(database.players[u].name) === pname) {
-                    record = database.players[u];
-                    break;
-                }
-            }
-        }
-        if (record === null || record === undefined) return 1.0;
-        var careerRp = 0;
-        if (record.career !== null && typeof record.career === "object") {
-            careerRp = rpNumber(record.career.rivalPointsTotal, 0);
-        }
-        var tier = rpGetTitleTier(careerRp);
-        var mult = rpNumber(tier.tpMult, 1.0);
-        if (!(mult > 0) || isNaN(mult) || !isFinite(mult)) return 1.0;
-        return mult;
-    } catch (ignored) {
-        return 1.0;
-    }
-}
-
-function rpLower(value) {
-    return rpString(value).toLowerCase();
 }
 
 function rpCommas(value) {
@@ -2436,49 +1781,68 @@ function rivalLevelTpMultiplier(data) {
     return rivalLevelTpMultiplierFromLevel(rivalGetDmzLevel(data));
 }
 
-/* kind: "burst" (default) or "drip". Pass player to include career-title TP perk. */
-function rivalEffectiveTpMultiplier(data, kind, player) {
+/* kind: "burst" (default) or "drip" */
+function rivalEffectiveTpMultiplier(data, kind) {
     var burst = rivalLevelTpMultiplier(data);
-    var levelPart = burst;
-    if (kind === "drip") {
-        var drip = Math.pow(Math.max(1.0, burst), RIVAL_LEVEL_TP_DRIP_POWER);
-        var dripCap = Number(RIVAL_LEVEL_TP_DRIP_MAX);
-        if (isNaN(dripCap) || dripCap < 1) dripCap = 75.0;
-        if (drip > dripCap) drip = dripCap;
-        levelPart = drip;
-    }
-    var titlePart = rivalTitleTpMultiplier(player);
-    if (!(titlePart > 0) || isNaN(titlePart) || !isFinite(titlePart)) titlePart = 1.0;
-    return levelPart * titlePart;
+    if (kind !== "drip") return burst;
+    var drip = Math.pow(Math.max(1.0, burst), RIVAL_LEVEL_TP_DRIP_POWER);
+    var dripCap = Number(RIVAL_LEVEL_TP_DRIP_MAX);
+    if (isNaN(dripCap) || dripCap < 1) dripCap = 75.0;
+    if (drip > dripCap) drip = dripCap;
+    return drip;
 }
 
-function rivalScaleTpByLevel(data, amount, kind, player) {
+function rivalScaleTpByLevel(data, amount, kind) {
     var base = Math.floor(Number(amount));
     if (isNaN(base) || base <= 0) return 0;
+    var gainScale = Number(RIVAL_TP_GAIN_SCALE);
+    if (!(gainScale > 0) || isNaN(gainScale) || !isFinite(gainScale)) gainScale = 1.0;
+    base = Math.max(1, Math.floor(base * gainScale));
     if (data === null || data === undefined) return base;
-    var mult = rivalEffectiveTpMultiplier(data, kind, player);
+    var mult = rivalEffectiveTpMultiplier(data, kind);
     if (!(mult > 0) || isNaN(mult) || !isFinite(mult)) mult = 1.0;
     return Math.max(1, Math.floor(base * mult));
 }
 
-function rpAwardTP(player, data, amount, reason, kind) {
+function rivalKillTpChatEnabled(player) {
+    try {
+        if (player === null || player === undefined) return true;
+        var stored = player.getStoreddata();
+        if (stored === null || stored === undefined) return true;
+        if (!stored.has(KILL_TP_CHAT_KEY)) return true;
+        var value = String(stored.get(KILL_TP_CHAT_KEY)).toLowerCase();
+        return value !== "0" && value !== "false" && value !== "off";
+    } catch (e) {
+        return true;
+    }
+}
+
+/*
+ * killChat=true: message respects /rival tpmsg preference.
+ * Other awards still show unless RP_SHOW_KILL_TP is false.
+ */
+function rpAwardTP(player, data, amount, reason, kind, killChat) {
     try {
         if (data === null || data === undefined) return false;
         var scaleKind = kind === "drip" ? "drip" : "burst";
-        amount = rivalScaleTpByLevel(data, amount, scaleKind, player);
+        amount = rivalScaleTpByLevel(data, amount, scaleKind);
         if (amount <= 0) return false;
         var resources = data.getResources();
         if (resources === null) return false;
         resources.addTrainingPoints(amount);
         var mcPlayer = player.getMCEntity();
         rpNetwork().sendToTrackingEntityAndSelf(new (rpSyncPacket())(mcPlayer), mcPlayer);
-        if (RP_SHOW_KILL_TP) {
+        var show = RP_SHOW_KILL_TP === true;
+        if (killChat === true) {
+            show = show && rivalKillTpChatEnabled(player);
+        }
+        if (show) {
             var note = reason ? String(reason) : "";
             if (RIVAL_LEVEL_TP_SHOW_IN_REASON === true && RIVAL_LEVEL_TP_ENABLED === true) {
                 var lvl = rivalGetDmzLevel(data);
                 note = (note ? note + " | " : "") +
                     "Lv" + rpCommas(lvl) + " " +
-                    rivalFormatMult(rivalEffectiveTpMultiplier(data, scaleKind, player));
+                    rivalFormatMult(rivalEffectiveTpMultiplier(data, scaleKind));
             }
             rpMessage(player, RP_COLOR + "a[Rival] +" + rpCommas(amount) + " TP" +
                 (note ? RP_COLOR + "7 (" + note + ")" : ""));
@@ -2576,6 +1940,53 @@ function rpOffenseMultiplier(points, presenceMs, catchupExtra) {
     return 1.0 + total;
 }
 
+function rpNearRivalPriority(link) {
+    if (link == null) return 0;
+    var status = rcLinkStatus(link);
+    var rank = 0;
+    if (status === "nemesis") rank = 4;
+    else if (status === "mutual") rank = 3;
+    else if (status === "declared") rank = 2;
+    else if (status === "pending") rank = 1;
+    else if (status === "unknown") rank = 1;
+    return rank * 1000000 + rpNumber(link.points, 0);
+}
+
+function rpSortNearRivalsByPriority(list) {
+    if (list == null || list.length <= 1) return list;
+    list.sort(function (a, b) {
+        return rpNumber(b.priority, 0) - rpNumber(a.priority, 0);
+    });
+    return list;
+}
+
+function rpNearRivalTpCap() {
+    var cap = Math.floor(Number(RP_NEAR_RIVAL_TP_CAP));
+    if (isNaN(cap) || !isFinite(cap) || cap < 1) return 2;
+    return cap;
+}
+
+function rpMarkMobKill(player) {
+    if (!rpIsPlayer(player)) return;
+    try {
+        rpTempPut(rpTemp(player), RP_LAST_MOB_KILL_KEY, rpNow());
+    } catch (ignored) {}
+}
+
+/*
+ * True if this player killed a mob recently enough to count as "active"
+ * for nearby-rival rewards (blocks AFK parking).
+ */
+function rpHasRecentMobKill(player, nowMs) {
+    if (!rpIsPlayer(player)) return false;
+    var now = nowMs > 0 ? nowMs : rpNow();
+    var windowMs = Math.floor(Number(RP_NEAR_ACTIVE_KILL_MS));
+    if (isNaN(windowMs) || !isFinite(windowMs) || windowMs < 1000) windowMs = 30000;
+    var last = rpTempNumber(rpTemp(player), RP_LAST_MOB_KILL_KEY, 0);
+    if (last <= 0) return false;
+    return (now - last) <= windowMs;
+}
+
 function rpTemp(player) {
     return player.getTempdata();
 }
@@ -2612,15 +2023,13 @@ function rpProcessPlayer(player) {
     var temp = rpTemp(player);
     var now = rpNow();
     var inChallenge = rpInActiveChallenge(player);
+    var inSparring = rpIsInSparring(player);
 
     var bestMultiplier = 1.0;
     var nearCount = 0;
     var dirty = false;
     var wantsPgUnderdog = false;
-    var presenceAwardsThisTick = 0;
-    var globalPresenceKey = "rival.v4.presenceRp.global";
-    var lastGlobalPresence = rpTempNumber(temp, globalPresenceKey, 0);
-    var presenceWindowOpen = (now - lastGlobalPresence) >= RP_PRESENCE_RP_INTERVAL_MS;
+    var nearForRewards = [];
 
     for (var rivalUuid in record.rivals) {
         if (!record.rivals.hasOwnProperty(rivalUuid)) continue;
@@ -2665,6 +2074,9 @@ function rpProcessPlayer(player) {
         if (record.career === null || typeof record.career !== "object") record.career = {};
         record.career.presenceMs = rpNumber(record.career.presenceMs, 0) + RP_TICK_MS;
 
+        /* AFK rivals do not grant nearby reward / multiplier credit. */
+        if (!rpHasRecentMobKill(rivalPlayer, now)) continue;
+
         var rivalData = rpGetDMZ(rivalPlayer);
         var rivalReleased = rpGetReleasedBP(rivalData);
         var rivalRecord = database.players[rivalUuid];
@@ -2691,42 +2103,14 @@ function rpProcessPlayer(player) {
             }
         }
 
-        if (mult > bestMultiplier) bestMultiplier = mult;
-
-        /*
-         Presence RP ticks - both sides of an active rivalry gain rank while near.
-         Mutual gains a bit more than one-sided links.
-        */
-        var presenceKey = "rival.v4.presenceRp." + rivalUuid;
-        var lastPresenceRp = rpTempNumber(temp, presenceKey, 0);
-        /* Presence tracks time near rivals; awards TP. RP stays official-battle-only. */
-        if (now - lastPresenceRp >= RP_PRESENCE_RP_INTERVAL_MS) {
-            link.presenceMs = rpNumber(link.presenceMs, 0) + RP_PRESENCE_RP_INTERVAL_MS;
-            link.lastSeenTogetherAt = now;
-            dirty = true;
-            rpTempPut(temp, presenceKey, now);
-
-            var canPresenceAward = presenceWindowOpen === true &&
-                presenceAwardsThisTick < RP_PRESENCE_MAX_AWARDS_PER_INTERVAL;
-
-            if (canPresenceAward && RP_PRESENCE_TP_ENABLED === true && inChallenge !== true) {
-                var pStatus = rcLinkStatus(link);
-                var presenceTp = RP_PRESENCE_TP_ONE_SIDED;
-                if (pStatus === "mutual") presenceTp = RP_PRESENCE_TP_MUTUAL;
-                if (pStatus === "nemesis") presenceTp = RP_PRESENCE_TP_NEMESIS;
-                if (rpAwardTP(player, data, presenceTp, "Near " + pStatus + " " + link.name, "drip")) {
-                    presenceAwardsThisTick++;
-                    rpTempPut(temp, globalPresenceKey, now);
-                    presenceWindowOpen = false;
-                }
-            }
-            if (canPresenceAward && RP_PRESENCE_RP_ENABLED === true) {
-                var presenceRp = RP_PRESENCE_RP_ONE_SIDED;
-                if (rcLinkStatus(link) === "mutual") presenceRp = RP_PRESENCE_RP_MUTUAL;
-                if (rcLinkStatus(link) === "nemesis") presenceRp = RP_PRESENCE_RP_MUTUAL + 2;
-                rpAwardPoints(record, rivalUuid, presenceRp, "presence");
-            }
-        }
+        nearForRewards.push({
+            rivalUuid: rivalUuid,
+            link: link,
+            rivalPlayer: rivalPlayer,
+            rivalReleased: rivalReleased,
+            mult: mult,
+            priority: rpNearRivalPriority(link)
+        });
 
         /* Surpass award: cross from weaker -> stronger only, persisted cooldowns */
         if (RP_SURPASS_ENABLED && rivalReleased > 0) {
@@ -2764,6 +2148,64 @@ function rpProcessPlayer(player) {
         }
     }
 
+    /* Only the top N nearby active rivals feed offense pick + presence TP. */
+    rpSortNearRivalsByPriority(nearForRewards);
+    var rewardCap = rpNearRivalTpCap();
+    var rewardedNear = 0;
+    for (var ni = 0; ni < nearForRewards.length; ni++) {
+        var nearEntry = nearForRewards[ni];
+        if (ni >= rewardCap) break;
+        rewardedNear++;
+
+        if (nearEntry.mult > bestMultiplier) bestMultiplier = nearEntry.mult;
+
+        var cappedLink = nearEntry.link;
+        var cappedRivalUuid = nearEntry.rivalUuid;
+        var presenceKey = "rival.v4.presenceRp." + cappedRivalUuid;
+        var lastPresenceRp = rpTempNumber(temp, presenceKey, 0);
+        if (now - lastPresenceRp >= RP_PRESENCE_RP_INTERVAL_MS) {
+            cappedLink.presenceMs = rpNumber(cappedLink.presenceMs, 0) + RP_PRESENCE_RP_INTERVAL_MS;
+            cappedLink.lastSeenTogetherAt = now;
+            dirty = true;
+            rpTempPut(temp, presenceKey, now);
+
+            if (RP_PRESENCE_TP_ENABLED === true && inChallenge !== true && inSparring !== true) {
+                var pStatus = rcLinkStatus(cappedLink);
+                var presenceTp = 0;
+                /*
+                 * Benefits only if YOU rivaled them (declaredByMe).
+                 * Silent Unknown, Declared, Mutual, Nemesis all qualify when you declared.
+                 */
+                if (cappedLink.mutual === true) {
+                    if (pStatus === "nemesis") presenceTp = RP_PRESENCE_TP_NEMESIS;
+                    else presenceTp = RP_PRESENCE_TP_MUTUAL;
+                } else if (cappedLink.declaredByMe === true) {
+                    presenceTp = RP_PRESENCE_TP_ONE_SIDED;
+                } else if (pStatus === "unknown" && RP_PRESENCE_TP_UNKNOWN === true) {
+                    presenceTp = RP_PRESENCE_TP_ONE_SIDED;
+                }
+
+                if (presenceTp > 0) {
+                    rpAwardTP(
+                        player,
+                        data,
+                        presenceTp,
+                        "Near " + pStatus + " " + cappedLink.name,
+                        "drip"
+                    );
+                }
+            }
+            if (RP_PRESENCE_RP_ENABLED === true) {
+                if (cappedLink.declaredByMe === true || cappedLink.mutual === true) {
+                    var presenceRp = RP_PRESENCE_RP_ONE_SIDED;
+                    if (cappedLink.mutual === true) presenceRp = RP_PRESENCE_RP_MUTUAL;
+                    if (rcLinkStatus(cappedLink) === "nemesis") presenceRp = RP_PRESENCE_RP_MUTUAL + 2;
+                    rpAwardPoints(record, cappedRivalUuid, presenceRp, "presence");
+                }
+            }
+        }
+    }
+
     rpApplyOffenseBonus(player, data, bestMultiplier);
 
     if (PG_ENABLED === true) {
@@ -2773,9 +2215,11 @@ function rpProcessPlayer(player) {
 
     if (nearCount > 0) {
         rpTempPut(temp, "rival.v4.nearCount", nearCount);
+        rpTempPut(temp, "rival.v4.nearRewardCount", rewardedNear);
         rpTempPut(temp, "rival.v4.offenseMult", bestMultiplier.toFixed(3));
     } else {
         rpTempPut(temp, "rival.v4.nearCount", 0);
+        rpTempPut(temp, "rival.v4.nearRewardCount", 0);
         rpTempPut(temp, "rival.v4.offenseMult", "1.000");
     }
 
@@ -2801,6 +2245,7 @@ function rpHandleKillNearRivals(killer, victim) {
     var dirty = false;
     var victimIsPlayer = rpIsPlayer(victim);
     var victimUuid = victimIsPlayer ? rpUuid(victim) : "";
+    var nearKillList = [];
 
     /* Direct rival kill underdog win */
     if (victimIsPlayer) {
@@ -2809,7 +2254,8 @@ function rpHandleKillNearRivals(killer, victim) {
             var victimData = rpGetDMZ(victim);
             var victimReleased = rpGetReleasedBP(victimData);
             if (victimReleased > killerReleased) {
-                rpAwardTP(killer, killerData, RP_UNDERDOG_WIN_TP, "Underdog victory vs " + directLink.name);
+                rpAwardTP(killer, killerData, RP_UNDERDOG_WIN_TP,
+                    "Underdog victory vs " + directLink.name, "burst", true);
                 dirty = true;
             }
         }
@@ -2823,28 +2269,46 @@ function rpHandleKillNearRivals(killer, victim) {
         var rivalPlayer = rpFindOnlineByUuid(rivalUuid);
         if (rivalPlayer === null) continue;
         if (rpDistance(killer, rivalPlayer) > rpRangeForPoints(link.points)) continue;
+        /* AFK rivals do not grant kill-near-rival TP. */
+        if (!rpHasRecentMobKill(rivalPlayer, rpNow())) continue;
 
-        var tier = rpTierIndex(link.points);
+        nearKillList.push({
+            rivalUuid: rivalUuid,
+            link: link,
+            rivalPlayer: rivalPlayer,
+            priority: rpNearRivalPriority(link)
+        });
+    }
+
+    rpSortNearRivalsByPriority(nearKillList);
+    var killCap = rpNearRivalTpCap();
+    for (var ki = 0; ki < nearKillList.length && ki < killCap; ki++) {
+        var nearKill = nearKillList[ki];
+        var killLink = nearKill.link;
+        var killRivalUuid = nearKill.rivalUuid;
+        var killRivalPlayer = nearKill.rivalPlayer;
+
+        var tier = rpTierIndex(killLink.points);
         var tp = RP_KILL_TP_BASE + tier * RP_KILL_TP_PER_TIER;
-        var killStatus = rcLinkStatus(link);
+        var killStatus = rcLinkStatus(killLink);
         if (killStatus === "nemesis") tp = Math.floor(tp * RP_KILL_TP_MUTUAL_MULT * 1.25);
         else if (killStatus === "mutual") tp = Math.floor(tp * RP_KILL_TP_MUTUAL_MULT);
 
-        rpAwardTP(killer, killerData, tp, "Near " + killStatus + " " + link.name);
+        rpAwardTP(killer, killerData, tp, "Near " + killStatus + " " + killLink.name, "burst", true);
         if (record.career === null || typeof record.career !== "object") record.career = {};
         record.career.killsNearRival = rpNumber(record.career.killsNearRival, 0) + 1;
         dirty = true;
 
         /* Anti-gank: if this rival is much weaker and has me declared, they gain from witnessing */
-        var rivalRecord = database.players[rivalUuid];
+        var rivalRecord = database.players[killRivalUuid];
         if (rivalRecord === null || rivalRecord === undefined) continue;
         var theirLink = rpGetLink(rivalRecord, killerUuid);
         if (theirLink === null || theirLink.declaredByMe !== true) continue;
 
-        var rivalData = rpGetDMZ(rivalPlayer);
+        var rivalData = rpGetDMZ(killRivalPlayer);
         var rivalReleased = rpGetReleasedBP(rivalData);
         if (killerReleased > 0 && rivalReleased <= killerReleased * RP_ANTIGANK_RATIO) {
-            rpAwardTP(killer, killerData, RP_ANTIGANK_WITNESS_KILL_TP, "Rivals watching");
+            rpAwardTP(killer, killerData, RP_ANTIGANK_WITNESS_KILL_TP, "Rivals watching", "burst", true);
             dirty = true;
         }
     }
@@ -2965,6 +2429,18 @@ function rpHandleStrongPlayerDamagedNearWeakRivals(victim) {
     }
 }
 
+/* Sparring sessions must not advance Rival Nemesis / presence TP. */
+function rpIsInSparring(player) {
+    if (player == null) return false;
+    try {
+        var temp = player.getTempdata();
+        if (temp == null || !temp.has("spar.active")) return false;
+        return rpString(temp.get("spar.active")) === "1";
+    } catch (e) {
+        return false;
+    }
+}
+
 function rpHandleDeathToRival(victim, damageSource) {
     var attacker = null;
     try { attacker = damageSource; } catch (ignored) {}
@@ -2975,18 +2451,73 @@ function rpHandleDeathToRival(victim, damageSource) {
             }
         } catch (ignored2) {}
     }
+    /* died event may pass IDamageSource - resolve the killing player. */
+    if (!rpIsPlayer(attacker)) {
+        try {
+            if (damageSource !== null && damageSource.getTrueSource) {
+                attacker = damageSource.getTrueSource();
+            }
+        } catch (ignored3) {}
+    }
+    if (!rpIsPlayer(attacker)) {
+        try {
+            if (damageSource !== null && damageSource.getImmediateSource) {
+                var imm = damageSource.getImmediateSource();
+                if (rpIsPlayer(imm)) attacker = imm;
+                else if (imm != null && typeof imm.getMCEntity == "function") {
+                    /* ignore non-players */
+                }
+            }
+        } catch (ignored4) {}
+    }
     if (!rpIsPlayer(attacker)) return;
+    if (rpIsInSparring(victim) || rpIsInSparring(attacker)) return;
 
     var database = rpLoadDatabase(victim);
     if (database === null) return;
 
     var victimUuid = rpUuid(victim);
     var attackerUuid = rpUuid(attacker);
-    var record = database.players[victimUuid];
-    if (record === null || record === undefined) return;
+    var victimRecord = database.players[victimUuid];
+    if (victimRecord == null) victimRecord = rcEnsurePlayer(database, victim);
+    var killerRecord = database.players[attackerUuid];
+    if (killerRecord == null) killerRecord = rcEnsurePlayer(database, attacker);
+    if (victimRecord == null || killerRecord == null) return;
 
-    var link = rpGetLink(record, attackerUuid);
-    if (link === null) return;
+    /*
+     * Challenge KO already counted deathLosses in chApplyRewards.
+     * Skip open-world double-count for a few seconds.
+     */
+    try {
+        var temp = victim.getTempdata();
+        if (temp != null && temp.has("rival.v4.deathLossCounted")) {
+            var countedAt = rpNumber(temp.get("rival.v4.deathLossCounted"), 0);
+            if (rpNow() - countedAt < 5000) return;
+        }
+    } catch (eSkip) {}
+
+    var link = rpGetLink(victimRecord, attackerUuid);
+    if (link == null) return;
+
+    /* Mutual deaths drive Nemesis. One-sided deaths stay flavor history. */
+    if (link.mutual === true) {
+        if (rcRegisterMutualDeathLoss(database, victimRecord, killerRecord, "Fallen to mutual rival in the world")) {
+            try {
+                victim.getTempdata().put("rival.v4.deathLossCounted", String(rpNow()));
+            } catch (eMark) {}
+            rpSaveDatabase(victim, database);
+            var deaths = rcNumber(victimRecord.rivals[attackerUuid].deathLosses, 0);
+            rpMessage(victim, RP_COLOR + "c[Rival] Death to Mutual rival " +
+                RP_COLOR + "e" + killerRecord.name + RP_COLOR + "7 (" +
+                deaths + "/" + RC_NEMESIS_DEATH_LOSSES + " toward Nemesis)");
+            if (deaths >= RC_NEMESIS_DEATH_LOSSES &&
+                rcString(victimRecord.nemesisUuid) === attackerUuid) {
+                /* Announce already handled inside rcRecomputeNemesis when newly crowned. */
+            }
+        }
+        return;
+    }
+
     if (link.declaredByMe !== true) return;
 
     var myData = rpGetDMZ(victim);
@@ -3049,11 +2580,68 @@ function rivalProxDamaged(event) {
     }
 }
 
+/*
+ * Killer-side backup: CNPC died.source is often IDamageSource and may
+ * fail to resolve the player killer. Kill events always know the killer.
+ */
+function rpHandleKillOfMutualRival(killer, victim) {
+    if (!rpIsPlayer(killer) || !rpIsPlayer(victim)) return false;
+    if (rpIsInSparring(killer) || rpIsInSparring(victim)) return false;
+
+    try {
+        var temp = victim.getTempdata();
+        if (temp != null && temp.has("rival.v4.deathLossCounted")) {
+            var countedAt = rpNumber(temp.get("rival.v4.deathLossCounted"), 0);
+            if (rpNow() - countedAt < 5000) return false;
+        }
+    } catch (eSkip) {}
+
+    var database = rpLoadDatabase(killer);
+    if (database === null) return false;
+
+    var killerRecord = database.players[rpUuid(killer)];
+    if (killerRecord == null) killerRecord = rcEnsurePlayer(database, killer);
+    var victimRecord = database.players[rpUuid(victim)];
+    if (victimRecord == null) victimRecord = rcEnsurePlayer(database, victim);
+    if (killerRecord == null || victimRecord == null) return false;
+
+    var link = rpGetLink(victimRecord, rpUuid(killer));
+    if (link == null || link.mutual !== true) return false;
+
+    if (!rcRegisterMutualDeathLoss(
+        database,
+        victimRecord,
+        killerRecord,
+        "Fallen to mutual rival in the world"
+    )) {
+        return false;
+    }
+
+    try {
+        victim.getTempdata().put("rival.v4.deathLossCounted", String(rpNow()));
+    } catch (eMark) {}
+    rpSaveDatabase(killer, database);
+
+    var deaths = rcNumber(victimRecord.rivals[rpUuid(killer)].deathLosses, 0);
+    try {
+        rpMessage(victim, RP_COLOR + "c[Rival] Death to Mutual rival " +
+            RP_COLOR + "e" + killerRecord.name + RP_COLOR + "7 (" +
+            deaths + "/" + RC_NEMESIS_DEATH_LOSSES + " toward Nemesis)");
+    } catch (eMsg) {}
+    return true;
+}
+
 function rivalProxKill(event) {
     try {
         var killer = event.player;
         var victim = event.entity;
         if (!rpIsPlayer(killer) || victim === null) return;
+        if (!rpIsPlayer(victim)) {
+            rpMarkMobKill(killer);
+        }
+        try { rpHandleKillOfMutualRival(killer, victim); } catch (eDeath) {
+            rpLog("mutual kill death-loss failed: " + eDeath);
+        }
         rpHandleKillNearRivals(killer, victim);
     } catch (error) {
         rpLog("kill failed: " + error);
@@ -3153,12 +2741,29 @@ var CH_DB_BACKUP_KEY = "dlr.rivalry.v4.challenges.backup";
 
 var CH_REQUEST_EXPIRE_MS = 30 * 1000;
 var CH_COUNTDOWN_MS = 5 * 1000;
-var CH_DURATION_MS = 60 * 1000; /* default challenge length (1 minute) */
+var CH_DURATION_MS = 60 * 1000;
 var CH_MIN_MINUTES = 1;
 var CH_MAX_MINUTES = 10;
+/* Live score cadence: short fights stay frequent; long fights quiet down. */
+var CH_LONG_FIGHT_MS = 2 * 60 * 1000;
+var CH_BROADCAST_SCORE_LONG_MS = 60 * 1000;
 var CH_REQUEST_COOLDOWN_MS = 15 * 1000;
+/* After a challenge ends, both fighters wait before another official battle. */
+var CH_BETWEEN_COOLDOWN_MS = 2 * 60 * 1000;
 var CH_MAX_DISTANCE = 64;
 var CH_TICK_MS = 250;
+
+/*
+ * CNPC damaged / damagedEntity fire on LivingHurtEvent with the
+ * pre-mitigation amount (DMZ attack damage). Challenge scoring must
+ * use health actually lost after armor / DMZ defense instead.
+ */
+var CH_HP_SAMPLE_KEY = "rival.v4.challenge.hpPool";
+var CH_PENDING_SAMPLE_KEY = "rival.v4.challenge.pendingSample";
+var CH_PENDING_ATK_KEY = "rival.v4.challenge.pendingAtk";
+var CH_PENDING_KI_KEY = "rival.v4.challenge.pendingKi";
+var CH_PENDING_UNTIL_KEY = "rival.v4.challenge.pendingUntil";
+var CH_PENDING_RESOLVE_MS = 75;
 
 /* Server-wide rival battle display */
 var CH_BROADCAST_ENABLED = true;
@@ -3210,17 +2815,42 @@ function chNumber(value, fallback) {
 
 function chBroadcast(text) {
     if (CH_BROADCAST_ENABLED !== true) return;
+    /*
+     * Deduplicate by player UUID. Multi-world getAllPlayers() can
+     * re-list the same players and spam identical challenge lines.
+     */
     try {
         var seen = {};
+        var sent = 0;
+
+        try {
+            var Bukkit = Java.type("org.bukkit.Bukkit");
+            var online = Bukkit.getOnlinePlayers();
+            var it = online.iterator();
+            while (it.hasNext()) {
+                var bp = it.next();
+                var name = "";
+                try { name = String(bp.getName()); } catch (eName) { continue; }
+                var p = chFindOnlineAnyWorld(name);
+                if (p === null) continue;
+                var id = chUuid(p);
+                if (id === "" || seen[id] === true) continue;
+                seen[id] = true;
+                chMessage(p, text);
+                sent++;
+            }
+            if (sent > 0) return;
+        } catch (bukkitErr) {}
+
         var worlds = chApi().Instance().getIWorlds();
         for (var i = 0; i < worlds.length; i++) {
             try {
                 var players = worlds[i].getAllPlayers();
-                for (var p = 0; p < players.length; p++) {
-                    var pl = players[p];
-                    var id = chUuid(pl);
-                    if (id === "" || seen[id] === true) continue;
-                    seen[id] = true;
+                for (var pIdx = 0; pIdx < players.length; pIdx++) {
+                    var pl = players[pIdx];
+                    var pid = chUuid(pl);
+                    if (pid === "" || seen[pid] === true) continue;
+                    seen[pid] = true;
                     chMessage(pl, text);
                 }
             } catch (ignored) {}
@@ -3228,6 +2858,44 @@ function chBroadcast(text) {
     } catch (error) {
         chLog("Broadcast failed: " + error);
     }
+}
+
+function chClaimCountdownAnnounce(pairKey) {
+    try {
+        var world = chDataWorld(null);
+        if (world === null) return true;
+        var stored = world.getStoreddata();
+        var key = "dlr.rivalry.v4.challenge.announce." + chString(pairKey);
+        var last = 0;
+        try {
+            if (stored.has(key)) last = chNumber(stored.get(key), 0);
+        } catch (e1) {}
+        if (chNow() - last < 8000) return false;
+        stored.put(key, "" + chNow());
+        return true;
+    } catch (e) {
+        return true;
+    }
+}
+
+function chPlannedDurationMs(session) {
+    var planned = chNumber(session == null ? 0 : session.durationMs, CH_DURATION_MS);
+    if (planned < CH_DURATION_MS) planned = CH_DURATION_MS;
+    return planned;
+}
+
+function chBattleElapsedMs(session) {
+    if (session == null) return 0;
+    var ended = chNumber(session.endedAt, chNow());
+    var started = chNumber(session.battleStartedAt, 0);
+    if (started > 0) return Math.max(0, ended - started);
+    var planned = chPlannedDurationMs(session);
+    return Math.max(0, ended - (chNumber(session.battleEndsAt, ended) - planned));
+}
+
+function chScoreBroadcastIntervalMs(session) {
+    if (chPlannedDurationMs(session) > CH_LONG_FIGHT_MS) return CH_BROADCAST_SCORE_LONG_MS;
+    return CH_BROADCAST_SCORE_MS;
 }
 
 function chBroadcastLines(lines) {
@@ -3307,41 +2975,36 @@ function chFormatMs(ms) {
     return minutes + "m " + seconds + "s";
 }
 
-function chParseChallengeMinutes(raw) {
-    var s = chString(raw).replace(/^\s+|\s+$/g, "").toLowerCase();
-    if (s === "") return CH_MIN_MINUTES;
-    s = s.replace(/m(in(utes?)?)?$/, "");
-    var n = Math.floor(Number(s));
-    if (isNaN(n) || !isFinite(n)) return -1;
-    if (n < CH_MIN_MINUTES || n > CH_MAX_MINUTES) return -1;
-    return n;
+function chPlayerBattleCdKey(uuid) {
+    return "ended:" + chString(uuid);
 }
 
-function chChallengeDurationLabel(minutes) {
-    var m = Math.max(CH_MIN_MINUTES, chNumber(minutes, CH_MIN_MINUTES));
-    if (m === 1) return "1 minute";
-    return m + " minutes";
+function chBattleCooldownRemaining(db, uuid) {
+    if (db == null || db.cooldowns == null) return 0;
+    var last = chNumber(db.cooldowns[chPlayerBattleCdKey(uuid)], 0);
+    if (last <= 0) return 0;
+    return Math.max(0, CH_BETWEEN_COOLDOWN_MS - (chNow() - last));
 }
 
-/* Default 1 min; Command Handler stores durationMinutes/durationMs on the session. */
-function chSessionDurationMs(session) {
-    if (session == null) return CH_DURATION_MS;
-    var minutes = Math.max(CH_MIN_MINUTES, chNumber(session.durationMinutes, CH_MIN_MINUTES));
-    if (minutes > CH_MAX_MINUTES) minutes = CH_MAX_MINUTES;
-    var ms = chNumber(session.durationMs, minutes * 60 * 1000);
-    if (ms < minutes * 60 * 1000) ms = minutes * 60 * 1000;
-    var maxMs = CH_MAX_MINUTES * 60 * 1000;
-    if (ms > maxMs) ms = maxMs;
-    if (ms < CH_DURATION_MS) ms = CH_DURATION_MS;
-    return ms;
+function chSetBattleCooldown(db, uuid) {
+    if (db == null || db.cooldowns == null) return;
+    var id = chString(uuid);
+    if (id == "") return;
+    db.cooldowns[chPlayerBattleCdKey(id)] = chNow();
 }
 
-function chSessionElapsedMs(session) {
-    var full = chSessionDurationMs(session);
-    var endsAt = chNumber(session.battleEndsAt, 0);
-    var endedAt = chNumber(session.endedAt, chNow());
-    if (endsAt <= 0) return 0;
-    return Math.max(0, endedAt - (endsAt - full));
+function chBlockIfBattleCooldown(player, db, uuid, whoLabel) {
+    var rem = chBattleCooldownRemaining(db, uuid);
+    if (rem <= 0) return false;
+    var who = chString(whoLabel);
+    if (who == "" || who == "you") {
+        chMessage(player, CH_COLOR + "cChallenge cooldown: " + chFormatMs(rem) +
+            CH_COLOR + "7 before another official battle.");
+    } else {
+        chMessage(player, CH_COLOR + "c" + who + " is on challenge cooldown (" +
+            chFormatMs(rem) + ").");
+    }
+    return true;
 }
 
 /* ========================= STORAGE ========================= */
@@ -3412,39 +3075,6 @@ function chSaveChallengeDb(player, database) {
     var json = JSON.stringify(database);
     if (stored.has(CH_DB_KEY)) stored.put(CH_DB_BACKUP_KEY, chString(stored.get(CH_DB_KEY)));
     stored.put(CH_DB_KEY, json);
-}
-
-/*
- * Single-flight resolve lock for a challenge session.
- * Prevents dual player ticks / kill+died from awarding TP and
- * broadcasting the win many times for one battle.
- */
-function chResolveLockKey(sessionId) {
-    return "dlr.rivalry.v4.challenge.resolved." + chString(sessionId);
-}
-
-function chTryClaimResolve(player, sessionId) {
-    try {
-        var world = chDataWorld(player);
-        if (world === null) return false;
-        var stored = world.getStoreddata();
-        var key = chResolveLockKey(sessionId);
-        if (stored.has(key)) return false;
-        stored.put(key, "" + chNow());
-        return true;
-    } catch (err) {
-        return false;
-    }
-}
-
-function chHasResolved(player, sessionId) {
-    try {
-        var world = chDataWorld(player);
-        if (world === null) return false;
-        return world.getStoreddata().has(chResolveLockKey(sessionId));
-    } catch (err) {
-        return false;
-    }
 }
 
 function chLoadCoreDb(player) {
@@ -3521,41 +3151,14 @@ function chGetSession(db, uuid) {
 function chFreshCombat() {
     return {
         damage: 0,
-        damageTaken: 0,
         physical: 0,
         ki: 0,
         hits: 0,
-        hitsTaken: 0,
         biggestHit: 0,
-        biggestTaken: 0,
         combo: 0,
         longestCombo: 0,
         lastHitAt: 0
     };
-}
-
-/*
- * Resolve the attacking player from a victim `damaged` event.
- * Prefer true source so Ki projectiles still attribute to the owner.
- */
-function chAttackerFromDamaged(event) {
-    var source = null;
-    try { source = event.source; } catch (ignored) {}
-    if (chIsPlayer(source)) return source;
-
-    try {
-        var ds = event.damageSource;
-        if (ds === null || ds === undefined) return null;
-        var trueSrc = null;
-        try { trueSrc = ds.getTrueSource(); } catch (ignored2) {}
-        if (chIsPlayer(trueSrc)) return trueSrc;
-        try {
-            if (trueSrc !== null && trueSrc.getMCEntity) {
-                /* already an IEntity wrapper */
-            }
-        } catch (ignored3) {}
-    } catch (ignored4) {}
-    return null;
 }
 
 /* ========================= DMZ ========================= */
@@ -3570,111 +3173,11 @@ function chGetDMZ(player) {
     }
 }
 
-/*
- * Read a double from the MC entity persistent NBT (Forge CompoundTag).
- * DMZ stores combat scratch values here during LivingHurt / LivingDamage:
- *   dmz_raw_damage, dmz_defense_pen, dmz_block_multiplier
- */
-function chNbtGetDouble(player, key, fallback) {
-    try {
-        var mc = player.getMCEntity();
-        if (mc === null) return fallback;
-        var nbt = null;
-        try { nbt = mc.getPersistentData(); } catch (e1) { nbt = null; }
-        if (nbt === null) return fallback;
-        var has = false;
-        try { has = nbt.contains(key) === true; } catch (e2) {
-            try { has = nbt.m_128441_(key) === true; } catch (e3) { has = false; }
-        }
-        if (!has) return fallback;
-        var v = NaN;
-        try { v = Number(nbt.getDouble(key)); } catch (e4) {
-            try { v = Number(nbt.m_128459_(key)); } catch (e5) { v = NaN; }
-        }
-        if (isNaN(v) || !isFinite(v)) return fallback;
-        return v;
-    } catch (ignored) {
-        return fallback;
-    }
-}
-
-function chPlayerHealth(player) {
-    try {
-        var hp = Number(player.getHealth());
-        if (!isNaN(hp) && isFinite(hp)) return hp;
-    } catch (ignored) {}
-    try {
-        var mc = player.getMCEntity();
-        if (mc !== null) {
-            var hp2 = Number(mc.getHealth());
-            if (!isNaN(hp2) && isFinite(hp2)) return hp2;
-        }
-    } catch (ignored2) {}
-    return -1;
-}
-
-/*
- * Convert DMZ LivingHurt raw damage into actual HP damage taken.
- *
- * Verified from dragonminez-2.1.3 CombatEvent:
- * - CustomNPCs `damaged` hooks LivingHurtEvent (pre-armor).
- * - DMZ @HIGH sets LivingHurt amount to getMeleeDamage/getKiDamage/etc (RAW).
- * - DMZ DamageDealtEvent also posts that RAW amount.
- * - Real HP loss is applied later on LivingDamageEvent via
- *   StatsData.calculatePostMitigationDamage(raw, guardBroken, defensePen)
- *   then * dmz_block_multiplier (and optional Ki Protection).
- *
- * Do NOT mutate event.damage — CNPC writes it back onto LivingHurt.setAmount,
- * which would break DMZ's later LivingDamage mitigation path.
- */
-function chDmzDamageTaken(victim, rawFromEvent) {
-    var raw = Math.max(0, chNumber(rawFromEvent, 0));
-    var nbtRaw = chNbtGetDouble(victim, "dmz_raw_damage", -1);
-    if (nbtRaw > 0) raw = nbtRaw;
-    if (!(raw > 0)) return 0;
-
-    var data = chGetDMZ(victim);
-    if (data === null) return raw;
-
-    var pen = chNbtGetDouble(victim, "dmz_defense_pen", 0);
-    if (pen < 0) pen = 0;
-    if (pen > 1) pen = 1;
-
-    var guardBroken = false;
-    try {
-        var status = data.getStatus();
-        var resources = data.getResources();
-        guardBroken = status.isStunEffect() === true &&
-            Number(resources.getCurrentPoise()) <= 0;
-    } catch (ignoredGuard) {
-        guardBroken = false;
-    }
-
-    var taken = raw;
-    try {
-        taken = Number(data.calculatePostMitigationDamage(raw, guardBroken, pen));
-    } catch (mitErr) {
-        chLog("calculatePostMitigationDamage failed: " + mitErr);
-        taken = raw;
-    }
-    if (isNaN(taken) || !isFinite(taken) || taken < 0) taken = 0;
-
-    var blockMult = chNbtGetDouble(victim, "dmz_block_multiplier", 1);
-    if (!(blockMult > 0) || !isFinite(blockMult)) blockMult = 1;
-    taken = taken * blockMult;
-
-    /* Cannot lose more HP than currently remaining. */
-    var hp = chPlayerHealth(victim);
-    if (hp >= 0 && taken > hp) taken = hp;
-
-    return taken;
-}
-
 function chAwardTP(player, amount, reason) {
     try {
         var data = chGetDMZ(player);
         if (data === null) return false;
-        amount = rivalScaleTpByLevel(data, amount, "burst", player);
+        amount = rivalScaleTpByLevel(data, amount, "burst");
         if (amount <= 0) return false;
         data.getResources().addTrainingPoints(amount);
         var mcPlayer = player.getMCEntity();
@@ -3683,7 +3186,7 @@ function chAwardTP(player, amount, reason) {
         if (RIVAL_LEVEL_TP_SHOW_IN_REASON === true && RIVAL_LEVEL_TP_ENABLED === true) {
             note = (note ? note + " | " : "") +
                 "Lv" + chCommas(rivalGetDmzLevel(data)) + " " +
-                rivalFormatMult(rivalEffectiveTpMultiplier(data, "burst", player));
+                rivalFormatMult(rivalEffectiveTpMultiplier(data, "burst"));
         }
         chMessage(player, CH_COLOR + "a[Challenge] +" + chCommas(amount) + " TP" +
             (note ? CH_COLOR + "7 (" + note + ")" : ""));
@@ -3752,26 +3255,19 @@ function chEnsureCorePlayer(core, player) {
                 declarationsAccepted: 0,
                 declarationsDeclined: 0,
                 rivalsRemoved: 0
-            },
-            pastRivals: {}
+            }
         };
         core.players[uuid] = record;
     }
     record.name = name;
     record.nameLower = name.toLowerCase();
     if (record.rivals === null || typeof record.rivals !== "object") record.rivals = {};
-    if (record.pastRivals === null || typeof record.pastRivals !== "object") record.pastRivals = {};
     if (record.career === null || typeof record.career !== "object") record.career = {};
     return record;
 }
 
 function chEnsureLink(owner, target) {
     if (owner.rivals[target.uuid] === undefined) {
-        var restored = rcRestorePastRival(owner, target);
-        if (restored !== null) {
-            rcRecalcCareerRp(owner);
-            return restored;
-        }
         var t = chNow();
         owner.rivals[target.uuid] = {
             uuid: target.uuid,
@@ -3786,6 +3282,8 @@ function chEnsureLink(owner, target) {
             losses: 0,
             draws: 0,
             battles: 0,
+            deathLosses: 0,
+            deathWins: 0,
             currentStreak: 0,
             bestStreak: 0,
             damageDealt: 0,
@@ -3808,7 +3306,11 @@ function chEnsureLink(owner, target) {
     var link = owner.rivals[target.uuid];
     link.name = target.name;
     link.updatedAt = chNow();
-    if (link.isNemesis !== true) link.isNemesis = false;
+    link.deathLosses = chNumber(link.deathLosses, 0);
+    link.deathWins = chNumber(link.deathWins, 0);
+    link.isNemesis = link.mutual === true &&
+        link.deathLosses >= RC_NEMESIS_DEATH_LOSSES &&
+        link.isNemesis === true;
     link.provingGrounds = pgNormalize(link.provingGrounds);
     return link;
 }
@@ -3866,19 +3368,12 @@ function chBusy(db, uuid) {
     return false;
 }
 
-function chChallenge(player, targetName, durationRaw) {
+function chChallenge(player, targetName) {
     var clean = chString(targetName).replace(/^\s+|\s+$/g, "");
     if (clean === "") {
-        chMessage(player, CH_COLOR + "cUsage: /challenge rival <player> [1-" + CH_MAX_MINUTES + "]");
+        chMessage(player, CH_COLOR + "cUsage: /challenge rival <player>");
         return;
     }
-    var minutes = chParseChallengeMinutes(durationRaw);
-    if (minutes < 0) {
-        chMessage(player, CH_COLOR + "cDuration must be " + CH_MIN_MINUTES + "-" + CH_MAX_MINUTES + " minutes.");
-        return;
-    }
-    var durationMs = minutes * 60 * 1000;
-    var label = chChallengeDurationLabel(minutes);
 
     var target = chFindOnlineAnyWorld(clean);
     if (target === null) {
@@ -3917,6 +3412,8 @@ function chChallenge(player, targetName, durationRaw) {
         chMessage(player, CH_COLOR + "cThat player is already in a challenge.");
         return;
     }
+    if (chBlockIfBattleCooldown(player, db, fromUuid, "you")) return;
+    if (chBlockIfBattleCooldown(player, db, toUuid, chName(target))) return;
 
     var cooldownKey = fromUuid + ">" + toUuid;
     var remaining = CH_REQUEST_COOLDOWN_MS - (chNow() - chNumber(db.cooldowns[cooldownKey], 0));
@@ -3933,17 +3430,14 @@ function chChallenge(player, targetName, durationRaw) {
         toUuid: toUuid,
         toName: chName(target),
         createdAt: chNow(),
-        related: chAreRelated(core, fromUuid, toUuid),
-        durationMinutes: minutes,
-        durationMs: durationMs
+        related: chAreRelated(core, fromUuid, toUuid)
     };
     db.cooldowns[cooldownKey] = chNow();
     chSaveChallengeDb(player, db);
 
-    chMessage(player, CH_COLOR + "6[Challenge] " + CH_COLOR + "aSent to " + CH_COLOR + "e" + chName(target) +
-        CH_COLOR + "8  (" + label + ")");
+    chMessage(player, CH_COLOR + "6[Challenge] " + CH_COLOR + "aSent to " + CH_COLOR + "e" + chName(target));
     chMessage(target, CH_COLOR + "6[Challenge] " + CH_COLOR + "e" + chName(player) +
-        CH_COLOR + "7 wants a " + CH_COLOR + "f" + label + CH_COLOR + "7 rival battle");
+        CH_COLOR + "7 wants a 60s rival battle");
     chMessage(target, CH_COLOR + "8  /challenge accept" + CH_COLOR + "7   or   " +
         CH_COLOR + "8/challenge decline");
 }
@@ -3960,34 +3454,11 @@ function chFindPendingFor(db, playerUuid, optionalFromName) {
     return null;
 }
 
-function chClaimCountdownAnnounce(pairKey) {
-    try {
-        var world = chDataWorld(null);
-        if (world === null) return true;
-        var stored = world.getStoreddata();
-        var key = "dlr.rivalry.v4.challenge.announce." + chString(pairKey);
-        var last = 0;
-        try {
-            if (stored.has(key)) last = chNumber(stored.get(key), 0);
-        } catch (e1) {}
-        if (chNow() - last < 8000) return false;
-        stored.put(key, "" + chNow());
-        return true;
-    } catch (e) {
-        return true;
-    }
-}
-
 function chStartCountdown(player, db, pending) {
     delete db.pending[pending.id];
 
     var sessionId = String(db.nextId++);
     var now = chNow();
-    var minutes = Math.max(CH_MIN_MINUTES, chNumber(pending.durationMinutes, CH_MIN_MINUTES));
-    if (minutes > CH_MAX_MINUTES) minutes = CH_MAX_MINUTES;
-    var durationMs = chNumber(pending.durationMs, minutes * 60 * 1000);
-    if (durationMs < minutes * 60 * 1000) durationMs = minutes * 60 * 1000;
-    var label = chChallengeDurationLabel(minutes);
     var session = {
         id: sessionId,
         state: "countdown",
@@ -3999,8 +3470,6 @@ function chStartCountdown(player, db, pending) {
         createdAt: now,
         countdownEndsAt: now + CH_COUNTDOWN_MS,
         battleEndsAt: 0,
-        durationMinutes: minutes,
-        durationMs: durationMs,
         endedAt: 0,
         endReason: "",
         winnerUuid: "",
@@ -4018,17 +3487,19 @@ function chStartCountdown(player, db, pending) {
 
     var a = chFindOnlineByUuid(pending.fromUuid);
     var b = chFindOnlineByUuid(pending.toUuid);
-    if (a !== null) chMessage(a, CH_COLOR + "6[Challenge] " + CH_COLOR + "eAccepted! " +
-        CH_COLOR + "f" + label + CH_COLOR + "e  Countdown...");
-    if (b !== null) chMessage(b, CH_COLOR + "6[Challenge] " + CH_COLOR + "eAccepted! " +
-        CH_COLOR + "f" + label + CH_COLOR + "e  Countdown...");
+    if (a !== null) chMessage(a, CH_COLOR + "6[Challenge] " + CH_COLOR + "eAccepted! Countdown...");
+    if (b !== null) chMessage(b, CH_COLOR + "6[Challenge] " + CH_COLOR + "eAccepted! Countdown...");
 
+    /*
+     * Pair-key lock so accept spam / dual handlers cannot
+     * flood the server with identical countdown lines.
+     */
     var pairKey = chString(pending.fromUuid) + ">" + chString(pending.toUuid);
     if (chClaimCountdownAnnounce(pairKey)) {
         chBroadcast(CH_COLOR + "8--------------------------------");
         chBroadcast(CH_COLOR + "6[Rival Battle] " + CH_COLOR + "e" + pending.fromName +
             CH_COLOR + "7  vs  " + CH_COLOR + "e" + pending.toName);
-        chBroadcast(CH_COLOR + "8" + label + CH_COLOR + "7  |  Countdown...  Watch: " +
+        chBroadcast(CH_COLOR + "8Countdown..." + CH_COLOR + "7  Watch: " +
             CH_COLOR + "f/spectaterival " + pending.fromName);
 
         try {
@@ -4064,6 +3535,13 @@ function chAccept(player, fromName) {
         return;
     }
 
+    /* Prevent double-accept from multi-fire CMI/triggers */
+    var acceptKey = "accept." + chString(pending.fromUuid) + ">" + chString(pending.toUuid);
+    if (!chClaimCountdownAnnounce(acceptKey)) {
+        chMessage(player, CH_COLOR + "7Challenge already accepted.");
+        return;
+    }
+
     var challenger = chFindOnlineByUuid(pending.fromUuid);
     if (challenger === null) {
         delete db.pending[pending.id];
@@ -4075,6 +3553,8 @@ function chAccept(player, fromName) {
         chMessage(player, CH_COLOR + "cGet within " + CH_MAX_DISTANCE + " blocks to accept.");
         return;
     }
+    if (chBlockIfBattleCooldown(player, db, chUuid(player), "you")) return;
+    if (chBlockIfBattleCooldown(player, db, pending.fromUuid, pending.fromName)) return;
 
     chStartCountdown(player, db, pending);
 }
@@ -4130,35 +3610,40 @@ function chCancel(player) {
 function chBeginBattle(player, db, session) {
     if (session.state !== "countdown") return;
     if (session.announcedFight === true) return;
-    if (chHasResolved(player, session.id)) return;
 
-    var durationMs = chSessionDurationMs(session);
-    var minutes = Math.max(CH_MIN_MINUTES, chNumber(session.durationMinutes, Math.round(durationMs / 60000)));
-    if (minutes > CH_MAX_MINUTES) minutes = CH_MAX_MINUTES;
-    session.durationMinutes = minutes;
-    session.durationMs = durationMs;
+    /*
+     * Only the challenger's tick starts the fight. Both fighters tick the
+     * countdown; without this they race and each get duplicate FIGHT lines.
+     */
+    if (chUuid(player) !== chString(session.challengerUuid)) return;
+
+    var fightKey = "fight." + chString(session.challengerUuid) + ">" +
+        chString(session.opponentUuid);
+    if (!chClaimCountdownAnnounce(fightKey)) return;
+
     session.state = "active";
-    session.battleEndsAt = chNow() + durationMs;
+    var durationMs = chNumber(session.durationMs, CH_DURATION_MS);
+    if (durationMs < CH_DURATION_MS) durationMs = CH_DURATION_MS;
+    session.battleStartedAt = chNow();
+    session.battleEndsAt = session.battleStartedAt + durationMs;
     session.lastScoreBroadcastAt = 0;
     session.announcedFight = true;
     chSaveChallengeDb(player, db);
 
-    var label = chChallengeDurationLabel(minutes);
     var a = chFindOnlineByUuid(session.challengerUuid);
     var b = chFindOnlineByUuid(session.opponentUuid);
+    var minutes = Math.max(1, Math.round(durationMs / 60000));
+    var fightLabel = minutes === 1 ? "60 seconds" : (minutes + " minutes");
     if (a !== null) chMessage(a, CH_COLOR + "c" + CH_COLOR + "lFIGHT! " + CH_COLOR + "r" +
-        CH_COLOR + "eMost damage in " + label + "!");
+        CH_COLOR + "eMost damage in " + fightLabel + "!");
     if (b !== null) chMessage(b, CH_COLOR + "c" + CH_COLOR + "lFIGHT! " + CH_COLOR + "r" +
-        CH_COLOR + "eMost damage in " + label + "!");
-
-    var fightKey = "fight." + chString(session.challengerUuid) + ">" + chString(session.opponentUuid);
-    if (!chClaimCountdownAnnounce(fightKey)) return;
+        CH_COLOR + "eMost damage in " + fightLabel + "!");
 
     chBroadcast(CH_COLOR + "8--------------------------------");
     chBroadcast(CH_COLOR + "c" + CH_COLOR + "l FIGHT! " + CH_COLOR + "r");
     chBroadcast(CH_COLOR + "e" + session.challengerName + CH_COLOR + "7  vs  " +
         CH_COLOR + "e" + session.opponentName);
-    chBroadcast(CH_COLOR + "8" + label + " most damage");
+    chBroadcast(CH_COLOR + "8" + fightLabel + " most damage");
     try {
         if (session.related === true) {
             var fightCore = chLoadCoreDb(player);
@@ -4192,7 +3677,7 @@ function chBuildReport(session, winnerName, loserName) {
         lines.push(CH_COLOR + "8Runner  " + CH_COLOR + "c" + loserName);
     }
     lines.push(CH_COLOR + "8Time    " + CH_COLOR + "f" +
-        chFormatMs(chSessionElapsedMs(session)) +
+        chFormatMs(chBattleElapsedMs(session)) +
         CH_COLOR + "8   via  " + CH_COLOR + "7" + session.endReason);
 
     var ids = [session.challengerUuid, session.opponentUuid];
@@ -4203,8 +3688,7 @@ function chBuildReport(session, winnerName, loserName) {
         lines.push(CH_COLOR + "e" + name);
         lines.push(CH_COLOR + "8  Damage  " + CH_COLOR + "f" + chCommas(combat.damage) +
             CH_COLOR + "8  (Phy " + chCommas(combat.physical) + " / Ki " + chCommas(combat.ki) + ")");
-        lines.push(CH_COLOR + "8  Taken   " + CH_COLOR + "f" + chCommas(chNumber(combat.damageTaken, 0)) +
-            CH_COLOR + "8  Hits " + CH_COLOR + "f" + combat.hits +
+        lines.push(CH_COLOR + "8  Hits  " + CH_COLOR + "f" + combat.hits +
             CH_COLOR + "8   Best  " + CH_COLOR + "f" + chCommas(combat.biggestHit) +
             CH_COLOR + "8   Combo  " + CH_COLOR + "f" + combat.longestCombo);
     }
@@ -4221,19 +3705,19 @@ function chWriteBattleResult(onlinePlayer, session, result, won, seasonRp, journ
             ? session.opponentUuid
             : session.challengerUuid;
         var otherCombat = session.combat[otherUuid] || chFreshCombat();
-        var fullMs = chSessionDurationMs(session);
-        var duration = chSessionElapsedMs(session);
+        var plannedMs = chPlannedDurationMs(session);
+        var duration = chBattleElapsedMs(session);
         var payload = {
             won: won === true,
             seasonRp: chNumber(seasonRp, 0),
             journalKey: chString(journalKey),
             damageDealt: chNumber(combat.damage, 0),
-            damageTaken: chNumber(combat.damageTaken, chNumber(otherCombat.damage, 0)),
+            damageTaken: chNumber(otherCombat.damage, 0),
             physical: chNumber(combat.physical, 0),
             ki: chNumber(combat.ki, 0),
             longestCombo: chNumber(combat.longestCombo, 0),
             biggestHit: chNumber(combat.biggestHit, 0),
-            fullDuration: duration >= (fullMs - 1500),
+            fullDuration: duration >= (plannedMs - 1500),
             durationMs: duration,
             knockout: result.knockout === true,
             reason: chString(result.reason),
@@ -4268,8 +3752,7 @@ function chApplyRewards(player, session, result) {
         if (record === null) return;
         record.career.challengesPlayed = chNumber(record.career.challengesPlayed, 0) + 1;
         record.career.damageDealt = chNumber(record.career.damageDealt, 0) + chNumber(combat.damage, 0);
-        record.career.damageTaken = chNumber(record.career.damageTaken, 0) +
-            chNumber(combat.damageTaken, chNumber(takenCombat.damage, 0));
+        record.career.damageTaken = chNumber(record.career.damageTaken, 0) + chNumber(takenCombat.damage, 0);
         record.career.biggestHit = Math.max(chNumber(record.career.biggestHit, 0), chNumber(combat.biggestHit, 0));
         record.career.highestCombo = Math.max(chNumber(record.career.highestCombo, 0), chNumber(combat.longestCombo, 0));
     }
@@ -4279,7 +3762,7 @@ function chApplyRewards(player, session, result) {
     bumpCombatStats(challengerRecord, cCombat, oCombat);
     bumpCombatStats(opponentRecord, oCombat, cCombat);
 
-    var battleDuration = chSessionElapsedMs(session);
+    var battleDuration = chBattleElapsedMs(session);
     function touchDuration(record, wonFlag) {
         if (record === null) return;
         record.career.longestBattleMs = Math.max(chNumber(record.career.longestBattleMs, 0), battleDuration);
@@ -4307,8 +3790,7 @@ function chApplyRewards(player, session, result) {
         L.battles = chNumber(L.battles, 0) + 1;
         L.timeFoughtMs = chNumber(L.timeFoughtMs, 0) + battleDuration;
         L.damageDealt = chNumber(L.damageDealt, 0) + chNumber(myCombat.damage, 0);
-        L.damageTaken = chNumber(L.damageTaken, 0) +
-            chNumber(myCombat.damageTaken, chNumber(theirCombat.damage, 0));
+        L.damageTaken = chNumber(L.damageTaken, 0) + chNumber(theirCombat.damage, 0);
         if (outcome === "win") {
             L.currentStreak = chNumber(L.currentStreak, 0) + 1;
             L.bestStreak = Math.max(chNumber(L.bestStreak, 0), L.currentStreak);
@@ -4434,6 +3916,30 @@ function chApplyRewards(player, session, result) {
         winnerRecord.rivals[loserRecord.uuid].wins++;
         loserRecord.rivals[winnerRecord.uuid].losses++;
 
+        /*
+         * Nemesis tracks DEATH / knockout losses only.
+         * Timer or damage-dealt decisions do not increment deathLosses.
+         */
+        var deathLoss = result.knockout === true ||
+            result.reason === "knockout" ||
+            result.reason === "death";
+        if (deathLoss && mutual) {
+            rcRegisterMutualDeathLoss(
+                core,
+                loserRecord,
+                winnerRecord,
+                "Fallen in official challenge"
+            );
+            try {
+                if (loserPlayer != null) {
+                    loserPlayer.getTempdata().put("rival.v4.deathLossCounted", String(chNow()));
+                }
+            } catch (eMarkDeath) {}
+        } else if (mutual) {
+            /* Timer / damage wins never crown or advance Nemesis. */
+            rcRecomputeNemesis(winnerRecord);
+            rcRecomputeNemesis(loserRecord);
+        }
         var winRp = 0;
         var loseRp = 0;
         if (mutual) {
@@ -4530,75 +4036,56 @@ function chApplyRewards(player, session, result) {
     chSaveCoreDb(player, core);
 }
 
-function chEndSession(player, db, session, result) {
-    if (session === null || session === undefined) return;
-    if (session.state === "ended" || session.rewardsApplied === true) return;
-
-    var sessionId = chString(session.id);
-    if (sessionId === "") return;
-
-    /*
-     * Re-load from world storage so kill+died / dual ticks cannot
-     * both resolve from stale in-memory copies.
-     */
+function chClaimSessionEnd(sessionId) {
     try {
-        var freshDb = chLoadChallengeDb(player);
-        var fresh = freshDb.sessions[sessionId];
-        if (fresh === null || fresh === undefined) return;
-        if (fresh.state === "ended" || fresh.rewardsApplied === true) return;
-        if (chHasResolved(player, sessionId)) return;
-        session = fresh;
-        db = freshDb;
-    } catch (reloadErr) {
-        chLog("Resolve reload failed: " + reloadErr);
-        return;
+        var world = chDataWorld(null);
+        if (world === null) return true;
+        var stored = world.getStoreddata();
+        var key = "dlr.rivalry.v4.challenge.end." + chString(sessionId);
+        var last = 0;
+        try {
+            if (stored.has(key)) last = chNumber(stored.get(key), 0);
+        } catch (e1) {}
+        if (chNow() - last < 15000) return false;
+        stored.put(key, "" + chNow());
+        return true;
+    } catch (e) {
+        return true;
     }
+}
 
-    if (!chTryClaimResolve(player, sessionId)) return;
-
-    session.state = "ended";
-    session.rewardsApplied = true;
-    session.endedAt = chNow();
-    session.endReason = result.reason;
-    session.winnerUuid = chString(result.winnerUuid);
-    session.loserUuid = chString(result.loserUuid);
-
-    delete db.playerSessions[session.challengerUuid];
-    delete db.playerSessions[session.opponentUuid];
-    db.sessions[sessionId] = session;
-    chSaveChallengeDb(player, db);
-
-    try {
-        chApplyRewards(player, session, result);
-    } catch (rewardErr) {
-        chLog("Apply rewards failed: " + rewardErr);
-    }
-
-    var winnerName = "";
-    var loserName = "";
-    if (result.reason === "draw") {
-        winnerName = "Draw";
-    } else {
-        winnerName = result.winnerUuid === session.challengerUuid ? session.challengerName : session.opponentName;
-        loserName = result.loserUuid === session.challengerUuid ? session.challengerName : session.opponentName;
-    }
-
-    var report = chBuildReport(session, winnerName, loserName);
+function chDeliverReport(session, result, report) {
     var a = chFindOnlineByUuid(session.challengerUuid);
     var b = chFindOnlineByUuid(session.opponentUuid);
+    var winnerName = "";
+    if (result.reason === "draw") winnerName = "Draw";
+    else {
+        winnerName = result.winnerUuid === session.challengerUuid
+            ? session.challengerName : session.opponentName;
+    }
+
+    /*
+     Deliver the battle report once only:
+     broadcast when enabled, otherwise private DM to both fighters.
+     Never DM + broadcast the same report (that double-shows for fighters).
+    */
+    if (report != null) {
+        if (CH_BROADCAST_REPORT === true) {
+            chBroadcastLines(report);
+        } else {
+            for (var i = 0; i < report.length; i++) {
+                if (a !== null) chMessage(a, report[i]);
+                if (b !== null) chMessage(b, report[i]);
+            }
+        }
+    }
 
     if (CH_BROADCAST_REPORT === true) {
-        chBroadcastLines(report);
         if (result.reason === "draw") {
             chBroadcast(CH_COLOR + "e[Rival Battle] " + CH_COLOR + "fDraw!");
         } else {
             chBroadcast(CH_COLOR + "a[Rival Battle] " + CH_COLOR + "f" + winnerName +
                 CH_COLOR + "a takes the win!");
-        }
-    } else {
-        for (var i = 0; i < report.length; i++) {
-            if (a !== null) chMessage(a, report[i]);
-            if (b !== null) chMessage(b, report[i]);
         }
     }
 
@@ -4612,8 +4099,69 @@ function chEndSession(player, db, session, result) {
             else chMessage(b, CH_COLOR + "c[Rival] Defeat!");
         }
     }
+}
 
-    delete db.sessions[sessionId];
+function chEndSession(player, db, session, result) {
+    if (session == null || db == null) return;
+    if (session.state === "ended") return;
+    if (!chClaimSessionEnd(session.id)) {
+        session.state = "ended";
+        return;
+    }
+
+    session.state = "ended";
+    session.endedAt = chNow();
+    session.endReason = result.reason;
+    session.winnerUuid = chString(result.winnerUuid);
+    session.loserUuid = chString(result.loserUuid);
+    try { delete session.pendingEnd; } catch (ePe) {}
+
+    /* Personal between-challenge cooldown for both fighters. */
+    try { chSetBattleCooldown(db, session.challengerUuid); } catch (eCd1) {}
+    try { chSetBattleCooldown(db, session.opponentUuid); } catch (eCd2) {}
+
+    delete db.playerSessions[session.challengerUuid];
+    delete db.playerSessions[session.opponentUuid];
+    chSaveChallengeDb(player, db);
+
+    try {
+        chApplyRewards(player, session, result);
+    } catch (rewardErr) {
+        chLog("applyRewards failed: " + rewardErr);
+    }
+
+    var winnerName = "";
+    var loserName = "";
+    if (result.reason === "draw") {
+        winnerName = "Draw";
+    } else {
+        winnerName = result.winnerUuid === session.challengerUuid ? session.challengerName : session.opponentName;
+        loserName = result.loserUuid === session.challengerUuid ? session.challengerName : session.opponentName;
+    }
+
+    var report = null;
+    try {
+        report = chBuildReport(session, winnerName, loserName);
+    } catch (reportErr) {
+        chLog("buildReport failed: " + reportErr);
+        report = [
+            CH_COLOR + "8--------------------------------",
+            CH_COLOR + "6" + CH_COLOR + "l RIVAL BATTLE REPORT " + CH_COLOR + "r",
+            CH_COLOR + "8--------------------------------",
+            CH_COLOR + "8Result  " + CH_COLOR + "f" +
+                (result.reason === "draw" ? "Draw" : (winnerName + " wins")),
+            CH_COLOR + "8via  " + CH_COLOR + "7" + chString(result.reason),
+            CH_COLOR + "8--------------------------------"
+        ];
+    }
+
+    try {
+        chDeliverReport(session, result, report);
+    } catch (deliverErr) {
+        chLog("deliverReport failed: " + deliverErr);
+    }
+
+    delete db.sessions[session.id];
     chSaveChallengeDb(player, db);
 }
 
@@ -4667,11 +4215,134 @@ function chRecordHit(session, attackerUuid, victimUuid, damage, isKi) {
     if (atk.combo > atk.longestCombo) atk.longestCombo = atk.combo;
     atk.lastHitAt = chNow();
 
-    var vic = session.combat[victimUuid];
-    vic.damageTaken = chNumber(vic.damageTaken, 0) + damage;
-    vic.hitsTaken = chNumber(vic.hitsTaken, 0) + 1;
-    if (damage > chNumber(vic.biggestTaken, 0)) vic.biggestTaken = damage;
-    vic.combo = 0;
+    session.combat[victimUuid].combo = 0;
+}
+
+/* Health + absorption = real damage-received pool. */
+function chGetHealthPool(player) {
+    var health = 0;
+    var absorption = 0;
+    try { health = Number(player.getHealth()); } catch (e1) { health = 0; }
+    try {
+        if (typeof player.getAbsorptionAmount == "function") {
+            absorption = Number(player.getAbsorptionAmount());
+        } else if (typeof player.getAbsorption == "function") {
+            absorption = Number(player.getAbsorption());
+        }
+    } catch (e2) {}
+    try {
+        var mc = player.getMCEntity();
+        if (mc != null) {
+            if (!(absorption > 0)) {
+                try { absorption = Number(mc.getAbsorptionAmount()); } catch (e3) {}
+            }
+            if (!(health > 0)) {
+                try { health = Number(mc.getHealth()); } catch (e4) {}
+            }
+        }
+    } catch (e5) {}
+    if (isNaN(health) || health < 0) health = 0;
+    if (isNaN(absorption) || absorption < 0) absorption = 0;
+    return health + absorption;
+}
+
+function chTempHas(temp, key) {
+    try { return temp != null && temp.has(key); } catch (e) { return false; }
+}
+
+function chTempGetNumber(temp, key, fallback) {
+    try {
+        if (temp != null && temp.has(key)) return chNumber(temp.get(key), fallback);
+    } catch (e) {}
+    return fallback;
+}
+
+function chTempPut(temp, key, value) {
+    try { temp.put(key, chString(value)); } catch (e) {}
+}
+
+function chTempClear(temp, key) {
+    try {
+        if (temp != null && temp.has(key)) temp.remove(key);
+    } catch (e) {
+        try { temp.put(key, ""); } catch (e2) {}
+    }
+}
+
+function chSampleHealthPool(player) {
+    if (player == null) return;
+    try {
+        chTempPut(player.getTempdata(), CH_HP_SAMPLE_KEY, chGetHealthPool(player));
+    } catch (e) {}
+}
+
+function chClearPendingReceived(player) {
+    if (player == null) return;
+    try {
+        var temp = player.getTempdata();
+        chTempClear(temp, CH_PENDING_SAMPLE_KEY);
+        chTempClear(temp, CH_PENDING_ATK_KEY);
+        chTempClear(temp, CH_PENDING_KI_KEY);
+        chTempClear(temp, CH_PENDING_UNTIL_KEY);
+    } catch (e) {}
+}
+
+/*
+ * Queue a received-damage resolve. LivingHurtEvent has not applied
+ * mitigation yet, so we snapshot the pool and measure the drop next tick.
+ */
+function chQueueReceivedHit(victim, attackerUuid, isKi) {
+    if (victim == null || attackerUuid == null || attackerUuid == "") return;
+    try {
+        var temp = victim.getTempdata();
+        var pool = chGetHealthPool(victim);
+        if (!chTempHas(temp, CH_PENDING_SAMPLE_KEY) ||
+            chTempGetNumber(temp, CH_PENDING_SAMPLE_KEY, -1) < 0) {
+            chTempPut(temp, CH_PENDING_SAMPLE_KEY, pool);
+        }
+        chTempPut(temp, CH_PENDING_ATK_KEY, attackerUuid);
+        chTempPut(temp, CH_PENDING_KI_KEY, isKi === true ? "1" : "0");
+        chTempPut(temp, CH_PENDING_UNTIL_KEY, chNow() + CH_PENDING_RESOLVE_MS);
+    } catch (e) {}
+}
+
+/* Apply pending HP-loss as challenge damage dealt by the attacker. */
+function chResolvePendingReceived(player, db) {
+    if (player == null || db == null) return false;
+    var temp = null;
+    try { temp = player.getTempdata(); } catch (e0) { return false; }
+    if (!chTempHas(temp, CH_PENDING_UNTIL_KEY)) return false;
+
+    var until = chTempGetNumber(temp, CH_PENDING_UNTIL_KEY, 0);
+    if (chNow() < until) return false;
+
+    var sample = chTempGetNumber(temp, CH_PENDING_SAMPLE_KEY, -1);
+    var atkUuid = "";
+    try { atkUuid = chString(temp.get(CH_PENDING_ATK_KEY)); } catch (e1) { atkUuid = ""; }
+    var isKi = false;
+    try { isKi = chString(temp.get(CH_PENDING_KI_KEY)) == "1"; } catch (e2) {}
+
+    chClearPendingReceived(player);
+
+    if (sample < 0 || atkUuid == "") {
+        chSampleHealthPool(player);
+        return false;
+    }
+
+    var nowPool = chGetHealthPool(player);
+    var received = sample - nowPool;
+    chSampleHealthPool(player);
+
+    if (!(received > 0.01)) return false;
+
+    var vicUuid = chUuid(player);
+    var session = chGetSession(db, vicUuid);
+    if (session == null || session.state !== "active") return false;
+    if (atkUuid !== session.challengerUuid && atkUuid !== session.opponentUuid) return false;
+    if (vicUuid !== session.challengerUuid && vicUuid !== session.opponentUuid) return false;
+
+    chRecordHit(session, atkUuid, vicUuid, received, isKi);
+    return true;
 }
 
 /* ========================= EVENTS ========================= */
@@ -4692,6 +4363,25 @@ function rivalChTick(event) {
 
         var temp = player.getTempdata();
         var now = chNow();
+
+        /*
+         * Resolve received-damage before the challenge tick throttle so
+         * HP-loss samples are applied on the first tick after the hit.
+         */
+        try {
+            var earlyDb = chLoadChallengeDb(player);
+            if (chResolvePendingReceived(player, earlyDb)) {
+                chSaveChallengeDb(player, earlyDb);
+            } else {
+                var earlySession = chGetSession(earlyDb, chUuid(player));
+                if (earlySession != null && earlySession.state === "active") {
+                    if (!chTempHas(temp, CH_PENDING_UNTIL_KEY)) {
+                        chSampleHealthPool(player);
+                    }
+                }
+            }
+        } catch (eHp) {}
+
         var last = 0;
         try {
             if (temp.has("rival.v4.challenge.tick")) last = chNumber(temp.get("rival.v4.challenge.tick"), 0);
@@ -4718,37 +4408,19 @@ function rivalChTick(event) {
         var session = chGetSession(db, chUuid(player));
         if (session === null) return;
 
-        /* Ignore already-resolved leftovers */
-        if (session.state === "ended" || session.rewardsApplied === true ||
-            chHasResolved(player, session.id)) {
-            delete db.playerSessions[chUuid(player)];
-            if (db.sessions[String(session.id)]) delete db.sessions[String(session.id)];
-            chSaveChallengeDb(player, db);
+        /* Handler forfeit/cancel writes pendingEnd; System owns the report. */
+        if (session.pendingEnd != null && typeof session.pendingEnd === "object") {
+            var pe = session.pendingEnd;
+            chEndSession(player, db, session, {
+                reason: chString(pe.reason || "forfeit"),
+                winnerUuid: chString(pe.winnerUuid),
+                loserUuid: chString(pe.loserUuid),
+                knockout: pe.knockout === true
+            });
             return;
         }
 
         if (session.state === "countdown") {
-            /*
-             * Only the challenger advances countdown -> fight so both
-             * players cannot double-begin / double-broadcast FIGHT.
-             */
-            if (chUuid(player) !== session.challengerUuid) {
-                var remainingOther = session.countdownEndsAt - now;
-                if (remainingOther > 0) {
-                    var secOther = Math.ceil(remainingOther / 1000);
-                    var markOther = "rival.v4.challenge.cd." + session.id;
-                    var lastOther = 0;
-                    try {
-                        if (temp.has(markOther)) lastOther = chNumber(temp.get(markOther), 0);
-                    } catch (ignoredCd) {}
-                    if (secOther !== lastOther && secOther <= 5) {
-                        try { temp.put(markOther, chString(secOther)); } catch (ignoredCd2) {}
-                        chMessage(player, CH_COLOR + "e" + secOther + "...");
-                    }
-                }
-                return;
-            }
-
             var remaining = session.countdownEndsAt - now;
             if (remaining <= 0) {
                 chBeginBattle(player, db, session);
@@ -4771,24 +4443,8 @@ function rivalChTick(event) {
             var a = chFindOnlineByUuid(session.challengerUuid);
             var b = chFindOnlineByUuid(session.opponentUuid);
             if (a === null || b === null) {
-                /*
-                 * Prefer the still-online fighter as resolver.
-                 * Claim lock still prevents a double payout.
-                 */
-                var canResolveDc = false;
-                if (a === null && b !== null) {
-                    canResolveDc = chUuid(player) === session.opponentUuid;
-                } else if (b === null && a !== null) {
-                    canResolveDc = chUuid(player) === session.challengerUuid;
-                } else {
-                    canResolveDc = true;
-                }
-                if (!canResolveDc) return;
-
                 var offlineUuid = a === null ? session.challengerUuid : session.opponentUuid;
-                var winnerUuid = offlineUuid === session.challengerUuid
-                    ? session.opponentUuid
-                    : session.challengerUuid;
+                var winnerUuid = offlineUuid === session.challengerUuid ? session.opponentUuid : session.challengerUuid;
                 chEndSession(player, db, session, {
                     reason: "disconnect",
                     winnerUuid: winnerUuid,
@@ -4799,15 +4455,11 @@ function rivalChTick(event) {
             }
 
             if (chDistance(a, b) > CH_MAX_DISTANCE * 2) {
-                if (chUuid(player) === session.challengerUuid) {
-                    chMessage(a, CH_COLOR + "cToo far apart! Return within range!");
-                    chMessage(b, CH_COLOR + "cToo far apart! Return within range!");
-                }
+                chMessage(a, CH_COLOR + "cToo far apart! Return within range!");
+                chMessage(b, CH_COLOR + "cToo far apart! Return within range!");
             }
 
             if (now >= session.battleEndsAt) {
-                /* Challenger-only time resolve - stops dual-tick TP spam */
-                if (chUuid(player) !== session.challengerUuid) return;
                 chResolveByDamage(player, db, session, "time");
                 return;
             }
@@ -4821,9 +4473,12 @@ function rivalChTick(event) {
                 }
             }
 
+            /* Live scoreboard for the whole server (challenger tick only).
+             * Short fights: every 15s. Longer than 2 minutes: every 1 minute. */
             if (CH_BROADCAST_ENABLED === true && chUuid(player) === session.challengerUuid) {
                 var lastScore = chNumber(session.lastScoreBroadcastAt, 0);
-                if (lastScore <= 0 || now - lastScore >= CH_BROADCAST_SCORE_MS) {
+                var scoreInterval = chScoreBroadcastIntervalMs(session);
+                if (lastScore <= 0 || now - lastScore >= scoreInterval) {
                     session.lastScoreBroadcastAt = now;
                     chSaveChallengeDb(player, db);
                     chBroadcast(chScoreLine(session));
@@ -4836,17 +4491,12 @@ function rivalChTick(event) {
 }
 
 function rivalChDamagedEntity(event) {
-    try {
-        /*
-         * Do not score challenge damage here.
-         * damagedEntity carries DMZ outgoing attack numbers (often pre-defense)
-         * and also double-counts with the victim `damaged` hook.
-         * Actual damage taken is recorded in rivalChDamaged.
-         */
-        return;
-    } catch (error) {
-        chLog("damagedEntity failed: " + error);
-    }
+    /*
+     * Intentionally no scoring here.
+     * DamagedEntityEvent uses LivingHurtEvent pre-mitigation DMZ damage and
+     * previously double-counted with the victim damaged event.
+     * Challenge damage is measured as HP/absorption actually lost on the victim.
+     */
 }
 
 function rivalChDamaged(event) {
@@ -4854,7 +4504,8 @@ function rivalChDamaged(event) {
         var victim = event.player;
         if (!chIsPlayer(victim)) return;
 
-        var source = chAttackerFromDamaged(event);
+        var source = null;
+        try { source = event.source; } catch (ignored) {}
         if (!chIsPlayer(source)) return;
 
         var db = chLoadChallengeDb(victim);
@@ -4865,21 +4516,9 @@ function rivalChDamaged(event) {
         var vicUuid = chUuid(victim);
         if (atkUuid !== session.challengerUuid && atkUuid !== session.opponentUuid) return;
         if (vicUuid !== session.challengerUuid && vicUuid !== session.opponentUuid) return;
-        if (atkUuid === vicUuid) return;
 
-        /*
-         * event.damage here is DMZ RAW attack damage from LivingHurt
-         * (getMeleeDamage / getKiDamage / getStrikeDamage), NOT HP lost.
-         * Convert with StatsData.calculatePostMitigationDamage.
-         */
-        var raw = Number(event.damage);
-        if (isNaN(raw) || !isFinite(raw) || raw <= 0) return;
-
-        var taken = chDmzDamageTaken(victim, raw);
-        if (!(taken > 0)) return;
-
-        chRecordHit(session, atkUuid, vicUuid, taken, chIsKiDamage(event));
-        chSaveChallengeDb(victim, db);
+        /* Snapshot pool now (pre-mitigation); tick resolves real HP lost. */
+        chQueueReceivedHit(victim, atkUuid, chIsKiDamage(event));
     } catch (error) {
         chLog("damaged failed: " + error);
     }
@@ -4894,7 +4533,6 @@ function rivalChKill(event) {
         var db = chLoadChallengeDb(killer);
         var session = chGetSession(db, chUuid(killer));
         if (session === null || session.state !== "active") return;
-        if (session.rewardsApplied === true || chHasResolved(killer, session.id)) return;
 
         var killUuid = chUuid(killer);
         var vicUuid = chUuid(victim);
@@ -4914,6 +4552,31 @@ function rivalChKill(event) {
     }
 }
 
+function rivalChResolveKiller(damageSource) {
+    var attacker = null;
+    try { attacker = damageSource; } catch (ignored) {}
+    if (chIsPlayer(attacker)) return attacker;
+    try {
+        if (damageSource != null && damageSource.getSourceEntity) {
+            attacker = damageSource.getSourceEntity();
+            if (chIsPlayer(attacker)) return attacker;
+        }
+    } catch (e1) {}
+    try {
+        if (damageSource != null && damageSource.getTrueSource) {
+            attacker = damageSource.getTrueSource();
+            if (chIsPlayer(attacker)) return attacker;
+        }
+    } catch (e2) {}
+    try {
+        if (damageSource != null && damageSource.getImmediateSource) {
+            attacker = damageSource.getImmediateSource();
+            if (chIsPlayer(attacker)) return attacker;
+        }
+    } catch (e3) {}
+    return null;
+}
+
 function rivalChDied(event) {
     try {
         var victim = event.player;
@@ -4922,11 +4585,11 @@ function rivalChDied(event) {
         var db = chLoadChallengeDb(victim);
         var session = chGetSession(db, chUuid(victim));
         if (session === null || session.state !== "active") return;
-        if (session.rewardsApplied === true || chHasResolved(victim, session.id)) return;
 
         var source = null;
-        try { source = event.source; } catch (ignored) {}
+        try { source = rivalChResolveKiller(event.source); } catch (ignored) {}
         if (!chIsPlayer(source)) {
+            /* Environment / unresolved death still counts as KO vs opponent. */
             var winnerUuid = chUuid(victim) === session.challengerUuid
                 ? session.opponentUuid
                 : session.challengerUuid;
@@ -4939,9 +4602,16 @@ function rivalChDied(event) {
             return;
         }
 
+        var killerUuid = chUuid(source);
+        if (killerUuid !== session.challengerUuid && killerUuid !== session.opponentUuid) {
+            killerUuid = chUuid(victim) === session.challengerUuid
+                ? session.opponentUuid
+                : session.challengerUuid;
+        }
+
         chEndSession(victim, db, session, {
             reason: "knockout",
-            winnerUuid: chUuid(source),
+            winnerUuid: killerUuid,
             loserUuid: chUuid(victim),
             knockout: true
         });
@@ -5024,7 +4694,7 @@ var RI_TIERS = [
     { min: 100,  range: 64,  relative: true,  charging: false, battlePower: false, form: false, fusion: false, name: "Competitor" },
     { min: 300,  range: 80,  relative: true,  charging: true,  battlePower: false, form: false, fusion: false, name: "Adversary" },
     { min: 700,  range: 96,  relative: true,  charging: true,  battlePower: true,  form: false, fusion: false, name: "Rival" },
-    { min: 1500, range: 128, relative: true,  charging: true,  battlePower: true,  form: true,  fusion: false, name: "Nemesis" },
+    { min: 1500, range: 128, relative: true,  charging: true,  battlePower: true,  form: true,  fusion: false, name: "Vendetta" },
     { min: 3000, range: 160, relative: true,  charging: true,  battlePower: true,  form: true,  fusion: true,  name: "Legendary" },
     { min: 5000, range: 176, relative: true,  charging: true,  battlePower: true,  form: true,  fusion: true,  name: "Arch Rival" },
     { min: 7500, range: 192, relative: true,  charging: true,  battlePower: true,  form: true,  fusion: true,  name: "Mortal Enemy" },
@@ -5226,7 +4896,7 @@ function riScan(player) {
         var rivalData = riDMZ(rival);
         var status = riStatus(rivalData);
         var theirReleased = riReleased(rivalData);
-        var tag = link.isNemesis === true ? "Nemesis" : tier.name;
+        var tag = rcLinkStatus(link) === "nemesis" ? "Nemesis" : tier.name;
 
         /* Arrive: one combined ping when they enter range (not every few seconds). */
         if (!wasNear) {
@@ -5350,7 +5020,7 @@ var RPROG_TIERS = [
     { min: 100, name: "Competitor" },
     { min: 300, name: "Adversary" },
     { min: 700, name: "Rival" },
-    { min: 1500, name: "Nemesis" },
+    { min: 1500, name: "Vendetta" },
     { min: 3000, name: "Legendary" },
     { min: 5000, name: "Arch Rival" },
     { min: 7500, name: "Mortal Enemy" },
@@ -5449,7 +5119,7 @@ function rprogEnsureQuests(prog, id) {
                 { id: "melee_hits", name: "Land 50 melee hits in challenges", goal: 50, progress: 0, rp: 25 },
                 { id: "ki_damage", name: "Deal 20,000 Ki damage in challenges", goal: 20000, progress: 0, rp: 25 },
                 { id: "three_battles", name: "Fight 3 official battles", goal: 3, progress: 0, rp: 30 },
-                { id: "long_battle", name: "Finish a full-duration battle", goal: 1, progress: 0, rp: 20 }
+                { id: "long_battle", name: "Finish a full 60s battle", goal: 1, progress: 0, rp: 20 }
             ]
         };
     }
@@ -5468,7 +5138,9 @@ function rprogUnlock(prog, id, ach, player) {
     if (prog.achievements[id] == null) prog.achievements[id] = {};
     if (prog.achievements[id][ach] === true) return;
     prog.achievements[id][ach] = true;
-    rprogMsg(player, RPROG_C + "6[Rival Achievement] " + RPROG_C + "e" + ach.replace(/_/g, " "));
+    /* "nemesis" achievement id = RP Vendetta rank, not relationship Nemesis. */
+    var achLabel = ach == "nemesis" ? "Vendetta Rank" : ach.replace(/_/g, " ");
+    rprogMsg(player, RPROG_C + "6[Rival Achievement] " + RPROG_C + "e" + achLabel);
     if (ach == "legend_killer") prog.specialTitles[id] = "legend_killer";
     if (ach == "god_rival") prog.specialTitles[id] = "god_slayer";
 }
@@ -5509,7 +5181,7 @@ function recomputeHof(prog, db) {
         for (var rid in rec.rivals) {
             if (!rec.rivals.hasOwnProperty(rid)) continue;
             var link = rec.rivals[rid];
-            if (link.mutual !== true && link.isNemesis !== true) continue;
+            if (link.mutual !== true) continue;
             var pairKey = id < rid ? id + "|" + rid : rid + "|" + id;
             if (seenPairs[pairKey]) continue;
             seenPairs[pairKey] = true;
@@ -5518,8 +5190,10 @@ function recomputeHof(prog, db) {
             if (fightCount <= 0) {
                 fightCount = rprogNum(link.wins, 0) + rprogNum(link.losses, 0) + rprogNum(link.draws, 0);
             }
+            var realNemesis = link.isNemesis === true &&
+                rprogNum(link.deathLosses, 0) >= RC_NEMESIS_DEATH_LOSSES;
             var pairScore = fightCount * 10 + rprogNum(link.points, 0) +
-                (link.isNemesis === true ? 100 : 0);
+                (realNemesis ? 100 : 0);
             var pairName = rec.name + " vs " + link.name + " (" + fightCount + " battles)";
             if (greatestRivals == null || pairScore > greatestRivals.v) {
                 greatestRivals = { name: pairName, v: pairScore };
@@ -5589,6 +5263,7 @@ function onLoginProgress(player) {
     recomputeHof(prog, db);
     rprogSave(RPROG_PROG_KEY, RPROG_PROG_BACKUP, prog);
 
+    /* Achievement id kept as "nemesis" for save compat; it is RP-tier Vendetta, not relationship Nemesis. */
     if (rprogNum((rec.career || {}).rivalPointsTotal, 0) >= 1500) rprogUnlock(prog, rprogUuid(player), "nemesis", player);
     if (rprogNum((rec.career || {}).bestStreak, 0) >= 5) rprogUnlock(prog, rprogUuid(player), "unbreakable", player);
     if (rprogNum((rec.career || {}).challengesPlayed, 0) >= 25) rprogUnlock(prog, rprogUuid(player), "battle_hardened", player);
@@ -5993,13 +5668,13 @@ function rivalFusionKill(event) {
         var data = rfGetDmz(killer);
         if (data == null) return;
         try {
-            var killerTp = rivalScaleTpByLevel(data, RF_KILL_TP, "burst", killer);
+            var killerTp = rivalScaleTpByLevel(data, RF_KILL_TP, "burst");
             data.getResources().addTrainingPoints(killerTp);
             rfNetwork().sendToTrackingEntityAndSelf(new (rfSync())(killer.getMCEntity()), killer.getMCEntity());
             var kNote = "";
             if (RIVAL_LEVEL_TP_SHOW_IN_REASON === true && RIVAL_LEVEL_TP_ENABLED === true) {
                 kNote = RF_C + "7 (Lv" + rivalGetDmzLevel(data) + " " +
-                    rivalFormatMult(rivalEffectiveTpMultiplier(data, "burst", killer)) + ")";
+                    rivalFormatMult(rivalEffectiveTpMultiplier(data, "burst")) + ")";
             }
             rfMsg(killer, RF_C + "a[Rival Fusion] +" + killerTp + " TP" + kNote);
         } catch (e) {}
@@ -6009,7 +5684,7 @@ function rivalFusionKill(event) {
         var pdata = rfGetDmz(partner);
         if (pdata == null) return;
         try {
-            var partnerTp = rivalScaleTpByLevel(pdata, RF_KILL_TP, "burst", partner);
+            var partnerTp = rivalScaleTpByLevel(pdata, RF_KILL_TP, "burst");
             pdata.getResources().addTrainingPoints(partnerTp);
             rfNetwork().sendToTrackingEntityAndSelf(new (rfSync())(partner.getMCEntity()), partner.getMCEntity());
             var pNote = "";
