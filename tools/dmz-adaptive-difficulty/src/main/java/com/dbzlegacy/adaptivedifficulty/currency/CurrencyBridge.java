@@ -3,17 +3,11 @@ package com.dbzlegacy.adaptivedifficulty.currency;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import io.github.lightman314.lightmanscurrency.api.capability.money.IMoneyHandler;
-import io.github.lightman314.lightmanscurrency.api.capability.money.MoneyHandler;
 import io.github.lightman314.lightmanscurrency.api.money.MoneyAPI;
-import io.github.lightman314.lightmanscurrency.api.money.bank.IBankAccount;
-import io.github.lightman314.lightmanscurrency.api.money.bank.reference.builtin.PlayerBankReference;
 import io.github.lightman314.lightmanscurrency.api.money.coins.CoinAPI;
 import io.github.lightman314.lightmanscurrency.api.money.value.MoneyValue;
 import io.github.lightman314.lightmanscurrency.api.money.value.MoneyView;
 import io.github.lightman314.lightmanscurrency.api.money.value.builtin.CoinValue;
-import io.github.lightman314.lightmanscurrency.api.money.value.holder.IMoneyHolder;
-import java.util.ArrayList;
-import java.util.List;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
@@ -24,7 +18,7 @@ import net.minecraftforge.registries.ForgeRegistries;
  * Difficulty increases are always paid in Lightman's Currency.
  * Costs are priced in iron coins (configurable item id).
  * <p>
- * Combines equipped wallet + bank account + inventory coins.
+ * Payments use <b>inventory coins only</b> (not wallet or bank).
  */
 public final class CurrencyBridge {
     private static final boolean LIGHTMANS_LOADED = ModList.get().isLoaded("lightmanscurrency");
@@ -92,46 +86,15 @@ public final class CurrencyBridge {
         }
     }
 
-    private static IMoneyHandler combinedHandler(ServerPlayer player) {
-        List<IMoneyHandler> handlers = new ArrayList<>(3);
-
+    /** Inventory coin stacks only — wallet/bank are ignored for difficulty payments. */
+    private static IMoneyHandler inventoryHandler(ServerPlayer player) {
         try {
-            IMoneyHolder wallet = MoneyAPI.getApi().GetPlayersMoneyHandler(player);
-            if (wallet != null) {
-                handlers.add(wallet);
-            }
-        } catch (Throwable t) {
-            AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] Lightman's wallet handler failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
-        }
-
-        try {
-            IBankAccount bank = PlayerBankReference.of(player).get();
-            if (bank != null) {
-                handlers.add(bank);
-            }
-        } catch (Throwable t) {
-            AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] Lightman's bank handler failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
-        }
-
-        try {
-            IMoneyHandler inventory = MoneyAPI.getApi().GetContainersMoneyHandler(player.m_150109_(), player);
-            if (inventory != null) {
-                handlers.add(inventory);
-            }
+            return MoneyAPI.getApi().GetContainersMoneyHandler(player.m_150109_(), player);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] Lightman's inventory handler failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
-        }
-
-        if (handlers.isEmpty()) {
             return null;
         }
-        if (handlers.size() == 1) {
-            return handlers.get(0);
-        }
-        return MoneyHandler.combine(handlers);
     }
 
     private static boolean canAffordLightmans(ServerPlayer player, long ironCoins) {
@@ -142,7 +105,7 @@ public final class CurrencyBridge {
                         "[{}] Lightman's price invalid for {} iron coins", AdaptiveDifficultyMod.MOD_ID, ironCoins);
                 return false;
             }
-            IMoneyHandler handler = combinedHandler(player);
+            IMoneyHandler handler = inventoryHandler(player);
             if (handler == null) {
                 return false;
             }
@@ -161,7 +124,7 @@ public final class CurrencyBridge {
             if (price == null || price.isEmpty() || price.isInvalid()) {
                 return false;
             }
-            IMoneyHandler handler = combinedHandler(player);
+            IMoneyHandler handler = inventoryHandler(player);
             if (handler == null) {
                 return false;
             }
@@ -187,7 +150,7 @@ public final class CurrencyBridge {
             return "Lightman's missing";
         }
         try {
-            IMoneyHandler handler = combinedHandler(player);
+            IMoneyHandler handler = inventoryHandler(player);
             if (handler == null) {
                 return "0";
             }
@@ -224,6 +187,6 @@ public final class CurrencyBridge {
     }
 
     public static String currencyLabel() {
-        return LIGHTMANS_LOADED ? "Lightman's Coins" : "Lightman's Currency (missing)";
+        return LIGHTMANS_LOADED ? "Inventory Coins" : "Lightman's Currency (missing)";
     }
 }

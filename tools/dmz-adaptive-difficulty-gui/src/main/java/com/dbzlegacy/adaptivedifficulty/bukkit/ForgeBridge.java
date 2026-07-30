@@ -135,19 +135,28 @@ public final class ForgeBridge {
             out.put("balance", String.valueOf(balanceText.invoke(null, nms)));
             out.put("currency", String.valueOf(currencyLabel.invoke(null)));
 
-            long c100 = (Long) purchaseCost.invoke(null, purchased, 100L);
-            long c1k = (Long) purchaseCost.invoke(null, purchased, 1000L);
-            long c10k = (Long) purchaseCost.invoke(null, purchased, 10000L);
-            out.put("cost_100", String.valueOf(formatCost.invoke(null, c100)));
-            out.put("cost_1000", String.valueOf(formatCost.invoke(null, c1k)));
-            out.put("cost_10000", String.valueOf(formatCost.invoke(null, c10k)));
-
             Method raiseCost = calcCls.getMethod("raiseCostIronCoins", long.class, long.class);
             long room = Math.max(0L, available - active);
-            long upAmt = Math.min(100L, room);
-            long upCost = upAmt <= 0 ? 0L : (Long) raiseCost.invoke(null, active, upAmt);
+            long[] steps = {1L, 5L, 25L, 100L};
+            for (long step : steps) {
+                long buyCost = (Long) purchaseCost.invoke(null, purchased, step);
+                out.put("cost_buy_" + step, String.valueOf(formatCost.invoke(null, buyCost)));
+                // legacy aliases used by older menu builds
+                out.put("cost_" + step, out.get("cost_buy_" + step));
+
+                long upAmt = Math.min(step, room);
+                if (upAmt <= 0) {
+                    out.put("cost_up_" + step, "at max");
+                } else {
+                    long upCost = (Long) raiseCost.invoke(null, active, upAmt);
+                    out.put("cost_up_" + step, String.valueOf(formatCost.invoke(null, upCost)));
+                }
+            }
+            // keep old buy aliases for any leftover references
+            out.put("cost_1000", String.valueOf(formatCost.invoke(null, purchaseCost.invoke(null, purchased, 1000L))));
+            out.put("cost_10000", String.valueOf(formatCost.invoke(null, purchaseCost.invoke(null, purchased, 10000L))));
+
             long maxCost = room <= 0 ? 0L : (Long) raiseCost.invoke(null, active, room);
-            out.put("cost_up_100", upAmt <= 0 ? "at max" : String.valueOf(formatCost.invoke(null, upCost)));
             out.put("cost_max", room <= 0 ? "at max" : String.valueOf(formatCost.invoke(null, maxCost)));
             out.put("raise_room", String.valueOf(room));
 

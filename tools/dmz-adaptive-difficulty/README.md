@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.2)
+# DMZ Adaptive Difficulty (v1.7.5)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -10,23 +10,24 @@ Clients do **not** need this jar to join.
   1. **CMI / CMILib** inventory GUI (preferred)
   2. Companion Bukkit chest GUI
   3. Clickable chat fallback
+- Choosable steps: **+1 / +5 / +25 / +100** and **−1 / −5 / −25 / −100**
 - Bukkit `/difficulty` registered by the companion plugin so **all players** can use it on Mohist
 - FTB Teams teammate scaling (scoreboard fallback)
 - Raising difficulty always costs **Lightman's iron coins** (scaled); lowering/reset is free
-- Buy-max also uses Lightman's (wallet + bank + inventory)
+- Payments take coins from the **player inventory only** (not wallet/bank)
 - Spawn mob scaling (capped), elites, mutations, enemy evolution, adaptive AI, boss phases
 - Scaling Health-inspired area difficulty (`weighted` / `average` / `max`)
 - Optimized tick path: unmarked mobs exit immediately; AI/evolution staggered
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.2.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.5.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
    - `CMILib*.jar` (required by CMI)
    - `CMI-*.jar`
-   - `dmz_adaptive_difficulty_gui-1.7.4.jar` (**registers Bukkit `/difficulty`**)
+   - `dmz_adaptive_difficulty_gui-1.7.5.jar` (**registers Bukkit `/difficulty`**)
    - Optional: `PlaceholderAPI-*.jar`
 5. Optionally set `guiBackend` in `config/dmz_adaptive_difficulty.json`:
    - `cmi` (default), `auto`, `chest`, or `chat`
@@ -48,7 +49,7 @@ Clients do **not** need this jar to join.
 
 ## Pricing (Lightman's iron coins)
 
-Raising active difficulty and buying more max **always** costs Lightman's Currency.
+Raising active difficulty and buying more max **always** costs Lightman's Currency from **inventory coins only**.
 
 Default formula (iron coins):
 

@@ -112,11 +112,11 @@ public final class DifficultyActions {
         if (!CurrencyBridge.canAfford(player, cost)) {
             openGui(player, page);
             return Result.fail("Need " + CurrencyBridge.formatCost(cost)
-                    + ". Balance: " + CurrencyBridge.balanceText(player));
+                    + " in inventory. Have: " + CurrencyBridge.balanceText(player));
         }
         if (!CurrencyBridge.charge(player, cost)) {
             openGui(player, page);
-            return Result.fail("Payment failed. Balance: " + CurrencyBridge.balanceText(player));
+            return Result.fail("Payment failed. Inventory: " + CurrencyBridge.balanceText(player));
         }
         PlayerDifficultyData data = DifficultyCache.data(player);
         long next = fromActive + raiseBy;
@@ -151,11 +151,11 @@ public final class DifficultyActions {
         if (!CurrencyBridge.canAfford(player, cost)) {
             openGui(player, page);
             return Result.fail("Need " + CurrencyBridge.formatCost(cost)
-                    + ". Balance: " + CurrencyBridge.balanceText(player));
+                    + " in inventory. Have: " + CurrencyBridge.balanceText(player));
         }
         if (!CurrencyBridge.charge(player, cost)) {
             openGui(player, page);
-            return Result.fail("Payment failed. Balance: " + CurrencyBridge.balanceText(player));
+            return Result.fail("Payment failed. Inventory: " + CurrencyBridge.balanceText(player));
         }
         data.setPurchasedDifficulty(data.getPurchasedDifficulty() + amount);
         DifficultyCache.save(player);

@@ -55,37 +55,63 @@ public final class CmiDifficultyGui {
 
     private static void openMain(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
-        // 6 rows: status / spacer / adjust / buy / spacer / nav
         CMIGui gui = base(player, "&8Difficulty", 6);
 
         String stateColor = ph.getOrDefault("state_color", "f");
-        CMIGuiButton status = new CMIGuiButton(13, Material.NETHER_STAR, "&f&lDifficulty");
+        CMIGuiButton status = new CMIGuiButton(4, Material.NETHER_STAR, "&f&lDifficulty");
         status.lockField();
         status.addLore(statusLore(ph, stateColor));
         gui.addButton(status);
 
-        // Adjust row (row index 2 → slots 18–26)
-        gui.addButton(actionBtn(20, Material.RED_CONCRETE, "&c− 100", "down", "100",
-                List.of("&7Lower active difficulty", "&8Always free")));
-        gui.addButton(actionBtn(21, Material.WHITE_CONCRETE, "&fReset", "reset", "0",
-                List.of("&7Set active to &f0", "&8Purchased max kept")));
-        gui.addButton(actionBtn(22, Material.LIME_CONCRETE, "&a+ 100", "up", "100",
-                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_100", "?"))));
-        gui.addButton(actionBtn(23, Material.ORANGE_CONCRETE, "&6Max", "set_max", "0",
+        gui.addButton(actionBtn(6, Material.ORANGE_CONCRETE, "&6Max", "set_max", "0",
                 List.of("&7Jump to available max", "&f" + ph.getOrDefault("available", "?"),
-                        "&8Cost &e" + ph.getOrDefault("cost_max", "?"))));
-        gui.addButton(actionBtn(24, Material.COMPASS, "&bTeam", "team", "0",
+                        "&8Cost &e" + ph.getOrDefault("cost_max", "?"),
+                        "&8Paid from inventory coins")));
+        gui.addButton(actionBtn(7, Material.COMPASS, "&bTeam", "team", "0",
                 List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
 
-        // Unlock more max (also Lightman's iron coins)
-        gui.addButton(actionBtn(29, Material.GOLD_NUGGET, "&eBuy +100 max", "buy", "100",
-                List.of("&7Unlock more max difficulty", "&8Cost &e" + ph.getOrDefault("cost_100", "?"))));
-        gui.addButton(actionBtn(31, Material.GOLD_INGOT, "&eBuy +1,000 max", "buy", "1000",
-                List.of("&7Unlock more max difficulty", "&8Cost &e" + ph.getOrDefault("cost_1000", "?"))));
-        gui.addButton(actionBtn(33, Material.GOLD_BLOCK, "&eBuy +10,000 max", "buy", "10000",
-                List.of("&7Unlock more max difficulty", "&8Cost &e" + ph.getOrDefault("cost_10000", "?"))));
+        // Adjust row: -100 -25 -5 -1 | Reset | +1 +5 +25 +100
+        gui.addButton(actionBtn(18, Material.RED_CONCRETE, "&c−100", "down", "100",
+                List.of("&7Lower active difficulty", "&8Always free")));
+        gui.addButton(actionBtn(19, Material.RED_TERRACOTTA, "&c−25", "down", "25",
+                List.of("&7Lower active difficulty", "&8Always free")));
+        gui.addButton(actionBtn(20, Material.PINK_CONCRETE, "&c−5", "down", "5",
+                List.of("&7Lower active difficulty", "&8Always free")));
+        gui.addButton(actionBtn(21, Material.PINK_TERRACOTTA, "&c−1", "down", "1",
+                List.of("&7Lower active difficulty", "&8Always free")));
+        gui.addButton(actionBtn(22, Material.WHITE_CONCRETE, "&fReset", "reset", "0",
+                List.of("&7Set active to &f0", "&8Purchased max kept")));
+        gui.addButton(actionBtn(23, Material.LIME_TERRACOTTA, "&a+1", "up", "1",
+                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_1", "?"),
+                        "&8Paid from inventory coins")));
+        gui.addButton(actionBtn(24, Material.LIME_CONCRETE, "&a+5", "up", "5",
+                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_5", "?"),
+                        "&8Paid from inventory coins")));
+        gui.addButton(actionBtn(25, Material.GREEN_TERRACOTTA, "&a+25", "up", "25",
+                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_25", "?"),
+                        "&8Paid from inventory coins")));
+        gui.addButton(actionBtn(26, Material.GREEN_CONCRETE, "&a+100", "up", "100",
+                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_100", "?"),
+                        "&8Paid from inventory coins")));
 
-        // Footer (row index 5 → slots 45–53)
+        // Unlock more max (same increments)
+        CMIGuiButton buyLabel = new CMIGuiButton(31, Material.GOLD_INGOT, "&eBuy max");
+        buyLabel.lockField();
+        buyLabel.addLore(List.of(
+                "",
+                "&7Unlock more available max",
+                "&8Paid from inventory coins"
+        ));
+        gui.addButton(buyLabel);
+        gui.addButton(actionBtn(29, Material.GOLD_NUGGET, "&e+1 max", "buy", "1",
+                List.of("&7Unlock +1 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_1", "?"))));
+        gui.addButton(actionBtn(30, Material.GOLD_NUGGET, "&e+5 max", "buy", "5",
+                List.of("&7Unlock +5 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_5", "?"))));
+        gui.addButton(actionBtn(32, Material.GOLD_INGOT, "&e+25 max", "buy", "25",
+                List.of("&7Unlock +25 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_25", "?"))));
+        gui.addButton(actionBtn(33, Material.GOLD_BLOCK, "&e+100 max", "buy", "100",
+                List.of("&7Unlock +100 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_100", "?"))));
+
         gui.addButton(pageBtn(45, Material.EXPERIENCE_BOTTLE, "&fRewards", "rewards",
                 "&7TP multiplier details"));
         gui.addButton(pageBtn(46, Material.IRON_SWORD, "&fTiers", "tiers",
@@ -195,16 +221,19 @@ public final class CmiDifficultyGui {
         ));
         gui.addButton(team);
 
-        CMIGuiButton account = new CMIGuiButton(15, Material.GOLD_INGOT, "&f&lAccount");
+        CMIGuiButton account = new CMIGuiButton(15, Material.GOLD_INGOT, "&f&lInventory");
         account.lockField();
         account.addLore(List.of(
                 "",
-                "&7Balance  &f" + ph.getOrDefault("balance", "?"),
-                "&7Level    &f" + ph.getOrDefault("level", "?"),
+                "&7Coins   &f" + ph.getOrDefault("balance", "?"),
+                "&7Level   &f" + ph.getOrDefault("level", "?"),
                 "&7Prestige &f" + ph.getOrDefault("prestige", "?"),
                 "",
                 "&7Titles",
-                "&f" + ph.getOrDefault("titles", "none")
+                "&f" + ph.getOrDefault("titles", "none"),
+                "",
+                "&8Difficulty purchases use",
+                "&8inventory coins only"
         ));
         gui.addButton(account);
 
@@ -222,10 +251,11 @@ public final class CmiDifficultyGui {
         lore.add("");
         lore.add("&7State  &" + stateColor + ph.getOrDefault("state", "?"));
         lore.add("&7Tier   &f" + ph.getOrDefault("tier", "?"));
-        lore.add("&7Wallet &f" + ph.getOrDefault("balance", "?"));
+        lore.add("&7Inv    &f" + ph.getOrDefault("balance", "?"));
         lore.add("");
         lore.add("&8Calc " + ph.getOrDefault("calculated", "?")
                 + "  ·  Bought " + ph.getOrDefault("purchased", "?"));
+        lore.add("&8Steps +1 / +5 / +25 / +100");
         return lore;
     }
 
