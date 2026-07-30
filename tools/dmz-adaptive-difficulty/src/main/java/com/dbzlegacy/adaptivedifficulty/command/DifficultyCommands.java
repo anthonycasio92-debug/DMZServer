@@ -8,6 +8,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
+import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -29,7 +30,13 @@ public final class DifficultyCommands {
     @SubscribeEvent
     public void onRegister(RegisterCommandsEvent event) {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.m_82127_("difficulty")
-                .executes(ctx -> show(ctx.getSource()))
+                .executes(ctx -> openGui(ctx.getSource(), "main"))
+                .then(Commands.m_82127_("gui")
+                        .executes(ctx -> openGui(ctx.getSource(), "main"))
+                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                .executes(ctx -> openGui(ctx.getSource(), StringArgumentType.getString(ctx, "page")))))
+                .then(Commands.m_82127_("show")
+                        .executes(ctx -> show(ctx.getSource())))
                 .then(Commands.m_82127_("up")
                         .executes(ctx -> adjust(ctx.getSource(), 100))
                         .then(Commands.m_82129_("amount", LongArgumentType.longArg(1))
@@ -66,6 +73,16 @@ public final class DifficultyCommands {
         AdaptiveDifficultyMod.LOGGER.info("[{}] registered /difficulty", AdaptiveDifficultyMod.MOD_ID);
     }
 
+    private static int openGui(CommandSourceStack source, String page) {
+        ServerPlayer player = source.m_230896_();
+        if (player == null) {
+            source.m_81352_(Component.m_237113_("Players only."));
+            return 0;
+        }
+        DifficultyMenu.open(player, page);
+        return 1;
+    }
+
     private static int show(CommandSourceStack source) {
         ServerPlayer player = source.m_230896_();
         if (player == null) {
@@ -87,9 +104,7 @@ public final class DifficultyCommands {
                         + "§eTeam Mode: §f" + snap.teamMode + "\n"
                         + "§7Currency: §f" + CurrencyBridge.currencyLabel()
                         + " §8| next +100 cost ~ §f"
-                        + DifficultyCalculator.purchaseCost(snap.purchased, 100) + "\n"
-                        + "§7/difficulty up|down [amount]  /difficulty buy <amount>\n"
-                        + "§7/difficulty team [personal|threshold|full]"
+                        + DifficultyCalculator.purchaseCost(snap.purchased, 100)
         ), false);
         return 1;
     }
@@ -108,6 +123,7 @@ public final class DifficultyCommands {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         source.m_288197_(() -> Component.m_237113_("§aActive difficulty set to §f" + snap.active
                 + " §7(max " + snap.availableMax + ")"), false);
+        DifficultyMenu.open(player, "main");
         return 1;
     }
 
@@ -149,6 +165,7 @@ public final class DifficultyCommands {
                         + CurrencyBridge.currencyLabel() + ".\n§ePurchased total: §f" + snap.purchased
                         + " §7| Available max: §f" + snap.availableMax
         ), false);
+        DifficultyMenu.open(player, "main");
         return 1;
     }
 
@@ -163,6 +180,7 @@ public final class DifficultyCommands {
         DifficultyCache.invalidateAll();
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         source.m_288197_(() -> Component.m_237113_("§aTeam mode: §f" + snap.teamMode), false);
+        DifficultyMenu.open(player, "main");
         return 1;
     }
 
@@ -191,9 +209,10 @@ public final class DifficultyCommands {
         source.m_288197_(() -> Component.m_237113_(
                 "§6/difficulty admin set <key> <value>\n"
                         + "§7Keys: prestigeMultiplier, levelMultiplier, teamBonusPercent, contributionPercent,\n"
-                        + "§7baseCost, costScaling, rewardScaling, healthPercentPerDifficulty,\n"
-                        + "§7damagePercentPerDifficulty, defensePercentPerDifficulty, mobScaleRadius,\n"
-                        + "§7purchaseCurrency (training_points|free|lightmans), enableMobScaling, enableRewardScaling"
+                        + "§7baseCost, costScaling, rewardScaling, health/damage/defense percents,\n"
+                        + "§7purchaseCurrency (lightmans|training_points|free),\n"
+                        + "§7enableElites, eliteChancePercent, enableMutations, mutationChancePercent,\n"
+                        + "§7enableAdaptiveAi, enableBossScaling, bossStatMultiplier, bossHealthThreshold"
         ), false);
         return 1;
     }
@@ -216,6 +235,14 @@ public final class DifficultyCommands {
                 case "purchasecurrency" -> cfg.purchaseCurrency = value.trim();
                 case "enablemobscaling" -> cfg.enableMobScaling = Boolean.parseBoolean(value);
                 case "enablerewardscaling" -> cfg.enableRewardScaling = Boolean.parseBoolean(value);
+                case "enableelites" -> cfg.enableElites = Boolean.parseBoolean(value);
+                case "elitechance", "elitechancepercent" -> cfg.eliteChancePercent = Double.parseDouble(value);
+                case "enablemutations" -> cfg.enableMutations = Boolean.parseBoolean(value);
+                case "mutationchance", "mutationchancepercent" -> cfg.mutationChancePercent = Double.parseDouble(value);
+                case "enableadaptiveai" -> cfg.enableAdaptiveAi = Boolean.parseBoolean(value);
+                case "enablebossscaling" -> cfg.enableBossScaling = Boolean.parseBoolean(value);
+                case "bossstatmultiplier" -> cfg.bossStatMultiplier = Double.parseDouble(value);
+                case "bosshealththreshold" -> cfg.bossHealthThreshold = Double.parseDouble(value);
                 default -> {
                     source.m_81352_(Component.m_237113_("Unknown key: " + key));
                     return 0;

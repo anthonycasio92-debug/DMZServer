@@ -1,8 +1,11 @@
 package com.dbzlegacy.adaptivedifficulty.scaling;
 
+import com.dbzlegacy.adaptivedifficulty.boss.BossScaling;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
+import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import java.util.List;
 import net.minecraft.nbt.CompoundTag;
@@ -74,6 +77,11 @@ public final class MobScaling {
         if (armor != null && armorBonus > 0) {
             armor.m_22100_(armor.m_22115_() + Math.min(30.0, armorBonus));
         }
+
+        // Phase 2: boss → elite → mutation (order matters for naming)
+        BossScaling.scaleIfBoss(entity, difficulty);
+        EliteSystem.maybePromote(entity, difficulty);
+        MutationSystem.maybeMutate(entity, difficulty);
     }
 
     private static void scaleAttribute(

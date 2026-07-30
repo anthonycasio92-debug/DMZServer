@@ -8,21 +8,19 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import net.minecraftforge.fml.loading.FMLPaths;
 
-/**
- * Mirrors the concept doc admin settings. Saved at
- * {@code config/dmz_adaptive_difficulty.json}.
- */
+/** Mirrors the concept doc admin settings. Saved at {@code config/dmz_adaptive_difficulty.json}. */
 public final class DifficultyConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static DifficultyConfig INSTANCE = new DifficultyConfig();
 
     public double prestigeMultiplier = 10.0;
     public double levelMultiplier = 1.0;
-    /** Percent bonus to max difficulty per online teammate. */
     public double teamBonusPercent = 10.0;
-    /** Percent of a teammate's spare max that can be borrowed (full team scaling). */
     public double contributionPercent = 25.0;
     public long baseCost = 100_000L;
     public long costScaling = 1_000L;
@@ -35,18 +33,30 @@ public final class DifficultyConfig {
     public double dmzExtraDamagePercent = 1.0;
     public double dmzExtraDefensePercent = 3.0;
     public double dmzExtraKiDamagePercent = 1.0;
-    /** Radius used to pick which players' difficulty snapshot a mob inherits. */
     public double mobScaleRadius = 64.0;
-    /** Cap active difficulty clamp for safety. */
     public long hardCapDifficulty = 1_000_000L;
     /**
-     * Payment mode for purchased difficulty:
-     * {@code training_points} (default bridge), {@code free}, or {@code lightmans} (reflection).
+     * {@code lightmans} (preferred when mod present), {@code training_points}, or {@code free}.
      */
-    public String purchaseCurrency = "training_points";
+    public String purchaseCurrency = "lightmans";
     public boolean scaleHostileOnly = true;
     public boolean enableRewardScaling = true;
     public boolean enableMobScaling = true;
+
+    // Phase 2 systems
+    public boolean enableElites = true;
+    public double eliteChancePercent = 3.0;
+    public double eliteStatMultiplier = 1.75;
+    public double eliteRewardBonus = 2.0;
+    public boolean enableMutations = true;
+    public double mutationChancePercent = 5.0;
+    public boolean enableAdaptiveAi = true;
+    public boolean enableBossScaling = true;
+    public double bossStatMultiplier = 1.5;
+    public double bossHealthThreshold = 100.0;
+    public List<String> bossIdContains = new ArrayList<>(Arrays.asList(
+            "boss", "warden", "wither", "ender_dragon", "raid"
+    ));
 
     private DifficultyConfig() {}
 
@@ -65,6 +75,9 @@ public final class DifficultyConfig {
                 try (Reader reader = Files.newBufferedReader(file)) {
                     DifficultyConfig loaded = GSON.fromJson(reader, DifficultyConfig.class);
                     if (loaded != null) {
+                        if (loaded.bossIdContains == null) {
+                            loaded.bossIdContains = new ArrayList<>();
+                        }
                         INSTANCE = loaded;
                     }
                 }

@@ -6,7 +6,11 @@ FORGE_U="$ROOT/libraries/net/minecraftforge/forge/1.20.1-47.4.10/forge-1.20.1-47
 FORGE_S="$ROOT/libraries/net/minecraftforge/forge/1.20.1-47.4.10/forge-1.20.1-47.4.10-server.jar"
 DMZ="$ROOT/mods/dragonminez-2.1.3.jar"
 GSON="$ROOT/libraries/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar"
-VERSION="1.0.0"
+LIGHTMANS="$ROOT/libraries/lightmanscurrency-1.20.1-2.3.0.5.jar"
+if [[ ! -f "$LIGHTMANS" ]]; then
+  LIGHTMANS="$ROOT/mods/lightmanscurrency-1.20.1-2.3.0.5.jar"
+fi
+VERSION="1.1.0"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
@@ -15,7 +19,7 @@ JAR="$ROOT/mods/dmz_adaptive_difficulty-${VERSION}.jar"
 rm -f "$ROOT"/mods/dmz_adaptive_difficulty-*.jar
 rm -f "$ROOT"/dmz_adaptive_difficulty-*.jar
 
-CP="$SRG:$FORGE_S:$FORGE_U:$GSON:\
+CP="$SRG:$FORGE_S:$FORGE_U:$GSON:$LIGHTMANS:\
 $ROOT/libraries/net/minecraftforge/fmlcore/1.20.1-47.4.10/fmlcore-1.20.1-47.4.10.jar:\
 $ROOT/libraries/net/minecraftforge/fmlloader/1.20.1-47.4.10/fmlloader-1.20.1-47.4.10.jar:\
 $ROOT/libraries/net/minecraftforge/forgespi/7.0.1/forgespi-7.0.1.jar:\
@@ -28,6 +32,7 @@ $ROOT/libraries/org/apache/logging/log4j/log4j-api/2.19.0/log4j-api-2.19.0.jar:\
 $ROOT/libraries/com/mojang/authlib/4.0.43/authlib-4.0.43.jar:\
 $ROOT/libraries/com/mojang/brigadier/1.1.8/brigadier-1.1.8.jar:\
 $ROOT/libraries/com/google/guava/guava/31.1-jre/guava-31.1-jre.jar:\
+$ROOT/libraries/org/slf4j/slf4j-api/2.0.1/slf4j-api-2.0.1.jar:\
 $DMZ"
 
 rm -rf "$OUT"

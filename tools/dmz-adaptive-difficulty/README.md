@@ -1,13 +1,23 @@
-# DMZ Adaptive Difficulty (Phase 1)
+# DMZ Adaptive Difficulty (v1.1.0)
 
-Server-side Forge/Mohist 1.20.1 mod implementing the Adaptive Difficulty concept:
+Server-side Forge/Mohist 1.20.1 mod implementing the Adaptive Difficulty concept.
 
+## Features
+
+### Phase 1
 - Personal **Calculated / Purchased / Active** difficulty
 - Prestige-aware calculated difficulty (`prestige` DMZ skill × multiplier)
 - Team modes via vanilla scoreboard teams
-- Mob scaling once at spawn (cached on entity NBT)
-- Training Points reward multiplier via `DMZEvent.TPGainEvent`
-- Admin JSON config + `/difficulty` commands
+- Mob scaling once at spawn
+- TP reward multiplier via `DMZEvent.TPGainEvent`
+
+### Phase 2
+- **Lightman's Currency** purchases (`MoneyAPI` / `CoinValue.fromNumber("main", cost)`)
+- Clickable **difficulty GUI** (`/difficulty`) — chat buttons for up/down/buy/team/pages
+- **Elite** spawns (glowing named elites, higher stats/rewards)
+- **Mutations** (Burning, Electric, Gravity, Titan, Berserker, Shadow, Vampiric)
+- **Adaptive AI** (focus weakest, dodge, retreat, anti-flight, coordinated targeting)
+- **Boss scaling** + HP phases (75% / 50% / 25%)
 
 ## Build
 
@@ -15,41 +25,35 @@ Server-side Forge/Mohist 1.20.1 mod implementing the Adaptive Difficulty concept
 bash tools/dmz-adaptive-difficulty/build.sh
 ```
 
-Outputs `mods/dmz_adaptive_difficulty-1.0.0.jar`.
+Requires `libraries/lightmanscurrency-1.20.1-2.3.0.5.jar` (or same file under `mods/`) on the compile classpath.
+
+Outputs `mods/dmz_adaptive_difficulty-1.1.0.jar`.
+
+## Install
+
+1. Put `dmz_adaptive_difficulty-1.1.0.jar` in `mods/`
+2. Put `lightmanscurrency-1.20.1-2.3.0.5.jar` in `mods/` (optional but recommended)
+3. Restart → config at `config/dmz_adaptive_difficulty.json`
+
+If Lightman's is missing, purchases automatically fall back to Training Points.
 
 ## Commands
 
 | Command | Description |
 |---|---|
-| `/difficulty` | Show personal + team difficulty snapshot |
-| `/difficulty up [n]` / `down [n]` | Change **active** difficulty (free) |
-| `/difficulty set <n>` | Set active difficulty within available max |
-| `/difficulty buy <amount>` | Permanently buy purchased difficulty (TP by default) |
-| `/difficulty team [personal\|threshold\|full]` | Cycle/set team scaling mode |
+| `/difficulty` | Open clickable GUI |
+| `/difficulty gui [main\|rewards\|tiers\|stats]` | Open a GUI page |
+| `/difficulty show` | Plain text snapshot |
+| `/difficulty up\|down [n]` | Change **active** difficulty (free) |
+| `/difficulty set <n>` | Set active within available max |
+| `/difficulty buy <amount>` | Buy purchased difficulty (Lightman's / TP) |
+| `/difficulty team [personal\|threshold\|full]` | Team scaling mode |
 | `/difficulty reload` | Reload config (op) |
-| `/difficulty admin set <key> <value>` | Edit config keys (op) |
+| `/difficulty admin set <key> <value>` | Edit config (op) |
 
-## Config
+## Config highlights
 
-`config/dmz_adaptive_difficulty.json`
-
-Important keys:
-
-- `prestigeMultiplier` (default 10)
-- `teamBonusPercent` / `contributionPercent`
-- `baseCost` / `costScaling`
-- `rewardScaling`
-- `healthPercentPerDifficulty` / `damagePercentPerDifficulty` / `defensePercentPerDifficulty`
-- `purchaseCurrency`: `training_points` (default), `free`, or `lightmans` (stub)
-
-## Phase 1 vs later
-
-**Included:** personal difficulty, team threshold/contribution, spawn scaling, TP reward mult, commands, config.
-
-**Deferred:** Lightman's Currency wire-up, difficulty GUI, elite/mutations, adaptive AI, boss phases, DMZ XP/drop tables beyond TP.
-
-## Notes
-
-- Prestige is read from DMZ skill `"prestige"` (same source your Prestige Sync Fabled scripts maintain).
-- Purchases default to DMZ Training Points until Lightman's is installed and wired.
-- Compile uses SRG Minecraft names (same pattern as `dmz_mohist_melee_fix`).
+- `purchaseCurrency`: `lightmans` (default) \| `training_points` \| `free`
+- `eliteChancePercent`, `mutationChancePercent`
+- `enableAdaptiveAi`, `enableBossScaling`, `bossHealthThreshold`
+- Scaling percents + reward/cost formulas from the concept doc
