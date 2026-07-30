@@ -7,8 +7,10 @@ import com.dragonminez.common.stats.skills.Skills;
 import net.minecraft.world.entity.player.Player;
 
 /**
- * Reads DMZ progression the same way your CNPC/Fabled scripts do:
- * {@code StatsData.getLevel()} and skill {@code prestige}.
+ * Reads DMZ progression the same way current Dragon-Mine-Z scripts do
+ * ({@code Fabled Sync.js} on branch {@code cursor/rival-sparring-reaudit-dd5f}):
+ * {@code StatsData.getLevel()} and skill {@code prestige}
+ * (Fabled Prestige class level - 1).
  */
 public final class DmzProgression {
     private DmzProgression() {}
