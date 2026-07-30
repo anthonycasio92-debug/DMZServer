@@ -55,28 +55,22 @@ public final class DifficultyCommands {
                 .then(vanillaDifficultyLiteral("normal"))
                 .then(vanillaDifficultyLiteral("hard"))
                 .then(Commands.m_82127_("admin")
-                        .requires(DifficultyCommands::canUseAdminToggle)
                         .executes(ctx -> toggleAdmin(ctx.getSource()))
                         .then(Commands.m_82127_("help")
-                                .requires(DifficultyCommands::hasAdminMode)
-                                .executes(ctx -> adminHelp(ctx.getSource())))
+                                .executes(ctx -> adminHelpOrDeny(ctx.getSource())))
                         .then(Commands.m_82127_("reload")
-                                .requires(DifficultyCommands::hasAdminMode)
-                                .executes(ctx -> reload(ctx.getSource())))
+                                .executes(ctx -> reloadOrDeny(ctx.getSource())))
                         .then(Commands.m_82127_("settings")
-                                .requires(DifficultyCommands::hasAdminMode)
-                                .executes(ctx -> openAdminSettings(ctx.getSource())))
+                                .executes(ctx -> openAdminSettingsOrDeny(ctx.getSource())))
                         .then(Commands.m_82127_("gamedifficulty")
-                                .requires(DifficultyCommands::hasAdminMode)
                                 .then(Commands.m_82129_("level", StringArgumentType.word())
-                                        .executes(ctx -> setVanillaDifficulty(
+                                        .executes(ctx -> setVanillaDifficultyOrDeny(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "level")))))
                         .then(Commands.m_82127_("set")
-                                .requires(DifficultyCommands::hasAdminMode)
                                 .then(Commands.m_82129_("key", StringArgumentType.word())
                                         .then(Commands.m_82129_("value", StringArgumentType.greedyString())
-                                                .executes(ctx -> adminSet(
+                                                .executes(ctx -> adminSetOrDeny(
                                                         ctx.getSource(),
                                                         StringArgumentType.getString(ctx, "key"),
                                                         StringArgumentType.getString(ctx, "value")))))));
@@ -127,21 +121,6 @@ public final class DifficultyCommands {
         return result.ok() ? 1 : 0;
     }
 
-    private static boolean canUseAdminToggle(CommandSourceStack src) {
-        if (src.m_230896_() == null) {
-            return src.m_6761_(2);
-        }
-        return isStaff(src);
-    }
-
-    private static boolean hasAdminMode(CommandSourceStack src) {
-        ServerPlayer player = src.m_230896_();
-        if (player == null) {
-            return src.m_6761_(2);
-        }
-        return isStaff(src) && AdminCommandAccess.isEnabled(player);
-    }
-
     private static boolean isStaff(CommandSourceStack src) {
         if (src.m_6761_(2)) {
             return true;
@@ -175,6 +154,12 @@ public final class DifficultyCommands {
         if (player == null) {
             return adminHelp(source);
         }
+        if (!isStaff(source)) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§cNo permission for /difficulty admin (need op or difficulty.admin)."
+            ), false);
+            return 0;
+        }
         boolean enabled = AdminCommandAccess.toggle(player);
         if (enabled) {
             source.m_288197_(() -> Component.m_237113_(
@@ -188,6 +173,43 @@ public final class DifficultyCommands {
             source.m_288197_(() -> Component.m_237113_("§cAdmin commands DISABLED."), false);
         }
         return 1;
+    }
+
+    private static int denyAdmin(CommandSourceStack source) {
+        if (!isStaff(source)) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§cNo permission for /difficulty admin (need op or difficulty.admin)."
+            ), false);
+            return 0;
+        }
+        ServerPlayer player = source.m_230896_();
+        if (player != null && !AdminCommandAccess.isEnabled(player)) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§cEnable admin mode first: §f/difficulty admin"
+            ), false);
+            return 0;
+        }
+        return 1;
+    }
+
+    private static int adminHelpOrDeny(CommandSourceStack source) {
+        return denyAdmin(source) == 0 ? 0 : adminHelp(source);
+    }
+
+    private static int reloadOrDeny(CommandSourceStack source) {
+        return denyAdmin(source) == 0 ? 0 : reload(source);
+    }
+
+    private static int openAdminSettingsOrDeny(CommandSourceStack source) {
+        return denyAdmin(source) == 0 ? 0 : openAdminSettings(source);
+    }
+
+    private static int setVanillaDifficultyOrDeny(CommandSourceStack source, String level) {
+        return denyAdmin(source) == 0 ? 0 : setVanillaDifficulty(source, level);
+    }
+
+    private static int adminSetOrDeny(CommandSourceStack source, String key, String value) {
+        return denyAdmin(source) == 0 ? 0 : adminSet(source, key, value);
     }
 
     private static int setVanillaDifficulty(CommandSourceStack source, String level) {
@@ -234,7 +256,7 @@ public final class DifficultyCommands {
     private static int adminHelp(CommandSourceStack source) {
         source.m_288197_(() -> Component.m_237113_(
                 "§6Adaptive Difficulty — admin (server-side only mod)\n"
-                        + "§e/difficulty §7— open player GUI (DeluxeMenus / chest / chat)\n"
+                        + "§e/difficulty §7— open player GUI (CMI / chest / chat)\n"
                         + "§e/difficulty hard|normal|easy|peaceful §7— vanilla world difficulty (ops)\n"
                         + "§e/difficulty admin §7— toggle admin command access\n"
                         + "§e/difficulty admin reload|settings|gamedifficulty\n"

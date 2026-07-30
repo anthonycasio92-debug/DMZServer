@@ -3,13 +3,18 @@ package com.dbzlegacy.adaptivedifficulty.bukkit;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import org.bukkit.entity.Player;
 
-/** Reflects into the Forge mod for live difficulty values (Mohist shared JVM). */
+/** Reflects into the Forge mod for live values / actions (Mohist shared JVM). */
 public final class ForgeBridge {
+    private static final Set<UUID> ADMIN = new HashSet<>();
+
     private ForgeBridge() {}
 
     public static Object nmsPlayer(Player player) {
@@ -83,7 +88,7 @@ public final class ForgeBridge {
             double mult = (Double) calc.getMethod("rewardMultiplier", long.class).invoke(null, active);
             out.put("reward_mult", String.format(Locale.US, "%.2f", mult));
         } catch (Throwable ignored) {
-            // Forge mod not loaded / Mohist bridge unavailable
+            // Forge mod not loaded
         }
         return out;
     }
@@ -92,8 +97,214 @@ public final class ForgeBridge {
         if (id == null) {
             return "";
         }
-        Map<String, String> map = placeholders(player);
-        return map.getOrDefault(id.toLowerCase(Locale.ROOT), "");
+        return placeholders(player).getOrDefault(id.toLowerCase(Locale.ROOT), "");
+    }
+
+    /** Runs a GUI action through the Forge mod and returns the result message. */
+    public static String handleAction(Player player, String action, String arg) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach adaptive difficulty mod.";
+        }
+        try {
+            Class<?> sp = Class.forName("net.minecraft.server.level.ServerPlayer");
+            Class<?> actions = Class.forName("com.dbzlegacy.adaptivedifficulty.service.DifficultyActions");
+            String act = action == null ? "" : action.toLowerCase(Locale.ROOT);
+            String page = "main";
+            long amount = 0L;
+            if ("page".equals(act)) {
+                page = arg == null || arg.isBlank() ? "main" : arg;
+            } else if (arg != null && !arg.isBlank()) {
+                try {
+                    amount = Long.parseLong(arg);
+                } catch (NumberFormatException ignored) {
+                    amount = 0L;
+                }
+            }
+            Object result = actions.getMethod("handle", sp, String.class, long.class, String.class)
+                    .invoke(null, nms, act, amount, page);
+            if (result == null) {
+                return "";
+            }
+            Method message = result.getClass().getMethod("message");
+            Object msg = message.invoke(result);
+            return msg == null ? "" : String.valueOf(msg);
+        } catch (Throwable t) {
+            return "§cAction failed: " + t.getClass().getSimpleName();
+        }
+    }
+
+    public static boolean forgeAvailable() {
+        try {
+            Class.forName("com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod");
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    public static boolean isStaff(Player player) {
+        if (player == null) {
+            return false;
+        }
+        if (player.isOp() || player.hasPermission("difficulty.admin")) {
+            return true;
+        }
+        return player.hasPermission("*");
+    }
+
+    public static boolean toggleAdmin(Player player) {
+        UUID id = player.getUniqueId();
+        if (ADMIN.contains(id)) {
+            ADMIN.remove(id);
+            tryDisableForgeAdmin(player);
+            return false;
+        }
+        ADMIN.add(id);
+        tryEnableForgeAdmin(player);
+        return true;
+    }
+
+    public static boolean hasAdmin(Player player) {
+        return player != null && ADMIN.contains(player.getUniqueId());
+    }
+
+    public static void clearAdmin(Player player) {
+        if (player != null) {
+            ADMIN.remove(player.getUniqueId());
+            tryDisableForgeAdmin(player);
+        }
+    }
+
+    public static String adminSet(String key, String value) {
+        try {
+            Class<?> cfgCls = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig");
+            Object cfg = cfgCls.getMethod("get").invoke(null);
+            // Prefer the Forge command path for full key coverage when possible is hard;
+            // set common fields reflectively + save.
+            Field field = findConfigField(cfgCls, key);
+            if (field == null) {
+                return "Unknown key: " + key;
+            }
+            Object parsed = coerce(field.getType(), value);
+            field.setAccessible(true);
+            field.set(cfg, parsed);
+            cfgCls.getMethod("save").invoke(null);
+            Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache")
+                    .getMethod("invalidateAll").invoke(null);
+            return "Set " + key + " = " + value;
+        } catch (Throwable t) {
+            return "Failed: " + t.getMessage();
+        }
+    }
+
+    public static void reloadConfig() {
+        try {
+            Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+                    .getMethod("reload").invoke(null);
+            Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache")
+                    .getMethod("invalidateAll").invoke(null);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    public static boolean setVanillaDifficulty(String level) {
+        try {
+            Class<?> difficulty = Class.forName("net.minecraft.world.Difficulty");
+            Object parsed = Class.forName("com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard")
+                    .getMethod("parse", String.class)
+                    .invoke(null, level);
+            if (parsed == null) {
+                return false;
+            }
+            Object server = Class.forName("org.bukkit.Bukkit")
+                    .getMethod("getServer").invoke(null);
+            // Mohist CraftServer -> getServer() NMS
+            Object nmsServer = server.getClass().getMethod("getServer").invoke(server);
+            return Boolean.TRUE.equals(
+                    Class.forName("com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard")
+                            .getMethod("set", Class.forName("net.minecraft.server.MinecraftServer"), difficulty)
+                            .invoke(null, nmsServer, parsed)
+            );
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private static void tryEnableForgeAdmin(Player player) {
+        try {
+            Object nms = nmsPlayer(player);
+            Class<?> access = Class.forName("com.dbzlegacy.adaptivedifficulty.command.AdminCommandAccess");
+            // enable by toggling until enabled
+            Method isEnabled = access.getMethod("isEnabled", Class.forName("net.minecraft.server.level.ServerPlayer"));
+            Method toggle = access.getMethod("toggle", Class.forName("net.minecraft.server.level.ServerPlayer"));
+            if (!Boolean.TRUE.equals(isEnabled.invoke(null, nms))) {
+                toggle.invoke(null, nms);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void tryDisableForgeAdmin(Player player) {
+        try {
+            Object nms = nmsPlayer(player);
+            Class<?> access = Class.forName("com.dbzlegacy.adaptivedifficulty.command.AdminCommandAccess");
+            Method disable = access.getMethod("disable", Class.forName("net.minecraft.server.level.ServerPlayer"));
+            disable.invoke(null, nms);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static Field findConfigField(Class<?> cfgCls, String key) {
+        String k = key == null ? "" : key.toLowerCase(Locale.ROOT);
+        Map<String, String> aliases = Map.ofEntries(
+                Map.entry("guibackend", "guiBackend"),
+                Map.entry("vanilladifficulty", "vanillaDifficulty"),
+                Map.entry("enablemobscaling", "enableMobScaling"),
+                Map.entry("adminpermission", "adminPermission"),
+                Map.entry("basecost", "baseCost"),
+                Map.entry("costscaling", "costScaling"),
+                Map.entry("rewardscaling", "rewardScaling"),
+                Map.entry("prestigemultiplier", "prestigeMultiplier"),
+                Map.entry("levelmultiplier", "levelMultiplier"),
+                Map.entry("teambonus", "teamBonusPercent"),
+                Map.entry("teambonuspercent", "teamBonusPercent"),
+                Map.entry("maxhealthmultiplier", "maxHealthMultiplier"),
+                Map.entry("maxscaledhealth", "maxScaledHealth")
+        );
+        String fieldName = aliases.getOrDefault(k, key);
+        try {
+            return cfgCls.getField(fieldName);
+        } catch (NoSuchFieldException e) {
+            for (Field f : cfgCls.getFields()) {
+                if (f.getName().equalsIgnoreCase(fieldName) || f.getName().equalsIgnoreCase(k)) {
+                    return f;
+                }
+            }
+            return null;
+        }
+    }
+
+    private static Object coerce(Class<?> type, String value) {
+        if (type == String.class) {
+            return value;
+        }
+        if (type == boolean.class || type == Boolean.class) {
+            return Boolean.parseBoolean(value);
+        }
+        if (type == int.class || type == Integer.class) {
+            return Integer.parseInt(value);
+        }
+        if (type == long.class || type == Long.class) {
+            return Long.parseLong(value);
+        }
+        if (type == double.class || type == Double.class) {
+            return Double.parseDouble(value);
+        }
+        if (type == float.class || type == Float.class) {
+            return Float.parseFloat(value);
+        }
+        return value;
     }
 
     private static Object field(Object obj, String name) throws Exception {

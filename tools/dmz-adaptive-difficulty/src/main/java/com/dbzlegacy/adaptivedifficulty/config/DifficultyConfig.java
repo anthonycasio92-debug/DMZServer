@@ -69,9 +69,10 @@ public final class DifficultyConfig {
     public String adminPermission = "difficulty.admin";
     /**
      * Player UI backend for {@code /difficulty}:
-     * {@code auto} (DeluxeMenus → Bukkit chest → chat), {@code deluxemenus}, {@code chest}, or {@code chat}.
+     * {@code auto} (CMI/CMILib → chest → DeluxeMenus → chat), {@code cmi}, {@code chest},
+     * {@code deluxemenus}, or {@code chat}.
      */
-    public String guiBackend = "auto";
+    public String guiBackend = "cmi";
     /**
      * If the Minecraft world is on Peaceful (no hostile spawns), restore it on server start.
      * Peaceful prevents adaptive mob scaling from doing anything.
