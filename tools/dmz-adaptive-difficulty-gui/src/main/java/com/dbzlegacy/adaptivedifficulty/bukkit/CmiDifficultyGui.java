@@ -70,6 +70,8 @@ public final class CmiDifficultyGui {
         gui.addButton(info);
 
         gui.addButton(actionBtn(19, Material.RED_DYE, "&c▼ -100", "down", "100", "&7Lower active difficulty (free)"));
+        gui.addButton(actionBtn(20, Material.BARRIER, "&cReset to 0", "reset", "0",
+                "&7Set active difficulty to 0 (free)\n&8Purchased max is kept"));
         gui.addButton(actionBtn(21, Material.ORANGE_DYE, "&6Max", "set_max", "0", "&7Set active to available max"));
         gui.addButton(actionBtn(23, Material.LIME_DYE, "&a▲ +100", "up", "100", "&7Raise active difficulty"));
         gui.addButton(actionBtn(25, Material.COMPASS, "&bTeam Mode", "team", "0",

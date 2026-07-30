@@ -100,6 +100,18 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
             case "admin" -> {
                 return handleAdmin(sender, args);
             }
+            case "reset", "zero", "clear" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage("Players only.");
+                    return true;
+                }
+                String msg = ForgeBridge.handleAction(player, "reset", "0");
+                if (msg != null && !msg.isBlank()) {
+                    player.sendMessage(msg.startsWith("§") ? msg : "§a" + msg);
+                }
+                getServer().getScheduler().runTask(this, () -> openMenu(player, "main"));
+                return true;
+            }
             case "hard", "normal", "easy", "peaceful" -> {
                 if (!sender.isOp() && !sender.hasPermission("difficulty.admin")) {
                     sender.sendMessage("§cOps only: /difficulty " + sub);
@@ -116,6 +128,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
             }
             default -> {
                 sender.sendMessage("§e/difficulty §7— open GUI");
+                sender.sendMessage("§e/difficulty reset §7— set active difficulty to 0");
                 sender.sendMessage("§e/difficulty admin §7— staff tools");
                 return true;
             }
@@ -160,8 +173,17 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
             case "help" -> {
                 sender.sendMessage("§6Adaptive Difficulty — admin");
                 sender.sendMessage("§e/difficulty §7— open CMI/chest GUI");
+                sender.sendMessage("§e/difficulty reset §7— set active difficulty to 0");
                 sender.sendMessage("§e/difficulty hard|normal|easy|peaceful §7— vanilla difficulty");
-                sender.sendMessage("§e/difficulty admin reload|settings|gamedifficulty|set");
+                sender.sendMessage("§e/difficulty admin reload|settings|area|resetpurchased|gamedifficulty|set");
+                return true;
+            }
+            case "resetpurchased" -> {
+                if (player == null) {
+                    sender.sendMessage("Players only.");
+                    return true;
+                }
+                sender.sendMessage(ForgeBridge.resetPurchased(player));
                 return true;
             }
             case "reload" -> {

@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.0)
+# DMZ Adaptive Difficulty (v1.7.1)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -19,13 +19,13 @@ Clients do **not** need this jar to join.
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.0.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.1.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
    - `CMILib*.jar` (required by CMI)
    - `CMI-*.jar`
-   - `dmz_adaptive_difficulty_gui-1.7.0.jar` (**registers Bukkit `/difficulty`**)
+   - `dmz_adaptive_difficulty_gui-1.7.1.jar` (**registers Bukkit `/difficulty`**)
    - Optional: `PlaceholderAPI-*.jar`
 5. Optionally set `guiBackend` in `config/dmz_adaptive_difficulty.json`:
    - `cmi` (default), `auto`, `chest`, or `chat`
@@ -38,10 +38,12 @@ Clients do **not** need this jar to join.
 | Who | Command | Action |
 |---|---|---|
 | Everyone | `/difficulty` | Open CMI inventory GUI (or chest/chat fallback) |
+| Everyone | `/difficulty reset` | Set **active** difficulty to 0 (free; purchased max kept) |
+| GUI | **Reset to 0** button | Same as `/difficulty reset` |
 | GUI buttons | `/difficulty do …` | Used by GUI clicks |
 | Ops | `/difficulty hard\|normal\|easy\|peaceful` | Vanilla world difficulty |
 | Staff | `/difficulty admin` | Toggle admin command access (shows errors if no perm) |
-| Staff (toggled on) | `/difficulty admin help\|reload\|settings\|area\|gamedifficulty\|set` | Config tools |
+| Staff (toggled on) | `/difficulty admin help\|reload\|settings\|area\|resetpurchased\|gamedifficulty\|set` | Config tools |
 
 ## Area difficulty
 

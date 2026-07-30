@@ -52,6 +52,9 @@ public final class DifficultyCommands {
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "action"),
                                                 StringArgumentType.getString(ctx, "arg"))))))
+                // Player: reset active difficulty to 0 (free; purchased max kept)
+                .then(Commands.m_82127_("reset")
+                        .executes(ctx -> guiDo(ctx.getSource(), DifficultyActions.ACT_RESET, "0")))
                 // Vanilla world difficulty (replaces overwritten /difficulty <level>)
                 .then(vanillaDifficultyLiteral("peaceful"))
                 .then(vanillaDifficultyLiteral("easy"))
@@ -72,6 +75,8 @@ public final class DifficultyCommands {
                                                 StringArgumentType.getString(ctx, "level")))))
                         .then(Commands.m_82127_("area")
                                 .executes(ctx -> showAreaDifficulty(ctx.getSource())))
+                        .then(Commands.m_82127_("resetpurchased")
+                                .executes(ctx -> adminResetPurchasedOrDeny(ctx.getSource())))
                         .then(Commands.m_82127_("set")
                                 .then(Commands.m_82129_("key", StringArgumentType.word())
                                         .then(Commands.m_82129_("value", StringArgumentType.greedyString())
@@ -292,14 +297,36 @@ public final class DifficultyCommands {
         source.m_288197_(() -> Component.m_237113_(
                 "§6Adaptive Difficulty — admin (server-side only mod)\n"
                         + "§e/difficulty §7— open player GUI (CMI / chest / chat)\n"
+                        + "§e/difficulty reset §7— set your active difficulty to 0 (free)\n"
                         + "§e/difficulty hard|normal|easy|peaceful §7— vanilla world difficulty (ops)\n"
                         + "§e/difficulty admin §7— toggle admin command access\n"
-                        + "§e/difficulty admin reload|settings|area|gamedifficulty\n"
+                        + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased\n"
                         + "§e/difficulty admin set <key> <value>\n"
                         + "§8areaDifficultyMode=weighted|average|max (Scaling Health-style)\n"
                         + "§8tierAwakened|tierEnhanced|…|tierImpossible — ability unlock thresholds\n"
                         + "§8movement|dmzExtraHealth|dmzExtraDamage|dmzExtraDefense|dmzExtraKiDamage"
         ), false);
+        return 1;
+    }
+
+    private static int adminResetPurchasedOrDeny(CommandSourceStack source) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        ServerPlayer player = source.m_230896_();
+        if (player == null) {
+            source.m_81352_(Component.m_237113_("Players only."));
+            return 0;
+        }
+        var data = DifficultyCache.data(player);
+        data.setPurchasedDifficulty(0L);
+        data.setActiveDifficulty(0L);
+        DifficultyCache.save(player);
+        DifficultyCache.refresh(player);
+        AreaDifficulty.clearCache();
+        source.m_288197_(() -> Component.m_237113_(
+                "§aReset purchased + active difficulty to 0 for yourself."
+        ), true);
         return 1;
     }
 

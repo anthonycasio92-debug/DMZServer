@@ -7,6 +7,7 @@ import com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
+import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -18,6 +19,7 @@ public final class DifficultyActions {
     public static final String ACT_TEAM = "team";
     public static final String ACT_SET = "set";
     public static final String ACT_SET_MAX = "set_max";
+    public static final String ACT_RESET = "reset";
     public static final String ACT_REFRESH = "refresh";
     public static final String ACT_PAGE = "page";
 
@@ -44,6 +46,7 @@ public final class DifficultyActions {
             case ACT_TEAM -> cycleTeam(player, page);
             case ACT_SET -> setActive(player, Math.max(0L, amount), page);
             case ACT_SET_MAX -> setActive(player, Long.MAX_VALUE, page);
+            case ACT_RESET, "zero", "clear" -> resetActive(player, page);
             case ACT_REFRESH -> {
                 openGui(player, page);
                 yield Result.ok("");
@@ -71,8 +74,20 @@ public final class DifficultyActions {
         data.setActiveDifficulty(next);
         DifficultyCache.save(player);
         DifficultyCache.refresh(player);
+        AreaDifficulty.clearCache();
         openGui(player, page);
         return Result.ok("Active difficulty set to " + next);
+    }
+
+    /** Free — concept: lowering difficulty is always free. Does not refund purchases. */
+    private static Result resetActive(ServerPlayer player, String page) {
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        data.setActiveDifficulty(0L);
+        DifficultyCache.save(player);
+        DifficultyCache.refresh(player);
+        AreaDifficulty.clearCache();
+        openGui(player, page);
+        return Result.ok("Active difficulty reset to 0 (purchased max unchanged).");
     }
 
     private static Result buy(ServerPlayer player, long amount, String page) {

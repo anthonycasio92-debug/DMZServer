@@ -67,6 +67,8 @@ public final class DifficultyChatMenu {
                 .m_7220_(Component.m_237113_(" "))
                 .m_7220_(btn("§eMax", "/difficulty do set_max 0", "Set active to available max"))
                 .m_7220_(Component.m_237113_(" "))
+                .m_7220_(btn("§cReset", "/difficulty do reset 0", "Set active difficulty to 0 (free)"))
+                .m_7220_(Component.m_237113_(" "))
                 .m_7220_(btn("§bTeam", "/difficulty do team 0", "Cycle team scaling mode"));
         send(player, controls);
 

@@ -62,6 +62,8 @@ public final class DifficultyChestGui implements Listener {
         )));
 
         inv.setItem(19, button(Material.RED_DYE, "&c▼ -100", "down", "100", "&7Lower active difficulty (free)"));
+        inv.setItem(20, button(Material.BARRIER, "&cReset to 0", "reset", "0",
+                "&7Set active difficulty to 0 (free)\n&8Purchased max is kept"));
         inv.setItem(21, button(Material.ORANGE_DYE, "&6Max", "set_max", "0", "&7Set active to available max"));
         inv.setItem(23, button(Material.LIME_DYE, "&a▲ +100", "up", "100", "&7Raise active difficulty"));
         inv.setItem(25, button(Material.COMPASS, "&bTeam Mode", "team", "0", "&7Cycle team scaling mode"));

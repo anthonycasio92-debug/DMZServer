@@ -288,6 +288,28 @@ public final class ForgeBridge {
         }
     }
 
+    /** Staff: wipe purchased + active difficulty for this player. */
+    public static String resetPurchased(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach adaptive difficulty mod.";
+        }
+        try {
+            ensureResolved();
+            Object data = cacheData.invoke(null, nms);
+            data.getClass().getMethod("setPurchasedDifficulty", long.class).invoke(data, 0L);
+            data.getClass().getMethod("setActiveDifficulty", long.class).invoke(data, 0L);
+            cacheCls.getMethod("save", serverPlayerCls).invoke(null, nms);
+            cacheRefresh.invoke(null, nms);
+            Class.forName("com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty")
+                    .getMethod("clearCache").invoke(null);
+            PLACEHOLDER_CACHE.remove(player.getUniqueId());
+            return "§aReset purchased + active difficulty to 0.";
+        } catch (Throwable t) {
+            return "§cReset failed: " + t.getMessage();
+        }
+    }
+
     public static String areaDifficultyText(Player player) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
