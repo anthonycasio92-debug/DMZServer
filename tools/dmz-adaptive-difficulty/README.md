@@ -26,7 +26,7 @@ Clients do **not** need this jar to join.
 4. Plugins required for the inventory GUI:
    - `CMILib*.jar` (required by CMI)
    - `CMI-*.jar`
-   - `dmz_adaptive_difficulty_gui-1.7.2.jar` (**registers Bukkit `/difficulty`**)
+   - `dmz_adaptive_difficulty_gui-1.7.4.jar` (**registers Bukkit `/difficulty`**)
    - Optional: `PlaceholderAPI-*.jar`
 5. Optionally set `guiBackend` in `config/dmz_adaptive_difficulty.json`:
    - `cmi` (default), `auto`, `chest`, or `chat`

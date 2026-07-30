@@ -10,7 +10,13 @@ import net.Zrips.CMILib.GUI.GUIManager.InvType;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
-/** Clean CMILib inventory GUI for adaptive difficulty. */
+/**
+ * Clean CMILib inventory GUI for adaptive difficulty.
+ * <p>
+ * Important: CMILib {@code addButton} does <b>not</b> overwrite an occupied slot —
+ * it silently skips (or searches forward). Always place real buttons first, then
+ * fill remaining empty slots with glass.
+ */
 public final class CmiDifficultyGui {
     private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
     private static final Material ACCENT = Material.GRAY_STAINED_GLASS_PANE;
@@ -51,7 +57,6 @@ public final class CmiDifficultyGui {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         // 6 rows: status / spacer / adjust / buy / spacer / nav
         CMIGui gui = base(player, "&8Difficulty", 6);
-        frame(gui, 6);
 
         String stateColor = ph.getOrDefault("state_color", "f");
         CMIGuiButton status = new CMIGuiButton(13, Material.NETHER_STAR, "&f&lDifficulty");
@@ -90,13 +95,13 @@ public final class CmiDifficultyGui {
         gui.addButton(actionBtn(49, Material.SUNFLOWER, "&7Refresh", "refresh", "0",
                 List.of("&7Reload this menu")));
         gui.addButton(closeBtn(53));
+        fillEmpty(gui, 6);
         gui.open();
     }
 
     private static void openRewards(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         CMIGui gui = base(player, "&8Rewards", 3);
-        frame(gui, 3);
 
         CMIGuiButton info = new CMIGuiButton(13, Material.EXPERIENCE_BOTTLE, "&f&lRewards");
         info.lockField();
@@ -110,13 +115,13 @@ public final class CmiDifficultyGui {
         gui.addButton(info);
         gui.addButton(pageBtn(18, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
         gui.addButton(closeBtn(26));
+        fillEmpty(gui, 3);
         gui.open();
     }
 
     private static void openTiers(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         CMIGui gui = base(player, "&8Enemy Tiers", 4);
-        frame(gui, 4);
 
         CMIGuiButton header = new CMIGuiButton(4, Material.IRON_SWORD, "&f&lEnemy Tiers");
         header.lockField();
@@ -152,13 +157,13 @@ public final class CmiDifficultyGui {
         }
         gui.addButton(pageBtn(27, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
         gui.addButton(closeBtn(35));
+        fillEmpty(gui, 4);
         gui.open();
     }
 
     private static void openStats(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         CMIGui gui = base(player, "&8Details", 4);
-        frame(gui, 4);
         String stateColor = ph.getOrDefault("state_color", "f");
 
         CMIGuiButton core = new CMIGuiButton(11, Material.NETHER_STAR, "&f&lProgression");
@@ -205,6 +210,7 @@ public final class CmiDifficultyGui {
 
         gui.addButton(pageBtn(27, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
         gui.addButton(closeBtn(35));
+        fillEmpty(gui, 4);
         gui.open();
     }
 
@@ -223,9 +229,17 @@ public final class CmiDifficultyGui {
         return lore;
     }
 
-    private static void frame(CMIGui gui, int rows) {
+    /**
+     * Fill only unoccupied slots. Must run <b>after</b> real buttons are added —
+     * CMILib refuses to replace an existing button at the same slot.
+     */
+    private static void fillEmpty(CMIGui gui, int rows) {
         int size = rows * 9;
+        Map<Integer, CMIGuiButton> existing = gui.getButtons();
         for (int i = 0; i < size; i++) {
+            if (existing != null && existing.containsKey(i)) {
+                continue;
+            }
             boolean edge = i < 9 || i >= size - 9 || i % 9 == 0 || i % 9 == 8;
             CMIGuiButton pane = new CMIGuiButton(i, edge ? ACCENT : FILL, " ");
             pane.lockField();
