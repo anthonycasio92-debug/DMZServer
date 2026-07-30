@@ -3,10 +3,10 @@ forge-*-installer.jar
 forge-*-installer.jar.log
 *.log
 
-# Runtime / world data (regenerated)
-world/
-logs/
-crash-reports/
+# Runtime / world data (regenerated) — root only (do not ignore Java packages named world)
+/world/
+/logs/
+/crash-reports/
 .cache/
 local/
 
