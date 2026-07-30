@@ -9,6 +9,7 @@ import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import java.util.List;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -18,6 +19,7 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.AABB;
+import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Apply scaling once at spawn and cache difficulty on the mob (concept §9 / §17).
@@ -65,12 +67,15 @@ public final class MobScaling {
         double armorBonus = difficulty * (cfg.defensePercentPerDifficulty / 100.0);
         double moveMult = 1.0 + ((difficulty / 100.0) * (cfg.movementPercentPer100Difficulty / 100.0));
 
-        healthMult += difficulty * (cfg.dmzExtraHealthPercent / 100.0);
-        armorBonus += difficulty * (cfg.dmzExtraDefensePercent / 100.0);
+        // Concept §9: DragonMineZ mobs get additional health/defense (ki/physical via damage mixin)
+        if (isDragonMineZMob(entity)) {
+            healthMult += difficulty * (cfg.dmzExtraHealthPercent / 100.0);
+            armorBonus += difficulty * (cfg.dmzExtraDefensePercent / 100.0);
+            tag.m_128379_("dmz_ad_dmz_mob", true);
+        }
 
         // Health / move / armor via attributes once at spawn.
-        // Attack damage is applied via LivingEntityHurtScaleMixin so projectiles
-        // and non-attribute hits also scale (avoids double-applying melee).
+        // Attack damage (+ DMZ ki/physical extras) applied via LivingEntityHurtScaleMixin.
         scaleAttribute(entity, Attributes.f_22276_, healthMult, true); // MAX_HEALTH
         scaleAttribute(entity, Attributes.f_22279_, moveMult, false); // MOVEMENT_SPEED
         AttributeInstance armor = entity.m_21051_(Attributes.f_22284_); // ARMOR
@@ -82,6 +87,18 @@ public final class MobScaling {
         BossScaling.scaleIfBoss(entity, difficulty);
         EliteSystem.maybePromote(entity, difficulty);
         MutationSystem.maybeMutate(entity, difficulty);
+    }
+
+    public static boolean isDragonMineZMob(LivingEntity entity) {
+        if (entity == null) {
+            return false;
+        }
+        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entity.m_6095_());
+        if (id != null && "dragonminez".equals(id.m_135827_())) { // getNamespace
+            return true;
+        }
+        String cn = entity.getClass().getName().toLowerCase();
+        return cn.contains("dragonminez") || cn.contains("shurui");
     }
 
     private static void scaleAttribute(
@@ -122,7 +139,12 @@ public final class MobScaling {
             return 1.0f;
         }
         DifficultyConfig cfg = DifficultyConfig.get();
-        return (float) (1.0 + d * (cfg.damagePercentPerDifficulty / 100.0)
-                + d * (cfg.dmzExtraDamagePercent / 100.0));
+        double mult = 1.0 + d * (cfg.damagePercentPerDifficulty / 100.0);
+        // Concept §9 / §16: DMZ mobs also gain physical + ki damage extras
+        if (isDragonMineZMob(attacker) || PersistentDataAccess.get(attacker).m_128471_("dmz_ad_dmz_mob")) {
+            mult += d * (cfg.dmzExtraDamagePercent / 100.0);
+            mult += d * (cfg.dmzExtraKiDamagePercent / 100.0);
+        }
+        return (float) mult;
     }
 }

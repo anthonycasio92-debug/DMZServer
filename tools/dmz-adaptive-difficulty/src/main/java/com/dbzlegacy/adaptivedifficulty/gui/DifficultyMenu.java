@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
+import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
 import net.minecraft.network.chat.ClickEvent;
@@ -28,6 +29,8 @@ public final class DifficultyMenu {
             tiers(player);
         } else if ("stats".equalsIgnoreCase(page) || "statistics".equalsIgnoreCase(page)) {
             stats(player);
+        } else if ("settings".equalsIgnoreCase(page)) {
+            settings(player);
         } else {
             main(player);
         }
@@ -121,6 +124,7 @@ public final class DifficultyMenu {
 
     private static void stats(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
+        var data = DifficultyCache.data(player);
         send(player, Component.m_237113_("§6§lStatistics"));
         send(player, Component.m_237113_("§7DMZ Level §f" + snap.dmzLevel
                 + " §8| §7Prestige §f" + snap.prestige));
@@ -132,6 +136,33 @@ public final class DifficultyMenu {
                 + " §8| §7State color §" + snap.stateColorCode() + "●"));
         send(player, Component.m_237113_("§7Lightman's loaded: §f" + CurrencyBridge.lightmansAvailable()
                 + " §8| mode §f" + CurrencyBridge.activeMode()));
+        send(player, Component.m_237113_("§7Titles: §f"
+                + (data.getTitles().isEmpty() ? "none" : String.join("§8, §f", data.getTitles()))));
+        send(player, btn("§a« Back", "/difficulty gui", "Return"));
+    }
+
+    private static void settings(ServerPlayer player) {
+        DifficultyConfig cfg = DifficultyConfig.get();
+        send(player, Component.m_237113_("§6§lAdmin Settings"));
+        send(player, Component.m_237113_("§7prestigeMultiplier §f" + cfg.prestigeMultiplier
+                + " §8| §7levelMultiplier §f" + cfg.levelMultiplier));
+        send(player, Component.m_237113_("§7teamBonus% §f" + cfg.teamBonusPercent
+                + " §8| §7contribution% §f" + cfg.contributionPercent));
+        send(player, Component.m_237113_("§7baseCost §f" + cfg.baseCost
+                + " §8| §7costScaling §f" + cfg.costScaling
+                + " §8| §7rewardScaling §f" + cfg.rewardScaling));
+        send(player, Component.m_237113_("§7health/dmg/def % §f"
+                + cfg.healthPercentPerDifficulty + "/"
+                + cfg.damagePercentPerDifficulty + "/"
+                + cfg.defensePercentPerDifficulty));
+        send(player, Component.m_237113_("§7elites §f" + cfg.enableElites
+                + " §8| §7mutations §f" + cfg.enableMutations
+                + " §8| §7AI §f" + cfg.enableAdaptiveAi
+                + " §8| §7evo §f" + cfg.enableEnemyEvolution
+                + " §8| §7boss §f" + cfg.enableBossScaling));
+        send(player, Component.m_237113_("§7currency §f" + cfg.purchaseCurrency
+                + " §8| §7perm §f" + cfg.adminPermission));
+        send(player, Component.m_237113_("§8Use §f/difficulty settings <key> <value> §8or §f/difficulty admin set ..."));
         send(player, btn("§a« Back", "/difficulty gui", "Return"));
     }
 

@@ -13,6 +13,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -20,6 +22,38 @@ import net.minecraftforge.event.entity.living.LivingHurtEvent;
 /** Concept §14 — progressive AI unlocked by difficulty tiers. */
 public final class AdaptiveAiSystem {
     private AdaptiveAiSystem() {}
+
+    /**
+     * Counter ki charging: nearby Advanced+ mobs rush the charging player and apply pressure.
+     */
+    public static void onPlayerKiCharge(ServerPlayer player) {
+        DifficultyConfig cfg = DifficultyConfig.get();
+        if (!cfg.enableAdaptiveAi || player == null || !(player.m_9236_() instanceof ServerLevel level)) {
+            return;
+        }
+        AABB box = player.m_20191_().m_82400_(16.0);
+        List<Mob> mobs = level.m_45976_(Mob.class, box);
+        for (Mob mob : mobs) {
+            long difficulty = MobScaling.difficultyOf(mob);
+            DifficultyTier tier = DifficultyTier.of(difficulty);
+            if (EliteSystem.isElite(mob) && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
+                tier = DifficultyTier.ELITE;
+            }
+            if (tier.ordinalPower() < DifficultyTier.ADVANCED.ordinalPower()) {
+                continue;
+            }
+            mob.m_6710_(player);
+            mob.m_21573_().m_5624_(player, 1.4);
+            if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()) {
+                player.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 30, 0, false, true)); // SLOWNESS
+            }
+            // Interrupt feel: brief blindness / nausea at high tiers
+            if (tier.ordinalPower() >= DifficultyTier.LEGENDARY.ordinalPower()
+                    && ThreadLocalRandom.current().nextDouble() < 0.15) {
+                player.m_7292_(new MobEffectInstance(MobEffects.f_19604_, 40, 0, false, true)); // NAUSEA
+            }
+        }
+    }
 
     public static void tick(LivingEntity entity) {
         DifficultyConfig cfg = DifficultyConfig.get();

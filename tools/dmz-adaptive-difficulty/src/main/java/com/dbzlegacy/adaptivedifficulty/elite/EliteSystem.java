@@ -52,6 +52,16 @@ public final class EliteSystem {
         if (armor != null) {
             armor.m_22100_(armor.m_22115_() + 4.0);
         }
+        // "Larger size" stand-in without Pehkui: knockback resist + slower but tankier presence
+        AttributeInstance knock = entity.m_21051_(Attributes.f_22278_); // KNOCKBACK_RESISTANCE
+        if (knock != null) {
+            knock.m_22100_(Math.min(1.0, knock.m_22115_() + 0.6));
+        }
+        AttributeInstance speed = entity.m_21051_(Attributes.f_22279_);
+        if (speed != null) {
+            speed.m_22100_(speed.m_22115_() * 0.92);
+        }
+        tag.m_128350_("dmz_ad_elite_scale", 1.35f); // hint for client/Pehkui packs
 
         long current = MobScaling.difficultyOf(entity);
         long boosted = Math.round(Math.max(current, 1L) * mult);
@@ -60,6 +70,6 @@ public final class EliteSystem {
         DifficultyTier tier = DifficultyTier.of(difficulty);
         String typeName = entity.m_6095_().m_20676_().getString();
         entity.m_6593_(Component.m_237113_("§6✦ Elite §e" + typeName + " §7(" + tier.display + ")"));
-        entity.m_20340_(true); // glowing
+        entity.m_20340_(true); // glowing aura stand-in
     }
 }

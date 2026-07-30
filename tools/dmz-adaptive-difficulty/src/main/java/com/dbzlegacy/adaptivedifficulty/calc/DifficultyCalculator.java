@@ -66,10 +66,13 @@ public final class DifficultyCalculator {
         if (amountToBuy <= 0) {
             return 0L;
         }
-        // Cost = Base × (Purchased / CostScaling), minimum Base, charged per chunk bought.
-        double scale = cfg.costScaling <= 0 ? 1.0 : (double) Math.max(1L, currentPurchased) / (double) cfg.costScaling;
-        long unit = Math.max(1L, Math.round(cfg.baseCost * Math.max(1.0, scale)));
-        return Math.max(1L, unit * Math.max(1L, amountToBuy / Math.max(1L, cfg.costScaling)));
+        // Concept §6: Cost = Base Cost × (Purchased Difficulty / Cost Scaling)
+        // Applied per costScaling-sized chunk being bought (min 1 chunk).
+        double purchasedRatio = cfg.costScaling <= 0
+                ? 1.0
+                : Math.max(1.0, (double) Math.max(1L, currentPurchased) / (double) cfg.costScaling);
+        long chunks = Math.max(1L, (amountToBuy + Math.max(1L, cfg.costScaling) - 1L) / Math.max(1L, cfg.costScaling));
+        return Math.max(1L, Math.round(cfg.baseCost * purchasedRatio) * chunks);
     }
 
     public static double rewardMultiplier(long activeDifficulty) {

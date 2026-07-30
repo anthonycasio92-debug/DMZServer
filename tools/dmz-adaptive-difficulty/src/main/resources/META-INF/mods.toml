@@ -4,13 +4,13 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_adaptive_difficulty"
-version = "1.1.0"
+version = "1.2.0"
 displayName = "DMZ Adaptive Difficulty"
 authors = "DBZ Legacy Reborn"
 description = '''
 Personal + team-scaled adaptive difficulty for DragonMineZ.
-Lightman's Currency purchases, clickable difficulty GUI,
-elite/mutation/AI/boss scaling, reward multipliers.
+Lightman's purchases, GUI, enemy evolution, elites, mutations,
+adaptive AI, boss phases, and full reward scaling.
 '''
 
 [[mixins]]

@@ -51,12 +51,15 @@ public final class DifficultyConfig {
     public boolean enableMutations = true;
     public double mutationChancePercent = 5.0;
     public boolean enableAdaptiveAi = true;
+    public boolean enableEnemyEvolution = true;
     public boolean enableBossScaling = true;
     public double bossStatMultiplier = 1.5;
     public double bossHealthThreshold = 100.0;
     public List<String> bossIdContains = new ArrayList<>(Arrays.asList(
             "boss", "warden", "wither", "ender_dragon", "raid"
     ));
+    /** Admin permission node (Forge PermissionAPI / LuckPerms). Ops always allowed. */
+    public String adminPermission = "difficulty.admin";
 
     private DifficultyConfig() {}
 

@@ -46,8 +46,17 @@ public final class DifficultyCommands {
                         .then(Commands.m_82129_("amount", LongArgumentType.longArg(1))
                                 .executes(ctx -> adjust(ctx.getSource(), -LongArgumentType.getLong(ctx, "amount")))))
                 .then(Commands.m_82127_("set")
+                        // Player: /difficulty set <amount>
                         .then(Commands.m_82129_("amount", LongArgumentType.longArg(0))
-                                .executes(ctx -> setActive(ctx.getSource(), LongArgumentType.getLong(ctx, "amount")))))
+                                .executes(ctx -> setActive(ctx.getSource(), LongArgumentType.getLong(ctx, "amount"))))
+                        // Admin concept alias: /difficulty set prestigeMultiplier 10
+                        .then(Commands.m_82129_("key", StringArgumentType.word())
+                                .requires(DifficultyCommands::isAdmin)
+                                .then(Commands.m_82129_("value", StringArgumentType.greedyString())
+                                        .executes(ctx -> adminSet(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "key"),
+                                                StringArgumentType.getString(ctx, "value"))))))
                 .then(Commands.m_82127_("buy")
                         .then(Commands.m_82129_("amount", LongArgumentType.longArg(1))
                                 .executes(ctx -> buy(ctx.getSource(), LongArgumentType.getLong(ctx, "amount")))))
@@ -55,11 +64,20 @@ public final class DifficultyCommands {
                         .executes(ctx -> cycleTeam(ctx.getSource()))
                         .then(Commands.m_82129_("mode", StringArgumentType.word())
                                 .executes(ctx -> setTeam(ctx.getSource(), StringArgumentType.getString(ctx, "mode")))))
+                .then(Commands.m_82127_("settings")
+                        .requires(DifficultyCommands::isAdmin)
+                        .executes(ctx -> openGui(ctx.getSource(), "settings"))
+                        .then(Commands.m_82129_("key", StringArgumentType.word())
+                                .then(Commands.m_82129_("value", StringArgumentType.greedyString())
+                                        .executes(ctx -> adminSet(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "key"),
+                                                StringArgumentType.getString(ctx, "value"))))))
                 .then(Commands.m_82127_("reload")
-                        .requires(src -> src.m_6761_(2))
+                        .requires(DifficultyCommands::isAdmin)
                         .executes(ctx -> reload(ctx.getSource())))
                 .then(Commands.m_82127_("admin")
-                        .requires(src -> src.m_6761_(2))
+                        .requires(DifficultyCommands::isAdmin)
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("set")
                                 .then(Commands.m_82129_("key", StringArgumentType.word())
@@ -71,6 +89,25 @@ public final class DifficultyCommands {
 
         event.getDispatcher().register(root);
         AdaptiveDifficultyMod.LOGGER.info("[{}] registered /difficulty", AdaptiveDifficultyMod.MOD_ID);
+    }
+
+    private static boolean isAdmin(CommandSourceStack src) {
+        if (src.m_6761_(2)) {
+            return true;
+        }
+        ServerPlayer player = src.m_230896_();
+        if (player == null) {
+            return false;
+        }
+        String node = DifficultyConfig.get().adminPermission;
+        try {
+            // Mohist/Bukkit: CommandSender#hasPermission(String)
+            var method = player.getClass().getMethod("hasPermission", String.class);
+            Object result = method.invoke(player, node);
+            return result instanceof Boolean b && b;
+        } catch (Throwable ignored) {
+        }
+        return false;
     }
 
     private static int openGui(CommandSourceStack source, String page) {
@@ -240,9 +277,11 @@ public final class DifficultyCommands {
                 case "enablemutations" -> cfg.enableMutations = Boolean.parseBoolean(value);
                 case "mutationchance", "mutationchancepercent" -> cfg.mutationChancePercent = Double.parseDouble(value);
                 case "enableadaptiveai" -> cfg.enableAdaptiveAi = Boolean.parseBoolean(value);
+                case "enableenemyevolution" -> cfg.enableEnemyEvolution = Boolean.parseBoolean(value);
                 case "enablebossscaling" -> cfg.enableBossScaling = Boolean.parseBoolean(value);
                 case "bossstatmultiplier" -> cfg.bossStatMultiplier = Double.parseDouble(value);
                 case "bosshealththreshold" -> cfg.bossHealthThreshold = Double.parseDouble(value);
+                case "adminpermission" -> cfg.adminPermission = value.trim();
                 default -> {
                     source.m_81352_(Component.m_237113_("Unknown key: " + key));
                     return 0;

@@ -10,7 +10,7 @@ LIGHTMANS="$ROOT/libraries/lightmanscurrency-1.20.1-2.3.0.5.jar"
 if [[ ! -f "$LIGHTMANS" ]]; then
   LIGHTMANS="$ROOT/mods/lightmanscurrency-1.20.1-2.3.0.5.jar"
 fi
-VERSION="1.1.0"
+VERSION="1.2.0"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
