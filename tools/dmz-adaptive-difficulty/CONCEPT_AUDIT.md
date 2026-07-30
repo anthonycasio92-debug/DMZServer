@@ -1,6 +1,6 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.7.10** (server-side only; CMI GUI, no DeluxeMenus)  
+Mod version: **1.7.11** (server-side only; CMI GUI, no DeluxeMenus)  
 Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
 Reaudited against live Java sources (not prior audit claims).
@@ -48,6 +48,12 @@ Mobs scale once at spawn from nearby **active** difficulty (area mode). Evolutio
 | **1000+** | **Master** | Berserk / **Charged Beams**; warden teleport |
 
 Raise active difficulty via `/difficulty` → **Adjust**, then fight **newly spawned** hostiles (already-spawned mobs keep their old cached difficulty).
+
+## v1.7.11 — per-mob kits + stacked gravity
+- Endermen/Wardens apply real DMZ gravity-chamber pressure; more aggro = heavier gravity
+- Full kits: Creeper / Zombie / Skeleton / Enderman / Warden / Blaze / Ghast / Piglin / Zombie Piglin / Hoglin
+- Skeleton/Blaze/Ghast vanilla projectiles replaced with DMZ ki
+- Creepers always Final Explosion; radius/fuse/damage scale with difficulty
 
 ## v1.7.10 — matching nameplates
 - Evolution used translation keys (`entity.minecraft.zombie`) for name tags

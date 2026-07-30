@@ -8,6 +8,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
+import com.dbzlegacy.adaptivedifficulty.evolution.CombatGravity;
 import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.reward.RewardSystem;
@@ -18,11 +19,19 @@ import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.dragonminez.common.events.DMZEvent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.entity.monster.Blaze;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.entity.monster.Ghast;
+import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.SmallFireball;
+import net.minecraft.world.entity.projectile.LargeFireball;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -60,7 +69,7 @@ public final class DifficultyEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             DifficultyCache.save(player);
             DifficultyCache.remove(player.m_20148_());
-            // Only drop this player's cache — do not wipe everyone on leave.
+            CombatGravity.clearPlayer(player);
             AreaDifficulty.clearCache();
         }
     }
@@ -75,6 +84,7 @@ public final class DifficultyEvents {
         data.writeToPlayerNbt(PersistentDataAccess.get(neu));
         DifficultyCache.putData(neu, data);
         DifficultyCache.remove(old.m_20148_());
+        CombatGravity.clearPlayer(old);
     }
 
     @SubscribeEvent(priority = EventPriority.LOW)
@@ -143,6 +153,9 @@ public final class DifficultyEvents {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)) {
             return;
         }
+        // Keep DMZ gravity-chamber zones glued to the player while endermen/wardens agro.
+        CombatGravity.tickPlayer(player);
+
         if (player.f_19797_ % 100 != 0) {
             return;
         }
@@ -159,19 +172,58 @@ public final class DifficultyEvents {
     public void onHurt(LivingHurtEvent event) {
         AdaptiveAiSystem.onHurt(event);
         LivingEntity entity = event.getEntity();
-        if (entity instanceof EnderMan && event.getAmount() > 0.0f) {
+        if (entity != null && event.getAmount() > 0.0f) {
             EnemyEvolution.onHurt(entity);
         }
     }
 
     @SubscribeEvent
     public void onDeath(LivingDeathEvent event) {
+        LivingEntity dead = event.getEntity();
+        if (dead instanceof Creeper creeper) {
+            EnemyEvolution.onCreeperDeath(creeper);
+        }
         if (!(event.getSource().m_7639_() instanceof ServerPlayer killer)) {
             return;
         }
-        LivingEntity dead = event.getEntity();
         if (dead != null) {
             RewardSystem.onKill(killer, dead);
+        }
+    }
+
+    /**
+     * Replace vanilla projectiles from evolved skeletons / blazes / ghasts with DMZ ki.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public void onProjectileJoin(EntityJoinLevelEvent event) {
+        if (event.getLevel().m_5776_()) { // isClientSide
+            return;
+        }
+        Entity entity = event.getEntity();
+        LivingEntity target = null;
+        Mob shooter = null;
+
+        if (entity instanceof AbstractArrow arrow && arrow.m_19749_() instanceof AbstractSkeleton skel) {
+            shooter = skel;
+            target = skel.m_5448_();
+        } else if (entity instanceof SmallFireball ball && ball.m_19749_() instanceof Blaze blaze) {
+            shooter = blaze;
+            target = blaze.m_5448_();
+        } else if (entity instanceof LargeFireball ball && ball.m_19749_() instanceof Ghast ghast) {
+            shooter = ghast;
+            target = ghast.m_5448_();
+        } else {
+            return;
+        }
+
+        if (shooter == null || target == null || !EnemyEvolution.isEvolvable(shooter)) {
+            return;
+        }
+        if (!PersistentDataAccess.get(shooter).m_128471_(MobScaling.TAG_SCALED)) {
+            return;
+        }
+        if (EnemyEvolution.tryReplaceProjectile(shooter, target)) {
+            event.setCanceled(true);
         }
     }
 
@@ -183,7 +235,6 @@ public final class DifficultyEvents {
         if (!(event.getPlayer() instanceof ServerPlayer player)) {
             return;
         }
-        // Display/combat cache is enough — avoid full team recompute every TP tick.
         DifficultySnapshot snap = DifficultyCache.get(player);
         double mult = DifficultyCalculator.rewardMultiplier(snap.active);
         if (mult > 1.0) {
