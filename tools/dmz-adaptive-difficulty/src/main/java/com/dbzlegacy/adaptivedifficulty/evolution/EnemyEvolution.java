@@ -4,6 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dbzlegacy.adaptivedifficulty.util.EntityDisplayNames;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import java.lang.reflect.Field;
 import java.util.List;
@@ -137,8 +138,9 @@ public final class EnemyEvolution {
         tag.m_128379_(TAG_EVOLVED, true);
         // Brief glow so evolution is visible in the field
         mob.m_7292_(new MobEffectInstance(MobEffects.f_19619_, 100, 0, false, false)); // GLOWING
+        // Never overwrite elite / mutation / boss nameplates.
         if (!mob.m_8077_()) { // hasCustomName
-            String typeName = String.valueOf(mob.m_6095_().m_20675_());
+            String typeName = EntityDisplayNames.of(mob);
             mob.m_6593_(Component.m_237113_("§6" + tier.display + " §f" + typeName));
             mob.m_20340_(true); // setCustomNameVisible
         }

@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.elite;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dbzlegacy.adaptivedifficulty.util.EntityDisplayNames;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.nbt.CompoundTag;
@@ -73,7 +74,7 @@ public final class EliteSystem {
         tag.m_128356_(MobScaling.TAG_DIFFICULTY, Math.max(current, boosted));
 
         DifficultyTier tier = DifficultyTier.of(difficulty);
-        String typeName = entity.m_6095_().m_20676_().getString();
+        String typeName = EntityDisplayNames.of(entity);
         entity.m_6593_(Component.m_237113_("§6✦ Elite §e" + typeName + " §7(" + tier.display + ")"));
         entity.m_20340_(true); // glowing aura stand-in
     }

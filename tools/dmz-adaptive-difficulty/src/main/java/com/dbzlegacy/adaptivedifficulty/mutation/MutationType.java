@@ -5,43 +5,50 @@ import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.EnderMan;
-import net.minecraft.world.entity.monster.Skeleton;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 
+/**
+ * Concept §13 mutations. Display names are adjectives only — the live entity type
+ * is appended at apply-time so a spider never shows as "Burning Zombie".
+ */
 public enum MutationType {
-    BURNING_ZOMBIE("Burning", "Burning Zombie"),
-    ELECTRIC_SKELETON("Electric", "Electric Skeleton"),
-    GRAVITY_ENDERMAN("Gravity", "Gravity Enderman"),
-    TITAN_CREEPER("Titan", "Titan Creeper"),
-    BERSERKER_PIGLIN("Berserker", "Berserker Piglin"),
-    SHADOW("Shadow", "Shadow Stalker"),
-    VAMPIRIC("Vampiric", "Vampiric Horror");
+    BURNING_ZOMBIE("Burning"),
+    ELECTRIC_SKELETON("Electric"),
+    GRAVITY_ENDERMAN("Gravity"),
+    TITAN_CREEPER("Titan"),
+    BERSERKER_PIGLIN("Berserker"),
+    SHADOW("Shadow"),
+    VAMPIRIC("Vampiric");
 
     public final String shortName;
+    /** @deprecated use {@link #shortName} + live entity type */
+    @Deprecated
     public final String displayName;
 
-    MutationType(String shortName, String displayName) {
+    MutationType(String shortName) {
         this.shortName = shortName;
-        this.displayName = displayName;
+        this.displayName = shortName;
     }
 
     public static MutationType randomFor(LivingEntity entity) {
         MutationType[] pool;
         if (entity instanceof Zombie) {
             pool = new MutationType[] {BURNING_ZOMBIE, VAMPIRIC, SHADOW};
-        } else if (entity instanceof Skeleton) {
-            pool = new MutationType[] {ELECTRIC_SKELETON, SHADOW};
+        } else if (entity instanceof AbstractSkeleton) {
+            pool = new MutationType[] {ELECTRIC_SKELETON, SHADOW, VAMPIRIC};
         } else if (entity instanceof EnderMan) {
             pool = new MutationType[] {GRAVITY_ENDERMAN, SHADOW};
         } else if (entity instanceof Creeper) {
-            pool = new MutationType[] {TITAN_CREEPER, BURNING_ZOMBIE};
+            pool = new MutationType[] {TITAN_CREEPER, SHADOW, BURNING_ZOMBIE};
         } else if (entity instanceof AbstractPiglin) {
-            pool = new MutationType[] {BERSERKER_PIGLIN, BURNING_ZOMBIE};
+            pool = new MutationType[] {BERSERKER_PIGLIN, SHADOW, BURNING_ZOMBIE};
         } else {
-            pool = values();
+            // Generic hostiles: only names that work for any mob type.
+            pool = new MutationType[] {SHADOW, VAMPIRIC};
         }
         return pool[ThreadLocalRandom.current().nextInt(pool.length)];
     }

@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.mutation;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dbzlegacy.adaptivedifficulty.util.EntityDisplayNames;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.nbt.CompoundTag;
@@ -65,7 +66,8 @@ public final class MutationSystem {
         }
 
         String prefix = EliteSystem.isElite(entity) ? "§6Elite " : "";
-        entity.m_6593_(Component.m_237113_("§d" + prefix + type.displayName));
+        // Adjective + live type so names always match the mob (e.g. "Burning Husk").
+        entity.m_6593_(Component.m_237113_("§d" + prefix + type.shortName + " " + EntityDisplayNames.of(entity)));
         entity.m_20340_(true);
     }
 

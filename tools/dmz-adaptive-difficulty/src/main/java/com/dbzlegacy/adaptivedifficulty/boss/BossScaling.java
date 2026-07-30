@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.boss;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dbzlegacy.adaptivedifficulty.util.EntityDisplayNames;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -103,7 +104,7 @@ public final class BossScaling {
         }
 
         DifficultyTier tier = DifficultyTier.of(difficulty);
-        String typeName = entity.m_6095_().m_20676_().getString();
+        String typeName = EntityDisplayNames.of(entity);
         entity.m_6593_(Component.m_237113_("§c☠ Boss §4" + typeName + " §7[" + tier.display + "]"));
         entity.m_20340_(true);
     }
