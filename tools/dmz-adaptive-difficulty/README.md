@@ -51,6 +51,7 @@ Clients do **not** need this jar to join.
 ## Pricing (Lightman's iron coins)
 
 Raising active difficulty and buying more max **always** costs Lightman's Currency from **inventory coins only**.
+Higher coins (gold, emerald, …) are accepted for iron-priced costs — leftover is returned as change.
 
 Default formula (iron coins):
 
