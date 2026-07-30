@@ -36,10 +36,18 @@ Reaudited against live Java sources (not prior audit claims).
 - **Admin command shape**: nested under `/difficulty admin` with toggle (ops / `difficulty.admin`)
 - **Phys vs Ki DMZ extras**: folded into shared outgoing damage multiplier for mobs
 
-## v1.7.0 reaudit fixes
+## v1.6.2 reaudit fixes
 - Anti-flight now disables DMZ `fly` skill + removes `MainEffects.FLY` (not only creative fly)
 - Red / Extreme state is reachable (full team ceiling or hard-cap band) and shown in GUIs
 - Unlocked titles listed on Statistics (chat / CMI / chest)
 - Ability unlock tier thresholds admin-editable (`tierAwakened` … `tierImpossible`)
 - Admin set covers movement % and `dmzExtra*` keys
 - Creepers gain larger `explosionRadius` + faster fuse by tier
+
+## v1.7.0 optimization + CMI-only GUI
+- Removed DeluxeMenus bridge, configs, and jar; legacy `guiBackend=deluxemenus` remaps to `cmi`
+- LivingTick: Mob-only, unmarked scaled-zero exit, sparse spawn retry, staggered AI/evolution
+- Area difficulty uses cached player snapshots + 250ms chunk TTL (no full refresh on spawn)
+- PersistentDataAccess MethodHandle; cached damage multiplier on mob NBT
+- Logout no longer invalidates every player's cache
+- ForgeBridge caches reflective handles + 200ms placeholder map
