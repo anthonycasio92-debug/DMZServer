@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.2.0)
+# DMZ Adaptive Difficulty (v1.2.1)
 
 Server-side Forge/Mohist 1.20.1 mod implementing the Adaptive Difficulty concept.
 
@@ -31,11 +31,11 @@ bash tools/dmz-adaptive-difficulty/build.sh
 
 Requires `libraries/lightmanscurrency-1.20.1-2.3.0.5.jar` (or same file under `mods/`) on the compile classpath.
 
-Outputs `mods/dmz_adaptive_difficulty-1.2.0.jar`.
+Outputs `mods/dmz_adaptive_difficulty-1.2.1.jar`.
 
 ## Install
 
-1. Put `dmz_adaptive_difficulty-1.2.0.jar` in `mods/`
+1. Put `dmz_adaptive_difficulty-1.2.1.jar` in `mods/` (remove any older `dmz_adaptive_difficulty-*.jar`)
 2. Put `lightmanscurrency-1.20.1-2.3.0.5.jar` in `mods/` (optional but recommended)
 3. Restart → config at `config/dmz_adaptive_difficulty.json`
 

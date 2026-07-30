@@ -4,7 +4,7 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_adaptive_difficulty"
-version = "1.2.0"
+version = "1.2.1"
 displayName = "DMZ Adaptive Difficulty"
 authors = "DBZ Legacy Reborn"
 description = '''
@@ -40,6 +40,7 @@ side = "BOTH"
 [[dependencies.dmz_adaptive_difficulty]]
 modId = "lightmanscurrency"
 mandatory = false
-versionRange = "[2.0,)"
+# Lightman's versions are MC-prefixed (e.g. 1.20.1-2.3.0.5); [2.0,) falsely rejects them.
+versionRange = "[0,)"
 ordering = "AFTER"
 side = "BOTH"
