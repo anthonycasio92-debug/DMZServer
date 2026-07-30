@@ -1,0 +1,38 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "MIT"
+
+[[mods]]
+modId = "dmz_adaptive_difficulty"
+version = "1.0.0"
+displayName = "DMZ Adaptive Difficulty"
+authors = "DBZ Legacy Reborn"
+description = '''
+Personal + team-scaled adaptive difficulty for DragonMineZ.
+Server-side: calculated/purchased/active difficulty, mob scaling,
+reward multipliers, admin config. Phase 1 foundation.
+'''
+
+[[mixins]]
+config = "dmz_adaptive_difficulty.mixins.json"
+
+[[dependencies.dmz_adaptive_difficulty]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.dmz_adaptive_difficulty]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.20.2)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.dmz_adaptive_difficulty]]
+modId = "dragonminez"
+mandatory = true
+versionRange = "[2.1,)"
+ordering = "AFTER"
+side = "BOTH"
