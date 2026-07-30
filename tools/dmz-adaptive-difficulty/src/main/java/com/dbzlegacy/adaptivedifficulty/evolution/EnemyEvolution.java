@@ -162,18 +162,42 @@ public final class EnemyEvolution {
         if (target == null) {
             return;
         }
-        // "Ki blast" / laser stand-in: ranged pressure via glowing + wither/poison bolts feel
-        if (tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower() && skeleton.f_19797_ % 40 == 0
-                && skeleton.m_20270_(target) < 18.0f) {
-            target.m_7292_(new MobEffectInstance(MobEffects.f_19615_, 40, 0, false, true)); // WITHER brief
+        float dist = skeleton.m_20270_(target);
+        if (dist > 28.0f) {
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(skeleton);
+        long age = skeleton.f_19797_;
+
+        // Concept §11 Skeletons: Ki Blast → Laser → Beam → Charged Beam (real DMZ projectiles)
+        if (tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_ki_blast") >= 45
+                && dist < 18.0f) {
+            if (KiAttackHelper.fireKiBlast(skeleton, target, tier)) {
+                tag.m_128356_("dmz_ad_ki_blast", age);
+            }
+        }
+        if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_ki_laser") >= 70
+                && dist < 22.0f) {
+            if (KiAttackHelper.fireKiLaser(skeleton, target, tier)) {
+                tag.m_128356_("dmz_ad_ki_laser", age);
+            }
         }
         if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()) {
-            skeleton.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, 0, false, false));
+            skeleton.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, 0, false, false)); // SPEED
+            if (age - tag.m_128454_("dmz_ad_ki_beam") >= 100 && dist < 24.0f) {
+                if (KiAttackHelper.fireKiBeam(skeleton, target, tier, false)) {
+                    tag.m_128356_("dmz_ad_ki_beam", age);
+                }
+            }
         }
-        // Charged beam: heavy burst
         if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()
-                && skeleton.f_19797_ % 100 == 0 && skeleton.m_20270_(target) < 20.0f) {
-            target.m_6469_(skeleton.m_269291_().m_269333_(skeleton), 4.0f + tier.ordinalPower());
+                && age - tag.m_128454_("dmz_ad_ki_charged") >= 140
+                && dist < 26.0f) {
+            if (KiAttackHelper.fireKiBeam(skeleton, target, tier, true)) {
+                tag.m_128356_("dmz_ad_ki_charged", age);
+            }
         }
     }
 
@@ -203,20 +227,43 @@ public final class EnemyEvolution {
         if (target == null) {
             return;
         }
-        // Ki barrage stand-in: pulse damage to nearby players
-        if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower() && warden.f_19797_ % 60 == 0) {
+        CompoundTag tag = PersistentDataAccess.get(warden);
+        long age = warden.f_19797_;
+        float dist = warden.m_20270_(target);
+
+        // Concept §11 Wardens: Ki Barrage / Beam (real DMZ projectiles)
+        if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_ki_barrage") >= 70
+                && dist < 20.0f) {
+            int shots = 2 + Math.min(4, tier.ordinalPower() / 2);
+            if (KiAttackHelper.fireKiBarrage(warden, target, tier, shots) > 0) {
+                tag.m_128356_("dmz_ad_ki_barrage", age);
+            }
+            if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()) {
+                target.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 40, 1, false, true)); // SLOWNESS
+            }
+        }
+        if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_ki_beam") >= 110
+                && dist < 24.0f) {
+            if (KiAttackHelper.fireKiBeam(warden, target, tier,
+                    tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower())) {
+                tag.m_128356_("dmz_ad_ki_beam", age);
+            }
+        }
+        // Gravity pulse (nearby pull / slow) when Advanced+
+        if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower() && age % 80 == 0) {
             AABB box = warden.m_20191_().m_82400_(8.0);
             List<ServerPlayer> players = level.m_45976_(ServerPlayer.class, box);
             for (ServerPlayer p : players) {
-                p.m_6469_(warden.m_269291_().m_269333_(warden), 3.0f + tier.ordinalPower());
-                if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()) {
-                    p.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 40, 1, false, true));
-                }
+                p.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 40, 1, false, true));
             }
         }
         // Teleport hop
         if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()
-                && warden.f_19797_ % 120 == 0 && warden.m_20270_(target) > 6.0f) {
+                && age - tag.m_128454_("dmz_ad_tp") >= 120
+                && dist > 6.0f) {
+            tag.m_128356_("dmz_ad_tp", age);
             warden.m_6021_(target.m_20185_(), target.m_20186_(), target.m_20189_());
         }
     }

@@ -1,6 +1,6 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.7.0** (server-side only; CMI GUI, no DeluxeMenus)  
+Mod version: **1.7.7** (server-side only; CMI GUI, no DeluxeMenus)  
 Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
 Reaudited against live Java sources (not prior audit claims).
@@ -17,7 +17,7 @@ Reaudited against live Java sources (not prior audit claims).
 | 8 | State colors G/Y/O/P/R | Done | `DifficultySnapshot.state()`; Extreme = full team ceiling or hard-cap; shown in GUIs |
 | 9 | Mob spawn scaling + DMZ extras | Done | `MobScaling` + `AreaDifficulty` (SH-style); DMZ extras on DMZ mobs |
 | 10 | Tiers 10→100000 | Done | `DifficultyTier` defaults match concept; thresholds config-driven |
-| 11 | Enemy evolution (creeper/zombie/skel/enderman/warden) | Done* | `EnemyEvolution` — creeper larger blast/faster fuse via radius+swell; ki beams are stand-ins |
+| 11 | Enemy evolution (creeper/zombie/skel/enderman/warden) | Done | `EnemyEvolution` + `KiAttackHelper` — skeletons/wardens fire real DMZ `KiBlast`/`KiLaser`/`KiWave` |
 | 12 | Elites (name/aura/size/AI/rewards) | Done* | `EliteSystem` — glow aura + knockback-resist size + NBT scale hint (no Pehkui) |
 | 13 | Mutations listed | Done | All five + Shadow / Vampiric extras |
 | 14 | Adaptive AI incl. ki-charge + anti-flight | Done | Dodge/retreat/ki-charge/`MainEffects.FLY`+fly skill/focus/coord |
@@ -30,11 +30,28 @@ Reaudited against live Java sources (not prior audit claims).
 ## Intentional approximations (not blockers)
 - **GUI host**: CMILib/CMI inventory / Bukkit chest / chat (no Forge client Screen jar)
 - **Elite size / aura**: no Pehkui; knockback resist + glowing name; NBT `dmz_ad_elite_scale`
-- **Skeleton “ki beam/laser”**: effect/damage stand-ins (not full DMZ ki projectiles)
 - **DMZ XP**: vanilla XP points (no dedicated DMZ XP gain event in 2.1.3)
 - **Cosmetics**: capsule item drops (not wardrobe skins); titles unlock + Statistics list
 - **Admin command shape**: nested under `/difficulty admin` with toggle (ops / `difficulty.admin`)
 - **Phys vs Ki DMZ extras**: folded into shared outgoing damage multiplier for mobs
+
+## Mob power ladder (concept §9–§14) — how to see ki
+Mobs scale once at spawn from nearby **active** difficulty (area mode). Evolution/AI unlock by tier:
+
+| Active difficulty | Tier | What you should notice |
+|---|---|---|
+| 0 | — | Stats only if somehow tagged; no evolution |
+| 10+ | Awakened | Evolution starts |
+| **50+** | **Enhanced** | Skeletons fire **Ki Blasts** (DMZ projectile) |
+| **100+** | **Elite** | Skeleton **Lasers**; Warden **Ki Barrage** |
+| **500+** | **Advanced** | Skeleton **Beams**; anti-flight / dodge AI |
+| **1000+** | **Master** | Skeleton **Charged Beams**; warden teleport |
+
+Raise active difficulty via `/difficulty` → **Adjust**, then fight freshly spawned skeletons (already-spawned mobs keep their old cached difficulty).
+
+## v1.7.7 — real DMZ ki projectiles
+- Replaced skeleton/warden effect stand-ins with `KiBlastEntity` / `KiLaserEntity` / `KiWaveEntity`
+- Homing aimed shots; damage scales with tier + mob difficulty
 
 ## v1.6.2 reaudit fixes
 - Anti-flight now disables DMZ `fly` skill + removes `MainEffects.FLY` (not only creative fly)

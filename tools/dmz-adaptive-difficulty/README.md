@@ -16,7 +16,7 @@ Clients do **not** need this jar to join.
 - FTB Teams teammate scaling (scoreboard fallback)
 - Raising difficulty always costs **Lightman's iron coins** (scaled); lowering/reset is free
 - Payments take coins from the **player inventory only** (not wallet/bank)
-- Spawn mob scaling (capped), elites, mutations, enemy evolution, adaptive AI, boss phases
+- Spawn mob scaling (capped), elites, mutations, enemy evolution (real DMZ ki blasts/lasers/beams), adaptive AI, boss phases
 - Scaling Health-inspired area difficulty (`weighted` / `average` / `max`)
 - Optimized tick path: unmarked mobs exit immediately; AI/evolution staggered
 
