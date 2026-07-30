@@ -43,13 +43,18 @@ public final class DifficultyConfig {
     public String costCoinItem = "lightmanscurrency:coin_iron";
     public double rewardScaling = 1_000.0;
     public double healthPercentPerDifficulty = 1.0;
-    public double damagePercentPerDifficulty = 1.0;
-    public double defensePercentPerDifficulty = 3.0;
+    /** Per-difficulty damage % (was 1.0; +50% → 1.5). */
+    public double damagePercentPerDifficulty = 1.5;
+    /** Per-difficulty armor points (was 3.0; +50% → 4.5). */
+    public double defensePercentPerDifficulty = 4.5;
     public double movementPercentPer100Difficulty = 0.1;
     public double dmzExtraHealthPercent = 1.0;
-    public double dmzExtraDamagePercent = 1.0;
-    public double dmzExtraDefensePercent = 3.0;
-    public double dmzExtraKiDamagePercent = 1.0;
+    /** DMZ-style extra damage % (was 1.0; +50% → 1.5). */
+    public double dmzExtraDamagePercent = 1.5;
+    /** DMZ-style extra armor points (was 3.0; +50% → 4.5). */
+    public double dmzExtraDefensePercent = 4.5;
+    /** DMZ-style extra ki damage % (was 1.0; +50% → 1.5). */
+    public double dmzExtraKiDamagePercent = 1.5;
     public double mobScaleRadius = 64.0;
     /**
      * Area difficulty mode (Scaling Health-inspired):
@@ -263,6 +268,38 @@ public final class DifficultyConfig {
                     AdaptiveDifficultyMod.MOD_ID
             );
         }
+        // Bump stock damage/defense rates +50% when still on pre-1.7.18 defaults.
+        boolean bumped = false;
+        if (nearly(cfg.damagePercentPerDifficulty, 1.0)) {
+            cfg.damagePercentPerDifficulty = 1.5;
+            bumped = true;
+        }
+        if (nearly(cfg.defensePercentPerDifficulty, 3.0)) {
+            cfg.defensePercentPerDifficulty = 4.5;
+            bumped = true;
+        }
+        if (nearly(cfg.dmzExtraDamagePercent, 1.0)) {
+            cfg.dmzExtraDamagePercent = 1.5;
+            bumped = true;
+        }
+        if (nearly(cfg.dmzExtraDefensePercent, 3.0)) {
+            cfg.dmzExtraDefensePercent = 4.5;
+            bumped = true;
+        }
+        if (nearly(cfg.dmzExtraKiDamagePercent, 1.0)) {
+            cfg.dmzExtraKiDamagePercent = 1.5;
+            bumped = true;
+        }
+        if (bumped) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] damage/defense percents +50% (1.0/3.0 → 1.5/4.5 incl. DMZ extras)",
+                    AdaptiveDifficultyMod.MOD_ID
+            );
+        }
+    }
+
+    private static boolean nearly(double value, double expected) {
+        return Math.abs(value - expected) < 1.0e-9;
     }
 
     public static void save() {
