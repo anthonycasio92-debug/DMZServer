@@ -170,23 +170,32 @@ public final class DifficultyChestGui implements Listener {
     private Inventory tiers(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         Holder holder = new Holder("tiers");
-        Inventory inv = Bukkit.createInventory(holder, 36, color("&8Enemy Tiers"));
+        Inventory inv = Bukkit.createInventory(holder, 54, color("&8Enemy Tiers"));
         holder.bind(inv);
-        frame(inv, 36);
+        frame(inv, 54);
         inv.setItem(4, item(Material.IRON_SWORD, "&f&lEnemy Tiers", List.of(
                 "",
                 "&7Current  &f" + ph.getOrDefault("tier", "?"),
-                "&7Active   &f" + ph.getOrDefault("active", "?")
+                "&7Active   &f" + ph.getOrDefault("active", "?"),
+                "",
+                "&8Zenith = theoretical max",
+                "&8(level 100k × 10 prestiges)"
         )));
 
         String[][] rows = {
                 {"awakened", "Awakened"}, {"enhanced", "Enhanced"}, {"elite", "Elite"},
                 {"advanced", "Advanced"}, {"master", "Master"}, {"legendary", "Legendary"},
-                {"god", "God"}, {"divine", "Divine"}, {"impossible", "Impossible"}
+                {"god", "God"}, {"divine", "Divine"}, {"impossible", "Impossible"},
+                {"transcendent", "Transcendent"}, {"eternal", "Eternal"}, {"mythic", "Mythic"},
+                {"omega", "Omega"}, {"absolute", "Absolute"}, {"apex", "Apex"},
+                {"zenith", "Zenith"}
         };
         long active = parseLong(ph.getOrDefault("active", "0"));
-        int[] slots = {18, 19, 20, 21, 22, 23, 24, 25, 26};
-        for (int i = 0; i < rows.length; i++) {
+        int[] slots = {
+                9, 10, 11, 12, 13, 14, 15, 16,
+                18, 19, 20, 21, 22, 23, 24, 25
+        };
+        for (int i = 0; i < rows.length && i < slots.length; i++) {
             long thr = parseLong(ph.getOrDefault("tier_" + rows[i][0], defaultTier(rows[i][0])));
             boolean unlocked = active >= thr;
             inv.setItem(slots[i], item(
@@ -195,8 +204,8 @@ public final class DifficultyChestGui implements Listener {
                     List.of("", "&7Threshold  &f" + thr, unlocked ? "&aUnlocked" : "&8Locked")
             ));
         }
-        inv.setItem(27, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
-        inv.setItem(35, closeBtn());
+        inv.setItem(45, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
+        inv.setItem(53, closeBtn());
         return inv;
     }
 
@@ -383,6 +392,13 @@ public final class DifficultyChestGui implements Listener {
             case "god" -> "10000";
             case "divine" -> "50000";
             case "impossible" -> "100000";
+            case "transcendent" -> "250000";
+            case "eternal" -> "500000";
+            case "mythic" -> "1000000";
+            case "omega" -> "2500000";
+            case "absolute" -> "5000000";
+            case "apex" -> "7500000";
+            case "zenith" -> "10000000";
             default -> "0";
         };
     }

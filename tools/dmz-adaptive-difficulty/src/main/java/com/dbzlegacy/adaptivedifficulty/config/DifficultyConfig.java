@@ -66,7 +66,15 @@ public final class DifficultyConfig {
      */
     public long hardCapDifficulty = 0L;
 
-    // Concept §10 / §7 — ability unlock tier thresholds (admin-editable)
+    /**
+     * Reference caps used to document the top tier (Zenith).
+     * Theoretical max ≈ referenceMaxLevel × referenceMaxPrestige × prestigeMultiplier
+     * = 100000 × 10 × 10 = 10,000,000 with defaults.
+     */
+    public long referenceMaxLevel = 100_000L;
+    public int referenceMaxPrestige = 10;
+
+    // Ability unlock tier thresholds (admin-editable)
     public long tierAwakened = 10L;
     public long tierEnhanced = 50L;
     public long tierElite = 100L;
@@ -76,6 +84,14 @@ public final class DifficultyConfig {
     public long tierGod = 10_000L;
     public long tierDivine = 50_000L;
     public long tierImpossible = 100_000L;
+    public long tierTranscendent = 250_000L;
+    public long tierEternal = 500_000L;
+    public long tierMythic = 1_000_000L;
+    public long tierOmega = 2_500_000L;
+    public long tierAbsolute = 5_000_000L;
+    public long tierApex = 7_500_000L;
+    /** Top tier — theoretical max for level 100k @ 10 prestiges. */
+    public long tierZenith = 10_000_000L;
     /**
      * Difficulty payments always use Lightman's Currency (iron coins).
      * Kept for config compatibility; non-lightmans values are forced back to lightmans.
@@ -127,7 +143,7 @@ public final class DifficultyConfig {
         return restoreVanillaDifficultyFromPeaceful == null || restoreVanillaDifficultyFromPeaceful;
     }
 
-    /** Concept §10 thresholds — editable via {@code /difficulty admin set tierX <n>}. */
+    /** Tier thresholds — editable via {@code /difficulty admin set tierX <n>}. */
     public long tierThreshold(com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier tier) {
         if (tier == null) {
             return 0L;
@@ -143,7 +159,29 @@ public final class DifficultyConfig {
             case GOD -> Math.max(0L, tierGod);
             case DIVINE -> Math.max(0L, tierDivine);
             case IMPOSSIBLE -> Math.max(0L, tierImpossible);
+            case TRANSCENDENT -> Math.max(0L, tierTranscendent);
+            case ETERNAL -> Math.max(0L, tierEternal);
+            case MYTHIC -> Math.max(0L, tierMythic);
+            case OMEGA -> Math.max(0L, tierOmega);
+            case ABSOLUTE -> Math.max(0L, tierAbsolute);
+            case APEX -> Math.max(0L, tierApex);
+            case ZENITH -> Math.max(0L, tierZenith);
         };
+    }
+
+    /** Theoretical max at reference caps (level 100k × 10 prestiges by default). */
+    public long theoreticalMaxAtReferenceCaps() {
+        long levelPart = Math.round(Math.max(1L, referenceMaxLevel) * Math.max(0.0, levelMultiplier));
+        int p = Math.max(0, referenceMaxPrestige);
+        if (p <= 0) {
+            return Math.max(0L, levelPart);
+        }
+        long prestigeFactor = Math.round(p * Math.max(0.0, prestigeMultiplier));
+        try {
+            return Math.multiplyExact(levelPart, Math.max(1L, prestigeFactor));
+        } catch (ArithmeticException e) {
+            return Long.MAX_VALUE / 4L;
+        }
     }
 
     private DifficultyConfig() {}

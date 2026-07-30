@@ -1,6 +1,6 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.7.12** (server-side only; CMI GUI, no DeluxeMenus)  
+Mod version: **1.7.13** (server-side only; CMI GUI, no DeluxeMenus)  
 Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
 Reaudited against live Java sources (not prior audit claims).
@@ -16,7 +16,7 @@ Reaudited against live Java sources (not prior audit claims).
 | 7 | Admin config / `difficulty.admin` / ability unlock tiers | Done | `/difficulty admin set …` incl. scaling keys + `tierAwakened`…`tierImpossible` |
 | 8 | State colors G/Y/O/P/R | Done | `DifficultySnapshot.state()`; Extreme = full team ceiling or hard-cap; shown in GUIs |
 | 9 | Mob spawn scaling + DMZ extras | Done | `MobScaling` + `AreaDifficulty` (SH-style); DMZ extras on DMZ mobs |
-| 10 | Tiers 10→100000 | Done | `DifficultyTier` defaults match concept; thresholds config-driven |
+| 10 | Tiers 10→100000 | Done+ | Extended through Zenith 10M (P10 / level 100k theoretical max) |
 | 11 | Enemy evolution (creeper/zombie/skel/enderman/warden) | Done | `EnemyEvolution` — all hostiles; special kits + shared melee/ranged (ki) packages; Stray/WitherSkeleton included |
 | 12 | Elites (name/aura/size/AI/rewards) | Done* | `EliteSystem` — glow aura + knockback-resist size + NBT scale hint (no Pehkui) |
 | 13 | Mutations listed | Done | All five + Shadow / Vampiric extras |
@@ -48,6 +48,11 @@ Mobs scale once at spawn from nearby **active** difficulty (area mode). Evolutio
 | **1000+** | **Master** | Berserk / **Charged Beams**; warden teleport |
 
 Raise active difficulty via `/difficulty` → **Adjust**, then fight **newly spawned** hostiles (already-spawned mobs keep their old cached difficulty).
+
+## v1.7.13 — tiers through Zenith (P10 theoretical max)
+- Added Transcendent → Zenith (250k … 10M)
+- Zenith = level 100000 × 10 prestiges × prestigeMultiplier 10
+- GUI tiers page lists the full ladder
 
 ## v1.7.12 — max from theoretical stats (no hardcap)
 - Removed default 1,000,000 hardcap (`hardCapDifficulty = 0`)

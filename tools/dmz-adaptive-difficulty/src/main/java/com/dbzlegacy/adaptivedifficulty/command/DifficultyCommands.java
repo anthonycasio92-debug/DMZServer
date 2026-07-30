@@ -320,7 +320,7 @@ public final class DifficultyCommands {
                         + "§e/difficulty admin set <key> <value>\n"
                         + "§8areaDifficultyMode=weighted|average|max (Scaling Health-style)\n"
                         + "§8hardCapDifficulty — 0 = no hardcap (max from DMZ stats)\n"
-                        + "§8tierAwakened|tierEnhanced|…|tierImpossible — ability unlock thresholds\n"
+                        + "§8tierAwakened…tierZenith — unlock thresholds (Zenith=10M @ L100k/P10)\n"
                         + "§8baseCostIronCoins|costScalePerDifficulty|costCoinItem\n"
                         + "§8levelMultiplier|prestigeMultiplier|movement|dmzExtra*"
         ), false);
@@ -383,6 +383,15 @@ public final class DifficultyCommands {
                 case "tiergod" -> cfg.tierGod = Long.parseLong(value);
                 case "tierdivine" -> cfg.tierDivine = Long.parseLong(value);
                 case "tierimpossible" -> cfg.tierImpossible = Long.parseLong(value);
+                case "tiertranscendent" -> cfg.tierTranscendent = Long.parseLong(value);
+                case "tiereternal" -> cfg.tierEternal = Long.parseLong(value);
+                case "tiermythic" -> cfg.tierMythic = Long.parseLong(value);
+                case "tieromega" -> cfg.tierOmega = Long.parseLong(value);
+                case "tierabsolute" -> cfg.tierAbsolute = Long.parseLong(value);
+                case "tierapex" -> cfg.tierApex = Long.parseLong(value);
+                case "tierzenith" -> cfg.tierZenith = Long.parseLong(value);
+                case "referencemaxlevel" -> cfg.referenceMaxLevel = Math.max(1L, Long.parseLong(value));
+                case "referencemaxprestige" -> cfg.referenceMaxPrestige = Math.max(0, Integer.parseInt(value));
                 case "hardcap", "hardcapdifficulty" ->
                         cfg.hardCapDifficulty = Math.max(0L, Long.parseLong(value)); // 0 = no hardcap
                 case "mobscaleradius" -> cfg.mobScaleRadius = Double.parseDouble(value);

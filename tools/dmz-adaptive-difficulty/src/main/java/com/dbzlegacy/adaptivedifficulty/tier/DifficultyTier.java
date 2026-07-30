@@ -2,7 +2,11 @@ package com.dbzlegacy.adaptivedifficulty.tier;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 
-/** Concept §10 difficulty tiers that unlock AI / abilities. Thresholds are admin-configurable. */
+/**
+ * Difficulty tiers that unlock AI / abilities.
+ * Ladder runs from early Awakened up to {@link #ZENITH} at the theoretical max
+ * for a maxed player (DMZ level 100000 × 10 prestiges × prestigeMultiplier 10 = 10M).
+ */
 public enum DifficultyTier {
     NONE(0, "None"),
     AWAKENED(10, "Awakened"),
@@ -13,9 +17,18 @@ public enum DifficultyTier {
     LEGENDARY(5_000, "Legendary"),
     GOD(10_000, "God"),
     DIVINE(50_000, "Divine"),
-    IMPOSSIBLE(100_000, "Impossible");
+    IMPOSSIBLE(100_000, "Impossible"),
+    /** Mid prestige — past base Impossible. */
+    TRANSCENDENT(250_000, "Transcendent"),
+    ETERNAL(500_000, "Eternal"),
+    MYTHIC(1_000_000, "Mythic"),
+    OMEGA(2_500_000, "Omega"),
+    ABSOLUTE(5_000_000, "Absolute"),
+    APEX(7_500_000, "Apex"),
+    /** Theoretical max: level 100000 @ 10 prestiges (default multipliers). */
+    ZENITH(10_000_000, "Zenith");
 
-    /** Concept default threshold (used when config is unavailable). */
+    /** Concept / design default threshold (used when config is unavailable). */
     public final long threshold;
     public final String display;
 
@@ -30,7 +43,7 @@ public enum DifficultyTier {
         CACHED_THRESHOLDS = null;
     }
 
-    /** Live threshold from config (falls back to concept default). */
+    /** Live threshold from config (falls back to design default). */
     public long threshold() {
         long[] cached = CACHED_THRESHOLDS;
         if (cached == null) {

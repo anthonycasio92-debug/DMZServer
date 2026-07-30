@@ -159,9 +159,12 @@ public final class DifficultyChatMenu {
 
     private static void tiers(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
+        DifficultyConfig cfg = DifficultyConfig.get();
         DifficultyTier current = DifficultyTier.of(snap.active);
         send(player, Component.m_237113_("§8──────── §fTiers §8────────"));
-        send(player, Component.m_237113_("§7Current §f" + current.display));
+        send(player, Component.m_237113_("§7Current §f" + current.display
+                + "  §8·  §7Zenith §f" + cfg.tierZenith
+                + " §8(L" + cfg.referenceMaxLevel + "/P" + cfg.referenceMaxPrestige + ")"));
         for (DifficultyTier tier : DifficultyTier.values()) {
             if (tier == DifficultyTier.NONE) {
                 continue;

@@ -202,25 +202,35 @@ public final class CmiDifficultyGui {
 
     private static void openTiers(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
-        CMIGui gui = base(player, "&8Enemy Tiers", 4);
+        CMIGui gui = base(player, "&8Enemy Tiers", 6);
 
         CMIGuiButton header = new CMIGuiButton(4, Material.IRON_SWORD, "&f&lEnemy Tiers");
         header.lockField();
         header.addLore(List.of(
                 "",
                 "&7Current  &f" + ph.getOrDefault("tier", "?"),
-                "&7Active   &f" + ph.getOrDefault("active", "?")
+                "&7Active   &f" + ph.getOrDefault("active", "?"),
+                "",
+                "&8Zenith = theoretical max",
+                "&8(level 100k × 10 prestiges)"
         ));
         gui.addButton(header);
 
         String[][] rows = {
                 {"awakened", "Awakened"}, {"enhanced", "Enhanced"}, {"elite", "Elite"},
                 {"advanced", "Advanced"}, {"master", "Master"}, {"legendary", "Legendary"},
-                {"god", "God"}, {"divine", "Divine"}, {"impossible", "Impossible"}
+                {"god", "God"}, {"divine", "Divine"}, {"impossible", "Impossible"},
+                {"transcendent", "Transcendent"}, {"eternal", "Eternal"}, {"mythic", "Mythic"},
+                {"omega", "Omega"}, {"absolute", "Absolute"}, {"apex", "Apex"},
+                {"zenith", "Zenith"}
         };
         long active = parseLong(ph.getOrDefault("active", "0"));
-        int[] slots = {18, 19, 20, 21, 22, 23, 24, 25, 26};
-        for (int i = 0; i < rows.length; i++) {
+        // Two full rows + partial third
+        int[] slots = {
+                9, 10, 11, 12, 13, 14, 15, 16,
+                18, 19, 20, 21, 22, 23, 24, 25
+        };
+        for (int i = 0; i < rows.length && i < slots.length; i++) {
             long thr = parseLong(ph.getOrDefault("tier_" + rows[i][0], defaultsTier(rows[i][0])));
             boolean unlocked = active >= thr;
             CMIGuiButton btn = new CMIGuiButton(
@@ -236,9 +246,9 @@ public final class CmiDifficultyGui {
             ));
             gui.addButton(btn);
         }
-        gui.addButton(pageBtn(27, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
-        gui.addButton(closeBtn(35));
-        fillEmpty(gui, 4);
+        gui.addButton(pageBtn(45, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
+        gui.addButton(closeBtn(53));
+        fillEmpty(gui, 6);
         gui.open();
     }
 
@@ -387,6 +397,13 @@ public final class CmiDifficultyGui {
             case "god" -> "10000";
             case "divine" -> "50000";
             case "impossible" -> "100000";
+            case "transcendent" -> "250000";
+            case "eternal" -> "500000";
+            case "mythic" -> "1000000";
+            case "omega" -> "2500000";
+            case "absolute" -> "5000000";
+            case "apex" -> "7500000";
+            case "zenith" -> "10000000";
             default -> "0";
         };
     }
