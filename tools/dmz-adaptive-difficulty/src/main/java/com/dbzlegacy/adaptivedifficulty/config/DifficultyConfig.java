@@ -44,6 +44,17 @@ public final class DifficultyConfig {
     /** Random variance applied to area difficulty when scaling a mob (percent, e.g. 5 => 0.95–1.05). */
     public double areaDifficultyVariancePercent = 5.0;
     public long hardCapDifficulty = 1_000_000L;
+
+    // Concept §10 / §7 — ability unlock tier thresholds (admin-editable)
+    public long tierAwakened = 10L;
+    public long tierEnhanced = 50L;
+    public long tierElite = 100L;
+    public long tierAdvanced = 500L;
+    public long tierMaster = 1_000L;
+    public long tierLegendary = 5_000L;
+    public long tierGod = 10_000L;
+    public long tierDivine = 50_000L;
+    public long tierImpossible = 100_000L;
     /**
      * {@code lightmans} (preferred when mod present), {@code training_points}, or {@code free}.
      */
@@ -93,6 +104,25 @@ public final class DifficultyConfig {
 
     public boolean shouldRestoreVanillaFromPeaceful() {
         return restoreVanillaDifficultyFromPeaceful == null || restoreVanillaDifficultyFromPeaceful;
+    }
+
+    /** Concept §10 thresholds — editable via {@code /difficulty admin set tierX <n>}. */
+    public long tierThreshold(com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier tier) {
+        if (tier == null) {
+            return 0L;
+        }
+        return switch (tier) {
+            case NONE -> 0L;
+            case AWAKENED -> Math.max(0L, tierAwakened);
+            case ENHANCED -> Math.max(0L, tierEnhanced);
+            case ELITE -> Math.max(0L, tierElite);
+            case ADVANCED -> Math.max(0L, tierAdvanced);
+            case MASTER -> Math.max(0L, tierMaster);
+            case LEGENDARY -> Math.max(0L, tierLegendary);
+            case GOD -> Math.max(0L, tierGod);
+            case DIVINE -> Math.max(0L, tierDivine);
+            case IMPOSSIBLE -> Math.max(0L, tierImpossible);
+        };
     }
 
     private DifficultyConfig() {}

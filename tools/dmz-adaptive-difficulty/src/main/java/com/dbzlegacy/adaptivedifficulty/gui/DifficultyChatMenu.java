@@ -5,8 +5,10 @@ import com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge;
+import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import java.util.List;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -54,7 +56,8 @@ public final class DifficultyChatMenu {
                 + " §8(" + TeamScaling.teammates(player).size() + " online via " + TeamScaling.teamSourceLabel() + ")"));
         send(player, Component.m_237113_("§eTeam Mode: §f" + snap.teamMode
                 + " §8| §eBalance: §f" + CurrencyBridge.balanceText(player)));
-        send(player, Component.m_237113_("§eEnemy Tier: §f" + DifficultyTier.of(snap.active).display));
+        send(player, Component.m_237113_("§eEnemy Tier: §f" + DifficultyTier.of(snap.active).display
+                + " §8| §eState: §" + color + snap.state()));
         send(player, Component.m_237113_(""));
 
         MutableComponent controls = Component.m_237113_("§7Controls: ")
@@ -107,21 +110,24 @@ public final class DifficultyChatMenu {
             if (tier == DifficultyTier.NONE) {
                 continue;
             }
-            String mark = snap.active >= tier.threshold ? "§a✓" : "§8·";
-            send(player, Component.m_237113_(mark + " §e" + tier.threshold + " §f" + tier.display));
+            String mark = snap.active >= tier.threshold() ? "§a✓" : "§8·";
+            send(player, Component.m_237113_(mark + " §e" + tier.threshold() + " §f" + tier.display));
         }
         send(player, btn("§a« Back", "/difficulty do page main", "Return"));
     }
 
     private static void stats(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
-        send(player, Component.m_237113_("§6§lStatistics"));
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        List<String> titles = data.getTitles();
+        send(player, Component.m_237113_("§6§lStatistics §8(§" + snap.stateColorCode() + snap.state() + "§8)"));
         send(player, Component.m_237113_("§7Balance §f" + CurrencyBridge.balanceText(player)
                 + " §8| §7Teams §f" + TeamScaling.teamSourceLabel()));
         send(player, Component.m_237113_("§7Active §f" + snap.active
                 + " §8| §7Available §f" + snap.availableMax));
         send(player, Component.m_237113_("§7Purchased §f" + snap.purchased
                 + " §8| §7Calculated §f" + snap.calculated));
+        send(player, Component.m_237113_("§7Titles §f" + (titles.isEmpty() ? "none" : String.join("§8, §f", titles))));
         send(player, btn("§a« Back", "/difficulty do page main", "Return"));
     }
 

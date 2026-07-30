@@ -42,8 +42,10 @@ public final class DifficultyChestGui implements Listener {
         holder.bind(inv);
 
         fill(inv, Material.GRAY_STAINED_GLASS_PANE);
+        String stateColor = ph.getOrDefault("state_color", "f");
         inv.setItem(4, item(Material.NETHER_STAR, "&6&lAdaptive Difficulty", List.of(
                 "&eActive: &f" + ph.getOrDefault("active", "?") + " &7/ max &f" + ph.getOrDefault("available", "?"),
+                "&eState: &" + stateColor + ph.getOrDefault("state", "?"),
                 "&eCalculated: &f" + ph.getOrDefault("calculated", "?")
                         + " &7(Lv " + ph.getOrDefault("level", "?")
                         + " · Prestige " + ph.getOrDefault("prestige", "?") + ")",
@@ -106,9 +108,9 @@ public final class DifficultyChestGui implements Listener {
                 "&7Active: &f" + ph.getOrDefault("active", "?")
         )));
         String[][] rows = {
-                {"10", "Awakened"}, {"50", "Enhanced"}, {"100", "Elite"}, {"500", "Advanced"},
-                {"1000", "Master"}, {"5000", "Legendary"}, {"10000", "God"},
-                {"50000", "Divine"}, {"100000", "Impossible"}
+                {"awakened", "Awakened"}, {"enhanced", "Enhanced"}, {"elite", "Elite"}, {"advanced", "Advanced"},
+                {"master", "Master"}, {"legendary", "Legendary"}, {"god", "God"},
+                {"divine", "Divine"}, {"impossible", "Impossible"}
         };
         int slot = 11;
         long active;
@@ -118,7 +120,12 @@ public final class DifficultyChestGui implements Listener {
             active = 0L;
         }
         for (String[] row : rows) {
-            long thr = Long.parseLong(row[0]);
+            long thr;
+            try {
+                thr = Long.parseLong(ph.getOrDefault("tier_" + row[0], defaultTier(row[0])));
+            } catch (NumberFormatException e) {
+                thr = Long.parseLong(defaultTier(row[0]));
+            }
             boolean unlocked = active >= thr;
             inv.setItem(slot, item(
                     unlocked ? Material.LIME_CONCRETE : Material.GRAY_CONCRETE,
@@ -141,17 +148,35 @@ public final class DifficultyChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 27, color("&8Statistics"));
         holder.bind(inv);
         fill(inv, Material.GRAY_STAINED_GLASS_PANE);
+        String stateColor = ph.getOrDefault("state_color", "f");
         inv.setItem(13, item(Material.BOOK, "&6&lStatistics", List.of(
+                "&7State &" + stateColor + ph.getOrDefault("state", "?"),
                 "&7Balance &f" + ph.getOrDefault("balance", "?")
                         + " &8| &7Teams &f" + ph.getOrDefault("team_source", "?"),
                 "&7Active &f" + ph.getOrDefault("active", "?")
                         + " &8| &7Available &f" + ph.getOrDefault("available", "?"),
                 "&7Purchased &f" + ph.getOrDefault("purchased", "?")
-                        + " &8| &7Calculated &f" + ph.getOrDefault("calculated", "?")
+                        + " &8| &7Calculated &f" + ph.getOrDefault("calculated", "?"),
+                "&7Titles &f" + ph.getOrDefault("titles", "none")
         )));
         inv.setItem(18, pageBtn(Material.ARROW, "&a« Back", "main"));
         inv.setItem(26, closeBtn());
         return inv;
+    }
+
+    private static String defaultTier(String key) {
+        return switch (key) {
+            case "awakened" -> "10";
+            case "enhanced" -> "50";
+            case "elite" -> "100";
+            case "advanced" -> "500";
+            case "master" -> "1000";
+            case "legendary" -> "5000";
+            case "god" -> "10000";
+            case "divine" -> "50000";
+            case "impossible" -> "100000";
+            default -> "0";
+        };
     }
 
     @EventHandler

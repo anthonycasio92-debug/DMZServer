@@ -26,7 +26,7 @@ public final class MutationSystem {
 
     public static void maybeMutate(LivingEntity entity, long difficulty) {
         DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableMutations || entity == null || difficulty < DifficultyTier.ENHANCED.threshold) {
+        if (!cfg.enableMutations || entity == null || difficulty < DifficultyTier.ENHANCED.threshold()) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);

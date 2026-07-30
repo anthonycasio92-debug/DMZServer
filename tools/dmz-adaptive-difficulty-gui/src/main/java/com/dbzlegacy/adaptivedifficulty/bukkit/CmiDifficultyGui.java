@@ -47,10 +47,12 @@ public final class CmiDifficultyGui {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         CMIGui gui = base(player, "&8Adaptive Difficulty", 5);
 
+        String stateColor = ph.getOrDefault("state_color", "f");
         CMIGuiButton info = new CMIGuiButton(4, Material.NETHER_STAR, "&6&lAdaptive Difficulty");
         info.lockField();
         info.addLore(List.of(
                 "&eActive: &f" + ph.getOrDefault("active", "?") + " &7/ max &f" + ph.getOrDefault("available", "?"),
+                "&eState: &" + stateColor + ph.getOrDefault("state", "?"),
                 "&eCalculated: &f" + ph.getOrDefault("calculated", "?")
                         + " &7(Lv " + ph.getOrDefault("level", "?")
                         + " · Prestige " + ph.getOrDefault("prestige", "?") + ")",
@@ -116,9 +118,9 @@ public final class CmiDifficultyGui {
         gui.addButton(info);
 
         String[][] rows = {
-                {"10", "Awakened"}, {"50", "Enhanced"}, {"100", "Elite"}, {"500", "Advanced"},
-                {"1000", "Master"}, {"5000", "Legendary"}, {"10000", "God"},
-                {"50000", "Divine"}, {"100000", "Impossible"}
+                {"awakened", "Awakened"}, {"enhanced", "Enhanced"}, {"elite", "Elite"}, {"advanced", "Advanced"},
+                {"master", "Master"}, {"legendary", "Legendary"}, {"god", "God"},
+                {"divine", "Divine"}, {"impossible", "Impossible"}
         };
         long active;
         try {
@@ -128,7 +130,12 @@ public final class CmiDifficultyGui {
         }
         int slot = 11;
         for (String[] row : rows) {
-            long thr = Long.parseLong(row[0]);
+            long thr;
+            try {
+                thr = Long.parseLong(ph.getOrDefault("tier_" + row[0], defaultsTier(row[0])));
+            } catch (NumberFormatException e) {
+                thr = Long.parseLong(defaultsTier(row[0]));
+            }
             boolean unlocked = active >= thr;
             CMIGuiButton btn = new CMIGuiButton(
                     slot,
@@ -151,20 +158,38 @@ public final class CmiDifficultyGui {
     private static void openStats(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         CMIGui gui = base(player, "&8Statistics", 3);
+        String stateColor = ph.getOrDefault("state_color", "f");
         CMIGuiButton info = new CMIGuiButton(13, Material.BOOK, "&6&lStatistics");
         info.lockField();
         info.addLore(List.of(
+                "&7State &" + stateColor + ph.getOrDefault("state", "?"),
                 "&7Balance &f" + ph.getOrDefault("balance", "?")
                         + " &8| &7Teams &f" + ph.getOrDefault("team_source", "?"),
                 "&7Active &f" + ph.getOrDefault("active", "?")
                         + " &8| &7Available &f" + ph.getOrDefault("available", "?"),
                 "&7Purchased &f" + ph.getOrDefault("purchased", "?")
-                        + " &8| &7Calculated &f" + ph.getOrDefault("calculated", "?")
+                        + " &8| &7Calculated &f" + ph.getOrDefault("calculated", "?"),
+                "&7Titles &f" + ph.getOrDefault("titles", "none")
         ));
         gui.addButton(info);
         gui.addButton(pageBtn(18, Material.ARROW, "&a« Back", "main"));
         gui.addButton(closeBtn(26));
         gui.open();
+    }
+
+    private static String defaultsTier(String key) {
+        return switch (key) {
+            case "awakened" -> "10";
+            case "enhanced" -> "50";
+            case "elite" -> "100";
+            case "advanced" -> "500";
+            case "master" -> "1000";
+            case "legendary" -> "5000";
+            case "god" -> "10000";
+            case "divine" -> "50000";
+            case "impossible" -> "100000";
+            default -> "0";
+        };
     }
 
     private static CMIGui base(Player player, String title, int rows) {

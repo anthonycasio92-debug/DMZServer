@@ -23,7 +23,7 @@ public final class EliteSystem {
 
     public static void maybePromote(LivingEntity entity, long difficulty) {
         DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableElites || entity == null || difficulty < DifficultyTier.ELITE.threshold) {
+        if (!cfg.enableElites || entity == null || difficulty < DifficultyTier.ELITE.threshold()) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);

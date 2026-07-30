@@ -211,13 +211,13 @@ public final class RewardSystem {
         String title = null;
         if (boss && tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()) {
             title = "Boss Slayer";
-        } else if (elite && snap.active >= DifficultyTier.LEGENDARY.threshold) {
+        } else if (elite && snap.active >= DifficultyTier.LEGENDARY.threshold()) {
             title = "Legendary Hunter";
-        } else if (snap.active >= DifficultyTier.IMPOSSIBLE.threshold) {
+        } else if (snap.active >= DifficultyTier.IMPOSSIBLE.threshold()) {
             title = "Impossible";
-        } else if (snap.active >= DifficultyTier.GOD.threshold) {
+        } else if (snap.active >= DifficultyTier.GOD.threshold()) {
             title = "God Challenger";
-        } else if (snap.active >= DifficultyTier.DIVINE.threshold) {
+        } else if (snap.active >= DifficultyTier.DIVINE.threshold()) {
             title = "Divine";
         }
         if (title != null && data.unlockTitle(title)) {

@@ -1,20 +1,27 @@
 package com.dbzlegacy.adaptivedifficulty.ai;
 
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
+import com.dragonminez.common.init.MainEffects;
+import com.dragonminez.common.network.NetworkHandler;
+import com.dragonminez.common.network.S2C.StatsSyncS2C;
+import com.dragonminez.common.stats.StatsData;
+import com.dragonminez.common.stats.skills.Skills;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -146,15 +153,49 @@ public final class AdaptiveAiSystem {
     }
 
     private static void antiFlight(Mob mob, Player player) {
-        // getAbilities().flying
+        boolean grounded = false;
+
+        // Vanilla creative / ability flying
         if (player.m_150110_().f_35935_) {
             player.m_150110_().f_35935_ = false;
-            player.m_20256_(new Vec3(0.0, -0.8, 0.0));
-            // Leap mob upward slightly toward player
-            double dx = player.m_20185_() - mob.m_20185_();
-            double dz = player.m_20189_() - mob.m_20189_();
-            mob.m_5997_(dx * 0.08, 0.45, dz * 0.08);
+            grounded = true;
         }
+
+        // DragonMineZ Fly skill + MainEffects.FLY (concept §14 Countering flight)
+        try {
+            StatsData stats = DmzProgression.stats(player);
+            Skills skills = stats == null ? null : stats.getSkills();
+            if (skills != null && skills.isSkillActive("fly")) {
+                skills.setSkillActive("fly", false);
+                grounded = true;
+                if (player instanceof ServerPlayer sp) {
+                    try {
+                        NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(sp), sp);
+                    } catch (Throwable ignored) {
+                    }
+                }
+            }
+            MobEffect flyFx = MainEffects.FLY.get();
+            if (flyFx != null && player.m_21023_(flyFx)) {
+                player.m_21195_(flyFx);
+                grounded = true;
+            }
+        } catch (Throwable ignored) {
+            // DMZ APIs unavailable
+        }
+
+        // Airborne chase pressure even if skill toggle raced us
+        if (!grounded && !player.m_20096_() && player.m_20186_() - mob.m_20186_() > 2.5) {
+            grounded = true;
+        }
+
+        if (!grounded) {
+            return;
+        }
+        player.m_20256_(new Vec3(0.0, -0.85, 0.0));
+        double dx = player.m_20185_() - mob.m_20185_();
+        double dz = player.m_20189_() - mob.m_20189_();
+        mob.m_5997_(dx * 0.08, 0.45, dz * 0.08);
     }
 
     private static void maybeRetreat(Mob mob, LivingEntity target) {

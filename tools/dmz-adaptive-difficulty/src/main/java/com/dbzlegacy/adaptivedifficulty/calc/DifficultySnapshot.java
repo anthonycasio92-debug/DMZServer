@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.calc;
 
+import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
 
 /** Cached view of a player's difficulty numbers. */
@@ -39,22 +40,38 @@ public final class DifficultySnapshot {
         this.teamMode = teamMode;
     }
 
+    /**
+     * Concept §8 state colors:
+     * Green below progression, Yellow balanced, Orange personal max,
+     * Purple team-boosted, Red extreme (full team ceiling or hard-cap band).
+     */
     public String stateColorCode() {
-        if (active <= 0) {
-            return "a"; // green-ish / low
+        return switch (state()) {
+            case "Below" -> "a";
+            case "Balanced" -> "e";
+            case "Personal Max" -> "6";
+            case "Team Boosted" -> "d";
+            case "Extreme" -> "c";
+            default -> "f";
+        };
+    }
+
+    public String state() {
+        if (active <= 0 || active < calculated) {
+            return "Below";
         }
-        if (active < calculated) {
-            return "a"; // green below progression
+        long hardCap = Math.max(0L, DifficultyConfig.get().hardCapDifficulty);
+        boolean atHardCap = hardCap > 0 && active >= hardCap;
+        boolean fullTeamCeiling = availableMax > personalMax && active >= availableMax;
+        if (atHardCap || fullTeamCeiling) {
+            return "Extreme";
         }
-        if (active <= personalMax) {
-            if (active == personalMax) {
-                return "6"; // orange/gold personal max
-            }
-            return "e"; // yellow balanced
+        if (active > personalMax) {
+            return "Team Boosted";
         }
-        if (active <= availableMax) {
-            return "d"; // purple team boosted
+        if (active == personalMax) {
+            return "Personal Max";
         }
-        return "c"; // red extreme / clamped
+        return "Balanced";
     }
 }

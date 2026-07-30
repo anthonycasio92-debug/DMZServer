@@ -296,7 +296,9 @@ public final class DifficultyCommands {
                         + "§e/difficulty admin §7— toggle admin command access\n"
                         + "§e/difficulty admin reload|settings|area|gamedifficulty\n"
                         + "§e/difficulty admin set <key> <value>\n"
-                        + "§8areaDifficultyMode=weighted|average|max (Scaling Health-style)"
+                        + "§8areaDifficultyMode=weighted|average|max (Scaling Health-style)\n"
+                        + "§8tierAwakened|tierEnhanced|…|tierImpossible — ability unlock thresholds\n"
+                        + "§8movement|dmzExtraHealth|dmzExtraDamage|dmzExtraDefense|dmzExtraKiDamage"
         ), false);
         return 1;
     }
@@ -315,6 +317,23 @@ public final class DifficultyCommands {
                 case "health", "healthpercentperdifficulty" -> cfg.healthPercentPerDifficulty = Double.parseDouble(value);
                 case "damage", "damagepercentperdifficulty" -> cfg.damagePercentPerDifficulty = Double.parseDouble(value);
                 case "defense", "defensepercentperdifficulty" -> cfg.defensePercentPerDifficulty = Double.parseDouble(value);
+                case "movement", "movementpercentper100difficulty" ->
+                        cfg.movementPercentPer100Difficulty = Double.parseDouble(value);
+                case "dmzextrahealth", "dmzextrahealthpercent" -> cfg.dmzExtraHealthPercent = Double.parseDouble(value);
+                case "dmzextradamage", "dmzextradamagepercent" -> cfg.dmzExtraDamagePercent = Double.parseDouble(value);
+                case "dmzextradefense", "dmzextradefensepercent" -> cfg.dmzExtraDefensePercent = Double.parseDouble(value);
+                case "dmzextrakidamage", "dmzextrakidamagepercent" ->
+                        cfg.dmzExtraKiDamagePercent = Double.parseDouble(value);
+                case "tierawakened" -> cfg.tierAwakened = Long.parseLong(value);
+                case "tierenhanced" -> cfg.tierEnhanced = Long.parseLong(value);
+                case "tierelite" -> cfg.tierElite = Long.parseLong(value);
+                case "tieradvanced" -> cfg.tierAdvanced = Long.parseLong(value);
+                case "tiermaster" -> cfg.tierMaster = Long.parseLong(value);
+                case "tierlegendary" -> cfg.tierLegendary = Long.parseLong(value);
+                case "tiergod" -> cfg.tierGod = Long.parseLong(value);
+                case "tierdivine" -> cfg.tierDivine = Long.parseLong(value);
+                case "tierimpossible" -> cfg.tierImpossible = Long.parseLong(value);
+                case "hardcap", "hardcapdifficulty" -> cfg.hardCapDifficulty = Long.parseLong(value);
                 case "mobscaleradius" -> cfg.mobScaleRadius = Double.parseDouble(value);
                 case "purchasecurrency" -> cfg.purchaseCurrency = value.trim();
                 case "enablemobscaling" -> cfg.enableMobScaling = Boolean.parseBoolean(value);

@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.nbt.CompoundTag;
@@ -66,6 +67,7 @@ public final class EnemyEvolution {
     }
 
     private static void creeperTick(Creeper creeper, ServerLevel level, LivingEntity target, DifficultyTier tier) {
+        scaleCreeperBlast(creeper, tier);
         // Faster fuse / primed when close
         if (target != null && creeper.m_20270_(target) < 4.0f && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
             creeper.m_32314_(); // ignite
@@ -79,9 +81,40 @@ public final class EnemyEvolution {
                 && creeper.m_21223_() <= creeper.m_21233_() * 0.15f
                 && tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()) {
             tag.m_128379_("dmz_ad_final_boom", true);
-            float power = tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower() ? 6.0f : 4.0f;
+            float power = tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower() ? 7.0f : 5.0f;
+            if (tier.ordinalPower() >= DifficultyTier.GOD.ordinalPower()) {
+                power = 9.0f;
+            }
             level.m_254849_(creeper, creeper.m_20185_(), creeper.m_20186_(), creeper.m_20189_(),
                     power, Level.ExplosionInteraction.MOB);
+        }
+    }
+
+    /** Concept §11 Larger Blast — bump creeper explosionRadius + shorten fuse by tier. */
+    private static void scaleCreeperBlast(Creeper creeper, DifficultyTier tier) {
+        if (tier.ordinalPower() < DifficultyTier.ENHANCED.ordinalPower()) {
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(creeper);
+        if (tag.m_128471_("dmz_ad_blast_scaled")) {
+            return;
+        }
+        tag.m_128379_("dmz_ad_blast_scaled", true);
+        int bonus = Math.max(0, tier.ordinalPower() - DifficultyTier.AWAKENED.ordinalPower());
+        try {
+            // SRG: explosionRadius -> bV, maxSwell -> bU
+            Field radius = Creeper.class.getDeclaredField("bV");
+            radius.setAccessible(true);
+            int base = radius.getInt(creeper);
+            radius.setInt(creeper, Math.min(16, base + bonus));
+
+            Field swell = Creeper.class.getDeclaredField("bU");
+            swell.setAccessible(true);
+            int maxSwell = swell.getInt(creeper);
+            int faster = Math.max(10, maxSwell - (bonus * 4));
+            swell.setInt(creeper, faster);
+        } catch (Throwable ignored) {
+            // Field names differ on non-SRG runtimes; final-boom path still scales power.
         }
     }
 

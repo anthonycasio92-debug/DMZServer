@@ -87,6 +87,41 @@ public final class ForgeBridge {
             out.put("cost_10000", String.valueOf(format.invoke(null, c10k)));
             double mult = (Double) calc.getMethod("rewardMultiplier", long.class).invoke(null, active);
             out.put("reward_mult", String.format(Locale.US, "%.2f", mult));
+
+            Object state = snap.getClass().getMethod("state").invoke(snap);
+            Object stateColor = snap.getClass().getMethod("stateColorCode").invoke(snap);
+            out.put("state", state == null ? "?" : String.valueOf(state));
+            out.put("state_color", stateColor == null ? "f" : String.valueOf(stateColor));
+
+            Class<?> dataCls = Class.forName("com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData");
+            Object data = cache.getMethod("data", sp).invoke(null, nms);
+            if (data != null) {
+                Object titlesObj = dataCls.getMethod("getTitles").invoke(data);
+                if (titlesObj instanceof List<?> titles && !titles.isEmpty()) {
+                    StringBuilder sb = new StringBuilder();
+                    for (Object t : titles) {
+                        if (sb.length() > 0) {
+                            sb.append(", ");
+                        }
+                        sb.append(t);
+                    }
+                    out.put("titles", sb.toString());
+                } else {
+                    out.put("titles", "none");
+                }
+            } else {
+                out.put("titles", "none");
+            }
+
+            // Live concept §10 thresholds for tiers GUI
+            for (Object t : (Object[]) tierCls.getMethod("values").invoke(null)) {
+                String name = String.valueOf(t);
+                if ("NONE".equals(name)) {
+                    continue;
+                }
+                Object thr = tierCls.getMethod("threshold").invoke(t);
+                out.put("tier_" + name.toLowerCase(Locale.ROOT), String.valueOf(thr));
+            }
         } catch (Throwable ignored) {
             // Forge mod not loaded
         }

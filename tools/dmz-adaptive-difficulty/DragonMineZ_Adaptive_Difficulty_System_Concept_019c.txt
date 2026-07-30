@@ -1,0 +1,362 @@
+# DragonMineZ Adaptive Difficulty System
+# Full Development Concept Document
+## Personal Difficulty + Team Scaling + Currency Progression System
+
+# 1. System Overview
+
+The Adaptive Difficulty System is a progression-based difficulty framework for DragonMineZ.
+
+The world no longer uses a static difficulty. Every player has their own personal difficulty progression that grows alongside their DragonMineZ progression.
+
+Core features:
+- Personal Difficulty
+- Calculated Difficulty
+- Purchased Difficulty
+- Active Difficulty
+- Optional Team Scaling
+- Lightman's Currency progression
+- Configurable in-game settings
+- Enemy stat scaling
+- Enemy AI progression
+- Boss scaling
+- Reward scaling
+
+# 2. Core Philosophy
+
+The stronger players become, the stronger the world can become.
+
+Difficulty is always optional and player controlled.
+
+Players spend Lightman's Currency to unlock higher difficulties while also benefiting from teammates when team scaling is enabled.
+
+# 3. Difficulty Values
+
+Every player stores five values:
+
+• Calculated Difficulty
+• Purchased Difficulty
+• Active Difficulty
+• Team Threshold Bonus
+• Team Contribution
+
+Calculated Difficulty is based on DragonMineZ progression.
+
+Prestige 0:
+Calculated Difficulty = DMZ Level
+
+Prestige 1+:
+Calculated Difficulty = DMZ Level × (Prestige × Prestige Multiplier)
+
+Default Prestige Multiplier = 10
+
+Purchased Difficulty is bought using Lightman's Currency and is stored separately from Calculated Difficulty.
+
+Personal Maximum Difficulty:
+
+Calculated Difficulty + Purchased Difficulty
+
+Active Difficulty is the difficulty currently selected by the player and can never exceed the player's current maximum.
+
+# 4. Team Scaling
+
+Difficulty is NOT shared globally.
+
+Every player has their own personal difficulty.
+
+Players may optionally enable Team Scaling.
+
+Each online teammate increases that player's maximum difficulty threshold by 10%.
+
+Example:
+
+Calculated Maximum: 500
+3 teammates
+
+Maximum becomes:
+
+500 × 1.30 = 650
+
+A player with 10,000 calculated maximum becomes:
+
+10,000 × 1.30 = 13,000
+
+In addition to the threshold increase, teammates may contribute their available difficulty.
+
+Example:
+
+Player A:
+Maximum = 500
+
+Player B:
+Maximum = 15,000
+
+If Team Scaling is enabled, Player A may temporarily access higher difficulty based on Player B's contribution.
+
+This borrowed difficulty is temporary and disappears when teammates leave.
+
+Players can choose between:
+
+• Personal Only
+• Threshold Bonus Only
+• Full Team Scaling
+
+# 5. Difficulty GUI
+
+Command:
+/difficulty
+
+Displays:
+
+- Active Difficulty
+- Calculated Difficulty
+- Purchased Difficulty
+- Team Bonus
+- Team Contribution
+- Maximum Available Difficulty
+
+Buttons:
+
+Increase Difficulty
+Decrease Difficulty
+Toggle Team Scaling
+Rewards
+Enemy Tiers
+Statistics
+
+# 6. Purchasing Difficulty
+
+Players spend Lightman's Currency to permanently unlock Purchased Difficulty.
+
+Example upgrades:
+
++100
++1,000
++10,000
+
+Cost formula is configurable.
+
+Default:
+
+Cost = Base Cost × (Purchased Difficulty / Cost Scaling)
+
+Lowering difficulty is always free.
+
+# 7. Administrator Configuration
+
+Everything should be configurable in-game.
+
+Permission:
+difficulty.admin
+
+Command:
+/difficulty admin
+
+Editable settings include:
+
+- Prestige multiplier
+- Level multiplier
+- Team bonus %
+- Contribution %
+- Base cost
+- Cost scaling
+- Reward scaling
+- Health scaling
+- Damage scaling
+- Defense scaling
+- Ability unlock tiers
+
+Example commands:
+
+/difficulty settings
+/difficulty set prestigeMultiplier 10
+/difficulty set teamBonus 10
+/difficulty set baseCost 100000
+/difficulty set costScaling 1000
+/difficulty set rewardScaling 1000
+/difficulty reload
+
+# 8. Difficulty States
+
+Green = Below progression
+Yellow = Balanced
+Orange = Personal Maximum
+Purple = Team Boosted
+Red = Extreme
+
+# 9. Mob Scaling
+
+Scaling is calculated once when a mob spawns.
+
+Default scaling:
+
+Health +1% per Difficulty
+Damage +1% per Difficulty
+Defense +3% per Difficulty
+Movement +0.1% every 100 Difficulty
+
+DragonMineZ mobs additionally gain:
+
+Health +1%
+Physical Damage +1%
+Defense +3%
+Ki Damage +1%
+
+# 10. Difficulty Tiers
+
+10 - Awakened
+50 - Enhanced
+100 - Elite
+500 - Advanced
+1,000 - Master
+5,000 - Legendary
+10,000 - God
+50,000 - Divine
+100,000 - Impossible
+
+Each tier unlocks additional AI and abilities.
+
+# 11. Enemy Evolution
+
+Examples:
+
+Creepers:
+- Final Explosion
+- Faster Fuse
+- Larger Blast
+- Tracking Explosion
+
+Zombies:
+- Leap
+- Rush
+- Ground Slam
+- Berserker Mode
+
+Skeletons:
+- Ki Blast
+- Laser
+- Beam
+- Charged Beam
+
+Endermen:
+- Gravity
+- Solar Flare
+- Teleport Combos
+- Counter Teleport
+
+Wardens:
+- Ki Barrage
+- Gravity
+- Beam
+- Teleport
+- Multiple Boss Phases
+
+# 12. Elite Enemies
+
+Elite enemies may randomly spawn.
+
+Features:
+
+- Custom names
+- Aura
+- Larger size
+- Better AI
+- Extra abilities
+- Better rewards
+
+# 13. Mutation System
+
+Random mutations include:
+
+Burning Zombie
+Electric Skeleton
+Gravity Enderman
+Titan Creeper
+Berserker Piglin
+
+# 14. Adaptive AI
+
+Enemies progressively gain:
+
+- Dodging
+- Retreating
+- Countering Ki Charging
+- Anti-flight
+- Focus weakest player
+- Coordinated attacks
+
+# 15. Reward Scaling
+
+Higher Difficulty grants:
+
+- DMZ XP
+- Training Points
+- Potential XP
+- Rare Drops
+- Capsules
+- Cosmetics
+- Titles
+
+Default reward formula:
+
+Reward Multiplier = 1 + Difficulty / Reward Scaling
+
+# 16. Boss Scaling
+
+Bosses inherit player difficulty.
+
+Bosses scale:
+
+- Health
+- Damage
+- Defense
+- Ki Damage
+- AI
+- Combat Phases
+
+# 17. Performance Requirements
+
+Never calculate every tick.
+
+Cache:
+
+- Player difficulty
+- Team bonus
+- Team contribution
+- Mob scaling
+
+Update only when:
+
+- Player joins
+- Player leaves
+- Level changes
+- Prestige changes
+- Difficulty changes
+- Team changes
+
+# Gameplay Loop
+
+Progress in DragonMineZ
+↓
+Earn Lightman's Currency
+↓
+Purchase Higher Difficulty
+↓
+Join Teammates
+↓
+Increase Difficulty Ceiling
+↓
+Fight Stronger Enemies
+↓
+Earn Better Rewards
+↓
+Repeat
+
+# Final Vision
+
+Players do not simply become stronger than the world.
+
+They choose how dangerous the world becomes.
+
+Low-level players benefit from experienced teammates while experienced players gain even greater challenge ceilings.
+
+Difficulty becomes an endless progression system that keeps DragonMineZ challenging throughout the entire game.
