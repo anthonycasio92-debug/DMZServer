@@ -72,6 +72,18 @@ public final class DifficultyConfig {
      * {@code auto} (DeluxeMenus → Bukkit chest → chat), {@code deluxemenus}, {@code chest}, or {@code chat}.
      */
     public String guiBackend = "auto";
+    /**
+     * If the Minecraft world is on Peaceful (no hostile spawns), restore it on server start.
+     * Peaceful prevents adaptive mob scaling from doing anything.
+     * Null in JSON means enabled (default true).
+     */
+    public Boolean restoreVanillaDifficultyFromPeaceful = Boolean.TRUE;
+    /** Target vanilla difficulty when restoring from Peaceful: easy / normal / hard. */
+    public String vanillaDifficulty = "hard";
+
+    public boolean shouldRestoreVanillaFromPeaceful() {
+        return restoreVanillaDifficultyFromPeaceful == null || restoreVanillaDifficultyFromPeaceful;
+    }
 
     private DifficultyConfig() {}
 
@@ -90,9 +102,7 @@ public final class DifficultyConfig {
                 try (Reader reader = Files.newBufferedReader(file)) {
                     DifficultyConfig loaded = GSON.fromJson(reader, DifficultyConfig.class);
                     if (loaded != null) {
-                        if (loaded.bossIdContains == null) {
-                            loaded.bossIdContains = new ArrayList<>();
-                        }
+                        normalize(loaded);
                         INSTANCE = loaded;
                     }
                 }
@@ -101,6 +111,24 @@ public final class DifficultyConfig {
         } catch (Exception e) {
             AdaptiveDifficultyMod.LOGGER.warn("[{}] failed to load config: {}", AdaptiveDifficultyMod.MOD_ID, e.toString());
             INSTANCE = new DifficultyConfig();
+        }
+    }
+
+    private static void normalize(DifficultyConfig cfg) {
+        if (cfg.bossIdContains == null) {
+            cfg.bossIdContains = new ArrayList<>();
+        }
+        if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
+            cfg.guiBackend = "auto";
+        }
+        if (cfg.vanillaDifficulty == null || cfg.vanillaDifficulty.isBlank()) {
+            cfg.vanillaDifficulty = "hard";
+        }
+        if (cfg.adminPermission == null || cfg.adminPermission.isBlank()) {
+            cfg.adminPermission = "difficulty.admin";
+        }
+        if (cfg.purchaseCurrency == null || cfg.purchaseCurrency.isBlank()) {
+            cfg.purchaseCurrency = "lightmans";
         }
     }
 

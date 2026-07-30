@@ -12,6 +12,7 @@ import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.reward.RewardSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
+import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.dragonminez.common.events.DMZEvent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -22,6 +23,7 @@ import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -32,6 +34,12 @@ public final class DifficultyEvents {
     public void onServerStarting(ServerStartingEvent event) {
         DifficultyConfig.load();
         DifficultyCache.invalidateAll();
+    }
+
+    @SubscribeEvent
+    public void onServerStarted(ServerStartedEvent event) {
+        // Peaceful kills hostile spawns — restore so adaptive scaling can run.
+        VanillaDifficultyGuard.restoreIfPeaceful(event.getServer());
     }
 
     @SubscribeEvent

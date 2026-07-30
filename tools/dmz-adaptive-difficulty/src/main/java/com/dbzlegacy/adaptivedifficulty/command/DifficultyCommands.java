@@ -6,21 +6,25 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
 import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
+import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /**
- * Players: {@code /difficulty} opens the chat GUI.
+ * Players: {@code /difficulty} opens the GUI.
  * GUI buttons use {@code /difficulty do ...} (not for normal player use).
  * Staff: {@code /difficulty admin} toggles config commands.
+ * Ops can still set vanilla world difficulty via {@code /difficulty hard|normal|easy|peaceful}
+ * (this mod replaces the vanilla {@code /difficulty} command name).
  */
 public final class DifficultyCommands {
     private DifficultyCommands() {}
@@ -45,6 +49,11 @@ public final class DifficultyCommands {
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "action"),
                                                 StringArgumentType.getString(ctx, "arg"))))))
+                // Vanilla world difficulty (replaces overwritten /difficulty <level>)
+                .then(vanillaDifficultyLiteral("peaceful"))
+                .then(vanillaDifficultyLiteral("easy"))
+                .then(vanillaDifficultyLiteral("normal"))
+                .then(vanillaDifficultyLiteral("hard"))
                 .then(Commands.m_82127_("admin")
                         .requires(DifficultyCommands::canUseAdminToggle)
                         .executes(ctx -> toggleAdmin(ctx.getSource()))
@@ -57,6 +66,12 @@ public final class DifficultyCommands {
                         .then(Commands.m_82127_("settings")
                                 .requires(DifficultyCommands::hasAdminMode)
                                 .executes(ctx -> openAdminSettings(ctx.getSource())))
+                        .then(Commands.m_82127_("gamedifficulty")
+                                .requires(DifficultyCommands::hasAdminMode)
+                                .then(Commands.m_82129_("level", StringArgumentType.word())
+                                        .executes(ctx -> setVanillaDifficulty(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "level")))))
                         .then(Commands.m_82127_("set")
                                 .requires(DifficultyCommands::hasAdminMode)
                                 .then(Commands.m_82129_("key", StringArgumentType.word())
@@ -68,9 +83,15 @@ public final class DifficultyCommands {
 
         event.getDispatcher().register(root);
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] registered /difficulty (DeluxeMenus/chest/chat GUI; admin toggle for staff)",
+                "[{}] registered /difficulty (GUI + vanilla hard/normal/easy/peaceful for ops)",
                 AdaptiveDifficultyMod.MOD_ID
         );
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> vanillaDifficultyLiteral(String level) {
+        return Commands.m_82127_(level)
+                .requires(src -> src.m_6761_(2))
+                .executes(ctx -> setVanillaDifficulty(ctx.getSource(), level));
     }
 
     @SubscribeEvent
@@ -159,11 +180,37 @@ public final class DifficultyCommands {
             source.m_288197_(() -> Component.m_237113_(
                     "§aAdmin commands ENABLED.\n"
                             + "§7/difficulty admin help|reload|settings\n"
+                            + "§7/difficulty admin gamedifficulty <peaceful|easy|normal|hard>\n"
                             + "§7/difficulty admin set <key> <value>\n"
                             + "§8Run §f/difficulty admin §8again to disable."
             ), false);
         } else {
             source.m_288197_(() -> Component.m_237113_("§cAdmin commands DISABLED."), false);
+        }
+        return 1;
+    }
+
+    private static int setVanillaDifficulty(CommandSourceStack source, String level) {
+        Difficulty difficulty = VanillaDifficultyGuard.parse(level);
+        if (difficulty == null) {
+            source.m_81352_(Component.m_237113_("Unknown vanilla difficulty: " + level
+                    + " (use peaceful|easy|normal|hard)"));
+            return 0;
+        }
+        if (!VanillaDifficultyGuard.set(source.m_81377_(), difficulty)) {
+            source.m_81352_(Component.m_237113_("Failed to set vanilla difficulty."));
+            return 0;
+        }
+        if (difficulty == Difficulty.PEACEFUL) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§cVanilla difficulty set to PEACEFUL.\n"
+                            + "§7Hostile mobs will not spawn — adaptive scaling will not run.\n"
+                            + "§eUse §f/difficulty hard §eto restore."
+            ), true);
+        } else {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§aVanilla difficulty set to §f" + difficulty.m_19036_()
+            ), true);
         }
         return 1;
     }
@@ -188,8 +235,9 @@ public final class DifficultyCommands {
         source.m_288197_(() -> Component.m_237113_(
                 "§6Adaptive Difficulty — admin (server-side only mod)\n"
                         + "§e/difficulty §7— open player GUI (DeluxeMenus / chest / chat)\n"
+                        + "§e/difficulty hard|normal|easy|peaceful §7— vanilla world difficulty (ops)\n"
                         + "§e/difficulty admin §7— toggle admin command access\n"
-                        + "§e/difficulty admin reload|settings\n"
+                        + "§e/difficulty admin reload|settings|gamedifficulty\n"
                         + "§e/difficulty admin set <key> <value>"
         ), false);
         return 1;
@@ -229,6 +277,9 @@ public final class DifficultyCommands {
                 case "maxdamagemultiplier" -> cfg.maxDamageMultiplier = Double.parseDouble(value);
                 case "adminpermission" -> cfg.adminPermission = value.trim();
                 case "guibackend" -> cfg.guiBackend = value.trim().toLowerCase();
+                case "vanilladifficulty" -> cfg.vanillaDifficulty = value.trim().toLowerCase();
+                case "restorevanilladifficultyfrompeaceful" ->
+                        cfg.restoreVanillaDifficultyFromPeaceful = Boolean.valueOf(value);
                 default -> {
                     source.m_81352_(Component.m_237113_("Unknown key: " + key));
                     return 0;
