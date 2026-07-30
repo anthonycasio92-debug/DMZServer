@@ -1,0 +1,33 @@
+menu_title: '&8Statistics'
+open_command: []
+size: 27
+update_interval: 20
+items:
+  filler:
+    material: GRAY_STAINED_GLASS_PANE
+    slots:
+      - 0-12
+      - 14-17
+      - 19-25
+    display_name: ' '
+  info:
+    material: BOOK
+    slot: 13
+    update: true
+    display_name: '&6&lStatistics'
+    lore:
+      - '&7Balance &f%dmzdiff_balance% &8| &7Teams &f%dmzdiff_team_source%'
+      - '&7Active &f%dmzdiff_active% &8| &7Available &f%dmzdiff_available%'
+      - '&7Purchased &f%dmzdiff_purchased% &8| &7Calculated &f%dmzdiff_calculated%'
+  back:
+    material: ARROW
+    slot: 18
+    display_name: '&a« Back'
+    left_click_commands:
+      - '[openguimenu] dmz_difficulty'
+  close:
+    material: BARRIER
+    slot: 26
+    display_name: '&cClose'
+    left_click_commands:
+      - '[close]'

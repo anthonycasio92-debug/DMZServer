@@ -1,0 +1,33 @@
+menu_title: '&8Rewards'
+open_command: []
+size: 27
+update_interval: 20
+items:
+  filler:
+    material: GRAY_STAINED_GLASS_PANE
+    slots:
+      - 0-12
+      - 14-17
+      - 19-25
+    display_name: ' '
+  info:
+    material: EXPERIENCE_BOTTLE
+    slot: 13
+    update: true
+    display_name: '&6&lRewards'
+    lore:
+      - '&eActive: &f%dmzdiff_active%'
+      - '&eTP Multiplier: &f×%dmzdiff_reward_mult%'
+      - '&7Formula: 1 + Difficulty / RewardScaling'
+  back:
+    material: ARROW
+    slot: 18
+    display_name: '&a« Back'
+    left_click_commands:
+      - '[openguimenu] dmz_difficulty'
+  close:
+    material: BARRIER
+    slot: 26
+    display_name: '&cClose'
+    left_click_commands:
+      - '[close]'

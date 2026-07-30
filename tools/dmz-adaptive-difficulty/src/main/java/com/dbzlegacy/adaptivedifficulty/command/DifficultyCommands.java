@@ -68,7 +68,7 @@ public final class DifficultyCommands {
 
         event.getDispatcher().register(root);
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] registered /difficulty (server-only chat GUI; admin toggle for staff)",
+                "[{}] registered /difficulty (DeluxeMenus/chest/chat GUI; admin toggle for staff)",
                 AdaptiveDifficultyMod.MOD_ID
         );
     }
@@ -187,7 +187,7 @@ public final class DifficultyCommands {
     private static int adminHelp(CommandSourceStack source) {
         source.m_288197_(() -> Component.m_237113_(
                 "§6Adaptive Difficulty — admin (server-side only mod)\n"
-                        + "§e/difficulty §7— open player chat GUI\n"
+                        + "§e/difficulty §7— open player GUI (DeluxeMenus / chest / chat)\n"
                         + "§e/difficulty admin §7— toggle admin command access\n"
                         + "§e/difficulty admin reload|settings\n"
                         + "§e/difficulty admin set <key> <value>"
@@ -228,6 +228,7 @@ public final class DifficultyCommands {
                 case "maxarmorbonus" -> cfg.maxArmorBonus = Double.parseDouble(value);
                 case "maxdamagemultiplier" -> cfg.maxDamageMultiplier = Double.parseDouble(value);
                 case "adminpermission" -> cfg.adminPermission = value.trim();
+                case "guibackend" -> cfg.guiBackend = value.trim().toLowerCase();
                 default -> {
                     source.m_81352_(Component.m_237113_("Unknown key: " + key));
                     return 0;

@@ -1,0 +1,13 @@
+# DeluxeMenus config for DMZ Adaptive Difficulty
+# Menus are opened by the Forge mod via: dm open <menu> <player>
+debug: LOWEST
+check_updates: false
+gui_menus:
+  dmz_difficulty:
+    file: dmz_difficulty.yml
+  dmz_difficulty_rewards:
+    file: dmz_difficulty_rewards.yml
+  dmz_difficulty_tiers:
+    file: dmz_difficulty_tiers.yml
+  dmz_difficulty_stats:
+    file: dmz_difficulty_stats.yml

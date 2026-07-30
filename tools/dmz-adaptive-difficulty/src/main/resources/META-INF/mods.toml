@@ -4,15 +4,16 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_adaptive_difficulty"
-version = "1.4.0"
+version = "1.5.0"
 displayName = "DMZ Adaptive Difficulty"
 authors = "DBZ Legacy Reborn"
 displayTest = "IGNORE_SERVER_VERSION"
 description = '''
 Server-side adaptive difficulty for DragonMineZ.
-Clients do not need this mod. Chat GUI via /difficulty.
-FTB Teams, Lightman's wallet/bank/inventory coins,
-enemy scaling, elites, mutations, AI, boss phases, rewards.
+Clients do not need this mod. /difficulty opens DeluxeMenus
+or a Bukkit chest GUI (chat fallback). FTB Teams, Lightman's
+wallet/bank/inventory coins, enemy scaling, elites, mutations,
+AI, boss phases, rewards.
 '''
 
 [[mixins]]

@@ -67,6 +67,11 @@ public final class DifficultyConfig {
     public double maxDamageMultiplier = 50.0;
     /** Admin permission node (Forge PermissionAPI / LuckPerms). Ops always allowed. */
     public String adminPermission = "difficulty.admin";
+    /**
+     * Player UI backend for {@code /difficulty}:
+     * {@code auto} (DeluxeMenus → Bukkit chest → chat), {@code deluxemenus}, {@code chest}, or {@code chat}.
+     */
+    public String guiBackend = "auto";
 
     private DifficultyConfig() {}
 
