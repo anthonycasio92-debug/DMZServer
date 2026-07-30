@@ -16,11 +16,7 @@ if [[ ! -f "$FTB" ]]; then
   curl -fsSL -o "$FTB" \
     "https://maven.ftb.dev/releases/dev/ftb/mods/ftb-teams-forge/2001.3.1/ftb-teams-forge-2001.3.1.jar"
 fi
-SDU="$ROOT/mods/sdu-3.0.0.jar"
-if [[ ! -f "$SDU" ]]; then
-  SDU="$ROOT/sdu-3.0.5.jar"
-fi
-VERSION="1.3.0"
+VERSION="1.3.1"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
@@ -49,7 +45,7 @@ fi
 rm -f "$ROOT"/mods/dmz_adaptive_difficulty-*.jar
 rm -f "$ROOT"/dmz_adaptive_difficulty-*.jar
 
-CP="$STUBS:$SRG:$FORGE_S:$FORGE_U:$GSON:$LIGHTMANS:$FTB:$SDU:$NETTY_BUF:$NETTY_COMMON:$MERGETOOL:\
+CP="$STUBS:$SRG:$FORGE_S:$FORGE_U:$GSON:$LIGHTMANS:$FTB:$NETTY_BUF:$NETTY_COMMON:$MERGETOOL:\
 $ROOT/libraries/net/minecraftforge/fmlcore/1.20.1-47.4.10/fmlcore-1.20.1-47.4.10.jar:\
 $ROOT/libraries/net/minecraftforge/fmlloader/1.20.1-47.4.10/fmlloader-1.20.1-47.4.10.jar:\
 $ROOT/libraries/net/minecraftforge/forgespi/7.0.1/forgespi-7.0.1.jar:\

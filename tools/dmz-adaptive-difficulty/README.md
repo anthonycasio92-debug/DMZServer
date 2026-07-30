@@ -1,11 +1,10 @@
-# DMZ Adaptive Difficulty (v1.3.0)
+# DMZ Adaptive Difficulty (v1.3.1)
 
 Server + client Forge mixin mod for Mohist/Forge 1.20.1.
 
-## What's new in 1.3.0
+## What's new in 1.3.x
 
-- **Real GUI** (SDU-style screen) — `/difficulty` opens a clickable panel, not chat
-- **SDU hub entry** when SDU is installed (Difficulty → Adaptive Difficulty)
+- **Standalone Screen GUI** — `/difficulty` opens its own panel (not in the SDU hub)
 - **FTB Teams** for teammate detection (falls back to scoreboard if FTB missing)
 - **Lightman's fix** — checks/charges **wallet + bank + inventory coins** (was wallet-only)
 
@@ -24,16 +23,16 @@ Server + client Forge mixin mod for Mohist/Forge 1.20.1.
 bash tools/dmz-adaptive-difficulty/build.sh
 ```
 
-Outputs `mods/dmz_adaptive_difficulty-1.3.0.jar`.
+Outputs `mods/dmz_adaptive_difficulty-1.3.1.jar`.
 
 ## Install
 
-1. Put `dmz_adaptive_difficulty-1.3.0.jar` in **server and client** `mods/`
+1. Put `dmz_adaptive_difficulty-1.3.1.jar` in **server and client** `mods/`
 2. Remove any older `dmz_adaptive_difficulty-*.jar`
 3. Ensure `lightmanscurrency` and `ftbteams` are installed on the server (optional but expected)
 4. Restart
 
-Clients need the jar for the Screen GUI. Chat fallback: `/difficulty chat`.
+Open with `/difficulty` (standalone Screen). Chat fallback: `/difficulty chat`.
 
 ## Commands
 
