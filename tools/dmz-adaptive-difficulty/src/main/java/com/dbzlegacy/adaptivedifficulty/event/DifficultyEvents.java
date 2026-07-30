@@ -16,6 +16,7 @@ import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.dragonminez.common.events.DMZEvent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
@@ -85,6 +86,11 @@ public final class DifficultyEvents {
         LivingEntity entity = event.getEntity();
         if (entity == null || entity.m_9236_().f_46443_ || entity instanceof Player) {
             return;
+        }
+        // Scaling Health pattern: process a few ticks after spawn if FinalizeSpawn missed
+        // (common on hybrid Mohist stacks).
+        if (entity instanceof Mob && entity.f_19797_ > 2 && entity.f_19797_ < 40) {
+            MobScaling.scaleIfNeeded(entity);
         }
         MutationSystem.tick(entity);
         AdaptiveAiSystem.tick(entity);

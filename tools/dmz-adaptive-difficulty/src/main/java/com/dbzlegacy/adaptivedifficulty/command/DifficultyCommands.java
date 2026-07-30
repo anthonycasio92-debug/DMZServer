@@ -6,12 +6,15 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
 import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
+import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
+import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Difficulty;
 import net.minecraftforge.common.MinecraftForge;
@@ -67,6 +70,8 @@ public final class DifficultyCommands {
                                         .executes(ctx -> setVanillaDifficultyOrDeny(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "level")))))
+                        .then(Commands.m_82127_("area")
+                                .executes(ctx -> showAreaDifficulty(ctx.getSource())))
                         .then(Commands.m_82127_("set")
                                 .then(Commands.m_82129_("key", StringArgumentType.word())
                                         .then(Commands.m_82129_("value", StringArgumentType.greedyString())
@@ -246,6 +251,36 @@ public final class DifficultyCommands {
         return 1;
     }
 
+    /** Scaling Health-style area difficulty readout (`sh_difficulty get`). */
+    private static int showAreaDifficulty(CommandSourceStack source) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        ServerPlayer player = source.m_230896_();
+        if (player == null) {
+            source.m_81352_(Component.m_237113_("Players only."));
+            return 0;
+        }
+        ServerLevel level = player.m_284548_(); // serverLevel / getLevel
+        if (level == null) {
+            level = player.m_9236_() instanceof ServerLevel sl ? sl : null;
+        }
+        DifficultySnapshot snap = DifficultyCache.refresh(player);
+        long area = level == null ? 0L : AreaDifficulty.at(level, player.m_20183_());
+        DifficultyConfig cfg = DifficultyConfig.get();
+        ServerLevel finalLevel = level;
+        source.m_288197_(() -> Component.m_237113_(
+                "§6Area Difficulty §8(Scaling Health-style)\n"
+                        + "§ePlayer active: §f" + snap.active + " §7/ max §f" + snap.availableMax + "\n"
+                        + "§eArea at you: §f" + area + "\n"
+                        + "§eMode: §f" + cfg.areaDifficultyMode
+                        + " §8| §eradius §f" + cfg.mobScaleRadius
+                        + " §8| §egroupBonus% §f" + cfg.areaGroupBonusPercent
+                        + (finalLevel == null ? "\n§cNo server level" : "")
+        ), false);
+        return 1;
+    }
+
     private static int reload(CommandSourceStack source) {
         DifficultyConfig.reload();
         DifficultyCache.invalidateAll();
@@ -259,8 +294,9 @@ public final class DifficultyCommands {
                         + "§e/difficulty §7— open player GUI (CMI / chest / chat)\n"
                         + "§e/difficulty hard|normal|easy|peaceful §7— vanilla world difficulty (ops)\n"
                         + "§e/difficulty admin §7— toggle admin command access\n"
-                        + "§e/difficulty admin reload|settings|gamedifficulty\n"
-                        + "§e/difficulty admin set <key> <value>"
+                        + "§e/difficulty admin reload|settings|area|gamedifficulty\n"
+                        + "§e/difficulty admin set <key> <value>\n"
+                        + "§8areaDifficultyMode=weighted|average|max (Scaling Health-style)"
         ), false);
         return 1;
     }
@@ -302,6 +338,10 @@ public final class DifficultyCommands {
                 case "vanilladifficulty" -> cfg.vanillaDifficulty = value.trim().toLowerCase();
                 case "restorevanilladifficultyfrompeaceful" ->
                         cfg.restoreVanillaDifficultyFromPeaceful = Boolean.valueOf(value);
+                case "areadifficultymode" -> cfg.areaDifficultyMode = value.trim().toLowerCase();
+                case "areagroupbonuspercent" -> cfg.areaGroupBonusPercent = Double.parseDouble(value);
+                case "areadifficultyvariancepercent" ->
+                        cfg.areaDifficultyVariancePercent = Double.parseDouble(value);
                 default -> {
                     source.m_81352_(Component.m_237113_("Unknown key: " + key));
                     return 0;

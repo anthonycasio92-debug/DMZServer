@@ -1,6 +1,6 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.6.0** (server-side only)
+Mod version: **1.6.1** (server-side only)
 
 | § | Concept | Status | Notes |
 |---|---------|--------|-------|
@@ -10,7 +10,7 @@ Mod version: **1.6.0** (server-side only)
 | 6 | Lightman's purchase +100/+1k/+10k | Done | Soft-dep; TP fallback |
 | 7 | Admin settings / reload / `difficulty.admin` | Done | Ops + `hasPermission("difficulty.admin")` |
 | 8 | State colors G/Y/O/P/R | Done | `DifficultySnapshot.stateColorCode` |
-| 9 | Mob spawn scaling + DMZ extras | Done | DMZ extras only on `dragonminez:` / DMZ classes |
+| 9 | Mob spawn scaling + DMZ extras | Done | Scaling Health-style area difficulty (weighted/avg/max) + deferred tick; DMZ extras on DMZ mobs |
 | 10 | Tiers 10→100000 | Done | `DifficultyTier` |
 | 11 | Enemy evolution (creeper/zombie/skel/enderman/warden) | Done | `EnemyEvolution` ability stand-ins |
 | 12 | Elites (name/aura/size/AI/rewards) | Done | Glow aura; size via knockback resist + NBT scale hint |

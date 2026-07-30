@@ -34,6 +34,15 @@ public final class DifficultyConfig {
     public double dmzExtraDefensePercent = 3.0;
     public double dmzExtraKiDamagePercent = 1.0;
     public double mobScaleRadius = 64.0;
+    /**
+     * Area difficulty mode (Scaling Health-inspired):
+     * {@code weighted} (default), {@code average}, or {@code max}.
+     */
+    public String areaDifficultyMode = "weighted";
+    /** Extra area difficulty percent per additional nearby player (Scaling Health group bonus). */
+    public double areaGroupBonusPercent = 5.0;
+    /** Random variance applied to area difficulty when scaling a mob (percent, e.g. 5 => 0.95–1.05). */
+    public double areaDifficultyVariancePercent = 5.0;
     public long hardCapDifficulty = 1_000_000L;
     /**
      * {@code lightmans} (preferred when mod present), {@code training_points}, or {@code free}.
@@ -130,6 +139,9 @@ public final class DifficultyConfig {
         }
         if (cfg.purchaseCurrency == null || cfg.purchaseCurrency.isBlank()) {
             cfg.purchaseCurrency = "lightmans";
+        }
+        if (cfg.areaDifficultyMode == null || cfg.areaDifficultyMode.isBlank()) {
+            cfg.areaDifficultyMode = "weighted";
         }
     }
 

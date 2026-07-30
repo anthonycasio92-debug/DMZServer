@@ -2,24 +2,19 @@ package com.dbzlegacy.adaptivedifficulty.scaling;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.boss.BossScaling;
-import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
-import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
-import java.util.List;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.phys.AABB;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
@@ -79,7 +74,6 @@ public final class MobScaling {
         boolean boss = BossScaling.isNaturalBoss(entity);
 
         long difficulty = resolveNearbyDifficulty(entity);
-        difficulty = Math.min(difficulty, Math.max(0L, cfg.hardCapDifficulty));
         tag.m_128356_(TAG_DIFFICULTY, difficulty);
         tag.m_128379_(TAG_SCALED, true);
         if (difficulty <= 0) {
@@ -172,15 +166,8 @@ public final class MobScaling {
         if (!(entity.m_9236_() instanceof ServerLevel level)) {
             return 0L;
         }
-        double r = Math.max(8.0, DifficultyConfig.get().mobScaleRadius);
-        AABB box = entity.m_20191_().m_82400_(r);
-        List<ServerPlayer> players = level.m_45976_(ServerPlayer.class, box);
-        long best = 0L;
-        for (ServerPlayer player : players) {
-            DifficultySnapshot snap = DifficultyCache.refresh(player);
-            best = Math.max(best, snap.active);
-        }
-        return best;
+        // Scaling Health-style area difficulty at the mob's block position.
+        return AreaDifficulty.at(level, entity.m_20183_());
     }
 
     public static float outgoingDamageMultiplier(LivingEntity attacker) {

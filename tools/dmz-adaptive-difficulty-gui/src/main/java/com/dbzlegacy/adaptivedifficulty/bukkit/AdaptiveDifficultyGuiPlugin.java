@@ -134,13 +134,13 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
         // Bare /difficulty admin toggles admin mode for players; console gets help.
         if (args.length == 1) {
             if (console) {
-                sender.sendMessage("§6/difficulty admin help|reload|settings|gamedifficulty|set");
+                sender.sendMessage("§6/difficulty admin help|reload|settings|area|gamedifficulty|set");
                 return true;
             }
             boolean enabled = ForgeBridge.toggleAdmin(player);
             if (enabled) {
                 sender.sendMessage("§aAdmin commands ENABLED.");
-                sender.sendMessage("§7/difficulty admin help|reload|settings");
+                sender.sendMessage("§7/difficulty admin help|reload|settings|area");
                 sender.sendMessage("§7/difficulty admin gamedifficulty <peaceful|easy|normal|hard>");
                 sender.sendMessage("§7/difficulty admin set <key> <value>");
                 sender.sendMessage("§8Run §f/difficulty admin §8again to disable.");
@@ -176,6 +176,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
                 }
                 openMenu(player, "main");
                 sender.sendMessage("§7Use §f/difficulty admin set <key> <value>");
+                return true;
+            }
+            case "area" -> {
+                if (player == null) {
+                    sender.sendMessage("Players only.");
+                    return true;
+                }
+                sender.sendMessage(ForgeBridge.areaDifficultyText(player));
                 return true;
             }
             case "gamedifficulty" -> {

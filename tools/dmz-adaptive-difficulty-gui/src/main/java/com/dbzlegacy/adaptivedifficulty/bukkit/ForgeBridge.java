@@ -208,6 +208,41 @@ public final class ForgeBridge {
         }
     }
 
+    public static String areaDifficultyText(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach adaptive difficulty mod.";
+        }
+        try {
+            Class<?> sp = Class.forName("net.minecraft.server.level.ServerPlayer");
+            Object snap = Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache")
+                    .getMethod("refresh", sp).invoke(null, nms);
+            long active = ((Number) snap.getClass().getField("active").get(snap)).longValue();
+            long available = ((Number) snap.getClass().getField("availableMax").get(snap)).longValue();
+            Object level = sp.getMethod("m_284548_").invoke(nms);
+            Object pos = nms.getClass().getMethod("m_20183_").invoke(nms);
+            long area = 0L;
+            if (level != null && pos != null) {
+                area = ((Number) Class.forName("com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty")
+                        .getMethod("at", Class.forName("net.minecraft.server.level.ServerLevel"),
+                                Class.forName("net.minecraft.core.BlockPos"))
+                        .invoke(null, level, pos)).longValue();
+            }
+            Object cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+                    .getMethod("get").invoke(null);
+            String mode = String.valueOf(cfg.getClass().getField("areaDifficultyMode").get(cfg));
+            double radius = ((Number) cfg.getClass().getField("mobScaleRadius").get(cfg)).doubleValue();
+            double group = ((Number) cfg.getClass().getField("areaGroupBonusPercent").get(cfg)).doubleValue();
+            return "§6Area Difficulty §8(Scaling Health-style)\n"
+                    + "§ePlayer active: §f" + active + " §7/ max §f" + available + "\n"
+                    + "§eArea at you: §f" + area + "\n"
+                    + "§eMode: §f" + mode + " §8| §eradius §f" + radius
+                    + " §8| §egroupBonus% §f" + group;
+        } catch (Throwable t) {
+            return "§cArea difficulty failed: " + t.getMessage();
+        }
+    }
+
     public static boolean setVanillaDifficulty(String level) {
         try {
             Class<?> difficulty = Class.forName("net.minecraft.world.Difficulty");
