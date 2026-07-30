@@ -1,12 +1,12 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.4.0** (server-side only)
+Mod version: **1.5.0** (server-side only)
 
 | § | Concept | Status | Notes |
 |---|---------|--------|-------|
 | 3 | Calculated / Purchased / Active / Team Threshold / Contribution | Done | Prestige 0 = level; 1+ = level × (prestige × mult) |
-| 4 | Team modes Personal / Threshold / Full | Done | Vanilla scoreboard teams; +10%/teammate |
-| 5 | `/difficulty` GUI + buttons | Done | Clickable chat GUI (server-safe) |
+| 4 | Team modes Personal / Threshold / Full | Done | FTB Teams (+ scoreboard fallback); +10%/teammate |
+| 5 | `/difficulty` GUI + buttons | Done | DeluxeMenus → Bukkit chest → chat (server-safe) |
 | 6 | Lightman's purchase +100/+1k/+10k | Done | Soft-dep; TP fallback |
 | 7 | Admin settings / reload / `difficulty.admin` | Done | Ops + `hasPermission("difficulty.admin")` |
 | 8 | State colors G/Y/O/P/R | Done | `DifficultySnapshot.stateColorCode` |
@@ -21,7 +21,7 @@ Mod version: **1.4.0** (server-side only)
 | 17 | Cache / no per-tick calc | Done | Cache + 5s level/prestige refresh |
 
 ## Intentional approximations
-- **GUI**: chat click GUI (no client Screen jar in Mohist toolchain)
+- **GUI**: DeluxeMenus inventory menus (+ PAPI `%dmzdiff_*%`) with Bukkit chest companion fallback; chat if neither is available (no client Screen jar)
 - **Elite size / aura**: no Pehkui; knockback resist + glowing name; NBT `dmz_ad_elite_scale` for packs
 - **Enemy evolution “ki beam/laser”**: effect/damage stand-ins (not full DMZ ki projectiles from vanilla mobs)
 - **DMZ XP**: vanilla XP points (no dedicated DMZ XP gain event in 2.1.3)
