@@ -2,16 +2,9 @@ package com.dbzlegacy.adaptivedifficulty.command;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
-import com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator;
-import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
-import com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge;
-import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
-import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
-import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
-import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
@@ -20,8 +13,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
+/**
+ * Players: only {@code /difficulty} (opens the Screen GUI).
+ * Staff: {@code /difficulty admin} toggles access to config/reload/settings commands.
+ * All gameplay actions (up/down/buy/team) are GUI-only via packets.
+ */
 public final class DifficultyCommands {
     private DifficultyCommands() {}
 
@@ -32,58 +31,21 @@ public final class DifficultyCommands {
     @SubscribeEvent
     public void onRegister(RegisterCommandsEvent event) {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.m_82127_("difficulty")
-                .executes(ctx -> openGui(ctx.getSource(), "main"))
-                .then(Commands.m_82127_("gui")
-                        .executes(ctx -> openGui(ctx.getSource(), "main"))
-                        .then(Commands.m_82129_("page", StringArgumentType.word())
-                                .executes(ctx -> openGui(ctx.getSource(), StringArgumentType.getString(ctx, "page")))))
-                .then(Commands.m_82127_("chat")
-                        .executes(ctx -> openChat(ctx.getSource(), "main"))
-                        .then(Commands.m_82129_("page", StringArgumentType.word())
-                                .executes(ctx -> openChat(ctx.getSource(), StringArgumentType.getString(ctx, "page")))))
-                .then(Commands.m_82127_("show")
-                        .executes(ctx -> show(ctx.getSource())))
-                .then(Commands.m_82127_("up")
-                        .executes(ctx -> act(ctx.getSource(), DifficultyActions.ACT_UP, 100))
-                        .then(Commands.m_82129_("amount", LongArgumentType.longArg(1))
-                                .executes(ctx -> act(ctx.getSource(), DifficultyActions.ACT_UP, LongArgumentType.getLong(ctx, "amount")))))
-                .then(Commands.m_82127_("down")
-                        .executes(ctx -> act(ctx.getSource(), DifficultyActions.ACT_DOWN, 100))
-                        .then(Commands.m_82129_("amount", LongArgumentType.longArg(1))
-                                .executes(ctx -> act(ctx.getSource(), DifficultyActions.ACT_DOWN, LongArgumentType.getLong(ctx, "amount")))))
-                .then(Commands.m_82127_("set")
-                        .then(Commands.m_82129_("amount", LongArgumentType.longArg(0))
-                                .executes(ctx -> act(ctx.getSource(), DifficultyActions.ACT_SET, LongArgumentType.getLong(ctx, "amount"))))
-                        .then(Commands.m_82129_("key", StringArgumentType.word())
-                                .requires(DifficultyCommands::isAdmin)
-                                .then(Commands.m_82129_("value", StringArgumentType.greedyString())
-                                        .executes(ctx -> adminSet(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "key"),
-                                                StringArgumentType.getString(ctx, "value"))))))
-                .then(Commands.m_82127_("buy")
-                        .then(Commands.m_82129_("amount", LongArgumentType.longArg(1))
-                                .executes(ctx -> act(ctx.getSource(), DifficultyActions.ACT_BUY, LongArgumentType.getLong(ctx, "amount")))))
-                .then(Commands.m_82127_("team")
-                        .executes(ctx -> act(ctx.getSource(), DifficultyActions.ACT_TEAM, 0))
-                        .then(Commands.m_82129_("mode", StringArgumentType.word())
-                                .executes(ctx -> setTeam(ctx.getSource(), StringArgumentType.getString(ctx, "mode")))))
-                .then(Commands.m_82127_("settings")
-                        .requires(DifficultyCommands::isAdmin)
-                        .executes(ctx -> openChat(ctx.getSource(), "settings"))
-                        .then(Commands.m_82129_("key", StringArgumentType.word())
-                                .then(Commands.m_82129_("value", StringArgumentType.greedyString())
-                                        .executes(ctx -> adminSet(
-                                                ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "key"),
-                                                StringArgumentType.getString(ctx, "value"))))))
-                .then(Commands.m_82127_("reload")
-                        .requires(DifficultyCommands::isAdmin)
-                        .executes(ctx -> reload(ctx.getSource())))
+                .executes(ctx -> openGui(ctx.getSource()))
                 .then(Commands.m_82127_("admin")
-                        .requires(DifficultyCommands::isAdmin)
-                        .executes(ctx -> adminHelp(ctx.getSource()))
+                        .requires(DifficultyCommands::canUseAdminToggle)
+                        .executes(ctx -> toggleAdmin(ctx.getSource()))
+                        .then(Commands.m_82127_("help")
+                                .requires(DifficultyCommands::hasAdminMode)
+                                .executes(ctx -> adminHelp(ctx.getSource())))
+                        .then(Commands.m_82127_("reload")
+                                .requires(DifficultyCommands::hasAdminMode)
+                                .executes(ctx -> reload(ctx.getSource())))
+                        .then(Commands.m_82127_("settings")
+                                .requires(DifficultyCommands::hasAdminMode)
+                                .executes(ctx -> openAdminSettings(ctx.getSource())))
                         .then(Commands.m_82127_("set")
+                                .requires(DifficultyCommands::hasAdminMode)
                                 .then(Commands.m_82129_("key", StringArgumentType.word())
                                         .then(Commands.m_82129_("value", StringArgumentType.greedyString())
                                                 .executes(ctx -> adminSet(
@@ -92,10 +54,38 @@ public final class DifficultyCommands {
                                                         StringArgumentType.getString(ctx, "value")))))));
 
         event.getDispatcher().register(root);
-        AdaptiveDifficultyMod.LOGGER.info("[{}] registered /difficulty", AdaptiveDifficultyMod.MOD_ID);
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] registered /difficulty (GUI-only for players; /difficulty admin toggle for staff)",
+                AdaptiveDifficultyMod.MOD_ID
+        );
     }
 
-    private static boolean isAdmin(CommandSourceStack src) {
+    @SubscribeEvent
+    public void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            AdminCommandAccess.disable(player);
+        }
+    }
+
+    /** Op / permission holders may run the admin toggle. */
+    private static boolean canUseAdminToggle(CommandSourceStack src) {
+        // Console always allowed
+        if (src.m_230896_() == null) {
+            return src.m_6761_(2);
+        }
+        return isStaff(src);
+    }
+
+    /** Admin subcommands require staff + session toggle (console skips toggle). */
+    private static boolean hasAdminMode(CommandSourceStack src) {
+        ServerPlayer player = src.m_230896_();
+        if (player == null) {
+            return src.m_6761_(2);
+        }
+        return isStaff(src) && AdminCommandAccess.isEnabled(player);
+    }
+
+    private static boolean isStaff(CommandSourceStack src) {
         if (src.m_6761_(2)) {
             return true;
         }
@@ -113,74 +103,43 @@ public final class DifficultyCommands {
         return false;
     }
 
-    private static int openGui(CommandSourceStack source, String page) {
+    private static int openGui(CommandSourceStack source) {
         ServerPlayer player = source.m_230896_();
         if (player == null) {
-            source.m_81352_(Component.m_237113_("Players only."));
+            source.m_81352_(Component.m_237113_("Players only. Use /difficulty admin … from console."));
             return 0;
         }
-        DifficultyMenu.open(player, page);
+        DifficultyMenu.open(player, "main");
         return 1;
     }
 
-    private static int openChat(CommandSourceStack source, String page) {
+    private static int toggleAdmin(CommandSourceStack source) {
         ServerPlayer player = source.m_230896_();
         if (player == null) {
-            source.m_81352_(Component.m_237113_("Players only."));
-            return 0;
+            // Console: always "on" — print help
+            return adminHelp(source);
         }
-        DifficultyChatMenu.open(player, page);
+        boolean enabled = AdminCommandAccess.toggle(player);
+        if (enabled) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§aAdmin commands ENABLED.\n"
+                            + "§7/difficulty admin help|reload|settings\n"
+                            + "§7/difficulty admin set <key> <value>\n"
+                            + "§8Run §f/difficulty admin §8again to disable."
+            ), false);
+        } else {
+            source.m_288197_(() -> Component.m_237113_("§cAdmin commands DISABLED."), false);
+        }
         return 1;
     }
 
-    private static int act(CommandSourceStack source, String action, long amount) {
+    private static int openAdminSettings(CommandSourceStack source) {
         ServerPlayer player = source.m_230896_();
         if (player == null) {
-            return 0;
+            return adminHelp(source);
         }
-        DifficultyActions.Result result = DifficultyActions.handle(player, action, amount, "main");
-        result.tell(player);
-        return result.ok() ? 1 : 0;
-    }
-
-    private static int show(CommandSourceStack source) {
-        ServerPlayer player = source.m_230896_();
-        if (player == null) {
-            source.m_81352_(Component.m_237113_("Players only."));
-            return 0;
-        }
-        DifficultySnapshot snap = DifficultyCache.refresh(player);
-        String color = snap.stateColorCode();
-        source.m_288197_(() -> Component.m_237113_(
-                "§6=== Adaptive Difficulty §" + color + snap.active + "§6 ===\n"
-                        + "§eActive: §f" + snap.active + "\n"
-                        + "§eCalculated: §f" + snap.calculated + " §7(level " + snap.dmzLevel
-                        + ", prestige " + snap.prestige + ")\n"
-                        + "§ePurchased: §f" + snap.purchased + "\n"
-                        + "§ePersonal Max: §f" + snap.personalMax + "\n"
-                        + "§eTeam: §f" + TeamScaling.teamName(player)
-                        + " §7(" + TeamScaling.teammates(player).size() + " online via "
-                        + TeamScaling.teamSourceLabel() + ")\n"
-                        + "§eTeam Threshold Bonus: §f" + snap.teamThresholdBonus + "\n"
-                        + "§eTeam Contribution: §f" + snap.teamContribution + "\n"
-                        + "§eAvailable Max: §f" + snap.availableMax + "\n"
-                        + "§eTeam Mode: §f" + snap.teamMode + "\n"
-                        + "§7Currency: §f" + CurrencyBridge.currencyLabel()
-                        + " §8| Balance: §f" + CurrencyBridge.balanceText(player) + "\n"
-                        + "§7Next +100 cost: §f" + CurrencyBridge.formatCost(
-                        DifficultyCalculator.purchaseCost(snap.purchased, 100))
-        ), false);
+        DifficultyChatMenu.open(player, "settings");
         return 1;
-    }
-
-    private static int setTeam(CommandSourceStack source, String mode) {
-        ServerPlayer player = source.m_230896_();
-        if (player == null) {
-            return 0;
-        }
-        DifficultyActions.Result result = DifficultyActions.setTeam(player, TeamMode.fromString(mode), "main");
-        result.tell(player);
-        return result.ok() ? 1 : 0;
     }
 
     private static int reload(CommandSourceStack source) {
@@ -192,7 +151,12 @@ public final class DifficultyCommands {
 
     private static int adminHelp(CommandSourceStack source) {
         source.m_288197_(() -> Component.m_237113_(
-                "§6/difficulty admin set <key> <value>\n"
+                "§6Adaptive Difficulty — admin\n"
+                        + "§e/difficulty §7— open player GUI (everyone)\n"
+                        + "§e/difficulty admin §7— toggle admin command access\n"
+                        + "§e/difficulty admin reload\n"
+                        + "§e/difficulty admin settings\n"
+                        + "§e/difficulty admin set <key> <value>\n"
                         + "§7Keys: prestigeMultiplier, levelMultiplier, teamBonusPercent, contributionPercent,\n"
                         + "§7baseCost, costScaling, rewardScaling, health/damage/defense percents,\n"
                         + "§7purchaseCurrency (lightmans|training_points|free),\n"
