@@ -5,20 +5,24 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import io.github.lightman314.lightmanscurrency.api.capability.money.IMoneyHandler;
 import io.github.lightman314.lightmanscurrency.api.money.MoneyAPI;
 import io.github.lightman314.lightmanscurrency.api.money.coins.CoinAPI;
+import io.github.lightman314.lightmanscurrency.api.money.coins.data.ChainData;
 import io.github.lightman314.lightmanscurrency.api.money.value.MoneyValue;
 import io.github.lightman314.lightmanscurrency.api.money.value.MoneyView;
 import io.github.lightman314.lightmanscurrency.api.money.value.builtin.CoinValue;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Difficulty increases are always paid in Lightman's Currency.
- * Costs are priced in iron coins (configurable item id).
+ * Costs are priced in iron-coin <b>value</b> (configurable item id).
  * <p>
  * Payments use <b>inventory coins only</b> (not wallet or bank).
+ * Higher denominations (gold, emerald, …) are accepted: inventory coins are
+ * exchanged down, the value is taken, then leftover is exchanged back up as change.
  */
 public final class CurrencyBridge {
     private static final boolean LIGHTMANS_LOADED = ModList.get().isLoaded("lightmanscurrency");
@@ -54,23 +58,44 @@ public final class CurrencyBridge {
         return chargeLightmans(player, ironCoins);
     }
 
-    /** Build a Lightman's price of {@code ironCoins} iron coins (or configured coin item). */
+    /**
+     * Price as main-chain <b>core value</b> equal to {@code ironCoins} of the cost coin.
+     * Gold/emerald/etc. count toward the same value and can make change.
+     */
     private static MoneyValue coinPrice(long ironCoins) {
         long count = Math.max(1L, ironCoins);
         Item coin = resolveCostCoin();
-        if (coin != null) {
-            try {
-                // fromItemOrValue(Item,long) is always count=1 — use (Item,int,long) for N coins.
-                int coinCount = (int) Math.min(Integer.MAX_VALUE, count);
-                MoneyValue priced = CoinValue.fromItemOrValue(coin, coinCount, count);
-                if (priced != null && !priced.isEmpty() && !priced.isInvalid()) {
-                    return priced;
+        try {
+            if (coin != null) {
+                ChainData chain = CoinAPI.getApi().ChainDataOfCoin(coin);
+                if (chain != null) {
+                    long unit = Math.max(1L, chain.getCoreValue(coin));
+                    long total = multiplyExactOrCap(unit, count);
+                    MoneyValue priced = CoinValue.fromNumber(chain, total);
+                    if (priced != null && !priced.isEmpty() && !priced.isInvalid()) {
+                        return priced;
+                    }
                 }
-            } catch (Throwable ignored) {
+                // Fallback: N of the coin item (still value-aware via getCoreValue)
+                int coinCount = (int) Math.min(Integer.MAX_VALUE, count);
+                MoneyValue itemPriced = CoinValue.fromItemOrValue(coin, coinCount, count);
+                if (itemPriced != null && !itemPriced.isEmpty() && !itemPriced.isInvalid()) {
+                    return itemPriced;
+                }
             }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] coinPrice failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
         }
-        // Fallback: treat number as main-chain core value
         return CoinValue.fromNumber(CoinAPI.MAIN_CHAIN, count);
+    }
+
+    private static long multiplyExactOrCap(long unit, long count) {
+        try {
+            return Math.multiplyExact(unit, count);
+        } catch (ArithmeticException e) {
+            return Long.MAX_VALUE / 4L;
+        }
     }
 
     private static Item resolveCostCoin() {
@@ -110,6 +135,7 @@ public final class CurrencyBridge {
                 return false;
             }
             MoneyView stored = handler.getStoredMoney();
+            // Total inventory coin value (any denomination on the chain).
             return stored != null && stored.containsValue(price);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(
@@ -118,7 +144,16 @@ public final class CurrencyBridge {
         }
     }
 
+    /**
+     * Charge iron-coin value from inventory.
+     * <ol>
+     *   <li>Exchange higher coins down (gold/emerald → iron/copper)</li>
+     *   <li>Extract the price (Lightman's also returns change if a larger coin is consumed)</li>
+     *   <li>Exchange leftover back up so the player keeps tidy change</li>
+     * </ol>
+     */
     private static boolean chargeLightmans(ServerPlayer player, long ironCoins) {
+        Inventory inv = player.m_150109_();
         try {
             MoneyValue price = coinPrice(ironCoins);
             if (price == null || price.isEmpty() || price.isInvalid()) {
@@ -132,16 +167,64 @@ public final class CurrencyBridge {
             if (stored == null || !stored.containsValue(price)) {
                 return false;
             }
+
+            // Break gold/emerald/etc. into lower coins so payment + change is reliable.
+            exchangeAllDown(inv);
+
+            // Re-resolve handler after inventory mutation.
+            handler = inventoryHandler(player);
+            if (handler == null) {
+                exchangeAllUp(inv);
+                return false;
+            }
+            stored = handler.getStoredMoney();
+            if (stored == null || !stored.containsValue(price)) {
+                exchangeAllUp(inv);
+                return false;
+            }
+
             MoneyValue simulated = handler.extractMoney(price, true);
             if (simulated != null && !simulated.isEmpty() && !simulated.isFree()) {
+                exchangeAllUp(inv);
                 return false;
             }
             MoneyValue leftover = handler.extractMoney(price, false);
-            return leftover == null || leftover.isEmpty() || leftover.isFree();
+            boolean ok = leftover == null || leftover.isEmpty() || leftover.isFree();
+            // Recombine leftover copper/iron into higher coins (player's change).
+            exchangeAllUp(inv);
+            return ok;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] Lightman's charge failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            try {
+                exchangeAllUp(inv);
+            } catch (Throwable ignored) {
+            }
             return false;
+        }
+    }
+
+    private static void exchangeAllDown(Inventory inv) {
+        if (inv == null) {
+            return;
+        }
+        try {
+            CoinAPI.getApi().CoinExchangeAllDown(inv);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] CoinExchangeAllDown: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
+    }
+
+    private static void exchangeAllUp(Inventory inv) {
+        if (inv == null) {
+            return;
+        }
+        try {
+            CoinAPI.getApi().CoinExchangeAllUp(inv);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] CoinExchangeAllUp: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
         }
     }
 
