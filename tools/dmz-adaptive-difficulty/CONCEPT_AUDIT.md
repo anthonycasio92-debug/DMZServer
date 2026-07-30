@@ -17,7 +17,7 @@ Reaudited against live Java sources (not prior audit claims).
 | 8 | State colors G/Y/O/P/R | Done | `DifficultySnapshot.state()`; Extreme = full team ceiling or hard-cap; shown in GUIs |
 | 9 | Mob spawn scaling + DMZ extras | Done | `MobScaling` + `AreaDifficulty` (SH-style); DMZ extras on DMZ mobs |
 | 10 | Tiers 10→100000 | Done | `DifficultyTier` defaults match concept; thresholds config-driven |
-| 11 | Enemy evolution (creeper/zombie/skel/enderman/warden) | Done | `EnemyEvolution` + `KiAttackHelper` — skeletons/wardens fire real DMZ `KiBlast`/`KiLaser`/`KiWave` |
+| 11 | Enemy evolution (creeper/zombie/skel/enderman/warden) | Done | `EnemyEvolution` — all hostiles; special kits + shared melee/ranged (ki) packages; Stray/WitherSkeleton included |
 | 12 | Elites (name/aura/size/AI/rewards) | Done* | `EliteSystem` — glow aura + knockback-resist size + NBT scale hint (no Pehkui) |
 | 13 | Mutations listed | Done | All five + Shadow / Vampiric extras |
 | 14 | Adaptive AI incl. ki-charge + anti-flight | Done | Dodge/retreat/ki-charge/`MainEffects.FLY`+fly skill/focus/coord |
@@ -41,15 +41,20 @@ Mobs scale once at spawn from nearby **active** difficulty (area mode). Evolutio
 | Active difficulty | Tier | What you should notice |
 |---|---|---|
 | 0 | — | Stats only if somehow tagged; no evolution |
-| 10+ | Awakened | Evolution starts |
-| **50+** | **Enhanced** | Skeletons fire **Ki Blasts** (DMZ projectile) |
-| **100+** | **Elite** | Skeleton **Lasers**; Warden **Ki Barrage** |
-| **500+** | **Advanced** | Skeleton **Beams**; anti-flight / dodge AI |
-| **1000+** | **Master** | Skeleton **Charged Beams**; warden teleport |
+| 10+ | Awakened | Evolution starts (all hostiles) |
+| **50+** | **Enhanced** | Glow + tier name; melee leap; ranged **Ki Blasts** |
+| **100+** | **Elite** | Rush / **Lasers** / Warden barrage |
+| **500+** | **Advanced** | Slam / **Beams**; anti-flight / dodge AI |
+| **1000+** | **Master** | Berserk / **Charged Beams**; warden teleport |
 
-Raise active difficulty via `/difficulty` → **Adjust**, then fight freshly spawned skeletons (already-spawned mobs keep their old cached difficulty).
+Raise active difficulty via `/difficulty` → **Adjust**, then fight **newly spawned** hostiles (already-spawned mobs keep their old cached difficulty).
 
-## v1.7.9 — real DMZ ki projectiles
+## v1.7.9 — evolution on all hostiles
+- Was limited to Creeper/Zombie/Skeleton/Enderman/Warden (missed Stray/Wither Skeleton)
+- Now every `MONSTER` / `Enemy` evolves (special kits + shared melee/ranged packages)
+- Enhanced+ mobs briefly glow and get a tier nameplate
+
+## v1.7.8 — real DMZ ki projectiles
 - Replaced skeleton/warden effect stand-ins with `KiBlastEntity` / `KiLaserEntity` / `KiWaveEntity`
 - Homing aimed shots; damage scales with tier + mob difficulty
 
