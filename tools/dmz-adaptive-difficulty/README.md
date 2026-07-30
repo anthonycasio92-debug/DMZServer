@@ -10,7 +10,7 @@ Clients do **not** need this jar to join.
   1. **CMI / CMILib** inventory GUI (preferred)
   2. Companion Bukkit chest GUI
   3. Clickable chat fallback
-- Choosable steps on a dedicated **Adjust** page: **+1 / +5 / +25 / +100** and **−1 / −5 / −25 / −100**
+- Choosable steps on a dedicated **Adjust** page: **+1 / +5 / +25 / +100 / +1000 / +10000 / +100000** (and matching lowers)
 - Separate **Buy Max** page for unlocking more available max
 - Bukkit `/difficulty` registered by the companion plugin so **all players** can use it on Mohist
 - FTB Teams teammate scaling (scoreboard fallback)

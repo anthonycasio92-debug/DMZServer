@@ -137,7 +137,7 @@ public final class ForgeBridge {
 
             Method raiseCost = calcCls.getMethod("raiseCostIronCoins", long.class, long.class);
             long room = Math.max(0L, available - active);
-            long[] steps = {1L, 5L, 25L, 100L};
+            long[] steps = {1L, 5L, 25L, 100L, 1000L, 10000L, 100000L};
             for (long step : steps) {
                 long buyCost = (Long) purchaseCost.invoke(null, purchased, step);
                 out.put("cost_buy_" + step, String.valueOf(formatCost.invoke(null, buyCost)));
@@ -153,8 +153,9 @@ public final class ForgeBridge {
                 }
             }
             // keep old buy aliases for any leftover references
-            out.put("cost_1000", String.valueOf(formatCost.invoke(null, purchaseCost.invoke(null, purchased, 1000L))));
-            out.put("cost_10000", String.valueOf(formatCost.invoke(null, purchaseCost.invoke(null, purchased, 10000L))));
+            out.put("cost_1000", out.get("cost_buy_1000"));
+            out.put("cost_10000", out.get("cost_buy_10000"));
+            out.put("cost_100000", out.get("cost_buy_100000"));
 
             long maxCost = room <= 0 ? 0L : (Long) raiseCost.invoke(null, active, room);
             out.put("cost_max", room <= 0 ? "at max" : String.valueOf(formatCost.invoke(null, maxCost)));

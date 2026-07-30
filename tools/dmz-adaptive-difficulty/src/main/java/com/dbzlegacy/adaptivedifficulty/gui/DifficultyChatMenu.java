@@ -18,7 +18,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 /** Clean clickable chat fallback when inventory GUIs are unavailable. */
 public final class DifficultyChatMenu {
-    private static final long[] STEPS = {1L, 5L, 25L, 100L};
+    private static final long[] STEPS = {1L, 5L, 25L, 100L, 1000L, 10000L, 100000L};
 
     private DifficultyChatMenu() {}
 

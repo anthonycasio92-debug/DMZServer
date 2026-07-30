@@ -68,7 +68,7 @@ public final class CmiDifficultyGui {
 
         gui.addButton(pageBtn(20, Material.LIME_CONCRETE, "&aAdjust", "adjust",
                 "&7Raise / lower active difficulty",
-                "&8Steps +1 / +5 / +25 / +100"));
+                "&8Steps +1 … +100000"));
         gui.addButton(pageBtn(22, Material.GOLD_INGOT, "&eBuy Max", "buy",
                 "&7Unlock more available max",
                 "&8Paid from inventory coins"));
@@ -115,17 +115,23 @@ public final class CmiDifficultyGui {
         gui.addButton(actionBtn(7, Material.WHITE_CONCRETE, "&fReset", "reset", "0", "adjust",
                 List.of("&7Set active to &f0", "&8Purchased max kept", "&8Always free")));
 
-        // Lower row
-        gui.addButton(actionBtn(19, Material.RED_CONCRETE, "&c−100", "down", "100", "adjust",
+        // Lower row (large → small)
+        gui.addButton(actionBtn(19, Material.RED_CONCRETE, "&c−100000", "down", "100000", "adjust",
                 List.of("&7Lower active difficulty", "&8Always free")));
-        gui.addButton(actionBtn(20, Material.RED_TERRACOTTA, "&c−25", "down", "25", "adjust",
+        gui.addButton(actionBtn(20, Material.RED_WOOL, "&c−10000", "down", "10000", "adjust",
                 List.of("&7Lower active difficulty", "&8Always free")));
-        gui.addButton(actionBtn(21, Material.PINK_CONCRETE, "&c−5", "down", "5", "adjust",
+        gui.addButton(actionBtn(21, Material.RED_TERRACOTTA, "&c−1000", "down", "1000", "adjust",
                 List.of("&7Lower active difficulty", "&8Always free")));
-        gui.addButton(actionBtn(22, Material.PINK_TERRACOTTA, "&c−1", "down", "1", "adjust",
+        gui.addButton(actionBtn(22, Material.PINK_CONCRETE, "&c−100", "down", "100", "adjust",
+                List.of("&7Lower active difficulty", "&8Always free")));
+        gui.addButton(actionBtn(23, Material.PINK_TERRACOTTA, "&c−25", "down", "25", "adjust",
+                List.of("&7Lower active difficulty", "&8Always free")));
+        gui.addButton(actionBtn(24, Material.MAGENTA_CONCRETE, "&c−5", "down", "5", "adjust",
+                List.of("&7Lower active difficulty", "&8Always free")));
+        gui.addButton(actionBtn(25, Material.MAGENTA_TERRACOTTA, "&c−1", "down", "1", "adjust",
                 List.of("&7Lower active difficulty", "&8Always free")));
 
-        // Raise row
+        // Raise row (small → large)
         gui.addButton(actionBtn(28, Material.LIME_TERRACOTTA, "&a+1", "up", "1", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_1", "?"),
                         "&8Paid from inventory coins")));
@@ -138,6 +144,15 @@ public final class CmiDifficultyGui {
         gui.addButton(actionBtn(31, Material.GREEN_CONCRETE, "&a+100", "up", "100", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_100", "?"),
                         "&8Paid from inventory coins")));
+        gui.addButton(actionBtn(32, Material.EMERALD, "&a+1000", "up", "1000", "adjust",
+                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_1000", "?"),
+                        "&8Paid from inventory coins")));
+        gui.addButton(actionBtn(33, Material.DIAMOND, "&a+10000", "up", "10000", "adjust",
+                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_10000", "?"),
+                        "&8Paid from inventory coins")));
+        gui.addButton(actionBtn(34, Material.NETHERITE_INGOT, "&a+100000", "up", "100000", "adjust",
+                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_100000", "?"),
+                        "&8Paid from inventory coins")));
 
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
         gui.addButton(pageBtn(40, Material.GOLD_INGOT, "&eBuy Max", "buy", "&7Unlock more available max"));
@@ -149,9 +164,9 @@ public final class CmiDifficultyGui {
     /** Dedicated buy-max unlock page. */
     private static void openBuy(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
-        CMIGui gui = base(player, "&8Buy Max Difficulty", 4);
+        CMIGui gui = base(player, "&8Buy Max Difficulty", 5);
 
-        CMIGuiButton info = new CMIGuiButton(13, Material.GOLD_INGOT, "&e&lBuy Max");
+        CMIGuiButton info = new CMIGuiButton(4, Material.GOLD_INGOT, "&e&lBuy Max");
         info.lockField();
         info.addLore(List.of(
                 "",
@@ -166,17 +181,23 @@ public final class CmiDifficultyGui {
 
         gui.addButton(actionBtn(19, Material.GOLD_NUGGET, "&e+1 max", "buy", "1", "buy",
                 List.of("&7Unlock +1 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_1", "?"))));
-        gui.addButton(actionBtn(21, Material.GOLD_NUGGET, "&e+5 max", "buy", "5", "buy",
+        gui.addButton(actionBtn(20, Material.GOLD_NUGGET, "&e+5 max", "buy", "5", "buy",
                 List.of("&7Unlock +5 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_5", "?"))));
-        gui.addButton(actionBtn(23, Material.GOLD_INGOT, "&e+25 max", "buy", "25", "buy",
+        gui.addButton(actionBtn(21, Material.GOLD_INGOT, "&e+25 max", "buy", "25", "buy",
                 List.of("&7Unlock +25 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_25", "?"))));
-        gui.addButton(actionBtn(25, Material.GOLD_BLOCK, "&e+100 max", "buy", "100", "buy",
+        gui.addButton(actionBtn(22, Material.GOLD_BLOCK, "&e+100 max", "buy", "100", "buy",
                 List.of("&7Unlock +100 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_100", "?"))));
+        gui.addButton(actionBtn(23, Material.EMERALD, "&e+1000 max", "buy", "1000", "buy",
+                List.of("&7Unlock +1000 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_1000", "?"))));
+        gui.addButton(actionBtn(24, Material.DIAMOND, "&e+10000 max", "buy", "10000", "buy",
+                List.of("&7Unlock +10000 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_10000", "?"))));
+        gui.addButton(actionBtn(25, Material.NETHERITE_INGOT, "&e+100000 max", "buy", "100000", "buy",
+                List.of("&7Unlock +100000 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_100000", "?"))));
 
-        gui.addButton(pageBtn(27, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
-        gui.addButton(pageBtn(31, Material.LIME_CONCRETE, "&aAdjust", "adjust", "&7Raise / lower active"));
-        gui.addButton(closeBtn(35));
-        fillEmpty(gui, 4);
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
+        gui.addButton(pageBtn(40, Material.LIME_CONCRETE, "&aAdjust", "adjust", "&7Raise / lower active"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
         gui.open();
     }
 
