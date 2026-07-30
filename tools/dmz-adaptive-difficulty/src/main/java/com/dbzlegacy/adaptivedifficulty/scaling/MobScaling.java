@@ -70,6 +70,9 @@ public final class MobScaling {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);
+        if (!PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
         if (tag.m_128471_(TAG_SCALED)) {
             return;
         }

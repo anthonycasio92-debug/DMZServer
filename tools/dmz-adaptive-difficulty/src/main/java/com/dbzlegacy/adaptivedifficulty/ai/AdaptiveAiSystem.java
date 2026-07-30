@@ -162,6 +162,11 @@ public final class AdaptiveAiSystem {
     private static void antiFlight(Mob mob, Player player) {
         boolean grounded = false;
 
+        // Never ground creative / spectator builders (instabuild).
+        if (player.m_150110_().f_35937_) { // instabuild
+            return;
+        }
+
         // Vanilla creative / ability flying
         if (player.m_150110_().f_35935_) {
             player.m_150110_().f_35935_ = false;

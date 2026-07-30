@@ -69,8 +69,8 @@ public final class RewardSystem {
         if (mutated) {
             bonus += 25.0f;
         }
-        // Baseline kill bonus scales with active difficulty
-        bonus += (float) (5.0 * mult);
+        // Baseline kill bonus (unscaled); multiply once below with elite/boss/mutation parts.
+        bonus += 5.0f;
         if (bonus <= 0.0f) {
             return;
         }
@@ -215,10 +215,11 @@ public final class RewardSystem {
             title = "Legendary Hunter";
         } else if (snap.active >= DifficultyTier.IMPOSSIBLE.threshold()) {
             title = "Impossible";
+        } else if (snap.active >= DifficultyTier.DIVINE.threshold()) {
+            // Divine (50k) must be checked before God (10k) or it is unreachable.
+            title = "Divine";
         } else if (snap.active >= DifficultyTier.GOD.threshold()) {
             title = "God Challenger";
-        } else if (snap.active >= DifficultyTier.DIVINE.threshold()) {
-            title = "Divine";
         }
         if (title != null && data.unlockTitle(title)) {
             DifficultyCache.save(killer);

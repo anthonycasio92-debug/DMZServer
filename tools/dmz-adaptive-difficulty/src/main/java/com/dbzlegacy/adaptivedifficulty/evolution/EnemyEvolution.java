@@ -16,6 +16,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
@@ -148,9 +150,21 @@ public final class EnemyEvolution {
         }
     }
 
-    /** Called on creeper death — guaranteed final explosion. */
+    /** Called on creeper death — final explosion when killed before fuse detonation. */
     public static void onCreeperDeath(Creeper creeper) {
+        onCreeperDeath(creeper, null);
+    }
+
+    /**
+     * Final boom only when the creeper did <b>not</b> already explode (fuse / other blast).
+     * Fuse detonation kills via explosion damage — stacking another blast was near-instant death.
+     */
+    public static void onCreeperDeath(Creeper creeper, DamageSource source) {
         if (creeper == null || creeper.m_9236_().f_46443_) {
+            return;
+        }
+        // Skip if death was already from an explosion (vanilla fuse boom, TNT, etc.).
+        if (source != null && source.m_269533_(DamageTypeTags.f_268415_)) { // IS_EXPLOSION
             return;
         }
         long difficulty = MobScaling.difficultyOf(creeper);
@@ -439,7 +453,7 @@ public final class EnemyEvolution {
                 tag.m_128356_("dmz_ad_explode", age);
             }
         }
-        target.m_20254_(2);
+        // Intentionally no per-tick ignite — burning is applied by successful ki hits only.
     }
 
     // ── Ghasts: Large Blast / Burn Beam / Explosion Wave ──────────────────

@@ -1,7 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.evolution;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
-import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
 import com.dragonminez.common.init.entities.ki.KiBlastEntity;
 import com.dragonminez.common.init.entities.ki.KiLaserEntity;
@@ -203,10 +202,14 @@ public final class KiAttackHelper {
         }
     }
 
+    /**
+     * Tier-only base damage. Difficulty scaling is applied once by
+     * {@link com.dbzlegacy.adaptivedifficulty.scaling.MobScaling#scaleOutgoingHurt}
+     * for projectiles / ki (indirect hits).
+     * Do <b>not</b> bake difficulty into the projectile here — that double-scaled blasts.
+     */
     private static float baseDamage(Mob shooter, DifficultyTier tier, float base) {
-        long difficulty = Math.max(0L, MobScaling.difficultyOf(shooter));
         float tierBonus = Math.max(0, tier.ordinalPower()) * 1.25f;
-        float scale = 1.0f + (float) (difficulty * 0.01);
-        return Math.min(80.0f, (base + tierBonus) * Math.min(scale, 8.0f));
+        return Math.min(40.0f, base + tierBonus);
     }
 }

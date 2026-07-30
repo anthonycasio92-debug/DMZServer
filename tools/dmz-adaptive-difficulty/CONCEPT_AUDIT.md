@@ -1,6 +1,6 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.7.15** (server-side only; CMI GUI, no DeluxeMenus)  
+Mod version: **1.7.17** (server-side only; CMI GUI, no DeluxeMenus)  
 Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
 Reaudited against live Java sources (not prior audit claims).
@@ -12,10 +12,10 @@ Reaudited against live Java sources (not prior audit claims).
 | 3 | Calculated / Purchased / Active / Team Threshold / Contribution | Done | `DifficultyCalculator`, `PlayerDifficultyData`, `TeamScaling`, `DmzProgression` |
 | 4 | Personal / Threshold / Full team modes (+10%/teammate) | Done | `TeamMode` + FTB Teams (scoreboard fallback) |
 | 5 | `/difficulty` GUI fields + buttons | Done | CMI → chest → chat; Increase/Decrease/Team/Rewards/Tiers/Stats (+ Buy) |
-| 6 | Lightman's +100/+1k/+10k; lowering free | Done | `CurrencyBridge` wallet+bank+inventory; TP/`free` fallback |
+| 6 | Lightman's +1…+100000; lowering free | Done | `CurrencyBridge` **inventory coins only** (no wallet/bank/TP pay) |
 | 7 | Admin config / `difficulty.admin` / ability unlock tiers | Done | `/difficulty admin set …` incl. scaling keys + `tierAwakened`…`tierImpossible` |
 | 8 | State colors G/Y/O/P/R | Done | `DifficultySnapshot.state()`; Extreme = full team ceiling or hard-cap; shown in GUIs |
-| 9 | Mob spawn scaling + DMZ extras | Done | `MobScaling` + `AreaDifficulty` (SH-style); DMZ extras on DMZ mobs |
+| 9 | Mob spawn scaling + DMZ extras | Done | `MobScaling` + `AreaDifficulty` (SH-style); DMZ extras on **all hostiles** by default |
 | 10 | Tiers 10→100000 | Done+ | Extended through Zenith 10M (P10 / level 100k theoretical max) |
 | 11 | Enemy evolution (creeper/zombie/skel/enderman/warden) | Done | `EnemyEvolution` — all hostiles; special kits + shared melee/ranged (ki) packages; Stray/WitherSkeleton included |
 | 12 | Elites (name/aura/size/AI/rewards) | Done* | `EliteSystem` — glow aura + knockback-resist size + NBT scale hint (no Pehkui) |

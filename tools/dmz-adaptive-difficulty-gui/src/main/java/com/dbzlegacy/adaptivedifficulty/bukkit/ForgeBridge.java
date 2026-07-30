@@ -3,7 +3,6 @@ package com.dbzlegacy.adaptivedifficulty.bukkit;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -14,7 +13,7 @@ import org.bukkit.entity.Player;
 
 /** Reflects into the Forge mod for live values / actions (Mohist shared JVM). */
 public final class ForgeBridge {
-    private static final Set<UUID> ADMIN = new HashSet<>();
+    private static final Set<UUID> ADMIN = ConcurrentHashMap.newKeySet();
     private static final long PLACEHOLDER_TTL_MS = 200L;
     private static final Map<UUID, CachedPlaceholders> PLACEHOLDER_CACHE = new ConcurrentHashMap<>();
 
@@ -40,6 +39,7 @@ public final class ForgeBridge {
     private static Method balanceText;
     private static Method currencyLabel;
     private static Method purchaseCost;
+    private static Method raiseCostIronCoins;
     private static Method formatCost;
     private static Method rewardMult;
     private static Method dataTitles;
@@ -47,6 +47,8 @@ public final class ForgeBridge {
     private static Method snapshotStateColor;
     private static Method actionsHandle;
     private static Method resultMessage;
+    private static Method resultOk;
+    private static Method chatMenuOpen;
 
     private ForgeBridge() {}
 
@@ -94,8 +96,8 @@ public final class ForgeBridge {
         }
         try {
             ensureResolved();
-            // Prefer cached snapshot for display — actions call refresh themselves.
-            Object snap = cacheGet.invoke(null, nms);
+            // Refresh so GUI costs/balance match post-level / coin changes (chat menu does the same).
+            Object snap = cacheRefresh.invoke(null, nms);
             if (snap == null) {
                 return out;
             }
@@ -135,7 +137,6 @@ public final class ForgeBridge {
             out.put("balance", String.valueOf(balanceText.invoke(null, nms)));
             out.put("currency", String.valueOf(currencyLabel.invoke(null)));
 
-            Method raiseCost = calcCls.getMethod("raiseCostIronCoins", long.class, long.class);
             long room = Math.max(0L, available - active);
             long[] steps = {1L, 5L, 25L, 100L, 1000L, 10000L, 100000L};
             for (long step : steps) {
@@ -148,7 +149,7 @@ public final class ForgeBridge {
                 if (upAmt <= 0) {
                     out.put("cost_up_" + step, "at max");
                 } else {
-                    long upCost = (Long) raiseCost.invoke(null, active, upAmt);
+                    long upCost = (Long) raiseCostIronCoins.invoke(null, active, upAmt);
                     out.put("cost_up_" + step, String.valueOf(formatCost.invoke(null, upCost)));
                 }
             }
@@ -157,7 +158,7 @@ public final class ForgeBridge {
             out.put("cost_10000", out.get("cost_buy_10000"));
             out.put("cost_100000", out.get("cost_buy_100000"));
 
-            long maxCost = room <= 0 ? 0L : (Long) raiseCost.invoke(null, active, room);
+            long maxCost = room <= 0 ? 0L : (Long) raiseCostIronCoins.invoke(null, active, room);
             out.put("cost_max", room <= 0 ? "at max" : String.valueOf(formatCost.invoke(null, maxCost)));
             out.put("raise_room", String.valueOf(room));
 
@@ -204,40 +205,113 @@ public final class ForgeBridge {
 
     /** Runs a GUI action through the Forge mod and returns the result message. */
     public static String handleAction(Player player, String action, String arg) {
-        return handleAction(player, action, arg, null);
+        return handleActionResult(player, action, arg, null).message;
     }
 
     /**
      * @param returnPage GUI page to reopen after the action (e.g. {@code adjust}, {@code buy}).
      */
     public static String handleAction(Player player, String action, String arg, String returnPage) {
+        return handleActionResult(player, action, arg, returnPage).message;
+    }
+
+    /**
+     * @param returnPage GUI page to reopen after the action (e.g. {@code adjust}, {@code buy}).
+     */
+    public static ActionResult handleActionResult(Player player, String action, String arg, String returnPage) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
-            return "§cCould not reach adaptive difficulty mod.";
+            return ActionResult.fail("Could not reach adaptive difficulty mod.");
         }
         try {
             ensureResolved();
             String act = action == null ? "" : action.toLowerCase(Locale.ROOT);
             String page = resolveReturnPage(act, arg, returnPage);
             long amount = 0L;
-            if ("page".equals(act)) {
-                page = arg == null || arg.isBlank() ? "main" : arg;
+            if ("page".equals(act) || "team".equals(act) || "refresh".equals(act)
+                    || "set_max".equals(act) || "reset".equals(act) || "zero".equals(act)
+                    || "clear".equals(act)) {
+                if ("page".equals(act)) {
+                    page = arg == null || arg.isBlank() ? "main" : arg;
+                }
             } else if (arg != null && !arg.isBlank()) {
                 try {
                     amount = Long.parseLong(arg);
                 } catch (NumberFormatException ignored) {
-                    amount = 0L;
+                    return ActionResult.fail("Invalid amount: " + arg);
                 }
             }
             Object result = actionsHandle.invoke(null, nms, act, amount, page);
             PLACEHOLDER_CACHE.remove(player.getUniqueId());
             if (result == null) {
-                return "";
+                return ActionResult.ok("");
             }
             Object msg = resultMessage.invoke(result);
-            return msg == null ? "" : String.valueOf(msg);
+            boolean ok = resultOk == null || Boolean.TRUE.equals(resultOk.invoke(result));
+            String text = msg == null ? "" : String.valueOf(msg);
+            return new ActionResult(ok, text);
         } catch (Throwable t) {
-            return "§cAction failed: " + t.getClass().getSimpleName();
+            return ActionResult.fail("Action failed: " + t.getClass().getSimpleName());
+        }
+    }
+
+    /** Forge {@code guiBackend} config value (lowercased), or {@code cmi} default. */
+    public static String guiBackend() {
+        try {
+            ensureResolved();
+            Object cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+                    .getMethod("get").invoke(null);
+            Object raw = cfg.getClass().getField("guiBackend").get(cfg);
+            if (raw == null) {
+                return "cmi";
+            }
+            String v = String.valueOf(raw).trim().toLowerCase(Locale.ROOT);
+            return v.isEmpty() ? "cmi" : v;
+        } catch (Throwable t) {
+            return "cmi";
+        }
+    }
+
+    public static String adminPermission() {
+        try {
+            Object cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+                    .getMethod("get").invoke(null);
+            Object raw = cfg.getClass().getField("adminPermission").get(cfg);
+            if (raw == null) {
+                return "difficulty.admin";
+            }
+            String v = String.valueOf(raw).trim();
+            return v.isEmpty() ? "difficulty.admin" : v;
+        } catch (Throwable t) {
+            return "difficulty.admin";
+        }
+    }
+
+    /** Opens Forge clickable chat menu (settings / chat backend). */
+    public static boolean openChatMenu(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return false;
+        }
+        try {
+            ensureResolved();
+            if (chatMenuOpen == null) {
+                return false;
+            }
+            chatMenuOpen.invoke(null, nms, page == null || page.isBlank() ? "main" : page);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    public record ActionResult(boolean ok, String message) {
+        public static ActionResult ok(String message) {
+            return new ActionResult(true, message == null ? "" : message);
+        }
+
+        public static ActionResult fail(String message) {
+            return new ActionResult(false, message == null ? "" : message);
         }
     }
 
@@ -268,13 +342,28 @@ public final class ForgeBridge {
         if (player == null) {
             return false;
         }
-        if (player.isOp() || player.hasPermission("difficulty.admin")) {
+        if (player.isOp() || player.hasPermission(adminPermission())) {
             return true;
         }
         return player.hasPermission("*");
     }
 
     public static boolean toggleAdmin(Player player) {
+        // Prefer Forge AdminCommandAccess as source of truth.
+        try {
+            Object nms = nmsPlayer(player);
+            Class<?> access = Class.forName("com.dbzlegacy.adaptivedifficulty.command.AdminCommandAccess");
+            Method toggle = access.getMethod("toggle", Class.forName("net.minecraft.server.level.ServerPlayer"));
+            boolean enabled = Boolean.TRUE.equals(toggle.invoke(null, nms));
+            UUID id = player.getUniqueId();
+            if (enabled) {
+                ADMIN.add(id);
+            } else {
+                ADMIN.remove(id);
+            }
+            return enabled;
+        } catch (Throwable ignored) {
+        }
         UUID id = player.getUniqueId();
         if (ADMIN.contains(id)) {
             ADMIN.remove(id);
@@ -287,7 +376,23 @@ public final class ForgeBridge {
     }
 
     public static boolean hasAdmin(Player player) {
-        return player != null && ADMIN.contains(player.getUniqueId());
+        if (player == null) {
+            return false;
+        }
+        try {
+            Object nms = nmsPlayer(player);
+            Class<?> access = Class.forName("com.dbzlegacy.adaptivedifficulty.command.AdminCommandAccess");
+            Method isEnabled = access.getMethod("isEnabled", Class.forName("net.minecraft.server.level.ServerPlayer"));
+            boolean enabled = Boolean.TRUE.equals(isEnabled.invoke(null, nms));
+            if (enabled) {
+                ADMIN.add(player.getUniqueId());
+            } else {
+                ADMIN.remove(player.getUniqueId());
+            }
+            return enabled;
+        } catch (Throwable ignored) {
+        }
+        return ADMIN.contains(player.getUniqueId());
     }
 
     public static void clearAdmin(Player player) {
@@ -436,6 +541,7 @@ public final class ForgeBridge {
             balanceText = currencyCls.getMethod("balanceText", serverPlayerCls);
             currencyLabel = currencyCls.getMethod("currencyLabel");
             purchaseCost = calcCls.getMethod("purchaseCost", long.class, long.class);
+            raiseCostIronCoins = calcCls.getMethod("raiseCostIronCoins", long.class, long.class);
             formatCost = currencyCls.getMethod("formatCost", long.class);
             rewardMult = calcCls.getMethod("rewardMultiplier", long.class);
             dataTitles = dataCls.getMethod("getTitles");
@@ -443,8 +549,11 @@ public final class ForgeBridge {
             snapshotState = snapCls.getMethod("state");
             snapshotStateColor = snapCls.getMethod("stateColorCode");
             actionsHandle = actionsCls.getMethod("handle", serverPlayerCls, String.class, long.class, String.class);
-            resultMessage = Class.forName("com.dbzlegacy.adaptivedifficulty.service.DifficultyActions$Result")
-                    .getMethod("message");
+            Class<?> resultCls = Class.forName("com.dbzlegacy.adaptivedifficulty.service.DifficultyActions$Result");
+            resultMessage = resultCls.getMethod("message");
+            resultOk = resultCls.getMethod("ok");
+            chatMenuOpen = Class.forName("com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu")
+                    .getMethod("open", serverPlayerCls, String.class);
             resolved = true;
         }
     }

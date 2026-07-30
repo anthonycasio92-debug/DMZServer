@@ -23,10 +23,10 @@ public final class CmiGuiBridge {
             if (!(enabled instanceof Boolean b) || !b) {
                 return false;
             }
-            // Prefer real CMILib presence
+            // Require real CMILib / CMI — companion plugin alone is not enough.
             Object cmiLib = pm.getClass().getMethod("getPlugin", String.class).invoke(pm, "CMILib");
             Object cmi = pm.getClass().getMethod("getPlugin", String.class).invoke(pm, "CMI");
-            return cmiLib != null || cmi != null || plugin != null;
+            return cmiLib != null || cmi != null;
         } catch (Throwable ignored) {
             return false;
         }

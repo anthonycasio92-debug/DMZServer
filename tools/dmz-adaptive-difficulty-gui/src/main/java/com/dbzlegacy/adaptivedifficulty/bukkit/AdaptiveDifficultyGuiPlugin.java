@@ -31,11 +31,38 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
         getLogger().info("Registered Bukkit /difficulty (CMI GUI preferred).");
     }
 
-    /** Called by the Forge mod via reflection. */
+    /**
+     * Called by the Forge mod via reflection when {@code guiBackend} is cmi/chest/auto.
+     * Always opens an inventory GUI (does not re-read chat preference — Forge already decided).
+     */
     public void openMenu(Player player, String page) {
         if (player == null) {
             return;
         }
+        openInventory(player, page);
+    }
+
+    /** Player-facing open that honors Forge {@code guiBackend}. */
+    public void openMenuRespectingConfig(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        String backend = ForgeBridge.guiBackend();
+        if ("chat".equals(backend)) {
+            if (!ForgeBridge.openChatMenu(player, page)) {
+                player.sendMessage("§cChat difficulty menu unavailable (is the Forge mod loaded?).");
+            }
+            return;
+        }
+        if ("chest".equals(backend)) {
+            chestGui.open(player, page);
+            return;
+        }
+        // cmi / auto / unknown → CMI then chest
+        openInventory(player, page);
+    }
+
+    private void openInventory(Player player, String page) {
         if (CmiDifficultyGui.open(player, page)) {
             return;
         }
@@ -55,7 +82,11 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
                 sender.sendMessage("Players only.");
                 return true;
             }
-            openMenu(player, args.length > 0 ? args[0] : "main");
+            if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+                player.sendMessage("§cNo permission: dmzdiff.gui");
+                return true;
+            }
+            openMenuRespectingConfig(player, args.length > 0 ? args[0] : "main");
             return true;
         }
         if (!"difficulty".equals(name)) {
@@ -74,7 +105,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
                 player.sendMessage("§cNo permission: dmzdiff.gui");
                 return true;
             }
-            openMenu(player, "main");
+            openMenuRespectingConfig(player, "main");
             return true;
         }
 
@@ -85,16 +116,23 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
                     sender.sendMessage("Players only.");
                     return true;
                 }
+                if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+                    player.sendMessage("§cNo permission: dmzdiff.gui");
+                    return true;
+                }
                 String action = args.length > 1 ? args[1] : "";
                 String arg = args.length > 2 ? args[2] : null;
                 String returnPage = args.length > 3 ? args[3] : null;
                 String reopen = ForgeBridge.resolveReturnPage(action, arg, returnPage);
-                String msg = ForgeBridge.handleAction(player, action, arg, reopen);
-                if (msg != null && !msg.isBlank()) {
-                    player.sendMessage(msg.startsWith("§") ? msg : "§e" + msg);
+                ForgeBridge.ActionResult result = ForgeBridge.handleActionResult(player, action, arg, reopen);
+                if (result.message() != null && !result.message().isBlank()) {
+                    String msg = result.message();
+                    if (!msg.startsWith("§")) {
+                        msg = (result.ok() ? "§a" : "§c") + msg;
+                    }
+                    player.sendMessage(msg);
                 }
-                // Actions already reopen the Forge GUI path; reopen CMI/chest here too.
-                getServer().getScheduler().runTask(this, () -> openMenu(player, reopen));
+                // Forge DifficultyActions already reopens the GUI — do not open twice.
                 return true;
             }
             case "admin" -> {
@@ -105,11 +143,15 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
                     sender.sendMessage("Players only.");
                     return true;
                 }
-                String msg = ForgeBridge.handleAction(player, "reset", "0");
-                if (msg != null && !msg.isBlank()) {
-                    player.sendMessage(msg.startsWith("§") ? msg : "§a" + msg);
+                ForgeBridge.ActionResult result = ForgeBridge.handleActionResult(player, "reset", "0", "main");
+                if (result.message() != null && !result.message().isBlank()) {
+                    String msg = result.message();
+                    if (!msg.startsWith("§")) {
+                        msg = (result.ok() ? "§a" : "§c") + msg;
+                    }
+                    player.sendMessage(msg);
                 }
-                getServer().getScheduler().runTask(this, () -> openMenu(player, "main"));
+                // Forge already reopened with page=main.
                 return true;
             }
             case "hard", "normal", "easy", "peaceful" -> {
@@ -140,7 +182,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
         Player player = console ? null : (Player) sender;
 
         if (!console && !ForgeBridge.isStaff(player)) {
-            sender.sendMessage("§cNo permission for /difficulty admin (need op or difficulty.admin).");
+            sender.sendMessage("§cNo permission for /difficulty admin (need op or "
+                    + ForgeBridge.adminPermission() + ").");
             return true;
         }
 
@@ -196,7 +239,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
                     sender.sendMessage("Players only for settings page.");
                     return true;
                 }
-                openMenu(player, "main");
+                if (!ForgeBridge.openChatMenu(player, "settings")) {
+                    openMenuRespectingConfig(player, "main");
+                }
                 sender.sendMessage("§7Use §f/difficulty admin set <key> <value>");
                 return true;
             }

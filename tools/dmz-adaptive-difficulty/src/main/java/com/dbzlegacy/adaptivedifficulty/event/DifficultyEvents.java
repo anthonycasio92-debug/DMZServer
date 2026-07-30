@@ -192,7 +192,7 @@ public final class DifficultyEvents {
     public void onDeath(LivingDeathEvent event) {
         LivingEntity dead = event.getEntity();
         if (dead instanceof Creeper creeper) {
-            EnemyEvolution.onCreeperDeath(creeper);
+            EnemyEvolution.onCreeperDeath(creeper, event.getSource());
         }
         if (!(event.getSource().m_7639_() instanceof ServerPlayer killer)) {
             return;

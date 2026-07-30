@@ -153,6 +153,10 @@ public final class TeamScaling {
             long mateCalc = DifficultyCalculator.calculatedDifficulty(
                     DmzProgression.dmzLevel(mate), DmzProgression.prestige(mate));
             long matePersonal = mateCalc + mateData.getPurchasedDifficulty();
+            // Match snapshot hardcap so contribution can't exceed capped personal max.
+            if (cfg.hardCapDifficulty > 0L) {
+                matePersonal = Math.min(matePersonal, cfg.hardCapDifficulty);
+            }
             long mateUsed = Math.min(mateData.getActiveDifficulty(), matePersonal);
             long spare = Math.max(0L, matePersonal - mateUsed);
             spareTotal += spare;

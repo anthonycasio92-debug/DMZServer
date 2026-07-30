@@ -54,7 +54,12 @@ public final class MutationSystem {
         if (type == MutationType.TITAN_CREEPER) {
             AttributeInstance health = entity.m_21051_(Attributes.f_22276_);
             if (health != null) {
-                health.m_22100_(health.m_22115_() * 1.75);
+                double cap = Math.min(DifficultyConfig.get().maxScaledHealth, 1024.0);
+                if (!(cap > 0.0)) {
+                    cap = 1024.0;
+                }
+                double next = Math.min(cap, health.m_22115_() * 1.75);
+                health.m_22100_(next);
                 entity.m_21153_(entity.m_21233_());
             }
         }
