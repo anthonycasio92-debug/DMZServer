@@ -29,3 +29,6 @@ kubejs/exported/
 # Adaptive difficulty GUI build output
 tools/dmz-adaptive-difficulty-gui/build/
 tools/dmz-adaptive-difficulty/build/
+
+# Local convenience copies from adaptive-difficulty build.sh
+/dmz_adaptive_difficulty-*.jar
