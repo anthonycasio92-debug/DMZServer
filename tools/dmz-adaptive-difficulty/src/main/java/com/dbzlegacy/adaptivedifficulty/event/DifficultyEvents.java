@@ -182,7 +182,9 @@ public final class DifficultyEvents {
         LivingEntity victim = event.getEntity();
         var source = event.getSource();
         Entity causing = source == null ? null : source.m_7639_(); // getEntity
-        if (HostileMobs.isHostile(victim) && !(causing instanceof Player)) {
+        // Block hostile→hostile (and hostile booms on other hostiles). Allow self-damage
+        // so creeper fuse can finish killing the exploding creeper on some Mohist paths.
+        if (HostileMobs.isHostile(victim) && !(causing instanceof Player) && causing != victim) {
             boolean hostileAttacker = causing instanceof LivingEntity atk && HostileMobs.isHostile(atk);
             boolean hostileBoom = source != null && source.m_269533_(DamageTypeTags.f_268415_) // IS_EXPLOSION
                     && !(causing instanceof Player);

@@ -10,6 +10,7 @@ import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -263,6 +264,16 @@ public final class MobScaling {
         Entity causing = source.m_7639_(); // getEntity
         if (!(causing instanceof LivingEntity attacker) || attacker instanceof Player) {
             return amount;
+        }
+        // Creeper / mob explosions: soft scale (full offense mult skips or melts these).
+        if (source.m_269533_(DamageTypeTags.f_268415_)) { // IS_EXPLOSION
+            long d = difficultyOf(attacker);
+            if (d <= 0L) {
+                return amount;
+            }
+            double boom = 1.0 + ScalingCurves.offenseEffective(d) * 0.003;
+            boom = Math.min(500.0, Math.max(1.0, boom));
+            return amount * (float) boom;
         }
         float mult = outgoingDamageMultiplier(attacker);
         if (mult <= 1.0f) {

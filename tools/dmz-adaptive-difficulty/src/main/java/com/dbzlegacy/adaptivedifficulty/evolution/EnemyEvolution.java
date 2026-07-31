@@ -143,17 +143,28 @@ public final class EnemyEvolution {
         }
     }
 
-    // ── Creepers: always Final Explosion, radius/fuse/damage scale ──────────
+    // ── Creepers: ignite + scaled blast radius / faster fuse ───────────────
 
     private static void creeperTick(
             Creeper creeper, ServerLevel level, LivingEntity target, DifficultyTier tier, long difficulty) {
         scaleCreeperBlast(creeper, tier, difficulty);
-        if (target != null && creeper.m_20270_(target) < 5.0f
-                && tier.ordinalPower() >= DifficultyTier.AWAKENED.ordinalPower()) {
-            creeper.m_32314_(); // always push toward detonation
+        // Only arm against players — never waste fuse on other mobs.
+        if (!(target instanceof Player) || tier.ordinalPower() < DifficultyTier.AWAKENED.ordinalPower()) {
+            return;
         }
-        if (target != null && tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()) {
-            creeper.m_21573_().m_26519_(target.m_20185_(), target.m_20186_(), target.m_20189_(), 1.4);
+        float dist = creeper.m_20270_(target);
+        // Chase earlier than Elite so Awakened+ creepers actually close the gap.
+        if (dist < 18.0f) {
+            creeper.m_21573_().m_26519_(target.m_20185_(), target.m_20186_(), target.m_20189_(),
+                    tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower() ? 1.45 : 1.25);
+        }
+        // Fuse when close. m_32312_ = ignite(); m_32283_(1) = setSwellDir(1).
+        // (Old code called m_32314_ = increaseDroppedSkulls — creepers never armed.)
+        if (dist < 6.0f) {
+            if (!creeper.m_32311_()) { // isIgnited
+                creeper.m_32312_(); // ignite
+            }
+            creeper.m_32283_(1); // setSwellDir toward explosion
         }
     }
 
@@ -203,18 +214,19 @@ public final class EnemyEvolution {
         }
         tag.m_128379_("dmz_ad_blast_scaled", true);
         int bonus = Math.max(0, tier.ordinalPower() - DifficultyTier.AWAKENED.ordinalPower());
-        bonus += (int) Math.min(6, difficulty / 250);
+        bonus += (int) Math.min(8, difficulty / 500);
+        // SRG field names (not intermediary bU/bV — those never matched on Forge/Mohist).
         try {
-            Field radius = Creeper.class.getDeclaredField("bV");
+            Field radius = Creeper.class.getDeclaredField("f_32272_"); // explosionRadius
             radius.setAccessible(true);
-            int base = radius.getInt(creeper);
-            radius.setInt(creeper, Math.min(16, base + bonus + 1));
+            int base = Math.max(3, radius.getInt(creeper));
+            radius.setInt(creeper, Math.min(12, base + Math.min(6, bonus / 2) + 1));
 
-            Field swell = Creeper.class.getDeclaredField("bU");
+            Field swell = Creeper.class.getDeclaredField("f_32271_"); // maxSwell
             swell.setAccessible(true);
             int maxSwell = swell.getInt(creeper);
-            // Higher difficulty → faster fuse
-            swell.setInt(creeper, Math.max(8, maxSwell - (bonus * 5) - 6));
+            // Higher difficulty → faster fuse (vanilla default 30).
+            swell.setInt(creeper, Math.max(10, maxSwell - Math.min(18, bonus + 4)));
         } catch (Throwable ignored) {
         }
     }
