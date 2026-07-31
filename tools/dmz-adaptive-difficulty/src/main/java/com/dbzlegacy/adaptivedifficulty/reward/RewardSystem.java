@@ -6,11 +6,11 @@ import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
-import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dragonminez.common.init.MainItems;
 import com.dragonminez.common.network.NetworkHandler;
@@ -18,7 +18,6 @@ import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
 import java.util.concurrent.ThreadLocalRandom;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -64,7 +63,7 @@ public final class RewardSystem {
         // XP/drops use tier only — no difficulty TP-style multiplier.
         grantExperience(killer, 1.0, elite, boss, tier);
         grantDrops(killer, 1.0, elite, boss, mutated, tier);
-        maybeUnlockTitle(killer, snap, elite, boss, tier);
+        TitleSystem.maybeUnlockCombatTitle(killer, snap, elite, boss, tier);
     }
 
     private static void grantTrainingPoints(
@@ -168,29 +167,6 @@ public final class RewardSystem {
             }
         } catch (Throwable ignored) {
             // Capsules unavailable if DMZ items not ready
-        }
-    }
-
-    private static void maybeUnlockTitle(
-            ServerPlayer killer, DifficultySnapshot snap, boolean elite, boolean boss, DifficultyTier tier
-    ) {
-        PlayerDifficultyData data = DifficultyCache.data(killer);
-        String title = null;
-        if (boss && tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()) {
-            title = "Boss Slayer";
-        } else if (elite && snap.active >= DifficultyTier.LEGENDARY.threshold()) {
-            title = "Legendary Hunter";
-        } else if (snap.active >= DifficultyTier.IMPOSSIBLE.threshold()) {
-            title = "Impossible";
-        } else if (snap.active >= DifficultyTier.DIVINE.threshold()) {
-            // Divine (50k) must be checked before God (10k) or it is unreachable.
-            title = "Divine";
-        } else if (snap.active >= DifficultyTier.GOD.threshold()) {
-            title = "God Challenger";
-        }
-        if (title != null && data.unlockTitle(title)) {
-            DifficultyCache.save(killer);
-            killer.m_213846_(Component.m_237113_("§6✦ Title unlocked: §e" + title));
         }
     }
 

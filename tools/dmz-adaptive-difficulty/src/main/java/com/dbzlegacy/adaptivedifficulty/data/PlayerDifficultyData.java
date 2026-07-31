@@ -1,13 +1,14 @@
 package com.dbzlegacy.adaptivedifficulty.data;
 
+import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
 
 /**
  * Persisted per-player difficulty fields from the concept doc.
@@ -20,6 +21,7 @@ public final class PlayerDifficultyData {
     private long activeDifficulty;
     private TeamMode teamMode = TeamMode.PERSONAL_ONLY;
     private final Set<String> titles = new LinkedHashSet<>();
+    private String activeTitle = "";
 
     public long getPurchasedDifficulty() {
         return purchasedDifficulty;
@@ -58,15 +60,82 @@ public final class PlayerDifficultyData {
         return new ArrayList<>(titles);
     }
 
-    /** @return true if newly unlocked */
-    public boolean unlockTitle(String title) {
-        if (title == null || title.isBlank()) {
+    public boolean hasTitle(String titleId) {
+        if (titleId == null || titleId.isBlank()) {
             return false;
         }
-        return titles.add(title.trim());
+        return titles.contains(normalizeId(titleId));
+    }
+
+    /** @return true if newly unlocked */
+    public boolean unlockTitle(String title) {
+        DifficultyTitle known = DifficultyTitle.byId(title);
+        String id = known != null ? known.id : normalizeId(title);
+        if (id == null || id.isBlank()) {
+            return false;
+        }
+        return titles.add(id);
+    }
+
+    public String getActiveTitle() {
+        return activeTitle == null ? "" : activeTitle;
+    }
+
+    public void setActiveTitle(String titleId) {
+        if (titleId == null || titleId.isBlank()) {
+            this.activeTitle = "";
+            return;
+        }
+        DifficultyTitle known = DifficultyTitle.byId(titleId);
+        this.activeTitle = known != null ? known.id : normalizeId(titleId);
+    }
+
+    /**
+     * Migrate legacy display-name unlocks to catalog ids and drop an equipped title
+     * the player no longer owns.
+     *
+     * @return true if persisted data changed
+     */
+    public boolean normalizeTitles() {
+        boolean dirty = false;
+        List<String> snapshot = new ArrayList<>(titles);
+        titles.clear();
+        for (String raw : snapshot) {
+            DifficultyTitle known = DifficultyTitle.byId(raw);
+            String id = known != null ? known.id : normalizeId(raw);
+            if (id == null || id.isBlank()) {
+                dirty = true;
+                continue;
+            }
+            if (known == null && !id.equals(raw)) {
+                dirty = true;
+            } else if (known != null && !known.id.equals(raw)) {
+                dirty = true;
+            }
+            titles.add(id);
+        }
+        if (snapshot.size() != titles.size()) {
+            dirty = true;
+        }
+        if (activeTitle != null && !activeTitle.isBlank()) {
+            DifficultyTitle known = DifficultyTitle.byId(activeTitle);
+            String id = known != null ? known.id : normalizeId(activeTitle);
+            if (id == null || id.isBlank() || !titles.contains(id)) {
+                activeTitle = "";
+                dirty = true;
+            } else if (!id.equals(activeTitle)) {
+                activeTitle = id;
+                dirty = true;
+            }
+        } else if (activeTitle == null) {
+            activeTitle = "";
+            dirty = true;
+        }
+        return dirty;
     }
 
     public CompoundTag save() {
+        normalizeTitles();
         CompoundTag tag = new CompoundTag();
         tag.m_128356_("purchased", purchasedDifficulty); // putLong
         tag.m_128356_("active", activeDifficulty);
@@ -76,6 +145,7 @@ public final class PlayerDifficultyData {
             list.add(StringTag.m_129297_(t));
         }
         tag.m_128365_("titles", list);
+        tag.m_128359_("activeTitle", getActiveTitle());
         return tag;
     }
 
@@ -96,6 +166,11 @@ public final class PlayerDifficultyData {
                 }
             }
         }
+        activeTitle = tag.m_128461_("activeTitle");
+        if (activeTitle == null) {
+            activeTitle = "";
+        }
+        normalizeTitles();
     }
 
     public static PlayerDifficultyData fromPlayerNbt(CompoundTag persistent) {
@@ -111,5 +186,12 @@ public final class PlayerDifficultyData {
             return;
         }
         persistent.m_128365_(NBT_ROOT, save()); // put
+    }
+
+    private static String normalizeId(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "";
+        }
+        return raw.trim().toLowerCase(Locale.ROOT).replace(' ', '_');
     }
 }

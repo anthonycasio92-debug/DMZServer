@@ -5,9 +5,10 @@ import com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge;
-import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
+import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import java.util.List;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -35,6 +36,8 @@ public final class DifficultyChatMenu {
             tiers(player);
         } else if ("stats".equalsIgnoreCase(page) || "statistics".equalsIgnoreCase(page)) {
             stats(player);
+        } else if ("titles".equalsIgnoreCase(page) || "title".equalsIgnoreCase(page)) {
+            titles(player);
         } else if ("settings".equalsIgnoreCase(page)) {
             settings(player);
         } else {
@@ -52,7 +55,8 @@ public final class DifficultyChatMenu {
                 + "  §8·  §7" + DifficultyTier.of(snap.active).display));
         send(player, Component.m_237113_("§8Theoretical §f" + snap.calculated
                 + "  §8Bought §f" + snap.purchased
-                + "  §8Inv §f" + CurrencyBridge.balanceText(player)));
+                + "  §8Inv §f" + CurrencyBridge.balanceText(player)
+                + "  §8Title §f" + TitleSystem.activeDisplay(player)));
         send(player, Component.m_237113_(""));
 
         MutableComponent hub = Component.m_237113_("§7")
@@ -67,6 +71,8 @@ public final class DifficultyChatMenu {
                 .m_7220_(btn("§fRewards", "/difficulty do page rewards", "TP multiplier"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§fTiers", "/difficulty do page tiers", "Enemy tiers"))
+                .m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn("§eTitles", "/difficulty do page titles", "Unlock & equip titles"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§fDetails", "/difficulty do page stats", "Full breakdown"))
                 .m_7220_(Component.m_237113_("  "))
@@ -179,10 +185,95 @@ public final class DifficultyChatMenu {
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 
+    private static void titles(ServerPlayer player) {
+        TitleSystem.syncTierTitles(player, true);
+        DifficultySnapshot snap = DifficultyCache.refresh(player);
+        String equipped = TitleSystem.activeDisplay(player);
+        List<String> owned = TitleSystem.unlockedDisplays(player);
+        send(player, Component.m_237113_("§8──────── §fTitles §8────────"));
+        send(player, Component.m_237113_("§7Equipped §e" + equipped
+                + "  §8·  §7Owned §f" + owned.size()
+                + "  §8·  §7Active §f" + snap.active));
+        MutableComponent tierRow = Component.m_237113_("§7Tiers  ");
+        int inRow = 0;
+        for (DifficultyTitle title : DifficultyTitle.values()) {
+            if (title.kind != DifficultyTitle.Kind.TIER) {
+                continue;
+            }
+            if (inRow > 0) {
+                tierRow.m_7220_(Component.m_237113_(" "));
+            }
+            boolean unlocked = TitleSystem.has(player, title);
+            boolean on = title.id.equals(TitleSystem.activeId(player));
+            String label = on ? "§e[" + title.display + "]"
+                    : unlocked ? "§a" + title.display : "§8" + title.display;
+            String tip = !unlocked
+                    ? "Locked · reach " + title.unlockTier.threshold()
+                    : on ? "Click to unequip" : "Equip " + title.display;
+            if (unlocked) {
+                tierRow.m_7220_(btn(label, "/difficulty do equip_title " + title.id + " titles", tip));
+            } else {
+                tierRow.m_7220_(Component.m_237113_(label));
+            }
+            inRow++;
+            if (inRow >= 8) {
+                send(player, tierRow);
+                tierRow = Component.m_237113_("§7      ");
+                inRow = 0;
+            }
+        }
+        if (inRow > 0) {
+            send(player, tierRow);
+        }
+
+        MutableComponent combat = Component.m_237113_("§7Combat  ");
+        boolean firstCombat = true;
+        for (DifficultyTitle title : DifficultyTitle.values()) {
+            if (title.kind != DifficultyTitle.Kind.COMBAT) {
+                continue;
+            }
+            if (!firstCombat) {
+                combat.m_7220_(Component.m_237113_(" "));
+            }
+            firstCombat = false;
+            boolean unlocked = TitleSystem.has(player, title);
+            boolean on = title.id.equals(TitleSystem.activeId(player));
+            String label = on ? "§e[" + title.display + "]"
+                    : unlocked ? "§a" + title.display : "§8" + title.display;
+            String tip = combatTip(title, unlocked, on);
+            if (unlocked) {
+                combat.m_7220_(btn(label, "/difficulty do equip_title " + title.id + " titles", tip));
+            } else {
+                combat.m_7220_(Component.m_237113_(label));
+            }
+        }
+        send(player, combat);
+
+        MutableComponent nav = Component.m_237113_("")
+                .m_7220_(btn("§7« Back", "/difficulty do page main", "Return"))
+                .m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn("§fUnequip", "/difficulty do clear_title 0 titles", "Clear equipped title"));
+        send(player, nav);
+    }
+
+    private static String combatTip(DifficultyTitle title, boolean unlocked, boolean equipped) {
+        if (equipped) {
+            return "Click to unequip";
+        }
+        if (unlocked) {
+            return "Equip " + title.display;
+        }
+        return switch (title) {
+            case BOSS_SLAYER -> "Kill a boss at Master+";
+            case LEGENDARY_HUNTER -> "Kill an elite at Legendary+";
+            case GOD_CHALLENGER -> "Get a kill at God+";
+            default -> "Locked";
+        };
+    }
+
     private static void stats(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
-        PlayerDifficultyData data = DifficultyCache.data(player);
-        List<String> titles = data.getTitles();
+        List<String> titles = TitleSystem.unlockedDisplays(player);
         send(player, Component.m_237113_("§8──────── §fDetails §8────────"));
         send(player, Component.m_237113_("§7State §" + snap.stateColorCode() + snap.state()
                 + "  §7Team §f" + snap.teamMode
@@ -191,8 +282,13 @@ public final class DifficultyChatMenu {
                 + "  §7Contrib §f" + snap.teamContribution
                 + "  §7Online §f" + TeamScaling.teammates(player).size()));
         send(player, Component.m_237113_("§7Inventory §f" + CurrencyBridge.balanceText(player)));
-        send(player, Component.m_237113_("§7Titles §f" + (titles.isEmpty() ? "none" : String.join("§8, §f", titles))));
-        send(player, btn("§7« Back", "/difficulty do page main", "Return"));
+        send(player, Component.m_237113_("§7Title §e" + TitleSystem.activeDisplay(player)
+                + "  §7Owned §f" + (titles.isEmpty() ? "none" : String.join("§8, §f", titles))));
+        MutableComponent nav = Component.m_237113_("")
+                .m_7220_(btn("§7« Back", "/difficulty do page main", "Return"))
+                .m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn("§eTitles", "/difficulty do page titles", "Unlock & equip"));
+        send(player, nav);
     }
 
     private static void settings(ServerPlayer player) {

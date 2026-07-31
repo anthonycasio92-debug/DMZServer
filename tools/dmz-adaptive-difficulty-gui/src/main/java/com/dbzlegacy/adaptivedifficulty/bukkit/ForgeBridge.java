@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.bukkit;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -44,9 +45,20 @@ public final class ForgeBridge {
     private static Method rewardMult;
     private static Method killTp;
     private static Method dataTitles;
+    private static Method dataActiveTitle;
+    private static Method dataHasTitle;
+    private static Method dataNormalizeTitles;
+    private static Class<?> titleCls;
+    private static Class<?> titleSystemCls;
+    private static Method titleValues;
+    private static Method titleById;
+    private static Method titleSystemSync;
+    private static Method titleSystemActiveDisplay;
+    private static Method titleSystemUnlockedDisplays;
     private static Method snapshotState;
     private static Method snapshotStateColor;
     private static Method actionsHandle;
+    private static Method actionsHandleArg;
     private static Method resultMessage;
     private static Method resultOk;
     private static Method chatMenuOpen;
@@ -178,22 +190,64 @@ public final class ForgeBridge {
             out.put("state_color", stateColor == null ? "f" : String.valueOf(stateColor));
 
             Object data = cacheData.invoke(null, nms);
-            if (data != null) {
-                Object titlesObj = dataTitles.invoke(data);
-                if (titlesObj instanceof List<?> titles && !titles.isEmpty()) {
-                    StringBuilder sb = new StringBuilder();
-                    for (Object t : titles) {
-                        if (sb.length() > 0) {
-                            sb.append(", ");
-                        }
-                        sb.append(t);
-                    }
-                    out.put("titles", sb.toString());
-                } else {
-                    out.put("titles", "none");
+            if (data != null && dataNormalizeTitles != null) {
+                dataNormalizeTitles.invoke(data);
+            }
+
+            String activeTitle = "none";
+            String activeTitleId = "";
+            if (titleSystemActiveDisplay != null) {
+                Object disp = titleSystemActiveDisplay.invoke(null, nms);
+                if (disp != null && !String.valueOf(disp).isBlank()) {
+                    activeTitle = String.valueOf(disp);
                 }
-            } else {
-                out.put("titles", "none");
+            }
+            if (data != null && dataActiveTitle != null) {
+                Object idObj = dataActiveTitle.invoke(data);
+                if (idObj != null) {
+                    activeTitleId = String.valueOf(idObj);
+                }
+            }
+            out.put("active_title", activeTitle);
+            out.put("active_title_id", activeTitleId);
+
+            List<String> ownedDisplays = List.of();
+            if (titleSystemUnlockedDisplays != null) {
+                Object listObj = titleSystemUnlockedDisplays.invoke(null, nms);
+                if (listObj instanceof List<?> list) {
+                    List<String> copied = new ArrayList<>();
+                    for (Object t : list) {
+                        if (t != null && !String.valueOf(t).isBlank()) {
+                            copied.add(String.valueOf(t));
+                        }
+                    }
+                    ownedDisplays = copied;
+                }
+            } else if (data != null && dataTitles != null) {
+                Object titlesObj = dataTitles.invoke(data);
+                if (titlesObj instanceof List<?> titles) {
+                    List<String> copied = new ArrayList<>();
+                    for (Object t : titles) {
+                        if (t != null && !String.valueOf(t).isBlank()) {
+                            copied.add(String.valueOf(t));
+                        }
+                    }
+                    ownedDisplays = copied;
+                }
+            }
+            out.put("titles", ownedDisplays.isEmpty() ? "none" : String.join(", ", ownedDisplays));
+            out.put("titles_count", String.valueOf(ownedDisplays.size()));
+
+            if (titleValues != null && data != null && dataHasTitle != null) {
+                for (Object title : (Object[]) titleValues.invoke(null)) {
+                    String id = String.valueOf(field(title, "id"));
+                    boolean unlocked = Boolean.TRUE.equals(dataHasTitle.invoke(data, id));
+                    out.put("title_" + id, unlocked ? "1" : "0");
+                    out.put("title_" + id + "_unlocked", unlocked ? "1" : "0");
+                    out.put("title_" + id + "_name", String.valueOf(field(title, "display")));
+                    Object kind = field(title, "kind");
+                    out.put("title_" + id + "_kind", kind == null ? "" : String.valueOf(kind));
+                }
             }
 
             for (Object t : (Object[]) tierValues.invoke(null)) {
@@ -234,21 +288,29 @@ public final class ForgeBridge {
             ensureResolved();
             String act = action == null ? "" : action.toLowerCase(Locale.ROOT);
             String page = resolveReturnPage(act, arg, returnPage);
-            long amount = 0L;
-            if ("page".equals(act) || "team".equals(act) || "refresh".equals(act)
-                    || "set_max".equals(act) || "reset".equals(act) || "zero".equals(act)
-                    || "clear".equals(act)) {
-                if ("page".equals(act)) {
-                    page = arg == null || arg.isBlank() ? "main" : arg;
-                }
-            } else if (arg != null && !arg.isBlank()) {
-                try {
-                    amount = Long.parseLong(arg);
-                } catch (NumberFormatException ignored) {
-                    return ActionResult.fail("Invalid amount: " + arg);
-                }
+            if ("page".equals(act)) {
+                page = arg == null || arg.isBlank() ? "main" : arg;
             }
-            Object result = actionsHandle.invoke(null, nms, act, amount, page);
+            Object result;
+            if (actionsHandleArg != null) {
+                result = actionsHandleArg.invoke(null, nms, act, arg == null ? "" : arg, page);
+            } else {
+                long amount = 0L;
+                if (!("page".equals(act) || "team".equals(act) || "refresh".equals(act)
+                        || "set_max".equals(act) || "reset".equals(act) || "zero".equals(act)
+                        || "clear".equals(act)
+                        || "equip_title".equals(act) || "clear_title".equals(act)
+                        || "unequip_title".equals(act) || "equip".equals(act))) {
+                    if (arg != null && !arg.isBlank()) {
+                        try {
+                            amount = Long.parseLong(arg);
+                        } catch (NumberFormatException ignored) {
+                            return ActionResult.fail("Invalid amount: " + arg);
+                        }
+                    }
+                }
+                result = actionsHandle.invoke(null, nms, act, amount, page);
+            }
             PLACEHOLDER_CACHE.remove(player.getUniqueId());
             if (result == null) {
                 return ActionResult.ok("");
@@ -294,6 +356,22 @@ public final class ForgeBridge {
         }
     }
 
+    /** Grant earned tier titles (silent). Safe no-op if the mod is old/missing. */
+    public static void syncTitles(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return;
+        }
+        try {
+            ensureResolved();
+            if (titleSystemSync != null) {
+                titleSystemSync.invoke(null, nms, false);
+                PLACEHOLDER_CACHE.remove(player.getUniqueId());
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
     /** Opens Forge clickable chat menu (settings / chat backend). */
     public static boolean openChatMenu(Player player, String page) {
         Object nms = nmsPlayer(player);
@@ -332,6 +410,7 @@ public final class ForgeBridge {
             case "page" -> arg == null || arg.isBlank() ? "main" : arg.toLowerCase(Locale.ROOT);
             case "up", "down", "reset", "zero", "clear", "set_max", "set" -> "adjust";
             case "buy" -> "buy";
+            case "equip_title", "equip", "clear_title", "unequip_title" -> "titles";
             default -> "main";
         };
     }
@@ -557,10 +636,42 @@ public final class ForgeBridge {
                 killTp = null;
             }
             dataTitles = dataCls.getMethod("getTitles");
+            try {
+                dataActiveTitle = dataCls.getMethod("getActiveTitle");
+                dataHasTitle = dataCls.getMethod("hasTitle", String.class);
+                dataNormalizeTitles = dataCls.getMethod("normalizeTitles");
+            } catch (NoSuchMethodException missing) {
+                dataActiveTitle = null;
+                dataHasTitle = null;
+                dataNormalizeTitles = null;
+            }
+            try {
+                titleCls = Class.forName("com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle");
+                titleValues = titleCls.getMethod("values");
+                titleById = titleCls.getMethod("byId", String.class);
+                titleSystemCls = Class.forName("com.dbzlegacy.adaptivedifficulty.title.TitleSystem");
+                titleSystemSync = titleSystemCls.getMethod("syncTierTitles", serverPlayerCls, boolean.class);
+                titleSystemActiveDisplay = titleSystemCls.getMethod("activeDisplay", serverPlayerCls);
+                titleSystemUnlockedDisplays = titleSystemCls.getMethod("unlockedDisplays", serverPlayerCls);
+            } catch (Throwable missing) {
+                titleCls = null;
+                titleValues = null;
+                titleById = null;
+                titleSystemCls = null;
+                titleSystemSync = null;
+                titleSystemActiveDisplay = null;
+                titleSystemUnlockedDisplays = null;
+            }
             Class<?> snapCls = Class.forName("com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot");
             snapshotState = snapCls.getMethod("state");
             snapshotStateColor = snapCls.getMethod("stateColorCode");
             actionsHandle = actionsCls.getMethod("handle", serverPlayerCls, String.class, long.class, String.class);
+            try {
+                actionsHandleArg = actionsCls.getMethod(
+                        "handleArg", serverPlayerCls, String.class, String.class, String.class);
+            } catch (NoSuchMethodException missing) {
+                actionsHandleArg = null;
+            }
             Class<?> resultCls = Class.forName("com.dbzlegacy.adaptivedifficulty.service.DifficultyActions$Result");
             resultMessage = resultCls.getMethod("message");
             resultOk = resultCls.getMethod("ok");

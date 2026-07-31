@@ -122,32 +122,20 @@ public final class DifficultyCommands {
         if ("page".equals(act)) {
             String targetPage = arg == null || arg.isBlank() ? "main" : arg;
             DifficultyActions.Result result =
-                    DifficultyActions.handle(player, DifficultyActions.ACT_PAGE, 0L, targetPage);
+                    DifficultyActions.handleArg(player, DifficultyActions.ACT_PAGE, "0", targetPage);
             result.tell(player);
             return 1;
-        }
-        long amount = 0L;
-        if (arg != null && !arg.isBlank()) {
-            try {
-                amount = Long.parseLong(arg);
-            } catch (NumberFormatException ignored) {
-                // Never silently coerce bad args to the default +100 step.
-                if ("up".equals(act) || "down".equals(act) || "buy".equals(act) || "set".equals(act)) {
-                    player.m_213846_(Component.m_237113_("§cInvalid amount: §f" + arg));
-                    return 0;
-                }
-                amount = 0L;
-            }
         }
         String returnPage = page;
         if (returnPage == null || returnPage.isBlank()) {
             returnPage = switch (act) {
                 case "up", "down", "reset", "zero", "clear", "set_max", "set" -> "adjust";
                 case "buy" -> "buy";
+                case "equip_title", "equip", "clear_title", "unequip_title" -> "titles";
                 default -> "main";
             };
         }
-        DifficultyActions.Result result = DifficultyActions.handle(player, act, amount, returnPage);
+        DifficultyActions.Result result = DifficultyActions.handleArg(player, act, arg, returnPage);
         result.tell(player);
         return result.ok() ? 1 : 0;
     }

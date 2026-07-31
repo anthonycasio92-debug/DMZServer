@@ -8,6 +8,8 @@ import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
 import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
+import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
+import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -22,14 +24,27 @@ public final class DifficultyActions {
     public static final String ACT_RESET = "reset";
     public static final String ACT_REFRESH = "refresh";
     public static final String ACT_PAGE = "page";
+    public static final String ACT_EQUIP_TITLE = "equip_title";
+    public static final String ACT_CLEAR_TITLE = "clear_title";
 
     private DifficultyActions() {}
 
     public static void openGui(ServerPlayer player, String page) {
-        DifficultyMenu.open(player, page == null || page.isBlank() ? "main" : page);
+        String target = page == null || page.isBlank() ? "main" : page;
+        if ("titles".equalsIgnoreCase(target) || "title".equalsIgnoreCase(target)) {
+            TitleSystem.syncTierTitles(player, true);
+        }
+        DifficultyMenu.open(player, target);
     }
 
     public static Result handle(ServerPlayer player, String action, long amount, String page) {
+        return handleArg(player, action, String.valueOf(amount), page);
+    }
+
+    /**
+     * String-arg entry point for GUI actions (supports title ids as well as numeric amounts).
+     */
+    public static Result handleArg(ServerPlayer player, String action, String arg, String page) {
         if (player == null || action == null) {
             return Result.fail("Invalid action.");
         }
@@ -37,6 +52,22 @@ public final class DifficultyActions {
         if (ACT_PAGE.equals(act)) {
             openGui(player, page);
             return Result.ok("");
+        }
+        if (ACT_EQUIP_TITLE.equals(act) || "equip".equals(act)) {
+            return equipTitle(player, arg, page == null || page.isBlank() ? "titles" : page);
+        }
+        if (ACT_CLEAR_TITLE.equals(act) || "unequip_title".equals(act)) {
+            return clearTitle(player, page == null || page.isBlank() ? "titles" : page);
+        }
+        long amount = 0L;
+        if (arg != null && !arg.isBlank()) {
+            try {
+                amount = Long.parseLong(arg.trim());
+            } catch (NumberFormatException ignored) {
+                if (ACT_UP.equals(act) || ACT_DOWN.equals(act) || ACT_BUY.equals(act) || ACT_SET.equals(act)) {
+                    return Result.fail("Invalid amount: " + arg);
+                }
+            }
         }
         return switch (act) {
             case ACT_UP -> raise(player, Math.max(1L, amount <= 0 ? 100L : amount), page);
@@ -54,6 +85,41 @@ public final class DifficultyActions {
         };
     }
 
+    private static Result equipTitle(ServerPlayer player, String titleId, String page) {
+        TitleSystem.syncTierTitles(player, false);
+        DifficultyTitle title = DifficultyTitle.byId(titleId);
+        if (title == null) {
+            openGui(player, page);
+            return Result.fail("Unknown title.");
+        }
+        if (!TitleSystem.has(player, title)) {
+            openGui(player, page);
+            return Result.fail("Title locked: " + title.display);
+        }
+        // Clicking the already-equipped title unequips it.
+        if (title.id.equals(TitleSystem.activeId(player))) {
+            TitleSystem.clear(player);
+            openGui(player, page);
+            return Result.ok("Title unequipped.");
+        }
+        if (!TitleSystem.equip(player, title.id)) {
+            openGui(player, page);
+            return Result.fail("Could not equip " + title.display + ".");
+        }
+        openGui(player, page);
+        return Result.ok("Equipped title: " + title.display);
+    }
+
+    private static Result clearTitle(ServerPlayer player, String page) {
+        TitleSystem.clear(player);
+        openGui(player, page);
+        return Result.ok("Title unequipped.");
+    }
+
+    private static void afterActiveChanged(ServerPlayer player) {
+        TitleSystem.syncTierTitles(player, true);
+    }
+
     /** Lowering is always free. */
     private static Result lower(ServerPlayer player, long amount, String page) {
         PlayerDifficultyData data = DifficultyCache.data(player);
@@ -63,6 +129,7 @@ public final class DifficultyActions {
         DifficultyCache.save(player);
         DifficultyCache.refresh(player);
         AreaDifficulty.clearCache();
+        afterActiveChanged(player);
         openGui(player, page);
         return Result.ok("Active difficulty set to " + next + " (free).");
     }
@@ -93,6 +160,7 @@ public final class DifficultyActions {
             DifficultyCache.save(player);
             DifficultyCache.refresh(player);
             AreaDifficulty.clearCache();
+            afterActiveChanged(player);
             openGui(player, page);
             return Result.ok("Active difficulty set to " + target + (target < bounds.active ? " (free)." : "."));
         }
@@ -125,6 +193,7 @@ public final class DifficultyActions {
         DifficultyCache.save(player);
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         AreaDifficulty.clearCache();
+        afterActiveChanged(player);
         openGui(player, page);
         return Result.ok("Raised +" + raiseBy + " for " + CurrencyBridge.formatCost(cost)
                 + ". Active: " + snap.active + " / " + snap.availableMax);
@@ -137,6 +206,7 @@ public final class DifficultyActions {
         DifficultyCache.save(player);
         DifficultyCache.refresh(player);
         AreaDifficulty.clearCache();
+        afterActiveChanged(player);
         openGui(player, page);
         return Result.ok("Active difficulty reset to 0 (purchased max unchanged).");
     }

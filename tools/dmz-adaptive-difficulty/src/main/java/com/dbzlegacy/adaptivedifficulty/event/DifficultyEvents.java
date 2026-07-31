@@ -14,6 +14,7 @@ import com.dbzlegacy.adaptivedifficulty.reward.RewardSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
+import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.dragonminez.common.events.DMZEvent;
@@ -64,6 +65,8 @@ public final class DifficultyEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             DifficultyCache.data(player);
             DifficultyCache.refresh(player);
+            // Catch up tier titles earned before the Titles page existed (silent).
+            TitleSystem.syncTierTitles(player, false);
         }
     }
 

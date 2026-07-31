@@ -45,6 +45,7 @@ public final class CmiDifficultyGui {
                 case "buy", "purchase", "unlock" -> openBuy(player);
                 case "rewards" -> openRewards(player);
                 case "tiers", "enemies" -> openTiers(player);
+                case "titles", "title" -> openTitles(player);
                 case "stats", "statistics" -> openStats(player);
                 default -> openMain(player);
             }
@@ -76,11 +77,14 @@ public final class CmiDifficultyGui {
                 List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
 
         gui.addButton(pageBtn(27, Material.EXPERIENCE_BOTTLE, "&fRewards", "rewards",
-                "&7TP multiplier details"));
+                "&7Kill TP details"));
         gui.addButton(pageBtn(28, Material.IRON_SWORD, "&fTiers", "tiers",
                 "&7Enemy tier unlocks"));
-        gui.addButton(pageBtn(29, Material.BOOK, "&fDetails", "stats",
-                "&7Team, titles, full breakdown"));
+        gui.addButton(pageBtn(29, Material.NAME_TAG, "&eTitles", "titles",
+                "&7Unlock & equip titles",
+                "&8Equipped &f" + ph.getOrDefault("active_title", "none")));
+        gui.addButton(pageBtn(30, Material.BOOK, "&fDetails", "stats",
+                "&7Team, full breakdown"));
         gui.addButton(actionBtn(31, Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
                 List.of("&7Reload this menu")));
         gui.addButton(closeBtn(35));
@@ -316,8 +320,8 @@ public final class CmiDifficultyGui {
                 "&7Level   &f" + ph.getOrDefault("level", "?"),
                 "&7Prestige &f" + ph.getOrDefault("prestige", "?"),
                 "",
-                "&7Titles",
-                "&f" + ph.getOrDefault("titles", "none"),
+                "&7Title   &e" + ph.getOrDefault("active_title", "none"),
+                "&7Owned   &f" + ph.getOrDefault("titles_count", "0"),
                 "",
                 "&8Difficulty purchases use",
                 "&8inventory coins only"
@@ -325,8 +329,116 @@ public final class CmiDifficultyGui {
         gui.addButton(account);
 
         gui.addButton(pageBtn(27, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
+        gui.addButton(pageBtn(31, Material.NAME_TAG, "&eTitles", "titles",
+                "&7Unlock & equip titles"));
         gui.addButton(closeBtn(35));
         fillEmpty(gui, 4);
+        gui.open();
+    }
+
+    private static void openTitles(Player player) {
+        ForgeBridge.syncTitles(player);
+        Map<String, String> ph = ForgeBridge.placeholders(player);
+        CMIGui gui = base(player, "&8Titles", 6);
+
+        CMIGuiButton header = new CMIGuiButton(4, Material.NAME_TAG, "&e&lTitles");
+        header.lockField();
+        header.addLore(List.of(
+                "",
+                "&7Equipped  &e" + ph.getOrDefault("active_title", "none"),
+                "&7Owned     &f" + ph.getOrDefault("titles_count", "0"),
+                "&7Active    &f" + ph.getOrDefault("active", "?"),
+                "",
+                "&8Tier titles unlock with difficulty",
+                "&8Combat titles unlock from feats",
+                "&8Click an unlocked title to equip"
+        ));
+        gui.addButton(header);
+        gui.addButton(actionBtn(8, Material.BARRIER, "&fUnequip", "clear_title", "0", "titles",
+                List.of("&7Clear equipped title")));
+
+        String[][] tierTitles = {
+                {"awakened", "Awakened"}, {"enhanced", "Enhanced"}, {"elite", "Elite"},
+                {"advanced", "Advanced"}, {"master", "Master"}, {"legendary", "Legendary"},
+                {"god", "God"}, {"divine", "Divine"}, {"impossible", "Impossible"},
+                {"transcendent", "Transcendent"}, {"eternal", "Eternal"}, {"mythic", "Mythic"},
+                {"omega", "Omega"}, {"absolute", "Absolute"}, {"apex", "Apex"},
+                {"zenith", "Zenith"}
+        };
+        int[] tierSlots = {
+                9, 10, 11, 12, 13, 14, 15, 16,
+                18, 19, 20, 21, 22, 23, 24, 25
+        };
+        String equippedId = ph.getOrDefault("active_title_id", "");
+        for (int i = 0; i < tierTitles.length && i < tierSlots.length; i++) {
+            String id = tierTitles[i][0];
+            String name = tierTitles[i][1];
+            boolean unlocked = "1".equals(ph.getOrDefault("title_" + id, "0"));
+            boolean on = id.equalsIgnoreCase(equippedId);
+            long thr = parseLong(ph.getOrDefault("tier_" + id, defaultsTier(id)));
+            Material mat = on ? Material.GOLD_BLOCK
+                    : unlocked ? Material.LIME_CONCRETE : Material.GRAY_CONCRETE;
+            String label = (on ? "&e" : unlocked ? "&a" : "&8") + name;
+            List<String> tip = new ArrayList<>();
+            tip.add("");
+            tip.add("&7Tier title");
+            tip.add("&7Threshold  &f" + thr);
+            if (on) {
+                tip.add("&eEquipped &8· click to unequip");
+            } else if (unlocked) {
+                tip.add("&aUnlocked &8· click to equip");
+            } else {
+                tip.add("&8Locked");
+            }
+            if (unlocked) {
+                gui.addButton(actionBtn(tierSlots[i], mat, label, "equip_title", id, "titles", tip));
+            } else {
+                CMIGuiButton locked = new CMIGuiButton(tierSlots[i], mat, label);
+                locked.lockField();
+                locked.addLore(tip);
+                gui.addButton(locked);
+            }
+        }
+
+        String[][] combatTitles = {
+                {"boss_slayer", "Boss Slayer", "Kill a boss at Master+"},
+                {"legendary_hunter", "Legendary Hunter", "Kill an elite at Legendary+"},
+                {"god_challenger", "God Challenger", "Get a kill at God+"}
+        };
+        int[] combatSlots = {37, 39, 41};
+        for (int i = 0; i < combatTitles.length; i++) {
+            String id = combatTitles[i][0];
+            String name = combatTitles[i][1];
+            String how = combatTitles[i][2];
+            boolean unlocked = "1".equals(ph.getOrDefault("title_" + id, "0"));
+            boolean on = id.equalsIgnoreCase(equippedId);
+            Material mat = on ? Material.NETHER_STAR
+                    : unlocked ? Material.DIAMOND : Material.COAL;
+            String label = (on ? "&e" : unlocked ? "&a" : "&8") + name;
+            List<String> tip = new ArrayList<>();
+            tip.add("");
+            tip.add("&7Combat title");
+            tip.add("&8" + how);
+            if (on) {
+                tip.add("&eEquipped &8· click to unequip");
+            } else if (unlocked) {
+                tip.add("&aUnlocked &8· click to equip");
+            } else {
+                tip.add("&8Locked");
+            }
+            if (unlocked) {
+                gui.addButton(actionBtn(combatSlots[i], mat, label, "equip_title", id, "titles", tip));
+            } else {
+                CMIGuiButton locked = new CMIGuiButton(combatSlots[i], mat, label);
+                locked.lockField();
+                locked.addLore(tip);
+                gui.addButton(locked);
+            }
+        }
+
+        gui.addButton(pageBtn(45, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
+        gui.addButton(closeBtn(53));
+        fillEmpty(gui, 6);
         gui.open();
     }
 
@@ -338,6 +450,7 @@ public final class CmiDifficultyGui {
         lore.add("");
         lore.add("&7State  &" + stateColor + ph.getOrDefault("state", "?"));
         lore.add("&7Tier   &f" + ph.getOrDefault("tier", "?"));
+        lore.add("&7Title  &e" + ph.getOrDefault("active_title", "none"));
         lore.add("&7Inv    &f" + ph.getOrDefault("balance", "?"));
         lore.add("");
         lore.add("&8Theoretical " + ph.getOrDefault("calculated", "?")
