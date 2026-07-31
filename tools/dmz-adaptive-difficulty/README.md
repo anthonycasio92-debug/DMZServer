@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.34)
+# DMZ Adaptive Difficulty (v1.7.35)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -24,13 +24,13 @@ Clients do **not** need this jar to join.
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.34.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.35.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
    - `CMILib*.jar` (required by CMI)
    - `CMI-*.jar`
-   - `dmz_adaptive_difficulty_gui-1.7.13.jar` (**registers Bukkit `/difficulty`**)
+   - `dmz_adaptive_difficulty_gui-1.7.14.jar` (**registers Bukkit `/difficulty`**)
    - Optional: `PlaceholderAPI-*.jar`
 5. Optionally set `guiBackend` in `config/dmz_adaptive_difficulty.json`:
    - `cmi` (default), `auto`, `chest`, or `chat`
@@ -87,7 +87,7 @@ Offense rates keep a normal melee hit under ~800k raw and mob armor ≈ **200k**
 | Damage / defense | Steep offense curve (**uncapped**) | exp `0.96`, pivot `450`, rates `0.62`/`1.85` |
 | Health | Flat health curve | exp `0.40`, mult uncapped, abs cap **1024** HP |
 | Kill TP | **Mob max HP × rate** | `killTpPerHealth=5000` → ~5.1M at 1024 HP; hard cap **10M** |
-| Train TP mult | Mild power mult on DMZ `TPGainEvent` | gain `0.85`, exp `0.38`, scale `2500`, mult cap **×10**, grant cap **10M** |
+| Train TP | **No multiplier** | DMZ `TPGainEvent` amounts pass through unchanged |
 | Potential unlock | **Not touched** | Owned by CNPC `Potential.js` (`potentialunlock`) |
 | AI | Spaced across Awakened→Zenith | anti-flight Legendary+; pack/debuffs scale to Zenith |
 
@@ -106,10 +106,8 @@ Tune:
 /difficulty admin set maxScaledHealth 1024
 /difficulty admin set killTpPerHealth 5000
 /difficulty admin set maxKillTp 10000000
-/difficulty admin set maxTpGainEvent 10000000
-/difficulty admin set maxRewardMultiplier 10
 ```
-(`maxDamageMultiplier` / `maxHealthMultiplier` `0`/`1` = uncapped; `maxArmorBonus` `0` = uncapped; `maxKillTp` / `maxTpGainEvent` `0` = uncapped.)
+(`maxDamageMultiplier` / `maxHealthMultiplier` `0`/`1` = uncapped; `maxArmorBonus` `0` = uncapped; `maxKillTp` `0` = uncapped. TP multipliers are removed.)
 
 ## Pricing (Lightman's iron coins)
 

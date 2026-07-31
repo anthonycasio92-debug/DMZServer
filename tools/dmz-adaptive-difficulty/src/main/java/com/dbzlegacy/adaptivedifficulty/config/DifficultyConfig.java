@@ -51,16 +51,15 @@ public final class DifficultyConfig {
      * Power keeps TP on a diminishing curve that still grows at high difficulty.
      */
     public String rewardCurve = "power";
-    /** Multiplier applied inside the reward curve (log/sqrt/power). Lower = slower TP. */
-    public double rewardCurveGain = 0.85;
+    /** Legacy — TP multipliers removed; gain kept at 0 so old configs stay inert. */
+    public double rewardCurveGain = 0.0;
     /** Exponent for {@code rewardCurve=power} only (ignored by log/sqrt). */
     public double rewardCurveExponent = 0.38;
     /**
-     * Optional hard ceiling on TP/reward multiplier (training / {@code TPGainEvent}).
-     * Default {@code 10} keeps late-game train boosts from exploding.
-     * {@code 0} or {@code 1} = uncapped. Only values {@code > 1} apply a ceiling.
+     * Legacy field — TP multipliers are removed ({@code rewardMultiplier} always 1).
+     * Kept for config compatibility; migrated to {@code 1} on load.
      */
-    public double maxRewardMultiplier = 10.0;
+    public double maxRewardMultiplier = 1.0;
     /**
      * Legacy kill-TP difficulty curve fields (unused for grants — kept for config compatibility).
      * Kill TP is {@code maxHealth × killTpPerHealth}.
@@ -336,13 +335,13 @@ public final class DifficultyConfig {
             cfg.rewardCurve = "power";
         }
         if (cfg.rewardCurveGain < 0.0) {
-            cfg.rewardCurveGain = 0.85;
+            cfg.rewardCurveGain = 0.0;
         }
         if (cfg.rewardCurveExponent <= 0.0) {
             cfg.rewardCurveExponent = 0.38;
         }
         if (cfg.maxRewardMultiplier < 0.0) {
-            cfg.maxRewardMultiplier = 10.0;
+            cfg.maxRewardMultiplier = 1.0;
         }
         if (cfg.killTpRefAmount <= 0.0) {
             cfg.killTpRefAmount = 1_000_000.0;
@@ -389,27 +388,13 @@ public final class DifficultyConfig {
             cfg.combatCurvePivot = 450L;
             retuned = true;
         }
-        // Migrate old TP curves → Zenith-anchored kill TP with 5–10M ceilings.
-        boolean stockCappedTp = nearly(cfg.maxRewardMultiplier, 3.5)
-                || nearly(cfg.maxRewardMultiplier, 6.0);
-        boolean oldKillTp = nearly(cfg.killTpRefAmount, 400_000.0)
-                || nearly(cfg.killTpRefDifficulty, 8_000_000.0);
-        // Older soft caps, or uncapped train mult paired with the old kill curve → ×10.
-        if (stockCappedTp
-                || (oldKillTp && (nearly(cfg.maxRewardMultiplier, 0.0) || nearly(cfg.maxRewardMultiplier, 1.0)))) {
-            cfg.maxRewardMultiplier = 10.0;
+        // TP multipliers fully removed — force legacy train-mult knobs inert.
+        if (!nearly(cfg.rewardCurveGain, 0.0)) {
+            cfg.rewardCurveGain = 0.0;
             retuned = true;
         }
-        if ("log".equalsIgnoreCase(cfg.rewardCurve) && stockCappedTp) {
-            cfg.rewardCurve = "power";
-            retuned = true;
-        }
-        if (nearly(cfg.rewardCurveGain, 1.2) || (stockCappedTp && nearly(cfg.rewardCurveGain, 0.65))) {
-            cfg.rewardCurveGain = 0.85;
-            retuned = true;
-        }
-        if (stockCappedTp && nearly(cfg.rewardCurveExponent, 0.45)) {
-            cfg.rewardCurveExponent = 0.38;
+        if (!nearly(cfg.maxRewardMultiplier, 1.0)) {
+            cfg.maxRewardMultiplier = 1.0;
             retuned = true;
         }
         if (nearly(cfg.rewardScaling, 1_000.0)) {
@@ -503,7 +488,7 @@ public final class DifficultyConfig {
         }
         if (retuned) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] retuned retarget scaling + health-based kill TP (≤10M)",
+                    "[{}] retuned: health-based kill TP; TP multipliers removed",
                     AdaptiveDifficultyMod.MOD_ID
             );
         }

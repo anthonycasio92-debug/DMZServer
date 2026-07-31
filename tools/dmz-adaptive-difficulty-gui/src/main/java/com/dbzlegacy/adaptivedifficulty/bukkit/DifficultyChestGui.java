@@ -180,7 +180,7 @@ public final class DifficultyChestGui implements Listener {
                 "",
                 "&7Active  &f" + ph.getOrDefault("active", "?"),
                 "&7Kill TP (from mob HP) &a~" + ph.getOrDefault("kill_tp", "?"),
-                "&7Train × &a" + ph.getOrDefault("reward_mult", "?"),
+                "&7Train TP &ano multiplier",
                 "",
                 "&8Kill ≈ 400k at 8M difficulty (curve)"
         )));

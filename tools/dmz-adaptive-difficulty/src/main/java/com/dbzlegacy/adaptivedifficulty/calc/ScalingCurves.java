@@ -107,40 +107,11 @@ public final class ScalingCurves {
     }
 
     /**
-     * Reward / TP multiplier curve for DMZ {@code TPGainEvent} (training / other gains).
-     * Kill rewards use {@link #killTrainingPointsFromHealth(double)} instead.
-     * Default: {@code 1 + gain * (d / rewardScaling)^exp}, capped by {@code maxRewardMultiplier}
-     * (default ×10). Absolute grant also capped by {@code maxTpGainEvent} (default 10M).
+     * Legacy reward multiplier (XP / drops only). Always {@code 1.0} — TP multipliers
+     * are fully removed. Kept so call sites compile without reintroducing TP scaling.
      */
     public static double rewardMultiplier(long activeDifficulty) {
-        DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableRewardScaling || cfg.rewardScaling <= 0.0) {
-            return 1.0;
-        }
-        if (activeDifficulty <= 0L) {
-            return 1.0;
-        }
-        String mode = cfg.rewardCurve == null ? "power" : cfg.rewardCurve.trim().toLowerCase();
-        double d = activeDifficulty;
-        double scale = Math.max(1.0e-6, cfg.rewardScaling);
-        double mult = switch (mode) {
-            case "linear", "lin" -> 1.0 + (d / scale);
-            case "sqrt", "root" -> 1.0 + Math.sqrt(d / scale) * Math.max(0.0, cfg.rewardCurveGain);
-            case "log", "ln" -> {
-                double gain = Math.max(0.0, cfg.rewardCurveGain);
-                yield 1.0 + gain * Math.log1p(d / scale);
-            }
-            default -> { // power
-                double exp = clamp(cfg.rewardCurveExponent, 0.05, 1.0);
-                yield 1.0 + Math.pow(d / scale, exp) * Math.max(0.0, cfg.rewardCurveGain);
-            }
-        };
-        // Optional hard ceiling only when explicitly set above 1.0 (0 / 1 = uncapped).
-        double cap = cfg.maxRewardMultiplier;
-        if (cap > 1.0) {
-            mult = Math.min(mult, cap);
-        }
-        return Math.max(1.0, mult);
+        return 1.0;
     }
 
     private static double clamp(double value, double min, double max) {

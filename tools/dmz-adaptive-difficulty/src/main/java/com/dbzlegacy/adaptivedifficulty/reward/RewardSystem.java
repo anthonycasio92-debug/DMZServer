@@ -2,7 +2,6 @@ package com.dbzlegacy.adaptivedifficulty.reward;
 
 import com.dbzlegacy.adaptivedifficulty.boss.BossScaling;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
-import com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves;
@@ -36,13 +35,11 @@ import net.minecraftforge.registries.ForgeRegistries;
  * <p>
  * Kill TP comes from the mob's max health only (no difficulty / elite / boss TP multipliers).
  * Harder difficulties pay more TP because the mob has more HP after retarget scaling.
- * {@code addTrainingPoints} fires {@code TPGainEvent}, so kill grants set
- * {@link #SKIP_TP_EVENT_SCALE} to avoid applying the training multiplier on top.
+ * Training {@code TPGainEvent} is never multiplied by this mod.
  */
 public final class RewardSystem {
     /**
-     * When true, {@code DifficultyEvents.onTpGain} must not multiply the gain.
-     * Used for kill packages that already computed final TP.
+     * Legacy flag — TP multipliers are removed; kept so older call sites compile.
      */
     public static final ThreadLocal<Boolean> SKIP_TP_EVENT_SCALE = ThreadLocal.withInitial(() -> false);
 
@@ -58,15 +55,15 @@ public final class RewardSystem {
         }
         DifficultySnapshot snap = DifficultyCache.refresh(killer);
         long killDifficulty = Math.max(snap.active, MobScaling.difficultyOf(dead));
-        double eventMult = DifficultyCalculator.rewardMultiplier(snap.active);
         DifficultyTier tier = DifficultyTier.of(killDifficulty);
         boolean elite = EliteSystem.isElite(dead);
         boolean boss = PersistentDataAccess.get(dead).m_128471_(BossScaling.TAG_BOSS);
         boolean mutated = MutationSystem.get(dead) != null;
 
         grantTrainingPoints(killer, dead, cfg);
-        grantExperience(killer, eventMult, elite, boss, tier);
-        grantDrops(killer, eventMult, elite, boss, mutated, tier);
+        // XP/drops use tier only — no difficulty TP-style multiplier.
+        grantExperience(killer, 1.0, elite, boss, tier);
+        grantDrops(killer, 1.0, elite, boss, mutated, tier);
         maybeUnlockTitle(killer, snap, elite, boss, tier);
     }
 

@@ -3,7 +3,6 @@ package com.dbzlegacy.adaptivedifficulty.event;
 import com.dbzlegacy.adaptivedifficulty.ai.AdaptiveAiSystem;
 import com.dbzlegacy.adaptivedifficulty.boss.BossScaling;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
-import com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
@@ -364,31 +363,13 @@ public final class DifficultyEvents {
         }
     }
 
+    /**
+     * TP multiplier intentionally removed — training / other {@code TPGainEvent}
+     * amounts pass through unchanged. Kill TP is granted separately from mob HP.
+     */
     @SubscribeEvent
     public void onTpGain(DMZEvent.TPGainEvent event) {
-        if (!DifficultyConfig.get().enableRewardScaling) {
-            return;
-        }
-        // Kill packages already grant absolute TP — do not multiply them again.
-        if (Boolean.TRUE.equals(RewardSystem.SKIP_TP_EVENT_SCALE.get())) {
-            return;
-        }
-        if (!(event.getPlayer() instanceof ServerPlayer player)) {
-            return;
-        }
-        DifficultySnapshot snap = DifficultyCache.get(player);
-        DifficultyConfig cfg = DifficultyConfig.get();
-        double mult = DifficultyCalculator.rewardMultiplier(snap.active);
-        int gained = event.getTpGain();
-        long scaled = Math.max(0L, Math.round(gained * Math.max(1.0, mult)));
-        // Hard ceiling so training/other gains cannot exceed the 5–10M band.
-        if (cfg.maxTpGainEvent > 0.0) {
-            scaled = Math.min(scaled, (long) cfg.maxTpGainEvent);
-        }
-        int next = (int) Math.min(Integer.MAX_VALUE, scaled);
-        if (next != gained) {
-            event.setTpGain(next);
-        }
+        // no-op: do not multiply TP by difficulty
     }
 
     @SubscribeEvent

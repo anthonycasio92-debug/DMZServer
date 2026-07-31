@@ -151,15 +151,13 @@ public final class DifficultyChatMenu {
     private static void rewards(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         DifficultyConfig cfg = DifficultyConfig.get();
-        double mult = DifficultyCalculator.rewardMultiplier(snap.active);
         double killTp = DifficultyCalculator.killTrainingPoints(snap.active);
         send(player, Component.m_237113_("§8──────── §fRewards §8────────"));
         send(player, Component.m_237113_("§7Active §f" + snap.active
-                + "  §7Kill TP §a~" + String.format("%,.0f", killTp)
-                + "  §7Train ×§a" + String.format("%.2f", mult)));
+                + "  §7Kill TP §a~" + String.format("%,.0f", killTp)));
         send(player, Component.m_237113_("§8Kill TP = mob max HP × "
                 + String.format("%.0f", cfg.killTpPerHealth)
-                + " (no difficulty TP bonus)"));
+                + " · Train TP: no multiplier"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 
