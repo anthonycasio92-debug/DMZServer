@@ -9,7 +9,7 @@ import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import net.minecraft.server.level.ServerPlayer;
 
-/** V3 difficulty math: unlocks, activation ceilings, combat rating, Ancient Coin costs. */
+/** V3 difficulty math: unlocks, activation ceilings, combat rating. */
 public final class DifficultyCalculator {
     private DifficultyCalculator() {}
 
@@ -57,7 +57,6 @@ public final class DifficultyCalculator {
         }
 
         long combatRating = CombatRating.compute(level, prestige, active, transform, DifficultyConfig.get());
-        // Live inventory balance (real Lightman's Ancient Coins), not the retired NBT wallet.
         long ancientCopper = AncientCoinEconomy.balance(player);
 
         return new DifficultySnapshot(
@@ -78,44 +77,8 @@ public final class DifficultyCalculator {
         );
     }
 
-    /** Ancient-copper cost to raise active difficulty by {@code amount}. */
-    public static long upgradeCost(long fromLevel, long amount) {
-        if (amount <= 0) {
-            return 0L;
-        }
-        DifficultyConfig cfg = DifficultyConfig.get();
-        double base = Math.max(0.0, cfg.upgradeCostBaseAncient);
-        if (base <= 0.0) {
-            return 0L;
-        }
-        double scale = Math.max(0.0, cfg.upgradeCostScalePerLevel);
-        double from = Math.max(0L, fromLevel);
-        double total = amount * base * (1.0 + scale * (from + (amount - 1L) / 2.0));
-        return Math.max(1L, Math.round(total));
-    }
-
-    /** Compatibility alias — V3 upgrade costs in Ancient Copper. */
-    @Deprecated
-    public static long raiseCostIronCoins(long fromLevel, long amount) {
-        return upgradeCost(fromLevel, amount);
-    }
-
-    /** Compatibility alias — V3 upgrade costs in Ancient Copper. */
-    @Deprecated
-    public static long purchaseCost(long currentPurchased, long amountToBuy) {
-        return upgradeCost(Math.max(0L, currentPurchased), amountToBuy);
-    }
-
     public static double rewardMultiplier(long activeDifficulty) {
         return ScalingCurves.rewardMultiplier(activeDifficulty);
-    }
-
-    public static double killTrainingPoints(long difficulty) {
-        return 0.0;
-    }
-
-    public static double killTrainingPointsFromHealth(double maxHealth) {
-        return 0.0;
     }
 
     private static long clampNonNegative(long value) {

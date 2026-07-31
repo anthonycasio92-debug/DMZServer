@@ -4,16 +4,14 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_adaptive_difficulty"
-version = "3.0.6"
+version = "3.1.0"
 displayName = "DMZ Adaptive Difficulty"
 authors = "DBZ Legacy Reborn"
 displayTest = "IGNORE_SERVER_VERSION"
 description = '''
-Server-side adaptive difficulty for DragonMineZ.
-Clients do not need this mod. /difficulty opens a CMI/CMILib
-inventory GUI (chest/chat fallback). FTB Teams, Lightman's
-inventory coins only, enemy scaling, elites, mutations,
-AI, boss phases, rewards.
+Server-side Adaptive Difficulty V3 for DragonMineZ.
+Unlock tiers, Ancient Coin purchases, Combat Rating scaling,
+team modes, gated elites/mutations/AI/boss. No TP or titles.
 '''
 
 [[mixins]]

@@ -4,9 +4,7 @@
   "package": "com.dbzlegacy.adaptivedifficulty.mixin",
   "compatibilityLevel": "JAVA_17",
   "refmap": "dmz_adaptive_difficulty.refmap.json",
-  "mixins": [
-    "LivingEntityHurtScaleMixin"
-  ],
+  "mixins": [],
   "client": [],
   "server": [],
   "injectors": {

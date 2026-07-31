@@ -1,7 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.tier;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
-import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * V3 unlock logic: DMZ level requirement OR prestige ≥ tier id.
  * Prestige bypasses level gates but never activates difficulty.
+ * No free coin bootstrap — coins come from kill drops.
  */
 public final class UnlockSystem {
     private UnlockSystem() {}
@@ -34,16 +34,10 @@ public final class UnlockSystem {
         }
         int level = DmzProgression.dmzLevel(player);
         data.noteDmzLevel(level);
-        boolean firstUnlockEver = data.getUnlockedTiers().isEmpty();
         for (UnlockTier tier : UnlockTier.values()) {
             if (isEligible(player, tier) && data.unlockTier(tier.id)) {
                 newly.add(tier.id);
             }
-        }
-        // Bootstrap exact Copper Ancient Coins so the first tier purchase is reachable.
-        if (firstUnlockEver && !newly.isEmpty() && AncientCoinEconomy.balance(player) <= 0L) {
-            AncientCoinEconomy.grantCopperExact(player, 250L);
-            AncientCoinEconomy.notifyGrant(player, 250L);
         }
         return newly;
     }
@@ -63,11 +57,7 @@ public final class UnlockSystem {
         if (data == null) {
             return 0L;
         }
-        int active = data.getActiveTier();
-        UnlockTier tier = UnlockTier.byId(active);
-        if (tier == null) {
-            return 0L;
-        }
-        return tier.maxDifficulty();
+        UnlockTier tier = UnlockTier.byId(data.getActiveTier());
+        return tier == null ? 0L : tier.maxDifficulty();
     }
 }

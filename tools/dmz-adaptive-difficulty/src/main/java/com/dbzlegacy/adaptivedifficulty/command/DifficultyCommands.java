@@ -131,9 +131,8 @@ public final class DifficultyCommands {
         String returnPage = page;
         if (returnPage == null || returnPage.isBlank()) {
             returnPage = switch (act) {
-                case "up", "down", "reset", "zero", "clear", "set_max", "set", "upgrade" -> "adjust";
+                case "down", "reset", "zero", "clear", "set" -> "adjust";
                 case "buy", "activate", "purchase_tier" -> "buy";
-                case "equip_title", "equip", "clear_title", "unequip_title" -> "titles";
                 default -> "main";
             };
         }
@@ -369,35 +368,7 @@ public final class DifficultyCommands {
                 case "levelmultiplier" -> cfg.levelMultiplier = Double.parseDouble(value);
                 case "teambonus", "teambonuspercent" -> cfg.teamBonusPercent = Double.parseDouble(value);
                 case "contribution", "contributionpercent" -> cfg.contributionPercent = Double.parseDouble(value);
-                case "basecost" -> cfg.baseCost = Long.parseLong(value);
-                case "costscaling" -> cfg.costScaling = Long.parseLong(value);
-                case "basecostironcoins", "baseiron", "ironbase" ->
-                        cfg.baseCostIronCoins = Math.max(0L, Long.parseLong(value));
-                case "costscaleperdifficulty", "costscale", "ironscale" ->
-                        cfg.costScalePerDifficulty = Math.max(0.0, Double.parseDouble(value));
-                case "costcoinitem", "coinitem" -> cfg.costCoinItem = value.trim();
-                case "rewardscaling" -> cfg.rewardScaling = Double.parseDouble(value);
-                case "rewardcurve" -> cfg.rewardCurve = value.trim().toLowerCase();
-                case "rewardcurvegain" -> cfg.rewardCurveGain = Math.max(0.0, Double.parseDouble(value));
-                case "rewardcurveexponent" -> cfg.rewardCurveExponent = Math.max(0.05, Double.parseDouble(value));
-                case "maxrewardmultiplier", "maxrewardmult" ->
-                        // 0 / 1 = uncapped; only values > 1 apply a hard ceiling.
-                        cfg.maxRewardMultiplier = Math.max(0.0, Double.parseDouble(value));
-                case "killtprefamount", "killtpamount", "killtp" ->
-                        cfg.killTpRefAmount = Math.max(0.0, Double.parseDouble(value));
-                case "killtprefdifficulty", "killtpdifficulty", "killtpref" ->
-                        cfg.killTpRefDifficulty = Math.max(1.0, Double.parseDouble(value));
-                case "killtpexponent", "killtpexp" ->
-                        cfg.killTpExponent = Math.max(0.05, Math.min(1.0, Double.parseDouble(value)));
-                case "killtpminimum", "killtpmin" ->
-                        cfg.killTpMinimum = Math.max(0.0, Double.parseDouble(value));
-                case "killtpperhealth", "tpperhealth", "killtphp" ->
-                        cfg.killTpPerHealth = Math.max(0.0, Double.parseDouble(value));
-                case "maxkilltp", "maxkilltpgain" ->
-                        // 0 = uncapped; default 10M keeps max-difficulty grants in band.
-                        cfg.maxKillTp = Math.max(0.0, Double.parseDouble(value));
-                case "maxtpgainevent", "maxtpevent", "maxtpgain" ->
-                        cfg.maxTpGainEvent = Math.max(0.0, Double.parseDouble(value));
+                case "rewardscaling" -> cfg.rewardScaling = Math.max(1.0, Double.parseDouble(value));
                 case "combatcurveexponent", "combatcurve", "offensecurve" ->
                         cfg.combatCurveExponent = Math.max(0.05, Math.min(1.0, Double.parseDouble(value)));
                 case "combatcurvepivot", "offensecurvepivot" ->
@@ -436,7 +407,6 @@ public final class DifficultyCommands {
                 case "hardcap", "hardcapdifficulty" ->
                         cfg.hardCapDifficulty = Math.max(0L, Long.parseLong(value)); // 0 = no hardcap
                 case "mobscaleradius" -> cfg.mobScaleRadius = Double.parseDouble(value);
-                case "purchasecurrency" -> cfg.purchaseCurrency = value.trim();
                 case "enablemobscaling" -> cfg.enableMobScaling = Boolean.parseBoolean(value);
                 case "scalehostileonly" -> cfg.scaleHostileOnly = Boolean.parseBoolean(value);
                 case "applydmzextratoallhostiles", "dmzextrasall", "dmzstyleallhostiles" ->
@@ -526,10 +496,6 @@ public final class DifficultyCommands {
                         cfg.ancientCoinDropMult = Math.max(0.0, Double.parseDouble(value));
                 case "ancientcoinratingdivisor", "coinratingdivisor" ->
                         cfg.ancientCoinRatingDivisor = Math.max(1.0, Double.parseDouble(value));
-                case "upgradecostbaseancient", "upgradecostbase" ->
-                        cfg.upgradeCostBaseAncient = Math.max(0.0, Double.parseDouble(value));
-                case "upgradecostscaleperlevel", "upgradecostscale" ->
-                        cfg.upgradeCostScalePerLevel = Math.max(0.0, Double.parseDouble(value));
                 case "deathresetsactivedifficulty", "deathreset" ->
                         cfg.deathResetsActiveDifficulty = Boolean.parseBoolean(value);
                 case "eliteminunlocktier", "elitemintier" ->

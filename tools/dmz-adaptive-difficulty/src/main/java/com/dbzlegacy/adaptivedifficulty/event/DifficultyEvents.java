@@ -13,7 +13,6 @@ import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tick.BehaviorScheduler;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
-import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
@@ -69,8 +68,6 @@ public final class DifficultyEvents {
             // Convert any leftover NBT Ancient Coin wallet into real Lightman's items.
             com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.migrateWalletToItems(player);
             DifficultyCache.refresh(player);
-            // Catch up tier titles earned before the Titles page existed (silent).
-            TitleSystem.syncTierTitles(player, false);
         }
     }
 
@@ -305,14 +302,6 @@ public final class DifficultyEvents {
         if (EnemyEvolution.tryReplaceProjectile(shooter, target)) {
             event.setCanceled(true);
         }
-    }
-
-    /**
-     * This mod never touches Training Points — leave {@code TPGainEvent} amounts alone.
-     */
-    @SubscribeEvent
-    public void onTpGain(DMZEvent.TPGainEvent event) {
-        // no-op
     }
 
     @SubscribeEvent

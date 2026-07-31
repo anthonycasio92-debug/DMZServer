@@ -16,7 +16,10 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-/** Clean Bukkit chest GUI fallback when CMI/CMILib is unavailable. */
+/**
+ * Clean Bukkit chest GUI fallback when CMI/CMILib is unavailable.
+ * V3 pages: Hub · Buy Tier · Lower/Reset · Details.
+ */
 public final class DifficultyChestGui implements Listener {
     private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
     private static final Material ACCENT = Material.GRAY_STAINED_GLASS_PANE;
@@ -32,10 +35,7 @@ public final class DifficultyChestGui implements Listener {
         Inventory inv = switch (p) {
             case "adjust", "change", "set" -> adjust(player);
             case "buy", "purchase", "unlock" -> buy(player);
-            case "rewards" -> rewards(player);
-            case "tiers", "enemies" -> tiers(player);
-            case "titles", "title" -> titles(player);
-            case "stats", "statistics" -> stats(player);
+            case "stats", "statistics", "details" -> stats(player);
             default -> main(player);
         };
         player.openInventory(inv);
@@ -49,7 +49,7 @@ public final class DifficultyChestGui implements Listener {
         frame(inv, 36);
 
         String stateColor = ph.getOrDefault("state_color", "f");
-        inv.setItem(13, item(Material.NETHER_STAR, "&f&lDifficulty", statusLore(ph, stateColor)));
+        inv.setItem(13, item(Material.NETHER_STAR, "&f&lDifficulty V3", statusLore(ph, stateColor)));
         inv.setItem(20, pageBtn(Material.GOLD_INGOT, "&eBuy Tier", "buy",
                 "&7Purchase a difficulty tier", "&8Spend Ancient Coins from inventory"));
         inv.setItem(22, pageBtn(Material.WHITE_CONCRETE, "&fLower", "adjust",
@@ -57,11 +57,6 @@ public final class DifficultyChestGui implements Listener {
         inv.setItem(24, button(Material.COMPASS, "&bTeam", "team", "0", "main",
                 List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
 
-        inv.setItem(27, pageBtn(Material.EXPERIENCE_BOTTLE, "&fRewards", "rewards", "&7Kill rewards (no TP)"));
-        inv.setItem(28, pageBtn(Material.IRON_SWORD, "&fTiers", "tiers", "&7Enemy tier unlocks"));
-        inv.setItem(29, pageBtn(Material.NAME_TAG, "&eTitles", "titles",
-                "&7Unlock & equip titles",
-                "&8Equipped &f" + ph.getOrDefault("active_title", "none")));
         inv.setItem(30, pageBtn(Material.BOOK, "&fDetails", "stats", "&7Team, full breakdown"));
         inv.setItem(31, button(Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
                 List.of("&7Reload this menu")));
@@ -128,7 +123,7 @@ public final class DifficultyChestGui implements Listener {
                 "",
                 "&8Unlock by DMZ level or Prestige",
                 "&8Click a tier to buy it with Ancient Coins",
-                "&8No change — exact coins from inventory",
+                "&8Sets full tier difficulty · no change",
                 "&8Death clears active tier (unlocks stay)"
         )));
         Material[] mats = {
@@ -138,7 +133,8 @@ public final class DifficultyChestGui implements Listener {
         int activeTier = (int) parseLong(ph.getOrDefault("active_tier", "0"));
         int highest = (int) parseLong(ph.getOrDefault("highest_unlocked", "0"));
         for (int t = 1; t <= 7; t++) {
-            String cost = ph.getOrDefault("tier_" + t + "_cost", "?");
+            String cost = ph.getOrDefault("tier_" + t + "_cost",
+                    ph.getOrDefault("unlock_tier_" + t + "_cost", "?"));
             String max = ph.getOrDefault("unlock_tier_" + t + "_max", "?");
             boolean unlocked = highest >= t;
             boolean active = activeTier == t;
@@ -168,73 +164,6 @@ public final class DifficultyChestGui implements Listener {
         inv.setItem(36, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
         inv.setItem(40, pageBtn(Material.WHITE_CONCRETE, "&fLower", "adjust", "&7Lower / clear active"));
         inv.setItem(44, closeBtn());
-        return inv;
-    }
-
-    private Inventory rewards(Player player) {
-        Map<String, String> ph = ForgeBridge.placeholders(player);
-        Holder holder = new Holder("rewards");
-        Inventory inv = Bukkit.createInventory(holder, 27, color("&8Rewards"));
-        holder.bind(inv);
-        frame(inv, 27);
-        inv.setItem(13, item(Material.EXPERIENCE_BOTTLE, "&f&lRewards", List.of(
-                "",
-                "&7Active   &f" + ph.getOrDefault("active", "?"),
-                "&7Tier     &f" + ph.getOrDefault("tier", "?"),
-                "&7Reward × &a" + ph.getOrDefault("reward_mult", "1.00"),
-                "",
-                "&8XP & drop odds scale with difficulty",
-                "&8(1 + active / rewardScaling)",
-                "",
-                "&8Training Points / Potential",
-                "&8are not touched by this mod",
-                "",
-                "&7Also: capsules · titles"
-        )));
-        inv.setItem(18, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
-        inv.setItem(26, closeBtn());
-        return inv;
-    }
-
-    private Inventory tiers(Player player) {
-        Map<String, String> ph = ForgeBridge.placeholders(player);
-        Holder holder = new Holder("tiers");
-        Inventory inv = Bukkit.createInventory(holder, 54, color("&8Enemy Tiers"));
-        holder.bind(inv);
-        frame(inv, 54);
-        inv.setItem(4, item(Material.IRON_SWORD, "&f&lEnemy Tiers", List.of(
-                "",
-                "&7Current  &f" + ph.getOrDefault("tier", "?"),
-                "&7Active   &f" + ph.getOrDefault("active", "?"),
-                "",
-                "&8Zenith = theoretical max",
-                "&8(level 100k × 10 prestiges)"
-        )));
-
-        String[][] rows = {
-                {"awakened", "Awakened"}, {"enhanced", "Enhanced"}, {"elite", "Elite"},
-                {"advanced", "Advanced"}, {"master", "Master"}, {"legendary", "Legendary"},
-                {"god", "God"}, {"divine", "Divine"}, {"impossible", "Impossible"},
-                {"transcendent", "Transcendent"}, {"eternal", "Eternal"}, {"mythic", "Mythic"},
-                {"omega", "Omega"}, {"absolute", "Absolute"}, {"apex", "Apex"},
-                {"zenith", "Zenith"}
-        };
-        long active = parseLong(ph.getOrDefault("active", "0"));
-        int[] slots = {
-                9, 10, 11, 12, 13, 14, 15, 16,
-                18, 19, 20, 21, 22, 23, 24, 25
-        };
-        for (int i = 0; i < rows.length && i < slots.length; i++) {
-            long thr = parseLong(ph.getOrDefault("tier_" + rows[i][0], defaultTier(rows[i][0])));
-            boolean unlocked = active >= thr;
-            inv.setItem(slots[i], item(
-                    unlocked ? Material.LIME_STAINED_GLASS_PANE : Material.GRAY_STAINED_GLASS_PANE,
-                    (unlocked ? "&a" : "&8") + rows[i][1],
-                    List.of("", "&7Threshold  &f" + thr, unlocked ? "&aUnlocked" : "&8Locked")
-            ));
-        }
-        inv.setItem(45, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
-        inv.setItem(53, closeBtn());
         return inv;
     }
 
@@ -271,113 +200,12 @@ public final class DifficultyChestGui implements Listener {
                 "&7Balance &f" + ph.getOrDefault("balance", "?"),
                 "&7Level   &f" + ph.getOrDefault("level", "?"),
                 "&7Prestige &f" + ph.getOrDefault("prestige", "?"),
+                "&7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"),
                 "",
-                "&7Title   &e" + ph.getOrDefault("active_title", "none"),
-                "&7Owned   &f" + ph.getOrDefault("titles_count", "0"),
-                "",
-                "&8Activation & upgrades use",
-                "&8Ancient Coins only"
+                "&8Tier purchases use Ancient Coins only"
         )));
         inv.setItem(27, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
-        inv.setItem(31, pageBtn(Material.NAME_TAG, "&eTitles", "titles", "&7Unlock & equip titles"));
         inv.setItem(35, closeBtn());
-        return inv;
-    }
-
-    private Inventory titles(Player player) {
-        ForgeBridge.syncTitles(player);
-        Map<String, String> ph = ForgeBridge.placeholders(player);
-        Holder holder = new Holder("titles");
-        Inventory inv = Bukkit.createInventory(holder, 54, color("&8Titles"));
-        holder.bind(inv);
-        frame(inv, 54);
-
-        inv.setItem(4, item(Material.NAME_TAG, "&e&lTitles", List.of(
-                "",
-                "&7Equipped  &e" + ph.getOrDefault("active_title", "none"),
-                "&7Owned     &f" + ph.getOrDefault("titles_count", "0"),
-                "&7Active    &f" + ph.getOrDefault("active", "?"),
-                "",
-                "&8Tier titles unlock with difficulty",
-                "&8Combat titles unlock from feats",
-                "&8Click an unlocked title to equip"
-        )));
-        inv.setItem(8, button(Material.BARRIER, "&fUnequip", "clear_title", "0", "titles",
-                List.of("&7Clear equipped title")));
-
-        String[][] tierTitles = {
-                {"awakened", "Awakened"}, {"enhanced", "Enhanced"}, {"elite", "Elite"},
-                {"advanced", "Advanced"}, {"master", "Master"}, {"legendary", "Legendary"},
-                {"god", "God"}, {"divine", "Divine"}, {"impossible", "Impossible"},
-                {"transcendent", "Transcendent"}, {"eternal", "Eternal"}, {"mythic", "Mythic"},
-                {"omega", "Omega"}, {"absolute", "Absolute"}, {"apex", "Apex"},
-                {"zenith", "Zenith"}
-        };
-        int[] tierSlots = {
-                9, 10, 11, 12, 13, 14, 15, 16,
-                18, 19, 20, 21, 22, 23, 24, 25
-        };
-        String equippedId = ph.getOrDefault("active_title_id", "");
-        for (int i = 0; i < tierTitles.length && i < tierSlots.length; i++) {
-            String id = tierTitles[i][0];
-            String name = tierTitles[i][1];
-            boolean unlocked = "1".equals(ph.getOrDefault("title_" + id, "0"));
-            boolean on = id.equalsIgnoreCase(equippedId);
-            long thr = parseLong(ph.getOrDefault("tier_" + id, defaultTier(id)));
-            Material mat = on ? Material.GOLD_BLOCK
-                    : unlocked ? Material.LIME_CONCRETE : Material.GRAY_CONCRETE;
-            String label = (on ? "&e" : unlocked ? "&a" : "&8") + name;
-            List<String> tip = new ArrayList<>();
-            tip.add("&7Tier title");
-            tip.add("&7Threshold  &f" + thr);
-            if (on) {
-                tip.add("&eEquipped &8· click to unequip");
-            } else if (unlocked) {
-                tip.add("&aUnlocked &8· click to equip");
-            } else {
-                tip.add("&8Locked");
-            }
-            if (unlocked) {
-                inv.setItem(tierSlots[i], button(mat, label, "equip_title", id, "titles", tip));
-            } else {
-                inv.setItem(tierSlots[i], item(mat, label, prependBlank(tip)));
-            }
-        }
-
-        String[][] combatTitles = {
-                {"boss_slayer", "Boss Slayer", "Kill a boss at Master+"},
-                {"legendary_hunter", "Legendary Hunter", "Kill an elite at Legendary+"},
-                {"god_challenger", "God Challenger", "Get a kill at God+"}
-        };
-        int[] combatSlots = {37, 39, 41};
-        for (int i = 0; i < combatTitles.length; i++) {
-            String id = combatTitles[i][0];
-            String name = combatTitles[i][1];
-            String how = combatTitles[i][2];
-            boolean unlocked = "1".equals(ph.getOrDefault("title_" + id, "0"));
-            boolean on = id.equalsIgnoreCase(equippedId);
-            Material mat = on ? Material.NETHER_STAR
-                    : unlocked ? Material.DIAMOND : Material.COAL;
-            String label = (on ? "&e" : unlocked ? "&a" : "&8") + name;
-            List<String> tip = new ArrayList<>();
-            tip.add("&7Combat title");
-            tip.add("&8" + how);
-            if (on) {
-                tip.add("&eEquipped &8· click to unequip");
-            } else if (unlocked) {
-                tip.add("&aUnlocked &8· click to equip");
-            } else {
-                tip.add("&8Locked");
-            }
-            if (unlocked) {
-                inv.setItem(combatSlots[i], button(mat, label, "equip_title", id, "titles", tip));
-            } else {
-                inv.setItem(combatSlots[i], item(mat, label, prependBlank(tip)));
-            }
-        }
-
-        inv.setItem(45, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
-        inv.setItem(53, closeBtn());
         return inv;
     }
 
@@ -397,13 +225,12 @@ public final class DifficultyChestGui implements Listener {
                 "&7State  &" + stateColor + ph.getOrDefault("state", "?"),
                 "&7Tier   &f" + ph.getOrDefault("active_tier_name", ph.getOrDefault("tier", "?")),
                 "&7CR     &f" + ph.getOrDefault("combat_rating", ph.getOrDefault("calculated", "?")),
-                "&7Title  &e" + ph.getOrDefault("active_title", "none"),
                 "&7Ancient &f" + ph.getOrDefault("balance", "?"),
                 "",
                 "&7DMZ &f" + ph.getOrDefault("level", "?")
                         + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"),
-                "&7Team bonus  &f" + ph.getOrDefault("team_bonus", "0"),
-                "&7Team contrib &f" + ph.getOrDefault("team_contrib", "0"),
+                "&7Team &f" + ph.getOrDefault("team_mode", "?")
+                        + "  &7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"),
                 "&8Buy a tier in the Tier menu to raise"
         );
     }
@@ -516,28 +343,6 @@ public final class DifficultyChestGui implements Listener {
         } catch (Exception e) {
             return 0L;
         }
-    }
-
-    private static String defaultTier(String key) {
-        return switch (key) {
-            case "awakened" -> "10";
-            case "enhanced" -> "50";
-            case "elite" -> "100";
-            case "advanced" -> "500";
-            case "master" -> "1000";
-            case "legendary" -> "5000";
-            case "god" -> "10000";
-            case "divine" -> "50000";
-            case "impossible" -> "100000";
-            case "transcendent" -> "250000";
-            case "eternal" -> "500000";
-            case "mythic" -> "1000000";
-            case "omega" -> "2500000";
-            case "absolute" -> "5000000";
-            case "apex" -> "7500000";
-            case "zenith" -> "10000000";
-            default -> "0";
-        };
     }
 
     private static String color(String input) {

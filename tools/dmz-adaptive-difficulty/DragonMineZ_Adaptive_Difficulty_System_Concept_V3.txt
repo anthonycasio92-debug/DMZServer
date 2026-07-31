@@ -45,9 +45,7 @@ Prestige Difficulty Unlocks
 ```
 Current Active Difficulty Tier
 Current Active Difficulty Level
-Current Difficulty Upgrade Amount
 Team Scaling Enabled
-Purchased Difficulty State
 ```
 
 ---
@@ -107,8 +105,8 @@ Personal Only | Threshold Bonus Only (+10%/teammate) | Full Team Contribution
 
 # Ancient Coin Economy
 
-Primary difficulty currency. Kill rewards grant Ancient Coins (tiered drop quality).
-Used for tier activation and difficulty upgrades.
+Primary difficulty currency. Kill rewards drop Ancient Coins on the ground (tiered quality).
+Used for tier activation only (no per-level difficulty upgrades).
 
 ---
 

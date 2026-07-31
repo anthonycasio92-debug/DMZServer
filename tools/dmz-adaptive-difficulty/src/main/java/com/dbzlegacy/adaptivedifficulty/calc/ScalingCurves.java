@@ -96,20 +96,7 @@ public final class ScalingCurves {
         return offenseBonus(difficulty, percentPerDifficulty);
     }
 
-    /** Always {@code 0} — this mod never grants kill TP. */
-    public static double killTrainingPointsFromHealth(double maxHealth) {
-        return 0.0;
-    }
-
-    /** Always {@code 0} — this mod never grants kill TP. */
-    public static double killTrainingPoints(long difficulty) {
-        return 0.0;
-    }
-
-    /**
-     * Concept §15: {@code 1 + Difficulty / Reward Scaling}.
-     * Used for XP / rare-drop chance only — never Training Points.
-     */
+    /** Soft XP multiplier from active difficulty. */
     public static double rewardMultiplier(long activeDifficulty) {
         DifficultyConfig cfg = DifficultyConfig.get();
         if (!cfg.enableRewardScaling || activeDifficulty <= 0L) {

@@ -22,49 +22,8 @@ public final class DifficultyConfig {
     public double levelMultiplier = 1.0;
     public double teamBonusPercent = 10.0;
     public double contributionPercent = 25.0;
-    /**
-     * Legacy fields kept for old configs; pricing now uses iron-coin fields below.
-     * {@code baseCost}/{@code costScaling} are ignored for difficulty payments.
-     */
-    public long baseCost = 1L;
-    public long costScaling = 100L;
-    /**
-     * Iron coins charged per difficulty level at active/purchased = 0.
-     * Example: 1 → first +1 costs 1 iron coin.
-     */
-    public long baseCostIronCoins = 1L;
-    /**
-     * Extra cost growth per current difficulty level.
-     * Formula: cost ≈ amount × base × (1 + scale × (from + (amount-1)/2)).
-     * Default 0.01 → at difficulty 100, each +1 costs ~2× base.
-     */
-    public double costScalePerDifficulty = 0.01;
-    /** Lightman's coin item used as the unit price (default iron coin). */
-    public String costCoinItem = "lightmanscurrency:coin_iron";
-    /**
-     * Legacy reward-curve divisor. Unused — this mod no longer grants or multiplies TP.
-     */
+    /** Soft divisor for kill XP multiplier. */
     public double rewardScaling = 2_500.0;
-    /** Legacy reward curve mode. Unused — kept for config compatibility. */
-    public String rewardCurve = "power";
-    /** Legacy — forced to {@code 0} on load (TP multipliers removed). */
-    public double rewardCurveGain = 0.0;
-    /** Legacy power-curve exponent. Unused. */
-    public double rewardCurveExponent = 0.38;
-    /** Legacy — forced to {@code 1} on load (TP multipliers removed). */
-    public double maxRewardMultiplier = 1.0;
-    /** Legacy kill-TP fields — unused; this mod never grants Training Points. */
-    public double killTpRefAmount = 0.0;
-    public double killTpRefDifficulty = 10_000_000.0;
-    public double killTpExponent = 0.70;
-    /** Legacy — forced to {@code 0} on load (no kill TP grants). */
-    public double killTpPerHealth = 0.0;
-    /** Legacy — forced to {@code 0} on load. */
-    public double killTpMinimum = 0.0;
-    /** Legacy — forced to {@code 0} on load. */
-    public double maxKillTp = 0.0;
-    /** Legacy — forced to {@code 0} on load (TPGainEvent never modified). */
-    public double maxTpGainEvent = 0.0;
     /**
      * Offense (damage/defense) curve exponent. Higher = steeper growth with difficulty.
      * Effective = {@code pow(d, exp) * pow(pivot, 1-exp)}.
@@ -140,13 +99,8 @@ public final class DifficultyConfig {
     public long tierOmega = 2_500_000L;
     public long tierAbsolute = 5_000_000L;
     public long tierApex = 7_500_000L;
-    /** Top tier — theoretical max for level 100k @ 10 prestiges. */
+    /** Top internal ability ladder threshold (not a player Unlock Tier). */
     public long tierZenith = 10_000_000L;
-    /**
-     * Difficulty payments always use Lightman's Currency (iron coins).
-     * Kept for config compatibility; non-lightmans values are forced back to lightmans.
-     */
-    public String purchaseCurrency = "lightmans";
     public boolean scaleHostileOnly = true;
     /**
      * Apply DMZ extra health/defense/damage/ki percents to <b>all</b> hostiles
@@ -256,8 +210,6 @@ public final class DifficultyConfig {
     public boolean enableAncientCoinDrops = true;
     public double ancientCoinDropMult = 1.0;
     public double ancientCoinRatingDivisor = 25_000.0;
-    public double upgradeCostBaseAncient = 1.0;
-    public double upgradeCostScalePerLevel = 0.01;
     /** V3: reset active tier/level on player death (unlocks stay). */
     public boolean deathResetsActiveDifficulty = true;
     /** Minimum active unlock-tier for elites / mutations / full AI. */
@@ -415,50 +367,6 @@ public final class DifficultyConfig {
         if (cfg.adminPermission == null || cfg.adminPermission.isBlank()) {
             cfg.adminPermission = "difficulty.admin";
         }
-        // Always Lightman's for difficulty payments
-        cfg.purchaseCurrency = "lightmans";
-        if (cfg.costCoinItem == null || cfg.costCoinItem.isBlank()) {
-            cfg.costCoinItem = "lightmanscurrency:coin_iron";
-        }
-        if (cfg.baseCostIronCoins < 0L) {
-            cfg.baseCostIronCoins = 1L;
-        }
-        if (cfg.costScalePerDifficulty < 0.0) {
-            cfg.costScalePerDifficulty = 0.01;
-        }
-        if (cfg.rewardCurve == null || cfg.rewardCurve.isBlank()) {
-            cfg.rewardCurve = "power";
-        }
-        if (cfg.rewardCurveGain < 0.0) {
-            cfg.rewardCurveGain = 0.0;
-        }
-        if (cfg.rewardCurveExponent <= 0.0) {
-            cfg.rewardCurveExponent = 0.38;
-        }
-        if (cfg.maxRewardMultiplier < 0.0) {
-            cfg.maxRewardMultiplier = 1.0;
-        }
-        if (cfg.killTpRefDifficulty <= 0.0) {
-            cfg.killTpRefDifficulty = 10_000_000.0;
-        }
-        if (cfg.killTpExponent <= 0.0) {
-            cfg.killTpExponent = 0.70;
-        }
-        if (cfg.killTpRefAmount < 0.0) {
-            cfg.killTpRefAmount = 0.0;
-        }
-        if (cfg.killTpPerHealth < 0.0) {
-            cfg.killTpPerHealth = 0.0;
-        }
-        if (cfg.killTpMinimum < 0.0) {
-            cfg.killTpMinimum = 0.0;
-        }
-        if (cfg.maxKillTp < 0.0) {
-            cfg.maxKillTp = 0.0;
-        }
-        if (cfg.maxTpGainEvent < 0.0) {
-            cfg.maxTpGainEvent = 0.0;
-        }
         if (cfg.combatCurveExponent <= 0.0) {
             cfg.combatCurveExponent = 0.96;
         }
@@ -471,117 +379,11 @@ public final class DifficultyConfig {
         if (cfg.healthCurvePivot < 1L) {
             cfg.healthCurvePivot = 250L;
         }
-        // Migrate stock offense values → endgame-anchored damage/defense.
-        boolean retuned = false;
-        if (nearly(cfg.combatCurveExponent, 0.70)
-                || nearly(cfg.combatCurveExponent, 0.88)
-                || nearly(cfg.combatCurveExponent, 0.93)) {
-            cfg.combatCurveExponent = 0.96;
-            retuned = true;
-        }
-        if (cfg.combatCurvePivot == 250L || cfg.combatCurvePivot == 500L) {
-            cfg.combatCurvePivot = 450L;
-            retuned = true;
-        }
-        // TP fully removed — force every legacy TP knob inert.
-        if (!nearly(cfg.rewardCurveGain, 0.0)) {
-            cfg.rewardCurveGain = 0.0;
-            retuned = true;
-        }
-        if (!nearly(cfg.maxRewardMultiplier, 1.0)) {
-            cfg.maxRewardMultiplier = 1.0;
-            retuned = true;
-        }
-        if (nearly(cfg.rewardScaling, 1_000.0)) {
+        if (cfg.rewardScaling < 1.0) {
             cfg.rewardScaling = 2_500.0;
-            retuned = true;
         }
-        if (!nearly(cfg.killTpRefAmount, 0.0)) {
-            cfg.killTpRefAmount = 0.0;
-            retuned = true;
-        }
-        if (!nearly(cfg.killTpPerHealth, 0.0)) {
-            cfg.killTpPerHealth = 0.0;
-            retuned = true;
-        }
-        if (!nearly(cfg.killTpMinimum, 0.0)) {
-            cfg.killTpMinimum = 0.0;
-            retuned = true;
-        }
-        if (!nearly(cfg.maxKillTp, 0.0)) {
-            cfg.maxKillTp = 0.0;
-            retuned = true;
-        }
-        if (!nearly(cfg.maxTpGainEvent, 0.0)) {
-            cfg.maxTpGainEvent = 0.0;
-            retuned = true;
-        }
-        if (nearly(cfg.healthPercentPerDifficulty, 1.0)) {
-            cfg.healthPercentPerDifficulty = 0.45;
-            retuned = true;
-        }
-        if (nearly(cfg.dmzExtraHealthPercent, 1.0)) {
-            cfg.dmzExtraHealthPercent = 0.45;
-            retuned = true;
-        }
-        // Prior rates overshot endgame (~1.5M raw / ~811k armor at 8M vs ~800k HP / ~200k DEF).
-        if (nearly(cfg.damagePercentPerDifficulty, 1.0)
-                || nearly(cfg.damagePercentPerDifficulty, 1.5)
-                || nearly(cfg.damagePercentPerDifficulty, 2.5)
-                || nearly(cfg.damagePercentPerDifficulty, 3.2)) {
-            cfg.damagePercentPerDifficulty = 0.62;
-            retuned = true;
-        }
-        if (nearly(cfg.dmzExtraDamagePercent, 1.0)
-                || nearly(cfg.dmzExtraDamagePercent, 1.5)
-                || nearly(cfg.dmzExtraDamagePercent, 2.5)
-                || nearly(cfg.dmzExtraDamagePercent, 3.2)) {
-            cfg.dmzExtraDamagePercent = 0.62;
-            retuned = true;
-        }
-        if (nearly(cfg.dmzExtraKiDamagePercent, 1.0)
-                || nearly(cfg.dmzExtraKiDamagePercent, 1.5)
-                || nearly(cfg.dmzExtraKiDamagePercent, 2.5)
-                || nearly(cfg.dmzExtraKiDamagePercent, 3.2)) {
-            cfg.dmzExtraKiDamagePercent = 0.62;
-            retuned = true;
-        }
-        if (nearly(cfg.defensePercentPerDifficulty, 3.0)
-                || nearly(cfg.defensePercentPerDifficulty, 4.5)
-                || nearly(cfg.defensePercentPerDifficulty, 5.0)
-                || nearly(cfg.defensePercentPerDifficulty, 7.5)) {
-            cfg.defensePercentPerDifficulty = 1.85;
-            retuned = true;
-        }
-        if (nearly(cfg.dmzExtraDefensePercent, 3.0)
-                || nearly(cfg.dmzExtraDefensePercent, 4.5)
-                || nearly(cfg.dmzExtraDefensePercent, 5.0)
-                || nearly(cfg.dmzExtraDefensePercent, 7.5)) {
-            cfg.dmzExtraDefensePercent = 1.85;
-            retuned = true;
-        }
-        // Health: uncapped by default (vanilla 1024 attribute wall is raised at boot).
-        if (nearly(cfg.maxHealthMultiplier, 50.0) || nearly(cfg.maxHealthMultiplier, 8.0)) {
-            cfg.maxHealthMultiplier = 0.0;
-            retuned = true;
-        }
-        // Migrate old hard-cap defaults (400 / 1024) → uncapped.
         if (nearly(cfg.maxScaledHealth, 400.0) || nearly(cfg.maxScaledHealth, 1024.0)) {
             cfg.maxScaledHealth = 0.0;
-            retuned = true;
-        }
-        // Remove stock damage/armor ceilings — offense grows with the curve only.
-        if (nearly(cfg.maxDamageMultiplier, 50.0)
-                || nearly(cfg.maxDamageMultiplier, 25_000.0)
-                || nearly(cfg.maxDamageMultiplier, 50_000.0)) {
-            cfg.maxDamageMultiplier = 0.0;
-            retuned = true;
-        }
-        if (nearly(cfg.maxArmorBonus, 20.0)
-                || nearly(cfg.maxArmorBonus, 30.0)
-                || nearly(cfg.maxArmorBonus, 100.0)) {
-            cfg.maxArmorBonus = 0.0;
-            retuned = true;
         }
         if (cfg.maxDamageMultiplier < 0.0) {
             cfg.maxDamageMultiplier = 0.0;
@@ -589,25 +391,11 @@ public final class DifficultyConfig {
         if (cfg.maxArmorBonus < 0.0) {
             cfg.maxArmorBonus = 0.0;
         }
-        if (retuned) {
-            AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] retuned: kill/train TP grants removed; offense/health curves kept",
-                    AdaptiveDifficultyMod.MOD_ID
-            );
-        }
         if (cfg.areaDifficultyMode == null || cfg.areaDifficultyMode.isBlank()) {
             cfg.areaDifficultyMode = "weighted";
         }
-        if (cfg.hardCapDifficulty < 0L) {
+        if (cfg.hardCapDifficulty < 0L || cfg.hardCapDifficulty == 1_000_000L) {
             cfg.hardCapDifficulty = 0L;
-        }
-        // Legacy default was an artificial 1_000_000 ceiling — disable so max follows stats.
-        if (cfg.hardCapDifficulty == 1_000_000L) {
-            cfg.hardCapDifficulty = 0L;
-            AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] hardCapDifficulty 1000000 → 0 (no hardcap; max from DMZ stats)",
-                    AdaptiveDifficultyMod.MOD_ID
-            );
         }
     }
 

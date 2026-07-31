@@ -1,42 +1,34 @@
 package com.dbzlegacy.adaptivedifficulty.service;
 
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
-import com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
-import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
-import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import net.minecraft.server.level.ServerPlayer;
 
-/** V3 server-side actions for GUI / command buttons. */
+/**
+ * V3 player actions only:
+ * buy/activate tier, lower, reset, team, character reset, page/refresh.
+ * No +difficulty upgrades, titles, or set-max.
+ */
 public final class DifficultyActions {
-    public static final String ACT_UP = "up";
     public static final String ACT_DOWN = "down";
     public static final String ACT_BUY = "buy";
     public static final String ACT_ACTIVATE = "activate";
     public static final String ACT_PURCHASE_TIER = "purchase_tier";
     public static final String ACT_TEAM = "team";
-    public static final String ACT_SET = "set";
-    public static final String ACT_SET_MAX = "set_max";
     public static final String ACT_RESET = "reset";
-    /** Character wipe: same temporary clear as death (unlocks / prestige / coins kept). */
     public static final String ACT_CHARACTER_RESET = "character_reset";
     public static final String ACT_REFRESH = "refresh";
     public static final String ACT_PAGE = "page";
-    public static final String ACT_EQUIP_TITLE = "equip_title";
-    public static final String ACT_CLEAR_TITLE = "clear_title";
 
     private DifficultyActions() {}
 
     public static void openGui(ServerPlayer player, String page) {
         String target = page == null || page.isBlank() ? "main" : page;
-        if ("titles".equalsIgnoreCase(target) || "title".equalsIgnoreCase(target)) {
-            TitleSystem.syncTierTitles(player, true);
-        }
         UnlockSystem.syncUnlocks(player, DifficultyCache.data(player));
         DifficultyMenu.open(player, target);
     }
@@ -54,30 +46,30 @@ public final class DifficultyActions {
             openGui(player, page);
             return Result.ok("");
         }
-        if (ACT_EQUIP_TITLE.equals(act) || "equip".equals(act)) {
-            return equipTitle(player, arg, page == null || page.isBlank() ? "titles" : page);
+        // Removed legacy actions — refuse clearly.
+        if ("up".equals(act) || "upgrade".equals(act) || "set_max".equals(act)
+                || "equip_title".equals(act) || "clear_title".equals(act) || "equip".equals(act)
+                || "unequip_title".equals(act)) {
+            openGui(player, page == null || page.isBlank() ? "buy" : page);
+            return Result.fail("That feature was removed. Purchase a tier to raise difficulty.");
         }
-        if (ACT_CLEAR_TITLE.equals(act) || "unequip_title".equals(act)) {
-            return clearTitle(player, page == null || page.isBlank() ? "titles" : page);
-        }
+
         long amount = 0L;
         if (arg != null && !arg.isBlank()) {
             try {
                 amount = Long.parseLong(arg.trim());
             } catch (NumberFormatException ignored) {
-                if (ACT_UP.equals(act) || ACT_DOWN.equals(act) || ACT_SET.equals(act)
-                        || ACT_ACTIVATE.equals(act) || ACT_PURCHASE_TIER.equals(act) || ACT_BUY.equals(act)) {
+                if (ACT_DOWN.equals(act) || ACT_ACTIVATE.equals(act)
+                        || ACT_PURCHASE_TIER.equals(act) || ACT_BUY.equals(act) || "set".equals(act)) {
                     return Result.fail("Invalid amount: " + arg);
                 }
             }
         }
         return switch (act) {
-            case ACT_UP, "upgrade" -> upgrade(player, Math.max(1L, amount <= 0 ? 100L : amount), page);
             case ACT_DOWN -> lower(player, Math.max(1L, amount <= 0 ? 100L : amount), page);
+            case "set" -> setLowerOnly(player, Math.max(0L, amount), page);
             case ACT_ACTIVATE, ACT_PURCHASE_TIER, ACT_BUY -> activateTier(player, (int) amount, page);
             case ACT_TEAM -> cycleTeam(player, page);
-            case ACT_SET -> setActive(player, Math.max(0L, amount), page);
-            case ACT_SET_MAX -> setActive(player, Long.MAX_VALUE, page);
             case ACT_RESET, "zero", "clear" -> resetActive(player, page);
             case ACT_CHARACTER_RESET, "char_reset", "characterreset" -> characterReset(player, page);
             case ACT_REFRESH -> {
@@ -86,36 +78,6 @@ public final class DifficultyActions {
             }
             default -> Result.fail("Unknown action.");
         };
-    }
-
-    private static Result equipTitle(ServerPlayer player, String titleId, String page) {
-        TitleSystem.syncTierTitles(player, false);
-        DifficultyTitle title = DifficultyTitle.byId(titleId);
-        if (title == null) {
-            openGui(player, page);
-            return Result.fail("Unknown title.");
-        }
-        if (!TitleSystem.has(player, title)) {
-            openGui(player, page);
-            return Result.fail("Title locked: " + title.display);
-        }
-        if (title.id.equals(TitleSystem.activeId(player))) {
-            TitleSystem.clear(player);
-            openGui(player, page);
-            return Result.ok("Title unequipped.");
-        }
-        if (!TitleSystem.equip(player, title.id)) {
-            openGui(player, page);
-            return Result.fail("Could not equip " + title.display + ".");
-        }
-        openGui(player, page);
-        return Result.ok("Equipped title: " + title.display);
-    }
-
-    private static Result clearTitle(ServerPlayer player, String page) {
-        TitleSystem.clear(player);
-        openGui(player, page);
-        return Result.ok("Title unequipped.");
     }
 
     private static Result activateTier(ServerPlayer player, int tierId, String page) {
@@ -148,21 +110,14 @@ public final class DifficultyActions {
             return Result.fail("Payment failed — need " + costText + " in inventory.");
         }
         data.setActiveTier(tier.id);
-        // Tier purchase sets full tier difficulty — no separate +difficulty upgrades.
         data.setActiveDifficultyLevel(tier.maxDifficulty());
         DifficultyCache.save(player);
         DifficultyCache.refresh(player);
-        TitleSystem.syncTierTitles(player, true);
         DifficultySnapshot snap = DifficultyCache.get(player);
         openGui(player, returnPage);
         return Result.ok("Purchased " + tier.display + " (T" + tier.id + ") for " + costText
                 + ". Difficulty " + snap.active + " / " + snap.availableMax
                 + " · CR " + snap.combatRating);
-    }
-
-    private static Result upgrade(ServerPlayer player, long amount, String page) {
-        openGui(player, page == null || page.isBlank() ? "buy" : page);
-        return Result.fail("Difficulty is raised by purchasing tiers — open the Tier menu.");
     }
 
     private static Result lower(ServerPlayer player, long amount, String page) {
@@ -176,10 +131,10 @@ public final class DifficultyActions {
         return Result.ok("Difficulty lowered to " + next + " (free).");
     }
 
-    private static Result setActive(ServerPlayer player, long target, String page) {
-        // Paid raises disabled — only free lowers / reset, or tier purchase.
+    /** Free set only when lowering or equal; raising requires tier purchase. */
+    private static Result setLowerOnly(ServerPlayer player, long target, String page) {
         DifficultySnapshot bounds = DifficultyCache.get(player);
-        if (target == Long.MAX_VALUE || target > bounds.active) {
+        if (target > bounds.active) {
             openGui(player, "buy");
             return Result.fail("Buy a higher tier in the Tier menu to raise difficulty.");
         }
@@ -201,10 +156,6 @@ public final class DifficultyActions {
         return Result.ok("Active difficulty cleared. Unlocks and Ancient Coins kept.");
     }
 
-    /**
-     * Character reset hook for DMZ / CNPC scripts.
-     * Clears temporary difficulty state; keeps prestige, unlock tiers, Ancient Coins.
-     */
     private static Result characterReset(ServerPlayer player, String page) {
         PlayerDifficultyData data = DifficultyCache.data(player);
         data.resetTemporary();
