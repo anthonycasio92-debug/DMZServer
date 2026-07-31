@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.19)
+# DMZ Adaptive Difficulty (v1.7.20)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -22,7 +22,7 @@ Clients do **not** need this jar to join.
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.19.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.20.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
@@ -75,24 +75,29 @@ Available max = theoretical + purchased + optional team bonuses.
 
 ## Combat & reward curves
 
-Mob **HP / damage / defense** use a diminishing power curve (default exponent `0.70`, pivot `250`):
-high difficulty still gets stronger, but not 1:1 linear.
+Curves are **split**:
 
-TP / reward multiplier uses a **log** curve by default (soft-capped at ×6):
-
-| Active | Old linear TP mult | New log TP mult (approx) |
+| Stat | Curve | Defaults |
 |---|---|---|
-| 1,000 | ×2 | ~×1.8 |
-| 10,000 | ×11 | ~×3.9 |
-| 100,000 | ×101 | ~×5.9 (cap ×6) |
+| Damage / defense | Steeper offense power curve | exp `0.88`, pivot `250` |
+| Health | Flat health curve + hard caps | exp `0.40`, max mult `×8`, abs cap `400` HP |
+| TP / rewards | Soft log | gain `0.65`, scale `2500`, cap `×3.5` |
+
+| Active | TP mult (approx) |
+|---|---|
+| 1,000 | ~×1.2 |
+| 10,000 | ~×1.9 |
+| 100,000 | ~×3.0 |
+| 1,000,000+ | ×3.5 (cap) |
 
 Tune:
 ```
-/difficulty admin set combatCurveExponent 0.70
-/difficulty admin set combatCurvePivot 250
-/difficulty admin set rewardCurve log
-/difficulty admin set rewardCurveGain 1.2
-/difficulty admin set maxRewardMultiplier 6
+/difficulty admin set combatCurveExponent 0.88
+/difficulty admin set healthCurveExponent 0.40
+/difficulty admin set maxHealthMultiplier 8
+/difficulty admin set maxScaledHealth 400
+/difficulty admin set rewardCurveGain 0.65
+/difficulty admin set maxRewardMultiplier 3.5
 ```
 
 ## Pricing (Lightman's iron coins)

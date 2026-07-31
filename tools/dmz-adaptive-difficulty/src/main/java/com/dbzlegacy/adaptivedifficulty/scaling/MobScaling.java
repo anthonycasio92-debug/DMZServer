@@ -103,24 +103,24 @@ public final class MobScaling {
             tag.m_128379_(TAG_DMZ_STYLE, true);
         }
 
-        // Combat stats use a diminishing curve so high difficulty still grows, but not linearly.
-        double healthMult = 1.0 + ScalingCurves.combatBonus(difficulty, cfg.healthPercentPerDifficulty);
-        double armorBonus = ScalingCurves.combatBonus(difficulty, cfg.defensePercentPerDifficulty);
+        // Health uses a flat curve + hard caps; damage/defense use a steeper offense curve.
+        double healthMult = 1.0 + ScalingCurves.healthBonus(difficulty, cfg.healthPercentPerDifficulty);
+        double armorBonus = ScalingCurves.offenseBonus(difficulty, cfg.defensePercentPerDifficulty);
         double moveMult = 1.0 + ((difficulty / 100.0) * (cfg.movementPercentPer100Difficulty / 100.0));
 
         if (dmzStyle) {
-            healthMult += ScalingCurves.combatBonus(difficulty, cfg.dmzExtraHealthPercent);
-            armorBonus += ScalingCurves.combatBonus(difficulty, cfg.dmzExtraDefensePercent);
+            healthMult += ScalingCurves.healthBonus(difficulty, cfg.dmzExtraHealthPercent);
+            armorBonus += ScalingCurves.offenseBonus(difficulty, cfg.dmzExtraDefensePercent);
         }
 
         healthMult = clamp(healthMult, 1.0, Math.max(1.0, cfg.maxHealthMultiplier));
         moveMult = clamp(moveMult, 1.0, Math.max(1.0, cfg.maxMoveMultiplier));
         armorBonus = Math.min(armorBonus, Math.max(0.0, cfg.maxArmorBonus));
 
-        double dmgMult = 1.0 + ScalingCurves.combatBonus(difficulty, cfg.damagePercentPerDifficulty);
+        double dmgMult = 1.0 + ScalingCurves.offenseBonus(difficulty, cfg.damagePercentPerDifficulty);
         if (dmzStyle) {
-            dmgMult += ScalingCurves.combatBonus(difficulty, cfg.dmzExtraDamagePercent);
-            dmgMult += ScalingCurves.combatBonus(difficulty, cfg.dmzExtraKiDamagePercent);
+            dmgMult += ScalingCurves.offenseBonus(difficulty, cfg.dmzExtraDamagePercent);
+            dmgMult += ScalingCurves.offenseBonus(difficulty, cfg.dmzExtraKiDamagePercent);
         }
         dmgMult = Math.min(dmgMult, Math.max(1.0, cfg.maxDamageMultiplier));
         tag.m_128350_(TAG_DMG_MULT, (float) dmgMult); // putFloat
@@ -234,13 +234,13 @@ public final class MobScaling {
             return 1.0f;
         }
         DifficultyConfig cfg = DifficultyConfig.get();
-        double mult = 1.0 + ScalingCurves.combatBonus(d, cfg.damagePercentPerDifficulty);
+        double mult = 1.0 + ScalingCurves.offenseBonus(d, cfg.damagePercentPerDifficulty);
         boolean dmzStyle = tag.m_128471_(TAG_DMZ_STYLE)
                 || isDragonMineZMob(attacker)
                 || (cfg.applyDmzExtrasToAllHostiles && HostileMobs.isHostile(attacker));
         if (dmzStyle) {
-            mult += ScalingCurves.combatBonus(d, cfg.dmzExtraDamagePercent);
-            mult += ScalingCurves.combatBonus(d, cfg.dmzExtraKiDamagePercent);
+            mult += ScalingCurves.offenseBonus(d, cfg.dmzExtraDamagePercent);
+            mult += ScalingCurves.offenseBonus(d, cfg.dmzExtraKiDamagePercent);
         }
         mult = Math.min(mult, Math.max(1.0, cfg.maxDamageMultiplier));
         if (PersistentDataAccess.isWritable(tag)) {

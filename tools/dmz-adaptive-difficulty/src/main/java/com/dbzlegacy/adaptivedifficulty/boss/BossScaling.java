@@ -101,7 +101,7 @@ public final class BossScaling {
         AttributeInstance armor = entity.m_21051_(Attributes.f_22284_);
         if (armor != null) {
             double bonus = Math.min(cfg.maxArmorBonus,
-                    ScalingCurves.combatBonus(difficulty, cfg.defensePercentPerDifficulty) * 0.25);
+                    ScalingCurves.offenseBonus(difficulty, cfg.defensePercentPerDifficulty) * 0.25);
             armor.m_22100_(Math.min(30.0, armor.m_22115_() + bonus));
         }
 

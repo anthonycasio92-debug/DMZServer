@@ -45,32 +45,40 @@ public final class DifficultyConfig {
      * Reward curve divisor. Used by {@code log}/{@code sqrt}/{@code power} reward curves.
      * Legacy linear was {@code 1 + difficulty / rewardScaling}.
      */
-    public double rewardScaling = 1_000.0;
+    public double rewardScaling = 2_500.0;
     /**
      * Reward curve mode: {@code log} (default), {@code sqrt}, {@code power}, or {@code linear}.
      * Log keeps TP gains from exploding at high difficulty.
      */
     public String rewardCurve = "log";
-    /** Multiplier applied inside the reward curve (log/sqrt/power). */
-    public double rewardCurveGain = 1.2;
+    /** Multiplier applied inside the reward curve (log/sqrt/power). Lower = slower TP. */
+    public double rewardCurveGain = 0.65;
     /** Exponent for {@code rewardCurve=power} only (ignored by log/sqrt). */
     public double rewardCurveExponent = 0.45;
     /** Soft cap on TP/reward multiplier (1.0 = no bonus cap). */
-    public double maxRewardMultiplier = 6.0;
+    public double maxRewardMultiplier = 3.5;
     /**
-     * Combat curve exponent ({@code < 1} = diminishing returns). {@code 1.0} = old linear.
-     * Effective difficulty = {@code pow(d, exp) * pow(pivot, 1-exp)}.
+     * Offense (damage/defense) curve exponent. Higher = steeper growth with difficulty.
+     * Effective = {@code pow(d, exp) * pow(pivot, 1-exp)}.
      */
-    public double combatCurveExponent = 0.70;
-    /** Difficulty where the combat curve matches old linear rates. */
+    public double combatCurveExponent = 0.88;
+    /** Difficulty where the offense curve matches old linear rates. */
     public long combatCurvePivot = 250L;
-    public double healthPercentPerDifficulty = 1.0;
+    /**
+     * Health curve exponent — kept low so mob HP does not become unkillable sponges.
+     */
+    public double healthCurveExponent = 0.40;
+    /** Pivot for the health curve (usually same ballpark as combat pivot). */
+    public long healthCurvePivot = 250L;
+    /** Flat health % rate (applied through the flat health curve). */
+    public double healthPercentPerDifficulty = 0.45;
     /** Per-difficulty damage % (was 1.0; +50% → 1.5). */
     public double damagePercentPerDifficulty = 1.5;
     /** Per-difficulty armor points (was 3.0; +50% → 4.5). */
     public double defensePercentPerDifficulty = 4.5;
     public double movementPercentPer100Difficulty = 0.1;
-    public double dmzExtraHealthPercent = 1.0;
+    /** DMZ-style extra health % (kept low; health uses its own flat curve). */
+    public double dmzExtraHealthPercent = 0.45;
     /** DMZ-style extra damage % (was 1.0; +50% → 1.5). */
     public double dmzExtraDamagePercent = 1.5;
     /** DMZ-style extra armor points (was 3.0; +50% → 4.5). */
@@ -151,8 +159,8 @@ public final class DifficultyConfig {
             "boss", "warden", "wither", "ender_dragon", "raid_boss", "raidboss"
     ));
     /** Caps so high difficulty cannot explode attributes / break spawns. */
-    public double maxHealthMultiplier = 50.0;
-    public double maxScaledHealth = 1024.0;
+    public double maxHealthMultiplier = 8.0;
+    public double maxScaledHealth = 400.0;
     public double maxMoveMultiplier = 1.75;
     public double maxArmorBonus = 20.0;
     public double maxDamageMultiplier = 50.0;
@@ -280,19 +288,65 @@ public final class DifficultyConfig {
             cfg.rewardCurve = "log";
         }
         if (cfg.rewardCurveGain < 0.0) {
-            cfg.rewardCurveGain = 1.2;
+            cfg.rewardCurveGain = 0.65;
         }
         if (cfg.rewardCurveExponent <= 0.0) {
             cfg.rewardCurveExponent = 0.45;
         }
         if (cfg.maxRewardMultiplier < 1.0) {
-            cfg.maxRewardMultiplier = 6.0;
+            cfg.maxRewardMultiplier = 3.5;
         }
         if (cfg.combatCurveExponent <= 0.0) {
-            cfg.combatCurveExponent = 0.70;
+            cfg.combatCurveExponent = 0.88;
         }
         if (cfg.combatCurvePivot < 1L) {
             cfg.combatCurvePivot = 250L;
+        }
+        if (cfg.healthCurveExponent <= 0.0) {
+            cfg.healthCurveExponent = 0.40;
+        }
+        if (cfg.healthCurvePivot < 1L) {
+            cfg.healthCurvePivot = 250L;
+        }
+        // Migrate 1.7.19 stock curve/TP/health values → split offense/health + slower TP.
+        boolean retuned = false;
+        if (nearly(cfg.combatCurveExponent, 0.70)) {
+            cfg.combatCurveExponent = 0.88;
+            retuned = true;
+        }
+        if (nearly(cfg.rewardCurveGain, 1.2)) {
+            cfg.rewardCurveGain = 0.65;
+            retuned = true;
+        }
+        if (nearly(cfg.maxRewardMultiplier, 6.0)) {
+            cfg.maxRewardMultiplier = 3.5;
+            retuned = true;
+        }
+        if (nearly(cfg.rewardScaling, 1_000.0)) {
+            cfg.rewardScaling = 2_500.0;
+            retuned = true;
+        }
+        if (nearly(cfg.healthPercentPerDifficulty, 1.0)) {
+            cfg.healthPercentPerDifficulty = 0.45;
+            retuned = true;
+        }
+        if (nearly(cfg.dmzExtraHealthPercent, 1.0)) {
+            cfg.dmzExtraHealthPercent = 0.45;
+            retuned = true;
+        }
+        if (nearly(cfg.maxHealthMultiplier, 50.0)) {
+            cfg.maxHealthMultiplier = 8.0;
+            retuned = true;
+        }
+        if (nearly(cfg.maxScaledHealth, 1024.0)) {
+            cfg.maxScaledHealth = 400.0;
+            retuned = true;
+        }
+        if (retuned) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] retuned curves: steeper offense, flatter health, slower TP",
+                    AdaptiveDifficultyMod.MOD_ID
+            );
         }
         if (cfg.areaDifficultyMode == null || cfg.areaDifficultyMode.isBlank()) {
             cfg.areaDifficultyMode = "weighted";
