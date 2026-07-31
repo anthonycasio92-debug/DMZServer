@@ -98,6 +98,9 @@ public final class MobScaling {
             if (!cfg.enabled || !cfg.enableMobScaling) {
                 return;
             }
+            if (!com.dbzlegacy.adaptivedifficulty.util.SystemGate.allows(player)) {
+                return;
+            }
             // Cheap hostility gate before any NBT / kill checks.
             if (cfg.scaleHostileOnly && !HostileMobs.isHostile(entity)) {
                 return;

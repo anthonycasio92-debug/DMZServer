@@ -49,14 +49,25 @@ public final class DifficultyChestGui implements Listener {
         frame(inv, 36);
 
         boolean systemOn = !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "true"));
-        if (!systemOn) {
-            inv.setItem(13, item(Material.NETHER_STAR, "&c&lSYSTEM DISABLED", List.of(
-                    "",
-                    "&cAdaptive Difficulty is off",
-                    "&7An admin disabled the system",
-                    "&8No scaling, coins, or purchases",
-                    "&8Re-enable: &f/difficulty admin on"
-            )));
+        boolean allowed = !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "true"));
+        if (!systemOn || !allowed) {
+            inv.setItem(13, item(Material.NETHER_STAR,
+                    !systemOn ? "&c&lSYSTEM DISABLED" : "&e&lWHITELIST ONLY",
+                    !systemOn
+                            ? List.of(
+                            "",
+                            "&cAdaptive Difficulty is off",
+                            "&7An admin disabled the system",
+                            "&8No scaling, coins, or purchases",
+                            "&8Re-enable: &f/difficulty admin on"
+                    )
+                            : List.of(
+                            "",
+                            "&eTesting whitelist is on",
+                            "&7You are not on the whitelist",
+                            "&8Ask an admin:",
+                            "&f/difficulty admin whitelist add <you>"
+                    )));
             inv.setItem(31, button(Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
                     List.of("&7Reload this menu")));
             inv.setItem(35, closeBtn());

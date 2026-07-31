@@ -10,6 +10,8 @@ import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
+import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
+import net.minecraft.world.entity.LivingEntity;
 import java.util.List;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
@@ -93,6 +95,14 @@ public final class BehaviorScheduler {
             MobScaling.terminateIfZeroHealth(mob);
             CombatIndex.unmark(mob.m_20148_());
             return true;
+        }
+
+        // Whitelist testing: only tick AI/evolution for mobs fighting allowed players.
+        if (DifficultyConfig.isWhitelistEnabled()) {
+            LivingEntity target = mob.m_5448_();
+            if (!(target instanceof ServerPlayer sp) || !SystemGate.allows(sp)) {
+                return false;
+            }
         }
 
         CompoundTag tag = PersistentDataAccess.get(mob);

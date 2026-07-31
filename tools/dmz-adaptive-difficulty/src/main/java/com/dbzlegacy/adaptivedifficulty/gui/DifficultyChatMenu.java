@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
+import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -24,8 +25,8 @@ public final class DifficultyChatMenu {
             settings(player);
             return;
         }
-        // While the master switch is off, only show the disabled hub (admins use settings).
-        if (!DifficultyConfig.isEnabled()
+        // While the master switch is off / player not whitelisted, show the blocked hub.
+        if ((!DifficultyConfig.isEnabled() || !SystemGate.allows(player))
                 && (page == null || page.isBlank() || !"settings".equalsIgnoreCase(page))) {
             main(player);
             return;
@@ -55,6 +56,12 @@ public final class DifficultyChatMenu {
         if (!DifficultyConfig.isEnabled()) {
             send(player, Component.m_237113_("§c§lSYSTEM DISABLED §8· §7An admin turned Adaptive Difficulty off."));
             send(player, Component.m_237113_("§8No scaling, kill coins, or tier purchases until re-enabled."));
+            send(player, Component.m_237113_("§8────────────────────────"));
+            return;
+        }
+        if (!SystemGate.allows(player)) {
+            send(player, Component.m_237113_("§e§lWHITELIST ONLY §8· §7Adaptive Difficulty is in testing mode."));
+            send(player, Component.m_237113_("§8Ask an admin to add you: §f/difficulty admin whitelist add <you>"));
             send(player, Component.m_237113_("§8────────────────────────"));
             return;
         }
@@ -159,13 +166,17 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_("§8──────── §fAdmin §8────────"));
         send(player, Component.m_237113_(
                 (cfg.enabled ? "§aSystem ENABLED" : "§cSystem DISABLED")
-                        + " §8· §7/difficulty admin off|on|toggle"));
+                        + " §8· "
+                        + (cfg.whitelistEnabled
+                        ? "§eWhitelist ON §7(" + DifficultyConfig.whitelistEntries().size() + ")"
+                        : "§7Whitelist OFF")));
+        send(player, Component.m_237113_("§8/difficulty admin off|on · whitelist on|off|add|remove|list"));
         send(player, Component.m_237113_("§7CR weights DMZ §f" + cfg.combatRatingDmzWeight
                 + "  §7Prestige §f" + cfg.combatRatingPrestigeWeight
                 + "  §7Active §f" + cfg.combatRatingDifficultyWeight));
         send(player, Component.m_237113_("§7Coin drops §f" + cfg.enableAncientCoinDrops
                 + "  §7Death reset §f" + cfg.deathResetsActiveDifficulty));
-        send(player, Component.m_237113_("§8/difficulty admin set enabled true|false"));
+        send(player, Component.m_237113_("§8/difficulty admin set enabled|whitelistEnabled true|false"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 

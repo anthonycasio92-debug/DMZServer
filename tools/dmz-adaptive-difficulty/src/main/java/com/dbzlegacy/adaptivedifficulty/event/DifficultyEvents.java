@@ -120,7 +120,7 @@ public final class DifficultyEvents {
         if (!(entity instanceof Mob mob) || DimensionGates.isDisabled(mob)) {
             return;
         }
-        if (event.getNewTarget() instanceof ServerPlayer player) {
+        if (event.getNewTarget() instanceof ServerPlayer player && SystemGate.allows(player)) {
             CombatIndex.mark(mob);
             MobScaling.retargetToPlayer(mob, player);
         }
@@ -144,7 +144,7 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)
-                || SystemGate.isDisabled()) {
+                || SystemGate.isDisabled() || !SystemGate.allows(player)) {
             return;
         }
         // Level/prestige poll only — gravity moved to BehaviorScheduler.
@@ -189,6 +189,11 @@ public final class DifficultyEvents {
             return;
         }
 
+        // Whitelist testing: skip player-facing AD unless an allowed tester is in the fight.
+        // Hostile↔hostile civil-war cancel below still applies to scaled mobs.
+        boolean whitelistBlocksPlayers = DifficultyConfig.isWhitelistEnabled()
+                && !SystemGate.allowsAny(victim, causing);
+
         // Block hostile→hostile (and hostile booms on other hostiles). Allow self-damage
         // so creeper fuse can finish killing the exploding creeper on some Mohist paths.
         if (victimHostile && !causerPlayer && causing != victim) {
@@ -206,6 +211,10 @@ public final class DifficultyEvents {
                 }
                 return;
             }
+        }
+
+        if (whitelistBlocksPlayers) {
+            return;
         }
 
         // Combat-index + cached retarget (LivingAttackEvent removed — every swing crushed TPS).
@@ -264,6 +273,7 @@ public final class DifficultyEvents {
         }
         // V3 death penalty: clear temporary active tier/level; unlocks & coins stay.
         if (dead instanceof ServerPlayer victim
+                && SystemGate.allows(victim)
                 && DifficultyConfig.get().deathResetsActiveDifficulty) {
             var data = DifficultyCache.data(victim);
             if (data.getActiveTier() > 0 || data.getActiveDifficultyLevel() > 0L) {
@@ -274,7 +284,7 @@ public final class DifficultyEvents {
                         "§cDifficulty deactivated on death. §7Unlocks & Ancient Coins kept."));
             }
         }
-        if (!(event.getSource().m_7639_() instanceof ServerPlayer killer)) {
+        if (!(event.getSource().m_7639_() instanceof ServerPlayer killer) || !SystemGate.allows(killer)) {
             return;
         }
         if (dead != null) {
@@ -320,7 +330,8 @@ public final class DifficultyEvents {
 
     @SubscribeEvent
     public void onKiCharge(DMZEvent.KiChargeEvent event) {
-        if (SystemGate.isDisabled() || !(event.getPlayer() instanceof ServerPlayer player)) {
+        if (SystemGate.isDisabled() || !(event.getPlayer() instanceof ServerPlayer player)
+                || !SystemGate.allows(player)) {
             return;
         }
         AdaptiveAiSystem.onPlayerKiCharge(player);

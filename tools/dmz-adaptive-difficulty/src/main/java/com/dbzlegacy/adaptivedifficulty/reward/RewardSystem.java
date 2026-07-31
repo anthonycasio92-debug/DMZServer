@@ -10,6 +10,7 @@ import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
+import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -26,7 +27,7 @@ public final class RewardSystem {
             return;
         }
         DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enabled || !cfg.enableRewardScaling) {
+        if (!cfg.enabled || !cfg.enableRewardScaling || !SystemGate.allows(killer)) {
             return;
         }
         DifficultySnapshot snap = DifficultyCache.get(killer);

@@ -10,7 +10,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fml.loading.FMLPaths;
 
 /** Mirrors the concept doc admin settings. Saved at {@code config/dmz_adaptive_difficulty.json}. */
@@ -23,6 +27,17 @@ public final class DifficultyConfig {
      * Toggle in-game: {@code /difficulty admin off|on|toggle}.
      */
     public boolean enabled = true;
+
+    /**
+     * Testing whitelist. When {@code true}, only players in {@link #whitelist} may use AD.
+     * Toggle: {@code /difficulty admin whitelist on|off}.
+     */
+    public boolean whitelistEnabled = false;
+    /**
+     * Entries are player names (case-insensitive) and/or UUID strings.
+     * Managed via {@code /difficulty admin whitelist add|remove}.
+     */
+    public List<String> whitelist = new ArrayList<>();
 
     public double prestigeMultiplier = 10.0;
     public double levelMultiplier = 1.0;
@@ -341,6 +356,118 @@ public final class DifficultyConfig {
         save();
     }
 
+    public static boolean isWhitelistEnabled() {
+        return INSTANCE != null && INSTANCE.whitelistEnabled;
+    }
+
+    public static void setWhitelistEnabled(boolean on) {
+        if (INSTANCE == null) {
+            INSTANCE = new DifficultyConfig();
+        }
+        INSTANCE.whitelistEnabled = on;
+        save();
+    }
+
+    /** When whitelist is off, everyone is allowed (if the master switch is on). */
+    public static boolean isPlayerAllowed(ServerPlayer player) {
+        if (INSTANCE == null || player == null) {
+            return false;
+        }
+        if (!INSTANCE.whitelistEnabled) {
+            return true;
+        }
+        return isWhitelisted(player);
+    }
+
+    public static boolean isWhitelisted(ServerPlayer player) {
+        if (INSTANCE == null || player == null) {
+            return false;
+        }
+        return matchesWhitelist(player.m_6302_(), player.m_20148_());
+    }
+
+    public static boolean matchesWhitelist(String name, UUID uuid) {
+        if (INSTANCE == null || INSTANCE.whitelist == null || INSTANCE.whitelist.isEmpty()) {
+            return false;
+        }
+        String nameKey = name == null ? "" : name.trim().toLowerCase(Locale.ROOT);
+        String uuidKey = uuid == null ? "" : uuid.toString().toLowerCase(Locale.ROOT);
+        for (String raw : INSTANCE.whitelist) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            String entry = raw.trim().toLowerCase(Locale.ROOT);
+            if ((!nameKey.isEmpty() && entry.equals(nameKey))
+                    || (!uuidKey.isEmpty() && entry.equals(uuidKey))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** @return true if newly added */
+    public static boolean addWhitelistEntry(String raw) {
+        if (INSTANCE == null) {
+            INSTANCE = new DifficultyConfig();
+        }
+        if (INSTANCE.whitelist == null) {
+            INSTANCE.whitelist = new ArrayList<>();
+        }
+        String entry = normalizeWhitelistEntry(raw);
+        if (entry.isEmpty()) {
+            return false;
+        }
+        for (String existing : INSTANCE.whitelist) {
+            if (existing != null && existing.equalsIgnoreCase(entry)) {
+                return false;
+            }
+        }
+        INSTANCE.whitelist.add(entry);
+        save();
+        return true;
+    }
+
+    /** @return true if removed */
+    public static boolean removeWhitelistEntry(String raw) {
+        if (INSTANCE == null || INSTANCE.whitelist == null) {
+            return false;
+        }
+        String entry = normalizeWhitelistEntry(raw);
+        if (entry.isEmpty()) {
+            return false;
+        }
+        boolean removed = INSTANCE.whitelist.removeIf(
+                e -> e != null && e.equalsIgnoreCase(entry)
+        );
+        if (removed) {
+            save();
+        }
+        return removed;
+    }
+
+    public static List<String> whitelistEntries() {
+        if (INSTANCE == null || INSTANCE.whitelist == null) {
+            return List.of();
+        }
+        return new ArrayList<>(INSTANCE.whitelist);
+    }
+
+    private static String normalizeWhitelistEntry(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String t = raw.trim();
+        if (t.isEmpty()) {
+            return "";
+        }
+        // Keep UUID casing canonical lowercase; names lowercase for matching.
+        try {
+            return UUID.fromString(t).toString().toLowerCase(Locale.ROOT);
+        } catch (IllegalArgumentException ignored) {
+            return t.toLowerCase(Locale.ROOT);
+        }
+    }
+
     public static Path path() {
         return FMLPaths.CONFIGDIR.get().resolve("dmz_adaptive_difficulty.json");
     }
@@ -367,6 +494,18 @@ public final class DifficultyConfig {
     private static void normalize(DifficultyConfig cfg) {
         if (cfg.bossIdContains == null) {
             cfg.bossIdContains = new ArrayList<>();
+        }
+        if (cfg.whitelist == null) {
+            cfg.whitelist = new ArrayList<>();
+        } else {
+            LinkedHashSet<String> cleaned = new LinkedHashSet<>();
+            for (String raw : cfg.whitelist) {
+                String entry = normalizeWhitelistEntry(raw);
+                if (!entry.isEmpty()) {
+                    cleaned.add(entry);
+                }
+            }
+            cfg.whitelist = new ArrayList<>(cleaned);
         }
         if (cfg.disabledDimensions == null) {
             cfg.disabledDimensions = new ArrayList<>(Arrays.asList("minecraft:the_end"));

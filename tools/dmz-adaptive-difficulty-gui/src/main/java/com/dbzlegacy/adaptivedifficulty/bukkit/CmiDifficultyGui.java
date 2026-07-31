@@ -62,17 +62,28 @@ public final class CmiDifficultyGui {
         CMIGui gui = base(player, "&8Difficulty", 4);
 
         boolean systemOn = !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "true"));
+        boolean allowed = !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "true"));
         String stateColor = ph.getOrDefault("state_color", "f");
         CMIGuiButton status = new CMIGuiButton(13, Material.NETHER_STAR,
-                systemOn ? "&f&lDifficulty V3" : "&c&lSYSTEM DISABLED");
+                !systemOn ? "&c&lSYSTEM DISABLED"
+                        : !allowed ? "&e&lWHITELIST ONLY"
+                        : "&f&lDifficulty V3");
         status.lockField();
-        if (!systemOn) {
-            status.addLore(List.of(
+        if (!systemOn || !allowed) {
+            status.addLore(!systemOn
+                    ? List.of(
                     "",
                     "&cAdaptive Difficulty is off",
                     "&7An admin disabled the system",
                     "&8No scaling, coins, or purchases",
                     "&8Re-enable: &f/difficulty admin on"
+            )
+                    : List.of(
+                    "",
+                    "&eTesting whitelist is on",
+                    "&7You are not on the whitelist",
+                    "&8Ask an admin:",
+                    "&f/difficulty admin whitelist add <you>"
             ));
             gui.addButton(status);
             gui.addButton(actionBtn(31, Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",

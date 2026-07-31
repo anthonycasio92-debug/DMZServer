@@ -89,6 +89,8 @@ public final class DifficultyCommands {
                                 .executes(ctx -> toggleSystem(ctx.getSource())))
                         .then(Commands.m_82127_("status")
                                 .executes(ctx -> systemStatus(ctx.getSource())))
+                        .then(whitelistRoot("whitelist"))
+                        .then(whitelistRoot("wl"))
                         .then(Commands.m_82127_("gamedifficulty")
                                 .then(Commands.m_82129_("level", StringArgumentType.word())
                                         .executes(ctx -> setVanillaDifficultyOrDeny(
@@ -119,6 +121,34 @@ public final class DifficultyCommands {
         return Commands.m_82127_(level)
                 .requires(src -> src.m_6761_(2))
                 .executes(ctx -> setVanillaDifficulty(ctx.getSource(), level));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> whitelistRoot(String name) {
+        return Commands.m_82127_(name)
+                .executes(ctx -> whitelistStatus(ctx.getSource()))
+                .then(Commands.m_82127_("on")
+                        .executes(ctx -> setWhitelistEnabled(ctx.getSource(), true)))
+                .then(Commands.m_82127_("off")
+                        .executes(ctx -> setWhitelistEnabled(ctx.getSource(), false)))
+                .then(Commands.m_82127_("toggle")
+                        .executes(ctx -> setWhitelistEnabled(
+                                ctx.getSource(), !DifficultyConfig.isWhitelistEnabled())))
+                .then(Commands.m_82127_("status")
+                        .executes(ctx -> whitelistStatus(ctx.getSource())))
+                .then(Commands.m_82127_("list")
+                        .executes(ctx -> whitelistList(ctx.getSource())))
+                .then(Commands.m_82127_("add")
+                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .executes(ctx -> whitelistAdd(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "player")))))
+                .then(Commands.m_82127_("remove")
+                        .then(Commands.m_82129_("player", StringArgumentType.greedyString())
+                                .executes(ctx -> whitelistRemove(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "player")))))
+                .then(Commands.m_82127_("clear")
+                        .executes(ctx -> whitelistClear(ctx.getSource())));
     }
 
     @SubscribeEvent
@@ -255,12 +285,178 @@ public final class DifficultyCommands {
             return 0;
         }
         boolean on = DifficultyConfig.isEnabled();
+        boolean wl = DifficultyConfig.isWhitelistEnabled();
+        int n = DifficultyConfig.whitelistEntries().size();
         source.m_288197_(() -> Component.m_237113_(
-                on
-                        ? "§aAdaptive Difficulty is ENABLED."
-                        : "§cAdaptive Difficulty is DISABLED. §7Use §f/difficulty admin on"
+                (on ? "§aSystem ENABLED" : "§cSystem DISABLED")
+                        + " §8· "
+                        + (wl ? "§eWhitelist ON §7(" + n + " entries)" : "§7Whitelist OFF")
+                        + "\n§8/difficulty admin whitelist on|off|add|remove|list"
         ), false);
         return 1;
+    }
+
+    private static int setWhitelistEnabled(CommandSourceStack source, boolean on) {
+        if (!isStaff(source)) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§cNo permission (need op or difficulty.admin)."
+            ), false);
+            return 0;
+        }
+        DifficultyConfig.setWhitelistEnabled(on);
+        DifficultyCache.invalidateAll();
+        AreaDifficulty.clearCache();
+        int n = DifficultyConfig.whitelistEntries().size();
+        if (on) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§eWhitelist ENABLED §7(" + n + " entries).\n"
+                            + "§7Only listed players use Adaptive Difficulty.\n"
+                            + "§eAdd: §f/difficulty admin whitelist add <player>"
+            ), true);
+        } else {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§aWhitelist DISABLED.\n"
+                            + "§7All players may use Adaptive Difficulty again (if system is on)."
+            ), true);
+        }
+        return 1;
+    }
+
+    private static int whitelistStatus(CommandSourceStack source) {
+        if (!isStaff(source)) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§cNo permission (need op or difficulty.admin)."
+            ), false);
+            return 0;
+        }
+        boolean wl = DifficultyConfig.isWhitelistEnabled();
+        int n = DifficultyConfig.whitelistEntries().size();
+        source.m_288197_(() -> Component.m_237113_(
+                (wl ? "§eWhitelist ON" : "§7Whitelist OFF")
+                        + " §8· §f" + n + " §7entries\n"
+                        + "§8/difficulty admin whitelist add|remove|list|on|off|toggle|clear"
+        ), false);
+        return 1;
+    }
+
+    private static int whitelistList(CommandSourceStack source) {
+        if (!isStaff(source)) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§cNo permission (need op or difficulty.admin)."
+            ), false);
+            return 0;
+        }
+        var entries = DifficultyConfig.whitelistEntries();
+        if (entries.isEmpty()) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§7Whitelist is empty. §8Add with §f/difficulty admin whitelist add <player>"
+            ), false);
+            return 1;
+        }
+        String joined = String.join("§8, §f", entries);
+        source.m_288197_(() -> Component.m_237113_(
+                "§6Whitelist §7(" + entries.size() + ")\n§f" + joined
+        ), false);
+        return 1;
+    }
+
+    private static int whitelistAdd(CommandSourceStack source, String raw) {
+        if (!isStaff(source)) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§cNo permission (need op or difficulty.admin)."
+            ), false);
+            return 0;
+        }
+        if (raw == null || raw.isBlank()) {
+            source.m_81352_(Component.m_237113_("Usage: /difficulty admin whitelist add <player>"));
+            return 0;
+        }
+        ServerPlayer online = resolveOnlinePlayer(source, raw.trim());
+        boolean addedName;
+        boolean addedUuid = false;
+        if (online != null) {
+            addedName = DifficultyConfig.addWhitelistEntry(online.m_6302_());
+            addedUuid = DifficultyConfig.addWhitelistEntry(online.m_20148_().toString());
+        } else {
+            addedName = DifficultyConfig.addWhitelistEntry(raw.trim());
+        }
+        if (!addedName && !addedUuid) {
+            source.m_288197_(() -> Component.m_237113_("§eAlready on whitelist: §f" + raw.trim()), false);
+            return 1;
+        }
+        AreaDifficulty.clearCache();
+        String label = online != null ? online.m_6302_() : raw.trim();
+        source.m_288197_(() -> Component.m_237113_(
+                "§aAdded §f" + label + " §ato whitelist"
+                        + (DifficultyConfig.isWhitelistEnabled()
+                        ? "."
+                        : ".\n§eWhitelist is OFF — §f/difficulty admin whitelist on")
+        ), true);
+        return 1;
+    }
+
+    private static int whitelistRemove(CommandSourceStack source, String raw) {
+        if (!isStaff(source)) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§cNo permission (need op or difficulty.admin)."
+            ), false);
+            return 0;
+        }
+        if (raw == null || raw.isBlank()) {
+            source.m_81352_(Component.m_237113_("Usage: /difficulty admin whitelist remove <player|uuid>"));
+            return 0;
+        }
+        ServerPlayer online = resolveOnlinePlayer(source, raw.trim());
+        boolean removed = DifficultyConfig.removeWhitelistEntry(raw.trim());
+        if (online != null) {
+            removed = DifficultyConfig.removeWhitelistEntry(online.m_6302_()) || removed;
+            removed = DifficultyConfig.removeWhitelistEntry(online.m_20148_().toString()) || removed;
+        }
+        if (!removed) {
+            source.m_288197_(() -> Component.m_237113_("§cNot on whitelist: §f" + raw.trim()), false);
+            return 0;
+        }
+        AreaDifficulty.clearCache();
+        source.m_288197_(() -> Component.m_237113_("§aRemoved §f" + raw.trim() + " §afrom whitelist."), true);
+        return 1;
+    }
+
+    private static int whitelistClear(CommandSourceStack source) {
+        if (!isStaff(source)) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§cNo permission (need op or difficulty.admin)."
+            ), false);
+            return 0;
+        }
+        DifficultyConfig cfg = DifficultyConfig.get();
+        int n = cfg.whitelist == null ? 0 : cfg.whitelist.size();
+        if (cfg.whitelist != null) {
+            cfg.whitelist.clear();
+        }
+        DifficultyConfig.save();
+        AreaDifficulty.clearCache();
+        source.m_288197_(() -> Component.m_237113_("§aCleared whitelist (§f" + n + "§a entries)."), true);
+        return 1;
+    }
+
+    private static ServerPlayer resolveOnlinePlayer(CommandSourceStack source, String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        var server = source.m_81377_();
+        if (server == null) {
+            return null;
+        }
+        ServerPlayer byName = server.m_6846_().m_11255_(raw);
+        if (byName != null) {
+            return byName;
+        }
+        try {
+            java.util.UUID uuid = java.util.UUID.fromString(raw.trim());
+            return server.m_6846_().m_11259_(uuid);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     private static int denyAdmin(CommandSourceStack source) {
@@ -379,10 +575,11 @@ public final class DifficultyCommands {
                         + "§e/difficulty do character_reset §7— character-wipe hook (scriptable)\n"
                         + "§e/difficulty hard|normal|easy|peaceful §7— vanilla world difficulty (ops)\n"
                         + "§e/difficulty admin off|on|toggle|status §7— master system switch (ops)\n"
+                        + "§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist\n"
                         + "§e/difficulty admin §7— toggle admin command access\n"
                         + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased|characterreset\n"
                         + "§e/difficulty admin set <key> <value>\n"
-                        + "§8Master key: enabled true|false\n"
+                        + "§8Master keys: enabled · whitelistEnabled\n"
                         + "§8V3 keys: unlockTier1Level…7 / unlockTier1Max…7 / unlockTier1Cost…7\n"
                         + "§8combatRating*Weight · enableAncientCoinDrops · deathResetsActiveDifficulty\n"
                         + "§8eliteMinUnlockTier · mutationMinUnlockTier · adaptiveAiMinUnlockTier\n"
@@ -435,6 +632,19 @@ public final class DifficultyCommands {
                 case "enabled", "system", "systemenabled" -> {
                     cfg.enabled = Boolean.parseBoolean(value);
                     AreaDifficulty.clearCache();
+                }
+                case "whitelistenabled", "whitelist" -> {
+                    // Boolean only — use whitelist add/remove commands for names.
+                    if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)
+                            || "on".equalsIgnoreCase(value) || "off".equalsIgnoreCase(value)) {
+                        cfg.whitelistEnabled = "true".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value);
+                        AreaDifficulty.clearCache();
+                    } else {
+                        source.m_81352_(Component.m_237113_(
+                                "Use true/false for whitelistEnabled, or: /difficulty admin whitelist add <player>"
+                        ));
+                        return 0;
+                    }
                 }
                 case "prestigemultiplier" -> cfg.prestigeMultiplier = Double.parseDouble(value);
                 case "levelmultiplier" -> cfg.levelMultiplier = Double.parseDouble(value);

@@ -8,6 +8,7 @@ import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
+import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -62,6 +63,11 @@ public final class DifficultyActions {
         if (!DifficultyConfig.isEnabled()) {
             openGui(player, page == null || page.isBlank() ? "main" : page);
             return Result.fail("Adaptive Difficulty is disabled by an admin.");
+        }
+        // Testing whitelist — only listed players may purchase / change difficulty.
+        if (!SystemGate.allows(player)) {
+            openGui(player, page == null || page.isBlank() ? "main" : page);
+            return Result.fail("Adaptive Difficulty is whitelist-only right now. Ask an admin to add you.");
         }
 
         long amount = 0L;

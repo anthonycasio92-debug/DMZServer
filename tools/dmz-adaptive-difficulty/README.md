@@ -46,6 +46,12 @@ Implements **Developer Specification V3**
 When disabled: no mob scaling, kill coins, AI, death reset, or tier purchases.
 Config key: `enabled` (also `admin set enabled false`).
 
+### Testing whitelist
+- `/difficulty admin whitelist on|off|toggle`
+- `/difficulty admin whitelist add <player>` / `remove <player>` / `list` / `clear`
+- Alias: `wl`
+- When on, only listed players use AD (scaling, coins, purchases). Persists in config.
+
 ## Notes
 
 - The End stays in `disabledDimensions` by default (End Strength script owns it).

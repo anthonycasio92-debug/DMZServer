@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.scaling;
 
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -104,6 +105,10 @@ public final class AreaDifficulty {
         java.util.ArrayList<ServerPlayer> out = new java.util.ArrayList<>(Math.min(8, online.size()));
         for (ServerPlayer player : online) {
             if (player == null || player.m_9236_() != level || !player.m_6084_()) {
+                continue;
+            }
+            // Testing whitelist: non-listed players do not contribute area difficulty.
+            if (!SystemGate.allows(player)) {
                 continue;
             }
             double dx = player.m_20185_() - cx;

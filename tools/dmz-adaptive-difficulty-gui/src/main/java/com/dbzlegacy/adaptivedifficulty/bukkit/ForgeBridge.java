@@ -168,6 +168,11 @@ public final class ForgeBridge {
             boolean systemOn = systemEnabled();
             out.put("system_enabled", systemOn ? "true" : "false");
             out.put("system_status", systemOn ? "ENABLED" : "DISABLED");
+            boolean wlOn = whitelistEnabled();
+            boolean allowed = playerAllowed(player);
+            out.put("whitelist_enabled", wlOn ? "true" : "false");
+            out.put("whitelist_status", wlOn ? "ON" : "OFF");
+            out.put("player_allowed", allowed ? "true" : "false");
 
             // UnlockTier 1–7 activation costs (Ancient Coins).
             if (unlockTierValues != null && economyFormatExactCost != null && unlockTierActivationCost != null) {
@@ -334,6 +339,32 @@ public final class ForgeBridge {
             } catch (Throwable ignored) {
                 return true;
             }
+        }
+    }
+
+    public static boolean whitelistEnabled() {
+        try {
+            Object on = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+                    .getMethod("isWhitelistEnabled").invoke(null);
+            return on instanceof Boolean b && b;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** Whether this Bukkit player may use AD right now (master + whitelist). */
+    public static boolean playerAllowed(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return systemEnabled() && !whitelistEnabled();
+        }
+        try {
+            Object allowed = Class.forName("com.dbzlegacy.adaptivedifficulty.util.SystemGate")
+                    .getMethod("allows", Class.forName("net.minecraft.server.level.ServerPlayer"))
+                    .invoke(null, nms);
+            return allowed instanceof Boolean b && b;
+        } catch (Throwable t) {
+            return systemEnabled();
         }
     }
 
