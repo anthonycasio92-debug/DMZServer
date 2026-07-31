@@ -65,9 +65,9 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_(""));
 
         MutableComponent hub = Component.m_237113_("§7")
-                .m_7220_(btn("§aUpgrade", "/difficulty do page adjust", "Raise / lower active"))
+                .m_7220_(btn("§eBuy Tier", "/difficulty do page buy", "Purchase a difficulty tier"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§eTiers", "/difficulty do page buy", "Activate unlock tiers"))
+                .m_7220_(btn("§fLower", "/difficulty do page adjust", "Lower / clear (free)"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§bTeam", "/difficulty do team 0 main", "Mode: " + snap.teamMode));
         send(player, hub);
@@ -88,12 +88,10 @@ public final class DifficultyChatMenu {
 
     private static void adjust(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
-        long room = Math.max(0L, snap.availableMax - snap.active);
-        long maxCost = room <= 0 ? 0L : DifficultyCalculator.raiseCostIronCoins(snap.active, room);
-
-        send(player, Component.m_237113_("§8──────── §fAdjust Difficulty §8────────"));
+        send(player, Component.m_237113_("§8──────── §fLower Difficulty §8────────"));
         send(player, Component.m_237113_("§f" + snap.active + " §8/ §7" + snap.availableMax
                 + "  §8Inv §f" + CurrencyBridge.balanceText(player)));
+        send(player, Component.m_237113_("§8Raising is done by purchasing tiers — no +difficulty upgrades."));
 
         MutableComponent down = Component.m_237113_("§7Lower  ");
         for (int i = STEPS.length - 1; i >= 0; i--) {
@@ -104,51 +102,32 @@ public final class DifficultyChatMenu {
             down.m_7220_(btn("§c−" + step, "/difficulty do down " + step + " adjust", "Lower (free)"));
         }
         down.m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§fReset", "/difficulty do reset 0 adjust", "Active → 0"));
+                .m_7220_(btn("§fReset", "/difficulty do reset 0 adjust", "Clear active tier"));
         send(player, down);
-
-        MutableComponent up = Component.m_237113_("§7Raise  ");
-        for (int i = 0; i < STEPS.length; i++) {
-            long step = STEPS[i];
-            if (i > 0) {
-                up.m_7220_(Component.m_237113_(" "));
-            }
-            long amt = Math.min(step, room);
-            String tip = amt <= 0
-                    ? "At max"
-                    : "Raise — " + CurrencyBridge.formatCost(
-                            DifficultyCalculator.raiseCostIronCoins(snap.active, amt))
-                    + " (inventory)";
-            up.m_7220_(btn("§a+" + step, "/difficulty do up " + step + " adjust", tip));
-        }
-        up.m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§6Max", "/difficulty do set_max 0 adjust",
-                        room <= 0 ? "At max" : "Max — " + CurrencyBridge.formatCost(maxCost)));
-        send(player, up);
 
         MutableComponent nav = Component.m_237113_("")
                 .m_7220_(btn("§7« Back", "/difficulty do page main", "Return"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§eBuy Max", "/difficulty do page buy", "Unlock more max"));
+                .m_7220_(btn("§eBuy Tier", "/difficulty do page buy", "Purchase a tier"));
         send(player, nav);
     }
 
     private static void buy(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
-        send(player, Component.m_237113_("§8──────── §fActivate Tier §8────────"));
+        send(player, Component.m_237113_("§8──────── §fBuy Difficulty Tier §8────────"));
         send(player, Component.m_237113_("§7Active §f" + snap.activeTierName
                 + "  §7Unlocked §fT" + snap.highestUnlockedTier
-                + "  §7Ancient §f" + AncientCoinEconomy.format(snap.ancientCopper)));
-        send(player, Component.m_237113_("§8Unlocked by DMZ level or Prestige. Activation spends Ancient Coins."));
+                + "  §7Inv §f" + AncientCoinEconomy.balanceText(player)));
+        send(player, Component.m_237113_("§8Click a tier to purchase. Sets full tier difficulty. No change given."));
 
         MutableComponent row = Component.m_237113_("§7");
         for (UnlockTier tier : UnlockTier.values()) {
             boolean unlocked = snap.highestUnlockedTier >= tier.id;
             boolean active = snap.activeTier == tier.id;
-            String label = (active ? "§a● T" : unlocked ? "§eT" : "§8T") + tier.id;
+            String label = (active ? "§a● T" : unlocked ? "§eBuy T" : "§8T") + tier.id;
             String tip = unlocked
                     ? tier.display + " · max " + tier.maxDifficulty()
-                    + " · cost " + AncientCoinEconomy.format(tier.activationCost())
+                    + " · cost " + AncientCoinEconomy.formatExactCost(tier.activationCost())
                     : "Locked · need DMZ " + tier.requiredDmzLevel() + " or Prestige " + tier.id;
             row.m_7220_(btn(label, "/difficulty do activate " + tier.id + " buy", tip));
             row.m_7220_(Component.m_237113_(" "));
@@ -158,7 +137,7 @@ public final class DifficultyChatMenu {
         MutableComponent nav = Component.m_237113_("")
                 .m_7220_(btn("§7« Back", "/difficulty do page main", "Return"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§aUpgrade", "/difficulty do page adjust", "Raise / lower"));
+                .m_7220_(btn("§fLower", "/difficulty do page adjust", "Lower / clear"));
         send(player, nav);
     }
 

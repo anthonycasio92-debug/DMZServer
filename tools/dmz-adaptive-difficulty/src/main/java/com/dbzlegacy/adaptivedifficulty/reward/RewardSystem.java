@@ -46,10 +46,10 @@ public final class RewardSystem {
         boolean mutated = MutationSystem.get(dead) != null;
         double mult = ScalingCurves.rewardMultiplier(Math.max(1L, snap.active));
 
-        long coins = AncientCoinEconomy.rollKillDrop(killer, snap.combatRating, elite, boss);
-        if (coins > 0L) {
-            AncientCoinEconomy.grant(killer, coins);
-            AncientCoinEconomy.notifyGrant(killer, coins);
+        AncientCoinEconomy.Drop drop = AncientCoinEconomy.rollKillDrop(killer, snap.combatRating, elite, boss);
+        if (drop.count() > 0) {
+            AncientCoinEconomy.grantDrop(killer, drop);
+            AncientCoinEconomy.notifyGrant(killer, drop);
         }
         grantExperience(killer, mult, elite, boss, tier);
         grantDrops(killer, mult, elite, boss, mutated, tier);

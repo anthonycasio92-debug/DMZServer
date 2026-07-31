@@ -122,75 +122,47 @@ public final class DifficultyActions {
         PlayerDifficultyData data = DifficultyCache.data(player);
         UnlockSystem.syncUnlocks(player, data);
         UnlockTier tier = UnlockTier.byId(tierId);
+        String returnPage = page == null || page.isBlank() ? "buy" : page;
         if (tier == null) {
-            openGui(player, page == null || page.isBlank() ? "tiers" : page);
+            openGui(player, returnPage);
             return Result.fail("Unknown tier. Use 1–7.");
         }
         if (!data.hasUnlockedTier(tier.id)) {
-            openGui(player, "tiers");
+            openGui(player, returnPage);
             return Result.fail("Tier " + tier.id + " locked. Need DMZ " + tier.requiredDmzLevel()
                     + " or Prestige " + tier.id + ".");
         }
         if (data.getActiveTier() == tier.id) {
-            openGui(player, "main");
+            openGui(player, returnPage);
             return Result.ok("Tier " + tier.id + " already active.");
         }
         long cost = AncientCoinEconomy.activationCost(tier);
+        String costText = AncientCoinEconomy.formatExactCost(cost);
         if (!AncientCoinEconomy.canAfford(player, cost)) {
-            openGui(player, "tiers");
-            return Result.fail("Need " + AncientCoinEconomy.format(cost) + " Ancient Coins (have "
+            openGui(player, returnPage);
+            return Result.fail("Need " + costText + " (have "
                     + AncientCoinEconomy.balanceText(player) + ").");
         }
         if (!AncientCoinEconomy.charge(player, cost)) {
-            openGui(player, "tiers");
-            return Result.fail("Payment failed.");
+            openGui(player, returnPage);
+            return Result.fail("Payment failed — need " + costText + " in inventory.");
         }
         data.setActiveTier(tier.id);
-        // Keep level if still under new ceiling; otherwise start at 0.
-        if (data.getActiveDifficultyLevel() > tier.maxDifficulty()) {
-            data.setActiveDifficultyLevel(0L);
-        }
+        // Tier purchase sets full tier difficulty — no separate +difficulty upgrades.
+        data.setActiveDifficultyLevel(tier.maxDifficulty());
         DifficultyCache.save(player);
         DifficultyCache.refresh(player);
         TitleSystem.syncTierTitles(player, true);
         DifficultySnapshot snap = DifficultyCache.get(player);
-        openGui(player, page == null || page.isBlank() ? "main" : page);
-        return Result.ok("Activated " + tier.display + " (T" + tier.id + "). Active "
-                + snap.active + " / " + snap.availableMax
+        openGui(player, returnPage);
+        return Result.ok("Purchased " + tier.display + " (T" + tier.id + ") for " + costText
+                + ". Difficulty " + snap.active + " / " + snap.availableMax
                 + " · CR " + snap.combatRating);
     }
 
     private static Result upgrade(ServerPlayer player, long amount, String page) {
-        DifficultySnapshot before = DifficultyCache.get(player);
-        if (before.activeTier <= 0) {
-            openGui(player, "tiers");
-            return Result.fail("No tier active. Purchase a tier first.");
-        }
-        long room = Math.max(0L, before.availableMax - before.active);
-        if (room <= 0L) {
-            openGui(player, page);
-            return Result.fail("Already at maximum for this tier/team (" + before.availableMax + ").");
-        }
-        long raiseBy = Math.min(amount, room);
-        long cost = DifficultyCalculator.upgradeCost(before.active, raiseBy);
-        if (!AncientCoinEconomy.canAfford(player, cost)) {
-            openGui(player, page);
-            return Result.fail("Need " + AncientCoinEconomy.format(cost) + " Ancient Coins.");
-        }
-        if (!AncientCoinEconomy.charge(player, cost)) {
-            openGui(player, page);
-            return Result.fail("Payment failed.");
-        }
-        PlayerDifficultyData data = DifficultyCache.data(player);
-        data.setActiveDifficultyLevel(before.active + raiseBy);
-        DifficultyCache.save(player);
-        DifficultyCache.refresh(player);
-        TitleSystem.syncTierTitles(player, true);
-        DifficultySnapshot snap = DifficultyCache.get(player);
-        openGui(player, page);
-        return Result.ok("Difficulty +" + raiseBy + " (−" + AncientCoinEconomy.format(cost)
-                + "). Now " + snap.active + " / " + snap.availableMax
-                + " · CR " + snap.combatRating);
+        openGui(player, page == null || page.isBlank() ? "buy" : page);
+        return Result.fail("Difficulty is raised by purchasing tiers — open the Tier menu.");
     }
 
     private static Result lower(ServerPlayer player, long amount, String page) {
@@ -205,24 +177,19 @@ public final class DifficultyActions {
     }
 
     private static Result setActive(ServerPlayer player, long target, String page) {
+        // Paid raises disabled — only free lowers / reset, or tier purchase.
         DifficultySnapshot bounds = DifficultyCache.get(player);
-        if (bounds.activeTier <= 0) {
-            openGui(player, "tiers");
-            return Result.fail("No tier active. Purchase a tier first.");
-        }
-        if (target == Long.MAX_VALUE) {
-            target = bounds.availableMax;
+        if (target == Long.MAX_VALUE || target > bounds.active) {
+            openGui(player, "buy");
+            return Result.fail("Buy a higher tier in the Tier menu to raise difficulty.");
         }
         target = Math.max(0L, Math.min(target, bounds.availableMax));
-        if (target <= bounds.active) {
-            PlayerDifficultyData data = DifficultyCache.data(player);
-            data.setActiveDifficultyLevel(target);
-            DifficultyCache.save(player);
-            DifficultyCache.refresh(player);
-            openGui(player, page);
-            return Result.ok("Active difficulty set to " + target + " (free).");
-        }
-        return upgrade(player, target - bounds.active, page);
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        data.setActiveDifficultyLevel(target);
+        DifficultyCache.save(player);
+        DifficultyCache.refresh(player);
+        openGui(player, page == null || page.isBlank() ? "main" : page);
+        return Result.ok("Active difficulty set to " + target + " (free).");
     }
 
     private static Result resetActive(ServerPlayer player, String page) {

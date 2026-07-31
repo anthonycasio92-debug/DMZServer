@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.0.4)
+# DMZ Adaptive Difficulty (v3.0.5)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -11,8 +11,8 @@ Implements **Developer Specification V3**
 | System | Behavior |
 |--------|----------|
 | Unlock tiers (1–7) | Unlocked by DMZ level **or** Prestige ≥ tier id |
-| Activation | Spend **Ancient Coins** to activate an unlocked tier |
-| Active difficulty | Spend Ancient Coins to raise level inside the tier ceiling |
+| Buy tier | Spend inventory Ancient Coins in the Tier menu (sets full tier difficulty) |
+| Active difficulty | Set by tier purchase — no +difficulty coin upgrades |
 | Death | Clears active tier + level (unlocks / prestige / coins kept) |
 | Combat Rating | Cached `DMZ×w + Prestige×w + Transform + Active` → enemy scale |
 | Team modes | Personal / Threshold bonus / Full contribution |
@@ -20,8 +20,8 @@ Implements **Developer Specification V3**
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.0.4.jar` (remove older AD jars)
-2. `plugins/dmz_adaptive_difficulty_gui-3.0.4.jar`
+1. `mods/dmz_adaptive_difficulty-3.0.5.jar` (remove older AD jars)
+2. `plugins/dmz_adaptive_difficulty_gui-3.0.5.jar`
 3. Restart — config regenerates with V3 keys at `config/dmz_adaptive_difficulty.json`
 4. `/difficulty` → **Tiers** to activate → **Upgrade** to raise level
 
@@ -34,6 +34,7 @@ Implements **Developer Specification V3**
 ## Notes
 
 - The End stays in `disabledDimensions` by default (End Strength script owns it).
-- Ancient Coins are real Lightman's `coin_ancient` inventory items (not an NBT wallet).
-- Old NBT wallet balances migrate into real coins on login / first use.
+- Ancient Coins are real Lightman's `coin_ancient` inventory items (exact type/count, no change).
+- Old NBT wallet balances migrate into Copper Ancient coins on login / first use.
+- Raise difficulty only by purchasing tiers; +difficulty upgrades are disabled.
 - Pre-V3 `purchased`/`active` NBT is migrated best-effort on load.

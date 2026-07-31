@@ -50,10 +50,10 @@ public final class DifficultyChestGui implements Listener {
 
         String stateColor = ph.getOrDefault("state_color", "f");
         inv.setItem(13, item(Material.NETHER_STAR, "&f&lDifficulty", statusLore(ph, stateColor)));
-        inv.setItem(20, pageBtn(Material.LIME_CONCRETE, "&aUpgrade", "adjust",
-                "&7Raise / lower active difficulty", "&8Paid with Ancient Coins"));
-        inv.setItem(22, pageBtn(Material.GOLD_INGOT, "&eTiers", "buy",
-                "&7Activate unlocked difficulty tiers", "&8Ancient Coin activation"));
+        inv.setItem(20, pageBtn(Material.GOLD_INGOT, "&eBuy Tier", "buy",
+                "&7Purchase a difficulty tier", "&8Spend Ancient Coins from inventory"));
+        inv.setItem(22, pageBtn(Material.WHITE_CONCRETE, "&fLower", "adjust",
+                "&7Lower / clear active difficulty", "&8Free — buy tiers to raise"));
         inv.setItem(24, button(Material.COMPASS, "&bTeam", "team", "0", "main",
                 List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
 
@@ -87,12 +87,8 @@ public final class DifficultyChestGui implements Listener {
                 "&7CR      &f" + ph.getOrDefault("combat_rating", "?"),
                 "&7Ancient &f" + ph.getOrDefault("balance", "?"),
                 "",
-                "&8Raising costs Ancient Coins"
+                "&8Buy tiers to raise · lower is free"
         )));
-        inv.setItem(6, button(Material.ORANGE_CONCRETE, "&6Max", "set_max", "0", "adjust",
-                List.of("&7Jump to available max", "&f" + ph.getOrDefault("available", "?"),
-                        "&8Cost &e" + ph.getOrDefault("cost_max", "?"),
-                        "&8Paid with Ancient Coins")));
         inv.setItem(7, button(Material.WHITE_CONCRETE, "&fReset", "reset", "0", "adjust",
                 List.of("&7Clear active tier & level", "&8Unlocks & coins kept", "&8Always free")));
 
@@ -111,30 +107,8 @@ public final class DifficultyChestGui implements Listener {
         inv.setItem(25, button(Material.MAGENTA_TERRACOTTA, "&c−1", "down", "1", "adjust",
                 List.of("&7Lower active difficulty", "&8Always free")));
 
-        inv.setItem(28, button(Material.LIME_TERRACOTTA, "&a+1", "up", "1", "adjust",
-                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_1", "?"),
-                        "&8Paid with Ancient Coins")));
-        inv.setItem(29, button(Material.LIME_CONCRETE, "&a+5", "up", "5", "adjust",
-                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_5", "?"),
-                        "&8Paid with Ancient Coins")));
-        inv.setItem(30, button(Material.GREEN_TERRACOTTA, "&a+25", "up", "25", "adjust",
-                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_25", "?"),
-                        "&8Paid with Ancient Coins")));
-        inv.setItem(31, button(Material.GREEN_CONCRETE, "&a+100", "up", "100", "adjust",
-                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_100", "?"),
-                        "&8Paid with Ancient Coins")));
-        inv.setItem(32, button(Material.EMERALD, "&a+1000", "up", "1000", "adjust",
-                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_1000", "?"),
-                        "&8Paid with Ancient Coins")));
-        inv.setItem(33, button(Material.DIAMOND, "&a+10000", "up", "10000", "adjust",
-                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_10000", "?"),
-                        "&8Paid with Ancient Coins")));
-        inv.setItem(34, button(Material.NETHERITE_INGOT, "&a+100000", "up", "100000", "adjust",
-                List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_100000", "?"),
-                        "&8Paid with Ancient Coins")));
-
         inv.setItem(36, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
-        inv.setItem(40, pageBtn(Material.GOLD_INGOT, "&eTiers", "buy", "&7Activate unlocked tiers"));
+        inv.setItem(40, pageBtn(Material.GOLD_INGOT, "&eBuy Tier", "buy", "&7Purchase a difficulty tier"));
         inv.setItem(44, closeBtn());
         return inv;
     }
@@ -142,35 +116,57 @@ public final class DifficultyChestGui implements Listener {
     private Inventory buy(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         Holder holder = new Holder("buy");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Activate Tier"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Buy Difficulty Tier"));
         holder.bind(inv);
         frame(inv, 45);
 
-        inv.setItem(4, item(Material.GOLD_INGOT, "&e&lDifficulty Tiers", List.of(
+        inv.setItem(4, item(Material.GOLD_INGOT, "&e&lPurchase Tier", List.of(
                 "",
                 "&7Active     &f" + ph.getOrDefault("active_tier_name", "None"),
                 "&7Unlocked   &fT" + ph.getOrDefault("highest_unlocked", "0"),
-                "&7Ancient    &f" + ph.getOrDefault("balance", "?"),
+                "&7Inventory  &f" + ph.getOrDefault("balance", "?"),
                 "",
                 "&8Unlock by DMZ level or Prestige",
-                "&8Activate with Ancient Coins",
+                "&8Click a tier to buy it with Ancient Coins",
+                "&8No change — exact coins from inventory",
                 "&8Death clears active tier (unlocks stay)"
         )));
         Material[] mats = {
                 Material.COPPER_INGOT, Material.IRON_INGOT, Material.GOLD_INGOT,
                 Material.DIAMOND, Material.EMERALD, Material.NETHERITE_INGOT, Material.NETHER_STAR
         };
+        int activeTier = (int) parseLong(ph.getOrDefault("active_tier", "0"));
+        int highest = (int) parseLong(ph.getOrDefault("highest_unlocked", "0"));
         for (int t = 1; t <= 7; t++) {
-            inv.setItem(18 + (t - 1), button(mats[t - 1], "&eActivate T" + t, "activate", String.valueOf(t), "buy",
-                    List.of(
-                            "&7Activate unlock tier &f" + t,
-                            "&8Requires unlock + Ancient Coins",
-                            "&8Current active &f" + ph.getOrDefault("active_tier", "0")
-                    )));
+            String cost = ph.getOrDefault("tier_" + t + "_cost", "?");
+            String max = ph.getOrDefault("unlock_tier_" + t + "_max", "?");
+            boolean unlocked = highest >= t;
+            boolean active = activeTier == t;
+            String title = active ? "&a● T" + t + " Active"
+                    : unlocked ? "&eBuy T" + t
+                    : "&8Locked T" + t;
+            List<String> tip = new ArrayList<>();
+            tip.add("&7Difficulty tier &f" + t);
+            tip.add("&7Max difficulty &f" + max);
+            tip.add("&7Cost &e" + cost);
+            if (active) {
+                tip.add("&aCurrently active");
+            } else if (unlocked) {
+                tip.add("&aUnlocked &8· click to purchase");
+                tip.add("&8Sets difficulty to this tier's max");
+            } else {
+                tip.add("&cLocked &8· need DMZ level or Prestige " + t);
+            }
+            tip.add("&8Current active &f" + ph.getOrDefault("active_tier", "0"));
+            if (unlocked && !active) {
+                inv.setItem(18 + (t - 1), button(mats[t - 1], title, "activate", String.valueOf(t), "buy", tip));
+            } else {
+                inv.setItem(18 + (t - 1), item(mats[t - 1], title, prependBlank(tip)));
+            }
         }
 
         inv.setItem(36, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
-        inv.setItem(40, pageBtn(Material.LIME_CONCRETE, "&aUpgrade", "adjust", "&7Raise / lower active"));
+        inv.setItem(40, pageBtn(Material.WHITE_CONCRETE, "&fLower", "adjust", "&7Lower / clear active"));
         inv.setItem(44, closeBtn());
         return inv;
     }
@@ -408,7 +404,7 @@ public final class DifficultyChestGui implements Listener {
                         + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"),
                 "&7Team bonus  &f" + ph.getOrDefault("team_bonus", "0"),
                 "&7Team contrib &f" + ph.getOrDefault("team_contrib", "0"),
-                "&8Activate a tier, then upgrade"
+                "&8Buy a tier in the Tier menu to raise"
         );
     }
 

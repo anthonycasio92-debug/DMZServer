@@ -163,6 +163,37 @@ public final class ForgeBridge {
             out.put("balance", String.valueOf(balanceText.invoke(null, nms)));
             out.put("currency", String.valueOf(currencyLabel.invoke(null)));
 
+            // Unlock-tier purchase costs (exact Ancient Coin shopping list).
+            try {
+                Class<?> unlockTierCls = loadClass(
+                        "com.dbzlegacy.adaptivedifficulty.tier.UnlockTier",
+                        nms.getClass().getClassLoader());
+                Class<?> economyCls = loadClass(
+                        "com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy",
+                        nms.getClass().getClassLoader());
+                Method values = unlockTierCls.getMethod("values");
+                Method actCost = unlockTierCls.getMethod("activationCost");
+                Method exact = economyCls.getMethod("formatExactCost", long.class);
+                Method byId = unlockTierCls.getMethod("byId", int.class);
+                for (Object ut : (Object[]) values.invoke(null)) {
+                    int id = ((Number) field(ut, "id")).intValue();
+                    long cost = ((Number) actCost.invoke(ut)).longValue();
+                    String costText = String.valueOf(exact.invoke(null, cost));
+                    out.put("unlock_tier_" + id + "_cost", costText);
+                    out.put("tier_" + id + "_cost", costText);
+                    out.put("unlock_tier_" + id + "_max", String.valueOf(field(ut, "defaultMaxDifficulty")));
+                    Object live = byId.invoke(null, id);
+                    if (live != null) {
+                        try {
+                            long max = ((Number) live.getClass().getMethod("maxDifficulty").invoke(live)).longValue();
+                            out.put("unlock_tier_" + id + "_max", String.valueOf(max));
+                        } catch (Throwable ignored) {
+                        }
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+
             long room = Math.max(0L, available - active);
             long[] steps = {1L, 5L, 25L, 100L, 1000L, 10000L, 100000L};
             for (long step : steps) {

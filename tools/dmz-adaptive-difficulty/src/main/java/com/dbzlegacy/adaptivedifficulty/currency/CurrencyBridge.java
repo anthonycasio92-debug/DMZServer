@@ -46,7 +46,7 @@ public final class CurrencyBridge {
     }
 
     public static void grant(ServerPlayer player, long copper) {
-        AncientCoinEconomy.grant(player, copper);
+        AncientCoinEconomy.grantCopperExact(player, copper);
     }
 
     /**
@@ -223,12 +223,9 @@ public final class CurrencyBridge {
         return AncientCoinEconomy.balanceText(player);
     }
 
-    /** Format an Ancient Coin (copper-value) cost for GUI / chat. */
+    /** Format an Ancient Coin cost as an exact shopping list (no decimals / change). */
     public static String formatCost(long copperCost) {
-        if (copperCost <= 0) {
-            return "free";
-        }
-        return AncientCoinEconomy.format(copperCost);
+        return AncientCoinEconomy.formatExactCost(copperCost);
     }
 
     public static String currencyLabel() {

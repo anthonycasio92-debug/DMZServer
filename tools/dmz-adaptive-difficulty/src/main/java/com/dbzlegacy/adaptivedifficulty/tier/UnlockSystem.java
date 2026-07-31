@@ -40,9 +40,9 @@ public final class UnlockSystem {
                 newly.add(tier.id);
             }
         }
-        // Bootstrap real Ancient Coins so the first activation is reachable.
+        // Bootstrap exact Copper Ancient Coins so the first tier purchase is reachable.
         if (firstUnlockEver && !newly.isEmpty() && AncientCoinEconomy.balance(player) <= 0L) {
-            AncientCoinEconomy.grant(player, 250L);
+            AncientCoinEconomy.grantCopperExact(player, 250L);
             AncientCoinEconomy.notifyGrant(player, 250L);
         }
         return newly;
