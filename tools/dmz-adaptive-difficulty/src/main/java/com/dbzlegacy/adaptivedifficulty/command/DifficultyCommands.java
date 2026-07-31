@@ -174,8 +174,9 @@ public final class DifficultyCommands {
         String returnPage = page;
         if (returnPage == null || returnPage.isBlank()) {
             returnPage = switch (act) {
-                case "down", "reset", "zero", "clear", "set" -> "adjust";
+                case "down", "reset", "zero", "clear", "set", "lower_tier" -> "lower";
                 case "buy", "activate", "purchase_tier" -> "buy";
+                case "equip_title", "clear_title", "equip", "unequip_title" -> "titles";
                 default -> "main";
             };
         }
@@ -770,6 +771,8 @@ public final class DifficultyCommands {
                         cfg.unlockTier6EnemyMult = Math.max(0.0, Double.parseDouble(value));
                 case "unlocktier7enemymult", "tier7enemymult" ->
                         cfg.unlockTier7EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                case "tiercostleveldivisor", "costleveldivisor", "tiercostdivisor" ->
+                        cfg.tierCostLevelDivisor = Math.max(1.0, Double.parseDouble(value));
 
                 // ── V3 Ancient Coins + feature gates ───────────────────────
                 case "enableancientcoindrops", "ancientcoindrops" ->

@@ -219,6 +219,12 @@ public final class DifficultyConfig {
     public long unlockTier5Cost = 15_000L;
     public long unlockTier6Cost = 50_000L;
     public long unlockTier7Cost = 150_000L;
+    /**
+     * Tier purchase cost scales with DMZ level:
+     * {@code base × (1 + dmzLevel / tierCostLevelDivisor)}.
+     * Default 1000 → level 1000 ≈ 2× base, level 100000 ≈ 101× base.
+     */
+    public double tierCostLevelDivisor = 1_000.0;
     public double unlockTier1EnemyMult = 1.0;
     public double unlockTier2EnemyMult = 1.15;
     public double unlockTier3EnemyMult = 1.35;
@@ -281,6 +287,18 @@ public final class DifficultyConfig {
             case 7 -> Math.max(0L, unlockTier7Cost);
             default -> Long.MAX_VALUE / 4L;
         };
+    }
+
+    /** Level-scaled tier purchase cost for a player at {@code dmzLevel}. */
+    public long tierActivationCostScaled(int tierId, int dmzLevel) {
+        long base = tierActivationCost(tierId);
+        if (base <= 0L) {
+            return 0L;
+        }
+        double divisor = Math.max(1.0, tierCostLevelDivisor);
+        double mult = 1.0 + Math.max(0, dmzLevel) / divisor;
+        long scaled = Math.round(base * mult);
+        return Math.max(base, scaled);
     }
 
     public double tierEnemyMult(int tierId) {
@@ -554,6 +572,9 @@ public final class DifficultyConfig {
         }
         if (cfg.hardCapDifficulty < 0L || cfg.hardCapDifficulty == 1_000_000L) {
             cfg.hardCapDifficulty = 0L;
+        }
+        if (cfg.tierCostLevelDivisor < 1.0) {
+            cfg.tierCostLevelDivisor = 1_000.0;
         }
     }
 

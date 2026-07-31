@@ -162,6 +162,23 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
                 }
                 return true;
             }
+            case "buy", "purchase", "unlock", "lower", "adjust", "titles", "title",
+                 "team", "teams", "stats", "details" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage("Players only.");
+                    return true;
+                }
+                String page = switch (sub) {
+                    case "purchase", "unlock" -> "buy";
+                    case "adjust" -> "lower";
+                    case "title" -> "titles";
+                    case "teams" -> "team";
+                    case "details" -> "stats";
+                    default -> sub;
+                };
+                openMenuRespectingConfig(player, page);
+                return true;
+            }
             case "hard", "normal", "easy", "peaceful" -> {
                 if (!sender.isOp() && !sender.hasPermission("difficulty.admin")) {
                     sender.sendMessage("§cOps only: /difficulty " + sub);
@@ -178,7 +195,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
             }
             default -> {
                 sender.sendMessage("§e/difficulty §7— open GUI");
-                sender.sendMessage("§e/difficulty reset §7— set active difficulty to 0");
+                sender.sendMessage("§e/difficulty buy|lower|titles §7— open those pages");
+                sender.sendMessage("§e/difficulty reset §7— clear active tier");
                 sender.sendMessage("§e/difficulty admin off|on|whitelist §7— staff controls");
                 return true;
             }

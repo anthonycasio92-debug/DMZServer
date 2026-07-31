@@ -9,6 +9,7 @@ import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
+import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import net.minecraft.server.level.ServerPlayer;
@@ -43,6 +44,7 @@ public final class RewardSystem {
             AncientCoinEconomy.notifyGrant(killer, drop);
         }
         grantExperience(killer, mult, elite, boss, unlock);
+        TitleSystem.maybeUnlockCombatTitle(killer, snap, elite, boss);
     }
 
     private static void grantExperience(

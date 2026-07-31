@@ -21,11 +21,11 @@ import net.minecraft.world.level.Level;
 import net.minecraftforge.fml.ModList;
 
 /**
- * V3 Ancient Coin economy — real Lightman's {@code coin_ancient} items only.
+ * Ancient Coin economy — real Lightman's {@code coin_ancient} items only.
  * <p>
- * Grants put the <b>exact</b> coin type/count into inventory (no denomination splitting).
- * Charges remove coins totaling at least the copper cost and <b>never give change</b>.
- * Difficulty progression is via tier purchase, not per-level coin upgrades.
+ * Charges take an <b>exact</b> copper total from available denominations and
+ * never consume a higher coin that would overshoot. If the player cannot make
+ * exact payment, the charge fails and callers report how much is missing.
  */
 public final class AncientCoinEconomy {
     private static final boolean LIGHTMANS = ModList.get().isLoaded("lightmanscurrency");
@@ -38,6 +38,7 @@ public final class AncientCoinEconomy {
         DIAMOND(1_000L, "Diamond", AncientCoinType.DIAMOND),
         EMERALD(10_000L, "Emerald", AncientCoinType.EMERALD),
         NETHERITE(100_000L, "Netherite", AncientCoinType.NETHERITE_H),
+        LAPIS(500_000L, "Lapis", AncientCoinType.LAPIS),
         DIVINE(1_000_000L, "Divine", AncientCoinType.ENDER_PEARL);
 
         public final long copperValue;
@@ -62,6 +63,12 @@ public final class AncientCoinEconomy {
             String name = type.name();
             if (name != null && name.startsWith("NETHERITE")) {
                 return NETHERITE;
+            }
+            if ("LAPIS".equals(name)) {
+                return LAPIS;
+            }
+            if ("ENDER_PEARL".equals(name)) {
+                return DIVINE;
             }
             return null;
         }
@@ -104,7 +111,40 @@ public final class AncientCoinEconomy {
     }
 
     public static String balanceText(ServerPlayer player) {
-        return format(balance(player));
+        return inventoryBreakdown(player);
+    }
+
+    /**
+     * Per-type Ancient Coin counts in inventory.
+     * Always lists every Lightman's Ancient type the mod recognizes (incl. 0s).
+     */
+    public static String inventoryBreakdown(ServerPlayer player) {
+        if (player == null || !LIGHTMANS) {
+            return format(balance(player));
+        }
+        long[] counts = countByKind(player);
+        StringBuilder sb = new StringBuilder("§f");
+        boolean first = true;
+        for (CoinKind kind : CoinKind.values()) {
+            if (!first) {
+                sb.append(" §8· §f");
+            }
+            first = false;
+            sb.append(kind.display).append(' ').append(counts[kind.ordinal()]);
+        }
+        return sb.toString();
+    }
+
+    /** Alias used by some GUI/chat bindings. */
+    public static String formatCoins(long copper) {
+        return formatExactCost(copper);
+    }
+
+    public static long countOf(ServerPlayer player, CoinKind kind) {
+        if (player == null || kind == null) {
+            return 0L;
+        }
+        return countByKind(player)[kind.ordinal()];
     }
 
     public static String format(long copper) {
@@ -113,6 +153,9 @@ public final class AncientCoinEconomy {
         }
         if (copper >= CoinKind.DIVINE.copperValue && copper % CoinKind.DIVINE.copperValue == 0L) {
             return (copper / CoinKind.DIVINE.copperValue) + "× Divine";
+        }
+        if (copper >= CoinKind.LAPIS.copperValue && copper % CoinKind.LAPIS.copperValue == 0L) {
+            return (copper / CoinKind.LAPIS.copperValue) + "× Lapis";
         }
         if (copper >= CoinKind.NETHERITE.copperValue && copper % CoinKind.NETHERITE.copperValue == 0L) {
             return (copper / CoinKind.NETHERITE.copperValue) + "× Netherite";
@@ -139,7 +182,7 @@ public final class AncientCoinEconomy {
         }
         // Prefer a single clean denomination when the cost divides evenly.
         CoinKind[] order = {
-                CoinKind.DIVINE, CoinKind.NETHERITE, CoinKind.EMERALD,
+                CoinKind.DIVINE, CoinKind.LAPIS, CoinKind.NETHERITE, CoinKind.EMERALD,
                 CoinKind.DIAMOND, CoinKind.GOLD, CoinKind.IRON, CoinKind.COPPER
         };
         for (CoinKind kind : order) {
@@ -152,7 +195,35 @@ public final class AncientCoinEconomy {
     }
 
     public static boolean canAfford(ServerPlayer player, long copperCost) {
-        return copperCost <= 0L || balance(player) >= copperCost;
+        if (copperCost <= 0L) {
+            return true;
+        }
+        if (player == null) {
+            return false;
+        }
+        migrateWalletToItems(player);
+        if (LIGHTMANS) {
+            return planExactPayment(countByKind(player), copperCost) != null;
+        }
+        return balance(player) >= copperCost;
+    }
+
+    /** Human-readable shortfall when {@link #canAfford} is false. */
+    public static String missingText(ServerPlayer player, long copperCost) {
+        if (copperCost <= 0L) {
+            return "free";
+        }
+        long have = balance(player);
+        long missing = Math.max(0L, copperCost - have);
+        if (missing <= 0L && !canAfford(player, copperCost)) {
+            // Has enough copper value but cannot make exact change without overpaying.
+            return "Need exactly " + formatExactCost(copperCost)
+                    + " — break coins into smaller Ancient types (have "
+                    + inventoryBreakdown(player) + ")";
+        }
+        return "Need " + formatExactCost(copperCost)
+                + " — missing " + formatExactCost(missing)
+                + " (have " + inventoryBreakdown(player) + ")";
     }
 
     public static boolean charge(ServerPlayer player, long copperCost) {
@@ -164,7 +235,7 @@ public final class AncientCoinEconomy {
         }
         migrateWalletToItems(player);
         if (LIGHTMANS) {
-            return chargeInventoryNoChange(player, copperCost);
+            return chargeExact(player, copperCost);
         }
         warnMissingLightmans();
         PlayerDifficultyData data = DifficultyCache.data(player);
@@ -317,6 +388,15 @@ public final class AncientCoinEconomy {
         return tier == null ? 0L : tier.activationCost();
     }
 
+    public static long activationCost(UnlockTier tier, ServerPlayer player) {
+        if (tier == null) {
+            return 0L;
+        }
+        int level = player == null ? 0
+                : com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.dmzLevel(player);
+        return tier.activationCostForLevel(level);
+    }
+
     /** Convert any leftover NBT wallet into exact Copper ancient coins (once). */
     public static void migrateWalletToItems(ServerPlayer player) {
         if (player == null || !LIGHTMANS) {
@@ -355,48 +435,68 @@ public final class AncientCoinEconomy {
         return total;
     }
 
-    /**
-     * Remove coins totaling at least {@code copperCost}. Never returns change.
-     * Prefers exact lower denominations first to minimize overpay.
-     */
-    private static boolean chargeInventoryNoChange(ServerPlayer player, long copperCost) {
-        if (inventoryCopper(player) < copperCost) {
-            return false;
+    private static long[] countByKind(ServerPlayer player) {
+        long[] counts = new long[CoinKind.values().length];
+        if (player == null) {
+            return counts;
         }
-        long removed = removeCoinsNoChange(player, copperCost);
-        if (removed < copperCost) {
-            return false;
+        Inventory inv = player.m_150109_();
+        for (int i = 0; i < inv.m_6643_(); i++) {
+            CoinKind kind = kindOf(inv.m_8020_(i));
+            if (kind == null) {
+                continue;
+            }
+            counts[kind.ordinal()] = safeAdd(counts[kind.ordinal()], inv.m_8020_(i).m_41613_());
         }
-        // Intentionally no change / refund — overpay is kept by the shop.
-        DifficultyCache.refresh(player);
-        return true;
+        return counts;
     }
 
-    private static long removeCoinsNoChange(ServerPlayer player, long need) {
-        Inventory inv = player.m_150109_();
-        // Lowest first → exact Copper/Iron payments when possible; no change given.
-        CoinKind[] order = {
-                CoinKind.COPPER, CoinKind.IRON, CoinKind.GOLD, CoinKind.DIAMOND,
-                CoinKind.EMERALD, CoinKind.NETHERITE, CoinKind.DIVINE
+    /**
+     * Plan an exact payment (no overpay). Returns take-counts per CoinKind ordinal, or null.
+     */
+    private static long[] planExactPayment(long[] available, long copperCost) {
+        if (copperCost <= 0L) {
+            return new long[CoinKind.values().length];
+        }
+        long[] plan = new long[CoinKind.values().length];
+        long remaining = copperCost;
+        // Largest first that still fits exactly into the remainder.
+        CoinKind[] highFirst = {
+                CoinKind.DIVINE, CoinKind.LAPIS, CoinKind.NETHERITE, CoinKind.EMERALD,
+                CoinKind.DIAMOND, CoinKind.GOLD, CoinKind.IRON, CoinKind.COPPER
         };
-        long removed = 0L;
-        for (CoinKind kind : order) {
-            if (removed >= need) {
-                break;
+        for (CoinKind kind : highFirst) {
+            long unit = kind.copperValue;
+            if (unit <= 0L || remaining < unit) {
+                continue;
             }
-            for (int i = 0; i < inv.m_6643_() && removed < need; i++) {
+            long canTake = Math.min(available[kind.ordinal()], remaining / unit);
+            plan[kind.ordinal()] = canTake;
+            remaining -= canTake * unit;
+        }
+        return remaining == 0L ? plan : null;
+    }
+
+    /** Remove an exact copper total. Never takes a higher coin that would overshoot. */
+    private static boolean chargeExact(ServerPlayer player, long copperCost) {
+        long[] available = countByKind(player);
+        long[] plan = planExactPayment(available, copperCost);
+        if (plan == null) {
+            return false;
+        }
+        Inventory inv = player.m_150109_();
+        for (CoinKind kind : CoinKind.values()) {
+            long need = plan[kind.ordinal()];
+            if (need <= 0L) {
+                continue;
+            }
+            for (int i = 0; i < inv.m_6643_() && need > 0L; i++) {
                 ItemStack stack = inv.m_8020_(i);
                 if (kindOf(stack) != kind) {
                     continue;
                 }
                 int count = stack.m_41613_();
-                if (count <= 0) {
-                    continue;
-                }
-                long unit = kind.copperValue;
-                long stillNeed = need - removed;
-                long takeUnits = (stillNeed + unit - 1L) / unit; // ceil — may overpay, no change
-                int take = (int) Math.min(count, Math.min(Integer.MAX_VALUE, takeUnits));
+                int take = (int) Math.min(count, Math.min(Integer.MAX_VALUE, need));
                 if (take <= 0) {
                     continue;
                 }
@@ -404,10 +504,14 @@ public final class AncientCoinEconomy {
                 if (stack.m_41619_()) {
                     inv.m_6836_(i, ItemStack.f_41583_);
                 }
-                removed = safeAdd(removed, safeMul(unit, take));
+                need -= take;
+            }
+            if (need > 0L) {
+                return false;
             }
         }
-        return removed;
+        DifficultyCache.refresh(player);
+        return true;
     }
 
     private static void giveStacks(ServerPlayer player, CoinKind kind, long count) {

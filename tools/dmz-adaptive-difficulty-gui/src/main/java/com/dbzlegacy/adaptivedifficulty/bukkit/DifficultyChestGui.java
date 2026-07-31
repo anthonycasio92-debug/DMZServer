@@ -17,12 +17,13 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 /**
- * Clean Bukkit chest GUI fallback when CMI/CMILib is unavailable.
- * V3 pages: Hub · Buy Tier · Lower/Reset · Details.
+ * Bukkit chest GUI fallback — tier-centric Adaptive Difficulty.
+ * Pages: Hub · Buy Tier · Lower Tier · Titles · Details. Teams = WIP only.
  */
 public final class DifficultyChestGui implements Listener {
     private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
     private static final Material ACCENT = Material.GRAY_STAINED_GLASS_PANE;
+    private static final int[] TIER_SLOTS = {19, 20, 21, 22, 23, 24, 25};
 
     private final AdaptiveDifficultyGuiPlugin plugin;
 
@@ -33,8 +34,10 @@ public final class DifficultyChestGui implements Listener {
     public void open(Player player, String page) {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         Inventory inv = switch (p) {
-            case "adjust", "change", "set" -> adjust(player);
+            case "adjust", "change", "set", "lower" -> lower(player);
             case "buy", "purchase", "unlock" -> buy(player);
+            case "titles", "title" -> titles(player);
+            case "team", "teams" -> teamsWip(player);
             case "stats", "statistics", "details" -> stats(player);
             default -> main(player);
         };
@@ -44,7 +47,7 @@ public final class DifficultyChestGui implements Listener {
     private Inventory main(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         Holder holder = new Holder("main");
-        Inventory inv = Bukkit.createInventory(holder, 36, color("&8Difficulty"));
+        Inventory inv = Bukkit.createInventory(holder, 36, color("&8Adaptive Difficulty"));
         holder.bind(inv);
         frame(inv, 36);
 
@@ -54,20 +57,10 @@ public final class DifficultyChestGui implements Listener {
             inv.setItem(13, item(Material.NETHER_STAR,
                     !systemOn ? "&c&lSYSTEM DISABLED" : "&e&lWHITELIST ONLY",
                     !systemOn
-                            ? List.of(
-                            "",
-                            "&cAdaptive Difficulty is off",
-                            "&7An admin disabled the system",
-                            "&8No scaling, coins, or purchases",
-                            "&8Re-enable: &f/difficulty admin on"
-                    )
-                            : List.of(
-                            "",
-                            "&eTesting whitelist is on",
-                            "&7You are not on the whitelist",
-                            "&8Ask an admin:",
-                            "&f/difficulty admin whitelist add <you>"
-                    )));
+                            ? List.of("", "&cAdaptive Difficulty is off", "&7An admin disabled the system",
+                            "&8No scaling, coins, or purchases", "&8Re-enable: &f/difficulty admin on")
+                            : List.of("", "&eTesting whitelist is on", "&7You are not on the whitelist",
+                            "&8Ask an admin:", "&f/difficulty admin whitelist add <you>")));
             inv.setItem(31, button(Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
                     List.of("&7Reload this menu")));
             inv.setItem(35, closeBtn());
@@ -75,121 +68,150 @@ public final class DifficultyChestGui implements Listener {
         }
 
         String stateColor = ph.getOrDefault("state_color", "f");
-        inv.setItem(13, item(Material.NETHER_STAR, "&f&lDifficulty V3", statusLore(ph, stateColor)));
-        inv.setItem(20, pageBtn(Material.GOLD_INGOT, "&eBuy Tier", "buy",
-                "&7Purchase a difficulty tier", "&8Spend Ancient Coins from inventory"));
-        inv.setItem(22, pageBtn(Material.WHITE_CONCRETE, "&fLower", "adjust",
-                "&7Lower / clear active difficulty", "&8Free — buy tiers to raise"));
-        inv.setItem(24, button(Material.COMPASS, "&bTeam", "team", "0", "main",
-                List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
+        inv.setItem(13, item(Material.NETHER_STAR, "&f&lAdaptive Difficulty", statusLore(ph, stateColor)));
+        inv.setItem(19, pageBtn(Material.GOLD_INGOT, "&eBuy Tier", "buy",
+                "&7Purchase a higher Unlock Tier", "&8Exact Ancient Coins · scales with DMZ level"));
+        inv.setItem(21, pageBtn(Material.WHITE_CONCRETE, "&fLower Tier", "lower",
+                "&7Select a lower unlocked tier", "&8Or reset to None · always free"));
+        inv.setItem(23, pageBtn(Material.NAME_TAG, "&dTitles", "titles",
+                "&7Equip difficulty titles", "&8Higher CR / kill requirements"));
+        inv.setItem(25, pageBtn(Material.COMPASS, "&8Teams &7(WIP)", "team",
+                "&7Not available yet", "&ePersonal difficulty only"));
 
-        inv.setItem(30, pageBtn(Material.BOOK, "&fDetails", "stats", "&7Team, full breakdown"));
+        inv.setItem(30, pageBtn(Material.BOOK, "&fDetails", "stats", "&7Coins, progression, title"));
         inv.setItem(31, button(Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
                 List.of("&7Reload this menu")));
         inv.setItem(35, closeBtn());
         return inv;
     }
 
-    private Inventory adjust(Player player) {
+    private Inventory buy(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
-        Holder holder = new Holder("adjust");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Adjust Difficulty"));
+        Holder holder = new Holder("buy");
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Buy Higher Tier"));
         holder.bind(inv);
         frame(inv, 45);
 
-        String stateColor = ph.getOrDefault("state_color", "f");
-        inv.setItem(4, item(Material.NETHER_STAR, "&f&lActive", List.of(
-                "",
-                "&f" + ph.getOrDefault("active", "?") + " &8/ &7" + ph.getOrDefault("available", "?"),
-                "&7Active / Ceiling",
-                "",
-                "&7State   &" + stateColor + ph.getOrDefault("state", "?"),
-                "&7Tier    &f" + ph.getOrDefault("active_tier_name", "None"),
-                "&7CR      &f" + ph.getOrDefault("combat_rating", "?"),
-                "&7Ancient &f" + ph.getOrDefault("balance", "?"),
-                "",
-                "&8Buy tiers to raise · lower is free"
-        )));
-        inv.setItem(7, button(Material.WHITE_CONCRETE, "&fReset", "reset", "0", "adjust",
-                List.of("&7Clear active tier & level", "&8Unlocks & coins kept", "&8Always free")));
+        List<String> info = new ArrayList<>();
+        info.add("");
+        info.add("&7Current Tier &f" + ph.getOrDefault("active_tier_name", "None"));
+        info.add("&7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"));
+        info.add("&7DMZ Level &f" + ph.getOrDefault("level", "?")
+                + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"));
+        info.add("");
+        info.addAll(coinLore(ph));
+        info.add("");
+        info.add("&8Costs scale with your DMZ level");
+        info.add("&8Exact coins only — no overpay / change");
+        inv.setItem(4, item(Material.GOLD_INGOT, "&e&lBuy Higher Tier", info));
 
-        inv.setItem(19, button(Material.RED_CONCRETE, "&c−100000", "down", "100000", "adjust",
-                List.of("&7Lower active difficulty", "&8Always free")));
-        inv.setItem(20, button(Material.RED_WOOL, "&c−10000", "down", "10000", "adjust",
-                List.of("&7Lower active difficulty", "&8Always free")));
-        inv.setItem(21, button(Material.RED_TERRACOTTA, "&c−1000", "down", "1000", "adjust",
-                List.of("&7Lower active difficulty", "&8Always free")));
-        inv.setItem(22, button(Material.PINK_CONCRETE, "&c−100", "down", "100", "adjust",
-                List.of("&7Lower active difficulty", "&8Always free")));
-        inv.setItem(23, button(Material.PINK_TERRACOTTA, "&c−25", "down", "25", "adjust",
-                List.of("&7Lower active difficulty", "&8Always free")));
-        inv.setItem(24, button(Material.MAGENTA_CONCRETE, "&c−5", "down", "5", "adjust",
-                List.of("&7Lower active difficulty", "&8Always free")));
-        inv.setItem(25, button(Material.MAGENTA_TERRACOTTA, "&c−1", "down", "1", "adjust",
-                List.of("&7Lower active difficulty", "&8Always free")));
-
-        inv.setItem(36, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
-        inv.setItem(40, pageBtn(Material.GOLD_INGOT, "&eBuy Tier", "buy", "&7Purchase a difficulty tier"));
+        placeTierItems(inv, ph, true);
+        inv.setItem(36, pageBtn(Material.ARROW, "&7Back", "main", "&7Return"));
+        inv.setItem(40, pageBtn(Material.WHITE_CONCRETE, "&fLower Tier", "lower",
+                "&7Select a lower unlocked tier"));
         inv.setItem(44, closeBtn());
         return inv;
     }
 
-    private Inventory buy(Player player) {
+    private Inventory lower(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
-        Holder holder = new Holder("buy");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Buy Difficulty Tier"));
+        Holder holder = new Holder("lower");
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Lower Difficulty Tier"));
         holder.bind(inv);
         frame(inv, 45);
 
-        inv.setItem(4, item(Material.GOLD_INGOT, "&e&lPurchase Tier", List.of(
+        inv.setItem(4, item(Material.NETHER_STAR, "&f&lLower Tier", List.of(
                 "",
-                "&7Active     &f" + ph.getOrDefault("active_tier_name", "None"),
-                "&7Unlocked   &fT" + ph.getOrDefault("highest_unlocked", "0"),
-                "&7Inventory  &f" + ph.getOrDefault("balance", "?"),
+                "&7Current Tier &f" + ph.getOrDefault("active_tier_name", "None"),
+                "&7Combat Rating &f" + ph.getOrDefault("combat_rating", "?"),
                 "",
-                "&8Unlock by DMZ level or Prestige",
-                "&8Click a tier to buy it with Ancient Coins",
-                "&8Sets full tier difficulty · no change",
-                "&8Death clears active tier (unlocks stay)"
+                "&8Select a lower unlocked tier",
+                "&8Or reset to None — always free"
         )));
-        Material[] mats = {
-                Material.COPPER_INGOT, Material.IRON_INGOT, Material.GOLD_INGOT,
-                Material.DIAMOND, Material.EMERALD, Material.NETHERITE_INGOT, Material.NETHER_STAR
+        inv.setItem(8, button(Material.BARRIER, "&cReset to None", "lower_tier", "0", "lower",
+                List.of("&7Clear active tier", "&8Unlocks & coins kept", "&8Always free")));
+
+        placeTierItems(inv, ph, false);
+        inv.setItem(36, pageBtn(Material.ARROW, "&7Back", "main", "&7Return"));
+        inv.setItem(40, pageBtn(Material.GOLD_INGOT, "&eBuy Tier", "buy",
+                "&7Purchase a higher Unlock Tier"));
+        inv.setItem(44, closeBtn());
+        return inv;
+    }
+
+    private Inventory titles(Player player) {
+        Map<String, String> ph = ForgeBridge.placeholders(player);
+        Holder holder = new Holder("titles");
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Difficulty Titles"));
+        holder.bind(inv);
+        frame(inv, 45);
+
+        inv.setItem(4, item(Material.NAME_TAG, "&d&lTitles", List.of(
+                "",
+                "&7Equipped &e" + blankAsNone(ph.getOrDefault("active_title", "")),
+                "&7Current Tier &f" + ph.getOrDefault("active_tier_name", "None"),
+                "&7CR &f" + ph.getOrDefault("combat_rating", "?"),
+                "",
+                "&8Tier titles need active tier + higher DMZ/Prestige",
+                "&8Combat titles need harder kill feats"
+        )));
+        inv.setItem(8, button(Material.BARRIER, "&cClear Title", "clear_title", "0", "titles",
+                List.of("&7Unequip your title")));
+
+        String[] ids = {
+                "t1_awakened", "t2_enhanced", "t3_elite", "t4_advanced",
+                "t5_master", "t6_legendary", "t7_god",
+                "boss_slayer", "elite_hunter", "ascendant"
         };
-        int activeTier = (int) parseLong(ph.getOrDefault("active_tier", "0"));
-        int highest = (int) parseLong(ph.getOrDefault("highest_unlocked", "0"));
-        for (int t = 1; t <= 7; t++) {
-            String cost = ph.getOrDefault("tier_" + t + "_cost",
-                    ph.getOrDefault("unlock_tier_" + t + "_cost", "?"));
-            String max = ph.getOrDefault("unlock_tier_" + t + "_max", "?");
-            boolean unlocked = highest >= t;
-            boolean active = activeTier == t;
-            String title = active ? "&a● T" + t + " Active"
-                    : unlocked ? "&eBuy T" + t
-                    : "&8Locked T" + t;
-            List<String> tip = new ArrayList<>();
-            tip.add("&7Difficulty tier &f" + t);
-            tip.add("&7Max difficulty &f" + max);
-            tip.add("&7Cost &e" + cost);
-            if (active) {
-                tip.add("&aCurrently active");
-            } else if (unlocked) {
-                tip.add("&aUnlocked &8· click to purchase");
-                tip.add("&8Sets difficulty to this tier's max");
+        Material[] mats = {
+                Material.COPPER_INGOT, Material.IRON_INGOT, Material.GOLD_INGOT, Material.DIAMOND,
+                Material.EMERALD, Material.NETHERITE_INGOT, Material.NETHER_STAR,
+                Material.WITHER_SKELETON_SKULL, Material.DRAGON_HEAD, Material.ENCHANTED_GOLDEN_APPLE
+        };
+        int[] slots = {19, 20, 21, 22, 23, 24, 25, 29, 31, 33};
+        String equipped = ph.getOrDefault("active_title_id", "");
+        for (int i = 0; i < ids.length; i++) {
+            String id = ids[i];
+            boolean earned = "true".equalsIgnoreCase(ph.getOrDefault("title_" + id + "_earned", "false"));
+            String name = ph.getOrDefault("title_" + id + "_name", id);
+            String tip = ph.getOrDefault("title_" + id + "_req", "");
+            boolean isEquipped = id.equalsIgnoreCase(equipped);
+            String title = isEquipped ? "&a● " + name : earned ? "&e" + name : "&8" + name;
+            List<String> tipLore = new ArrayList<>();
+            tipLore.add("&7" + tip);
+            if (isEquipped) {
+                tipLore.add("&aCurrently equipped &8· click to unequip");
+            } else if (earned) {
+                tipLore.add("&aUnlocked &8· click to equip");
             } else {
-                tip.add("&cLocked &8· need DMZ level or Prestige " + t);
+                tipLore.add("&cLocked");
             }
-            tip.add("&8Current active &f" + ph.getOrDefault("active_tier", "0"));
-            if (unlocked && !active) {
-                inv.setItem(18 + (t - 1), button(mats[t - 1], title, "activate", String.valueOf(t), "buy", tip));
+            if (earned) {
+                inv.setItem(slots[i], button(mats[i], title, "equip_title", id, "titles", tipLore));
             } else {
-                inv.setItem(18 + (t - 1), item(mats[t - 1], title, prependBlank(tip)));
+                inv.setItem(slots[i], item(mats[i], title, prependBlank(tipLore)));
             }
         }
 
-        inv.setItem(36, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
-        inv.setItem(40, pageBtn(Material.WHITE_CONCRETE, "&fLower", "adjust", "&7Lower / clear active"));
+        inv.setItem(36, pageBtn(Material.ARROW, "&7Back", "main", "&7Return"));
         inv.setItem(44, closeBtn());
+        return inv;
+    }
+
+    private Inventory teamsWip(Player player) {
+        Holder holder = new Holder("team");
+        Inventory inv = Bukkit.createInventory(holder, 27, color("&8Teams (WIP)"));
+        holder.bind(inv);
+        frame(inv, 27);
+        inv.setItem(13, item(Material.COMPASS, "&8&lTeams — Work in Progress", List.of(
+                "",
+                "&7Team difficulty is not available yet.",
+                "&eDifficulty is personal / individual only.",
+                "",
+                "&8No team actions can be taken from this menu."
+        )));
+        inv.setItem(18, pageBtn(Material.ARROW, "&7Back", "main", "&7Return"));
+        inv.setItem(26, closeBtn());
         return inv;
     }
 
@@ -203,36 +225,83 @@ public final class DifficultyChestGui implements Listener {
 
         inv.setItem(11, item(Material.NETHER_STAR, "&f&lProgression", List.of(
                 "",
-                "&7Active      &f" + ph.getOrDefault("active", "?"),
-                "&7Ceiling     &f" + ph.getOrDefault("available", "?"),
+                "&7Current Tier &f" + ph.getOrDefault("active_tier_name", "None"),
                 "&7Combat CR   &f" + ph.getOrDefault("combat_rating", "?"),
-                "&7Personal    &f" + ph.getOrDefault("personal_max", "?"),
+                "&7State       &" + stateColor + ph.getOrDefault("state", "?"),
                 "",
-                "&7State  &" + stateColor + ph.getOrDefault("state", "?"),
-                "&7Tier   &f" + ph.getOrDefault("active_tier_name", ph.getOrDefault("tier", "?"))
-        )));
-        inv.setItem(13, item(Material.COMPASS, "&f&lTeam", List.of(
-                "",
-                "&7Name    &f" + ph.getOrDefault("team_name", "?"),
-                "&7Mode    &f" + ph.getOrDefault("team_mode", "?"),
-                "&7Online  &f" + ph.getOrDefault("team_size", "0"),
-                "&7Source  &f" + ph.getOrDefault("team_source", "?"),
-                "",
-                "&7Bonus         &f" + ph.getOrDefault("team_bonus", "?"),
-                "&7Contribution  &f" + ph.getOrDefault("team_contrib", "?")
-        )));
-        inv.setItem(15, item(Material.GOLD_INGOT, "&f&lAncient Coins", List.of(
-                "",
-                "&7Balance &f" + ph.getOrDefault("balance", "?"),
-                "&7Level   &f" + ph.getOrDefault("level", "?"),
-                "&7Prestige &f" + ph.getOrDefault("prestige", "?"),
+                "&7DMZ &f" + ph.getOrDefault("level", "?")
+                        + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"),
                 "&7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"),
-                "",
-                "&8Tier purchases use Ancient Coins only"
+                "&7Title &e" + blankAsNone(ph.getOrDefault("active_title", ""))
         )));
-        inv.setItem(27, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
+        inv.setItem(13, item(Material.COMPASS, "&8&lTeams (WIP)", List.of(
+                "",
+                "&7Not available yet.",
+                "&ePersonal difficulty only."
+        )));
+        List<String> coins = new ArrayList<>();
+        coins.add("");
+        coins.addAll(coinLore(ph));
+        coins.add("");
+        coins.add("&8Tier purchases use exact Ancient Coins");
+        inv.setItem(15, item(Material.GOLD_INGOT, "&f&lAncient Coins", coins));
+        inv.setItem(27, pageBtn(Material.ARROW, "&7Back", "main", "&7Return"));
         inv.setItem(35, closeBtn());
         return inv;
+    }
+
+    private static void placeTierItems(Inventory inv, Map<String, String> ph, boolean buyMode) {
+        Material[] mats = {
+                Material.COPPER_INGOT, Material.IRON_INGOT, Material.GOLD_INGOT,
+                Material.DIAMOND, Material.EMERALD, Material.NETHERITE_INGOT, Material.NETHER_STAR
+        };
+        int activeTier = (int) parseLong(ph.getOrDefault("active_tier", "0"));
+        int highest = (int) parseLong(ph.getOrDefault("highest_unlocked", "0"));
+        for (int t = 1; t <= 7; t++) {
+            String cost = ph.getOrDefault("tier_" + t + "_cost", "?");
+            String name = ph.getOrDefault("tier_" + t + "_name", "T" + t);
+            boolean unlocked = highest >= t;
+            boolean active = activeTier == t;
+            List<String> tip = new ArrayList<>();
+            tip.add("&7" + name);
+            if (buyMode) {
+                tip.add("&7Cost &e" + cost);
+                tip.add("&8Scaled for your DMZ level");
+            }
+            if (active) {
+                tip.add("&aCurrently active");
+            } else if (buyMode && unlocked) {
+                tip.add("&aUnlocked &8· click to purchase");
+                tip.add("&8Exact Ancient Coins only");
+            } else if (!buyMode && unlocked && t < activeTier) {
+                tip.add("&aOwned &8· click to lower here");
+            } else if (!unlocked) {
+                tip.add("&cLocked &8· need DMZ level or Prestige " + t);
+            } else if (!buyMode) {
+                tip.add("&8Higher than current — use Buy");
+            }
+
+            String title;
+            if (active) {
+                title = "&a● T" + t + " Active";
+            } else if (buyMode) {
+                title = unlocked ? "&eBuy T" + t : "&8Locked T" + t;
+            } else {
+                title = (unlocked && t < activeTier) ? "&fLower to T" + t
+                        : unlocked ? "&8T" + t : "&8Locked T" + t;
+            }
+
+            boolean clickable = buyMode
+                    ? (unlocked && !active)
+                    : (unlocked && t < activeTier);
+            if (clickable) {
+                String action = buyMode ? "activate" : "lower_tier";
+                String page = buyMode ? "buy" : "lower";
+                inv.setItem(TIER_SLOTS[t - 1], button(mats[t - 1], title, action, String.valueOf(t), page, tip));
+            } else {
+                inv.setItem(TIER_SLOTS[t - 1], item(mats[t - 1], title, prependBlank(tip)));
+            }
+        }
     }
 
     private static List<String> prependBlank(List<String> tip) {
@@ -243,22 +312,39 @@ public final class DifficultyChestGui implements Listener {
     }
 
     private static List<String> statusLore(Map<String, String> ph, String stateColor) {
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        lore.add("&7Current Tier &f" + ph.getOrDefault("active_tier_name", "None"));
+        lore.add("&7State  &" + stateColor + ph.getOrDefault("state", "?"));
+        lore.add("&7CR     &f" + ph.getOrDefault("combat_rating", "?"));
+        lore.add("&7Title  &e" + blankAsNone(ph.getOrDefault("active_title", "")));
+        lore.add("");
+        lore.addAll(coinLore(ph));
+        lore.add("");
+        lore.add("&7DMZ &f" + ph.getOrDefault("level", "?")
+                + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"));
+        lore.add("&7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"));
+        lore.add("&8Buy a higher tier · Lower to step down");
+        return lore;
+    }
+
+    private static List<String> coinLore(Map<String, String> ph) {
         return List.of(
-                "",
-                "&f" + ph.getOrDefault("active", "?") + " &8/ &7" + ph.getOrDefault("available", "?"),
-                "&7Active Difficulty / Ceiling",
-                "",
-                "&7State  &" + stateColor + ph.getOrDefault("state", "?"),
-                "&7Tier   &f" + ph.getOrDefault("active_tier_name", ph.getOrDefault("tier", "?")),
-                "&7CR     &f" + ph.getOrDefault("combat_rating", ph.getOrDefault("calculated", "?")),
-                "&7Ancient &f" + ph.getOrDefault("balance", "?"),
-                "",
-                "&7DMZ &f" + ph.getOrDefault("level", "?")
-                        + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"),
-                "&7Team &f" + ph.getOrDefault("team_mode", "?")
-                        + "  &7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"),
-                "&8Buy a tier in the Tier menu to raise"
+                "&6Ancient Coins",
+                "&eCopper &f" + ph.getOrDefault("coins_copper", "0")
+                        + "  &eIron &f" + ph.getOrDefault("coins_iron", "0")
+                        + "  &eGold &f" + ph.getOrDefault("coins_gold", "0"),
+                "&eDiamond &f" + ph.getOrDefault("coins_diamond", "0")
+                        + "  &eEmerald &f" + ph.getOrDefault("coins_emerald", "0")
+                        + "  &eNetherite &f" + ph.getOrDefault("coins_netherite", "0"),
+                "&eLapis &f" + ph.getOrDefault("coins_lapis", "0")
+                        + "  &eDivine &f" + ph.getOrDefault("coins_divine", "0")
+                        + "  &6Total &f" + ph.getOrDefault("ancient_coins", "0") + " AC"
         );
+    }
+
+    private static String blankAsNone(String value) {
+        return value == null || value.isBlank() ? "None" : value;
     }
 
     private static void frame(Inventory inv, int size) {

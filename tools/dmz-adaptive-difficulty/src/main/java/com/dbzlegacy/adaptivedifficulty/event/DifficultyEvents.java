@@ -13,6 +13,7 @@ import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tick.BehaviorScheduler;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
+import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
@@ -67,8 +68,9 @@ public final class DifficultyEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             DifficultyCache.data(player);
             // Convert any leftover NBT Ancient Coin wallet into real Lightman's items.
-            com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.migrateWalletToItems(player);
+            com.dbzlegacy.adaptivedifficulty.currency.            AncientCoinEconomy.migrateWalletToItems(player);
             DifficultyCache.refresh(player);
+            TitleSystem.syncTierTitles(player, false);
         }
     }
 

@@ -37,10 +37,20 @@ public final class ForgeBridge {
     private static Method economyBalanceText;
     private static Method economyFormat;
     private static Method economyFormatExactCost;
+    private static Method economyActivationCostPlayer;
+    private static Method economyCountOf;
+    private static Method economyBalance;
+    private static Class<?> coinKindCls;
     private static Method unlockTierValues;
     private static Method unlockTierById;
     private static Method unlockTierActivationCost;
+    private static Method unlockTierActivationCostForLevel;
     private static Method unlockTierMaxDifficulty;
+    private static Method titleActiveDisplay;
+    private static Method titleActiveId;
+    private static Method titleHas;
+    private static Method titleValues;
+    private static Method titleRequirementTip;
     private static Method snapshotState;
     private static Method snapshotStateColor;
     private static Method actionsHandle;
@@ -88,11 +98,6 @@ public final class ForgeBridge {
             return "";
         }
         String key = id.toLowerCase(Locale.ROOT);
-        // Titles removed from V3 player surface.
-        if (key.startsWith("title_") || key.equals("titles") || key.equals("titles_count")
-                || key.equals("active_title") || key.equals("active_title_id")) {
-            return "";
-        }
         return placeholders(player).getOrDefault(key, "");
     }
 
@@ -125,6 +130,7 @@ public final class ForgeBridge {
             Object teamMode = field(snap, "teamMode");
             Object activeTierName = field(snap, "activeTierName");
 
+            // Internal numbers kept for PAPI compatibility; GUIs no longer show active/available points.
             out.put("active", String.valueOf(active));
             out.put("available", String.valueOf(available));
             out.put("available_max", String.valueOf(available));
@@ -137,33 +143,39 @@ public final class ForgeBridge {
             out.put("level", String.valueOf(level));
             out.put("dmz_level", String.valueOf(level));
             out.put("prestige", String.valueOf(prestige));
-            out.put("team_mode", teamMode == null ? "?" : String.valueOf(teamMode));
+            out.put("team_mode", "WIP");
             out.put("combat_rating", String.valueOf(combatRating > 0 ? combatRating : calculated));
-            out.put("ancient_coins", String.valueOf(ancientCopper > 0 ? ancientCopper : purchased));
             out.put("active_tier", String.valueOf(activeTier));
             out.put("highest_unlocked", String.valueOf(highestUnlocked));
             out.put("active_tier_name", activeTierName == null ? "None" : String.valueOf(activeTierName));
             out.put("tier", activeTierName == null ? "None" : String.valueOf(activeTierName));
 
-            if (teamName != null) {
-                out.put("team_name", String.valueOf(teamName.invoke(null, nms)));
+            out.put("team_name", "WIP");
+            out.put("team_source", "personal");
+            out.put("team_size", "0");
+
+            long liveBalance = ancientCopper > 0 ? ancientCopper : purchased;
+            if (economyBalance != null) {
+                try {
+                    Object bal = economyBalance.invoke(null, nms);
+                    if (bal instanceof Number n) {
+                        liveBalance = n.longValue();
+                    }
+                } catch (Throwable ignored) {
+                }
             }
-            if (teamSource != null) {
-                out.put("team_source", String.valueOf(teamSource.invoke(null)));
-            }
-            if (teammates != null) {
-                Object mates = teammates.invoke(null, nms);
-                out.put("team_size", mates instanceof List<?> list ? String.valueOf(list.size()) : "0");
-            }
+            out.put("ancient_coins", String.valueOf(liveBalance));
 
             String balance = "?";
             if (economyBalanceText != null) {
                 balance = String.valueOf(economyBalanceText.invoke(null, nms));
             } else if (economyFormat != null) {
-                balance = String.valueOf(economyFormat.invoke(null, ancientCopper > 0 ? ancientCopper : purchased));
+                balance = String.valueOf(economyFormat.invoke(null, liveBalance));
             }
             out.put("balance", balance);
             out.put("currency", "Ancient Coins");
+
+            putCoinCounts(out, nms);
 
             boolean systemOn = systemEnabled();
             out.put("system_enabled", systemOn ? "true" : "false");
@@ -174,15 +186,18 @@ public final class ForgeBridge {
             out.put("whitelist_status", wlOn ? "ON" : "OFF");
             out.put("player_allowed", allowed ? "true" : "false");
 
-            // UnlockTier 1–7 activation costs (Ancient Coins).
-            if (unlockTierValues != null && economyFormatExactCost != null && unlockTierActivationCost != null) {
+            // UnlockTier 1–7 — level-scaled activation costs.
+            if (unlockTierValues != null && economyFormatExactCost != null) {
                 try {
                     for (Object ut : (Object[]) unlockTierValues.invoke(null)) {
                         int id = ((Number) field(ut, "id")).intValue();
-                        long cost = ((Number) unlockTierActivationCost.invoke(ut)).longValue();
+                        Object display = field(ut, "display");
+                        out.put("tier_" + id + "_name", "T" + id + " " + (display == null ? "" : display));
+                        long cost = resolveTierCost(ut, nms, level);
                         String costText = String.valueOf(economyFormatExactCost.invoke(null, cost));
                         out.put("unlock_tier_" + id + "_cost", costText);
                         out.put("tier_" + id + "_cost", costText);
+                        out.put("tier_" + id + "_cost_raw", String.valueOf(cost));
                         Object defaultMax = field(ut, "defaultMaxDifficulty");
                         out.put("unlock_tier_" + id + "_max", String.valueOf(defaultMax));
                         if (unlockTierById != null && unlockTierMaxDifficulty != null) {
@@ -200,6 +215,8 @@ public final class ForgeBridge {
                 }
             }
 
+            putTitlePlaceholders(out, nms);
+
             if (snapshotState != null) {
                 Object state = snapshotState.invoke(snap);
                 out.put("state", state == null ? "?" : String.valueOf(state));
@@ -212,6 +229,106 @@ public final class ForgeBridge {
             // Forge mod not loaded / partial API
         }
         return out;
+    }
+
+    private static long resolveTierCost(Object unlockTier, Object nmsPlayer, int dmzLevel) {
+        try {
+            if (economyActivationCostPlayer != null) {
+                Object cost = economyActivationCostPlayer.invoke(null, unlockTier, nmsPlayer);
+                if (cost instanceof Number n) {
+                    return n.longValue();
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            if (unlockTierActivationCostForLevel != null) {
+                Object cost = unlockTierActivationCostForLevel.invoke(unlockTier, dmzLevel);
+                if (cost instanceof Number n) {
+                    return n.longValue();
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            if (unlockTierActivationCost != null) {
+                Object cost = unlockTierActivationCost.invoke(unlockTier);
+                if (cost instanceof Number n) {
+                    return n.longValue();
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return 0L;
+    }
+
+    private static void putCoinCounts(Map<String, String> out, Object nms) {
+        String[] keys = {
+                "coins_copper", "coins_iron", "coins_gold", "coins_diamond",
+                "coins_emerald", "coins_netherite", "coins_lapis", "coins_divine"
+        };
+        String[] kindNames = {
+                "COPPER", "IRON", "GOLD", "DIAMOND", "EMERALD", "NETHERITE", "LAPIS", "DIVINE"
+        };
+        for (String key : keys) {
+            out.putIfAbsent(key, "0");
+        }
+        if (economyCountOf == null || coinKindCls == null || nms == null) {
+            return;
+        }
+        try {
+            Object[] kinds = (Object[]) coinKindCls.getMethod("values").invoke(null);
+            for (Object kind : kinds) {
+                String name = String.valueOf(kind);
+                Object countObj = economyCountOf.invoke(null, nms, kind);
+                long count = countObj instanceof Number n ? n.longValue() : 0L;
+                for (int i = 0; i < kindNames.length; i++) {
+                    if (kindNames[i].equalsIgnoreCase(name)) {
+                        out.put(keys[i], String.valueOf(count));
+                        break;
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void putTitlePlaceholders(Map<String, String> out, Object nms) {
+        out.put("active_title", "None");
+        out.put("active_title_id", "");
+        if (nms == null) {
+            return;
+        }
+        try {
+            if (titleActiveDisplay != null) {
+                Object display = titleActiveDisplay.invoke(null, nms);
+                out.put("active_title", display == null || String.valueOf(display).isBlank()
+                        ? "None" : String.valueOf(display));
+            }
+            if (titleActiveId != null) {
+                Object id = titleActiveId.invoke(null, nms);
+                out.put("active_title_id", id == null ? "" : String.valueOf(id));
+            }
+            if (titleValues != null) {
+                for (Object title : (Object[]) titleValues.invoke(null)) {
+                    String id = String.valueOf(field(title, "id"));
+                    String display = String.valueOf(field(title, "display"));
+                    out.put("title_" + id + "_name", display);
+                    boolean earned = false;
+                    if (titleHas != null) {
+                        earned = Boolean.TRUE.equals(titleHas.invoke(null, nms, title));
+                    }
+                    out.put("title_" + id + "_earned", earned ? "true" : "false");
+                    String req = "";
+                    if (titleRequirementTip != null) {
+                        Object tip = titleRequirementTip.invoke(title);
+                        req = tip == null ? "" : String.valueOf(tip);
+                    }
+                    out.put("title_" + id + "_req", req);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     /** Runs a GUI action through the Forge mod and returns the result message. */
@@ -284,9 +401,10 @@ public final class ForgeBridge {
 
     private static boolean isSupportedAction(String act) {
         return switch (act) {
-            case "activate", "purchase_tier", "buy",
+            case "activate", "purchase_tier", "buy", "lower_tier",
                  "down", "team", "reset", "zero", "clear",
                  "character_reset", "char_reset", "characterreset",
+                 "equip_title", "clear_title", "equip", "unequip_title",
                  "page", "refresh", "set" -> true;
             default -> false;
         };
@@ -404,8 +522,9 @@ public final class ForgeBridge {
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT);
         return switch (act) {
             case "page" -> arg == null || arg.isBlank() ? "main" : arg.toLowerCase(Locale.ROOT);
-            case "down", "reset", "zero", "clear", "set" -> "adjust";
+            case "down", "reset", "zero", "clear", "set", "lower_tier" -> "lower";
             case "buy", "activate", "purchase_tier" -> "buy";
+            case "equip_title", "clear_title", "equip", "unequip_title" -> "titles";
             default -> "main";
         };
     }
@@ -834,10 +953,36 @@ public final class ForgeBridge {
                         economyFormat = null;
                     }
                     economyFormatExactCost = economyCls.getMethod("formatExactCost", long.class);
+                    try {
+                        economyBalance = economyCls.getMethod("balance", serverPlayerCls);
+                    } catch (NoSuchMethodException ignored) {
+                        economyBalance = null;
+                    }
+                    try {
+                        coinKindCls = loadClass(
+                                "com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy$CoinKind",
+                                preferred);
+                        economyCountOf = economyCls.getMethod("countOf", serverPlayerCls, coinKindCls);
+                    } catch (Throwable ignored) {
+                        coinKindCls = null;
+                        economyCountOf = null;
+                    }
+                    try {
+                        Class<?> unlockTierCls = loadClass(
+                                "com.dbzlegacy.adaptivedifficulty.tier.UnlockTier", preferred);
+                        economyActivationCostPlayer = economyCls.getMethod(
+                                "activationCost", unlockTierCls, serverPlayerCls);
+                    } catch (Throwable ignored) {
+                        economyActivationCostPlayer = null;
+                    }
                 } catch (Throwable missing) {
                     economyBalanceText = null;
                     economyFormat = null;
                     economyFormatExactCost = null;
+                    economyBalance = null;
+                    economyCountOf = null;
+                    economyActivationCostPlayer = null;
+                    coinKindCls = null;
                 }
                 try {
                     Class<?> unlockTierCls = loadClass(
@@ -846,11 +991,35 @@ public final class ForgeBridge {
                     unlockTierById = unlockTierCls.getMethod("byId", int.class);
                     unlockTierActivationCost = unlockTierCls.getMethod("activationCost");
                     unlockTierMaxDifficulty = unlockTierCls.getMethod("maxDifficulty");
+                    try {
+                        unlockTierActivationCostForLevel =
+                                unlockTierCls.getMethod("activationCostForLevel", int.class);
+                    } catch (NoSuchMethodException ignored) {
+                        unlockTierActivationCostForLevel = null;
+                    }
                 } catch (Throwable missing) {
                     unlockTierValues = null;
                     unlockTierById = null;
                     unlockTierActivationCost = null;
+                    unlockTierActivationCostForLevel = null;
                     unlockTierMaxDifficulty = null;
+                }
+                try {
+                    Class<?> titleSys = loadClass(
+                            "com.dbzlegacy.adaptivedifficulty.title.TitleSystem", preferred);
+                    Class<?> titleCls = loadClass(
+                            "com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle", preferred);
+                    titleActiveDisplay = titleSys.getMethod("activeDisplay", serverPlayerCls);
+                    titleActiveId = titleSys.getMethod("activeId", serverPlayerCls);
+                    titleHas = titleSys.getMethod("has", serverPlayerCls, titleCls);
+                    titleValues = titleCls.getMethod("values");
+                    titleRequirementTip = titleCls.getMethod("requirementTip");
+                } catch (Throwable missing) {
+                    titleActiveDisplay = null;
+                    titleActiveId = null;
+                    titleHas = null;
+                    titleValues = null;
+                    titleRequirementTip = null;
                 }
 
                 try {

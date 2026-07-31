@@ -50,6 +50,11 @@ public enum UnlockTier {
         return DifficultyConfig.get().tierActivationCost(id);
     }
 
+    /** Base cost scaled by the player's current DMZ level. */
+    public long activationCostForLevel(int dmzLevel) {
+        return DifficultyConfig.get().tierActivationCostScaled(id, dmzLevel);
+    }
+
     /** Enemy scaling multiplier for this tier (≥ 1.0). */
     public double enemyScalingMultiplier() {
         return DifficultyConfig.get().tierEnemyMult(id);

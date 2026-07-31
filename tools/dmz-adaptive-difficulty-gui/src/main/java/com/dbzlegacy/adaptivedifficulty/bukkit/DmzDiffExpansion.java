@@ -5,8 +5,8 @@ import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.entity.Player;
 
 /**
- * PlaceholderAPI: {@code %dmzdiff_<id>%} for CMI lore / scoreboards.
- * V3 stats only — title placeholders intentionally empty.
+ * PlaceholderAPI: {@code %dmzdiff_<id>%}.
+ * Tier-centric surface + titles + per-type Ancient Coin counts.
  */
 public final class DmzDiffExpansion extends PlaceholderExpansion {
     private final AdaptiveDifficultyGuiPlugin plugin;
@@ -41,10 +41,8 @@ public final class DmzDiffExpansion extends PlaceholderExpansion {
             return "";
         }
         String key = params.toLowerCase(Locale.ROOT);
-        // Titles removed from V3 player surface.
-        if (key.startsWith("title_") || key.equals("titles") || key.equals("titles_count")
-                || key.equals("active_title") || key.equals("active_title_id")
-                || key.startsWith("cost_up_") || key.equals("cost_max")
+        // Removed player-facing difficulty-point / old reward placeholders.
+        if (key.startsWith("cost_up_") || key.equals("cost_max")
                 || key.startsWith("cost_buy_") || key.equals("raise_room")
                 || key.equals("reward_mult") || key.equals("kill_tp")) {
             return "";
