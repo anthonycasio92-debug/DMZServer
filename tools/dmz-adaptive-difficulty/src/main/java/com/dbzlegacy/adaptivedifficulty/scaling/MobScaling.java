@@ -72,6 +72,9 @@ public final class MobScaling {
 
     public static void scaleIfNeeded(LivingEntity entity) {
         try {
+            if (com.dbzlegacy.adaptivedifficulty.util.DimensionGates.isDisabled(entity)) {
+                return;
+            }
             scaleIfNeededInternal(entity);
         } catch (Throwable t) {
             // Never let scaling abort FinalizeSpawn — that kills natural spawns.

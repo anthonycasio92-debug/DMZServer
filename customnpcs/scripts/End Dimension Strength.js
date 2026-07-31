@@ -1,7 +1,7 @@
 /*
 ============================================================
  End Dimension Strength
- Version: 2.10.3
+ Version: 2.10.4
 
  DESIGN (why this exists):
  - DMZ StatsData / DMZ HP attaches to PLAYERS ONLY. Mobs/dragon cannot hold
@@ -61,9 +61,17 @@ var TRIGGER_CLEANUP_ID = 51;
 /* Back-compat alias */
 var TRIGGER_ID = TRIGGER_SPAWN_ID;
 
-var SCAN_INTERVAL_MS = 1500;
-var SCAN_RADIUS = 96;
-var NATURAL_CHECK_MS = 10000;
+/*
+ * TPS (2.10.4): End entity fan-out was crushing MSPT.
+ * - Never call world.getAllEntities(-1) on the tick path
+ * - World-wide scan lock so N End players don't each AABB-scan
+ * - Typed ENDER_DRAGON lookup only (small island box)
+ */
+var SCAN_INTERVAL_MS = 8000;
+var SCAN_RADIUS = 40;
+var NATURAL_CHECK_MS = 30000;
+var WORLD_SCAN_LOCK = "end.strength.worldScan";
+var WORLD_PENDING_BUFF_LOCK = "end.strength.pendingBuffTick";
 
 /* Natural dragon spawn if none alive. */
 var NATURAL_SPAWN_ENABLED = true;
@@ -274,8 +282,8 @@ var END_TP_ADJUST_MIN_DELTA = 50;
 
 /* Extra scripted dragon attacks - real DragonMineZ ki projectiles. */
 var DRAGON_EXTRA_ATTACKS_ENABLED = true;
-var DRAGON_ATTACK_INTERVAL_MS = 3200;
-var DRAGON_ATTACK_RANGE = 96;
+var DRAGON_ATTACK_INTERVAL_MS = 5000;
+var DRAGON_ATTACK_RANGE = 72;
 var DRAGON_ATTACK_WORLD_LOCK = "end.strength.dragonAtkLock";
 var DRAGON_KI_BEAM_CHANCE = 0.60; /* else DMZ ki blast */
 var DRAGON_DMZ_KI_DAMAGE = 450;   /* kiblast DamageSource amount (non-player owner) */
@@ -768,18 +776,7 @@ function getOrCreateEndDragonFight() {
         return { fight: null, level: null, world: null };
     }
 
-    try {
-        var dimName = "?";
-        try { dimName = str(endLevel.dimension().location()); } catch (eDim) {
-            try { dimName = str(endLevel.m_46472_().m_135782_()); } catch (eDim2) {}
-        }
-        print("[EndStrength] End ServerLevel=" + endLevel.getClass().getName() + " dim=" + dimName);
-    } catch (eLog) {}
-
-    try { forceLoadEndChunks(endLevel); } catch (eChunk) {
-        try { print("[EndStrength] forceLoadEndChunks error: " + eChunk); } catch (eChunk2) {}
-    }
-
+    /* Do NOT force-load chunks here — tick/natural paths call this often and keep The End hot. */
     var fight = readDragonFightFromLevel(endLevel);
     if (fight == null) {
         try { print("[EndStrength] EndDragonFight missing - creating and attaching one"); } catch (e1) {}
@@ -2067,34 +2064,27 @@ function findDragons(world) {
         found.push(ent);
     }
 
-    try {
-        var list = world.getAllEntities(-1);
-        for (var i = 0; i < list.length; i++) {
-            if (classifyEndEntity(list[i]) === "dragon") pushDragon(list[i]);
-        }
-    } catch (e) {}
-
-    /* MC-level backup - CNPC scans sometimes miss the fight dragon. */
+    /*
+     * TPS: NEVER world.getAllEntities(-1) here.
+     * Typed ENDER_DRAGON query around the main island only.
+     */
     try {
         var level = getMcServerLevel(world);
-        if (level != null) {
-            var EntityType = Java.type("net.minecraft.world.entity.EntityType");
-            var AABB = Java.type("net.minecraft.world.phys.AABB");
-            var box = new AABB(-600.0, 0.0, -600.0, 600.0, 320.0, 600.0);
-            var mcList = null;
-            try {
-                mcList = level.getEntities(EntityType.ENDER_DRAGON, box, function (e) { return e != null && e.isAlive(); });
-            } catch (e2) {
-                try {
-                    mcList = level.m_45976_(EntityType.f_20530_, box, function (e) { return e != null && e.m_6084_(); });
-                } catch (e3) {}
+        if (level == null) level = getEndServerLevel();
+        var fromLevel = findDragonsOnLevel(level);
+        for (var i = 0; i < fromLevel.length; i++) pushDragon(fromLevel[i]);
+    } catch (e) {}
+
+    /* Fight API backup when the typed query misses a mid-spawn dragon. */
+    try {
+        var fight = null;
+        try { fight = readDragonFightFromLevel(getMcServerLevel(world) || getEndServerLevel()); } catch (eF) {}
+        if (fight != null) {
+            var mc = null;
+            try { mc = fight.getDragon(); } catch (e2) {
+                try { mc = fight.m_64067_(); } catch (e3) {}
             }
-            if (mcList != null) {
-                var it = mcList.iterator();
-                while (it.hasNext()) {
-                    pushDragon(wrapMcEntity(it.next()));
-                }
-            }
+            if (mc != null) pushDragon(wrapMcEntity(mc));
         }
     } catch (e4) {}
 
@@ -2217,7 +2207,8 @@ function findDragonsOnLevel(endLevel) {
     try {
         var EntityType = Java.type("net.minecraft.world.entity.EntityType");
         var AABB = Java.type("net.minecraft.world.phys.AABB");
-        var box = new AABB(-800.0, 0.0, -800.0, 800.0, 320.0, 800.0);
+        /* Main island only — 1600² boxes were wiping MSPT when players visited The End. */
+        var box = new AABB(-256.0, 0.0, -256.0, 256.0, 320.0, 256.0);
         var dragonType = null;
         try { dragonType = EntityType.ENDER_DRAGON; } catch (e1) {
             try { dragonType = EntityType.f_20530_; } catch (e2) {}
@@ -2667,6 +2658,11 @@ function applyPendingDragonBuff(world, player) {
     try {
         var stored = world.getStoreddata();
         if (!stored.has(WORLD_PENDING_DRAGON_BUFF)) return;
+        /* Throttle pending-buff polls — findDragons is still non-trivial. */
+        var tPend = nowMs();
+        var lastPend = stored.has(WORLD_PENDING_BUFF_LOCK) ? num(stored.get(WORLD_PENDING_BUFF_LOCK), 0) : 0;
+        if (tPend - lastPend < 2000) return;
+        stored.put(WORLD_PENDING_BUFF_LOCK, "" + tPend);
         raw = str(stored.get(WORLD_PENDING_DRAGON_BUFF));
         var dragons = findDragons(world);
         if (dragons.length <= 0) {
@@ -3388,19 +3384,11 @@ function tickDragonExtraAttacks(world, player) {
     if (DRAGON_EXTRA_ATTACKS_ENABLED !== true) return;
     if (world == null || !isInTheEnd(world)) return;
 
-    var dragons = [];
-    try { dragons = findDragons(world); } catch (e1) {}
-    if (dragons.length <= 0) {
-        try { dragons = findDragonsOnLevel(getEndServerLevel()); } catch (e2) {}
-    }
-
-    /* Drop dead / dying dragons so attacks stop the moment the fight ends. */
-    var living = [];
-    for (var fi = 0; fi < dragons.length; fi++) {
-        if (isLivingDragon(dragons[fi])) living.push(dragons[fi]);
-    }
-    if (living.length <= 0) return;
-
+    /*
+     * TPS: throttle BEFORE findDragons().
+     * findDragons uses a typed ENDER_DRAGON query (still non-trivial) —
+     * never run it every player tick.
+     */
     var t = nowMs();
     try {
         var stored = world.getStoreddata();
@@ -3416,6 +3404,19 @@ function tickDragonExtraAttacks(world, player) {
             temp.put(TEMP_DRAGON_ATTACK, "" + t);
         } catch (eLock2) { return; }
     }
+
+    var dragons = [];
+    try { dragons = findDragons(world); } catch (e1) {}
+    if (dragons.length <= 0) {
+        try { dragons = findDragonsOnLevel(getEndServerLevel()); } catch (e2) {}
+    }
+
+    /* Drop dead / dying dragons so attacks stop the moment the fight ends. */
+    var living = [];
+    for (var fi = 0; fi < dragons.length; fi++) {
+        if (isLivingDragon(dragons[fi])) living.push(dragons[fi]);
+    }
+    if (living.length <= 0) return;
 
     for (var d = 0; d < living.length; d++) {
         var dragon = living[d];
@@ -3512,38 +3513,47 @@ function tick(event) {
             }
         } catch (eCrystal) {}
 
-        /* Natural spawn check (throttled per player, locked world-wide). */
+        /* Natural spawn check (throttled world-wide). */
         try {
             var lastNat = 0;
-            if (temp.has(TEMP_NATURAL)) lastNat = num(temp.get(TEMP_NATURAL), 0);
+            var wNat = world.getStoreddata();
+            if (wNat.has(TEMP_NATURAL)) lastNat = num(wNat.get(TEMP_NATURAL), 0);
+            else if (temp.has(TEMP_NATURAL)) lastNat = num(temp.get(TEMP_NATURAL), 0);
             if (t - lastNat >= NATURAL_CHECK_MS) {
-                temp.put(TEMP_NATURAL, "" + t);
+                wNat.put(TEMP_NATURAL, "" + t);
+                try { temp.put(TEMP_NATURAL, "" + t); } catch (eNatT) {}
                 tryNaturalDragonSpawn(player);
             }
         } catch (eNat) {}
 
         /* Buff a dragon that appeared after a delayed fight spawn. */
-        try { applyPendingDragonBuff(getEndWorld() || world, player); } catch (ePend) {}
+        try { applyPendingDragonBuff(world, player); } catch (ePend) {}
 
+        /* World-wide scan lock — one AABB fan-out for all End players. */
         var last = 0;
-        try { if (temp.has(TEMP_SCAN)) last = num(temp.get(TEMP_SCAN), 0); } catch (e1) {}
-        if (t - last < SCAN_INTERVAL_MS) return;
-        try { temp.put(TEMP_SCAN, "" + t); } catch (e2) {}
+        try {
+            var wScan = world.getStoreddata();
+            if (wScan.has(WORLD_SCAN_LOCK)) last = num(wScan.get(WORLD_SCAN_LOCK), 0);
+            if (t - last < SCAN_INTERVAL_MS) return;
+            wScan.put(WORLD_SCAN_LOCK, "" + t);
+        } catch (eScanLock) {
+            try { if (temp.has(TEMP_SCAN)) last = num(temp.get(TEMP_SCAN), 0); } catch (e1) {}
+            if (t - last < SCAN_INTERVAL_MS) return;
+            try { temp.put(TEMP_SCAN, "" + t); } catch (e2) {}
+        }
 
         var list = null;
         try {
-            if (SCAN_RADIUS < 0) list = world.getAllEntities(-1);
-            else {
-                list = world.getNearbyEntities(
-                    Math.floor(player.getX()),
-                    Math.floor(player.getY()),
-                    Math.floor(player.getZ()),
-                    SCAN_RADIUS,
-                    -1
-                );
-            }
+            /* Radius scan only — never getAllEntities(-1) on the tick path. */
+            list = world.getNearbyEntities(
+                Math.floor(player.getX()),
+                Math.floor(player.getY()),
+                Math.floor(player.getZ()),
+                SCAN_RADIUS,
+                -1
+            );
         } catch (e3) {
-            try { list = world.getAllEntities(-1); } catch (e4) { return; }
+            return;
         }
         if (list == null) return;
 

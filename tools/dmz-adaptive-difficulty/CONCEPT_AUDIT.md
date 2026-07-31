@@ -1,6 +1,6 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.8.2** · GUI: **1.8.2**  
+Mod version: **1.8.3** · GUI: **1.8.3**  
 Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
 | § | Concept | Status | Implementation |
@@ -33,6 +33,10 @@ Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_S
 - **Purchase formula**: iron-coin ramp (`baseCostIronCoins` × scale) instead of legacy `baseCost × purchased/costScaling`
 - **Phys vs Ki extras**: folded into shared outgoing damage multiplier
 
+## 1.8.3 — The End isolation
+- Config `disabledDimensions` defaults to `minecraft:the_end` (skip scale/AI/evo/gravity)
+- CNPC `End Dimension Strength.js` **2.10.4**: no tick-path `getAllEntities`; world scan lock; smaller dragon AABB; no force-load on fight lookup
+
 ## 1.8.2 follow-up
 - CombatIndex keeps weak refs (no all-level UUID scan every pulse)
 - Combat gravity ticks only players with contributions
@@ -56,6 +60,7 @@ Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_S
 - Hub GUI shows team bonus + contribution (§5)
 
 ## Install
-1. `mods/dmz_adaptive_difficulty-1.8.2.jar`
-2. `plugins/dmz_adaptive_difficulty_gui-1.8.2.jar`
+1. `mods/dmz_adaptive_difficulty-1.8.3.jar`
+2. `plugins/dmz_adaptive_difficulty_gui-1.8.3.jar`
 3. Optional: `mods/spark-1.10.53-forge.jar` (`tools/SPARK.md`)
+4. Reload CNPC **End Dimension Strength** 2.10.4
