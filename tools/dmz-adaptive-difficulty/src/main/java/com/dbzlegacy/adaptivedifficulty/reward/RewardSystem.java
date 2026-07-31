@@ -17,7 +17,6 @@ import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
-import com.dragonminez.common.stats.skills.Skills;
 import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -29,7 +28,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * Concept §15 — reward scaling: TP, XP, Potential progress, rare drops, capsules, titles.
+ * Concept §15 — reward scaling: TP, XP, rare drops, capsules, titles.
+ * <p>
+ * Potential unlock ({@code potentialunlock}) is owned by the CustomNPCs
+ * {@code Potential.js} script — this mod must not write that skill.
  */
 public final class RewardSystem {
     private RewardSystem() {}
@@ -51,7 +53,6 @@ public final class RewardSystem {
 
         grantTrainingPoints(killer, mult, elite, boss, mutated, cfg);
         grantExperience(killer, mult, elite, boss, tier);
-        grantPotentialProgress(killer, mult, elite, boss, tier);
         grantDrops(killer, mult, elite, boss, mutated, tier);
         maybeUnlockTitle(killer, snap, elite, boss, tier);
     }
@@ -101,52 +102,6 @@ public final class RewardSystem {
         }
         if (xp > 0) {
             killer.m_6756_(xp); // giveExperiencePoints
-        }
-    }
-
-    /**
-     * Potential is script-driven ({@code potentialunlock} skill). We nudge that skill's
-     * progress by adding levels/points when possible; otherwise store a bonus counter.
-     */
-    private static void grantPotentialProgress(
-            ServerPlayer killer, double mult, boolean elite, boolean boss, DifficultyTier tier
-    ) {
-        if (tier.ordinalPower() < DifficultyTier.AWAKENED.ordinalPower()) {
-            return;
-        }
-        StatsData stats = DmzProgression.stats(killer);
-        if (stats == null) {
-            return;
-        }
-        try {
-            Skills skills = stats.getSkills();
-            if (skills == null) {
-                return;
-            }
-            int gain = (elite ? 2 : 1) + (boss ? 3 : 0);
-            gain = (int) Math.max(1, Math.round(gain * Math.min(3.0, mult)));
-            if (!skills.hasSkill("potentialunlock")) {
-                skills.registerDefaultSkill("potentialunlock", 10);
-            }
-            int cur = skills.getSkillLevel("potentialunlock");
-            int max = skills.getMaxSkillLevel("potentialunlock");
-            if (max <= 0) {
-                max = 10;
-            }
-            // Store fractional progress in persistent data; +1 skill every 10 kills-worth
-            var tag = PersistentDataAccess.get(killer);
-            int prog = tag.m_128451_("dmz_ad_potential_prog") + gain;
-            while (prog >= 10 && cur < max) {
-                prog -= 10;
-                cur++;
-                skills.setSkillLevel("potentialunlock", cur);
-            }
-            tag.m_128405_("dmz_ad_potential_prog", prog);
-            try {
-                NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(killer), killer);
-            } catch (Throwable ignored) {
-            }
-        } catch (Throwable ignored) {
         }
     }
 

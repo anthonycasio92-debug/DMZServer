@@ -21,7 +21,7 @@ Reaudited against live Java sources (not prior audit claims).
 | 12 | Elites (name/aura/size/AI/rewards) | Done* | `EliteSystem` — glow aura + knockback-resist size + NBT scale hint (no Pehkui) |
 | 13 | Mutations listed | Done | All five + Shadow / Vampiric extras |
 | 14 | Adaptive AI incl. ki-charge + anti-flight | Done | Dodge/retreat/ki-charge/`MainEffects.FLY`+fly skill/focus/coord |
-| 15 | Rewards TP/XP/Potential/drops/capsules/titles | Done* | Kill package + TP event; titles listed in Statistics; XP = vanilla points |
+| 15 | Rewards TP/XP/drops/capsules/titles | Done* | Kill package + TP event; Potential left to CNPC `Potential.js` |
 | 16 | Boss scale + phases | Done* | `BossScaling` HP/armor/name + 75/50/25% phases |
 | 17 | Cache / no per-tick calc | Done | `DifficultyCache` + mob NBT; level/prestige polled every 5s |
 
