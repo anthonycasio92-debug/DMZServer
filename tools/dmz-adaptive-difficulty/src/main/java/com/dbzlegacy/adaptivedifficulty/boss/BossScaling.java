@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.boss;
 
+import com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
@@ -99,7 +100,8 @@ public final class BossScaling {
         }
         AttributeInstance armor = entity.m_21051_(Attributes.f_22284_);
         if (armor != null) {
-            double bonus = Math.min(cfg.maxArmorBonus, difficulty * (cfg.defensePercentPerDifficulty / 100.0) * 0.25);
+            double bonus = Math.min(cfg.maxArmorBonus,
+                    ScalingCurves.combatBonus(difficulty, cfg.defensePercentPerDifficulty) * 0.25);
             armor.m_22100_(Math.min(30.0, armor.m_22115_() + bonus));
         }
 

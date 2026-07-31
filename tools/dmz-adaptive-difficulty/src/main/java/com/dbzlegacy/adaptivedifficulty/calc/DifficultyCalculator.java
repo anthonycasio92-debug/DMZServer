@@ -96,12 +96,9 @@ public final class DifficultyCalculator {
         return raiseCostIronCoins(Math.max(0L, currentPurchased), amountToBuy);
     }
 
+    /** TP / reward multiplier — log curve by default (see {@link ScalingCurves}). */
     public static double rewardMultiplier(long activeDifficulty) {
-        DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableRewardScaling || cfg.rewardScaling <= 0) {
-            return 1.0;
-        }
-        return 1.0 + (activeDifficulty / cfg.rewardScaling);
+        return ScalingCurves.rewardMultiplier(activeDifficulty);
     }
 
     /**

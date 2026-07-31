@@ -41,7 +41,29 @@ public final class DifficultyConfig {
     public double costScalePerDifficulty = 0.01;
     /** Lightman's coin item used as the unit price (default iron coin). */
     public String costCoinItem = "lightmanscurrency:coin_iron";
+    /**
+     * Reward curve divisor. Used by {@code log}/{@code sqrt}/{@code power} reward curves.
+     * Legacy linear was {@code 1 + difficulty / rewardScaling}.
+     */
     public double rewardScaling = 1_000.0;
+    /**
+     * Reward curve mode: {@code log} (default), {@code sqrt}, {@code power}, or {@code linear}.
+     * Log keeps TP gains from exploding at high difficulty.
+     */
+    public String rewardCurve = "log";
+    /** Multiplier applied inside the reward curve (log/sqrt/power). */
+    public double rewardCurveGain = 1.2;
+    /** Exponent for {@code rewardCurve=power} only (ignored by log/sqrt). */
+    public double rewardCurveExponent = 0.45;
+    /** Soft cap on TP/reward multiplier (1.0 = no bonus cap). */
+    public double maxRewardMultiplier = 6.0;
+    /**
+     * Combat curve exponent ({@code < 1} = diminishing returns). {@code 1.0} = old linear.
+     * Effective difficulty = {@code pow(d, exp) * pow(pivot, 1-exp)}.
+     */
+    public double combatCurveExponent = 0.70;
+    /** Difficulty where the combat curve matches old linear rates. */
+    public long combatCurvePivot = 250L;
     public double healthPercentPerDifficulty = 1.0;
     /** Per-difficulty damage % (was 1.0; +50% → 1.5). */
     public double damagePercentPerDifficulty = 1.5;
@@ -253,6 +275,24 @@ public final class DifficultyConfig {
         }
         if (cfg.costScalePerDifficulty < 0.0) {
             cfg.costScalePerDifficulty = 0.01;
+        }
+        if (cfg.rewardCurve == null || cfg.rewardCurve.isBlank()) {
+            cfg.rewardCurve = "log";
+        }
+        if (cfg.rewardCurveGain < 0.0) {
+            cfg.rewardCurveGain = 1.2;
+        }
+        if (cfg.rewardCurveExponent <= 0.0) {
+            cfg.rewardCurveExponent = 0.45;
+        }
+        if (cfg.maxRewardMultiplier < 1.0) {
+            cfg.maxRewardMultiplier = 6.0;
+        }
+        if (cfg.combatCurveExponent <= 0.0) {
+            cfg.combatCurveExponent = 0.70;
+        }
+        if (cfg.combatCurvePivot < 1L) {
+            cfg.combatCurvePivot = 250L;
         }
         if (cfg.areaDifficultyMode == null || cfg.areaDifficultyMode.isBlank()) {
             cfg.areaDifficultyMode = "weighted";

@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.18)
+# DMZ Adaptive Difficulty (v1.7.19)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -22,7 +22,7 @@ Clients do **not** need this jar to join.
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.18.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.19.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
@@ -72,6 +72,28 @@ Available max = theoretical + purchased + optional team bonuses.
 | Ops | `/difficulty hard\|normal\|easy\|peaceful` | Vanilla world difficulty |
 | Staff | `/difficulty admin` | Toggle admin command access (shows errors if no perm) |
 | Staff (toggled on) | `/difficulty admin help\|reload\|settings\|area\|resetpurchased\|gamedifficulty\|set` | Config tools |
+
+## Combat & reward curves
+
+Mob **HP / damage / defense** use a diminishing power curve (default exponent `0.70`, pivot `250`):
+high difficulty still gets stronger, but not 1:1 linear.
+
+TP / reward multiplier uses a **log** curve by default (soft-capped at ×6):
+
+| Active | Old linear TP mult | New log TP mult (approx) |
+|---|---|---|
+| 1,000 | ×2 | ~×1.8 |
+| 10,000 | ×11 | ~×3.9 |
+| 100,000 | ×101 | ~×5.9 (cap ×6) |
+
+Tune:
+```
+/difficulty admin set combatCurveExponent 0.70
+/difficulty admin set combatCurvePivot 250
+/difficulty admin set rewardCurve log
+/difficulty admin set rewardCurveGain 1.2
+/difficulty admin set maxRewardMultiplier 6
+```
 
 ## Pricing (Lightman's iron coins)
 

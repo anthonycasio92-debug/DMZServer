@@ -364,6 +364,14 @@ public final class DifficultyCommands {
                         cfg.costScalePerDifficulty = Math.max(0.0, Double.parseDouble(value));
                 case "costcoinitem", "coinitem" -> cfg.costCoinItem = value.trim();
                 case "rewardscaling" -> cfg.rewardScaling = Double.parseDouble(value);
+                case "rewardcurve" -> cfg.rewardCurve = value.trim().toLowerCase();
+                case "rewardcurvegain" -> cfg.rewardCurveGain = Math.max(0.0, Double.parseDouble(value));
+                case "rewardcurveexponent" -> cfg.rewardCurveExponent = Math.max(0.05, Double.parseDouble(value));
+                case "maxrewardmultiplier", "maxrewardmult" ->
+                        cfg.maxRewardMultiplier = Math.max(1.0, Double.parseDouble(value));
+                case "combatcurveexponent", "combatcurve" ->
+                        cfg.combatCurveExponent = Math.max(0.05, Math.min(1.0, Double.parseDouble(value)));
+                case "combatcurvepivot" -> cfg.combatCurvePivot = Math.max(1L, Long.parseLong(value));
                 case "health", "healthpercentperdifficulty" -> cfg.healthPercentPerDifficulty = Double.parseDouble(value);
                 case "damage", "damagepercentperdifficulty" -> cfg.damagePercentPerDifficulty = Double.parseDouble(value);
                 case "defense", "defensepercentperdifficulty" -> cfg.defensePercentPerDifficulty = Double.parseDouble(value);
