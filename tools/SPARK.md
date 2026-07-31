@@ -37,6 +37,16 @@ Typical workflow when TPS is stuck around 6–8:
 4. If TPS recovers a lot → this mod (or its combat load) is involved
 5. If TPS stays ~6–8 → profile with Spark; cost is elsewhere
 
+## The End
+
+Spark previously pointed at **The End** as the TPS cliff. Root cause was CNPC
+`customnpcs/scripts/End Dimension Strength.js` (full-world entity scans + per-player
+fan-out). Fixed in script **2.10.4**. Adaptive difficulty also skips The End by
+default (`disabledDimensions: ["minecraft:the_end"]`) so Enderman gravity/AI does
+not stack on top of that script.
+
+Reload player scripts in CNPC after updating the `.js` file (or restart).
+
 ## Docs
 
 - https://spark.lucko.me/

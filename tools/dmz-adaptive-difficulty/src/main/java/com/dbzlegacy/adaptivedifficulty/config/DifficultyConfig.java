@@ -206,6 +206,12 @@ public final class DifficultyConfig {
     public Boolean restoreVanillaDifficultyFromPeaceful = Boolean.TRUE;
     /** Target vanilla difficulty when restoring from Peaceful: easy / normal / hard. */
     public String vanillaDifficulty = "hard";
+    /**
+     * Dimensions where adaptive difficulty skips scaling / AI / evolution / gravity.
+     * Default: The End — owned by CNPC {@code End Dimension Strength.js}; stacking both
+     * systems crushed TPS when players visited.
+     */
+    public List<String> disabledDimensions = new ArrayList<>(Arrays.asList("minecraft:the_end"));
 
     public boolean shouldRestoreVanillaFromPeaceful() {
         return restoreVanillaDifficultyFromPeaceful == null || restoreVanillaDifficultyFromPeaceful;
@@ -284,6 +290,9 @@ public final class DifficultyConfig {
     private static void normalize(DifficultyConfig cfg) {
         if (cfg.bossIdContains == null) {
             cfg.bossIdContains = new ArrayList<>();
+        }
+        if (cfg.disabledDimensions == null) {
+            cfg.disabledDimensions = new ArrayList<>(Arrays.asList("minecraft:the_end"));
         }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
             cfg.guiBackend = "cmi";

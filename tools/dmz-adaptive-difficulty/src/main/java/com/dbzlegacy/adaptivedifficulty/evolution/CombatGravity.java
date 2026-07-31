@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationType;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dragonminez.server.util.GravityDeviceManager;
 import com.dragonminez.server.util.GravityStateSync;
 import java.util.Iterator;
@@ -38,6 +39,9 @@ public final class CombatGravity {
      */
     public static void contribute(ServerPlayer player, UUID sourceId, double gravity, int ttlTicks) {
         if (player == null || sourceId == null || gravity <= 0.0 || player.m_9236_().f_46443_) {
+            return;
+        }
+        if (DimensionGates.isDisabled(player)) {
             return;
         }
         if (!(player.m_9236_() instanceof ServerLevel level)) {

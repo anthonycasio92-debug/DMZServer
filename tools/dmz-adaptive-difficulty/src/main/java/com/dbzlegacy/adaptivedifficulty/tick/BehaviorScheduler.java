@@ -8,6 +8,7 @@ import com.dbzlegacy.adaptivedifficulty.evolution.CombatGravity;
 import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
+import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import java.util.List;
 import net.minecraft.nbt.CompoundTag;
@@ -80,6 +81,10 @@ public final class BehaviorScheduler {
     }
 
     private static boolean process(Mob mob, boolean ai, boolean evo, DifficultyConfig cfg) {
+        if (DimensionGates.isDisabled(mob)) {
+            CombatIndex.unmark(mob.m_20148_());
+            return false;
+        }
         float hp = mob.m_21223_();
         if (!(hp > 0.0f) || Float.isNaN(hp) || Float.isInfinite(hp)) {
             MobScaling.terminateIfZeroHealth(mob);

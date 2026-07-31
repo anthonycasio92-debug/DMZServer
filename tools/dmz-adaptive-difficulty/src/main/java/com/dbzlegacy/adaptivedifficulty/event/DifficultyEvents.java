@@ -14,6 +14,7 @@ import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tick.BehaviorScheduler;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
+import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.dragonminez.common.events.DMZEvent;
@@ -97,7 +98,8 @@ public final class DifficultyEvents {
     @SubscribeEvent(priority = EventPriority.LOW)
     public void onFinalizeSpawn(MobSpawnEvent.FinalizeSpawn event) {
         LivingEntity entity = event.getEntity();
-        if (entity != null && !event.isCanceled() && !event.isSpawnCancelled()) {
+        if (entity != null && !event.isCanceled() && !event.isSpawnCancelled()
+                && !DimensionGates.isDisabled(entity)) {
             MobScaling.scaleIfNeeded(entity);
         }
     }
@@ -109,7 +111,7 @@ public final class DifficultyEvents {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public void onChangeTarget(LivingChangeTargetEvent event) {
         LivingEntity entity = event.getEntity();
-        if (!(entity instanceof Mob mob)) {
+        if (!(entity instanceof Mob mob) || DimensionGates.isDisabled(mob)) {
             return;
         }
         if (event.getNewTarget() instanceof ServerPlayer player) {
@@ -165,6 +167,11 @@ public final class DifficultyEvents {
         }
         var source = event.getSource();
         Entity causing = source == null ? null : source.m_7639_(); // getEntity
+
+        // The End (etc.) is owned by other systems — do not stack AD work there.
+        if (DimensionGates.isDisabled(victim)) {
+            return;
+        }
 
         // Fast reject: ignore damage that cannot involve our systems (no player, no hostile).
         boolean victimPlayer = victim instanceof Player;

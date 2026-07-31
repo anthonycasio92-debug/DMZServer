@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.8.2)
+# DMZ Adaptive Difficulty (v1.8.3)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -21,18 +21,19 @@ Clients do **not** need this jar to join.
 - Kill rewards: XP + drop odds use concept `1 + difficulty / rewardScaling`; **no TP / Potential** writes
 - Titles catalog + equip GUI; capsules on elite/boss/mut kills
 - Scaling Health-inspired area difficulty for initial spawn (`weighted` / `average` / `max`)
-- **1.8.2**: combat-index weak refs; gravity ticks only active players; LivingHurt early-outs; Spark bundled for profiling (`tools/SPARK.md`)
+- **1.8.3**: skips The End by default (`disabledDimensions`) — End Strength script owns that dim; End script 2.10.4 TPS cuts
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.8.2.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.8.3.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
    - `CMILib*.jar` (required by CMI)
    - `CMI-*.jar`
-   - `dmz_adaptive_difficulty_gui-1.8.2.jar` (**registers Bukkit `/difficulty`**)
+   - `dmz_adaptive_difficulty_gui-1.8.3.jar` (**registers Bukkit `/difficulty`**)
 5. Optional profiler: `mods/spark-1.10.53-forge.jar` — see `tools/SPARK.md`
+6. Reload CNPC player script **End Dimension Strength** (v2.10.4) or restart
    - Optional: `PlaceholderAPI-*.jar`
 5. Optionally set `guiBackend` in `config/dmz_adaptive_difficulty.json`:
    - `cmi` (default), `auto`, `chest`, or `chat`

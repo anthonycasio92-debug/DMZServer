@@ -7,6 +7,7 @@ import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dragonminez.common.init.MainEffects;
@@ -52,7 +53,8 @@ public final class AdaptiveAiSystem {
      */
     public static void onPlayerKiCharge(ServerPlayer player) {
         DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableAdaptiveAi || player == null || !(player.m_9236_() instanceof ServerLevel level)) {
+        if (!cfg.enableAdaptiveAi || player == null || !(player.m_9236_() instanceof ServerLevel level)
+                || DimensionGates.isDisabled(player)) {
             return;
         }
         long now = level.m_46467_();
@@ -101,7 +103,7 @@ public final class AdaptiveAiSystem {
 
     public static void tick(Mob mob, long difficulty, boolean elite) {
         DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableAdaptiveAi || mob == null || !mob.m_6084_()) {
+        if (!cfg.enableAdaptiveAi || mob == null || !mob.m_6084_() || DimensionGates.isDisabled(mob)) {
             return;
         }
         if (!(mob.m_9236_() instanceof ServerLevel level)) {
