@@ -82,6 +82,7 @@ Curves are **split**:
 | Damage / defense | Steep offense curve (high endgame cap) | exp `0.93`, pivot `500`, dmg cap `×25000` |
 | Health | Flat health curve + hard caps | exp `0.40`, max mult `×8`, abs cap `400` HP |
 | TP / rewards | Diminishing power (uncapped) | gain `0.85`, exp `0.38`, scale `2500` |
+| Potential unlock | **Not touched** | Owned by CNPC `Potential.js` (`potentialunlock`) |
 | AI | Spaced across Awakened→Zenith | anti-flight Legendary+; pack/debuffs scale to Zenith |
 
 | Active | TP mult (approx) |
