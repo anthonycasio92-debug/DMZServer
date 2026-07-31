@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.tier;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,9 +40,10 @@ public final class UnlockSystem {
                 newly.add(tier.id);
             }
         }
-        // Bootstrap Ancient Coins so the first activation is reachable.
-        if (firstUnlockEver && !newly.isEmpty() && data.getAncientCopper() <= 0L) {
-            data.addAncientCopper(250L);
+        // Bootstrap real Ancient Coins so the first activation is reachable.
+        if (firstUnlockEver && !newly.isEmpty() && AncientCoinEconomy.balance(player) <= 0L) {
+            AncientCoinEconomy.grant(player, 250L);
+            AncientCoinEconomy.notifyGrant(player, 250L);
         }
         return newly;
     }

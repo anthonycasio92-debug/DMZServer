@@ -66,6 +66,8 @@ public final class DifficultyEvents {
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             DifficultyCache.data(player);
+            // Convert any leftover NBT Ancient Coin wallet into real Lightman's items.
+            com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.migrateWalletToItems(player);
             DifficultyCache.refresh(player);
             // Catch up tier titles earned before the Titles page existed (silent).
             TitleSystem.syncTierTitles(player, false);

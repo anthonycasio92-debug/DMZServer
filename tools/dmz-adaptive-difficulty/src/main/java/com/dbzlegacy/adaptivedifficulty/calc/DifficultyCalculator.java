@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.calc;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
 import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
@@ -56,6 +57,8 @@ public final class DifficultyCalculator {
         }
 
         long combatRating = CombatRating.compute(level, prestige, active, transform, DifficultyConfig.get());
+        // Live inventory balance (real Lightman's Ancient Coins), not the retired NBT wallet.
+        long ancientCopper = AncientCoinEconomy.balance(player);
 
         return new DifficultySnapshot(
                 level,
@@ -70,7 +73,7 @@ public final class DifficultyCalculator {
                 thresholdBonus,
                 contribution,
                 combatRating,
-                data.getAncientCopper(),
+                ancientCopper,
                 mode
         );
     }

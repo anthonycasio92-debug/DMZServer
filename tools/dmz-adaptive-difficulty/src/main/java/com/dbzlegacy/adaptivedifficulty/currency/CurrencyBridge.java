@@ -17,11 +17,11 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * Legacy Lightman's helpers kept for optional tooling.
+ * Difficulty currency bridge.
  * <p>
- * V3 difficulty payments use {@link AncientCoinEconomy} (Ancient Coins).
- * {@link #balanceText}, {@link #formatCost}, and {@link #currencyLabel} now
- * surface the Ancient Coin wallet so GUIs stay correct.
+ * V3 payments use {@link AncientCoinEconomy}: real Lightman's {@code coin_ancient}
+ * inventory items (not an NBT wallet). Legacy main-chain helpers remain below for
+ * tooling / fallback diagnostics.
  */
 public final class CurrencyBridge {
     private static final boolean LIGHTMANS_LOADED = ModList.get().isLoaded("lightmanscurrency");
@@ -34,7 +34,7 @@ public final class CurrencyBridge {
 
     /** V3 economy mode label. */
     public static String activeMode() {
-        return "ancient_coins";
+        return AncientCoinEconomy.realCoinsAvailable() ? "ancient_coins_items" : "ancient_coins_nbt_fallback";
     }
 
     public static boolean canAfford(ServerPlayer player, long copperCost) {
@@ -43,6 +43,10 @@ public final class CurrencyBridge {
 
     public static boolean charge(ServerPlayer player, long copperCost) {
         return AncientCoinEconomy.charge(player, copperCost);
+    }
+
+    public static void grant(ServerPlayer player, long copper) {
+        AncientCoinEconomy.grant(player, copper);
     }
 
     /**
@@ -228,6 +232,8 @@ public final class CurrencyBridge {
     }
 
     public static String currencyLabel() {
-        return "Ancient Coins";
+        return AncientCoinEconomy.realCoinsAvailable()
+                ? "Ancient Coins (inventory)"
+                : "Ancient Coins";
     }
 }

@@ -14,8 +14,10 @@ import net.minecraft.nbt.StringTag;
 /**
  * V3 player difficulty data.
  * <p>
- * Permanent: highest DMZ level, unlocked tiers, titles, ancient coin wallet.<br>
- * Temporary: active tier / active difficulty level (reset on death).
+ * Permanent: highest DMZ level, unlocked tiers, titles.<br>
+ * Temporary: active tier / active difficulty level (reset on death).<br>
+ * Ancient Coins are real Lightman's {@code coin_ancient} inventory items;
+ * {@code ancientCopper} is only kept for one-time migration from older builds.
  */
 public final class PlayerDifficultyData {
     public static final String NBT_ROOT = "dmz_adaptive_difficulty";
