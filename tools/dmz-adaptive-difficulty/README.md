@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.37)
+# DMZ Adaptive Difficulty (v1.7.38)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -20,11 +20,11 @@ Clients do **not** need this jar to join.
 - Elites, mutations, **per-mob evolution kits**, adaptive AI, boss phases
 - **No Training Point grants or multipliers** — kill/train TP left entirely to DragonMineZ
 - Scaling Health-inspired area difficulty for initial spawn (`weighted` / `average` / `max`)
-- TPS-minded tick path: non-hostiles skipped; AI/evolution every 40t near players only; gravity scan every 20t; retarget only on attack/target change
+- TPS-minded tick path: no per-tick NBT; AI/evolution every 80t near players only; combat gravity from kits (no AABB scans); retarget cache skips matched mobs
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.37.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.38.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:

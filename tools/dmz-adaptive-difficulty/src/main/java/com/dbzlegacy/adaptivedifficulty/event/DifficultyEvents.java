@@ -15,6 +15,7 @@ import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
+import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.dragonminez.common.events.DMZEvent;
@@ -27,7 +28,10 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Blaze;
 import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Ghast;
+import net.minecraft.world.entity.monster.ZombifiedPiglin;
+import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.LargeFireball;
@@ -139,7 +143,10 @@ public final class DifficultyEvents {
 
     /**
      * Concept §17 — only touch hostiles that need work.
-     * Animals / villagers exit before any NBT access.
+     * <p>
+     * Critical TPS rule: do <b>not</b> read persistent NBT every tick. Heavy work
+     * (AI / evolution / mutation / boss phases) runs on a staggered 80-tick slot
+     * and only when a player is nearby.
      */
     @SubscribeEvent
     public void onLivingTick(LivingEvent.LivingTickEvent event) {
@@ -147,31 +154,37 @@ public final class DifficultyEvents {
         if (!(entity instanceof Mob mob) || entity.m_9236_().f_46443_ || entity instanceof Player) {
             return;
         }
-        // Biggest TPS win: ignore non-hostiles entirely (no persistent-data lookup).
         if (!HostileMobs.isHostile(mob)) {
             return;
         }
 
         int age = entity.f_19797_;
 
-        // Cheap death check before NBT — healthy mobs skip terminate path.
+        // Cheap death check — float HP only, no NBT.
         float hp = entity.m_21223_();
         if (!(hp > 0.0f) || Float.isNaN(hp) || Float.isInfinite(hp)) {
-            if (MobScaling.terminateIfZeroHealth(entity)) {
-                return;
-            }
+            MobScaling.terminateIfZeroHealth(entity);
+            return;
+        }
+
+        // Sparse deferred scale if FinalizeSpawn missed (Mohist) — rare ages only.
+        if (age > 2 && age < 40 && (age == 5 || age == 15 || age == 30)) {
+            MobScaling.scaleIfNeeded(entity);
+            return;
+        }
+
+        // Heavy slot: once per ~4s per mob (staggered). No NBT outside this slot.
+        final int period = 80;
+        int stagger = Math.floorMod(entity.m_19879_(), period);
+        if (age % period != stagger) {
+            return;
+        }
+        if (!NearbyPlayers.anyWithin(mob, 48.0)) {
+            return;
         }
 
         CompoundTag tag = PersistentDataAccess.get(entity);
-        boolean scaled = tag.m_128471_(MobScaling.TAG_SCALED);
-
-        // Sparse deferred scale if FinalizeSpawn missed (Mohist).
-        if (!scaled && age > 2 && age < 40 && (age == 5 || age == 15 || age == 30)) {
-            MobScaling.scaleIfNeeded(entity);
-            tag = PersistentDataAccess.get(entity);
-            scaled = tag.m_128471_(MobScaling.TAG_SCALED);
-        }
-        if (!scaled) {
+        if (!tag.m_128471_(MobScaling.TAG_SCALED)) {
             return;
         }
 
@@ -181,59 +194,20 @@ public final class DifficultyEvents {
                 && !tag.m_128461_(MutationSystem.TAG_MUTATION).isEmpty();
         long difficulty = tag.m_128441_(MobScaling.TAG_DIFFICULTY) ? tag.m_128454_(MobScaling.TAG_DIFFICULTY) : 0L;
 
-        // Plain scaled-zero hostiles need no AI/evolution/phases.
         if (difficulty <= 0 && !elite && !boss && !mutated) {
             return;
         }
 
-        // Mutations / boss phases — less frequent than before.
-        if (mutated && age % 40 == 0) {
+        if (mutated) {
             MutationSystem.tick(entity, tag);
         }
-        if (boss && age % 20 == 0) {
+        if (boss) {
             BossScaling.tickPhases(entity, tag);
         }
-
-        // Heavy AI / evolution: every 40 ticks, staggered — skip when no nearby players.
-        int period = 40;
-        int stagger = Math.floorMod(entity.m_19879_(), period);
-        boolean aiSlot = age % period == stagger;
-        boolean evoSlot = age % period == ((stagger + (period / 2)) % period);
-        if (!aiSlot && !evoSlot) {
-            return;
-        }
-        if (!hasNearbyPlayer(mob, 64.0)) {
-            return;
-        }
-        if (aiSlot) {
-            AdaptiveAiSystem.tick(mob, difficulty, elite);
-        }
-        if (evoSlot && EnemyEvolution.isEvolvable(mob)) {
+        AdaptiveAiSystem.tick(mob, difficulty, elite);
+        if (EnemyEvolution.isEvolvable(mob)) {
             EnemyEvolution.tick(mob, difficulty, elite);
         }
-    }
-
-    /** Cheap online-player distance check (avoids AABB entity queries). */
-    private static boolean hasNearbyPlayer(Mob mob, double radius) {
-        if (!(mob.m_9236_() instanceof net.minecraft.server.level.ServerLevel level)) {
-            return false;
-        }
-        double rSq = radius * radius;
-        double x = mob.m_20185_();
-        double y = mob.m_20186_();
-        double z = mob.m_20189_();
-        for (ServerPlayer player : level.m_7654_().m_6846_().m_11314_()) {
-            if (player == null || player.m_9236_() != level || !player.m_6084_()) {
-                continue;
-            }
-            double dx = player.m_20185_() - x;
-            double dy = player.m_20186_() - y;
-            double dz = player.m_20189_() - z;
-            if (dx * dx + dy * dy + dz * dz <= rSq) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @SubscribeEvent
@@ -241,10 +215,10 @@ public final class DifficultyEvents {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)) {
             return;
         }
-        // Keep DMZ gravity-chamber zones glued to the player while endermen/wardens agro.
+        // Apply stacked combat-gravity contributions (kits push into the map; no AABB scan here).
         CombatGravity.tickPlayer(player);
 
-        if (player.f_19797_ % 100 != 0) {
+        if (player.f_19797_ % 200 != 0) {
             return;
         }
         DifficultySnapshot before = DifficultyCache.get(player);
@@ -252,7 +226,7 @@ public final class DifficultyEvents {
         int prestige = DmzProgression.prestige(player);
         if (before.dmzLevel != level || before.prestige != prestige) {
             DifficultyCache.refresh(player);
-            AreaDifficulty.clearCache();
+            // Don't wipe the whole area cache — TTL expires stale chunks.
         }
     }
 
@@ -296,10 +270,13 @@ public final class DifficultyEvents {
             }
         }
         AdaptiveAiSystem.onHurt(event);
-        if (victim != null && event.getAmount() > 0.0f) {
+        // Counter-teleport only for kits that use it — never NBT-scan every hurt victim.
+        if (victim != null && event.getAmount() > 0.0f
+                && (victim instanceof EnderMan
+                || victim instanceof ZombifiedPiglin
+                || victim instanceof Warden)) {
             EnemyEvolution.onHurt(victim);
         }
-        // After damage: only bother if the victim looks dead / nearly dead.
         if (victim != null && HostileMobs.isHostile(victim) && victim.m_21223_() <= 0.0f) {
             MobScaling.terminateIfZeroHealth(victim);
         }

@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
 import com.dbzlegacy.adaptivedifficulty.util.EntityDisplayNames;
+import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import java.lang.reflect.Field;
 import java.util.List;
@@ -46,6 +47,23 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class EnemyEvolution {
     public static final String TAG_EVOLVED = "dmz_ad_evolved";
+
+    private static final Field CREEPER_RADIUS;
+    private static final Field CREEPER_SWELL;
+
+    static {
+        Field radius = null;
+        Field swell = null;
+        try {
+            radius = Creeper.class.getDeclaredField("f_32272_"); // explosionRadius
+            radius.setAccessible(true);
+            swell = Creeper.class.getDeclaredField("f_32271_"); // maxSwell
+            swell.setAccessible(true);
+        } catch (Throwable ignored) {
+        }
+        CREEPER_RADIUS = radius;
+        CREEPER_SWELL = swell;
+    }
 
     private EnemyEvolution() {}
 
@@ -213,18 +231,15 @@ public final class EnemyEvolution {
         tag.m_128379_("dmz_ad_blast_scaled", true);
         int bonus = Math.max(0, tier.ordinalPower() - DifficultyTier.AWAKENED.ordinalPower());
         bonus += (int) Math.min(8, difficulty / 500);
-        // SRG field names (not intermediary bU/bV — those never matched on Forge/Mohist).
+        if (CREEPER_RADIUS == null || CREEPER_SWELL == null) {
+            return;
+        }
         try {
-            Field radius = Creeper.class.getDeclaredField("f_32272_"); // explosionRadius
-            radius.setAccessible(true);
-            int base = Math.max(3, radius.getInt(creeper));
-            radius.setInt(creeper, Math.min(12, base + Math.min(6, bonus / 2) + 1));
-
-            Field swell = Creeper.class.getDeclaredField("f_32271_"); // maxSwell
-            swell.setAccessible(true);
-            int maxSwell = swell.getInt(creeper);
+            int base = Math.max(3, CREEPER_RADIUS.getInt(creeper));
+            CREEPER_RADIUS.setInt(creeper, Math.min(12, base + Math.min(6, bonus / 2) + 1));
+            int maxSwell = CREEPER_SWELL.getInt(creeper);
             // Higher difficulty → faster fuse (vanilla default 30).
-            swell.setInt(creeper, Math.max(10, maxSwell - Math.min(18, bonus + 4)));
+            CREEPER_SWELL.setInt(creeper, Math.max(10, maxSwell - Math.min(18, bonus + 4)));
         } catch (Throwable ignored) {
         }
     }
@@ -717,20 +732,8 @@ public final class EnemyEvolution {
     // ── Shared helpers ────────────────────────────────────────────────────
 
     private static ServerPlayer nearestPlayer(ServerLevel level, Mob mob, double radius) {
-        AABB box = mob.m_20191_().m_82400_(radius);
-        ServerPlayer best = null;
-        double bestDist = Double.MAX_VALUE;
-        for (ServerPlayer p : level.m_45976_(ServerPlayer.class, box)) {
-            if (p == null || !p.m_6084_() || p.m_5833_()) { // isSpectator
-                continue;
-            }
-            double d = mob.m_20280_(p); // distanceToSqr
-            if (d < bestDist) {
-                bestDist = d;
-                best = p;
-            }
-        }
-        return best;
+        // Player-list distance — avoids AABB entity queries on busy servers.
+        return NearbyPlayers.nearest(mob, radius);
     }
 
     private static void solarFlare(ServerLevel level, Mob source, double radius) {
@@ -776,6 +779,10 @@ public final class EnemyEvolution {
     /** Counter-teleport / counter-movement when damaged. */
     public static void onHurt(LivingEntity entity) {
         if (entity == null || entity.m_9236_().f_46443_) {
+            return;
+        }
+        // Only kits that counter on hurt — bail before any NBT for other entities.
+        if (!(entity instanceof EnderMan || entity instanceof ZombifiedPiglin || entity instanceof Warden)) {
             return;
         }
         long difficulty = MobScaling.difficultyOf(entity);

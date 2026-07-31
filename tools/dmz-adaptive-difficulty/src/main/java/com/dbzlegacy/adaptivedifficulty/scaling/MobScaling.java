@@ -9,6 +9,9 @@ import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationType;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -51,6 +54,12 @@ public final class MobScaling {
     /** Vanilla generic.max_health upper bound — never push past this. */
     private static final double VANILLA_MAX_HEALTH_CAP = 1024.0;
 
+    /**
+     * Hot-path cache: entity UUID → last applied difficulty.
+     * Lets attack/target retarget skip NBT when already matched.
+     */
+    private static final Map<UUID, Long> APPLIED_DIFFICULTY = new ConcurrentHashMap<>();
+
     private MobScaling() {}
 
     public static long difficultyOf(LivingEntity entity) {
@@ -92,20 +101,26 @@ public final class MobScaling {
             if (cfg.scaleHostileOnly && !HostileMobs.isHostile(entity)) {
                 return;
             }
+            long difficulty = Math.max(0L, DifficultyCache.get(player).active);
+            // Memory cache — skip NBT entirely when this mob is already on this difficulty.
+            Long cached = APPLIED_DIFFICULTY.get(entity.m_20148_());
+            if (cached != null && cached == difficulty) {
+                return;
+            }
             CompoundTag tag = PersistentDataAccess.get(entity);
             if (!PersistentDataAccess.isWritable(tag)) {
                 return;
             }
-            long difficulty = Math.max(0L, DifficultyCache.get(player).active);
-            // Hot path: already matched — exit before terminate / apply work.
+            // Hot path: already matched in NBT — remember and exit.
             if (tag.m_128471_(TAG_SCALED)
                     && tag.m_128441_(TAG_BASE_HEALTH)
                     && tag.m_128441_(TAG_DIFFICULTY)
                     && tag.m_128454_(TAG_DIFFICULTY) == difficulty) {
+                APPLIED_DIFFICULTY.put(entity.m_20148_(), difficulty);
                 return;
             }
             // Never retarget / revive a mob that is already at 0 HP.
-            if (terminateIfZeroHealth(entity)) {
+            if (!(entity.m_21223_() > 0.0f) && terminateIfZeroHealth(entity)) {
                 return;
             }
             // Ensure spawn init ran (bases + elite/boss/mut rolls).
@@ -117,6 +132,7 @@ public final class MobScaling {
                 return;
             }
             if (tag.m_128441_(TAG_DIFFICULTY) && tag.m_128454_(TAG_DIFFICULTY) == difficulty) {
+                APPLIED_DIFFICULTY.put(entity.m_20148_(), difficulty);
                 return;
             }
             applyForDifficulty(entity, tag, difficulty, cfg);
@@ -155,6 +171,7 @@ public final class MobScaling {
         if (!tag.m_128471_(TAG_SCALED)) {
             return false;
         }
+        APPLIED_DIFFICULTY.remove(entity.m_20148_());
         try {
             // Entity.kill() — applies a lethal generic hit and runs normal death.
             entity.m_6074_();
@@ -387,6 +404,10 @@ public final class MobScaling {
 
         tag.m_128356_(TAG_DIFFICULTY, Math.max(0L, difficulty));
         tag.m_128350_(TAG_DMG_MULT, (float) Math.max(1.0, dmgMult * rarityDamage));
+        APPLIED_DIFFICULTY.put(entity.m_20148_(), Math.max(0L, difficulty));
+        if (APPLIED_DIFFICULTY.size() > 4096) {
+            APPLIED_DIFFICULTY.clear();
+        }
     }
 
     private static void captureBases(LivingEntity entity, CompoundTag tag, DifficultyConfig cfg) {
@@ -469,6 +490,11 @@ public final class MobScaling {
         }
         if (!(value >= 0.0) || Double.isNaN(value) || Double.isInfinite(value)) {
             return false;
+        }
+        // Skip dirty sync when the value is already effectively set.
+        double current = instance.m_22115_();
+        if (Math.abs(current - value) < 1.0e-4) {
+            return true;
         }
         instance.m_22100_(value);
         return true;

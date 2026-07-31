@@ -25,7 +25,7 @@ import net.minecraft.world.phys.AABB;
  */
 public final class AreaDifficulty {
     /** Longer TTL — spawn bursts were thrashing chunk difficulty recomputes. */
-    private static final long CACHE_TTL_MS = 1_000L;
+    private static final long CACHE_TTL_MS = 5_000L;
     private static final Map<Long, Cached> CHUNK_CACHE = new ConcurrentHashMap<>();
 
     private AreaDifficulty() {}
