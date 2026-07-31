@@ -282,7 +282,7 @@ public final class MobScaling {
             dmgMult = Math.min(dmgMult, cfg.maxDamageMultiplier);
         }
 
-        // Permanent rarity multipliers — baked into HP/damage so TP follows HP, not a TP bonus.
+        // Permanent rarity multipliers — baked into HP/damage (not separate reward bonuses).
         double rarityHealth = 1.0;
         double rarityDamage = 1.0;
         if (elite) {

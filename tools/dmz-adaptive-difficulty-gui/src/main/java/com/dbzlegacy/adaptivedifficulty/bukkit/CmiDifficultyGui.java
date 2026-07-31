@@ -77,7 +77,7 @@ public final class CmiDifficultyGui {
                 List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
 
         gui.addButton(pageBtn(27, Material.EXPERIENCE_BOTTLE, "&fRewards", "rewards",
-                "&7Kill TP details"));
+                "&7Kill rewards (no TP)"));
         gui.addButton(pageBtn(28, Material.IRON_SWORD, "&fTiers", "tiers",
                 "&7Enemy tier unlocks"));
         gui.addButton(pageBtn(29, Material.NAME_TAG, "&eTitles", "titles",
@@ -214,10 +214,13 @@ public final class CmiDifficultyGui {
         info.addLore(List.of(
                 "",
                 "&7Active  &f" + ph.getOrDefault("active", "?"),
-                "&7Kill TP (from mob HP) &a~" + ph.getOrDefault("kill_tp", "?"),
-                "&7Train TP &ano multiplier",
+                "&7Tier    &f" + ph.getOrDefault("tier", "?"),
                 "",
-                "&8Kill ≈ 400k at 8M difficulty (curve)"
+                "&8This mod does not grant or",
+                "&8multiply Training Points.",
+                "",
+                "&7Kill rewards",
+                "&8XP · rare drops · capsules · titles"
         ));
         gui.addButton(info);
         gui.addButton(pageBtn(18, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));

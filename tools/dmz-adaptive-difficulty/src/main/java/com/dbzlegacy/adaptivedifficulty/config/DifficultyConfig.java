@@ -42,49 +42,29 @@ public final class DifficultyConfig {
     /** Lightman's coin item used as the unit price (default iron coin). */
     public String costCoinItem = "lightmanscurrency:coin_iron";
     /**
-     * Reward curve divisor. Used by {@code log}/{@code sqrt}/{@code power} reward curves.
-     * Legacy linear was {@code 1 + difficulty / rewardScaling}.
+     * Legacy reward-curve divisor. Unused — this mod no longer grants or multiplies TP.
      */
     public double rewardScaling = 2_500.0;
-    /**
-     * Reward curve mode: {@code power} (default), {@code log}, {@code sqrt}, or {@code linear}.
-     * Power keeps TP on a diminishing curve that still grows at high difficulty.
-     */
+    /** Legacy reward curve mode. Unused — kept for config compatibility. */
     public String rewardCurve = "power";
-    /** Legacy — TP multipliers removed; gain kept at 0 so old configs stay inert. */
+    /** Legacy — forced to {@code 0} on load (TP multipliers removed). */
     public double rewardCurveGain = 0.0;
-    /** Exponent for {@code rewardCurve=power} only (ignored by log/sqrt). */
+    /** Legacy power-curve exponent. Unused. */
     public double rewardCurveExponent = 0.38;
-    /**
-     * Legacy field — TP multipliers are removed ({@code rewardMultiplier} always 1).
-     * Kept for config compatibility; migrated to {@code 1} on load.
-     */
+    /** Legacy — forced to {@code 1} on load (TP multipliers removed). */
     public double maxRewardMultiplier = 1.0;
-    /**
-     * Legacy kill-TP difficulty curve fields (unused for grants — kept for config compatibility).
-     * Kill TP is {@code maxHealth × killTpPerHealth}.
-     */
-    public double killTpRefAmount = 1_000_000.0;
+    /** Legacy kill-TP fields — unused; this mod never grants Training Points. */
+    public double killTpRefAmount = 0.0;
     public double killTpRefDifficulty = 10_000_000.0;
     public double killTpExponent = 0.70;
-    /**
-     * Kill TP per point of mob max health after retarget scaling.
-     * Default {@code 5000} → ~5.1M TP at 1024 HP (vanilla health ceiling).
-     */
-    public double killTpPerHealth = 5_000.0;
-    /** Floor TP for any scaled kill. */
-    public double killTpMinimum = 25.0;
-    /**
-     * Hard ceiling on a single kill TP grant.
-     * Default {@code 10,000,000} — top of the 5–10M max-difficulty band.
-     * {@code 0} = uncapped.
-     */
-    public double maxKillTp = 10_000_000.0;
-    /**
-     * Hard ceiling on a single {@code TPGainEvent} after the train multiplier.
-     * Default {@code 10,000,000}. {@code 0} = uncapped.
-     */
-    public double maxTpGainEvent = 10_000_000.0;
+    /** Legacy — forced to {@code 0} on load (no kill TP grants). */
+    public double killTpPerHealth = 0.0;
+    /** Legacy — forced to {@code 0} on load. */
+    public double killTpMinimum = 0.0;
+    /** Legacy — forced to {@code 0} on load. */
+    public double maxKillTp = 0.0;
+    /** Legacy — forced to {@code 0} on load (TPGainEvent never modified). */
+    public double maxTpGainEvent = 0.0;
     /**
      * Offense (damage/defense) curve exponent. Higher = steeper growth with difficulty.
      * Effective = {@code pow(d, exp) * pow(pivot, 1-exp)}.
@@ -343,26 +323,26 @@ public final class DifficultyConfig {
         if (cfg.maxRewardMultiplier < 0.0) {
             cfg.maxRewardMultiplier = 1.0;
         }
-        if (cfg.killTpRefAmount <= 0.0) {
-            cfg.killTpRefAmount = 1_000_000.0;
-        }
         if (cfg.killTpRefDifficulty <= 0.0) {
             cfg.killTpRefDifficulty = 10_000_000.0;
         }
         if (cfg.killTpExponent <= 0.0) {
             cfg.killTpExponent = 0.70;
         }
+        if (cfg.killTpRefAmount < 0.0) {
+            cfg.killTpRefAmount = 0.0;
+        }
         if (cfg.killTpPerHealth < 0.0) {
-            cfg.killTpPerHealth = 5_000.0;
+            cfg.killTpPerHealth = 0.0;
         }
         if (cfg.killTpMinimum < 0.0) {
-            cfg.killTpMinimum = 25.0;
+            cfg.killTpMinimum = 0.0;
         }
         if (cfg.maxKillTp < 0.0) {
-            cfg.maxKillTp = 10_000_000.0;
+            cfg.maxKillTp = 0.0;
         }
         if (cfg.maxTpGainEvent < 0.0) {
-            cfg.maxTpGainEvent = 10_000_000.0;
+            cfg.maxTpGainEvent = 0.0;
         }
         if (cfg.combatCurveExponent <= 0.0) {
             cfg.combatCurveExponent = 0.96;
@@ -388,7 +368,7 @@ public final class DifficultyConfig {
             cfg.combatCurvePivot = 450L;
             retuned = true;
         }
-        // TP multipliers fully removed — force legacy train-mult knobs inert.
+        // TP fully removed — force every legacy TP knob inert.
         if (!nearly(cfg.rewardCurveGain, 0.0)) {
             cfg.rewardCurveGain = 0.0;
             retuned = true;
@@ -401,13 +381,24 @@ public final class DifficultyConfig {
             cfg.rewardScaling = 2_500.0;
             retuned = true;
         }
-        // Prior kill curve (~400k @ 8M) → 1M @ Zenith 10M (peak ~7.5M with bonuses).
-        if (nearly(cfg.killTpRefAmount, 400_000.0)) {
-            cfg.killTpRefAmount = 1_000_000.0;
+        if (!nearly(cfg.killTpRefAmount, 0.0)) {
+            cfg.killTpRefAmount = 0.0;
             retuned = true;
         }
-        if (nearly(cfg.killTpRefDifficulty, 8_000_000.0)) {
-            cfg.killTpRefDifficulty = 10_000_000.0;
+        if (!nearly(cfg.killTpPerHealth, 0.0)) {
+            cfg.killTpPerHealth = 0.0;
+            retuned = true;
+        }
+        if (!nearly(cfg.killTpMinimum, 0.0)) {
+            cfg.killTpMinimum = 0.0;
+            retuned = true;
+        }
+        if (!nearly(cfg.maxKillTp, 0.0)) {
+            cfg.maxKillTp = 0.0;
+            retuned = true;
+        }
+        if (!nearly(cfg.maxTpGainEvent, 0.0)) {
+            cfg.maxTpGainEvent = 0.0;
             retuned = true;
         }
         if (nearly(cfg.healthPercentPerDifficulty, 1.0)) {
@@ -454,17 +445,13 @@ public final class DifficultyConfig {
             cfg.dmzExtraDefensePercent = 1.85;
             retuned = true;
         }
-        // Health: allow curve growth up to vanilla 1024 so kill TP (from HP) can reach 5–10M.
+        // Health: curve growth up to vanilla attribute ceiling (1024).
         if (nearly(cfg.maxHealthMultiplier, 50.0) || nearly(cfg.maxHealthMultiplier, 8.0)) {
             cfg.maxHealthMultiplier = 0.0;
             retuned = true;
         }
         if (nearly(cfg.maxScaledHealth, 400.0)) {
             cfg.maxScaledHealth = 1024.0;
-            retuned = true;
-        }
-        if (cfg.killTpPerHealth <= 0.0) {
-            cfg.killTpPerHealth = 5_000.0;
             retuned = true;
         }
         // Remove stock damage/armor ceilings — offense grows with the curve only.
@@ -488,7 +475,7 @@ public final class DifficultyConfig {
         }
         if (retuned) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] retuned: health-based kill TP; TP multipliers removed",
+                    "[{}] retuned: kill/train TP grants removed; offense/health curves kept",
                     AdaptiveDifficultyMod.MOD_ID
             );
         }

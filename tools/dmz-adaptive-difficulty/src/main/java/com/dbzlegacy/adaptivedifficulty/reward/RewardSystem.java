@@ -3,8 +3,6 @@ package com.dbzlegacy.adaptivedifficulty.reward;
 import com.dbzlegacy.adaptivedifficulty.boss.BossScaling;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
-import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
-import com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
@@ -13,10 +11,6 @@ import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dragonminez.common.init.MainItems;
-import com.dragonminez.common.network.NetworkHandler;
-import com.dragonminez.common.network.S2C.StatsSyncS2C;
-import com.dragonminez.common.stats.StatsData;
-import com.dragonminez.common.stats.character.Resources;
 import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -27,21 +21,15 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * Concept §15 — reward scaling: TP, XP, rare drops, capsules, titles.
+ * Concept §15 — kill rewards: XP, rare drops, capsules, titles.
+ * <p>
+ * This mod never grants or multiplies Training Points (TP). Kill TP and
+ * {@code TPGainEvent} amounts are left entirely to DragonMineZ / other systems.
  * <p>
  * Potential unlock ({@code potentialunlock}) is owned by the CustomNPCs
  * {@code Potential.js} script — this mod must not write that skill.
- * <p>
- * Kill TP comes from the mob's max health only (no difficulty / elite / boss TP multipliers).
- * Harder difficulties pay more TP because the mob has more HP after retarget scaling.
- * Training {@code TPGainEvent} is never multiplied by this mod.
  */
 public final class RewardSystem {
-    /**
-     * Legacy flag — TP multipliers are removed; kept so older call sites compile.
-     */
-    public static final ThreadLocal<Boolean> SKIP_TP_EVENT_SCALE = ThreadLocal.withInitial(() -> false);
-
     private RewardSystem() {}
 
     public static void onKill(ServerPlayer killer, LivingEntity dead) {
@@ -59,52 +47,15 @@ public final class RewardSystem {
         boolean boss = PersistentDataAccess.get(dead).m_128471_(BossScaling.TAG_BOSS);
         boolean mutated = MutationSystem.get(dead) != null;
 
-        grantTrainingPoints(killer, dead, cfg);
-        // XP/drops use tier only — no difficulty TP-style multiplier.
-        grantExperience(killer, 1.0, elite, boss, tier);
-        grantDrops(killer, 1.0, elite, boss, mutated, tier);
+        grantExperience(killer, elite, boss, tier);
+        grantDrops(killer, elite, boss, mutated, tier);
         TitleSystem.maybeUnlockCombatTitle(killer, snap, elite, boss, tier);
     }
 
-    private static void grantTrainingPoints(
-            ServerPlayer killer,
-            LivingEntity dead,
-            DifficultyConfig cfg
-    ) {
-        // Extra TP comes from the mob having more health after difficulty scaling —
-        // not from a separate difficulty / elite / boss TP multiplier.
-        double tp = ScalingCurves.killTrainingPointsFromHealth(dead.m_21233_());
-        if (tp <= 0.0) {
-            return;
-        }
-        float grant = (float) Math.min(Float.MAX_VALUE, tp);
-        if (grant <= 0.0f) {
-            return;
-        }
-        StatsData stats = DmzProgression.stats(killer);
-        if (stats == null) {
-            return;
-        }
-        Resources resources = stats.getResources();
-        if (resources == null) {
-            return;
-        }
-        SKIP_TP_EVENT_SCALE.set(true);
-        try {
-            resources.addTrainingPoints(grant);
-        } finally {
-            SKIP_TP_EVENT_SCALE.set(false);
-        }
-        try {
-            NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(killer), killer);
-        } catch (Throwable ignored) {
-        }
-    }
-
     private static void grantExperience(
-            ServerPlayer killer, double mult, boolean elite, boolean boss, DifficultyTier tier
+            ServerPlayer killer, boolean elite, boolean boss, DifficultyTier tier
     ) {
-        int xp = (int) Math.round(3.0 * mult * Math.max(1, tier.ordinalPower()));
+        int xp = 3 * Math.max(1, tier.ordinalPower());
         if (elite) {
             xp *= 2;
         }
@@ -117,9 +68,9 @@ public final class RewardSystem {
     }
 
     private static void grantDrops(
-            ServerPlayer killer, double mult, boolean elite, boolean boss, boolean mutated, DifficultyTier tier
+            ServerPlayer killer, boolean elite, boolean boss, boolean mutated, DifficultyTier tier
     ) {
-        double rareChance = 0.02 * mult * Math.max(1, tier.ordinalPower());
+        double rareChance = 0.02 * Math.max(1, tier.ordinalPower());
         if (elite) {
             rareChance += 0.08;
         }
@@ -141,8 +92,7 @@ public final class RewardSystem {
             give(killer, item("minecraft", "netherite_scrap"), 1);
             give(killer, item("minecraft", "nether_star"), 1);
         }
-        // Capsules (cosmetics / loot)
-        if ((elite || boss || mutated) && ThreadLocalRandom.current().nextDouble() < Math.min(0.6, 0.1 * mult)) {
+        if ((elite || boss || mutated) && ThreadLocalRandom.current().nextDouble() < 0.1) {
             giveCapsule(killer, boss);
         }
     }
@@ -180,7 +130,7 @@ public final class RewardSystem {
         }
         ItemStack stack = new ItemStack(item, count);
         if (!player.m_150109_().m_36054_(stack)) {
-            player.m_36176_(stack, false); // drop if full — check method
+            player.m_36176_(stack, false); // drop if full
         }
     }
 }

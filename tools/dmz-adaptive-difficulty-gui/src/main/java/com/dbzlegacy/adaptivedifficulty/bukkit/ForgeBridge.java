@@ -43,7 +43,6 @@ public final class ForgeBridge {
     private static Method raiseCostIronCoins;
     private static Method formatCost;
     private static Method rewardMult;
-    private static Method killTp;
     private static Method dataTitles;
     private static Method dataActiveTitle;
     private static Method dataHasTitle;
@@ -177,12 +176,8 @@ public final class ForgeBridge {
 
             double mult = (Double) rewardMult.invoke(null, active);
             out.put("reward_mult", String.format(Locale.US, "%.2f", mult));
-            if (killTp != null) {
-                double kill = (Double) killTp.invoke(null, active);
-                out.put("kill_tp", String.format(Locale.US, "%,.0f", kill));
-            } else {
-                out.put("kill_tp", "?");
-            }
+            // Adaptive difficulty never grants/multiplies TP.
+            out.put("kill_tp", "0");
 
             Object state = snapshotState.invoke(snap);
             Object stateColor = snapshotStateColor.invoke(snap);
@@ -630,11 +625,6 @@ public final class ForgeBridge {
             raiseCostIronCoins = calcCls.getMethod("raiseCostIronCoins", long.class, long.class);
             formatCost = currencyCls.getMethod("formatCost", long.class);
             rewardMult = calcCls.getMethod("rewardMultiplier", long.class);
-            try {
-                killTp = calcCls.getMethod("killTrainingPoints", long.class);
-            } catch (NoSuchMethodException missing) {
-                killTp = null;
-            }
             dataTitles = dataCls.getMethod("getTitles");
             try {
                 dataActiveTitle = dataCls.getMethod("getActiveTitle");

@@ -68,7 +68,7 @@ public final class DifficultyChatMenu {
         send(player, hub);
 
         MutableComponent pages = Component.m_237113_("§7More  ")
-                .m_7220_(btn("§fRewards", "/difficulty do page rewards", "TP multiplier"))
+                .m_7220_(btn("§fRewards", "/difficulty do page rewards", "Kill rewards info"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§fTiers", "/difficulty do page tiers", "Enemy tiers"))
                 .m_7220_(Component.m_237113_("  "))
@@ -156,14 +156,11 @@ public final class DifficultyChatMenu {
 
     private static void rewards(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
-        DifficultyConfig cfg = DifficultyConfig.get();
-        double killTp = DifficultyCalculator.killTrainingPoints(snap.active);
         send(player, Component.m_237113_("§8──────── §fRewards §8────────"));
         send(player, Component.m_237113_("§7Active §f" + snap.active
-                + "  §7Kill TP §a~" + String.format("%,.0f", killTp)));
-        send(player, Component.m_237113_("§8Kill TP = mob max HP × "
-                + String.format("%.0f", cfg.killTpPerHealth)
-                + " · Train TP: no multiplier"));
+                + "  §7Tier §f" + DifficultyTier.of(snap.active).display));
+        send(player, Component.m_237113_("§8This mod does not grant or multiply Training Points."));
+        send(player, Component.m_237113_("§8Kill rewards: XP, rare drops, capsules, titles."));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 

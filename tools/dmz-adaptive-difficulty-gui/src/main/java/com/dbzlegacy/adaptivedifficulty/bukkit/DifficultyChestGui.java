@@ -57,7 +57,7 @@ public final class DifficultyChestGui implements Listener {
         inv.setItem(24, button(Material.COMPASS, "&bTeam", "team", "0", "main",
                 List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
 
-        inv.setItem(27, pageBtn(Material.EXPERIENCE_BOTTLE, "&fRewards", "rewards", "&7Kill TP details"));
+        inv.setItem(27, pageBtn(Material.EXPERIENCE_BOTTLE, "&fRewards", "rewards", "&7Kill rewards (no TP)"));
         inv.setItem(28, pageBtn(Material.IRON_SWORD, "&fTiers", "tiers", "&7Enemy tier unlocks"));
         inv.setItem(29, pageBtn(Material.NAME_TAG, "&eTitles", "titles",
                 "&7Unlock & equip titles",
@@ -183,10 +183,13 @@ public final class DifficultyChestGui implements Listener {
         inv.setItem(13, item(Material.EXPERIENCE_BOTTLE, "&f&lRewards", List.of(
                 "",
                 "&7Active  &f" + ph.getOrDefault("active", "?"),
-                "&7Kill TP (from mob HP) &a~" + ph.getOrDefault("kill_tp", "?"),
-                "&7Train TP &ano multiplier",
+                "&7Tier    &f" + ph.getOrDefault("tier", "?"),
                 "",
-                "&8Kill ≈ 400k at 8M difficulty (curve)"
+                "&8This mod does not grant or",
+                "&8multiply Training Points.",
+                "",
+                "&7Kill rewards",
+                "&8XP · rare drops · capsules · titles"
         )));
         inv.setItem(18, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
         inv.setItem(26, closeBtn());

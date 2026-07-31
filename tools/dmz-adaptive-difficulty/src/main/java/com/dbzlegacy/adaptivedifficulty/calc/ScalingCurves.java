@@ -3,12 +3,12 @@ package com.dbzlegacy.adaptivedifficulty.calc;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 
 /**
- * Separate curves for offense (damage/defense), health, and TP rewards.
+ * Separate curves for offense (damage/defense) and health.
  * <p>
  * Offense uses a steeper power curve so fights get meaner without ballooning HP.
  * Health uses a flat curve + lower caps so mobs stay killable.
- * Rewards use a diminishing power curve (uncapped by default) so TP keeps growing
- * at high difficulty without going linear.
+ * <p>
+ * Training Points are not scaled or granted by this mod.
  */
 public final class ScalingCurves {
     private ScalingCurves() {}
@@ -67,48 +67,19 @@ public final class ScalingCurves {
         return offenseBonus(difficulty, percentPerDifficulty);
     }
 
-    /**
-     * Kill TP from the mob's max health (no difficulty / elite / boss TP multipliers).
-     * Default: {@code maxHealth × killTpPerHealth} (5000) → ~5.1M at 1024 HP, capped by {@code maxKillTp}.
-     */
+    /** Always {@code 0} — this mod never grants kill TP. */
     public static double killTrainingPointsFromHealth(double maxHealth) {
-        DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableRewardScaling) {
-            return 0.0;
-        }
-        double hp = Math.max(0.0, maxHealth);
-        double tp = hp * Math.max(0.0, cfg.killTpPerHealth);
-        tp = Math.max(cfg.killTpMinimum, tp);
-        if (cfg.maxKillTp > 0.0) {
-            tp = Math.min(tp, cfg.maxKillTp);
-        }
-        return tp;
+        return 0.0;
     }
 
-    /**
-     * @deprecated Kill TP is health-based via {@link #killTrainingPointsFromHealth(double)}.
-     * Kept for admin previews that still pass a difficulty id.
-     */
-    @Deprecated
+    /** Always {@code 0} — this mod never grants kill TP. */
     public static double killTrainingPoints(long difficulty) {
-        // Preview only: estimate TP for a typical fully-scaled zombie-sized mob at this difficulty.
-        DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableRewardScaling || difficulty <= 0L) {
-            return Math.max(cfg.killTpMinimum, 20.0 * Math.max(0.0, cfg.killTpPerHealth));
-        }
-        double healthMult = 1.0 + healthBonus(difficulty, cfg.healthPercentPerDifficulty);
-        healthMult += healthBonus(difficulty, cfg.dmzExtraHealthPercent);
-        if (cfg.maxHealthMultiplier > 1.0) {
-            healthMult = Math.min(healthMult, cfg.maxHealthMultiplier);
-        }
-        double cap = cfg.maxScaledHealth > 0.0 ? Math.min(cfg.maxScaledHealth, 1024.0) : 1024.0;
-        double estHp = Math.min(cap, 20.0 * healthMult);
-        return killTrainingPointsFromHealth(estHp);
+        return 0.0;
     }
 
     /**
-     * Legacy reward multiplier (XP / drops only). Always {@code 1.0} — TP multipliers
-     * are fully removed. Kept so call sites compile without reintroducing TP scaling.
+     * Legacy reward multiplier stub. Always {@code 1.0} — this mod does not
+     * multiply Training Points or other reward events by difficulty.
      */
     public static double rewardMultiplier(long activeDifficulty) {
         return 1.0;

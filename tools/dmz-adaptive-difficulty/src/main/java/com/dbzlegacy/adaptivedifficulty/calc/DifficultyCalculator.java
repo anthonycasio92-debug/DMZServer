@@ -96,22 +96,19 @@ public final class DifficultyCalculator {
         return raiseCostIronCoins(Math.max(0L, currentPurchased), amountToBuy);
     }
 
-    /** TPGainEvent multiplier (training / non-kill). See {@link ScalingCurves#rewardMultiplier}. */
+    /** Always {@code 1.0} — this mod never multiplies TP / reward events. */
     public static double rewardMultiplier(long activeDifficulty) {
         return ScalingCurves.rewardMultiplier(activeDifficulty);
     }
 
-    /**
-     * Preview kill TP estimate for a typical mob at this difficulty (health-based).
-     * Actual grants use {@link ScalingCurves#killTrainingPointsFromHealth(double)}.
-     */
+    /** Always {@code 0} — this mod never grants kill TP. */
     public static double killTrainingPoints(long difficulty) {
-        return ScalingCurves.killTrainingPoints(difficulty);
+        return 0.0;
     }
 
-    /** Kill TP from a mob's max health. */
+    /** Always {@code 0} — this mod never grants kill TP. */
     public static double killTrainingPointsFromHealth(double maxHealth) {
-        return ScalingCurves.killTrainingPointsFromHealth(maxHealth);
+        return 0.0;
     }
 
     /**

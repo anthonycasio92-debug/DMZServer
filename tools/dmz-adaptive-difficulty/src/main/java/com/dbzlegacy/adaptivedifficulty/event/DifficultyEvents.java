@@ -367,12 +367,11 @@ public final class DifficultyEvents {
     }
 
     /**
-     * TP multiplier intentionally removed — training / other {@code TPGainEvent}
-     * amounts pass through unchanged. Kill TP is granted separately from mob HP.
+     * This mod never touches Training Points — leave {@code TPGainEvent} amounts alone.
      */
     @SubscribeEvent
     public void onTpGain(DMZEvent.TPGainEvent event) {
-        // no-op: do not multiply TP by difficulty
+        // no-op
     }
 
     @SubscribeEvent
