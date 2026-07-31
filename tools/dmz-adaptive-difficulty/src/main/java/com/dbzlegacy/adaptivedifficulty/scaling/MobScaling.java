@@ -84,6 +84,10 @@ public final class MobScaling {
             return;
         }
         try {
+            // Never retarget / revive a mob that is already at 0 HP.
+            if (terminateIfZeroHealth(entity)) {
+                return;
+            }
             DifficultyConfig cfg = DifficultyConfig.get();
             if (!cfg.enableMobScaling) {
                 return;
@@ -116,6 +120,52 @@ public final class MobScaling {
                     t.toString()
             );
         }
+    }
+
+    /**
+     * If a difficulty-scaled mob is at ≤0 HP but still alive, force it to die.
+     * Retarget/HP-ratio math and Mohist edge cases can otherwise leave 0-HP zombies.
+     *
+     * @return true if the entity was terminated (or already dead/removed)
+     */
+    public static boolean terminateIfZeroHealth(LivingEntity entity) {
+        if (entity == null || entity.m_9236_().f_46443_) {
+            return false;
+        }
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (!tag.m_128471_(TAG_SCALED)) {
+            return false;
+        }
+        if (entity.m_213877_()) { // isRemoved
+            return true;
+        }
+        if (entity.m_21224_()) { // isDeadOrDying
+            return true;
+        }
+        float hp = entity.m_21223_();
+        if (hp > 0.0f && !Float.isNaN(hp) && !Float.isInfinite(hp)) {
+            return false;
+        }
+        try {
+            // Entity.kill() — applies a lethal generic hit and runs normal death.
+            entity.m_6074_();
+        } catch (Throwable ignored) {
+        }
+        if (!entity.m_21224_() && !entity.m_213877_()) {
+            try {
+                DamageSource src = entity.m_269291_().m_269425_(); // generic
+                entity.m_21153_(0.0f);
+                entity.m_6667_(src); // die
+            } catch (Throwable ignored) {
+            }
+        }
+        if (!entity.m_21224_() && !entity.m_213877_()) {
+            try {
+                entity.m_146870_(); // discard — last resort
+            } catch (Throwable ignored) {
+            }
+        }
+        return true;
     }
 
     private static void scaleIfNeededInternal(LivingEntity entity) {
@@ -264,20 +314,33 @@ public final class MobScaling {
             newMaxHealth = Math.min(absHealthCap, baseHealth);
         }
 
-        // Preserve fight progress across retargets.
+        // Preserve fight progress across retargets. Never revive a 0-HP mob.
         float oldMax = entity.m_21233_();
         float oldHp = entity.m_21223_();
+        if (entity.m_21224_() || !(oldHp > 0.0f) || Float.isNaN(oldHp) || Float.isInfinite(oldHp)) {
+            terminateIfZeroHealth(entity);
+            return;
+        }
         double hpRatio = (oldMax > 0.0f && !Float.isNaN(oldMax))
                 ? Math.max(0.0, Math.min(1.0, oldHp / oldMax))
                 : 1.0;
+        if (hpRatio <= 0.0) {
+            terminateIfZeroHealth(entity);
+            return;
+        }
 
         setAttributeValue(entity, Attributes.f_22276_, newMaxHealth); // MAX_HEALTH
         float appliedMax = entity.m_21233_();
         if (appliedMax > 0.0f && !Float.isNaN(appliedMax) && !Float.isInfinite(appliedMax)) {
-            float nextHp = (float) Math.max(1.0e-3, appliedMax * hpRatio);
+            float nextHp = (float) (appliedMax * hpRatio);
             // Keep at full when first applying from a full-health spawn.
             if (!tag.m_128441_(TAG_DIFFICULTY) && oldHp >= oldMax - 0.5f) {
                 nextHp = appliedMax;
+            }
+            // Floor only when still meaningfully alive — never keep a corpse at 0.001 HP.
+            if (nextHp <= 0.0f) {
+                terminateIfZeroHealth(entity);
+                return;
             }
             entity.m_21153_(Math.min(appliedMax, nextHp));
         }

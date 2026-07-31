@@ -159,6 +159,11 @@ public final class DifficultyEvents {
             return;
         }
 
+        // Difficulty-scaled mobs stuck at 0 HP must die (retarget / Mohist edge cases).
+        if (MobScaling.terminateIfZeroHealth(entity)) {
+            return;
+        }
+
         boolean elite = tag.m_128471_(EliteSystem.TAG_ELITE);
         boolean boss = tag.m_128471_(BossScaling.TAG_BOSS);
         boolean mutated = tag.m_128441_(MutationSystem.TAG_MUTATION)
@@ -257,6 +262,21 @@ public final class DifficultyEvents {
         AdaptiveAiSystem.onHurt(event);
         if (victim != null && event.getAmount() > 0.0f) {
             EnemyEvolution.onHurt(victim);
+        }
+        // After damage: if a scaled mob landed at ≤0 HP, finish it.
+        if (victim != null) {
+            MobScaling.terminateIfZeroHealth(victim);
+        }
+    }
+
+    /**
+     * Post-mitigation safety net — catch scaled mobs that reached 0 HP after armor/absorb.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void onDamageDone(net.minecraftforge.event.entity.living.LivingDamageEvent event) {
+        LivingEntity victim = event.getEntity();
+        if (victim != null) {
+            MobScaling.terminateIfZeroHealth(victim);
         }
     }
 
