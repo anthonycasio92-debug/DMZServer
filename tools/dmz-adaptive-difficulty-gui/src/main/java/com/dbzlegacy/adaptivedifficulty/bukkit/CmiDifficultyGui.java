@@ -212,7 +212,7 @@ public final class CmiDifficultyGui {
                 "&7Active  &f" + ph.getOrDefault("active", "?"),
                 "&7TP mult &a×" + ph.getOrDefault("reward_mult", "?"),
                 "",
-                "&81 + Difficulty / RewardScaling"
+                "&81 + gain × (Difficulty / Scale)^exp  &8(uncapped)"
         ));
         gui.addButton(info);
         gui.addButton(pageBtn(18, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));

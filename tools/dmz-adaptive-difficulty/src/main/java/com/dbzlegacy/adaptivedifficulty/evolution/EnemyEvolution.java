@@ -2,8 +2,6 @@ package com.dbzlegacy.adaptivedifficulty.evolution;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
-import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
-import com.dbzlegacy.adaptivedifficulty.mutation.MutationType;
 import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
@@ -235,6 +233,14 @@ public final class EnemyEvolution {
 
     private static void zombieTick(Mob mob, LivingEntity target, DifficultyTier tier) {
         if (target == null) {
+            if (mob.m_9236_() instanceof ServerLevel level) {
+                target = nearestPlayer(level, mob, 18.0);
+                if (target != null) {
+                    mob.m_6710_(target);
+                }
+            }
+        }
+        if (target == null) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(mob);
@@ -294,6 +300,14 @@ public final class EnemyEvolution {
     // ── Skeletons: Ki only (blast / laser / beam / charge) ────────────────
 
     private static void skeletonTick(Mob mob, LivingEntity target, DifficultyTier tier) {
+        if (target == null) {
+            if (mob.m_9236_() instanceof ServerLevel level) {
+                target = nearestPlayer(level, mob, 28.0);
+                if (target != null) {
+                    mob.m_6710_(target);
+                }
+            }
+        }
         if (target == null) {
             return;
         }
@@ -364,16 +378,24 @@ public final class EnemyEvolution {
 
     private static void endermanTick(
             EnderMan ender, ServerLevel level, LivingEntity target, DifficultyTier tier, long difficulty) {
-        if (!(target instanceof ServerPlayer player)) {
+        // Gravity is applied every player tick via CombatGravity.scanNearbySources.
+        // Still acquire a player target so flare / TP / chase kits keep working after blinks.
+        ServerPlayer player = target instanceof ServerPlayer sp
+                ? sp
+                : nearestPlayer(level, ender, 28.0);
+        if (player == null) {
             return;
+        }
+        if (target != player) {
+            ender.m_6710_(player);
         }
         CompoundTag tag = PersistentDataAccess.get(ender);
         long age = ender.f_19797_;
         float dist = ender.m_20270_(player);
 
-        // Stacked gravity chamber pressure — more aggro'd endermen = heavier
+        // Backup contribute (player-tick scan is primary).
         if (tier.ordinalPower() >= DifficultyTier.AWAKENED.ordinalPower() && dist < 28.0f) {
-            double g = gravityFor(ender, tier, difficulty, 1.0);
+            double g = CombatGravity.gravityFor(ender, tier, difficulty, 1.0);
             CombatGravity.contribute(player, ender.m_20148_(), g, 45);
         }
 
@@ -408,6 +430,13 @@ public final class EnemyEvolution {
 
     private static void wardenTick(
             Warden warden, ServerLevel level, LivingEntity target, DifficultyTier tier, long difficulty) {
+        ServerPlayer focused = target instanceof ServerPlayer sp
+                ? sp
+                : nearestPlayer(level, warden, 32.0);
+        if (focused != null && target != focused) {
+            warden.m_6710_(focused);
+            target = focused;
+        }
         if (target == null) {
             return;
         }
@@ -415,11 +444,12 @@ public final class EnemyEvolution {
         long age = warden.f_19797_;
         float dist = warden.m_20270_(target);
 
-        if (target instanceof ServerPlayer player
+        // Backup contribute (player-tick scan is primary).
+        if (focused != null
                 && tier.ordinalPower() >= DifficultyTier.AWAKENED.ordinalPower()
                 && dist < 32.0f) {
-            double g = gravityFor(warden, tier, difficulty, 1.6);
-            CombatGravity.contribute(player, warden.m_20148_(), g, 45);
+            double g = CombatGravity.gravityFor(warden, tier, difficulty, 1.6);
+            CombatGravity.contribute(focused, warden.m_20148_(), g, 45);
         }
 
         // Leap
@@ -479,6 +509,12 @@ public final class EnemyEvolution {
     // ── Blazes: Rapid barrage / Burning blast / Explosion blast ───────────
 
     private static void blazeTick(Blaze blaze, LivingEntity target, DifficultyTier tier) {
+        if (target == null && blaze.m_9236_() instanceof ServerLevel level) {
+            target = nearestPlayer(level, blaze, 26.0);
+            if (target != null) {
+                blaze.m_6710_(target);
+            }
+        }
         if (target == null) {
             return;
         }
@@ -517,6 +553,12 @@ public final class EnemyEvolution {
     // ── Ghasts: Large Blast / Burn Beam / Explosion Wave ──────────────────
 
     private static void ghastTick(Ghast ghast, LivingEntity target, DifficultyTier tier) {
+        if (target == null && ghast.m_9236_() instanceof ServerLevel level) {
+            target = nearestPlayer(level, ghast, 48.0);
+            if (target != null) {
+                ghast.m_6710_(target);
+            }
+        }
         if (target == null) {
             return;
         }
@@ -554,6 +596,12 @@ public final class EnemyEvolution {
     // ── Piglins: Leap / Small Blast / Rush Combo ──────────────────────────
 
     private static void piglinTick(AbstractPiglin piglin, LivingEntity target, DifficultyTier tier) {
+        if (target == null && piglin.m_9236_() instanceof ServerLevel level) {
+            target = nearestPlayer(level, piglin, 16.0);
+            if (target != null) {
+                piglin.m_6710_(target);
+            }
+        }
         if (target == null) {
             return;
         }
@@ -587,6 +635,12 @@ public final class EnemyEvolution {
     // ── Zombie Pigmen: Leap / Ki Barrage / Counter TP / swarm ─────────────
 
     private static void zombiePiglinTick(ZombifiedPiglin zp, LivingEntity target, DifficultyTier tier) {
+        if (target == null && zp.m_9236_() instanceof ServerLevel level) {
+            target = nearestPlayer(level, zp, 18.0);
+            if (target != null) {
+                zp.m_6710_(target);
+            }
+        }
         if (target == null) {
             return;
         }
@@ -629,6 +683,12 @@ public final class EnemyEvolution {
     // ── Hoglins: aerial — launch grounded / smash airborne ────────────────
 
     private static void hoglinTick(Hoglin hoglin, LivingEntity target, DifficultyTier tier) {
+        if (target == null && hoglin.m_9236_() instanceof ServerLevel level) {
+            target = nearestPlayer(level, hoglin, 14.0);
+            if (target != null) {
+                hoglin.m_6710_(target);
+            }
+        }
         if (target == null || tier.ordinalPower() < DifficultyTier.ENHANCED.ordinalPower()) {
             return;
         }
@@ -656,16 +716,21 @@ public final class EnemyEvolution {
 
     // ── Shared helpers ────────────────────────────────────────────────────
 
-    private static double gravityFor(Mob mob, DifficultyTier tier, long difficulty, double mult) {
-        double base = 6.0 + tier.ordinalPower() * 5.0;
-        base += Math.min(30.0, difficulty / 80.0);
-        if (EliteSystem.isElite(mob)) {
-            base *= 1.35;
+    private static ServerPlayer nearestPlayer(ServerLevel level, Mob mob, double radius) {
+        AABB box = mob.m_20191_().m_82400_(radius);
+        ServerPlayer best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (ServerPlayer p : level.m_45976_(ServerPlayer.class, box)) {
+            if (p == null || !p.m_6084_() || p.m_5833_()) { // isSpectator
+                continue;
+            }
+            double d = mob.m_20280_(p); // distanceToSqr
+            if (d < bestDist) {
+                bestDist = d;
+                best = p;
+            }
         }
-        if (MutationSystem.get(mob) == MutationType.GRAVITY_ENDERMAN) {
-            base *= 1.5;
-        }
-        return Math.max(4.0, base * mult);
+        return best;
     }
 
     private static void solarFlare(ServerLevel level, Mob source, double radius) {

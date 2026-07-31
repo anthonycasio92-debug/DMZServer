@@ -41,7 +41,13 @@ public final class BukkitGuiBridge {
             if (bukkitPlayer == null) {
                 return false;
             }
-            Method open = plugin.getClass().getMethod("openMenu", playerClass, String.class);
+            // Prefer chest-only when Forge selected guiBackend=chest.
+            Method open;
+            try {
+                open = plugin.getClass().getMethod("openMenuRespectingConfig", playerClass, String.class);
+            } catch (NoSuchMethodException missing) {
+                open = plugin.getClass().getMethod("openMenu", playerClass, String.class);
+            }
             open.invoke(plugin, bukkitPlayer, page == null || page.isBlank() ? "main" : page);
             return true;
         } catch (Throwable t) {

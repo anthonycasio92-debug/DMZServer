@@ -131,6 +131,11 @@ public final class DifficultyCommands {
             try {
                 amount = Long.parseLong(arg);
             } catch (NumberFormatException ignored) {
+                // Never silently coerce bad args to the default +100 step.
+                if ("up".equals(act) || "down".equals(act) || "buy".equals(act) || "set".equals(act)) {
+                    player.m_213846_(Component.m_237113_("§cInvalid amount: §f" + arg));
+                    return 0;
+                }
                 amount = 0L;
             }
         }

@@ -61,8 +61,12 @@ public final class KiAttackHelper {
             aimAt(shooter, target);
             float damage = baseDamage(shooter, tier, 7.5f);
             float speed = 1.05f + Math.min(0.5f, tier.ordinalPower() * 0.04f);
+            float size = 1.6f + Math.min(1.2f, tier.ordinalPower() * 0.08f);
             KiBlastEntity blast = new KiBlastEntity(shooter.m_9236_(), shooter);
-            blast.setupKiSmall(shooter, damage, speed, COLOR_LARGE, COLOR_BORDER);
+            // Real large-blast setup (setupKiSmall was visually/physically a small shot).
+            int cast = Math.max(6, 16 - tier.ordinalPower());
+            blast.setupKiLargeBlast(
+                    shooter, damage, speed, COLOR_LARGE, COLOR_BORDER, COLOR_OUTLINE, size, cast);
             blast.setHomingTarget(target.m_19879_());
             return true;
         } catch (Throwable t) {

@@ -96,7 +96,7 @@ public final class AdaptiveAiSystem {
         if (elite && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
             tier = DifficultyTier.ELITE;
         }
-        if (tier.ordinalPower() < DifficultyTier.ENHANCED.ordinalPower()) {
+        if (tier.ordinalPower() < DifficultyTier.AWAKENED.ordinalPower()) {
             return;
         }
 
@@ -106,9 +106,13 @@ public final class AdaptiveAiSystem {
         LivingEntity target = mob.m_5448_();
         double scan = Math.min(aiRadius(tier), cfg.mobScaleRadius);
 
-        // Enhanced+: focus the weakest nearby player
+        // Awakened+: lock onto a nearby player so kits (gravity/ki/leap) actually fire.
+        // Enhanced+ still prefers the weakest target.
         if (tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
             focusWeakest(mob, level, scan);
+            target = mob.m_5448_();
+        } else if (!(target instanceof Player)) {
+            focusNearest(mob, level, Math.min(20.0, scan));
             target = mob.m_5448_();
         }
 
@@ -257,7 +261,7 @@ public final class AdaptiveAiSystem {
         ServerPlayer weakest = null;
         float lowest = Float.MAX_VALUE;
         for (ServerPlayer p : players) {
-            if (!p.m_6084_()) {
+            if (!p.m_6084_() || p.m_5833_()) {
                 continue;
             }
             float hp = p.m_21223_();
@@ -271,6 +275,26 @@ public final class AdaptiveAiSystem {
             if (current == null || current.m_21223_() > weakest.m_21223_() + 4.0f) {
                 mob.m_6710_(weakest);
             }
+        }
+    }
+
+    /** Awakened fallback — lock the nearest living player so kits do not idle. */
+    private static void focusNearest(Mob mob, ServerLevel level, double radius) {
+        AABB box = mob.m_20191_().m_82400_(Math.max(8.0, radius));
+        ServerPlayer nearest = null;
+        double best = Double.MAX_VALUE;
+        for (ServerPlayer p : level.m_45976_(ServerPlayer.class, box)) {
+            if (!p.m_6084_() || p.m_5833_()) {
+                continue;
+            }
+            double d = mob.m_20280_(p);
+            if (d < best) {
+                best = d;
+                nearest = p;
+            }
+        }
+        if (nearest != null) {
+            mob.m_6710_(nearest);
         }
     }
 

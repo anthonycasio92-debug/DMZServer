@@ -45,7 +45,13 @@ public final class CmiGuiBridge {
             if (bukkitPlayer == null || plugin == null) {
                 return false;
             }
-            Method open = plugin.getClass().getMethod("openMenu", playerClass, String.class);
+            // Honor Forge guiBackend (chest/chat/cmi) instead of always preferring CMI.
+            Method open;
+            try {
+                open = plugin.getClass().getMethod("openMenuRespectingConfig", playerClass, String.class);
+            } catch (NoSuchMethodException missing) {
+                open = plugin.getClass().getMethod("openMenu", playerClass, String.class);
+            }
             open.invoke(plugin, bukkitPlayer, page == null || page.isBlank() ? "main" : page);
             return true;
         } catch (Throwable t) {

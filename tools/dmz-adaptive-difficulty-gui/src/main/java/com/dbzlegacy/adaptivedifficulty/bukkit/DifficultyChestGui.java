@@ -181,7 +181,7 @@ public final class DifficultyChestGui implements Listener {
                 "&7Active  &f" + ph.getOrDefault("active", "?"),
                 "&7TP mult &a×" + ph.getOrDefault("reward_mult", "?"),
                 "",
-                "&81 + Difficulty / RewardScaling"
+                "&81 + gain × (Difficulty / Scale)^exp  &8(uncapped)"
         )));
         inv.setItem(18, pageBtn(Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
         inv.setItem(26, closeBtn());
