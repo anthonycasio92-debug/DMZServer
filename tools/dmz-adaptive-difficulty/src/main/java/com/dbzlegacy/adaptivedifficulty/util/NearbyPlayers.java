@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.util;
 
+import java.util.function.Consumer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -16,6 +17,28 @@ public final class NearbyPlayers {
             return false;
         }
         return nearest(level, entity.m_20185_(), entity.m_20186_(), entity.m_20189_(), radius) != null;
+    }
+
+    /** Visit online players within radius of {@code from} (player-list distance only). */
+    public static void forEachWithin(LivingEntity from, double radius, Consumer<ServerPlayer> consumer) {
+        if (from == null || consumer == null || !(from.m_9236_() instanceof ServerLevel level) || radius <= 0.0) {
+            return;
+        }
+        double rSq = radius * radius;
+        double x = from.m_20185_();
+        double y = from.m_20186_();
+        double z = from.m_20189_();
+        for (ServerPlayer player : level.m_7654_().m_6846_().m_11314_()) {
+            if (player == null || player.m_9236_() != level || !player.m_6084_() || player.m_5833_()) {
+                continue;
+            }
+            double dx = player.m_20185_() - x;
+            double dy = player.m_20186_() - y;
+            double dz = player.m_20189_() - z;
+            if (dx * dx + dy * dy + dz * dz <= rSq) {
+                consumer.accept(player);
+            }
+        }
     }
 
     public static ServerPlayer nearest(LivingEntity from, double radius) {

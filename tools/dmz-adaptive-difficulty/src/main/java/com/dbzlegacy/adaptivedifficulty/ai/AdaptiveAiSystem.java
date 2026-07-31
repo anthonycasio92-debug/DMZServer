@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
+import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
 import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -25,9 +27,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 
@@ -35,6 +35,8 @@ import net.minecraftforge.event.entity.living.LivingHurtEvent;
  * Progressive AI spaced across the full Awakened → Zenith ladder.
  * Early tiers teach pressure; late tiers escalate pack tactics, anti-flight,
  * debuffs, and dodge — so multi-million difficulty keeps unlocking new threat.
+ * <p>
+ * Pack / ki reactions use {@link CombatIndex} only — never world AABB scans.
  */
 public final class AdaptiveAiSystem {
     /** One ki-charge pack reaction per player every 40 ticks. */
@@ -46,7 +48,7 @@ public final class AdaptiveAiSystem {
 
     /**
      * Counter ki charging — starts at Master; intensity grows through high tiers.
-     * Throttled + typed {@link Monster} query (not every Mob in 18 blocks).
+     * Throttled + combat-index peers only (no {@code getEntitiesOfClass}).
      */
     public static void onPlayerKiCharge(ServerPlayer player) {
         DifficultyConfig cfg = DifficultyConfig.get();
@@ -58,23 +60,22 @@ public final class AdaptiveAiSystem {
         if (last != null && now - last < 40L) {
             return;
         }
-        AABB box = player.m_20191_().m_82400_(12.0);
-        int reacted = 0;
-        for (Monster mob : level.m_45976_(Monster.class, box)) {
-            if (reacted >= 6) {
-                break;
+        AtomicInteger reacted = new AtomicInteger();
+        CombatIndex.forEachNearPlayer(player, 12.0, 8, mob -> {
+            if (reacted.get() >= 6) {
+                return;
             }
             if (!PersistentDataAccess.flag(mob, MobScaling.TAG_SCALED)) {
-                continue;
+                return;
             }
             DifficultyTier tier = resolveTier(mob, MobScaling.difficultyOf(mob));
             if (tier.ordinalPower() < DifficultyTier.MASTER.ordinalPower()) {
-                continue;
+                return;
             }
             mob.m_6710_(player);
             double speed = 1.25 + Math.min(0.75, (tier.ordinalPower() - DifficultyTier.MASTER.ordinalPower()) * 0.06);
             mob.m_21573_().m_5624_(player, speed);
-            reacted++;
+            reacted.incrementAndGet();
 
             if (tier.ordinalPower() >= DifficultyTier.GOD.ordinalPower()) {
                 player.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 40, 0, false, true)); // SLOWNESS
@@ -85,7 +86,7 @@ public final class AdaptiveAiSystem {
             if (tier.ordinalPower() >= DifficultyTier.OMEGA.ordinalPower()) {
                 mob.m_7292_(new MobEffectInstance(MobEffects.f_19600_, 60, 1, false, false)); // STRENGTH
             }
-        }
+        });
         if (KI_CHARGE_COOLDOWN.size() > 256) {
             KI_CHARGE_COOLDOWN.clear();
         }
@@ -144,7 +145,7 @@ public final class AdaptiveAiSystem {
             mob.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, amp, false, false)); // SPEED
         }
 
-        // Master+: rare pack call (cooldown + small typed scan)
+        // Master+: rare pack call via combat-index peers (no world scan)
         if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()) {
             coordinate(mob, level, Math.min(12.0, scan), packSize(tier));
         }
@@ -390,27 +391,23 @@ public final class AdaptiveAiSystem {
         if (PACK_COOLDOWN.size() > 256) {
             PACK_COOLDOWN.clear();
         }
-        // Typed Monster scan in a small radius — Mob.class over 28 blocks crushed TPS.
-        AABB box = mob.m_20191_().m_82400_(Math.min(12.0, radius));
-        int shared = 0;
-        for (Monster ally : level.m_45976_(Monster.class, box)) {
-            if (ally == mob || !ally.m_6084_()) {
-                continue;
+        AtomicInteger shared = new AtomicInteger();
+        CombatIndex.forEachNear(mob, Math.min(12.0, radius), maxAllies + 4, ally -> {
+            if (shared.get() >= maxAllies) {
+                return;
             }
             clearHostileTarget(ally);
             if (ally.m_5448_() != null) {
-                continue;
+                return;
             }
             CompoundTag allyTag = PersistentDataAccess.get(ally);
             if (!allyTag.m_128471_(MobScaling.TAG_SCALED) && !allyTag.m_128471_(EliteSystem.TAG_ELITE)) {
-                continue;
+                return;
             }
             ally.m_6710_(target);
-            shared++;
-            if (shared >= maxAllies) {
-                break;
-            }
-        }
+            CombatIndex.mark(ally, now);
+            shared.incrementAndGet();
+        });
     }
 
     /** Drop targets that are other hostiles so mobs don't farm each other. */
@@ -425,21 +422,21 @@ public final class AdaptiveAiSystem {
     }
 
     private static void frenzyAllies(Mob mob, ServerLevel level, double radius) {
-        AABB box = mob.m_20191_().m_82400_(Math.min(10.0, radius));
-        int buffed = 0;
-        for (Monster ally : level.m_45976_(Monster.class, box)) {
-            if (buffed >= 8) {
-                break;
+        AtomicInteger buffed = new AtomicInteger();
+        // Self-buff always.
+        mob.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 80, 1, false, false));
+        mob.m_7292_(new MobEffectInstance(MobEffects.f_19600_, 80, 0, false, false));
+        buffed.incrementAndGet();
+        CombatIndex.forEachNear(mob, Math.min(10.0, radius), 12, ally -> {
+            if (buffed.get() >= 8) {
+                return;
             }
-            if (!ally.m_6084_()) {
-                continue;
-            }
-            if (ally != mob && !PersistentDataAccess.flag(ally, MobScaling.TAG_SCALED)) {
-                continue;
+            if (!PersistentDataAccess.flag(ally, MobScaling.TAG_SCALED)) {
+                return;
             }
             ally.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 80, 1, false, false));
             ally.m_7292_(new MobEffectInstance(MobEffects.f_19600_, 80, 0, false, false));
-            buffed++;
-        }
+            buffed.incrementAndGet();
+        });
     }
 }

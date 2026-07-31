@@ -10,7 +10,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 
 /**
  * Area difficulty inspired by SilentChaos512 Scaling Health.
@@ -97,31 +96,24 @@ public final class AreaDifficulty {
         if (online == null || online.isEmpty()) {
             return List.of();
         }
-        // Small player counts: distance filter is cheaper than AABB entity query.
-        if (online.size() <= 64) {
-            double rSq = radius * radius;
-            double cx = pos.m_123341_() + 0.5;
-            double cy = pos.m_123342_() + 0.5;
-            double cz = pos.m_123343_() + 0.5;
-            java.util.ArrayList<ServerPlayer> out = new java.util.ArrayList<>(Math.min(8, online.size()));
-            for (ServerPlayer player : online) {
-                if (player == null || player.m_9236_() != level || !player.m_6084_()) {
-                    continue;
-                }
-                double dx = player.m_20185_() - cx;
-                double dy = player.m_20186_() - cy;
-                double dz = player.m_20189_() - cz;
-                if (dx * dx + dy * dy + dz * dz <= rSq) {
-                    out.add(player);
-                }
+        // Always player-list distance — never AABB entity queries (large online counts crushed TPS).
+        double rSq = radius * radius;
+        double cx = pos.m_123341_() + 0.5;
+        double cy = pos.m_123342_() + 0.5;
+        double cz = pos.m_123343_() + 0.5;
+        java.util.ArrayList<ServerPlayer> out = new java.util.ArrayList<>(Math.min(8, online.size()));
+        for (ServerPlayer player : online) {
+            if (player == null || player.m_9236_() != level || !player.m_6084_()) {
+                continue;
             }
-            return out;
+            double dx = player.m_20185_() - cx;
+            double dy = player.m_20186_() - cy;
+            double dz = player.m_20189_() - cz;
+            if (dx * dx + dy * dy + dz * dz <= rSq) {
+                out.add(player);
+            }
         }
-        AABB box = new AABB(
-                pos.m_123341_() - radius, pos.m_123342_() - radius, pos.m_123343_() - radius,
-                pos.m_123341_() + radius, pos.m_123342_() + radius, pos.m_123343_() + radius
-        );
-        return level.m_45976_(ServerPlayer.class, box);
+        return out;
     }
 
     private static double maxMode(List<ServerPlayer> players) {

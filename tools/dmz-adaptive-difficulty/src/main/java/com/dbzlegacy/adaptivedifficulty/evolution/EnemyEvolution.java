@@ -4,12 +4,12 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
+import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
 import com.dbzlegacy.adaptivedifficulty.util.EntityDisplayNames;
 import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import java.lang.reflect.Field;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -38,7 +38,6 @@ import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.entity.raid.Raider;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -681,21 +680,21 @@ public final class EnemyEvolution {
                 tag.m_128356_("dmz_ad_ki_barrage", age);
             }
         }
-        // Aggressive swarm — player targets only
-        if (target instanceof Player
-                && tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower() && age % 40 == 0
-                && zp.m_9236_() instanceof ServerLevel level) {
-            AABB box = zp.m_20191_().m_82400_(16.0);
-            for (ZombifiedPiglin ally : level.m_45976_(ZombifiedPiglin.class, box)) {
-                if (ally != zp && ally.m_6084_()) {
-                    LivingEntity allyTarget = ally.m_5448_();
-                    if (allyTarget != null && !(allyTarget instanceof Player) && HostileMobs.isHostile(allyTarget)) {
-                        ally.m_6710_(null);
-                    }
-                    ally.m_6710_(target);
-                    ally.m_21573_().m_5624_(target, 1.3);
+        // Aggressive swarm — combat-index peers only (no world AABB)
+        if (target instanceof Player packTarget
+                && tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower() && age % 40 == 0) {
+            CombatIndex.forEachNear(zp, 16.0, 12, ally -> {
+                if (!(ally instanceof ZombifiedPiglin) || !ally.m_6084_()) {
+                    return;
                 }
-            }
+                LivingEntity allyTarget = ally.m_5448_();
+                if (allyTarget != null && !(allyTarget instanceof Player) && HostileMobs.isHostile(allyTarget)) {
+                    ally.m_6710_(null);
+                }
+                ally.m_6710_(packTarget);
+                ally.m_21573_().m_5624_(packTarget, 1.3);
+                CombatIndex.mark(ally);
+            });
             zp.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 50, 1, false, false));
         }
     }
@@ -742,28 +741,22 @@ public final class EnemyEvolution {
     }
 
     private static void solarFlare(ServerLevel level, Mob source, double radius) {
-        AABB box = source.m_20191_().m_82400_(radius);
-        List<ServerPlayer> players = level.m_45976_(ServerPlayer.class, box);
-        for (ServerPlayer p : players) {
+        NearbyPlayers.forEachWithin(source, radius, p -> {
             p.m_7292_(new MobEffectInstance(MobEffects.f_19610_, 70, 0, false, true)); // BLINDNESS
             p.m_7292_(new MobEffectInstance(MobEffects.f_19604_, 50, 0, false, true)); // NAUSEA
             p.m_7292_(new MobEffectInstance(MobEffects.f_19619_, 40, 0, false, true)); // GLOWING flash
-        }
+        });
         source.m_7292_(new MobEffectInstance(MobEffects.f_19619_, 40, 0, false, true));
     }
 
     private static void groundSlam(Mob mob, LivingEntity target, double radius, int slowAmp) {
         target.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 60, slowAmp, false, true));
         target.m_5997_(0, 0.35, 0);
-        if (!(mob.m_9236_() instanceof ServerLevel level)) {
-            return;
-        }
-        AABB box = mob.m_20191_().m_82400_(radius);
-        for (ServerPlayer p : level.m_45976_(ServerPlayer.class, box)) {
+        NearbyPlayers.forEachWithin(mob, radius, p -> {
             if (p != target) {
                 p.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 40, 0, false, true));
             }
-        }
+        });
     }
 
     private static void pushToward(Mob mob, LivingEntity target, double horizontal, double upward) {

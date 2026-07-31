@@ -12,6 +12,7 @@ import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tick.BehaviorScheduler;
+import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
@@ -35,7 +36,6 @@ import net.minecraft.world.entity.projectile.LargeFireball;
 import net.minecraft.world.entity.projectile.SmallFireball;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -53,6 +53,7 @@ public final class DifficultyEvents {
         DifficultyConfig.load();
         DifficultyCache.invalidateAll();
         AreaDifficulty.clearCache();
+        CombatIndex.clear();
     }
 
     @SubscribeEvent
@@ -103,37 +104,17 @@ public final class DifficultyEvents {
 
     /**
      * When a mob switches agro onto a player, retarget stats to that player's difficulty
-     * before the next swing resolves.
+     * and register it in the combat index (BehaviorScheduler uses this — no world scans).
      */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public void onChangeTarget(LivingChangeTargetEvent event) {
-        LivingEntity mob = event.getEntity();
-        if (mob == null) {
+        LivingEntity entity = event.getEntity();
+        if (!(entity instanceof Mob mob)) {
             return;
         }
         if (event.getNewTarget() instanceof ServerPlayer player) {
+            CombatIndex.mark(mob);
             MobScaling.retargetToPlayer(mob, player);
-        }
-    }
-
-    /**
-     * Before damage is calculated: scale the hostile to the involved player's difficulty
-     * so multi-player fights stay fair for whoever is currently engaged.
-     * (Hurt-event retarget removed — duplicate work crushed TPS.)
-     */
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public void onAttack(LivingAttackEvent event) {
-        LivingEntity victim = event.getEntity();
-        var source = event.getSource();
-        Entity causing = source == null ? null : source.m_7639_();
-        if (causing instanceof ServerPlayer player && HostileMobs.isHostile(victim)) {
-            MobScaling.retargetToPlayer(victim, player);
-            return;
-        }
-        if (victim instanceof ServerPlayer player
-                && causing instanceof LivingEntity atk
-                && HostileMobs.isHostile(atk)) {
-            MobScaling.retargetToPlayer(atk, player);
         }
     }
 
@@ -199,6 +180,17 @@ public final class DifficultyEvents {
                 }
                 return;
             }
+        }
+
+        // Combat-index + cached retarget (LivingAttackEvent removed — every swing crushed TPS).
+        if (causing instanceof ServerPlayer player && HostileMobs.isHostile(victim) && victim instanceof Mob vm) {
+            CombatIndex.mark(vm);
+            MobScaling.retargetToPlayer(vm, player);
+        } else if (victim instanceof ServerPlayer player
+                && causing instanceof Mob atk
+                && HostileMobs.isHostile(atk)) {
+            CombatIndex.mark(atk);
+            MobScaling.retargetToPlayer(atk, player);
         }
 
         float amount = event.getAmount();

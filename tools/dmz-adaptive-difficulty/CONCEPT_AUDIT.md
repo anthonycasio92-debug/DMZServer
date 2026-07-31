@@ -1,6 +1,6 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.8.0** · GUI: **1.8.0**  
+Mod version: **1.8.1** · GUI: **1.8.1**  
 Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
 | § | Concept | Status | Implementation |
@@ -21,7 +21,7 @@ Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_S
 | 14 | Adaptive AI | Done | Dodge / retreat / ki-charge / anti-flight / focus weakest / pack |
 | 15 | Reward scaling | Done* | `1 + diff / rewardScaling` → **XP + drop odds**; capsules; titles. **TP & Potential not touched** (by design) |
 | 16 | Boss scaling + phases | Done* | Inherit difficulty; HP/dmg/def; 75/50/25% phase bursts |
-| 17 | Performance / cache | Done | **No LivingTick bus**; `BehaviorScheduler` player-centric pulses; difficulty/area/retarget caches; curve LUT |
+| 17 | Performance / cache | Done | **No LivingTick / no combat AABB**; `CombatIndex` + `BehaviorScheduler`; difficulty/area/retarget caches; curve LUT |
 
 \* = intentional approximation (still fulfills the gameplay intent).
 
@@ -33,16 +33,22 @@ Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_S
 - **Purchase formula**: iron-coin ramp (`baseCostIronCoins` × scale) instead of legacy `baseCost × purchased/costScaling`
 - **Phys vs Ki extras**: folded into shared outgoing damage multiplier
 
+## 1.8.1 TPS fix (combat index)
+- Removed remaining `getEntitiesOfClass` / AABB combat scans (pack call, ki-charge, piglin swarm, solar/slam player fan-out)
+- Engaged mobs registered from target-change + hurt via `tick.CombatIndex` (UUID TTL)
+- `BehaviorScheduler` pulses only the combat index (budget 48 / 20t) — never neighborhood Mob AABB
+- Dropped `LivingAttackEvent` retarget (every swing); retarget stays on ChangeTarget + Hurt (cached)
+- Area difficulty always uses online player-list distance (never player AABB)
+
 ## 1.8.0 rewrite notes (optimization + concept close-out)
-- Replaced per-entity `LivingTickEvent` with `tick.BehaviorScheduler` (scan near players only, budget + stagger)
-- Combat gravity batched on the server pulse (no per-player tick AABB scans)
-- Curve LUT for offense/health (`ScalingCurves`) — avoids `Math.pow` on every retarget
-- Soft-prune retarget difficulty cache (no full wipe stampedes)
-- Area cache no longer cleared on every raise/lower/buy
+- Replaced per-entity `LivingTickEvent` with `tick.BehaviorScheduler`
+- Combat gravity batched on the server pulse
+- Curve LUT for offense/health (`ScalingCurves`)
+- Soft-prune retarget difficulty cache; area cache not cleared on every raise/buy
 - Concept §15 reward multiplier restored for XP/drops only
-- Concept §11 creeper **tracking explosion** (keep pathing while ignited)
+- Concept §11 creeper **tracking explosion**
 - Hub GUI shows team bonus + contribution (§5)
 
 ## Install
-1. `mods/dmz_adaptive_difficulty-1.8.0.jar`
-2. `plugins/dmz_adaptive_difficulty_gui-1.8.0.jar`
+1. `mods/dmz_adaptive_difficulty-1.8.1.jar`
+2. `plugins/dmz_adaptive_difficulty_gui-1.8.1.jar`
