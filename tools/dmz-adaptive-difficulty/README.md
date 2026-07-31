@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.27)
+# DMZ Adaptive Difficulty (v1.7.28)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -22,7 +22,7 @@ Clients do **not** need this jar to join.
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.27.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.28.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
@@ -79,7 +79,7 @@ Curves are **split**:
 
 | Stat | Curve | Defaults |
 |---|---|---|
-| Damage / defense | Steep offense curve (high endgame cap) | exp `0.96`, pivot `450`, rates `3.2`/`7.5`, dmg cap `×50000`, armor cap `100` |
+| Damage / defense | Steep offense curve (**uncapped**) | exp `0.96`, pivot `450`, rates `3.2`/`7.5`; no mod/vanilla attribute ceiling |
 | Health | Flat health curve + hard caps | exp `0.40`, max mult `×8`, abs cap `400` HP |
 | TP / rewards | Diminishing power (uncapped) | gain `0.85`, exp `0.38`, scale `2500` |
 | Potential unlock | **Not touched** | Owned by CNPC `Potential.js` (`potentialunlock`) |
@@ -100,8 +100,8 @@ Tune:
 /difficulty admin set combatCurvePivot 450
 /difficulty admin set damagePercentPerDifficulty 3.2
 /difficulty admin set defensePercentPerDifficulty 7.5
-/difficulty admin set maxDamageMultiplier 50000
-/difficulty admin set maxArmorBonus 100
+/difficulty admin set maxDamageMultiplier 0
+/difficulty admin set maxArmorBonus 0
 /difficulty admin set healthCurveExponent 0.40
 /difficulty admin set maxHealthMultiplier 8
 /difficulty admin set maxScaledHealth 400
@@ -110,7 +110,7 @@ Tune:
 /difficulty admin set rewardCurveExponent 0.38
 /difficulty admin set maxRewardMultiplier 0
 ```
-(`maxRewardMultiplier` `0`/`1` = uncapped; only values `> 1` apply a ceiling.)
+(`maxDamageMultiplier` / `maxRewardMultiplier` `0`/`1` = uncapped; `maxArmorBonus` `0` = uncapped.)
 
 ## Pricing (Lightman's iron coins)
 

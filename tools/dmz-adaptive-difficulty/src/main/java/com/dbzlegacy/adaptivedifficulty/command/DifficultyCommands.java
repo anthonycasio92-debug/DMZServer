@@ -431,8 +431,12 @@ public final class DifficultyCommands {
                 case "maxhealthmultiplier" -> cfg.maxHealthMultiplier = Double.parseDouble(value);
                 case "maxscaledhealth" -> cfg.maxScaledHealth = Double.parseDouble(value);
                 case "maxmovemultiplier" -> cfg.maxMoveMultiplier = Double.parseDouble(value);
-                case "maxarmorbonus" -> cfg.maxArmorBonus = Double.parseDouble(value);
-                case "maxdamagemultiplier" -> cfg.maxDamageMultiplier = Double.parseDouble(value);
+                case "maxarmorbonus" ->
+                        // 0 = uncapped
+                        cfg.maxArmorBonus = Math.max(0.0, Double.parseDouble(value));
+                case "maxdamagemultiplier" ->
+                        // 0 / 1 = uncapped; only values > 1 apply a ceiling
+                        cfg.maxDamageMultiplier = Math.max(0.0, Double.parseDouble(value));
                 case "adminpermission" -> cfg.adminPermission = value.trim();
                 case "guibackend" -> cfg.guiBackend = value.trim().toLowerCase();
                 case "vanilladifficulty" -> cfg.vanillaDifficulty = value.trim().toLowerCase();

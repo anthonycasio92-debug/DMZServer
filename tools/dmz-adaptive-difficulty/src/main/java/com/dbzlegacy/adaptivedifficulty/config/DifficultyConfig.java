@@ -166,15 +166,15 @@ public final class DifficultyConfig {
     public double maxScaledHealth = 400.0;
     public double maxMoveMultiplier = 2.0;
     /**
-     * Armor-point ceiling from defense scaling. Legacy 30 saturated by ~500 difficulty
-     * and made high-end defense feel flat — raised so late tiers keep tanking harder.
+     * Optional armor-point ceiling from defense scaling.
+     * {@code 0} = uncapped (default). Only values {@code > 0} apply a ceiling.
      */
-    public double maxArmorBonus = 100.0;
+    public double maxArmorBonus = 0.0;
     /**
-     * Damage multiplier ceiling. Legacy 50 / 25000 saturated mid–late game;
-     * default is high enough for multi-million DMZ difficulty to keep growing.
+     * Optional damage multiplier ceiling.
+     * {@code 0} or {@code 1} = uncapped (default). Only values {@code > 1} apply a ceiling.
      */
-    public double maxDamageMultiplier = 50_000.0;
+    public double maxDamageMultiplier = 0.0;
     /** Admin permission node (Forge PermissionAPI / LuckPerms). Ops always allowed. */
     public String adminPermission = "difficulty.admin";
     /**
@@ -400,18 +400,28 @@ public final class DifficultyConfig {
             cfg.maxScaledHealth = 400.0;
             retuned = true;
         }
+        // Remove stock damage/armor ceilings — offense grows with the curve only.
         if (nearly(cfg.maxDamageMultiplier, 50.0)
-                || nearly(cfg.maxDamageMultiplier, 25_000.0)) {
-            cfg.maxDamageMultiplier = 50_000.0;
+                || nearly(cfg.maxDamageMultiplier, 25_000.0)
+                || nearly(cfg.maxDamageMultiplier, 50_000.0)) {
+            cfg.maxDamageMultiplier = 0.0;
             retuned = true;
         }
-        if (nearly(cfg.maxArmorBonus, 20.0) || nearly(cfg.maxArmorBonus, 30.0)) {
-            cfg.maxArmorBonus = 100.0;
+        if (nearly(cfg.maxArmorBonus, 20.0)
+                || nearly(cfg.maxArmorBonus, 30.0)
+                || nearly(cfg.maxArmorBonus, 100.0)) {
+            cfg.maxArmorBonus = 0.0;
             retuned = true;
+        }
+        if (cfg.maxDamageMultiplier < 0.0) {
+            cfg.maxDamageMultiplier = 0.0;
+        }
+        if (cfg.maxArmorBonus < 0.0) {
+            cfg.maxArmorBonus = 0.0;
         }
         if (retuned) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] retuned high-end damage/defense (steeper offense + armor/dmg caps ↑)",
+                    "[{}] retuned high-end damage/defense (steeper offense; dmg/armor uncapped)",
                     AdaptiveDifficultyMod.MOD_ID
             );
         }

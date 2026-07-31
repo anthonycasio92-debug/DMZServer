@@ -116,14 +116,20 @@ public final class MobScaling {
 
         healthMult = clamp(healthMult, 1.0, Math.max(1.0, cfg.maxHealthMultiplier));
         moveMult = clamp(moveMult, 1.0, Math.max(1.0, cfg.maxMoveMultiplier));
-        armorBonus = Math.min(armorBonus, Math.max(0.0, cfg.maxArmorBonus));
+        // 0 = uncapped defense
+        if (cfg.maxArmorBonus > 0.0) {
+            armorBonus = Math.min(armorBonus, cfg.maxArmorBonus);
+        }
 
         double dmgMult = 1.0 + ScalingCurves.offenseBonus(difficulty, cfg.damagePercentPerDifficulty);
         if (dmzStyle) {
             dmgMult += ScalingCurves.offenseBonus(difficulty, cfg.dmzExtraDamagePercent);
             dmgMult += ScalingCurves.offenseBonus(difficulty, cfg.dmzExtraKiDamagePercent);
         }
-        dmgMult = Math.min(dmgMult, Math.max(1.0, cfg.maxDamageMultiplier));
+        // 0 / 1 = uncapped damage
+        if (cfg.maxDamageMultiplier > 1.0) {
+            dmgMult = Math.min(dmgMult, cfg.maxDamageMultiplier);
+        }
         tag.m_128350_(TAG_DMG_MULT, (float) dmgMult); // putFloat
 
         scaleMaxHealth(entity, healthMult, cfg.maxScaledHealth);
@@ -134,8 +140,13 @@ public final class MobScaling {
         }
         AttributeInstance armor = entity.m_21051_(Attributes.f_22284_); // ARMOR
         if (armor != null && armorBonus > 0) {
-            double next = Math.min(30.0, armor.m_22115_() + armorBonus);
-            armor.m_22100_(next);
+            double next = armor.m_22115_() + armorBonus;
+            if (cfg.maxArmorBonus > 0.0) {
+                next = Math.min(cfg.maxArmorBonus, next);
+            }
+            if (next > 0 && !Double.isNaN(next) && !Double.isInfinite(next)) {
+                armor.m_22100_(next);
+            }
         }
 
         if (boss) {
@@ -243,7 +254,9 @@ public final class MobScaling {
             mult += ScalingCurves.offenseBonus(d, cfg.dmzExtraDamagePercent);
             mult += ScalingCurves.offenseBonus(d, cfg.dmzExtraKiDamagePercent);
         }
-        mult = Math.min(mult, Math.max(1.0, cfg.maxDamageMultiplier));
+        if (cfg.maxDamageMultiplier > 1.0) {
+            mult = Math.min(mult, cfg.maxDamageMultiplier);
+        }
         if (PersistentDataAccess.isWritable(tag)) {
             tag.m_128350_(TAG_DMG_MULT, (float) mult);
         }

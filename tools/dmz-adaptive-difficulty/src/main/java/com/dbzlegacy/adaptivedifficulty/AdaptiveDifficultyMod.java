@@ -4,6 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.command.DifficultyCommands;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge;
 import com.dbzlegacy.adaptivedifficulty.event.DifficultyEvents;
+import com.dbzlegacy.adaptivedifficulty.scaling.AttributeLimits;
 import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.IExtensionPoint;
@@ -16,7 +17,7 @@ import org.apache.logging.log4j.Logger;
 @Mod(AdaptiveDifficultyMod.MOD_ID)
 public final class AdaptiveDifficultyMod {
     public static final String MOD_ID = "dmz_adaptive_difficulty";
-    public static final String VERSION = "1.7.27";
+    public static final String VERSION = "1.7.28";
     public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
 
     public AdaptiveDifficultyMod() {
@@ -30,6 +31,8 @@ public final class AdaptiveDifficultyMod {
         );
 
         DifficultyConfig.load();
+        // Vanilla armor max 30 / attack-damage max 2048 would silently hard-cap offense.
+        AttributeLimits.uncapOffenseAttributes();
         MinecraftForge.EVENT_BUS.register(new DifficultyEvents());
         DifficultyCommands.register();
         LOGGER.info(

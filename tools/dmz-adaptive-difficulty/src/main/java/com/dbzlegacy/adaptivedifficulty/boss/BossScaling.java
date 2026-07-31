@@ -100,9 +100,17 @@ public final class BossScaling {
         }
         AttributeInstance armor = entity.m_21051_(Attributes.f_22284_);
         if (armor != null) {
-            double bonus = Math.min(cfg.maxArmorBonus,
-                    ScalingCurves.offenseBonus(difficulty, cfg.defensePercentPerDifficulty) * 0.25);
-            armor.m_22100_(Math.min(30.0, armor.m_22115_() + bonus));
+            double bonus = ScalingCurves.offenseBonus(difficulty, cfg.defensePercentPerDifficulty) * 0.25;
+            if (cfg.maxArmorBonus > 0.0) {
+                bonus = Math.min(cfg.maxArmorBonus, bonus);
+            }
+            double next = armor.m_22115_() + bonus;
+            if (cfg.maxArmorBonus > 0.0) {
+                next = Math.min(cfg.maxArmorBonus, next);
+            }
+            if (next > 0 && !Double.isNaN(next) && !Double.isInfinite(next)) {
+                armor.m_22100_(next);
+            }
         }
 
         DifficultyTier tier = DifficultyTier.of(difficulty);
