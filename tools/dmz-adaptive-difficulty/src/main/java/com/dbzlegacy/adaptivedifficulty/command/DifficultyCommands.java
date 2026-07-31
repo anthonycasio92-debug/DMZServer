@@ -452,7 +452,9 @@ public final class DifficultyCommands {
                 case "bossstatmultiplier" -> cfg.bossStatMultiplier = Double.parseDouble(value);
                 case "bosshealththreshold" -> cfg.bossHealthThreshold = Double.parseDouble(value);
                 case "maxhealthmultiplier" -> cfg.maxHealthMultiplier = Double.parseDouble(value);
-                case "maxscaledhealth" -> cfg.maxScaledHealth = Double.parseDouble(value);
+                case "maxscaledhealth" ->
+                        // 0 = uncapped (vanilla 1024 attribute wall is raised at mod boot)
+                        cfg.maxScaledHealth = Math.max(0.0, Double.parseDouble(value));
                 case "maxmovemultiplier" -> cfg.maxMoveMultiplier = Double.parseDouble(value);
                 case "maxarmorbonus" ->
                         // 0 = uncapped

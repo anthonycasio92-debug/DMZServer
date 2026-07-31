@@ -52,9 +52,6 @@ public final class MobScaling {
     public static final String TAG_BASE_SPEED = "dmz_ad_base_speed";
     public static final String TAG_BASE_KNOCKBACK = "dmz_ad_base_knockback";
 
-    /** Vanilla generic.max_health upper bound — never push past this. */
-    private static final double VANILLA_MAX_HEALTH_CAP = 1024.0;
-
     /**
      * Hot-path cache: entity UUID → last applied difficulty.
      * Lets attack/target retarget skip NBT when already matched.
@@ -355,12 +352,15 @@ public final class MobScaling {
         double baseSpeed = tag.m_128441_(TAG_BASE_SPEED) ? Math.max(0.0, tag.m_128459_(TAG_BASE_SPEED)) : 0.0;
         double baseKnock = tag.m_128441_(TAG_BASE_KNOCKBACK) ? Math.max(0.0, tag.m_128459_(TAG_BASE_KNOCKBACK)) : 0.0;
 
-        double absHealthCap = cfg.maxScaledHealth > 0.0
-                ? Math.min(cfg.maxScaledHealth, VANILLA_MAX_HEALTH_CAP)
-                : VANILLA_MAX_HEALTH_CAP;
-        double newMaxHealth = Math.min(absHealthCap, baseHealth * healthMult * rarityHealth);
+        // maxScaledHealth > 0 = optional absolute HP ceiling; 0 = uncapped (attribute max raised at boot).
+        double newMaxHealth = baseHealth * healthMult * rarityHealth;
+        if (cfg.maxScaledHealth > 0.0) {
+            newMaxHealth = Math.min(cfg.maxScaledHealth, newMaxHealth);
+        }
         if (!(newMaxHealth > 0.0) || Double.isNaN(newMaxHealth) || Double.isInfinite(newMaxHealth)) {
-            newMaxHealth = Math.min(absHealthCap, baseHealth);
+            newMaxHealth = cfg.maxScaledHealth > 0.0
+                    ? Math.min(cfg.maxScaledHealth, baseHealth)
+                    : baseHealth;
         }
 
         // Preserve fight progress across retargets. Never revive a 0-HP mob.

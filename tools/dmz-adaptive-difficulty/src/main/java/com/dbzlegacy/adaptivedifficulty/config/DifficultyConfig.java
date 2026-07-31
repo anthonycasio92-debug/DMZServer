@@ -178,8 +178,11 @@ public final class DifficultyConfig {
      * {@code 0} or {@code 1} = uncapped (default). Absolute HP still limited by {@link #maxScaledHealth}.
      */
     public double maxHealthMultiplier = 0.0;
-    /** Absolute max HP after scaling (also clamped to vanilla 1024). {@code 0} = vanilla 1024 only. */
-    public double maxScaledHealth = 1024.0;
+    /**
+     * Absolute max HP after scaling.
+     * {@code 0} = uncapped (default). Vanilla's 1024 max_health attribute limit is raised at mod boot.
+     */
+    public double maxScaledHealth = 0.0;
     public double maxMoveMultiplier = 2.0;
     /**
      * Optional armor-point ceiling from defense scaling.
@@ -557,13 +560,14 @@ public final class DifficultyConfig {
             cfg.dmzExtraDefensePercent = 1.85;
             retuned = true;
         }
-        // Health: curve growth up to vanilla attribute ceiling (1024).
+        // Health: uncapped by default (vanilla 1024 attribute wall is raised at boot).
         if (nearly(cfg.maxHealthMultiplier, 50.0) || nearly(cfg.maxHealthMultiplier, 8.0)) {
             cfg.maxHealthMultiplier = 0.0;
             retuned = true;
         }
-        if (nearly(cfg.maxScaledHealth, 400.0)) {
-            cfg.maxScaledHealth = 1024.0;
+        // Migrate old hard-cap defaults (400 / 1024) → uncapped.
+        if (nearly(cfg.maxScaledHealth, 400.0) || nearly(cfg.maxScaledHealth, 1024.0)) {
+            cfg.maxScaledHealth = 0.0;
             retuned = true;
         }
         // Remove stock damage/armor ceilings — offense grows with the curve only.

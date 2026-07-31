@@ -7,8 +7,9 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.attributes.RangedAttribute;
 
 /**
- * Vanilla clamps {@code generic.armor} to 30 and {@code generic.attack_damage} to 2048.
- * Raise those ceilings so adaptive difficulty can scale without a hard attribute wall.
+ * Vanilla clamps {@code generic.max_health} to 1024, {@code generic.armor} to 30,
+ * and {@code generic.attack_damage} to 2048. Raise those ceilings so adaptive
+ * difficulty can scale without a hard attribute wall.
  */
 public final class AttributeLimits {
     /** High enough for multi-million difficulty curves; still finite for attribute math. */
@@ -17,6 +18,7 @@ public final class AttributeLimits {
     private AttributeLimits() {}
 
     public static void uncapOffenseAttributes() {
+        raiseMax(Attributes.f_22276_, UNCAP_MAX); // MAX_HEALTH (vanilla 1024)
         raiseMax(Attributes.f_22284_, UNCAP_MAX); // ARMOR
         raiseMax(Attributes.f_22281_, UNCAP_MAX); // ATTACK_DAMAGE
     }
