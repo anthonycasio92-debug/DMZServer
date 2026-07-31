@@ -61,9 +61,27 @@ public final class CmiDifficultyGui {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         CMIGui gui = base(player, "&8Difficulty", 4);
 
+        boolean systemOn = !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "true"));
         String stateColor = ph.getOrDefault("state_color", "f");
-        CMIGuiButton status = new CMIGuiButton(13, Material.NETHER_STAR, "&f&lDifficulty V3");
+        CMIGuiButton status = new CMIGuiButton(13, Material.NETHER_STAR,
+                systemOn ? "&f&lDifficulty V3" : "&c&lSYSTEM DISABLED");
         status.lockField();
+        if (!systemOn) {
+            status.addLore(List.of(
+                    "",
+                    "&cAdaptive Difficulty is off",
+                    "&7An admin disabled the system",
+                    "&8No scaling, coins, or purchases",
+                    "&8Re-enable: &f/difficulty admin on"
+            ));
+            gui.addButton(status);
+            gui.addButton(actionBtn(31, Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
+                    List.of("&7Reload this menu")));
+            gui.addButton(closeBtn(35));
+            fillEmpty(gui, 4);
+            gui.open();
+            return;
+        }
         status.addLore(statusLore(ph, stateColor));
         gui.addButton(status);
 

@@ -76,6 +76,19 @@ public final class DifficultyCommands {
                                 .executes(ctx -> reloadOrDeny(ctx.getSource())))
                         .then(Commands.m_82127_("settings")
                                 .executes(ctx -> openAdminSettingsOrDeny(ctx.getSource())))
+                        // Master system switch — ops only (no admin-mode session required).
+                        .then(Commands.m_82127_("off")
+                                .executes(ctx -> setSystemEnabled(ctx.getSource(), false)))
+                        .then(Commands.m_82127_("disable")
+                                .executes(ctx -> setSystemEnabled(ctx.getSource(), false)))
+                        .then(Commands.m_82127_("on")
+                                .executes(ctx -> setSystemEnabled(ctx.getSource(), true)))
+                        .then(Commands.m_82127_("enable")
+                                .executes(ctx -> setSystemEnabled(ctx.getSource(), true)))
+                        .then(Commands.m_82127_("toggle")
+                                .executes(ctx -> toggleSystem(ctx.getSource())))
+                        .then(Commands.m_82127_("status")
+                                .executes(ctx -> systemStatus(ctx.getSource())))
                         .then(Commands.m_82127_("gamedifficulty")
                                 .then(Commands.m_82129_("level", StringArgumentType.word())
                                         .executes(ctx -> setVanillaDifficultyOrDeny(
@@ -184,14 +197,69 @@ public final class DifficultyCommands {
         if (enabled) {
             source.m_288197_(() -> Component.m_237113_(
                     "§aAdmin commands ENABLED.\n"
+                            + "§7/difficulty admin off|on|toggle|status §8— master system switch\n"
                             + "§7/difficulty admin help|reload|settings\n"
                             + "§7/difficulty admin gamedifficulty <peaceful|easy|normal|hard>\n"
                             + "§7/difficulty admin set <key> <value>\n"
-                            + "§8Run §f/difficulty admin §8again to disable."
+                            + "§8Run §f/difficulty admin §8again to disable admin mode."
             ), false);
         } else {
             source.m_288197_(() -> Component.m_237113_("§cAdmin commands DISABLED."), false);
         }
+        return 1;
+    }
+
+    /** Ops-only master switch — does not require admin-mode session. */
+    private static int setSystemEnabled(CommandSourceStack source, boolean on) {
+        if (!isStaff(source)) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§cNo permission (need op or difficulty.admin)."
+            ), false);
+            return 0;
+        }
+        DifficultyConfig.setEnabled(on);
+        DifficultyCache.invalidateAll();
+        AreaDifficulty.clearCache();
+        if (on) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§aAdaptive Difficulty ENABLED.\n"
+                            + "§7Scaling, rewards, AI, and tier purchases are active again."
+            ), true);
+        } else {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§cAdaptive Difficulty DISABLED.\n"
+                            + "§7No scaling, kill coins, AI, or tier purchases until re-enabled.\n"
+                            + "§eRe-enable: §f/difficulty admin on"
+            ), true);
+        }
+        ServerPlayer actor = source.m_230896_();
+        String who = actor != null ? actor.m_6302_() : "console";
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] system {} by {}",
+                AdaptiveDifficultyMod.MOD_ID,
+                on ? "ENABLED" : "DISABLED",
+                who
+        );
+        return 1;
+    }
+
+    private static int toggleSystem(CommandSourceStack source) {
+        return setSystemEnabled(source, !DifficultyConfig.isEnabled());
+    }
+
+    private static int systemStatus(CommandSourceStack source) {
+        if (!isStaff(source)) {
+            source.m_288197_(() -> Component.m_237113_(
+                    "§cNo permission (need op or difficulty.admin)."
+            ), false);
+            return 0;
+        }
+        boolean on = DifficultyConfig.isEnabled();
+        source.m_288197_(() -> Component.m_237113_(
+                on
+                        ? "§aAdaptive Difficulty is ENABLED."
+                        : "§cAdaptive Difficulty is DISABLED. §7Use §f/difficulty admin on"
+        ), false);
         return 1;
     }
 
@@ -310,13 +378,13 @@ public final class DifficultyCommands {
                         + "§e/difficulty reset §7— clear active tier/level (free)\n"
                         + "§e/difficulty do character_reset §7— character-wipe hook (scriptable)\n"
                         + "§e/difficulty hard|normal|easy|peaceful §7— vanilla world difficulty (ops)\n"
+                        + "§e/difficulty admin off|on|toggle|status §7— master system switch (ops)\n"
                         + "§e/difficulty admin §7— toggle admin command access\n"
                         + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased|characterreset\n"
                         + "§e/difficulty admin set <key> <value>\n"
+                        + "§8Master key: enabled true|false\n"
                         + "§8V3 keys: unlockTier1Level…7 / unlockTier1Max…7 / unlockTier1Cost…7\n"
-                        + "§8unlockTier1EnemyMult…7 · combatRatingDmzWeight · combatRatingPrestigeWeight\n"
-                        + "§8combatRatingTransformWeight · combatRatingDifficultyWeight\n"
-                        + "§8enableAncientCoinDrops · ancientCoinDropMult · deathResetsActiveDifficulty\n"
+                        + "§8combatRating*Weight · enableAncientCoinDrops · deathResetsActiveDifficulty\n"
                         + "§8eliteMinUnlockTier · mutationMinUnlockTier · adaptiveAiMinUnlockTier\n"
                         + "§8enemyEvolutionMinUnlockTier · bossMechanicsMinUnlockTier"
         ), false);
@@ -364,6 +432,10 @@ public final class DifficultyCommands {
         DifficultyConfig cfg = DifficultyConfig.get();
         try {
             switch (key.toLowerCase()) {
+                case "enabled", "system", "systemenabled" -> {
+                    cfg.enabled = Boolean.parseBoolean(value);
+                    AreaDifficulty.clearCache();
+                }
                 case "prestigemultiplier" -> cfg.prestigeMultiplier = Double.parseDouble(value);
                 case "levelmultiplier" -> cfg.levelMultiplier = Double.parseDouble(value);
                 case "teambonus", "teambonuspercent" -> cfg.teamBonusPercent = Double.parseDouble(value);

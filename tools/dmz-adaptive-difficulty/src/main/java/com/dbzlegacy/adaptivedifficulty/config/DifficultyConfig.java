@@ -18,6 +18,12 @@ public final class DifficultyConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static DifficultyConfig INSTANCE = new DifficultyConfig();
 
+    /**
+     * Master switch. When {@code false}, scaling / rewards / AI / purchases are inert.
+     * Toggle in-game: {@code /difficulty admin off|on|toggle}.
+     */
+    public boolean enabled = true;
+
     public double prestigeMultiplier = 10.0;
     public double levelMultiplier = 1.0;
     public double teamBonusPercent = 10.0;
@@ -320,6 +326,19 @@ public final class DifficultyConfig {
 
     public static DifficultyConfig get() {
         return INSTANCE;
+    }
+
+    /** Master gate used by events / scaling / rewards / player purchases. */
+    public static boolean isEnabled() {
+        return INSTANCE != null && INSTANCE.enabled;
+    }
+
+    public static void setEnabled(boolean on) {
+        if (INSTANCE == null) {
+            INSTANCE = new DifficultyConfig();
+        }
+        INSTANCE.enabled = on;
+        save();
     }
 
     public static Path path() {

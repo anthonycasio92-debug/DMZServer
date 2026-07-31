@@ -165,6 +165,10 @@ public final class ForgeBridge {
             out.put("balance", balance);
             out.put("currency", "Ancient Coins");
 
+            boolean systemOn = systemEnabled();
+            out.put("system_enabled", systemOn ? "true" : "false");
+            out.put("system_status", systemOn ? "ENABLED" : "DISABLED");
+
             // UnlockTier 1–7 activation costs (Ancient Coins).
             if (unlockTierValues != null && economyFormatExactCost != null && unlockTierActivationCost != null) {
                 try {
@@ -312,6 +316,24 @@ public final class ForgeBridge {
             return v.isEmpty() ? "difficulty.admin" : v;
         } catch (Throwable t) {
             return "difficulty.admin";
+        }
+    }
+
+    /** Master Adaptive Difficulty switch ({@code DifficultyConfig.enabled}). */
+    public static boolean systemEnabled() {
+        try {
+            Object on = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+                    .getMethod("isEnabled").invoke(null);
+            return !(on instanceof Boolean b) || b;
+        } catch (Throwable t) {
+            try {
+                Object cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+                        .getMethod("get").invoke(null);
+                Object raw = cfg.getClass().getField("enabled").get(cfg);
+                return !(raw instanceof Boolean b) || b;
+            } catch (Throwable ignored) {
+                return true;
+            }
         }
     }
 

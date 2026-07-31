@@ -34,6 +34,10 @@ public final class BehaviorScheduler {
         if (server == null) {
             return;
         }
+        DifficultyConfig cfg = DifficultyConfig.get();
+        if (!cfg.enabled) {
+            return;
+        }
         List<ServerPlayer> online = server.m_6846_().m_11314_();
         if (online == null || online.isEmpty()) {
             CombatIndex.clear();
@@ -49,7 +53,6 @@ public final class BehaviorScheduler {
             return;
         }
 
-        DifficultyConfig cfg = DifficultyConfig.get();
         boolean ai = cfg.enableAdaptiveAi;
         boolean evo = cfg.enableEnemyEvolution;
         if (!ai && !evo && !cfg.enableMutations && !cfg.enableBossScaling) {

@@ -48,6 +48,21 @@ public final class DifficultyChestGui implements Listener {
         holder.bind(inv);
         frame(inv, 36);
 
+        boolean systemOn = !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "true"));
+        if (!systemOn) {
+            inv.setItem(13, item(Material.NETHER_STAR, "&c&lSYSTEM DISABLED", List.of(
+                    "",
+                    "&cAdaptive Difficulty is off",
+                    "&7An admin disabled the system",
+                    "&8No scaling, coins, or purchases",
+                    "&8Re-enable: &f/difficulty admin on"
+            )));
+            inv.setItem(31, button(Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
+                    List.of("&7Reload this menu")));
+            inv.setItem(35, closeBtn());
+            return inv;
+        }
+
         String stateColor = ph.getOrDefault("state_color", "f");
         inv.setItem(13, item(Material.NETHER_STAR, "&f&lDifficulty V3", statusLore(ph, stateColor)));
         inv.setItem(20, pageBtn(Material.GOLD_INGOT, "&eBuy Tier", "buy",

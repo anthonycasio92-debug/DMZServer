@@ -26,7 +26,7 @@ public final class RewardSystem {
             return;
         }
         DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableRewardScaling) {
+        if (!cfg.enabled || !cfg.enableRewardScaling) {
             return;
         }
         DifficultySnapshot snap = DifficultyCache.get(killer);

@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.service;
 
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
+import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
@@ -42,7 +43,7 @@ public final class DifficultyActions {
             return Result.fail("Invalid action.");
         }
         String act = action.toLowerCase();
-        if (ACT_PAGE.equals(act)) {
+        if (ACT_PAGE.equals(act) || ACT_REFRESH.equals(act)) {
             openGui(player, page);
             return Result.ok("");
         }
@@ -52,6 +53,15 @@ public final class DifficultyActions {
                 || "unequip_title".equals(act)) {
             openGui(player, page == null || page.isBlank() ? "buy" : page);
             return Result.fail("That feature was removed. Purchase a tier to raise difficulty.");
+        }
+        // Character-wipe hook must still work while the system is offline.
+        if (ACT_CHARACTER_RESET.equals(act) || "char_reset".equals(act) || "characterreset".equals(act)) {
+            return characterReset(player, page);
+        }
+        // Master admin switch — block gameplay actions while the system is off.
+        if (!DifficultyConfig.isEnabled()) {
+            openGui(player, page == null || page.isBlank() ? "main" : page);
+            return Result.fail("Adaptive Difficulty is disabled by an admin.");
         }
 
         long amount = 0L;
@@ -71,11 +81,6 @@ public final class DifficultyActions {
             case ACT_ACTIVATE, ACT_PURCHASE_TIER, ACT_BUY -> activateTier(player, (int) amount, page);
             case ACT_TEAM -> cycleTeam(player, page);
             case ACT_RESET, "zero", "clear" -> resetActive(player, page);
-            case ACT_CHARACTER_RESET, "char_reset", "characterreset" -> characterReset(player, page);
-            case ACT_REFRESH -> {
-                openGui(player, page);
-                yield Result.ok("");
-            }
             default -> Result.fail("Unknown action.");
         };
     }

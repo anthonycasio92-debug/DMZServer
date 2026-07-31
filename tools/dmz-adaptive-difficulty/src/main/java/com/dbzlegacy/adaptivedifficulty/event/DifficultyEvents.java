@@ -15,6 +15,7 @@ import com.dbzlegacy.adaptivedifficulty.tick.BehaviorScheduler;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
+import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.dragonminez.common.events.DMZEvent;
 import net.minecraft.server.level.ServerPlayer;
@@ -97,6 +98,9 @@ public final class DifficultyEvents {
     @SubscribeEvent(priority = EventPriority.LOW)
     public void onFinalizeSpawn(MobSpawnEvent.FinalizeSpawn event) {
         LivingEntity entity = event.getEntity();
+        if (SystemGate.isDisabled()) {
+            return;
+        }
         if (entity != null && !event.isCanceled() && !event.isSpawnCancelled()
                 && !DimensionGates.isDisabled(entity)) {
             MobScaling.scaleIfNeeded(entity);
@@ -109,6 +113,9 @@ public final class DifficultyEvents {
      */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public void onChangeTarget(LivingChangeTargetEvent event) {
+        if (SystemGate.isDisabled()) {
+            return;
+        }
         LivingEntity entity = event.getEntity();
         if (!(entity instanceof Mob mob) || DimensionGates.isDisabled(mob)) {
             return;
@@ -124,7 +131,7 @@ public final class DifficultyEvents {
      */
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
+        if (event.phase != TickEvent.Phase.END || SystemGate.isDisabled()) {
             return;
         }
         var server = ServerLifecycleHooks.getCurrentServer();
@@ -136,7 +143,8 @@ public final class DifficultyEvents {
 
     @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)) {
+        if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)
+                || SystemGate.isDisabled()) {
             return;
         }
         // Level/prestige poll only — gravity moved to BehaviorScheduler.
@@ -161,7 +169,7 @@ public final class DifficultyEvents {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onHurt(LivingHurtEvent event) {
         LivingEntity victim = event.getEntity();
-        if (victim == null || victim.m_9236_().f_46443_) {
+        if (victim == null || victim.m_9236_().f_46443_ || SystemGate.isDisabled()) {
             return;
         }
         var source = event.getSource();
@@ -236,6 +244,9 @@ public final class DifficultyEvents {
      */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onDamageDone(net.minecraftforge.event.entity.living.LivingDamageEvent event) {
+        if (SystemGate.isDisabled()) {
+            return;
+        }
         LivingEntity victim = event.getEntity();
         if (victim != null && HostileMobs.isHostile(victim) && victim.m_21223_() <= 0.0f) {
             MobScaling.terminateIfZeroHealth(victim);
@@ -244,6 +255,9 @@ public final class DifficultyEvents {
 
     @SubscribeEvent
     public void onDeath(LivingDeathEvent event) {
+        if (SystemGate.isDisabled()) {
+            return;
+        }
         LivingEntity dead = event.getEntity();
         if (dead instanceof Creeper creeper) {
             EnemyEvolution.onCreeperDeath(creeper, event.getSource());
@@ -273,7 +287,7 @@ public final class DifficultyEvents {
      */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public void onProjectileJoin(EntityJoinLevelEvent event) {
-        if (event.getLevel().m_5776_()) { // isClientSide
+        if (SystemGate.isDisabled() || event.getLevel().m_5776_()) { // isClientSide
             return;
         }
         Entity entity = event.getEntity();
@@ -306,7 +320,7 @@ public final class DifficultyEvents {
 
     @SubscribeEvent
     public void onKiCharge(DMZEvent.KiChargeEvent event) {
-        if (!(event.getPlayer() instanceof ServerPlayer player)) {
+        if (SystemGate.isDisabled() || !(event.getPlayer() instanceof ServerPlayer player)) {
             return;
         }
         AdaptiveAiSystem.onPlayerKiCharge(player);

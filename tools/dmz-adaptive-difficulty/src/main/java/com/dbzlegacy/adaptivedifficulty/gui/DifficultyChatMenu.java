@@ -20,6 +20,16 @@ public final class DifficultyChatMenu {
     private DifficultyChatMenu() {}
 
     public static void open(ServerPlayer player, String page) {
+        if ("settings".equalsIgnoreCase(page)) {
+            settings(player);
+            return;
+        }
+        // While the master switch is off, only show the disabled hub (admins use settings).
+        if (!DifficultyConfig.isEnabled()
+                && (page == null || page.isBlank() || !"settings".equalsIgnoreCase(page))) {
+            main(player);
+            return;
+        }
         if (page == null || page.isBlank() || "main".equalsIgnoreCase(page)) {
             main(player);
         } else if ("adjust".equalsIgnoreCase(page) || "change".equalsIgnoreCase(page) || "set".equalsIgnoreCase(page)) {
@@ -32,8 +42,6 @@ public final class DifficultyChatMenu {
             buy(player);
         } else if ("stats".equalsIgnoreCase(page) || "statistics".equalsIgnoreCase(page) || "details".equalsIgnoreCase(page)) {
             stats(player);
-        } else if ("settings".equalsIgnoreCase(page)) {
-            settings(player);
         } else {
             main(player);
         }
@@ -44,6 +52,12 @@ public final class DifficultyChatMenu {
         String color = snap.stateColorCode();
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§8──────── §fDifficulty V3 §8────────"));
+        if (!DifficultyConfig.isEnabled()) {
+            send(player, Component.m_237113_("§c§lSYSTEM DISABLED §8· §7An admin turned Adaptive Difficulty off."));
+            send(player, Component.m_237113_("§8No scaling, kill coins, or tier purchases until re-enabled."));
+            send(player, Component.m_237113_("§8────────────────────────"));
+            return;
+        }
         send(player, Component.m_237113_("§7Tier §f" + snap.activeTierName
                 + "  §8·  §f" + snap.active + " §8/ §7" + snap.availableMax
                 + "  §8·  §" + color + snap.state()));
@@ -143,12 +157,15 @@ public final class DifficultyChatMenu {
     private static void settings(ServerPlayer player) {
         DifficultyConfig cfg = DifficultyConfig.get();
         send(player, Component.m_237113_("§8──────── §fAdmin §8────────"));
+        send(player, Component.m_237113_(
+                (cfg.enabled ? "§aSystem ENABLED" : "§cSystem DISABLED")
+                        + " §8· §7/difficulty admin off|on|toggle"));
         send(player, Component.m_237113_("§7CR weights DMZ §f" + cfg.combatRatingDmzWeight
                 + "  §7Prestige §f" + cfg.combatRatingPrestigeWeight
                 + "  §7Active §f" + cfg.combatRatingDifficultyWeight));
         send(player, Component.m_237113_("§7Coin drops §f" + cfg.enableAncientCoinDrops
                 + "  §7Death reset §f" + cfg.deathResetsActiveDifficulty));
-        send(player, Component.m_237113_("§8/difficulty admin set <key> <value>"));
+        send(player, Component.m_237113_("§8/difficulty admin set enabled true|false"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 

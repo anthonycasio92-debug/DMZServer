@@ -95,7 +95,7 @@ public final class MobScaling {
         }
         try {
             DifficultyConfig cfg = DifficultyConfig.get();
-            if (!cfg.enableMobScaling) {
+            if (!cfg.enabled || !cfg.enableMobScaling) {
                 return;
             }
             // Cheap hostility gate before any NBT / kill checks.
@@ -203,7 +203,7 @@ public final class MobScaling {
 
     private static void scaleIfNeededInternal(LivingEntity entity) {
         DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableMobScaling || entity == null || entity.m_9236_().f_46443_) {
+        if (!cfg.enabled || !cfg.enableMobScaling || entity == null || entity.m_9236_().f_46443_) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);

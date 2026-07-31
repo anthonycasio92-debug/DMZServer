@@ -39,8 +39,12 @@ Implements **Developer Specification V3**
 ## Commands
 
 - `/difficulty` — GUI
+- `/difficulty admin off|on|toggle|status` — master system switch (ops)
 - `/difficulty admin reload|settings|set <key> <value>`
 - Actions: `activate <1-7>`, `down`, `team`, `reset`, `character_reset`
+
+When disabled: no mob scaling, kill coins, AI, death reset, or tier purchases.
+Config key: `enabled` (also `admin set enabled false`).
 
 ## Notes
 
