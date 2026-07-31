@@ -4,9 +4,11 @@ import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge;
 import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import java.util.List;
@@ -49,23 +51,23 @@ public final class DifficultyChatMenu {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         String color = snap.stateColorCode();
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8──────── §fDifficulty §8────────"));
-        send(player, Component.m_237113_("§f" + snap.active + " §8/ §7" + snap.availableMax
-                + "  §8·  §" + color + snap.state()
-                + "  §8·  §7" + DifficultyTier.of(snap.active).display));
-        send(player, Component.m_237113_("§8Theoretical §f" + snap.calculated
-                + "  §8Bought §f" + snap.purchased
-                + "  §8Inv §f" + CurrencyBridge.balanceText(player)
-                + "  §8Title §f" + TitleSystem.activeDisplay(player)));
-        send(player, Component.m_237113_("§8Team bonus §f" + snap.teamThresholdBonus
-                + "  §8Contrib §f" + snap.teamContribution
-                + "  §8Max §f" + snap.availableMax));
+        send(player, Component.m_237113_("§8──────── §fDifficulty V3 §8────────"));
+        send(player, Component.m_237113_("§7Tier §f" + snap.activeTierName
+                + "  §8·  §f" + snap.active + " §8/ §7" + snap.availableMax
+                + "  §8·  §" + color + snap.state()));
+        send(player, Component.m_237113_("§7Combat Rating §f" + snap.combatRating
+                + "  §8·  §7Ancient §f" + AncientCoinEconomy.format(snap.ancientCopper)
+                + "  §8·  §7Title §f" + TitleSystem.activeDisplay(player)));
+        send(player, Component.m_237113_("§7DMZ §f" + snap.dmzLevel
+                + "  §8·  §7Prestige §f" + snap.prestige
+                + "  §8·  §7Unlocked §fT" + snap.highestUnlockedTier
+                + "  §8·  §7Team §f" + snap.teamMode.displayName()));
         send(player, Component.m_237113_(""));
 
         MutableComponent hub = Component.m_237113_("§7")
-                .m_7220_(btn("§aAdjust", "/difficulty do page adjust", "Raise / lower active"))
+                .m_7220_(btn("§aUpgrade", "/difficulty do page adjust", "Raise / lower active"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§eBuy Max", "/difficulty do page buy", "Unlock more max"))
+                .m_7220_(btn("§eTiers", "/difficulty do page buy", "Activate unlock tiers"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§bTeam", "/difficulty do team 0 main", "Mode: " + snap.teamMode));
         send(player, hub);
@@ -133,27 +135,30 @@ public final class DifficultyChatMenu {
 
     private static void buy(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
-        send(player, Component.m_237113_("§8──────── §fBuy Max Difficulty §8────────"));
-        send(player, Component.m_237113_("§7Purchased §f" + snap.purchased
-                + "  §7Available §f" + snap.availableMax
-                + "  §8Inv §f" + CurrencyBridge.balanceText(player)));
+        send(player, Component.m_237113_("§8──────── §fActivate Tier §8────────"));
+        send(player, Component.m_237113_("§7Active §f" + snap.activeTierName
+                + "  §7Unlocked §fT" + snap.highestUnlockedTier
+                + "  §7Ancient §f" + AncientCoinEconomy.format(snap.ancientCopper)));
+        send(player, Component.m_237113_("§8Unlocked by DMZ level or Prestige. Activation spends Ancient Coins."));
 
-        MutableComponent row = Component.m_237113_("§7Buy  ");
-        for (int i = 0; i < STEPS.length; i++) {
-            long step = STEPS[i];
-            if (i > 0) {
-                row.m_7220_(Component.m_237113_(" "));
-            }
-            long cost = DifficultyCalculator.purchaseCost(snap.purchased, step);
-            row.m_7220_(btn("§e+" + step, "/difficulty do buy " + step + " buy",
-                    CurrencyBridge.formatCost(cost) + " (inventory)"));
+        MutableComponent row = Component.m_237113_("§7");
+        for (UnlockTier tier : UnlockTier.values()) {
+            boolean unlocked = snap.highestUnlockedTier >= tier.id;
+            boolean active = snap.activeTier == tier.id;
+            String label = (active ? "§a● T" : unlocked ? "§eT" : "§8T") + tier.id;
+            String tip = unlocked
+                    ? tier.display + " · max " + tier.maxDifficulty()
+                    + " · cost " + AncientCoinEconomy.format(tier.activationCost())
+                    : "Locked · need DMZ " + tier.requiredDmzLevel() + " or Prestige " + tier.id;
+            row.m_7220_(btn(label, "/difficulty do activate " + tier.id + " buy", tip));
+            row.m_7220_(Component.m_237113_(" "));
         }
         send(player, row);
 
         MutableComponent nav = Component.m_237113_("")
                 .m_7220_(btn("§7« Back", "/difficulty do page main", "Return"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§aAdjust", "/difficulty do page adjust", "Raise / lower"));
+                .m_7220_(btn("§aUpgrade", "/difficulty do page adjust", "Raise / lower"));
         send(player, nav);
     }
 
@@ -164,8 +169,8 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_("§7Active §f" + snap.active
                 + "  §7Tier §f" + DifficultyTier.of(snap.active).display
                 + "  §7Reward × §a" + String.format("%.2f", mult)));
-        send(player, Component.m_237113_("§8Concept: 1 + difficulty / rewardScaling → XP & drop odds."));
-        send(player, Component.m_237113_("§8Training Points / Potential are not touched by this mod."));
+        send(player, Component.m_237113_("§8Primary currency reward: Ancient Coins (tiered quality)."));
+        send(player, Component.m_237113_("§8XP / drop odds scale with active difficulty. TP / Potential untouched."));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 

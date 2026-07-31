@@ -50,10 +50,10 @@ public final class DifficultyChestGui implements Listener {
 
         String stateColor = ph.getOrDefault("state_color", "f");
         inv.setItem(13, item(Material.NETHER_STAR, "&f&lDifficulty", statusLore(ph, stateColor)));
-        inv.setItem(20, pageBtn(Material.LIME_CONCRETE, "&aAdjust", "adjust",
-                "&7Raise / lower active difficulty", "&8Steps +1 … +100000"));
-        inv.setItem(22, pageBtn(Material.GOLD_INGOT, "&eBuy Max", "buy",
-                "&7Unlock more available max", "&8Paid from inventory coins"));
+        inv.setItem(20, pageBtn(Material.LIME_CONCRETE, "&aUpgrade", "adjust",
+                "&7Raise / lower active difficulty", "&8Paid with Ancient Coins"));
+        inv.setItem(22, pageBtn(Material.GOLD_INGOT, "&eTiers", "buy",
+                "&7Activate unlocked difficulty tiers", "&8Ancient Coin activation"));
         inv.setItem(24, button(Material.COMPASS, "&bTeam", "team", "0", "main",
                 List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
 

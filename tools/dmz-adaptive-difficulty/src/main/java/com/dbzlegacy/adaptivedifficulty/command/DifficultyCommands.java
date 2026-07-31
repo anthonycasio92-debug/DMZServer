@@ -129,8 +129,8 @@ public final class DifficultyCommands {
         String returnPage = page;
         if (returnPage == null || returnPage.isBlank()) {
             returnPage = switch (act) {
-                case "up", "down", "reset", "zero", "clear", "set_max", "set" -> "adjust";
-                case "buy" -> "buy";
+                case "up", "down", "reset", "zero", "clear", "set_max", "set", "upgrade" -> "adjust";
+                case "buy", "activate", "purchase_tier" -> "buy";
                 case "equip_title", "equip", "clear_title", "unequip_title" -> "titles";
                 default -> "main";
             };
@@ -330,13 +330,12 @@ public final class DifficultyCommands {
             return 0;
         }
         var data = DifficultyCache.data(player);
-        data.setPurchasedDifficulty(0L);
-        data.setActiveDifficulty(0L);
+        data.resetTemporary();
         DifficultyCache.save(player);
         DifficultyCache.refresh(player);
         AreaDifficulty.clearCache();
         source.m_288197_(() -> Component.m_237113_(
-                "§aReset purchased + active difficulty to 0 for yourself."
+                "§aCleared active tier/level (V3 temporary data). Unlocks & Ancient Coins kept."
         ), true);
         return 1;
     }

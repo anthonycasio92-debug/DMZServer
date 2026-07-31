@@ -121,9 +121,14 @@ public final class ForgeBridge {
             long personalMax = longField(snap, "personalMax");
             long teamBonus = longField(snap, "teamThresholdBonus");
             long teamContrib = longField(snap, "teamContribution");
+            long combatRating = longField(snap, "combatRating");
+            long ancientCopper = longField(snap, "ancientCopper");
             int level = intField(snap, "dmzLevel");
             int prestige = intField(snap, "prestige");
+            int activeTier = intField(snap, "activeTier");
+            int highestUnlocked = intField(snap, "highestUnlockedTier");
             Object teamMode = field(snap, "teamMode");
+            Object activeTierName = field(snap, "activeTierName");
 
             out.put("active", String.valueOf(active));
             out.put("available", String.valueOf(available));
@@ -137,9 +142,15 @@ public final class ForgeBridge {
             out.put("level", String.valueOf(level));
             out.put("prestige", String.valueOf(prestige));
             out.put("team_mode", teamMode == null ? "?" : String.valueOf(teamMode));
+            out.put("combat_rating", String.valueOf(combatRating > 0 ? combatRating : calculated));
+            out.put("ancient_coins", String.valueOf(ancientCopper > 0 ? ancientCopper : purchased));
+            out.put("active_tier", String.valueOf(activeTier));
+            out.put("highest_unlocked", String.valueOf(highestUnlocked));
+            out.put("active_tier_name", activeTierName == null ? "None" : String.valueOf(activeTierName));
 
             Object tier = tierOf.invoke(null, active);
-            out.put("tier", String.valueOf(field(tier, "display")));
+            out.put("tier", activeTierName != null ? String.valueOf(activeTierName)
+                    : String.valueOf(field(tier, "display")));
 
             out.put("team_name", String.valueOf(teamName.invoke(null, nms)));
             out.put("team_source", String.valueOf(teamSource.invoke(null)));
@@ -403,8 +414,8 @@ public final class ForgeBridge {
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT);
         return switch (act) {
             case "page" -> arg == null || arg.isBlank() ? "main" : arg.toLowerCase(Locale.ROOT);
-            case "up", "down", "reset", "zero", "clear", "set_max", "set" -> "adjust";
-            case "buy" -> "buy";
+            case "up", "down", "reset", "zero", "clear", "set_max", "set", "upgrade" -> "adjust";
+            case "buy", "activate", "purchase_tier" -> "buy";
             case "equip_title", "equip", "clear_title", "unequip_title" -> "titles";
             default -> "main";
         };

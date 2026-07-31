@@ -110,16 +110,17 @@ public final class BehaviorScheduler {
             return false;
         }
 
-        if (mutated) {
+        int unlockTier = tag.m_128451_("dmz_ad_unlock_tier");
+        if (mutated && unlockTier >= cfg.mutationMinUnlockTier) {
             MutationSystem.tick(mob, tag);
         }
-        if (boss && cfg.enableBossScaling) {
+        if (boss && cfg.enableBossScaling && unlockTier >= cfg.bossMechanicsMinUnlockTier) {
             BossScaling.tickPhases(mob, tag);
         }
-        if (ai) {
+        if (ai && unlockTier >= cfg.adaptiveAiMinUnlockTier) {
             AdaptiveAiSystem.tick(mob, difficulty, elite);
         }
-        if (evo && EnemyEvolution.isEvolvable(mob)) {
+        if (evo && unlockTier >= cfg.enemyEvolutionMinUnlockTier && EnemyEvolution.isEvolvable(mob)) {
             EnemyEvolution.tick(mob, difficulty, elite);
         }
         return true;

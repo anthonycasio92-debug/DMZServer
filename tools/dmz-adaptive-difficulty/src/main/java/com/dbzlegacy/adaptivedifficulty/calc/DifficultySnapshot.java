@@ -2,54 +2,75 @@ package com.dbzlegacy.adaptivedifficulty.calc;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 
-/** Cached view of a player's difficulty numbers. */
+/** Cached V3 view of a player's difficulty / combat-rating numbers. */
 public final class DifficultySnapshot {
     public final int dmzLevel;
     public final int prestige;
-    public final long calculated;
-    public final long purchased;
+    public final double transformationPower;
+    public final int highestUnlockedTier;
+    public final int activeTier;
+    public final long activeDifficulty;
+    /** Compatibility alias for older GUI/PAPI bindings (`snap.active`). */
+    public final long active;
+    public final long tierMaxDifficulty;
+    public final long availableMax;
     public final long personalMax;
     public final long teamThresholdBonus;
     public final long teamContribution;
-    public final long availableMax;
-    public final long active;
+    public final long combatRating;
+    public final long ancientCopper;
     public final TeamMode teamMode;
+    public final String activeTierName;
+
+    // Legacy-compatible aliases used by older GUI/PAPI bindings.
+    public final long calculated;
+    public final long purchased;
 
     public DifficultySnapshot(
             int dmzLevel,
             int prestige,
-            long calculated,
-            long purchased,
+            double transformationPower,
+            int highestUnlockedTier,
+            int activeTier,
+            long activeDifficulty,
+            long tierMaxDifficulty,
+            long availableMax,
             long personalMax,
             long teamThresholdBonus,
             long teamContribution,
-            long availableMax,
-            long active,
+            long combatRating,
+            long ancientCopper,
             TeamMode teamMode
     ) {
         this.dmzLevel = dmzLevel;
         this.prestige = prestige;
-        this.calculated = calculated;
-        this.purchased = purchased;
+        this.transformationPower = transformationPower;
+        this.highestUnlockedTier = highestUnlockedTier;
+        this.activeTier = activeTier;
+        this.activeDifficulty = activeDifficulty;
+        this.active = activeDifficulty;
+        this.tierMaxDifficulty = tierMaxDifficulty;
+        this.availableMax = availableMax;
         this.personalMax = personalMax;
         this.teamThresholdBonus = teamThresholdBonus;
         this.teamContribution = teamContribution;
-        this.availableMax = availableMax;
-        this.active = active;
+        this.combatRating = combatRating;
+        this.ancientCopper = ancientCopper;
         this.teamMode = teamMode;
+        UnlockTier tier = UnlockTier.byId(activeTier);
+        this.activeTierName = tier == null ? "None" : ("T" + tier.id + " " + tier.display);
+        this.calculated = combatRating;
+        this.purchased = ancientCopper;
     }
 
-    /**
-     * Concept §8 state colors:
-     * Green below progression, Yellow balanced, Orange personal max,
-     * Purple team-boosted, Red extreme (full team ceiling or optional admin hardcap).
-     */
     public String stateColorCode() {
         return switch (state()) {
+            case "Inactive" -> "7";
             case "Below" -> "a";
             case "Balanced" -> "e";
-            case "Personal Max" -> "6";
+            case "Tier Max" -> "6";
             case "Team Boosted" -> "d";
             case "Extreme" -> "c";
             default -> "f";
@@ -57,21 +78,20 @@ public final class DifficultySnapshot {
     }
 
     public String state() {
-        if (active <= 0 || active < calculated) {
-            return "Below";
+        if (activeTier <= 0 || activeDifficulty <= 0) {
+            return "Inactive";
         }
         long hardCap = Math.max(0L, DifficultyConfig.get().hardCapDifficulty);
-        boolean atHardCap = hardCap > 0 && active >= hardCap;
-        boolean fullTeamCeiling = availableMax > personalMax && active >= availableMax;
+        boolean atHardCap = hardCap > 0 && activeDifficulty >= hardCap;
+        boolean fullTeamCeiling = availableMax > personalMax && activeDifficulty >= availableMax;
         if (atHardCap || fullTeamCeiling) {
             return "Extreme";
         }
-        if (active > personalMax) {
+        if (activeDifficulty > personalMax) {
             return "Team Boosted";
         }
-        // At theoretical (stats) + purchased ceiling
-        if (active >= personalMax && personalMax > 0) {
-            return "Personal Max";
+        if (activeDifficulty >= personalMax && personalMax > 0) {
+            return "Tier Max";
         }
         return "Balanced";
     }

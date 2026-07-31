@@ -119,7 +119,7 @@ public final class AreaDifficulty {
     private static double maxMode(List<ServerPlayer> players) {
         double best = 0;
         for (ServerPlayer player : players) {
-            best = Math.max(best, DifficultyCache.get(player).active);
+            best = Math.max(best, DifficultyCache.get(player).combatRating);
         }
         return best;
     }
@@ -127,7 +127,7 @@ public final class AreaDifficulty {
     private static double averageMode(List<ServerPlayer> players) {
         double total = 0;
         for (ServerPlayer player : players) {
-            total += DifficultyCache.get(player).active;
+            total += DifficultyCache.get(player).combatRating;
         }
         return total / players.size();
     }
@@ -148,7 +148,7 @@ public final class AreaDifficulty {
             if (weight <= 0) {
                 continue;
             }
-            total += weight * DifficultyCache.get(player).active;
+            total += weight * DifficultyCache.get(player).combatRating;
             totalWeight += weight;
         }
         return totalWeight <= 0 ? 0 : total / totalWeight;
@@ -161,6 +161,17 @@ public final class AreaDifficulty {
         int cz = pos.m_123343_() >> 4;
         // Pack dim + chunk coords; collisions are acceptable (TTL is short).
         return (((long) dimHash) << 32) ^ (((long) cx) << 16) ^ (cz & 0xffffL);
+    }
+
+    /** Highest activated unlock-tier among nearby players (V3 feature gates). */
+    public static int highestActiveUnlockTier(ServerLevel level, BlockPos pos) {
+        DifficultyConfig cfg = DifficultyConfig.get();
+        double radius = Math.max(8.0, cfg.mobScaleRadius);
+        int best = 0;
+        for (ServerPlayer player : nearbyPlayers(level, pos, radius)) {
+            best = Math.max(best, DifficultyCache.get(player).activeTier);
+        }
+        return best;
     }
 
     private record Cached(double value, long atMs) {}

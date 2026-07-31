@@ -1,0 +1,126 @@
+# DragonMineZ Adaptive Difficulty System
+# Developer Implementation Specification V3
+
+## Project Goal
+
+Create a complete Adaptive Difficulty System for a DragonMineZ Minecraft server.
+
+The system replaces Minecraft's static difficulty and creates a player-controlled progression system where difficulty scales with player strength.
+
+The system must be modular, configurable, performant, and expandable.
+
+---
+
+# Core System Concept
+
+Difficulty is separated into multiple systems:
+
+1. Difficulty Tier Unlocks
+2. Difficulty Activation
+3. Active Difficulty Level
+4. Combat Rating
+5. Enemy Scaling
+6. Team Scaling
+7. Ancient Coin Economy
+8. Prestige Integration
+
+These systems must work independently but communicate together.
+
+---
+
+# Player Difficulty Data
+
+## Permanent Data
+
+```
+Player UUID
+Highest DMZ Level Reached
+Unlocked Difficulty Tiers
+Prestige Level
+Prestige Difficulty Unlocks
+```
+
+## Temporary Difficulty Data
+
+```
+Current Active Difficulty Tier
+Current Active Difficulty Level
+Current Difficulty Upgrade Amount
+Team Scaling Enabled
+Purchased Difficulty State
+```
+
+---
+
+# Difficulty Tier Unlock System
+
+Default Tier Requirements (configurable):
+
+```
+Tier 1: DMZ Level 100
+Tier 2: DMZ Level 500
+Tier 3: DMZ Level 1000
+Tier 4: DMZ Level 5000
+Tier 5: DMZ Level 10000
+Tier 6: DMZ Level 50000
+Tier 7: DMZ Level 100000
+```
+
+Unlock when DMZ Level >= requirement OR Prestige >= tier id.
+Prestige bypasses level requirements but does NOT activate difficulty.
+
+---
+
+# Prestige System
+
+Each Prestige unlocks one additional tier (P1→Tier1 … P7→Tier1-7).
+Prestige does NOT keep difficulty active, prevent death resets, or refund purchases.
+
+---
+
+# Difficulty Activation
+
+Players activate unlocked tiers using Ancient Coins.
+Death resets Active Tier + Active Level to 0. Unlocks / prestige / DMZ level stay.
+Character reset keeps Prestige + Tier Unlocks; clears temporary purchases.
+
+---
+
+# Combat Rating
+
+```
+CR = (DMZ Level × DMZ Weight)
+   + (Prestige × Prestige Weight)
+   + Transformation Power
+   + Active Difficulty
+```
+
+Recalculate only on level / prestige / transform / difficulty / team change. Cache result.
+
+---
+
+# Team Modes
+
+Personal Only | Threshold Bonus Only (+10%/teammate) | Full Team Contribution
+
+---
+
+# Ancient Coin Economy
+
+Primary difficulty currency. Kill rewards grant Ancient Coins (tiered drop quality).
+Used for tier activation and difficulty upgrades.
+
+---
+
+# Enemy Scaling
+
+Scale from Player Combat Rating + Active Difficulty + Difficulty Tier.
+Calculate once on spawn; retarget/cache on engagement.
+
+Tier gates: T1 stats → T2 abilities → T3 AI → T4 elites → T5 mutations → T6 boss → T7 full AI
+
+---
+
+# Performance
+
+Event-driven. Never recalculate every tick. Cache combat rating, difficulty, team, mob scaling.

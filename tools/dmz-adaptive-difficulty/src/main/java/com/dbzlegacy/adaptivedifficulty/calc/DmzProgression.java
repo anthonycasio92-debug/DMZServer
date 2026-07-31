@@ -7,10 +7,7 @@ import com.dragonminez.common.stats.skills.Skills;
 import net.minecraft.world.entity.player.Player;
 
 /**
- * Reads DMZ progression the same way current Dragon-Mine-Z scripts do
- * ({@code Fabled Sync.js} on branch {@code cursor/rival-sparring-reaudit-dd5f}):
- * {@code StatsData.getLevel()} and skill {@code prestige}
- * (Fabled Prestige class level - 1).
+ * Reads DMZ progression for V3 unlocks + combat rating.
  */
 public final class DmzProgression {
     private DmzProgression() {}
@@ -39,7 +36,7 @@ public final class DmzProgression {
     }
 
     /**
-     * DMZ prestige skill level (synced from Fabled Prestige class level - 1 in your scripts).
+     * DMZ prestige skill level (synced from Fabled Prestige class level - 1).
      */
     public static int prestige(Player player) {
         StatsData data = stats(player);
@@ -54,6 +51,27 @@ public final class DmzProgression {
             return Math.max(0, skills.getSkillLevel("prestige"));
         } catch (Throwable ignored) {
             return 0;
+        }
+    }
+
+    /**
+     * Transformation / form power contribution for Combat Rating.
+     * Uses battle power (includes form multipliers) scaled into CR units.
+     */
+    public static double transformationPower(Player player) {
+        StatsData data = stats(player);
+        if (data == null) {
+            return 0.0;
+        }
+        try {
+            double bp = data.getBattlePowerExact();
+            if (!(bp > 0.0) || Double.isNaN(bp) || Double.isInfinite(bp)) {
+                bp = data.getBattlePower();
+            }
+            // Keep CR readable — raw BP can be multi-million.
+            return Math.max(0.0, bp / 1000.0);
+        } catch (Throwable ignored) {
+            return 0.0;
         }
     }
 }

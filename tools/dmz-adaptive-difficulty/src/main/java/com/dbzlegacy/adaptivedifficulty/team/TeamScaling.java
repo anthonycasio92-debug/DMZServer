@@ -2,8 +2,6 @@ package com.dbzlegacy.adaptivedifficulty.team;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
-import com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator;
-import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
@@ -150,14 +148,15 @@ public final class TeamScaling {
             if (mateData.getTeamMode() == TeamMode.PERSONAL_ONLY) {
                 continue;
             }
-            long mateCalc = DifficultyCalculator.calculatedDifficulty(
-                    DmzProgression.dmzLevel(mate), DmzProgression.prestige(mate));
-            long matePersonal = mateCalc + mateData.getPurchasedDifficulty();
-            // Match snapshot hardcap so contribution can't exceed capped personal max.
+            // V3: contribute unused room inside the mate's activated tier ceiling.
+            long matePersonal = com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem.maxDifficultyFor(mateData);
+            if (matePersonal <= 0L) {
+                continue;
+            }
             if (cfg.hardCapDifficulty > 0L) {
                 matePersonal = Math.min(matePersonal, cfg.hardCapDifficulty);
             }
-            long mateUsed = Math.min(mateData.getActiveDifficulty(), matePersonal);
+            long mateUsed = Math.min(mateData.getActiveDifficultyLevel(), matePersonal);
             long spare = Math.max(0L, matePersonal - mateUsed);
             spareTotal += spare;
         }

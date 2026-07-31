@@ -213,8 +213,111 @@ public final class DifficultyConfig {
      */
     public List<String> disabledDimensions = new ArrayList<>(Arrays.asList("minecraft:the_end"));
 
+    // ── V3 Combat Rating weights ───────────────────────────────────────────
+    public double combatRatingDmzWeight = 1.0;
+    public double combatRatingPrestigeWeight = 1000.0;
+    public double combatRatingTransformWeight = 1.0;
+    public double combatRatingDifficultyWeight = 1.0;
+
+    // ── V3 Unlock tier requirements / ceilings / activation costs ───────────
+    public long unlockTier1Level = 100L;
+    public long unlockTier2Level = 500L;
+    public long unlockTier3Level = 1_000L;
+    public long unlockTier4Level = 5_000L;
+    public long unlockTier5Level = 10_000L;
+    public long unlockTier6Level = 50_000L;
+    public long unlockTier7Level = 100_000L;
+    public long unlockTier1Max = 1_000L;
+    public long unlockTier2Max = 5_000L;
+    public long unlockTier3Max = 10_000L;
+    public long unlockTier4Max = 25_000L;
+    public long unlockTier5Max = 50_000L;
+    public long unlockTier6Max = 100_000L;
+    public long unlockTier7Max = 250_000L;
+    public long unlockTier1Cost = 100L;
+    public long unlockTier2Cost = 500L;
+    public long unlockTier3Cost = 1_500L;
+    public long unlockTier4Cost = 5_000L;
+    public long unlockTier5Cost = 15_000L;
+    public long unlockTier6Cost = 50_000L;
+    public long unlockTier7Cost = 150_000L;
+    public double unlockTier1EnemyMult = 1.0;
+    public double unlockTier2EnemyMult = 1.15;
+    public double unlockTier3EnemyMult = 1.35;
+    public double unlockTier4EnemyMult = 1.60;
+    public double unlockTier5EnemyMult = 1.90;
+    public double unlockTier6EnemyMult = 2.30;
+    public double unlockTier7EnemyMult = 3.00;
+
+    // ── V3 Ancient Coin economy ────────────────────────────────────────────
+    public boolean enableAncientCoinDrops = true;
+    public double ancientCoinDropMult = 1.0;
+    public double ancientCoinRatingDivisor = 25_000.0;
+    public double upgradeCostBaseAncient = 1.0;
+    public double upgradeCostScalePerLevel = 0.01;
+    /** V3: reset active tier/level on player death (unlocks stay). */
+    public boolean deathResetsActiveDifficulty = true;
+    /** Minimum active unlock-tier for elites / mutations / full AI. */
+    public int eliteMinUnlockTier = 4;
+    public int mutationMinUnlockTier = 5;
+    public int adaptiveAiMinUnlockTier = 3;
+    public int enemyEvolutionMinUnlockTier = 2;
+    public int bossMechanicsMinUnlockTier = 6;
+
     public boolean shouldRestoreVanillaFromPeaceful() {
         return restoreVanillaDifficultyFromPeaceful == null || restoreVanillaDifficultyFromPeaceful;
+    }
+
+    public long tierRequiredLevel(int tierId) {
+        return switch (tierId) {
+            case 1 -> Math.max(0L, unlockTier1Level);
+            case 2 -> Math.max(0L, unlockTier2Level);
+            case 3 -> Math.max(0L, unlockTier3Level);
+            case 4 -> Math.max(0L, unlockTier4Level);
+            case 5 -> Math.max(0L, unlockTier5Level);
+            case 6 -> Math.max(0L, unlockTier6Level);
+            case 7 -> Math.max(0L, unlockTier7Level);
+            default -> Long.MAX_VALUE / 4L;
+        };
+    }
+
+    public long tierMaxDifficulty(int tierId) {
+        return switch (tierId) {
+            case 1 -> Math.max(0L, unlockTier1Max);
+            case 2 -> Math.max(0L, unlockTier2Max);
+            case 3 -> Math.max(0L, unlockTier3Max);
+            case 4 -> Math.max(0L, unlockTier4Max);
+            case 5 -> Math.max(0L, unlockTier5Max);
+            case 6 -> Math.max(0L, unlockTier6Max);
+            case 7 -> Math.max(0L, unlockTier7Max);
+            default -> 0L;
+        };
+    }
+
+    public long tierActivationCost(int tierId) {
+        return switch (tierId) {
+            case 1 -> Math.max(0L, unlockTier1Cost);
+            case 2 -> Math.max(0L, unlockTier2Cost);
+            case 3 -> Math.max(0L, unlockTier3Cost);
+            case 4 -> Math.max(0L, unlockTier4Cost);
+            case 5 -> Math.max(0L, unlockTier5Cost);
+            case 6 -> Math.max(0L, unlockTier6Cost);
+            case 7 -> Math.max(0L, unlockTier7Cost);
+            default -> Long.MAX_VALUE / 4L;
+        };
+    }
+
+    public double tierEnemyMult(int tierId) {
+        return switch (tierId) {
+            case 1 -> Math.max(0.1, unlockTier1EnemyMult);
+            case 2 -> Math.max(0.1, unlockTier2EnemyMult);
+            case 3 -> Math.max(0.1, unlockTier3EnemyMult);
+            case 4 -> Math.max(0.1, unlockTier4EnemyMult);
+            case 5 -> Math.max(0.1, unlockTier5EnemyMult);
+            case 6 -> Math.max(0.1, unlockTier6EnemyMult);
+            case 7 -> Math.max(0.1, unlockTier7EnemyMult);
+            default -> 1.0;
+        };
     }
 
     /** Tier thresholds — editable via {@code /difficulty admin set tierX <n>}. */

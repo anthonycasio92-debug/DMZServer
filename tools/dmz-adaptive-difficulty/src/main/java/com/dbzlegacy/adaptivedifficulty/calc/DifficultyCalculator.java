@@ -4,117 +4,117 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
 import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import net.minecraft.server.level.ServerPlayer;
 
+/** V3 difficulty math: unlocks, activation ceilings, combat rating, Ancient Coin costs. */
 public final class DifficultyCalculator {
     private DifficultyCalculator() {}
 
-    /**
-     * Theoretical max from DMZ progression (level × prestige formula).
-     * Prestige 0: level × levelMultiplier
-     * Prestige 1+: level × levelMultiplier × (prestige × prestigeMultiplier)
-     */
-    public static long calculatedDifficulty(int dmzLevel, int prestige) {
-        DifficultyConfig cfg = DifficultyConfig.get();
-        long levelPart = Math.round(Math.max(1, dmzLevel) * Math.max(0.0, cfg.levelMultiplier));
-        if (prestige <= 0) {
-            return clampNonNegative(levelPart);
-        }
-        long prestigeFactor = Math.round(prestige * Math.max(0.0, cfg.prestigeMultiplier));
-        return clampNonNegative(safeMul(levelPart, Math.max(1L, prestigeFactor)));
-    }
-
     public static DifficultySnapshot snapshot(ServerPlayer player, PlayerDifficultyData data) {
+        UnlockSystem.syncUnlocks(player, data);
+
         int level = DmzProgression.dmzLevel(player);
         int prestige = DmzProgression.prestige(player);
-        long calculated = calculatedDifficulty(level, prestige);
-        long purchased = data.getPurchasedDifficulty();
-        // Personal max = theoretical (stats) + purchased unlocks — no artificial hardcap by default.
-        long personalMax = clampNonNegative(safeAdd(calculated, purchased));
+        double transform = DmzProgression.transformationPower(player);
+        data.noteDmzLevel(level);
+
+        int highest = UnlockSystem.highestUnlocked(data);
+        int activeTier = data.getActiveTier();
+        UnlockTier tier = UnlockTier.byId(activeTier);
+        long tierMax = tier == null ? 0L : tier.maxDifficulty();
 
         TeamMode mode = data.getTeamMode();
+        long personalMax = tierMax;
         long thresholdBonus = 0L;
         long contribution = 0L;
-        if (mode != TeamMode.PERSONAL_ONLY) {
+        if (tier != null && mode != TeamMode.PERSONAL_ONLY) {
             thresholdBonus = TeamScaling.thresholdBonus(player, personalMax);
         }
         long afterThreshold = clampNonNegative(safeAdd(personalMax, thresholdBonus));
-        if (mode == TeamMode.FULL_TEAM_SCALING) {
+        if (tier != null && mode == TeamMode.FULL_TEAM_SCALING) {
             contribution = TeamScaling.contributionBonus(player, afterThreshold);
         }
         long availableMax = clampNonNegative(safeAdd(afterThreshold, contribution));
 
-        long active = Math.min(data.getActiveDifficulty(), availableMax);
-        if (active < 0) {
-            active = 0;
+        long active = Math.min(data.getActiveDifficultyLevel(), availableMax);
+        if (tier == null) {
+            active = 0L;
         }
-        if (active != data.getActiveDifficulty()) {
-            data.setActiveDifficulty(active);
+        if (active != data.getActiveDifficultyLevel()) {
+            data.setActiveDifficultyLevel(active);
         }
+        if (activeTier > 0 && !data.hasUnlockedTier(activeTier)) {
+            data.resetTemporary();
+            activeTier = 0;
+            active = 0L;
+            availableMax = 0L;
+            personalMax = 0L;
+            thresholdBonus = 0L;
+            contribution = 0L;
+        }
+
+        long combatRating = CombatRating.compute(level, prestige, active, transform, DifficultyConfig.get());
 
         return new DifficultySnapshot(
                 level,
                 prestige,
-                calculated,
-                purchased,
+                transform,
+                highest,
+                activeTier,
+                active,
+                tierMax,
+                availableMax,
                 personalMax,
                 thresholdBonus,
                 contribution,
-                availableMax,
-                active,
+                combatRating,
+                data.getAncientCopper(),
                 mode
         );
     }
 
-    /**
-     * Iron-coin cost to raise difficulty by {@code amount} levels starting from {@code fromLevel}.
-     * <p>
-     * Default: 1 iron coin per level at 0, scaling by {@code costScalePerDifficulty}
-     * so higher difficulty is more expensive per level.
-     * <pre>
-     * cost(level) = baseIron × (1 + level × scale)
-     * total ≈ amount × baseIron × (1 + scale × (from + (amount-1)/2))
-     * </pre>
-     */
-    public static long raiseCostIronCoins(long fromLevel, long amount) {
+    /** Ancient-copper cost to raise active difficulty by {@code amount}. */
+    public static long upgradeCost(long fromLevel, long amount) {
         if (amount <= 0) {
             return 0L;
         }
         DifficultyConfig cfg = DifficultyConfig.get();
-        double base = Math.max(0.0, cfg.baseCostIronCoins);
+        double base = Math.max(0.0, cfg.upgradeCostBaseAncient);
         if (base <= 0.0) {
             return 0L;
         }
-        double scale = Math.max(0.0, cfg.costScalePerDifficulty);
+        double scale = Math.max(0.0, cfg.upgradeCostScalePerLevel);
         double from = Math.max(0L, fromLevel);
         double total = amount * base * (1.0 + scale * (from + (amount - 1L) / 2.0));
         return Math.max(1L, Math.round(total));
     }
 
-    /** Cost to unlock more purchased max (same iron-coin scaling, keyed off current purchased). */
-    public static long purchaseCost(long currentPurchased, long amountToBuy) {
-        return raiseCostIronCoins(Math.max(0L, currentPurchased), amountToBuy);
+    /** Compatibility alias — V3 upgrade costs in Ancient Copper. */
+    @Deprecated
+    public static long raiseCostIronCoins(long fromLevel, long amount) {
+        return upgradeCost(fromLevel, amount);
     }
 
-    /** Concept §15 reward multiplier for XP / drops (never Training Points). */
+    /** Compatibility alias — V3 upgrade costs in Ancient Copper. */
+    @Deprecated
+    public static long purchaseCost(long currentPurchased, long amountToBuy) {
+        return upgradeCost(Math.max(0L, currentPurchased), amountToBuy);
+    }
+
     public static double rewardMultiplier(long activeDifficulty) {
         return ScalingCurves.rewardMultiplier(activeDifficulty);
     }
 
-    /** Always {@code 0} — this mod never grants kill TP. */
     public static double killTrainingPoints(long difficulty) {
         return 0.0;
     }
 
-    /** Always {@code 0} — this mod never grants kill TP. */
     public static double killTrainingPointsFromHealth(double maxHealth) {
         return 0.0;
     }
 
-    /**
-     * Floor at 0. Optional admin hardcap only when {@code hardCapDifficulty > 0}.
-     * Default 0 = unlimited (ceiling is stats / purchased / team only).
-     */
     private static long clampNonNegative(long value) {
         if (value < 0L) {
             return 0L;
@@ -129,14 +129,6 @@ public final class DifficultyCalculator {
     private static long safeAdd(long a, long b) {
         try {
             return Math.addExact(a, b);
-        } catch (ArithmeticException e) {
-            return Long.MAX_VALUE / 4L;
-        }
-    }
-
-    private static long safeMul(long a, long b) {
-        try {
-            return Math.multiplyExact(a, b);
         } catch (ArithmeticException e) {
             return Long.MAX_VALUE / 4L;
         }

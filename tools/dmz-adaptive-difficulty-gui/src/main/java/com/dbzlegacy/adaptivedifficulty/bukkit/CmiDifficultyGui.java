@@ -62,17 +62,17 @@ public final class CmiDifficultyGui {
         CMIGui gui = base(player, "&8Difficulty", 4);
 
         String stateColor = ph.getOrDefault("state_color", "f");
-        CMIGuiButton status = new CMIGuiButton(13, Material.NETHER_STAR, "&f&lDifficulty");
+        CMIGuiButton status = new CMIGuiButton(13, Material.NETHER_STAR, "&f&lDifficulty V3");
         status.lockField();
         status.addLore(statusLore(ph, stateColor));
         gui.addButton(status);
 
-        gui.addButton(pageBtn(20, Material.LIME_CONCRETE, "&aAdjust", "adjust",
+        gui.addButton(pageBtn(20, Material.LIME_CONCRETE, "&aUpgrade", "adjust",
                 "&7Raise / lower active difficulty",
-                "&8Steps +1 … +100000"));
-        gui.addButton(pageBtn(22, Material.GOLD_INGOT, "&eBuy Max", "buy",
-                "&7Unlock more available max",
-                "&8Paid from inventory coins"));
+                "&8Paid with Ancient Coins"));
+        gui.addButton(pageBtn(22, Material.GOLD_INGOT, "&eTiers", "buy",
+                "&7Activate unlocked difficulty tiers",
+                "&8Ancient Coin activation"));
         gui.addButton(actionBtn(24, Material.COMPASS, "&bTeam", "team", "0", "main",
                 List.of("&7Cycle team scaling", "&8" + ph.getOrDefault("team_mode", "?"))));
 
@@ -165,41 +165,41 @@ public final class CmiDifficultyGui {
         gui.open();
     }
 
-    /** Dedicated buy-max unlock page. */
+    /** V3 tier activation page (Ancient Coins). */
     private static void openBuy(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
-        CMIGui gui = base(player, "&8Buy Max Difficulty", 5);
+        CMIGui gui = base(player, "&8Activate Tier", 5);
 
-        CMIGuiButton info = new CMIGuiButton(4, Material.GOLD_INGOT, "&e&lBuy Max");
+        CMIGuiButton info = new CMIGuiButton(4, Material.GOLD_INGOT, "&e&lDifficulty Tiers");
         info.lockField();
         info.addLore(List.of(
                 "",
-                "&7Purchased  &f" + ph.getOrDefault("purchased", "?"),
-                "&7Available  &f" + ph.getOrDefault("available", "?"),
-                "&7Inv coins  &f" + ph.getOrDefault("balance", "?"),
+                "&7Active     &f" + ph.getOrDefault("active_tier_name", "None"),
+                "&7Unlocked   &fT" + ph.getOrDefault("highest_unlocked", "0"),
+                "&7Ancient    &f" + ph.getOrDefault("balance", "?"),
                 "",
-                "&8Unlock more max difficulty",
-                "&8Paid from inventory coins"
+                "&8Unlock by DMZ level or Prestige",
+                "&8Activate with Ancient Coins",
+                "&8Death clears active tier (unlocks stay)"
         ));
         gui.addButton(info);
 
-        gui.addButton(actionBtn(19, Material.GOLD_NUGGET, "&e+1 max", "buy", "1", "buy",
-                List.of("&7Unlock +1 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_1", "?"))));
-        gui.addButton(actionBtn(20, Material.GOLD_NUGGET, "&e+5 max", "buy", "5", "buy",
-                List.of("&7Unlock +5 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_5", "?"))));
-        gui.addButton(actionBtn(21, Material.GOLD_INGOT, "&e+25 max", "buy", "25", "buy",
-                List.of("&7Unlock +25 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_25", "?"))));
-        gui.addButton(actionBtn(22, Material.GOLD_BLOCK, "&e+100 max", "buy", "100", "buy",
-                List.of("&7Unlock +100 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_100", "?"))));
-        gui.addButton(actionBtn(23, Material.EMERALD, "&e+1000 max", "buy", "1000", "buy",
-                List.of("&7Unlock +1000 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_1000", "?"))));
-        gui.addButton(actionBtn(24, Material.DIAMOND, "&e+10000 max", "buy", "10000", "buy",
-                List.of("&7Unlock +10000 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_10000", "?"))));
-        gui.addButton(actionBtn(25, Material.NETHERITE_INGOT, "&e+100000 max", "buy", "100000", "buy",
-                List.of("&7Unlock +100000 max difficulty", "&8Cost &e" + ph.getOrDefault("cost_buy_100000", "?"))));
+        Material[] mats = {
+                Material.COPPER_INGOT, Material.IRON_INGOT, Material.GOLD_INGOT,
+                Material.DIAMOND, Material.EMERALD, Material.NETHERITE_INGOT, Material.NETHER_STAR
+        };
+        for (int t = 1; t <= 7; t++) {
+            int slot = 18 + (t - 1);
+            gui.addButton(actionBtn(slot, mats[t - 1], "&eActivate T" + t, "activate", String.valueOf(t), "buy",
+                    List.of(
+                            "&7Activate unlock tier &f" + t,
+                            "&8Requires unlock + Ancient Coins",
+                            "&8Current active &f" + ph.getOrDefault("active_tier", "0")
+                    )));
+        }
 
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
-        gui.addButton(pageBtn(40, Material.LIME_CONCRETE, "&aAdjust", "adjust", "&7Raise / lower active"));
+        gui.addButton(pageBtn(40, Material.LIME_CONCRETE, "&aUpgrade", "adjust", "&7Raise / lower active"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -452,18 +452,19 @@ public final class CmiDifficultyGui {
         List<String> lore = new ArrayList<>();
         lore.add("");
         lore.add("&f" + ph.getOrDefault("active", "?") + " &8/ &7" + ph.getOrDefault("available", "?"));
-        lore.add("&7Active / Available");
+        lore.add("&7Active Difficulty / Ceiling");
         lore.add("");
         lore.add("&7State  &" + stateColor + ph.getOrDefault("state", "?"));
-        lore.add("&7Tier   &f" + ph.getOrDefault("tier", "?"));
+        lore.add("&7Tier   &f" + ph.getOrDefault("active_tier_name", ph.getOrDefault("tier", "?")));
+        lore.add("&7CR     &f" + ph.getOrDefault("combat_rating", ph.getOrDefault("calculated", "?")));
         lore.add("&7Title  &e" + ph.getOrDefault("active_title", "none"));
-        lore.add("&7Inv    &f" + ph.getOrDefault("balance", "?"));
+        lore.add("&7Ancient &f" + ph.getOrDefault("balance", "?"));
         lore.add("");
+        lore.add("&7DMZ &f" + ph.getOrDefault("level", "?")
+                + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"));
         lore.add("&7Team bonus  &f" + ph.getOrDefault("team_bonus", "0"));
         lore.add("&7Team contrib &f" + ph.getOrDefault("team_contrib", "0"));
-        lore.add("&8Theoretical " + ph.getOrDefault("calculated", "?")
-                + "  ·  Bought " + ph.getOrDefault("purchased", "?"));
-        lore.add("&8Open Adjust to raise / lower");
+        lore.add("&8Activate a tier, then upgrade");
         return lore;
     }
 

@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.data;
 
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -11,32 +12,116 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 
 /**
- * Persisted per-player difficulty fields from the concept doc.
- * Calculated difficulty is derived live from DMZ level/prestige and not stored.
+ * V3 player difficulty data.
+ * <p>
+ * Permanent: highest DMZ level, unlocked tiers, titles, ancient coin wallet.<br>
+ * Temporary: active tier / active difficulty level (reset on death).
  */
 public final class PlayerDifficultyData {
     public static final String NBT_ROOT = "dmz_adaptive_difficulty";
 
-    private long purchasedDifficulty;
-    private long activeDifficulty;
-    private TeamMode teamMode = TeamMode.PERSONAL_ONLY;
+    // ── Permanent ──────────────────────────────────────────────────────────
+    private long highestDmzLevel;
+    private final Set<Integer> unlockedTiers = new LinkedHashSet<>();
+    private long ancientCopper;
     private final Set<String> titles = new LinkedHashSet<>();
     private String activeTitle = "";
 
-    public long getPurchasedDifficulty() {
-        return purchasedDifficulty;
+    // ── Temporary (death / character-reset clears) ─────────────────────────
+    private int activeTier;
+    private long activeDifficultyLevel;
+    private TeamMode teamMode = TeamMode.PERSONAL_ONLY;
+
+    // Legacy migration fields (not used by V3 logic after load)
+    private long legacyPurchased;
+    private long legacyActive;
+
+    public long getHighestDmzLevel() {
+        return highestDmzLevel;
     }
 
-    public void setPurchasedDifficulty(long purchasedDifficulty) {
-        this.purchasedDifficulty = Math.max(0L, purchasedDifficulty);
+    public void noteDmzLevel(int level) {
+        if (level > highestDmzLevel) {
+            highestDmzLevel = level;
+        }
     }
 
+    public Set<Integer> getUnlockedTiers() {
+        return new LinkedHashSet<>(unlockedTiers);
+    }
+
+    public boolean hasUnlockedTier(int tierId) {
+        return tierId > 0 && unlockedTiers.contains(tierId);
+    }
+
+    /** @return true if newly unlocked */
+    public boolean unlockTier(int tierId) {
+        if (UnlockTier.byId(tierId) == null) {
+            return false;
+        }
+        return unlockedTiers.add(tierId);
+    }
+
+    public int getActiveTier() {
+        return Math.max(0, activeTier);
+    }
+
+    public void setActiveTier(int tierId) {
+        if (tierId <= 0) {
+            this.activeTier = 0;
+            return;
+        }
+        this.activeTier = UnlockTier.byId(tierId) == null ? 0 : tierId;
+    }
+
+    public long getActiveDifficultyLevel() {
+        return Math.max(0L, activeDifficultyLevel);
+    }
+
+    public void setActiveDifficultyLevel(long level) {
+        this.activeDifficultyLevel = Math.max(0L, level);
+    }
+
+    /** Alias used by scaling/cache code paths that expect "active". */
     public long getActiveDifficulty() {
-        return activeDifficulty;
+        return getActiveDifficultyLevel();
     }
 
-    public void setActiveDifficulty(long activeDifficulty) {
-        this.activeDifficulty = Math.max(0L, activeDifficulty);
+    public void setActiveDifficulty(long level) {
+        setActiveDifficultyLevel(level);
+    }
+
+    /** Death / character-reset: clear temporary activation only. */
+    public void resetTemporary() {
+        this.activeTier = 0;
+        this.activeDifficultyLevel = 0L;
+    }
+
+    public long getAncientCopper() {
+        return Math.max(0L, ancientCopper);
+    }
+
+    public void setAncientCopper(long amount) {
+        this.ancientCopper = Math.max(0L, amount);
+    }
+
+    public boolean spendAncientCopper(long cost) {
+        if (cost <= 0L) {
+            return true;
+        }
+        if (ancientCopper < cost) {
+            return false;
+        }
+        ancientCopper -= cost;
+        return true;
+    }
+
+    public void addAncientCopper(long amount) {
+        if (amount > 0L) {
+            long base = Math.max(0L, ancientCopper);
+            long next = base + amount;
+            ancientCopper = next < base ? Long.MAX_VALUE / 4L : next;
+        }
     }
 
     public TeamMode getTeamMode() {
@@ -67,7 +152,6 @@ public final class PlayerDifficultyData {
         return titles.contains(normalizeId(titleId));
     }
 
-    /** @return true if newly unlocked */
     public boolean unlockTitle(String title) {
         DifficultyTitle known = DifficultyTitle.byId(title);
         String id = known != null ? known.id : normalizeId(title);
@@ -90,12 +174,6 @@ public final class PlayerDifficultyData {
         this.activeTitle = known != null ? known.id : normalizeId(titleId);
     }
 
-    /**
-     * Migrate legacy display-name unlocks to catalog ids and drop an equipped title
-     * the player no longer owns.
-     *
-     * @return true if persisted data changed
-     */
     public boolean normalizeTitles() {
         boolean dirty = false;
         List<String> snapshot = new ArrayList<>(titles);
@@ -137,15 +215,27 @@ public final class PlayerDifficultyData {
     public CompoundTag save() {
         normalizeTitles();
         CompoundTag tag = new CompoundTag();
-        tag.m_128356_("purchased", purchasedDifficulty); // putLong
-        tag.m_128356_("active", activeDifficulty);
-        tag.m_128359_("teamMode", getTeamMode().name()); // putString
+        tag.m_128356_("highestDmzLevel", highestDmzLevel);
+        tag.m_128405_("activeTier", activeTier); // putInt
+        tag.m_128356_("activeLevel", activeDifficultyLevel);
+        tag.m_128356_("ancientCopper", ancientCopper);
+        tag.m_128359_("teamMode", getTeamMode().name());
+        ListTag tiers = new ListTag();
+        for (Integer id : unlockedTiers) {
+            CompoundTag t = new CompoundTag();
+            t.m_128405_("id", id);
+            tiers.add(t);
+        }
+        tag.m_128365_("unlockedTiers", tiers);
         ListTag list = new ListTag();
         for (String t : titles) {
             list.add(StringTag.m_129297_(t));
         }
         tag.m_128365_("titles", list);
         tag.m_128359_("activeTitle", getActiveTitle());
+        // Keep legacy keys written as 0 so old tools don't explode on read.
+        tag.m_128356_("purchased", 0L);
+        tag.m_128356_("active", activeDifficultyLevel);
         return tag;
     }
 
@@ -153,14 +243,27 @@ public final class PlayerDifficultyData {
         if (tag == null) {
             return;
         }
-        purchasedDifficulty = Math.max(0L, tag.m_128454_("purchased")); // getLong
-        activeDifficulty = Math.max(0L, tag.m_128454_("active"));
-        teamMode = TeamMode.fromString(tag.m_128461_("teamMode")); // getString
+        highestDmzLevel = Math.max(0L, tag.m_128454_("highestDmzLevel"));
+        activeTier = Math.max(0, tag.m_128451_("activeTier")); // getInt
+        activeDifficultyLevel = Math.max(0L, tag.m_128454_("activeLevel"));
+        ancientCopper = Math.max(0L, tag.m_128454_("ancientCopper"));
+        teamMode = TeamMode.fromString(tag.m_128461_("teamMode"));
+        unlockedTiers.clear();
+        if (tag.m_128425_("unlockedTiers", 10)) { // TAG_COMPOUND=10
+            ListTag tiers = tag.m_128437_("unlockedTiers", 10);
+            for (int i = 0; i < tiers.size(); i++) {
+                CompoundTag t = tiers.m_128728_(i); // getCompound
+                int id = t.m_128451_("id");
+                if (UnlockTier.byId(id) != null) {
+                    unlockedTiers.add(id);
+                }
+            }
+        }
         titles.clear();
-        if (tag.m_128425_("titles", 8)) { // contains list of strings (TAG_STRING=8)
+        if (tag.m_128425_("titles", 8)) {
             ListTag list = tag.m_128437_("titles", 8);
             for (int i = 0; i < list.size(); i++) {
-                String s = list.m_128778_(i); // getString
+                String s = list.m_128778_(i);
                 if (s != null && !s.isBlank()) {
                     titles.add(s);
                 }
@@ -170,13 +273,36 @@ public final class PlayerDifficultyData {
         if (activeTitle == null) {
             activeTitle = "";
         }
+
+        // Migrate pre-V3 purchased/active → best-effort temporary activation.
+        legacyPurchased = Math.max(0L, tag.m_128454_("purchased"));
+        legacyActive = Math.max(0L, tag.m_128454_("active"));
+        if (activeTier <= 0 && (legacyActive > 0L || legacyPurchased > 0L)) {
+            long seed = Math.max(legacyActive, legacyPurchased);
+            UnlockTier best = UnlockTier.T1;
+            for (UnlockTier t : UnlockTier.values()) {
+                if (seed >= t.defaultRequiredLevel) {
+                    best = t;
+                }
+            }
+            unlockTier(best.id);
+            activeTier = best.id;
+            activeDifficultyLevel = Math.min(best.maxDifficulty(), Math.max(legacyActive, 1L));
+            if (ancientCopper <= 0L && legacyPurchased > 0L) {
+                ancientCopper = legacyPurchased; // soft convert leftover purchase into coins
+            }
+        }
+        if (activeTier > 0 && UnlockTier.byId(activeTier) == null) {
+            activeTier = 0;
+            activeDifficultyLevel = 0L;
+        }
         normalizeTitles();
     }
 
     public static PlayerDifficultyData fromPlayerNbt(CompoundTag persistent) {
         PlayerDifficultyData data = new PlayerDifficultyData();
-        if (persistent != null && persistent.m_128441_(NBT_ROOT)) { // contains
-            data.load(persistent.m_128469_(NBT_ROOT)); // getCompound
+        if (persistent != null && persistent.m_128441_(NBT_ROOT)) {
+            data.load(persistent.m_128469_(NBT_ROOT));
         }
         return data;
     }
@@ -185,7 +311,7 @@ public final class PlayerDifficultyData {
         if (persistent == null) {
             return;
         }
-        persistent.m_128365_(NBT_ROOT, save()); // put
+        persistent.m_128365_(NBT_ROOT, save());
     }
 
     private static String normalizeId(String raw) {

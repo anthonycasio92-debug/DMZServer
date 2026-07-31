@@ -8,6 +8,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationType;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import java.util.Map;
 import java.util.UUID;
@@ -104,7 +105,13 @@ public final class MobScaling {
             if (cfg.scaleHostileOnly && !HostileMobs.isHostile(entity)) {
                 return;
             }
-            long difficulty = Math.max(0L, DifficultyCache.get(player).active);
+            // V3: scale to engaged player's Combat Rating × active tier enemy mult.
+            var snap = DifficultyCache.get(player);
+            long difficulty = Math.max(0L, snap.combatRating);
+            UnlockTier ut = UnlockTier.byId(snap.activeTier);
+            if (ut != null) {
+                difficulty = Math.round(difficulty * ut.enemyScalingMultiplier());
+            }
             // Memory cache — skip NBT entirely when this mob is already on this difficulty.
             Long cached = APPLIED_DIFFICULTY.get(entity.m_20148_());
             if (cached != null && cached == difficulty) {
@@ -238,13 +245,26 @@ public final class MobScaling {
         tag.m_128379_(TAG_SCALED, true);
 
         long areaDifficulty = resolveNearbyDifficulty(entity);
+        int unlockTier = 0;
+        if (entity.m_9236_() instanceof net.minecraft.server.level.ServerLevel sl) {
+            unlockTier = AreaDifficulty.highestActiveUnlockTier(sl, entity.m_20183_());
+        }
+        tag.m_128405_("dmz_ad_unlock_tier", unlockTier);
+        UnlockTier ut = UnlockTier.byId(unlockTier);
+        if (ut != null) {
+            areaDifficulty = Math.round(areaDifficulty * ut.enemyScalingMultiplier());
+        }
 
         // Roll elite / boss / mutation once (flags + cosmetics only — stats via applyForDifficulty).
-        if (naturalBoss) {
+        if (naturalBoss && unlockTier >= cfg.bossMechanicsMinUnlockTier) {
             BossScaling.markBoss(entity, areaDifficulty);
         }
-        EliteSystem.maybePromote(entity, areaDifficulty);
-        MutationSystem.maybeMutate(entity, areaDifficulty);
+        if (unlockTier >= cfg.eliteMinUnlockTier) {
+            EliteSystem.maybePromote(entity, areaDifficulty);
+        }
+        if (unlockTier >= cfg.mutationMinUnlockTier) {
+            MutationSystem.maybeMutate(entity, areaDifficulty);
+        }
 
         applyForDifficulty(entity, tag, areaDifficulty, cfg);
     }

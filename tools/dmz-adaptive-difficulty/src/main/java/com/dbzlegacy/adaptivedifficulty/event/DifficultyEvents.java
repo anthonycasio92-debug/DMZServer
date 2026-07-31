@@ -249,6 +249,18 @@ public final class DifficultyEvents {
         if (dead instanceof Creeper creeper) {
             EnemyEvolution.onCreeperDeath(creeper, event.getSource());
         }
+        // V3 death penalty: clear temporary active tier/level; unlocks & coins stay.
+        if (dead instanceof ServerPlayer victim
+                && DifficultyConfig.get().deathResetsActiveDifficulty) {
+            var data = DifficultyCache.data(victim);
+            if (data.getActiveTier() > 0 || data.getActiveDifficultyLevel() > 0L) {
+                data.resetTemporary();
+                DifficultyCache.save(victim);
+                DifficultyCache.refresh(victim);
+                victim.m_213846_(net.minecraft.network.chat.Component.m_237113_(
+                        "§cDifficulty deactivated on death. §7Unlocks & Ancient Coins kept."));
+            }
+        }
         if (!(event.getSource().m_7639_() instanceof ServerPlayer killer)) {
             return;
         }

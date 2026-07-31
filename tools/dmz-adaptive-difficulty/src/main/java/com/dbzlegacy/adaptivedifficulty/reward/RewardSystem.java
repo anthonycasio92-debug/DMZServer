@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
@@ -22,11 +23,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * Concept §15 — kill rewards: XP, rare drops, capsules, titles.
- * <p>
- * Reward multiplier {@code 1 + difficulty / rewardScaling} applies to XP and drop
- * odds only. Training Points and Potential XP are never granted or multiplied here
- * (TP left to DragonMineZ; Potential owned by CNPC {@code Potential.js}).
+ * V3 kill rewards: Ancient Coins (primary), XP, rare drops, capsules, titles.
+ * Training Points / Potential are never granted here.
  */
 public final class RewardSystem {
     private RewardSystem() {}
@@ -41,13 +39,18 @@ public final class RewardSystem {
         }
         // Cached snapshot — avoid full refresh on every kill.
         DifficultySnapshot snap = DifficultyCache.get(killer);
-        long killDifficulty = Math.max(snap.active, MobScaling.difficultyOf(dead));
-        DifficultyTier tier = DifficultyTier.of(killDifficulty);
+        long killDifficulty = Math.max(snap.combatRating, MobScaling.difficultyOf(dead));
+        DifficultyTier tier = DifficultyTier.of(Math.max(snap.active, killDifficulty / 10));
         boolean elite = EliteSystem.isElite(dead);
         boolean boss = PersistentDataAccess.get(dead).m_128471_(BossScaling.TAG_BOSS);
         boolean mutated = MutationSystem.get(dead) != null;
-        double mult = ScalingCurves.rewardMultiplier(killDifficulty);
+        double mult = ScalingCurves.rewardMultiplier(Math.max(1L, snap.active));
 
+        long coins = AncientCoinEconomy.rollKillDrop(killer, snap.combatRating, elite, boss);
+        if (coins > 0L) {
+            AncientCoinEconomy.grant(killer, coins);
+            AncientCoinEconomy.notifyGrant(killer, coins);
+        }
         grantExperience(killer, mult, elite, boss, tier);
         grantDrops(killer, mult, elite, boss, mutated, tier);
         TitleSystem.maybeUnlockCombatTitle(killer, snap, elite, boss, tier);

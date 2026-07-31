@@ -17,12 +17,11 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * Difficulty increases are always paid in Lightman's Currency.
- * Costs are priced in iron-coin <b>value</b> (configurable item id).
+ * Legacy Lightman's helpers kept for optional tooling.
  * <p>
- * Payments use <b>inventory coins only</b> (not wallet or bank).
- * Higher denominations (gold, emerald, …) are accepted: inventory coins are
- * exchanged down, the value is taken, then leftover is exchanged back up as change.
+ * V3 difficulty payments use {@link AncientCoinEconomy} (Ancient Coins).
+ * {@link #balanceText}, {@link #formatCost}, and {@link #currencyLabel} now
+ * surface the Ancient Coin wallet so GUIs stay correct.
  */
 public final class CurrencyBridge {
     private static final boolean LIGHTMANS_LOADED = ModList.get().isLoaded("lightmanscurrency");
@@ -33,29 +32,17 @@ public final class CurrencyBridge {
         return LIGHTMANS_LOADED;
     }
 
-    /** Always Lightman's for difficulty payments. */
+    /** V3 economy mode label. */
     public static String activeMode() {
-        return "lightmans";
+        return "ancient_coins";
     }
 
-    public static boolean canAfford(ServerPlayer player, long ironCoins) {
-        if (ironCoins <= 0) {
-            return true;
-        }
-        if (!LIGHTMANS_LOADED) {
-            return false;
-        }
-        return canAffordLightmans(player, ironCoins);
+    public static boolean canAfford(ServerPlayer player, long copperCost) {
+        return AncientCoinEconomy.canAfford(player, copperCost);
     }
 
-    public static boolean charge(ServerPlayer player, long ironCoins) {
-        if (ironCoins <= 0) {
-            return true;
-        }
-        if (!LIGHTMANS_LOADED) {
-            return false;
-        }
-        return chargeLightmans(player, ironCoins);
+    public static boolean charge(ServerPlayer player, long copperCost) {
+        return AncientCoinEconomy.charge(player, copperCost);
     }
 
     /**
@@ -229,47 +216,18 @@ public final class CurrencyBridge {
     }
 
     public static String balanceText(ServerPlayer player) {
-        if (!LIGHTMANS_LOADED) {
-            return "Lightman's missing";
-        }
-        try {
-            IMoneyHandler handler = inventoryHandler(player);
-            if (handler == null) {
-                return "0";
-            }
-            MoneyView view = handler.getStoredMoney();
-            if (view == null || view.isEmpty()) {
-                return "0";
-            }
-            MoneyValue main = view.valueOf(CoinAPI.MAIN_CHAIN);
-            if (main != null && !main.isEmpty()) {
-                return main.getString();
-            }
-            return view.getString();
-        } catch (Throwable t) {
-            return "?";
-        }
+        return AncientCoinEconomy.balanceText(player);
     }
 
-    /** Format an iron-coin cost for GUI / chat. */
-    public static String formatCost(long ironCoins) {
-        if (ironCoins <= 0) {
+    /** Format an Ancient Coin (copper-value) cost for GUI / chat. */
+    public static String formatCost(long copperCost) {
+        if (copperCost <= 0) {
             return "free";
         }
-        if (!LIGHTMANS_LOADED) {
-            return ironCoins + " iron coins";
-        }
-        try {
-            MoneyValue price = coinPrice(ironCoins);
-            if (price != null && !price.isEmpty()) {
-                return price.getString();
-            }
-        } catch (Throwable ignored) {
-        }
-        return ironCoins + " iron";
+        return AncientCoinEconomy.format(copperCost);
     }
 
     public static String currencyLabel() {
-        return LIGHTMANS_LOADED ? "Inventory Coins" : "Lightman's Currency (missing)";
+        return "Ancient Coins";
     }
 }
