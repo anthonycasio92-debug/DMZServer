@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.29)
+# DMZ Adaptive Difficulty (v1.7.30)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -22,7 +22,7 @@ Clients do **not** need this jar to join.
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.29.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.30.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
@@ -75,11 +75,14 @@ Available max = theoretical + purchased + optional team bonuses.
 
 ## Combat & reward curves
 
+**Endgame anchors (level ~100k / ~8M active):** player HP ≈ **800k**, DEF ≈ **200k**.
+Offense rates keep a normal melee hit under ~800k raw (tankable from HP alone) and mob armor ≈ **200k**.
+
 Curves are **split**:
 
 | Stat | Curve | Defaults |
 |---|---|---|
-| Damage / defense | Steep offense curve (**uncapped**) | exp `0.96`, pivot `450`, rates `3.2`/`7.5`; no mod/vanilla attribute ceiling |
+| Damage / defense | Steep offense curve (**uncapped**) | exp `0.96`, pivot `450`, rates `0.62`/`1.85`; anchored to ~800k HP / ~200k DEF at 8M |
 | Health | Flat health curve + hard caps | exp `0.40`, max mult `×8`, abs cap `400` HP |
 | Kill TP | Absolute difficulty curve | `400000 × (d / 8000000)^0.70` → **~400k at 8M** |
 | Train TP mult | Mild power mult on DMZ `TPGainEvent` | gain `0.85`, exp `0.38`, scale `2500` |
@@ -101,8 +104,8 @@ Tune:
 ```
 /difficulty admin set combatCurveExponent 0.96
 /difficulty admin set combatCurvePivot 450
-/difficulty admin set damagePercentPerDifficulty 3.2
-/difficulty admin set defensePercentPerDifficulty 7.5
+/difficulty admin set damagePercentPerDifficulty 0.62
+/difficulty admin set defensePercentPerDifficulty 1.85
 /difficulty admin set maxDamageMultiplier 0
 /difficulty admin set maxArmorBonus 0
 /difficulty admin set healthCurveExponent 0.40

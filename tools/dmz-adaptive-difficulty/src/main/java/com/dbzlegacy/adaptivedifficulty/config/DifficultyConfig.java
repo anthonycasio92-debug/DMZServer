@@ -90,19 +90,26 @@ public final class DifficultyConfig {
     public long healthCurvePivot = 250L;
     /** Flat health % rate (applied through the flat health curve). */
     public double healthPercentPerDifficulty = 0.45;
-    /** Per-difficulty damage % (offense curve). */
-    public double damagePercentPerDifficulty = 3.2;
-    /** Per-difficulty armor points (offense curve). */
-    public double defensePercentPerDifficulty = 7.5;
+    /**
+     * Per-difficulty damage % (offense curve).
+     * Tuned so at ~8M (level-100k band) a base-3 melee hit stays under ~800k raw —
+     * what most players can tank from HP alone — while still biting through ~200k DEF.
+     */
+    public double damagePercentPerDifficulty = 0.62;
+    /**
+     * Per-difficulty armor points (offense curve).
+     * Tuned so mob armor ≈ ~200k at 8M, matching typical endgame player DEF.
+     */
+    public double defensePercentPerDifficulty = 1.85;
     public double movementPercentPer100Difficulty = 0.15;
     /** DMZ-style extra health % (kept low; health uses its own flat curve). */
     public double dmzExtraHealthPercent = 0.45;
     /** DMZ-style extra damage % (offense curve). */
-    public double dmzExtraDamagePercent = 3.2;
+    public double dmzExtraDamagePercent = 0.62;
     /** DMZ-style extra armor points (offense curve). */
-    public double dmzExtraDefensePercent = 7.5;
+    public double dmzExtraDefensePercent = 1.85;
     /** DMZ-style extra ki damage % (offense curve). */
-    public double dmzExtraKiDamagePercent = 3.2;
+    public double dmzExtraKiDamagePercent = 0.62;
     public double mobScaleRadius = 64.0;
     /**
      * Area difficulty mode (Scaling Health-inspired):
@@ -346,7 +353,7 @@ public final class DifficultyConfig {
         if (cfg.healthCurvePivot < 1L) {
             cfg.healthCurvePivot = 250L;
         }
-        // Migrate stock offense values → steeper high-difficulty damage/defense.
+        // Migrate stock offense values → endgame-anchored damage/defense.
         boolean retuned = false;
         if (nearly(cfg.combatCurveExponent, 0.70)
                 || nearly(cfg.combatCurveExponent, 0.88)
@@ -389,34 +396,40 @@ public final class DifficultyConfig {
             cfg.dmzExtraHealthPercent = 0.45;
             retuned = true;
         }
+        // Prior rates overshot endgame (~1.5M raw / ~811k armor at 8M vs ~800k HP / ~200k DEF).
         if (nearly(cfg.damagePercentPerDifficulty, 1.0)
                 || nearly(cfg.damagePercentPerDifficulty, 1.5)
-                || nearly(cfg.damagePercentPerDifficulty, 2.5)) {
-            cfg.damagePercentPerDifficulty = 3.2;
+                || nearly(cfg.damagePercentPerDifficulty, 2.5)
+                || nearly(cfg.damagePercentPerDifficulty, 3.2)) {
+            cfg.damagePercentPerDifficulty = 0.62;
             retuned = true;
         }
         if (nearly(cfg.dmzExtraDamagePercent, 1.0)
                 || nearly(cfg.dmzExtraDamagePercent, 1.5)
-                || nearly(cfg.dmzExtraDamagePercent, 2.5)) {
-            cfg.dmzExtraDamagePercent = 3.2;
+                || nearly(cfg.dmzExtraDamagePercent, 2.5)
+                || nearly(cfg.dmzExtraDamagePercent, 3.2)) {
+            cfg.dmzExtraDamagePercent = 0.62;
             retuned = true;
         }
         if (nearly(cfg.dmzExtraKiDamagePercent, 1.0)
                 || nearly(cfg.dmzExtraKiDamagePercent, 1.5)
-                || nearly(cfg.dmzExtraKiDamagePercent, 2.5)) {
-            cfg.dmzExtraKiDamagePercent = 3.2;
+                || nearly(cfg.dmzExtraKiDamagePercent, 2.5)
+                || nearly(cfg.dmzExtraKiDamagePercent, 3.2)) {
+            cfg.dmzExtraKiDamagePercent = 0.62;
             retuned = true;
         }
         if (nearly(cfg.defensePercentPerDifficulty, 3.0)
                 || nearly(cfg.defensePercentPerDifficulty, 4.5)
-                || nearly(cfg.defensePercentPerDifficulty, 5.0)) {
-            cfg.defensePercentPerDifficulty = 7.5;
+                || nearly(cfg.defensePercentPerDifficulty, 5.0)
+                || nearly(cfg.defensePercentPerDifficulty, 7.5)) {
+            cfg.defensePercentPerDifficulty = 1.85;
             retuned = true;
         }
         if (nearly(cfg.dmzExtraDefensePercent, 3.0)
                 || nearly(cfg.dmzExtraDefensePercent, 4.5)
-                || nearly(cfg.dmzExtraDefensePercent, 5.0)) {
-            cfg.dmzExtraDefensePercent = 7.5;
+                || nearly(cfg.dmzExtraDefensePercent, 5.0)
+                || nearly(cfg.dmzExtraDefensePercent, 7.5)) {
+            cfg.dmzExtraDefensePercent = 1.85;
             retuned = true;
         }
         if (nearly(cfg.maxHealthMultiplier, 50.0)) {
@@ -448,7 +461,7 @@ public final class DifficultyConfig {
         }
         if (retuned) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] retuned high-end damage/defense (steeper offense; dmg/armor uncapped)",
+                    "[{}] retuned offense for ~800k HP / ~200k DEF at 8M (dmg 0.62 / def 1.85; uncapped)",
                     AdaptiveDifficultyMod.MOD_ID
             );
         }
