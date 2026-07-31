@@ -61,8 +61,9 @@ var TRIGGER_CLEANUP_ID = 51;
 /* Back-compat alias */
 var TRIGGER_ID = TRIGGER_SPAWN_ID;
 
-var SCAN_INTERVAL_MS = 1500;
-var SCAN_RADIUS = 96;
+/* Was 1500ms / 96 — nearby entity fan-out per End player crushed TPS. */
+var SCAN_INTERVAL_MS = 3000;
+var SCAN_RADIUS = 64;
 var NATURAL_CHECK_MS = 10000;
 
 /* Natural dragon spawn if none alive. */
@@ -3388,19 +3389,11 @@ function tickDragonExtraAttacks(world, player) {
     if (DRAGON_EXTRA_ATTACKS_ENABLED !== true) return;
     if (world == null || !isInTheEnd(world)) return;
 
-    var dragons = [];
-    try { dragons = findDragons(world); } catch (e1) {}
-    if (dragons.length <= 0) {
-        try { dragons = findDragonsOnLevel(getEndServerLevel()); } catch (e2) {}
-    }
-
-    /* Drop dead / dying dragons so attacks stop the moment the fight ends. */
-    var living = [];
-    for (var fi = 0; fi < dragons.length; fi++) {
-        if (isLivingDragon(dragons[fi])) living.push(dragons[fi]);
-    }
-    if (living.length <= 0) return;
-
+    /*
+     * TPS: throttle BEFORE findDragons().
+     * findDragons() calls world.getAllEntities(-1) + a huge AABB scan —
+     * previously that ran every player tick in The End and crushed MSPT.
+     */
     var t = nowMs();
     try {
         var stored = world.getStoreddata();
@@ -3416,6 +3409,19 @@ function tickDragonExtraAttacks(world, player) {
             temp.put(TEMP_DRAGON_ATTACK, "" + t);
         } catch (eLock2) { return; }
     }
+
+    var dragons = [];
+    try { dragons = findDragons(world); } catch (e1) {}
+    if (dragons.length <= 0) {
+        try { dragons = findDragonsOnLevel(getEndServerLevel()); } catch (e2) {}
+    }
+
+    /* Drop dead / dying dragons so attacks stop the moment the fight ends. */
+    var living = [];
+    for (var fi = 0; fi < dragons.length; fi++) {
+        if (isLivingDragon(dragons[fi])) living.push(dragons[fi]);
+    }
+    if (living.length <= 0) return;
 
     for (var d = 0; d < living.length; d++) {
         var dragon = living[d];

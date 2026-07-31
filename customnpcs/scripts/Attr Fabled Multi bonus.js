@@ -20,15 +20,75 @@
 // After a DMZ wipe (Race Lock / prestige / dmzstats reset),
 // hasCreatedCharacter is false. This script must CLEAR bonuses
 // and not re-apply Fabled multipliers until a character exists
-// again ? otherwise wipe power looks like it "persists".
+// again — otherwise wipe power looks like it "persists".
+//
+// TPS (2026-07): cache Fabled reflection + skip clear/sync when
+// attribute signature is unchanged (was reflecting + NetworkHandler
+// every second for every online player).
 
-var TICK_INTERVAL = 20; // once per second
+var TICK_INTERVAL = 40; // every 2 seconds
 var DEBUG = false;
 
 var BONUS_NAME = "\u00A76Prestige Bonus";
 
-// Old typo name from the duplicate script ? clear it too.
+// Old typo name from the duplicate script — clear it too.
 var LEGACY_BONUS_NAME = "\u00A76Prestrige Bonus";
+
+var SIG_KEY = "fabled_dmz_bonus_sig";
+var CREATED_KEY = "fabled_dmz_bonus_created";
+
+// Cached Java handles (resolved once).
+var CACHED = {
+    ready: false,
+    failed: false,
+    Bukkit: null,
+    UUID: null,
+    StatsProvider: null,
+    StatsCapability: null,
+    StatsSyncS2C: null,
+    NetworkHandler: null,
+    getDataMethod: null
+};
+
+function ensureCaches() {
+    if (CACHED.ready || CACHED.failed) {
+        return CACHED.ready;
+    }
+    try {
+        CACHED.Bukkit = Java.type("org.bukkit.Bukkit");
+        CACHED.UUID = Java.type("java.util.UUID");
+        CACHED.StatsProvider = Java.type("com.dragonminez.common.stats.StatsProvider");
+        CACHED.StatsCapability = Java.type("com.dragonminez.common.stats.StatsCapability");
+        CACHED.StatsSyncS2C = Java.type("com.dragonminez.common.network.S2C.StatsSyncS2C");
+        CACHED.NetworkHandler = Java.type("com.dragonminez.common.network.NetworkHandler");
+
+        var plugin = CACHED.Bukkit.getPluginManager().getPlugin("Fabled");
+        if (plugin == null || !plugin.isEnabled()) {
+            CACHED.failed = true;
+            return false;
+        }
+        var loader = plugin.getClass().getClassLoader();
+        var fabledClass = loader.loadClass("studio.magemonkey.fabled.Fabled");
+        var methods = fabledClass.getMethods();
+        var getDataMethod = null;
+        for (var i = 0; i < methods.length; i++) {
+            if (String(methods[i].getName()) == "getData" && methods[i].getParameterTypes().length == 1) {
+                getDataMethod = methods[i];
+                break;
+            }
+        }
+        if (getDataMethod == null) {
+            CACHED.failed = true;
+            return false;
+        }
+        CACHED.getDataMethod = getDataMethod;
+        CACHED.ready = true;
+        return true;
+    } catch (e) {
+        CACHED.failed = true;
+        return false;
+    }
+}
 
 function tick(event) {
     try {
@@ -50,42 +110,18 @@ function tick(event) {
 
         temp.put(tickKey, "0");
 
-        var Bukkit = Java.type("org.bukkit.Bukkit");
-        var UUID = Java.type("java.util.UUID");
+        if (!ensureCaches()) return;
 
-        var StatsProvider = Java.type("com.dragonminez.common.stats.StatsProvider");
-        var StatsCapability = Java.type("com.dragonminez.common.stats.StatsCapability");
-        var StatsSyncS2C = Java.type("com.dragonminez.common.network.S2C.StatsSyncS2C");
-        var NetworkHandler = Java.type("com.dragonminez.common.network.NetworkHandler");
-
-        var bukkitPlayer = Bukkit.getPlayer(UUID.fromString("" + player.getUUID()));
+        var bukkitPlayer = CACHED.Bukkit.getPlayer(CACHED.UUID.fromString("" + player.getUUID()));
         if (bukkitPlayer == null) return;
 
-        var plugin = Bukkit.getPluginManager().getPlugin("Fabled");
-        if (plugin == null || !plugin.isEnabled()) return;
-
-        var loader = plugin.getClass().getClassLoader();
-        var fabledClass = loader.loadClass("studio.magemonkey.fabled.Fabled");
-
-        var getDataMethod = null;
-        var methods = fabledClass.getMethods();
-
-        for (var i = 0; i < methods.length; i++) {
-            if (String(methods[i].getName()) == "getData" && methods[i].getParameterTypes().length == 1) {
-                getDataMethod = methods[i];
-                break;
-            }
-        }
-
-        if (getDataMethod == null) return;
-
-        var fabledData = getDataMethod.invoke(null, bukkitPlayer);
+        var fabledData = CACHED.getDataMethod.invoke(null, bukkitPlayer);
         if (fabledData == null) return;
 
         var mcPlayer = player.getMCEntity();
         if (mcPlayer == null) return;
 
-        var lazy = StatsProvider.get(StatsCapability.INSTANCE, mcPlayer);
+        var lazy = CACHED.StatsProvider.get(CACHED.StatsCapability.INSTANCE, mcPlayer);
         if (lazy == null) return;
 
         var dmzData = lazy.orElse(null);
@@ -109,15 +145,19 @@ function tick(event) {
             characterCreated = false;
         }
 
-        clearAllNamedBonuses(bonusStats);
-
         if (!characterCreated) {
-            try {
-                NetworkHandler.sendToTrackingEntityAndSelf(
-                    new StatsSyncS2C(mcPlayer),
-                    mcPlayer
-                );
-            } catch (syncClearErr) {}
+            var wasCreated = String(temp.get(CREATED_KEY) || "") === "1";
+            if (wasCreated || String(temp.get(SIG_KEY) || "") !== "cleared") {
+                clearAllNamedBonuses(bonusStats);
+                try {
+                    CACHED.NetworkHandler.sendToTrackingEntityAndSelf(
+                        new CACHED.StatsSyncS2C(mcPlayer),
+                        mcPlayer
+                    );
+                } catch (syncClearErr) {}
+                temp.put(SIG_KEY, "cleared");
+                temp.put(CREATED_KEY, "0");
+            }
             return;
         }
 
@@ -127,6 +167,13 @@ function tick(event) {
         var fVit = safeNumber(fabledData.getAttribute("vit"));
         var fPwr = safeNumber(fabledData.getAttribute("pwr"));
         var fEne = safeNumber(fabledData.getAttribute("ene"));
+
+        var sig = fStr + "|" + fSkp + "|" + fRes + "|" + fVit + "|" + fPwr + "|" + fEne;
+        if (String(temp.get(SIG_KEY) || "") === sig && String(temp.get(CREATED_KEY) || "") === "1") {
+            return; // nothing changed — skip clear/reapply/network sync
+        }
+
+        clearAllNamedBonuses(bonusStats);
 
         var changed = false;
 
@@ -160,10 +207,13 @@ function tick(event) {
             changed = true;
         }
 
+        temp.put(SIG_KEY, sig);
+        temp.put(CREATED_KEY, "1");
+
         if (changed) {
             try {
-                NetworkHandler.sendToTrackingEntityAndSelf(
-                    new StatsSyncS2C(mcPlayer),
+                CACHED.NetworkHandler.sendToTrackingEntityAndSelf(
+                    new CACHED.StatsSyncS2C(mcPlayer),
                     mcPlayer
                 );
             } catch (syncErr) {}
