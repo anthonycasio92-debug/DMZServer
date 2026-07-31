@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.0.5)
+# DMZ Adaptive Difficulty (v3.0.6)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -16,12 +16,12 @@ Implements **Developer Specification V3**
 | Death | Clears active tier + level (unlocks / prestige / coins kept) |
 | Combat Rating | Cached `DMZ×w + Prestige×w + Transform + Active` → enemy scale |
 | Team modes | Personal / Threshold bonus / Full contribution |
-| Kill rewards | Real Lightman's `coin_ancient` items (tiered quality) + XP/drops/capsules/titles (no TP) |
+| Kill rewards | Ancient Coins drop on the ground at the mob (tiered quality) + XP/drops/capsules/titles (no TP) |
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.0.5.jar` (remove older AD jars)
-2. `plugins/dmz_adaptive_difficulty_gui-3.0.5.jar`
+1. `mods/dmz_adaptive_difficulty-3.0.6.jar` (remove older AD jars)
+2. `plugins/dmz_adaptive_difficulty_gui-3.0.6.jar`
 3. Restart — config regenerates with V3 keys at `config/dmz_adaptive_difficulty.json`
 4. `/difficulty` → **Tiers** to activate → **Upgrade** to raise level
 

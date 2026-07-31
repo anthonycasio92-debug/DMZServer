@@ -10,11 +10,14 @@ import io.github.lightman314.lightmanscurrency.common.items.AncientCoinItem;
 import io.github.lightman314.lightmanscurrency.common.items.ancient_coins.AncientCoinType;
 import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.fml.ModList;
 
 /**
@@ -199,6 +202,48 @@ public final class AncientCoinEconomy {
         DifficultyCache.refresh(player);
     }
 
+    /**
+     * Spawn exact Ancient Coin item stacks in the world at the killed mob.
+     * Does <b>not</b> put coins into the player's inventory.
+     */
+    public static void dropInWorld(LivingEntity at, Drop drop) {
+        if (at == null || drop == null || drop.count() <= 0 || drop.kind() == null) {
+            return;
+        }
+        if (!LIGHTMANS) {
+            warnMissingLightmans();
+            return;
+        }
+        Level level = at.m_9236_();
+        if (!(level instanceof ServerLevel server)) {
+            return;
+        }
+        double x = at.m_20185_();
+        double y = at.m_20186_() + 0.35;
+        double z = at.m_20189_();
+        long left = drop.count();
+        while (left > 0L) {
+            int chunk = (int) Math.min(64L, left);
+            ItemStack stack = drop.kind().ancientType.asItem(chunk);
+            if (stack == null || stack.m_41619_()) {
+                break;
+            }
+            ItemEntity entity = new ItemEntity(server, x, y, z, stack);
+            // Short pickup delay so nearby killer can grab it, but still a world drop.
+            entity.m_32061_(); // setDefaultPickUpDelay (10 ticks)
+            double spread = 0.12;
+            entity.m_20334_(
+                    (ThreadLocalRandom.current().nextDouble() - 0.5) * spread,
+                    0.12 + ThreadLocalRandom.current().nextDouble() * 0.08,
+                    (ThreadLocalRandom.current().nextDouble() - 0.5) * spread
+            );
+            server.m_7967_(entity); // addFreshEntity
+            left -= chunk;
+        }
+    }
+
+    /** @deprecated Kill rewards must use {@link #dropInWorld}; kept for non-kill grants only. */
+    @Deprecated
     public static void grantDrop(ServerPlayer player, Drop drop) {
         if (player == null || drop == null || drop.count() <= 0) {
             return;
@@ -207,7 +252,7 @@ public final class AncientCoinEconomy {
     }
 
     /**
-     * Roll an exact Ancient Coin drop. Returns the coin type + count to place in inventory.
+     * Roll an exact Ancient Coin drop. Returns the coin type + count to spawn at the mob.
      */
     public static Drop rollKillDrop(ServerPlayer killer, long combatRating, boolean elite, boolean boss) {
         DifficultyConfig cfg = DifficultyConfig.get();
@@ -257,7 +302,7 @@ public final class AncientCoinEconomy {
         if (player == null || drop == null || drop.count() <= 0) {
             return;
         }
-        player.m_213846_(Component.m_237113_("§6+ " + drop.display() + " §7Ancient Coin"
+        player.m_213846_(Component.m_237113_("§6Dropped " + drop.display() + " §7Ancient Coin"
                 + (drop.count() == 1 ? "" : "s")));
     }
 

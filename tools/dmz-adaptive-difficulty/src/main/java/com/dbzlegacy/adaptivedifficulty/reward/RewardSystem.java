@@ -48,7 +48,8 @@ public final class RewardSystem {
 
         AncientCoinEconomy.Drop drop = AncientCoinEconomy.rollKillDrop(killer, snap.combatRating, elite, boss);
         if (drop.count() > 0) {
-            AncientCoinEconomy.grantDrop(killer, drop);
+            // World drop at the mob — never inject into the killer's inventory.
+            AncientCoinEconomy.dropInWorld(dead, drop);
             AncientCoinEconomy.notifyGrant(killer, drop);
         }
         grantExperience(killer, mult, elite, boss, tier);
