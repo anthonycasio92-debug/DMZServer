@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.20)
+# DMZ Adaptive Difficulty (v1.7.21)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -22,7 +22,7 @@ Clients do **not** need this jar to join.
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.20.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.21.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
@@ -79,9 +79,10 @@ Curves are **split**:
 
 | Stat | Curve | Defaults |
 |---|---|---|
-| Damage / defense | Steeper offense power curve | exp `0.88`, pivot `250` |
+| Damage / defense | Steep offense curve (high endgame cap) | exp `0.93`, pivot `500`, dmg cap `×25000` |
 | Health | Flat health curve + hard caps | exp `0.40`, max mult `×8`, abs cap `400` HP |
 | TP / rewards | Soft log | gain `0.65`, scale `2500`, cap `×3.5` |
+| AI | Spaced across Awakened→Zenith | anti-flight Legendary+; pack/debuffs scale to Zenith |
 
 | Active | TP mult (approx) |
 |---|---|

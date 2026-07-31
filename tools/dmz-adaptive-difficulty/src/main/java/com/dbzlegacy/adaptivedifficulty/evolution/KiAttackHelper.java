@@ -203,13 +203,13 @@ public final class KiAttackHelper {
     }
 
     /**
-     * Tier-only base damage. Difficulty scaling is applied once by
+     * Tier-scaled base damage. Difficulty multiplier is applied once by
      * {@link com.dbzlegacy.adaptivedifficulty.scaling.MobScaling#scaleOutgoingHurt}
-     * for projectiles / ki (indirect hits).
-     * Do <b>not</b> bake difficulty into the projectile here — that double-scaled blasts.
+     * for projectiles / ki (indirect hits) — do not bake difficulty here.
      */
     private static float baseDamage(Mob shooter, DifficultyTier tier, float base) {
-        float tierBonus = Math.max(0, tier.ordinalPower()) * 1.25f;
-        return Math.min(40.0f, base + tierBonus);
+        float tierBonus = Math.max(0, tier.ordinalPower()) * 2.0f;
+        // Higher soft cap so Zenith kits start from a real base before the offense mult.
+        return Math.min(120.0f, base + tierBonus);
     }
 }

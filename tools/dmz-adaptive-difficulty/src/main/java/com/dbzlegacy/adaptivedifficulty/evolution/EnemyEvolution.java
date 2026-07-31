@@ -221,37 +221,54 @@ public final class EnemyEvolution {
         CompoundTag tag = PersistentDataAccess.get(mob);
         long age = mob.f_19797_;
         double dist = mob.m_20270_(target);
+        int power = tier.ordinalPower();
 
-        // Short dash
-        if (dist > 2.0 && dist < 7.0 && age - tag.m_128454_("dmz_ad_dash") > 45
-                && tier.ordinalPower() >= DifficultyTier.AWAKENED.ordinalPower()) {
+        // Short dash — faster at high tiers
+        long dashCd = power >= DifficultyTier.MYTHIC.ordinalPower() ? 20
+                : power >= DifficultyTier.GOD.ordinalPower() ? 30 : 45;
+        if (dist > 2.0 && dist < 7.0 && age - tag.m_128454_("dmz_ad_dash") > dashCd
+                && power >= DifficultyTier.AWAKENED.ordinalPower()) {
             tag.m_128356_("dmz_ad_dash", age);
-            pushToward(mob, target, 0.95, 0.12);
+            double force = power >= DifficultyTier.OMEGA.ordinalPower() ? 1.35 : 0.95;
+            pushToward(mob, target, force, 0.12);
         }
 
-        // Leap (chained at Advanced+)
-        int leapCd = tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower() ? 35 : 60;
+        // Leap — Enhanced+; chained Master+; rapid Transcendent+
+        int leapCd = power >= DifficultyTier.TRANSCENDENT.ordinalPower() ? 22
+                : power >= DifficultyTier.ADVANCED.ordinalPower() ? 35 : 60;
         if (dist > 3.0 && dist < 14.0 && age - tag.m_128454_("dmz_ad_leap") > leapCd
-                && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
+                && power >= DifficultyTier.ENHANCED.ordinalPower()) {
             tag.m_128356_("dmz_ad_leap", age);
-            pushToward(mob, target, 1.25, 0.58);
-            if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()
+            pushToward(mob, target, 1.25 + Math.min(0.6, power * 0.04), 0.58);
+            if (power >= DifficultyTier.MASTER.ordinalPower()
                     && age - tag.m_128454_("dmz_ad_leap2") > 20) {
                 tag.m_128356_("dmz_ad_leap2", age);
-                // Second hop mid-air feel
                 mob.m_5997_(0, 0.25, 0);
             }
         }
 
-        // Rush
-        if (dist < 18.0 && tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()) {
-            mob.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, 1, false, false));
-            mob.m_21573_().m_5624_(target, 1.35);
+        // Rush — Elite+
+        if (dist < 18.0 && power >= DifficultyTier.ELITE.ordinalPower()) {
+            int amp = power >= DifficultyTier.MYTHIC.ordinalPower() ? 2 : 1;
+            mob.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, amp, false, false));
+            mob.m_21573_().m_5624_(target, power >= DifficultyTier.GOD.ordinalPower() ? 1.55 : 1.35);
         }
 
-        // Ground slam
-        if (dist < 3.5 && tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower() && age % 70 == 0) {
-            groundSlam(mob, target, 3.0, 1);
+        // Ground slam — Advanced+; more frequent Impossible+
+        int slamEvery = power >= DifficultyTier.IMPOSSIBLE.ordinalPower() ? 35
+                : power >= DifficultyTier.DIVINE.ordinalPower() ? 50 : 70;
+        if (dist < 3.5 && power >= DifficultyTier.ADVANCED.ordinalPower() && age % slamEvery == 0) {
+            int amp = power >= DifficultyTier.OMEGA.ordinalPower() ? 2 : 1;
+            groundSlam(mob, target, 3.0 + Math.min(2.0, power * 0.1), amp);
+            if (power >= DifficultyTier.ABSOLUTE.ordinalPower() && target instanceof ServerPlayer sp) {
+                sp.m_7292_(new MobEffectInstance(MobEffects.f_19615_, 50, 0, false, true)); // WITHER
+            }
+        }
+
+        // God+: berserk strength while chasing
+        if (power >= DifficultyTier.GOD.ordinalPower() && dist < 16.0) {
+            mob.m_7292_(new MobEffectInstance(MobEffects.f_19600_, 40,
+                    power >= DifficultyTier.APEX.ordinalPower() ? 2 : 1, false, false));
         }
     }
 
@@ -262,42 +279,64 @@ public final class EnemyEvolution {
             return;
         }
         float dist = mob.m_20270_(target);
-        if (dist > 28.0f) {
+        if (dist > 32.0f) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(mob);
         long age = mob.f_19797_;
+        int power = tier.ordinalPower();
 
-        // Beam choice scales with difficulty
-        if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_charged") >= 120
+        // Cooldowns shrink across the high ladder so Zenith actually fires more than Master.
+        long chargedCd = power >= DifficultyTier.ZENITH.ordinalPower() ? 55
+                : power >= DifficultyTier.OMEGA.ordinalPower() ? 70
+                : power >= DifficultyTier.IMPOSSIBLE.ordinalPower() ? 90 : 120;
+        long beamCd = power >= DifficultyTier.MYTHIC.ordinalPower() ? 45
+                : power >= DifficultyTier.DIVINE.ordinalPower() ? 65 : 90;
+        long laserCd = power >= DifficultyTier.GOD.ordinalPower() ? 30
+                : power >= DifficultyTier.LEGENDARY.ordinalPower() ? 45 : 60;
+        long blastCd = power >= DifficultyTier.TRANSCENDENT.ordinalPower() ? 14
+                : power >= DifficultyTier.MASTER.ordinalPower() ? 22 : 35;
+
+        if (power >= DifficultyTier.MASTER.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_ki_charged") >= chargedCd
                 && dist < 26.0f) {
             if (KiAttackHelper.fireKiBeam(mob, target, tier, true)) {
                 tag.m_128356_("dmz_ad_ki_charged", age);
                 return;
             }
         }
-        if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_beam") >= 90
+        if (power >= DifficultyTier.ADVANCED.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_ki_beam") >= beamCd
                 && dist < 24.0f) {
             if (KiAttackHelper.fireKiBeam(mob, target, tier, false)) {
                 tag.m_128356_("dmz_ad_ki_beam", age);
                 return;
             }
         }
-        if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_laser") >= 60
+        if (power >= DifficultyTier.ELITE.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_ki_laser") >= laserCd
                 && dist < 22.0f) {
             if (KiAttackHelper.fireKiLaser(mob, target, tier)) {
                 tag.m_128356_("dmz_ad_ki_laser", age);
                 return;
             }
         }
-        if (tier.ordinalPower() >= DifficultyTier.AWAKENED.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_blast") >= 35
+        if (power >= DifficultyTier.AWAKENED.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_ki_blast") >= blastCd
                 && dist < 18.0f) {
-            if (KiAttackHelper.fireKiBlast(mob, target, tier)) {
+            boolean burning = power >= DifficultyTier.GOD.ordinalPower();
+            if (KiAttackHelper.fireKiBlast(mob, target, tier, burning)) {
                 tag.m_128356_("dmz_ad_ki_blast", age);
+            }
+        }
+
+        // Impossible+: barrage volleys
+        if (power >= DifficultyTier.IMPOSSIBLE.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_ki_barrage") >= 80
+                && dist < 20.0f) {
+            int shots = 3 + Math.min(6, power - DifficultyTier.IMPOSSIBLE.ordinalPower());
+            if (KiAttackHelper.fireKiBarrage(mob, target, tier, shots, power >= DifficultyTier.OMEGA.ordinalPower()) > 0) {
+                tag.m_128356_("dmz_ad_ki_barrage", age);
             }
         }
     }

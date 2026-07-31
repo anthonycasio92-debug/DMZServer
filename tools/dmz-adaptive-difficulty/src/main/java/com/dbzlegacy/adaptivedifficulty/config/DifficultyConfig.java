@@ -61,9 +61,9 @@ public final class DifficultyConfig {
      * Offense (damage/defense) curve exponent. Higher = steeper growth with difficulty.
      * Effective = {@code pow(d, exp) * pow(pivot, 1-exp)}.
      */
-    public double combatCurveExponent = 0.88;
+    public double combatCurveExponent = 0.93;
     /** Difficulty where the offense curve matches old linear rates. */
-    public long combatCurvePivot = 250L;
+    public long combatCurvePivot = 500L;
     /**
      * Health curve exponent — kept low so mob HP does not become unkillable sponges.
      */
@@ -72,19 +72,19 @@ public final class DifficultyConfig {
     public long healthCurvePivot = 250L;
     /** Flat health % rate (applied through the flat health curve). */
     public double healthPercentPerDifficulty = 0.45;
-    /** Per-difficulty damage % (was 1.0; +50% → 1.5). */
-    public double damagePercentPerDifficulty = 1.5;
-    /** Per-difficulty armor points (was 3.0; +50% → 4.5). */
-    public double defensePercentPerDifficulty = 4.5;
-    public double movementPercentPer100Difficulty = 0.1;
+    /** Per-difficulty damage % (offense curve). */
+    public double damagePercentPerDifficulty = 2.5;
+    /** Per-difficulty armor points (offense curve). */
+    public double defensePercentPerDifficulty = 5.0;
+    public double movementPercentPer100Difficulty = 0.15;
     /** DMZ-style extra health % (kept low; health uses its own flat curve). */
     public double dmzExtraHealthPercent = 0.45;
-    /** DMZ-style extra damage % (was 1.0; +50% → 1.5). */
-    public double dmzExtraDamagePercent = 1.5;
-    /** DMZ-style extra armor points (was 3.0; +50% → 4.5). */
-    public double dmzExtraDefensePercent = 4.5;
-    /** DMZ-style extra ki damage % (was 1.0; +50% → 1.5). */
-    public double dmzExtraKiDamagePercent = 1.5;
+    /** DMZ-style extra damage % (offense curve). */
+    public double dmzExtraDamagePercent = 2.5;
+    /** DMZ-style extra armor points (offense curve). */
+    public double dmzExtraDefensePercent = 5.0;
+    /** DMZ-style extra ki damage % (offense curve). */
+    public double dmzExtraKiDamagePercent = 2.5;
     public double mobScaleRadius = 64.0;
     /**
      * Area difficulty mode (Scaling Health-inspired):
@@ -161,9 +161,13 @@ public final class DifficultyConfig {
     /** Caps so high difficulty cannot explode attributes / break spawns. */
     public double maxHealthMultiplier = 8.0;
     public double maxScaledHealth = 400.0;
-    public double maxMoveMultiplier = 1.75;
-    public double maxArmorBonus = 20.0;
-    public double maxDamageMultiplier = 50.0;
+    public double maxMoveMultiplier = 2.0;
+    public double maxArmorBonus = 30.0;
+    /**
+     * Damage multiplier ceiling. Legacy 50 saturated by ~10k difficulty and made
+     * multi-million difficulty feel identical — default is now high for DMZ endgame.
+     */
+    public double maxDamageMultiplier = 25_000.0;
     /** Admin permission node (Forge PermissionAPI / LuckPerms). Ops always allowed. */
     public String adminPermission = "difficulty.admin";
     /**
@@ -297,10 +301,10 @@ public final class DifficultyConfig {
             cfg.maxRewardMultiplier = 3.5;
         }
         if (cfg.combatCurveExponent <= 0.0) {
-            cfg.combatCurveExponent = 0.88;
+            cfg.combatCurveExponent = 0.93;
         }
         if (cfg.combatCurvePivot < 1L) {
-            cfg.combatCurvePivot = 250L;
+            cfg.combatCurvePivot = 500L;
         }
         if (cfg.healthCurveExponent <= 0.0) {
             cfg.healthCurveExponent = 0.40;
@@ -308,10 +312,14 @@ public final class DifficultyConfig {
         if (cfg.healthCurvePivot < 1L) {
             cfg.healthCurvePivot = 250L;
         }
-        // Migrate 1.7.19 stock curve/TP/health values → split offense/health + slower TP.
+        // Migrate stock values that made multi-million difficulty feel identical to ~10k.
         boolean retuned = false;
-        if (nearly(cfg.combatCurveExponent, 0.70)) {
-            cfg.combatCurveExponent = 0.88;
+        if (nearly(cfg.combatCurveExponent, 0.70) || nearly(cfg.combatCurveExponent, 0.88)) {
+            cfg.combatCurveExponent = 0.93;
+            retuned = true;
+        }
+        if (cfg.combatCurvePivot == 250L) {
+            cfg.combatCurvePivot = 500L;
             retuned = true;
         }
         if (nearly(cfg.rewardCurveGain, 1.2)) {
@@ -334,6 +342,26 @@ public final class DifficultyConfig {
             cfg.dmzExtraHealthPercent = 0.45;
             retuned = true;
         }
+        if (nearly(cfg.damagePercentPerDifficulty, 1.0) || nearly(cfg.damagePercentPerDifficulty, 1.5)) {
+            cfg.damagePercentPerDifficulty = 2.5;
+            retuned = true;
+        }
+        if (nearly(cfg.dmzExtraDamagePercent, 1.0) || nearly(cfg.dmzExtraDamagePercent, 1.5)) {
+            cfg.dmzExtraDamagePercent = 2.5;
+            retuned = true;
+        }
+        if (nearly(cfg.dmzExtraKiDamagePercent, 1.0) || nearly(cfg.dmzExtraKiDamagePercent, 1.5)) {
+            cfg.dmzExtraKiDamagePercent = 2.5;
+            retuned = true;
+        }
+        if (nearly(cfg.defensePercentPerDifficulty, 3.0) || nearly(cfg.defensePercentPerDifficulty, 4.5)) {
+            cfg.defensePercentPerDifficulty = 5.0;
+            retuned = true;
+        }
+        if (nearly(cfg.dmzExtraDefensePercent, 3.0) || nearly(cfg.dmzExtraDefensePercent, 4.5)) {
+            cfg.dmzExtraDefensePercent = 5.0;
+            retuned = true;
+        }
         if (nearly(cfg.maxHealthMultiplier, 50.0)) {
             cfg.maxHealthMultiplier = 8.0;
             retuned = true;
@@ -342,9 +370,17 @@ public final class DifficultyConfig {
             cfg.maxScaledHealth = 400.0;
             retuned = true;
         }
+        if (nearly(cfg.maxDamageMultiplier, 50.0)) {
+            cfg.maxDamageMultiplier = 25_000.0;
+            retuned = true;
+        }
+        if (nearly(cfg.maxArmorBonus, 20.0)) {
+            cfg.maxArmorBonus = 30.0;
+            retuned = true;
+        }
         if (retuned) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] retuned curves: steeper offense, flatter health, slower TP",
+                    "[{}] retuned endgame offense (damage cap ↑) + spaced high-tier AI",
                     AdaptiveDifficultyMod.MOD_ID
             );
         }

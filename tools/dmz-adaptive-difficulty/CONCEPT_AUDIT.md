@@ -41,11 +41,17 @@ Mobs scale once at spawn from nearby **active** difficulty (area mode). Evolutio
 | Active difficulty | Tier | What you should notice |
 |---|---|---|
 | 0 | — | Stats only if somehow tagged; no evolution |
-| 10+ | Awakened | Evolution starts (all hostiles) |
-| **50+** | **Enhanced** | Glow + tier name; melee leap; ranged **Ki Blasts** |
-| **100+** | **Elite** | Rush / **Lasers** / Warden barrage |
-| **500+** | **Advanced** | Slam / **Beams**; anti-flight / dodge AI |
-| **1000+** | **Master** | Berserk / **Charged Beams**; warden teleport |
+| 10+ | Awakened | Evolution starts; short dash / ki blasts |
+| **50+** | **Enhanced** | Focus weakest; leap; glow name |
+| **100+** | **Elite** | Retreat / rush / lasers |
+| **500+** | **Advanced** | Slam / beams; light dodge + speed |
+| **1000+** | **Master** | Pack call; charged beams; ki-charge interrupt |
+| **5k+** | **Legendary** | Anti-flight |
+| **10k+** | **God** | Stronger chase / burning ki |
+| **50k–100k** | Divine / Impossible | Debuffs, barrages, bigger packs |
+| **250k–10M** | Transcendent→Zenith | Frenzy, wither touch, max AI intensity |
+
+Damage no longer hard-caps at ×50 (that made 3M feel like 10k). Fight **newly spawned** mobs after raising difficulty.
 
 Raise active difficulty via `/difficulty` → **Adjust**, then fight **newly spawned** hostiles (already-spawned mobs keep their old cached difficulty).
 
