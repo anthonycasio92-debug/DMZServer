@@ -68,8 +68,9 @@ public final class ScalingCurves {
     }
 
     /**
-     * Absolute kill TP from difficulty (not a tiny base × small mult).
-     * Default: {@code 400000 × (d / 8000000)^0.70} → ~400k TP at 8M difficulty.
+     * Absolute kill TP from difficulty (before elite/boss/mutation bonuses).
+     * Default: {@code 1000000 × (d / 10000000)^0.70} → ~1M TP at Zenith (10M).
+     * Full bonuses ≈ 7.5M; {@code maxKillTp} (default 10M) caps the final grant.
      */
     public static double killTrainingPoints(long difficulty) {
         DifficultyConfig cfg = DifficultyConfig.get();
@@ -86,8 +87,8 @@ public final class ScalingCurves {
     /**
      * Reward / TP multiplier curve for DMZ {@code TPGainEvent} (training / other gains).
      * Kill rewards use {@link #killTrainingPoints(long)} instead.
-     * Default: {@code 1 + gain * (d / rewardScaling)^exp} — diminishing, not hard-capped.
-     * Set {@code maxRewardMultiplier > 1} only if you want an optional ceiling.
+     * Default: {@code 1 + gain * (d / rewardScaling)^exp}, capped by {@code maxRewardMultiplier}
+     * (default ×10). Absolute grant also capped by {@code maxTpGainEvent} (default 10M).
      */
     public static double rewardMultiplier(long activeDifficulty) {
         DifficultyConfig cfg = DifficultyConfig.get();

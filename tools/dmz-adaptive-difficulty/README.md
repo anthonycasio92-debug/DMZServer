@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.30)
+# DMZ Adaptive Difficulty (v1.7.31)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -22,7 +22,7 @@ Clients do **not** need this jar to join.
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.30.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.31.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
@@ -84,21 +84,21 @@ Curves are **split**:
 |---|---|---|
 | Damage / defense | Steep offense curve (**uncapped**) | exp `0.96`, pivot `450`, rates `0.62`/`1.85`; anchored to ~800k HP / ~200k DEF at 8M |
 | Health | Flat health curve + hard caps | exp `0.40`, max mult `×8`, abs cap `400` HP |
-| Kill TP | Absolute difficulty curve | `400000 × (d / 8000000)^0.70` → **~400k at 8M** |
-| Train TP mult | Mild power mult on DMZ `TPGainEvent` | gain `0.85`, exp `0.38`, scale `2500` |
+| Kill TP | Absolute difficulty curve | `1000000 × (d / 10000000)^0.70` → **~1M at Zenith**; hard cap **10M** |
+| Train TP mult | Mild power mult on DMZ `TPGainEvent` | gain `0.85`, exp `0.38`, scale `2500`, mult cap **×10**, grant cap **10M** |
 | Potential unlock | **Not touched** | Owned by CNPC `Potential.js` (`potentialunlock`) |
 | AI | Spaced across Awakened→Zenith | anti-flight Legendary+; pack/debuffs scale to Zenith |
 
-| Active | Kill TP (normal) |
-|---|---|
-| 1,000 | ~740 |
-| 10,000 | ~3,700 |
-| 100,000 | ~19,000 |
-| 1,000,000 | ~93,000 |
-| 8,000,000 | **~400,000** |
-| 10,000,000 | ~468,000 |
+| Active | Kill TP (normal) | Peak (elite+boss+mut) |
+|---|---|---|
+| 1,000 | ~1,200 | ~9,000 |
+| 10,000 | ~6,000 | ~45,000 |
+| 100,000 | ~30,000 | ~224,000 |
+| 1,000,000 | ~150,000 | ~1.1M |
+| 8,000,000 | ~642,000 | ~4.8M |
+| **10,000,000** | **~1,000,000** | **~7.5M** (capped at 10M) |
 
-(Elites ×`eliteRewardBonus`, bosses ×3, mutations ×1.25.)
+(Elites ×`eliteRewardBonus`, bosses ×3, mutations ×1.25. Single-grant ceiling: `maxKillTp` / `maxTpGainEvent` = **10M**.)
 
 Tune:
 ```
@@ -111,12 +111,14 @@ Tune:
 /difficulty admin set healthCurveExponent 0.40
 /difficulty admin set maxHealthMultiplier 8
 /difficulty admin set maxScaledHealth 400
-/difficulty admin set killTpRefAmount 400000
-/difficulty admin set killTpRefDifficulty 8000000
+/difficulty admin set killTpRefAmount 1000000
+/difficulty admin set killTpRefDifficulty 10000000
 /difficulty admin set killTpExponent 0.70
-/difficulty admin set maxRewardMultiplier 0
+/difficulty admin set maxKillTp 10000000
+/difficulty admin set maxTpGainEvent 10000000
+/difficulty admin set maxRewardMultiplier 10
 ```
-(`maxDamageMultiplier` / `maxRewardMultiplier` `0`/`1` = uncapped; `maxArmorBonus` `0` = uncapped.)
+(`maxDamageMultiplier` `0`/`1` = uncapped; `maxArmorBonus` `0` = uncapped; `maxKillTp` / `maxTpGainEvent` `0` = uncapped.)
 
 ## Pricing (Lightman's iron coins)
 

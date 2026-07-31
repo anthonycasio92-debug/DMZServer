@@ -278,13 +278,17 @@ public final class DifficultyEvents {
             return;
         }
         DifficultySnapshot snap = DifficultyCache.get(player);
+        DifficultyConfig cfg = DifficultyConfig.get();
         double mult = DifficultyCalculator.rewardMultiplier(snap.active);
-        if (mult > 1.0) {
-            int gained = event.getTpGain();
-            int scaled = (int) Math.max(0, Math.round(gained * mult));
-            if (scaled != gained) {
-                event.setTpGain(scaled);
-            }
+        int gained = event.getTpGain();
+        long scaled = Math.max(0L, Math.round(gained * Math.max(1.0, mult)));
+        // Hard ceiling so training/other gains cannot exceed the 5–10M band.
+        if (cfg.maxTpGainEvent > 0.0) {
+            scaled = Math.min(scaled, (long) cfg.maxTpGainEvent);
+        }
+        int next = (int) Math.min(Integer.MAX_VALUE, scaled);
+        if (next != gained) {
+            event.setTpGain(next);
         }
     }
 

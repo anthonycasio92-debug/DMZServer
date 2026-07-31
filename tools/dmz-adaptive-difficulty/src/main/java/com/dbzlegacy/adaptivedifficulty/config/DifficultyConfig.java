@@ -56,18 +56,19 @@ public final class DifficultyConfig {
     /** Exponent for {@code rewardCurve=power} only (ignored by log/sqrt). */
     public double rewardCurveExponent = 0.38;
     /**
-     * Optional hard ceiling on TP/reward multiplier.
-     * {@code 0} or {@code 1} = uncapped (default). Only values {@code > 1} apply a ceiling.
+     * Optional hard ceiling on TP/reward multiplier (training / {@code TPGainEvent}).
+     * Default {@code 10} keeps late-game train boosts from exploding.
+     * {@code 0} or {@code 1} = uncapped. Only values {@code > 1} apply a ceiling.
      */
-    public double maxRewardMultiplier = 0.0;
+    public double maxRewardMultiplier = 10.0;
     /**
-     * Kill TP reference: at {@link #killTpRefDifficulty} active/mob difficulty,
-     * a normal kill grants about this many training points.
-     * Default targets ~400k TP/kill at 8,000,000 difficulty (endgame / ~100k-level play).
+     * Kill TP reference: at {@link #killTpRefDifficulty}, a normal kill grants about this many TP.
+     * Default: {@code 1,000,000} at Zenith ({@code 10,000,000}) — elite+boss+mut ≈ 7.5M
+     * (inside the 5–10M max-difficulty band).
      */
-    public double killTpRefAmount = 400_000.0;
+    public double killTpRefAmount = 1_000_000.0;
     /** Difficulty where {@link #killTpRefAmount} is granted for a normal kill. */
-    public double killTpRefDifficulty = 8_000_000.0;
+    public double killTpRefDifficulty = 10_000_000.0;
     /**
      * Kill TP curve exponent: {@code refAmount × (difficulty / refDifficulty)^exp}.
      * Higher = more front-loaded toward late game.
@@ -75,6 +76,17 @@ public final class DifficultyConfig {
     public double killTpExponent = 0.70;
     /** Floor TP for any scaled kill (before elite/boss/mutation bonuses). */
     public double killTpMinimum = 25.0;
+    /**
+     * Hard ceiling on a single kill TP grant after elite/boss/mutation bonuses.
+     * Default {@code 10,000,000} — top of the 5–10M max-difficulty band.
+     * {@code 0} = uncapped.
+     */
+    public double maxKillTp = 10_000_000.0;
+    /**
+     * Hard ceiling on a single {@code TPGainEvent} after the train multiplier.
+     * Default {@code 10,000,000}. {@code 0} = uncapped.
+     */
+    public double maxTpGainEvent = 10_000_000.0;
     /**
      * Offense (damage/defense) curve exponent. Higher = steeper growth with difficulty.
      * Effective = {@code pow(d, exp) * pow(pivot, 1-exp)}.
@@ -327,19 +339,25 @@ public final class DifficultyConfig {
             cfg.rewardCurveExponent = 0.38;
         }
         if (cfg.maxRewardMultiplier < 0.0) {
-            cfg.maxRewardMultiplier = 0.0;
+            cfg.maxRewardMultiplier = 10.0;
         }
         if (cfg.killTpRefAmount <= 0.0) {
-            cfg.killTpRefAmount = 400_000.0;
+            cfg.killTpRefAmount = 1_000_000.0;
         }
         if (cfg.killTpRefDifficulty <= 0.0) {
-            cfg.killTpRefDifficulty = 8_000_000.0;
+            cfg.killTpRefDifficulty = 10_000_000.0;
         }
         if (cfg.killTpExponent <= 0.0) {
             cfg.killTpExponent = 0.70;
         }
         if (cfg.killTpMinimum < 0.0) {
             cfg.killTpMinimum = 25.0;
+        }
+        if (cfg.maxKillTp < 0.0) {
+            cfg.maxKillTp = 10_000_000.0;
+        }
+        if (cfg.maxTpGainEvent < 0.0) {
+            cfg.maxTpGainEvent = 10_000_000.0;
         }
         if (cfg.combatCurveExponent <= 0.0) {
             cfg.combatCurveExponent = 0.96;
@@ -365,11 +383,15 @@ public final class DifficultyConfig {
             cfg.combatCurvePivot = 450L;
             retuned = true;
         }
-        // Migrate capped log TP curve → uncapped diminishing power curve.
+        // Migrate old TP curves → Zenith-anchored kill TP with 5–10M ceilings.
         boolean stockCappedTp = nearly(cfg.maxRewardMultiplier, 3.5)
                 || nearly(cfg.maxRewardMultiplier, 6.0);
-        if (stockCappedTp) {
-            cfg.maxRewardMultiplier = 0.0;
+        boolean oldKillTp = nearly(cfg.killTpRefAmount, 400_000.0)
+                || nearly(cfg.killTpRefDifficulty, 8_000_000.0);
+        // Older soft caps, or uncapped train mult paired with the old kill curve → ×10.
+        if (stockCappedTp
+                || (oldKillTp && (nearly(cfg.maxRewardMultiplier, 0.0) || nearly(cfg.maxRewardMultiplier, 1.0)))) {
+            cfg.maxRewardMultiplier = 10.0;
             retuned = true;
         }
         if ("log".equalsIgnoreCase(cfg.rewardCurve) && stockCappedTp) {
@@ -386,6 +408,15 @@ public final class DifficultyConfig {
         }
         if (nearly(cfg.rewardScaling, 1_000.0)) {
             cfg.rewardScaling = 2_500.0;
+            retuned = true;
+        }
+        // Prior kill curve (~400k @ 8M) → 1M @ Zenith 10M (peak ~7.5M with bonuses).
+        if (nearly(cfg.killTpRefAmount, 400_000.0)) {
+            cfg.killTpRefAmount = 1_000_000.0;
+            retuned = true;
+        }
+        if (nearly(cfg.killTpRefDifficulty, 8_000_000.0)) {
+            cfg.killTpRefDifficulty = 10_000_000.0;
             retuned = true;
         }
         if (nearly(cfg.healthPercentPerDifficulty, 1.0)) {
@@ -461,7 +492,7 @@ public final class DifficultyConfig {
         }
         if (retuned) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] retuned offense for ~800k HP / ~200k DEF at 8M (dmg 0.62 / def 1.85; uncapped)",
+                    "[{}] retuned offense (~800k HP / ~200k DEF) and TP (≤10M @ Zenith)",
                     AdaptiveDifficultyMod.MOD_ID
             );
         }

@@ -34,7 +34,8 @@ import net.minecraftforge.registries.ForgeRegistries;
  * Potential unlock ({@code potentialunlock}) is owned by the CustomNPCs
  * {@code Potential.js} script — this mod must not write that skill.
  * <p>
- * Kill TP uses an absolute difficulty curve (≈400k at 8M). {@code addTrainingPoints}
+ * Kill TP uses an absolute difficulty curve (≈1M at Zenith 10M; elite+boss+mut ≈7.5M).
+ * Grants are hard-capped by {@code maxKillTp} (default 10M). {@code addTrainingPoints}
  * fires {@code TPGainEvent}, so kill grants set {@link #SKIP_TP_EVENT_SCALE} to avoid
  * applying the training multiplier on top of the absolute amount.
  */
@@ -90,7 +91,10 @@ public final class RewardSystem {
         if (mutated) {
             tp *= 1.25;
         }
-        // float is fine up through multi-million TP grants for this curve.
+        // Hard ceiling — keep max-difficulty grants inside the 5–10M band.
+        if (cfg.maxKillTp > 0.0) {
+            tp = Math.min(tp, cfg.maxKillTp);
+        }
         float grant = (float) Math.min(Float.MAX_VALUE, tp);
         if (grant <= 0.0f) {
             return;
