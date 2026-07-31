@@ -64,9 +64,9 @@ public final class DifficultyConfig {
      * Offense (damage/defense) curve exponent. Higher = steeper growth with difficulty.
      * Effective = {@code pow(d, exp) * pow(pivot, 1-exp)}.
      */
-    public double combatCurveExponent = 0.93;
+    public double combatCurveExponent = 0.96;
     /** Difficulty where the offense curve matches old linear rates. */
-    public long combatCurvePivot = 500L;
+    public long combatCurvePivot = 450L;
     /**
      * Health curve exponent — kept low so mob HP does not become unkillable sponges.
      */
@@ -76,18 +76,18 @@ public final class DifficultyConfig {
     /** Flat health % rate (applied through the flat health curve). */
     public double healthPercentPerDifficulty = 0.45;
     /** Per-difficulty damage % (offense curve). */
-    public double damagePercentPerDifficulty = 2.5;
+    public double damagePercentPerDifficulty = 3.2;
     /** Per-difficulty armor points (offense curve). */
-    public double defensePercentPerDifficulty = 5.0;
+    public double defensePercentPerDifficulty = 7.5;
     public double movementPercentPer100Difficulty = 0.15;
     /** DMZ-style extra health % (kept low; health uses its own flat curve). */
     public double dmzExtraHealthPercent = 0.45;
     /** DMZ-style extra damage % (offense curve). */
-    public double dmzExtraDamagePercent = 2.5;
+    public double dmzExtraDamagePercent = 3.2;
     /** DMZ-style extra armor points (offense curve). */
-    public double dmzExtraDefensePercent = 5.0;
+    public double dmzExtraDefensePercent = 7.5;
     /** DMZ-style extra ki damage % (offense curve). */
-    public double dmzExtraKiDamagePercent = 2.5;
+    public double dmzExtraKiDamagePercent = 3.2;
     public double mobScaleRadius = 64.0;
     /**
      * Area difficulty mode (Scaling Health-inspired):
@@ -165,12 +165,16 @@ public final class DifficultyConfig {
     public double maxHealthMultiplier = 8.0;
     public double maxScaledHealth = 400.0;
     public double maxMoveMultiplier = 2.0;
-    public double maxArmorBonus = 30.0;
     /**
-     * Damage multiplier ceiling. Legacy 50 saturated by ~10k difficulty and made
-     * multi-million difficulty feel identical — default is now high for DMZ endgame.
+     * Armor-point ceiling from defense scaling. Legacy 30 saturated by ~500 difficulty
+     * and made high-end defense feel flat — raised so late tiers keep tanking harder.
      */
-    public double maxDamageMultiplier = 25_000.0;
+    public double maxArmorBonus = 100.0;
+    /**
+     * Damage multiplier ceiling. Legacy 50 / 25000 saturated mid–late game;
+     * default is high enough for multi-million DMZ difficulty to keep growing.
+     */
+    public double maxDamageMultiplier = 50_000.0;
     /** Admin permission node (Forge PermissionAPI / LuckPerms). Ops always allowed. */
     public String adminPermission = "difficulty.admin";
     /**
@@ -304,10 +308,10 @@ public final class DifficultyConfig {
             cfg.maxRewardMultiplier = 0.0;
         }
         if (cfg.combatCurveExponent <= 0.0) {
-            cfg.combatCurveExponent = 0.93;
+            cfg.combatCurveExponent = 0.96;
         }
         if (cfg.combatCurvePivot < 1L) {
-            cfg.combatCurvePivot = 500L;
+            cfg.combatCurvePivot = 450L;
         }
         if (cfg.healthCurveExponent <= 0.0) {
             cfg.healthCurveExponent = 0.40;
@@ -315,14 +319,16 @@ public final class DifficultyConfig {
         if (cfg.healthCurvePivot < 1L) {
             cfg.healthCurvePivot = 250L;
         }
-        // Migrate stock values that made multi-million difficulty feel identical to ~10k.
+        // Migrate stock offense values → steeper high-difficulty damage/defense.
         boolean retuned = false;
-        if (nearly(cfg.combatCurveExponent, 0.70) || nearly(cfg.combatCurveExponent, 0.88)) {
-            cfg.combatCurveExponent = 0.93;
+        if (nearly(cfg.combatCurveExponent, 0.70)
+                || nearly(cfg.combatCurveExponent, 0.88)
+                || nearly(cfg.combatCurveExponent, 0.93)) {
+            cfg.combatCurveExponent = 0.96;
             retuned = true;
         }
-        if (cfg.combatCurvePivot == 250L) {
-            cfg.combatCurvePivot = 500L;
+        if (cfg.combatCurvePivot == 250L || cfg.combatCurvePivot == 500L) {
+            cfg.combatCurvePivot = 450L;
             retuned = true;
         }
         // Migrate capped log TP curve → uncapped diminishing power curve.
@@ -356,24 +362,34 @@ public final class DifficultyConfig {
             cfg.dmzExtraHealthPercent = 0.45;
             retuned = true;
         }
-        if (nearly(cfg.damagePercentPerDifficulty, 1.0) || nearly(cfg.damagePercentPerDifficulty, 1.5)) {
-            cfg.damagePercentPerDifficulty = 2.5;
+        if (nearly(cfg.damagePercentPerDifficulty, 1.0)
+                || nearly(cfg.damagePercentPerDifficulty, 1.5)
+                || nearly(cfg.damagePercentPerDifficulty, 2.5)) {
+            cfg.damagePercentPerDifficulty = 3.2;
             retuned = true;
         }
-        if (nearly(cfg.dmzExtraDamagePercent, 1.0) || nearly(cfg.dmzExtraDamagePercent, 1.5)) {
-            cfg.dmzExtraDamagePercent = 2.5;
+        if (nearly(cfg.dmzExtraDamagePercent, 1.0)
+                || nearly(cfg.dmzExtraDamagePercent, 1.5)
+                || nearly(cfg.dmzExtraDamagePercent, 2.5)) {
+            cfg.dmzExtraDamagePercent = 3.2;
             retuned = true;
         }
-        if (nearly(cfg.dmzExtraKiDamagePercent, 1.0) || nearly(cfg.dmzExtraKiDamagePercent, 1.5)) {
-            cfg.dmzExtraKiDamagePercent = 2.5;
+        if (nearly(cfg.dmzExtraKiDamagePercent, 1.0)
+                || nearly(cfg.dmzExtraKiDamagePercent, 1.5)
+                || nearly(cfg.dmzExtraKiDamagePercent, 2.5)) {
+            cfg.dmzExtraKiDamagePercent = 3.2;
             retuned = true;
         }
-        if (nearly(cfg.defensePercentPerDifficulty, 3.0) || nearly(cfg.defensePercentPerDifficulty, 4.5)) {
-            cfg.defensePercentPerDifficulty = 5.0;
+        if (nearly(cfg.defensePercentPerDifficulty, 3.0)
+                || nearly(cfg.defensePercentPerDifficulty, 4.5)
+                || nearly(cfg.defensePercentPerDifficulty, 5.0)) {
+            cfg.defensePercentPerDifficulty = 7.5;
             retuned = true;
         }
-        if (nearly(cfg.dmzExtraDefensePercent, 3.0) || nearly(cfg.dmzExtraDefensePercent, 4.5)) {
-            cfg.dmzExtraDefensePercent = 5.0;
+        if (nearly(cfg.dmzExtraDefensePercent, 3.0)
+                || nearly(cfg.dmzExtraDefensePercent, 4.5)
+                || nearly(cfg.dmzExtraDefensePercent, 5.0)) {
+            cfg.dmzExtraDefensePercent = 7.5;
             retuned = true;
         }
         if (nearly(cfg.maxHealthMultiplier, 50.0)) {
@@ -384,17 +400,18 @@ public final class DifficultyConfig {
             cfg.maxScaledHealth = 400.0;
             retuned = true;
         }
-        if (nearly(cfg.maxDamageMultiplier, 50.0)) {
-            cfg.maxDamageMultiplier = 25_000.0;
+        if (nearly(cfg.maxDamageMultiplier, 50.0)
+                || nearly(cfg.maxDamageMultiplier, 25_000.0)) {
+            cfg.maxDamageMultiplier = 50_000.0;
             retuned = true;
         }
-        if (nearly(cfg.maxArmorBonus, 20.0)) {
-            cfg.maxArmorBonus = 30.0;
+        if (nearly(cfg.maxArmorBonus, 20.0) || nearly(cfg.maxArmorBonus, 30.0)) {
+            cfg.maxArmorBonus = 100.0;
             retuned = true;
         }
         if (retuned) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] retuned endgame offense (damage cap ↑) + spaced high-tier AI",
+                    "[{}] retuned high-end damage/defense (steeper offense + armor/dmg caps ↑)",
                     AdaptiveDifficultyMod.MOD_ID
             );
         }
@@ -409,34 +426,6 @@ public final class DifficultyConfig {
             cfg.hardCapDifficulty = 0L;
             AdaptiveDifficultyMod.LOGGER.info(
                     "[{}] hardCapDifficulty 1000000 → 0 (no hardcap; max from DMZ stats)",
-                    AdaptiveDifficultyMod.MOD_ID
-            );
-        }
-        // Bump stock damage/defense rates +50% when still on pre-1.7.18 defaults.
-        boolean bumped = false;
-        if (nearly(cfg.damagePercentPerDifficulty, 1.0)) {
-            cfg.damagePercentPerDifficulty = 1.5;
-            bumped = true;
-        }
-        if (nearly(cfg.defensePercentPerDifficulty, 3.0)) {
-            cfg.defensePercentPerDifficulty = 4.5;
-            bumped = true;
-        }
-        if (nearly(cfg.dmzExtraDamagePercent, 1.0)) {
-            cfg.dmzExtraDamagePercent = 1.5;
-            bumped = true;
-        }
-        if (nearly(cfg.dmzExtraDefensePercent, 3.0)) {
-            cfg.dmzExtraDefensePercent = 4.5;
-            bumped = true;
-        }
-        if (nearly(cfg.dmzExtraKiDamagePercent, 1.0)) {
-            cfg.dmzExtraKiDamagePercent = 1.5;
-            bumped = true;
-        }
-        if (bumped) {
-            AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] damage/defense percents +50% (1.0/3.0 → 1.5/4.5 incl. DMZ extras)",
                     AdaptiveDifficultyMod.MOD_ID
             );
         }
