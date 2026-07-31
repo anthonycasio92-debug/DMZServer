@@ -101,9 +101,17 @@ public final class DifficultyCalculator {
         return ScalingCurves.rewardMultiplier(activeDifficulty);
     }
 
-    /** Absolute kill TP at the given difficulty. See {@link ScalingCurves#killTrainingPoints}. */
+    /**
+     * Preview kill TP estimate for a typical mob at this difficulty (health-based).
+     * Actual grants use {@link ScalingCurves#killTrainingPointsFromHealth(double)}.
+     */
     public static double killTrainingPoints(long difficulty) {
         return ScalingCurves.killTrainingPoints(difficulty);
+    }
+
+    /** Kill TP from a mob's max health. */
+    public static double killTrainingPointsFromHealth(double maxHealth) {
+        return ScalingCurves.killTrainingPointsFromHealth(maxHealth);
     }
 
     /**

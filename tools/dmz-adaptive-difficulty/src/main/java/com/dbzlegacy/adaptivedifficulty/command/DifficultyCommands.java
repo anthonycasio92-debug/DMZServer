@@ -383,6 +383,8 @@ public final class DifficultyCommands {
                         cfg.killTpExponent = Math.max(0.05, Math.min(1.0, Double.parseDouble(value)));
                 case "killtpminimum", "killtpmin" ->
                         cfg.killTpMinimum = Math.max(0.0, Double.parseDouble(value));
+                case "killtpperhealth", "tpperhealth", "killtphp" ->
+                        cfg.killTpPerHealth = Math.max(0.0, Double.parseDouble(value));
                 case "maxkilltp", "maxkilltpgain" ->
                         // 0 = uncapped; default 10M keeps max-difficulty grants in band.
                         cfg.maxKillTp = Math.max(0.0, Double.parseDouble(value));

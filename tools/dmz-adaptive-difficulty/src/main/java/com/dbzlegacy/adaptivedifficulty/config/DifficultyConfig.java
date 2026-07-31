@@ -62,22 +62,21 @@ public final class DifficultyConfig {
      */
     public double maxRewardMultiplier = 10.0;
     /**
-     * Kill TP reference: at {@link #killTpRefDifficulty}, a normal kill grants about this many TP.
-     * Default: {@code 1,000,000} at Zenith ({@code 10,000,000}) — elite+boss+mut ≈ 7.5M
-     * (inside the 5–10M max-difficulty band).
+     * Legacy kill-TP difficulty curve fields (unused for grants — kept for config compatibility).
+     * Kill TP is {@code maxHealth × killTpPerHealth}.
      */
     public double killTpRefAmount = 1_000_000.0;
-    /** Difficulty where {@link #killTpRefAmount} is granted for a normal kill. */
     public double killTpRefDifficulty = 10_000_000.0;
-    /**
-     * Kill TP curve exponent: {@code refAmount × (difficulty / refDifficulty)^exp}.
-     * Higher = more front-loaded toward late game.
-     */
     public double killTpExponent = 0.70;
-    /** Floor TP for any scaled kill (before elite/boss/mutation bonuses). */
+    /**
+     * Kill TP per point of mob max health after retarget scaling.
+     * Default {@code 5000} → ~5.1M TP at 1024 HP (vanilla health ceiling).
+     */
+    public double killTpPerHealth = 5_000.0;
+    /** Floor TP for any scaled kill. */
     public double killTpMinimum = 25.0;
     /**
-     * Hard ceiling on a single kill TP grant after elite/boss/mutation bonuses.
+     * Hard ceiling on a single kill TP grant.
      * Default {@code 10,000,000} — top of the 5–10M max-difficulty band.
      * {@code 0} = uncapped.
      */
@@ -195,9 +194,13 @@ public final class DifficultyConfig {
     public List<String> bossIdContains = new ArrayList<>(Arrays.asList(
             "boss", "warden", "wither", "ender_dragon", "raid_boss", "raidboss"
     ));
-    /** Caps so high difficulty cannot explode attributes / break spawns. */
-    public double maxHealthMultiplier = 8.0;
-    public double maxScaledHealth = 400.0;
+    /**
+     * Optional ceiling on the health multiplier from the health curve.
+     * {@code 0} or {@code 1} = uncapped (default). Absolute HP still limited by {@link #maxScaledHealth}.
+     */
+    public double maxHealthMultiplier = 0.0;
+    /** Absolute max HP after scaling (also clamped to vanilla 1024). {@code 0} = vanilla 1024 only. */
+    public double maxScaledHealth = 1024.0;
     public double maxMoveMultiplier = 2.0;
     /**
      * Optional armor-point ceiling from defense scaling.
@@ -350,6 +353,9 @@ public final class DifficultyConfig {
         if (cfg.killTpExponent <= 0.0) {
             cfg.killTpExponent = 0.70;
         }
+        if (cfg.killTpPerHealth < 0.0) {
+            cfg.killTpPerHealth = 5_000.0;
+        }
         if (cfg.killTpMinimum < 0.0) {
             cfg.killTpMinimum = 25.0;
         }
@@ -463,12 +469,17 @@ public final class DifficultyConfig {
             cfg.dmzExtraDefensePercent = 1.85;
             retuned = true;
         }
-        if (nearly(cfg.maxHealthMultiplier, 50.0)) {
-            cfg.maxHealthMultiplier = 8.0;
+        // Health: allow curve growth up to vanilla 1024 so kill TP (from HP) can reach 5–10M.
+        if (nearly(cfg.maxHealthMultiplier, 50.0) || nearly(cfg.maxHealthMultiplier, 8.0)) {
+            cfg.maxHealthMultiplier = 0.0;
             retuned = true;
         }
-        if (nearly(cfg.maxScaledHealth, 1024.0)) {
-            cfg.maxScaledHealth = 400.0;
+        if (nearly(cfg.maxScaledHealth, 400.0)) {
+            cfg.maxScaledHealth = 1024.0;
+            retuned = true;
+        }
+        if (cfg.killTpPerHealth <= 0.0) {
+            cfg.killTpPerHealth = 5_000.0;
             retuned = true;
         }
         // Remove stock damage/armor ceilings — offense grows with the curve only.
@@ -492,7 +503,7 @@ public final class DifficultyConfig {
         }
         if (retuned) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] retuned offense (~800k HP / ~200k DEF) and TP (≤10M @ Zenith)",
+                    "[{}] retuned retarget scaling + health-based kill TP (≤10M)",
                     AdaptiveDifficultyMod.MOD_ID
             );
         }

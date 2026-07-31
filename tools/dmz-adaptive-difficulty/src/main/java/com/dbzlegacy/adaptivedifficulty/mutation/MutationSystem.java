@@ -9,8 +9,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.AttributeInstance;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 
 /** Concept section 13 — random mutations on scaled hostiles. */
 public final class MutationSystem {
@@ -44,31 +42,16 @@ public final class MutationSystem {
         apply(entity, MutationType.randomFor(entity));
     }
 
+    /**
+     * Flag + cosmetics only. Titan / berserker stat bonuses are applied by
+     * {@link com.dbzlegacy.adaptivedifficulty.scaling.MobScaling} on each retarget.
+     */
     public static void apply(LivingEntity entity, MutationType type) {
         if (entity == null || type == null) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);
         tag.m_128359_(TAG_MUTATION, type.name());
-
-        if (type == MutationType.TITAN_CREEPER) {
-            AttributeInstance health = entity.m_21051_(Attributes.f_22276_);
-            if (health != null) {
-                double cap = Math.min(DifficultyConfig.get().maxScaledHealth, 1024.0);
-                if (!(cap > 0.0)) {
-                    cap = 1024.0;
-                }
-                double next = Math.min(cap, health.m_22115_() * 1.75);
-                health.m_22100_(next);
-                entity.m_21153_(entity.m_21233_());
-            }
-        }
-        if (type == MutationType.BERSERKER_PIGLIN) {
-            AttributeInstance speed = entity.m_21051_(Attributes.f_22279_);
-            if (speed != null) {
-                speed.m_22100_(speed.m_22115_() * 1.25);
-            }
-        }
 
         String prefix = EliteSystem.isElite(entity) ? "§6Elite " : "";
         // Adjective + live type so names always match the mob (e.g. "Burning Husk").

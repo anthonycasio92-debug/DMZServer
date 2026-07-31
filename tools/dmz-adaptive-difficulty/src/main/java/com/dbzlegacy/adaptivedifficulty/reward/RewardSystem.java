@@ -34,10 +34,10 @@ import net.minecraftforge.registries.ForgeRegistries;
  * Potential unlock ({@code potentialunlock}) is owned by the CustomNPCs
  * {@code Potential.js} script — this mod must not write that skill.
  * <p>
- * Kill TP uses an absolute difficulty curve (≈1M at Zenith 10M; elite+boss+mut ≈7.5M).
- * Grants are hard-capped by {@code maxKillTp} (default 10M). {@code addTrainingPoints}
- * fires {@code TPGainEvent}, so kill grants set {@link #SKIP_TP_EVENT_SCALE} to avoid
- * applying the training multiplier on top of the absolute amount.
+ * Kill TP comes from the mob's max health only (no difficulty / elite / boss TP multipliers).
+ * Harder difficulties pay more TP because the mob has more HP after retarget scaling.
+ * {@code addTrainingPoints} fires {@code TPGainEvent}, so kill grants set
+ * {@link #SKIP_TP_EVENT_SCALE} to avoid applying the training multiplier on top.
  */
 public final class RewardSystem {
     /**
@@ -64,7 +64,7 @@ public final class RewardSystem {
         boolean boss = PersistentDataAccess.get(dead).m_128471_(BossScaling.TAG_BOSS);
         boolean mutated = MutationSystem.get(dead) != null;
 
-        grantTrainingPoints(killer, killDifficulty, elite, boss, mutated, cfg);
+        grantTrainingPoints(killer, dead, cfg);
         grantExperience(killer, eventMult, elite, boss, tier);
         grantDrops(killer, eventMult, elite, boss, mutated, tier);
         maybeUnlockTitle(killer, snap, elite, boss, tier);
@@ -72,28 +72,14 @@ public final class RewardSystem {
 
     private static void grantTrainingPoints(
             ServerPlayer killer,
-            long difficulty,
-            boolean elite,
-            boolean boss,
-            boolean mutated,
+            LivingEntity dead,
             DifficultyConfig cfg
     ) {
-        double tp = ScalingCurves.killTrainingPoints(difficulty);
+        // Extra TP comes from the mob having more health after difficulty scaling —
+        // not from a separate difficulty / elite / boss TP multiplier.
+        double tp = ScalingCurves.killTrainingPointsFromHealth(dead.m_21233_());
         if (tp <= 0.0) {
             return;
-        }
-        if (elite) {
-            tp *= Math.max(1.0, cfg.eliteRewardBonus);
-        }
-        if (boss) {
-            tp *= 3.0;
-        }
-        if (mutated) {
-            tp *= 1.25;
-        }
-        // Hard ceiling — keep max-difficulty grants inside the 5–10M band.
-        if (cfg.maxKillTp > 0.0) {
-            tp = Math.min(tp, cfg.maxKillTp);
         }
         float grant = (float) Math.min(Float.MAX_VALUE, tp);
         if (grant <= 0.0f) {

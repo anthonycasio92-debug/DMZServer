@@ -2,14 +2,17 @@ package com.dbzlegacy.adaptivedifficulty.scaling;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.boss.BossScaling;
+import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
+import com.dbzlegacy.adaptivedifficulty.mutation.MutationType;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -22,12 +25,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * Apply scaling once at spawn and cache difficulty on the mob (concept §9 / §17).
- * All hostiles receive the same DMZ-style extras (health / defense / damage / ki).
+ * Scale hostiles after spawn from their captured base stats, then re-scale to the
+ * engaged player's difficulty on target switch / attack (before damage resolves).
  * <p>
  * Damage is applied two ways for Mohist reliability:
  * <ul>
- *   <li>{@link Attributes#ATTACK_DAMAGE} multiplied at spawn (melee)</li>
+ *   <li>{@link Attributes#ATTACK_DAMAGE} rewritten on each retarget (melee)</li>
  *   <li>{@link #scaleOutgoingHurt} via Forge {@code LivingHurtEvent} (projectiles / custom hits)</li>
  * </ul>
  */
@@ -36,8 +39,14 @@ public final class MobScaling {
     public static final String TAG_SCALED = "dmz_ad_scaled";
     public static final String TAG_DMG_MULT = "dmz_ad_dmg_mult";
     public static final String TAG_DMZ_STYLE = "dmz_ad_dmz_mob";
-    /** True when ATTACK_DAMAGE was multiplied at spawn — melee must not be event-multiplied again. */
+    /** True when ATTACK_DAMAGE was written from our scaler — melee must not be event-multiplied again. */
     public static final String TAG_ATTR_DMG_SCALED = "dmz_ad_attr_dmg";
+
+    public static final String TAG_BASE_HEALTH = "dmz_ad_base_max_health";
+    public static final String TAG_BASE_ATTACK = "dmz_ad_base_attack";
+    public static final String TAG_BASE_ARMOR = "dmz_ad_base_armor";
+    public static final String TAG_BASE_SPEED = "dmz_ad_base_speed";
+    public static final String TAG_BASE_KNOCKBACK = "dmz_ad_base_knockback";
 
     /** Vanilla generic.max_health upper bound — never push past this. */
     private static final double VANILLA_MAX_HEALTH_CAP = 1024.0;
@@ -66,6 +75,49 @@ public final class MobScaling {
         }
     }
 
+    /**
+     * Re-scale a hostile to {@code player}'s active difficulty, preserving HP %.
+     * No-op when already matched. Safe to call every hit / target change.
+     */
+    public static void retargetToPlayer(LivingEntity entity, ServerPlayer player) {
+        if (entity == null || player == null || entity.m_9236_().f_46443_) {
+            return;
+        }
+        try {
+            DifficultyConfig cfg = DifficultyConfig.get();
+            if (!cfg.enableMobScaling) {
+                return;
+            }
+            if (cfg.scaleHostileOnly && !HostileMobs.isHostile(entity)) {
+                return;
+            }
+            CompoundTag tag = PersistentDataAccess.get(entity);
+            if (!PersistentDataAccess.isWritable(tag)) {
+                return;
+            }
+            // Ensure spawn init ran (bases + elite/boss/mut rolls).
+            if (!tag.m_128471_(TAG_SCALED) || !tag.m_128441_(TAG_BASE_HEALTH)) {
+                scaleIfNeededInternal(entity);
+                tag = PersistentDataAccess.get(entity);
+            }
+            if (!tag.m_128441_(TAG_BASE_HEALTH)) {
+                return;
+            }
+            long difficulty = Math.max(0L, DifficultyCache.get(player).active);
+            if (tag.m_128441_(TAG_DIFFICULTY) && tag.m_128454_(TAG_DIFFICULTY) == difficulty) {
+                return;
+            }
+            applyForDifficulty(entity, tag, difficulty, cfg);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] retarget scaling failed for {}: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    entity.m_6095_().toString(),
+                    t.toString()
+            );
+        }
+    }
+
     private static void scaleIfNeededInternal(LivingEntity entity) {
         DifficultyConfig cfg = DifficultyConfig.get();
         if (!cfg.enableMobScaling || entity == null || entity.m_9236_().f_46443_) {
@@ -75,7 +127,8 @@ public final class MobScaling {
         if (!PersistentDataAccess.isWritable(tag)) {
             return;
         }
-        if (tag.m_128471_(TAG_SCALED)) {
+        // Already initialized — combat retarget uses {@link #retargetToPlayer}.
+        if (tag.m_128471_(TAG_SCALED) && tag.m_128441_(TAG_BASE_HEALTH)) {
             return;
         }
 
@@ -88,78 +141,268 @@ public final class MobScaling {
             }
         }
 
-        // Detect bosses BEFORE health scaling. Post-scale HP>=threshold was marking
-        // every high-difficulty zombie as a boss and re-multiplying stats into oblivion.
-        boolean boss = BossScaling.isNaturalBoss(entity);
-
-        long difficulty = resolveNearbyDifficulty(entity);
-        tag.m_128356_(TAG_DIFFICULTY, difficulty);
-        tag.m_128379_(TAG_SCALED, true);
-        if (difficulty <= 0) {
-            return;
+        // Capture natural / current stats before any of our multipliers.
+        // Legacy mobs already scaled without bases: reverse the old difficulty mult.
+        if (!tag.m_128441_(TAG_BASE_HEALTH)) {
+            captureBases(entity, tag, cfg);
         }
+
+        // Detect bosses from captured base HP (not post-scale).
+        boolean naturalBoss = BossScaling.isNaturalBoss(entity)
+                || (tag.m_128441_(TAG_BASE_HEALTH)
+                && tag.m_128459_(TAG_BASE_HEALTH) >= cfg.bossHealthThreshold);
 
         boolean dmzStyle = shouldApplyDmzStyleExtras(entity, cfg);
         if (dmzStyle) {
             tag.m_128379_(TAG_DMZ_STYLE, true);
         }
+        tag.m_128379_(TAG_SCALED, true);
 
-        // Health uses a flat curve + hard caps; damage/defense use a steeper offense curve.
-        double healthMult = 1.0 + ScalingCurves.healthBonus(difficulty, cfg.healthPercentPerDifficulty);
-        double armorBonus = ScalingCurves.offenseBonus(difficulty, cfg.defensePercentPerDifficulty);
-        double moveMult = 1.0 + ((difficulty / 100.0) * (cfg.movementPercentPer100Difficulty / 100.0));
+        long areaDifficulty = resolveNearbyDifficulty(entity);
 
-        if (dmzStyle) {
-            healthMult += ScalingCurves.healthBonus(difficulty, cfg.dmzExtraHealthPercent);
-            armorBonus += ScalingCurves.offenseBonus(difficulty, cfg.dmzExtraDefensePercent);
+        // Roll elite / boss / mutation once (flags + cosmetics only — stats via applyForDifficulty).
+        if (naturalBoss) {
+            BossScaling.markBoss(entity, areaDifficulty);
         }
+        EliteSystem.maybePromote(entity, areaDifficulty);
+        MutationSystem.maybeMutate(entity, areaDifficulty);
 
-        healthMult = clamp(healthMult, 1.0, Math.max(1.0, cfg.maxHealthMultiplier));
-        moveMult = clamp(moveMult, 1.0, Math.max(1.0, cfg.maxMoveMultiplier));
-        // 0 = uncapped defense
-        if (cfg.maxArmorBonus > 0.0) {
-            armorBonus = Math.min(armorBonus, cfg.maxArmorBonus);
-        }
-
-        double dmgMult = 1.0 + ScalingCurves.offenseBonus(difficulty, cfg.damagePercentPerDifficulty);
-        if (dmzStyle) {
-            dmgMult += ScalingCurves.offenseBonus(difficulty, cfg.dmzExtraDamagePercent);
-            dmgMult += ScalingCurves.offenseBonus(difficulty, cfg.dmzExtraKiDamagePercent);
-        }
-        // 0 / 1 = uncapped damage
-        if (cfg.maxDamageMultiplier > 1.0) {
-            dmgMult = Math.min(dmgMult, cfg.maxDamageMultiplier);
-        }
-        tag.m_128350_(TAG_DMG_MULT, (float) dmgMult); // putFloat
-
-        scaleMaxHealth(entity, healthMult, cfg.maxScaledHealth);
-        scaleAttribute(entity, Attributes.f_22279_, moveMult); // MOVEMENT_SPEED
-        // Melee damage attribute — primary path (mixin alone was unreliable on Mohist).
-        if (scaleAttribute(entity, Attributes.f_22281_, dmgMult)) { // ATTACK_DAMAGE
-            tag.m_128379_(TAG_ATTR_DMG_SCALED, true);
-        }
-        AttributeInstance armor = entity.m_21051_(Attributes.f_22284_); // ARMOR
-        if (armor != null && armorBonus > 0) {
-            double next = armor.m_22115_() + armorBonus;
-            if (cfg.maxArmorBonus > 0.0) {
-                next = Math.min(cfg.maxArmorBonus, next);
-            }
-            if (next > 0 && !Double.isNaN(next) && !Double.isInfinite(next)) {
-                armor.m_22100_(next);
-            }
-        }
-
-        if (boss) {
-            BossScaling.scaleIfBoss(entity, difficulty);
-        }
-        EliteSystem.maybePromote(entity, difficulty);
-        MutationSystem.maybeMutate(entity, difficulty);
+        applyForDifficulty(entity, tag, areaDifficulty, cfg);
     }
 
     /**
-     * DMZ-style extras (extra HP/DEF/DMG/ki) apply to every hostile by default,
-     * matching how DragonMineZ mobs were scaled.
+     * Rewrite health / damage / armor / speed from stored bases for {@code difficulty}.
+     * Preserves current HP as a fraction of max so mid-fight retargets stay fair.
      */
+    public static void applyForDifficulty(
+            LivingEntity entity, CompoundTag tag, long difficulty, DifficultyConfig cfg
+    ) {
+        if (entity == null || tag == null || !PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
+        if (!tag.m_128441_(TAG_BASE_HEALTH)) {
+            return;
+        }
+
+        boolean dmzStyle = tag.m_128471_(TAG_DMZ_STYLE) || shouldApplyDmzStyleExtras(entity, cfg);
+        boolean elite = tag.m_128471_(EliteSystem.TAG_ELITE);
+        boolean boss = tag.m_128471_(BossScaling.TAG_BOSS);
+        MutationType mutation = MutationType.fromString(tag.m_128461_(MutationSystem.TAG_MUTATION));
+
+        double healthMult = 1.0;
+        double armorBonus = 0.0;
+        double moveMult = 1.0;
+        double dmgMult = 1.0;
+
+        if (difficulty > 0L) {
+            healthMult = 1.0 + ScalingCurves.healthBonus(difficulty, cfg.healthPercentPerDifficulty);
+            armorBonus = ScalingCurves.offenseBonus(difficulty, cfg.defensePercentPerDifficulty);
+            moveMult = 1.0 + ((difficulty / 100.0) * (cfg.movementPercentPer100Difficulty / 100.0));
+            dmgMult = 1.0 + ScalingCurves.offenseBonus(difficulty, cfg.damagePercentPerDifficulty);
+            if (dmzStyle) {
+                healthMult += ScalingCurves.healthBonus(difficulty, cfg.dmzExtraHealthPercent);
+                armorBonus += ScalingCurves.offenseBonus(difficulty, cfg.dmzExtraDefensePercent);
+                dmgMult += ScalingCurves.offenseBonus(difficulty, cfg.dmzExtraDamagePercent);
+                dmgMult += ScalingCurves.offenseBonus(difficulty, cfg.dmzExtraKiDamagePercent);
+            }
+        }
+
+        // Optional ceilings (0 / 1 = uncapped mult).
+        if (cfg.maxHealthMultiplier > 1.0) {
+            healthMult = Math.min(healthMult, cfg.maxHealthMultiplier);
+        }
+        if (cfg.maxMoveMultiplier > 1.0) {
+            moveMult = clamp(moveMult, 1.0, cfg.maxMoveMultiplier);
+        } else {
+            moveMult = Math.max(1.0, moveMult);
+        }
+        if (cfg.maxArmorBonus > 0.0) {
+            armorBonus = Math.min(armorBonus, cfg.maxArmorBonus);
+        }
+        if (cfg.maxDamageMultiplier > 1.0) {
+            dmgMult = Math.min(dmgMult, cfg.maxDamageMultiplier);
+        }
+
+        // Permanent rarity multipliers — baked into HP/damage so TP follows HP, not a TP bonus.
+        double rarityHealth = 1.0;
+        double rarityDamage = 1.0;
+        if (elite) {
+            rarityHealth *= Math.max(1.0, cfg.eliteStatMultiplier);
+            rarityDamage *= Math.max(1.0, cfg.eliteStatMultiplier);
+            armorBonus += 4.0;
+            moveMult *= 0.92;
+        }
+        if (boss) {
+            rarityHealth *= Math.max(1.0, cfg.bossStatMultiplier);
+            rarityDamage *= Math.max(1.0, cfg.bossStatMultiplier);
+            if (difficulty > 0L) {
+                double bossArmor = ScalingCurves.offenseBonus(difficulty, cfg.defensePercentPerDifficulty) * 0.25;
+                if (cfg.maxArmorBonus > 0.0) {
+                    bossArmor = Math.min(cfg.maxArmorBonus, bossArmor);
+                }
+                armorBonus += bossArmor;
+            }
+        }
+        if (mutation == MutationType.TITAN_CREEPER) {
+            rarityHealth *= 1.75;
+        }
+        if (mutation == MutationType.BERSERKER_PIGLIN) {
+            moveMult *= 1.25;
+        }
+
+        double baseHealth = Math.max(1.0e-3, tag.m_128459_(TAG_BASE_HEALTH));
+        double baseAttack = tag.m_128441_(TAG_BASE_ATTACK) ? Math.max(0.0, tag.m_128459_(TAG_BASE_ATTACK)) : 0.0;
+        double baseArmor = tag.m_128441_(TAG_BASE_ARMOR) ? Math.max(0.0, tag.m_128459_(TAG_BASE_ARMOR)) : 0.0;
+        double baseSpeed = tag.m_128441_(TAG_BASE_SPEED) ? Math.max(0.0, tag.m_128459_(TAG_BASE_SPEED)) : 0.0;
+        double baseKnock = tag.m_128441_(TAG_BASE_KNOCKBACK) ? Math.max(0.0, tag.m_128459_(TAG_BASE_KNOCKBACK)) : 0.0;
+
+        double absHealthCap = cfg.maxScaledHealth > 0.0
+                ? Math.min(cfg.maxScaledHealth, VANILLA_MAX_HEALTH_CAP)
+                : VANILLA_MAX_HEALTH_CAP;
+        double newMaxHealth = Math.min(absHealthCap, baseHealth * healthMult * rarityHealth);
+        if (!(newMaxHealth > 0.0) || Double.isNaN(newMaxHealth) || Double.isInfinite(newMaxHealth)) {
+            newMaxHealth = Math.min(absHealthCap, baseHealth);
+        }
+
+        // Preserve fight progress across retargets.
+        float oldMax = entity.m_21233_();
+        float oldHp = entity.m_21223_();
+        double hpRatio = (oldMax > 0.0f && !Float.isNaN(oldMax))
+                ? Math.max(0.0, Math.min(1.0, oldHp / oldMax))
+                : 1.0;
+
+        setAttributeValue(entity, Attributes.f_22276_, newMaxHealth); // MAX_HEALTH
+        float appliedMax = entity.m_21233_();
+        if (appliedMax > 0.0f && !Float.isNaN(appliedMax) && !Float.isInfinite(appliedMax)) {
+            float nextHp = (float) Math.max(1.0e-3, appliedMax * hpRatio);
+            // Keep at full when first applying from a full-health spawn.
+            if (!tag.m_128441_(TAG_DIFFICULTY) && oldHp >= oldMax - 0.5f) {
+                nextHp = appliedMax;
+            }
+            entity.m_21153_(Math.min(appliedMax, nextHp));
+        }
+
+        if (baseAttack > 0.0) {
+            double nextAtk = baseAttack * Math.max(1.0, dmgMult) * rarityDamage;
+            if (nextAtk > 0.0 && !Double.isNaN(nextAtk) && !Double.isInfinite(nextAtk)) {
+                if (setAttributeValue(entity, Attributes.f_22281_, nextAtk)) { // ATTACK_DAMAGE
+                    tag.m_128379_(TAG_ATTR_DMG_SCALED, true);
+                }
+            }
+        }
+
+        double nextArmor = baseArmor + Math.max(0.0, armorBonus);
+        if (cfg.maxArmorBonus > 0.0) {
+            nextArmor = Math.min(cfg.maxArmorBonus, nextArmor);
+        }
+        if (nextArmor >= 0.0 && !Double.isNaN(nextArmor) && !Double.isInfinite(nextArmor)) {
+            setAttributeValue(entity, Attributes.f_22284_, nextArmor); // ARMOR
+        }
+
+        if (baseSpeed > 0.0) {
+            double nextSpeed = baseSpeed * Math.max(0.05, moveMult);
+            if (nextSpeed > 0.0 && !Double.isNaN(nextSpeed) && !Double.isInfinite(nextSpeed)) {
+                setAttributeValue(entity, Attributes.f_22279_, nextSpeed); // MOVEMENT_SPEED
+            }
+        }
+
+        if (elite) {
+            double nextKnock = Math.min(1.0, baseKnock + 0.6);
+            setAttributeValue(entity, Attributes.f_22278_, nextKnock); // KNOCKBACK_RESISTANCE
+        } else if (tag.m_128441_(TAG_BASE_KNOCKBACK)) {
+            setAttributeValue(entity, Attributes.f_22278_, baseKnock);
+        }
+
+        tag.m_128356_(TAG_DIFFICULTY, Math.max(0L, difficulty));
+        tag.m_128350_(TAG_DMG_MULT, (float) Math.max(1.0, dmgMult * rarityDamage));
+    }
+
+    private static void captureBases(LivingEntity entity, CompoundTag tag, DifficultyConfig cfg) {
+        double health = attrBase(entity, Attributes.f_22276_, 20.0);
+        double attack = attrBase(entity, Attributes.f_22281_, 0.0);
+        double armor = attrBase(entity, Attributes.f_22284_, 0.0);
+        double speed = attrBase(entity, Attributes.f_22279_, 0.0);
+        double knock = attrBase(entity, Attributes.f_22278_, 0.0);
+
+        // Best-effort reverse of a prior one-shot scale (pre-retarget builds).
+        if (tag.m_128471_(TAG_SCALED) && tag.m_128441_(TAG_DIFFICULTY)) {
+            long oldD = tag.m_128454_(TAG_DIFFICULTY);
+            if (oldD > 0L) {
+                boolean dmzStyle = tag.m_128471_(TAG_DMZ_STYLE) || shouldApplyDmzStyleExtras(entity, cfg);
+                double healthMult = 1.0 + ScalingCurves.healthBonus(oldD, cfg.healthPercentPerDifficulty);
+                double dmgMult = 1.0 + ScalingCurves.offenseBonus(oldD, cfg.damagePercentPerDifficulty);
+                double moveMult = 1.0 + ((oldD / 100.0) * (cfg.movementPercentPer100Difficulty / 100.0));
+                if (dmzStyle) {
+                    healthMult += ScalingCurves.healthBonus(oldD, cfg.dmzExtraHealthPercent);
+                    dmgMult += ScalingCurves.offenseBonus(oldD, cfg.dmzExtraDamagePercent);
+                    dmgMult += ScalingCurves.offenseBonus(oldD, cfg.dmzExtraKiDamagePercent);
+                }
+                if (cfg.maxHealthMultiplier > 1.0) {
+                    healthMult = Math.min(healthMult, cfg.maxHealthMultiplier);
+                }
+                if (tag.m_128471_(EliteSystem.TAG_ELITE)) {
+                    healthMult *= Math.max(1.0, cfg.eliteStatMultiplier);
+                    dmgMult *= Math.max(1.0, cfg.eliteStatMultiplier);
+                    moveMult *= 0.92;
+                }
+                if (tag.m_128471_(BossScaling.TAG_BOSS)) {
+                    healthMult *= Math.max(1.0, cfg.bossStatMultiplier);
+                    dmgMult *= Math.max(1.0, cfg.bossStatMultiplier);
+                }
+                if (MutationType.TITAN_CREEPER == MutationType.fromString(tag.m_128461_(MutationSystem.TAG_MUTATION))) {
+                    healthMult *= 1.75;
+                }
+                if (MutationType.BERSERKER_PIGLIN == MutationType.fromString(tag.m_128461_(MutationSystem.TAG_MUTATION))) {
+                    moveMult *= 1.25;
+                }
+                if (healthMult > 1.0e-6) {
+                    health /= healthMult;
+                }
+                if (dmgMult > 1.0e-6 && attack > 0.0) {
+                    attack /= dmgMult;
+                }
+                if (moveMult > 1.0e-6 && speed > 0.0) {
+                    speed /= moveMult;
+                }
+            }
+        }
+
+        tag.m_128347_(TAG_BASE_HEALTH, Math.max(1.0, health));
+        if (attack > 0.0) {
+            tag.m_128347_(TAG_BASE_ATTACK, attack);
+        }
+        tag.m_128347_(TAG_BASE_ARMOR, Math.max(0.0, armor));
+        if (speed > 0.0) {
+            tag.m_128347_(TAG_BASE_SPEED, speed);
+        }
+        tag.m_128347_(TAG_BASE_KNOCKBACK, Math.max(0.0, knock));
+    }
+
+    private static double attrBase(LivingEntity entity, Attribute attribute, double fallback) {
+        AttributeInstance instance = entity.m_21051_(attribute);
+        if (instance == null) {
+            return fallback;
+        }
+        double v = instance.m_22115_();
+        if (!(v >= 0.0) || Double.isNaN(v) || Double.isInfinite(v)) {
+            return fallback;
+        }
+        return v;
+    }
+
+    private static boolean setAttributeValue(LivingEntity entity, Attribute attribute, double value) {
+        AttributeInstance instance = entity.m_21051_(attribute);
+        if (instance == null) {
+            return false;
+        }
+        if (!(value >= 0.0) || Double.isNaN(value) || Double.isInfinite(value)) {
+            return false;
+        }
+        instance.m_22100_(value);
+        return true;
+    }
+
+    /** DMZ-style extras apply to every hostile by default. */
     private static boolean shouldApplyDmzStyleExtras(LivingEntity entity, DifficultyConfig cfg) {
         if (isDragonMineZMob(entity)) {
             return true;
@@ -180,45 +423,6 @@ public final class MobScaling {
         }
         String cn = entity.getClass().getName().toLowerCase();
         return cn.contains("dragonminez") || cn.contains("shurui");
-    }
-
-    private static void scaleMaxHealth(LivingEntity entity, double multiplier, double hardCap) {
-        AttributeInstance instance = entity.m_21051_(Attributes.f_22276_);
-        if (instance == null || multiplier <= 1.0) {
-            return;
-        }
-        double cap = hardCap > 0 ? Math.min(hardCap, VANILLA_MAX_HEALTH_CAP) : VANILLA_MAX_HEALTH_CAP;
-        double base = instance.m_22115_();
-        if (!(base > 0.0) || Double.isNaN(base) || Double.isInfinite(base)) {
-            return;
-        }
-        double next = Math.min(cap, base * multiplier);
-        if (!(next > 0.0) || Double.isNaN(next) || Double.isInfinite(next)) {
-            return;
-        }
-        instance.m_22100_(next);
-        float max = entity.m_21233_();
-        if (max > 0.0f && !Float.isNaN(max) && !Float.isInfinite(max)) {
-            entity.m_21153_(max);
-        }
-    }
-
-    /** @return true if the attribute existed and was multiplied */
-    private static boolean scaleAttribute(LivingEntity entity, Attribute attribute, double multiplier) {
-        AttributeInstance instance = entity.m_21051_(attribute);
-        if (instance == null || multiplier <= 1.0) {
-            return false;
-        }
-        double base = instance.m_22115_();
-        if (!(base > 0.0) || Double.isNaN(base) || Double.isInfinite(base)) {
-            return false;
-        }
-        double next = base * multiplier;
-        if (!(next > 0.0) || Double.isNaN(next) || Double.isInfinite(next)) {
-            return false;
-        }
-        instance.m_22100_(next);
-        return true;
     }
 
     private static double clamp(double value, double min, double max) {
@@ -254,6 +458,12 @@ public final class MobScaling {
             mult += ScalingCurves.offenseBonus(d, cfg.dmzExtraDamagePercent);
             mult += ScalingCurves.offenseBonus(d, cfg.dmzExtraKiDamagePercent);
         }
+        if (tag.m_128471_(EliteSystem.TAG_ELITE)) {
+            mult *= Math.max(1.0, cfg.eliteStatMultiplier);
+        }
+        if (tag.m_128471_(BossScaling.TAG_BOSS)) {
+            mult *= Math.max(1.0, cfg.bossStatMultiplier);
+        }
         if (cfg.maxDamageMultiplier > 1.0) {
             mult = Math.min(mult, cfg.maxDamageMultiplier);
         }
@@ -267,8 +477,6 @@ public final class MobScaling {
      * Scale hurt amount from a hostile attacker.
      * Skips melee when {@link #TAG_ATTR_DMG_SCALED} is set (already on ATTACK_DAMAGE).
      * Still scales projectiles / indirect damage.
-     *
-     * @return scaled amount (unchanged if no boost applies)
      */
     public static float scaleOutgoingHurt(float amount, DamageSource source) {
         if (amount <= 0.0f || source == null) {

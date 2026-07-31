@@ -1,6 +1,5 @@
 package com.dbzlegacy.adaptivedifficulty.boss;
 
-import com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
@@ -18,7 +17,10 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraftforge.registries.ForgeRegistries;
 
-/** Concept §16 — bosses inherit nearby difficulty + phased combat. */
+/**
+ * Concept §16 — bosses inherit nearby difficulty + phased combat.
+ * Stat bonuses are applied by {@link MobScaling} from base attrs on each retarget.
+ */
 public final class BossScaling {
     public static final String TAG_BOSS = "dmz_ad_boss";
     public static final String TAG_PHASE = "dmz_ad_boss_phase";
@@ -43,12 +45,19 @@ public final class BossScaling {
         if (entity instanceof Warden) {
             return true;
         }
-        // Only treat naturally-high base HP as boss (checked before our scaling).
-        AttributeInstance health = entity.m_21051_(Attributes.f_22276_);
-        if (health != null) {
-            double base = health.m_22115_();
-            if (base >= DifficultyConfig.get().bossHealthThreshold) {
+        // Prefer captured base HP when present (retarget-safe).
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (tag.m_128441_(MobScaling.TAG_BASE_HEALTH)) {
+            if (tag.m_128459_(MobScaling.TAG_BASE_HEALTH) >= DifficultyConfig.get().bossHealthThreshold) {
                 return true;
+            }
+        } else {
+            AttributeInstance health = entity.m_21051_(Attributes.f_22276_);
+            if (health != null) {
+                double base = health.m_22115_();
+                if (base >= DifficultyConfig.get().bossHealthThreshold) {
+                    return true;
+                }
             }
         }
         ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entity.m_6095_());
@@ -60,9 +69,7 @@ public final class BossScaling {
                     continue;
                 }
                 String n = needle.toLowerCase().trim();
-                // Prefer path match; avoid ultra-broad tokens matching unrelated mobs.
                 if (path.contains(n) || full.contains(n)) {
-                    // "raid" alone is too broad (matches many non-boss ids) — require boss-ish context
                     if ("raid".equals(n) && !(path.contains("boss") || path.contains("raid_boss") || path.contains("raidboss"))) {
                         continue;
                     }
@@ -74,9 +81,10 @@ public final class BossScaling {
         return cn.contains("raidboss") || cn.contains("bossentity") || cn.contains("boss_");
     }
 
-    public static void scaleIfBoss(LivingEntity entity, long difficulty) {
+    /** Flag + cosmetics only. Stats come from {@link MobScaling#applyForDifficulty}. */
+    public static void markBoss(LivingEntity entity, long difficulty) {
         DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableBossScaling || entity == null || difficulty <= 0) {
+        if (!cfg.enableBossScaling || entity == null) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);
@@ -85,38 +93,17 @@ public final class BossScaling {
         }
         tag.m_128379_(TAG_BOSS, true);
         tag.m_128405_(TAG_PHASE, 1);
-        tag.m_128356_(MobScaling.TAG_DIFFICULTY, Math.max(MobScaling.difficultyOf(entity), difficulty));
-
-        // Mild extra boss boost only — base difficulty scaling already applied.
-        double mult = Math.min(cfg.bossStatMultiplier, cfg.maxHealthMultiplier);
-        AttributeInstance health = entity.m_21051_(Attributes.f_22276_);
-        if (health != null && mult > 1.0) {
-            double cap = cfg.maxScaledHealth > 0 ? Math.min(cfg.maxScaledHealth, 1024.0) : 1024.0;
-            double next = Math.min(cap, health.m_22115_() * mult);
-            if (next > 0 && !Double.isNaN(next) && !Double.isInfinite(next)) {
-                health.m_22100_(next);
-                entity.m_21153_(entity.m_21233_());
-            }
-        }
-        AttributeInstance armor = entity.m_21051_(Attributes.f_22284_);
-        if (armor != null) {
-            double bonus = ScalingCurves.offenseBonus(difficulty, cfg.defensePercentPerDifficulty) * 0.25;
-            if (cfg.maxArmorBonus > 0.0) {
-                bonus = Math.min(cfg.maxArmorBonus, bonus);
-            }
-            double next = armor.m_22115_() + bonus;
-            if (cfg.maxArmorBonus > 0.0) {
-                next = Math.min(cfg.maxArmorBonus, next);
-            }
-            if (next > 0 && !Double.isNaN(next) && !Double.isInfinite(next)) {
-                armor.m_22100_(next);
-            }
-        }
 
         DifficultyTier tier = DifficultyTier.of(difficulty);
         String typeName = EntityDisplayNames.of(entity);
         entity.m_6593_(Component.m_237113_("§c☠ Boss §4" + typeName + " §7[" + tier.display + "]"));
         entity.m_20340_(true);
+    }
+
+    /** @deprecated use {@link #markBoss(LivingEntity, long)} — kept for call-site compatibility. */
+    @Deprecated
+    public static void scaleIfBoss(LivingEntity entity, long difficulty) {
+        markBoss(entity, difficulty);
     }
 
     /** Advance combat phases at HP thresholds (concept warden-style). */

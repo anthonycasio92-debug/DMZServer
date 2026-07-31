@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.31)
+# DMZ Adaptive Difficulty (v1.7.32)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -16,19 +16,21 @@ Clients do **not** need this jar to join.
 - FTB Teams teammate scaling (scoreboard fallback)
 - Raising difficulty always costs **Lightman's iron coins** (scaled); lowering/reset is free
 - Payments take coins from the **player inventory only** (not wallet/bank)
-- Spawn mob scaling for **all hostiles** with the same DMZ-style extras (HP/DEF/DMG/ki), elites, mutations, **per-mob evolution kits**, adaptive AI, boss phases
-- Scaling Health-inspired area difficulty (`weighted` / `average` / `max`)
+- **Per-player retarget scaling**: mobs capture base HP/damage at spawn, then re-scale to the engaged player's difficulty on target switch / hit (HP % preserved)
+- Elites, mutations, **per-mob evolution kits**, adaptive AI, boss phases
+- Kill TP from **mob max health** only (no difficulty / elite / boss TP multipliers)
+- Scaling Health-inspired area difficulty for initial spawn (`weighted` / `average` / `max`)
 - Optimized tick path: unmarked mobs exit immediately; AI/evolution staggered
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.31.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.32.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
    - `CMILib*.jar` (required by CMI)
    - `CMI-*.jar`
-   - `dmz_adaptive_difficulty_gui-1.7.12.jar` (**registers Bukkit `/difficulty`**)
+   - `dmz_adaptive_difficulty_gui-1.7.13.jar` (**registers Bukkit `/difficulty`**)
    - Optional: `PlaceholderAPI-*.jar`
 5. Optionally set `guiBackend` in `config/dmz_adaptive_difficulty.json`:
    - `cmi` (default), `auto`, `chest`, or `chat`
@@ -75,30 +77,21 @@ Available max = theoretical + purchased + optional team bonuses.
 
 ## Combat & reward curves
 
-**Endgame anchors (level ~100k / ~8M active):** player HP ≈ **800k**, DEF ≈ **200k**.
-Offense rates keep a normal melee hit under ~800k raw (tankable from HP alone) and mob armor ≈ **200k**.
+**Retarget scaling:** after spawn, base HP/damage/armor/speed are stored. When a player is hit by / hits / is targeted by a mob, stats rewrite to that player's active difficulty (current HP % kept). Multiple players can share a fight without the mob staying locked to the wrong power level.
 
-Curves are **split**:
+**Endgame anchors (level ~100k / ~8M active):** player HP ≈ **800k**, DEF ≈ **200k**.
+Offense rates keep a normal melee hit under ~800k raw and mob armor ≈ **200k**.
 
 | Stat | Curve | Defaults |
 |---|---|---|
-| Damage / defense | Steep offense curve (**uncapped**) | exp `0.96`, pivot `450`, rates `0.62`/`1.85`; anchored to ~800k HP / ~200k DEF at 8M |
-| Health | Flat health curve + hard caps | exp `0.40`, max mult `×8`, abs cap `400` HP |
-| Kill TP | Absolute difficulty curve | `1000000 × (d / 10000000)^0.70` → **~1M at Zenith**; hard cap **10M** |
+| Damage / defense | Steep offense curve (**uncapped**) | exp `0.96`, pivot `450`, rates `0.62`/`1.85` |
+| Health | Flat health curve | exp `0.40`, mult uncapped, abs cap **1024** HP |
+| Kill TP | **Mob max HP × rate** | `killTpPerHealth=5000` → ~5.1M at 1024 HP; hard cap **10M** |
 | Train TP mult | Mild power mult on DMZ `TPGainEvent` | gain `0.85`, exp `0.38`, scale `2500`, mult cap **×10**, grant cap **10M** |
 | Potential unlock | **Not touched** | Owned by CNPC `Potential.js` (`potentialunlock`) |
 | AI | Spaced across Awakened→Zenith | anti-flight Legendary+; pack/debuffs scale to Zenith |
 
-| Active | Kill TP (normal) | Peak (elite+boss+mut) |
-|---|---|---|
-| 1,000 | ~1,200 | ~9,000 |
-| 10,000 | ~6,000 | ~45,000 |
-| 100,000 | ~30,000 | ~224,000 |
-| 1,000,000 | ~150,000 | ~1.1M |
-| 8,000,000 | ~642,000 | ~4.8M |
-| **10,000,000** | **~1,000,000** | **~7.5M** (capped at 10M) |
-
-(Elites ×`eliteRewardBonus`, bosses ×3, mutations ×1.25. Single-grant ceiling: `maxKillTp` / `maxTpGainEvent` = **10M**.)
+Kill TP has **no** difficulty / elite / boss / mutation TP multipliers — elites/bosses pay more only because they have more HP.
 
 Tune:
 ```
@@ -109,16 +102,14 @@ Tune:
 /difficulty admin set maxDamageMultiplier 0
 /difficulty admin set maxArmorBonus 0
 /difficulty admin set healthCurveExponent 0.40
-/difficulty admin set maxHealthMultiplier 8
-/difficulty admin set maxScaledHealth 400
-/difficulty admin set killTpRefAmount 1000000
-/difficulty admin set killTpRefDifficulty 10000000
-/difficulty admin set killTpExponent 0.70
+/difficulty admin set maxHealthMultiplier 0
+/difficulty admin set maxScaledHealth 1024
+/difficulty admin set killTpPerHealth 5000
 /difficulty admin set maxKillTp 10000000
 /difficulty admin set maxTpGainEvent 10000000
 /difficulty admin set maxRewardMultiplier 10
 ```
-(`maxDamageMultiplier` `0`/`1` = uncapped; `maxArmorBonus` `0` = uncapped; `maxKillTp` / `maxTpGainEvent` `0` = uncapped.)
+(`maxDamageMultiplier` / `maxHealthMultiplier` `0`/`1` = uncapped; `maxArmorBonus` `0` = uncapped; `maxKillTp` / `maxTpGainEvent` `0` = uncapped.)
 
 ## Pricing (Lightman's iron coins)
 

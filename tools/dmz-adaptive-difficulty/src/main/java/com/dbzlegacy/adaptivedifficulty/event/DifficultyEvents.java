@@ -34,6 +34,8 @@ import net.minecraft.world.entity.projectile.LargeFireball;
 import net.minecraft.world.entity.projectile.SmallFireball;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
+import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -94,6 +96,41 @@ public final class DifficultyEvents {
         LivingEntity entity = event.getEntity();
         if (entity != null && !event.isCanceled() && !event.isSpawnCancelled()) {
             MobScaling.scaleIfNeeded(entity);
+        }
+    }
+
+    /**
+     * When a mob switches agro onto a player, retarget stats to that player's difficulty
+     * before the next swing resolves.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public void onChangeTarget(LivingChangeTargetEvent event) {
+        LivingEntity mob = event.getEntity();
+        if (mob == null) {
+            return;
+        }
+        if (event.getNewTarget() instanceof ServerPlayer player) {
+            MobScaling.retargetToPlayer(mob, player);
+        }
+    }
+
+    /**
+     * Before damage is calculated: scale the hostile to the involved player's difficulty
+     * so multi-player fights stay fair for whoever is currently engaged.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onAttack(LivingAttackEvent event) {
+        LivingEntity victim = event.getEntity();
+        var source = event.getSource();
+        Entity causing = source == null ? null : source.m_7639_();
+        if (causing instanceof ServerPlayer player && HostileMobs.isHostile(victim)) {
+            MobScaling.retargetToPlayer(victim, player);
+            return;
+        }
+        if (victim instanceof ServerPlayer player
+                && causing instanceof LivingEntity atk
+                && HostileMobs.isHostile(atk)) {
+            MobScaling.retargetToPlayer(atk, player);
         }
     }
 
@@ -182,6 +219,14 @@ public final class DifficultyEvents {
         LivingEntity victim = event.getEntity();
         var source = event.getSource();
         Entity causing = source == null ? null : source.m_7639_(); // getEntity
+        // Retarget again here as a Mohist safety net (some paths skip LivingAttackEvent).
+        if (causing instanceof ServerPlayer player && HostileMobs.isHostile(victim)) {
+            MobScaling.retargetToPlayer(victim, player);
+        } else if (victim instanceof ServerPlayer player
+                && causing instanceof LivingEntity atk
+                && HostileMobs.isHostile(atk)) {
+            MobScaling.retargetToPlayer(atk, player);
+        }
         // Block hostile→hostile (and hostile booms on other hostiles). Allow self-damage
         // so creeper fuse can finish killing the exploding creeper on some Mohist paths.
         if (HostileMobs.isHostile(victim) && !(causing instanceof Player) && causing != victim) {

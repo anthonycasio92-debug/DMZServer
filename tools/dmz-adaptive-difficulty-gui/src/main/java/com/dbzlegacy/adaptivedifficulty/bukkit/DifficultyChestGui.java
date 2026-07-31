@@ -179,7 +179,7 @@ public final class DifficultyChestGui implements Listener {
         inv.setItem(13, item(Material.EXPERIENCE_BOTTLE, "&f&lRewards", List.of(
                 "",
                 "&7Active  &f" + ph.getOrDefault("active", "?"),
-                "&7Kill TP &a~" + ph.getOrDefault("kill_tp", "?"),
+                "&7Kill TP (from mob HP) &a~" + ph.getOrDefault("kill_tp", "?"),
                 "&7Train × &a" + ph.getOrDefault("reward_mult", "?"),
                 "",
                 "&8Kill ≈ 400k at 8M difficulty (curve)"
