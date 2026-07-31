@@ -153,7 +153,7 @@ public final class DifficultyChatMenu {
         double mult = DifficultyCalculator.rewardMultiplier(snap.active);
         send(player, Component.m_237113_("§8──────── §fRewards §8────────"));
         send(player, Component.m_237113_("§7Active §f" + snap.active + "  §7TP ×§a" + String.format("%.2f", mult)));
-        send(player, Component.m_237113_("§81 + Difficulty / RewardScaling"));
+        send(player, Component.m_237113_("§81 + gain × (Difficulty / Scale)^exp  §8(uncapped)"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 

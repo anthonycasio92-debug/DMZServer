@@ -47,16 +47,19 @@ public final class DifficultyConfig {
      */
     public double rewardScaling = 2_500.0;
     /**
-     * Reward curve mode: {@code log} (default), {@code sqrt}, {@code power}, or {@code linear}.
-     * Log keeps TP gains from exploding at high difficulty.
+     * Reward curve mode: {@code power} (default), {@code log}, {@code sqrt}, or {@code linear}.
+     * Power keeps TP on a diminishing curve that still grows at high difficulty.
      */
-    public String rewardCurve = "log";
+    public String rewardCurve = "power";
     /** Multiplier applied inside the reward curve (log/sqrt/power). Lower = slower TP. */
-    public double rewardCurveGain = 0.65;
+    public double rewardCurveGain = 0.85;
     /** Exponent for {@code rewardCurve=power} only (ignored by log/sqrt). */
-    public double rewardCurveExponent = 0.45;
-    /** Soft cap on TP/reward multiplier (1.0 = no bonus cap). */
-    public double maxRewardMultiplier = 3.5;
+    public double rewardCurveExponent = 0.38;
+    /**
+     * Optional hard ceiling on TP/reward multiplier.
+     * {@code 0} or {@code 1} = uncapped (default). Only values {@code > 1} apply a ceiling.
+     */
+    public double maxRewardMultiplier = 0.0;
     /**
      * Offense (damage/defense) curve exponent. Higher = steeper growth with difficulty.
      * Effective = {@code pow(d, exp) * pow(pivot, 1-exp)}.
@@ -289,16 +292,16 @@ public final class DifficultyConfig {
             cfg.costScalePerDifficulty = 0.01;
         }
         if (cfg.rewardCurve == null || cfg.rewardCurve.isBlank()) {
-            cfg.rewardCurve = "log";
+            cfg.rewardCurve = "power";
         }
         if (cfg.rewardCurveGain < 0.0) {
-            cfg.rewardCurveGain = 0.65;
+            cfg.rewardCurveGain = 0.85;
         }
         if (cfg.rewardCurveExponent <= 0.0) {
-            cfg.rewardCurveExponent = 0.45;
+            cfg.rewardCurveExponent = 0.38;
         }
-        if (cfg.maxRewardMultiplier < 1.0) {
-            cfg.maxRewardMultiplier = 3.5;
+        if (cfg.maxRewardMultiplier < 0.0) {
+            cfg.maxRewardMultiplier = 0.0;
         }
         if (cfg.combatCurveExponent <= 0.0) {
             cfg.combatCurveExponent = 0.93;
@@ -322,12 +325,23 @@ public final class DifficultyConfig {
             cfg.combatCurvePivot = 500L;
             retuned = true;
         }
-        if (nearly(cfg.rewardCurveGain, 1.2)) {
-            cfg.rewardCurveGain = 0.65;
+        // Migrate capped log TP curve → uncapped diminishing power curve.
+        boolean stockCappedTp = nearly(cfg.maxRewardMultiplier, 3.5)
+                || nearly(cfg.maxRewardMultiplier, 6.0);
+        if (stockCappedTp) {
+            cfg.maxRewardMultiplier = 0.0;
             retuned = true;
         }
-        if (nearly(cfg.maxRewardMultiplier, 6.0)) {
-            cfg.maxRewardMultiplier = 3.5;
+        if ("log".equalsIgnoreCase(cfg.rewardCurve) && stockCappedTp) {
+            cfg.rewardCurve = "power";
+            retuned = true;
+        }
+        if (nearly(cfg.rewardCurveGain, 1.2) || (stockCappedTp && nearly(cfg.rewardCurveGain, 0.65))) {
+            cfg.rewardCurveGain = 0.85;
+            retuned = true;
+        }
+        if (stockCappedTp && nearly(cfg.rewardCurveExponent, 0.45)) {
+            cfg.rewardCurveExponent = 0.38;
             retuned = true;
         }
         if (nearly(cfg.rewardScaling, 1_000.0)) {

@@ -7,7 +7,8 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
  * <p>
  * Offense uses a steeper power curve so fights get meaner without ballooning HP.
  * Health uses a flat curve + lower caps so mobs stay killable.
- * Rewards use a soft log curve so TP does not explode at high difficulty.
+ * Rewards use a diminishing power curve (uncapped by default) so TP keeps growing
+ * at high difficulty without going linear.
  */
 public final class ScalingCurves {
     private ScalingCurves() {}
@@ -68,7 +69,8 @@ public final class ScalingCurves {
 
     /**
      * Reward / TP multiplier curve.
-     * Default: {@code 1 + gain * ln(1 + d / rewardScaling)}, soft-capped.
+     * Default: {@code 1 + gain * (d / rewardScaling)^exp} — diminishing, not hard-capped.
+     * Set {@code maxRewardMultiplier > 1} only if you want an optional ceiling.
      */
     public static double rewardMultiplier(long activeDifficulty) {
         DifficultyConfig cfg = DifficultyConfig.get();
@@ -78,21 +80,22 @@ public final class ScalingCurves {
         if (activeDifficulty <= 0L) {
             return 1.0;
         }
-        String mode = cfg.rewardCurve == null ? "log" : cfg.rewardCurve.trim().toLowerCase();
+        String mode = cfg.rewardCurve == null ? "power" : cfg.rewardCurve.trim().toLowerCase();
         double d = activeDifficulty;
         double scale = Math.max(1.0e-6, cfg.rewardScaling);
         double mult = switch (mode) {
             case "linear", "lin" -> 1.0 + (d / scale);
             case "sqrt", "root" -> 1.0 + Math.sqrt(d / scale) * Math.max(0.0, cfg.rewardCurveGain);
-            case "power", "pow" -> {
-                double exp = clamp(cfg.rewardCurveExponent, 0.05, 1.0);
-                yield 1.0 + Math.pow(d / scale, exp) * Math.max(0.0, cfg.rewardCurveGain);
-            }
-            default -> { // log
+            case "log", "ln" -> {
                 double gain = Math.max(0.0, cfg.rewardCurveGain);
                 yield 1.0 + gain * Math.log1p(d / scale);
             }
+            default -> { // power
+                double exp = clamp(cfg.rewardCurveExponent, 0.05, 1.0);
+                yield 1.0 + Math.pow(d / scale, exp) * Math.max(0.0, cfg.rewardCurveGain);
+            }
         };
+        // Optional hard ceiling only when explicitly set above 1.0 (0 / 1 = uncapped).
         double cap = cfg.maxRewardMultiplier;
         if (cap > 1.0) {
             mult = Math.min(mult, cap);

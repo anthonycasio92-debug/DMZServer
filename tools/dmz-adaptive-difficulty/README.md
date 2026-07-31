@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.23)
+# DMZ Adaptive Difficulty (v1.7.24)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -22,7 +22,7 @@ Clients do **not** need this jar to join.
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.23.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.24.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
@@ -81,15 +81,17 @@ Curves are **split**:
 |---|---|---|
 | Damage / defense | Steep offense curve (high endgame cap) | exp `0.93`, pivot `500`, dmg cap `×25000` |
 | Health | Flat health curve + hard caps | exp `0.40`, max mult `×8`, abs cap `400` HP |
-| TP / rewards | Soft log | gain `0.65`, scale `2500`, cap `×3.5` |
+| TP / rewards | Diminishing power (uncapped) | gain `0.85`, exp `0.38`, scale `2500` |
 | AI | Spaced across Awakened→Zenith | anti-flight Legendary+; pack/debuffs scale to Zenith |
 
 | Active | TP mult (approx) |
 |---|---|
-| 1,000 | ~×1.2 |
-| 10,000 | ~×1.9 |
-| 100,000 | ~×3.0 |
-| 1,000,000+ | ×3.5 (cap) |
+| 1,000 | ~×1.6 |
+| 10,000 | ~×2.4 |
+| 100,000 | ~×4.5 |
+| 1,000,000 | ~×9.3 |
+| 3,000,000 | ~×13.6 |
+| 10,000,000 | ~×20.9 |
 
 Tune:
 ```
@@ -97,9 +99,12 @@ Tune:
 /difficulty admin set healthCurveExponent 0.40
 /difficulty admin set maxHealthMultiplier 8
 /difficulty admin set maxScaledHealth 400
-/difficulty admin set rewardCurveGain 0.65
-/difficulty admin set maxRewardMultiplier 3.5
+/difficulty admin set rewardCurve power
+/difficulty admin set rewardCurveGain 0.85
+/difficulty admin set rewardCurveExponent 0.38
+/difficulty admin set maxRewardMultiplier 0
 ```
+(`maxRewardMultiplier` `0`/`1` = uncapped; only values `> 1` apply a ceiling.)
 
 ## Pricing (Lightman's iron coins)
 

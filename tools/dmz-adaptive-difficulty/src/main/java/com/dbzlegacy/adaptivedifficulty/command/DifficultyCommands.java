@@ -368,7 +368,8 @@ public final class DifficultyCommands {
                 case "rewardcurvegain" -> cfg.rewardCurveGain = Math.max(0.0, Double.parseDouble(value));
                 case "rewardcurveexponent" -> cfg.rewardCurveExponent = Math.max(0.05, Double.parseDouble(value));
                 case "maxrewardmultiplier", "maxrewardmult" ->
-                        cfg.maxRewardMultiplier = Math.max(1.0, Double.parseDouble(value));
+                        // 0 / 1 = uncapped; only values > 1 apply a hard ceiling.
+                        cfg.maxRewardMultiplier = Math.max(0.0, Double.parseDouble(value));
                 case "combatcurveexponent", "combatcurve", "offensecurve" ->
                         cfg.combatCurveExponent = Math.max(0.05, Math.min(1.0, Double.parseDouble(value)));
                 case "combatcurvepivot", "offensecurvepivot" ->
