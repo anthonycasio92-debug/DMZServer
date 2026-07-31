@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
@@ -46,6 +47,45 @@ public final class CombatGravity {
         BY_PLAYER
                 .computeIfAbsent(player.m_20148_(), id -> new ConcurrentHashMap<>())
                 .put(sourceId, new Contribution(gravity, expire));
+    }
+
+    /**
+     * Apply gravity only for players who currently have (or recently had) contributions.
+     * Avoids walking the full online player list every pulse.
+     */
+    public static void tickActive(MinecraftServer server) {
+        if (server == null || (BY_PLAYER.isEmpty() && LAST_APPLIED.isEmpty())) {
+            return;
+        }
+        // Copy keys — tickPlayer may remove empty maps.
+        for (UUID id : new java.util.ArrayList<>(BY_PLAYER.keySet())) {
+            ServerPlayer player = server.m_6846_().m_11259_(id); // getPlayer(UUID)
+            if (player != null) {
+                tickPlayer(player);
+            } else {
+                BY_PLAYER.remove(id);
+                LAST_APPLIED.remove(id);
+            }
+        }
+        // Clear residual applied gravity for players who dropped off the map.
+        if (!LAST_APPLIED.isEmpty()) {
+            for (UUID id : new java.util.ArrayList<>(LAST_APPLIED.keySet())) {
+                if (BY_PLAYER.containsKey(id)) {
+                    continue;
+                }
+                Double prev = LAST_APPLIED.get(id);
+                if (prev == null || prev <= 0.05) {
+                    LAST_APPLIED.remove(id);
+                    continue;
+                }
+                ServerPlayer player = server.m_6846_().m_11259_(id);
+                if (player != null) {
+                    tickPlayer(player);
+                } else {
+                    LAST_APPLIED.remove(id);
+                }
+            }
+        }
     }
 
     /** Apply / clear the player's combat gravity zone. Call from player tick. */

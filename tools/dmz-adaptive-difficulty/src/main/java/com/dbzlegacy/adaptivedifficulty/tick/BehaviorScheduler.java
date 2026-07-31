@@ -35,14 +35,13 @@ public final class BehaviorScheduler {
         }
         List<ServerPlayer> online = server.m_6846_().m_11314_();
         if (online == null || online.isEmpty()) {
+            CombatIndex.clear();
             return;
         }
 
-        // Gravity map apply — no entity scans.
+        // Gravity map apply — only players with active contributions.
         if (gameTick % 10 == 0) {
-            for (ServerPlayer player : online) {
-                CombatGravity.tickPlayer(player);
-            }
+            CombatGravity.tickActive(server);
         }
 
         if (gameTick % PULSE_INTERVAL != 0) {

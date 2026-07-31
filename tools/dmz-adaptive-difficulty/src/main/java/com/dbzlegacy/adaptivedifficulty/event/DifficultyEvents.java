@@ -160,18 +160,30 @@ public final class DifficultyEvents {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onHurt(LivingHurtEvent event) {
         LivingEntity victim = event.getEntity();
+        if (victim == null || victim.m_9236_().f_46443_) {
+            return;
+        }
         var source = event.getSource();
         Entity causing = source == null ? null : source.m_7639_(); // getEntity
+
+        // Fast reject: ignore damage that cannot involve our systems (no player, no hostile).
+        boolean victimPlayer = victim instanceof Player;
+        boolean causerPlayer = causing instanceof Player;
+        boolean victimHostile = !victimPlayer && HostileMobs.isHostile(victim);
+        boolean causerHostile = !causerPlayer && causing instanceof LivingEntity le && HostileMobs.isHostile(le);
+        if (!victimPlayer && !causerPlayer && !victimHostile && !causerHostile) {
+            return;
+        }
+
         // Block hostile→hostile (and hostile booms on other hostiles). Allow self-damage
         // so creeper fuse can finish killing the exploding creeper on some Mohist paths.
-        if (HostileMobs.isHostile(victim) && !(causing instanceof Player) && causing != victim) {
-            boolean hostileAttacker = causing instanceof LivingEntity atk && HostileMobs.isHostile(atk);
+        if (victimHostile && !causerPlayer && causing != victim) {
             boolean hostileBoom = source != null && source.m_269533_(DamageTypeTags.f_268415_) // IS_EXPLOSION
-                    && !(causing instanceof Player);
-            if (hostileAttacker || hostileBoom) {
+                    && !causerPlayer;
+            if (causerHostile || hostileBoom) {
                 event.setCanceled(true);
                 event.setAmount(0.0f);
-                if (hostileAttacker && causing instanceof Mob am && am.m_5448_() == victim) {
+                if (causerHostile && causing instanceof Mob am && am.m_5448_() == victim) {
                     am.m_6710_(null);
                 }
                 if (victim instanceof Mob vm && causing instanceof LivingEntity
@@ -183,32 +195,32 @@ public final class DifficultyEvents {
         }
 
         // Combat-index + cached retarget (LivingAttackEvent removed — every swing crushed TPS).
-        if (causing instanceof ServerPlayer player && HostileMobs.isHostile(victim) && victim instanceof Mob vm) {
+        if (causing instanceof ServerPlayer player && victimHostile && victim instanceof Mob vm) {
             CombatIndex.mark(vm);
             MobScaling.retargetToPlayer(vm, player);
-        } else if (victim instanceof ServerPlayer player
-                && causing instanceof Mob atk
-                && HostileMobs.isHostile(atk)) {
+        } else if (victim instanceof ServerPlayer player && causerHostile && causing instanceof Mob atk) {
             CombatIndex.mark(atk);
             MobScaling.retargetToPlayer(atk, player);
         }
 
         float amount = event.getAmount();
-        if (amount > 0.0f && causing instanceof LivingEntity && !(causing instanceof Player)) {
+        if (amount > 0.0f && causerHostile) {
             float scaled = MobScaling.scaleOutgoingHurt(amount, event.getSource());
             if (scaled != amount) {
                 event.setAmount(scaled);
             }
         }
-        AdaptiveAiSystem.onHurt(event);
+        if (victimHostile) {
+            AdaptiveAiSystem.onHurt(event);
+        }
         // Counter-teleport only for kits that use it — never NBT-scan every hurt victim.
-        if (victim != null && event.getAmount() > 0.0f
+        if (victimHostile && event.getAmount() > 0.0f
                 && (victim instanceof EnderMan
                 || victim instanceof ZombifiedPiglin
                 || victim instanceof Warden)) {
             EnemyEvolution.onHurt(victim);
         }
-        if (victim != null && HostileMobs.isHostile(victim) && victim.m_21223_() <= 0.0f) {
+        if (victimHostile && victim.m_21223_() <= 0.0f) {
             MobScaling.terminateIfZeroHealth(victim);
         }
     }

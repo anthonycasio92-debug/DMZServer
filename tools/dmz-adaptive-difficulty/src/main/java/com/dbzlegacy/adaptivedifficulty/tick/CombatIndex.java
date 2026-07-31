@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.tick;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -17,10 +18,11 @@ import net.minecraft.world.entity.Mob;
  * <p>
  * Mobs are marked from target-change / hurt events and expire after a short TTL
  * so the behavior scheduler never has to query {@code getEntitiesOfClass}.
+ * Weak refs avoid scanning every loaded level on each pulse.
  */
 public final class CombatIndex {
-    /** mob UUID → expire game-time */
     private static final Map<UUID, Long> ACTIVE = new ConcurrentHashMap<>();
+    private static final Map<UUID, WeakReference<Mob>> REFS = new ConcurrentHashMap<>();
     /** Keep pressure alive between scheduler pulses while fighting. */
     private static final long TTL_TICKS = 100L; // 5 seconds
 
@@ -30,7 +32,9 @@ public final class CombatIndex {
         if (mob == null) {
             return;
         }
-        ACTIVE.put(mob.m_20148_(), gameTime + TTL_TICKS);
+        UUID id = mob.m_20148_();
+        ACTIVE.put(id, gameTime + TTL_TICKS);
+        REFS.put(id, new WeakReference<>(mob));
         if (ACTIVE.size() > 2048) {
             prune(gameTime);
         }
@@ -46,11 +50,13 @@ public final class CombatIndex {
     public static void unmark(UUID id) {
         if (id != null) {
             ACTIVE.remove(id);
+            REFS.remove(id);
         }
     }
 
     public static void clear() {
         ACTIVE.clear();
+        REFS.clear();
     }
 
     public static int size() {
@@ -69,13 +75,16 @@ public final class CombatIndex {
         Iterator<Map.Entry<UUID, Long>> it = ACTIVE.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<UUID, Long> e = it.next();
+            UUID id = e.getKey();
             if (e.getValue() < gameTime) {
                 it.remove();
+                REFS.remove(id);
                 continue;
             }
-            Mob mob = findMob(server, e.getKey());
+            Mob mob = resolve(server, id);
             if (mob == null || !mob.m_6084_()) {
                 it.remove();
+                REFS.remove(id);
                 continue;
             }
             out.add(mob);
@@ -94,8 +103,7 @@ public final class CombatIndex {
         if (!(origin.m_9236_() instanceof ServerLevel level)) {
             return;
         }
-        MinecraftServer server = level.m_7654_();
-        if (server == null || ACTIVE.isEmpty()) {
+        if (ACTIVE.isEmpty()) {
             return;
         }
         long gameTime = level.m_46467_();
@@ -103,6 +111,7 @@ public final class CombatIndex {
         double ox = origin.m_20185_();
         double oy = origin.m_20186_();
         double oz = origin.m_20189_();
+        UUID originId = origin.m_20148_();
         int count = 0;
         for (Map.Entry<UUID, Long> e : ACTIVE.entrySet()) {
             if (count >= max) {
@@ -112,11 +121,11 @@ public final class CombatIndex {
                 continue;
             }
             UUID id = e.getKey();
-            if (id.equals(origin.m_20148_())) {
+            if (id.equals(originId)) {
                 continue;
             }
-            Entity entity = level.m_8791_(id); // same-level UUID lookup — no AABB
-            if (!(entity instanceof Mob ally) || !ally.m_6084_()) {
+            Mob ally = resolveInLevel(level, id);
+            if (ally == null || !ally.m_6084_()) {
                 continue;
             }
             double dx = ally.m_20185_() - ox;
@@ -158,8 +167,8 @@ public final class CombatIndex {
             if (e.getValue() < gameTime) {
                 continue;
             }
-            Entity entity = level.m_8791_(e.getKey());
-            if (!(entity instanceof Mob mob) || !mob.m_6084_()) {
+            Mob mob = resolveInLevel(level, e.getKey());
+            if (mob == null || !mob.m_6084_()) {
                 continue;
             }
             double dx = mob.m_20185_() - px;
@@ -173,13 +182,45 @@ public final class CombatIndex {
         }
     }
 
+    private static Mob resolve(MinecraftServer server, UUID id) {
+        WeakReference<Mob> ref = REFS.get(id);
+        if (ref != null) {
+            Mob mob = ref.get();
+            if (mob != null && mob.m_6084_()) {
+                return mob;
+            }
+        }
+        Mob found = findMob(server, id);
+        if (found != null) {
+            REFS.put(id, new WeakReference<>(found));
+        } else {
+            REFS.remove(id);
+        }
+        return found;
+    }
+
+    private static Mob resolveInLevel(ServerLevel level, UUID id) {
+        WeakReference<Mob> ref = REFS.get(id);
+        if (ref != null) {
+            Mob mob = ref.get();
+            if (mob != null && mob.m_6084_() && mob.m_9236_() == level) {
+                return mob;
+            }
+        }
+        Entity entity = level.m_8791_(id); // getEntity(UUID)
+        if (entity instanceof Mob mob) {
+            REFS.put(id, new WeakReference<>(mob));
+            return mob;
+        }
+        return null;
+    }
+
     private static Mob findMob(MinecraftServer server, UUID id) {
-        // Prefer entity lookup by UUID across loaded levels — O(levels), not O(entities in AABB).
         for (ServerLevel level : server.m_129785_()) { // getAllLevels
             if (level == null) {
                 continue;
             }
-            Entity entity = level.m_8791_(id); // getEntity(UUID)
+            Entity entity = level.m_8791_(id);
             if (entity instanceof Mob mob) {
                 return mob;
             }
@@ -188,12 +229,19 @@ public final class CombatIndex {
     }
 
     private static void prune(long gameTime) {
-        ACTIVE.entrySet().removeIf(e -> e.getValue() < gameTime);
+        ACTIVE.entrySet().removeIf(e -> {
+            if (e.getValue() < gameTime) {
+                REFS.remove(e.getKey());
+                return true;
+            }
+            return false;
+        });
         if (ACTIVE.size() > 2048) {
             int remove = ACTIVE.size() / 2;
             Iterator<Map.Entry<UUID, Long>> it = ACTIVE.entrySet().iterator();
             while (it.hasNext() && remove-- > 0) {
-                it.next();
+                Map.Entry<UUID, Long> e = it.next();
+                REFS.remove(e.getKey());
                 it.remove();
             }
         }
