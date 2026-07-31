@@ -18,7 +18,7 @@ console.info("[Capsule Disable] script file evaluating...");
 
 var CapsuleItemClass = null;
 var CapsuleClassTried = false;
-var PLAYER_PURGE_INTERVAL = 100; // 5 seconds
+var PLAYER_PURGE_INTERVAL = 200; // 10 seconds — was 5s; duplicates that used clear/kill every 1s are disabled
 var DEBUG_CAPSULE = false;
 
 function getCapsuleItemClass() {
