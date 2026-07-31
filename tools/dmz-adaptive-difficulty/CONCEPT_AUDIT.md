@@ -1,112 +1,48 @@
 # Concept audit vs `DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
 
-Mod version: **1.7.17** (server-side only; CMI GUI, no DeluxeMenus)  
+Mod version: **1.8.0** · GUI: **1.8.0**  
 Source concept: `tools/dmz-adaptive-difficulty/DragonMineZ_Adaptive_Difficulty_System_Concept_019c.txt`
-
-Reaudited against live Java sources (not prior audit claims).
 
 | § | Concept | Status | Implementation |
 |---|---------|--------|----------------|
-| 1 | System overview | Done | Framing realized by the stack below |
-| 2 | Optional / player-controlled + Lightman's + team | Done | Active selection, purchases, team modes |
-| 3 | Calculated / Purchased / Active / Team Threshold / Contribution | Done | `DifficultyCalculator`, `PlayerDifficultyData`, `TeamScaling`, `DmzProgression` |
-| 4 | Personal / Threshold / Full team modes (+10%/teammate) | Done | `TeamMode` + FTB Teams (scoreboard fallback) |
-| 5 | `/difficulty` GUI fields + buttons | Done | CMI → chest → chat; Increase/Decrease/Team/Rewards/Tiers/Stats (+ Buy) |
-| 6 | Lightman's +1…+100000; lowering free | Done | `CurrencyBridge` **inventory coins only** (no wallet/bank/TP pay) |
-| 7 | Admin config / `difficulty.admin` / ability unlock tiers | Done | `/difficulty admin set …` incl. scaling keys + `tierAwakened`…`tierImpossible` |
-| 8 | State colors G/Y/O/P/R | Done | `DifficultySnapshot.state()`; Extreme = full team ceiling or hard-cap; shown in GUIs |
-| 9 | Mob spawn scaling + DMZ extras | Done | `MobScaling` + `AreaDifficulty` (SH-style); DMZ extras on **all hostiles** by default |
-| 10 | Tiers 10→100000 | Done+ | Extended through Zenith 10M (P10 / level 100k theoretical max) |
-| 11 | Enemy evolution (creeper/zombie/skel/enderman/warden) | Done | `EnemyEvolution` — all hostiles; special kits + shared melee/ranged (ki) packages; Stray/WitherSkeleton included |
-| 12 | Elites (name/aura/size/AI/rewards) | Done* | `EliteSystem` — glow aura + knockback-resist size + NBT scale hint (no Pehkui) |
-| 13 | Mutations listed | Done | All five + Shadow / Vampiric extras |
-| 14 | Adaptive AI incl. ki-charge + anti-flight | Done | Dodge/retreat/ki-charge/`MainEffects.FLY`+fly skill/focus/coord |
-| 15 | Rewards TP/XP/drops/capsules/titles | Done* | Kill package + TP event; Potential left to CNPC `Potential.js` |
-| 16 | Boss scale + phases | Done* | `BossScaling` HP/armor/name + 75/50/25% phases |
-| 17 | Cache / no per-tick calc | Done | `DifficultyCache` + mob NBT; level/prestige polled every 5s |
+| 1 | System overview | Done | Personal / calculated / purchased / active + team + scaling stack |
+| 2 | Optional + Lightman's + team | Done | Active selection, inventory coin purchases, team modes |
+| 3 | Five difficulty values | Done | `DifficultyCalculator` + `PlayerDifficultyData` + `TeamScaling` |
+| 4 | Personal / Threshold / Full team | Done | `TeamMode` + FTB Teams (scoreboard fallback); +10%/teammate default |
+| 5 | `/difficulty` GUI fields + buttons | Done | Hub shows Active/Max/Calculated/Purchased/**Team bonus/contrib**; Adjust / Team / Rewards / Tiers / Titles / Details |
+| 6 | Purchase difficulty | Done* | Iron-coin trapezoid cost (configurable); lowering free; Buy Max page |
+| 7 | Admin config | Done* | `/difficulty admin` toggle + `set` / `reload` / `settings` / tier keys |
+| 8 | State colors G/Y/O/P/R | Done | `DifficultySnapshot.state()` |
+| 9 | Mob scaling | Done* | Spawn area scale + per-player retarget; power curves (not literal +1%/level); DMZ extras on hostiles |
+| 10 | Tiers 10→100000 | Done+ | Extended Awakened→Zenith (10M) |
+| 11 | Enemy evolution kits | Done | Creeper (incl. **tracking fuse chase**), Zombie, Skeleton ki, Enderman, Warden + extras |
+| 12 | Elites | Done* | Name, glow aura, KB-resist “size”, AI floor, reward bonus (no Pehkui) |
+| 13 | Mutations (5 listed) | Done+ | All five + Shadow / Vampiric |
+| 14 | Adaptive AI | Done | Dodge / retreat / ki-charge / anti-flight / focus weakest / pack |
+| 15 | Reward scaling | Done* | `1 + diff / rewardScaling` → **XP + drop odds**; capsules; titles. **TP & Potential not touched** (by design) |
+| 16 | Boss scaling + phases | Done* | Inherit difficulty; HP/dmg/def; 75/50/25% phase bursts |
+| 17 | Performance / cache | Done | **No LivingTick bus**; `BehaviorScheduler` player-centric pulses; difficulty/area/retarget caches; curve LUT |
 
-\* = intentional approximation noted below (still functionally present).
+\* = intentional approximation (still fulfills the gameplay intent).
 
-## Intentional approximations (not blockers)
-- **GUI host**: CMILib/CMI inventory / Bukkit chest / chat (no Forge client Screen jar)
-- **Elite size / aura**: no Pehkui; knockback resist + glowing name; NBT `dmz_ad_elite_scale`
-- **DMZ XP**: vanilla XP points (no dedicated DMZ XP gain event in 2.1.3)
-- **Cosmetics**: capsule item drops (not wardrobe skins); titles unlock + Statistics list
-- **Admin command shape**: nested under `/difficulty admin` with toggle (ops / `difficulty.admin`)
-- **Phys vs Ki DMZ extras**: folded into shared outgoing damage multiplier for mobs
+## Intentional approximations
+- **GUI host**: CMI / chest / chat (no Forge client Screen)
+- **Elite size**: knockback resist + NBT scale hint (no Pehkui)
+- **DMZ XP**: vanilla XP points scaled by reward multiplier (no dedicated DMZ XP event)
+- **TP / Potential**: never granted or multiplied — TP stays with DragonMineZ; Potential with CNPC `Potential.js`
+- **Purchase formula**: iron-coin ramp (`baseCostIronCoins` × scale) instead of legacy `baseCost × purchased/costScaling`
+- **Phys vs Ki extras**: folded into shared outgoing damage multiplier
 
-## Mob power ladder (concept §9–§14) — how to see ki
-Mobs scale once at spawn from nearby **active** difficulty (area mode). Evolution/AI unlock by tier:
+## 1.8.0 rewrite notes (optimization + concept close-out)
+- Replaced per-entity `LivingTickEvent` with `tick.BehaviorScheduler` (scan near players only, budget + stagger)
+- Combat gravity batched on the server pulse (no per-player tick AABB scans)
+- Curve LUT for offense/health (`ScalingCurves`) — avoids `Math.pow` on every retarget
+- Soft-prune retarget difficulty cache (no full wipe stampedes)
+- Area cache no longer cleared on every raise/lower/buy
+- Concept §15 reward multiplier restored for XP/drops only
+- Concept §11 creeper **tracking explosion** (keep pathing while ignited)
+- Hub GUI shows team bonus + contribution (§5)
 
-| Active difficulty | Tier | What you should notice |
-|---|---|---|
-| 0 | — | Stats only if somehow tagged; no evolution |
-| 10+ | Awakened | Evolution starts; short dash / ki blasts |
-| **50+** | **Enhanced** | Focus weakest; leap; glow name |
-| **100+** | **Elite** | Retreat / rush / lasers |
-| **500+** | **Advanced** | Slam / beams; light dodge + speed |
-| **1000+** | **Master** | Pack call; charged beams; ki-charge interrupt |
-| **5k+** | **Legendary** | Anti-flight |
-| **10k+** | **God** | Stronger chase / burning ki |
-| **50k–100k** | Divine / Impossible | Debuffs, barrages, bigger packs |
-| **250k–10M** | Transcendent→Zenith | Frenzy, wither touch, max AI intensity |
-
-Damage no longer hard-caps at ×50 (that made 3M feel like 10k). Fight **newly spawned** mobs after raising difficulty.
-
-Raise active difficulty via `/difficulty` → **Adjust**, then fight **newly spawned** hostiles (already-spawned mobs keep their old cached difficulty).
-
-## v1.7.15 — damage scaling fixed (attribute + Forge event)
-- Melee: multiply `ATTACK_DAMAGE` at spawn (same as health/defense path)
-- Projectiles / custom hits: Forge `LivingHurtEvent` applies cached damage multiplier
-- Mixin-only path was unreliable on Mohist and often never applied
-
-## v1.7.14 — all hostiles get DMZ-style scaling
-- Hostile detection no longer limited to `MobCategory.MONSTER` (includes Hoglin / Enemy / Raider / modded)
-- `dmzExtra*` health/defense/damage/ki extras apply to **all hostiles** by default (`applyDmzExtrasToAllHostiles`)
-- Scaling + evolution share the same `HostileMobs` helper
-
-## v1.7.13 — tiers through Zenith (P10 theoretical max)
-- Added Transcendent → Zenith (250k … 10M)
-- Zenith = level 100000 × 10 prestiges × prestigeMultiplier 10
-- GUI tiers page lists the full ladder
-
-## v1.7.12 — max from theoretical stats (no hardcap)
-- Removed default 1,000,000 hardcap (`hardCapDifficulty = 0`)
-- Existing configs with legacy `1000000` auto-migrate to `0` on load
-- Ceiling is calculated DMZ level/prestige (+ purchased + team), not an artificial cap
-
-## v1.7.11 — per-mob kits + stacked gravity
-- Endermen/Wardens apply real DMZ gravity-chamber pressure; more aggro = heavier gravity
-- Full kits: Creeper / Zombie / Skeleton / Enderman / Warden / Blaze / Ghast / Piglin / Zombie Piglin / Hoglin
-- Skeleton/Blaze/Ghast vanilla projectiles replaced with DMZ ki
-- Creepers always Final Explosion; radius/fuse/damage scale with difficulty
-
-## v1.7.10 — matching nameplates
-- Evolution used translation keys (`entity.minecraft.zombie`) for name tags
-- Mutations could label unrelated mobs (e.g. spider as "Burning Zombie")
-- All elite / boss / mutation / evolution nameplates now use the live entity display name
-
-## v1.7.9 — evolution on all hostiles
-- Was limited to Creeper/Zombie/Skeleton/Enderman/Warden (missed Stray/Wither Skeleton)
-- Now every `MONSTER` / `Enemy` evolves (special kits + shared melee/ranged packages)
-- Enhanced+ mobs briefly glow and get a tier nameplate
-
-## v1.7.8 — real DMZ ki projectiles
-- Replaced skeleton/warden effect stand-ins with `KiBlastEntity` / `KiLaserEntity` / `KiWaveEntity`
-- Homing aimed shots; damage scales with tier + mob difficulty
-
-## v1.6.2 reaudit fixes
-- Anti-flight now disables DMZ `fly` skill + removes `MainEffects.FLY` (not only creative fly)
-- Red / Extreme state is reachable (full team ceiling or hard-cap band) and shown in GUIs
-- Unlocked titles listed on Statistics (chat / CMI / chest)
-- Ability unlock tier thresholds admin-editable (`tierAwakened` … `tierImpossible`)
-- Admin set covers movement % and `dmzExtra*` keys
-- Creepers gain larger `explosionRadius` + faster fuse by tier
-
-## v1.7.0 optimization + CMI-only GUI
-- Removed DeluxeMenus bridge, configs, and jar; legacy `guiBackend=deluxemenus` remaps to `cmi`
-- LivingTick: Mob-only, unmarked scaled-zero exit, sparse spawn retry, staggered AI/evolution
-- Area difficulty uses cached player snapshots + 250ms chunk TTL (no full refresh on spawn)
-- PersistentDataAccess MethodHandle; cached damage multiplier on mob NBT
-- Logout no longer invalidates every player's cache
-- ForgeBridge caches reflective handles + 200ms placeholder map
+## Install
+1. `mods/dmz_adaptive_difficulty-1.8.0.jar`
+2. `plugins/dmz_adaptive_difficulty_gui-1.8.0.jar`

@@ -406,7 +406,13 @@ public final class MobScaling {
         tag.m_128350_(TAG_DMG_MULT, (float) Math.max(1.0, dmgMult * rarityDamage));
         APPLIED_DIFFICULTY.put(entity.m_20148_(), Math.max(0L, difficulty));
         if (APPLIED_DIFFICULTY.size() > 4096) {
-            APPLIED_DIFFICULTY.clear();
+            // Soft prune — full clear caused retarget stampedes.
+            int remove = APPLIED_DIFFICULTY.size() / 2;
+            var it = APPLIED_DIFFICULTY.entrySet().iterator();
+            while (it.hasNext() && remove-- > 0) {
+                it.next();
+                it.remove();
+            }
         }
     }
 

@@ -213,14 +213,17 @@ public final class CmiDifficultyGui {
         info.lockField();
         info.addLore(List.of(
                 "",
-                "&7Active  &f" + ph.getOrDefault("active", "?"),
-                "&7Tier    &f" + ph.getOrDefault("tier", "?"),
+                "&7Active   &f" + ph.getOrDefault("active", "?"),
+                "&7Tier     &f" + ph.getOrDefault("tier", "?"),
+                "&7Reward × &a" + ph.getOrDefault("reward_mult", "1.00"),
                 "",
-                "&8This mod does not grant or",
-                "&8multiply Training Points.",
+                "&8XP & drop odds scale with difficulty",
+                "&8(1 + active / rewardScaling)",
                 "",
-                "&7Kill rewards",
-                "&8XP · rare drops · capsules · titles"
+                "&8Training Points / Potential",
+                "&8are not touched by this mod",
+                "",
+                "&7Also: capsules · titles"
         ));
         gui.addButton(info);
         gui.addButton(pageBtn(18, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
@@ -456,6 +459,8 @@ public final class CmiDifficultyGui {
         lore.add("&7Title  &e" + ph.getOrDefault("active_title", "none"));
         lore.add("&7Inv    &f" + ph.getOrDefault("balance", "?"));
         lore.add("");
+        lore.add("&7Team bonus  &f" + ph.getOrDefault("team_bonus", "0"));
+        lore.add("&7Team contrib &f" + ph.getOrDefault("team_contrib", "0"));
         lore.add("&8Theoretical " + ph.getOrDefault("calculated", "?")
                 + "  ·  Bought " + ph.getOrDefault("purchased", "?"));
         lore.add("&8Open Adjust to raise / lower");

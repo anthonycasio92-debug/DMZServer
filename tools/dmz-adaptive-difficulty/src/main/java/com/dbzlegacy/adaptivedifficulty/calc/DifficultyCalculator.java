@@ -96,7 +96,7 @@ public final class DifficultyCalculator {
         return raiseCostIronCoins(Math.max(0L, currentPurchased), amountToBuy);
     }
 
-    /** Always {@code 1.0} — this mod never multiplies TP / reward events. */
+    /** Concept §15 reward multiplier for XP / drops (never Training Points). */
     public static double rewardMultiplier(long activeDifficulty) {
         return ScalingCurves.rewardMultiplier(activeDifficulty);
     }

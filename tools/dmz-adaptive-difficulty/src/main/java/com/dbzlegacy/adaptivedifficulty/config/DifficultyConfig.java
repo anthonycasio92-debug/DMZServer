@@ -507,6 +507,7 @@ public final class DifficultyConfig {
                 GSON.toJson(INSTANCE, writer);
             }
             com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier.invalidateThresholdCache();
+            com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves.invalidateLut();
             com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty.clearCache();
         } catch (IOException e) {
             AdaptiveDifficultyMod.LOGGER.warn("[{}] failed to save config: {}", AdaptiveDifficultyMod.MOD_ID, e.toString());
@@ -516,6 +517,7 @@ public final class DifficultyConfig {
     public static void reload() {
         load();
         com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier.invalidateThresholdCache();
+        com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves.invalidateLut();
         com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty.clearCache();
     }
 }

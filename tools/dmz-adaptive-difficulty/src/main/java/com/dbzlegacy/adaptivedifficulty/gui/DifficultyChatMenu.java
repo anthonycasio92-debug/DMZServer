@@ -57,6 +57,9 @@ public final class DifficultyChatMenu {
                 + "  §8Bought §f" + snap.purchased
                 + "  §8Inv §f" + CurrencyBridge.balanceText(player)
                 + "  §8Title §f" + TitleSystem.activeDisplay(player)));
+        send(player, Component.m_237113_("§8Team bonus §f" + snap.teamThresholdBonus
+                + "  §8Contrib §f" + snap.teamContribution
+                + "  §8Max §f" + snap.availableMax));
         send(player, Component.m_237113_(""));
 
         MutableComponent hub = Component.m_237113_("§7")
@@ -157,10 +160,12 @@ public final class DifficultyChatMenu {
     private static void rewards(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         send(player, Component.m_237113_("§8──────── §fRewards §8────────"));
+        double mult = DifficultyCalculator.rewardMultiplier(snap.active);
         send(player, Component.m_237113_("§7Active §f" + snap.active
-                + "  §7Tier §f" + DifficultyTier.of(snap.active).display));
-        send(player, Component.m_237113_("§8This mod does not grant or multiply Training Points."));
-        send(player, Component.m_237113_("§8Kill rewards: XP, rare drops, capsules, titles."));
+                + "  §7Tier §f" + DifficultyTier.of(snap.active).display
+                + "  §7Reward × §a" + String.format("%.2f", mult)));
+        send(player, Component.m_237113_("§8Concept: 1 + difficulty / rewardScaling → XP & drop odds."));
+        send(player, Component.m_237113_("§8Training Points / Potential are not touched by this mod."));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 

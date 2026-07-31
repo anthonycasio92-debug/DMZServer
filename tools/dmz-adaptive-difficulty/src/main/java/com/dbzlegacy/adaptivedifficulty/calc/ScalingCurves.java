@@ -1,17 +1,34 @@
 package com.dbzlegacy.adaptivedifficulty.calc;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Separate curves for offense (damage/defense) and health.
+ * Offense / health curves with a small LUT so combat paths avoid {@code Math.pow}.
  * <p>
- * Offense uses a steeper power curve so fights get meaner without ballooning HP.
- * Health uses a flat curve + lower caps so mobs stay killable.
- * <p>
- * Training Points are not scaled or granted by this mod.
+ * Training Points are never scaled or granted by this mod.
+ * Reward multiplier follows concept §15 for XP / drops only.
  */
 public final class ScalingCurves {
+    /** Bucket size for LUT keys — balances precision vs cache size. */
+    private static final long BUCKET = 25L;
+    private static final Map<Long, Double> OFFENSE_LUT = new ConcurrentHashMap<>();
+    private static final Map<Long, Double> HEALTH_LUT = new ConcurrentHashMap<>();
+    private static volatile long offensePivot = -1L;
+    private static volatile long healthPivot = -1L;
+    private static volatile long offenseExpBits = 0L;
+    private static volatile long healthExpBits = 0L;
+
     private ScalingCurves() {}
+
+    /** Call when config reloads so LUT entries match new exponents/pivots. */
+    public static void invalidateLut() {
+        OFFENSE_LUT.clear();
+        HEALTH_LUT.clear();
+        offensePivot = -1L;
+        healthPivot = -1L;
+    }
 
     /**
      * Effective difficulty for a power curve.
@@ -31,14 +48,26 @@ public final class ScalingCurves {
 
     /** Damage / defense curve (steeper). */
     public static double offenseEffective(long difficulty) {
+        if (difficulty <= 0L) {
+            return 0.0;
+        }
         DifficultyConfig cfg = DifficultyConfig.get();
-        return curvedEffective(difficulty, cfg.combatCurveExponent, cfg.combatCurvePivot);
+        ensureOffenseKey(cfg);
+        long key = bucket(difficulty);
+        return OFFENSE_LUT.computeIfAbsent(key, k ->
+                curvedEffective(k, cfg.combatCurveExponent, cfg.combatCurvePivot));
     }
 
     /** Health curve (flatter — avoids unkillable sponge mobs). */
     public static double healthEffective(long difficulty) {
+        if (difficulty <= 0L) {
+            return 0.0;
+        }
         DifficultyConfig cfg = DifficultyConfig.get();
-        return curvedEffective(difficulty, cfg.healthCurveExponent, cfg.healthCurvePivot);
+        ensureHealthKey(cfg);
+        long key = bucket(difficulty);
+        return HEALTH_LUT.computeIfAbsent(key, k ->
+                curvedEffective(k, cfg.healthCurveExponent, cfg.healthCurvePivot));
     }
 
     /** @deprecated use {@link #offenseEffective(long)} */
@@ -78,11 +107,48 @@ public final class ScalingCurves {
     }
 
     /**
-     * Legacy reward multiplier stub. Always {@code 1.0} — this mod does not
-     * multiply Training Points or other reward events by difficulty.
+     * Concept §15: {@code 1 + Difficulty / Reward Scaling}.
+     * Used for XP / rare-drop chance only — never Training Points.
      */
     public static double rewardMultiplier(long activeDifficulty) {
-        return 1.0;
+        DifficultyConfig cfg = DifficultyConfig.get();
+        if (!cfg.enableRewardScaling || activeDifficulty <= 0L) {
+            return 1.0;
+        }
+        double scale = Math.max(1.0, cfg.rewardScaling);
+        // Soft cap so drop odds stay sane at multi-million difficulty.
+        return Math.min(25.0, 1.0 + (activeDifficulty / scale));
+    }
+
+    private static long bucket(long difficulty) {
+        if (difficulty <= 0L) {
+            return 0L;
+        }
+        return ((difficulty + BUCKET - 1L) / BUCKET) * BUCKET;
+    }
+
+    private static void ensureOffenseKey(DifficultyConfig cfg) {
+        long expBits = Double.doubleToLongBits(cfg.combatCurveExponent);
+        if (offensePivot != cfg.combatCurvePivot || offenseExpBits != expBits) {
+            OFFENSE_LUT.clear();
+            offensePivot = cfg.combatCurvePivot;
+            offenseExpBits = expBits;
+        }
+        if (OFFENSE_LUT.size() > 2048) {
+            OFFENSE_LUT.clear();
+        }
+    }
+
+    private static void ensureHealthKey(DifficultyConfig cfg) {
+        long expBits = Double.doubleToLongBits(cfg.healthCurveExponent);
+        if (healthPivot != cfg.healthCurvePivot || healthExpBits != expBits) {
+            HEALTH_LUT.clear();
+            healthPivot = cfg.healthCurvePivot;
+            healthExpBits = expBits;
+        }
+        if (HEALTH_LUT.size() > 2048) {
+            HEALTH_LUT.clear();
+        }
     }
 
     private static double clamp(double value, double min, double max) {

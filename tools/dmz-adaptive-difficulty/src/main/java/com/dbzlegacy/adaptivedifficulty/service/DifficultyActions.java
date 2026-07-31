@@ -7,7 +7,6 @@ import com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
-import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import net.minecraft.network.chat.Component;
@@ -128,7 +127,6 @@ public final class DifficultyActions {
         data.setActiveDifficulty(next);
         DifficultyCache.save(player);
         DifficultyCache.refresh(player);
-        AreaDifficulty.clearCache();
         afterActiveChanged(player);
         openGui(player, page);
         return Result.ok("Active difficulty set to " + next + " (free).");
@@ -159,7 +157,6 @@ public final class DifficultyActions {
             data.setActiveDifficulty(target);
             DifficultyCache.save(player);
             DifficultyCache.refresh(player);
-            AreaDifficulty.clearCache();
             afterActiveChanged(player);
             openGui(player, page);
             return Result.ok("Active difficulty set to " + target + (target < bounds.active ? " (free)." : "."));
@@ -192,7 +189,6 @@ public final class DifficultyActions {
         data.setActiveDifficulty(next);
         DifficultyCache.save(player);
         DifficultySnapshot snap = DifficultyCache.refresh(player);
-        AreaDifficulty.clearCache();
         afterActiveChanged(player);
         openGui(player, page);
         return Result.ok("Raised +" + raiseBy + " for " + CurrencyBridge.formatCost(cost)
@@ -205,7 +201,6 @@ public final class DifficultyActions {
         data.setActiveDifficulty(0L);
         DifficultyCache.save(player);
         DifficultyCache.refresh(player);
-        AreaDifficulty.clearCache();
         afterActiveChanged(player);
         openGui(player, page);
         return Result.ok("Active difficulty reset to 0 (purchased max unchanged).");
@@ -231,7 +226,6 @@ public final class DifficultyActions {
         data.setPurchasedDifficulty(data.getPurchasedDifficulty() + amount);
         DifficultyCache.save(player);
         DifficultySnapshot snap = DifficultyCache.refresh(player);
-        AreaDifficulty.clearCache();
         openGui(player, page);
         return Result.ok("Purchased +" + amount + " max for " + CurrencyBridge.formatCost(cost)
                 + ". Purchased: " + snap.purchased + " | Available max: " + snap.availableMax);

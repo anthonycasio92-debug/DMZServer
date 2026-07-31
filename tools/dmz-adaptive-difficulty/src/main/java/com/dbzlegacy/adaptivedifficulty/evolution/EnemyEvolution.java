@@ -169,18 +169,23 @@ public final class EnemyEvolution {
             return;
         }
         float dist = creeper.m_20270_(target);
+        double speed = tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower() ? 1.45 : 1.25;
         // Chase earlier than Elite so Awakened+ creepers actually close the gap.
         if (dist < 18.0f) {
-            creeper.m_21573_().m_26519_(target.m_20185_(), target.m_20186_(), target.m_20189_(),
-                    tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower() ? 1.45 : 1.25);
+            creeper.m_21573_().m_26519_(target.m_20185_(), target.m_20186_(), target.m_20189_(), speed);
         }
         // Fuse when close. m_32312_ = ignite(); m_32283_(1) = setSwellDir(1).
-        // (Old code called m_32314_ = increaseDroppedSkulls — creepers never armed.)
         if (dist < 6.0f) {
             if (!creeper.m_32311_()) { // isIgnited
                 creeper.m_32312_(); // ignite
             }
             creeper.m_32283_(1); // setSwellDir toward explosion
+        }
+        // Concept §11 Tracking Explosion — keep pathing to the player while swelling.
+        if (creeper.m_32311_() && dist < 22.0f && target.m_6084_()) {
+            double trackSpeed = speed + (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower() ? 0.35 : 0.15);
+            creeper.m_21573_().m_26519_(target.m_20185_(), target.m_20186_(), target.m_20189_(), trackSpeed);
+            creeper.m_6710_(target);
         }
     }
 

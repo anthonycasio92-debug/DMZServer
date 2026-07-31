@@ -1,26 +1,23 @@
 package com.dbzlegacy.adaptivedifficulty.event;
 
 import com.dbzlegacy.adaptivedifficulty.ai.AdaptiveAiSystem;
-import com.dbzlegacy.adaptivedifficulty.boss.BossScaling;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
-import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.evolution.CombatGravity;
 import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
-import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.reward.RewardSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
+import com.dbzlegacy.adaptivedifficulty.tick.BehaviorScheduler;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
-import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.dragonminez.common.events.DMZEvent;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.server.ServerLifecycleHooks;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -41,7 +38,6 @@ import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -142,72 +138,18 @@ public final class DifficultyEvents {
     }
 
     /**
-     * Concept §17 — only touch hostiles that need work.
-     * <p>
-     * Critical TPS rule: do <b>not</b> read persistent NBT every tick. Heavy work
-     * (AI / evolution / mutation / boss phases) runs on a staggered 80-tick slot
-     * and only when a player is nearby.
+     * Concept §17 — one server-pulse scheduler instead of LivingTick on every entity.
      */
     @SubscribeEvent
-    public void onLivingTick(LivingEvent.LivingTickEvent event) {
-        LivingEntity entity = event.getEntity();
-        if (!(entity instanceof Mob mob) || entity.m_9236_().f_46443_ || entity instanceof Player) {
+    public void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
             return;
         }
-        if (!HostileMobs.isHostile(mob)) {
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
             return;
         }
-
-        int age = entity.f_19797_;
-
-        // Cheap death check — float HP only, no NBT.
-        float hp = entity.m_21223_();
-        if (!(hp > 0.0f) || Float.isNaN(hp) || Float.isInfinite(hp)) {
-            MobScaling.terminateIfZeroHealth(entity);
-            return;
-        }
-
-        // Sparse deferred scale if FinalizeSpawn missed (Mohist) — rare ages only.
-        if (age > 2 && age < 40 && (age == 5 || age == 15 || age == 30)) {
-            MobScaling.scaleIfNeeded(entity);
-            return;
-        }
-
-        // Heavy slot: once per ~4s per mob (staggered). No NBT outside this slot.
-        final int period = 80;
-        int stagger = Math.floorMod(entity.m_19879_(), period);
-        if (age % period != stagger) {
-            return;
-        }
-        if (!NearbyPlayers.anyWithin(mob, 48.0)) {
-            return;
-        }
-
-        CompoundTag tag = PersistentDataAccess.get(entity);
-        if (!tag.m_128471_(MobScaling.TAG_SCALED)) {
-            return;
-        }
-
-        boolean elite = tag.m_128471_(EliteSystem.TAG_ELITE);
-        boolean boss = tag.m_128471_(BossScaling.TAG_BOSS);
-        boolean mutated = tag.m_128441_(MutationSystem.TAG_MUTATION)
-                && !tag.m_128461_(MutationSystem.TAG_MUTATION).isEmpty();
-        long difficulty = tag.m_128441_(MobScaling.TAG_DIFFICULTY) ? tag.m_128454_(MobScaling.TAG_DIFFICULTY) : 0L;
-
-        if (difficulty <= 0 && !elite && !boss && !mutated) {
-            return;
-        }
-
-        if (mutated) {
-            MutationSystem.tick(entity, tag);
-        }
-        if (boss) {
-            BossScaling.tickPhases(entity, tag);
-        }
-        AdaptiveAiSystem.tick(mob, difficulty, elite);
-        if (EnemyEvolution.isEvolvable(mob)) {
-            EnemyEvolution.tick(mob, difficulty, elite);
-        }
+        BehaviorScheduler.pulse(server, server.m_129921_()); // getTickCount
     }
 
     @SubscribeEvent
@@ -215,9 +157,7 @@ public final class DifficultyEvents {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)) {
             return;
         }
-        // Apply stacked combat-gravity contributions (kits push into the map; no AABB scan here).
-        CombatGravity.tickPlayer(player);
-
+        // Level/prestige poll only — gravity moved to BehaviorScheduler.
         if (player.f_19797_ % 200 != 0) {
             return;
         }
@@ -226,7 +166,6 @@ public final class DifficultyEvents {
         int prestige = DmzProgression.prestige(player);
         if (before.dmzLevel != level || before.prestige != prestige) {
             DifficultyCache.refresh(player);
-            // Don't wipe the whole area cache — TTL expires stale chunks.
         }
     }
 

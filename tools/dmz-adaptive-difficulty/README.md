@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.38)
+# DMZ Adaptive Difficulty (v1.8.0)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -18,19 +18,20 @@ Clients do **not** need this jar to join.
 - Payments take coins from the **player inventory only** (not wallet/bank)
 - **Per-player retarget scaling**: mobs capture base HP/damage at spawn, then re-scale to the engaged player's difficulty on target switch / hit (HP % preserved)
 - Elites, mutations, **per-mob evolution kits**, adaptive AI, boss phases
-- **No Training Point grants or multipliers** — kill/train TP left entirely to DragonMineZ
+- Kill rewards: XP + drop odds use concept `1 + difficulty / rewardScaling`; **no TP / Potential** writes
+- Titles catalog + equip GUI; capsules on elite/boss/mut kills
 - Scaling Health-inspired area difficulty for initial spawn (`weighted` / `average` / `max`)
-- TPS-minded tick path: no per-tick NBT; AI/evolution every 80t near players only; combat gravity from kits (no AABB scans); retarget cache skips matched mobs
+- **1.8.0 tick rewrite**: player-centric `BehaviorScheduler` (no LivingTick bus); curve LUT; retarget cache
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.38.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.8.0.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
    - `CMILib*.jar` (required by CMI)
    - `CMI-*.jar`
-   - `dmz_adaptive_difficulty_gui-1.7.16.jar` (**registers Bukkit `/difficulty`**)
+   - `dmz_adaptive_difficulty_gui-1.8.0.jar` (**registers Bukkit `/difficulty`**)
    - Optional: `PlaceholderAPI-*.jar`
 5. Optionally set `guiBackend` in `config/dmz_adaptive_difficulty.json`:
    - `cmi` (default), `auto`, `chest`, or `chat`
@@ -86,8 +87,8 @@ Offense rates keep a normal melee hit under ~800k raw and mob armor ≈ **200k**
 |---|---|---|
 | Damage / defense | Steep offense curve (**uncapped**) | exp `0.96`, pivot `450`, rates `0.62`/`1.85` |
 | Health | Flat health curve | exp `0.40`, mult uncapped, abs cap **1024** HP |
-| Kill / train TP | **Not touched** | No kill grants; `TPGainEvent` pass-through |
-| Potential unlock | **Not touched** | Owned by CNPC `Potential.js` (`potentialunlock`) |
+| Kill rewards | XP / drops × `(1 + d / rewardScaling)` | Cap ×25; TP never touched |
+| Train TP / Potential | **Not touched** | `TPGainEvent` pass-through; Potential = CNPC |
 | AI | Spaced across Awakened→Zenith | anti-flight Legendary+; pack/debuffs scale to Zenith |
 
 Tune:

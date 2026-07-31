@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.reward;
 import com.dbzlegacy.adaptivedifficulty.boss.BossScaling;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
+import com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
@@ -23,11 +24,9 @@ import net.minecraftforge.registries.ForgeRegistries;
 /**
  * Concept §15 — kill rewards: XP, rare drops, capsules, titles.
  * <p>
- * This mod never grants or multiplies Training Points (TP). Kill TP and
- * {@code TPGainEvent} amounts are left entirely to DragonMineZ / other systems.
- * <p>
- * Potential unlock ({@code potentialunlock}) is owned by the CustomNPCs
- * {@code Potential.js} script — this mod must not write that skill.
+ * Reward multiplier {@code 1 + difficulty / rewardScaling} applies to XP and drop
+ * odds only. Training Points and Potential XP are never granted or multiplied here
+ * (TP left to DragonMineZ; Potential owned by CNPC {@code Potential.js}).
  */
 public final class RewardSystem {
     private RewardSystem() {}
@@ -40,22 +39,24 @@ public final class RewardSystem {
         if (!cfg.enableRewardScaling) {
             return;
         }
-        DifficultySnapshot snap = DifficultyCache.refresh(killer);
+        // Cached snapshot — avoid full refresh on every kill.
+        DifficultySnapshot snap = DifficultyCache.get(killer);
         long killDifficulty = Math.max(snap.active, MobScaling.difficultyOf(dead));
         DifficultyTier tier = DifficultyTier.of(killDifficulty);
         boolean elite = EliteSystem.isElite(dead);
         boolean boss = PersistentDataAccess.get(dead).m_128471_(BossScaling.TAG_BOSS);
         boolean mutated = MutationSystem.get(dead) != null;
+        double mult = ScalingCurves.rewardMultiplier(killDifficulty);
 
-        grantExperience(killer, elite, boss, tier);
-        grantDrops(killer, elite, boss, mutated, tier);
+        grantExperience(killer, mult, elite, boss, tier);
+        grantDrops(killer, mult, elite, boss, mutated, tier);
         TitleSystem.maybeUnlockCombatTitle(killer, snap, elite, boss, tier);
     }
 
     private static void grantExperience(
-            ServerPlayer killer, boolean elite, boolean boss, DifficultyTier tier
+            ServerPlayer killer, double mult, boolean elite, boolean boss, DifficultyTier tier
     ) {
-        int xp = 3 * Math.max(1, tier.ordinalPower());
+        int xp = (int) Math.round(3.0 * Math.max(1.0, mult) * Math.max(1, tier.ordinalPower()));
         if (elite) {
             xp *= 2;
         }
@@ -68,9 +69,9 @@ public final class RewardSystem {
     }
 
     private static void grantDrops(
-            ServerPlayer killer, boolean elite, boolean boss, boolean mutated, DifficultyTier tier
+            ServerPlayer killer, double mult, boolean elite, boolean boss, boolean mutated, DifficultyTier tier
     ) {
-        double rareChance = 0.02 * Math.max(1, tier.ordinalPower());
+        double rareChance = 0.02 * Math.max(1.0, mult) * Math.max(1, tier.ordinalPower());
         if (elite) {
             rareChance += 0.08;
         }
@@ -92,7 +93,7 @@ public final class RewardSystem {
             give(killer, item("minecraft", "netherite_scrap"), 1);
             give(killer, item("minecraft", "nether_star"), 1);
         }
-        if ((elite || boss || mutated) && ThreadLocalRandom.current().nextDouble() < 0.1) {
+        if ((elite || boss || mutated) && ThreadLocalRandom.current().nextDouble() < Math.min(0.6, 0.1 * mult)) {
             giveCapsule(killer, boss);
         }
     }
@@ -130,7 +131,7 @@ public final class RewardSystem {
         }
         ItemStack stack = new ItemStack(item, count);
         if (!player.m_150109_().m_36054_(stack)) {
-            player.m_36176_(stack, false); // drop if full
+            player.m_36176_(stack, false);
         }
     }
 }
