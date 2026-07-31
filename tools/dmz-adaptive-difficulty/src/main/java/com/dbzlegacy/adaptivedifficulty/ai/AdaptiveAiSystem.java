@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.ai;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
+import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
@@ -99,6 +100,9 @@ public final class AdaptiveAiSystem {
             return;
         }
 
+        // Never let scaled AI chase other hostiles (pack/ki mistakes → civil war).
+        clearHostileTarget(mob);
+
         LivingEntity target = mob.m_5448_();
         double scan = Math.min(aiRadius(tier), cfg.mobScaleRadius);
 
@@ -129,8 +133,8 @@ public final class AdaptiveAiSystem {
             antiFlight(mob, player, tier);
         }
 
-        // God+: keep aggression locked + jump boost for vertical chase
-        if (target != null && tier.ordinalPower() >= DifficultyTier.GOD.ordinalPower()) {
+        // God+: keep aggression locked on players + jump boost for vertical chase
+        if (target instanceof Player && tier.ordinalPower() >= DifficultyTier.GOD.ordinalPower()) {
             mob.m_6710_(target);
             mob.m_7292_(new MobEffectInstance(MobEffects.f_19603_, 40, 1, false, false)); // JUMP_BOOST
         }
@@ -350,14 +354,19 @@ public final class AdaptiveAiSystem {
 
     private static void coordinate(Mob mob, ServerLevel level, double radius, int maxAllies) {
         LivingEntity target = mob.m_5448_();
-        if (target == null) {
+        // Pack call is player-only — never point allies at other mobs.
+        if (!(target instanceof Player)) {
             return;
         }
         AABB box = mob.m_20191_().m_82400_(Math.min(28.0, radius));
         List<Mob> allies = level.m_45976_(Mob.class, box);
         int shared = 0;
         for (Mob ally : allies) {
-            if (ally == mob || !ally.m_6084_() || ally.m_5448_() != null) {
+            if (ally == mob || !ally.m_6084_()) {
+                continue;
+            }
+            clearHostileTarget(ally);
+            if (ally.m_5448_() != null) {
                 continue;
             }
             if (!PersistentDataAccess.flag(ally, MobScaling.TAG_SCALED)
@@ -369,6 +378,17 @@ public final class AdaptiveAiSystem {
             if (shared >= maxAllies) {
                 break;
             }
+        }
+    }
+
+    /** Drop targets that are other hostiles so mobs don't farm each other. */
+    private static void clearHostileTarget(Mob mob) {
+        if (mob == null) {
+            return;
+        }
+        LivingEntity target = mob.m_5448_();
+        if (target != null && !(target instanceof Player) && HostileMobs.isHostile(target)) {
+            mob.m_6710_(null);
         }
     }
 

@@ -13,12 +13,14 @@ import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.reward.RewardSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
+import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.dragonminez.common.events.DMZEvent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -171,9 +173,33 @@ public final class DifficultyEvents {
     /**
      * Primary damage scaling path (Forge event — reliable on Mohist).
      * Melee uses scaled ATTACK_DAMAGE; this multiplies projectiles / custom hits.
+     * <p>
+     * Hostile→hostile damage is cancelled: high offense multipliers were turning
+     * splash/ki/pack mistakes into mob civil wars.
      */
-    @SubscribeEvent(priority = EventPriority.HIGH)
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onHurt(LivingHurtEvent event) {
+        LivingEntity victim = event.getEntity();
+        var source = event.getSource();
+        Entity causing = source == null ? null : source.m_7639_(); // getEntity
+        if (HostileMobs.isHostile(victim) && !(causing instanceof Player)) {
+            boolean hostileAttacker = causing instanceof LivingEntity atk && HostileMobs.isHostile(atk);
+            boolean hostileBoom = source != null && source.m_269533_(DamageTypeTags.f_268415_) // IS_EXPLOSION
+                    && !(causing instanceof Player);
+            if (hostileAttacker || hostileBoom) {
+                event.setCanceled(true);
+                event.setAmount(0.0f);
+                if (hostileAttacker && causing instanceof Mob am && am.m_5448_() == victim) {
+                    am.m_6710_(null);
+                }
+                if (victim instanceof Mob vm && causing instanceof LivingEntity
+                        && vm.m_5448_() == causing) {
+                    vm.m_6710_(null);
+                }
+                return;
+            }
+        }
+
         float amount = event.getAmount();
         if (amount > 0.0f) {
             float scaled = MobScaling.scaleOutgoingHurt(amount, event.getSource());
@@ -182,9 +208,8 @@ public final class DifficultyEvents {
             }
         }
         AdaptiveAiSystem.onHurt(event);
-        LivingEntity entity = event.getEntity();
-        if (entity != null && event.getAmount() > 0.0f) {
-            EnemyEvolution.onHurt(entity);
+        if (victim != null && event.getAmount() > 0.0f) {
+            EnemyEvolution.onHurt(victim);
         }
     }
 

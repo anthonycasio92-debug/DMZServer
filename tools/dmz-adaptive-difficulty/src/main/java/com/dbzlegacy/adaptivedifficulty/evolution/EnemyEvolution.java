@@ -22,6 +22,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Blaze;
 import net.minecraft.world.entity.monster.Creeper;
@@ -82,7 +83,13 @@ public final class EnemyEvolution {
 
         markEvolved(mob, tier);
 
+        // Kits are player-focused — drop other-hostile targets so packs don't civil-war.
         LivingEntity target = mob.m_5448_();
+        if (target != null && !(target instanceof Player) && HostileMobs.isHostile(target)) {
+            mob.m_6710_(null);
+            target = null;
+        }
+
         if (mob instanceof Creeper creeper) {
             creeperTick(creeper, level, target, tier, difficulty);
         } else if (mob instanceof ZombifiedPiglin zp) {
@@ -588,12 +595,17 @@ public final class EnemyEvolution {
                 tag.m_128356_("dmz_ad_ki_barrage", age);
             }
         }
-        // Aggressive swarm — pull nearby zombified piglins onto the same target
-        if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower() && age % 40 == 0
+        // Aggressive swarm — player targets only
+        if (target instanceof Player
+                && tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower() && age % 40 == 0
                 && zp.m_9236_() instanceof ServerLevel level) {
             AABB box = zp.m_20191_().m_82400_(16.0);
             for (ZombifiedPiglin ally : level.m_45976_(ZombifiedPiglin.class, box)) {
                 if (ally != zp && ally.m_6084_()) {
+                    LivingEntity allyTarget = ally.m_5448_();
+                    if (allyTarget != null && !(allyTarget instanceof Player) && HostileMobs.isHostile(allyTarget)) {
+                        ally.m_6710_(null);
+                    }
                     ally.m_6710_(target);
                     ally.m_21573_().m_5624_(target, 1.3);
                 }

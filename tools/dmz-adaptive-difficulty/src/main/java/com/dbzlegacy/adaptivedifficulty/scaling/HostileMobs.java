@@ -42,4 +42,9 @@ public final class HostileMobs {
             return false;
         }
     }
+
+    /** True when both sides are hostiles — used to block friendly fire / mob civil wars. */
+    public static boolean bothHostile(LivingEntity a, LivingEntity b) {
+        return isHostile(a) && isHostile(b);
+    }
 }
