@@ -11,6 +11,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 /**
  * Bukkit-side entrypoint so {@code /difficulty} works for all players on Mohist.
  * Prefers CMILib (CMI) inventory GUIs, then a plain chest GUI.
+ * <p>
+ * On Mohist, this plugin owns {@code /difficulty} — admin switches (on/off/whitelist)
+ * must be handled here and forwarded into the Forge mod config.
  */
 public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Listener {
     private DifficultyChestGui chestGui;
@@ -139,7 +142,6 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
                     }
                     player.sendMessage(msg);
                 }
-                // Forge DifficultyActions already reopens the GUI — do not open twice.
                 return true;
             }
             case "admin" -> {
@@ -158,7 +160,6 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
                     }
                     player.sendMessage(msg);
                 }
-                // Forge already reopened with page=main.
                 return true;
             }
             case "hard", "normal", "easy", "peaceful" -> {
@@ -178,7 +179,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
             default -> {
                 sender.sendMessage("§e/difficulty §7— open GUI");
                 sender.sendMessage("§e/difficulty reset §7— set active difficulty to 0");
-                sender.sendMessage("§e/difficulty admin §7— staff tools");
+                sender.sendMessage("§e/difficulty admin off|on|whitelist §7— staff controls");
                 return true;
             }
         }
@@ -197,20 +198,27 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
         // Bare /difficulty admin toggles admin mode for players; console gets help.
         if (args.length == 1) {
             if (console) {
-                sender.sendMessage("§6/difficulty admin help|reload|settings|area|gamedifficulty|set");
+                sendAdminHelp(sender);
                 return true;
             }
             boolean enabled = ForgeBridge.toggleAdmin(player);
             if (enabled) {
                 sender.sendMessage("§aAdmin commands ENABLED.");
-                sender.sendMessage("§7/difficulty admin help|reload|settings|area");
-                sender.sendMessage("§7/difficulty admin gamedifficulty <peaceful|easy|normal|hard>");
-                sender.sendMessage("§7/difficulty admin set <key> <value>");
-                sender.sendMessage("§8Run §f/difficulty admin §8again to disable.");
+                sender.sendMessage("§7/difficulty admin off|on|toggle|status");
+                sender.sendMessage("§7/difficulty admin whitelist on|off|add|remove|list");
+                sender.sendMessage("§7/difficulty admin help|reload|settings|area|set");
+                sender.sendMessage("§8Run §f/difficulty admin §8again to disable admin mode.");
             } else {
                 sender.sendMessage("§cAdmin commands DISABLED.");
             }
             return true;
+        }
+
+        String sub = args[1].toLowerCase();
+
+        // Master switch + whitelist — ops only, no admin-mode session required.
+        if (isDirectStaffSubcommand(sub)) {
+            return handleDirectStaff(sender, args, sub);
         }
 
         if (!console && !ForgeBridge.hasAdmin(player)) {
@@ -218,17 +226,12 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
             return true;
         }
 
-        String sub = args[1].toLowerCase();
         switch (sub) {
             case "help" -> {
-                sender.sendMessage("§6Adaptive Difficulty — admin");
-                sender.sendMessage("§e/difficulty §7— open CMI/chest GUI");
-                sender.sendMessage("§e/difficulty reset §7— set active difficulty to 0");
-                sender.sendMessage("§e/difficulty hard|normal|easy|peaceful §7— vanilla difficulty");
-                sender.sendMessage("§e/difficulty admin reload|settings|area|resetpurchased|gamedifficulty|set");
+                sendAdminHelp(sender);
                 return true;
             }
-            case "resetpurchased" -> {
+            case "resetpurchased", "characterreset" -> {
                 if (player == null) {
                     sender.sendMessage("Players only.");
                     return true;
@@ -281,7 +284,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
                 for (int i = 4; i < args.length; i++) {
                     sb.append(' ').append(args[i]);
                 }
-                sender.sendMessage("§a" + ForgeBridge.adminSet(key, sb.toString()));
+                sender.sendMessage(ForgeBridge.adminSet(key, sb.toString()));
                 return true;
             }
             default -> {
@@ -289,5 +292,109 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
                 return true;
             }
         }
+    }
+
+    private static boolean isDirectStaffSubcommand(String sub) {
+        return switch (sub) {
+            case "off", "disable", "on", "enable", "toggle", "status",
+                 "whitelist", "wl" -> true;
+            default -> false;
+        };
+    }
+
+    private boolean handleDirectStaff(CommandSender sender, String[] args, String sub) {
+        switch (sub) {
+            case "off", "disable" -> {
+                sender.sendMessage(ForgeBridge.setSystemEnabled(false));
+                return true;
+            }
+            case "on", "enable" -> {
+                sender.sendMessage(ForgeBridge.setSystemEnabled(true));
+                return true;
+            }
+            case "toggle" -> {
+                sender.sendMessage(ForgeBridge.setSystemEnabled(!ForgeBridge.systemEnabled()));
+                return true;
+            }
+            case "status" -> {
+                sender.sendMessage(ForgeBridge.systemStatusText());
+                return true;
+            }
+            case "whitelist", "wl" -> {
+                return handleWhitelist(sender, args);
+            }
+            default -> {
+                return false;
+            }
+        }
+    }
+
+    private boolean handleWhitelist(CommandSender sender, String[] args) {
+        // /difficulty admin whitelist
+        if (args.length == 2) {
+            sender.sendMessage(ForgeBridge.whitelistStatusText());
+            return true;
+        }
+        String op = args[2].toLowerCase();
+        switch (op) {
+            case "on", "enable" -> {
+                sender.sendMessage(ForgeBridge.setWhitelistEnabled(true));
+                return true;
+            }
+            case "off", "disable" -> {
+                sender.sendMessage(ForgeBridge.setWhitelistEnabled(false));
+                return true;
+            }
+            case "toggle" -> {
+                sender.sendMessage(ForgeBridge.setWhitelistEnabled(!ForgeBridge.whitelistEnabled()));
+                return true;
+            }
+            case "status" -> {
+                sender.sendMessage(ForgeBridge.whitelistStatusText());
+                return true;
+            }
+            case "list" -> {
+                sender.sendMessage(ForgeBridge.whitelistListText());
+                return true;
+            }
+            case "add" -> {
+                if (args.length < 4) {
+                    sender.sendMessage("§cUsage: /difficulty admin whitelist add <player>");
+                    return true;
+                }
+                sender.sendMessage(ForgeBridge.whitelistAdd(args[3]));
+                return true;
+            }
+            case "remove", "rm", "del" -> {
+                if (args.length < 4) {
+                    sender.sendMessage("§cUsage: /difficulty admin whitelist remove <player|uuid>");
+                    return true;
+                }
+                StringBuilder name = new StringBuilder(args[3]);
+                for (int i = 4; i < args.length; i++) {
+                    name.append(' ').append(args[i]);
+                }
+                sender.sendMessage(ForgeBridge.whitelistRemove(name.toString()));
+                return true;
+            }
+            case "clear" -> {
+                sender.sendMessage(ForgeBridge.whitelistClear());
+                return true;
+            }
+            default -> {
+                sender.sendMessage("§cUsage: /difficulty admin whitelist on|off|add|remove|list|clear");
+                return true;
+            }
+        }
+    }
+
+    private static void sendAdminHelp(CommandSender sender) {
+        sender.sendMessage("§6Adaptive Difficulty — admin");
+        sender.sendMessage("§e/difficulty §7— open CMI/chest GUI");
+        sender.sendMessage("§e/difficulty admin off|on|toggle|status §7— master system switch");
+        sender.sendMessage("§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist");
+        sender.sendMessage("§e/difficulty admin reload|settings|area|set §7— config tools");
+        sender.sendMessage("§e/difficulty hard|normal|easy|peaceful §7— vanilla difficulty");
+        sender.sendMessage("§8Master keys: enabled · whitelistEnabled");
     }
 }

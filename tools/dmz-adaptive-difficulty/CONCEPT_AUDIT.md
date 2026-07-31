@@ -1,6 +1,6 @@
 # Concept audit — Adaptive Difficulty V3.1
 
-Mod version: **3.1.2** · GUI: **3.1.2**  
+Mod version: **3.1.3** · GUI: **3.1.3**  
 Spec: `DragonMineZ_Adaptive_Difficulty_System_Concept_V3.txt`
 
 | Spec area | Status |

@@ -490,6 +490,22 @@ public final class ForgeBridge {
 
     public static String adminSet(String key, String value) {
         try {
+            String k = key == null ? "" : key.toLowerCase(Locale.ROOT);
+            // Prefer dedicated setters so caches clear correctly.
+            if ("enabled".equals(k) || "system".equals(k) || "systemenabled".equals(k)) {
+                boolean on = Boolean.parseBoolean(value)
+                        || "on".equalsIgnoreCase(value)
+                        || "true".equalsIgnoreCase(value);
+                return setSystemEnabled(on);
+            }
+            if ("whitelistenabled".equals(k) || "whitelist".equals(k)) {
+                if (!("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)
+                        || "on".equalsIgnoreCase(value) || "off".equalsIgnoreCase(value))) {
+                    return "Use true/false, or: /difficulty admin whitelist add <player>";
+                }
+                boolean on = "true".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value);
+                return setWhitelistEnabled(on);
+            }
             Class<?> cfgCls = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig");
             Object cfg = cfgCls.getMethod("get").invoke(null);
             Field field = findConfigField(cfgCls, key);
@@ -502,10 +518,175 @@ public final class ForgeBridge {
             cfgCls.getMethod("save").invoke(null);
             Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache")
                     .getMethod("invalidateAll").invoke(null);
+            clearAreaCache();
             PLACEHOLDER_CACHE.clear();
             return "Set " + key + " = " + value;
         } catch (Throwable t) {
             return "Failed: " + t.getMessage();
+        }
+    }
+
+    public static String setSystemEnabled(boolean on) {
+        try {
+            Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+                    .getMethod("setEnabled", boolean.class)
+                    .invoke(null, on);
+            Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache")
+                    .getMethod("invalidateAll").invoke(null);
+            clearAreaCache();
+            PLACEHOLDER_CACHE.clear();
+            return on
+                    ? "§aAdaptive Difficulty ENABLED.\n§7Scaling, rewards, AI, and tier purchases are active again."
+                    : "§cAdaptive Difficulty DISABLED.\n§7No scaling, kill coins, AI, or tier purchases until re-enabled.\n§eRe-enable: §f/difficulty admin on";
+        } catch (Throwable t) {
+            return "§cFailed to toggle system: " + t.getMessage();
+        }
+    }
+
+    public static String setWhitelistEnabled(boolean on) {
+        try {
+            Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+                    .getMethod("setWhitelistEnabled", boolean.class)
+                    .invoke(null, on);
+            Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache")
+                    .getMethod("invalidateAll").invoke(null);
+            clearAreaCache();
+            PLACEHOLDER_CACHE.clear();
+            int n = whitelistEntries().size();
+            return on
+                    ? "§eWhitelist ENABLED §7(" + n + " entries).\n§7Only listed players use Adaptive Difficulty.\n§eAdd: §f/difficulty admin whitelist add <player>"
+                    : "§aWhitelist DISABLED.\n§7All players may use Adaptive Difficulty again (if system is on).";
+        } catch (Throwable t) {
+            return "§cFailed to toggle whitelist: " + t.getMessage();
+        }
+    }
+
+    public static String systemStatusText() {
+        boolean on = systemEnabled();
+        boolean wl = whitelistEnabled();
+        int n = whitelistEntries().size();
+        return (on ? "§aSystem ENABLED" : "§cSystem DISABLED")
+                + " §8· "
+                + (wl ? "§eWhitelist ON §7(" + n + " entries)" : "§7Whitelist OFF")
+                + "\n§8/difficulty admin whitelist on|off|add|remove|list";
+    }
+
+    public static String whitelistStatusText() {
+        boolean wl = whitelistEnabled();
+        int n = whitelistEntries().size();
+        return (wl ? "§eWhitelist ON" : "§7Whitelist OFF")
+                + " §8· §f" + n + " §7entries\n"
+                + "§8/difficulty admin whitelist add|remove|list|on|off|toggle|clear";
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<String> whitelistEntries() {
+        try {
+            Object list = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+                    .getMethod("whitelistEntries").invoke(null);
+            if (list instanceof List<?> raw) {
+                List<String> out = new ArrayList<>();
+                for (Object o : raw) {
+                    if (o != null) {
+                        out.add(String.valueOf(o));
+                    }
+                }
+                return out;
+            }
+        } catch (Throwable ignored) {
+        }
+        return List.of();
+    }
+
+    public static String whitelistListText() {
+        List<String> entries = whitelistEntries();
+        if (entries.isEmpty()) {
+            return "§7Whitelist is empty. §8Add with §f/difficulty admin whitelist add <player>";
+        }
+        return "§6Whitelist §7(" + entries.size() + ")\n§f" + String.join("§8, §f", entries);
+    }
+
+    public static String whitelistAdd(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "§cUsage: /difficulty admin whitelist add <player>";
+        }
+        try {
+            Class<?> cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig");
+            Player online = org.bukkit.Bukkit.getPlayerExact(raw.trim());
+            boolean added = false;
+            if (online != null) {
+                added = Boolean.TRUE.equals(cfg.getMethod("addWhitelistEntry", String.class)
+                        .invoke(null, online.getName())) || added;
+                added = Boolean.TRUE.equals(cfg.getMethod("addWhitelistEntry", String.class)
+                        .invoke(null, online.getUniqueId().toString())) || added;
+            } else {
+                added = Boolean.TRUE.equals(cfg.getMethod("addWhitelistEntry", String.class)
+                        .invoke(null, raw.trim()));
+            }
+            clearAreaCache();
+            PLACEHOLDER_CACHE.clear();
+            if (!added) {
+                return "§eAlready on whitelist: §f" + raw.trim();
+            }
+            String label = online != null ? online.getName() : raw.trim();
+            return "§aAdded §f" + label + " §ato whitelist"
+                    + (whitelistEnabled() ? "." : ".\n§eWhitelist is OFF — §f/difficulty admin whitelist on");
+        } catch (Throwable t) {
+            return "§cWhitelist add failed: " + t.getMessage();
+        }
+    }
+
+    public static String whitelistRemove(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "§cUsage: /difficulty admin whitelist remove <player|uuid>";
+        }
+        try {
+            Class<?> cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig");
+            Player online = org.bukkit.Bukkit.getPlayerExact(raw.trim());
+            boolean removed = Boolean.TRUE.equals(cfg.getMethod("removeWhitelistEntry", String.class)
+                    .invoke(null, raw.trim()));
+            if (online != null) {
+                removed = Boolean.TRUE.equals(cfg.getMethod("removeWhitelistEntry", String.class)
+                        .invoke(null, online.getName())) || removed;
+                removed = Boolean.TRUE.equals(cfg.getMethod("removeWhitelistEntry", String.class)
+                        .invoke(null, online.getUniqueId().toString())) || removed;
+            }
+            clearAreaCache();
+            PLACEHOLDER_CACHE.clear();
+            if (!removed) {
+                return "§cNot on whitelist: §f" + raw.trim();
+            }
+            return "§aRemoved §f" + raw.trim() + " §afrom whitelist.";
+        } catch (Throwable t) {
+            return "§cWhitelist remove failed: " + t.getMessage();
+        }
+    }
+
+    public static String whitelistClear() {
+        try {
+            Class<?> cfgCls = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig");
+            Object cfg = cfgCls.getMethod("get").invoke(null);
+            Field listField = cfgCls.getField("whitelist");
+            @SuppressWarnings("unchecked")
+            List<String> list = (List<String>) listField.get(cfg);
+            int n = list == null ? 0 : list.size();
+            if (list != null) {
+                list.clear();
+            }
+            cfgCls.getMethod("save").invoke(null);
+            clearAreaCache();
+            PLACEHOLDER_CACHE.clear();
+            return "§aCleared whitelist (§f" + n + "§a entries).";
+        } catch (Throwable t) {
+            return "§cWhitelist clear failed: " + t.getMessage();
+        }
+    }
+
+    private static void clearAreaCache() {
+        try {
+            Class.forName("com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty")
+                    .getMethod("clearCache").invoke(null);
+        } catch (Throwable ignored) {
         }
     }
 
@@ -795,8 +976,10 @@ public final class ForgeBridge {
                 Map.entry("vanilladifficulty", "vanillaDifficulty"),
                 Map.entry("enablemobscaling", "enableMobScaling"),
                 Map.entry("adminpermission", "adminPermission"),
-                Map.entry("basecost", "baseCost"),
-                Map.entry("costscaling", "costScaling"),
+                Map.entry("enabled", "enabled"),
+                Map.entry("system", "enabled"),
+                Map.entry("systemenabled", "enabled"),
+                Map.entry("whitelistenabled", "whitelistEnabled"),
                 Map.entry("rewardscaling", "rewardScaling"),
                 Map.entry("prestigemultiplier", "prestigeMultiplier"),
                 Map.entry("levelmultiplier", "levelMultiplier"),
