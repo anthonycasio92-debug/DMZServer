@@ -85,6 +85,8 @@ public final class DifficultyCommands {
                                 .executes(ctx -> showAreaDifficulty(ctx.getSource())))
                         .then(Commands.m_82127_("resetpurchased")
                                 .executes(ctx -> adminResetPurchasedOrDeny(ctx.getSource())))
+                        .then(Commands.m_82127_("characterreset")
+                                .executes(ctx -> adminCharacterResetOrDeny(ctx.getSource())))
                         .then(Commands.m_82127_("set")
                                 .then(Commands.m_82129_("key", StringArgumentType.word())
                                         .then(Commands.m_82129_("value", StringArgumentType.greedyString())
@@ -304,18 +306,20 @@ public final class DifficultyCommands {
 
     private static int adminHelp(CommandSourceStack source) {
         source.m_288197_(() -> Component.m_237113_(
-                "§6Adaptive Difficulty — admin (server-side only mod)\n"
+                "§6Adaptive Difficulty V3 — admin\n"
                         + "§e/difficulty §7— open player GUI (CMI / chest / chat)\n"
-                        + "§e/difficulty reset §7— set your active difficulty to 0 (free)\n"
+                        + "§e/difficulty reset §7— clear active tier/level (free)\n"
+                        + "§e/difficulty do character_reset §7— character-wipe hook (scriptable)\n"
                         + "§e/difficulty hard|normal|easy|peaceful §7— vanilla world difficulty (ops)\n"
                         + "§e/difficulty admin §7— toggle admin command access\n"
-                        + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased\n"
+                        + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased|characterreset\n"
                         + "§e/difficulty admin set <key> <value>\n"
-                        + "§8areaDifficultyMode=weighted|average|max (Scaling Health-style)\n"
-                        + "§8hardCapDifficulty — 0 = no hardcap (max from DMZ stats)\n"
-                        + "§8tierAwakened…tierZenith — unlock thresholds (Zenith=10M @ L100k/P10)\n"
-                        + "§8baseCostIronCoins|costScalePerDifficulty|costCoinItem\n"
-                        + "§8levelMultiplier|prestigeMultiplier|movement|dmzExtra*"
+                        + "§8V3 keys: unlockTier1Level…7 / unlockTier1Max…7 / unlockTier1Cost…7\n"
+                        + "§8unlockTier1EnemyMult…7 · combatRatingDmzWeight · combatRatingPrestigeWeight\n"
+                        + "§8combatRatingTransformWeight · combatRatingDifficultyWeight\n"
+                        + "§8enableAncientCoinDrops · ancientCoinDropMult · deathResetsActiveDifficulty\n"
+                        + "§8eliteMinUnlockTier · mutationMinUnlockTier · adaptiveAiMinUnlockTier\n"
+                        + "§8enemyEvolutionMinUnlockTier · bossMechanicsMinUnlockTier"
         ), false);
         return 1;
     }
@@ -338,6 +342,23 @@ public final class DifficultyCommands {
                 "§aCleared active tier/level (V3 temporary data). Unlocks & Ancient Coins kept."
         ), true);
         return 1;
+    }
+
+    private static int adminCharacterResetOrDeny(CommandSourceStack source) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        ServerPlayer player = source.m_230896_();
+        if (player == null) {
+            source.m_81352_(Component.m_237113_("Players only. Or run: /difficulty do character_reset"));
+            return 0;
+        }
+        DifficultyActions.Result result =
+                DifficultyActions.handleArg(player, DifficultyActions.ACT_CHARACTER_RESET, "0", "");
+        result.tell(player);
+        AreaDifficulty.clearCache();
+        source.m_288197_(() -> Component.m_237113_("§aCharacter difficulty reset applied."), true);
+        return result.ok() ? 1 : 0;
     }
 
     private static int adminSet(CommandSourceStack source, String key, String value) {
@@ -448,6 +469,78 @@ public final class DifficultyCommands {
                 case "areagroupbonuspercent" -> cfg.areaGroupBonusPercent = Double.parseDouble(value);
                 case "areadifficultyvariancepercent" ->
                         cfg.areaDifficultyVariancePercent = Double.parseDouble(value);
+
+                // ── V3 Combat Rating ───────────────────────────────────────
+                case "combatratingdmzweight", "crdmz", "crdmzweight" ->
+                        cfg.combatRatingDmzWeight = Double.parseDouble(value);
+                case "combatratingprestigeweight", "crprestige", "crprestigeweight" ->
+                        cfg.combatRatingPrestigeWeight = Double.parseDouble(value);
+                case "combatratingtransformweight", "crtransform", "crtransformweight" ->
+                        cfg.combatRatingTransformWeight = Double.parseDouble(value);
+                case "combatratingdifficultyweight", "crdifficulty", "crdiffweight" ->
+                        cfg.combatRatingDifficultyWeight = Double.parseDouble(value);
+
+                // ── V3 Unlock tier levels / max / costs / enemy mults ───────
+                case "unlocktier1level", "tier1level" -> cfg.unlockTier1Level = Math.max(0L, Long.parseLong(value));
+                case "unlocktier2level", "tier2level" -> cfg.unlockTier2Level = Math.max(0L, Long.parseLong(value));
+                case "unlocktier3level", "tier3level" -> cfg.unlockTier3Level = Math.max(0L, Long.parseLong(value));
+                case "unlocktier4level", "tier4level" -> cfg.unlockTier4Level = Math.max(0L, Long.parseLong(value));
+                case "unlocktier5level", "tier5level" -> cfg.unlockTier5Level = Math.max(0L, Long.parseLong(value));
+                case "unlocktier6level", "tier6level" -> cfg.unlockTier6Level = Math.max(0L, Long.parseLong(value));
+                case "unlocktier7level", "tier7level" -> cfg.unlockTier7Level = Math.max(0L, Long.parseLong(value));
+                case "unlocktier1max", "tier1max" -> cfg.unlockTier1Max = Math.max(0L, Long.parseLong(value));
+                case "unlocktier2max", "tier2max" -> cfg.unlockTier2Max = Math.max(0L, Long.parseLong(value));
+                case "unlocktier3max", "tier3max" -> cfg.unlockTier3Max = Math.max(0L, Long.parseLong(value));
+                case "unlocktier4max", "tier4max" -> cfg.unlockTier4Max = Math.max(0L, Long.parseLong(value));
+                case "unlocktier5max", "tier5max" -> cfg.unlockTier5Max = Math.max(0L, Long.parseLong(value));
+                case "unlocktier6max", "tier6max" -> cfg.unlockTier6Max = Math.max(0L, Long.parseLong(value));
+                case "unlocktier7max", "tier7max" -> cfg.unlockTier7Max = Math.max(0L, Long.parseLong(value));
+                case "unlocktier1cost", "tier1cost" -> cfg.unlockTier1Cost = Math.max(0L, Long.parseLong(value));
+                case "unlocktier2cost", "tier2cost" -> cfg.unlockTier2Cost = Math.max(0L, Long.parseLong(value));
+                case "unlocktier3cost", "tier3cost" -> cfg.unlockTier3Cost = Math.max(0L, Long.parseLong(value));
+                case "unlocktier4cost", "tier4cost" -> cfg.unlockTier4Cost = Math.max(0L, Long.parseLong(value));
+                case "unlocktier5cost", "tier5cost" -> cfg.unlockTier5Cost = Math.max(0L, Long.parseLong(value));
+                case "unlocktier6cost", "tier6cost" -> cfg.unlockTier6Cost = Math.max(0L, Long.parseLong(value));
+                case "unlocktier7cost", "tier7cost" -> cfg.unlockTier7Cost = Math.max(0L, Long.parseLong(value));
+                case "unlocktier1enemymult", "tier1enemymult" ->
+                        cfg.unlockTier1EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                case "unlocktier2enemymult", "tier2enemymult" ->
+                        cfg.unlockTier2EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                case "unlocktier3enemymult", "tier3enemymult" ->
+                        cfg.unlockTier3EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                case "unlocktier4enemymult", "tier4enemymult" ->
+                        cfg.unlockTier4EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                case "unlocktier5enemymult", "tier5enemymult" ->
+                        cfg.unlockTier5EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                case "unlocktier6enemymult", "tier6enemymult" ->
+                        cfg.unlockTier6EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                case "unlocktier7enemymult", "tier7enemymult" ->
+                        cfg.unlockTier7EnemyMult = Math.max(0.0, Double.parseDouble(value));
+
+                // ── V3 Ancient Coins + feature gates ───────────────────────
+                case "enableancientcoindrops", "ancientcoindrops" ->
+                        cfg.enableAncientCoinDrops = Boolean.parseBoolean(value);
+                case "ancientcoindropmult", "coindropmult" ->
+                        cfg.ancientCoinDropMult = Math.max(0.0, Double.parseDouble(value));
+                case "ancientcoinratingdivisor", "coinratingdivisor" ->
+                        cfg.ancientCoinRatingDivisor = Math.max(1.0, Double.parseDouble(value));
+                case "upgradecostbaseancient", "upgradecostbase" ->
+                        cfg.upgradeCostBaseAncient = Math.max(0.0, Double.parseDouble(value));
+                case "upgradecostscaleperlevel", "upgradecostscale" ->
+                        cfg.upgradeCostScalePerLevel = Math.max(0.0, Double.parseDouble(value));
+                case "deathresetsactivedifficulty", "deathreset" ->
+                        cfg.deathResetsActiveDifficulty = Boolean.parseBoolean(value);
+                case "eliteminunlocktier", "elitemintier" ->
+                        cfg.eliteMinUnlockTier = Math.max(0, Integer.parseInt(value));
+                case "mutationminunlocktier", "mutationmintier" ->
+                        cfg.mutationMinUnlockTier = Math.max(0, Integer.parseInt(value));
+                case "adaptiveaiminunlocktier", "aimintier" ->
+                        cfg.adaptiveAiMinUnlockTier = Math.max(0, Integer.parseInt(value));
+                case "enemyevolutionminunlocktier", "evolutionmintier" ->
+                        cfg.enemyEvolutionMinUnlockTier = Math.max(0, Integer.parseInt(value));
+                case "bossmechanicsminunlocktier", "bossmintier" ->
+                        cfg.bossMechanicsMinUnlockTier = Math.max(0, Integer.parseInt(value));
+
                 default -> {
                     source.m_81352_(Component.m_237113_("Unknown key: " + key));
                     return 0;

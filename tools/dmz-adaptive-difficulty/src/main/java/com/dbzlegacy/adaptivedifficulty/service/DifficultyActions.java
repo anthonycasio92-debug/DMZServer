@@ -23,6 +23,8 @@ public final class DifficultyActions {
     public static final String ACT_SET = "set";
     public static final String ACT_SET_MAX = "set_max";
     public static final String ACT_RESET = "reset";
+    /** Character wipe: same temporary clear as death (unlocks / prestige / coins kept). */
+    public static final String ACT_CHARACTER_RESET = "character_reset";
     public static final String ACT_REFRESH = "refresh";
     public static final String ACT_PAGE = "page";
     public static final String ACT_EQUIP_TITLE = "equip_title";
@@ -77,6 +79,7 @@ public final class DifficultyActions {
             case ACT_SET -> setActive(player, Math.max(0L, amount), page);
             case ACT_SET_MAX -> setActive(player, Long.MAX_VALUE, page);
             case ACT_RESET, "zero", "clear" -> resetActive(player, page);
+            case ACT_CHARACTER_RESET, "char_reset", "characterreset" -> characterReset(player, page);
             case ACT_REFRESH -> {
                 openGui(player, page);
                 yield Result.ok("");
@@ -229,6 +232,21 @@ public final class DifficultyActions {
         DifficultyCache.refresh(player);
         openGui(player, page);
         return Result.ok("Active difficulty cleared. Unlocks and Ancient Coins kept.");
+    }
+
+    /**
+     * Character reset hook for DMZ / CNPC scripts.
+     * Clears temporary difficulty state; keeps prestige, unlock tiers, Ancient Coins.
+     */
+    private static Result characterReset(ServerPlayer player, String page) {
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        data.resetTemporary();
+        DifficultyCache.save(player);
+        DifficultyCache.refresh(player);
+        if (page != null && !page.isBlank()) {
+            openGui(player, page);
+        }
+        return Result.ok("Character reset: active tier/level cleared. Prestige, unlocks, and Ancient Coins kept.");
     }
 
     private static Result cycleTeam(ServerPlayer player, String page) {

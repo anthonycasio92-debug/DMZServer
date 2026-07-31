@@ -103,21 +103,23 @@ public final class CmiDifficultyGui {
         status.addLore(List.of(
                 "",
                 "&f" + ph.getOrDefault("active", "?") + " &8/ &7" + ph.getOrDefault("available", "?"),
-                "&7Active / Available",
+                "&7Active / Ceiling",
                 "",
-                "&7State  &" + stateColor + ph.getOrDefault("state", "?"),
-                "&7Inv    &f" + ph.getOrDefault("balance", "?"),
+                "&7State   &" + stateColor + ph.getOrDefault("state", "?"),
+                "&7Tier    &f" + ph.getOrDefault("active_tier_name", "None"),
+                "&7CR      &f" + ph.getOrDefault("combat_rating", "?"),
+                "&7Ancient &f" + ph.getOrDefault("balance", "?"),
                 "",
-                "&8Raising costs inventory coins"
+                "&8Raising costs Ancient Coins"
         ));
         gui.addButton(status);
 
         gui.addButton(actionBtn(6, Material.ORANGE_CONCRETE, "&6Max", "set_max", "0", "adjust",
                 List.of("&7Jump to available max", "&f" + ph.getOrDefault("available", "?"),
                         "&8Cost &e" + ph.getOrDefault("cost_max", "?"),
-                        "&8Paid from inventory coins")));
+                        "&8Paid with Ancient Coins")));
         gui.addButton(actionBtn(7, Material.WHITE_CONCRETE, "&fReset", "reset", "0", "adjust",
-                List.of("&7Set active to &f0", "&8Purchased max kept", "&8Always free")));
+                List.of("&7Clear active tier & level", "&8Unlocks & coins kept", "&8Always free")));
 
         // Lower row (large → small)
         gui.addButton(actionBtn(19, Material.RED_CONCRETE, "&c−100000", "down", "100000", "adjust",
@@ -138,28 +140,28 @@ public final class CmiDifficultyGui {
         // Raise row (small → large)
         gui.addButton(actionBtn(28, Material.LIME_TERRACOTTA, "&a+1", "up", "1", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_1", "?"),
-                        "&8Paid from inventory coins")));
+                        "&8Paid with Ancient Coins")));
         gui.addButton(actionBtn(29, Material.LIME_CONCRETE, "&a+5", "up", "5", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_5", "?"),
-                        "&8Paid from inventory coins")));
+                        "&8Paid with Ancient Coins")));
         gui.addButton(actionBtn(30, Material.GREEN_TERRACOTTA, "&a+25", "up", "25", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_25", "?"),
-                        "&8Paid from inventory coins")));
+                        "&8Paid with Ancient Coins")));
         gui.addButton(actionBtn(31, Material.GREEN_CONCRETE, "&a+100", "up", "100", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_100", "?"),
-                        "&8Paid from inventory coins")));
+                        "&8Paid with Ancient Coins")));
         gui.addButton(actionBtn(32, Material.EMERALD, "&a+1000", "up", "1000", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_1000", "?"),
-                        "&8Paid from inventory coins")));
+                        "&8Paid with Ancient Coins")));
         gui.addButton(actionBtn(33, Material.DIAMOND, "&a+10000", "up", "10000", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_10000", "?"),
-                        "&8Paid from inventory coins")));
+                        "&8Paid with Ancient Coins")));
         gui.addButton(actionBtn(34, Material.NETHERITE_INGOT, "&a+100000", "up", "100000", "adjust",
                 List.of("&7Raise active difficulty", "&8Cost &e" + ph.getOrDefault("cost_up_100000", "?"),
-                        "&8Paid from inventory coins")));
+                        "&8Paid with Ancient Coins")));
 
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));
-        gui.addButton(pageBtn(40, Material.GOLD_INGOT, "&eBuy Max", "buy", "&7Unlock more available max"));
+        gui.addButton(pageBtn(40, Material.GOLD_INGOT, "&eTiers", "buy", "&7Activate unlocked tiers"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -294,13 +296,12 @@ public final class CmiDifficultyGui {
         core.addLore(List.of(
                 "",
                 "&7Active      &f" + ph.getOrDefault("active", "?"),
-                "&7Available   &f" + ph.getOrDefault("available", "?"),
-                "&7Theoretical &f" + ph.getOrDefault("calculated", "?"),
-                "&7Purchased   &f" + ph.getOrDefault("purchased", "?"),
+                "&7Ceiling     &f" + ph.getOrDefault("available", "?"),
+                "&7Combat CR   &f" + ph.getOrDefault("combat_rating", "?"),
                 "&7Personal    &f" + ph.getOrDefault("personal_max", "?"),
                 "",
                 "&7State  &" + stateColor + ph.getOrDefault("state", "?"),
-                "&7Tier   &f" + ph.getOrDefault("tier", "?")
+                "&7Tier   &f" + ph.getOrDefault("active_tier_name", ph.getOrDefault("tier", "?"))
         ));
         gui.addButton(core);
 
@@ -318,19 +319,19 @@ public final class CmiDifficultyGui {
         ));
         gui.addButton(team);
 
-        CMIGuiButton account = new CMIGuiButton(15, Material.GOLD_INGOT, "&f&lInventory");
+        CMIGuiButton account = new CMIGuiButton(15, Material.GOLD_INGOT, "&f&lAncient Coins");
         account.lockField();
         account.addLore(List.of(
                 "",
-                "&7Coins   &f" + ph.getOrDefault("balance", "?"),
+                "&7Balance &f" + ph.getOrDefault("balance", "?"),
                 "&7Level   &f" + ph.getOrDefault("level", "?"),
                 "&7Prestige &f" + ph.getOrDefault("prestige", "?"),
                 "",
                 "&7Title   &e" + ph.getOrDefault("active_title", "none"),
                 "&7Owned   &f" + ph.getOrDefault("titles_count", "0"),
                 "",
-                "&8Difficulty purchases use",
-                "&8inventory coins only"
+                "&8Activation & upgrades use",
+                "&8Ancient Coins only"
         ));
         gui.addButton(account);
 

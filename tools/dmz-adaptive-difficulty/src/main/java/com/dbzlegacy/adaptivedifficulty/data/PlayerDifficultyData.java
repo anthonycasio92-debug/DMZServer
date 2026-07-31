@@ -91,10 +91,14 @@ public final class PlayerDifficultyData {
         setActiveDifficultyLevel(level);
     }
 
-    /** Death / character-reset: clear temporary activation only. */
+    /**
+     * Death / character-reset: clear temporary activation only.
+     * Keeps prestige, unlock tiers, and Ancient Coin wallet.
+     */
     public void resetTemporary() {
         this.activeTier = 0;
         this.activeDifficultyLevel = 0L;
+        this.teamMode = TeamMode.PERSONAL_ONLY;
     }
 
     public long getAncientCopper() {
