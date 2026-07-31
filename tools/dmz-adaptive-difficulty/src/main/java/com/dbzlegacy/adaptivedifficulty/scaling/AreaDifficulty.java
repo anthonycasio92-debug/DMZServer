@@ -24,7 +24,8 @@ import net.minecraft.world.phys.AABB;
  * Uses cached player snapshots (no full refresh on spawn) and a short chunk TTL cache.
  */
 public final class AreaDifficulty {
-    private static final long CACHE_TTL_MS = 250L;
+    /** Longer TTL — spawn bursts were thrashing chunk difficulty recomputes. */
+    private static final long CACHE_TTL_MS = 1_000L;
     private static final Map<Long, Cached> CHUNK_CACHE = new ConcurrentHashMap<>();
 
     private AreaDifficulty() {}

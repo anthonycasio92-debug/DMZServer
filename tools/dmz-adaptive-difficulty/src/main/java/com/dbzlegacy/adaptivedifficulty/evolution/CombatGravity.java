@@ -26,18 +26,16 @@ import net.minecraft.world.phys.AABB;
  * Stacks DMZ gravity-chamber pressure on players from nearby Endermen / Wardens /
  * Gravity-mutated hostiles — same path as a real {@code GravityDevice}.
  * <p>
- * {@link GravityDeviceManager#getGravityFor} takes the <b>max</b> of overlapping
- * zones, so we register <b>one zone per player</b> whose gravity equals the
- * sum of all active contributions (more Endermen → heavier gravity).
- * <p>
- * Contributions are refreshed every player tick from proximity (not only when a
- * mob currently has the player as AI target), so teleporting Endermen still apply
- * pressure while near the player.
+ * Heavy entity scans run every {@link #SCAN_INTERVAL_TICKS} (not every player tick).
+ * Zone register / client sync only fire when the applied gravity actually changes.
  */
 public final class CombatGravity {
     private static final Map<UUID, Map<UUID, Contribution>> BY_PLAYER = new ConcurrentHashMap<>();
+    private static final Map<UUID, Double> LAST_APPLIED = new ConcurrentHashMap<>();
     private static final double SCAN_RADIUS = 28.0;
     private static final int CONTRIB_TTL_TICKS = 40;
+    /** Full proximity scan cadence — was every tick and crushed TPS. */
+    private static final int SCAN_INTERVAL_TICKS = 20;
 
     private CombatGravity() {}
 
@@ -58,7 +56,7 @@ public final class CombatGravity {
                 .put(sourceId, new Contribution(gravity, expire));
     }
 
-    /** Apply / clear the player's combat gravity zone. Call every player tick. */
+    /** Apply / clear the player's combat gravity zone. Call from player tick. */
     public static void tickPlayer(ServerPlayer player) {
         if (player == null || player.m_9236_().f_46443_) {
             return;
@@ -67,8 +65,10 @@ public final class CombatGravity {
             return;
         }
 
-        // Proximity refresh — do not require mob AI target (Endermen teleport often).
-        scanNearbySources(player, level);
+        // Expensive AABB scan only every SCAN_INTERVAL_TICKS.
+        if (player.f_19797_ % SCAN_INTERVAL_TICKS == 0) {
+            scanNearbySources(player, level);
+        }
 
         Map<UUID, Contribution> sources = BY_PLAYER.get(player.m_20148_());
         double total = 0.0;
@@ -88,16 +88,21 @@ public final class CombatGravity {
             }
         }
 
+        double gravity = total <= 0.05 ? 0.0 : Math.min(400.0, total);
+        Double prev = LAST_APPLIED.get(player.m_20148_());
+        // Skip GravityDeviceManager + network sync unless the value moved.
+        if (prev != null && Math.abs(prev - gravity) < 0.5) {
+            return;
+        }
+        LAST_APPLIED.put(player.m_20148_(), gravity);
+
         BlockPos key = keyFor(player);
         try {
-            if (total <= 0.05) {
+            if (gravity <= 0.05) {
                 GravityDeviceManager.unregister(level, key);
                 GravityStateSync.sync(player);
                 return;
             }
-            // Cap below device max (1000) so combat pressure stays playable.
-            double gravity = Math.min(400.0, total);
-            // Wide box so feet/eyes stay inside while sprinting / flying.
             AABB box = player.m_20191_().m_82377_(4.0, 3.0, 4.0); // inflate(x,y,z)
             GravityDeviceManager.register(level, key, box, gravity);
             GravityStateSync.sync(player);
@@ -109,59 +114,75 @@ public final class CombatGravity {
 
     /**
      * Find nearby gravity-capable hostiles and stack their pressure.
-     * Works at Awakened+ for Endermen/Wardens; Gravity mutations work whenever present.
+     * Prefer typed queries (Enderman/Warden) over scanning every Mob.
      */
     private static void scanNearbySources(ServerPlayer player, ServerLevel level) {
         AABB box = player.m_20191_().m_82400_(SCAN_RADIUS);
-        List<Mob> mobs = level.m_45976_(Mob.class, box);
-        for (Mob mob : mobs) {
-            if (mob == null || !mob.m_6084_()) {
-                continue;
+        // Typed scans beat Mob.class + instanceof filters on busy servers.
+        for (EnderMan mob : level.m_45976_(EnderMan.class, box)) {
+            consider(player, mob, true, false);
+        }
+        for (Warden mob : level.m_45976_(Warden.class, box)) {
+            consider(player, mob, false, true);
+        }
+        // Gravity mutations are rare — only scan Mob when the player is near other hostiles.
+        // Keep this cheap: skip unless we already have endermen/wardens OR every 60 ticks.
+        if (player.f_19797_ % 60 == 0) {
+            for (Mob mob : level.m_45976_(Mob.class, box)) {
+                if (mob instanceof EnderMan || mob instanceof Warden) {
+                    continue;
+                }
+                MutationType mutation = MutationSystem.get(mob);
+                if (mutation == MutationType.GRAVITY_ENDERMAN) {
+                    consider(player, mob, false, false);
+                }
             }
-            if (!PersistentDataAccess.flag(mob, MobScaling.TAG_SCALED)
-                    && !EliteSystem.isElite(mob)) {
-                continue;
-            }
-            MutationType mutation = MutationSystem.get(mob);
-            boolean enderman = mob instanceof EnderMan;
-            boolean warden = mob instanceof Warden;
-            boolean gravityMut = mutation == MutationType.GRAVITY_ENDERMAN;
-            if (!enderman && !warden && !gravityMut) {
-                continue;
-            }
+        }
+    }
 
-            long difficulty = MobScaling.difficultyOf(mob);
-            DifficultyTier tier = DifficultyTier.of(difficulty);
-            if (EliteSystem.isElite(mob) && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
-                tier = DifficultyTier.ELITE;
-            }
-            if (!gravityMut && tier.ordinalPower() < DifficultyTier.AWAKENED.ordinalPower()) {
-                continue;
-            }
-            if (difficulty <= 0L && !EliteSystem.isElite(mob) && !gravityMut) {
-                continue;
-            }
+    private static void consider(ServerPlayer player, Mob mob, boolean enderman, boolean warden) {
+        if (mob == null || !mob.m_6084_()) {
+            return;
+        }
+        if (!PersistentDataAccess.flag(mob, MobScaling.TAG_SCALED)
+                && !EliteSystem.isElite(mob)) {
+            return;
+        }
+        MutationType mutation = MutationSystem.get(mob);
+        boolean gravityMut = mutation == MutationType.GRAVITY_ENDERMAN;
+        if (!enderman && !warden && !gravityMut) {
+            return;
+        }
 
-            float dist = mob.m_20270_(player);
-            if (dist > SCAN_RADIUS) {
-                continue;
-            }
+        long difficulty = MobScaling.difficultyOf(mob);
+        DifficultyTier tier = DifficultyTier.of(difficulty);
+        if (EliteSystem.isElite(mob) && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
+            tier = DifficultyTier.ELITE;
+        }
+        if (!gravityMut && tier.ordinalPower() < DifficultyTier.AWAKENED.ordinalPower()) {
+            return;
+        }
+        if (difficulty <= 0L && !EliteSystem.isElite(mob) && !gravityMut) {
+            return;
+        }
 
-            double kitMult = warden ? 1.6 : 1.0;
-            if (gravityMut) {
-                kitMult *= 1.5;
-            }
-            double g = gravityFor(mob, tier, Math.max(1L, difficulty), kitMult);
-            // Soft falloff past 16 blocks so distant mobs nudge instead of crush.
-            if (dist > 16.0f) {
-                g *= Math.max(0.35, 1.0 - (dist - 16.0) / (SCAN_RADIUS - 16.0) * 0.65);
-            }
-            contribute(player, mob.m_20148_(), g, CONTRIB_TTL_TICKS);
+        float dist = mob.m_20270_(player);
+        if (dist > SCAN_RADIUS) {
+            return;
+        }
 
-            // Keep them locked onto the player so kits/AI keep firing.
-            if (mob.m_5448_() != player && dist < 22.0f) {
-                mob.m_6710_(player);
-            }
+        double kitMult = warden ? 1.6 : 1.0;
+        if (gravityMut) {
+            kitMult *= 1.5;
+        }
+        double g = gravityFor(mob, tier, Math.max(1L, difficulty), kitMult);
+        if (dist > 16.0f) {
+            g *= Math.max(0.35, 1.0 - (dist - 16.0) / (SCAN_RADIUS - 16.0) * 0.65);
+        }
+        contribute(player, mob.m_20148_(), g, CONTRIB_TTL_TICKS);
+
+        if (mob.m_5448_() != player && dist < 22.0f) {
+            mob.m_6710_(player);
         }
     }
 
@@ -183,6 +204,7 @@ public final class CombatGravity {
             return;
         }
         BY_PLAYER.remove(player.m_20148_());
+        LAST_APPLIED.remove(player.m_20148_());
         try {
             if (player.m_9236_() instanceof ServerLevel level) {
                 GravityDeviceManager.unregister(level, keyFor(player));

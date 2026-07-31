@@ -84,19 +84,28 @@ public final class MobScaling {
             return;
         }
         try {
-            // Never retarget / revive a mob that is already at 0 HP.
-            if (terminateIfZeroHealth(entity)) {
-                return;
-            }
             DifficultyConfig cfg = DifficultyConfig.get();
             if (!cfg.enableMobScaling) {
                 return;
             }
+            // Cheap hostility gate before any NBT / kill checks.
             if (cfg.scaleHostileOnly && !HostileMobs.isHostile(entity)) {
                 return;
             }
             CompoundTag tag = PersistentDataAccess.get(entity);
             if (!PersistentDataAccess.isWritable(tag)) {
+                return;
+            }
+            long difficulty = Math.max(0L, DifficultyCache.get(player).active);
+            // Hot path: already matched — exit before terminate / apply work.
+            if (tag.m_128471_(TAG_SCALED)
+                    && tag.m_128441_(TAG_BASE_HEALTH)
+                    && tag.m_128441_(TAG_DIFFICULTY)
+                    && tag.m_128454_(TAG_DIFFICULTY) == difficulty) {
+                return;
+            }
+            // Never retarget / revive a mob that is already at 0 HP.
+            if (terminateIfZeroHealth(entity)) {
                 return;
             }
             // Ensure spawn init ran (bases + elite/boss/mut rolls).
@@ -107,7 +116,6 @@ public final class MobScaling {
             if (!tag.m_128441_(TAG_BASE_HEALTH)) {
                 return;
             }
-            long difficulty = Math.max(0L, DifficultyCache.get(player).active);
             if (tag.m_128441_(TAG_DIFFICULTY) && tag.m_128454_(TAG_DIFFICULTY) == difficulty) {
                 return;
             }
@@ -132,8 +140,9 @@ public final class MobScaling {
         if (entity == null || entity.m_9236_().f_46443_) {
             return false;
         }
-        CompoundTag tag = PersistentDataAccess.get(entity);
-        if (!tag.m_128471_(TAG_SCALED)) {
+        // Fast reject: healthy mobs never need NBT.
+        float hp = entity.m_21223_();
+        if (hp > 0.0f && !Float.isNaN(hp) && !Float.isInfinite(hp)) {
             return false;
         }
         if (entity.m_213877_()) { // isRemoved
@@ -142,8 +151,8 @@ public final class MobScaling {
         if (entity.m_21224_()) { // isDeadOrDying
             return true;
         }
-        float hp = entity.m_21223_();
-        if (hp > 0.0f && !Float.isNaN(hp) && !Float.isInfinite(hp)) {
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (!tag.m_128471_(TAG_SCALED)) {
             return false;
         }
         try {

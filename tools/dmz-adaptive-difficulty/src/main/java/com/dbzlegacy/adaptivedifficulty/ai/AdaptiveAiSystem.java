@@ -106,13 +106,13 @@ public final class AdaptiveAiSystem {
         LivingEntity target = mob.m_5448_();
         double scan = Math.min(aiRadius(tier), cfg.mobScaleRadius);
 
-        // Awakened+: lock onto a nearby player so kits (gravity/ki/leap) actually fire.
-        // Enhanced+ still prefers the weakest target.
-        if (tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
-            focusWeakest(mob, level, scan);
-            target = mob.m_5448_();
-        } else if (!(target instanceof Player)) {
-            focusNearest(mob, level, Math.min(20.0, scan));
+        // Only run expensive player AABB scans when we don't already have a living player target.
+        if (!(target instanceof Player) || !target.m_6084_()) {
+            if (tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
+                focusWeakest(mob, level, scan);
+            } else {
+                focusNearest(mob, level, Math.min(20.0, scan));
+            }
             target = mob.m_5448_();
         }
 
@@ -188,10 +188,17 @@ public final class AdaptiveAiSystem {
             return;
         }
         LivingEntity entity = event.getEntity();
-        if (!(entity instanceof Mob) || entity.m_9236_().f_46443_) {
+        if (!(entity instanceof Mob mob) || entity.m_9236_().f_46443_) {
             return;
         }
-        DifficultyTier tier = resolveTier(entity, MobScaling.difficultyOf(entity));
+        if (!HostileMobs.isHostile(mob) || !PersistentDataAccess.flag(mob, MobScaling.TAG_SCALED)) {
+            return;
+        }
+        long difficulty = MobScaling.difficultyOf(entity);
+        if (difficulty <= 0L && !EliteSystem.isElite(entity)) {
+            return;
+        }
+        DifficultyTier tier = resolveTier(entity, difficulty);
         // Dodge starts at Advanced, stays modest until high tiers
         if (tier.ordinalPower() < DifficultyTier.ADVANCED.ordinalPower()) {
             return;

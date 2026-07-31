@@ -117,6 +117,7 @@ public final class DifficultyEvents {
     /**
      * Before damage is calculated: scale the hostile to the involved player's difficulty
      * so multi-player fights stay fair for whoever is currently engaged.
+     * (Hurt-event retarget removed — duplicate work crushed TPS.)
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onAttack(LivingAttackEvent event) {
@@ -135,8 +136,8 @@ public final class DifficultyEvents {
     }
 
     /**
-     * Concept §17 — only touch mobs that need work.
-     * Unscaled hostiles get sparse spawn-retry; unmarked vanilla mobs exit immediately.
+     * Concept §17 — only touch hostiles that need work.
+     * Animals / villagers exit before any NBT access.
      */
     @SubscribeEvent
     public void onLivingTick(LivingEvent.LivingTickEvent event) {
@@ -144,8 +145,21 @@ public final class DifficultyEvents {
         if (!(entity instanceof Mob mob) || entity.m_9236_().f_46443_ || entity instanceof Player) {
             return;
         }
+        // Biggest TPS win: ignore non-hostiles entirely (no persistent-data lookup).
+        if (!HostileMobs.isHostile(mob)) {
+            return;
+        }
 
         int age = entity.f_19797_;
+
+        // Cheap death check before NBT — healthy mobs skip terminate path.
+        float hp = entity.m_21223_();
+        if (!(hp > 0.0f) || Float.isNaN(hp) || Float.isInfinite(hp)) {
+            if (MobScaling.terminateIfZeroHealth(entity)) {
+                return;
+            }
+        }
+
         CompoundTag tag = PersistentDataAccess.get(entity);
         boolean scaled = tag.m_128471_(MobScaling.TAG_SCALED);
 
@@ -156,11 +170,6 @@ public final class DifficultyEvents {
             scaled = tag.m_128471_(MobScaling.TAG_SCALED);
         }
         if (!scaled) {
-            return;
-        }
-
-        // Difficulty-scaled mobs stuck at 0 HP must die (retarget / Mohist edge cases).
-        if (MobScaling.terminateIfZeroHealth(entity)) {
             return;
         }
 
@@ -175,21 +184,54 @@ public final class DifficultyEvents {
             return;
         }
 
-        if (mutated && age % 20 == 0) {
+        // Mutations / boss phases — less frequent than before.
+        if (mutated && age % 40 == 0) {
             MutationSystem.tick(entity, tag);
         }
-        if (boss && age % 10 == 0) {
+        if (boss && age % 20 == 0) {
             BossScaling.tickPhases(entity, tag);
         }
 
-        // Stagger AI / evolution across entity ids to smooth TPS.
-        int stagger = Math.floorMod(entity.m_19879_(), 20);
-        if (age % 20 == stagger) {
+        // Heavy AI / evolution: every 40 ticks, staggered — skip when no nearby players.
+        int period = 40;
+        int stagger = Math.floorMod(entity.m_19879_(), period);
+        boolean aiSlot = age % period == stagger;
+        boolean evoSlot = age % period == ((stagger + (period / 2)) % period);
+        if (!aiSlot && !evoSlot) {
+            return;
+        }
+        if (!hasNearbyPlayer(mob, 64.0)) {
+            return;
+        }
+        if (aiSlot) {
             AdaptiveAiSystem.tick(mob, difficulty, elite);
         }
-        if (EnemyEvolution.isEvolvable(mob) && age % 20 == ((stagger + 10) % 20)) {
+        if (evoSlot && EnemyEvolution.isEvolvable(mob)) {
             EnemyEvolution.tick(mob, difficulty, elite);
         }
+    }
+
+    /** Cheap online-player distance check (avoids AABB entity queries). */
+    private static boolean hasNearbyPlayer(Mob mob, double radius) {
+        if (!(mob.m_9236_() instanceof net.minecraft.server.level.ServerLevel level)) {
+            return false;
+        }
+        double rSq = radius * radius;
+        double x = mob.m_20185_();
+        double y = mob.m_20186_();
+        double z = mob.m_20189_();
+        for (ServerPlayer player : level.m_7654_().m_6846_().m_11314_()) {
+            if (player == null || player.m_9236_() != level || !player.m_6084_()) {
+                continue;
+            }
+            double dx = player.m_20185_() - x;
+            double dy = player.m_20186_() - y;
+            double dz = player.m_20189_() - z;
+            if (dx * dx + dy * dy + dz * dz <= rSq) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @SubscribeEvent
@@ -224,14 +266,6 @@ public final class DifficultyEvents {
         LivingEntity victim = event.getEntity();
         var source = event.getSource();
         Entity causing = source == null ? null : source.m_7639_(); // getEntity
-        // Retarget again here as a Mohist safety net (some paths skip LivingAttackEvent).
-        if (causing instanceof ServerPlayer player && HostileMobs.isHostile(victim)) {
-            MobScaling.retargetToPlayer(victim, player);
-        } else if (victim instanceof ServerPlayer player
-                && causing instanceof LivingEntity atk
-                && HostileMobs.isHostile(atk)) {
-            MobScaling.retargetToPlayer(atk, player);
-        }
         // Block hostile→hostile (and hostile booms on other hostiles). Allow self-damage
         // so creeper fuse can finish killing the exploding creeper on some Mohist paths.
         if (HostileMobs.isHostile(victim) && !(causing instanceof Player) && causing != victim) {
@@ -253,7 +287,7 @@ public final class DifficultyEvents {
         }
 
         float amount = event.getAmount();
-        if (amount > 0.0f) {
+        if (amount > 0.0f && causing instanceof LivingEntity && !(causing instanceof Player)) {
             float scaled = MobScaling.scaleOutgoingHurt(amount, event.getSource());
             if (scaled != amount) {
                 event.setAmount(scaled);
@@ -263,19 +297,19 @@ public final class DifficultyEvents {
         if (victim != null && event.getAmount() > 0.0f) {
             EnemyEvolution.onHurt(victim);
         }
-        // After damage: if a scaled mob landed at ≤0 HP, finish it.
-        if (victim != null) {
+        // After damage: only bother if the victim looks dead / nearly dead.
+        if (victim != null && HostileMobs.isHostile(victim) && victim.m_21223_() <= 0.0f) {
             MobScaling.terminateIfZeroHealth(victim);
         }
     }
 
     /**
-     * Post-mitigation safety net — catch scaled mobs that reached 0 HP after armor/absorb.
+     * Post-mitigation safety net — only for hostiles at ≤0 HP.
      */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onDamageDone(net.minecraftforge.event.entity.living.LivingDamageEvent event) {
         LivingEntity victim = event.getEntity();
-        if (victim != null) {
+        if (victim != null && HostileMobs.isHostile(victim) && victim.m_21223_() <= 0.0f) {
             MobScaling.terminateIfZeroHealth(victim);
         }
     }
