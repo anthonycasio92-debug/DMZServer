@@ -19,6 +19,7 @@ public final class ForgeBridge {
     private static final Map<UUID, CachedPlaceholders> PLACEHOLDER_CACHE = new ConcurrentHashMap<>();
 
     private static volatile boolean resolved;
+    private static volatile String resolveError;
     private static Class<?> serverPlayerCls;
     private static Class<?> cacheCls;
     private static Class<?> tierCls;
@@ -69,12 +70,14 @@ public final class ForgeBridge {
             return null;
         }
         try {
-            ensureResolved();
             if (getHandle == null) {
                 getHandle = player.getClass().getMethod("getHandle");
             }
-            return getHandle.invoke(player);
+            Object handle = getHandle.invoke(player);
+            ensureResolved(handle == null ? null : handle.getClass().getClassLoader());
+            return handle;
         } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
             return null;
         }
     }
@@ -288,10 +291,13 @@ public final class ForgeBridge {
     public static ActionResult handleActionResult(Player player, String action, String arg, String returnPage) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
-            return ActionResult.fail("Could not reach adaptive difficulty mod.");
+            String detail = resolveError == null || resolveError.isBlank()
+                    ? "is dmz_adaptive_difficulty loaded in mods/?"
+                    : resolveError;
+            return ActionResult.fail("Could not reach adaptive difficulty mod (" + detail + ").");
         }
         try {
-            ensureResolved();
+            ensureResolved(nms.getClass().getClassLoader());
             String act = action == null ? "" : action.toLowerCase(Locale.ROOT);
             String page = resolveReturnPage(act, arg, returnPage);
             if ("page".equals(act)) {
@@ -304,7 +310,8 @@ public final class ForgeBridge {
                 long amount = 0L;
                 if (!("page".equals(act) || "team".equals(act) || "refresh".equals(act)
                         || "set_max".equals(act) || "reset".equals(act) || "zero".equals(act)
-                        || "clear".equals(act)
+                        || "clear".equals(act) || "character_reset".equals(act)
+                        || "char_reset".equals(act) || "characterreset".equals(act)
                         || "equip_title".equals(act) || "clear_title".equals(act)
                         || "unequip_title".equals(act) || "equip".equals(act))) {
                     if (arg != null && !arg.isBlank()) {
@@ -321,12 +328,14 @@ public final class ForgeBridge {
             if (result == null) {
                 return ActionResult.ok("");
             }
-            Object msg = resultMessage.invoke(result);
+            Object msg = readResultMessage(result);
             boolean ok = resultOk == null || Boolean.TRUE.equals(resultOk.invoke(result));
             String text = msg == null ? "" : String.valueOf(msg);
             return new ActionResult(ok, text);
         } catch (Throwable t) {
-            return ActionResult.fail("Action failed: " + t.getClass().getSimpleName());
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return ActionResult.fail("Action failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage()));
         }
     }
 
@@ -423,11 +432,17 @@ public final class ForgeBridge {
 
     public static boolean forgeAvailable() {
         try {
-            Class.forName("com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod");
+            loadClass("com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod", null);
             return true;
         } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
             return false;
         }
+    }
+
+    /** Last reflection/classloader failure detail (for logs / player messages). */
+    public static String lastError() {
+        return resolveError == null ? "" : resolveError;
     }
 
     public static boolean isStaff(Player player) {
@@ -526,23 +541,32 @@ public final class ForgeBridge {
         }
     }
 
-    /** Staff: wipe purchased + active difficulty for this player. */
+    /** Staff: clear V3 temporary difficulty (active tier/level). Unlocks & coins kept. */
     public static String resetPurchased(Player player) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
-            return "§cCould not reach adaptive difficulty mod.";
+            return "§cCould not reach adaptive difficulty mod"
+                    + (resolveError == null || resolveError.isBlank() ? "." : " (" + resolveError + ").");
         }
         try {
-            ensureResolved();
+            ensureResolved(nms.getClass().getClassLoader());
             Object data = cacheData.invoke(null, nms);
-            data.getClass().getMethod("setPurchasedDifficulty", long.class).invoke(data, 0L);
-            data.getClass().getMethod("setActiveDifficulty", long.class).invoke(data, 0L);
+            try {
+                data.getClass().getMethod("resetTemporary").invoke(data);
+            } catch (NoSuchMethodException legacy) {
+                // Pre-V3 fallback
+                try {
+                    data.getClass().getMethod("setPurchasedDifficulty", long.class).invoke(data, 0L);
+                } catch (NoSuchMethodException ignored) {
+                }
+                data.getClass().getMethod("setActiveDifficulty", long.class).invoke(data, 0L);
+            }
             cacheCls.getMethod("save", serverPlayerCls).invoke(null, nms);
             cacheRefresh.invoke(null, nms);
-            Class.forName("com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty")
+            loadClass("com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty", nms.getClass().getClassLoader())
                     .getMethod("clearCache").invoke(null);
             PLACEHOLDER_CACHE.remove(player.getUniqueId());
-            return "§aReset purchased + active difficulty to 0.";
+            return "§aCleared active tier/level. Unlocks & Ancient Coins kept.";
         } catch (Throwable t) {
             return "§cReset failed: " + t.getMessage();
         }
@@ -551,10 +575,12 @@ public final class ForgeBridge {
     public static String areaDifficultyText(Player player) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
-            return "§cCould not reach adaptive difficulty mod.";
+            return "§cCould not reach adaptive difficulty mod"
+                    + (resolveError == null || resolveError.isBlank() ? "." : " (" + resolveError + ").");
         }
         try {
-            ensureResolved();
+            ClassLoader cl = nms.getClass().getClassLoader();
+            ensureResolved(cl);
             Object snap = cacheRefresh.invoke(null, nms);
             long active = ((Number) snap.getClass().getField("active").get(snap)).longValue();
             long available = ((Number) snap.getClass().getField("availableMax").get(snap)).longValue();
@@ -562,12 +588,12 @@ public final class ForgeBridge {
             Object pos = nms.getClass().getMethod("m_20183_").invoke(nms);
             long area = 0L;
             if (level != null && pos != null) {
-                area = ((Number) Class.forName("com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty")
-                        .getMethod("at", Class.forName("net.minecraft.server.level.ServerLevel"),
-                                Class.forName("net.minecraft.core.BlockPos"))
+                area = ((Number) loadClass("com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty", cl)
+                        .getMethod("at", loadClass("net.minecraft.server.level.ServerLevel", cl),
+                                loadClass("net.minecraft.core.BlockPos", cl))
                         .invoke(null, level, pos)).longValue();
             }
-            Object cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+            Object cfg = loadClass("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig", cl)
                     .getMethod("get").invoke(null);
             String mode = String.valueOf(cfg.getClass().getField("areaDifficultyMode").get(cfg));
             double radius = ((Number) cfg.getClass().getField("mobScaleRadius").get(cfg)).doubleValue();
@@ -605,6 +631,10 @@ public final class ForgeBridge {
     }
 
     private static void ensureResolved() throws Exception {
+        ensureResolved(null);
+    }
+
+    private static void ensureResolved(ClassLoader preferred) throws Exception {
         if (resolved) {
             return;
         }
@@ -612,73 +642,141 @@ public final class ForgeBridge {
             if (resolved) {
                 return;
             }
-            serverPlayerCls = Class.forName("net.minecraft.server.level.ServerPlayer");
-            cacheCls = Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache");
-            tierCls = Class.forName("com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier");
-            teamCls = Class.forName("com.dbzlegacy.adaptivedifficulty.team.TeamScaling");
-            currencyCls = Class.forName("com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge");
-            calcCls = Class.forName("com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator");
-            dataCls = Class.forName("com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData");
-            actionsCls = Class.forName("com.dbzlegacy.adaptivedifficulty.service.DifficultyActions");
+            try {
+                serverPlayerCls = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+                cacheCls = loadClass("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache", preferred);
+                tierCls = loadClass("com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier", preferred);
+                teamCls = loadClass("com.dbzlegacy.adaptivedifficulty.team.TeamScaling", preferred);
+                currencyCls = loadClass("com.dbzlegacy.adaptivedifficulty.currency.CurrencyBridge", preferred);
+                calcCls = loadClass("com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator", preferred);
+                dataCls = loadClass("com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData", preferred);
+                actionsCls = loadClass("com.dbzlegacy.adaptivedifficulty.service.DifficultyActions", preferred);
 
-            cacheGet = cacheCls.getMethod("get", serverPlayerCls);
-            cacheRefresh = cacheCls.getMethod("refresh", serverPlayerCls);
-            cacheData = cacheCls.getMethod("data", serverPlayerCls);
-            tierOf = tierCls.getMethod("of", long.class);
-            tierValues = tierCls.getMethod("values");
-            tierThreshold = tierCls.getMethod("threshold");
-            teamName = teamCls.getMethod("teamName", serverPlayerCls);
-            teamSource = teamCls.getMethod("teamSourceLabel");
-            teammates = teamCls.getMethod("teammates", serverPlayerCls);
-            balanceText = currencyCls.getMethod("balanceText", serverPlayerCls);
-            currencyLabel = currencyCls.getMethod("currencyLabel");
-            purchaseCost = calcCls.getMethod("purchaseCost", long.class, long.class);
-            raiseCostIronCoins = calcCls.getMethod("raiseCostIronCoins", long.class, long.class);
-            formatCost = currencyCls.getMethod("formatCost", long.class);
-            rewardMult = calcCls.getMethod("rewardMultiplier", long.class);
-            dataTitles = dataCls.getMethod("getTitles");
-            try {
-                dataActiveTitle = dataCls.getMethod("getActiveTitle");
-                dataHasTitle = dataCls.getMethod("hasTitle", String.class);
-                dataNormalizeTitles = dataCls.getMethod("normalizeTitles");
-            } catch (NoSuchMethodException missing) {
-                dataActiveTitle = null;
-                dataHasTitle = null;
-                dataNormalizeTitles = null;
+                cacheGet = cacheCls.getMethod("get", serverPlayerCls);
+                cacheRefresh = cacheCls.getMethod("refresh", serverPlayerCls);
+                cacheData = cacheCls.getMethod("data", serverPlayerCls);
+                tierOf = tierCls.getMethod("of", long.class);
+                tierValues = tierCls.getMethod("values");
+                tierThreshold = tierCls.getMethod("threshold");
+                teamName = teamCls.getMethod("teamName", serverPlayerCls);
+                teamSource = teamCls.getMethod("teamSourceLabel");
+                teammates = teamCls.getMethod("teammates", serverPlayerCls);
+                balanceText = currencyCls.getMethod("balanceText", serverPlayerCls);
+                currencyLabel = currencyCls.getMethod("currencyLabel");
+                purchaseCost = calcCls.getMethod("purchaseCost", long.class, long.class);
+                raiseCostIronCoins = calcCls.getMethod("raiseCostIronCoins", long.class, long.class);
+                formatCost = currencyCls.getMethod("formatCost", long.class);
+                rewardMult = calcCls.getMethod("rewardMultiplier", long.class);
+                dataTitles = dataCls.getMethod("getTitles");
+                try {
+                    dataActiveTitle = dataCls.getMethod("getActiveTitle");
+                    dataHasTitle = dataCls.getMethod("hasTitle", String.class);
+                    dataNormalizeTitles = dataCls.getMethod("normalizeTitles");
+                } catch (NoSuchMethodException missing) {
+                    dataActiveTitle = null;
+                    dataHasTitle = null;
+                    dataNormalizeTitles = null;
+                }
+                try {
+                    titleCls = loadClass("com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle", preferred);
+                    titleValues = titleCls.getMethod("values");
+                    titleById = titleCls.getMethod("byId", String.class);
+                    titleSystemCls = loadClass("com.dbzlegacy.adaptivedifficulty.title.TitleSystem", preferred);
+                    titleSystemSync = titleSystemCls.getMethod("syncTierTitles", serverPlayerCls, boolean.class);
+                    titleSystemActiveDisplay = titleSystemCls.getMethod("activeDisplay", serverPlayerCls);
+                    titleSystemUnlockedDisplays = titleSystemCls.getMethod("unlockedDisplays", serverPlayerCls);
+                } catch (Throwable missing) {
+                    titleCls = null;
+                    titleValues = null;
+                    titleById = null;
+                    titleSystemCls = null;
+                    titleSystemSync = null;
+                    titleSystemActiveDisplay = null;
+                    titleSystemUnlockedDisplays = null;
+                }
+                Class<?> snapCls = loadClass(
+                        "com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot", preferred);
+                snapshotState = snapCls.getMethod("state");
+                snapshotStateColor = snapCls.getMethod("stateColorCode");
+                actionsHandle = actionsCls.getMethod(
+                        "handle", serverPlayerCls, String.class, long.class, String.class);
+                try {
+                    actionsHandleArg = actionsCls.getMethod(
+                            "handleArg", serverPlayerCls, String.class, String.class, String.class);
+                } catch (NoSuchMethodException missing) {
+                    actionsHandleArg = null;
+                }
+                Class<?> resultCls = loadClass(
+                        "com.dbzlegacy.adaptivedifficulty.service.DifficultyActions$Result", preferred);
+                try {
+                    resultMessage = resultCls.getMethod("message");
+                    RESULT_MESSAGE_FIELD = null;
+                } catch (NoSuchMethodException missing) {
+                    // Older jars: public field only — missing accessor used to kill the whole bridge.
+                    resultMessage = null;
+                    RESULT_MESSAGE_FIELD = resultCls.getField("message");
+                }
+                resultOk = resultCls.getMethod("ok");
+                chatMenuOpen = loadClass(
+                        "com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu", preferred)
+                        .getMethod("open", serverPlayerCls, String.class);
+                resolveError = null;
+                resolved = true;
+            } catch (Throwable t) {
+                resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+                throw t instanceof Exception e ? e : new Exception(t);
+            }
+        }
+    }
+
+    private static volatile Field RESULT_MESSAGE_FIELD;
+
+    private static Object readResultMessage(Object result) throws Exception {
+        if (resultMessage != null) {
+            return resultMessage.invoke(result);
+        }
+        if (RESULT_MESSAGE_FIELD != null) {
+            return RESULT_MESSAGE_FIELD.get(result);
+        }
+        return "";
+    }
+
+    /** Load a class trying Mohist/Forge-friendly classloaders first. */
+    private static Class<?> loadClass(String name, ClassLoader preferred) throws ClassNotFoundException {
+        ClassNotFoundException last = null;
+        List<ClassLoader> loaders = new ArrayList<>();
+        if (preferred != null) {
+            loaders.add(preferred);
+        }
+        ClassLoader ctx = Thread.currentThread().getContextClassLoader();
+        if (ctx != null) {
+            loaders.add(ctx);
+        }
+        loaders.add(ForgeBridge.class.getClassLoader());
+        try {
+            Object server = Class.forName("org.bukkit.Bukkit").getMethod("getServer").invoke(null);
+            if (server != null) {
+                loaders.add(server.getClass().getClassLoader());
+            }
+        } catch (Throwable ignored) {
+        }
+        for (ClassLoader loader : loaders) {
+            if (loader == null) {
+                continue;
             }
             try {
-                titleCls = Class.forName("com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle");
-                titleValues = titleCls.getMethod("values");
-                titleById = titleCls.getMethod("byId", String.class);
-                titleSystemCls = Class.forName("com.dbzlegacy.adaptivedifficulty.title.TitleSystem");
-                titleSystemSync = titleSystemCls.getMethod("syncTierTitles", serverPlayerCls, boolean.class);
-                titleSystemActiveDisplay = titleSystemCls.getMethod("activeDisplay", serverPlayerCls);
-                titleSystemUnlockedDisplays = titleSystemCls.getMethod("unlockedDisplays", serverPlayerCls);
-            } catch (Throwable missing) {
-                titleCls = null;
-                titleValues = null;
-                titleById = null;
-                titleSystemCls = null;
-                titleSystemSync = null;
-                titleSystemActiveDisplay = null;
-                titleSystemUnlockedDisplays = null;
+                return Class.forName(name, true, loader);
+            } catch (ClassNotFoundException e) {
+                last = e;
             }
-            Class<?> snapCls = Class.forName("com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot");
-            snapshotState = snapCls.getMethod("state");
-            snapshotStateColor = snapCls.getMethod("stateColorCode");
-            actionsHandle = actionsCls.getMethod("handle", serverPlayerCls, String.class, long.class, String.class);
-            try {
-                actionsHandleArg = actionsCls.getMethod(
-                        "handleArg", serverPlayerCls, String.class, String.class, String.class);
-            } catch (NoSuchMethodException missing) {
-                actionsHandleArg = null;
+        }
+        try {
+            return Class.forName(name);
+        } catch (ClassNotFoundException e) {
+            if (last != null) {
+                throw last;
             }
-            Class<?> resultCls = Class.forName("com.dbzlegacy.adaptivedifficulty.service.DifficultyActions$Result");
-            resultMessage = resultCls.getMethod("message");
-            resultOk = resultCls.getMethod("ok");
-            chatMenuOpen = Class.forName("com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu")
-                    .getMethod("open", serverPlayerCls, String.class);
-            resolved = true;
+            throw e;
         }
     }
 

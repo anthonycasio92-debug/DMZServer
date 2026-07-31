@@ -273,6 +273,11 @@ public final class DifficultyActions {
             return ok;
         }
 
+        /** Accessor used by the Bukkit GUI ForgeBridge (reflection). */
+        public String message() {
+            return message == null ? "" : message;
+        }
+
         public void tell(ServerPlayer player) {
             if (player == null || message == null || message.isBlank()) {
                 return;

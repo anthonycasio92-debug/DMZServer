@@ -26,8 +26,15 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
             getLogger().info("Registered PlaceholderAPI expansion: dmzdiff");
         }
 
+        boolean forge = ForgeBridge.forgeAvailable();
         getLogger().info("GUI backend: CMILib=" + CmiDifficultyGui.available()
-                + " forgeMod=" + ForgeBridge.forgeAvailable());
+                + " forgeMod=" + forge);
+        if (!forge) {
+            String err = ForgeBridge.lastError();
+            getLogger().severe("Adaptive Difficulty Forge mod NOT reachable — GUI actions will fail."
+                    + (err == null || err.isBlank() ? "" : " (" + err + ")"));
+            getLogger().severe("Install mods/dmz_adaptive_difficulty-*.jar and restart.");
+        }
         getLogger().info("Registered Bukkit /difficulty (CMI GUI preferred).");
     }
 
