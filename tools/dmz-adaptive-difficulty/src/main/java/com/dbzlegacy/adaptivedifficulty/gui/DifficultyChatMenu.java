@@ -151,9 +151,12 @@ public final class DifficultyChatMenu {
     private static void rewards(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         double mult = DifficultyCalculator.rewardMultiplier(snap.active);
+        double killTp = DifficultyCalculator.killTrainingPoints(snap.active);
         send(player, Component.m_237113_("§8──────── §fRewards §8────────"));
-        send(player, Component.m_237113_("§7Active §f" + snap.active + "  §7TP ×§a" + String.format("%.2f", mult)));
-        send(player, Component.m_237113_("§81 + gain × (Difficulty / Scale)^exp  §8(uncapped)"));
+        send(player, Component.m_237113_("§7Active §f" + snap.active
+                + "  §7Kill TP §a~" + String.format("%,.0f", killTp)
+                + "  §7Train ×§a" + String.format("%.2f", mult)));
+        send(player, Component.m_237113_("§8Kill: refAmount × (diff / 8M)^exp   Train: power mult"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 

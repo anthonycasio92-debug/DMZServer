@@ -375,6 +375,14 @@ public final class DifficultyCommands {
                 case "maxrewardmultiplier", "maxrewardmult" ->
                         // 0 / 1 = uncapped; only values > 1 apply a hard ceiling.
                         cfg.maxRewardMultiplier = Math.max(0.0, Double.parseDouble(value));
+                case "killtprefamount", "killtpamount", "killtp" ->
+                        cfg.killTpRefAmount = Math.max(0.0, Double.parseDouble(value));
+                case "killtprefdifficulty", "killtpdifficulty", "killtpref" ->
+                        cfg.killTpRefDifficulty = Math.max(1.0, Double.parseDouble(value));
+                case "killtpexponent", "killtpexp" ->
+                        cfg.killTpExponent = Math.max(0.05, Math.min(1.0, Double.parseDouble(value)));
+                case "killtpminimum", "killtpmin" ->
+                        cfg.killTpMinimum = Math.max(0.0, Double.parseDouble(value));
                 case "combatcurveexponent", "combatcurve", "offensecurve" ->
                         cfg.combatCurveExponent = Math.max(0.05, Math.min(1.0, Double.parseDouble(value)));
                 case "combatcurvepivot", "offensecurvepivot" ->

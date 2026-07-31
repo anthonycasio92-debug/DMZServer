@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
@@ -32,8 +33,18 @@ import net.minecraftforge.registries.ForgeRegistries;
  * <p>
  * Potential unlock ({@code potentialunlock}) is owned by the CustomNPCs
  * {@code Potential.js} script — this mod must not write that skill.
+ * <p>
+ * Kill TP uses an absolute difficulty curve (≈400k at 8M). {@code addTrainingPoints}
+ * fires {@code TPGainEvent}, so kill grants set {@link #SKIP_TP_EVENT_SCALE} to avoid
+ * applying the training multiplier on top of the absolute amount.
  */
 public final class RewardSystem {
+    /**
+     * When true, {@code DifficultyEvents.onTpGain} must not multiply the gain.
+     * Used for kill packages that already computed final TP.
+     */
+    public static final ThreadLocal<Boolean> SKIP_TP_EVENT_SCALE = ThreadLocal.withInitial(() -> false);
+
     private RewardSystem() {}
 
     public static void onKill(ServerPlayer killer, LivingEntity dead) {
@@ -45,34 +56,43 @@ public final class RewardSystem {
             return;
         }
         DifficultySnapshot snap = DifficultyCache.refresh(killer);
-        double mult = DifficultyCalculator.rewardMultiplier(snap.active);
-        DifficultyTier tier = DifficultyTier.of(Math.max(snap.active, MobScaling.difficultyOf(dead)));
+        long killDifficulty = Math.max(snap.active, MobScaling.difficultyOf(dead));
+        double eventMult = DifficultyCalculator.rewardMultiplier(snap.active);
+        DifficultyTier tier = DifficultyTier.of(killDifficulty);
         boolean elite = EliteSystem.isElite(dead);
         boolean boss = PersistentDataAccess.get(dead).m_128471_(BossScaling.TAG_BOSS);
         boolean mutated = MutationSystem.get(dead) != null;
 
-        grantTrainingPoints(killer, mult, elite, boss, mutated, cfg);
-        grantExperience(killer, mult, elite, boss, tier);
-        grantDrops(killer, mult, elite, boss, mutated, tier);
+        grantTrainingPoints(killer, killDifficulty, elite, boss, mutated, cfg);
+        grantExperience(killer, eventMult, elite, boss, tier);
+        grantDrops(killer, eventMult, elite, boss, mutated, tier);
         maybeUnlockTitle(killer, snap, elite, boss, tier);
     }
 
     private static void grantTrainingPoints(
-            ServerPlayer killer, double mult, boolean elite, boolean boss, boolean mutated, DifficultyConfig cfg
+            ServerPlayer killer,
+            long difficulty,
+            boolean elite,
+            boolean boss,
+            boolean mutated,
+            DifficultyConfig cfg
     ) {
-        float bonus = 0.0f;
+        double tp = ScalingCurves.killTrainingPoints(difficulty);
+        if (tp <= 0.0) {
+            return;
+        }
         if (elite) {
-            bonus += 50.0f * (float) cfg.eliteRewardBonus;
+            tp *= Math.max(1.0, cfg.eliteRewardBonus);
         }
         if (boss) {
-            bonus += 200.0f;
+            tp *= 3.0;
         }
         if (mutated) {
-            bonus += 25.0f;
+            tp *= 1.25;
         }
-        // Baseline kill bonus (unscaled); multiply once below with elite/boss/mutation parts.
-        bonus += 5.0f;
-        if (bonus <= 0.0f) {
+        // float is fine up through multi-million TP grants for this curve.
+        float grant = (float) Math.min(Float.MAX_VALUE, tp);
+        if (grant <= 0.0f) {
             return;
         }
         StatsData stats = DmzProgression.stats(killer);
@@ -83,7 +103,12 @@ public final class RewardSystem {
         if (resources == null) {
             return;
         }
-        resources.addTrainingPoints(bonus * (float) mult);
+        SKIP_TP_EVENT_SCALE.set(true);
+        try {
+            resources.addTrainingPoints(grant);
+        } finally {
+            SKIP_TP_EVENT_SCALE.set(false);
+        }
         try {
             NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(killer), killer);
         } catch (Throwable ignored) {

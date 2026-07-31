@@ -270,6 +270,10 @@ public final class DifficultyEvents {
         if (!DifficultyConfig.get().enableRewardScaling) {
             return;
         }
+        // Kill packages already grant absolute TP — do not multiply them again.
+        if (Boolean.TRUE.equals(RewardSystem.SKIP_TP_EVENT_SCALE.get())) {
+            return;
+        }
         if (!(event.getPlayer() instanceof ServerPlayer player)) {
             return;
         }

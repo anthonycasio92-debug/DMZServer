@@ -96,9 +96,14 @@ public final class DifficultyCalculator {
         return raiseCostIronCoins(Math.max(0L, currentPurchased), amountToBuy);
     }
 
-    /** TP / reward multiplier — log curve by default (see {@link ScalingCurves}). */
+    /** TPGainEvent multiplier (training / non-kill). See {@link ScalingCurves#rewardMultiplier}. */
     public static double rewardMultiplier(long activeDifficulty) {
         return ScalingCurves.rewardMultiplier(activeDifficulty);
+    }
+
+    /** Absolute kill TP at the given difficulty. See {@link ScalingCurves#killTrainingPoints}. */
+    public static double killTrainingPoints(long difficulty) {
+        return ScalingCurves.killTrainingPoints(difficulty);
     }
 
     /**

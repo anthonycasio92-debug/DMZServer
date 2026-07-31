@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v1.7.28)
+# DMZ Adaptive Difficulty (v1.7.29)
 
 **Server-side only** Forge mixin mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -22,13 +22,13 @@ Clients do **not** need this jar to join.
 
 ## Install (server only)
 
-1. Put `dmz_adaptive_difficulty-1.7.28.jar` in the **server** `mods/` folder
+1. Put `dmz_adaptive_difficulty-1.7.29.jar` in the **server** `mods/` folder
 2. Remove older `dmz_adaptive_difficulty-*.jar` (and remove it from clients if present)
 3. Ensure vanilla world difficulty is **not Peaceful** (`server.properties` → `difficulty=hard`)
 4. Plugins required for the inventory GUI:
    - `CMILib*.jar` (required by CMI)
    - `CMI-*.jar`
-   - `dmz_adaptive_difficulty_gui-1.7.11.jar` (**registers Bukkit `/difficulty`**)
+   - `dmz_adaptive_difficulty_gui-1.7.12.jar` (**registers Bukkit `/difficulty`**)
    - Optional: `PlaceholderAPI-*.jar`
 5. Optionally set `guiBackend` in `config/dmz_adaptive_difficulty.json`:
    - `cmi` (default), `auto`, `chest`, or `chat`
@@ -81,18 +81,21 @@ Curves are **split**:
 |---|---|---|
 | Damage / defense | Steep offense curve (**uncapped**) | exp `0.96`, pivot `450`, rates `3.2`/`7.5`; no mod/vanilla attribute ceiling |
 | Health | Flat health curve + hard caps | exp `0.40`, max mult `×8`, abs cap `400` HP |
-| TP / rewards | Diminishing power (uncapped) | gain `0.85`, exp `0.38`, scale `2500` |
+| Kill TP | Absolute difficulty curve | `400000 × (d / 8000000)^0.70` → **~400k at 8M** |
+| Train TP mult | Mild power mult on DMZ `TPGainEvent` | gain `0.85`, exp `0.38`, scale `2500` |
 | Potential unlock | **Not touched** | Owned by CNPC `Potential.js` (`potentialunlock`) |
 | AI | Spaced across Awakened→Zenith | anti-flight Legendary+; pack/debuffs scale to Zenith |
 
-| Active | TP mult (approx) |
+| Active | Kill TP (normal) |
 |---|---|
-| 1,000 | ~×1.6 |
-| 10,000 | ~×2.4 |
-| 100,000 | ~×4.5 |
-| 1,000,000 | ~×9.3 |
-| 3,000,000 | ~×13.6 |
-| 10,000,000 | ~×20.9 |
+| 1,000 | ~740 |
+| 10,000 | ~3,700 |
+| 100,000 | ~19,000 |
+| 1,000,000 | ~93,000 |
+| 8,000,000 | **~400,000** |
+| 10,000,000 | ~468,000 |
+
+(Elites ×`eliteRewardBonus`, bosses ×3, mutations ×1.25.)
 
 Tune:
 ```
@@ -105,9 +108,9 @@ Tune:
 /difficulty admin set healthCurveExponent 0.40
 /difficulty admin set maxHealthMultiplier 8
 /difficulty admin set maxScaledHealth 400
-/difficulty admin set rewardCurve power
-/difficulty admin set rewardCurveGain 0.85
-/difficulty admin set rewardCurveExponent 0.38
+/difficulty admin set killTpRefAmount 400000
+/difficulty admin set killTpRefDifficulty 8000000
+/difficulty admin set killTpExponent 0.70
 /difficulty admin set maxRewardMultiplier 0
 ```
 (`maxDamageMultiplier` / `maxRewardMultiplier` `0`/`1` = uncapped; `maxArmorBonus` `0` = uncapped.)

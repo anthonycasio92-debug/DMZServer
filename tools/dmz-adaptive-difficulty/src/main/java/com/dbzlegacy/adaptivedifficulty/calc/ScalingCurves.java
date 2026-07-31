@@ -68,7 +68,24 @@ public final class ScalingCurves {
     }
 
     /**
-     * Reward / TP multiplier curve.
+     * Absolute kill TP from difficulty (not a tiny base × small mult).
+     * Default: {@code 400000 × (d / 8000000)^0.70} → ~400k TP at 8M difficulty.
+     */
+    public static double killTrainingPoints(long difficulty) {
+        DifficultyConfig cfg = DifficultyConfig.get();
+        if (!cfg.enableRewardScaling || difficulty <= 0L) {
+            return 0.0;
+        }
+        double refD = Math.max(1.0, cfg.killTpRefDifficulty);
+        double refTp = Math.max(0.0, cfg.killTpRefAmount);
+        double exp = clamp(cfg.killTpExponent, 0.05, 1.0);
+        double tp = refTp * Math.pow(difficulty / refD, exp);
+        return Math.max(cfg.killTpMinimum, tp);
+    }
+
+    /**
+     * Reward / TP multiplier curve for DMZ {@code TPGainEvent} (training / other gains).
+     * Kill rewards use {@link #killTrainingPoints(long)} instead.
      * Default: {@code 1 + gain * (d / rewardScaling)^exp} — diminishing, not hard-capped.
      * Set {@code maxRewardMultiplier > 1} only if you want an optional ceiling.
      */

@@ -210,9 +210,10 @@ public final class CmiDifficultyGui {
         info.addLore(List.of(
                 "",
                 "&7Active  &f" + ph.getOrDefault("active", "?"),
-                "&7TP mult &a×" + ph.getOrDefault("reward_mult", "?"),
+                "&7Kill TP &a~" + ph.getOrDefault("kill_tp", "?"),
+                "&7Train × &a" + ph.getOrDefault("reward_mult", "?"),
                 "",
-                "&81 + gain × (Difficulty / Scale)^exp  &8(uncapped)"
+                "&8Kill ≈ 400k at 8M difficulty (curve)"
         ));
         gui.addButton(info);
         gui.addButton(pageBtn(18, Material.ARROW, "&7Back", "main", "&7Return to difficulty"));

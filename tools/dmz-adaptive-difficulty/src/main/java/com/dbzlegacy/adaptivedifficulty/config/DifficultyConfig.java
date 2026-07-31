@@ -61,6 +61,21 @@ public final class DifficultyConfig {
      */
     public double maxRewardMultiplier = 0.0;
     /**
+     * Kill TP reference: at {@link #killTpRefDifficulty} active/mob difficulty,
+     * a normal kill grants about this many training points.
+     * Default targets ~400k TP/kill at 8,000,000 difficulty (endgame / ~100k-level play).
+     */
+    public double killTpRefAmount = 400_000.0;
+    /** Difficulty where {@link #killTpRefAmount} is granted for a normal kill. */
+    public double killTpRefDifficulty = 8_000_000.0;
+    /**
+     * Kill TP curve exponent: {@code refAmount × (difficulty / refDifficulty)^exp}.
+     * Higher = more front-loaded toward late game.
+     */
+    public double killTpExponent = 0.70;
+    /** Floor TP for any scaled kill (before elite/boss/mutation bonuses). */
+    public double killTpMinimum = 25.0;
+    /**
      * Offense (damage/defense) curve exponent. Higher = steeper growth with difficulty.
      * Effective = {@code pow(d, exp) * pow(pivot, 1-exp)}.
      */
@@ -306,6 +321,18 @@ public final class DifficultyConfig {
         }
         if (cfg.maxRewardMultiplier < 0.0) {
             cfg.maxRewardMultiplier = 0.0;
+        }
+        if (cfg.killTpRefAmount <= 0.0) {
+            cfg.killTpRefAmount = 400_000.0;
+        }
+        if (cfg.killTpRefDifficulty <= 0.0) {
+            cfg.killTpRefDifficulty = 8_000_000.0;
+        }
+        if (cfg.killTpExponent <= 0.0) {
+            cfg.killTpExponent = 0.70;
+        }
+        if (cfg.killTpMinimum < 0.0) {
+            cfg.killTpMinimum = 25.0;
         }
         if (cfg.combatCurveExponent <= 0.0) {
             cfg.combatCurveExponent = 0.96;
