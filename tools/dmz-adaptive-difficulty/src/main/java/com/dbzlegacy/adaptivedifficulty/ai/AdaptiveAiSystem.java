@@ -7,6 +7,7 @@ import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockAbilityCaps;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
@@ -245,9 +246,17 @@ public final class AdaptiveAiSystem {
     private static DifficultyTier resolveTier(LivingEntity entity, long difficulty) {
         DifficultyTier tier = DifficultyTier.of(difficulty);
         if (EliteSystem.isElite(entity) && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
-            return DifficultyTier.ELITE;
+            tier = DifficultyTier.ELITE;
         }
-        return tier;
+        int unlockTier = 0;
+        if (entity != null) {
+            CompoundTag tag = PersistentDataAccess.get(entity);
+            if (tag.m_128441_("dmz_ad_unlock_tier")) {
+                unlockTier = tag.m_128451_("dmz_ad_unlock_tier");
+            }
+        }
+        // Higher Unlock Tiers unlock smarter AI; low tiers stay capped.
+        return UnlockAbilityCaps.clamp(tier, unlockTier);
     }
 
     private static double aiRadius(DifficultyTier tier) {

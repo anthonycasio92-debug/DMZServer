@@ -6,18 +6,21 @@ import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
- * Rescales hostiles <b>already near</b> players to that player's transformed /
- * limit-release stats × unlock-tier percent. Spawn no longer paints final stats.
- * <p>
- * Uses a tight per-player AABB with a hard budget — never a world-wide scan.
+ * Rescales the closest hostiles near each player (hard cap: {@link ScaledMobTracker}).
+ * Spawn does not bake final fight stats.
  */
 public final class NearbyMobScaler {
     private NearbyMobScaler() {}
@@ -30,20 +33,16 @@ public final class NearbyMobScaler {
         if (!cfg.enabled || !cfg.enableMobScaling) {
             return;
         }
+        processEvictions();
         int interval = Math.max(10, cfg.nearbyScaleIntervalTicks);
         List<ServerPlayer> online = server.m_6846_().m_11314_();
         if (online == null || online.isEmpty()) {
             return;
         }
-        int budgetGlobal = Math.max(8, cfg.nearbyScaleBudgetPerPlayer * 4);
         for (ServerPlayer player : online) {
-            if (budgetGlobal <= 0) {
-                return;
-            }
             if (player == null || !player.m_6084_() || player.m_5833_()) {
                 continue;
             }
-            // Stagger players across the interval window.
             if (Math.floorMod(gameTick + player.m_19879_(), interval) != 0) {
                 continue;
             }
@@ -53,18 +52,17 @@ public final class NearbyMobScaler {
             if (DifficultyCache.get(player).activeTier <= 0) {
                 continue;
             }
-            budgetGlobal -= scaleAround(player, cfg);
+            scaleAround(player, cfg);
         }
     }
 
-    private static int scaleAround(ServerPlayer player, DifficultyConfig cfg) {
+    private static void scaleAround(ServerPlayer player, DifficultyConfig cfg) {
         if (!(player.m_9236_() instanceof ServerLevel level)) {
-            return 0;
+            return;
         }
         double radius = Math.max(8.0, Math.min(48.0, cfg.mobScaleRadius));
+        int max = ScaledMobTracker.maxSlots();
         AABB box = player.m_20191_().m_82377_(radius, Math.min(16.0, radius), radius);
-        int budget = Math.max(1, cfg.nearbyScaleBudgetPerPlayer);
-        int used = 0;
         List<Mob> mobs;
         try {
             mobs = level.m_6443_(Mob.class, box, mob ->
@@ -73,29 +71,67 @@ public final class NearbyMobScaler {
                             && HostileMobs.isHostile(mob)
                             && !DimensionGates.isDisabled(mob));
         } catch (Throwable t) {
-            return 0;
+            return;
         }
         if (mobs == null || mobs.isEmpty()) {
-            return 0;
+            return;
         }
         double rSq = radius * radius;
         double px = player.m_20185_();
         double py = player.m_20186_();
         double pz = player.m_20189_();
+        List<Mob> inRange = new ArrayList<>(Math.min(mobs.size(), 32));
         for (Mob mob : mobs) {
-            if (used >= budget) {
-                break;
-            }
             double dx = mob.m_20185_() - px;
             double dy = mob.m_20186_() - py;
             double dz = mob.m_20189_() - pz;
-            if (dx * dx + dy * dy + dz * dz > rSq) {
-                continue;
+            if (dx * dx + dy * dy + dz * dz <= rSq) {
+                inRange.add(mob);
             }
-            CombatIndex.mark(mob);
-            MobScaling.retargetToPlayer(mob, player);
-            used++;
         }
-        return used;
+        if (inRange.isEmpty()) {
+            return;
+        }
+        ScaledMobTracker.sortNearest(player, inRange);
+        int scaled = 0;
+        for (Mob mob : inRange) {
+            if (scaled >= max) {
+                break;
+            }
+            MobScaling.retargetToPlayer(mob, player);
+            if (ScaledMobTracker.isClaimed(player, mob)) {
+                CombatIndex.mark(mob);
+                scaled++;
+            }
+        }
+    }
+
+    /** Revert mobs that lost their difficulty slot to a closer hostile. */
+    public static void processEvictions() {
+        Map<UUID, UUID> evicted = ScaledMobTracker.drainEvictions();
+        if (evicted.isEmpty()) {
+            return;
+        }
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            return;
+        }
+        for (UUID mobId : evicted.keySet()) {
+            Mob mob = findMob(server, mobId);
+            if (mob != null) {
+                MobScaling.revertToBases(mob);
+                CombatIndex.unmark(mobId);
+            }
+        }
+    }
+
+    private static Mob findMob(MinecraftServer server, UUID id) {
+        for (ServerLevel level : server.m_129785_()) {
+            Entity entity = level.m_8791_(id);
+            if (entity instanceof Mob mob) {
+                return mob;
+            }
+        }
+        return null;
     }
 }

@@ -8,6 +8,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationType;
+import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
 import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
@@ -110,6 +111,10 @@ public final class MobScaling {
             }
             PlayerCombatProfile profile = PlayerCombatProfile.of(player);
             if (!profile.active()) {
+                return;
+            }
+            // Hard cap: only a few hostiles per player carry difficulty scaling.
+            if (entity instanceof Mob mob && !ScaledMobTracker.tryClaim(player, mob)) {
                 return;
             }
             Long cached = APPLIED_PROFILE.get(entity.m_20148_());
@@ -258,19 +263,58 @@ public final class MobScaling {
             MutationSystem.maybeMutate(entity, rollSeed);
         }
 
-        // Do NOT bake final fight stats at spawn. Scale to a nearby player if one
-        // already has an active tier; otherwise leave natural bases until they approach.
-        ServerPlayer nearby = NearbyPlayers.nearest(entity, Math.max(8.0, cfg.mobScaleRadius));
-        if (nearby != null && SystemGate.allows(nearby)) {
-            PlayerCombatProfile profile = PlayerCombatProfile.of(nearby);
-            if (profile.active()) {
-                applyForPlayerProfile(entity, tag, profile, cfg);
-                return;
-            }
-        }
+        // Do NOT bake final fight stats at spawn. Nearby scaler / combat retarget
+        // claim one of the player's limited difficulty slots (max 5).
         tag.m_128356_(TAG_DIFFICULTY, 0L);
         tag.m_128356_(TAG_PROFILE_SIG, 0L);
         tag.m_128350_(TAG_DMG_MULT, 1.0f);
+        ServerPlayer nearby = NearbyPlayers.nearest(entity, Math.max(8.0, cfg.mobScaleRadius));
+        if (nearby != null && SystemGate.allows(nearby) && entity instanceof Mob mob) {
+            retargetToPlayer(mob, nearby);
+        }
+    }
+
+    /** Restore captured natural attributes when a mob loses its difficulty slot. */
+    public static void revertToBases(LivingEntity entity) {
+        if (entity == null || entity.m_9236_().f_46443_) {
+            return;
+        }
+        try {
+            CompoundTag tag = PersistentDataAccess.get(entity);
+            if (!tag.m_128441_(TAG_BASE_HEALTH)) {
+                return;
+            }
+            double baseHealth = Math.max(1.0, tag.m_128459_(TAG_BASE_HEALTH));
+            setAttributeValue(entity, Attributes.f_22276_, baseHealth);
+            float max = entity.m_21233_();
+            if (max > 0.0f && entity.m_21223_() > 0.0f) {
+                entity.m_21153_(Math.min(max, entity.m_21223_()));
+            }
+            if (tag.m_128441_(TAG_BASE_ATTACK)) {
+                setAttributeValue(entity, Attributes.f_22281_, Math.max(0.0, tag.m_128459_(TAG_BASE_ATTACK)));
+            }
+            if (tag.m_128441_(TAG_BASE_ARMOR)) {
+                setAttributeValue(entity, Attributes.f_22284_, Math.max(0.0, tag.m_128459_(TAG_BASE_ARMOR)));
+            }
+            if (tag.m_128441_(TAG_BASE_SPEED)) {
+                setAttributeValue(entity, Attributes.f_22279_, Math.max(0.0, tag.m_128459_(TAG_BASE_SPEED)));
+            }
+            if (tag.m_128441_(TAG_BASE_KNOCKBACK)) {
+                setAttributeValue(entity, Attributes.f_22278_, Math.max(0.0, tag.m_128459_(TAG_BASE_KNOCKBACK)));
+            }
+            tag.m_128356_(TAG_DIFFICULTY, 0L);
+            tag.m_128356_(TAG_PROFILE_SIG, 0L);
+            tag.m_128350_(TAG_DMG_MULT, 1.0f);
+            tag.m_128379_(TAG_ATTR_DMG_SCALED, false);
+            APPLIED_PROFILE.remove(entity.m_20148_());
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] revertToBases failed for {}: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    entity.m_6095_().toString(),
+                    t.toString()
+            );
+        }
     }
 
     /**

@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockAbilityCaps;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dbzlegacy.adaptivedifficulty.util.EntityDisplayNames;
 import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
@@ -89,10 +90,7 @@ public final class EnemyEvolution {
         if (difficulty <= 0 && !elite) {
             return;
         }
-        DifficultyTier tier = DifficultyTier.of(difficulty);
-        if (elite && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
-            tier = DifficultyTier.ELITE;
-        }
+        DifficultyTier tier = resolveAbilityTier(mob, difficulty, elite);
         if (tier.ordinalPower() < DifficultyTier.AWAKENED.ordinalPower()) {
             return;
         }
@@ -207,8 +205,8 @@ public final class EnemyEvolution {
             return;
         }
         long difficulty = MobScaling.difficultyOf(creeper);
-        DifficultyTier tier = DifficultyTier.of(difficulty);
-        if (tier.ordinalPower() < DifficultyTier.AWAKENED.ordinalPower() && !EliteSystem.isElite(creeper)) {
+        DifficultyTier tier = resolveAbilityTier(creeper, difficulty, EliteSystem.isElite(creeper));
+        if (tier.ordinalPower() < DifficultyTier.AWAKENED.ordinalPower()) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(creeper);
@@ -785,10 +783,7 @@ public final class EnemyEvolution {
             return;
         }
         long difficulty = MobScaling.difficultyOf(entity);
-        DifficultyTier tier = DifficultyTier.of(difficulty);
-        if (EliteSystem.isElite(entity) && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
-            tier = DifficultyTier.ELITE;
-        }
+        DifficultyTier tier = resolveAbilityTier(entity, difficulty, EliteSystem.isElite(entity));
         LivingEntity target = entity instanceof Mob mob ? mob.m_5448_() : null;
 
         if (entity instanceof EnderMan ender
@@ -824,10 +819,7 @@ public final class EnemyEvolution {
             return false;
         }
         long difficulty = MobScaling.difficultyOf(shooter);
-        DifficultyTier tier = DifficultyTier.of(difficulty);
-        if (EliteSystem.isElite(shooter) && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
-            tier = DifficultyTier.ELITE;
-        }
+        DifficultyTier tier = resolveAbilityTier(shooter, difficulty, EliteSystem.isElite(shooter));
         if (tier.ordinalPower() < DifficultyTier.AWAKENED.ordinalPower()) {
             return false;
         }
@@ -842,5 +834,21 @@ public final class EnemyEvolution {
             return KiAttackHelper.fireLargeBlast(shooter, target, tier);
         }
         return false;
+    }
+
+    /** Difficulty ladder clamped by the mob's Unlock Tier (more tiers → more abilities). */
+    private static DifficultyTier resolveAbilityTier(LivingEntity entity, long difficulty, boolean elite) {
+        DifficultyTier tier = DifficultyTier.of(difficulty);
+        if (elite && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
+            tier = DifficultyTier.ELITE;
+        }
+        int unlockTier = 0;
+        if (entity != null) {
+            CompoundTag tag = PersistentDataAccess.get(entity);
+            if (tag.m_128441_("dmz_ad_unlock_tier")) {
+                unlockTier = tag.m_128451_("dmz_ad_unlock_tier");
+            }
+        }
+        return UnlockAbilityCaps.clamp(tier, unlockTier);
     }
 }

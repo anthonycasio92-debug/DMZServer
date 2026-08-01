@@ -244,8 +244,14 @@ public final class DifficultyConfig {
     public double defenseToArmorFactor = 2.5;
     /** Server ticks between nearby-player mob rescale pulses (per-player stagger). */
     public int nearbyScaleIntervalTicks = 40;
-    /** Max hostiles rescaled around one player per pulse. */
-    public int nearbyScaleBudgetPerPlayer = 20;
+    /**
+     * Max difficulty-adjusted hostiles near one player at a time (closest win).
+     * Also used as the nearby rescale budget.
+     */
+    public int maxScaledMobsPerPlayer = 5;
+    /** @deprecated use {@link #maxScaledMobsPerPlayer}; kept for config compat. */
+    @Deprecated
+    public int nearbyScaleBudgetPerPlayer = 5;
 
     // ── V3 Ancient Coin economy ────────────────────────────────────────────
     public boolean enableAncientCoinDrops = true;
@@ -256,8 +262,9 @@ public final class DifficultyConfig {
     /** Minimum active unlock-tier for elites / mutations / full AI. */
     public int eliteMinUnlockTier = 4;
     public int mutationMinUnlockTier = 5;
-    public int adaptiveAiMinUnlockTier = 3;
-    public int enemyEvolutionMinUnlockTier = 2;
+    /** Soft AI starts at Unlock Tier 1; kit depth is capped by {@link com.dbzlegacy.adaptivedifficulty.tier.UnlockAbilityCaps}. */
+    public int adaptiveAiMinUnlockTier = 1;
+    public int enemyEvolutionMinUnlockTier = 1;
     public int bossMechanicsMinUnlockTier = 6;
 
     public boolean shouldRestoreVanillaFromPeaceful() {
@@ -637,8 +644,21 @@ public final class DifficultyConfig {
         if (cfg.nearbyScaleIntervalTicks < 10) {
             cfg.nearbyScaleIntervalTicks = 40;
         }
-        if (cfg.nearbyScaleBudgetPerPlayer < 1) {
-            cfg.nearbyScaleBudgetPerPlayer = 20;
+        // Hard product rule: at most 5 difficulty-adjusted mobs near a player.
+        if (cfg.maxScaledMobsPerPlayer < 1 || cfg.maxScaledMobsPerPlayer > 5) {
+            if (cfg.nearbyScaleBudgetPerPlayer >= 1 && cfg.nearbyScaleBudgetPerPlayer <= 5) {
+                cfg.maxScaledMobsPerPlayer = cfg.nearbyScaleBudgetPerPlayer;
+            } else {
+                cfg.maxScaledMobsPerPlayer = 5;
+            }
+        }
+        cfg.maxScaledMobsPerPlayer = Math.max(1, Math.min(5, cfg.maxScaledMobsPerPlayer));
+        cfg.nearbyScaleBudgetPerPlayer = cfg.maxScaledMobsPerPlayer;
+        if (cfg.adaptiveAiMinUnlockTier < 1) {
+            cfg.adaptiveAiMinUnlockTier = 1;
+        }
+        if (cfg.enemyEvolutionMinUnlockTier < 1) {
+            cfg.enemyEvolutionMinUnlockTier = 1;
         }
         // One-time migrate old CR enemy-mult ladder (1.0/1.15/…/3.0) → player-stat percents.
         if (nearly(cfg.unlockTier1EnemyMult, 1.0)

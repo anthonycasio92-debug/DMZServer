@@ -581,8 +581,8 @@ public final class DifficultyCommands {
                         + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased|characterreset\n"
                         + "§e/difficulty admin set <key> <value>\n"
                         + "§8Master keys: enabled · whitelistEnabled\n"
-                        + "§8V3 keys: unlockTier1Level…7 / unlockTier1Max…7 / unlockTier1Cost…7\n"
-                        + "§8combatRating*Weight · enableAncientCoinDrops · deathResetsActiveDifficulty\n"
+                        + "§8Tier keys: unlockTier1Level…7 / Cost…7 / tier1statpercent…7 (0.15–2.0)\n"
+                        + "§8Nearby scale: weakStatCounterMult · weakDefensePierceMult\n"
                         + "§8eliteMinUnlockTier · mutationMinUnlockTier · adaptiveAiMinUnlockTier\n"
                         + "§8enemyEvolutionMinUnlockTier · bossMechanicsMinUnlockTier"
         ), false);
@@ -779,8 +779,11 @@ public final class DifficultyCommands {
                         cfg.defenseToArmorFactor = Math.max(0.1, Double.parseDouble(value));
                 case "nearbyscaleintervalticks", "nearbyscaleinterval" ->
                         cfg.nearbyScaleIntervalTicks = Math.max(10, Integer.parseInt(value));
-                case "nearbyscalebudgetperplayer", "nearbyscalebudget" ->
-                        cfg.nearbyScaleBudgetPerPlayer = Math.max(1, Integer.parseInt(value));
+                case "maxscaledmobsperplayer", "nearbyscalebudgetperplayer", "nearbyscalebudget" -> {
+                    int n = Math.max(1, Math.min(5, Integer.parseInt(value)));
+                    cfg.maxScaledMobsPerPlayer = n;
+                    cfg.nearbyScaleBudgetPerPlayer = n;
+                }
                 case "tiercostleveldivisor", "costleveldivisor", "tiercostdivisor" ->
                         cfg.tierCostLevelDivisor = Math.max(1.0, Double.parseDouble(value));
 

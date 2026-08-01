@@ -80,6 +80,7 @@ public final class DifficultyEvents {
             DifficultyCache.save(player);
             DifficultyCache.remove(player.m_20148_());
             CombatGravity.clearPlayer(player);
+            com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker.clearPlayer(player.m_20148_());
             AreaDifficulty.clearCache();
         }
     }
