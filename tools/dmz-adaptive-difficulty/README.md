@@ -57,4 +57,5 @@ Config key: `enabled` (also `admin set enabled false`).
 - The End stays in `disabledDimensions` by default (End Strength script owns it).
 - Ancient Coins are real Lightman's `coin_ancient` items (exact type/count, no change).
 - Coin ladder: Copper → Iron → Gold → Emerald → Diamond → Netherite (9 letter variants, equal value). Lapis / Ender Pearl unused.
+- Tier costs cap at 128 of one coin type, then promote to the next denomination (rounded up).
 - Old NBT wallet balances migrate into Copper Ancient coins on login.

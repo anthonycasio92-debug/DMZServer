@@ -35,6 +35,12 @@ public final class AncientCoinEconomy {
     private static final boolean LIGHTMANS = ModList.get().isLoaded("lightmanscurrency");
     private static volatile boolean warnedMissingLightmans;
 
+    /**
+     * Max coins of one denomination for a tier price. Beyond this the cost
+     * promotes to the next Ancient Coin type (Copper→…→Netherite), rounding up.
+     */
+    public static final int MAX_COINS_PER_TYPE = 128;
+
     /** All Lightman's Netherite letter ancients (HEROBRINE) — equal value. */
     private static final AncientCoinType[] NETHERITE_VARIANTS = {
             AncientCoinType.NETHERITE_H,
@@ -69,6 +75,11 @@ public final class AncientCoinEconomy {
         /** Payment / balance order, highest value first. */
         static CoinKind[] highToLow() {
             return new CoinKind[] {NETHERITE, DIAMOND, EMERALD, GOLD, IRON, COPPER};
+        }
+
+        /** Ladder order, cheapest first. */
+        static CoinKind[] lowToHigh() {
+            return new CoinKind[] {COPPER, IRON, GOLD, EMERALD, DIAMOND, NETHERITE};
         }
 
         static CoinKind of(AncientCoinType type) {
@@ -169,10 +180,10 @@ public final class AncientCoinEconomy {
         if (copper <= 0L) {
             return "0 Copper";
         }
-        for (CoinKind kind : CoinKind.highToLow()) {
-            if (copper >= kind.copperValue && copper % kind.copperValue == 0L) {
-                return (copper / kind.copperValue) + "× " + kind.display;
-            }
+        CoinKind kind = preferredKind(copper);
+        long n = copper / kind.copperValue;
+        if (copper % kind.copperValue == 0L) {
+            return n + "× " + kind.display;
         }
         return copper + "× Copper";
     }
@@ -182,13 +193,55 @@ public final class AncientCoinEconomy {
         if (copperCost <= 0L) {
             return "free";
         }
+        long normalized = normalizeCost(copperCost);
+        CoinKind kind = preferredKind(normalized);
+        long n = normalized / kind.copperValue;
+        return n + "× " + kind.display + " Ancient";
+    }
+
+    /**
+     * Snap a copper-value cost so it is payable as ≤{@link #MAX_COINS_PER_TYPE}
+     * of a single Ancient Coin type. When more would be required, promote to the
+     * next ladder step (rounding up).
+     */
+    public static long normalizeCost(long copperCost) {
+        if (copperCost <= 0L) {
+            return 0L;
+        }
+        long value = copperCost;
+        CoinKind[] ladder = CoinKind.lowToHigh();
+        for (int i = 0; i < ladder.length; i++) {
+            long unit = ladder[i].copperValue;
+            long count = (value + unit - 1L) / unit; // ceil
+            if (count <= MAX_COINS_PER_TYPE || i == ladder.length - 1) {
+                return safeMul(count, unit);
+            }
+            // Keep the ceiled copper value while promoting.
+            value = safeMul(count, unit);
+        }
+        return value;
+    }
+
+    /** Best single denomination for a (preferably normalized) copper total. */
+    private static CoinKind preferredKind(long copperCost) {
+        if (copperCost <= 0L) {
+            return CoinKind.COPPER;
+        }
+        CoinKind fallback = CoinKind.COPPER;
         for (CoinKind kind : CoinKind.highToLow()) {
-            if (copperCost >= kind.copperValue && copperCost % kind.copperValue == 0L) {
-                long n = copperCost / kind.copperValue;
-                return n + "× " + kind.display + " Ancient";
+            if (copperCost % kind.copperValue != 0L) {
+                continue;
+            }
+            long n = copperCost / kind.copperValue;
+            if (n <= 0L) {
+                continue;
+            }
+            fallback = kind;
+            if (n <= MAX_COINS_PER_TYPE) {
+                return kind;
             }
         }
-        return copperCost + "× Copper Ancient";
+        return fallback;
     }
 
     public static boolean canAfford(ServerPlayer player, long copperCost) {
@@ -401,7 +454,7 @@ public final class AncientCoinEconomy {
     }
 
     public static long activationCost(UnlockTier tier) {
-        return tier == null ? 0L : tier.activationCost();
+        return tier == null ? 0L : normalizeCost(tier.activationCost());
     }
 
     public static long activationCost(UnlockTier tier, ServerPlayer player) {
@@ -410,7 +463,7 @@ public final class AncientCoinEconomy {
         }
         int level = player == null ? 0
                 : com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.dmzLevel(player);
-        return tier.activationCostForLevel(level);
+        return normalizeCost(tier.activationCostForLevel(level));
     }
 
     /** Convert any leftover NBT wallet into exact Copper ancient coins (once). */

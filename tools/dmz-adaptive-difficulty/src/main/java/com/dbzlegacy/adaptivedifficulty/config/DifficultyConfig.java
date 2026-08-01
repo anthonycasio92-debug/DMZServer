@@ -319,7 +319,9 @@ public final class DifficultyConfig {
         double divisor = Math.max(1.0, tierCostLevelDivisor);
         double mult = 1.0 + Math.max(0, dmzLevel) / divisor;
         long scaled = Math.round(base * mult);
-        return Math.max(base, scaled);
+        long raw = Math.max(base, scaled);
+        // Cap at 128 of one coin type, then promote to the next Ancient Coin.
+        return com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.normalizeCost(raw);
     }
 
     public double tierEnemyMult(int tierId) {
