@@ -8,6 +8,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.hoglin.Hoglin;
 import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.entity.monster.warden.Warden;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.raid.Raider;
 
 /**
@@ -46,5 +47,29 @@ public final class HostileMobs {
     /** True when both sides are hostiles — used to block friendly fire / mob civil wars. */
     public static boolean bothHostile(LivingEntity a, LivingEntity b) {
         return isHostile(a) && isHostile(b);
+    }
+
+    /**
+     * Drop other-hostile combat targets and revenge memory so vanilla
+     * {@code HurtByTargetGoal} cannot keep packs fighting each other.
+     *
+     * @return true if a hostile target was cleared
+     */
+    public static boolean clearCivilWarAggro(Mob mob) {
+        if (mob == null) {
+            return false;
+        }
+        boolean cleared = false;
+        LivingEntity target = mob.m_5448_(); // getTarget
+        if (target != null && !(target instanceof Player) && isHostile(target)) {
+            mob.m_6710_(null); // setTarget
+            cleared = true;
+        }
+        LivingEntity revenge = mob.m_21188_(); // getLastHurtByMob
+        if (revenge != null && !(revenge instanceof Player) && isHostile(revenge)) {
+            mob.m_6703_(null); // setLastHurtByMob
+            cleared = true;
+        }
+        return cleared;
     }
 }

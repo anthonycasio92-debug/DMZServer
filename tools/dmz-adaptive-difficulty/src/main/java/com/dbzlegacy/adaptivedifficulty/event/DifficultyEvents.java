@@ -15,6 +15,7 @@ import com.dbzlegacy.adaptivedifficulty.tick.BehaviorScheduler;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
+import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
@@ -38,6 +39,7 @@ import net.minecraft.world.entity.projectile.LargeFireball;
 import net.minecraft.world.entity.projectile.SmallFireball;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -111,8 +113,8 @@ public final class DifficultyEvents {
     }
 
     /**
-     * When a mob switches agro onto a player, retarget stats to that player's difficulty
-     * and register it in the combat index (BehaviorScheduler uses this — no world scans).
+     * Player agro → scale to that player. Hostile→hostile agro → block / redirect to a player
+     * so packs do not civil-war (vanilla revenge + splash/ki otherwise re-locks every tick).
      */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public void onChangeTarget(LivingChangeTargetEvent event) {
@@ -123,9 +125,44 @@ public final class DifficultyEvents {
         if (!(entity instanceof Mob mob) || DimensionGates.isDisabled(mob)) {
             return;
         }
-        if (event.getNewTarget() instanceof ServerPlayer player && SystemGate.allows(player)) {
+        LivingEntity neu = event.getNewTarget();
+        if (neu instanceof ServerPlayer player && SystemGate.allows(player)) {
             CombatIndex.mark(mob);
             MobScaling.retargetToPlayer(mob, player);
+            return;
+        }
+        if (neu != null && HostileMobs.bothHostile(mob, neu)) {
+            ServerPlayer player = NearbyPlayers.nearest(mob, DifficultyConfig.get().mobScaleRadius);
+            if (player != null && SystemGate.allows(player)) {
+                event.setNewTarget(player);
+                CombatIndex.mark(mob);
+                MobScaling.retargetToPlayer(mob, player);
+            } else {
+                event.setNewTarget(null);
+                HostileMobs.clearCivilWarAggro(mob);
+            }
+        }
+    }
+
+    /**
+     * Cheap early cancel: stop hostile→hostile swings before revenge memory arms.
+     * (Heavier combat-index work stays on {@link #onHurt} for player fights only.)
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onAttack(LivingAttackEvent event) {
+        if (SystemGate.isDisabled()) {
+            return;
+        }
+        LivingEntity victim = event.getEntity();
+        if (victim == null || victim.m_9236_().f_46443_ || DimensionGates.isDisabled(victim)) {
+            return;
+        }
+        Entity causing = event.getSource() == null ? null : event.getSource().m_7639_();
+        if (causing == null || causing == victim || causing instanceof Player || victim instanceof Player) {
+            return;
+        }
+        if (causing instanceof LivingEntity attacker && HostileMobs.bothHostile(victim, attacker)) {
+            event.setCanceled(true);
         }
     }
 
@@ -232,13 +269,8 @@ public final class DifficultyEvents {
             if (causerHostile || hostileBoom) {
                 event.setCanceled(true);
                 event.setAmount(0.0f);
-                if (causerHostile && causing instanceof Mob am && am.m_5448_() == victim) {
-                    am.m_6710_(null);
-                }
-                if (victim instanceof Mob vm && causing instanceof LivingEntity
-                        && vm.m_5448_() == causing) {
-                    vm.m_6710_(null);
-                }
+                // Wipe revenge + redirect onto a nearby player (null target lets vanilla re-aggro).
+                redirectCivilWar(causing instanceof LivingEntity le ? le : null, victim);
                 return;
             }
         }
@@ -365,5 +397,37 @@ public final class DifficultyEvents {
             return;
         }
         AdaptiveAiSystem.onPlayerKiCharge(player);
+    }
+
+    /**
+     * After a hostile↔hostile hit/boom is cancelled, clear civil-war agro and point both
+     * sides at the nearest allowed player when one is in range.
+     */
+    private static void redirectCivilWar(LivingEntity causing, LivingEntity victim) {
+        ServerPlayer player = null;
+        if (victim instanceof Mob vm) {
+            player = focusPlayerOrClear(vm, null);
+        }
+        if (causing instanceof Mob am) {
+            focusPlayerOrClear(am, player);
+        }
+    }
+
+    private static ServerPlayer focusPlayerOrClear(Mob mob, ServerPlayer hint) {
+        HostileMobs.clearCivilWarAggro(mob);
+        ServerPlayer player = hint;
+        if (player == null || !player.m_6084_() || player.m_9236_() != mob.m_9236_()) {
+            player = NearbyPlayers.nearest(mob, DifficultyConfig.get().mobScaleRadius);
+        }
+        if (player != null && SystemGate.allows(player)) {
+            LivingEntity current = mob.m_5448_();
+            if (!(current instanceof Player) || !current.m_6084_()) {
+                mob.m_6710_(player);
+            }
+            CombatIndex.mark(mob);
+            MobScaling.retargetToPlayer(mob, player);
+            return player;
+        }
+        return null;
     }
 }

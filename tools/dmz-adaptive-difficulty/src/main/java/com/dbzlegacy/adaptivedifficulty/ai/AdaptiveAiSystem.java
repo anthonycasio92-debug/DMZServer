@@ -421,15 +421,9 @@ public final class AdaptiveAiSystem {
         });
     }
 
-    /** Drop targets that are other hostiles so mobs don't farm each other. */
+    /** Drop targets + revenge that point at other hostiles so packs don't civil-war. */
     private static void clearHostileTarget(Mob mob) {
-        if (mob == null) {
-            return;
-        }
-        LivingEntity target = mob.m_5448_();
-        if (target != null && !(target instanceof Player) && HostileMobs.isHostile(target)) {
-            mob.m_6710_(null);
-        }
+        HostileMobs.clearCivilWarAggro(mob);
     }
 
     private static void frenzyAllies(Mob mob, ServerLevel level, double radius) {

@@ -97,12 +97,9 @@ public final class EnemyEvolution {
 
         markEvolved(mob, tier);
 
-        // Kits are player-focused — drop other-hostile targets so packs don't civil-war.
+        // Kits are player-focused — drop other-hostile targets/revenge so packs don't civil-war.
+        HostileMobs.clearCivilWarAggro(mob);
         LivingEntity target = mob.m_5448_();
-        if (target != null && !(target instanceof Player) && HostileMobs.isHostile(target)) {
-            mob.m_6710_(null);
-            target = null;
-        }
 
         if (mob instanceof Creeper creeper) {
             creeperTick(creeper, level, target, tier, difficulty);
