@@ -61,14 +61,22 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§8──────── §fAdaptive Difficulty §8────────"));
         if (!DifficultyConfig.isEnabled()) {
-            send(player, Component.m_237113_("§c§lSYSTEM DISABLED §8· §7An admin turned Adaptive Difficulty off."));
-            send(player, Component.m_237113_("§8No scaling, kill coins, or tier purchases until re-enabled."));
+            send(player, Component.m_237113_("§c§lSYSTEM DISABLED"));
+            if (isStaff(player)) {
+                send(player, Component.m_237113_("§8No scaling until re-enabled: §f/difficulty admin on"));
+            } else {
+                send(player, Component.m_237113_("§7Please try again later."));
+            }
             send(player, Component.m_237113_("§8────────────────────────"));
             return;
         }
         if (!SystemGate.allows(player)) {
-            send(player, Component.m_237113_("§e§lWHITELIST ONLY §8· §7Adaptive Difficulty is in testing mode."));
-            send(player, Component.m_237113_("§8Ask an admin to add you: §f/difficulty admin whitelist add <you>"));
+            send(player, Component.m_237113_("§e§lNOT AVAILABLE"));
+            if (isStaff(player)) {
+                send(player, Component.m_237113_("§8Whitelist: §f/difficulty admin whitelist add <you>"));
+            } else {
+                send(player, Component.m_237113_("§7Ask an admin if you need access."));
+            }
             send(player, Component.m_237113_("§8────────────────────────"));
             return;
         }
@@ -244,6 +252,18 @@ public final class DifficultyChatMenu {
                         .m_131142_(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
                         .m_131144_(new HoverEvent(HoverEvent.Action.f_130831_, Component.m_237113_(hover)))
         );
+    }
+
+    private static boolean isStaff(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        try {
+            // Permission level 2 ≈ op; covers difficulty.admin via LuckPerms on Mohist when mapped.
+            return player.m_20310_(2);
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private static void send(ServerPlayer player, Component component) {

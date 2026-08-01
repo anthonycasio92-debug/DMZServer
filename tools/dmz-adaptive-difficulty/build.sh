@@ -16,7 +16,7 @@ if [[ ! -f "$FTB" ]]; then
   curl -fsSL -o "$FTB" \
     "https://maven.ftb.dev/releases/dev/ftb/mods/ftb-teams-forge/2001.3.1/ftb-teams-forge-2001.3.1.jar"
 fi
-VERSION="3.2.6"
+VERSION="3.2.7"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"

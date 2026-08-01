@@ -68,11 +68,7 @@ public final class CmiDifficultyGui {
                         : "&f&lAdaptive Difficulty");
         status.lockField();
         if (!systemOn || !allowed) {
-            status.addLore(!systemOn
-                    ? List.of("", "&cAdaptive Difficulty is off", "&7An admin disabled the system",
-                    "&8No scaling, coins, or purchases", "&8Re-enable: &f/difficulty admin on")
-                    : List.of("", "&eTesting whitelist is on", "&7You are not on the whitelist",
-                    "&8Ask an admin:", "&f/difficulty admin whitelist add <you>"));
+            status.addLore(unavailableLore(player, systemOn));
             gui.addButton(status);
             gui.addButton(actionBtn(31, Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
                     List.of("&7Reload this menu")));
@@ -347,6 +343,24 @@ public final class CmiDifficultyGui {
                 gui.addButton(locked);
             }
         }
+    }
+
+    /** Clean copy for players; command tips only for staff. */
+    private static List<String> unavailableLore(Player player, boolean systemOn) {
+        boolean staff = ForgeBridge.isStaff(player);
+        if (!systemOn) {
+            if (staff) {
+                return List.of("", "&cAdaptive Difficulty is off",
+                        "&7No scaling, coins, or purchases",
+                        "&8Re-enable: &f/difficulty admin on");
+            }
+            return List.of("", "&cAdaptive Difficulty is off", "&7Please try again later");
+        }
+        if (staff) {
+            return List.of("", "&eTesting whitelist is on", "&7You are not on the whitelist",
+                    "&8Add: &f/difficulty admin whitelist add <you>");
+        }
+        return List.of("", "&eNot available right now", "&7Ask an admin if you need access");
     }
 
     private static List<String> statusLore(Map<String, String> ph, String stateColor) {

@@ -181,7 +181,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
             }
             case "hard", "normal", "easy", "peaceful" -> {
                 if (!sender.isOp() && !sender.hasPermission("difficulty.admin")) {
-                    sender.sendMessage("§cOps only: /difficulty " + sub);
+                    sender.sendMessage("§cOps only.");
                     return true;
                 }
                 boolean ok = ForgeBridge.setVanillaDifficulty(sub);
@@ -193,11 +193,26 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
                 }
                 return true;
             }
+            case "help", "?" -> {
+                if (sender instanceof Player player && !ForgeBridge.isStaff(player)) {
+                    // Normal players: open the clean GUI — no command dump.
+                    openMenuRespectingConfig(player, "main");
+                    return true;
+                }
+                sendStaffHelp(sender);
+                return true;
+            }
             default -> {
-                sender.sendMessage("§e/difficulty §7— open GUI");
-                sender.sendMessage("§e/difficulty buy|lower|titles §7— open those pages");
-                sender.sendMessage("§e/difficulty reset §7— clear active tier");
-                sender.sendMessage("§e/difficulty admin off|on|whitelist §7— staff controls");
+                // Unknown args: players just get the menu; staff get command help.
+                if (sender instanceof Player player) {
+                    if (ForgeBridge.isStaff(player)) {
+                        sendStaffHelp(sender);
+                    } else {
+                        openMenuRespectingConfig(player, "main");
+                    }
+                    return true;
+                }
+                sendStaffHelp(sender);
                 return true;
             }
         }
@@ -208,8 +223,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
         Player player = console ? null : (Player) sender;
 
         if (!console && !ForgeBridge.isStaff(player)) {
-            sender.sendMessage("§cNo permission for /difficulty admin (need op or "
-                    + ForgeBridge.adminPermission() + ").");
+            // No command-syntax dump for normal players.
+            sender.sendMessage("§cStaff only.");
             return true;
         }
 
@@ -407,8 +422,15 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
     }
 
     private static void sendAdminHelp(CommandSender sender) {
-        sender.sendMessage("§6Adaptive Difficulty — admin");
-        sender.sendMessage("§e/difficulty §7— open CMI/chest GUI");
+        sendStaffHelp(sender);
+    }
+
+    /** Full command reference — staff / console only. */
+    private static void sendStaffHelp(CommandSender sender) {
+        sender.sendMessage("§6Adaptive Difficulty — staff");
+        sender.sendMessage("§e/difficulty §7— open GUI");
+        sender.sendMessage("§e/difficulty buy|lower|titles|details §7— open those pages");
+        sender.sendMessage("§e/difficulty reset §7— clear active tier");
         sender.sendMessage("§e/difficulty admin off|on|toggle|status §7— master system switch");
         sender.sendMessage("§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist");
         sender.sendMessage("§e/difficulty admin reload|settings|area|set §7— config tools");

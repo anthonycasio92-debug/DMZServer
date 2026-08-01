@@ -56,11 +56,7 @@ public final class DifficultyChestGui implements Listener {
         if (!systemOn || !allowed) {
             inv.setItem(13, item(Material.NETHER_STAR,
                     !systemOn ? "&c&lSYSTEM DISABLED" : "&e&lWHITELIST ONLY",
-                    !systemOn
-                            ? List.of("", "&cAdaptive Difficulty is off", "&7An admin disabled the system",
-                            "&8No scaling, coins, or purchases", "&8Re-enable: &f/difficulty admin on")
-                            : List.of("", "&eTesting whitelist is on", "&7You are not on the whitelist",
-                            "&8Ask an admin:", "&f/difficulty admin whitelist add <you>")));
+                    unavailableLore(player, systemOn)));
             inv.setItem(31, button(Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
                     List.of("&7Reload this menu")));
             inv.setItem(35, closeBtn());
@@ -309,6 +305,24 @@ public final class DifficultyChestGui implements Listener {
         out.add("");
         out.addAll(tip);
         return out;
+    }
+
+    /** Clean copy for players; command tips only for staff. */
+    private static List<String> unavailableLore(Player player, boolean systemOn) {
+        boolean staff = ForgeBridge.isStaff(player);
+        if (!systemOn) {
+            if (staff) {
+                return List.of("", "&cAdaptive Difficulty is off",
+                        "&7No scaling, coins, or purchases",
+                        "&8Re-enable: &f/difficulty admin on");
+            }
+            return List.of("", "&cAdaptive Difficulty is off", "&7Please try again later");
+        }
+        if (staff) {
+            return List.of("", "&eTesting whitelist is on", "&7You are not on the whitelist",
+                    "&8Add: &f/difficulty admin whitelist add <you>");
+        }
+        return List.of("", "&eNot available right now", "&7Ask an admin if you need access");
     }
 
     private static List<String> statusLore(Map<String, String> ph, String stateColor) {
