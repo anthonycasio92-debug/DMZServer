@@ -225,13 +225,27 @@ public final class DifficultyConfig {
      * Default 1000 → level 1000 ≈ 2× base, level 100000 ≈ 101× base.
      */
     public double tierCostLevelDivisor = 1_000.0;
-    public double unlockTier1EnemyMult = 1.0;
-    public double unlockTier2EnemyMult = 1.15;
-    public double unlockTier3EnemyMult = 1.35;
-    public double unlockTier4EnemyMult = 1.60;
-    public double unlockTier5EnemyMult = 1.90;
-    public double unlockTier6EnemyMult = 2.30;
-    public double unlockTier7EnemyMult = 3.00;
+    /**
+     * Nearby-mob scale vs the player's post-transform / limit-release stats.
+     * Defaults: T1 15% · T2 30% · T3 55% · T4 80% · T5 110% · T6 130% · T7 200%.
+     */
+    public double unlockTier1EnemyMult = 0.15;
+    public double unlockTier2EnemyMult = 0.30;
+    public double unlockTier3EnemyMult = 0.55;
+    public double unlockTier4EnemyMult = 0.80;
+    public double unlockTier5EnemyMult = 1.10;
+    public double unlockTier6EnemyMult = 1.30;
+    public double unlockTier7EnemyMult = 2.00;
+    /** Extra pressure when countering the player's weakest combat stat. */
+    public double weakStatCounterMult = 1.45;
+    /** How hard weak-defense counters pierce (mob damage vs player defense share). */
+    public double weakDefensePierceMult = 1.35;
+    /** Converts DMZ defense share into vanilla armor points: log1p(def) × factor. */
+    public double defenseToArmorFactor = 2.5;
+    /** Server ticks between nearby-player mob rescale pulses (per-player stagger). */
+    public int nearbyScaleIntervalTicks = 40;
+    /** Max hostiles rescaled around one player per pulse. */
+    public int nearbyScaleBudgetPerPlayer = 20;
 
     // ── V3 Ancient Coin economy ────────────────────────────────────────────
     public boolean enableAncientCoinDrops = true;
@@ -302,16 +316,51 @@ public final class DifficultyConfig {
     }
 
     public double tierEnemyMult(int tierId) {
+        return tierPlayerStatPercent(tierId);
+    }
+
+    /** Fraction of the player's transformed/released stats used for nearby mobs. */
+    public double tierPlayerStatPercent(int tierId) {
         return switch (tierId) {
-            case 1 -> Math.max(0.1, unlockTier1EnemyMult);
-            case 2 -> Math.max(0.1, unlockTier2EnemyMult);
-            case 3 -> Math.max(0.1, unlockTier3EnemyMult);
-            case 4 -> Math.max(0.1, unlockTier4EnemyMult);
-            case 5 -> Math.max(0.1, unlockTier5EnemyMult);
-            case 6 -> Math.max(0.1, unlockTier6EnemyMult);
-            case 7 -> Math.max(0.1, unlockTier7EnemyMult);
-            default -> 1.0;
+            case 1 -> clampPercent(unlockTier1EnemyMult, 0.15);
+            case 2 -> clampPercent(unlockTier2EnemyMult, 0.30);
+            case 3 -> clampPercent(unlockTier3EnemyMult, 0.55);
+            case 4 -> clampPercent(unlockTier4EnemyMult, 0.80);
+            case 5 -> clampPercent(unlockTier5EnemyMult, 1.10);
+            case 6 -> clampPercent(unlockTier6EnemyMult, 1.30);
+            case 7 -> clampPercent(unlockTier7EnemyMult, 2.00);
+            default -> 0.0;
         };
+    }
+
+    private static double clampPercent(double value, double fallback) {
+        if (!(value > 0.0) || Double.isNaN(value) || Double.isInfinite(value)) {
+            return fallback;
+        }
+        // Migrate legacy CR-style multipliers (1.0–3.0+) into the new percent model.
+        if (value >= 1.0 && value == Math.rint(value) && value <= 3.0 && value != 1.0 && value != 2.0) {
+            // Keep explicit 1.0 / 2.0 (100% / 200%) — only remap old 1.15/1.35/… style values
+            // when they look like the previous enemy-mult ladder.
+        }
+        if (nearly(value, 1.15)) {
+            return 0.30;
+        }
+        if (nearly(value, 1.35)) {
+            return 0.55;
+        }
+        if (nearly(value, 1.60)) {
+            return 0.80;
+        }
+        if (nearly(value, 1.90)) {
+            return 1.10;
+        }
+        if (nearly(value, 2.30)) {
+            return 1.30;
+        }
+        if (nearly(value, 3.00)) {
+            return 2.00;
+        }
+        return Math.max(0.01, Math.min(10.0, value));
     }
 
     /** Tier thresholds — editable via {@code /difficulty admin set tierX <n>}. */
@@ -575,6 +624,41 @@ public final class DifficultyConfig {
         }
         if (cfg.tierCostLevelDivisor < 1.0) {
             cfg.tierCostLevelDivisor = 1_000.0;
+        }
+        if (cfg.weakStatCounterMult < 1.0) {
+            cfg.weakStatCounterMult = 1.45;
+        }
+        if (cfg.weakDefensePierceMult < 1.0) {
+            cfg.weakDefensePierceMult = 1.35;
+        }
+        if (cfg.defenseToArmorFactor <= 0.0) {
+            cfg.defenseToArmorFactor = 2.5;
+        }
+        if (cfg.nearbyScaleIntervalTicks < 10) {
+            cfg.nearbyScaleIntervalTicks = 40;
+        }
+        if (cfg.nearbyScaleBudgetPerPlayer < 1) {
+            cfg.nearbyScaleBudgetPerPlayer = 20;
+        }
+        // One-time migrate old CR enemy-mult ladder (1.0/1.15/…/3.0) → player-stat percents.
+        if (nearly(cfg.unlockTier1EnemyMult, 1.0)
+                && nearly(cfg.unlockTier2EnemyMult, 1.15)
+                && nearly(cfg.unlockTier7EnemyMult, 3.0)) {
+            cfg.unlockTier1EnemyMult = 0.15;
+            cfg.unlockTier2EnemyMult = 0.30;
+            cfg.unlockTier3EnemyMult = 0.55;
+            cfg.unlockTier4EnemyMult = 0.80;
+            cfg.unlockTier5EnemyMult = 1.10;
+            cfg.unlockTier6EnemyMult = 1.30;
+            cfg.unlockTier7EnemyMult = 2.00;
+        } else {
+            cfg.unlockTier1EnemyMult = clampPercent(cfg.unlockTier1EnemyMult, 0.15);
+            cfg.unlockTier2EnemyMult = clampPercent(cfg.unlockTier2EnemyMult, 0.30);
+            cfg.unlockTier3EnemyMult = clampPercent(cfg.unlockTier3EnemyMult, 0.55);
+            cfg.unlockTier4EnemyMult = clampPercent(cfg.unlockTier4EnemyMult, 0.80);
+            cfg.unlockTier5EnemyMult = clampPercent(cfg.unlockTier5EnemyMult, 1.10);
+            cfg.unlockTier6EnemyMult = clampPercent(cfg.unlockTier6EnemyMult, 1.30);
+            cfg.unlockTier7EnemyMult = clampPercent(cfg.unlockTier7EnemyMult, 2.00);
         }
     }
 

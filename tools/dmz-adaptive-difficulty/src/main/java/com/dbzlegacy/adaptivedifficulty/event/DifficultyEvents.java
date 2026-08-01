@@ -149,16 +149,43 @@ public final class DifficultyEvents {
                 || SystemGate.isDisabled() || !SystemGate.allows(player)) {
             return;
         }
-        // Level/prestige poll only — gravity moved to BehaviorScheduler.
-        if (player.f_19797_ % 200 != 0) {
+        // Level / prestige / transform-power poll — transform & limit-release change CR + mob scale.
+        if (player.f_19797_ % 40 != 0) {
             return;
         }
         DifficultySnapshot before = DifficultyCache.get(player);
         int level = DmzProgression.dmzLevel(player);
         int prestige = DmzProgression.prestige(player);
-        if (before.dmzLevel != level || before.prestige != prestige) {
+        double transform = DmzProgression.transformationPower(player);
+        if (before.dmzLevel != level
+                || before.prestige != prestige
+                || Math.abs(before.transformationPower - transform) > 0.5) {
             DifficultyCache.refresh(player);
         }
+    }
+
+    @SubscribeEvent
+    public void onFormChange(DMZEvent.FormChangeEvent event) {
+        if (SystemGate.isDisabled()) {
+            return;
+        }
+        ServerPlayer player = event.getPlayer();
+        if (player == null || !SystemGate.allows(player)) {
+            return;
+        }
+        DifficultyCache.refresh(player);
+    }
+
+    @SubscribeEvent
+    public void onStackFormChange(DMZEvent.StackFormChangeEvent event) {
+        if (SystemGate.isDisabled()) {
+            return;
+        }
+        ServerPlayer player = event.getPlayer();
+        if (player == null || !SystemGate.allows(player)) {
+            return;
+        }
+        DifficultyCache.refresh(player);
     }
 
     /**

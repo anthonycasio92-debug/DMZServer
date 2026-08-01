@@ -51,6 +51,9 @@ public final class BehaviorScheduler {
             CombatGravity.tickActive(server);
         }
 
+        // Rescale hostiles already near players to transform / limit-release stats.
+        NearbyMobScaler.pulse(server, gameTick);
+
         if (gameTick % PULSE_INTERVAL != 0) {
             return;
         }

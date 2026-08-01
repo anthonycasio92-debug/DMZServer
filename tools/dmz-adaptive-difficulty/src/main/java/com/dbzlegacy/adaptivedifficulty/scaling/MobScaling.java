@@ -2,14 +2,15 @@ package com.dbzlegacy.adaptivedifficulty.scaling;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.boss.BossScaling;
-import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
+import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationType;
-import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
+import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
+import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,8 +30,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * Scale hostiles after spawn from their captured base stats, then re-scale to the
- * engaged player's difficulty on target switch / attack (before damage resolves).
+ * Scale hostiles near players to a fraction of that player's post-transform /
+ * limit-release stats (Unlock Tier %). Spawn only captures bases — nearby /
+ * combat retarget paints the real fight stats.
  * <p>
  * Damage is applied two ways for Mohist reliability:
  * <ul>
@@ -45,6 +47,9 @@ public final class MobScaling {
     public static final String TAG_DMZ_STYLE = "dmz_ad_dmz_mob";
     /** True when ATTACK_DAMAGE was written from our scaler — melee must not be event-multiplied again. */
     public static final String TAG_ATTR_DMG_SCALED = "dmz_ad_attr_dmg";
+    /** Fingerprint of the player combat profile this mob was last scaled to. */
+    public static final String TAG_PROFILE_SIG = "dmz_ad_profile_sig";
+    public static final String TAG_TIER_PERCENT = "dmz_ad_tier_pct";
 
     public static final String TAG_BASE_HEALTH = "dmz_ad_base_max_health";
     public static final String TAG_BASE_ATTACK = "dmz_ad_base_attack";
@@ -53,10 +58,9 @@ public final class MobScaling {
     public static final String TAG_BASE_KNOCKBACK = "dmz_ad_base_knockback";
 
     /**
-     * Hot-path cache: entity UUID → last applied difficulty.
-     * Lets attack/target retarget skip NBT when already matched.
+     * Hot-path cache: entity UUID → last applied player-profile signature.
      */
-    private static final Map<UUID, Long> APPLIED_DIFFICULTY = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> APPLIED_PROFILE = new ConcurrentHashMap<>();
 
     private MobScaling() {}
 
@@ -86,8 +90,8 @@ public final class MobScaling {
     }
 
     /**
-     * Re-scale a hostile to {@code player}'s active difficulty, preserving HP %.
-     * No-op when already matched. Safe to call every hit / target change.
+     * Re-scale a hostile to {@code player}'s post-transform / limit-release stats
+     * × active Unlock Tier percent. No-op when already matched.
      */
     public static void retargetToPlayer(LivingEntity entity, ServerPlayer player) {
         if (entity == null || player == null || entity.m_9236_().f_46443_) {
@@ -98,42 +102,34 @@ public final class MobScaling {
             if (!cfg.enabled || !cfg.enableMobScaling) {
                 return;
             }
-            if (!com.dbzlegacy.adaptivedifficulty.util.SystemGate.allows(player)) {
+            if (!SystemGate.allows(player)) {
                 return;
             }
-            // Cheap hostility gate before any NBT / kill checks.
             if (cfg.scaleHostileOnly && !HostileMobs.isHostile(entity)) {
                 return;
             }
-            // V3: scale to engaged player's Combat Rating × active tier enemy mult.
-            var snap = DifficultyCache.get(player);
-            long difficulty = Math.max(0L, snap.combatRating);
-            UnlockTier ut = UnlockTier.byId(snap.activeTier);
-            if (ut != null) {
-                difficulty = Math.round(difficulty * ut.enemyScalingMultiplier());
+            PlayerCombatProfile profile = PlayerCombatProfile.of(player);
+            if (!profile.active()) {
+                return;
             }
-            // Memory cache — skip NBT entirely when this mob is already on this difficulty.
-            Long cached = APPLIED_DIFFICULTY.get(entity.m_20148_());
-            if (cached != null && cached == difficulty) {
+            Long cached = APPLIED_PROFILE.get(entity.m_20148_());
+            if (cached != null && cached == profile.signature) {
                 return;
             }
             CompoundTag tag = PersistentDataAccess.get(entity);
             if (!PersistentDataAccess.isWritable(tag)) {
                 return;
             }
-            // Hot path: already matched in NBT — remember and exit.
             if (tag.m_128471_(TAG_SCALED)
                     && tag.m_128441_(TAG_BASE_HEALTH)
-                    && tag.m_128441_(TAG_DIFFICULTY)
-                    && tag.m_128454_(TAG_DIFFICULTY) == difficulty) {
-                APPLIED_DIFFICULTY.put(entity.m_20148_(), difficulty);
+                    && tag.m_128441_(TAG_PROFILE_SIG)
+                    && tag.m_128454_(TAG_PROFILE_SIG) == profile.signature) {
+                APPLIED_PROFILE.put(entity.m_20148_(), profile.signature);
                 return;
             }
-            // Never retarget / revive a mob that is already at 0 HP.
             if (!(entity.m_21223_() > 0.0f) && terminateIfZeroHealth(entity)) {
                 return;
             }
-            // Ensure spawn init ran (bases + elite/boss/mut rolls).
             if (!tag.m_128471_(TAG_SCALED) || !tag.m_128441_(TAG_BASE_HEALTH)) {
                 scaleIfNeededInternal(entity);
                 tag = PersistentDataAccess.get(entity);
@@ -141,11 +137,11 @@ public final class MobScaling {
             if (!tag.m_128441_(TAG_BASE_HEALTH)) {
                 return;
             }
-            if (tag.m_128441_(TAG_DIFFICULTY) && tag.m_128454_(TAG_DIFFICULTY) == difficulty) {
-                APPLIED_DIFFICULTY.put(entity.m_20148_(), difficulty);
+            if (tag.m_128441_(TAG_PROFILE_SIG) && tag.m_128454_(TAG_PROFILE_SIG) == profile.signature) {
+                APPLIED_PROFILE.put(entity.m_20148_(), profile.signature);
                 return;
             }
-            applyForDifficulty(entity, tag, difficulty, cfg);
+            applyForPlayerProfile(entity, tag, profile, cfg);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] retarget scaling failed for {}: {}",
@@ -181,7 +177,7 @@ public final class MobScaling {
         if (!tag.m_128471_(TAG_SCALED)) {
             return false;
         }
-        APPLIED_DIFFICULTY.remove(entity.m_20148_());
+        APPLIED_PROFILE.remove(entity.m_20148_());
         try {
             // Entity.kill() — applies a lethal generic hit and runs normal death.
             entity.m_6074_();
@@ -244,29 +240,168 @@ public final class MobScaling {
         }
         tag.m_128379_(TAG_SCALED, true);
 
-        long areaDifficulty = resolveNearbyDifficulty(entity);
         int unlockTier = 0;
-        if (entity.m_9236_() instanceof net.minecraft.server.level.ServerLevel sl) {
+        if (entity.m_9236_() instanceof ServerLevel sl) {
             unlockTier = AreaDifficulty.highestActiveUnlockTier(sl, entity.m_20183_());
         }
         tag.m_128405_("dmz_ad_unlock_tier", unlockTier);
-        UnlockTier ut = UnlockTier.byId(unlockTier);
-        if (ut != null) {
-            areaDifficulty = Math.round(areaDifficulty * ut.enemyScalingMultiplier());
-        }
 
-        // Roll elite / boss / mutation once (flags + cosmetics only — stats via applyForDifficulty).
+        // Elite/boss/mutation rolls use nearby unlock tier only — not CR spawn paint.
+        long rollSeed = Math.max(1L, unlockTier) * 10_000L;
         if (naturalBoss && unlockTier >= cfg.bossMechanicsMinUnlockTier) {
-            BossScaling.markBoss(entity, areaDifficulty);
+            BossScaling.markBoss(entity, rollSeed);
         }
         if (unlockTier >= cfg.eliteMinUnlockTier) {
-            EliteSystem.maybePromote(entity, areaDifficulty);
+            EliteSystem.maybePromote(entity, rollSeed);
         }
         if (unlockTier >= cfg.mutationMinUnlockTier) {
-            MutationSystem.maybeMutate(entity, areaDifficulty);
+            MutationSystem.maybeMutate(entity, rollSeed);
         }
 
-        applyForDifficulty(entity, tag, areaDifficulty, cfg);
+        // Do NOT bake final fight stats at spawn. Scale to a nearby player if one
+        // already has an active tier; otherwise leave natural bases until they approach.
+        ServerPlayer nearby = NearbyPlayers.nearest(entity, Math.max(8.0, cfg.mobScaleRadius));
+        if (nearby != null && SystemGate.allows(nearby)) {
+            PlayerCombatProfile profile = PlayerCombatProfile.of(nearby);
+            if (profile.active()) {
+                applyForPlayerProfile(entity, tag, profile, cfg);
+                return;
+            }
+        }
+        tag.m_128356_(TAG_DIFFICULTY, 0L);
+        tag.m_128356_(TAG_PROFILE_SIG, 0L);
+        tag.m_128350_(TAG_DMG_MULT, 1.0f);
+    }
+
+    /**
+     * Paint mob attributes from a player's transformed/released combat profile.
+     */
+    public static void applyForPlayerProfile(
+            LivingEntity entity, CompoundTag tag, PlayerCombatProfile profile, DifficultyConfig cfg
+    ) {
+        if (entity == null || tag == null || profile == null || !profile.active()
+                || !PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
+        if (!tag.m_128441_(TAG_BASE_HEALTH)) {
+            return;
+        }
+
+        boolean elite = tag.m_128471_(EliteSystem.TAG_ELITE);
+        boolean boss = tag.m_128471_(BossScaling.TAG_BOSS);
+        MutationType mutation = MutationType.fromString(tag.m_128461_(MutationSystem.TAG_MUTATION));
+
+        double rarityHealth = 1.0;
+        double rarityDamage = 1.0;
+        double moveMult = 1.0;
+        if (elite) {
+            rarityHealth *= Math.max(1.0, cfg.eliteStatMultiplier);
+            rarityDamage *= Math.max(1.0, cfg.eliteStatMultiplier);
+            moveMult *= 0.92;
+        }
+        if (boss) {
+            rarityHealth *= Math.max(1.0, cfg.bossStatMultiplier);
+            rarityDamage *= Math.max(1.0, cfg.bossStatMultiplier);
+        }
+        if (mutation == MutationType.TITAN_CREEPER) {
+            rarityHealth *= 1.75;
+        }
+        if (mutation == MutationType.BERSERKER_PIGLIN) {
+            moveMult *= 1.25;
+        }
+
+        double newMaxHealth = profile.targetMobHealth(cfg) * rarityHealth;
+        if (cfg.maxScaledHealth > 0.0) {
+            newMaxHealth = Math.min(cfg.maxScaledHealth, newMaxHealth);
+        }
+        if (cfg.maxHealthMultiplier > 1.0) {
+            double baseHealth = Math.max(1.0, tag.m_128459_(TAG_BASE_HEALTH));
+            newMaxHealth = Math.min(newMaxHealth, baseHealth * cfg.maxHealthMultiplier);
+        }
+        if (!(newMaxHealth > 0.0) || Double.isNaN(newMaxHealth) || Double.isInfinite(newMaxHealth)) {
+            newMaxHealth = Math.max(20.0, tag.m_128459_(TAG_BASE_HEALTH));
+        }
+
+        float oldMax = entity.m_21233_();
+        float oldHp = entity.m_21223_();
+        if (entity.m_21224_() || !(oldHp > 0.0f) || Float.isNaN(oldHp) || Float.isInfinite(oldHp)) {
+            terminateIfZeroHealth(entity);
+            return;
+        }
+        double hpRatio = (oldMax > 0.0f && !Float.isNaN(oldMax))
+                ? Math.max(0.0, Math.min(1.0, oldHp / oldMax))
+                : 1.0;
+        if (hpRatio <= 0.0) {
+            terminateIfZeroHealth(entity);
+            return;
+        }
+
+        setAttributeValue(entity, Attributes.f_22276_, newMaxHealth); // MAX_HEALTH
+        float appliedMax = entity.m_21233_();
+        if (appliedMax > 0.0f && !Float.isNaN(appliedMax) && !Float.isInfinite(appliedMax)) {
+            float nextHp = (float) (appliedMax * hpRatio);
+            if (!tag.m_128441_(TAG_PROFILE_SIG) && oldHp >= oldMax - 0.5f) {
+                nextHp = appliedMax;
+            }
+            if (nextHp <= 0.0f) {
+                terminateIfZeroHealth(entity);
+                return;
+            }
+            entity.m_21153_(Math.min(appliedMax, nextHp));
+        }
+
+        double nextAtk = profile.targetMobDamage(cfg) * rarityDamage;
+        if (cfg.maxDamageMultiplier > 1.0) {
+            double baseAttack = tag.m_128441_(TAG_BASE_ATTACK) ? tag.m_128459_(TAG_BASE_ATTACK) : 1.0;
+            nextAtk = Math.min(nextAtk, Math.max(1.0, baseAttack) * cfg.maxDamageMultiplier);
+        }
+        if (nextAtk > 0.0 && !Double.isNaN(nextAtk) && !Double.isInfinite(nextAtk)) {
+            if (setAttributeValue(entity, Attributes.f_22281_, nextAtk)) { // ATTACK_DAMAGE
+                tag.m_128379_(TAG_ATTR_DMG_SCALED, true);
+            }
+        }
+
+        double baseArmor = tag.m_128441_(TAG_BASE_ARMOR) ? Math.max(0.0, tag.m_128459_(TAG_BASE_ARMOR)) : 0.0;
+        double nextArmor = baseArmor + profile.targetMobArmor(cfg);
+        if (elite) {
+            nextArmor += 4.0;
+        }
+        if (cfg.maxArmorBonus > 0.0) {
+            nextArmor = Math.min(cfg.maxArmorBonus, nextArmor);
+        }
+        if (nextArmor >= 0.0 && !Double.isNaN(nextArmor) && !Double.isInfinite(nextArmor)) {
+            setAttributeValue(entity, Attributes.f_22284_, nextArmor); // ARMOR
+        }
+
+        double baseSpeed = tag.m_128441_(TAG_BASE_SPEED) ? Math.max(0.0, tag.m_128459_(TAG_BASE_SPEED)) : 0.0;
+        if (baseSpeed > 0.0) {
+            if (cfg.maxMoveMultiplier > 1.0) {
+                moveMult = clamp(moveMult, 0.05, cfg.maxMoveMultiplier);
+            }
+            double nextSpeed = baseSpeed * Math.max(0.05, moveMult);
+            if (nextSpeed > 0.0 && !Double.isNaN(nextSpeed) && !Double.isInfinite(nextSpeed)) {
+                setAttributeValue(entity, Attributes.f_22279_, nextSpeed); // MOVEMENT_SPEED
+            }
+        }
+
+        double baseKnock = tag.m_128441_(TAG_BASE_KNOCKBACK) ? Math.max(0.0, tag.m_128459_(TAG_BASE_KNOCKBACK)) : 0.0;
+        if (elite) {
+            setAttributeValue(entity, Attributes.f_22278_, Math.min(1.0, baseKnock + 0.6));
+        } else if (tag.m_128441_(TAG_BASE_KNOCKBACK)) {
+            setAttributeValue(entity, Attributes.f_22278_, baseKnock);
+        }
+
+        tag.m_128405_("dmz_ad_unlock_tier", profile.activeTier);
+        tag.m_128350_(TAG_TIER_PERCENT, (float) profile.tierPercent);
+        // Keep TAG_DIFFICULTY as a readable proxy for AI/evolution curves.
+        long proxyDifficulty = Math.max(1L, Math.round(profile.offense * profile.tierPercent));
+        tag.m_128356_(TAG_DIFFICULTY, proxyDifficulty);
+        tag.m_128356_(TAG_PROFILE_SIG, profile.signature);
+        // Hurt-event path: absolute attack already set — keep mult at 1 for melee;
+        // projectiles still get a modest boost from TAG_DMG_MULT when needed.
+        tag.m_128350_(TAG_DMG_MULT, (float) Math.max(1.0, rarityDamage));
+        APPLIED_PROFILE.put(entity.m_20148_(), profile.signature);
+        pruneProfileCache();
     }
 
     /**
@@ -430,15 +565,20 @@ public final class MobScaling {
 
         tag.m_128356_(TAG_DIFFICULTY, Math.max(0L, difficulty));
         tag.m_128350_(TAG_DMG_MULT, (float) Math.max(1.0, dmgMult * rarityDamage));
-        APPLIED_DIFFICULTY.put(entity.m_20148_(), Math.max(0L, difficulty));
-        if (APPLIED_DIFFICULTY.size() > 4096) {
-            // Soft prune — full clear caused retarget stampedes.
-            int remove = APPLIED_DIFFICULTY.size() / 2;
-            var it = APPLIED_DIFFICULTY.entrySet().iterator();
-            while (it.hasNext() && remove-- > 0) {
-                it.next();
-                it.remove();
-            }
+        // Legacy CR path — clear player-profile match so nearby scaler can overwrite.
+        tag.m_128356_(TAG_PROFILE_SIG, 0L);
+        APPLIED_PROFILE.remove(entity.m_20148_());
+    }
+
+    private static void pruneProfileCache() {
+        if (APPLIED_PROFILE.size() <= 4096) {
+            return;
+        }
+        int remove = APPLIED_PROFILE.size() / 2;
+        var it = APPLIED_PROFILE.entrySet().iterator();
+        while (it.hasNext() && remove-- > 0) {
+            it.next();
+            it.remove();
         }
     }
 
@@ -557,13 +697,6 @@ public final class MobScaling {
 
     private static double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
-    }
-
-    private static long resolveNearbyDifficulty(LivingEntity entity) {
-        if (!(entity.m_9236_() instanceof ServerLevel level)) {
-            return 0L;
-        }
-        return AreaDifficulty.at(level, entity.m_20183_());
     }
 
     public static float outgoingDamageMultiplier(LivingEntity attacker) {

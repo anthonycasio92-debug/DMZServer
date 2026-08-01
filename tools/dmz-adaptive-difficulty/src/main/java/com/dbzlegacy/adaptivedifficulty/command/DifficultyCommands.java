@@ -757,20 +757,30 @@ public final class DifficultyCommands {
                 case "unlocktier5cost", "tier5cost" -> cfg.unlockTier5Cost = Math.max(0L, Long.parseLong(value));
                 case "unlocktier6cost", "tier6cost" -> cfg.unlockTier6Cost = Math.max(0L, Long.parseLong(value));
                 case "unlocktier7cost", "tier7cost" -> cfg.unlockTier7Cost = Math.max(0L, Long.parseLong(value));
-                case "unlocktier1enemymult", "tier1enemymult" ->
+                case "unlocktier1enemymult", "tier1enemymult", "tier1statpercent" ->
                         cfg.unlockTier1EnemyMult = Math.max(0.0, Double.parseDouble(value));
-                case "unlocktier2enemymult", "tier2enemymult" ->
+                case "unlocktier2enemymult", "tier2enemymult", "tier2statpercent" ->
                         cfg.unlockTier2EnemyMult = Math.max(0.0, Double.parseDouble(value));
-                case "unlocktier3enemymult", "tier3enemymult" ->
+                case "unlocktier3enemymult", "tier3enemymult", "tier3statpercent" ->
                         cfg.unlockTier3EnemyMult = Math.max(0.0, Double.parseDouble(value));
-                case "unlocktier4enemymult", "tier4enemymult" ->
+                case "unlocktier4enemymult", "tier4enemymult", "tier4statpercent" ->
                         cfg.unlockTier4EnemyMult = Math.max(0.0, Double.parseDouble(value));
-                case "unlocktier5enemymult", "tier5enemymult" ->
+                case "unlocktier5enemymult", "tier5enemymult", "tier5statpercent" ->
                         cfg.unlockTier5EnemyMult = Math.max(0.0, Double.parseDouble(value));
-                case "unlocktier6enemymult", "tier6enemymult" ->
+                case "unlocktier6enemymult", "tier6enemymult", "tier6statpercent" ->
                         cfg.unlockTier6EnemyMult = Math.max(0.0, Double.parseDouble(value));
-                case "unlocktier7enemymult", "tier7enemymult" ->
+                case "unlocktier7enemymult", "tier7enemymult", "tier7statpercent" ->
                         cfg.unlockTier7EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                case "weakstatcountermult", "weakcounter" ->
+                        cfg.weakStatCounterMult = Math.max(1.0, Double.parseDouble(value));
+                case "weakdefensepiercemult", "defpierce" ->
+                        cfg.weakDefensePierceMult = Math.max(1.0, Double.parseDouble(value));
+                case "defensetoarmorfactor" ->
+                        cfg.defenseToArmorFactor = Math.max(0.1, Double.parseDouble(value));
+                case "nearbyscaleintervalticks", "nearbyscaleinterval" ->
+                        cfg.nearbyScaleIntervalTicks = Math.max(10, Integer.parseInt(value));
+                case "nearbyscalebudgetperplayer", "nearbyscalebudget" ->
+                        cfg.nearbyScaleBudgetPerPlayer = Math.max(1, Integer.parseInt(value));
                 case "tiercostleveldivisor", "costleveldivisor", "tiercostdivisor" ->
                         cfg.tierCostLevelDivisor = Math.max(1.0, Double.parseDouble(value));
 
