@@ -19,13 +19,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Difficulty;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /**
  * Players: {@code /difficulty} opens the GUI.
  * GUI buttons use {@code /difficulty do ...} (not for normal player use).
- * Staff: {@code /difficulty admin} toggles config commands.
+ * Staff: {@code /difficulty admin …} (op or {@code difficulty.admin}) — no session toggle.
  * Ops can still set vanilla world difficulty via {@code /difficulty hard|normal|easy|peaceful}
  * (this mod replaces the vanilla {@code /difficulty} command name).
  */
@@ -69,7 +68,7 @@ public final class DifficultyCommands {
                 .then(vanillaDifficultyLiteral("normal"))
                 .then(vanillaDifficultyLiteral("hard"))
                 .then(Commands.m_82127_("admin")
-                        .executes(ctx -> toggleAdmin(ctx.getSource()))
+                        .executes(ctx -> adminHelpOrDeny(ctx.getSource()))
                         .then(Commands.m_82127_("help")
                                 .executes(ctx -> adminHelpOrDeny(ctx.getSource())))
                         .then(Commands.m_82127_("reload")
@@ -151,13 +150,6 @@ public final class DifficultyCommands {
                         .executes(ctx -> whitelistClear(ctx.getSource())));
     }
 
-    @SubscribeEvent
-    public void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            AdminCommandAccess.disable(player);
-        }
-    }
-
     private static int guiDo(CommandSourceStack source, String action, String arg, String page) {
         ServerPlayer player = source.m_230896_();
         if (player == null) {
@@ -213,34 +205,7 @@ public final class DifficultyCommands {
         return 1;
     }
 
-    private static int toggleAdmin(CommandSourceStack source) {
-        ServerPlayer player = source.m_230896_();
-        if (player == null) {
-            return adminHelp(source);
-        }
-        if (!isStaff(source)) {
-            source.m_288197_(() -> Component.m_237113_(
-                    "§cNo permission for /difficulty admin (need op or difficulty.admin)."
-            ), false);
-            return 0;
-        }
-        boolean enabled = AdminCommandAccess.toggle(player);
-        if (enabled) {
-            source.m_288197_(() -> Component.m_237113_(
-                    "§aAdmin commands ENABLED.\n"
-                            + "§7/difficulty admin off|on|toggle|status §8— master system switch\n"
-                            + "§7/difficulty admin help|reload|settings\n"
-                            + "§7/difficulty admin gamedifficulty <peaceful|easy|normal|hard>\n"
-                            + "§7/difficulty admin set <key> <value>\n"
-                            + "§8Run §f/difficulty admin §8again to disable admin mode."
-            ), false);
-        } else {
-            source.m_288197_(() -> Component.m_237113_("§cAdmin commands DISABLED."), false);
-        }
-        return 1;
-    }
-
-    /** Ops-only master switch — does not require admin-mode session. */
+    /** Ops-only master switch. */
     private static int setSystemEnabled(CommandSourceStack source, boolean on) {
         if (!isStaff(source)) {
             source.m_288197_(() -> Component.m_237113_(
@@ -467,13 +432,6 @@ public final class DifficultyCommands {
             ), false);
             return 0;
         }
-        ServerPlayer player = source.m_230896_();
-        if (player != null && !AdminCommandAccess.isEnabled(player)) {
-            source.m_288197_(() -> Component.m_237113_(
-                    "§cEnable admin mode first: §f/difficulty admin"
-            ), false);
-            return 0;
-        }
         return 1;
     }
 
@@ -550,8 +508,8 @@ public final class DifficultyCommands {
         DifficultyConfig cfg = DifficultyConfig.get();
         ServerLevel finalLevel = level;
         source.m_288197_(() -> Component.m_237113_(
-                "§6Area Difficulty §8(Scaling Health-style)\n"
-                        + "§ePlayer active: §f" + snap.active + " §7/ max §f" + snap.availableMax + "\n"
+                "§6Area Difficulty\n"
+                        + "§eActive tier CR proxy: §f" + snap.active + " §7/ max §f" + snap.availableMax + "\n"
                         + "§eArea at you: §f" + area + "\n"
                         + "§eMode: §f" + cfg.areaDifficultyMode
                         + " §8| §eradius §f" + cfg.mobScaleRadius
@@ -570,14 +528,13 @@ public final class DifficultyCommands {
 
     private static int adminHelp(CommandSourceStack source) {
         source.m_288197_(() -> Component.m_237113_(
-                "§6Adaptive Difficulty V3 — admin\n"
+                "§6Adaptive Difficulty — admin\n"
                         + "§e/difficulty §7— open player GUI (CMI / chest / chat)\n"
-                        + "§e/difficulty reset §7— clear active tier/level (free)\n"
+                        + "§e/difficulty reset §7— clear active tier (free)\n"
                         + "§e/difficulty do character_reset §7— character-wipe hook (scriptable)\n"
                         + "§e/difficulty hard|normal|easy|peaceful §7— vanilla world difficulty (ops)\n"
-                        + "§e/difficulty admin off|on|toggle|status §7— master system switch (ops)\n"
+                        + "§e/difficulty admin off|on|toggle|status §7— master system switch\n"
                         + "§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist\n"
-                        + "§e/difficulty admin §7— toggle admin command access\n"
                         + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased|characterreset\n"
                         + "§e/difficulty admin set <key> <value>\n"
                         + "§8Master keys: enabled · whitelistEnabled\n"
@@ -605,7 +562,7 @@ public final class DifficultyCommands {
         DifficultyCache.refresh(player);
         AreaDifficulty.clearCache();
         source.m_288197_(() -> Component.m_237113_(
-                "§aCleared active tier/level (V3 temporary data). Unlocks & Ancient Coins kept."
+                "§aCleared active tier. Unlocks & Ancient Coins kept."
         ), true);
         return 1;
     }

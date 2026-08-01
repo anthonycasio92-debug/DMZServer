@@ -1,4 +1,3 @@
 Manifest-Version: 1.0
 Implementation-Title: DMZ Adaptive Difficulty
-Implementation-Version: 1.7.23
-MixinConfigs: dmz_adaptive_difficulty.mixins.json
+Implementation-Version: 3.3.0

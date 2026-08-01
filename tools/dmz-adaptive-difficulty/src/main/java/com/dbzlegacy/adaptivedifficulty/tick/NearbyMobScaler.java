@@ -52,6 +52,7 @@ public final class NearbyMobScaler {
             if (DifficultyCache.get(player).activeTier <= 0) {
                 continue;
             }
+            ScaledMobTracker.prunePlayer(player);
             scaleAround(player, cfg);
         }
     }

@@ -6,6 +6,9 @@ import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
 import com.dragonminez.common.stats.character.Stats;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -17,6 +20,9 @@ import net.minecraft.server.level.ServerPlayer;
  * more easily than evenly stated players.
  */
 public final class PlayerCombatProfile {
+    private static final long CACHE_TTL_MS = 250L;
+    private static final Map<UUID, Cached> CACHE = new ConcurrentHashMap<>();
+
     public enum WeakStat {
         STRENGTH,
         STRIKE,
@@ -77,6 +83,31 @@ public final class PlayerCombatProfile {
         if (player == null) {
             return inactive();
         }
+        UUID id = player.m_20148_();
+        long now = System.currentTimeMillis();
+        Cached cached = CACHE.get(id);
+        if (cached != null && cached.expiresAtMs > now) {
+            return cached.profile;
+        }
+        PlayerCombatProfile profile = build(player);
+        CACHE.put(id, new Cached(profile, now + CACHE_TTL_MS));
+        if (CACHE.size() > 512) {
+            pruneCache(now);
+        }
+        return profile;
+    }
+
+    public static void clear(UUID playerId) {
+        if (playerId != null) {
+            CACHE.remove(playerId);
+        }
+    }
+
+    public static void clearAll() {
+        CACHE.clear();
+    }
+
+    private static PlayerCombatProfile build(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.get(player);
         int tier = Math.max(0, snap.activeTier);
         if (tier <= 0) {
@@ -195,6 +226,15 @@ public final class PlayerCombatProfile {
     }
 
     private record StatBalance(WeakStat weakest, double imbalance) {}
+
+    private record Cached(PlayerCombatProfile profile, long expiresAtMs) {}
+
+    private static void pruneCache(long now) {
+        CACHE.entrySet().removeIf(e -> e.getValue() == null || e.getValue().expiresAtMs <= now);
+        if (CACHE.size() > 512) {
+            CACHE.clear();
+        }
+    }
 
     private static StatBalance resolveBalance(
             StatsData data,

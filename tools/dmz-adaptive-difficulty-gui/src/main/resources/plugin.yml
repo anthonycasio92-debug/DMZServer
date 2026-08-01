@@ -1,5 +1,5 @@
 name: DMZAdaptiveDifficultyGUI
-version: '3.2.7'
+version: '3.3.0'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
@@ -18,5 +18,5 @@ permissions:
     description: Open the adaptive difficulty GUI
     default: true
   difficulty.admin:
-    description: Toggle adaptive difficulty admin commands
+    description: Use adaptive difficulty admin commands (op or this node)
     default: op

@@ -23,9 +23,13 @@ public final class EliteSystem {
         return entity != null && PersistentDataAccess.get(entity).m_128471_(TAG_ELITE);
     }
 
-    public static void maybePromote(LivingEntity entity, long difficulty) {
+    /**
+     * @param rollSeed spawn roll seed (unlock-tier based). Unlock-tier gating is done by the caller
+     *                 via {@code eliteMinUnlockTier}; no legacy CR threshold here.
+     */
+    public static void maybePromote(LivingEntity entity, long rollSeed) {
         DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableElites || entity == null || difficulty < DifficultyTier.ELITE.threshold()) {
+        if (!cfg.enableElites || entity == null || rollSeed <= 0L) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);
@@ -33,11 +37,11 @@ public final class EliteSystem {
             return;
         }
         double chance = cfg.eliteChancePercent / 100.0;
-        chance += Math.min(0.15, difficulty / 100_000.0);
+        chance += Math.min(0.15, rollSeed / 100_000.0);
         if (ThreadLocalRandom.current().nextDouble() > chance) {
             return;
         }
-        promote(entity, difficulty);
+        promote(entity, rollSeed);
     }
 
     public static void promote(LivingEntity entity, long difficulty) {

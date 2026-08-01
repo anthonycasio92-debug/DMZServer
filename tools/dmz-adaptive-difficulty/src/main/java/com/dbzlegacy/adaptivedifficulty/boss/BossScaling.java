@@ -81,7 +81,7 @@ public final class BossScaling {
         return cn.contains("raidboss") || cn.contains("bossentity") || cn.contains("boss_");
     }
 
-    /** Flag + cosmetics only. Stats come from {@link MobScaling#applyForDifficulty}. */
+    /** Flag + cosmetics only. Fight stats come from {@link MobScaling} player-profile retarget. */
     public static void markBoss(LivingEntity entity, long difficulty) {
         DifficultyConfig cfg = DifficultyConfig.get();
         if (!cfg.enableBossScaling || entity == null) {
@@ -98,12 +98,6 @@ public final class BossScaling {
         String typeName = EntityDisplayNames.of(entity);
         entity.m_6593_(Component.m_237113_("§c☠ Boss §4" + typeName + " §7[" + tier.display + "]"));
         entity.m_20340_(true);
-    }
-
-    /** @deprecated use {@link #markBoss(LivingEntity, long)} — kept for call-site compatibility. */
-    @Deprecated
-    public static void scaleIfBoss(LivingEntity entity, long difficulty) {
-        markBoss(entity, difficulty);
     }
 
     /** Advance combat phases at HP thresholds (concept warden-style). */

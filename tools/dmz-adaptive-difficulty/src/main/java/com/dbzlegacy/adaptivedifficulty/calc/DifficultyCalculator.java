@@ -4,12 +4,11 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
-import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import net.minecraft.server.level.ServerPlayer;
 
-/** V3 difficulty math: unlocks, activation ceilings, combat rating. */
+/** Unlock tiers, activation ceilings, combat rating (rewards/display). Teams are WIP. */
 public final class DifficultyCalculator {
     private DifficultyCalculator() {}
 
@@ -26,18 +25,12 @@ public final class DifficultyCalculator {
         UnlockTier tier = UnlockTier.byId(activeTier);
         long tierMax = tier == null ? 0L : tier.maxDifficulty();
 
-        TeamMode mode = data.getTeamMode();
+        // Teams remain a WIP stub — personal difficulty only.
+        TeamMode mode = TeamMode.PERSONAL_ONLY;
         long personalMax = tierMax;
         long thresholdBonus = 0L;
         long contribution = 0L;
-        if (tier != null && mode != TeamMode.PERSONAL_ONLY) {
-            thresholdBonus = TeamScaling.thresholdBonus(player, personalMax);
-        }
-        long afterThreshold = clampNonNegative(safeAdd(personalMax, thresholdBonus));
-        if (tier != null && mode == TeamMode.FULL_TEAM_SCALING) {
-            contribution = TeamScaling.contributionBonus(player, afterThreshold);
-        }
-        long availableMax = clampNonNegative(safeAdd(afterThreshold, contribution));
+        long availableMax = clampNonNegative(personalMax);
 
         long active = Math.min(data.getActiveDifficultyLevel(), availableMax);
         if (tier == null) {
@@ -90,13 +83,5 @@ public final class DifficultyCalculator {
             return Math.min(value, cap);
         }
         return value;
-    }
-
-    private static long safeAdd(long a, long b) {
-        try {
-            return Math.addExact(a, b);
-        } catch (ArithmeticException e) {
-            return Long.MAX_VALUE / 4L;
-        }
     }
 }

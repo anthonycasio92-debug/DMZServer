@@ -7,17 +7,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.entity.Player;
 
 /**
- * Reflects into the Forge mod for live V3 values / actions (Mohist shared JVM).
- * Surface: hub status, Buy Tier (UnlockTier 1–7), Lower/Reset, Team, character_reset.
+ * Reflects into the Forge mod for live values / actions (Mohist shared JVM).
+ * Surface: hub status, Buy Tier (UnlockTier 1–7), Lower/Reset, Team (WIP), character_reset.
  */
 public final class ForgeBridge {
-    private static final Set<UUID> ADMIN = ConcurrentHashMap.newKeySet();
     private static final long PLACEHOLDER_TTL_MS = 200L;
     private static final Map<UUID, CachedPlaceholders> PLACEHOLDER_CACHE = new ConcurrentHashMap<>();
 
@@ -556,59 +554,6 @@ public final class ForgeBridge {
         return player.hasPermission("*");
     }
 
-    public static boolean toggleAdmin(Player player) {
-        try {
-            Object nms = nmsPlayer(player);
-            Class<?> access = Class.forName("com.dbzlegacy.adaptivedifficulty.command.AdminCommandAccess");
-            Method toggle = access.getMethod("toggle", Class.forName("net.minecraft.server.level.ServerPlayer"));
-            boolean enabled = Boolean.TRUE.equals(toggle.invoke(null, nms));
-            UUID id = player.getUniqueId();
-            if (enabled) {
-                ADMIN.add(id);
-            } else {
-                ADMIN.remove(id);
-            }
-            return enabled;
-        } catch (Throwable ignored) {
-        }
-        UUID id = player.getUniqueId();
-        if (ADMIN.contains(id)) {
-            ADMIN.remove(id);
-            tryDisableForgeAdmin(player);
-            return false;
-        }
-        ADMIN.add(id);
-        tryEnableForgeAdmin(player);
-        return true;
-    }
-
-    public static boolean hasAdmin(Player player) {
-        if (player == null) {
-            return false;
-        }
-        try {
-            Object nms = nmsPlayer(player);
-            Class<?> access = Class.forName("com.dbzlegacy.adaptivedifficulty.command.AdminCommandAccess");
-            Method isEnabled = access.getMethod("isEnabled", Class.forName("net.minecraft.server.level.ServerPlayer"));
-            boolean enabled = Boolean.TRUE.equals(isEnabled.invoke(null, nms));
-            if (enabled) {
-                ADMIN.add(player.getUniqueId());
-            } else {
-                ADMIN.remove(player.getUniqueId());
-            }
-            return enabled;
-        } catch (Throwable ignored) {
-        }
-        return ADMIN.contains(player.getUniqueId());
-    }
-
-    public static void clearAdmin(Player player) {
-        if (player != null) {
-            ADMIN.remove(player.getUniqueId());
-            tryDisableForgeAdmin(player);
-        }
-    }
-
     public static String adminSet(String key, String value) {
         try {
             String k = key == null ? "" : key.toLowerCase(Locale.ROOT);
@@ -878,8 +823,8 @@ public final class ForgeBridge {
             String mode = String.valueOf(cfg.getClass().getField("areaDifficultyMode").get(cfg));
             double radius = ((Number) cfg.getClass().getField("mobScaleRadius").get(cfg)).doubleValue();
             double group = ((Number) cfg.getClass().getField("areaGroupBonusPercent").get(cfg)).doubleValue();
-            return "§6Area Difficulty §8(Scaling Health-style)\n"
-                    + "§ePlayer active: §f" + active + " §7/ max §f" + available + "\n"
+            return "§6Area Difficulty\n"
+                    + "§eActive tier CR proxy: §f" + active + " §7/ max §f" + available + "\n"
                     + "§eArea at you: §f" + area + "\n"
                     + "§eMode: §f" + mode + " §8| §eradius §f" + radius
                     + " §8| §egroupBonus% §f" + group;
@@ -1114,29 +1059,6 @@ public final class ForgeBridge {
                 throw last;
             }
             throw e;
-        }
-    }
-
-    private static void tryEnableForgeAdmin(Player player) {
-        try {
-            Object nms = nmsPlayer(player);
-            Class<?> access = Class.forName("com.dbzlegacy.adaptivedifficulty.command.AdminCommandAccess");
-            Method isEnabled = access.getMethod("isEnabled", Class.forName("net.minecraft.server.level.ServerPlayer"));
-            Method toggle = access.getMethod("toggle", Class.forName("net.minecraft.server.level.ServerPlayer"));
-            if (!Boolean.TRUE.equals(isEnabled.invoke(null, nms))) {
-                toggle.invoke(null, nms);
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
-    private static void tryDisableForgeAdmin(Player player) {
-        try {
-            Object nms = nmsPlayer(player);
-            Class<?> access = Class.forName("com.dbzlegacy.adaptivedifficulty.command.AdminCommandAccess");
-            Method disable = access.getMethod("disable", Class.forName("net.minecraft.server.level.ServerPlayer"));
-            disable.invoke(null, nms);
-        } catch (Throwable ignored) {
         }
     }
 

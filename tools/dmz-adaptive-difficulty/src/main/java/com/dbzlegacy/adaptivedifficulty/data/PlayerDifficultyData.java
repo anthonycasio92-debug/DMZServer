@@ -130,21 +130,18 @@ public final class PlayerDifficultyData {
         }
     }
 
+    /** Teams are WIP — always personal-only until that feature ships. */
     public TeamMode getTeamMode() {
-        return teamMode == null ? TeamMode.PERSONAL_ONLY : teamMode;
+        return TeamMode.PERSONAL_ONLY;
     }
 
     public void setTeamMode(TeamMode teamMode) {
-        this.teamMode = teamMode == null ? TeamMode.PERSONAL_ONLY : teamMode;
+        this.teamMode = TeamMode.PERSONAL_ONLY;
     }
 
+    /** No-op while team scaling is WIP. */
     public void cycleTeamMode() {
-        TeamMode current = getTeamMode();
-        this.teamMode = switch (current) {
-            case PERSONAL_ONLY -> TeamMode.THRESHOLD_BONUS_ONLY;
-            case THRESHOLD_BONUS_ONLY -> TeamMode.FULL_TEAM_SCALING;
-            case FULL_TEAM_SCALING -> TeamMode.PERSONAL_ONLY;
-        };
+        this.teamMode = TeamMode.PERSONAL_ONLY;
     }
 
     public List<String> getTitles() {

@@ -4,7 +4,9 @@ import com.dbzlegacy.adaptivedifficulty.ai.AdaptiveAiSystem;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.evolution.CombatGravity;
 import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
 import com.dbzlegacy.adaptivedifficulty.reward.RewardSystem;
@@ -13,6 +15,7 @@ import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tick.BehaviorScheduler;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
+import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
@@ -69,8 +72,8 @@ public final class DifficultyEvents {
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             DifficultyCache.data(player);
-            // Convert any leftover NBT Ancient Coin wallet into real Lightman's items.
-            com.dbzlegacy.adaptivedifficulty.currency.            AncientCoinEconomy.migrateWalletToItems(player);
+            // Convert any leftover NBT Ancient Coin wallet into real Lightman's items (once/session).
+            AncientCoinEconomy.migrateWalletToItems(player);
             DifficultyCache.refresh(player);
             TitleSystem.syncTierTitles(player, false);
         }
@@ -82,7 +85,9 @@ public final class DifficultyEvents {
             DifficultyCache.save(player);
             DifficultyCache.remove(player.m_20148_());
             CombatGravity.clearPlayer(player);
-            com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker.clearPlayer(player.m_20148_());
+            ScaledMobTracker.clearPlayer(player.m_20148_());
+            PlayerCombatProfile.clear(player.m_20148_());
+            AncientCoinEconomy.clearMigrateFlag(player.m_20148_());
             AreaDifficulty.clearCache();
         }
     }

@@ -70,12 +70,6 @@ public final class ScalingCurves {
                 curvedEffective(k, cfg.healthCurveExponent, cfg.healthCurvePivot));
     }
 
-    /** @deprecated use {@link #offenseEffective(long)} */
-    @Deprecated
-    public static double combatEffective(long difficulty) {
-        return offenseEffective(difficulty);
-    }
-
     public static double offenseBonus(long difficulty, double percentPerDifficulty) {
         if (percentPerDifficulty <= 0.0) {
             return 0.0;
@@ -88,12 +82,6 @@ public final class ScalingCurves {
             return 0.0;
         }
         return healthEffective(difficulty) * (percentPerDifficulty / 100.0);
-    }
-
-    /** @deprecated use {@link #offenseBonus(long, double)} */
-    @Deprecated
-    public static double combatBonus(long difficulty, double percentPerDifficulty) {
-        return offenseBonus(difficulty, percentPerDifficulty);
     }
 
     /** Soft XP multiplier from active difficulty. */

@@ -5,8 +5,8 @@ import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * V3 Combat Rating — primary enemy-scaling input.
- * Cached via {@link DifficultySnapshot}; recalculate only on progression/difficulty/team changes.
+ * Combat Rating for rewards, display, and area readouts.
+ * Nearby mob fight stats use {@link PlayerCombatProfile}, not CR.
  */
 public final class CombatRating {
     private CombatRating() {}

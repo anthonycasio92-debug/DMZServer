@@ -3,9 +3,6 @@ package com.dbzlegacy.adaptivedifficulty.bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -15,14 +12,13 @@ import org.bukkit.plugin.java.JavaPlugin;
  * On Mohist, this plugin owns {@code /difficulty} — admin switches (on/off/whitelist)
  * must be handled here and forwarded into the Forge mod config.
  */
-public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Listener {
+public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     private DifficultyChestGui chestGui;
 
     @Override
     public void onEnable() {
         chestGui = new DifficultyChestGui(this);
         getServer().getPluginManager().registerEvents(chestGui, this);
-        getServer().getPluginManager().registerEvents(this, this);
 
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new DmzDiffExpansion(this).register();
@@ -77,11 +73,6 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
             return;
         }
         chestGui.open(player, page);
-    }
-
-    @EventHandler
-    public void onQuit(PlayerQuitEvent event) {
-        ForgeBridge.clearAdmin(event.getPlayer());
     }
 
     @Override
@@ -228,35 +219,17 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin implements Lis
             return true;
         }
 
-        // Bare /difficulty admin toggles admin mode for players; console gets help.
+        // Bare /difficulty admin shows staff help.
         if (args.length == 1) {
-            if (console) {
-                sendAdminHelp(sender);
-                return true;
-            }
-            boolean enabled = ForgeBridge.toggleAdmin(player);
-            if (enabled) {
-                sender.sendMessage("§aAdmin commands ENABLED.");
-                sender.sendMessage("§7/difficulty admin off|on|toggle|status");
-                sender.sendMessage("§7/difficulty admin whitelist on|off|add|remove|list");
-                sender.sendMessage("§7/difficulty admin help|reload|settings|area|set");
-                sender.sendMessage("§8Run §f/difficulty admin §8again to disable admin mode.");
-            } else {
-                sender.sendMessage("§cAdmin commands DISABLED.");
-            }
+            sendAdminHelp(sender);
             return true;
         }
 
         String sub = args[1].toLowerCase();
 
-        // Master switch + whitelist — ops only, no admin-mode session required.
+        // Master switch + whitelist.
         if (isDirectStaffSubcommand(sub)) {
             return handleDirectStaff(sender, args, sub);
-        }
-
-        if (!console && !ForgeBridge.hasAdmin(player)) {
-            sender.sendMessage("§cEnable admin mode first: §f/difficulty admin");
-            return true;
         }
 
         switch (sub) {

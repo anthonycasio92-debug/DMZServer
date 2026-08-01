@@ -8,6 +8,9 @@ import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import io.github.lightman314.lightmanscurrency.common.core.ModItems;
 import io.github.lightman314.lightmanscurrency.common.items.AncientCoinItem;
 import io.github.lightman314.lightmanscurrency.common.items.ancient_coins.AncientCoinType;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -34,6 +37,8 @@ import net.minecraftforge.fml.ModList;
 public final class AncientCoinEconomy {
     private static final boolean LIGHTMANS = ModList.get().isLoaded("lightmanscurrency");
     private static volatile boolean warnedMissingLightmans;
+    /** One-shot NBT wallet → inventory migrate per login session. */
+    private static final Set<UUID> MIGRATED = ConcurrentHashMap.newKeySet();
 
     /**
      * Max coins of one denomination for a tier price. Beyond this the cost
@@ -132,7 +137,6 @@ public final class AncientCoinEconomy {
         if (player == null) {
             return 0L;
         }
-        migrateWalletToItems(player);
         if (LIGHTMANS) {
             return inventoryCopper(player);
         }
@@ -251,7 +255,6 @@ public final class AncientCoinEconomy {
         if (player == null) {
             return false;
         }
-        migrateWalletToItems(player);
         if (LIGHTMANS) {
             return planExactPayment(countByKind(player), copperCost) != null;
         }
@@ -283,7 +286,6 @@ public final class AncientCoinEconomy {
         if (player == null) {
             return false;
         }
-        migrateWalletToItems(player);
         if (LIGHTMANS) {
             return chargeExact(player, copperCost);
         }
@@ -310,7 +312,6 @@ public final class AncientCoinEconomy {
         if (player == null || kind == null || count <= 0L) {
             return;
         }
-        migrateWalletToItems(player);
         if (LIGHTMANS) {
             giveStacks(player, kind, count);
             DifficultyCache.refresh(player);
@@ -466,9 +467,16 @@ public final class AncientCoinEconomy {
         return normalizeCost(tier.activationCostForLevel(level));
     }
 
-    /** Convert any leftover NBT wallet into exact Copper ancient coins (once). */
+    /**
+     * Convert any leftover NBT wallet into exact Copper ancient coins.
+     * Runs at most once per login session (login hook); not on every balance read.
+     */
     public static void migrateWalletToItems(ServerPlayer player) {
         if (player == null || !LIGHTMANS) {
+            return;
+        }
+        UUID id = player.m_20148_();
+        if (!MIGRATED.add(id)) {
             return;
         }
         PlayerDifficultyData data = DifficultyCache.data(player);
@@ -484,8 +492,14 @@ public final class AncientCoinEconomy {
                 AdaptiveDifficultyMod.MOD_ID,
                 wallet,
                 wallet,
-                player.m_20148_()
+                id
         );
+    }
+
+    public static void clearMigrateFlag(UUID playerId) {
+        if (playerId != null) {
+            MIGRATED.remove(playerId);
+        }
     }
 
     // ── Inventory helpers ──────────────────────────────────────────────────

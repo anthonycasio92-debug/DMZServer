@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.scaling;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.boss.BossScaling;
+import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
@@ -174,12 +175,16 @@ public final class MobScaling {
             if (cfg.scaleHostileOnly && !HostileMobs.isHostile(entity)) {
                 return;
             }
-            PlayerCombatProfile profile = PlayerCombatProfile.of(player);
-            if (!profile.active()) {
+            // Cheap gate before profile rebuild / claim work.
+            if (DifficultyCache.get(player).activeTier <= 0) {
                 return;
             }
             // Hard cap: only a few hostiles per player carry difficulty scaling.
             if (entity instanceof Mob mob && !ScaledMobTracker.tryClaim(player, mob)) {
+                return;
+            }
+            PlayerCombatProfile profile = PlayerCombatProfile.of(player);
+            if (!profile.active()) {
                 return;
             }
             Long cached = APPLIED_PROFILE.get(entity.m_20148_());
@@ -515,172 +520,6 @@ public final class MobScaling {
         tag.m_128350_(TAG_DMG_MULT, (float) Math.max(1.0, rarityDamage));
         APPLIED_PROFILE.put(entity.m_20148_(), profile.signature);
         pruneProfileCache();
-    }
-
-    /**
-     * Rewrite health / damage / armor / speed from stored bases for {@code difficulty}.
-     * Preserves current HP as a fraction of max so mid-fight retargets stay fair.
-     */
-    public static void applyForDifficulty(
-            LivingEntity entity, CompoundTag tag, long difficulty, DifficultyConfig cfg
-    ) {
-        if (entity == null || tag == null || !PersistentDataAccess.isWritable(tag)) {
-            return;
-        }
-        if (!tag.m_128441_(TAG_BASE_HEALTH)) {
-            return;
-        }
-
-        boolean dmzStyle = tag.m_128471_(TAG_DMZ_STYLE) || shouldApplyDmzStyleExtras(entity, cfg);
-        boolean elite = tag.m_128471_(EliteSystem.TAG_ELITE);
-        boolean boss = tag.m_128471_(BossScaling.TAG_BOSS);
-        MutationType mutation = MutationType.fromString(tag.m_128461_(MutationSystem.TAG_MUTATION));
-
-        double healthMult = 1.0;
-        double armorBonus = 0.0;
-        double moveMult = 1.0;
-        double dmgMult = 1.0;
-
-        if (difficulty > 0L) {
-            healthMult = 1.0 + ScalingCurves.healthBonus(difficulty, cfg.healthPercentPerDifficulty);
-            armorBonus = ScalingCurves.offenseBonus(difficulty, cfg.defensePercentPerDifficulty);
-            moveMult = 1.0 + ((difficulty / 100.0) * (cfg.movementPercentPer100Difficulty / 100.0));
-            dmgMult = 1.0 + ScalingCurves.offenseBonus(difficulty, cfg.damagePercentPerDifficulty);
-            if (dmzStyle) {
-                healthMult += ScalingCurves.healthBonus(difficulty, cfg.dmzExtraHealthPercent);
-                armorBonus += ScalingCurves.offenseBonus(difficulty, cfg.dmzExtraDefensePercent);
-                dmgMult += ScalingCurves.offenseBonus(difficulty, cfg.dmzExtraDamagePercent);
-                dmgMult += ScalingCurves.offenseBonus(difficulty, cfg.dmzExtraKiDamagePercent);
-            }
-        }
-
-        // Optional ceilings (0 / 1 = uncapped mult).
-        if (cfg.maxHealthMultiplier > 1.0) {
-            healthMult = Math.min(healthMult, cfg.maxHealthMultiplier);
-        }
-        if (cfg.maxMoveMultiplier > 1.0) {
-            moveMult = clamp(moveMult, 1.0, cfg.maxMoveMultiplier);
-        } else {
-            moveMult = Math.max(1.0, moveMult);
-        }
-        if (cfg.maxArmorBonus > 0.0) {
-            armorBonus = Math.min(armorBonus, cfg.maxArmorBonus);
-        }
-        if (cfg.maxDamageMultiplier > 1.0) {
-            dmgMult = Math.min(dmgMult, cfg.maxDamageMultiplier);
-        }
-
-        // Permanent rarity multipliers — baked into HP/damage (not separate reward bonuses).
-        double rarityHealth = 1.0;
-        double rarityDamage = 1.0;
-        if (elite) {
-            rarityHealth *= Math.max(1.0, cfg.eliteStatMultiplier);
-            rarityDamage *= Math.max(1.0, cfg.eliteStatMultiplier);
-            armorBonus += 4.0;
-            moveMult *= 0.92;
-        }
-        if (boss) {
-            rarityHealth *= Math.max(1.0, cfg.bossStatMultiplier);
-            rarityDamage *= Math.max(1.0, cfg.bossStatMultiplier);
-            if (difficulty > 0L) {
-                double bossArmor = ScalingCurves.offenseBonus(difficulty, cfg.defensePercentPerDifficulty) * 0.25;
-                if (cfg.maxArmorBonus > 0.0) {
-                    bossArmor = Math.min(cfg.maxArmorBonus, bossArmor);
-                }
-                armorBonus += bossArmor;
-            }
-        }
-        if (mutation == MutationType.TITAN_CREEPER) {
-            rarityHealth *= 1.75;
-        }
-        if (mutation == MutationType.BERSERKER_PIGLIN) {
-            moveMult *= 1.25;
-        }
-
-        double baseHealth = Math.max(1.0e-3, tag.m_128459_(TAG_BASE_HEALTH));
-        double baseAttack = tag.m_128441_(TAG_BASE_ATTACK) ? Math.max(0.0, tag.m_128459_(TAG_BASE_ATTACK)) : 0.0;
-        double baseArmor = tag.m_128441_(TAG_BASE_ARMOR) ? Math.max(0.0, tag.m_128459_(TAG_BASE_ARMOR)) : 0.0;
-        double baseSpeed = tag.m_128441_(TAG_BASE_SPEED) ? Math.max(0.0, tag.m_128459_(TAG_BASE_SPEED)) : 0.0;
-        double baseKnock = tag.m_128441_(TAG_BASE_KNOCKBACK) ? Math.max(0.0, tag.m_128459_(TAG_BASE_KNOCKBACK)) : 0.0;
-
-        // maxScaledHealth > 0 = optional absolute HP ceiling; 0 = uncapped (attribute max raised at boot).
-        double newMaxHealth = baseHealth * healthMult * rarityHealth;
-        if (cfg.maxScaledHealth > 0.0) {
-            newMaxHealth = Math.min(cfg.maxScaledHealth, newMaxHealth);
-        }
-        if (!(newMaxHealth > 0.0) || Double.isNaN(newMaxHealth) || Double.isInfinite(newMaxHealth)) {
-            newMaxHealth = cfg.maxScaledHealth > 0.0
-                    ? Math.min(cfg.maxScaledHealth, baseHealth)
-                    : baseHealth;
-        }
-
-        // Preserve fight progress across retargets. Never revive a 0-HP mob.
-        float oldMax = entity.m_21233_();
-        float oldHp = entity.m_21223_();
-        if (entity.m_21224_() || !(oldHp > 0.0f) || Float.isNaN(oldHp) || Float.isInfinite(oldHp)) {
-            terminateIfZeroHealth(entity);
-            return;
-        }
-        double hpRatio = (oldMax > 0.0f && !Float.isNaN(oldMax))
-                ? Math.max(0.0, Math.min(1.0, oldHp / oldMax))
-                : 1.0;
-        if (hpRatio <= 0.0) {
-            terminateIfZeroHealth(entity);
-            return;
-        }
-
-        setAttributeValue(entity, Attributes.f_22276_, newMaxHealth); // MAX_HEALTH
-        float appliedMax = entity.m_21233_();
-        if (appliedMax > 0.0f && !Float.isNaN(appliedMax) && !Float.isInfinite(appliedMax)) {
-            float nextHp = (float) (appliedMax * hpRatio);
-            // Keep at full when first applying from a full-health spawn.
-            if (!tag.m_128441_(TAG_DIFFICULTY) && oldHp >= oldMax - 0.5f) {
-                nextHp = appliedMax;
-            }
-            // Floor only when still meaningfully alive — never keep a corpse at 0.001 HP.
-            if (nextHp <= 0.0f) {
-                terminateIfZeroHealth(entity);
-                return;
-            }
-            entity.m_21153_(Math.min(appliedMax, nextHp));
-        }
-
-        if (baseAttack > 0.0) {
-            double nextAtk = baseAttack * Math.max(1.0, dmgMult) * rarityDamage;
-            if (nextAtk > 0.0 && !Double.isNaN(nextAtk) && !Double.isInfinite(nextAtk)) {
-                if (setAttributeValue(entity, Attributes.f_22281_, nextAtk)) { // ATTACK_DAMAGE
-                    tag.m_128379_(TAG_ATTR_DMG_SCALED, true);
-                }
-            }
-        }
-
-        double nextArmor = baseArmor + Math.max(0.0, armorBonus);
-        if (cfg.maxArmorBonus > 0.0) {
-            nextArmor = Math.min(cfg.maxArmorBonus, nextArmor);
-        }
-        if (nextArmor >= 0.0 && !Double.isNaN(nextArmor) && !Double.isInfinite(nextArmor)) {
-            setAttributeValue(entity, Attributes.f_22284_, nextArmor); // ARMOR
-        }
-
-        if (baseSpeed > 0.0) {
-            double nextSpeed = baseSpeed * Math.max(0.05, moveMult);
-            if (nextSpeed > 0.0 && !Double.isNaN(nextSpeed) && !Double.isInfinite(nextSpeed)) {
-                setAttributeValue(entity, Attributes.f_22279_, nextSpeed); // MOVEMENT_SPEED
-            }
-        }
-
-        if (elite) {
-            double nextKnock = Math.min(1.0, baseKnock + 0.6);
-            setAttributeValue(entity, Attributes.f_22278_, nextKnock); // KNOCKBACK_RESISTANCE
-        } else if (tag.m_128441_(TAG_BASE_KNOCKBACK)) {
-            setAttributeValue(entity, Attributes.f_22278_, baseKnock);
-        }
-
-        tag.m_128356_(TAG_DIFFICULTY, Math.max(0L, difficulty));
-        tag.m_128350_(TAG_DMG_MULT, (float) Math.max(1.0, dmgMult * rarityDamage));
-        // Legacy CR path — clear player-profile match so nearby scaler can overwrite.
-        tag.m_128356_(TAG_PROFILE_SIG, 0L);
-        APPLIED_PROFILE.remove(entity.m_20148_());
     }
 
     private static void pruneProfileCache() {

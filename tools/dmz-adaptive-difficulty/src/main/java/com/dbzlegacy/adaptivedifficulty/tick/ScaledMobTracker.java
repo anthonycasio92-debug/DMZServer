@@ -41,7 +41,7 @@ public final class ScaledMobTracker {
         double distSq = player.m_20275_(mob.m_20185_(), mob.m_20186_(), mob.m_20189_());
         List<Claim> claims = CLAIMS.computeIfAbsent(playerId, id -> new ArrayList<>(maxSlots()));
         synchronized (claims) {
-            pruneDead(claims);
+            // Fast path: already claimed — no world scan.
             for (Claim c : claims) {
                 if (c.mobId.equals(mobId)) {
                     c.distSq = distSq;
@@ -49,6 +49,10 @@ public final class ScaledMobTracker {
                 }
             }
             int max = maxSlots();
+            // Only world-scan dead claims when we need a free slot.
+            if (claims.size() >= max) {
+                pruneDead(claims, player);
+            }
             if (claims.size() < max) {
                 claims.add(new Claim(mobId, distSq));
                 return true;
@@ -64,7 +68,6 @@ public final class ScaledMobTracker {
                 UUID evicted = farthest.mobId;
                 claims.remove(farthest);
                 claims.add(new Claim(mobId, distSq));
-                // Caller may revert the evicted mob; mark for cleanup.
                 PENDING_REVERT.put(evicted, playerId);
                 return true;
             }
@@ -100,8 +103,21 @@ public final class ScaledMobTracker {
             return 0;
         }
         synchronized (claims) {
-            pruneDead(claims);
             return claims.size();
+        }
+    }
+
+    /** Periodic cleanup from the nearby scaler pulse (player's dimension first). */
+    public static void prunePlayer(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        List<Claim> claims = CLAIMS.get(player.m_20148_());
+        if (claims == null || claims.isEmpty()) {
+            return;
+        }
+        synchronized (claims) {
+            pruneDead(claims, player);
         }
     }
 
@@ -140,25 +156,38 @@ public final class ScaledMobTracker {
         return out;
     }
 
-    private static void pruneDead(List<Claim> claims) {
+    private static void pruneDead(List<Claim> claims, ServerPlayer preferPlayer) {
         var server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) {
             return;
         }
+        ServerLevel preferLevel = null;
+        if (preferPlayer != null && preferPlayer.m_9236_() instanceof ServerLevel sl) {
+            preferLevel = sl;
+        }
         Iterator<Claim> it = claims.iterator();
         while (it.hasNext()) {
             Claim c = it.next();
-            Mob mob = findMob(server, c.mobId);
+            Mob mob = findMob(server, preferLevel, c.mobId);
             if (mob == null || !mob.m_6084_()) {
                 it.remove();
-            } else {
-                // Refresh distance lazily when we have a player context elsewhere.
             }
         }
     }
 
-    private static Mob findMob(net.minecraft.server.MinecraftServer server, UUID id) {
+    private static Mob findMob(
+            net.minecraft.server.MinecraftServer server, ServerLevel preferLevel, UUID id
+    ) {
+        if (preferLevel != null) {
+            var entity = preferLevel.m_8791_(id);
+            if (entity instanceof Mob mob) {
+                return mob;
+            }
+        }
         for (ServerLevel level : server.m_129785_()) {
+            if (level == preferLevel) {
+                continue;
+            }
             var entity = level.m_8791_(id); // getEntity
             if (entity instanceof Mob mob) {
                 return mob;
