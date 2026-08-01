@@ -334,12 +334,10 @@ public final class DifficultyChestGui implements Listener {
                 "&eCopper &f" + ph.getOrDefault("coins_copper", "0")
                         + "  &eIron &f" + ph.getOrDefault("coins_iron", "0")
                         + "  &eGold &f" + ph.getOrDefault("coins_gold", "0"),
-                "&eDiamond &f" + ph.getOrDefault("coins_diamond", "0")
-                        + "  &eEmerald &f" + ph.getOrDefault("coins_emerald", "0")
+                "&eEmerald &f" + ph.getOrDefault("coins_emerald", "0")
+                        + "  &eDiamond &f" + ph.getOrDefault("coins_diamond", "0")
                         + "  &eNetherite &f" + ph.getOrDefault("coins_netherite", "0"),
-                "&eLapis &f" + ph.getOrDefault("coins_lapis", "0")
-                        + "  &eDivine &f" + ph.getOrDefault("coins_divine", "0")
-                        + "  &6Total &f" + ph.getOrDefault("ancient_coins", "0") + " AC"
+                "&6Total &f" + ph.getOrDefault("ancient_coins", "0") + " AC"
         );
     }
 

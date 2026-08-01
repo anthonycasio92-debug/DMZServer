@@ -263,12 +263,14 @@ public final class ForgeBridge {
     }
 
     private static void putCoinCounts(Map<String, String> out, Object nms) {
+        // Ladder: Copper → Iron → Gold → Emerald → Diamond → Netherite
+        // (Lapis / Ender Pearl ancients are unused by this mod.)
         String[] keys = {
-                "coins_copper", "coins_iron", "coins_gold", "coins_diamond",
-                "coins_emerald", "coins_netherite", "coins_lapis", "coins_divine"
+                "coins_copper", "coins_iron", "coins_gold",
+                "coins_emerald", "coins_diamond", "coins_netherite"
         };
         String[] kindNames = {
-                "COPPER", "IRON", "GOLD", "DIAMOND", "EMERALD", "NETHERITE", "LAPIS", "DIVINE"
+                "COPPER", "IRON", "GOLD", "EMERALD", "DIAMOND", "NETHERITE"
         };
         for (String key : keys) {
             out.putIfAbsent(key, "0");

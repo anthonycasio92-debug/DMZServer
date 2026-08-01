@@ -23,6 +23,10 @@ import net.minecraftforge.fml.ModList;
 /**
  * Ancient Coin economy — real Lightman's {@code coin_ancient} items only.
  * <p>
+ * Ladder (cheap → expensive): Copper → Iron → Gold → Emerald → Diamond →
+ * Netherite (all 9 letter variants share one value). Lapis and Ender Pearl
+ * ancient coins are ignored (never spent, counted, granted, or dropped).
+ * <p>
  * Charges take an <b>exact</b> copper total from available denominations and
  * never consume a higher coin that would overshoot. If the player cannot make
  * exact payment, the charge fails and callers report how much is missing.
@@ -31,15 +35,26 @@ public final class AncientCoinEconomy {
     private static final boolean LIGHTMANS = ModList.get().isLoaded("lightmanscurrency");
     private static volatile boolean warnedMissingLightmans;
 
+    /** All Lightman's Netherite letter ancients (HEROBRINE) — equal value. */
+    private static final AncientCoinType[] NETHERITE_VARIANTS = {
+            AncientCoinType.NETHERITE_H,
+            AncientCoinType.NETHERITE_E1,
+            AncientCoinType.NETHERITE_R1,
+            AncientCoinType.NETHERITE_O,
+            AncientCoinType.NETHERITE_B,
+            AncientCoinType.NETHERITE_R2,
+            AncientCoinType.NETHERITE_I,
+            AncientCoinType.NETHERITE_N,
+            AncientCoinType.NETHERITE_E2
+    };
+
     public enum CoinKind {
         COPPER(1L, "Copper", AncientCoinType.COPPER),
         IRON(10L, "Iron", AncientCoinType.IRON),
         GOLD(100L, "Gold", AncientCoinType.GOLD),
-        DIAMOND(1_000L, "Diamond", AncientCoinType.DIAMOND),
-        EMERALD(10_000L, "Emerald", AncientCoinType.EMERALD),
-        NETHERITE(100_000L, "Netherite", AncientCoinType.NETHERITE_H),
-        LAPIS(500_000L, "Lapis", AncientCoinType.LAPIS),
-        DIVINE(1_000_000L, "Divine", AncientCoinType.ENDER_PEARL);
+        EMERALD(1_000L, "Emerald", AncientCoinType.EMERALD),
+        DIAMOND(10_000L, "Diamond", AncientCoinType.DIAMOND),
+        NETHERITE(100_000L, "Netherite", AncientCoinType.NETHERITE_H);
 
         public final long copperValue;
         public final String display;
@@ -51,24 +66,27 @@ public final class AncientCoinEconomy {
             this.ancientType = ancientType;
         }
 
+        /** Payment / balance order, highest value first. */
+        static CoinKind[] highToLow() {
+            return new CoinKind[] {NETHERITE, DIAMOND, EMERALD, GOLD, IRON, COPPER};
+        }
+
         static CoinKind of(AncientCoinType type) {
             if (type == null) {
                 return null;
+            }
+            // Lapis / Ender Pearl ancients are intentionally unused by this mod.
+            String name = type.name();
+            if ("LAPIS".equals(name) || "ENDER_PEARL".equals(name)) {
+                return null;
+            }
+            if (name != null && name.startsWith("NETHERITE")) {
+                return NETHERITE;
             }
             for (CoinKind kind : values()) {
                 if (kind.ancientType == type) {
                     return kind;
                 }
-            }
-            String name = type.name();
-            if (name != null && name.startsWith("NETHERITE")) {
-                return NETHERITE;
-            }
-            if ("LAPIS".equals(name)) {
-                return LAPIS;
-            }
-            if ("ENDER_PEARL".equals(name)) {
-                return DIVINE;
             }
             return null;
         }
@@ -151,26 +169,10 @@ public final class AncientCoinEconomy {
         if (copper <= 0L) {
             return "0 Copper";
         }
-        if (copper >= CoinKind.DIVINE.copperValue && copper % CoinKind.DIVINE.copperValue == 0L) {
-            return (copper / CoinKind.DIVINE.copperValue) + "× Divine";
-        }
-        if (copper >= CoinKind.LAPIS.copperValue && copper % CoinKind.LAPIS.copperValue == 0L) {
-            return (copper / CoinKind.LAPIS.copperValue) + "× Lapis";
-        }
-        if (copper >= CoinKind.NETHERITE.copperValue && copper % CoinKind.NETHERITE.copperValue == 0L) {
-            return (copper / CoinKind.NETHERITE.copperValue) + "× Netherite";
-        }
-        if (copper >= CoinKind.EMERALD.copperValue && copper % CoinKind.EMERALD.copperValue == 0L) {
-            return (copper / CoinKind.EMERALD.copperValue) + "× Emerald";
-        }
-        if (copper >= CoinKind.DIAMOND.copperValue && copper % CoinKind.DIAMOND.copperValue == 0L) {
-            return (copper / CoinKind.DIAMOND.copperValue) + "× Diamond";
-        }
-        if (copper >= CoinKind.GOLD.copperValue && copper % CoinKind.GOLD.copperValue == 0L) {
-            return (copper / CoinKind.GOLD.copperValue) + "× Gold";
-        }
-        if (copper >= CoinKind.IRON.copperValue && copper % CoinKind.IRON.copperValue == 0L) {
-            return (copper / CoinKind.IRON.copperValue) + "× Iron";
+        for (CoinKind kind : CoinKind.highToLow()) {
+            if (copper >= kind.copperValue && copper % kind.copperValue == 0L) {
+                return (copper / kind.copperValue) + "× " + kind.display;
+            }
         }
         return copper + "× Copper";
     }
@@ -180,12 +182,7 @@ public final class AncientCoinEconomy {
         if (copperCost <= 0L) {
             return "free";
         }
-        // Prefer a single clean denomination when the cost divides evenly.
-        CoinKind[] order = {
-                CoinKind.DIVINE, CoinKind.LAPIS, CoinKind.NETHERITE, CoinKind.EMERALD,
-                CoinKind.DIAMOND, CoinKind.GOLD, CoinKind.IRON, CoinKind.COPPER
-        };
-        for (CoinKind kind : order) {
+        for (CoinKind kind : CoinKind.highToLow()) {
             if (copperCost >= kind.copperValue && copperCost % kind.copperValue == 0L) {
                 long n = copperCost / kind.copperValue;
                 return n + "× " + kind.display + " Ancient";
@@ -293,24 +290,42 @@ public final class AncientCoinEconomy {
         double y = at.m_20186_() + 0.35;
         double z = at.m_20189_();
         long left = drop.count();
+        // Netherite kill drops: one random HEROBRINE letter per coin.
+        if (drop.kind() == CoinKind.NETHERITE) {
+            while (left > 0L) {
+                AncientCoinType variant = NETHERITE_VARIANTS[
+                        ThreadLocalRandom.current().nextInt(NETHERITE_VARIANTS.length)];
+                ItemStack stack = variant.asItem(1);
+                if (stack == null || stack.m_41619_()) {
+                    break;
+                }
+                spawnDropEntity(server, x, y, z, stack);
+                left -= 1L;
+            }
+            return;
+        }
         while (left > 0L) {
             int chunk = (int) Math.min(64L, left);
             ItemStack stack = drop.kind().ancientType.asItem(chunk);
             if (stack == null || stack.m_41619_()) {
                 break;
             }
-            ItemEntity entity = new ItemEntity(server, x, y, z, stack);
-            // Short pickup delay so nearby killer can grab it, but still a world drop.
-            entity.m_32061_(); // setDefaultPickUpDelay (10 ticks)
-            double spread = 0.12;
-            entity.m_20334_(
-                    (ThreadLocalRandom.current().nextDouble() - 0.5) * spread,
-                    0.12 + ThreadLocalRandom.current().nextDouble() * 0.08,
-                    (ThreadLocalRandom.current().nextDouble() - 0.5) * spread
-            );
-            server.m_7967_(entity); // addFreshEntity
+            spawnDropEntity(server, x, y, z, stack);
             left -= chunk;
         }
+    }
+
+    private static void spawnDropEntity(ServerLevel server, double x, double y, double z, ItemStack stack) {
+        ItemEntity entity = new ItemEntity(server, x, y, z, stack);
+        // Short pickup delay so nearby killer can grab it, but still a world drop.
+        entity.m_32061_(); // setDefaultPickUpDelay (10 ticks)
+        double spread = 0.12;
+        entity.m_20334_(
+                (ThreadLocalRandom.current().nextDouble() - 0.5) * spread,
+                0.12 + ThreadLocalRandom.current().nextDouble() * 0.08,
+                (ThreadLocalRandom.current().nextDouble() - 0.5) * spread
+        );
+        server.m_7967_(entity); // addFreshEntity
     }
 
     /** @deprecated Kill rewards must use {@link #dropInWorld}; kept for non-kill grants only. */
@@ -358,14 +373,15 @@ public final class AncientCoinEconomy {
 
     public static CoinKind rollKind(int activeTier) {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
+        // Ladder: Copper < Iron < Gold < Emerald < Diamond < Netherite
         return switch (Math.max(1, activeTier)) {
             case 1 -> CoinKind.COPPER;
             case 2 -> rng.nextDouble() < 0.25 ? CoinKind.IRON : CoinKind.COPPER;
             case 3 -> rng.nextDouble() < 0.30 ? CoinKind.GOLD : (rng.nextDouble() < 0.55 ? CoinKind.IRON : CoinKind.COPPER);
-            case 4 -> rng.nextDouble() < 0.25 ? CoinKind.DIAMOND : (rng.nextDouble() < 0.55 ? CoinKind.GOLD : CoinKind.IRON);
-            case 5 -> rng.nextDouble() < 0.22 ? CoinKind.EMERALD : (rng.nextDouble() < 0.55 ? CoinKind.DIAMOND : CoinKind.GOLD);
-            case 6 -> rng.nextDouble() < 0.18 ? CoinKind.NETHERITE : (rng.nextDouble() < 0.50 ? CoinKind.EMERALD : CoinKind.DIAMOND);
-            default -> rng.nextDouble() < 0.12 ? CoinKind.DIVINE : (rng.nextDouble() < 0.45 ? CoinKind.NETHERITE : CoinKind.EMERALD);
+            case 4 -> rng.nextDouble() < 0.25 ? CoinKind.EMERALD : (rng.nextDouble() < 0.55 ? CoinKind.GOLD : CoinKind.IRON);
+            case 5 -> rng.nextDouble() < 0.22 ? CoinKind.DIAMOND : (rng.nextDouble() < 0.55 ? CoinKind.EMERALD : CoinKind.GOLD);
+            case 6 -> rng.nextDouble() < 0.18 ? CoinKind.NETHERITE : (rng.nextDouble() < 0.50 ? CoinKind.DIAMOND : CoinKind.EMERALD);
+            default -> rng.nextDouble() < 0.35 ? CoinKind.NETHERITE : (rng.nextDouble() < 0.55 ? CoinKind.DIAMOND : CoinKind.EMERALD);
         };
     }
 
@@ -461,11 +477,7 @@ public final class AncientCoinEconomy {
         long[] plan = new long[CoinKind.values().length];
         long remaining = copperCost;
         // Largest first that still fits exactly into the remainder.
-        CoinKind[] highFirst = {
-                CoinKind.DIVINE, CoinKind.LAPIS, CoinKind.NETHERITE, CoinKind.EMERALD,
-                CoinKind.DIAMOND, CoinKind.GOLD, CoinKind.IRON, CoinKind.COPPER
-        };
-        for (CoinKind kind : highFirst) {
+        for (CoinKind kind : CoinKind.highToLow()) {
             long unit = kind.copperValue;
             if (unit <= 0L || remaining < unit) {
                 continue;
@@ -518,7 +530,11 @@ public final class AncientCoinEconomy {
         long left = count;
         while (left > 0L) {
             int chunk = (int) Math.min(64L, left);
-            dropOrAdd(player, kind.ancientType.asItem(chunk));
+            // Netherite has 9 letter variants — pick one at random per stack.
+            AncientCoinType type = kind == CoinKind.NETHERITE
+                    ? NETHERITE_VARIANTS[ThreadLocalRandom.current().nextInt(NETHERITE_VARIANTS.length)]
+                    : kind.ancientType;
+            dropOrAdd(player, type.asItem(chunk));
             left -= chunk;
         }
     }
