@@ -240,6 +240,21 @@ public final class DifficultyConfig {
     public double weakStatCounterMult = 1.45;
     /** How hard weak-defense counters pierce (mob damage vs player defense share). */
     public double weakDefensePierceMult = 1.35;
+    /**
+     * Damage floor from player defense × tier % — stops DEF dumps from facing soft hits.
+     * Example: 0.40 → mob attack at least 40% of (defense × tierPercent).
+     */
+    public double tankDamageDefenseRatio = 0.40;
+    /**
+     * Damage floor from player max HP × tier % — presses high-VIT tanks.
+     * Example: 0.012 → mob attack at least 1.2% of (maxHealth × tierPercent).
+     */
+    public double tankDamageHealthRatio = 0.012;
+    /**
+     * Extra mob damage for specialized builds: {@code damage × (1 + imbalance × tax)}.
+     * imbalance is 0 for even builds and approaches 1 for hard stat dumps.
+     */
+    public double specializationDamageTax = 0.60;
     /** Converts DMZ defense share into vanilla armor points: log1p(def) × factor. */
     public double defenseToArmorFactor = 2.5;
     /** Server ticks between nearby-player mob rescale pulses (per-player stagger). */
@@ -639,6 +654,15 @@ public final class DifficultyConfig {
         }
         if (cfg.weakDefensePierceMult < 1.0) {
             cfg.weakDefensePierceMult = 1.35;
+        }
+        if (cfg.tankDamageDefenseRatio < 0.0) {
+            cfg.tankDamageDefenseRatio = 0.40;
+        }
+        if (cfg.tankDamageHealthRatio < 0.0) {
+            cfg.tankDamageHealthRatio = 0.012;
+        }
+        if (cfg.specializationDamageTax < 0.0) {
+            cfg.specializationDamageTax = 0.60;
         }
         if (cfg.defenseToArmorFactor <= 0.0) {
             cfg.defenseToArmorFactor = 2.5;

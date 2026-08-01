@@ -583,6 +583,7 @@ public final class DifficultyCommands {
                         + "§8Master keys: enabled · whitelistEnabled\n"
                         + "§8Tier keys: unlockTier1Level…7 / Cost…7 / tier1statpercent…7 (0.15–2.0)\n"
                         + "§8Nearby scale: weakStatCounterMult · weakDefensePierceMult\n"
+                        + "§8tankDamageDefenseRatio · tankDamageHealthRatio · specializationDamageTax\n"
                         + "§8eliteMinUnlockTier · mutationMinUnlockTier · adaptiveAiMinUnlockTier\n"
                         + "§8enemyEvolutionMinUnlockTier · bossMechanicsMinUnlockTier"
         ), false);
@@ -775,6 +776,12 @@ public final class DifficultyCommands {
                         cfg.weakStatCounterMult = Math.max(1.0, Double.parseDouble(value));
                 case "weakdefensepiercemult", "defpierce" ->
                         cfg.weakDefensePierceMult = Math.max(1.0, Double.parseDouble(value));
+                case "tankdamagedefenseratio", "tankdeffloor" ->
+                        cfg.tankDamageDefenseRatio = Math.max(0.0, Double.parseDouble(value));
+                case "tankdamagehealthratio", "tankhpfloor" ->
+                        cfg.tankDamageHealthRatio = Math.max(0.0, Double.parseDouble(value));
+                case "specializationdamagetax", "spectax" ->
+                        cfg.specializationDamageTax = Math.max(0.0, Double.parseDouble(value));
                 case "defensetoarmorfactor" ->
                         cfg.defenseToArmorFactor = Math.max(0.1, Double.parseDouble(value));
                 case "nearbyscaleintervalticks", "nearbyscaleinterval" ->

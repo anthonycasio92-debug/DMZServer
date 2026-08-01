@@ -59,4 +59,5 @@ Config key: `enabled` (also `admin set enabled false`).
 - Coin ladder: Copper → Iron → Gold → Emerald → Diamond → Netherite (9 letter variants, equal value). Lapis / Ender Pearl unused.
 - Tier costs cap at 128 of one coin type, then promote to the next denomination (rounded up).
 - Saga/quest-spawned mobs (`dmz_quest_*` / `dmz_saga_id`) and cage-spawner mobs are never AD-converted.
+- Mob damage uses blended offense + a DEF/HP tank floor + specialization tax so 1–3 stat dumps cannot shrug tiered hits vs even builds.
 - Old NBT wallet balances migrate into Copper Ancient coins on login.

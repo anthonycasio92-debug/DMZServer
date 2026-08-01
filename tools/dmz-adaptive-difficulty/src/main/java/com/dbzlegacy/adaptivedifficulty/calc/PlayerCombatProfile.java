@@ -11,6 +11,10 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * Post-transform / limit-release combat snapshot used to scale nearby hostiles
  * to a fraction of the player's real fighting power.
+ * <p>
+ * Specialized 1–3 stat dumps (especially DEF/VIT tanks) are pressed by a
+ * tankiness damage floor + specialization tax so they cannot shrug tiered mobs
+ * more easily than evenly stated players.
  */
 public final class PlayerCombatProfile {
     public enum WeakStat {
@@ -29,9 +33,15 @@ public final class PlayerCombatProfile {
     public final double kiDamage;
     public final double defense;
     public final double maxHealth;
+    /** Blended offensive threat (peak + average), not peak-only. */
     public final double offense;
     public final double releasePercent;
     public final WeakStat weakest;
+    /**
+     * 0 = even build, approaches 1 as the weakest combat stat is dumped
+     * relative to the player's peak invested stat.
+     */
+    public final double imbalance;
     /** Stable fingerprint for mob re-scale cache invalidation. */
     public final long signature;
 
@@ -46,6 +56,7 @@ public final class PlayerCombatProfile {
             double offense,
             double releasePercent,
             WeakStat weakest,
+            double imbalance,
             long signature
     ) {
         this.activeTier = activeTier;
@@ -58,6 +69,7 @@ public final class PlayerCombatProfile {
         this.offense = offense;
         this.releasePercent = releasePercent;
         this.weakest = weakest;
+        this.imbalance = Math.max(0.0, Math.min(1.0, imbalance));
         this.signature = signature;
     }
 
@@ -99,14 +111,22 @@ public final class PlayerCombatProfile {
                 // Fall through with defaults.
             }
         }
-        double offense = Math.max(melee, Math.max(strike, ki));
-        WeakStat weakest = resolveWeakest(data, melee, strike, def, hp, ki, offense);
-        long sig = fingerprint(tier, pct, melee, strike, ki, def, hp, release, weakest);
-        return new PlayerCombatProfile(tier, pct, melee, strike, ki, def, hp, offense, release, weakest, sig);
+        // Peak-only let pure tanks face wet-noodle hits; blend in the average.
+        double peakOffense = Math.max(melee, Math.max(strike, ki));
+        double avgOffense = (melee + strike + ki) / 3.0;
+        double offense = peakOffense * 0.55 + avgOffense * 0.45;
+        StatBalance balance = resolveBalance(data, melee, strike, def, hp, ki);
+        long sig = fingerprint(tier, pct, melee, strike, ki, def, hp, release, balance.weakest, balance.imbalance);
+        return new PlayerCombatProfile(
+                tier, pct, melee, strike, ki, def, hp, offense, release,
+                balance.weakest, balance.imbalance, sig
+        );
     }
 
     private static PlayerCombatProfile inactive() {
-        return new PlayerCombatProfile(0, 0.0, 1.0, 1.0, 1.0, 1.0, 20.0, 1.0, 100.0, WeakStat.NONE, 0L);
+        return new PlayerCombatProfile(
+                0, 0.0, 1.0, 1.0, 1.0, 1.0, 20.0, 1.0, 100.0, WeakStat.NONE, 0.0, 0L
+        );
     }
 
     public boolean active() {
@@ -122,23 +142,41 @@ public final class PlayerCombatProfile {
      */
     public double targetMobHealth(DifficultyConfig cfg) {
         double base = maxHealth * tierPercent;
-        double counter = weakest == WeakStat.STRENGTH || weakest == WeakStat.STRIKE || weakest == WeakStat.KI_POWER
-                ? Math.max(1.0, cfg.weakStatCounterMult)
-                : 1.0;
-        return Math.max(20.0, base * counter);
+        // Glass cannons (weak DEF/VIT) shouldn't free-melt tiered packs.
+        if (weakest == WeakStat.DEFENSE || weakest == WeakStat.VITALITY) {
+            base *= Math.max(1.0, Math.sqrt(Math.max(1.0, cfg.weakStatCounterMult)));
+        }
+        // Mild HP bump when the build is heavily skewed.
+        if (imbalance > 0.35) {
+            base *= 1.0 + (imbalance - 0.35) * 0.35;
+        }
+        return Math.max(20.0, base);
     }
 
     /**
-     * Target mob attack — biased up hard when the player's defense is their weak point
-     * so hits feel like they punch through defense.
+     * Target mob attack. Uses blended offense, a tankiness floor (so DEF/VIT
+     * dumps still get pressured), weak-stat counters, and a specialization tax.
      */
     public double targetMobDamage(DifficultyConfig cfg) {
-        double base = offense * tierPercent;
+        double offenseShare = offense * tierPercent;
+        double defFloor = defense * tierPercent * Math.max(0.0, cfg.tankDamageDefenseRatio);
+        double hpFloor = maxHealth * tierPercent * Math.max(0.0, cfg.tankDamageHealthRatio);
+        double base = Math.max(offenseShare, Math.max(defFloor, hpFloor));
+
         if (weakest == WeakStat.DEFENSE || weakest == WeakStat.VITALITY) {
             double counter = Math.max(1.0, cfg.weakStatCounterMult);
             // Aim above the player's defense share so tanking feels contested.
             double throughDefense = defense * tierPercent * Math.max(1.15, cfg.weakDefensePierceMult);
             base = Math.max(base * counter, throughDefense);
+        } else if (weakest == WeakStat.STRENGTH
+                || weakest == WeakStat.STRIKE
+                || weakest == WeakStat.KI_POWER) {
+            // Offense dump + tank stack — still raise pressure (floor alone isn't enough).
+            base *= Math.max(1.0, cfg.weakStatCounterMult);
+        }
+
+        if (imbalance > 0.0) {
+            base *= 1.0 + imbalance * Math.max(0.0, cfg.specializationDamageTax);
         }
         return Math.max(1.0, base);
     }
@@ -147,7 +185,7 @@ public final class PlayerCombatProfile {
     public double targetMobArmor(DifficultyConfig cfg) {
         double share = defense * tierPercent;
         double armor = Math.log1p(Math.max(0.0, share)) * cfg.defenseToArmorFactor;
-        if (weakest == WeakStat.STRENGTH || weakest == WeakStat.STRIKE) {
+        if (weakest == WeakStat.STRENGTH || weakest == WeakStat.STRIKE || weakest == WeakStat.KI_POWER) {
             armor *= Math.max(1.0, cfg.weakStatCounterMult);
         }
         if (cfg.maxArmorBonus > 0.0) {
@@ -156,14 +194,15 @@ public final class PlayerCombatProfile {
         return Math.max(0.0, armor);
     }
 
-    private static WeakStat resolveWeakest(
+    private record StatBalance(WeakStat weakest, double imbalance) {}
+
+    private static StatBalance resolveBalance(
             StatsData data,
             double melee,
             double strike,
             double defense,
             double health,
-            double ki,
-            double offense
+            double ki
     ) {
         // Prefer raw invested stats (with form multipliers via combat getters as fallback).
         double str = melee;
@@ -186,7 +225,7 @@ public final class PlayerCombatProfile {
         }
         double peak = Math.max(str, Math.max(skp, Math.max(res, Math.max(vit, pwr))));
         if (!(peak > 0.0)) {
-            return WeakStat.NONE;
+            return new StatBalance(WeakStat.NONE, 0.0);
         }
         // Normalize to peak so different units stay comparable.
         double nStr = str / peak;
@@ -209,13 +248,16 @@ public final class PlayerCombatProfile {
             best = WeakStat.VITALITY;
         }
         if (nPwr < lowest) {
+            lowest = nPwr;
             best = WeakStat.KI_POWER;
         }
         // Only counter when the gap is meaningful (not a flat build).
         if (lowest > 0.85) {
-            return WeakStat.NONE;
+            return new StatBalance(WeakStat.NONE, 0.0);
         }
-        return best;
+        // Soften near the flat threshold so mild spreads aren't taxed like dumps.
+        double imbalance = Math.max(0.0, Math.min(1.0, (0.85 - lowest) / 0.85));
+        return new StatBalance(best, imbalance);
     }
 
     private static long fingerprint(
@@ -227,7 +269,8 @@ public final class PlayerCombatProfile {
             double def,
             double hp,
             double release,
-            WeakStat weakest
+            WeakStat weakest,
+            double imbalance
     ) {
         long h = 1469598103934665603L;
         h = mix(h, tier);
@@ -239,6 +282,9 @@ public final class PlayerCombatProfile {
         h = mix(h, Math.round(hp));
         h = mix(h, Math.round(release));
         h = mix(h, weakest == null ? 0 : weakest.ordinal() + 1);
+        h = mix(h, Math.round(imbalance * 1000.0));
+        // Formula revision bump so cached mobs re-paint after this balance change.
+        h = mix(h, 2L);
         return h;
     }
 
