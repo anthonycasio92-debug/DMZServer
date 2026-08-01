@@ -15,7 +15,7 @@ Clients do **not** need this jar to join.
 | Combat Rating | Rewards / display / area readouts (not mob HP) |
 | Teams | WIP stub — personal difficulty only |
 | Titles | Restored; equip from GUI |
-| Kill rewards | Ancient Coins **drop on the ground** at the mob (+ modest XP) |
+| Kill rewards | Hostiles only + active Unlock Tier — 1–5 coins drop on the ground |
 | Feature gates | T2 evo → T3 AI → T4 elite → T5 mutation → T6 boss → T7 full |
 
 ## Removed / cleaned
