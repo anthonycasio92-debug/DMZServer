@@ -69,7 +69,8 @@ public final class NearbyMobScaler {
                     mob != null
                             && mob.m_6084_()
                             && HostileMobs.isHostile(mob)
-                            && !DimensionGates.isDisabled(mob));
+                            && !DimensionGates.isDisabled(mob)
+                            && !MobScaling.isExemptFromConversion(mob));
         } catch (Throwable t) {
             return;
         }

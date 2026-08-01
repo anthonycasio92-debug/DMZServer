@@ -51,12 +51,24 @@ public final class MobScaling {
     /** Fingerprint of the player combat profile this mob was last scaled to. */
     public static final String TAG_PROFILE_SIG = "dmz_ad_profile_sig";
     public static final String TAG_TIER_PERCENT = "dmz_ad_tier_pct";
+    /** Mob is owned by another system (saga/quest/spawner) — never AD-convert. */
+    public static final String TAG_EXEMPT = "dmz_ad_exempt";
+    /** Stamped at FinalizeSpawn when {@code MobSpawnType.SPAWNER}. */
+    public static final String TAG_FROM_SPAWNER = "dmz_ad_from_spawner";
 
     public static final String TAG_BASE_HEALTH = "dmz_ad_base_max_health";
     public static final String TAG_BASE_ATTACK = "dmz_ad_base_attack";
     public static final String TAG_BASE_ARMOR = "dmz_ad_base_armor";
     public static final String TAG_BASE_SPEED = "dmz_ad_base_speed";
     public static final String TAG_BASE_KNOCKBACK = "dmz_ad_base_knockback";
+
+    /** DMZ QuestService / saga spawn markers (Forge persistent data). */
+    private static final String[] QUEST_SPAWN_TAGS = {
+            "dmz_quest_key",
+            "dmz_quest_owner",
+            "dmz_quest_objective_index",
+            "dmz_saga_id"
+    };
 
     /**
      * Hot-path cache: entity UUID → last applied player-profile signature.
@@ -73,9 +85,58 @@ public final class MobScaling {
         return tag.m_128441_(TAG_DIFFICULTY) ? tag.m_128454_(TAG_DIFFICULTY) : 0L;
     }
 
+    /**
+     * Saga/quest (DMZ) and cage-spawner mobs keep their own difficulty — AD must not convert them.
+     */
+    public static boolean isExemptFromConversion(LivingEntity entity) {
+        if (entity == null) {
+            return false;
+        }
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (tag.m_128471_(TAG_EXEMPT) || tag.m_128471_(TAG_FROM_SPAWNER)) {
+            return true;
+        }
+        for (String key : QUEST_SPAWN_TAGS) {
+            if (tag.m_128441_(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Stamp a mob from {@link net.minecraft.world.entity.MobSpawnType#SPAWNER}. */
+    public static void markFromSpawner(LivingEntity entity) {
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (!PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
+        tag.m_128379_(TAG_FROM_SPAWNER, true);
+        tag.m_128379_(TAG_EXEMPT, true);
+    }
+
+    /**
+     * Persist exempt and undo a prior AD player-profile paint if one was applied by mistake.
+     */
+    private static void ensureExempt(LivingEntity entity) {
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (!PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
+        tag.m_128379_(TAG_EXEMPT, true);
+        if (tag.m_128471_(TAG_SCALED)
+                && tag.m_128441_(TAG_PROFILE_SIG)
+                && tag.m_128454_(TAG_PROFILE_SIG) != 0L) {
+            revertToBases(entity);
+        }
+    }
+
     public static void scaleIfNeeded(LivingEntity entity) {
         try {
             if (com.dbzlegacy.adaptivedifficulty.util.DimensionGates.isDisabled(entity)) {
+                return;
+            }
+            if (isExemptFromConversion(entity)) {
+                ensureExempt(entity);
                 return;
             }
             scaleIfNeededInternal(entity);
@@ -99,6 +160,10 @@ public final class MobScaling {
             return;
         }
         try {
+            if (isExemptFromConversion(entity)) {
+                ensureExempt(entity);
+                return;
+            }
             DifficultyConfig cfg = DifficultyConfig.get();
             if (!cfg.enabled || !cfg.enableMobScaling) {
                 return;
@@ -208,6 +273,10 @@ public final class MobScaling {
     private static void scaleIfNeededInternal(LivingEntity entity) {
         DifficultyConfig cfg = DifficultyConfig.get();
         if (!cfg.enabled || !cfg.enableMobScaling || entity == null || entity.m_9236_().f_46443_) {
+            return;
+        }
+        if (isExemptFromConversion(entity)) {
+            ensureExempt(entity);
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);

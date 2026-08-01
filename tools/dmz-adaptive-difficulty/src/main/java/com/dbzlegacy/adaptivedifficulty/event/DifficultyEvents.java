@@ -106,10 +106,17 @@ public final class DifficultyEvents {
         if (SystemGate.isDisabled()) {
             return;
         }
-        if (entity != null && !event.isCanceled() && !event.isSpawnCancelled()
-                && !DimensionGates.isDisabled(entity)) {
-            MobScaling.scaleIfNeeded(entity);
+        if (entity == null || event.isCanceled() || event.isSpawnCancelled()
+                || DimensionGates.isDisabled(entity)) {
+            return;
         }
+        // Cage / minecart spawners keep vanilla difficulty — stamp so nearby rescale can't convert later.
+        if (event.getSpawnType() == net.minecraft.world.entity.MobSpawnType.SPAWNER) {
+            MobScaling.markFromSpawner(entity);
+            return;
+        }
+        // Saga/quest kills already carry dmz_quest_* / dmz_saga_id — scaleIfNeeded no-ops.
+        MobScaling.scaleIfNeeded(entity);
     }
 
     /**

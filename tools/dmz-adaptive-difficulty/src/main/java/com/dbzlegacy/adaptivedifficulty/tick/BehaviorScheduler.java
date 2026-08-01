@@ -108,6 +108,12 @@ public final class BehaviorScheduler {
             }
         }
 
+        // Saga/quest + spawner mobs are owned by other systems — never convert / AI-kit them.
+        if (MobScaling.isExemptFromConversion(mob)) {
+            CombatIndex.unmark(mob.m_20148_());
+            return false;
+        }
+
         CompoundTag tag = PersistentDataAccess.get(mob);
         if (!tag.m_128471_(MobScaling.TAG_SCALED)) {
             MobScaling.scaleIfNeeded(mob);

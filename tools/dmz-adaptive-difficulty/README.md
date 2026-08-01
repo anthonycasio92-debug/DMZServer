@@ -58,4 +58,5 @@ Config key: `enabled` (also `admin set enabled false`).
 - Ancient Coins are real Lightman's `coin_ancient` items (exact type/count, no change).
 - Coin ladder: Copper → Iron → Gold → Emerald → Diamond → Netherite (9 letter variants, equal value). Lapis / Ender Pearl unused.
 - Tier costs cap at 128 of one coin type, then promote to the next denomination (rounded up).
+- Saga/quest-spawned mobs (`dmz_quest_*` / `dmz_saga_id`) and cage-spawner mobs are never AD-converted.
 - Old NBT wallet balances migrate into Copper Ancient coins on login.
