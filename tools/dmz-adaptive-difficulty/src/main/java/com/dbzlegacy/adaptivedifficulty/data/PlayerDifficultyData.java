@@ -292,7 +292,8 @@ public final class PlayerDifficultyData {
             activeTier = best.id;
             activeDifficultyLevel = Math.min(best.maxDifficulty(), Math.max(legacyActive, 1L));
             if (ancientCopper <= 0L && legacyPurchased > 0L) {
-                ancientCopper = legacyPurchased; // soft convert leftover purchase into coins
+                // Old "purchased" was difficulty points, not copper coins — soft token only.
+                ancientCopper = Math.min(1_000L, legacyPurchased);
             }
         }
         if (activeTier > 0 && UnlockTier.byId(activeTier) == null) {

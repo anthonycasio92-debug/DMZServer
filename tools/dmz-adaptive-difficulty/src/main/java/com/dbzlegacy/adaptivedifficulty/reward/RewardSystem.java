@@ -7,20 +7,24 @@ import com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
+import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
 /**
- * V3 kill rewards: Ancient Coins drop in the world at the mob + modest XP.
- * No TP, titles, capsules, or inventory coin injection.
+ * Kill rewards: Ancient Coins drop in the world at the mob + modest XP.
+ * Only hostiles, only with an active Unlock Tier. No farm-animal / inactive spam.
  */
 public final class RewardSystem {
+    private static final String TAG_REWARDED = "dmz_ad_kill_rewarded";
+
     private RewardSystem() {}
 
     public static void onKill(ServerPlayer killer, LivingEntity dead) {
@@ -31,11 +35,24 @@ public final class RewardSystem {
         if (!cfg.enabled || !cfg.enableRewardScaling || !SystemGate.allows(killer)) {
             return;
         }
+        // Passive mobs / farms must never mint Ancient Coins.
+        if (!HostileMobs.isHostile(dead) || MobScaling.isExemptFromConversion(dead)) {
+            return;
+        }
         DifficultySnapshot snap = DifficultyCache.get(killer);
-        long killDifficulty = Math.max(snap.combatRating, MobScaling.difficultyOf(dead));
-        UnlockTier unlock = UnlockTier.byId(Math.max(snap.activeTier, 1));
+        // No active tier → no coin economy participation.
+        if (snap.activeTier <= 0) {
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(dead);
+        if (tag.m_128471_(TAG_REWARDED)) {
+            return;
+        }
+        tag.m_128379_(TAG_REWARDED, true);
+
+        UnlockTier unlock = UnlockTier.byId(snap.activeTier);
         boolean elite = EliteSystem.isElite(dead);
-        boolean boss = PersistentDataAccess.get(dead).m_128471_(BossScaling.TAG_BOSS);
+        boolean boss = tag.m_128471_(BossScaling.TAG_BOSS);
         double mult = ScalingCurves.rewardMultiplier(Math.max(1L, snap.active));
 
         AncientCoinEconomy.Drop drop = AncientCoinEconomy.rollKillDrop(killer, snap.combatRating, elite, boss);

@@ -324,6 +324,9 @@ public final class AncientCoinEconomy {
         DifficultyCache.refresh(player);
     }
 
+    /** Hard safety cap — kill rolls never exceed this many coins per death. */
+    private static final int MAX_KILL_DROP_COUNT = 8;
+
     /**
      * Spawn exact Ancient Coin item stacks in the world at the killed mob.
      * Does <b>not</b> put coins into the player's inventory.
@@ -343,7 +346,8 @@ public final class AncientCoinEconomy {
         double x = at.m_20185_();
         double y = at.m_20186_() + 0.35;
         double z = at.m_20189_();
-        long left = drop.count();
+        // Clamp runaway counts — kill rewards are tiny (1–5); never spawn thousands.
+        long left = Math.min(MAX_KILL_DROP_COUNT, drop.count());
         // Netherite kill drops: one random HEROBRINE letter per coin.
         if (drop.kind() == CoinKind.NETHERITE) {
             while (left > 0L) {
@@ -393,17 +397,17 @@ public final class AncientCoinEconomy {
 
     /**
      * Roll an exact Ancient Coin drop. Returns the coin type + count to spawn at the mob.
+     * Requires an active Unlock Tier — inactive players mint nothing.
      */
     public static Drop rollKillDrop(ServerPlayer killer, long combatRating, boolean elite, boolean boss) {
         DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableAncientCoinDrops) {
+        if (!cfg.enableAncientCoinDrops || killer == null) {
             return new Drop(CoinKind.COPPER, 0);
         }
         PlayerDifficultyData data = DifficultyCache.data(killer);
         int tier = data.getActiveTier();
         if (tier <= 0) {
-            // Inactive: always 1× Copper (exact).
-            return new Drop(CoinKind.COPPER, 1);
+            return new Drop(CoinKind.COPPER, 0);
         }
         CoinKind kind = rollKind(tier);
         int count = 1;
@@ -422,7 +426,7 @@ public final class AncientCoinEconomy {
                 && ThreadLocalRandom.current().nextDouble() < 0.15) {
             count += 1;
         }
-        return new Drop(kind, Math.max(1, count));
+        return new Drop(kind, Math.min(MAX_KILL_DROP_COUNT, Math.max(1, count)));
     }
 
     public static CoinKind rollKind(int activeTier) {
@@ -468,8 +472,15 @@ public final class AncientCoinEconomy {
     }
 
     /**
-     * Convert any leftover NBT wallet into exact Copper ancient coins.
-     * Runs at most once per login session (login hook); not on every balance read.
+     * Max copper-value converted from legacy NBT wallet per login.
+     * Old {@code purchased} difficulty points were never coin counts — uncapped
+     * migration previously dumped tens of thousands of Copper items into the world.
+     */
+    private static final long MAX_MIGRATE_COPPER = 500_000L; // 5× Netherite value
+
+    /**
+     * Convert leftover NBT wallet into mixed Ancient Coin denominations in inventory.
+     * Runs at most once per login session. Never world-dumps overflow.
      */
     public static void migrateWalletToItems(ServerPlayer player) {
         if (player == null || !LIGHTMANS) {
@@ -484,16 +495,81 @@ public final class AncientCoinEconomy {
         if (wallet <= 0L) {
             return;
         }
-        data.setAncientCopper(0L);
+        long toGrant = Math.min(wallet, MAX_MIGRATE_COPPER);
+        long leftover = wallet - toGrant;
+        data.setAncientCopper(leftover);
         DifficultyCache.save(player);
-        giveStacks(player, CoinKind.COPPER, wallet);
+        long placed = grantMixedCopperValueInventoryOnly(player, toGrant);
+        long unplaced = Math.max(0L, toGrant - placed);
+        if (unplaced > 0L) {
+            // Inventory full — keep remainder in NBT instead of littering the world.
+            data.setAncientCopper(data.getAncientCopper() + unplaced);
+            DifficultyCache.save(player);
+        }
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] migrated {} wallet units → {}× Copper Ancient for {}",
+                "[{}] migrated wallet {} → {} copper-value Ancient coins for {} (leftover NBT={})",
                 AdaptiveDifficultyMod.MOD_ID,
                 wallet,
-                wallet,
-                id
+                placed,
+                id,
+                data.getAncientCopper()
         );
+    }
+
+    /**
+     * Greedy high→low denomination grant into inventory only.
+     * @return copper-value successfully placed
+     */
+    private static long grantMixedCopperValueInventoryOnly(ServerPlayer player, long copperValue) {
+        if (player == null || copperValue <= 0L) {
+            return 0L;
+        }
+        long remaining = copperValue;
+        long placed = 0L;
+        for (CoinKind kind : CoinKind.highToLow()) {
+            if (remaining < kind.copperValue) {
+                continue;
+            }
+            long count = remaining / kind.copperValue;
+            long given = giveStacksInventoryOnly(player, kind, count);
+            long value = safeMul(kind.copperValue, given);
+            remaining -= value;
+            placed += value;
+            if (remaining <= 0L) {
+                break;
+            }
+        }
+        return placed;
+    }
+
+    /** @return number of coins actually placed in inventory */
+    private static long giveStacksInventoryOnly(ServerPlayer player, CoinKind kind, long count) {
+        if (player == null || kind == null || count <= 0L) {
+            return 0L;
+        }
+        long left = count;
+        long given = 0L;
+        while (left > 0L) {
+            int chunk = (int) Math.min(64L, left);
+            AncientCoinType type = kind == CoinKind.NETHERITE
+                    ? NETHERITE_VARIANTS[ThreadLocalRandom.current().nextInt(NETHERITE_VARIANTS.length)]
+                    : kind.ancientType;
+            ItemStack stack = type.asItem(chunk);
+            if (stack == null || stack.m_41619_()) {
+                break;
+            }
+            ItemStack copy = stack.m_41777_();
+            if (!player.m_150109_().m_36054_(copy)) {
+                // No room — stop without world-dropping.
+                break;
+            }
+            given += chunk;
+            left -= chunk;
+        }
+        if (given > 0L) {
+            DifficultyCache.refresh(player);
+        }
+        return given;
     }
 
     public static void clearMigrateFlag(UUID playerId) {
