@@ -77,17 +77,32 @@ public final class DifficultyEvents {
             // Convert any leftover NBT Ancient Coin wallet into real Lightman's items (once/session).
             AncientCoinEconomy.migrateWalletToItems(player);
             DifficultyCache.refresh(player);
+            // Persist any unlock-list repairs from refresh so the next disconnect keeps the tier.
+            DifficultyCache.save(player);
             TitleSystem.syncTierTitles(player, false);
+        }
+    }
+
+    /**
+     * Forge persists players via SaveToFile — often before {@link PlayerEvent.PlayerLoggedOutEvent}.
+     * Always flush AD data here so purchased tiers survive disconnect.
+     */
+    @SubscribeEvent
+    public void onSaveToFile(PlayerEvent.SaveToFile event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            DifficultyCache.save(player);
         }
     }
 
     @SubscribeEvent
     public void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            // Flush player AD data only — do NOT clear active tier on disconnect.
             DifficultyCache.save(player);
             DifficultyCache.remove(player.m_20148_());
             CombatGravity.clearPlayer(player);
             // Queue claimed mobs for base-stat revert, then apply immediately.
+            // (Mob scaling reverts; the player's purchased unlock tier is kept.)
             ScaledMobTracker.releaseAndRevertPlayer(player);
             NearbyMobScaler.processEvictions();
             PlayerCombatProfile.clear(player.m_20148_());

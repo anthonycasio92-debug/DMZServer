@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.3.16)
+# DMZ Adaptive Difficulty (v3.3.18)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -12,7 +12,7 @@ Clients do **not** need this jar to join.
 | Active difficulty | Set only by tier purchase — no +difficulty upgrades |
 | Personal toggle | GUI on/off for that player only (default ON). OFF freezes scaling, kill coins, AI pressure, and tier buy/lower until turned back on |
 | Coin drop chat | GUI mute for "Dropped X Ancient Coins" (default OFF) |
-| Death | Clears active tier + level when personal ON (unlocks / prestige / coins kept) |
+| Death | Clears active tier + level when personal ON (unlocks / prestige / coins kept). Disconnect / logout keeps the purchased tier |
 | Nearby scaling | Hostiles scale to player post-transform stats × tier % (max 5/player); leave range / personal off / logout reverts. Elite/mutation/boss rolls happen on claim using the claim owner's unlock tier |
 | Combat Rating | Rewards / display / area readouts (not mob HP) |
 | Teams | WIP stub — personal difficulty only |
@@ -34,8 +34,8 @@ Clients do **not** need this jar to join.
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.3.16.jar` (remove older AD jars)
-2. `plugins/dmz_adaptive_difficulty_gui-3.3.16.jar`
+1. `mods/dmz_adaptive_difficulty-3.3.18.jar` (remove older AD jars)
+2. `plugins/dmz_adaptive_difficulty_gui-3.3.18.jar`
 3. Restart — config regenerates at `config/dmz_adaptive_difficulty.json`
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -57,7 +57,7 @@ Config key: `enabled` (also `admin set enabled false`).
 
 ## Security (staff settings / admin set)
 
-Two issues that used to look like “auth gaps” — what they were, and what 3.3.16 does:
+Two issues that used to look like “auth gaps” — what they were, and what 3.3.18 does:
 
 ### Unauthenticated settings page
 - **Risk:** The settings/details chat page is status text for staff, but the Bukkit path `/dmzdiffgui settings` only required `dmzdiff.gui` (default true for all players). `openChatMenu` did not re-check staff, so a non-admin could open the settings/details view. That page itself cannot mutate config, but it leaked staff-facing status and was a footgun next to `admin set`.

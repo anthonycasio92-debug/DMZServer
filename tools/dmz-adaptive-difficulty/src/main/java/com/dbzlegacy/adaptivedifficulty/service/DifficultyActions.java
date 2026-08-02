@@ -256,6 +256,7 @@ public final class DifficultyActions {
     }
 
     private static void applyTier(PlayerDifficultyData data, ServerPlayer player, UnlockTier tier) {
+        data.unlockTier(tier.id);
         data.setActiveTier(tier.id);
         // Internal CR scale only — not shown as player-facing "points".
         data.setActiveDifficultyLevel(tier.maxDifficulty());

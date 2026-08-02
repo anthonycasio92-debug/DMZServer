@@ -39,14 +39,21 @@ public final class DifficultyCalculator {
         if (active != data.getActiveDifficultyLevel()) {
             data.setActiveDifficultyLevel(active);
         }
+        // Repair unlock-list desync — never wipe a valid purchased activation on
+        // login/refresh/logout. Older builds cleared activeTier here when the
+        // unlock set failed to load, which looked like "disconnect resets to 0".
         if (activeTier > 0 && !data.hasUnlockedTier(activeTier)) {
-            data.resetTemporary();
-            activeTier = 0;
-            active = 0L;
-            availableMax = 0L;
-            personalMax = 0L;
-            thresholdBonus = 0L;
-            contribution = 0L;
+            if (tier != null) {
+                data.unlockTier(activeTier);
+            } else {
+                data.resetTemporary();
+                activeTier = 0;
+                active = 0L;
+                availableMax = 0L;
+                personalMax = 0L;
+                thresholdBonus = 0L;
+                contribution = 0L;
+            }
         }
 
         long combatRating = CombatRating.compute(level, prestige, active, transform, DifficultyConfig.get());
