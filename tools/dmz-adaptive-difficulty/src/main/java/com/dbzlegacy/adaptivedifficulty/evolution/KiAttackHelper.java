@@ -2,16 +2,23 @@ package com.dbzlegacy.adaptivedifficulty.evolution;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dragonminez.common.init.entities.ki.AbstractKiProjectile;
 import com.dragonminez.common.init.entities.ki.KiBlastEntity;
 import com.dragonminez.common.init.entities.ki.KiLaserEntity;
 import com.dragonminez.common.init.entities.ki.KiWaveEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Fires real DragonMineZ ki projectiles from evolved hostiles.
+ * <p>
+ * DMZ {@code setupKiSmall} / cast setups spawn the entity at the shooter but do
+ * <b>not</b> apply launch velocity for mobs. Player kits call {@code shoot}
+ * separately — we must do the same or blasts sit stuck on the shooter.
  */
 public final class KiAttackHelper {
     private static final int COLOR_MAIN = 0x55DDFF;
@@ -40,6 +47,8 @@ public final class KiAttackHelper {
             int border = burning ? COLOR_BURN_BORDER : COLOR_BORDER;
             KiBlastEntity blast = new KiBlastEntity(shooter.m_9236_(), shooter);
             blast.setupKiSmall(shooter, damage, speed, main, border);
+            // setupKiSmall adds the entity with firing=true but zero velocity — launch it.
+            launchToward(blast, shooter, target, speed);
             blast.setHomingTarget(target.m_19879_());
             if (burning) {
                 target.m_20254_(4);
@@ -63,7 +72,7 @@ public final class KiAttackHelper {
             float speed = 1.05f + Math.min(0.5f, tier.ordinalPower() * 0.04f);
             float size = 1.6f + Math.min(1.2f, tier.ordinalPower() * 0.08f);
             KiBlastEntity blast = new KiBlastEntity(shooter.m_9236_(), shooter);
-            // Real large-blast setup (setupKiSmall was visually/physically a small shot).
+            // Cast-then-fire path; aim the caster so fireHability shoots at the player.
             int cast = Math.max(6, 16 - tier.ordinalPower());
             blast.setupKiLargeBlast(
                     shooter, damage, speed, COLOR_LARGE, COLOR_BORDER, COLOR_OUTLINE, size, cast);
@@ -198,11 +207,58 @@ public final class KiAttackHelper {
                 && !shooter.m_9236_().f_46443_;
     }
 
+    /**
+     * Point the mob at the target and sync body/head yaw immediately so cast-fire
+     * ({@code fireHability}) uses a correct look vector.
+     */
     private static void aimAt(Mob shooter, LivingEntity target) {
         try {
+            Vec3 from = shooter.m_146892_();
+            Vec3 to = target.m_146892_();
+            double dx = to.f_82479_ - from.f_82479_;
+            double dy = to.f_82480_ - from.f_82480_;
+            double dz = to.f_82481_ - from.f_82481_;
+            double horiz = Math.sqrt(dx * dx + dz * dz);
+            float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0);
+            float pitch = (float) (-Math.toDegrees(Math.atan2(dy, Math.max(1.0E-4, horiz))));
+            shooter.m_146922_(yaw); // setYRot
+            shooter.m_146926_(pitch); // setXRot
+            shooter.m_5618_(yaw); // setYBodyRot
+            shooter.m_5616_(yaw); // setYHeadRot
             shooter.m_21391_(target, 360.0f, 360.0f);
             shooter.m_21563_().m_24960_(target, 360.0f, 360.0f);
         } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * Apply real launch velocity toward the target.
+     * Homing only steers existing motion — zero-speed projectiles stay glued to the shooter.
+     */
+    private static void launchToward(Projectile projectile, Mob shooter, LivingEntity target, float speed) {
+        if (projectile == null || shooter == null || target == null) {
+            return;
+        }
+        aimAt(shooter, target);
+        double dx = target.m_20185_() - projectile.m_20185_();
+        double dy = (target.m_20186_() + target.m_20206_() * 0.45) - projectile.m_20186_();
+        double dz = target.m_20189_() - projectile.m_20189_();
+        if (dx * dx + dy * dy + dz * dz < 1.0E-6) {
+            Vec3 from = shooter.m_146892_();
+            Vec3 to = target.m_146892_();
+            dx = to.f_82479_ - from.f_82479_;
+            dy = to.f_82480_ - from.f_82480_;
+            dz = to.f_82481_ - from.f_82481_;
+        }
+        float launchSpeed = Math.max(0.75f, speed);
+        // shoot(dx, dy, dz, velocity, inaccuracy) — same path DMZ player barrages use via shootFromRotation.
+        projectile.m_6686_(dx, dy, dz, launchSpeed, 0.35f);
+        if (projectile instanceof AbstractKiProjectile ki) {
+            // Keep firing flag / homing active after we override motion.
+            try {
+                ki.setFiring(true);
+            } catch (Throwable ignored) {
+            }
         }
     }
 
