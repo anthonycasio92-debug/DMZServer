@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.MagmaCube;
 import net.minecraft.world.entity.monster.Slime;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -18,43 +19,42 @@ import net.minecraftforge.registries.ForgeRegistries;
  * Those split children must never receive Adaptive Difficulty paint (would multiply one
  * scaled kill into several scaled cubs).
  * <p>
- * Forge 1.20.1 has no split event — we record a short pending window on parent death and
- * stamp children that join nearby with matching size/type. Magma cubes extend {@link Slime},
- * so both are covered.
+ * Forge 1.20.1 has no split event — we record a pending window on parent death and
+ * stamp children that join nearby. Matching is intentionally loose for Mohist timing.
  */
 public final class SlimeSplitGuard {
-    private static final long WINDOW_TICKS = 10L;
-    private static final double MATCH_DIST_SQ = 6.0 * 6.0;
-    /** Parent UUID → pending split window. */
+    /** Long enough for delayed Mohist join / next-tick addFreshEntity. */
+    private static final long WINDOW_TICKS = 60L;
+    private static final double MATCH_DIST_SQ = 24.0 * 24.0;
+    /** Session fallback when entity persistent-data is not writable yet. */
+    private static final Map<UUID, Long> MEMORY_EXEMPT = new ConcurrentHashMap<>();
     private static final Map<UUID, Pending> PENDING = new ConcurrentHashMap<>();
 
     private SlimeSplitGuard() {}
 
     /** Call from {@code LivingDeathEvent} when a slime/magma dies. */
     public static void onParentDeath(LivingEntity dead) {
-        if (!(dead instanceof Slime slime) || !(dead.m_9236_() instanceof ServerLevel level)) {
+        if (!isSlimeFamily(dead) || !(dead.m_9236_() instanceof ServerLevel level)) {
             return;
         }
-        int size = slime.m_33632_(); // getSize
+        int size = slimeSize(dead);
         if (size <= 1) {
             return;
         }
-        EntityType<?> type = slime.m_6095_();
+        EntityType<?> type = dead.m_6095_();
         ResourceLocation typeId = ForgeRegistries.ENTITY_TYPES.getKey(type);
-        if (typeId == null) {
-            return;
-        }
-        int childSize = size / 2;
-        // Vanilla spawns 2–4 children; allow headroom for modded splits.
-        PENDING.put(slime.m_20148_(), new Pending(
+        String family = familyKey(typeId, dead);
+        int childSize = Math.max(1, size / 2);
+        PENDING.put(dead.m_20148_(), new Pending(
                 level.m_46472_(),
-                typeId,
+                family,
+                size,
                 childSize,
-                slime.m_20185_(),
-                slime.m_20186_(),
-                slime.m_20189_(),
+                dead.m_20185_(),
+                dead.m_20186_(),
+                dead.m_20189_(),
                 level.m_46467_() + WINDOW_TICKS,
-                6
+                8
         ));
         if (PENDING.size() > 256) {
             prune(level.m_46467_());
@@ -65,19 +65,23 @@ public final class SlimeSplitGuard {
      * If {@code child} looks like a just-spawned split offspring, stamp exempt and return true.
      */
     public static boolean tryMarkSplitChild(LivingEntity child) {
-        if (!(child instanceof Slime slime) || !(child.m_9236_() instanceof ServerLevel level)) {
+        if (!isSlimeFamily(child) || !(child.m_9236_() instanceof ServerLevel level)) {
             return false;
         }
-        ResourceLocation typeId = ForgeRegistries.ENTITY_TYPES.getKey(slime.m_6095_());
-        if (typeId == null) {
-            return false;
-        }
-        int size = slime.m_33632_();
+        UUID id = child.m_20148_();
         long now = level.m_46467_();
+        if (isMemoryExempt(id, now)) {
+            MobScaling.markFromSlimeSplit(child);
+            return true;
+        }
+
+        ResourceLocation typeId = ForgeRegistries.ENTITY_TYPES.getKey(child.m_6095_());
+        String family = familyKey(typeId, child);
+        int size = slimeSize(child);
         ResourceKey<Level> dim = level.m_46472_();
-        double x = slime.m_20185_();
-        double y = slime.m_20186_();
-        double z = slime.m_20189_();
+        double x = child.m_20185_();
+        double y = child.m_20186_();
+        double z = child.m_20189_();
 
         prune(now);
         for (Iterator<Map.Entry<UUID, Pending>> it = PENDING.entrySet().iterator(); it.hasNext(); ) {
@@ -87,7 +91,12 @@ public final class SlimeSplitGuard {
                 it.remove();
                 continue;
             }
-            if (!p.dimension.equals(dim) || !p.typeId.equals(typeId) || p.childSize != size) {
+            if (!p.dimension.equals(dim) || !p.family.equals(family)) {
+                continue;
+            }
+            // Prefer exact half-size; also accept any strictly smaller cub (Mohist size races).
+            boolean sizeOk = size == p.childSize || (size > 0 && size < p.parentSize);
+            if (!sizeOk) {
                 continue;
             }
             double dx = x - p.x;
@@ -100,19 +109,89 @@ public final class SlimeSplitGuard {
             if (p.remaining <= 0) {
                 it.remove();
             }
-            MobScaling.markFromSlimeSplit(slime);
+            MEMORY_EXEMPT.put(id, now + 1200L); // ~60s session guard
+            MobScaling.markFromSlimeSplit(child);
             return true;
         }
         return false;
     }
 
+    /** True when this entity was marked as a split child (NBT or session memory). */
+    public static boolean isSplitChild(LivingEntity entity) {
+        if (entity == null) {
+            return false;
+        }
+        if (MobScaling.isSlimeSplitTagged(entity)) {
+            return true;
+        }
+        long now = 0L;
+        if (entity.m_9236_() instanceof ServerLevel level) {
+            now = level.m_46467_();
+        }
+        return isMemoryExempt(entity.m_20148_(), now);
+    }
+
+    private static boolean isMemoryExempt(UUID id, long now) {
+        if (id == null) {
+            return false;
+        }
+        Long until = MEMORY_EXEMPT.get(id);
+        if (until == null) {
+            return false;
+        }
+        if (now > 0L && now > until) {
+            MEMORY_EXEMPT.remove(id, until);
+            return false;
+        }
+        return true;
+    }
+
+    static boolean isSlimeFamily(LivingEntity entity) {
+        if (entity == null) {
+            return false;
+        }
+        if (entity instanceof MagmaCube || entity instanceof Slime) {
+            return true;
+        }
+        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entity.m_6095_());
+        if (id == null) {
+            return false;
+        }
+        String path = id.m_135815_(); // getPath
+        return "magma_cube".equals(path) || "slime".equals(path);
+    }
+
+    private static String familyKey(ResourceLocation typeId, LivingEntity entity) {
+        if (entity instanceof MagmaCube) {
+            return "magma_cube";
+        }
+        if (typeId != null) {
+            String path = typeId.m_135815_();
+            if ("magma_cube".equals(path) || "slime".equals(path)) {
+                return path;
+            }
+        }
+        return entity instanceof Slime ? "slime" : "unknown";
+    }
+
+    private static int slimeSize(LivingEntity entity) {
+        if (entity instanceof Slime slime) {
+            return Math.max(0, slime.m_33632_());
+        }
+        return 0;
+    }
+
     private static void prune(long now) {
         PENDING.entrySet().removeIf(e -> now > e.getValue().expireGameTime || e.getValue().remaining <= 0);
+        if (MEMORY_EXEMPT.size() > 512) {
+            MEMORY_EXEMPT.entrySet().removeIf(e -> now > e.getValue());
+        }
     }
 
     private static final class Pending {
         final ResourceKey<Level> dimension;
-        final ResourceLocation typeId;
+        final String family;
+        final int parentSize;
         final int childSize;
         final double x;
         final double y;
@@ -122,7 +201,8 @@ public final class SlimeSplitGuard {
 
         Pending(
                 ResourceKey<Level> dimension,
-                ResourceLocation typeId,
+                String family,
+                int parentSize,
                 int childSize,
                 double x,
                 double y,
@@ -131,7 +211,8 @@ public final class SlimeSplitGuard {
                 int remaining
         ) {
             this.dimension = dimension;
-            this.typeId = typeId;
+            this.family = family;
+            this.parentSize = parentSize;
             this.childSize = childSize;
             this.x = x;
             this.y = y;

@@ -121,6 +121,9 @@ public final class MobScaling {
         if (entity instanceof EnderDragon) {
             return true;
         }
+        if (SlimeSplitGuard.isSplitChild(entity)) {
+            return true;
+        }
         CompoundTag tag = PersistentDataAccess.get(entity);
         if (tag.m_128471_(TAG_EXEMPT)
                 || tag.m_128471_(TAG_FROM_SPAWNER)
@@ -131,6 +134,11 @@ public final class MobScaling {
             return true;
         }
         return hasSddSpawnerMark(tag);
+    }
+
+    /** NBT-only slime-split stamp (no pending-window lookup). */
+    public static boolean isSlimeSplitTagged(LivingEntity entity) {
+        return entity != null && PersistentDataAccess.flag(entity, TAG_FROM_SLIME_SPLIT);
     }
 
     /** True when Shurui Advanced Spawner / dungeon-boss ownership tags are present. */
@@ -175,18 +183,26 @@ public final class MobScaling {
     /** Stamp a slime/magma cube that came from a parent split. */
     public static void markFromSlimeSplit(LivingEntity entity) {
         CompoundTag tag = PersistentDataAccess.get(entity);
-        if (!PersistentDataAccess.isWritable(tag)) {
-            return;
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128379_(TAG_FROM_SLIME_SPLIT, true);
+            tag.m_128379_(TAG_EXEMPT, true);
+            // If nearby scaling already painted this child, roll back to natural size stats.
+            if (tag.m_128471_(TAG_SCALED) && tag.m_128441_(TAG_BASE_HEALTH)) {
+                revertToBases(entity);
+            }
+            clearAdBookkeeping(entity, tag);
+            tag.m_128379_(TAG_FROM_SLIME_SPLIT, true);
+            tag.m_128379_(TAG_EXEMPT, true);
         }
-        tag.m_128379_(TAG_FROM_SLIME_SPLIT, true);
-        tag.m_128379_(TAG_EXEMPT, true);
-        // If nearby scaling already painted this child, roll back to natural size stats.
-        if (tag.m_128471_(TAG_SCALED) && tag.m_128441_(TAG_BASE_HEALTH)) {
-            revertToBases(entity);
+        // Vanilla copies the parent's custom name onto split cubs — strip AD elite/mutation labels.
+        try {
+            entity.m_6593_(null);
+            entity.m_20340_(false); // glowing
+        } catch (Throwable ignored) {
         }
-        clearAdBookkeeping(entity, tag);
-        tag.m_128379_(TAG_FROM_SLIME_SPLIT, true);
-        tag.m_128379_(TAG_EXEMPT, true);
+        if (entity instanceof Mob mob) {
+            ScaledMobTracker.releaseAllClaims(mob);
+        }
     }
 
     /**
@@ -249,6 +265,10 @@ public final class MobScaling {
             if (com.dbzlegacy.adaptivedifficulty.util.DimensionGates.isDisabled(entity)) {
                 return;
             }
+            // Last-chance split detection — Mohist may join cubs after FinalizeSpawn paint.
+            if (SlimeSplitGuard.tryMarkSplitChild(entity)) {
+                return;
+            }
             if (isExemptFromConversion(entity)) {
                 ensureExempt(entity);
                 return;
@@ -274,7 +294,7 @@ public final class MobScaling {
             return;
         }
         try {
-            if (isExemptFromConversion(entity)) {
+            if (SlimeSplitGuard.tryMarkSplitChild(entity) || isExemptFromConversion(entity)) {
                 ensureExempt(entity);
                 return;
             }

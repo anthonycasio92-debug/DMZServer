@@ -155,7 +155,7 @@ public final class DifficultyEvents {
      * SDD Advanced Spawner stamps {@code sdd_spawner}/{@code sdd_boss} after finalizeSpawn
      * (and finalize can fail on Mohist). Catch them on world join and undo any AD paint.
      */
-    @SubscribeEvent(priority = EventPriority.HIGH)
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onLivingJoin(EntityJoinLevelEvent event) {
         if (SystemGate.isDisabled() || event.getLevel().m_5776_()) {
             return;
@@ -164,7 +164,11 @@ public final class DifficultyEvents {
             return;
         }
         // Split cubs join via addFreshEntity (often without FinalizeSpawn on Mohist).
-        SlimeSplitGuard.tryMarkSplitChild(living);
+        // Run before any other AD work so magma/slime children never get claimed.
+        if (SlimeSplitGuard.tryMarkSplitChild(living)) {
+            MobScaling.ensureExempt(living);
+            return;
+        }
         if (MobScaling.hasSddSpawnerMark(living)) {
             MobScaling.markFromSpawner(living);
         }
