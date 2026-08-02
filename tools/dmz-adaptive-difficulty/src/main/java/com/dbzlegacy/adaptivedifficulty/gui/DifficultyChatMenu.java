@@ -240,7 +240,8 @@ public final class DifficultyChatMenu {
                 + "  §8·  §7Title §e" + TitleSystem.activeDisplay(player)));
         send(player, Component.m_237113_("§6Ancient Coins"));
         send(player, Component.m_237113_("§f" + AncientCoinEconomy.inventoryBreakdown(player)));
-        send(player, Component.m_237113_("§8Teams WIP · Gates: T2 evo · T3 AI · T4 elite · T5 mutation · T6 boss"));
+        send(player, Component.m_237113_(
+                "§8Teams WIP · Kits: T1 Awakened→T7 God · T4 elite · T5 mutation · T6 boss"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 

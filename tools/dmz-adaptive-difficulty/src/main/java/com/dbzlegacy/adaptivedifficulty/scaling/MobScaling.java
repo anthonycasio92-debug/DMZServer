@@ -10,6 +10,8 @@ import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationType;
 import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
+import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockAbilityCaps;
 import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
@@ -600,6 +602,11 @@ public final class MobScaling {
         // Keep TAG_DIFFICULTY as a readable proxy for AI/evolution curves.
         long proxyDifficulty = Math.max(1L, Math.round(profile.offense * profile.tierPercent));
         tag.m_128356_(TAG_DIFFICULTY, proxyDifficulty);
+        // Stamp the unlock-band kit so AI/evo + nameplates match Buy Tier immediately.
+        DifficultyTier kit = UnlockAbilityCaps.resolve(proxyDifficulty, profile.activeTier);
+        if (kit != DifficultyTier.NONE) {
+            tag.m_128359_("dmz_ad_ability_tier", kit.display);
+        }
         tag.m_128356_(TAG_PROFILE_SIG, profile.signature);
         // Hurt-event path: absolute attack already set — keep mult at 1 for melee;
         // projectiles still get a modest boost from TAG_DMG_MULT when needed.

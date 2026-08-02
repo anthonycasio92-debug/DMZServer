@@ -244,10 +244,6 @@ public final class AdaptiveAiSystem {
     }
 
     private static DifficultyTier resolveTier(LivingEntity entity, long difficulty) {
-        DifficultyTier tier = DifficultyTier.of(difficulty);
-        if (EliteSystem.isElite(entity) && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
-            tier = DifficultyTier.ELITE;
-        }
         int unlockTier = 0;
         if (entity != null) {
             CompoundTag tag = PersistentDataAccess.get(entity);
@@ -255,8 +251,13 @@ public final class AdaptiveAiSystem {
                 unlockTier = tag.m_128451_("dmz_ad_unlock_tier");
             }
         }
-        // Higher Unlock Tiers unlock smarter AI; low tiers stay capped.
-        return UnlockAbilityCaps.clamp(tier, unlockTier);
+        DifficultyTier tier = UnlockAbilityCaps.resolve(difficulty, unlockTier);
+        if (EliteSystem.isElite(entity) && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()
+                && unlockTier >= 3) {
+            // Elites only floor to Elite kit when the unlock band allows it.
+            tier = UnlockAbilityCaps.clamp(DifficultyTier.ELITE, unlockTier);
+        }
+        return tier;
     }
 
     private static double aiRadius(DifficultyTier tier) {

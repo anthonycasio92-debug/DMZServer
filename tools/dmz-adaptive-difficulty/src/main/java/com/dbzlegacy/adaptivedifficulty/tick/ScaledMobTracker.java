@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
@@ -151,6 +153,62 @@ public final class ScaledMobTracker {
     public static void clearPlayer(UUID playerId) {
         if (playerId != null) {
             CLAIMS.remove(playerId);
+        }
+    }
+
+    /** Player UUID currently claiming this mob, or null. */
+    public static UUID findClaimOwnerId(UUID mobId) {
+        if (mobId == null || CLAIMS.isEmpty()) {
+            return null;
+        }
+        for (Map.Entry<UUID, List<Claim>> e : CLAIMS.entrySet()) {
+            List<Claim> claims = e.getValue();
+            if (claims == null || claims.isEmpty()) {
+                continue;
+            }
+            synchronized (claims) {
+                for (Claim c : claims) {
+                    if (c.mobId.equals(mobId)) {
+                        return e.getKey();
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Visit every live claimed mob with its owning player.
+     * Used so AI / evolution kits tick even before combat-index engagement.
+     */
+    public static void forEachClaimed(MinecraftServer server, BiConsumer<ServerPlayer, Mob> consumer) {
+        if (server == null || consumer == null || CLAIMS.isEmpty()) {
+            return;
+        }
+        var players = server.m_6846_();
+        for (Map.Entry<UUID, List<Claim>> e : CLAIMS.entrySet()) {
+            ServerPlayer owner = players.m_11259_(e.getKey()); // getPlayer(UUID)
+            if (owner == null || !owner.m_6084_()) {
+                continue;
+            }
+            List<Claim> claims = e.getValue();
+            if (claims == null || claims.isEmpty()) {
+                continue;
+            }
+            List<UUID> mobIds;
+            synchronized (claims) {
+                mobIds = new ArrayList<>(claims.size());
+                for (Claim c : claims) {
+                    mobIds.add(c.mobId);
+                }
+            }
+            ServerLevel prefer = owner.m_9236_() instanceof ServerLevel sl ? sl : null;
+            for (UUID mobId : mobIds) {
+                Mob mob = findMob(server, prefer, mobId);
+                if (mob != null && mob.m_6084_()) {
+                    consumer.accept(owner, mob);
+                }
+            }
         }
     }
 

@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.3.11)
+# DMZ Adaptive Difficulty (v3.3.12)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -19,7 +19,7 @@ Clients do **not** need this jar to join.
 | Titles | Restored; equip from GUI |
 | Kill rewards | Personal ON: pre-T1 drops 1× Copper; with tier, normal ladder drops on the ground |
 | Upgrade drop | 2% chance for +1 next-higher coin (e.g. Copper + rare Iron) |
-| Feature gates | T2 evo → T3 AI → T4 elite → T5 mutation → T6 boss → T7 full |
+| Feature gates | T1+ AI/evo kits by unlock band · T4 elite · T5 mutation · T6 boss · T7 Zenith ceiling |
 
 ## Removed / cleaned
 
@@ -34,8 +34,8 @@ Clients do **not** need this jar to join.
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.3.11.jar` (remove older AD jars)
-2. `plugins/dmz_adaptive_difficulty_gui-3.3.11.jar`
+1. `mods/dmz_adaptive_difficulty-3.3.12.jar` (remove older AD jars)
+2. `plugins/dmz_adaptive_difficulty_gui-3.3.12.jar`
 3. Restart — config regenerates at `config/dmz_adaptive_difficulty.json`
 4. `/difficulty` → **Buy Tier** (hub also has personal + coin-chat toggles)
 
@@ -67,3 +67,4 @@ Config key: `enabled` (also `admin set enabled false`).
 - Mob damage uses blended offense + a DEF/HP tank floor + specialization tax so 1–3 stat dumps cannot shrug tiered hits vs even builds.
 - Scaled mob HP defaults to 50% of the previous match (`mobHealthScale` in config; damage unchanged).
 - Old NBT wallet balances migrate into Copper Ancient coins once per login.
+- AI + Enemy Evolution kits deepen with Buy Tier (nameplates show the kit, e.g. `§6Elite §fZombie`). Soft floors: T1 Awakened · T2 Enhanced · T3 Elite · T4 Advanced · T5 Master · T6 Legendary · T7 God (ceiling up to Zenith).

@@ -138,20 +138,22 @@ public final class EnemyEvolution {
     }
 
     private static void markEvolved(Mob mob, DifficultyTier tier) {
-        if (tier.ordinalPower() < DifficultyTier.ENHANCED.ordinalPower()) {
+        if (tier.ordinalPower() < DifficultyTier.AWAKENED.ordinalPower()) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(mob);
-        if (tag.m_128471_(TAG_EVOLVED)) {
+        String want = tier.display;
+        String prev = tag.m_128461_("dmz_ad_ability_tier");
+        // Refresh nameplate when unlock tier / kit depth changes (T1→T2 etc.).
+        if (tag.m_128471_(TAG_EVOLVED) && want.equals(prev) && mob.m_8077_()) {
             return;
         }
         tag.m_128379_(TAG_EVOLVED, true);
+        tag.m_128359_("dmz_ad_ability_tier", want);
         mob.m_7292_(new MobEffectInstance(MobEffects.f_19619_, 100, 0, false, false));
-        if (!mob.m_8077_()) {
-            String typeName = EntityDisplayNames.of(mob);
-            mob.m_6593_(Component.m_237113_("§6" + tier.display + " §f" + typeName));
-            mob.m_20340_(true);
-        }
+        String typeName = EntityDisplayNames.of(mob);
+        mob.m_6593_(Component.m_237113_("§6" + want + " §f" + typeName));
+        mob.m_20340_(true);
     }
 
     // ── Creepers: ignite + scaled blast radius / faster fuse ───────────────
@@ -907,10 +909,6 @@ public final class EnemyEvolution {
 
     /** Difficulty ladder clamped by the mob's Unlock Tier (more tiers → more abilities). */
     private static DifficultyTier resolveAbilityTier(LivingEntity entity, long difficulty, boolean elite) {
-        DifficultyTier tier = DifficultyTier.of(difficulty);
-        if (elite && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower()) {
-            tier = DifficultyTier.ELITE;
-        }
         int unlockTier = 0;
         if (entity != null) {
             CompoundTag tag = PersistentDataAccess.get(entity);
@@ -918,6 +916,10 @@ public final class EnemyEvolution {
                 unlockTier = tag.m_128451_("dmz_ad_unlock_tier");
             }
         }
-        return UnlockAbilityCaps.clamp(tier, unlockTier);
+        DifficultyTier tier = UnlockAbilityCaps.resolve(difficulty, unlockTier);
+        if (elite && tier.ordinalPower() < DifficultyTier.ELITE.ordinalPower() && unlockTier >= 3) {
+            tier = UnlockAbilityCaps.clamp(DifficultyTier.ELITE, unlockTier);
+        }
+        return tier;
     }
 }
