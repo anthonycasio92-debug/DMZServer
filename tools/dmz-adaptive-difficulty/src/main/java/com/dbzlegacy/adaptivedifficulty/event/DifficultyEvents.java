@@ -16,6 +16,7 @@ import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.scaling.SlimeSplitGuard;
 import com.dbzlegacy.adaptivedifficulty.tick.BehaviorScheduler;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
+import com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler;
 import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
@@ -86,7 +87,9 @@ public final class DifficultyEvents {
             DifficultyCache.save(player);
             DifficultyCache.remove(player.m_20148_());
             CombatGravity.clearPlayer(player);
-            ScaledMobTracker.clearPlayer(player.m_20148_());
+            // Queue claimed mobs for base-stat revert, then apply immediately.
+            ScaledMobTracker.releaseAndRevertPlayer(player);
+            NearbyMobScaler.processEvictions();
             PlayerCombatProfile.clear(player.m_20148_());
             AncientCoinEconomy.clearMigrateFlag(player.m_20148_());
             AreaDifficulty.clearCache();
@@ -100,7 +103,10 @@ public final class DifficultyEvents {
         }
         DifficultyCache.save(old);
         var data = DifficultyCache.data(old);
-        data.writeToPlayerNbt(PersistentDataAccess.get(neu));
+        var neuTag = PersistentDataAccess.get(neu);
+        if (PersistentDataAccess.isWritable(neuTag)) {
+            data.writeToPlayerNbt(neuTag);
+        }
         DifficultyCache.putData(neu, data);
         DifficultyCache.remove(old.m_20148_());
         CombatGravity.clearPlayer(old);
@@ -384,6 +390,8 @@ public final class DifficultyEvents {
                 data.resetTemporary();
                 DifficultyCache.save(victim);
                 DifficultyCache.refresh(victim);
+                ScaledMobTracker.releaseAndRevertPlayer(victim);
+                NearbyMobScaler.processEvictions();
                 victim.m_213846_(net.minecraft.network.chat.Component.m_237113_(
                         "§cDifficulty deactivated on death. §7Unlocks & Ancient Coins kept."));
             }

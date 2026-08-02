@@ -723,6 +723,12 @@ public final class DifficultyConfig {
         if (cfg.nearbyScaleIntervalTicks < 10) {
             cfg.nearbyScaleIntervalTicks = 40;
         }
+        if (cfg.mobScaleRadius < 8.0) {
+            cfg.mobScaleRadius = 8.0;
+        }
+        if (cfg.mobScaleRadius > 128.0) {
+            cfg.mobScaleRadius = 128.0;
+        }
         // Hard product rule: at most 5 difficulty-adjusted mobs near a player.
         if (cfg.maxScaledMobsPerPlayer < 1 || cfg.maxScaledMobsPerPlayer > 5) {
             if (cfg.nearbyScaleBudgetPerPlayer >= 1 && cfg.nearbyScaleBudgetPerPlayer <= 5) {
@@ -733,6 +739,14 @@ public final class DifficultyConfig {
         }
         cfg.maxScaledMobsPerPlayer = Math.max(1, Math.min(5, cfg.maxScaledMobsPerPlayer));
         cfg.nearbyScaleBudgetPerPlayer = cfg.maxScaledMobsPerPlayer;
+        // Never allow free tiers via live admin set / bad JSON.
+        cfg.unlockTier1Cost = Math.max(1L, cfg.unlockTier1Cost);
+        cfg.unlockTier2Cost = Math.max(1L, cfg.unlockTier2Cost);
+        cfg.unlockTier3Cost = Math.max(1L, cfg.unlockTier3Cost);
+        cfg.unlockTier4Cost = Math.max(1L, cfg.unlockTier4Cost);
+        cfg.unlockTier5Cost = Math.max(1L, cfg.unlockTier5Cost);
+        cfg.unlockTier6Cost = Math.max(1L, cfg.unlockTier6Cost);
+        cfg.unlockTier7Cost = Math.max(1L, cfg.unlockTier7Cost);
         if (cfg.adaptiveAiMinUnlockTier < 1) {
             cfg.adaptiveAiMinUnlockTier = 1;
         }
@@ -785,5 +799,12 @@ public final class DifficultyConfig {
         com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier.invalidateThresholdCache();
         com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves.invalidateLut();
         com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty.clearCache();
+    }
+
+    /** Re-run clamps on the live instance (Bukkit admin set / hot edits). */
+    public static void sanitizeLive() {
+        if (INSTANCE != null) {
+            normalize(INSTANCE);
+        }
     }
 }

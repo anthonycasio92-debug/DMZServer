@@ -14,6 +14,9 @@ import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -25,6 +28,8 @@ import net.minecraft.world.entity.player.Player;
  */
 public final class RewardSystem {
     private static final String TAG_REWARDED = "dmz_ad_kill_rewarded";
+    /** Fallback when entity persistent data is not writable (never touch shared EMPTY). */
+    private static final Set<UUID> SESSION_REWARDED = ConcurrentHashMap.newKeySet();
 
     private RewardSystem() {}
 
@@ -41,10 +46,18 @@ public final class RewardSystem {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(dead);
-        if (tag.m_128471_(TAG_REWARDED)) {
+        UUID deadId = dead.m_20148_();
+        if (PersistentDataAccess.isWritable(tag)) {
+            if (tag.m_128471_(TAG_REWARDED)) {
+                return;
+            }
+            tag.m_128379_(TAG_REWARDED, true);
+        } else if (!SESSION_REWARDED.add(deadId)) {
             return;
         }
-        tag.m_128379_(TAG_REWARDED, true);
+        if (SESSION_REWARDED.size() > 4096) {
+            SESSION_REWARDED.clear();
+        }
 
         DifficultySnapshot snap = DifficultyCache.get(killer);
         PlayerDifficultyData data = DifficultyCache.data(killer);

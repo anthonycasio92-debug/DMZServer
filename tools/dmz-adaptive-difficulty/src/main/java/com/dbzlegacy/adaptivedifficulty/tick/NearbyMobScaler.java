@@ -7,8 +7,10 @@ import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -20,7 +22,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
  * Rescales the closest hostiles near each player (hard cap: {@link ScaledMobTracker}).
- * Spawn does not bake final fight stats.
+ * When a player leaves range / turns personal off / has no tier, claimed mobs revert.
  */
 public final class NearbyMobScaler {
     private NearbyMobScaler() {}
@@ -47,23 +49,27 @@ public final class NearbyMobScaler {
                 continue;
             }
             if (!SystemGate.allows(player) || DimensionGates.isDisabled(player)) {
+                ScaledMobTracker.releaseAndRevertPlayer(player);
                 continue;
             }
-            // Personal off or no active tier: drop any leftover scaled claims.
+            // Personal off or no active tier: revert every claimed mob to vanilla bases.
             if (!SystemGate.participates(player) || DifficultyCache.get(player).activeTier <= 0) {
-                ScaledMobTracker.prunePlayer(player);
+                ScaledMobTracker.releaseAndRevertPlayer(player);
                 continue;
             }
             ScaledMobTracker.prunePlayer(player);
             scaleAround(player, cfg);
         }
+        // Apply any leave-range / personal-off / slot-eviction reverts from this pulse.
+        processEvictions();
     }
 
     private static void scaleAround(ServerPlayer player, DifficultyConfig cfg) {
         if (!(player.m_9236_() instanceof ServerLevel level)) {
             return;
         }
-        double radius = Math.max(8.0, Math.min(48.0, cfg.mobScaleRadius));
+        // Honor config radius (default 64); floor at 8 so tiny values still work.
+        double radius = Math.max(8.0, cfg.mobScaleRadius);
         int max = ScaledMobTracker.maxSlots();
         AABB box = player.m_20191_().m_82377_(radius, Math.min(16.0, radius), radius);
         List<Mob> mobs;
@@ -78,6 +84,7 @@ public final class NearbyMobScaler {
             return;
         }
         if (mobs == null || mobs.isEmpty()) {
+            ScaledMobTracker.retainOnly(player, Set.of());
             return;
         }
         double rSq = radius * radius;
@@ -94,23 +101,26 @@ public final class NearbyMobScaler {
             }
         }
         if (inRange.isEmpty()) {
+            ScaledMobTracker.retainOnly(player, Set.of());
             return;
         }
         ScaledMobTracker.sortNearest(player, inRange);
-        int scaled = 0;
+        Set<UUID> kept = new HashSet<>(max);
         for (Mob mob : inRange) {
-            if (scaled >= max) {
+            if (kept.size() >= max) {
                 break;
             }
             MobScaling.retargetToPlayer(mob, player);
             if (ScaledMobTracker.isClaimed(player, mob)) {
                 CombatIndex.mark(mob);
-                scaled++;
+                kept.add(mob.m_20148_());
             }
         }
+        // Anything previously claimed but now out of the kept set → revert to normal.
+        ScaledMobTracker.retainOnly(player, kept);
     }
 
-    /** Revert mobs that lost their difficulty slot to a closer hostile. */
+    /** Revert mobs that lost their difficulty slot. */
     public static void processEvictions() {
         Map<UUID, UUID> evicted = ScaledMobTracker.drainEvictions();
         if (evicted.isEmpty()) {
@@ -125,7 +135,6 @@ public final class NearbyMobScaler {
             if (mob == null) {
                 continue;
             }
-            // Never roll saga/quest/SDD/spawner stats back to AD-captured bases.
             if (MobScaling.isExemptFromConversion(mob)) {
                 MobScaling.ensureExempt(mob);
             } else {

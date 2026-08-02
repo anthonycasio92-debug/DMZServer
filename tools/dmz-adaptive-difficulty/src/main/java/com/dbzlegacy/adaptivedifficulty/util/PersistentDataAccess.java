@@ -27,7 +27,12 @@ public final class PersistentDataAccess {
 
     private PersistentDataAccess() {}
 
-    /** Real persistent data, or a shared empty tag if unavailable (do not write to empty). */
+    /**
+     * Real persistent data, or a shared empty sentinel if unavailable.
+     * <p>
+     * Never write to the sentinel — use {@link #isWritable(CompoundTag)} first.
+     * Callers that ignore this can corrupt shared state across entities.
+     */
     public static CompoundTag get(Entity entity) {
         if (entity == null || GET == null) {
             return EMPTY;
@@ -40,6 +45,7 @@ public final class PersistentDataAccess {
         }
     }
 
+    /** True when {@code tag} is a real entity persistent-data compound (safe to mutate). */
     public static boolean isWritable(CompoundTag tag) {
         return tag != null && tag != EMPTY;
     }

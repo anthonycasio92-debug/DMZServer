@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.cache;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
@@ -7,6 +8,7 @@ import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -20,8 +22,19 @@ public final class DifficultyCache {
     private DifficultyCache() {}
 
     public static PlayerDifficultyData data(ServerPlayer player) {
-        return DATA.computeIfAbsent(player.m_20148_(), id ->
-                PlayerDifficultyData.fromPlayerNbt(PersistentDataAccess.get(player)));
+        return DATA.computeIfAbsent(player.m_20148_(), id -> {
+            CompoundTag tag = PersistentDataAccess.get(player);
+            if (!PersistentDataAccess.isWritable(tag)) {
+                // Ephemeral data — never bind to the shared EMPTY sentinel.
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] player persistent data unavailable for {}; using session-only difficulty data",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        player.m_6302_() // getScoreboardName
+                );
+                return new PlayerDifficultyData();
+            }
+            return PlayerDifficultyData.fromPlayerNbt(tag);
+        });
     }
 
     public static void putData(ServerPlayer player, PlayerDifficultyData data) {
@@ -60,8 +73,18 @@ public final class DifficultyCache {
 
     public static void save(ServerPlayer player) {
         PlayerDifficultyData data = DATA.get(player.m_20148_());
-        if (data != null) {
-            data.writeToPlayerNbt(PersistentDataAccess.get(player));
+        if (data == null) {
+            return;
         }
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (!PersistentDataAccess.isWritable(tag)) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] skipped difficulty save for {} — persistent data not writable",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    player.m_6302_()
+            );
+            return;
+        }
+        data.writeToPlayerNbt(tag);
     }
 }

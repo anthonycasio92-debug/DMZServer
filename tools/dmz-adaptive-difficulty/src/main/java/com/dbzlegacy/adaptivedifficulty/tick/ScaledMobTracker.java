@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -17,22 +18,24 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
  * Hard cap: at most N difficulty-adjusted hostiles per player (default 5).
- * Tracks claimed mob UUIDs and prefers the closest hostiles.
+ * Global ownership: a mob claimed by one player cannot be stolen by another.
  */
 public final class ScaledMobTracker {
     private static final Map<UUID, List<Claim>> CLAIMS = new ConcurrentHashMap<>();
+    /** mob UUID → claiming player UUID (single global owner). */
+    private static final Map<UUID, UUID> MOB_OWNER = new ConcurrentHashMap<>();
+    /** Mob UUIDs that lost their slot and should revert to base stats. */
+    private static final Map<UUID, UUID> PENDING_REVERT = new ConcurrentHashMap<>();
 
     private ScaledMobTracker() {}
 
     public static int maxSlots() {
-        return Math.max(1, DifficultyConfig.get().maxScaledMobsPerPlayer);
+        return Math.max(1, Math.min(5, DifficultyConfig.get().maxScaledMobsPerPlayer));
     }
 
     /**
      * Try to claim a slot for {@code mob} under {@code player}.
-     * Evicts the farthest claimed mob when full and {@code mob} is closer.
-     *
-     * @return true if this mob may receive difficulty scaling for the player
+     * Refuses if another online player already owns the mob.
      */
     public static boolean tryClaim(ServerPlayer player, Mob mob) {
         if (player == null || mob == null || !mob.m_6084_()) {
@@ -41,25 +44,40 @@ public final class ScaledMobTracker {
         UUID playerId = player.m_20148_();
         UUID mobId = mob.m_20148_();
         double distSq = player.m_20275_(mob.m_20185_(), mob.m_20186_(), mob.m_20189_());
+
+        UUID owner = MOB_OWNER.get(mobId);
+        if (owner != null && !owner.equals(playerId)) {
+            if (isOwnerOnline(owner)) {
+                return false; // another player holds this mob
+            }
+            // Stale owner (offline) — drop ownership so we can claim.
+            MOB_OWNER.remove(mobId, owner);
+            List<Claim> stale = CLAIMS.get(owner);
+            if (stale != null) {
+                synchronized (stale) {
+                    stale.removeIf(c -> c.mobId.equals(mobId));
+                }
+            }
+        }
+
         List<Claim> claims = CLAIMS.computeIfAbsent(playerId, id -> new ArrayList<>(maxSlots()));
         synchronized (claims) {
-            // Fast path: already claimed — no world scan.
             for (Claim c : claims) {
                 if (c.mobId.equals(mobId)) {
                     c.distSq = distSq;
+                    MOB_OWNER.put(mobId, playerId);
                     return true;
                 }
             }
             int max = maxSlots();
-            // Only world-scan dead claims when we need a free slot.
             if (claims.size() >= max) {
                 pruneDead(claims, player);
             }
             if (claims.size() < max) {
                 claims.add(new Claim(mobId, distSq));
+                MOB_OWNER.put(mobId, playerId);
                 return true;
             }
-            // Replace farthest if this mob is closer.
             Claim farthest = null;
             for (Claim c : claims) {
                 if (farthest == null || c.distSq > farthest.distSq) {
@@ -70,7 +88,9 @@ public final class ScaledMobTracker {
                 UUID evicted = farthest.mobId;
                 claims.remove(farthest);
                 claims.add(new Claim(mobId, distSq));
+                MOB_OWNER.remove(evicted, playerId);
                 PENDING_REVERT.put(evicted, playerId);
+                MOB_OWNER.put(mobId, playerId);
                 return true;
             }
             return false;
@@ -81,19 +101,7 @@ public final class ScaledMobTracker {
         if (player == null || mob == null) {
             return false;
         }
-        List<Claim> claims = CLAIMS.get(player.m_20148_());
-        if (claims == null) {
-            return false;
-        }
-        UUID mobId = mob.m_20148_();
-        synchronized (claims) {
-            for (Claim c : claims) {
-                if (c.mobId.equals(mobId)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return player.m_20148_().equals(MOB_OWNER.get(mob.m_20148_()));
     }
 
     public static int claimedCount(ServerPlayer player) {
@@ -109,7 +117,6 @@ public final class ScaledMobTracker {
         }
     }
 
-    /** Periodic cleanup from the nearby scaler pulse (player's dimension first). */
     public static void prunePlayer(ServerPlayer player) {
         if (player == null) {
             return;
@@ -123,16 +130,55 @@ public final class ScaledMobTracker {
         }
     }
 
+    /**
+     * Keep only {@code keep} mobs for this player; queue the rest for base-stat revert.
+     * Used when the player leaves range of previously claimed hostiles.
+     */
+    public static void retainOnly(ServerPlayer player, Set<UUID> keep) {
+        if (player == null) {
+            return;
+        }
+        UUID playerId = player.m_20148_();
+        List<Claim> claims = CLAIMS.get(playerId);
+        if (claims == null || claims.isEmpty()) {
+            return;
+        }
+        Set<UUID> retain = keep == null ? Set.of() : keep;
+        synchronized (claims) {
+            Iterator<Claim> it = claims.iterator();
+            while (it.hasNext()) {
+                Claim c = it.next();
+                if (!retain.contains(c.mobId)) {
+                    MOB_OWNER.remove(c.mobId, playerId);
+                    PENDING_REVERT.put(c.mobId, playerId);
+                    it.remove();
+                }
+            }
+        }
+    }
+
+    /** Drop all claims for a player and queue every mob for revert (death / personal off / logout). */
+    public static void releaseAndRevertPlayer(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        clearPlayer(player.m_20148_());
+    }
+
     public static void release(ServerPlayer player, UUID mobId) {
         if (player == null || mobId == null) {
             return;
         }
-        List<Claim> claims = CLAIMS.get(player.m_20148_());
+        UUID playerId = player.m_20148_();
+        List<Claim> claims = CLAIMS.get(playerId);
         if (claims == null) {
             return;
         }
         synchronized (claims) {
-            claims.removeIf(c -> c.mobId.equals(mobId));
+            if (claims.removeIf(c -> c.mobId.equals(mobId))) {
+                MOB_OWNER.remove(mobId, playerId);
+                PENDING_REVERT.put(mobId, playerId);
+            }
         }
     }
 
@@ -143,6 +189,7 @@ public final class ScaledMobTracker {
         }
         UUID mobId = mob.m_20148_();
         PENDING_REVERT.remove(mobId);
+        MOB_OWNER.remove(mobId);
         for (List<Claim> claims : CLAIMS.values()) {
             synchronized (claims) {
                 claims.removeIf(c -> c.mobId.equals(mobId));
@@ -151,43 +198,33 @@ public final class ScaledMobTracker {
     }
 
     public static void clearPlayer(UUID playerId) {
-        if (playerId != null) {
-            CLAIMS.remove(playerId);
+        if (playerId == null) {
+            return;
+        }
+        List<Claim> claims = CLAIMS.remove(playerId);
+        if (claims == null) {
+            return;
+        }
+        synchronized (claims) {
+            for (Claim c : claims) {
+                MOB_OWNER.remove(c.mobId, playerId);
+                PENDING_REVERT.put(c.mobId, playerId);
+            }
+            claims.clear();
         }
     }
 
-    /** Player UUID currently claiming this mob, or null. */
     public static UUID findClaimOwnerId(UUID mobId) {
-        if (mobId == null || CLAIMS.isEmpty()) {
-            return null;
-        }
-        for (Map.Entry<UUID, List<Claim>> e : CLAIMS.entrySet()) {
-            List<Claim> claims = e.getValue();
-            if (claims == null || claims.isEmpty()) {
-                continue;
-            }
-            synchronized (claims) {
-                for (Claim c : claims) {
-                    if (c.mobId.equals(mobId)) {
-                        return e.getKey();
-                    }
-                }
-            }
-        }
-        return null;
+        return mobId == null ? null : MOB_OWNER.get(mobId);
     }
 
-    /**
-     * Visit every live claimed mob with its owning player.
-     * Used so AI / evolution kits tick even before combat-index engagement.
-     */
     public static void forEachClaimed(MinecraftServer server, BiConsumer<ServerPlayer, Mob> consumer) {
         if (server == null || consumer == null || CLAIMS.isEmpty()) {
             return;
         }
         var players = server.m_6846_();
         for (Map.Entry<UUID, List<Claim>> e : CLAIMS.entrySet()) {
-            ServerPlayer owner = players.m_11259_(e.getKey()); // getPlayer(UUID)
+            ServerPlayer owner = players.m_11259_(e.getKey());
             if (owner == null || !owner.m_6084_()) {
                 continue;
             }
@@ -212,9 +249,6 @@ public final class ScaledMobTracker {
         }
     }
 
-    /** Mob UUIDs that lost their slot and should revert to base stats. */
-    private static final Map<UUID, UUID> PENDING_REVERT = new ConcurrentHashMap<>();
-
     public static UUID pollEvictedOwner(UUID mobId) {
         return mobId == null ? null : PENDING_REVERT.remove(mobId);
     }
@@ -228,6 +262,15 @@ public final class ScaledMobTracker {
         return out;
     }
 
+    private static boolean isOwnerOnline(UUID ownerId) {
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            return false;
+        }
+        ServerPlayer p = server.m_6846_().m_11259_(ownerId);
+        return p != null && p.m_6084_();
+    }
+
     private static void pruneDead(List<Claim> claims, ServerPlayer preferPlayer) {
         var server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) {
@@ -237,19 +280,23 @@ public final class ScaledMobTracker {
         if (preferPlayer != null && preferPlayer.m_9236_() instanceof ServerLevel sl) {
             preferLevel = sl;
         }
+        UUID playerId = preferPlayer == null ? null : preferPlayer.m_20148_();
         Iterator<Claim> it = claims.iterator();
         while (it.hasNext()) {
             Claim c = it.next();
             Mob mob = findMob(server, preferLevel, c.mobId);
             if (mob == null || !mob.m_6084_()) {
+                if (playerId != null) {
+                    MOB_OWNER.remove(c.mobId, playerId);
+                } else {
+                    MOB_OWNER.remove(c.mobId);
+                }
                 it.remove();
             }
         }
     }
 
-    private static Mob findMob(
-            net.minecraft.server.MinecraftServer server, ServerLevel preferLevel, UUID id
-    ) {
+    private static Mob findMob(MinecraftServer server, ServerLevel preferLevel, UUID id) {
         if (preferLevel != null) {
             var entity = preferLevel.m_8791_(id);
             if (entity instanceof Mob mob) {
@@ -260,7 +307,7 @@ public final class ScaledMobTracker {
             if (level == preferLevel) {
                 continue;
             }
-            var entity = level.m_8791_(id); // getEntity
+            var entity = level.m_8791_(id);
             if (entity instanceof Mob mob) {
                 return mob;
             }
@@ -268,7 +315,6 @@ public final class ScaledMobTracker {
         return null;
     }
 
-    /** Sort candidates nearest-first for claiming. */
     public static void sortNearest(ServerPlayer player, List<Mob> mobs) {
         if (player == null || mobs == null || mobs.size() < 2) {
             return;

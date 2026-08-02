@@ -603,15 +603,27 @@ public final class ForgeBridge {
             if (field == null) {
                 return "Unknown key: " + key;
             }
+            // Block mutating collections / migration flags via raw reflection.
+            if (!isSafeAdminField(field.getName())) {
+                return "Key not settable here: " + key + " (use a dedicated admin command)";
+            }
             Object parsed = coerce(field.getType(), value);
+            // Pre-clamp obvious foot-guns before assign.
+            parsed = clampAdminValue(field.getName(), parsed);
             field.setAccessible(true);
             field.set(cfg, parsed);
+            // Re-run config normalize so maxScaledMobs / intervals / costs stay valid.
+            try {
+                cfgCls.getMethod("sanitizeLive").invoke(null);
+            } catch (NoSuchMethodException ignored) {
+            }
             cfgCls.getMethod("save").invoke(null);
             Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache")
                     .getMethod("invalidateAll").invoke(null);
             clearAreaCache();
             PLACEHOLDER_CACHE.clear();
-            return "Set " + key + " = " + value;
+            Object live = field.get(cfg);
+            return "Set " + key + " = " + live;
         } catch (Throwable t) {
             return "Failed: " + t.getMessage();
         }
@@ -1104,7 +1116,15 @@ public final class ForgeBridge {
                 Map.entry("teambonus", "teamBonusPercent"),
                 Map.entry("teambonuspercent", "teamBonusPercent"),
                 Map.entry("maxhealthmultiplier", "maxHealthMultiplier"),
-                Map.entry("maxscaledhealth", "maxScaledHealth")
+                Map.entry("maxscaledhealth", "maxScaledHealth"),
+                Map.entry("mobscaleradius", "mobScaleRadius"),
+                Map.entry("mobhealthscale", "mobHealthScale"),
+                Map.entry("ancientcoinupgradechance", "ancientCoinUpgradeChance"),
+                Map.entry("nearbyscaleintervalticks", "nearbyScaleIntervalTicks"),
+                Map.entry("nearbyscaleinterval", "nearbyScaleIntervalTicks"),
+                Map.entry("maxscaledmobsperplayer", "maxScaledMobsPerPlayer"),
+                Map.entry("nearbyscalebudgetperplayer", "maxScaledMobsPerPlayer"),
+                Map.entry("tiercostleveldivisor", "tierCostLevelDivisor")
         );
         String fieldName = aliases.getOrDefault(k, key);
         try {
@@ -1119,12 +1139,63 @@ public final class ForgeBridge {
         }
     }
 
+    /** Scalar config fields only — never whitelist/disabledDimensions/migration flags. */
+    private static boolean isSafeAdminField(String fieldName) {
+        if (fieldName == null || fieldName.isBlank()) {
+            return false;
+        }
+        return switch (fieldName) {
+            case "whitelist", "disabledDimensions", "bossIdContains",
+                 "endScalingEnabledMigrated", "restoreVanillaDifficultyFromPeaceful" -> false;
+            default -> true;
+        };
+    }
+
+    private static Object clampAdminValue(String fieldName, Object parsed) {
+        if (parsed == null || fieldName == null) {
+            return parsed;
+        }
+        try {
+            return switch (fieldName) {
+                case "maxScaledMobsPerPlayer", "nearbyScaleBudgetPerPlayer" -> {
+                    int n = ((Number) parsed).intValue();
+                    yield Math.max(1, Math.min(5, n));
+                }
+                case "nearbyScaleIntervalTicks" -> Math.max(10, ((Number) parsed).intValue());
+                case "mobScaleRadius" -> {
+                    double r = ((Number) parsed).doubleValue();
+                    yield Math.max(8.0, Math.min(128.0, r));
+                }
+                case "mobHealthScale" -> {
+                    double h = ((Number) parsed).doubleValue();
+                    yield h <= 0.0 || h > 4.0 ? 0.5 : h;
+                }
+                case "ancientCoinUpgradeChance" -> {
+                    double c = ((Number) parsed).doubleValue();
+                    yield Math.max(0.0, Math.min(1.0, c));
+                }
+                case "unlockTier1Cost", "unlockTier2Cost", "unlockTier3Cost",
+                     "unlockTier4Cost", "unlockTier5Cost", "unlockTier6Cost",
+                     "unlockTier7Cost" -> Math.max(1L, ((Number) parsed).longValue());
+                case "adminPermission" -> {
+                    String s = String.valueOf(parsed).trim();
+                    yield s.isEmpty() ? "difficulty.admin" : s;
+                }
+                default -> parsed;
+            };
+        } catch (Throwable t) {
+            return parsed;
+        }
+    }
+
     private static Object coerce(Class<?> type, String value) {
         if (type == String.class) {
             return value;
         }
         if (type == boolean.class || type == Boolean.class) {
-            return Boolean.parseBoolean(value);
+            return Boolean.parseBoolean(value)
+                    || "on".equalsIgnoreCase(value)
+                    || "yes".equalsIgnoreCase(value);
         }
         if (type == int.class || type == Integer.class) {
             return Integer.parseInt(value);
@@ -1138,7 +1209,8 @@ public final class ForgeBridge {
         if (type == float.class || type == Float.class) {
             return Float.parseFloat(value);
         }
-        return value;
+        // Refuse List/Map/etc. mutation through this path.
+        throw new IllegalArgumentException("Unsupported config type: " + type.getSimpleName());
     }
 
     private static Object field(Object obj, String name) throws Exception {

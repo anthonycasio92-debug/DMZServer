@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.3.14)
+# DMZ Adaptive Difficulty (v3.3.15)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -13,7 +13,7 @@ Clients do **not** need this jar to join.
 | Personal toggle | GUI on/off for that player only (default ON) |
 | Coin drop chat | GUI mute for "Dropped X Ancient Coins" (default OFF) |
 | Death | Clears active tier + level when personal ON (unlocks / prestige / coins kept) |
-| Nearby scaling | Hostiles scale to player post-transform stats × tier % (max 5/player) |
+| Nearby scaling | Hostiles scale to player post-transform stats × tier % (max 5/player); leave range / personal off / logout reverts |
 | Combat Rating | Rewards / display / area readouts (not mob HP) |
 | Teams | WIP stub — personal difficulty only |
 | Titles | Restored; equip from GUI |
@@ -34,8 +34,8 @@ Clients do **not** need this jar to join.
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.3.14.jar` (remove older AD jars)
-2. `plugins/dmz_adaptive_difficulty_gui-3.3.14.jar`
+1. `mods/dmz_adaptive_difficulty-3.3.15.jar` (remove older AD jars)
+2. `plugins/dmz_adaptive_difficulty_gui-3.3.15.jar`
 3. Restart — config regenerates at `config/dmz_adaptive_difficulty.json`
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 

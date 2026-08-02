@@ -91,9 +91,8 @@ public final class BehaviorScheduler {
             if (!SystemGate.participates(owner) || DifficultyCache.get(owner).activeTier <= 0) {
                 return;
             }
-            if (Math.floorMod(gameTick + mob.m_19879_(), 20) != 0) {
-                return;
-            }
+            // Outer pulse is already every PULSE_INTERVAL — do not filter by entityId
+            // (that previously skipped ~95% of claimed mobs).
             if (done.contains(mob.m_20148_())) {
                 return;
             }
@@ -112,9 +111,6 @@ public final class BehaviorScheduler {
                 break;
             }
             if (done.contains(mob.m_20148_())) {
-                continue;
-            }
-            if (Math.floorMod(gameTick + mob.m_19879_(), 20) != 0) {
                 continue;
             }
             if (process(mob, null, ai, evo, cfg)) {

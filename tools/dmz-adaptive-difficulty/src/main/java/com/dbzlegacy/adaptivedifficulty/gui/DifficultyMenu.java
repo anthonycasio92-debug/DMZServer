@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -16,8 +17,12 @@ public final class DifficultyMenu {
         }
         String target = page == null || page.isBlank() ? "main" : page;
         if ("settings".equalsIgnoreCase(target)) {
-            DifficultyChatMenu.open(player, "settings");
-            return;
+            if (!StaffAccess.isStaff(player)) {
+                target = "main";
+            } else {
+                DifficultyChatMenu.open(player, "settings");
+                return;
+            }
         }
 
         GuiBackend backend = GuiBackend.fromConfig();

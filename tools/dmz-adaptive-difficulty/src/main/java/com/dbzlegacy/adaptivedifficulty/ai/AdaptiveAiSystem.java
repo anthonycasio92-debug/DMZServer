@@ -59,9 +59,10 @@ public final class AdaptiveAiSystem {
             return;
         }
         long now = level.m_46467_();
-        Long last = KI_CHARGE_COOLDOWN.put(player.m_20148_(), now);
+        UUID playerId = player.m_20148_();
+        Long last = KI_CHARGE_COOLDOWN.get(playerId);
         if (last != null && now - last < 40L) {
-            return;
+            return; // still cooling down — do not refresh the timer
         }
         AtomicInteger reacted = new AtomicInteger();
         CombatIndex.forEachNearPlayer(player, 12.0, 8, mob -> {
@@ -90,6 +91,10 @@ public final class AdaptiveAiSystem {
                 mob.m_7292_(new MobEffectInstance(MobEffects.f_19600_, 60, 1, false, false)); // STRENGTH
             }
         });
+        // Only arm cooldown after a successful pack reaction.
+        if (reacted.get() > 0) {
+            KI_CHARGE_COOLDOWN.put(playerId, now);
+        }
         if (KI_CHARGE_COOLDOWN.size() > 256) {
             KI_CHARGE_COOLDOWN.clear();
         }

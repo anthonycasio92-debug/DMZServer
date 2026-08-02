@@ -8,8 +8,11 @@ import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
+import com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler;
+import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
 import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -53,7 +56,11 @@ public final class DifficultyActions {
         }
         String act = action.toLowerCase();
         if (ACT_PAGE.equals(act) || ACT_REFRESH.equals(act)) {
-            openGui(player, page);
+            String target = page == null || page.isBlank() ? "main" : page;
+            if ("settings".equalsIgnoreCase(target) && !StaffAccess.isStaff(player)) {
+                target = "main";
+            }
+            openGui(player, target);
             return Result.ok("");
         }
         if (ACT_EQUIP_TITLE.equals(act) || "equip".equals(act)) {
@@ -117,6 +124,10 @@ public final class DifficultyActions {
         boolean on = data.togglePersonalEnabled();
         DifficultyCache.save(player);
         DifficultyCache.refresh(player);
+        if (!on) {
+            ScaledMobTracker.releaseAndRevertPlayer(player);
+            NearbyMobScaler.processEvictions();
+        }
         String returnPage = page == null || page.isBlank() ? "main" : page;
         openGui(player, returnPage);
         return Result.ok(on
@@ -248,6 +259,8 @@ public final class DifficultyActions {
         data.resetTemporary();
         DifficultyCache.save(player);
         DifficultyCache.refresh(player);
+        ScaledMobTracker.releaseAndRevertPlayer(player);
+        NearbyMobScaler.processEvictions();
         openGui(player, page);
         return Result.ok("Difficulty cleared. Unlocks and Ancient Coins kept.");
     }
@@ -257,6 +270,8 @@ public final class DifficultyActions {
         data.resetTemporary();
         DifficultyCache.save(player);
         DifficultyCache.refresh(player);
+        ScaledMobTracker.releaseAndRevertPlayer(player);
+        NearbyMobScaler.processEvictions();
         if (page != null && !page.isBlank()) {
             openGui(player, page);
         }

@@ -10,6 +10,7 @@ import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -27,7 +28,11 @@ public final class DifficultyChatMenu {
 
     public static void open(ServerPlayer player, String page) {
         if ("settings".equalsIgnoreCase(page)) {
-            settings(player);
+            if (StaffAccess.isStaff(player)) {
+                settings(player);
+            } else {
+                main(player);
+            }
             return;
         }
         if ((!DifficultyConfig.isEnabled() || !SystemGate.allows(player))
@@ -250,6 +255,10 @@ public final class DifficultyChatMenu {
     }
 
     private static void settings(ServerPlayer player) {
+        if (!StaffAccess.isStaff(player)) {
+            main(player);
+            return;
+        }
         DifficultyConfig cfg = DifficultyConfig.get();
         send(player, Component.m_237113_("§8──────── §fAdmin §8────────"));
         send(player, Component.m_237113_(
@@ -276,15 +285,7 @@ public final class DifficultyChatMenu {
     }
 
     private static boolean isStaff(ServerPlayer player) {
-        if (player == null) {
-            return false;
-        }
-        try {
-            // Permission level 2 ≈ op; covers difficulty.admin via LuckPerms on Mohist when mapped.
-            return player.m_20310_(2);
-        } catch (Throwable ignored) {
-            return false;
-        }
+        return StaffAccess.isStaff(player);
     }
 
     private static void send(ServerPlayer player, Component component) {
