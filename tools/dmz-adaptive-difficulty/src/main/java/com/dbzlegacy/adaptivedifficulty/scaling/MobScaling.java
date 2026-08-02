@@ -52,7 +52,7 @@ public final class MobScaling {
     /** Fingerprint of the player combat profile this mob was last scaled to. */
     public static final String TAG_PROFILE_SIG = "dmz_ad_profile_sig";
     public static final String TAG_TIER_PERCENT = "dmz_ad_tier_pct";
-    /** Mob is owned by another system (saga/quest/spawner) — never AD-convert. */
+    /** Mob is owned by another system (saga/quest/spawner/SDD) — never AD-convert. */
     public static final String TAG_EXEMPT = "dmz_ad_exempt";
     /** Stamped at FinalizeSpawn when {@code MobSpawnType.SPAWNER}. */
     public static final String TAG_FROM_SPAWNER = "dmz_ad_from_spawner";
@@ -72,6 +72,16 @@ public final class MobScaling {
     };
 
     /**
+     * Shurui's DMZ Dungeons ({@code shuruis_dmz_dungeons}) Advanced Spawner markers.
+     * Stamped on persistent data after finalizeSpawn — must be checked even when
+     * the Forge SPAWNER spawn-type path was skipped/failed on Mohist.
+     */
+    private static final String[] SDD_SPAWNER_TAGS = {
+            "sdd_spawner",
+            "sdd_boss"
+    };
+
+    /**
      * Hot-path cache: entity UUID → last applied player-profile signature.
      */
     private static final Map<UUID, Long> APPLIED_PROFILE = new ConcurrentHashMap<>();
@@ -87,7 +97,8 @@ public final class MobScaling {
     }
 
     /**
-     * Saga/quest (DMZ) and cage-spawner mobs keep their own difficulty — AD must not convert them.
+     * Saga/quest (DMZ), vanilla cage spawners, and SDD Advanced Spawner mobs keep
+     * their own difficulty — AD must not convert them.
      */
     public static boolean isExemptFromConversion(LivingEntity entity) {
         if (entity == null) {
@@ -98,6 +109,23 @@ public final class MobScaling {
             return true;
         }
         for (String key : QUEST_SPAWN_TAGS) {
+            if (tag.m_128441_(key)) {
+                return true;
+            }
+        }
+        return hasSddSpawnerMark(tag);
+    }
+
+    /** True when Shurui Advanced Spawner / dungeon-boss ownership tags are present. */
+    public static boolean hasSddSpawnerMark(LivingEntity entity) {
+        return entity != null && hasSddSpawnerMark(PersistentDataAccess.get(entity));
+    }
+
+    private static boolean hasSddSpawnerMark(CompoundTag tag) {
+        if (tag == null) {
+            return false;
+        }
+        for (String key : SDD_SPAWNER_TAGS) {
             if (tag.m_128441_(key)) {
                 return true;
             }
@@ -118,7 +146,7 @@ public final class MobScaling {
     /**
      * Persist exempt and undo a prior AD player-profile paint if one was applied by mistake.
      */
-    private static void ensureExempt(LivingEntity entity) {
+    public static void ensureExempt(LivingEntity entity) {
         CompoundTag tag = PersistentDataAccess.get(entity);
         if (!PersistentDataAccess.isWritable(tag)) {
             return;

@@ -115,13 +115,34 @@ public final class DifficultyEvents {
                 || DimensionGates.isDisabled(entity)) {
             return;
         }
-        // Cage / minecart spawners keep vanilla difficulty — stamp so nearby rescale can't convert later.
-        if (event.getSpawnType() == net.minecraft.world.entity.MobSpawnType.SPAWNER) {
+        // Cage / minecart / SDD Advanced Spawner — stamp so nearby rescale can't convert later.
+        if (event.getSpawnType() == net.minecraft.world.entity.MobSpawnType.SPAWNER
+                || MobScaling.hasSddSpawnerMark(entity)) {
             MobScaling.markFromSpawner(entity);
             return;
         }
         // Saga/quest kills already carry dmz_quest_* / dmz_saga_id — scaleIfNeeded no-ops.
         MobScaling.scaleIfNeeded(entity);
+    }
+
+    /**
+     * SDD Advanced Spawner stamps {@code sdd_spawner}/{@code sdd_boss} after finalizeSpawn
+     * (and finalize can fail on Mohist). Catch them on world join and undo any AD paint.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public void onLivingJoin(EntityJoinLevelEvent event) {
+        if (SystemGate.isDisabled() || event.getLevel().m_5776_()) {
+            return;
+        }
+        if (!(event.getEntity() instanceof LivingEntity living) || DimensionGates.isDisabled(living)) {
+            return;
+        }
+        if (MobScaling.hasSddSpawnerMark(living)) {
+            MobScaling.markFromSpawner(living);
+        }
+        if (MobScaling.isExemptFromConversion(living)) {
+            MobScaling.ensureExempt(living);
+        }
     }
 
     /**
