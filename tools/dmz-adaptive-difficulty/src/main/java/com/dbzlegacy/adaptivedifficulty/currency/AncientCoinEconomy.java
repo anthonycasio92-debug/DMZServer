@@ -217,7 +217,12 @@ public final class AncientCoinEconomy {
         for (int i = 0; i < ladder.length; i++) {
             long unit = ladder[i].copperValue;
             long count = (value + unit - 1L) / unit; // ceil
-            if (count <= MAX_COINS_PER_TYPE || i == ladder.length - 1) {
+            boolean topRung = i == ladder.length - 1;
+            if (count <= MAX_COINS_PER_TYPE || topRung) {
+                // No denomination above Netherite — hard-cap at 128× top rung.
+                if (topRung) {
+                    count = Math.min(count, MAX_COINS_PER_TYPE);
+                }
                 return safeMul(count, unit);
             }
             // Keep the ceiled copper value while promoting.

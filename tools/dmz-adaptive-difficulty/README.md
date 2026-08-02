@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.3.1)
+# DMZ Adaptive Difficulty (v3.3.2)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -31,8 +31,8 @@ Clients do **not** need this jar to join.
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.3.1.jar` (remove older AD jars)
-2. `plugins/dmz_adaptive_difficulty_gui-3.3.1.jar`
+1. `mods/dmz_adaptive_difficulty-3.3.2.jar` (remove older AD jars)
+2. `plugins/dmz_adaptive_difficulty_gui-3.3.2.jar`
 3. Restart — config regenerates at `config/dmz_adaptive_difficulty.json`
 4. `/difficulty` → **Buy Tier**
 
@@ -57,7 +57,8 @@ Config key: `enabled` (also `admin set enabled false`).
 - The End stays in `disabledDimensions` by default (End Strength script owns it).
 - Ancient Coins are real Lightman's `coin_ancient` items (exact type/count, no change).
 - Coin ladder: Copper → Iron → Gold → Emerald → Diamond → Netherite (9 letter variants, equal value). Lapis / Ender Pearl unused.
-- Tier costs cap at 128 of one coin type, then promote to the next denomination (rounded up).
+- Tier costs cap at 128 of one coin type, then promote to the next denomination (rounded up; top = 128× Netherite).
+- Level scaling uses levels above each tier’s unlock requirement (buying T7 at unlock ≈ base cost, not 100×).
 - Saga/quest-spawned mobs (`dmz_quest_*` / `dmz_saga_id`) and cage-spawner mobs are never AD-converted.
 - Mob damage uses blended offense + a DEF/HP tank floor + specialization tax so 1–3 stat dumps cannot shrug tiered hits vs even builds.
 - Old NBT wallet balances migrate into Copper Ancient coins once per login.

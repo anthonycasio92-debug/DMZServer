@@ -239,7 +239,7 @@ public final class DifficultyChatMenu {
                         : "§7Whitelist OFF")));
         send(player, Component.m_237113_("§8/difficulty admin off|on · whitelist on|off|add|remove|list"));
         send(player, Component.m_237113_("§7Tier cost level divisor §f" + cfg.tierCostLevelDivisor
-                + " §8(cost × (1 + dmz / divisor))"));
+                + " §8(cost × (1 + levelsAboveUnlock / divisor))"));
         send(player, Component.m_237113_("§7Coin drops §f" + cfg.enableAncientCoinDrops
                 + "  §7Death reset §f" + cfg.deathResetsActiveDifficulty));
         send(player, Component.m_237113_("§8/difficulty admin set tierCostLevelDivisor <n>"));

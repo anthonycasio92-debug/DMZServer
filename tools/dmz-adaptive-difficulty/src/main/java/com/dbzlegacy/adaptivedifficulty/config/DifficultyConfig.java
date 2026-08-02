@@ -220,9 +220,10 @@ public final class DifficultyConfig {
     public long unlockTier6Cost = 50_000L;
     public long unlockTier7Cost = 150_000L;
     /**
-     * Tier purchase cost scales with DMZ level:
-     * {@code base × (1 + dmzLevel / tierCostLevelDivisor)}.
-     * Default 1000 → level 1000 ≈ 2× base, level 100000 ≈ 101× base.
+     * Tier purchase cost scales with how far above the tier's unlock level the
+     * player is: {@code base × (1 + max(0, dmzLevel - requiredLevel) / divisor)}.
+     * Buying at the unlock threshold ≈ base cost (T7 is no longer 100×+ at lvl 100k).
+     * Default 1000 → 1000 levels above unlock ≈ 2× base.
      */
     public double tierCostLevelDivisor = 1_000.0;
     /**
@@ -332,10 +333,14 @@ public final class DifficultyConfig {
             return 0L;
         }
         double divisor = Math.max(1.0, tierCostLevelDivisor);
-        double mult = 1.0 + Math.max(0, dmzLevel) / divisor;
+        // Scale only by levels above this tier's unlock requirement.
+        // Absolute-level scaling made T7 (req 100k) cost 152× Netherite at unlock.
+        long required = tierRequiredLevel(tierId);
+        long excess = Math.max(0L, (long) Math.max(0, dmzLevel) - required);
+        double mult = 1.0 + excess / divisor;
         long scaled = Math.round(base * mult);
         long raw = Math.max(base, scaled);
-        // Cap at 128 of one coin type, then promote to the next Ancient Coin.
+        // Cap at 128 of one coin type, then promote (top rung = 128× Netherite).
         return com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.normalizeCost(raw);
     }
 
