@@ -228,6 +228,10 @@ public final class PlayerCombatProfile {
      * Target mob attack. Uses blended offense, a tankiness floor (so DEF/VIT
      * dumps still get pressured), weak-stat counters, specialization tax,
      * and DMZ class/race overlays.
+     * <p>
+     * High-DEF builds are pressed even when DEF is their strongest stat: DMZ
+     * cancels hits when DEF is much larger than damage, so the pierce floor
+     * must stay a real fraction of player defense (not only a weak-stat counter).
      */
     public double targetMobDamage(DifficultyConfig cfg) {
         double offenseShare = offense * tierPercent;
@@ -235,21 +239,37 @@ public final class PlayerCombatProfile {
         double hpFloor = maxHealth * tierPercent * Math.max(0.0, cfg.tankDamageHealthRatio);
         // Class tanks always get the floor treatment even with "even" invested stats.
         if (cfg.enableClassCounters && style == FightingStyle.TANK) {
-            defFloor *= 1.15;
-            hpFloor *= 1.20;
+            defFloor *= 1.20;
+            hpFloor *= 1.25;
         }
         double base = Math.max(offenseShare, Math.max(defFloor, hpFloor));
 
+        // DEF:offense ratio — pure tanks used to face wet-noodle hits at low tiers
+        // because pierce only ran when DEF was the *weakest* invested stat.
+        double tankiness = defense / Math.max(1.0, offense);
+        boolean tankBuild = tankiness > 1.15
+                || weakest == WeakStat.STRENGTH
+                || weakest == WeakStat.STRIKE
+                || weakest == WeakStat.KI_POWER
+                || (cfg.enableClassCounters && style == FightingStyle.TANK);
+        if (tankBuild) {
+            double pierce = Math.max(cfg.tankDamageDefenseRatio, cfg.weakDefensePierceMult);
+            // Extra bite as DEF outpaces offense (capped so they aren't one-shot).
+            double tankExtra = Math.min(1.75, 1.0 + Math.max(0.0, tankiness - 1.0) * 0.45);
+            double throughDefense = defense * tierPercent * pierce * tankExtra;
+            base = Math.max(base, throughDefense);
+            if (weakest == WeakStat.STRENGTH
+                    || weakest == WeakStat.STRIKE
+                    || weakest == WeakStat.KI_POWER) {
+                base *= Math.max(1.0, cfg.weakStatCounterMult);
+            }
+        }
+
         if (weakest == WeakStat.DEFENSE || weakest == WeakStat.VITALITY) {
             double counter = Math.max(1.0, cfg.weakStatCounterMult);
-            // Aim above the player's defense share so tanking feels contested.
-            double throughDefense = defense * tierPercent * Math.max(1.15, cfg.weakDefensePierceMult);
+            // Glass cannons: aim through their thin defense share.
+            double throughDefense = defense * tierPercent * Math.max(1.25, cfg.weakDefensePierceMult);
             base = Math.max(base * counter, throughDefense);
-        } else if (weakest == WeakStat.STRENGTH
-                || weakest == WeakStat.STRIKE
-                || weakest == WeakStat.KI_POWER) {
-            // Offense dump + tank stack — still raise pressure (floor alone isn't enough).
-            base *= Math.max(1.0, cfg.weakStatCounterMult);
         }
 
         if (imbalance > 0.0) {

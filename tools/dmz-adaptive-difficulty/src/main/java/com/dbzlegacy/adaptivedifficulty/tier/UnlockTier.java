@@ -57,7 +57,7 @@ public enum UnlockTier {
 
     /**
      * Nearby-mob scale as a fraction of the player's post-transform / limit-release stats.
-     * Defaults: T1 0.15 · T2 0.30 · T3 0.55 · T4 0.80 · T5 1.10 · T6 1.30 · T7 2.00.
+     * Defaults: T1 0.28 · T2 0.42 · T3 0.65 · T4 0.80 · T5 1.10 · T6 1.30 · T7 2.00.
      */
     public double enemyScalingMultiplier() {
         return DifficultyConfig.get().tierPlayerStatPercent(id);

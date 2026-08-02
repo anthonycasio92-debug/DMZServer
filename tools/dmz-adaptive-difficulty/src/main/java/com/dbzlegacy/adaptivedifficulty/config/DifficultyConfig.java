@@ -245,11 +245,12 @@ public final class DifficultyConfig {
     public double tierCostLevelDivisor = 1_000.0;
     /**
      * Nearby-mob scale vs the player's post-transform / limit-release stats.
-     * Defaults: T1 15% · T2 30% · T3 55% · T4 80% · T5 110% · T6 130% · T7 200%.
+     * Defaults: T1 28% · T2 42% · T3 65% · T4 80% · T5 110% · T6 130% · T7 200%.
+     * (Raised T1–T3 so early unlocks still contest high-DEF / low-level builds.)
      */
-    public double unlockTier1EnemyMult = 0.15;
-    public double unlockTier2EnemyMult = 0.30;
-    public double unlockTier3EnemyMult = 0.55;
+    public double unlockTier1EnemyMult = 0.28;
+    public double unlockTier2EnemyMult = 0.42;
+    public double unlockTier3EnemyMult = 0.65;
     public double unlockTier4EnemyMult = 0.80;
     public double unlockTier5EnemyMult = 1.10;
     public double unlockTier6EnemyMult = 1.30;
@@ -261,18 +262,24 @@ public final class DifficultyConfig {
     public double mobHealthScale = 0.5;
     /** Extra pressure when countering the player's weakest combat stat. */
     public double weakStatCounterMult = 1.45;
-    /** How hard weak-defense counters pierce (mob damage vs player defense share). */
-    public double weakDefensePierceMult = 1.35;
+    /** How hard tank / weak-offense counters pierce (mob damage vs player defense share). */
+    public double weakDefensePierceMult = 1.75;
     /**
      * Damage floor from player defense × tier % — stops DEF dumps from facing soft hits.
-     * Example: 0.40 → mob attack at least 40% of (defense × tierPercent).
+     * Example: 0.90 → mob attack at least 90% of (defense × tierPercent).
+     * Must stay high enough that DMZ DEF mitigation does not cancel the hit to 0.
      */
-    public double tankDamageDefenseRatio = 0.40;
+    public double tankDamageDefenseRatio = 0.90;
     /**
      * Damage floor from player max HP × tier % — presses high-VIT tanks.
-     * Example: 0.012 → mob attack at least 1.2% of (maxHealth × tierPercent).
+     * Example: 0.025 → mob attack at least 2.5% of (maxHealth × tierPercent).
      */
-    public double tankDamageHealthRatio = 0.012;
+    public double tankDamageHealthRatio = 0.025;
+    /**
+     * One-time: raise soft T1–T3 percents + tank pierce so early difficulty
+     * contests high-DEF / low-level players (old 15%/30%/55% + 0.40 floor).
+     */
+    public Boolean lowTierPressureMigrated = Boolean.FALSE;
     /**
      * Extra mob damage for specialized builds: {@code damage × (1 + imbalance × tax)}.
      * imbalance is 0 for even builds and approaches 1 for hard stat dumps.
@@ -407,9 +414,9 @@ public final class DifficultyConfig {
     /** Fraction of the player's transformed/released stats used for nearby mobs. */
     public double tierPlayerStatPercent(int tierId) {
         return switch (tierId) {
-            case 1 -> clampPercent(unlockTier1EnemyMult, 0.15);
-            case 2 -> clampPercent(unlockTier2EnemyMult, 0.30);
-            case 3 -> clampPercent(unlockTier3EnemyMult, 0.55);
+            case 1 -> clampPercent(unlockTier1EnemyMult, 0.28);
+            case 2 -> clampPercent(unlockTier2EnemyMult, 0.42);
+            case 3 -> clampPercent(unlockTier3EnemyMult, 0.65);
             case 4 -> clampPercent(unlockTier4EnemyMult, 0.80);
             case 5 -> clampPercent(unlockTier5EnemyMult, 1.10);
             case 6 -> clampPercent(unlockTier6EnemyMult, 1.30);
@@ -693,6 +700,28 @@ public final class DifficultyConfig {
             }
             cfg.rarityChanceMigratedV2 = Boolean.TRUE;
         }
+        // Raise soft early-tier pressure + tank pierce (stock values only).
+        if (!Boolean.TRUE.equals(cfg.lowTierPressureMigrated)) {
+            if (nearly(cfg.unlockTier1EnemyMult, 0.15)) {
+                cfg.unlockTier1EnemyMult = 0.28;
+            }
+            if (nearly(cfg.unlockTier2EnemyMult, 0.30)) {
+                cfg.unlockTier2EnemyMult = 0.42;
+            }
+            if (nearly(cfg.unlockTier3EnemyMult, 0.55)) {
+                cfg.unlockTier3EnemyMult = 0.65;
+            }
+            if (nearly(cfg.tankDamageDefenseRatio, 0.40)) {
+                cfg.tankDamageDefenseRatio = 0.90;
+            }
+            if (nearly(cfg.tankDamageHealthRatio, 0.012)) {
+                cfg.tankDamageHealthRatio = 0.025;
+            }
+            if (nearly(cfg.weakDefensePierceMult, 1.35)) {
+                cfg.weakDefensePierceMult = 1.75;
+            }
+            cfg.lowTierPressureMigrated = Boolean.TRUE;
+        }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
             cfg.guiBackend = "cmi";
         } else {
@@ -751,13 +780,13 @@ public final class DifficultyConfig {
             cfg.weakStatCounterMult = 1.45;
         }
         if (cfg.weakDefensePierceMult < 1.0) {
-            cfg.weakDefensePierceMult = 1.35;
+            cfg.weakDefensePierceMult = 1.75;
         }
         if (cfg.tankDamageDefenseRatio < 0.0) {
-            cfg.tankDamageDefenseRatio = 0.40;
+            cfg.tankDamageDefenseRatio = 0.90;
         }
         if (cfg.tankDamageHealthRatio < 0.0) {
-            cfg.tankDamageHealthRatio = 0.012;
+            cfg.tankDamageHealthRatio = 0.025;
         }
         if (cfg.specializationDamageTax < 0.0) {
             cfg.specializationDamageTax = 0.60;
@@ -855,17 +884,17 @@ public final class DifficultyConfig {
         if (nearly(cfg.unlockTier1EnemyMult, 1.0)
                 && nearly(cfg.unlockTier2EnemyMult, 1.15)
                 && nearly(cfg.unlockTier7EnemyMult, 3.0)) {
-            cfg.unlockTier1EnemyMult = 0.15;
-            cfg.unlockTier2EnemyMult = 0.30;
-            cfg.unlockTier3EnemyMult = 0.55;
+            cfg.unlockTier1EnemyMult = 0.28;
+            cfg.unlockTier2EnemyMult = 0.42;
+            cfg.unlockTier3EnemyMult = 0.65;
             cfg.unlockTier4EnemyMult = 0.80;
             cfg.unlockTier5EnemyMult = 1.10;
             cfg.unlockTier6EnemyMult = 1.30;
             cfg.unlockTier7EnemyMult = 2.00;
         } else {
-            cfg.unlockTier1EnemyMult = clampPercent(cfg.unlockTier1EnemyMult, 0.15);
-            cfg.unlockTier2EnemyMult = clampPercent(cfg.unlockTier2EnemyMult, 0.30);
-            cfg.unlockTier3EnemyMult = clampPercent(cfg.unlockTier3EnemyMult, 0.55);
+            cfg.unlockTier1EnemyMult = clampPercent(cfg.unlockTier1EnemyMult, 0.28);
+            cfg.unlockTier2EnemyMult = clampPercent(cfg.unlockTier2EnemyMult, 0.42);
+            cfg.unlockTier3EnemyMult = clampPercent(cfg.unlockTier3EnemyMult, 0.65);
             cfg.unlockTier4EnemyMult = clampPercent(cfg.unlockTier4EnemyMult, 0.80);
             cfg.unlockTier5EnemyMult = clampPercent(cfg.unlockTier5EnemyMult, 1.10);
             cfg.unlockTier6EnemyMult = clampPercent(cfg.unlockTier6EnemyMult, 1.30);
