@@ -134,11 +134,18 @@ public final class DifficultyConfig {
 
     // Phase 2 systems
     public boolean enableElites = true;
-    public double eliteChancePercent = 3.0;
+    /** Percent chance a claimed T4+ hostile becomes elite (rare). */
+    public double eliteChancePercent = 1.25;
     public double eliteStatMultiplier = 1.75;
     public double eliteRewardBonus = 2.0;
     public boolean enableMutations = true;
-    public double mutationChancePercent = 5.0;
+    /** Percent chance a claimed T5+ hostile mutates. Elites get ×1.35. */
+    public double mutationChancePercent = 2.0;
+    /**
+     * One-time: stock 3%/5% chances felt common after the claim-seed +15% elite bug.
+     * Migrates untouched defaults down to 1.25%/2%.
+     */
+    public Boolean rarityChanceMigrated = Boolean.FALSE;
     public boolean enableAdaptiveAi = true;
     public boolean enableEnemyEvolution = true;
     public boolean enableBossScaling = true;
@@ -647,6 +654,16 @@ public final class DifficultyConfig {
                 return want.equals("minecraft:the_end") || want.equals("the_end");
             });
             cfg.endScalingEnabledMigrated = Boolean.TRUE;
+        }
+        // Drop inflated stock rarity chances once (3%/5% → 1.25%/2%).
+        if (!Boolean.TRUE.equals(cfg.rarityChanceMigrated)) {
+            if (nearly(cfg.eliteChancePercent, 3.0)) {
+                cfg.eliteChancePercent = 1.25;
+            }
+            if (nearly(cfg.mutationChancePercent, 5.0)) {
+                cfg.mutationChancePercent = 2.0;
+            }
+            cfg.rarityChanceMigrated = Boolean.TRUE;
         }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
             cfg.guiBackend = "cmi";

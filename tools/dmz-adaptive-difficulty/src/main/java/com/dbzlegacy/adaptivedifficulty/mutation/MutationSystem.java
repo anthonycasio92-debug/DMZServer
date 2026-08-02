@@ -35,11 +35,12 @@ public final class MutationSystem {
         if (tag.m_128441_(TAG_MUTATION) && !tag.m_128461_(TAG_MUTATION).isEmpty()) {
             return;
         }
-        double chance = cfg.mutationChancePercent / 100.0;
+        // Flat config %; elites get a small bump (not double — that felt common in packs).
+        double chance = Math.max(0.0, Math.min(1.0, cfg.mutationChancePercent / 100.0));
         if (EliteSystem.isElite(entity)) {
-            chance *= 2.0;
+            chance = Math.min(1.0, chance * 1.35);
         }
-        if (ThreadLocalRandom.current().nextDouble() > chance) {
+        if (chance <= 0.0 || ThreadLocalRandom.current().nextDouble() >= chance) {
             return;
         }
         apply(entity, MutationType.randomFor(entity));

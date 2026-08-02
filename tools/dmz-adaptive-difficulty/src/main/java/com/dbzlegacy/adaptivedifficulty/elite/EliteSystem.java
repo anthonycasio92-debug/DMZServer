@@ -24,8 +24,8 @@ public final class EliteSystem {
     }
 
     /**
-     * @param rollSeed spawn roll seed (unlock-tier based). Unlock-tier gating is done by the caller
-     *                 via {@code eliteMinUnlockTier}; no legacy CR threshold here.
+     * @param rollSeed claim-owner unlock seed ({@code unlockTier * 10_000}). Unlock-tier
+     *                 gating is done by the caller via {@code eliteMinUnlockTier}.
      */
     public static void maybePromote(LivingEntity entity, long rollSeed) {
         DifficultyConfig cfg = DifficultyConfig.get();
@@ -33,12 +33,15 @@ public final class EliteSystem {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);
-        if (tag.m_128471_(TAG_ELITE) || tag.m_128471_("dmz_ad_boss")) {
+        if (!PersistentDataAccess.isWritable(tag)
+                || tag.m_128471_(TAG_ELITE)
+                || tag.m_128471_("dmz_ad_boss")) {
             return;
         }
-        double chance = cfg.eliteChancePercent / 100.0;
-        chance += Math.min(0.15, rollSeed / 100_000.0);
-        if (ThreadLocalRandom.current().nextDouble() > chance) {
+        // Flat config % only. Old builds added rollSeed/100000 (capped +15%), which with
+        // unlockTier*10000 seeds always maxed out and made elites ~18% of claims.
+        double chance = Math.max(0.0, Math.min(1.0, cfg.eliteChancePercent / 100.0));
+        if (chance <= 0.0 || ThreadLocalRandom.current().nextDouble() >= chance) {
             return;
         }
         promote(entity, rollSeed);
