@@ -29,6 +29,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -98,11 +99,12 @@ public final class MobScaling {
     }
 
     /**
-     * Saga/quest (DMZ), vanilla cage spawners, and SDD Advanced Spawner mobs keep
-     * their own difficulty — AD must not convert them.
+     * Saga/quest (DMZ), vanilla cage spawners, SDD Advanced Spawner mobs, and the
+     * Ender Dragon keep their own difficulty — AD must not convert them.
      * <p>
      * All {@link DBSagasEntity} instances are exempt by class (not only quest tags),
      * so transform forms stay protected before {@code dmz_saga_id} is copied on.
+     * The Ender Dragon is owned by the End Strength script.
      */
     public static boolean isExemptFromConversion(LivingEntity entity) {
         if (entity == null) {
@@ -110,6 +112,10 @@ public final class MobScaling {
         }
         // Saga NPCs / transform forms — class check beats tag timing races.
         if (entity instanceof DBSagasEntity) {
+            return true;
+        }
+        // End Strength script owns the dragon fight — never AD-paint it.
+        if (entity instanceof EnderDragon) {
             return true;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);
@@ -176,6 +182,7 @@ public final class MobScaling {
         }
         tag.m_128379_(TAG_EXEMPT, true);
         boolean owned = entity instanceof DBSagasEntity
+                || entity instanceof EnderDragon
                 || hasQuestSpawnTags(tag)
                 || hasSddSpawnerMark(tag)
                 || tag.m_128471_(TAG_FROM_SPAWNER);

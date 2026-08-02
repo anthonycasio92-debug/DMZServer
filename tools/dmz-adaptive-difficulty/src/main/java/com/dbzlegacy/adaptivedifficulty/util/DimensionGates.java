@@ -10,8 +10,8 @@ import net.minecraft.world.level.Level;
 /**
  * Dimension deny-list for expensive adaptive-difficulty systems.
  * <p>
- * The End is owned by CNPC {@code End Dimension Strength.js} — stacking AD
- * Enderman gravity / evolution / AI on top of that script crushed TPS.
+ * The End is enabled by default so End hostiles can scale; the Ender Dragon
+ * stays exempt in {@code MobScaling} (End Strength script owns that fight).
  */
 public final class DimensionGates {
     private DimensionGates() {}

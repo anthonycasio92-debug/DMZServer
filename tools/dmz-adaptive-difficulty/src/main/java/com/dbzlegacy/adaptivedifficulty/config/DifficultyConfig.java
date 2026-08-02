@@ -186,10 +186,15 @@ public final class DifficultyConfig {
     public String vanillaDifficulty = "hard";
     /**
      * Dimensions where adaptive difficulty skips scaling / AI / evolution / gravity.
-     * Default: The End — owned by CNPC {@code End Dimension Strength.js}; stacking both
-     * systems crushed TPS when players visited.
+     * Empty by default — The End scales like Overworld/Nether; Ender Dragon is
+     * hard-exempt (End Strength script). Re-add {@code minecraft:the_end} to deny.
      */
-    public List<String> disabledDimensions = new ArrayList<>(Arrays.asList("minecraft:the_end"));
+    public List<String> disabledDimensions = new ArrayList<>();
+    /**
+     * One-time: strip legacy default {@code minecraft:the_end} from
+     * {@link #disabledDimensions} so existing configs pick up End scaling.
+     */
+    public Boolean endScalingEnabledMigrated = Boolean.FALSE;
 
     // ── V3 Combat Rating weights ───────────────────────────────────────────
     public double combatRatingDmzWeight = 1.0;
@@ -630,7 +635,18 @@ public final class DifficultyConfig {
             cfg.whitelist = new ArrayList<>(cleaned);
         }
         if (cfg.disabledDimensions == null) {
-            cfg.disabledDimensions = new ArrayList<>(Arrays.asList("minecraft:the_end"));
+            cfg.disabledDimensions = new ArrayList<>();
+        }
+        // Legacy installs defaulted The End off; enable End hostiles once (dragon still exempt).
+        if (!Boolean.TRUE.equals(cfg.endScalingEnabledMigrated)) {
+            cfg.disabledDimensions.removeIf(raw -> {
+                if (raw == null || raw.isBlank()) {
+                    return true;
+                }
+                String want = raw.trim().toLowerCase();
+                return want.equals("minecraft:the_end") || want.equals("the_end");
+            });
+            cfg.endScalingEnabledMigrated = Boolean.TRUE;
         }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
             cfg.guiBackend = "cmi";

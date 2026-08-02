@@ -275,7 +275,7 @@ public final class DifficultyEvents {
         var source = event.getSource();
         Entity causing = source == null ? null : source.m_7639_(); // getEntity
 
-        // The End (etc.) is owned by other systems — do not stack AD work there.
+        // Dimensions listed in disabledDimensions skip AD work entirely.
         if (DimensionGates.isDisabled(victim)) {
             return;
         }
