@@ -5,8 +5,10 @@ import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
+import io.github.lightman314.lightmanscurrency.api.money.coins.CoinAPI;
 import io.github.lightman314.lightmanscurrency.common.core.ModItems;
 import io.github.lightman314.lightmanscurrency.common.items.AncientCoinItem;
+import io.github.lightman314.lightmanscurrency.common.items.WalletItem;
 import io.github.lightman314.lightmanscurrency.common.items.ancient_coins.AncientCoinType;
 import java.util.Set;
 import java.util.UUID;
@@ -15,6 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
@@ -29,6 +32,9 @@ import net.minecraftforge.fml.ModList;
  * Ladder (cheap → expensive): Copper → Iron → Gold → Emerald → Diamond →
  * Netherite (all 9 letter variants share one value). Lapis and Ender Pearl
  * ancient coins are ignored (never spent, counted, granted, or dropped).
+ * <p>
+ * Spendable balances come from <b>player inventory + equipped wallet</b>.
+ * Lightman's bank accounts are never read or charged.
  * <p>
  * Charges prefer an exact copper total, but players may <b>pay up</b> with any
  * mix of denominations whose total value is ≥ the cost (lower coins can stand
@@ -190,7 +196,7 @@ public final class AncientCoinEconomy {
     }
 
     /**
-     * Per-type Ancient Coin counts in inventory.
+     * Per-type Ancient Coin counts in inventory + equipped wallet (not bank).
      * Always lists every Lightman's Ancient type the mod recognizes (incl. 0s).
      */
     public static String inventoryBreakdown(ServerPlayer player) {
@@ -670,10 +676,24 @@ public final class AncientCoinEconomy {
         }
     }
 
-    // ── Inventory helpers ──────────────────────────────────────────────────
+    // ── Inventory + equipped-wallet helpers (never bank) ───────────────────
 
     private static long inventoryCopper(ServerPlayer player) {
-        long total = 0L;
+        return totalCopperValue(countByKind(player));
+    }
+
+    /** Combined counts: player inventory first, then equipped Lightman's wallet. */
+    private static long[] countByKind(ServerPlayer player) {
+        long[] counts = new long[CoinKind.values().length];
+        if (player == null) {
+            return counts;
+        }
+        addCountsFromInventory(counts, player);
+        addCountsFromWallet(counts, player);
+        return counts;
+    }
+
+    private static void addCountsFromInventory(long[] counts, ServerPlayer player) {
         Inventory inv = player.m_150109_();
         for (int i = 0; i < inv.m_6643_(); i++) {
             ItemStack stack = inv.m_8020_(i);
@@ -681,25 +701,59 @@ public final class AncientCoinEconomy {
             if (kind == null) {
                 continue;
             }
-            total = safeAdd(total, safeMul(kind.copperValue, stack.m_41613_()));
+            counts[kind.ordinal()] = safeAdd(counts[kind.ordinal()], stack.m_41613_());
         }
-        return total;
     }
 
-    private static long[] countByKind(ServerPlayer player) {
-        long[] counts = new long[CoinKind.values().length];
-        if (player == null) {
-            return counts;
+    private static void addCountsFromWallet(long[] counts, ServerPlayer player) {
+        Container walletInv = equippedWalletContents(player);
+        if (walletInv == null) {
+            return;
         }
-        Inventory inv = player.m_150109_();
-        for (int i = 0; i < inv.m_6643_(); i++) {
-            CoinKind kind = kindOf(inv.m_8020_(i));
+        for (int i = 0; i < walletInv.m_6643_(); i++) {
+            ItemStack stack = walletInv.m_8020_(i);
+            CoinKind kind = kindOf(stack);
             if (kind == null) {
                 continue;
             }
-            counts[kind.ordinal()] = safeAdd(counts[kind.ordinal()], inv.m_8020_(i).m_41613_());
+            counts[kind.ordinal()] = safeAdd(counts[kind.ordinal()], stack.m_41613_());
         }
-        return counts;
+    }
+
+    /**
+     * Equipped Lightman's wallet contents, or null.
+     * Never opens bank storage — only the wallet item's internal coin slots.
+     */
+    private static Container equippedWalletContents(ServerPlayer player) {
+        ItemStack wallet = equippedWalletStack(player);
+        if (wallet == null || wallet.m_41619_() || !WalletItem.isWallet(wallet)) {
+            return null;
+        }
+        try {
+            return WalletItem.getWalletInventory(wallet);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] wallet inventory read failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            return null;
+        }
+    }
+
+    private static ItemStack equippedWalletStack(ServerPlayer player) {
+        if (player == null || !LIGHTMANS) {
+            return ItemStack.f_41583_;
+        }
+        try {
+            CoinAPI api = CoinAPI.getApi();
+            if (api == null) {
+                return ItemStack.f_41583_;
+            }
+            ItemStack wallet = api.getEquippedWallet(player);
+            return wallet == null ? ItemStack.f_41583_ : wallet;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] equipped wallet resolve failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            return ItemStack.f_41583_;
+        }
     }
 
     /**
@@ -788,16 +842,61 @@ public final class AncientCoinEconomy {
         return total;
     }
 
-    /** Remove coins per {@link #planPayment} — exact preferred, else pay-up with no change. */
+    /**
+     * Remove coins per {@link #planPayment} — inventory first, then equipped wallet.
+     * Never touches Lightman's bank accounts.
+     */
     private static boolean chargePayment(ServerPlayer player, long copperCost) {
-        long[] available = countByKind(player);
+        long[] invCounts = new long[CoinKind.values().length];
+        long[] walletCounts = new long[CoinKind.values().length];
+        addCountsFromInventory(invCounts, player);
+        addCountsFromWallet(walletCounts, player);
+        long[] available = new long[CoinKind.values().length];
+        for (int i = 0; i < available.length; i++) {
+            available[i] = safeAdd(invCounts[i], walletCounts[i]);
+        }
         long[] plan = planPayment(available, copperCost);
         if (plan == null) {
             return false;
         }
+        long[] fromInv = new long[CoinKind.values().length];
+        long[] fromWallet = new long[CoinKind.values().length];
+        for (CoinKind kind : CoinKind.values()) {
+            int idx = kind.ordinal();
+            long need = plan[idx];
+            if (need <= 0L) {
+                continue;
+            }
+            long invTake = Math.min(need, invCounts[idx]);
+            long walletTake = need - invTake;
+            if (walletTake > walletCounts[idx]) {
+                return false;
+            }
+            fromInv[idx] = invTake;
+            fromWallet[idx] = walletTake;
+        }
+        // Spend inventory first, then equipped wallet (never bank).
+        if (!takeExactFromInventory(player, fromInv)) {
+            return false;
+        }
+        if (!takeExactFromWallet(player, fromWallet)) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] wallet shortfall after inventory charge for {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    player.m_6302_());
+            return false;
+        }
+        DifficultyCache.refresh(player);
+        return true;
+    }
+
+    private static boolean takeExactFromInventory(ServerPlayer player, long[] needByKind) {
+        if (player == null || needByKind == null) {
+            return true;
+        }
         Inventory inv = player.m_150109_();
         for (CoinKind kind : CoinKind.values()) {
-            long need = plan[kind.ordinal()];
+            long need = needByKind[kind.ordinal()];
             if (need <= 0L) {
                 continue;
             }
@@ -821,8 +920,72 @@ public final class AncientCoinEconomy {
                 return false;
             }
         }
-        DifficultyCache.refresh(player);
         return true;
+    }
+
+    /** Take planned coins from the equipped wallet only (never bank). */
+    private static boolean takeExactFromWallet(ServerPlayer player, long[] needByKind) {
+        if (needByKind == null) {
+            return true;
+        }
+        boolean any = false;
+        for (long n : needByKind) {
+            if (n > 0L) {
+                any = true;
+                break;
+            }
+        }
+        if (!any) {
+            return true;
+        }
+        ItemStack wallet = equippedWalletStack(player);
+        if (wallet.m_41619_() || !WalletItem.isWallet(wallet)) {
+            return false;
+        }
+        Container walletInv;
+        try {
+            walletInv = WalletItem.getWalletInventory(wallet);
+        } catch (Throwable t) {
+            return false;
+        }
+        if (walletInv == null) {
+            return false;
+        }
+        for (CoinKind kind : CoinKind.values()) {
+            long need = needByKind[kind.ordinal()];
+            if (need <= 0L) {
+                continue;
+            }
+            for (int i = 0; i < walletInv.m_6643_() && need > 0L; i++) {
+                ItemStack stack = walletInv.m_8020_(i);
+                if (kindOf(stack) != kind) {
+                    continue;
+                }
+                int count = stack.m_41613_();
+                int take = (int) Math.min(count, Math.min(Integer.MAX_VALUE, need));
+                if (take <= 0) {
+                    continue;
+                }
+                stack.m_41774_(take);
+                if (stack.m_41619_()) {
+                    walletInv.m_6836_(i, ItemStack.f_41583_);
+                }
+                need -= take;
+            }
+            if (need > 0L) {
+                return false;
+            }
+        }
+        try {
+            WalletItem.putWalletInventory(wallet, walletInv);
+            return true;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] failed to persist wallet after charge: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    t.toString());
+            return false;
+        }
     }
 
     private static void giveStacks(ServerPlayer player, CoinKind kind, long count) {

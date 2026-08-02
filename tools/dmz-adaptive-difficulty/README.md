@@ -73,7 +73,7 @@ Staff gate remains: op level ≥2 / Bukkit op, or `difficulty.admin` (config `ad
 ## Notes
 
 - The End scales hostiles like other dimensions. The **Ender Dragon** is hard-exempt (End Strength script). To disable the whole End again, add `minecraft:the_end` to `disabledDimensions`.
-- Ancient Coins are real Lightman's `coin_ancient` items. Pay-up allowed (no change returned).
+- Ancient Coins are real Lightman's `coin_ancient` items. Tier buys spend from **inventory first, then the equipped wallet** — never from Lightman's bank. Pay-up allowed (no change returned).
 - Coin ladder values: Copper 1 → Iron 10 → Gold 100 → Emerald 1k → Diamond 10k → Netherite 100k (9 letter variants equal). Lapis / Ender Pearl unused.
 - Example: a 1× Iron cost can be paid with 10+ Copper, or 1× Gold (overpay, no change).
 - Tier costs cap at 128 of one coin type, then promote to the next denomination (rounded up; top = 128× Netherite).
