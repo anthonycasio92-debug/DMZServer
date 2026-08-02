@@ -1,14 +1,15 @@
 package com.dbzlegacy.adaptivedifficulty.evolution;
 
+import com.dbzlegacy.adaptivedifficulty.boss.BossScaling;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
+import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockAbilityCaps;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
-import com.dbzlegacy.adaptivedifficulty.util.EntityDisplayNames;
 import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import java.lang.reflect.Field;
@@ -137,6 +138,12 @@ public final class EnemyEvolution {
                         && !(mob instanceof net.minecraft.world.entity.monster.Ravager);
     }
 
+    /**
+     * Records which ability kit this mob was claimed with.
+     * Intentionally does NOT set a custom nameplate or glow — those are reserved for
+     * true rarity rolls (Elite / Mutation / Boss). Older builds named every T3+ kit mob
+     * "Elite …", which made almost every scaled hostile look like a rarity variant.
+     */
     private static void markEvolved(Mob mob, DifficultyTier tier) {
         if (tier.ordinalPower() < DifficultyTier.AWAKENED.ordinalPower()) {
             return;
@@ -144,16 +151,73 @@ public final class EnemyEvolution {
         CompoundTag tag = PersistentDataAccess.get(mob);
         String want = tier.display;
         String prev = tag.m_128461_("dmz_ad_ability_tier");
-        // Refresh nameplate when unlock tier / kit depth changes (T1→T2 etc.).
-        if (tag.m_128471_(TAG_EVOLVED) && want.equals(prev) && mob.m_8077_()) {
+        if (!tag.m_128471_(TAG_EVOLVED) || !want.equals(prev)) {
+            tag.m_128379_(TAG_EVOLVED, true);
+            tag.m_128359_("dmz_ad_ability_tier", want);
+        }
+        // Clear leftover kit cosmetics from older jars; rarity nameplates stay.
+        stripKitCosmeticIfPresent(mob);
+    }
+
+    /** True when this mob rolled a real rarity tag (elite / mutation / boss). */
+    public static boolean hasRarityVariant(Mob mob) {
+        if (mob == null) {
+            return false;
+        }
+        CompoundTag tag = PersistentDataAccess.get(mob);
+        if (tag.m_128471_(EliteSystem.TAG_ELITE) || tag.m_128471_(BossScaling.TAG_BOSS)) {
+            return true;
+        }
+        return tag.m_128441_(MutationSystem.TAG_MUTATION)
+                && !tag.m_128461_(MutationSystem.TAG_MUTATION).isEmpty();
+    }
+
+    /**
+     * Strip leftover kit-only cosmetics from older builds (custom name + glow with no rarity tag).
+     * Leaves true elite / mutation / boss nameplates alone.
+     */
+    public static void stripKitCosmeticIfPresent(Mob mob) {
+        if (mob == null || hasRarityVariant(mob)) {
             return;
         }
-        tag.m_128379_(TAG_EVOLVED, true);
-        tag.m_128359_("dmz_ad_ability_tier", want);
-        mob.m_7292_(new MobEffectInstance(MobEffects.f_19619_, 100, 0, false, false));
-        String typeName = EntityDisplayNames.of(mob);
-        mob.m_6593_(Component.m_237113_("§6" + want + " §f" + typeName));
-        mob.m_20340_(true);
+        CompoundTag tag = PersistentDataAccess.get(mob);
+        if (!tag.m_128471_(TAG_EVOLVED)) {
+            return;
+        }
+        try {
+            if (mob.m_8077_() && looksLikeKitNameplate(mob)) {
+                mob.m_6593_(null);
+            }
+            mob.m_20340_(false);
+        } catch (Throwable ignored) {
+            // cosmetic cleanup only
+        }
+    }
+
+    /** Matches the old kit format {@code §6<Tier> §f<Type>} (and stripped variants). */
+    private static boolean looksLikeKitNameplate(Mob mob) {
+        Component name = mob.m_7770_();
+        if (name == null) {
+            return false;
+        }
+        String s = name.getString();
+        if (s == null || s.isEmpty()) {
+            return false;
+        }
+        // Belt-and-suspenders: never strip known rarity nameplate shapes.
+        if (s.contains("✦") || s.contains("☠") || s.startsWith("§d")) {
+            return false;
+        }
+        for (DifficultyTier t : DifficultyTier.values()) {
+            if (t == DifficultyTier.NONE) {
+                continue;
+            }
+            String d = t.display;
+            if (s.startsWith(d + " ") || s.startsWith("§6" + d + " ")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ── Creepers: ignite + scaled blast radius / faster fuse ───────────────

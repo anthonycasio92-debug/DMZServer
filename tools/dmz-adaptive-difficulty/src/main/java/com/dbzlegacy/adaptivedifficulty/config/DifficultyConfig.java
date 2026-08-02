@@ -134,18 +134,23 @@ public final class DifficultyConfig {
 
     // Phase 2 systems
     public boolean enableElites = true;
-    /** Percent chance a claimed T4+ hostile becomes elite (rare). */
-    public double eliteChancePercent = 1.25;
+    /** Percent chance a claimed T4+ hostile becomes elite (rare). Nameplate only on true rarity. */
+    public double eliteChancePercent = 0.75;
     public double eliteStatMultiplier = 1.75;
     public double eliteRewardBonus = 2.0;
     public boolean enableMutations = true;
-    /** Percent chance a claimed T5+ hostile mutates. Elites get ×1.35. */
-    public double mutationChancePercent = 2.0;
+    /** Percent chance a claimed T5+ hostile mutates. Elites get ×1.35. Nameplate only on true rarity. */
+    public double mutationChancePercent = 1.25;
     /**
      * One-time: stock 3%/5% chances felt common after the claim-seed +15% elite bug.
      * Migrates untouched defaults down to 1.25%/2%.
      */
     public Boolean rarityChanceMigrated = Boolean.FALSE;
+    /**
+     * One-time: after kit nameplates stopped faking "Elite" variants, lower stock rarity
+     * defaults again (1.25%/2% → 0.75%/1.25%) when still on the prior stock values.
+     */
+    public Boolean rarityChanceMigratedV2 = Boolean.FALSE;
     public boolean enableAdaptiveAi = true;
     public boolean enableEnemyEvolution = true;
     public boolean enableBossScaling = true;
@@ -677,6 +682,16 @@ public final class DifficultyConfig {
                 cfg.mutationChancePercent = 2.0;
             }
             cfg.rarityChanceMigrated = Boolean.TRUE;
+        }
+        // Further drop stock rarity after kit cosmetics stopped looking like variants.
+        if (!Boolean.TRUE.equals(cfg.rarityChanceMigratedV2)) {
+            if (nearly(cfg.eliteChancePercent, 1.25)) {
+                cfg.eliteChancePercent = 0.75;
+            }
+            if (nearly(cfg.mutationChancePercent, 2.0)) {
+                cfg.mutationChancePercent = 1.25;
+            }
+            cfg.rarityChanceMigratedV2 = Boolean.TRUE;
         }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
             cfg.guiBackend = "cmi";

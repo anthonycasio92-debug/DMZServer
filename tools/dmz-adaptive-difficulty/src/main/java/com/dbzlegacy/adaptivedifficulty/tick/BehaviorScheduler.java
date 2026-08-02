@@ -186,11 +186,13 @@ public final class BehaviorScheduler {
             return false;
         }
 
-        // Stamp the resolved kit name so nameplates / debug see the live unlock band.
+        // Stamp kit depth in NBT for debug / ability resolution (no nameplate — rarity owns cosmetics).
         DifficultyTier kit = UnlockAbilityCaps.resolve(difficulty, unlockTier);
         if (kit != DifficultyTier.NONE && PersistentDataAccess.isWritable(tag)) {
             tag.m_128359_("dmz_ad_ability_tier", kit.display);
         }
+        // Older jars painted every kit mob "Elite …"; clear that unless rarity actually rolled.
+        EnemyEvolution.stripKitCosmeticIfPresent(mob);
 
         if (mutated && unlockTier >= cfg.mutationMinUnlockTier) {
             MutationSystem.tick(mob, tag);
