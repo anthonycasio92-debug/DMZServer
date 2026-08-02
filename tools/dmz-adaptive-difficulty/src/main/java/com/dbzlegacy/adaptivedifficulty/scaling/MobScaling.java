@@ -16,6 +16,7 @@ import com.dbzlegacy.adaptivedifficulty.tier.UnlockAbilityCaps;
 import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
+import com.dragonminez.common.init.MainDamageTypes;
 import com.dragonminez.common.init.entities.sagas.DBSagasEntity;
 import java.util.Map;
 import java.util.UUID;
@@ -993,6 +994,12 @@ public final class MobScaling {
         boolean indirect = direct != null && direct != attacker;
         // Melee already boosted via ATTACK_DAMAGE — don't multiply again.
         if (attrScaled && !indirect) {
+            return amount;
+        }
+        // Ki from AD-scaled mobs already bakes ATTACK_DAMAGE into getKiDamage
+        // (see KiAttackHelper). A second offense mult made tuning impossible and
+        // previously left vanilla-scale kiblasts so tiny DMZ DEF cancelled them to 0.
+        if (attrScaled && MainDamageTypes.isKiblastDamage(source)) {
             return amount;
         }
         return amount * mult;

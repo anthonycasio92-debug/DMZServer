@@ -80,6 +80,7 @@ Staff gate remains: op level ≥2 / Bukkit op, or `difficulty.admin` (config `ad
 - Level scaling uses levels above each tier’s unlock requirement (buying T7 at unlock ≈ base cost, not 100×). Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - Mob damage uses blended offense + a DEF/HP tank floor + specialization tax so 1–3 stat dumps cannot shrug tiered hits vs even builds.
+- Mob ki blasts/lasers/beams use the mob’s scaled attack damage (not vanilla 3–72), so DMZ DEF mitigation no longer cancels them to 0.
 - **Class/race counters:** mobs also press DMZ fighting classes (warrior/berserker melee, martial artist strike, spiritualist/cleric ki, tank/paladin) and mild race overlays (saiyan/majin/namekian/…). Toggle: `enableClassCounters`.
 - Scaled mob HP defaults to 50% of the previous match (`mobHealthScale` in config; damage unchanged).
 - Old NBT wallet balances migrate into Copper Ancient coins once per login.

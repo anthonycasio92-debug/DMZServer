@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.evolution;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
 import com.dragonminez.common.init.entities.ki.AbstractKiProjectile;
 import com.dragonminez.common.init.entities.ki.KiBlastEntity;
@@ -9,6 +10,7 @@ import com.dragonminez.common.init.entities.ki.KiWaveEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -41,7 +43,7 @@ public final class KiAttackHelper {
         }
         try {
             aimAt(shooter, target);
-            float damage = baseDamage(shooter, tier, burning ? 4.0f : 3.5f);
+            float damage = baseDamage(shooter, tier, burning ? 0.95f : 0.85f);
             float speed = 1.35f + Math.min(0.8f, tier.ordinalPower() * 0.08f);
             int main = burning ? COLOR_BURN : COLOR_MAIN;
             int border = burning ? COLOR_BURN_BORDER : COLOR_BORDER;
@@ -68,7 +70,7 @@ public final class KiAttackHelper {
         }
         try {
             aimAt(shooter, target);
-            float damage = baseDamage(shooter, tier, 7.5f);
+            float damage = baseDamage(shooter, tier, 1.25f);
             float speed = 1.05f + Math.min(0.5f, tier.ordinalPower() * 0.04f);
             float size = 1.6f + Math.min(1.2f, tier.ordinalPower() * 0.08f);
             KiBlastEntity blast = new KiBlastEntity(shooter.m_9236_(), shooter);
@@ -95,7 +97,7 @@ public final class KiAttackHelper {
         }
         try {
             aimAt(shooter, target);
-            float damage = baseDamage(shooter, tier, burning ? 5.5f : 5.0f);
+            float damage = baseDamage(shooter, tier, burning ? 1.15f : 1.05f);
             float speed = 1.6f + Math.min(0.6f, tier.ordinalPower() * 0.05f);
             int cast = Math.max(4, 14 - tier.ordinalPower());
             int main = burning ? COLOR_BURN : COLOR_MAIN;
@@ -125,7 +127,7 @@ public final class KiAttackHelper {
         }
         try {
             aimAt(shooter, target);
-            float damage = baseDamage(shooter, tier, charged ? 8.0f : 6.0f);
+            float damage = baseDamage(shooter, tier, charged ? 1.35f : 1.15f);
             float speed = charged ? 0.95f : 1.15f;
             float size = charged ? 1.4f : 0.9f;
             int cast = charged ? 28 : 16;
@@ -186,7 +188,7 @@ public final class KiAttackHelper {
         }
         try {
             aimAt(shooter, target);
-            float damage = baseDamage(shooter, tier, burning ? 4.0f : 3.5f) * damageScale;
+            float damage = baseDamage(shooter, tier, (burning ? 0.95f : 0.85f) * damageScale);
             float speed = 1.35f + Math.min(0.8f, tier.ordinalPower() * 0.08f);
             int main = burning ? COLOR_BURN : COLOR_MAIN;
             int border = burning ? COLOR_BURN_BORDER : COLOR_BORDER;
@@ -302,13 +304,44 @@ public final class KiAttackHelper {
     }
 
     /**
-     * Tier-scaled base damage. Difficulty multiplier is applied once by
-     * {@link com.dbzlegacy.adaptivedifficulty.scaling.MobScaling#scaleOutgoingHurt}
-     * for projectiles / ki (indirect hits) — do not bake difficulty here.
+     * Ki damage must be on the same scale as AD melee {@code ATTACK_DAMAGE}.
+     * <p>
+     * DMZ {@code calculatePostMitigationDamage} returns <b>0</b> when victim DEF
+     * ≫ incoming amount ({@code cancelDamageEventIfMitigationTooHigh}). Vanilla-scale
+     * 3.5–72 kiblasts were always cancelled for real characters — shots looked fine
+     * but never hurt. Bake the mob's scaled attack × skill ratio instead.
+     * {@link MobScaling#scaleOutgoingHurt} skips a second multiply for kiblast once
+     * attack attrs are already AD-painted.
+     *
+     * @param skillRatio fraction of the mob's scaled attack (blast ≈ 0.85, laser ≈ 1.05, …)
      */
-    private static float baseDamage(Mob shooter, DifficultyTier tier, float base) {
-        float tierBonus = Math.max(0, tier.ordinalPower()) * 1.35f;
-        // Soft cap before offense / projectile mult — keeps high-tier kits threatening, not spike-nuke.
-        return Math.min(72.0f, base + tierBonus);
+    private static float baseDamage(Mob shooter, DifficultyTier tier, float skillRatio) {
+        float atk = readScaledAttack(shooter);
+        float ratio = Math.max(0.25f, skillRatio);
+        float tierSpice = 1.0f + Math.max(0, tier.ordinalPower()) * 0.025f;
+        float dmg = atk * ratio * tierSpice;
+        // Soft ceiling vs the mob's own melee so barrages cannot outpace a punch train.
+        float ceiling = Math.max(atk * 2.25f, atk + 50.0f);
+        return Math.max(8.0f, Math.min(ceiling, dmg));
+    }
+
+    /** Live AD-painted attack, with offense-mult fallback when attrs aren't ready yet. */
+    private static float readScaledAttack(Mob shooter) {
+        if (shooter == null) {
+            return 8.0f;
+        }
+        try {
+            var inst = shooter.m_21051_(Attributes.f_22281_); // ATTACK_DAMAGE
+            if (inst != null) {
+                double v = inst.m_22135_(); // getValue
+                if (v > 1.0 && !Double.isNaN(v) && !Double.isInfinite(v)) {
+                    return (float) v;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        // Fallback: raw-ish floor × AD outgoing mult (claim may not have painted attrs yet).
+        float mult = MobScaling.outgoingDamageMultiplier(shooter);
+        return Math.max(8.0f, 12.0f * Math.max(1.0f, mult));
     }
 }
