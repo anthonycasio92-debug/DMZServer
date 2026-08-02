@@ -57,7 +57,7 @@ Config key: `enabled` (also `admin set enabled false`).
 
 ## Security (staff settings / admin set)
 
-Two issues that used to look like “auth gaps” — what they were, and what 3.3.18 does:
+Two issues that used to look like “auth gaps” — what they were, and what 3.3.16+ does:
 
 ### Unauthenticated settings page
 - **Risk:** The settings/details chat page is status text for staff, but the Bukkit path `/dmzdiffgui settings` only required `dmzdiff.gui` (default true for all players). `openChatMenu` did not re-check staff, so a non-admin could open the settings/details view. That page itself cannot mutate config, but it leaked staff-facing status and was a footgun next to `admin set`.
