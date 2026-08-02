@@ -13,6 +13,7 @@ import com.dbzlegacy.adaptivedifficulty.reward.RewardSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
+import com.dbzlegacy.adaptivedifficulty.scaling.SlimeSplitGuard;
 import com.dbzlegacy.adaptivedifficulty.tick.BehaviorScheduler;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
@@ -121,6 +122,10 @@ public final class DifficultyEvents {
             MobScaling.markFromSpawner(entity);
             return;
         }
+        // Slime / magma split children — never AD-convert the cubs.
+        if (SlimeSplitGuard.tryMarkSplitChild(entity)) {
+            return;
+        }
         // Saga/quest kills already carry dmz_quest_* / dmz_saga_id — scaleIfNeeded no-ops.
         MobScaling.scaleIfNeeded(entity);
     }
@@ -137,6 +142,8 @@ public final class DifficultyEvents {
         if (!(event.getEntity() instanceof LivingEntity living) || DimensionGates.isDisabled(living)) {
             return;
         }
+        // Split cubs join via addFreshEntity (often without FinalizeSpawn on Mohist).
+        SlimeSplitGuard.tryMarkSplitChild(living);
         if (MobScaling.hasSddSpawnerMark(living)) {
             MobScaling.markFromSpawner(living);
         }
@@ -363,6 +370,8 @@ public final class DifficultyEvents {
             return;
         }
         LivingEntity dead = event.getEntity();
+        // Register before vanilla remove() spawns smaller slime/magma cubs.
+        SlimeSplitGuard.onParentDeath(dead);
         if (dead instanceof Creeper creeper) {
             EnemyEvolution.onCreeperDeath(creeper, event.getSource());
         }

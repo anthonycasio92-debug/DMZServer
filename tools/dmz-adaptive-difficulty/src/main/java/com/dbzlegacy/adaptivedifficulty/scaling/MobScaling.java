@@ -60,6 +60,8 @@ public final class MobScaling {
     public static final String TAG_EXEMPT = "dmz_ad_exempt";
     /** Stamped at FinalizeSpawn when {@code MobSpawnType.SPAWNER}. */
     public static final String TAG_FROM_SPAWNER = "dmz_ad_from_spawner";
+    /** Slime / magma cube spawned by a parent split — never AD-convert. */
+    public static final String TAG_FROM_SLIME_SPLIT = "dmz_ad_slime_split";
 
     public static final String TAG_BASE_HEALTH = "dmz_ad_base_max_health";
     public static final String TAG_BASE_ATTACK = "dmz_ad_base_attack";
@@ -121,7 +123,9 @@ public final class MobScaling {
             return true;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);
-        if (tag.m_128471_(TAG_EXEMPT) || tag.m_128471_(TAG_FROM_SPAWNER)) {
+        if (tag.m_128471_(TAG_EXEMPT)
+                || tag.m_128471_(TAG_FROM_SPAWNER)
+                || tag.m_128471_(TAG_FROM_SLIME_SPLIT)) {
             return true;
         }
         if (hasQuestSpawnTags(tag)) {
@@ -169,6 +173,23 @@ public final class MobScaling {
         tag.m_128379_(TAG_EXEMPT, true);
     }
 
+    /** Stamp a slime/magma cube that came from a parent split. */
+    public static void markFromSlimeSplit(LivingEntity entity) {
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (!PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
+        tag.m_128379_(TAG_FROM_SLIME_SPLIT, true);
+        tag.m_128379_(TAG_EXEMPT, true);
+        // If nearby scaling already painted this child, roll back to natural size stats.
+        if (tag.m_128471_(TAG_SCALED) && tag.m_128441_(TAG_BASE_HEALTH)) {
+            revertToBases(entity);
+        }
+        clearAdBookkeeping(entity, tag);
+        tag.m_128379_(TAG_FROM_SLIME_SPLIT, true);
+        tag.m_128379_(TAG_EXEMPT, true);
+    }
+
     /**
      * Persist exempt and drop any AD bookkeeping.
      * <p>
@@ -176,6 +197,7 @@ public final class MobScaling {
      * {@link #revertToBases} them. Saga transform forms default to 300 max HP; AD
      * capturing that as a "base" and rolling back after quest HP is applied was
      * wiping Goku SSJ (etc.) down to the entity minimum.
+     * Slime-split children may have been painted already — those do revert.
      */
     public static void ensureExempt(LivingEntity entity) {
         CompoundTag tag = PersistentDataAccess.get(entity);
@@ -183,6 +205,10 @@ public final class MobScaling {
             return;
         }
         tag.m_128379_(TAG_EXEMPT, true);
+        if (tag.m_128471_(TAG_FROM_SLIME_SPLIT)) {
+            markFromSlimeSplit(entity);
+            return;
+        }
         boolean owned = entity instanceof DBSagasEntity
                 || entity instanceof EnderDragon
                 || hasQuestSpawnTags(tag)
