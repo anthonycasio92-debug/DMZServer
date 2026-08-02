@@ -167,6 +167,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     case "details" -> "stats";
                     default -> sub;
                 };
+                if (("stats".equals(page) || "details".equals(sub)) && !ForgeBridge.isStaff(player)) {
+                    openMenuRespectingConfig(player, "main");
+                    return true;
+                }
                 openMenuRespectingConfig(player, page);
                 return true;
             }

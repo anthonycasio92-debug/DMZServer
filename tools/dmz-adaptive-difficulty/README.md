@@ -37,7 +37,7 @@ Clients do **not** need this jar to join.
 1. `mods/dmz_adaptive_difficulty-3.3.12.jar` (remove older AD jars)
 2. `plugins/dmz_adaptive_difficulty_gui-3.3.12.jar`
 3. Restart — config regenerates at `config/dmz_adaptive_difficulty.json`
-4. `/difficulty` → **Buy Tier** (hub also has personal + coin-chat toggles)
+4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
 ## Commands
 

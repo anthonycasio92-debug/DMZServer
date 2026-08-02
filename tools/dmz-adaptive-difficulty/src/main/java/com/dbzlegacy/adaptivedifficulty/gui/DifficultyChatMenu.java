@@ -50,7 +50,11 @@ public final class DifficultyChatMenu {
             teamsWip(player);
         } else if ("stats".equalsIgnoreCase(page) || "statistics".equalsIgnoreCase(page)
                 || "details".equalsIgnoreCase(page)) {
-            stats(player);
+            if (isStaff(player)) {
+                stats(player);
+            } else {
+                main(player);
+            }
         } else {
             main(player);
         }
@@ -59,15 +63,15 @@ public final class DifficultyChatMenu {
     private static void main(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8──────── §fAdaptive Difficulty §8────────"));
+        send(player, Component.m_237113_("§8── §fAdaptive Difficulty §8──"));
         if (!DifficultyConfig.isEnabled()) {
             send(player, Component.m_237113_("§c§lSYSTEM DISABLED"));
             if (isStaff(player)) {
-                send(player, Component.m_237113_("§8No scaling until re-enabled: §f/difficulty admin on"));
+                send(player, Component.m_237113_("§8Re-enable: §f/difficulty admin on"));
             } else {
                 send(player, Component.m_237113_("§7Please try again later."));
             }
-            send(player, Component.m_237113_("§8────────────────────────"));
+            send(player, Component.m_237113_("§8────────────────"));
             return;
         }
         if (!SystemGate.allows(player)) {
@@ -77,24 +81,27 @@ public final class DifficultyChatMenu {
             } else {
                 send(player, Component.m_237113_("§7Ask an admin if you need access."));
             }
-            send(player, Component.m_237113_("§8────────────────────────"));
+            send(player, Component.m_237113_("§8────────────────"));
             return;
         }
         PlayerDifficultyData data = DifficultyCache.data(player);
         boolean personalOn = data.isPersonalEnabled();
         boolean coinChatOn = data.isCoinDropChat();
-        send(player, Component.m_237113_("§7Current Tier §f" + snap.activeTierName
-                + "  §8·  §7CR §f" + snap.combatRating
-                + "  §8·  §" + snap.stateColorCode() + snap.state()));
-        send(player, Component.m_237113_("§7DMZ §f" + snap.dmzLevel
-                + "  §8·  §7Prestige §f" + snap.prestige
+        send(player, Component.m_237113_("§7Tier §f" + snap.activeTierName
+                + "  §8·  §" + snap.stateColorCode() + snap.state()
                 + "  §8·  §7Unlocked §fT" + snap.highestUnlockedTier));
-        send(player, Component.m_237113_("§6Ancient Coins §8(inventory)"));
-        send(player, Component.m_237113_("§f" + AncientCoinEconomy.inventoryBreakdown(player)));
+        send(player, Component.m_237113_("§6Coins §f" + AncientCoinEconomy.inventoryBreakdown(player)));
         if (!TitleSystem.activeDisplay(player).equals("None")) {
             send(player, Component.m_237113_("§7Title §e" + TitleSystem.activeDisplay(player)));
         }
         send(player, Component.m_237113_(""));
+        MutableComponent hub = Component.m_237113_("§7")
+                .m_7220_(btn("§a[Buy Tier]", "/difficulty do page buy", "Purchase a higher Unlock Tier"))
+                .m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn("§f[Lower]", "/difficulty do page lower", "Select a lower unlocked tier"))
+                .m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn("§d[Titles]", "/difficulty do page titles", "Equip difficulty titles"));
+        send(player, hub);
         MutableComponent toggles = Component.m_237113_("§7")
                 .m_7220_(btn(personalOn ? "§a[Difficulty ON]" : "§c[Difficulty OFF]",
                         "/difficulty do toggle_personal 0 main",
@@ -108,16 +115,10 @@ public final class DifficultyChatMenu {
                                 ? "Mute Ancient Coin drop chat messages"
                                 : "Show Ancient Coin drop chat messages"));
         send(player, toggles);
-        MutableComponent hub = Component.m_237113_("§7")
-                .m_7220_(btn("§a[Buy Tier]", "/difficulty do page buy", "Purchase a higher Unlock Tier"))
-                .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§f[Lower Tier]", "/difficulty do page lower", "Select a lower unlocked tier"))
-                .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§d[Titles]", "/difficulty do page titles", "Equip difficulty titles"));
-        send(player, hub);
-        send(player, Component.m_237113_("§8Teams §7WIP — personal difficulty only"));
-        send(player, btn("§7[Details]", "/difficulty do page stats", "Full breakdown"));
-        send(player, Component.m_237113_("§8────────────────────────"));
+        if (isStaff(player)) {
+            send(player, btn("§8[Details]", "/difficulty do page stats", "Staff breakdown"));
+        }
+        send(player, Component.m_237113_("§8────────────────"));
     }
 
     private static void buy(ServerPlayer player) {
@@ -229,8 +230,12 @@ public final class DifficultyChatMenu {
     }
 
     private static void stats(ServerPlayer player) {
+        if (!isStaff(player)) {
+            main(player);
+            return;
+        }
         DifficultySnapshot snap = DifficultyCache.refresh(player);
-        send(player, Component.m_237113_("§8──────── §fDetails §8────────"));
+        send(player, Component.m_237113_("§8── §fDetails §8(staff) ──"));
         send(player, Component.m_237113_("§7Tier §f" + snap.activeTierName
                 + "  §8·  §7State §" + snap.stateColorCode() + snap.state()));
         send(player, Component.m_237113_("§7Combat Rating §f" + snap.combatRating
@@ -238,10 +243,9 @@ public final class DifficultyChatMenu {
                 + "  §8·  §7Prestige §f" + snap.prestige));
         send(player, Component.m_237113_("§7Unlocked §fT" + snap.highestUnlockedTier
                 + "  §8·  §7Title §e" + TitleSystem.activeDisplay(player)));
-        send(player, Component.m_237113_("§6Ancient Coins"));
-        send(player, Component.m_237113_("§f" + AncientCoinEconomy.inventoryBreakdown(player)));
+        send(player, Component.m_237113_("§6Ancient Coins §f" + AncientCoinEconomy.inventoryBreakdown(player)));
         send(player, Component.m_237113_(
-                "§8Teams WIP · Kits: T1 Awakened→T7 God · T4 elite · T5 mutation · T6 boss"));
+                "§8Kits T1→T7 · T4 elite · T5 mutation · T6 boss · Teams WIP"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 

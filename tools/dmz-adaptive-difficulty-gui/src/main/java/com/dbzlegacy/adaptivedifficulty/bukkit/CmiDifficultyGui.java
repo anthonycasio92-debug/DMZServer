@@ -12,8 +12,8 @@ import org.bukkit.entity.Player;
 
 /**
  * CMILib inventory GUI — tier-centric Adaptive Difficulty.
- * Pages: Hub · Buy Tier · Lower Tier · Titles · Details.
- * Teams shown as WIP only (no actions).
+ * Pages: Hub · Buy Tier · Lower Tier · Titles · Teams (WIP).
+ * Details is staff/ops only.
  */
 public final class CmiDifficultyGui {
     private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
@@ -45,7 +45,13 @@ public final class CmiDifficultyGui {
                 case "buy", "purchase", "unlock" -> openBuy(player);
                 case "titles", "title" -> openTitles(player);
                 case "team", "teams" -> openTeamsWip(player);
-                case "stats", "statistics", "details" -> openStats(player);
+                case "stats", "statistics", "details" -> {
+                    if (ForgeBridge.isStaff(player)) {
+                        openStats(player);
+                    } else {
+                        openMain(player);
+                    }
+                }
                 default -> openMain(player);
             }
             return true;
@@ -70,32 +76,28 @@ public final class CmiDifficultyGui {
         if (!systemOn || !allowed) {
             status.addLore(unavailableLore(player, systemOn));
             gui.addButton(status);
-            gui.addButton(actionBtn(31, Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
-                    List.of("&7Reload this menu")));
-            gui.addButton(closeBtn(35));
+            gui.addButton(closeBtn(31));
             fillEmpty(gui, 4);
             gui.open();
             return;
         }
-        status.addLore(statusLore(ph, stateColor));
+        status.addLore(statusLore(ph, stateColor, ForgeBridge.isStaff(player)));
         gui.addButton(status);
 
-        gui.addButton(pageBtn(19, Material.GOLD_INGOT, "&eBuy Tier", "buy",
+        // Primary actions — centered trio
+        gui.addButton(pageBtn(20, Material.GOLD_INGOT, "&eBuy Tier", "buy",
                 "&7Purchase a higher Unlock Tier",
                 "&8Ancient Coins · pay-up OK · no change"));
-        gui.addButton(pageBtn(21, Material.WHITE_CONCRETE, "&fLower Tier", "lower",
+        gui.addButton(pageBtn(22, Material.WHITE_CONCRETE, "&fLower Tier", "lower",
                 "&7Select a lower unlocked tier",
                 "&8Or reset to None · always free"));
-        gui.addButton(pageBtn(23, Material.NAME_TAG, "&dTitles", "titles",
+        gui.addButton(pageBtn(24, Material.NAME_TAG, "&dTitles", "titles",
                 "&7Equip difficulty titles",
-                "&8Higher CR / kill requirements"));
-        gui.addButton(pageBtn(25, Material.COMPASS, "&8Teams &7(WIP)", "team",
-                "&7Not available yet",
-                "&ePersonal difficulty only"));
+                "&8Earned from tiers and combat"));
 
         boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
         boolean coinChatOn = "true".equalsIgnoreCase(ph.getOrDefault("coin_drop_chat", "false"));
-        gui.addButton(actionBtn(28,
+        gui.addButton(actionBtn(29,
                 personalOn ? Material.LIME_DYE : Material.GRAY_DYE,
                 personalOn ? "&aDifficulty ON" : "&cDifficulty OFF",
                 "toggle_personal", "0", "main",
@@ -106,7 +108,7 @@ public final class CmiDifficultyGui {
                         "&8Pre-T1 still drops Copper when ON",
                         "&8No scaling / kill coins when OFF"
                 )));
-        gui.addButton(actionBtn(29,
+        gui.addButton(actionBtn(31,
                 coinChatOn ? Material.BELL : Material.PAPER,
                 coinChatOn ? "&aCoin Chat ON" : "&8Coin Chat OFF",
                 "toggle_coin_chat", "0", "main",
@@ -116,10 +118,11 @@ public final class CmiDifficultyGui {
                                 : "&7Click to show drop messages",
                         "&8Only affects Ancient Coin kill chat"
                 )));
-        gui.addButton(pageBtn(30, Material.BOOK, "&fDetails", "stats",
-                "&7Coins, progression, title"));
-        gui.addButton(actionBtn(31, Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
-                List.of("&7Reload this menu")));
+        if (ForgeBridge.isStaff(player)) {
+            gui.addButton(pageBtn(33, Material.BOOK, "&8Details", "stats",
+                    "&7Staff breakdown",
+                    "&8CR · prestige · kit gates"));
+        }
         gui.addButton(closeBtn(35));
         fillEmpty(gui, 4);
         gui.open();
@@ -266,8 +269,12 @@ public final class CmiDifficultyGui {
     }
 
     private static void openStats(Player player) {
+        if (!ForgeBridge.isStaff(player)) {
+            openMain(player);
+            return;
+        }
         Map<String, String> ph = ForgeBridge.placeholders(player);
-        CMIGui gui = base(player, "&8Details", 4);
+        CMIGui gui = base(player, "&8Details (staff)", 4);
         String stateColor = ph.getOrDefault("state_color", "f");
 
         CMIGuiButton core = new CMIGuiButton(11, Material.NETHER_STAR, "&f&lProgression");
@@ -386,23 +393,25 @@ public final class CmiDifficultyGui {
         return List.of("", "&eNot available right now", "&7Ask an admin if you need access");
     }
 
-    private static List<String> statusLore(Map<String, String> ph, String stateColor) {
+    private static List<String> statusLore(Map<String, String> ph, String stateColor, boolean staff) {
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.add("&7Current Tier &f" + ph.getOrDefault("active_tier_name", "None"));
-        lore.add("&7State  &" + stateColor + ph.getOrDefault("state", "?"));
-        lore.add("&7CR     &f" + ph.getOrDefault("combat_rating", "?"));
-        lore.add("&7Title  &e" + blankAsNone(ph.getOrDefault("active_title", "")));
+        lore.add("&7Tier &f" + ph.getOrDefault("active_tier_name", "None")
+                + "  &8·  &7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"));
+        lore.add("&7State &" + stateColor + ph.getOrDefault("state", "?"));
+        String title = blankAsNone(ph.getOrDefault("active_title", ""));
+        if (!"None".equals(title)) {
+            lore.add("&7Title &e" + title);
+        }
         lore.add("");
         lore.addAll(coinLore(ph));
+        if (staff) {
+            lore.add("");
+            lore.add("&8CR &f" + ph.getOrDefault("combat_rating", "?")
+                    + "  &8DMZ &f" + ph.getOrDefault("level", "?")
+                    + "  &8Prestige &f" + ph.getOrDefault("prestige", "?"));
+        }
         lore.add("");
-        lore.add("&7DMZ &f" + ph.getOrDefault("level", "?")
-                + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"));
-        lore.add("&7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"));
-        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
-        boolean coinChatOn = "true".equalsIgnoreCase(ph.getOrDefault("coin_drop_chat", "false"));
-        lore.add("&7Personal &" + (personalOn ? "aON" : "cOFF")
-                + "  &7Coin chat &" + (coinChatOn ? "aON" : "8OFF"));
         lore.add("&8Buy a higher tier · Lower to step down");
         return lore;
     }
