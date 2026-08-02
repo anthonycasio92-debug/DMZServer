@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.3.3)
+# DMZ Adaptive Difficulty (v3.3.4)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -8,7 +8,7 @@ Clients do **not** need this jar to join.
 | System | Behavior |
 |--------|----------|
 | Unlock tiers (1–7) | Unlocked by DMZ level **or** Prestige ≥ tier id |
-| Buy tier | Spend inventory Ancient Coins (exact payment, sets tier difficulty) |
+| Buy tier | Spend Ancient Coins (pay-up OK with lower/higher mix, no change) |
 | Active difficulty | Set only by tier purchase — no +difficulty upgrades |
 | Death | Clears active tier + level (unlocks / prestige / coins kept) |
 | Nearby scaling | Hostiles scale to player post-transform stats × tier % (max 5/player) |
@@ -31,8 +31,8 @@ Clients do **not** need this jar to join.
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.3.3.jar` (remove older AD jars)
-2. `plugins/dmz_adaptive_difficulty_gui-3.3.3.jar`
+1. `mods/dmz_adaptive_difficulty-3.3.4.jar` (remove older AD jars)
+2. `plugins/dmz_adaptive_difficulty_gui-3.3.4.jar`
 3. Restart — config regenerates at `config/dmz_adaptive_difficulty.json`
 4. `/difficulty` → **Buy Tier**
 
@@ -55,8 +55,9 @@ Config key: `enabled` (also `admin set enabled false`).
 ## Notes
 
 - The End stays in `disabledDimensions` by default (End Strength script owns it).
-- Ancient Coins are real Lightman's `coin_ancient` items (exact type/count, no change).
-- Coin ladder: Copper → Iron → Gold → Emerald → Diamond → Netherite (9 letter variants, equal value). Lapis / Ender Pearl unused.
+- Ancient Coins are real Lightman's `coin_ancient` items. Pay-up allowed (no change returned).
+- Coin ladder values: Copper 1 → Iron 10 → Gold 100 → Emerald 1k → Diamond 10k → Netherite 100k (9 letter variants equal). Lapis / Ender Pearl unused.
+- Example: a 1× Iron cost can be paid with 10+ Copper, or 1× Gold (overpay, no change).
 - Tier costs cap at 128 of one coin type, then promote to the next denomination (rounded up; top = 128× Netherite).
 - Level scaling uses levels above each tier’s unlock requirement (buying T7 at unlock ≈ base cost, not 100×).
 - Saga/quest (`dmz_quest_*` / `dmz_saga_id`), vanilla cage spawners, and SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`) are never AD-converted.

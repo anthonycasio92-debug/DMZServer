@@ -30,9 +30,9 @@ import net.minecraftforge.fml.ModList;
  * Netherite (all 9 letter variants share one value). Lapis and Ender Pearl
  * ancient coins are ignored (never spent, counted, granted, or dropped).
  * <p>
- * Charges take an <b>exact</b> copper total from available denominations and
- * never consume a higher coin that would overshoot. If the player cannot make
- * exact payment, the charge fails and callers report how much is missing.
+ * Charges prefer an exact copper total, but players may <b>pay up</b> with any
+ * mix of denominations whose total value is ≥ the cost (lower coins can stand
+ * in for higher ones). No change is returned — overpay is kept by the shop.
  */
 public final class AncientCoinEconomy {
     private static final boolean LIGHTMANS = ModList.get().isLoaded("lightmanscurrency");
@@ -260,9 +260,7 @@ public final class AncientCoinEconomy {
         if (player == null) {
             return false;
         }
-        if (LIGHTMANS) {
-            return planExactPayment(countByKind(player), copperCost) != null;
-        }
+        // Pay-up allowed: any mix whose copper-value is ≥ cost (no change given).
         return balance(player) >= copperCost;
     }
 
@@ -273,15 +271,10 @@ public final class AncientCoinEconomy {
         }
         long have = balance(player);
         long missing = Math.max(0L, copperCost - have);
-        if (missing <= 0L && !canAfford(player, copperCost)) {
-            // Has enough copper value but cannot make exact change without overpaying.
-            return "Need exactly " + formatExactCost(copperCost)
-                    + " — break coins into smaller Ancient types (have "
-                    + inventoryBreakdown(player) + ")";
-        }
         return "Need " + formatExactCost(copperCost)
                 + " — missing " + formatExactCost(missing)
-                + " (have " + inventoryBreakdown(player) + ")";
+                + " (have " + inventoryBreakdown(player) + ")"
+                + " §8· pay-up OK, no change";
     }
 
     public static boolean charge(ServerPlayer player, long copperCost) {
@@ -292,7 +285,7 @@ public final class AncientCoinEconomy {
             return false;
         }
         if (LIGHTMANS) {
-            return chargeExact(player, copperCost);
+            return chargePayment(player, copperCost);
         }
         warnMissingLightmans();
         PlayerDifficultyData data = DifficultyCache.data(player);
@@ -616,6 +609,21 @@ public final class AncientCoinEconomy {
     }
 
     /**
+     * Prefer exact payment; otherwise pay-up (value ≥ cost, no change).
+     * Returns take-counts per CoinKind ordinal, or null if unaffordable.
+     */
+    private static long[] planPayment(long[] available, long copperCost) {
+        if (copperCost <= 0L) {
+            return new long[CoinKind.values().length];
+        }
+        long[] exact = planExactPayment(available, copperCost);
+        if (exact != null) {
+            return exact;
+        }
+        return planPayUpPayment(available, copperCost);
+    }
+
+    /**
      * Plan an exact payment (no overpay). Returns take-counts per CoinKind ordinal, or null.
      */
     private static long[] planExactPayment(long[] available, long copperCost) {
@@ -637,10 +645,59 @@ public final class AncientCoinEconomy {
         return remaining == 0L ? plan : null;
     }
 
-    /** Remove an exact copper total. Never takes a higher coin that would overshoot. */
-    private static boolean chargeExact(ServerPlayer player, long copperCost) {
+    /**
+     * Pay-up plan: spend cheapest coins first until copper-value ≥ cost.
+     * Overpay is intentional — no change is returned.
+     * Example: cost of 1× Iron (10 copper-value) can be paid with 10+ Copper,
+     * or with 1× Gold (overpay, no change).
+     */
+    private static long[] planPayUpPayment(long[] available, long copperCost) {
+        if (copperCost <= 0L) {
+            return new long[CoinKind.values().length];
+        }
+        if (available == null || totalCopperValue(available) < copperCost) {
+            return null;
+        }
+        long[] plan = new long[CoinKind.values().length];
+        long[] left = java.util.Arrays.copyOf(available, available.length);
+        long need = copperCost;
+        for (CoinKind kind : CoinKind.lowToHigh()) {
+            int idx = kind.ordinal();
+            long unit = kind.copperValue;
+            if (unit <= 0L) {
+                continue;
+            }
+            while (need > 0L && left[idx] > 0L) {
+                plan[idx]++;
+                left[idx]--;
+                need -= unit;
+            }
+            if (need <= 0L) {
+                return plan;
+            }
+        }
+        return need <= 0L ? plan : null;
+    }
+
+    private static long totalCopperValue(long[] counts) {
+        if (counts == null) {
+            return 0L;
+        }
+        long total = 0L;
+        for (CoinKind kind : CoinKind.values()) {
+            int idx = kind.ordinal();
+            if (idx < 0 || idx >= counts.length || counts[idx] <= 0L) {
+                continue;
+            }
+            total = safeAdd(total, safeMul(kind.copperValue, counts[idx]));
+        }
+        return total;
+    }
+
+    /** Remove coins per {@link #planPayment} — exact preferred, else pay-up with no change. */
+    private static boolean chargePayment(ServerPlayer player, long copperCost) {
         long[] available = countByKind(player);
-        long[] plan = planExactPayment(available, copperCost);
+        long[] plan = planPayment(available, copperCost);
         if (plan == null) {
             return false;
         }

@@ -66,7 +66,7 @@ public final class DifficultyChestGui implements Listener {
         String stateColor = ph.getOrDefault("state_color", "f");
         inv.setItem(13, item(Material.NETHER_STAR, "&f&lAdaptive Difficulty", statusLore(ph, stateColor)));
         inv.setItem(19, pageBtn(Material.GOLD_INGOT, "&eBuy Tier", "buy",
-                "&7Purchase a higher Unlock Tier", "&8Exact Ancient Coins · scales with DMZ level"));
+                "&7Purchase a higher Unlock Tier", "&8Ancient Coins · pay-up OK · no change"));
         inv.setItem(21, pageBtn(Material.WHITE_CONCRETE, "&fLower Tier", "lower",
                 "&7Select a lower unlocked tier", "&8Or reset to None · always free"));
         inv.setItem(23, pageBtn(Material.NAME_TAG, "&dTitles", "titles",
@@ -98,7 +98,7 @@ public final class DifficultyChestGui implements Listener {
         info.addAll(coinLore(ph));
         info.add("");
         info.add("&8Costs scale with your DMZ level");
-        info.add("&8Exact coins only — no overpay / change");
+        info.add("&8Pay-up OK (e.g. Copper instead of Iron) — no change");
         inv.setItem(4, item(Material.GOLD_INGOT, "&e&lBuy Higher Tier", info));
 
         placeTierItems(inv, ph, true);
@@ -239,7 +239,7 @@ public final class DifficultyChestGui implements Listener {
         coins.add("");
         coins.addAll(coinLore(ph));
         coins.add("");
-        coins.add("&8Tier purchases use exact Ancient Coins");
+        coins.add("&8Tier purchases: pay-up OK, no change returned");
         inv.setItem(15, item(Material.GOLD_INGOT, "&f&lAncient Coins", coins));
         inv.setItem(27, pageBtn(Material.ARROW, "&7Back", "main", "&7Return"));
         inv.setItem(35, closeBtn());
@@ -268,7 +268,7 @@ public final class DifficultyChestGui implements Listener {
                 tip.add("&aCurrently active");
             } else if (buyMode && unlocked) {
                 tip.add("&aUnlocked &8· click to purchase");
-                tip.add("&8Exact Ancient Coins only");
+                tip.add("&8Pay-up OK · no change");
             } else if (!buyMode && unlocked && t < activeTier) {
                 tip.add("&aOwned &8· click to lower here");
             } else if (!unlocked) {

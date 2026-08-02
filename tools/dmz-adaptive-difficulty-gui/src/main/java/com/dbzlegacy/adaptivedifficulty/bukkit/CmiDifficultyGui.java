@@ -82,7 +82,7 @@ public final class CmiDifficultyGui {
 
         gui.addButton(pageBtn(19, Material.GOLD_INGOT, "&eBuy Tier", "buy",
                 "&7Purchase a higher Unlock Tier",
-                "&8Exact Ancient Coins · scales with DMZ level"));
+                "&8Ancient Coins · pay-up OK · no change"));
         gui.addButton(pageBtn(21, Material.WHITE_CONCRETE, "&fLower Tier", "lower",
                 "&7Select a lower unlocked tier",
                 "&8Or reset to None · always free"));
@@ -118,7 +118,7 @@ public final class CmiDifficultyGui {
         infoLore.addAll(coinLore(ph));
         infoLore.add("");
         infoLore.add("&8Costs scale with your DMZ level");
-        infoLore.add("&8Exact coins only — no overpay / change");
+        infoLore.add("&8Pay-up OK (e.g. Copper instead of Iron) — no change");
         info.addLore(infoLore);
         gui.addButton(info);
 
@@ -277,7 +277,7 @@ public final class CmiDifficultyGui {
         coin.add("");
         coin.addAll(coinLore(ph));
         coin.add("");
-        coin.add("&8Tier purchases use exact Ancient Coins");
+        coin.add("&8Tier purchases: pay-up OK, no change returned");
         account.addLore(coin);
         gui.addButton(account);
 
@@ -310,7 +310,7 @@ public final class CmiDifficultyGui {
                 lore.add("&aCurrently active");
             } else if (buyMode && unlocked) {
                 lore.add("&aUnlocked &8· click to purchase");
-                lore.add("&8Exact Ancient Coins only");
+                lore.add("&8Pay-up OK · no change");
             } else if (!buyMode && unlocked && t < activeTier) {
                 lore.add("&aOwned &8· click to lower here");
             } else if (!unlocked) {
