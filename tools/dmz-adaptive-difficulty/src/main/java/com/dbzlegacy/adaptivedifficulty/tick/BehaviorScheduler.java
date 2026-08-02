@@ -100,12 +100,14 @@ public final class BehaviorScheduler {
             return true;
         }
 
-        // Whitelist testing: only tick AI/evolution for mobs fighting allowed players.
-        if (DifficultyConfig.isWhitelistEnabled()) {
-            LivingEntity target = mob.m_5448_();
-            if (!(target instanceof ServerPlayer sp) || !SystemGate.allows(sp)) {
+        // Only tick AI/evolution for mobs fighting participating players.
+        LivingEntity target = mob.m_5448_();
+        if (target instanceof ServerPlayer sp) {
+            if (!SystemGate.participates(sp)) {
                 return false;
             }
+        } else if (DifficultyConfig.isWhitelistEnabled()) {
+            return false;
         }
 
         // Saga/quest + spawner mobs are owned by other systems — never convert / AI-kit them.

@@ -184,6 +184,27 @@ public final class ForgeBridge {
             out.put("whitelist_status", wlOn ? "ON" : "OFF");
             out.put("player_allowed", allowed ? "true" : "false");
 
+            boolean personalOn = true;
+            boolean coinChatOn = false;
+            if (cacheData != null) {
+                try {
+                    Object data = cacheData.invoke(null, nms);
+                    if (data != null) {
+                        Object pe = data.getClass().getMethod("isPersonalEnabled").invoke(data);
+                        if (pe instanceof Boolean b) {
+                            personalOn = b;
+                        }
+                        Object cc = data.getClass().getMethod("isCoinDropChat").invoke(data);
+                        if (cc instanceof Boolean b) {
+                            coinChatOn = b;
+                        }
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            out.put("personal_enabled", personalOn ? "true" : "false");
+            out.put("coin_drop_chat", coinChatOn ? "true" : "false");
+
             // UnlockTier 1–7 — level-scaled activation costs.
             if (unlockTierValues != null && economyFormatExactCost != null) {
                 try {
@@ -405,6 +426,8 @@ public final class ForgeBridge {
                  "down", "team", "reset", "zero", "clear",
                  "character_reset", "char_reset", "characterreset",
                  "equip_title", "clear_title", "equip", "unequip_title",
+                 "toggle_personal", "personal", "toggle_difficulty", "difficulty_toggle",
+                 "toggle_coin_chat", "coin_chat", "toggle_chat", "chat_drops",
                  "page", "refresh", "set" -> true;
             default -> false;
         };
@@ -525,6 +548,8 @@ public final class ForgeBridge {
             case "down", "reset", "zero", "clear", "set", "lower_tier" -> "lower";
             case "buy", "activate", "purchase_tier" -> "buy";
             case "equip_title", "clear_title", "equip", "unequip_title" -> "titles";
+            case "toggle_personal", "personal", "toggle_difficulty", "difficulty_toggle",
+                 "toggle_coin_chat", "coin_chat", "toggle_chat", "chat_drops" -> "main";
             default -> "main";
         };
     }

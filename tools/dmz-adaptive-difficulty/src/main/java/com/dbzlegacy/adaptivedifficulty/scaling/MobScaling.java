@@ -197,7 +197,7 @@ public final class MobScaling {
             if (!cfg.enabled || !cfg.enableMobScaling) {
                 return;
             }
-            if (!SystemGate.allows(player)) {
+            if (!SystemGate.participates(player)) {
                 return;
             }
             if (cfg.scaleHostileOnly && !HostileMobs.isHostile(entity)) {
@@ -371,7 +371,7 @@ public final class MobScaling {
         tag.m_128356_(TAG_PROFILE_SIG, 0L);
         tag.m_128350_(TAG_DMG_MULT, 1.0f);
         ServerPlayer nearby = NearbyPlayers.nearest(entity, Math.max(8.0, cfg.mobScaleRadius));
-        if (nearby != null && SystemGate.allows(nearby) && entity instanceof Mob mob) {
+        if (nearby != null && SystemGate.participates(nearby) && entity instanceof Mob mob) {
             retargetToPlayer(mob, nearby);
         }
     }

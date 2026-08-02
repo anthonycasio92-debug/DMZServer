@@ -394,8 +394,8 @@ public final class AncientCoinEconomy {
     }
 
     /**
-     * Roll an exact Ancient Coin drop. Returns the coin type + count to spawn at the mob.
-     * Requires an active Unlock Tier — inactive players mint nothing.
+     * Roll an Ancient Coin drop at the mob.
+     * Pre-T1 (no active tier) still drops 1× Copper so players can start buying tiers.
      */
     public static Drop rollKillDrop(ServerPlayer killer, long combatRating, boolean elite, boolean boss) {
         DifficultyConfig cfg = DifficultyConfig.get();
@@ -405,7 +405,8 @@ public final class AncientCoinEconomy {
         PlayerDifficultyData data = DifficultyCache.data(killer);
         int tier = data.getActiveTier();
         if (tier <= 0) {
-            return new Drop(CoinKind.COPPER, 0);
+            // Starter economy — Copper only until a tier is purchased.
+            return new Drop(CoinKind.COPPER, 1);
         }
         CoinKind kind = rollKind(tier);
         int count = 1;

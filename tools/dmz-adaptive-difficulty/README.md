@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.3.4)
+# DMZ Adaptive Difficulty (v3.3.5)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -10,12 +10,14 @@ Clients do **not** need this jar to join.
 | Unlock tiers (1–7) | Unlocked by DMZ level **or** Prestige ≥ tier id |
 | Buy tier | Spend Ancient Coins (pay-up OK with lower/higher mix, no change) |
 | Active difficulty | Set only by tier purchase — no +difficulty upgrades |
-| Death | Clears active tier + level (unlocks / prestige / coins kept) |
+| Personal toggle | GUI on/off for that player only (default ON) |
+| Coin drop chat | GUI mute for "Dropped X Ancient Coins" (default OFF) |
+| Death | Clears active tier + level when personal ON (unlocks / prestige / coins kept) |
 | Nearby scaling | Hostiles scale to player post-transform stats × tier % (max 5/player) |
 | Combat Rating | Rewards / display / area readouts (not mob HP) |
 | Teams | WIP stub — personal difficulty only |
 | Titles | Restored; equip from GUI |
-| Kill rewards | Hostiles only + active Unlock Tier — 1–5 coins drop on the ground |
+| Kill rewards | Personal ON: pre-T1 drops 1× Copper; with tier, normal ladder drops on the ground |
 | Feature gates | T2 evo → T3 AI → T4 elite → T5 mutation → T6 boss → T7 full |
 
 ## Removed / cleaned
@@ -31,17 +33,17 @@ Clients do **not** need this jar to join.
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.3.4.jar` (remove older AD jars)
-2. `plugins/dmz_adaptive_difficulty_gui-3.3.4.jar`
+1. `mods/dmz_adaptive_difficulty-3.3.5.jar` (remove older AD jars)
+2. `plugins/dmz_adaptive_difficulty_gui-3.3.5.jar`
 3. Restart — config regenerates at `config/dmz_adaptive_difficulty.json`
-4. `/difficulty` → **Buy Tier**
+4. `/difficulty` → **Buy Tier** (hub also has personal + coin-chat toggles)
 
 ## Commands
 
 - `/difficulty` — GUI
 - `/difficulty admin off|on|toggle|status` — master system switch (ops / staff)
 - `/difficulty admin reload|settings|set <key> <value>`
-- Actions: `activate <1-7>`, `reset`, `character_reset`, title equip
+- Actions: `activate <1-7>`, `reset`, `character_reset`, title equip, `toggle_personal`, `toggle_coin_chat`
 
 When disabled: no mob scaling, kill coins, AI, death reset, or tier purchases.
 Config key: `enabled` (also `admin set enabled false`).

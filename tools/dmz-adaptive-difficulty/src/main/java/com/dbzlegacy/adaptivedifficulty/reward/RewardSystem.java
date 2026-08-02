@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
+import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
@@ -20,7 +21,7 @@ import net.minecraft.world.entity.player.Player;
 
 /**
  * Kill rewards: Ancient Coins drop in the world at the mob + modest XP.
- * Only hostiles, only with an active Unlock Tier. No farm-animal / inactive spam.
+ * Requires personal difficulty on. Pre-T1 still drops Copper so players can buy T1.
  */
 public final class RewardSystem {
     private static final String TAG_REWARDED = "dmz_ad_kill_rewarded";
@@ -32,16 +33,11 @@ public final class RewardSystem {
             return;
         }
         DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enabled || !cfg.enableRewardScaling || !SystemGate.allows(killer)) {
+        if (!cfg.enabled || !cfg.enableRewardScaling || !SystemGate.participates(killer)) {
             return;
         }
         // Passive mobs / farms must never mint Ancient Coins.
         if (!HostileMobs.isHostile(dead) || MobScaling.isExemptFromConversion(dead)) {
-            return;
-        }
-        DifficultySnapshot snap = DifficultyCache.get(killer);
-        // No active tier → no coin economy participation.
-        if (snap.activeTier <= 0) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(dead);
@@ -50,6 +46,8 @@ public final class RewardSystem {
         }
         tag.m_128379_(TAG_REWARDED, true);
 
+        DifficultySnapshot snap = DifficultyCache.get(killer);
+        PlayerDifficultyData data = DifficultyCache.data(killer);
         UnlockTier unlock = UnlockTier.byId(snap.activeTier);
         boolean elite = EliteSystem.isElite(dead);
         boolean boss = tag.m_128471_(BossScaling.TAG_BOSS);
@@ -58,10 +56,15 @@ public final class RewardSystem {
         AncientCoinEconomy.Drop drop = AncientCoinEconomy.rollKillDrop(killer, snap.combatRating, elite, boss);
         if (drop.count() > 0) {
             AncientCoinEconomy.dropInWorld(dead, drop);
-            AncientCoinEconomy.notifyGrant(killer, drop);
+            if (data.isCoinDropChat()) {
+                AncientCoinEconomy.notifyGrant(killer, drop);
+            }
         }
-        grantExperience(killer, mult, elite, boss, unlock);
-        TitleSystem.maybeUnlockCombatTitle(killer, snap, elite, boss);
+        // XP / titles only once a tier is active.
+        if (snap.activeTier > 0) {
+            grantExperience(killer, mult, elite, boss, unlock);
+            TitleSystem.maybeUnlockCombatTitle(killer, snap, elite, boss);
+        }
     }
 
     private static void grantExperience(

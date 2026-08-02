@@ -80,6 +80,9 @@ public final class DifficultyChatMenu {
             send(player, Component.m_237113_("§8────────────────────────"));
             return;
         }
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        boolean personalOn = data.isPersonalEnabled();
+        boolean coinChatOn = data.isCoinDropChat();
         send(player, Component.m_237113_("§7Current Tier §f" + snap.activeTierName
                 + "  §8·  §7CR §f" + snap.combatRating
                 + "  §8·  §" + snap.stateColorCode() + snap.state()));
@@ -92,6 +95,19 @@ public final class DifficultyChatMenu {
             send(player, Component.m_237113_("§7Title §e" + TitleSystem.activeDisplay(player)));
         }
         send(player, Component.m_237113_(""));
+        MutableComponent toggles = Component.m_237113_("§7")
+                .m_7220_(btn(personalOn ? "§a[Difficulty ON]" : "§c[Difficulty OFF]",
+                        "/difficulty do toggle_personal 0 main",
+                        personalOn
+                                ? "Turn OFF personal difficulty (no scaling / kill coins for you)"
+                                : "Turn ON personal difficulty (pre-T1 still drops Copper)"))
+                .m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn(coinChatOn ? "§a[Coin Chat ON]" : "§8[Coin Chat OFF]",
+                        "/difficulty do toggle_coin_chat 0 main",
+                        coinChatOn
+                                ? "Mute Ancient Coin drop chat messages"
+                                : "Show Ancient Coin drop chat messages"));
+        send(player, toggles);
         MutableComponent hub = Component.m_237113_("§7")
                 .m_7220_(btn("§a[Buy Tier]", "/difficulty do page buy", "Purchase a higher Unlock Tier"))
                 .m_7220_(Component.m_237113_("  "))

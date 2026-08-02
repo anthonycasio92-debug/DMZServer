@@ -29,6 +29,8 @@ public final class DifficultyActions {
     public static final String ACT_PAGE = "page";
     public static final String ACT_EQUIP_TITLE = "equip_title";
     public static final String ACT_CLEAR_TITLE = "clear_title";
+    public static final String ACT_TOGGLE_PERSONAL = "toggle_personal";
+    public static final String ACT_TOGGLE_COIN_CHAT = "toggle_coin_chat";
 
     private DifficultyActions() {}
 
@@ -82,6 +84,14 @@ public final class DifficultyActions {
             openGui(player, page == null || page.isBlank() ? "main" : page);
             return Result.fail("Team scaling is a work in progress — difficulty is personal only for now.");
         }
+        if (ACT_TOGGLE_PERSONAL.equals(act) || "personal".equals(act)
+                || "toggle_difficulty".equals(act) || "difficulty_toggle".equals(act)) {
+            return togglePersonal(player, page);
+        }
+        if (ACT_TOGGLE_COIN_CHAT.equals(act) || "coin_chat".equals(act)
+                || "toggle_chat".equals(act) || "chat_drops".equals(act)) {
+            return toggleCoinChat(player, page);
+        }
 
         long amount = 0L;
         if (arg != null && !arg.isBlank()) {
@@ -100,6 +110,29 @@ public final class DifficultyActions {
             case ACT_RESET, "zero", "clear" -> resetActive(player, page);
             default -> Result.fail("Unknown action.");
         };
+    }
+
+    private static Result togglePersonal(ServerPlayer player, String page) {
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        boolean on = data.togglePersonalEnabled();
+        DifficultyCache.save(player);
+        DifficultyCache.refresh(player);
+        String returnPage = page == null || page.isBlank() ? "main" : page;
+        openGui(player, returnPage);
+        return Result.ok(on
+                ? "Personal difficulty ON — kill coins drop; scaling needs an active tier."
+                : "Personal difficulty OFF — no scaling or kill coins for you.");
+    }
+
+    private static Result toggleCoinChat(ServerPlayer player, String page) {
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        boolean on = data.toggleCoinDropChat();
+        DifficultyCache.save(player);
+        String returnPage = page == null || page.isBlank() ? "main" : page;
+        openGui(player, returnPage);
+        return Result.ok(on
+                ? "Coin drop chat ON — you'll see Ancient Coin drop messages."
+                : "Coin drop chat OFF — drop messages muted.");
     }
 
     private static Result equipTitle(ServerPlayer player, String titleId, String page) {

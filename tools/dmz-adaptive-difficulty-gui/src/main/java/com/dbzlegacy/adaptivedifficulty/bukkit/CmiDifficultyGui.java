@@ -93,6 +93,29 @@ public final class CmiDifficultyGui {
                 "&7Not available yet",
                 "&ePersonal difficulty only"));
 
+        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
+        boolean coinChatOn = "true".equalsIgnoreCase(ph.getOrDefault("coin_drop_chat", "false"));
+        gui.addButton(actionBtn(28,
+                personalOn ? Material.LIME_DYE : Material.GRAY_DYE,
+                personalOn ? "&aDifficulty ON" : "&cDifficulty OFF",
+                "toggle_personal", "0", "main",
+                List.of(
+                        personalOn
+                                ? "&7Click to turn OFF for you only"
+                                : "&7Click to turn ON for you only",
+                        "&8Pre-T1 still drops Copper when ON",
+                        "&8No scaling / kill coins when OFF"
+                )));
+        gui.addButton(actionBtn(29,
+                coinChatOn ? Material.BELL : Material.PAPER,
+                coinChatOn ? "&aCoin Chat ON" : "&8Coin Chat OFF",
+                "toggle_coin_chat", "0", "main",
+                List.of(
+                        coinChatOn
+                                ? "&7Click to mute drop messages"
+                                : "&7Click to show drop messages",
+                        "&8Only affects Ancient Coin kill chat"
+                )));
         gui.addButton(pageBtn(30, Material.BOOK, "&fDetails", "stats",
                 "&7Coins, progression, title"));
         gui.addButton(actionBtn(31, Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
@@ -376,6 +399,10 @@ public final class CmiDifficultyGui {
         lore.add("&7DMZ &f" + ph.getOrDefault("level", "?")
                 + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"));
         lore.add("&7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"));
+        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
+        boolean coinChatOn = "true".equalsIgnoreCase(ph.getOrDefault("coin_drop_chat", "false"));
+        lore.add("&7Personal &" + (personalOn ? "aON" : "cOFF")
+                + "  &7Coin chat &" + (coinChatOn ? "aON" : "8OFF"));
         lore.add("&8Buy a higher tier · Lower to step down");
         return lore;
     }

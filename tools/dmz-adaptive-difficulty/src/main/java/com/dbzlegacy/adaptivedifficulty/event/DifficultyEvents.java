@@ -159,14 +159,14 @@ public final class DifficultyEvents {
             return;
         }
         LivingEntity neu = event.getNewTarget();
-        if (neu instanceof ServerPlayer player && SystemGate.allows(player)) {
+        if (neu instanceof ServerPlayer player && SystemGate.participates(player)) {
             CombatIndex.mark(mob);
             MobScaling.retargetToPlayer(mob, player);
             return;
         }
         if (neu != null && HostileMobs.bothHostile(mob, neu)) {
             ServerPlayer player = NearbyPlayers.nearest(mob, DifficultyConfig.get().mobScaleRadius);
-            if (player != null && SystemGate.allows(player)) {
+            if (player != null && SystemGate.participates(player)) {
                 event.setNewTarget(player);
                 CombatIndex.mark(mob);
                 MobScaling.retargetToPlayer(mob, player);
@@ -368,7 +368,7 @@ public final class DifficultyEvents {
         }
         // V3 death penalty: clear temporary active tier/level; unlocks & coins stay.
         if (dead instanceof ServerPlayer victim
-                && SystemGate.allows(victim)
+                && SystemGate.participates(victim)
                 && DifficultyConfig.get().deathResetsActiveDifficulty) {
             var data = DifficultyCache.data(victim);
             if (data.getActiveTier() > 0 || data.getActiveDifficultyLevel() > 0L) {
@@ -379,7 +379,7 @@ public final class DifficultyEvents {
                         "§cDifficulty deactivated on death. §7Unlocks & Ancient Coins kept."));
             }
         }
-        if (!(event.getSource().m_7639_() instanceof ServerPlayer killer) || !SystemGate.allows(killer)) {
+        if (!(event.getSource().m_7639_() instanceof ServerPlayer killer) || !SystemGate.participates(killer)) {
             return;
         }
         if (dead != null) {
@@ -426,7 +426,7 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onKiCharge(DMZEvent.KiChargeEvent event) {
         if (SystemGate.isDisabled() || !(event.getPlayer() instanceof ServerPlayer player)
-                || !SystemGate.allows(player)) {
+                || !SystemGate.participates(player)) {
             return;
         }
         AdaptiveAiSystem.onPlayerKiCharge(player);
@@ -452,7 +452,7 @@ public final class DifficultyEvents {
         if (player == null || !player.m_6084_() || player.m_9236_() != mob.m_9236_()) {
             player = NearbyPlayers.nearest(mob, DifficultyConfig.get().mobScaleRadius);
         }
-        if (player != null && SystemGate.allows(player)) {
+        if (player != null && SystemGate.participates(player)) {
             LivingEntity current = mob.m_5448_();
             if (!(current instanceof Player) || !current.m_6084_()) {
                 mob.m_6710_(player);

@@ -49,7 +49,9 @@ public final class NearbyMobScaler {
             if (!SystemGate.allows(player) || DimensionGates.isDisabled(player)) {
                 continue;
             }
-            if (DifficultyCache.get(player).activeTier <= 0) {
+            // Personal off or no active tier: drop any leftover scaled claims.
+            if (!SystemGate.participates(player) || DifficultyCache.get(player).activeTier <= 0) {
+                ScaledMobTracker.prunePlayer(player);
                 continue;
             }
             ScaledMobTracker.prunePlayer(player);

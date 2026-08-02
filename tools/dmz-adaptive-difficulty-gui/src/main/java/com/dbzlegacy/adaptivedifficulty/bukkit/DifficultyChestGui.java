@@ -74,6 +74,29 @@ public final class DifficultyChestGui implements Listener {
         inv.setItem(25, pageBtn(Material.COMPASS, "&8Teams &7(WIP)", "team",
                 "&7Not available yet", "&ePersonal difficulty only"));
 
+        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
+        boolean coinChatOn = "true".equalsIgnoreCase(ph.getOrDefault("coin_drop_chat", "false"));
+        inv.setItem(28, button(
+                personalOn ? Material.LIME_DYE : Material.GRAY_DYE,
+                personalOn ? "&aDifficulty ON" : "&cDifficulty OFF",
+                "toggle_personal", "0", "main",
+                List.of(
+                        personalOn
+                                ? "&7Click to turn OFF for you only"
+                                : "&7Click to turn ON for you only",
+                        "&8Pre-T1 still drops Copper when ON",
+                        "&8No scaling / kill coins when OFF"
+                )));
+        inv.setItem(29, button(
+                coinChatOn ? Material.BELL : Material.PAPER,
+                coinChatOn ? "&aCoin Chat ON" : "&8Coin Chat OFF",
+                "toggle_coin_chat", "0", "main",
+                List.of(
+                        coinChatOn
+                                ? "&7Click to mute drop messages"
+                                : "&7Click to show drop messages",
+                        "&8Only affects Ancient Coin kill chat"
+                )));
         inv.setItem(30, pageBtn(Material.BOOK, "&fDetails", "stats", "&7Coins, progression, title"));
         inv.setItem(31, button(Material.SUNFLOWER, "&7Refresh", "refresh", "0", "main",
                 List.of("&7Reload this menu")));
@@ -338,6 +361,10 @@ public final class DifficultyChestGui implements Listener {
         lore.add("&7DMZ &f" + ph.getOrDefault("level", "?")
                 + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"));
         lore.add("&7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"));
+        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
+        boolean coinChatOn = "true".equalsIgnoreCase(ph.getOrDefault("coin_drop_chat", "false"));
+        lore.add("&7Personal &" + (personalOn ? "aON" : "cOFF")
+                + "  &7Coin chat &" + (coinChatOn ? "aON" : "8OFF"));
         lore.add("&8Buy a higher tier · Lower to step down");
         return lore;
     }

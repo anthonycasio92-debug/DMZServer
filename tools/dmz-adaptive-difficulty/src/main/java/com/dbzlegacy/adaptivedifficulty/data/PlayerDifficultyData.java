@@ -28,6 +28,10 @@ public final class PlayerDifficultyData {
     private long ancientCopper;
     private final Set<String> titles = new LinkedHashSet<>();
     private String activeTitle = "";
+    /** Player opt-in: when false, no scaling / kill coins / death reset for them. */
+    private boolean personalEnabled = true;
+    /** When true, chat notifies on Ancient Coin kill drops. Default off (less spam). */
+    private boolean coinDropChat = false;
 
     // ── Temporary (death / character-reset clears) ─────────────────────────
     private int activeTier;
@@ -93,9 +97,35 @@ public final class PlayerDifficultyData {
         setActiveDifficultyLevel(level);
     }
 
+    public boolean isPersonalEnabled() {
+        return personalEnabled;
+    }
+
+    public void setPersonalEnabled(boolean enabled) {
+        this.personalEnabled = enabled;
+    }
+
+    public boolean togglePersonalEnabled() {
+        this.personalEnabled = !this.personalEnabled;
+        return this.personalEnabled;
+    }
+
+    public boolean isCoinDropChat() {
+        return coinDropChat;
+    }
+
+    public void setCoinDropChat(boolean enabled) {
+        this.coinDropChat = enabled;
+    }
+
+    public boolean toggleCoinDropChat() {
+        this.coinDropChat = !this.coinDropChat;
+        return this.coinDropChat;
+    }
+
     /**
      * Death / character-reset: clear temporary activation only.
-     * Keeps prestige, unlock tiers, and Ancient Coin wallet.
+     * Keeps prestige, unlock tiers, toggles, and Ancient Coin wallet.
      */
     public void resetTemporary() {
         this.activeTier = 0;
@@ -236,6 +266,8 @@ public final class PlayerDifficultyData {
         }
         tag.m_128365_("titles", list);
         tag.m_128359_("activeTitle", getActiveTitle());
+        tag.m_128379_("personalEnabled", personalEnabled);
+        tag.m_128379_("coinDropChat", coinDropChat);
         // Keep legacy keys written as 0 so old tools don't explode on read.
         tag.m_128356_("purchased", 0L);
         tag.m_128356_("active", activeDifficultyLevel);
@@ -251,6 +283,9 @@ public final class PlayerDifficultyData {
         activeDifficultyLevel = Math.max(0L, tag.m_128454_("activeLevel"));
         ancientCopper = Math.max(0L, tag.m_128454_("ancientCopper"));
         teamMode = TeamMode.fromString(tag.m_128461_("teamMode"));
+        // Missing keys → defaults (on for personal, off for coin chat).
+        personalEnabled = !tag.m_128441_("personalEnabled") || tag.m_128471_("personalEnabled");
+        coinDropChat = tag.m_128441_("coinDropChat") && tag.m_128471_("coinDropChat");
         unlockedTiers.clear();
         if (tag.m_128425_("unlockedTiers", 10)) { // TAG_COMPOUND=10
             ListTag tiers = tag.m_128437_("unlockedTiers", 10);

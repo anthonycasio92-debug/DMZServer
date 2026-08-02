@@ -107,8 +107,8 @@ public final class AreaDifficulty {
             if (player == null || player.m_9236_() != level || !player.m_6084_()) {
                 continue;
             }
-            // Testing whitelist: non-listed players do not contribute area difficulty.
-            if (!SystemGate.allows(player)) {
+            // Non-listed / personal-off players do not contribute area difficulty.
+            if (!SystemGate.participates(player)) {
                 continue;
             }
             double dx = player.m_20185_() - cx;
