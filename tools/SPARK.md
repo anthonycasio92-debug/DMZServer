@@ -41,9 +41,10 @@ Typical workflow when TPS is stuck around 6–8:
 
 Spark previously pointed at **The End** as the TPS cliff. Root cause was CNPC
 `customnpcs/scripts/End Dimension Strength.js` (full-world entity scans + per-player
-fan-out). Fixed in script **2.10.4**. Adaptive difficulty also skips The End by
-default (`disabledDimensions: ["minecraft:the_end"]`) so Enderman gravity/AI does
-not stack on top of that script.
+fan-out). Fixed in script **2.10.4**. Adaptive difficulty scales End hostiles
+(Endermen, etc.) but hard-exempts the **Ender Dragon** so the End Strength script
+keeps ownership of that fight. To disable all End AD work again, add
+`minecraft:the_end` to `disabledDimensions`.
 
 Reload player scripts in CNPC after updating the `.js` file (or restart).
 
