@@ -73,7 +73,8 @@ public final class DifficultyCalculator {
                 contribution,
                 combatRating,
                 ancientCopper,
-                mode
+                mode,
+                data.isPersonalEnabled()
         );
     }
 

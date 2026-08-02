@@ -203,6 +203,7 @@ public final class ForgeBridge {
                 }
             }
             out.put("personal_enabled", personalOn ? "true" : "false");
+            out.put("personal_status", personalOn ? "ON" : "OFF");
             out.put("coin_drop_chat", coinChatOn ? "true" : "false");
 
             // UnlockTier 1–7 — level-scaled activation costs.
@@ -243,6 +244,11 @@ public final class ForgeBridge {
             if (snapshotStateColor != null) {
                 Object stateColor = snapshotStateColor.invoke(snap);
                 out.put("state_color", stateColor == null ? "f" : String.valueOf(stateColor));
+            }
+            // Personal OFF always wins for status display (GUI / PAPI).
+            if (!personalOn) {
+                out.put("state", "Off");
+                out.put("state_color", "c");
             }
         } catch (Throwable ignored) {
             // Forge mod not loaded / partial API

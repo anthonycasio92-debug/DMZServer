@@ -61,9 +61,11 @@ public final class DifficultyChestGui implements Listener {
             return inv;
         }
 
-        String stateColor = ph.getOrDefault("state_color", "f");
-        inv.setItem(13, item(Material.NETHER_STAR, "&f&lAdaptive Difficulty",
-                statusLore(ph, stateColor, ForgeBridge.isStaff(player))));
+        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
+        String stateColor = personalOn ? ph.getOrDefault("state_color", "f") : "c";
+        inv.setItem(13, item(Material.NETHER_STAR,
+                personalOn ? "&f&lAdaptive Difficulty" : "&c&lDIFFICULTY OFF",
+                statusLore(ph, stateColor, ForgeBridge.isStaff(player), personalOn)));
         // Primary actions — centered trio
         inv.setItem(20, pageBtn(Material.GOLD_INGOT, "&eBuy Tier", "buy",
                 "&7Purchase a higher Unlock Tier", "&8Ancient Coins · pay-up OK · no change"));
@@ -72,7 +74,6 @@ public final class DifficultyChestGui implements Listener {
         inv.setItem(24, pageBtn(Material.NAME_TAG, "&dTitles", "titles",
                 "&7Equip difficulty titles", "&8Earned from tiers and combat"));
 
-        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
         boolean coinChatOn = "true".equalsIgnoreCase(ph.getOrDefault("coin_drop_chat", "false"));
         inv.setItem(29, button(
                 personalOn ? Material.LIME_DYE : Material.GRAY_DYE,
@@ -375,12 +376,21 @@ public final class DifficultyChestGui implements Listener {
         return List.of("", "&eNot available right now", "&7Ask an admin if you need access");
     }
 
-    private static List<String> statusLore(Map<String, String> ph, String stateColor, boolean staff) {
+    private static List<String> statusLore(
+            Map<String, String> ph, String stateColor, boolean staff, boolean personalOn) {
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.add("&7Tier &f" + ph.getOrDefault("active_tier_name", "None")
-                + "  &8·  &7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"));
-        lore.add("&7State &" + stateColor + ph.getOrDefault("state", "?"));
+        if (!personalOn) {
+            lore.add("&cDifficulty is OFF for you");
+            lore.add("&7No scaling, kill coins, AI, or tier buys");
+            lore.add("&8Saved tier &f" + ph.getOrDefault("active_tier_name", "None")
+                    + "  &8·  &7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"));
+            lore.add("&7State &cOff");
+        } else {
+            lore.add("&7Tier &f" + ph.getOrDefault("active_tier_name", "None")
+                    + "  &8·  &7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"));
+            lore.add("&7State &" + stateColor + ph.getOrDefault("state", "?"));
+        }
         String title = blankAsNone(ph.getOrDefault("active_title", ""));
         if (!"None".equals(title)) {
             lore.add("&7Title &e" + title);
@@ -394,7 +404,9 @@ public final class DifficultyChestGui implements Listener {
                     + "  &8Prestige &f" + ph.getOrDefault("prestige", "?"));
         }
         lore.add("");
-        lore.add("&8Buy a higher tier · Lower to step down");
+        lore.add(personalOn
+                ? "&8Buy a higher tier · Lower to step down"
+                : "&8Turn Difficulty ON below to resume");
         return lore;
     }
 

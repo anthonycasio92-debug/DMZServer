@@ -23,6 +23,8 @@ public final class DifficultySnapshot {
     public final long ancientCopper;
     public final TeamMode teamMode;
     public final String activeTierName;
+    /** Player personal difficulty toggle — when false, scaling/rewards are paused. */
+    public final boolean personalEnabled;
 
     // Legacy-compatible aliases used by older GUI/PAPI bindings.
     public final long calculated;
@@ -42,7 +44,8 @@ public final class DifficultySnapshot {
             long teamContribution,
             long combatRating,
             long ancientCopper,
-            TeamMode teamMode
+            TeamMode teamMode,
+            boolean personalEnabled
     ) {
         this.dmzLevel = dmzLevel;
         this.prestige = prestige;
@@ -59,6 +62,7 @@ public final class DifficultySnapshot {
         this.combatRating = combatRating;
         this.ancientCopper = ancientCopper;
         this.teamMode = teamMode;
+        this.personalEnabled = personalEnabled;
         UnlockTier tier = UnlockTier.byId(activeTier);
         this.activeTierName = tier == null ? "None" : ("T" + tier.id + " " + tier.display);
         this.calculated = combatRating;
@@ -67,6 +71,7 @@ public final class DifficultySnapshot {
 
     public String stateColorCode() {
         return switch (state()) {
+            case "Off" -> "c";
             case "Inactive" -> "7";
             case "Below" -> "a";
             case "Balanced" -> "e";
@@ -78,6 +83,9 @@ public final class DifficultySnapshot {
     }
 
     public String state() {
+        if (!personalEnabled) {
+            return "Off";
+        }
         if (activeTier <= 0 || activeDifficulty <= 0) {
             return "Inactive";
         }

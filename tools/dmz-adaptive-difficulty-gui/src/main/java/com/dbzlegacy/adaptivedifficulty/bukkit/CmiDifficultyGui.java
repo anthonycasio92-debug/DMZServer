@@ -67,10 +67,12 @@ public final class CmiDifficultyGui {
 
         boolean systemOn = !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "true"));
         boolean allowed = !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "true"));
-        String stateColor = ph.getOrDefault("state_color", "f");
+        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
+        String stateColor = personalOn ? ph.getOrDefault("state_color", "f") : "c";
         CMIGuiButton status = new CMIGuiButton(13, Material.NETHER_STAR,
                 !systemOn ? "&c&lSYSTEM DISABLED"
                         : !allowed ? "&e&lWHITELIST ONLY"
+                        : !personalOn ? "&c&lDIFFICULTY OFF"
                         : "&f&lAdaptive Difficulty");
         status.lockField();
         if (!systemOn || !allowed) {
@@ -81,7 +83,7 @@ public final class CmiDifficultyGui {
             gui.open();
             return;
         }
-        status.addLore(statusLore(ph, stateColor, ForgeBridge.isStaff(player)));
+        status.addLore(statusLore(ph, stateColor, ForgeBridge.isStaff(player), personalOn));
         gui.addButton(status);
 
         // Primary actions — centered trio
@@ -95,7 +97,6 @@ public final class CmiDifficultyGui {
                 "&7Equip difficulty titles",
                 "&8Earned from tiers and combat"));
 
-        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
         boolean coinChatOn = "true".equalsIgnoreCase(ph.getOrDefault("coin_drop_chat", "false"));
         gui.addButton(actionBtn(29,
                 personalOn ? Material.LIME_DYE : Material.GRAY_DYE,
@@ -431,12 +432,21 @@ public final class CmiDifficultyGui {
         return List.of("", "&eNot available right now", "&7Ask an admin if you need access");
     }
 
-    private static List<String> statusLore(Map<String, String> ph, String stateColor, boolean staff) {
+    private static List<String> statusLore(
+            Map<String, String> ph, String stateColor, boolean staff, boolean personalOn) {
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.add("&7Tier &f" + ph.getOrDefault("active_tier_name", "None")
-                + "  &8·  &7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"));
-        lore.add("&7State &" + stateColor + ph.getOrDefault("state", "?"));
+        if (!personalOn) {
+            lore.add("&cDifficulty is OFF for you");
+            lore.add("&7No scaling, kill coins, AI, or tier buys");
+            lore.add("&8Saved tier &f" + ph.getOrDefault("active_tier_name", "None")
+                    + "  &8·  &7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"));
+            lore.add("&7State &cOff");
+        } else {
+            lore.add("&7Tier &f" + ph.getOrDefault("active_tier_name", "None")
+                    + "  &8·  &7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"));
+            lore.add("&7State &" + stateColor + ph.getOrDefault("state", "?"));
+        }
         String title = blankAsNone(ph.getOrDefault("active_title", ""));
         if (!"None".equals(title)) {
             lore.add("&7Title &e" + title);
@@ -450,7 +460,9 @@ public final class CmiDifficultyGui {
                     + "  &8Prestige &f" + ph.getOrDefault("prestige", "?"));
         }
         lore.add("");
-        lore.add("&8Buy a higher tier · Lower to step down");
+        lore.add(personalOn
+                ? "&8Buy a higher tier · Lower to step down"
+                : "&8Turn Difficulty ON below to resume");
         return lore;
     }
 

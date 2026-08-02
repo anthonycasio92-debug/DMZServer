@@ -92,9 +92,16 @@ public final class DifficultyChatMenu {
         PlayerDifficultyData data = DifficultyCache.data(player);
         boolean personalOn = data.isPersonalEnabled();
         boolean coinChatOn = data.isCoinDropChat();
-        send(player, Component.m_237113_("§7Tier §f" + snap.activeTierName
-                + "  §8·  §" + snap.stateColorCode() + snap.state()
-                + "  §8·  §7Unlocked §fT" + snap.highestUnlockedTier));
+        if (!personalOn) {
+            send(player, Component.m_237113_("§c§lDIFFICULTY OFF"));
+            send(player, Component.m_237113_("§7No scaling, kill coins, AI pressure, or tier buys"));
+            send(player, Component.m_237113_("§8Saved tier §f" + snap.activeTierName
+                    + "  §8·  §7Unlocked §fT" + snap.highestUnlockedTier));
+        } else {
+            send(player, Component.m_237113_("§7Tier §f" + snap.activeTierName
+                    + "  §8·  §" + snap.stateColorCode() + snap.state()
+                    + "  §8·  §7Unlocked §fT" + snap.highestUnlockedTier));
+        }
         send(player, Component.m_237113_("§6Coins §f" + AncientCoinEconomy.inventoryBreakdown(player)));
         if (!TitleSystem.activeDisplay(player).equals("None")) {
             send(player, Component.m_237113_("§7Title §e" + TitleSystem.activeDisplay(player)));
