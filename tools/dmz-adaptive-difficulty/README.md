@@ -13,7 +13,7 @@ Clients do **not** need this jar to join.
 | Personal toggle | GUI on/off for that player only (default ON). OFF freezes scaling, kill coins, AI pressure, and tier buy/lower until turned back on |
 | Coin drop chat | GUI mute for "Dropped X Ancient Coins" (default OFF) |
 | Death | Clears active tier + level when personal ON (unlocks / prestige / coins kept). Disconnect / logout keeps the purchased tier |
-| Nearby scaling | Hostiles scale to player post-transform stats × tier % (max 5/player); leave range / personal off / logout reverts. Elite/mutation/boss rolls happen on claim using the claim owner's unlock tier |
+| Nearby scaling | Hostiles scale to player post-transform stats × tier % (max 5/player); leave range / personal off / logout reverts stats **and** strips elite/mutation/boss nameplates so they are normal mobs again. Rarity rolls once per mob (no leave/re-enter farming) |
 | Combat Rating | Rewards / display / area readouts (not mob HP) |
 | Teams | WIP stub — personal difficulty only |
 | Titles | Restored; equip from GUI |

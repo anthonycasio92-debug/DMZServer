@@ -4,15 +4,15 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_adaptive_difficulty"
-version = "3.3.22"
+version = "3.3.23"
 displayName = "DMZ Adaptive Difficulty"
 authors = "DBZ Legacy Reborn"
 displayTest = "IGNORE_SERVER_VERSION"
 description = '''
-Server-side Adaptive Difficulty for DragonMineZ (3.3.22).
+Server-side Adaptive Difficulty for DragonMineZ (3.3.23).
 Unlock tiers bought with Lightman's Ancient Coins, nearby mobs scale to
 player fight stats × tier %, titles, gated elites/mutations/AI/boss.
-Kit mobs are silent; only rarity rolls get nameplates. Teams WIP.
+Leave-area reverts nameplates; kits silent; rarity-only cosmetics. Teams WIP.
 '''
 
 [[dependencies.dmz_adaptive_difficulty]]

@@ -7,6 +7,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
+import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.mutation.MutationType;
 import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
@@ -20,10 +21,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -479,6 +482,8 @@ public final class MobScaling {
         try {
             CompoundTag tag = PersistentDataAccess.get(entity);
             if (!tag.m_128441_(TAG_BASE_HEALTH)) {
+                // Still strip AD nameplates if somehow painted without bases.
+                clearAdCombatPaint(entity, tag);
                 return;
             }
             double baseHealth = Math.max(1.0, tag.m_128459_(TAG_BASE_HEALTH));
@@ -503,7 +508,11 @@ public final class MobScaling {
             tag.m_128356_(TAG_PROFILE_SIG, 0L);
             tag.m_128350_(TAG_DMG_MULT, 1.0f);
             tag.m_128379_(TAG_ATTR_DMG_SCALED, false);
+            tag.m_128405_("dmz_ad_unlock_tier", 0);
             APPLIED_PROFILE.remove(entity.m_20148_());
+            // Leave-area / personal-off / logout: drop rarity nameplates + identity so the
+            // hostile is a normal mob again. Bases + rarity_rolled stay for a clean reclaim.
+            clearAdCombatPaint(entity, tag);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] revertToBases failed for {}: {}",
@@ -515,6 +524,73 @@ public final class MobScaling {
     }
 
     /**
+     * Strip elite/mutation/boss/kit cosmetics and rarity identity when a mob loses its
+     * difficulty slot. Keeps {@code dmz_ad_rarity_rolled} so leave/re-enter cannot farm
+     * new elite rolls; natural bosses are re-stamped on the next claim.
+     */
+    private static void clearAdCombatPaint(LivingEntity entity, CompoundTag tag) {
+        if (entity == null || tag == null || !PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
+        boolean painted = tag.m_128471_(EliteSystem.TAG_ELITE)
+                || tag.m_128471_(BossScaling.TAG_BOSS)
+                || tag.m_128471_(EnemyEvolution.TAG_EVOLVED)
+                || (tag.m_128441_(MutationSystem.TAG_MUTATION)
+                && !tag.m_128461_(MutationSystem.TAG_MUTATION).isEmpty())
+                || tag.m_128441_("dmz_ad_ability_tier")
+                || looksLikeAdNameplate(entity);
+
+        tag.m_128473_(EliteSystem.TAG_ELITE);
+        tag.m_128473_("dmz_ad_elite_scale");
+        tag.m_128473_(MutationSystem.TAG_MUTATION);
+        tag.m_128473_(BossScaling.TAG_BOSS);
+        tag.m_128473_(BossScaling.TAG_PHASE);
+        tag.m_128473_(EnemyEvolution.TAG_EVOLVED);
+        tag.m_128473_("dmz_ad_ability_tier");
+
+        if (!painted) {
+            return;
+        }
+        try {
+            if (entity.m_8077_()) {
+                entity.m_6593_(null);
+            }
+            entity.m_20340_(false);
+            entity.m_21195_(MobEffects.f_19619_); // remove GLOWING potion if kit left one
+        } catch (Throwable ignored) {
+            // cosmetic cleanup only
+        }
+    }
+
+    /** True for AD kit / elite / mutation / boss nameplates we own. */
+    private static boolean looksLikeAdNameplate(LivingEntity entity) {
+        if (entity == null || !entity.m_8077_()) {
+            return false;
+        }
+        Component name = entity.m_7770_();
+        if (name == null) {
+            return false;
+        }
+        String s = name.getString();
+        if (s == null || s.isEmpty()) {
+            return false;
+        }
+        if (s.contains("✦") || s.contains("☠") || s.startsWith("§d") || s.contains("§d")) {
+            return true;
+        }
+        for (DifficultyTier t : DifficultyTier.values()) {
+            if (t == DifficultyTier.NONE) {
+                continue;
+            }
+            String d = t.display;
+            if (s.startsWith(d + " ") || s.startsWith("§6" + d + " ")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Elite / mutation / boss-mechanics rolls once per mob, keyed to the claim
      * owner's unlock tier — not the highest area unlock at spawn.
      */
@@ -523,18 +599,17 @@ public final class MobScaling {
         if (entity == null || tag == null || !PersistentDataAccess.isWritable(tag) || cfg == null) {
             return;
         }
-        if (tag.m_128471_("dmz_ad_rarity_rolled")) {
-            return;
-        }
-        tag.m_128379_("dmz_ad_rarity_rolled", true);
         int unlock = Math.max(0, ownerUnlockTier);
         tag.m_128405_("dmz_ad_unlock_tier", unlock);
         long rollSeed = Math.max(1L, unlock) * 10_000L;
-        boolean naturalBoss = tag.m_128471_("dmz_ad_natural_boss")
-                || BossScaling.isNaturalBoss(entity)
-                || (tag.m_128441_(TAG_BASE_HEALTH)
-                && tag.m_128459_(TAG_BASE_HEALTH) >= cfg.bossHealthThreshold);
-        if (naturalBoss && unlock >= cfg.bossMechanicsMinUnlockTier) {
+        // Leave-area wipe clears AD boss paint; natural bosses need it restored on reclaim
+        // even when elite/mutation already rolled once for this mob.
+        if (tag.m_128471_("dmz_ad_rarity_rolled")) {
+            restoreNaturalBossPaint(entity, tag, unlock, rollSeed, cfg);
+            return;
+        }
+        tag.m_128379_("dmz_ad_rarity_rolled", true);
+        if (isNaturalBossCandidate(entity, tag, cfg) && unlock >= cfg.bossMechanicsMinUnlockTier) {
             BossScaling.markBoss(entity, rollSeed);
         }
         if (unlock >= cfg.eliteMinUnlockTier) {
@@ -542,6 +617,40 @@ public final class MobScaling {
         }
         if (unlock >= cfg.mutationMinUnlockTier) {
             MutationSystem.maybeMutate(entity, rollSeed);
+        }
+    }
+
+    private static void restoreNaturalBossPaint(
+            LivingEntity entity, CompoundTag tag, int unlock, long rollSeed, DifficultyConfig cfg) {
+        if (unlock < cfg.bossMechanicsMinUnlockTier || tag.m_128471_(BossScaling.TAG_BOSS)) {
+            return;
+        }
+        if (isNaturalBossCandidate(entity, tag, cfg)) {
+            BossScaling.markBoss(entity, rollSeed);
+        }
+    }
+
+    /** Natural boss check that does not treat a leftover {@code dmz_ad_boss} flag as proof. */
+    private static boolean isNaturalBossCandidate(
+            LivingEntity entity, CompoundTag tag, DifficultyConfig cfg) {
+        if (tag.m_128471_("dmz_ad_natural_boss")) {
+            return true;
+        }
+        if (tag.m_128441_(TAG_BASE_HEALTH)
+                && tag.m_128459_(TAG_BASE_HEALTH) >= cfg.bossHealthThreshold) {
+            return true;
+        }
+        // Temporarily ignore AD boss flag so leave-area wipe does not self-qualify.
+        boolean hadBoss = tag.m_128471_(BossScaling.TAG_BOSS);
+        if (hadBoss) {
+            tag.m_128473_(BossScaling.TAG_BOSS);
+        }
+        try {
+            return BossScaling.isNaturalBoss(entity);
+        } finally {
+            if (hadBoss) {
+                tag.m_128379_(BossScaling.TAG_BOSS, true);
+            }
         }
     }
 
