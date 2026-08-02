@@ -351,7 +351,23 @@ public final class DifficultyConfig {
         long scaled = Math.round(base * mult);
         long raw = Math.max(base, scaled);
         // Cap at 128 of one coin type, then promote (top rung = 128× Netherite).
-        return com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.normalizeCost(raw);
+        long cost = com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.normalizeCost(raw);
+
+        // Excess-above-unlock scaling can invert the ladder (T7 << T6 near T7 unlock).
+        // Always keep higher tiers at least ~25% above the previous tier's cost.
+        if (tierId > 1) {
+            long prev = tierActivationCostScaled(tierId - 1, dmzLevel);
+            if (cost <= prev) {
+                long floor = prev + Math.max(1L, prev / 4L);
+                cost = com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy
+                        .normalizeCost(Math.max(raw, floor));
+                if (cost <= prev) {
+                    cost = com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy
+                            .costStrictlyAbove(prev);
+                }
+            }
+        }
+        return cost;
     }
 
     public double tierEnemyMult(int tierId) {

@@ -62,7 +62,7 @@ Config key: `enabled` (also `admin set enabled false`).
 - Coin ladder values: Copper 1 → Iron 10 → Gold 100 → Emerald 1k → Diamond 10k → Netherite 100k (9 letter variants equal). Lapis / Ender Pearl unused.
 - Example: a 1× Iron cost can be paid with 10+ Copper, or 1× Gold (overpay, no change).
 - Tier costs cap at 128 of one coin type, then promote to the next denomination (rounded up; top = 128× Netherite).
-- Level scaling uses levels above each tier’s unlock requirement (buying T7 at unlock ≈ base cost, not 100×).
+- Level scaling uses levels above each tier’s unlock requirement (buying T7 at unlock ≈ base cost, not 100×). Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player.
 - Saga/quest (`dmz_quest_*` / `dmz_saga_id`), vanilla cage spawners, and SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`) are never AD-converted.
 - Mob damage uses blended offense + a DEF/HP tank floor + specialization tax so 1–3 stat dumps cannot shrug tiered hits vs even builds.
 - Scaled mob HP defaults to 50% of the previous match (`mobHealthScale` in config; damage unchanged).

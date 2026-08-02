@@ -273,6 +273,30 @@ public final class AncientCoinEconomy {
         return value;
     }
 
+    /** Hard ceiling used by {@link #normalizeCost} (128× Netherite). */
+    public static long maxNormalizedCost() {
+        return safeMul(MAX_COINS_PER_TYPE, CoinKind.NETHERITE.copperValue);
+    }
+
+    /**
+     * Smallest normalized cost strictly above {@code copperCost}, or the hard
+     * cap when already at the top rung.
+     */
+    public static long costStrictlyAbove(long copperCost) {
+        long current = normalizeCost(Math.max(0L, copperCost));
+        long cap = maxNormalizedCost();
+        if (current >= cap) {
+            return cap;
+        }
+        CoinKind kind = preferredKind(current);
+        long step = Math.max(1L, kind.copperValue);
+        long next = normalizeCost(current + step);
+        if (next <= current) {
+            next = normalizeCost(current + 1L);
+        }
+        return Math.min(cap, Math.max(current + 1L, next));
+    }
+
     /** Best single denomination for a (preferably normalized) copper total. */
     private static CoinKind preferredKind(long copperCost) {
         if (copperCost <= 0L) {
