@@ -64,4 +64,5 @@ Config key: `enabled` (also `admin set enabled false`).
 - Level scaling uses levels above each tier’s unlock requirement (buying T7 at unlock ≈ base cost, not 100×).
 - Saga/quest (`dmz_quest_*` / `dmz_saga_id`), vanilla cage spawners, and SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`) are never AD-converted.
 - Mob damage uses blended offense + a DEF/HP tank floor + specialization tax so 1–3 stat dumps cannot shrug tiered hits vs even builds.
+- Scaled mob HP defaults to 50% of the previous match (`mobHealthScale` in config; damage unchanged).
 - Old NBT wallet balances migrate into Copper Ancient coins once per login.

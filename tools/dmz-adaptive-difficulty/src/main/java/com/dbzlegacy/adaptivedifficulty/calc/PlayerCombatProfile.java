@@ -170,6 +170,7 @@ public final class PlayerCombatProfile {
 
     /**
      * Target mob HP at this player's current transformed / released power.
+     * Scaled by {@link DifficultyConfig#mobHealthScale} (default 50%).
      */
     public double targetMobHealth(DifficultyConfig cfg) {
         double base = maxHealth * tierPercent;
@@ -181,7 +182,8 @@ public final class PlayerCombatProfile {
         if (imbalance > 0.35) {
             base *= 1.0 + (imbalance - 0.35) * 0.35;
         }
-        return Math.max(20.0, base);
+        double scale = cfg == null ? 0.5 : Math.max(0.05, Math.min(4.0, cfg.mobHealthScale));
+        return Math.max(10.0, base * scale);
     }
 
     /**

@@ -237,6 +237,11 @@ public final class DifficultyConfig {
     public double unlockTier5EnemyMult = 1.10;
     public double unlockTier6EnemyMult = 1.30;
     public double unlockTier7EnemyMult = 2.00;
+    /**
+     * Multiplier on final scaled mob max HP ({@code playerMaxHp × tier% × …}).
+     * Default {@code 0.5} = half of the previous full-match health scaling.
+     */
+    public double mobHealthScale = 0.5;
     /** Extra pressure when countering the player's weakest combat stat. */
     public double weakStatCounterMult = 1.45;
     /** How hard weak-defense counters pierce (mob damage vs player defense share). */
@@ -653,6 +658,9 @@ public final class DifficultyConfig {
         }
         if (cfg.tierCostLevelDivisor < 1.0) {
             cfg.tierCostLevelDivisor = 1_000.0;
+        }
+        if (cfg.mobHealthScale <= 0.0 || cfg.mobHealthScale > 4.0) {
+            cfg.mobHealthScale = 0.5;
         }
         if (cfg.weakStatCounterMult < 1.0) {
             cfg.weakStatCounterMult = 1.45;
