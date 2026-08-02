@@ -3,11 +3,12 @@ package com.dbzlegacy.adaptivedifficulty.calc;
 import com.dragonminez.common.stats.StatsCapability;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.StatsProvider;
+import com.dragonminez.common.stats.character.Character;
 import com.dragonminez.common.stats.skills.Skills;
 import net.minecraft.world.entity.player.Player;
 
 /**
- * Reads DMZ progression for V3 unlocks + combat rating.
+ * Reads DMZ progression for V3 unlocks + combat rating + class/race counters.
  */
 public final class DmzProgression {
     private DmzProgression() {}
@@ -20,6 +21,52 @@ public final class DmzProgression {
             return StatsProvider.get(StatsCapability.INSTANCE, player).orElse(null);
         } catch (Throwable ignored) {
             return null;
+        }
+    }
+
+    public static Character character(Player player) {
+        StatsData data = stats(player);
+        if (data == null) {
+            return null;
+        }
+        try {
+            return data.getCharacter();
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    /** DMZ race id (e.g. {@code saiyan}, {@code human}). Empty when unavailable. */
+    public static String race(Player player) {
+        Character ch = character(player);
+        if (ch == null) {
+            return "";
+        }
+        try {
+            String race = ch.getRace();
+            if (race == null || race.isBlank()) {
+                race = ch.getRaceName();
+            }
+            return race == null ? "" : race.trim().toLowerCase();
+        } catch (Throwable ignored) {
+            return "";
+        }
+    }
+
+    /**
+     * DMZ fighting class id (e.g. {@code warrior}, {@code spiritualist}, {@code tank}).
+     * Empty when unavailable.
+     */
+    public static String fightingClass(Player player) {
+        Character ch = character(player);
+        if (ch == null) {
+            return "";
+        }
+        try {
+            String cls = ch.getCharacterClass();
+            return cls == null ? "" : cls.trim().toLowerCase();
+        } catch (Throwable ignored) {
+            return "";
         }
     }
 

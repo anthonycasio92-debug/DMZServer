@@ -273,6 +273,19 @@ public final class DifficultyConfig {
      * imbalance is 0 for even builds and approaches 1 for hard stat dumps.
      */
     public double specializationDamageTax = 0.60;
+    /**
+     * When true, mobs also counter the player's DMZ fighting class / race
+     * (warrior, spiritualist, tank, …) — not only raw stat dumps.
+     */
+    public boolean enableClassCounters = true;
+    /** Extra mob damage vs the player's fighting style (class overlay). */
+    public double classCounterDamageMult = 1.22;
+    /** Extra mob HP vs glass / caster / ki classes. */
+    public double classCounterHealthMult = 1.18;
+    /** Extra mob armor vs melee / strike classes. */
+    public double classCounterArmorMult = 1.20;
+    /** Mild race overlay on top of class counters (regen / glass races). */
+    public double raceCounterMult = 1.08;
     /** Converts DMZ defense share into vanilla armor points: log1p(def) × factor. */
     public double defenseToArmorFactor = 2.5;
     /** Server ticks between nearby-player mob rescale pulses (per-player stagger). */
@@ -733,6 +746,30 @@ public final class DifficultyConfig {
         }
         if (cfg.specializationDamageTax < 0.0) {
             cfg.specializationDamageTax = 0.60;
+        }
+        if (cfg.classCounterDamageMult < 1.0) {
+            cfg.classCounterDamageMult = 1.0;
+        }
+        if (cfg.classCounterDamageMult > 3.0) {
+            cfg.classCounterDamageMult = 3.0;
+        }
+        if (cfg.classCounterHealthMult < 1.0) {
+            cfg.classCounterHealthMult = 1.0;
+        }
+        if (cfg.classCounterHealthMult > 3.0) {
+            cfg.classCounterHealthMult = 3.0;
+        }
+        if (cfg.classCounterArmorMult < 1.0) {
+            cfg.classCounterArmorMult = 1.0;
+        }
+        if (cfg.classCounterArmorMult > 3.0) {
+            cfg.classCounterArmorMult = 3.0;
+        }
+        if (cfg.raceCounterMult < 1.0) {
+            cfg.raceCounterMult = 1.0;
+        }
+        if (cfg.raceCounterMult > 2.0) {
+            cfg.raceCounterMult = 2.0;
         }
         if (cfg.defenseToArmorFactor <= 0.0) {
             cfg.defenseToArmorFactor = 2.5;

@@ -745,6 +745,18 @@ public final class DifficultyCommands {
                         cfg.tankDamageHealthRatio = Math.max(0.0, Double.parseDouble(value));
                 case "specializationdamagetax", "spectax" ->
                         cfg.specializationDamageTax = Math.max(0.0, Double.parseDouble(value));
+                case "enableclasscounters", "classcounters" ->
+                        cfg.enableClassCounters = Boolean.parseBoolean(value)
+                                || "on".equalsIgnoreCase(value)
+                                || "true".equalsIgnoreCase(value);
+                case "classcounterdamagemult", "classdmg" ->
+                        cfg.classCounterDamageMult = Math.max(1.0, Math.min(3.0, Double.parseDouble(value)));
+                case "classcounterhealthmult", "classhp" ->
+                        cfg.classCounterHealthMult = Math.max(1.0, Math.min(3.0, Double.parseDouble(value)));
+                case "classcounterarmormult", "classarmor" ->
+                        cfg.classCounterArmorMult = Math.max(1.0, Math.min(3.0, Double.parseDouble(value)));
+                case "racecountermult", "racemult" ->
+                        cfg.raceCounterMult = Math.max(1.0, Math.min(2.0, Double.parseDouble(value)));
                 case "defensetoarmorfactor" ->
                         cfg.defenseToArmorFactor = Math.max(0.1, Double.parseDouble(value));
                 case "nearbyscaleintervalticks", "nearbyscaleinterval" ->

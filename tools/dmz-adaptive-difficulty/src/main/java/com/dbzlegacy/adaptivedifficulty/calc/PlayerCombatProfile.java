@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
 import com.dragonminez.common.stats.character.Stats;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,9 +16,12 @@ import net.minecraft.server.level.ServerPlayer;
  * Post-transform / limit-release combat snapshot used to scale nearby hostiles
  * to a fraction of the player's real fighting power.
  * <p>
- * Specialized 1–3 stat dumps (especially DEF/VIT tanks) are pressed by a
- * tankiness damage floor + specialization tax so they cannot shrug tiered mobs
- * more easily than evenly stated players.
+ * Counters cover:
+ * <ul>
+ *   <li>weak-stat dumps (STR/SKP/RES/VIT/PWR imbalance)</li>
+ *   <li>DEF/VIT tank floors + specialization tax</li>
+ *   <li>DMZ fighting class / race overlays (warrior, spiritualist, tank, …)</li>
+ * </ul>
  */
 public final class PlayerCombatProfile {
     private static final long CACHE_TTL_MS = 250L;
@@ -30,6 +34,15 @@ public final class PlayerCombatProfile {
         VITALITY,
         KI_POWER,
         NONE
+    }
+
+    /** High-level fighting style derived from DMZ class (or offense peak fallback). */
+    public enum FightingStyle {
+        MELEE,
+        STRIKE,
+        KI,
+        TANK,
+        HYBRID
     }
 
     public final int activeTier;
@@ -48,6 +61,9 @@ public final class PlayerCombatProfile {
      * relative to the player's peak invested stat.
      */
     public final double imbalance;
+    public final String fightingClass;
+    public final String race;
+    public final FightingStyle style;
     /** Stable fingerprint for mob re-scale cache invalidation. */
     public final long signature;
 
@@ -63,6 +79,9 @@ public final class PlayerCombatProfile {
             double releasePercent,
             WeakStat weakest,
             double imbalance,
+            String fightingClass,
+            String race,
+            FightingStyle style,
             long signature
     ) {
         this.activeTier = activeTier;
@@ -76,6 +95,9 @@ public final class PlayerCombatProfile {
         this.releasePercent = releasePercent;
         this.weakest = weakest;
         this.imbalance = Math.max(0.0, Math.min(1.0, imbalance));
+        this.fightingClass = fightingClass == null ? "" : fightingClass;
+        this.race = race == null ? "" : race;
+        this.style = style == null ? FightingStyle.HYBRID : style;
         this.signature = signature;
     }
 
@@ -147,16 +169,23 @@ public final class PlayerCombatProfile {
         double avgOffense = (melee + strike + ki) / 3.0;
         double offense = peakOffense * 0.55 + avgOffense * 0.45;
         StatBalance balance = resolveBalance(data, melee, strike, def, hp, ki);
-        long sig = fingerprint(tier, pct, melee, strike, ki, def, hp, release, balance.weakest, balance.imbalance);
+        String fightingClass = DmzProgression.fightingClass(player);
+        String race = DmzProgression.race(player);
+        FightingStyle style = resolveStyle(fightingClass, melee, strike, ki, def, hp);
+        long sig = fingerprint(
+                tier, pct, melee, strike, ki, def, hp, release,
+                balance.weakest, balance.imbalance, fightingClass, race, style
+        );
         return new PlayerCombatProfile(
                 tier, pct, melee, strike, ki, def, hp, offense, release,
-                balance.weakest, balance.imbalance, sig
+                balance.weakest, balance.imbalance, fightingClass, race, style, sig
         );
     }
 
     private static PlayerCombatProfile inactive() {
         return new PlayerCombatProfile(
-                0, 0.0, 1.0, 1.0, 1.0, 1.0, 20.0, 1.0, 100.0, WeakStat.NONE, 0.0, 0L
+                0, 0.0, 1.0, 1.0, 1.0, 1.0, 20.0, 1.0, 100.0,
+                WeakStat.NONE, 0.0, "", "", FightingStyle.HYBRID, 0L
         );
     }
 
@@ -182,18 +211,33 @@ public final class PlayerCombatProfile {
         if (imbalance > 0.35) {
             base *= 1.0 + (imbalance - 0.35) * 0.35;
         }
+        // Class/race: ki casters + glass races need denser packs.
+        if (cfg.enableClassCounters) {
+            if (style == FightingStyle.KI || style == FightingStyle.STRIKE) {
+                base *= Math.max(1.0, cfg.classCounterHealthMult);
+            } else if (style == FightingStyle.MELEE) {
+                base *= Math.max(1.0, 1.0 + (cfg.classCounterHealthMult - 1.0) * 0.45);
+            }
+            base *= raceHealthBias(cfg);
+        }
         double scale = cfg == null ? 0.5 : Math.max(0.05, Math.min(4.0, cfg.mobHealthScale));
         return Math.max(10.0, base * scale);
     }
 
     /**
      * Target mob attack. Uses blended offense, a tankiness floor (so DEF/VIT
-     * dumps still get pressured), weak-stat counters, and a specialization tax.
+     * dumps still get pressured), weak-stat counters, specialization tax,
+     * and DMZ class/race overlays.
      */
     public double targetMobDamage(DifficultyConfig cfg) {
         double offenseShare = offense * tierPercent;
         double defFloor = defense * tierPercent * Math.max(0.0, cfg.tankDamageDefenseRatio);
         double hpFloor = maxHealth * tierPercent * Math.max(0.0, cfg.tankDamageHealthRatio);
+        // Class tanks always get the floor treatment even with "even" invested stats.
+        if (cfg.enableClassCounters && style == FightingStyle.TANK) {
+            defFloor *= 1.15;
+            hpFloor *= 1.20;
+        }
         double base = Math.max(offenseShare, Math.max(defFloor, hpFloor));
 
         if (weakest == WeakStat.DEFENSE || weakest == WeakStat.VITALITY) {
@@ -211,6 +255,11 @@ public final class PlayerCombatProfile {
         if (imbalance > 0.0) {
             base *= 1.0 + imbalance * Math.max(0.0, cfg.specializationDamageTax);
         }
+
+        if (cfg.enableClassCounters) {
+            base *= classDamageBias(cfg);
+            base *= raceDamageBias(cfg);
+        }
         return Math.max(1.0, base);
     }
 
@@ -221,10 +270,53 @@ public final class PlayerCombatProfile {
         if (weakest == WeakStat.STRENGTH || weakest == WeakStat.STRIKE || weakest == WeakStat.KI_POWER) {
             armor *= Math.max(1.0, cfg.weakStatCounterMult);
         }
+        if (cfg.enableClassCounters
+                && (style == FightingStyle.MELEE || style == FightingStyle.STRIKE)) {
+            armor *= Math.max(1.0, cfg.classCounterArmorMult);
+        }
         if (cfg.maxArmorBonus > 0.0) {
             armor = Math.min(cfg.maxArmorBonus, armor);
         }
         return Math.max(0.0, armor);
+    }
+
+    private double classDamageBias(DifficultyConfig cfg) {
+        double mult = Math.max(1.0, cfg.classCounterDamageMult);
+        return switch (style) {
+            case MELEE, STRIKE -> mult;
+            case KI -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.85);
+            case TANK -> Math.max(1.0, 1.0 + (mult - 1.0) * 1.15);
+            case HYBRID -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.55);
+        };
+    }
+
+    private double raceDamageBias(DifficultyConfig cfg) {
+        double raceMult = Math.max(1.0, cfg.raceCounterMult);
+        String r = race == null ? "" : race;
+        // Regen / sustain races — keep pressure up between hits.
+        if (r.contains("majin") || r.contains("namek") || r.contains("bio")) {
+            return raceMult;
+        }
+        // Transform / glass burst races — denser hits so they can't one-shot free.
+        if (r.contains("saiyan") || r.contains("frost") || r.contains("viltrum")) {
+            return Math.max(1.0, 1.0 + (raceMult - 1.0) * 0.75);
+        }
+        if (r.contains("human") || r.contains("monkey")) {
+            return Math.max(1.0, 1.0 + (raceMult - 1.0) * 0.5);
+        }
+        return Math.max(1.0, 1.0 + (raceMult - 1.0) * 0.35);
+    }
+
+    private double raceHealthBias(DifficultyConfig cfg) {
+        double raceMult = Math.max(1.0, cfg.raceCounterMult);
+        String r = race == null ? "" : race;
+        if (r.contains("saiyan") || r.contains("frost") || r.contains("viltrum")) {
+            return raceMult;
+        }
+        if (r.contains("human")) {
+            return Math.max(1.0, 1.0 + (raceMult - 1.0) * 0.4);
+        }
+        return 1.0;
     }
 
     private record StatBalance(WeakStat weakest, double imbalance) {}
@@ -236,6 +328,44 @@ public final class PlayerCombatProfile {
         if (CACHE.size() > 512) {
             CACHE.clear();
         }
+    }
+
+    static FightingStyle resolveStyle(
+            String fightingClass,
+            double melee,
+            double strike,
+            double ki,
+            double defense,
+            double health
+    ) {
+        String cls = fightingClass == null ? "" : fightingClass.toLowerCase(Locale.ROOT).trim();
+        return switch (cls) {
+            case "warrior", "berserker" -> FightingStyle.MELEE;
+            case "martialartist", "martial_artist", "martial-artist" -> FightingStyle.STRIKE;
+            case "spiritualist", "cleric" -> FightingStyle.KI;
+            case "tank", "paladin" -> FightingStyle.TANK;
+            default -> styleFromOffense(melee, strike, ki, defense, health);
+        };
+    }
+
+    private static FightingStyle styleFromOffense(
+            double melee, double strike, double ki, double defense, double health
+    ) {
+        double peakOff = Math.max(melee, Math.max(strike, ki));
+        double tankiness = Math.max(defense, health / 50.0);
+        if (tankiness > peakOff * 1.15) {
+            return FightingStyle.TANK;
+        }
+        if (melee >= strike && melee >= ki) {
+            return FightingStyle.MELEE;
+        }
+        if (strike >= melee && strike >= ki) {
+            return FightingStyle.STRIKE;
+        }
+        if (ki >= melee && ki >= strike) {
+            return FightingStyle.KI;
+        }
+        return FightingStyle.HYBRID;
     }
 
     private static StatBalance resolveBalance(
@@ -312,7 +442,10 @@ public final class PlayerCombatProfile {
             double hp,
             double release,
             WeakStat weakest,
-            double imbalance
+            double imbalance,
+            String fightingClass,
+            String race,
+            FightingStyle style
     ) {
         long h = 1469598103934665603L;
         h = mix(h, tier);
@@ -325,8 +458,11 @@ public final class PlayerCombatProfile {
         h = mix(h, Math.round(release));
         h = mix(h, weakest == null ? 0 : weakest.ordinal() + 1);
         h = mix(h, Math.round(imbalance * 1000.0));
-        // Formula revision bump so cached mobs re-paint after this balance change.
-        h = mix(h, 2L);
+        h = mix(h, fightingClass == null ? 0 : fightingClass.hashCode());
+        h = mix(h, race == null ? 0 : race.hashCode());
+        h = mix(h, style == null ? 0 : style.ordinal() + 1);
+        // Formula revision bump so cached mobs re-paint after class counters.
+        h = mix(h, 3L);
         return h;
     }
 
