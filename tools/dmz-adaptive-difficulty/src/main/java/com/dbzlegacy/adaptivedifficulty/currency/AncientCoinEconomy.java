@@ -87,6 +87,18 @@ public final class AncientCoinEconomy {
             return new CoinKind[] {COPPER, IRON, GOLD, EMERALD, DIAMOND, NETHERITE};
         }
 
+        /** Next higher denomination, or null at Netherite. */
+        public CoinKind nextHigher() {
+            return switch (this) {
+                case COPPER -> IRON;
+                case IRON -> GOLD;
+                case GOLD -> EMERALD;
+                case EMERALD -> DIAMOND;
+                case DIAMOND -> NETHERITE;
+                case NETHERITE -> null;
+            };
+        }
+
         static CoinKind of(AncientCoinType type) {
             if (type == null) {
                 return null;
@@ -124,6 +136,36 @@ public final class AncientCoinEconomy {
                 return "nothing";
             }
             return count + "× " + kind.display;
+        }
+    }
+
+    /** Primary kill drop plus optional rare higher-denomination bonus. */
+    public record KillLoot(Drop primary, Drop bonus) {
+        public KillLoot {
+            if (primary == null) {
+                primary = new Drop(CoinKind.COPPER, 0);
+            }
+        }
+
+        public boolean hasPrimary() {
+            return primary != null && primary.count() > 0;
+        }
+
+        public boolean hasBonus() {
+            return bonus != null && bonus.count() > 0;
+        }
+
+        public String display() {
+            if (!hasPrimary() && !hasBonus()) {
+                return "nothing";
+            }
+            if (!hasBonus()) {
+                return primary.display();
+            }
+            if (!hasPrimary()) {
+                return bonus.display();
+            }
+            return primary.display() + " §8+ §6" + bonus.display();
         }
     }
 
@@ -398,34 +440,52 @@ public final class AncientCoinEconomy {
      * Pre-T1 (no active tier) still drops 1× Copper so players can start buying tiers.
      */
     public static Drop rollKillDrop(ServerPlayer killer, long combatRating, boolean elite, boolean boss) {
+        return rollKillLoot(killer, combatRating, elite, boss).primary();
+    }
+
+    /**
+     * Roll primary kill coins plus a rare chance for one higher-denomination bonus
+     * (e.g. Copper + 2% Iron). Bonus is always 1× of the next ladder step.
+     */
+    public static KillLoot rollKillLoot(ServerPlayer killer, long combatRating, boolean elite, boolean boss) {
         DifficultyConfig cfg = DifficultyConfig.get();
         if (!cfg.enableAncientCoinDrops || killer == null) {
-            return new Drop(CoinKind.COPPER, 0);
+            return new KillLoot(new Drop(CoinKind.COPPER, 0), null);
         }
         PlayerDifficultyData data = DifficultyCache.data(killer);
         int tier = data.getActiveTier();
-        if (tier <= 0) {
-            // Starter economy — Copper only until a tier is purchased.
-            return new Drop(CoinKind.COPPER, 1);
-        }
-        CoinKind kind = rollKind(tier);
+        CoinKind kind;
         int count = 1;
-        if (elite) {
-            count += 1;
+        if (tier <= 0) {
+            // Starter economy — Copper until a tier is purchased.
+            kind = CoinKind.COPPER;
+        } else {
+            kind = rollKind(tier);
+            if (elite) {
+                count += 1;
+            }
+            if (boss) {
+                count += 2;
+            }
+            // Optional mult: chance for +1 extra of the same kind (never converts denomination).
+            double mult = Math.max(0.0, cfg.ancientCoinDropMult);
+            if (mult > 1.0 && ThreadLocalRandom.current().nextDouble() < Math.min(0.75, (mult - 1.0) * 0.35)) {
+                count += 1;
+            }
+            if (combatRating > cfg.ancientCoinRatingDivisor
+                    && ThreadLocalRandom.current().nextDouble() < 0.15) {
+                count += 1;
+            }
         }
-        if (boss) {
-            count += 2;
+        Drop primary = new Drop(kind, Math.min(MAX_KILL_DROP_COUNT, Math.max(1, count)));
+        Drop bonus = null;
+        double upgradeChance = Math.max(0.0, Math.min(1.0, cfg.ancientCoinUpgradeChance));
+        CoinKind upgrade = kind.nextHigher();
+        if (upgrade != null && upgradeChance > 0.0
+                && ThreadLocalRandom.current().nextDouble() < upgradeChance) {
+            bonus = new Drop(upgrade, 1);
         }
-        // Optional mult: chance for +1 extra of the same kind (never converts denomination).
-        double mult = Math.max(0.0, cfg.ancientCoinDropMult);
-        if (mult > 1.0 && ThreadLocalRandom.current().nextDouble() < Math.min(0.75, (mult - 1.0) * 0.35)) {
-            count += 1;
-        }
-        if (combatRating > cfg.ancientCoinRatingDivisor
-                && ThreadLocalRandom.current().nextDouble() < 0.15) {
-            count += 1;
-        }
-        return new Drop(kind, Math.min(MAX_KILL_DROP_COUNT, Math.max(1, count)));
+        return new KillLoot(primary, bonus);
     }
 
     public static CoinKind rollKind(int activeTier) {
@@ -448,6 +508,15 @@ public final class AncientCoinEconomy {
         }
         player.m_213846_(Component.m_237113_("§6Dropped " + drop.display() + " §7Ancient Coin"
                 + (drop.count() == 1 ? "" : "s")));
+    }
+
+    public static void notifyGrant(ServerPlayer player, KillLoot loot) {
+        if (player == null || loot == null || (!loot.hasPrimary() && !loot.hasBonus())) {
+            return;
+        }
+        boolean plural = loot.hasBonus() || (loot.hasPrimary() && loot.primary().count() != 1);
+        player.m_213846_(Component.m_237113_("§6Dropped " + loot.display() + " §7Ancient Coin"
+                + (plural ? "s" : "")));
     }
 
     public static void notifyGrant(ServerPlayer player, long copper) {

@@ -277,6 +277,11 @@ public final class DifficultyConfig {
     // ── V3 Ancient Coin economy ────────────────────────────────────────────
     public boolean enableAncientCoinDrops = true;
     public double ancientCoinDropMult = 1.0;
+    /**
+     * Chance (0–1) on each kill to also drop one coin of the next higher denomination
+     * alongside the normal drop (e.g. T0/T1 Copper + rare Iron). Default 2%.
+     */
+    public double ancientCoinUpgradeChance = 0.02;
     public double ancientCoinRatingDivisor = 25_000.0;
     /** V3: reset active tier/level on player death (unlocks stay). */
     public boolean deathResetsActiveDifficulty = true;
@@ -658,6 +663,9 @@ public final class DifficultyConfig {
         }
         if (cfg.tierCostLevelDivisor < 1.0) {
             cfg.tierCostLevelDivisor = 1_000.0;
+        }
+        if (cfg.ancientCoinUpgradeChance < 0.0 || cfg.ancientCoinUpgradeChance > 1.0) {
+            cfg.ancientCoinUpgradeChance = 0.02;
         }
         if (cfg.mobHealthScale <= 0.0 || cfg.mobHealthScale > 4.0) {
             cfg.mobHealthScale = 0.5;

@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.3.6)
+# DMZ Adaptive Difficulty (v3.3.8)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -18,6 +18,7 @@ Clients do **not** need this jar to join.
 | Teams | WIP stub — personal difficulty only |
 | Titles | Restored; equip from GUI |
 | Kill rewards | Personal ON: pre-T1 drops 1× Copper; with tier, normal ladder drops on the ground |
+| Upgrade drop | 2% chance for +1 next-higher coin (e.g. Copper + rare Iron) |
 | Feature gates | T2 evo → T3 AI → T4 elite → T5 mutation → T6 boss → T7 full |
 
 ## Removed / cleaned
@@ -33,8 +34,8 @@ Clients do **not** need this jar to join.
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.3.6.jar` (remove older AD jars)
-2. `plugins/dmz_adaptive_difficulty_gui-3.3.6.jar`
+1. `mods/dmz_adaptive_difficulty-3.3.8.jar` (remove older AD jars)
+2. `plugins/dmz_adaptive_difficulty_gui-3.3.8.jar`
 3. Restart — config regenerates at `config/dmz_adaptive_difficulty.json`
 4. `/difficulty` → **Buy Tier** (hub also has personal + coin-chat toggles)
 

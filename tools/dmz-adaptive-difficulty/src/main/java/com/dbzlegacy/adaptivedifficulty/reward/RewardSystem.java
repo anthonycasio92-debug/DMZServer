@@ -53,12 +53,16 @@ public final class RewardSystem {
         boolean boss = tag.m_128471_(BossScaling.TAG_BOSS);
         double mult = ScalingCurves.rewardMultiplier(Math.max(1L, snap.active));
 
-        AncientCoinEconomy.Drop drop = AncientCoinEconomy.rollKillDrop(killer, snap.combatRating, elite, boss);
-        if (drop.count() > 0) {
-            AncientCoinEconomy.dropInWorld(dead, drop);
-            if (data.isCoinDropChat()) {
-                AncientCoinEconomy.notifyGrant(killer, drop);
-            }
+        AncientCoinEconomy.KillLoot loot = AncientCoinEconomy.rollKillLoot(
+                killer, snap.combatRating, elite, boss);
+        if (loot.hasPrimary()) {
+            AncientCoinEconomy.dropInWorld(dead, loot.primary());
+        }
+        if (loot.hasBonus()) {
+            AncientCoinEconomy.dropInWorld(dead, loot.bonus());
+        }
+        if (data.isCoinDropChat() && (loot.hasPrimary() || loot.hasBonus())) {
+            AncientCoinEconomy.notifyGrant(killer, loot);
         }
         // XP / titles only once a tier is active.
         if (snap.activeTier > 0) {
