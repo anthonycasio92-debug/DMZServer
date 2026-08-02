@@ -729,6 +729,35 @@ public final class DifficultyConfig {
         if (cfg.mobScaleRadius > 128.0) {
             cfg.mobScaleRadius = 128.0;
         }
+        cfg.eliteChancePercent = Math.max(0.0, Math.min(100.0, cfg.eliteChancePercent));
+        cfg.mutationChancePercent = Math.max(0.0, Math.min(100.0, cfg.mutationChancePercent));
+        if (cfg.eliteStatMultiplier < 1.0) {
+            cfg.eliteStatMultiplier = 1.0;
+        }
+        if (cfg.eliteStatMultiplier > 10.0) {
+            cfg.eliteStatMultiplier = 10.0;
+        }
+        if (cfg.bossStatMultiplier < 1.0) {
+            cfg.bossStatMultiplier = 1.0;
+        }
+        if (cfg.bossStatMultiplier > 10.0) {
+            cfg.bossStatMultiplier = 10.0;
+        }
+        if (cfg.dmzExtraKiDamagePercent < 0.0) {
+            cfg.dmzExtraKiDamagePercent = 0.0;
+        }
+        if (cfg.dmzExtraKiDamagePercent > 5.0) {
+            cfg.dmzExtraKiDamagePercent = 5.0;
+        }
+        cfg.eliteMinUnlockTier = Math.max(0, Math.min(7, cfg.eliteMinUnlockTier));
+        cfg.mutationMinUnlockTier = Math.max(0, Math.min(7, cfg.mutationMinUnlockTier));
+        cfg.adaptiveAiMinUnlockTier = Math.max(0, Math.min(7, cfg.adaptiveAiMinUnlockTier));
+        cfg.enemyEvolutionMinUnlockTier = Math.max(0, Math.min(7, cfg.enemyEvolutionMinUnlockTier));
+        cfg.bossMechanicsMinUnlockTier = Math.max(0, Math.min(7, cfg.bossMechanicsMinUnlockTier));
+        if (cfg.adminPermission == null || cfg.adminPermission.isBlank()
+                || "*".equals(cfg.adminPermission.trim())) {
+            cfg.adminPermission = "difficulty.admin";
+        }
         // Hard product rule: at most 5 difficulty-adjusted mobs near a player.
         if (cfg.maxScaledMobsPerPlayer < 1 || cfg.maxScaledMobsPerPlayer > 5) {
             if (cfg.nearbyScaleBudgetPerPlayer >= 1 && cfg.nearbyScaleBudgetPerPlayer <= 5) {

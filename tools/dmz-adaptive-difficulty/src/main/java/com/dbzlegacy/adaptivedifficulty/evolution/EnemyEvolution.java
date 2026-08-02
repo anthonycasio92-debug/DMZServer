@@ -520,11 +520,11 @@ public final class EnemyEvolution {
             pushToward(warden, target, 1.35, 0.65);
         }
 
-        // Rapid blasts / Ki barrage
+        // Rapid blasts / Ki barrage — longer CD, small volley (was up to 8 same-tick).
         if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_barrage") >= 55
+                && age - tag.m_128454_("dmz_ad_ki_barrage") >= 95
                 && dist < 22.0f) {
-            int shots = 3 + Math.min(5, tier.ordinalPower());
+            int shots = 2 + Math.min(1, tier.ordinalPower() / 4);
             if (KiAttackHelper.fireKiBarrage(warden, target, tier, shots) > 0) {
                 tag.m_128356_("dmz_ad_ki_barrage", age);
             }
@@ -586,29 +586,64 @@ public final class EnemyEvolution {
             return;
         }
 
+        // Shared ki gap with vanilla fireball replace — prevents kit + projectile double-dump.
+        if (!blazeKiReady(tag, age, tier)) {
+            return;
+        }
+
         if (tier.ordinalPower() >= DifficultyTier.AWAKENED.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_barrage") >= 40
+                && age - tag.m_128454_("dmz_ad_ki_barrage") >= 85
                 && dist < 18.0f) {
-            int shots = 2 + Math.min(4, tier.ordinalPower());
+            int shots = 2 + Math.min(1, tier.ordinalPower() / 5);
             if (KiAttackHelper.fireKiBarrage(blaze, target, tier, shots, true) > 0) {
-                tag.m_128356_("dmz_ad_ki_barrage", age);
+                markBlazeKiShot(tag, age, "dmz_ad_ki_barrage");
+                return;
             }
         }
         if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_blast") >= 55
+                && age - tag.m_128454_("dmz_ad_ki_blast") >= 70
                 && dist < 20.0f) {
             if (KiAttackHelper.fireKiBlast(blaze, target, tier, true)) {
-                tag.m_128356_("dmz_ad_ki_blast", age);
+                markBlazeKiShot(tag, age, "dmz_ad_ki_blast");
+                return;
             }
         }
         if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_explode") >= 100
+                && age - tag.m_128454_("dmz_ad_explode") >= 120
                 && dist < 16.0f) {
             if (KiAttackHelper.fireExplosionBlast(blaze, target, tier)) {
-                tag.m_128356_("dmz_ad_explode", age);
+                markBlazeKiShot(tag, age, "dmz_ad_explode");
             }
         }
         // Intentionally no per-tick ignite — burning is applied by successful ki hits only.
+    }
+
+    private static long blazeKiGap(DifficultyTier tier) {
+        int power = tier == null ? 0 : tier.ordinalPower();
+        if (power >= DifficultyTier.ZENITH.ordinalPower()) {
+            return 30L;
+        }
+        if (power >= DifficultyTier.GOD.ordinalPower()) {
+            return 36L;
+        }
+        if (power >= DifficultyTier.MASTER.ordinalPower()) {
+            return 42L;
+        }
+        return 48L;
+    }
+
+    private static boolean blazeKiReady(CompoundTag tag, long age, DifficultyTier tier) {
+        return tag != null && age - tag.m_128454_("dmz_ad_ki_shot") >= blazeKiGap(tier);
+    }
+
+    private static void markBlazeKiShot(CompoundTag tag, long age, String abilityKey) {
+        if (tag == null) {
+            return;
+        }
+        tag.m_128356_("dmz_ad_ki_shot", age);
+        if (abilityKey != null && !abilityKey.isBlank()) {
+            tag.m_128356_(abilityKey, age);
+        }
     }
 
     // ── Ghasts: Large Blast / Burn Beam / Explosion Wave ──────────────────
@@ -899,7 +934,17 @@ public final class EnemyEvolution {
             return true;
         }
         if (shooter instanceof Blaze) {
-            return KiAttackHelper.fireKiBlast(shooter, target, tier, true);
+            CompoundTag tag = PersistentDataAccess.get(shooter);
+            long age = shooter.f_19797_;
+            if (!blazeKiReady(tag, age, tier)) {
+                // Eat the vanilla fireball — do not stack with kit barrage.
+                return true;
+            }
+            boolean fired = KiAttackHelper.fireKiBlast(shooter, target, tier, true);
+            if (fired) {
+                markBlazeKiShot(tag, age, "dmz_ad_ki_blast");
+            }
+            return true;
         }
         if (shooter instanceof Ghast) {
             return KiAttackHelper.fireLargeBlast(shooter, target, tier);

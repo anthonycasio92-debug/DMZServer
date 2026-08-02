@@ -21,7 +21,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
@@ -326,6 +325,8 @@ public final class MobScaling {
             if (!tag.m_128441_(TAG_BASE_HEALTH)) {
                 return;
             }
+            // One-shot elite / mutation / boss roll from the claim owner's unlock tier.
+            rollRarityForClaim(entity, tag, profile.activeTier, cfg);
             if (tag.m_128441_(TAG_PROFILE_SIG) && tag.m_128454_(TAG_PROFILE_SIG) == profile.signature) {
                 APPLIED_PROFILE.put(entity.m_20148_(), profile.signature);
                 return;
@@ -432,24 +433,12 @@ public final class MobScaling {
             tag.m_128379_(TAG_DMZ_STYLE, true);
         }
         tag.m_128379_(TAG_SCALED, true);
-
-        int unlockTier = 0;
-        if (entity.m_9236_() instanceof ServerLevel sl) {
-            unlockTier = AreaDifficulty.highestActiveUnlockTier(sl, entity.m_20183_());
+        // Remember natural-boss status; elite/mutation/boss mechanics roll on claim
+        // using the claiming player's unlock tier (not area max at spawn).
+        if (naturalBoss) {
+            tag.m_128379_("dmz_ad_natural_boss", true);
         }
-        tag.m_128405_("dmz_ad_unlock_tier", unlockTier);
-
-        // Elite/boss/mutation rolls use nearby unlock tier only — not CR spawn paint.
-        long rollSeed = Math.max(1L, unlockTier) * 10_000L;
-        if (naturalBoss && unlockTier >= cfg.bossMechanicsMinUnlockTier) {
-            BossScaling.markBoss(entity, rollSeed);
-        }
-        if (unlockTier >= cfg.eliteMinUnlockTier) {
-            EliteSystem.maybePromote(entity, rollSeed);
-        }
-        if (unlockTier >= cfg.mutationMinUnlockTier) {
-            MutationSystem.maybeMutate(entity, rollSeed);
-        }
+        tag.m_128405_("dmz_ad_unlock_tier", 0);
 
         // Do NOT bake final fight stats at spawn. Nearby scaler / combat retarget
         // claim one of the player's limited difficulty slots (max 5).
@@ -502,6 +491,37 @@ public final class MobScaling {
                     entity.m_6095_().toString(),
                     t.toString()
             );
+        }
+    }
+
+    /**
+     * Elite / mutation / boss-mechanics rolls once per mob, keyed to the claim
+     * owner's unlock tier — not the highest area unlock at spawn.
+     */
+    private static void rollRarityForClaim(
+            LivingEntity entity, CompoundTag tag, int ownerUnlockTier, DifficultyConfig cfg) {
+        if (entity == null || tag == null || !PersistentDataAccess.isWritable(tag) || cfg == null) {
+            return;
+        }
+        if (tag.m_128471_("dmz_ad_rarity_rolled")) {
+            return;
+        }
+        tag.m_128379_("dmz_ad_rarity_rolled", true);
+        int unlock = Math.max(0, ownerUnlockTier);
+        tag.m_128405_("dmz_ad_unlock_tier", unlock);
+        long rollSeed = Math.max(1L, unlock) * 10_000L;
+        boolean naturalBoss = tag.m_128471_("dmz_ad_natural_boss")
+                || BossScaling.isNaturalBoss(entity)
+                || (tag.m_128441_(TAG_BASE_HEALTH)
+                && tag.m_128459_(TAG_BASE_HEALTH) >= cfg.bossHealthThreshold);
+        if (naturalBoss && unlock >= cfg.bossMechanicsMinUnlockTier) {
+            BossScaling.markBoss(entity, rollSeed);
+        }
+        if (unlock >= cfg.eliteMinUnlockTier) {
+            EliteSystem.maybePromote(entity, rollSeed);
+        }
+        if (unlock >= cfg.mutationMinUnlockTier) {
+            MutationSystem.maybeMutate(entity, rollSeed);
         }
     }
 

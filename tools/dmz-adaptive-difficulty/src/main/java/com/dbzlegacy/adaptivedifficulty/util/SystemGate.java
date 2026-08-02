@@ -43,7 +43,7 @@ public final class SystemGate {
 
     /**
      * True when this player's personal difficulty is on — scaling, kill coins,
-     * death reset, and AI pressure driven by them.
+     * death reset, AI pressure, and tier buy/lower driven by them.
      */
     public static boolean participates(ServerPlayer player) {
         if (!allows(player)) {

@@ -105,8 +105,12 @@ public final class CmiDifficultyGui {
                         personalOn
                                 ? "&7Click to turn OFF for you only"
                                 : "&7Click to turn ON for you only",
-                        "&8Pre-T1 still drops Copper when ON",
-                        "&8No scaling / kill coins when OFF"
+                        personalOn
+                                ? "&8OFF disables scaling, kill coins,"
+                                : "&8ON restores scaling, kill coins,",
+                        personalOn
+                                ? "&8AI pressure, and tier buys"
+                                : "&8AI pressure, and tier buys"
                 )));
         gui.addButton(actionBtn(31,
                 coinChatOn ? Material.BELL : Material.PAPER,
@@ -131,6 +135,23 @@ public final class CmiDifficultyGui {
     private static void openBuy(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         CMIGui gui = base(player, "&8Buy Higher Tier", 5);
+
+        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
+        if (!personalOn) {
+            CMIGuiButton locked = new CMIGuiButton(4, Material.BARRIER, "&c&lBuy Locked");
+            locked.lockField();
+            locked.addLore(List.of(
+                    "",
+                    "&cPersonal difficulty is OFF",
+                    "&7Turn it ON on the main menu to buy."
+            ));
+            gui.addButton(locked);
+            gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+            gui.addButton(closeBtn(44));
+            fillEmpty(gui, 5);
+            gui.open();
+            return;
+        }
 
         CMIGuiButton info = new CMIGuiButton(4, Material.GOLD_INGOT, "&e&lBuy Higher Tier");
         info.lockField();
@@ -160,6 +181,23 @@ public final class CmiDifficultyGui {
     private static void openLower(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         CMIGui gui = base(player, "&8Lower Difficulty Tier", 5);
+
+        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
+        if (!personalOn) {
+            CMIGuiButton locked = new CMIGuiButton(4, Material.BARRIER, "&c&lLower Locked");
+            locked.lockField();
+            locked.addLore(List.of(
+                    "",
+                    "&cPersonal difficulty is OFF",
+                    "&7Turn it ON on the main menu to change tiers."
+            ));
+            gui.addButton(locked);
+            gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+            gui.addButton(closeBtn(44));
+            fillEmpty(gui, 5);
+            gui.open();
+            return;
+        }
 
         CMIGuiButton status = new CMIGuiButton(4, Material.NETHER_STAR, "&f&lLower Tier");
         status.lockField();

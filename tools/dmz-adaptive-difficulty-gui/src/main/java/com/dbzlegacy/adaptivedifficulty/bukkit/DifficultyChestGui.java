@@ -82,8 +82,12 @@ public final class DifficultyChestGui implements Listener {
                         personalOn
                                 ? "&7Click to turn OFF for you only"
                                 : "&7Click to turn ON for you only",
-                        "&8Pre-T1 still drops Copper when ON",
-                        "&8No scaling / kill coins when OFF"
+                        personalOn
+                                ? "&8OFF disables scaling, kill coins,"
+                                : "&8ON restores scaling, kill coins,",
+                        personalOn
+                                ? "&8AI pressure, and tier buys"
+                                : "&8AI pressure, and tier buys"
                 )));
         inv.setItem(31, button(
                 coinChatOn ? Material.BELL : Material.PAPER,
@@ -110,8 +114,17 @@ public final class DifficultyChestGui implements Listener {
         holder.bind(inv);
         frame(inv, 45);
 
+        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
         List<String> info = new ArrayList<>();
         info.add("");
+        if (!personalOn) {
+            info.add("&cPersonal difficulty is OFF");
+            info.add("&7Turn it ON on the main menu to buy.");
+            inv.setItem(4, item(Material.BARRIER, "&c&lBuy Locked", info));
+            inv.setItem(36, pageBtn(Material.ARROW, "&7Back", "main", "&7Return"));
+            inv.setItem(44, closeBtn());
+            return inv;
+        }
         info.add("&7Current Tier &f" + ph.getOrDefault("active_tier_name", "None"));
         info.add("&7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"));
         info.add("&7DMZ Level &f" + ph.getOrDefault("level", "?")
@@ -137,6 +150,18 @@ public final class DifficultyChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, color("&8Lower Difficulty Tier"));
         holder.bind(inv);
         frame(inv, 45);
+
+        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
+        if (!personalOn) {
+            inv.setItem(4, item(Material.BARRIER, "&c&lLower Locked", List.of(
+                    "",
+                    "&cPersonal difficulty is OFF",
+                    "&7Turn it ON on the main menu to change tiers."
+            )));
+            inv.setItem(36, pageBtn(Material.ARROW, "&7Back", "main", "&7Return"));
+            inv.setItem(44, closeBtn());
+            return inv;
+        }
 
         inv.setItem(4, item(Material.NETHER_STAR, "&f&lLower Tier", List.of(
                 "",

@@ -10,7 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
 
 /**
- * Concept §12 — rare elite promotions at spawn.
+ * Concept §12 — rare elite promotions on claim conversion.
  * Stat bonuses are applied by {@link com.dbzlegacy.adaptivedifficulty.scaling.MobScaling}
  * from base attrs so retargets stay consistent.
  */

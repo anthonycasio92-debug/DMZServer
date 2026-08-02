@@ -100,6 +100,15 @@ public final class DifficultyActions {
             return toggleCoinChat(player, page);
         }
 
+        // Personal OFF freezes buy / lower / reset until the player turns it back on.
+        if (!SystemGate.participates(player)
+                && (ACT_ACTIVATE.equals(act) || ACT_PURCHASE_TIER.equals(act) || ACT_BUY.equals(act)
+                || ACT_LOWER_TIER.equals(act) || ACT_RESET.equals(act)
+                || "zero".equals(act) || "clear".equals(act))) {
+            openGui(player, page == null || page.isBlank() ? "main" : page);
+            return Result.fail("Personal difficulty is OFF — turn it ON to use tiers.");
+        }
+
         long amount = 0L;
         if (arg != null && !arg.isBlank()) {
             try {
@@ -131,8 +140,8 @@ public final class DifficultyActions {
         String returnPage = page == null || page.isBlank() ? "main" : page;
         openGui(player, returnPage);
         return Result.ok(on
-                ? "Personal difficulty ON — kill coins drop; scaling needs an active tier."
-                : "Personal difficulty OFF — no scaling or kill coins for you.");
+                ? "Personal difficulty ON — scaling, kill coins, and tier buys are active again."
+                : "Personal difficulty OFF — scaling, kill coins, AI pressure, and tier buys disabled until you turn it back on.");
     }
 
     private static Result toggleCoinChat(ServerPlayer player, String page) {

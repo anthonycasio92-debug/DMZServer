@@ -673,7 +673,13 @@ public final class DifficultyCommands {
                 case "maxdamagemultiplier" ->
                         // 0 / 1 = uncapped; only values > 1 apply a ceiling
                         cfg.maxDamageMultiplier = Math.max(0.0, Double.parseDouble(value));
-                case "adminpermission" -> cfg.adminPermission = value.trim();
+                case "adminpermission" -> {
+                    // Privilege escalation risk — change only in config JSON + reload.
+                    source.m_81352_(Component.m_237113_(
+                            "adminPermission cannot be set live. Edit config/dmz_adaptive_difficulty.json and /difficulty admin reload."
+                    ));
+                    return 0;
+                }
                 case "guibackend" -> cfg.guiBackend = value.trim().toLowerCase();
                 case "vanilladifficulty" -> cfg.vanillaDifficulty = value.trim().toLowerCase();
                 case "restorevanilladifficultyfrompeaceful" ->
@@ -776,6 +782,7 @@ public final class DifficultyCommands {
                     return 0;
                 }
             }
+            DifficultyConfig.sanitizeLive();
             DifficultyConfig.save();
             DifficultyCache.invalidateAll();
             source.m_288197_(() -> Component.m_237113_("§aSet §f" + key + " §a= §f" + value), true);

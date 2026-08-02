@@ -2,7 +2,6 @@ package com.dbzlegacy.adaptivedifficulty.mutation;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
-import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
 import com.dbzlegacy.adaptivedifficulty.util.EntityDisplayNames;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import java.util.concurrent.ThreadLocalRandom;
@@ -23,9 +22,13 @@ public final class MutationSystem {
         return MutationType.fromString(PersistentDataAccess.get(entity).m_128461_(TAG_MUTATION));
     }
 
-    public static void maybeMutate(LivingEntity entity, long difficulty) {
+    /**
+     * @param rollSeed claim-owner unlock seed ({@code unlockTier * 10_000}). Unlock-tier
+     *                 gating is done by the caller via {@code mutationMinUnlockTier}.
+     */
+    public static void maybeMutate(LivingEntity entity, long rollSeed) {
         DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enableMutations || entity == null || difficulty < DifficultyTier.ENHANCED.threshold()) {
+        if (!cfg.enableMutations || entity == null || rollSeed <= 0L) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);

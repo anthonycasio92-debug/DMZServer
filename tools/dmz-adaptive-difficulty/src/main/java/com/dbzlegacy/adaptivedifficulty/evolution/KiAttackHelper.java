@@ -151,19 +151,58 @@ public final class KiAttackHelper {
 
     public static int fireKiBarrage(
             Mob shooter, LivingEntity target, DifficultyTier tier, int count, boolean burning) {
+        // Barrages use a soft damage scale so same-tick volleys cannot spike through armor.
+        return fireKiBarrage(shooter, target, tier, count, burning, 0.55f);
+    }
+
+    public static int fireKiBarrage(
+            Mob shooter,
+            LivingEntity target,
+            DifficultyTier tier,
+            int count,
+            boolean burning,
+            float damageScale) {
         if (!ready(shooter, target)) {
             return 0;
         }
         int fired = 0;
-        int n = Math.max(1, Math.min(8, count));
+        // Hard cap volley size — high tiers used to dump up to 8 same-tick blasts.
+        int n = Math.max(1, Math.min(3, count));
+        float scale = Math.max(0.25f, Math.min(1.0f, damageScale));
         for (int i = 0; i < n; i++) {
-            if (fireKiBlast(shooter, target, tier, burning)) {
+            if (fireKiBlastScaled(shooter, target, tier, burning, scale)) {
                 fired++;
             } else {
                 break;
             }
         }
         return fired;
+    }
+
+    private static boolean fireKiBlastScaled(
+            Mob shooter, LivingEntity target, DifficultyTier tier, boolean burning, float damageScale) {
+        if (!ready(shooter, target)) {
+            return false;
+        }
+        try {
+            aimAt(shooter, target);
+            float damage = baseDamage(shooter, tier, burning ? 4.0f : 3.5f) * damageScale;
+            float speed = 1.35f + Math.min(0.8f, tier.ordinalPower() * 0.08f);
+            int main = burning ? COLOR_BURN : COLOR_MAIN;
+            int border = burning ? COLOR_BURN_BORDER : COLOR_BORDER;
+            KiBlastEntity blast = new KiBlastEntity(shooter.m_9236_(), shooter);
+            blast.setupKiSmall(shooter, damage, speed, main, border);
+            launchToward(blast, shooter, target, speed);
+            blast.setHomingTarget(target.m_19879_());
+            if (burning) {
+                target.m_20254_(3);
+            }
+            return true;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] ki blast failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            return false;
+        }
     }
 
     /** Explosion blast — ki hit + small world explosion near the target. */
@@ -268,8 +307,8 @@ public final class KiAttackHelper {
      * for projectiles / ki (indirect hits) — do not bake difficulty here.
      */
     private static float baseDamage(Mob shooter, DifficultyTier tier, float base) {
-        float tierBonus = Math.max(0, tier.ordinalPower()) * 2.0f;
-        // Higher soft cap so Zenith kits start from a real base before the offense mult.
-        return Math.min(120.0f, base + tierBonus);
+        float tierBonus = Math.max(0, tier.ordinalPower()) * 1.35f;
+        // Soft cap before offense / projectile mult — keeps high-tier kits threatening, not spike-nuke.
+        return Math.min(72.0f, base + tierBonus);
     }
 }

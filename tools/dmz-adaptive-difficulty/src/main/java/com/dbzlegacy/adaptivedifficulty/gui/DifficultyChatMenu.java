@@ -111,8 +111,8 @@ public final class DifficultyChatMenu {
                 .m_7220_(btn(personalOn ? "§a[Difficulty ON]" : "§c[Difficulty OFF]",
                         "/difficulty do toggle_personal 0 main",
                         personalOn
-                                ? "Turn OFF personal difficulty (no scaling / kill coins for you)"
-                                : "Turn ON personal difficulty (pre-T1 still drops Copper)"))
+                                ? "Turn OFF — no scaling, kill coins, AI pressure, or tier buys"
+                                : "Turn ON — restore scaling, kill coins, and tier buys"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn(coinChatOn ? "§a[Coin Chat ON]" : "§8[Coin Chat OFF]",
                         "/difficulty do toggle_coin_chat 0 main",
@@ -133,6 +133,11 @@ public final class DifficultyChatMenu {
         int active = data.getActiveTier();
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§8──────── §aBuy Higher Tier §8────────"));
+        if (!data.isPersonalEnabled()) {
+            send(player, Component.m_237113_("§cPersonal difficulty is OFF — turn it ON on the main menu to buy."));
+            send(player, btn("§7« Back", "/difficulty do page main", "Return"));
+            return;
+        }
         send(player, Component.m_237113_("§7Current §f" + (active <= 0 ? "None" : ("T" + active))
                 + "  §8·  §7DMZ §f" + level
                 + "  §8·  §7Costs scale with your level"));
@@ -168,6 +173,11 @@ public final class DifficultyChatMenu {
         int active = data.getActiveTier();
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§8──────── §fLower Difficulty Tier §8────────"));
+        if (!data.isPersonalEnabled()) {
+            send(player, Component.m_237113_("§cPersonal difficulty is OFF — turn it ON on the main menu to change tiers."));
+            send(player, btn("§7« Back", "/difficulty do page main", "Return"));
+            return;
+        }
         send(player, Component.m_237113_("§7Current §f" + (active <= 0 ? "None" : ("T" + active + " "
                 + (UnlockTier.byId(active) == null ? "" : UnlockTier.byId(active).display)))));
         send(player, Component.m_237113_("§8Select a lower unlocked tier, or reset to None."));

@@ -515,12 +515,19 @@ public final class ForgeBridge {
         if (nms == null) {
             return false;
         }
+        String target = page == null || page.isBlank() ? "main" : page;
+        // Staff-only pages must not open for players who only have dmzdiff.gui.
+        if (("settings".equalsIgnoreCase(target) || "stats".equalsIgnoreCase(target)
+                || "statistics".equalsIgnoreCase(target) || "details".equalsIgnoreCase(target))
+                && !isStaff(player)) {
+            target = "main";
+        }
         try {
             ensureResolved();
             if (chatMenuOpen == null) {
                 return false;
             }
-            chatMenuOpen.invoke(null, nms, page == null || page.isBlank() ? "main" : page);
+            chatMenuOpen.invoke(null, nms, target);
             return true;
         } catch (Throwable t) {
             return false;
@@ -573,10 +580,10 @@ public final class ForgeBridge {
         if (player == null) {
             return false;
         }
-        if (player.isOp() || player.hasPermission(adminPermission())) {
-            return true;
-        }
-        return player.hasPermission("*");
+        // Align with Forge StaffAccess: op or configured adminPermission only.
+        // Do not treat permission("*") as staff — that widens settings/admin set to anyone
+        // whose permission plugin grants a wildcard node by default.
+        return player.isOp() || player.hasPermission(adminPermission());
     }
 
     public static String adminSet(String key, String value) {
@@ -1139,15 +1146,66 @@ public final class ForgeBridge {
         }
     }
 
-    /** Scalar config fields only — never whitelist/disabledDimensions/migration flags. */
+    /**
+     * Allowlist of scalar config fields settable via Bukkit {@code admin set}.
+     * Deny-by-default: collections, migration flags, and {@code adminPermission}
+     * (privilege escalation if set to a common/default node) are never writable here.
+     */
     private static boolean isSafeAdminField(String fieldName) {
         if (fieldName == null || fieldName.isBlank()) {
             return false;
         }
         return switch (fieldName) {
-            case "whitelist", "disabledDimensions", "bossIdContains",
-                 "endScalingEnabledMigrated", "restoreVanillaDifficultyFromPeaceful" -> false;
-            default -> true;
+            case "enabled", "whitelistEnabled",
+                 "prestigeMultiplier", "levelMultiplier", "teamBonusPercent",
+                 "contributionPercent", "rewardScaling",
+                 "combatCurveExponent", "combatCurvePivot",
+                 "healthCurveExponent", "healthCurvePivot",
+                 "healthPercentPerDifficulty", "damagePercentPerDifficulty",
+                 "defensePercentPerDifficulty", "movementPercentPer100Difficulty",
+                 "dmzExtraHealthPercent", "dmzExtraDamagePercent",
+                 "dmzExtraDefensePercent", "dmzExtraKiDamagePercent",
+                 "tierAwakened", "tierEnhanced", "tierElite", "tierAdvanced",
+                 "tierMaster", "tierLegendary", "tierGod", "tierDivine",
+                 "tierImpossible", "tierTranscendent", "tierEternal", "tierMythic",
+                 "tierOmega", "tierAbsolute", "tierApex", "tierZenith",
+                 "referenceMaxLevel", "referenceMaxPrestige", "hardCapDifficulty",
+                 "mobScaleRadius", "enableMobScaling", "scaleHostileOnly",
+                 "applyDmzExtrasToAllHostiles", "enableRewardScaling",
+                 "enableElites", "eliteChancePercent", "eliteStatMultiplier",
+                 "enableMutations", "mutationChancePercent",
+                 "enableAdaptiveAi", "enableEnemyEvolution", "enableBossScaling",
+                 "bossStatMultiplier", "bossHealthThreshold",
+                 "maxHealthMultiplier", "maxScaledHealth", "maxMoveMultiplier",
+                 "maxArmorBonus", "maxDamageMultiplier",
+                 "guiBackend", "vanillaDifficulty", "areaDifficultyMode",
+                 "areaGroupBonusPercent", "areaDifficultyVariancePercent",
+                 "combatRatingDmzWeight", "combatRatingPrestigeWeight",
+                 "combatRatingTransformWeight", "combatRatingDifficultyWeight",
+                 "unlockTier1Level", "unlockTier2Level", "unlockTier3Level",
+                 "unlockTier4Level", "unlockTier5Level", "unlockTier6Level",
+                 "unlockTier7Level",
+                 "unlockTier1Max", "unlockTier2Max", "unlockTier3Max",
+                 "unlockTier4Max", "unlockTier5Max", "unlockTier6Max",
+                 "unlockTier7Max",
+                 "unlockTier1Cost", "unlockTier2Cost", "unlockTier3Cost",
+                 "unlockTier4Cost", "unlockTier5Cost", "unlockTier6Cost",
+                 "unlockTier7Cost",
+                 "unlockTier1EnemyMult", "unlockTier2EnemyMult", "unlockTier3EnemyMult",
+                 "unlockTier4EnemyMult", "unlockTier5EnemyMult", "unlockTier6EnemyMult",
+                 "unlockTier7EnemyMult",
+                 "weakStatCounterMult", "weakDefensePierceMult",
+                 "tankDamageDefenseRatio", "tankDamageHealthRatio",
+                 "specializationDamageTax", "defenseToArmorFactor",
+                 "nearbyScaleIntervalTicks", "maxScaledMobsPerPlayer",
+                 "nearbyScaleBudgetPerPlayer", "tierCostLevelDivisor",
+                 "enableAncientCoinDrops", "ancientCoinDropMult",
+                 "ancientCoinRatingDivisor", "ancientCoinUpgradeChance",
+                 "deathResetsActiveDifficulty", "mobHealthScale",
+                 "eliteMinUnlockTier", "mutationMinUnlockTier",
+                 "adaptiveAiMinUnlockTier", "enemyEvolutionMinUnlockTier",
+                 "bossMechanicsMinUnlockTier" -> true;
+            default -> false;
         };
     }
 
@@ -1174,12 +1232,51 @@ public final class ForgeBridge {
                     double c = ((Number) parsed).doubleValue();
                     yield Math.max(0.0, Math.min(1.0, c));
                 }
+                case "eliteChancePercent", "mutationChancePercent" -> {
+                    double c = ((Number) parsed).doubleValue();
+                    yield Math.max(0.0, Math.min(100.0, c));
+                }
+                case "eliteStatMultiplier", "bossStatMultiplier" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    yield Math.max(1.0, Math.min(10.0, m));
+                }
+                case "maxDamageMultiplier", "maxHealthMultiplier", "maxMoveMultiplier" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    // 0 = uncapped (documented); otherwise keep a sane ceiling.
+                    if (m <= 0.0) {
+                        yield 0.0;
+                    }
+                    yield Math.max(1.0, Math.min(50.0, m));
+                }
+                case "dmzExtraKiDamagePercent", "dmzExtraDamagePercent",
+                     "dmzExtraHealthPercent", "dmzExtraDefensePercent",
+                     "damagePercentPerDifficulty", "healthPercentPerDifficulty",
+                     "defensePercentPerDifficulty" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    yield Math.max(0.0, Math.min(5.0, m));
+                }
+                case "eliteMinUnlockTier", "mutationMinUnlockTier",
+                     "adaptiveAiMinUnlockTier", "enemyEvolutionMinUnlockTier",
+                     "bossMechanicsMinUnlockTier" -> {
+                    int n = ((Number) parsed).intValue();
+                    yield Math.max(0, Math.min(7, n));
+                }
                 case "unlockTier1Cost", "unlockTier2Cost", "unlockTier3Cost",
                      "unlockTier4Cost", "unlockTier5Cost", "unlockTier6Cost",
                      "unlockTier7Cost" -> Math.max(1L, ((Number) parsed).longValue());
-                case "adminPermission" -> {
-                    String s = String.valueOf(parsed).trim();
-                    yield s.isEmpty() ? "difficulty.admin" : s;
+                case "guiBackend" -> {
+                    String s = String.valueOf(parsed).trim().toLowerCase(Locale.ROOT);
+                    yield switch (s) {
+                        case "chat", "chest", "cmi", "auto" -> s;
+                        default -> "auto";
+                    };
+                }
+                case "vanillaDifficulty" -> {
+                    String s = String.valueOf(parsed).trim().toLowerCase(Locale.ROOT);
+                    yield switch (s) {
+                        case "peaceful", "easy", "normal", "hard" -> s;
+                        default -> "hard";
+                    };
                 }
                 default -> parsed;
             };

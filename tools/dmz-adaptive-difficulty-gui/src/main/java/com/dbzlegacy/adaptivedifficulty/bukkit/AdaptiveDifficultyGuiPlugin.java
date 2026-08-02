@@ -87,7 +87,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 player.sendMessage("§cNo permission: dmzdiff.gui");
                 return true;
             }
-            openMenuRespectingConfig(player, args.length > 0 ? args[0] : "main");
+            String page = args.length > 0 ? args[0] : "main";
+            if (("settings".equalsIgnoreCase(page) || "stats".equalsIgnoreCase(page)
+                    || "details".equalsIgnoreCase(page) || "statistics".equalsIgnoreCase(page))
+                    && !ForgeBridge.isStaff(player)) {
+                player.sendMessage("§cStaff only.");
+                page = "main";
+            }
+            openMenuRespectingConfig(player, page);
             return true;
         }
         if (!"difficulty".equals(name)) {

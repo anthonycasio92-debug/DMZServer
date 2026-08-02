@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.3.15)
+# DMZ Adaptive Difficulty (v3.3.16)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -10,10 +10,10 @@ Clients do **not** need this jar to join.
 | Unlock tiers (1–7) | Unlocked by DMZ level **or** Prestige ≥ tier id |
 | Buy tier | Spend Ancient Coins (pay-up OK with lower/higher mix, no change) |
 | Active difficulty | Set only by tier purchase — no +difficulty upgrades |
-| Personal toggle | GUI on/off for that player only (default ON) |
+| Personal toggle | GUI on/off for that player only (default ON). OFF freezes scaling, kill coins, AI pressure, and tier buy/lower until turned back on |
 | Coin drop chat | GUI mute for "Dropped X Ancient Coins" (default OFF) |
 | Death | Clears active tier + level when personal ON (unlocks / prestige / coins kept) |
-| Nearby scaling | Hostiles scale to player post-transform stats × tier % (max 5/player); leave range / personal off / logout reverts |
+| Nearby scaling | Hostiles scale to player post-transform stats × tier % (max 5/player); leave range / personal off / logout reverts. Elite/mutation/boss rolls happen on claim using the claim owner's unlock tier |
 | Combat Rating | Rewards / display / area readouts (not mob HP) |
 | Teams | WIP stub — personal difficulty only |
 | Titles | Restored; equip from GUI |
@@ -34,8 +34,8 @@ Clients do **not** need this jar to join.
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.3.15.jar` (remove older AD jars)
-2. `plugins/dmz_adaptive_difficulty_gui-3.3.15.jar`
+1. `mods/dmz_adaptive_difficulty-3.3.16.jar` (remove older AD jars)
+2. `plugins/dmz_adaptive_difficulty_gui-3.3.16.jar`
 3. Restart — config regenerates at `config/dmz_adaptive_difficulty.json`
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -54,6 +54,21 @@ Config key: `enabled` (also `admin set enabled false`).
 - `/difficulty admin whitelist add <player>` / `remove <player>` / `list` / `clear`
 - Alias: `wl`
 - When on, only listed players use AD (scaling, coins, purchases). Persists in config.
+
+## Security (staff settings / admin set)
+
+Two issues that used to look like “auth gaps” — what they were, and what 3.3.16 does:
+
+### Unauthenticated settings page
+- **Risk:** The settings/details chat page is status text for staff, but the Bukkit path `/dmzdiffgui settings` only required `dmzdiff.gui` (default true for all players). `openChatMenu` did not re-check staff, so a non-admin could open the settings/details view. That page itself cannot mutate config, but it leaked staff-facing status and was a footgun next to `admin set`.
+- **Also:** Bukkit `isStaff` treated `permission("*")` as staff. Some permission plugins grant a wildcard-looking node broadly, which could widen settings/admin access beyond ops / `difficulty.admin`.
+- **Fix:** Staff checks at `/dmzdiffgui`, inside `openChatMenu` (settings/stats/details → main for non-staff), Forge `StaffAccess` on chat settings, and Bukkit `isStaff` = op or `adminPermission` only (no `*`).
+
+### Unsanitized Bukkit `admin set`
+- **Risk:** Bukkit `ForgeBridge.adminSet` used reflection over almost every public config field (deny-list only). A compromised or careless staff account could set `eliteChancePercent=100`, uncapped damage multipliers, or previously `adminPermission` to a common node (privilege escalation for the next player who holds that node). Clamps were thin; Forge’s typed `adminSet` also skipped `sanitizeLive()`.
+- **Fix:** Deny-by-default **allowlist** of known-safe scalar keys; `adminPermission` blocked from live set (edit JSON + reload); expanded clamps (chances 0–100, rarity mults, ki/damage percents, unlock mins 0–7, gui/vanilla enums); `sanitizeLive()` after both Bukkit and Forge sets; `adminPermission="*"` normalized away on load.
+
+Staff gate remains: op level ≥2 / Bukkit op, or `difficulty.admin` (config `adminPermission`).
 
 ## Notes
 
