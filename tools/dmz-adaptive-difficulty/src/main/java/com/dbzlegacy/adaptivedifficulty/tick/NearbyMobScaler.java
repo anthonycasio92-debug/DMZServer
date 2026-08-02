@@ -122,10 +122,16 @@ public final class NearbyMobScaler {
         }
         for (UUID mobId : evicted.keySet()) {
             Mob mob = findMob(server, mobId);
-            if (mob != null) {
-                MobScaling.revertToBases(mob);
-                CombatIndex.unmark(mobId);
+            if (mob == null) {
+                continue;
             }
+            // Never roll saga/quest/SDD/spawner stats back to AD-captured bases.
+            if (MobScaling.isExemptFromConversion(mob)) {
+                MobScaling.ensureExempt(mob);
+            } else {
+                MobScaling.revertToBases(mob);
+            }
+            CombatIndex.unmark(mobId);
         }
     }
 

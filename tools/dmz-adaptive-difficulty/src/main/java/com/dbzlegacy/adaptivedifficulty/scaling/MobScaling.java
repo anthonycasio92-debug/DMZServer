@@ -13,6 +13,7 @@ import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
 import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
+import com.dragonminez.common.init.entities.sagas.DBSagasEntity;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -99,19 +100,24 @@ public final class MobScaling {
     /**
      * Saga/quest (DMZ), vanilla cage spawners, and SDD Advanced Spawner mobs keep
      * their own difficulty — AD must not convert them.
+     * <p>
+     * All {@link DBSagasEntity} instances are exempt by class (not only quest tags),
+     * so transform forms stay protected before {@code dmz_saga_id} is copied on.
      */
     public static boolean isExemptFromConversion(LivingEntity entity) {
         if (entity == null) {
             return false;
         }
+        // Saga NPCs / transform forms — class check beats tag timing races.
+        if (entity instanceof DBSagasEntity) {
+            return true;
+        }
         CompoundTag tag = PersistentDataAccess.get(entity);
         if (tag.m_128471_(TAG_EXEMPT) || tag.m_128471_(TAG_FROM_SPAWNER)) {
             return true;
         }
-        for (String key : QUEST_SPAWN_TAGS) {
-            if (tag.m_128441_(key)) {
-                return true;
-            }
+        if (hasQuestSpawnTags(tag)) {
+            return true;
         }
         return hasSddSpawnerMark(tag);
     }
@@ -133,6 +139,18 @@ public final class MobScaling {
         return false;
     }
 
+    private static boolean hasQuestSpawnTags(CompoundTag tag) {
+        if (tag == null) {
+            return false;
+        }
+        for (String key : QUEST_SPAWN_TAGS) {
+            if (tag.m_128441_(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Stamp a mob from {@link net.minecraft.world.entity.MobSpawnType#SPAWNER}. */
     public static void markFromSpawner(LivingEntity entity) {
         CompoundTag tag = PersistentDataAccess.get(entity);
@@ -144,7 +162,12 @@ public final class MobScaling {
     }
 
     /**
-     * Persist exempt and undo a prior AD player-profile paint if one was applied by mistake.
+     * Persist exempt and drop any AD bookkeeping.
+     * <p>
+     * Quest/saga/SDD/spawner mobs already have the correct live attributes — never
+     * {@link #revertToBases} them. Saga transform forms default to 300 max HP; AD
+     * capturing that as a "base" and rolling back after quest HP is applied was
+     * wiping Goku SSJ (etc.) down to the entity minimum.
      */
     public static void ensureExempt(LivingEntity entity) {
         CompoundTag tag = PersistentDataAccess.get(entity);
@@ -152,10 +175,38 @@ public final class MobScaling {
             return;
         }
         tag.m_128379_(TAG_EXEMPT, true);
+        boolean owned = entity instanceof DBSagasEntity
+                || hasQuestSpawnTags(tag)
+                || hasSddSpawnerMark(tag)
+                || tag.m_128471_(TAG_FROM_SPAWNER);
+        if (owned) {
+            clearAdBookkeeping(entity, tag);
+            return;
+        }
         if (tag.m_128471_(TAG_SCALED)
                 && tag.m_128441_(TAG_PROFILE_SIG)
                 && tag.m_128454_(TAG_PROFILE_SIG) != 0L) {
             revertToBases(entity);
+        }
+    }
+
+    /** Drop AD paint markers without touching live attributes. */
+    private static void clearAdBookkeeping(LivingEntity entity, CompoundTag tag) {
+        tag.m_128473_(TAG_BASE_HEALTH);
+        tag.m_128473_(TAG_BASE_ATTACK);
+        tag.m_128473_(TAG_BASE_ARMOR);
+        tag.m_128473_(TAG_BASE_SPEED);
+        tag.m_128473_(TAG_BASE_KNOCKBACK);
+        tag.m_128356_(TAG_DIFFICULTY, 0L);
+        tag.m_128356_(TAG_PROFILE_SIG, 0L);
+        tag.m_128350_(TAG_DMG_MULT, 1.0f);
+        tag.m_128379_(TAG_ATTR_DMG_SCALED, false);
+        tag.m_128379_(TAG_SCALED, false);
+        if (entity != null) {
+            APPLIED_PROFILE.remove(entity.m_20148_());
+            if (entity instanceof Mob mob) {
+                ScaledMobTracker.releaseAllClaims(mob);
+            }
         }
     }
 
@@ -727,6 +778,10 @@ public final class MobScaling {
         }
         Entity causing = source.m_7639_(); // getEntity
         if (!(causing instanceof LivingEntity attacker) || attacker instanceof Player) {
+            return amount;
+        }
+        // Saga/quest/SDD/spawner: leave their own damage alone.
+        if (isExemptFromConversion(attacker)) {
             return amount;
         }
         // Creeper / mob explosions: soft scale (full offense mult skips or melts these).

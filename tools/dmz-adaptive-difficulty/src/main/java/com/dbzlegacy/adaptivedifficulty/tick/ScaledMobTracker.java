@@ -134,6 +134,20 @@ public final class ScaledMobTracker {
         }
     }
 
+    /** Drop every claim + pending eviction for this mob (used when a mob becomes exempt). */
+    public static void releaseAllClaims(Mob mob) {
+        if (mob == null) {
+            return;
+        }
+        UUID mobId = mob.m_20148_();
+        PENDING_REVERT.remove(mobId);
+        for (List<Claim> claims : CLAIMS.values()) {
+            synchronized (claims) {
+                claims.removeIf(c -> c.mobId.equals(mobId));
+            }
+        }
+    }
+
     public static void clearPlayer(UUID playerId) {
         if (playerId != null) {
             CLAIMS.remove(playerId);
