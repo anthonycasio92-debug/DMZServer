@@ -111,7 +111,7 @@ public final class MobScaling {
         return tag.m_128441_(TAG_DIFFICULTY) ? tag.m_128454_(TAG_DIFFICULTY) : 0L;
     }
 
-    /** Stamped unlock-tier ladder percent (0.10–0.90). 0 when unscaled. */
+    /** Stamped unlock-tier ladder percent (stock 0.21–2.00). 0 when unscaled. */
     public static double tierPercentOf(LivingEntity entity) {
         if (entity == null) {
             return 0.0;

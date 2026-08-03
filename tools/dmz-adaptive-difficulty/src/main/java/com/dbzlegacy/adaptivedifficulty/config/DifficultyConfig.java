@@ -250,15 +250,16 @@ public final class DifficultyConfig {
     public double tierCostLevelDivisor = 1_000.0;
     /**
      * Nearby-mob scale vs the player's post-transform / limit-release stats.
-     * Defaults: T1 10% · T2 20% · T3 30% · T4 40% · T5 50% · T6 65% · T7 90%.
+     * Defaults (1.0.1): T1 21% · T2 42% · T3 65% · T4 90% · T5 135% · T6 160% · T7 200%.
+     * Shape: T1 slight early / trivial high → T7 near one-shot pressure.
      */
-    public double unlockTier1EnemyMult = 0.10;
-    public double unlockTier2EnemyMult = 0.20;
-    public double unlockTier3EnemyMult = 0.30;
-    public double unlockTier4EnemyMult = 0.40;
-    public double unlockTier5EnemyMult = 0.50;
-    public double unlockTier6EnemyMult = 0.65;
-    public double unlockTier7EnemyMult = 0.90;
+    public double unlockTier1EnemyMult = 0.21;
+    public double unlockTier2EnemyMult = 0.42;
+    public double unlockTier3EnemyMult = 0.65;
+    public double unlockTier4EnemyMult = 0.90;
+    public double unlockTier5EnemyMult = 1.35;
+    public double unlockTier6EnemyMult = 1.60;
+    public double unlockTier7EnemyMult = 2.00;
     /**
      * Multiplier on final scaled mob max HP ({@code playerMaxHp × tier% × …}).
      * Default {@code 0.65} — early tiers need sponge so fights last more than one punch.
@@ -267,15 +268,15 @@ public final class DifficultyConfig {
     /**
      * How much of a form/transform boost enemies scale to (0–1), after the soft curve.
      * {@code 0} = form-stripped base stats only · {@code 1} = strongest allowed form slice.
-     * Default {@code 0.25}. Combined with {@link #transformScaleExponent} + tier damp so
-     * big forms (10–20×) do not linearly explode mob damage at T6–T7.
+     * Default {@code 0.55}. Combined with {@link #transformScaleExponent} + tier damp /
+     * mega-form compress so big forms do not linearly explode mob damage at T6–T7.
      */
-    public double transformScaleWeight = 0.25;
+    public double transformScaleWeight = 0.55;
     /**
      * Diminishing-returns exponent on form surplus ({@code (live/base - 1)^exp × weight}).
-     * {@code 1.0} = linear · {@code 0.50} = sqrt-ish (default) · lower = softer high forms.
+     * {@code 1.0} = linear · {@code 0.75} = stock · lower = softer high forms.
      */
-    public double transformScaleExponent = 0.50;
+    public double transformScaleExponent = 0.75;
     /**
      * Legacy weak-stat dump multiplier (unused in combat as of 3.3.35).
      * Kept for config/admin compat; default 1.0 = no effect.
@@ -317,6 +318,12 @@ public final class DifficultyConfig {
      * Only rewrites untouched stock values; custom admin-set ladders are kept.
      */
     public Boolean tierPercentLadderMigratedV3 = Boolean.FALSE;
+    /**
+     * One-time (1.0.1): soft stock 10/20/30/40/50/65/90 (+ transform 0.25/0.50)
+     * → balanced ladder 21/42/65/90/135/160/200 (+ transform 0.55/0.75).
+     * Only rewrites untouched stock values; custom admin-set ladders are kept.
+     */
+    public Boolean tierPercentLadderMigratedV4 = Boolean.FALSE;
     /**
      * One-time: drop race / weak-stat / specialization stack and soften class + top-1
      * counter stock values so existing configs match the lighter 3.3.35 model.
@@ -494,13 +501,13 @@ public final class DifficultyConfig {
     /** Fraction of the player's transformed/released stats used for nearby mobs. */
     public double tierPlayerStatPercent(int tierId) {
         return switch (tierId) {
-            case 1 -> clampPercent(unlockTier1EnemyMult, 0.10);
-            case 2 -> clampPercent(unlockTier2EnemyMult, 0.20);
-            case 3 -> clampPercent(unlockTier3EnemyMult, 0.30);
-            case 4 -> clampPercent(unlockTier4EnemyMult, 0.40);
-            case 5 -> clampPercent(unlockTier5EnemyMult, 0.50);
-            case 6 -> clampPercent(unlockTier6EnemyMult, 0.65);
-            case 7 -> clampPercent(unlockTier7EnemyMult, 0.90);
+            case 1 -> clampPercent(unlockTier1EnemyMult, 0.21);
+            case 2 -> clampPercent(unlockTier2EnemyMult, 0.42);
+            case 3 -> clampPercent(unlockTier3EnemyMult, 0.65);
+            case 4 -> clampPercent(unlockTier4EnemyMult, 0.90);
+            case 5 -> clampPercent(unlockTier5EnemyMult, 1.35);
+            case 6 -> clampPercent(unlockTier6EnemyMult, 1.60);
+            case 7 -> clampPercent(unlockTier7EnemyMult, 2.00);
             default -> 0.0;
         };
     }
@@ -860,6 +867,41 @@ public final class DifficultyConfig {
             }
             cfg.tierPercentLadderMigratedV3 = Boolean.TRUE;
         }
+        // Restore stock pressure: soft 10–90 (+ transform 0.25/0.50) → balanced live ladder.
+        if (!Boolean.TRUE.equals(cfg.tierPercentLadderMigratedV4)) {
+            boolean softStock =
+                    nearly(cfg.unlockTier1EnemyMult, 0.10)
+                            && nearly(cfg.unlockTier2EnemyMult, 0.20)
+                            && nearly(cfg.unlockTier3EnemyMult, 0.30)
+                            && nearly(cfg.unlockTier4EnemyMult, 0.40)
+                            && nearly(cfg.unlockTier5EnemyMult, 0.50)
+                            && nearly(cfg.unlockTier6EnemyMult, 0.65)
+                            && nearly(cfg.unlockTier7EnemyMult, 0.90);
+            boolean midSoftStock =
+                    nearly(cfg.unlockTier1EnemyMult, 0.13)
+                            && nearly(cfg.unlockTier2EnemyMult, 0.28)
+                            && nearly(cfg.unlockTier3EnemyMult, 0.42)
+                            && nearly(cfg.unlockTier4EnemyMult, 0.58)
+                            && nearly(cfg.unlockTier5EnemyMult, 0.76)
+                            && nearly(cfg.unlockTier6EnemyMult, 0.90)
+                            && nearly(cfg.unlockTier7EnemyMult, 1.16);
+            if (softStock || midSoftStock) {
+                cfg.unlockTier1EnemyMult = 0.21;
+                cfg.unlockTier2EnemyMult = 0.42;
+                cfg.unlockTier3EnemyMult = 0.65;
+                cfg.unlockTier4EnemyMult = 0.90;
+                cfg.unlockTier5EnemyMult = 1.35;
+                cfg.unlockTier6EnemyMult = 1.60;
+                cfg.unlockTier7EnemyMult = 2.00;
+            }
+            if (nearly(cfg.transformScaleWeight, 0.25)) {
+                cfg.transformScaleWeight = 0.55;
+            }
+            if (nearly(cfg.transformScaleExponent, 0.50)) {
+                cfg.transformScaleExponent = 0.75;
+            }
+            cfg.tierPercentLadderMigratedV4 = Boolean.TRUE;
+        }
         // Soften counters: class + top-1 only (drop race / weak / specialization stock stack).
         if (!Boolean.TRUE.equals(cfg.counterSimplifyMigratedV1)) {
             if (nearly(cfg.weakStatCounterMult, 1.45)) {
@@ -1022,11 +1064,11 @@ public final class DifficultyConfig {
         }
         if (cfg.transformScaleWeight < 0.0 || cfg.transformScaleWeight > 1.0
                 || Double.isNaN(cfg.transformScaleWeight)) {
-            cfg.transformScaleWeight = 0.25;
+            cfg.transformScaleWeight = 0.55;
         }
         if (cfg.transformScaleExponent < 0.20 || cfg.transformScaleExponent > 1.0
                 || Double.isNaN(cfg.transformScaleExponent)) {
-            cfg.transformScaleExponent = 0.50;
+            cfg.transformScaleExponent = 0.75;
         }
         if (cfg.weakStatCounterMult < 1.0) {
             cfg.weakStatCounterMult = 1.0;
@@ -1149,21 +1191,21 @@ public final class DifficultyConfig {
         if (nearly(cfg.unlockTier1EnemyMult, 1.0)
                 && nearly(cfg.unlockTier2EnemyMult, 1.15)
                 && nearly(cfg.unlockTier7EnemyMult, 3.0)) {
-            cfg.unlockTier1EnemyMult = 0.10;
-            cfg.unlockTier2EnemyMult = 0.20;
-            cfg.unlockTier3EnemyMult = 0.30;
-            cfg.unlockTier4EnemyMult = 0.40;
-            cfg.unlockTier5EnemyMult = 0.50;
-            cfg.unlockTier6EnemyMult = 0.65;
-            cfg.unlockTier7EnemyMult = 0.90;
+            cfg.unlockTier1EnemyMult = 0.21;
+            cfg.unlockTier2EnemyMult = 0.42;
+            cfg.unlockTier3EnemyMult = 0.65;
+            cfg.unlockTier4EnemyMult = 0.90;
+            cfg.unlockTier5EnemyMult = 1.35;
+            cfg.unlockTier6EnemyMult = 1.60;
+            cfg.unlockTier7EnemyMult = 2.00;
         }
-        cfg.unlockTier1EnemyMult = clampPercent(cfg.unlockTier1EnemyMult, 0.10);
-        cfg.unlockTier2EnemyMult = clampPercent(cfg.unlockTier2EnemyMult, 0.20);
-        cfg.unlockTier3EnemyMult = clampPercent(cfg.unlockTier3EnemyMult, 0.30);
-        cfg.unlockTier4EnemyMult = clampPercent(cfg.unlockTier4EnemyMult, 0.40);
-        cfg.unlockTier5EnemyMult = clampPercent(cfg.unlockTier5EnemyMult, 0.50);
-        cfg.unlockTier6EnemyMult = clampPercent(cfg.unlockTier6EnemyMult, 0.65);
-        cfg.unlockTier7EnemyMult = clampPercent(cfg.unlockTier7EnemyMult, 0.90);
+        cfg.unlockTier1EnemyMult = clampPercent(cfg.unlockTier1EnemyMult, 0.21);
+        cfg.unlockTier2EnemyMult = clampPercent(cfg.unlockTier2EnemyMult, 0.42);
+        cfg.unlockTier3EnemyMult = clampPercent(cfg.unlockTier3EnemyMult, 0.65);
+        cfg.unlockTier4EnemyMult = clampPercent(cfg.unlockTier4EnemyMult, 0.90);
+        cfg.unlockTier5EnemyMult = clampPercent(cfg.unlockTier5EnemyMult, 1.35);
+        cfg.unlockTier6EnemyMult = clampPercent(cfg.unlockTier6EnemyMult, 1.60);
+        cfg.unlockTier7EnemyMult = clampPercent(cfg.unlockTier7EnemyMult, 2.00);
     }
 
     public long paintEpoch() {

@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0)
+# AdaptiveDifficulty (v1.0.1)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -25,8 +25,8 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Play
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.jar` (remove older `dmz_adaptive_difficulty-*.jar` / AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.jar` (remove older `dmz_adaptive_difficulty_gui-*.jar`)
+1. `mods/AdaptiveDifficulty-1.0.1.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.1.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -59,7 +59,7 @@ Live `admin set` is allowlisted + clamped; change `adminPermission` only in JSON
 - Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - Mob damage uses blended offense + a DEF/HP tank pierce floor so high mitigation cannot zero hits. Pierce / counters ramp with tier% (full by ~50%), so T2 20% stays near 20%.
-- Tier scale vs player fight stats: T1 10% · T2 20% · T3 30% · T4 40% · T5 50% · T6 65% · T7 90%.
+- Tier scale vs player fight stats: T1 21% · T2 42% · T3 65% · T4 90% · T5 135% · T6 160% · T7 200%. Form soft curve stock: `transformScaleWeight` 0.55 · `transformScaleExponent` 0.75.
 - Side channels (creeper boom, gravity, early kiblasts) also follow tier%/unlock — not absolute offense proxy. Creeper explosions bake from painted attack damage (like kiblasts) so T1–T2 blasts are not cancelled to 0 by DMZ DEF.
 - Mob ki blasts/lasers/beams use the mob’s scaled attack damage (not vanilla 3–72), so DMZ DEF mitigation no longer cancels them to 0. Early unlock kiblasts are soft-ratio’d (~60% at T1–T2).
 - **Counters (light):** class + single top combat stat only; intensity scales with tier%. No race / weak / top-3 / specialization stacks. Toggles: `enableClassCounters`, `enableStrongStatCounters`.
