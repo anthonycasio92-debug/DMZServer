@@ -292,13 +292,11 @@ public final class DifficultyChestGui implements Listener {
         put(holder, inv, 13, item(Material.IRON_SWORD, "&c&lCounters", List.of(
                 "",
                 "&7Class &f" + blankAsNone(ph.getOrDefault("fighting_class", "")),
-                "&7Race  &f" + blankAsNone(ph.getOrDefault("race", "")),
                 "&7Style &f" + ph.getOrDefault("fighting_style", "HYBRID"),
                 "",
-                "&7Top stats &f" + ph.getOrDefault("top_stats", "—"),
-                "&7Weak     &f" + ph.getOrDefault("weak_stat", "NONE"),
+                "&7Top stat &f" + ph.getOrDefault("top_stats", "—"),
                 "",
-                "&8Mobs counter class, race, and top 3 stats"
+                "&8Mobs counter class and top stat"
         )));
         List<String> coins = new ArrayList<>();
         coins.add("");

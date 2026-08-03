@@ -18,13 +18,13 @@ import net.minecraft.server.level.ServerPlayer;
  * Post-transform / limit-release combat snapshot used to scale nearby hostiles
  * to a fraction of the player's real fighting power.
  * <p>
- * Counters cover:
+ * Counters are intentionally light:
  * <ul>
- *   <li>weak-stat dumps (STR/SKP/RES/VIT/PWR imbalance)</li>
- *   <li>highest 3 combat stats (pressure the player's strengths)</li>
- *   <li>DEF/VIT tank floors + specialization tax</li>
- *   <li>DMZ fighting class / race overlays</li>
+ *   <li>DMZ fighting class overlay</li>
+ *   <li>single highest combat stat (STR/SKP/RES/VIT/PWR)</li>
  * </ul>
+ * Race overlays, weak-stat dump multipliers, and specialization tax are off.
+ * Baseline DEF/VIT tank pierce floors remain so high mitigation cannot zero hits.
  */
 public final class PlayerCombatProfile {
     private static final long CACHE_TTL_MS = 250L;
@@ -66,7 +66,7 @@ public final class PlayerCombatProfile {
      */
     public final double imbalance;
     /**
-     * Player's highest invested combat stats (up to 3), highest first.
+     * Player's single highest invested combat stat (length 0 or 1).
      * Empty when inactive / unavailable.
      */
     public final WeakStat[] topStats;
@@ -210,17 +210,12 @@ public final class PlayerCombatProfile {
         return UnlockTier.byId(activeTier);
     }
 
-    /** True when this profile ranks {@code stat} among the player's top 3. */
+    /** True when {@code stat} is the player's single highest combat stat. */
     public boolean isTopStat(WeakStat stat) {
         if (stat == null || stat == WeakStat.NONE || topStats.length == 0) {
             return false;
         }
-        for (WeakStat top : topStats) {
-            if (top == stat) {
-                return true;
-            }
-        }
-        return false;
+        return topStats[0] == stat;
     }
 
     /** Compact label for GUI/staff: {@code STR>SKP>RES} or {@code —}. */
@@ -255,34 +250,20 @@ public final class PlayerCombatProfile {
      */
     public double targetMobHealth(DifficultyConfig cfg) {
         double base = maxHealth * tierPercent;
-        // Glass cannons (weak DEF/VIT) shouldn't free-melt tiered packs.
-        if (weakest == WeakStat.DEFENSE || weakest == WeakStat.VITALITY) {
-            base *= Math.max(1.0, Math.sqrt(Math.max(1.0, cfg.weakStatCounterMult)));
-        }
-        // Mild HP bump when the build is heavily skewed.
-        if (imbalance > 0.35) {
-            base *= 1.0 + (imbalance - 0.35) * 0.35;
-        }
-        // Survive the player's strongest damage channels / burst races.
+        // Survive the player's strongest damage channel.
         if (cfg.enableStrongStatCounters) {
             base *= strongStatHealthBias(cfg);
         }
         if (cfg.enableClassCounters) {
             base *= classHealthBias(cfg);
-            base *= raceHealthBias(cfg);
         }
         double scale = cfg == null ? 0.5 : Math.max(0.05, Math.min(4.0, cfg.mobHealthScale));
         return Math.max(10.0, base * scale);
     }
 
     /**
-     * Target mob attack. Uses blended offense, a tankiness floor (so DEF/VIT
-     * dumps still get pressured), weak/strong-stat counters, specialization tax,
-     * and DMZ class/race overlays.
-     * <p>
-     * High-DEF builds are pressed even when DEF is their strongest stat: DMZ
-     * cancels hits when DEF is much larger than damage, so the pierce floor
-     * must stay a real fraction of player defense (not only a weak-stat counter).
+     * Target mob attack. Uses blended offense, a light tankiness floor so high
+     * DEF cannot cancel hits to 0, plus class + top-stat overlays only.
      */
     public double targetMobDamage(DifficultyConfig cfg) {
         double offenseShare = offense * tierPercent;
@@ -290,53 +271,35 @@ public final class PlayerCombatProfile {
         double hpFloor = maxHealth * tierPercent * Math.max(0.0, cfg.tankDamageHealthRatio);
         // Class tanks always get the floor treatment even with "even" invested stats.
         if (cfg.enableClassCounters && style == FightingStyle.TANK) {
-            defFloor *= 1.25;
-            hpFloor *= 1.30;
+            defFloor *= 1.08;
+            hpFloor *= 1.08;
         }
         double base = Math.max(offenseShare, Math.max(defFloor, hpFloor));
 
-        // DEF:offense ratio — pure tanks used to face wet-noodle hits at low tiers
-        // because pierce only ran when DEF was the *weakest* invested stat.
+        // DEF:offense pierce floor — keeps DMZ mitigation from zeroing hits.
+        // Extra bite only when DEF/VIT is the player's single top invested stat.
         double tankiness = defense / Math.max(1.0, offense);
         boolean tankBuild = tankiness > 1.15
-                || weakest == WeakStat.STRENGTH
-                || weakest == WeakStat.STRIKE
-                || weakest == WeakStat.KI_POWER
                 || isTopStat(WeakStat.DEFENSE)
                 || isTopStat(WeakStat.VITALITY)
                 || (cfg.enableClassCounters && style == FightingStyle.TANK);
         if (tankBuild) {
-            double pierce = Math.max(cfg.tankDamageDefenseRatio, cfg.weakDefensePierceMult);
-            // Extra bite as DEF outpaces offense (capped so they aren't one-shot).
-            double tankExtra = Math.min(1.85, 1.0 + Math.max(0.0, tankiness - 1.0) * 0.45);
+            double pierce = Math.max(cfg.tankDamageDefenseRatio, 1.0);
+            double tankExtra = Math.min(1.22, 1.0 + Math.max(0.0, tankiness - 1.0) * 0.20);
             if (cfg.enableStrongStatCounters && (isTopStat(WeakStat.DEFENSE) || isTopStat(WeakStat.VITALITY))) {
-                tankExtra *= Math.max(1.0, 1.0 + (cfg.strongStatCounterMult - 1.0) * 0.55);
+                tankExtra *= Math.max(1.0, 1.0 + (cfg.strongStatCounterMult - 1.0) * 0.25);
             }
             double throughDefense = defense * tierPercent * pierce * tankExtra;
             base = Math.max(base, throughDefense);
-            if (weakest == WeakStat.STRENGTH
-                    || weakest == WeakStat.STRIKE
-                    || weakest == WeakStat.KI_POWER) {
-                base *= Math.max(1.0, cfg.weakStatCounterMult);
-            }
-        } else if (weakest == WeakStat.DEFENSE || weakest == WeakStat.VITALITY) {
-            // Glass path only when not already on the tank pierce path (avoids double-press).
-            double counter = Math.max(1.0, cfg.weakStatCounterMult);
-            double throughDefense = defense * tierPercent * Math.max(1.25, cfg.weakDefensePierceMult);
-            base = Math.max(base * counter, throughDefense);
         }
 
-        // Multiplicative overlays after pierce floors — hard-capped to stop stack blow-ups.
+        // Class + top-stat overlays only (no race / weak-stat / specialization stack).
         double overlay = 1.0;
-        if (imbalance > 0.0) {
-            overlay *= 1.0 + imbalance * Math.max(0.0, cfg.specializationDamageTax);
-        }
         if (cfg.enableStrongStatCounters) {
             overlay *= strongStatDamageBias(cfg);
         }
         if (cfg.enableClassCounters) {
             overlay *= classDamageBias(cfg);
-            overlay *= raceDamageBias(cfg);
         }
         double overlayCap = Math.max(1.0, Math.min(4.0, cfg.maxCounterOverlayMult));
         overlay = Math.max(1.0, Math.min(overlayCap, overlay));
@@ -347,9 +310,6 @@ public final class PlayerCombatProfile {
     public double targetMobArmor(DifficultyConfig cfg) {
         double share = defense * tierPercent;
         double armor = Math.log1p(Math.max(0.0, share)) * cfg.defenseToArmorFactor;
-        if (weakest == WeakStat.STRENGTH || weakest == WeakStat.STRIKE || weakest == WeakStat.KI_POWER) {
-            armor *= Math.max(1.0, cfg.weakStatCounterMult);
-        }
         if (cfg.enableStrongStatCounters) {
             armor *= strongStatArmorBias(cfg);
         }
@@ -359,7 +319,6 @@ public final class PlayerCombatProfile {
             } else if (style == FightingStyle.KI) {
                 armor *= Math.max(1.0, 1.0 + (cfg.classCounterArmorMult - 1.0) * 0.45);
             }
-            armor *= raceArmorBias(cfg);
         }
         if (cfg.maxArmorBonus > 0.0) {
             armor = Math.min(cfg.maxArmorBonus, armor);
@@ -369,8 +328,7 @@ public final class PlayerCombatProfile {
 
     /**
      * Kit cooldown scale for evolution abilities (&lt; 1 = more aggressive).
-     * Melee/strike/tank and high STR/SKP/RES/VIT builds get faster pressure kits;
-     * ki / high-PWR builds get denser ki cadence.
+     * Driven only by fighting class + single top combat stat.
      */
     public double kitCooldownScale(DifficultyConfig cfg) {
         if (cfg == null || (!cfg.enableClassCounters && !cfg.enableStrongStatCounters)) {
@@ -379,86 +337,76 @@ public final class PlayerCombatProfile {
         double scale = 1.0;
         if (cfg.enableClassCounters) {
             scale *= switch (style) {
-                case MELEE, STRIKE -> 0.82;
-                case TANK -> 0.78;
-                case KI -> 0.85;
-                case HYBRID -> 0.92;
+                case MELEE, STRIKE -> 0.94;
+                case TANK -> 0.92;
+                case KI -> 0.95;
+                case HYBRID -> 0.98;
             };
-            String r = race == null ? "" : race;
-            if (r.contains("saiyan") || r.contains("frost") || r.contains("viltrum")
-                    || r.contains("bio") || r.contains("android")) {
-                scale *= 0.90;
-            } else if (r.contains("majin") || r.contains("namek")) {
-                scale *= 0.88;
-            }
         }
-        if (cfg.enableStrongStatCounters) {
-            for (int i = 0; i < topStats.length; i++) {
-                double weight = 1.0 - (i * 0.22);
-                scale *= switch (topStats[i]) {
-                    case STRENGTH, STRIKE -> 1.0 - 0.10 * weight;
-                    case KI_POWER -> 1.0 - 0.12 * weight;
-                    case DEFENSE, VITALITY -> 1.0 - 0.08 * weight;
-                    case NONE -> 1.0;
-                };
-            }
-        }
-        return Math.max(0.55, Math.min(1.0, scale));
-    }
-
-    // ── Strong-stat (top 3) biases ─────────────────────────────────────────
-
-    private double strongStatHealthBias(DifficultyConfig cfg) {
-        double mult = Math.max(1.0, cfg.strongStatCounterMult);
-        double out = 1.0;
-        for (int i = 0; i < topStats.length; i++) {
-            double weight = 1.0 - (i * 0.22);
-            double bump = (mult - 1.0) * weight;
-            out *= switch (topStats[i]) {
-                // High DPS — packs need denser HP to survive the channel.
-                case STRENGTH, STRIKE -> 1.0 + bump * 0.90;
-                case KI_POWER -> 1.0 + bump * 1.10;
-                // High sustain — slight denser packs so VIT/RES walls don't free-clear.
-                case DEFENSE, VITALITY -> 1.0 + bump * 0.40;
+        if (cfg.enableStrongStatCounters && topStats.length > 0) {
+            scale *= switch (topStats[0]) {
+                case STRENGTH, STRIKE -> 0.96;
+                case KI_POWER -> 0.95;
+                case DEFENSE, VITALITY -> 0.97;
                 case NONE -> 1.0;
             };
         }
-        return Math.max(1.0, out);
+        return Math.max(0.85, Math.min(1.0, scale));
+    }
+
+    // ── Strong-stat (top-1) biases ─────────────────────────────────────────
+
+    private double strongStatHealthBias(DifficultyConfig cfg) {
+        double mult = Math.max(1.0, cfg.strongStatCounterMult);
+        WeakStat top = topStat();
+        if (top == WeakStat.NONE) {
+            return 1.0;
+        }
+        double bump = mult - 1.0;
+        return switch (top) {
+            case STRENGTH, STRIKE -> 1.0 + bump * 0.70;
+            case KI_POWER -> 1.0 + bump * 0.85;
+            case DEFENSE, VITALITY -> 1.0 + bump * 0.30;
+            case NONE -> 1.0;
+        };
     }
 
     private double strongStatDamageBias(DifficultyConfig cfg) {
         double mult = Math.max(1.0, cfg.strongStatCounterMult);
-        double out = 1.0;
-        for (int i = 0; i < topStats.length; i++) {
-            double weight = 1.0 - (i * 0.22);
-            double bump = (mult - 1.0) * weight;
-            out *= switch (topStats[i]) {
-                // Keep offensive specialists from snowballing uncontested.
-                case STRENGTH, STRIKE -> 1.0 + bump * 0.70;
-                case KI_POWER -> 1.0 + bump * 0.85;
-                // Pierce tanks — strongest when RES/VIT are their peaks.
-                case DEFENSE -> 1.0 + bump * 1.15;
-                case VITALITY -> 1.0 + bump * 1.05;
-                case NONE -> 1.0;
-            };
+        WeakStat top = topStat();
+        if (top == WeakStat.NONE) {
+            return 1.0;
         }
-        return Math.max(1.0, out);
+        double bump = mult - 1.0;
+        return switch (top) {
+            case STRENGTH, STRIKE -> 1.0 + bump * 0.55;
+            case KI_POWER -> 1.0 + bump * 0.65;
+            case DEFENSE -> 1.0 + bump * 0.85;
+            case VITALITY -> 1.0 + bump * 0.75;
+            case NONE -> 1.0;
+        };
     }
 
     private double strongStatArmorBias(DifficultyConfig cfg) {
         double mult = Math.max(1.0, cfg.strongStatCounterMult);
-        double out = 1.0;
-        for (int i = 0; i < topStats.length; i++) {
-            double weight = 1.0 - (i * 0.22);
-            double bump = (mult - 1.0) * weight;
-            out *= switch (topStats[i]) {
-                case STRENGTH, STRIKE -> 1.0 + bump * 1.05;
-                case KI_POWER -> 1.0 + bump * 0.55;
-                case DEFENSE, VITALITY -> 1.0 + bump * 0.25;
-                case NONE -> 1.0;
-            };
+        WeakStat top = topStat();
+        if (top == WeakStat.NONE) {
+            return 1.0;
         }
-        return Math.max(1.0, out);
+        double bump = mult - 1.0;
+        return switch (top) {
+            case STRENGTH, STRIKE -> 1.0 + bump * 0.80;
+            case KI_POWER -> 1.0 + bump * 0.40;
+            case DEFENSE, VITALITY -> 1.0 + bump * 0.20;
+            case NONE -> 1.0;
+        };
+    }
+
+    private WeakStat topStat() {
+        if (topStats.length == 0 || topStats[0] == null) {
+            return WeakStat.NONE;
+        }
+        return topStats[0];
     }
 
     // ── Class biases ──────────────────────────────────────────────────────
@@ -467,25 +415,25 @@ public final class PlayerCombatProfile {
         double mult = Math.max(1.0, cfg.classCounterDamageMult);
         String cls = fightingClass == null ? "" : fightingClass;
         if (cls.contains("berserk")) {
-            return Math.max(1.0, 1.0 + (mult - 1.0) * 1.20);
+            return Math.max(1.0, 1.0 + (mult - 1.0) * 1.10);
         }
         if (cls.contains("tank") || cls.contains("paladin")) {
-            return Math.max(1.0, 1.0 + (mult - 1.0) * 1.25);
+            return Math.max(1.0, 1.0 + (mult - 1.0) * 1.12);
         }
         if (cls.contains("warrior")) {
             return mult;
         }
         if (cls.contains("martial")) {
-            return Math.max(1.0, 1.0 + (mult - 1.0) * 1.05);
+            return Math.max(1.0, 1.0 + (mult - 1.0) * 1.00);
         }
         if (cls.contains("spirit") || cls.contains("cleric")) {
-            return Math.max(1.0, 1.0 + (mult - 1.0) * 0.95);
+            return Math.max(1.0, 1.0 + (mult - 1.0) * 0.90);
         }
         return switch (style) {
             case MELEE, STRIKE -> mult;
-            case KI -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.85);
-            case TANK -> Math.max(1.0, 1.0 + (mult - 1.0) * 1.20);
-            case HYBRID -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.55);
+            case KI -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.80);
+            case TANK -> Math.max(1.0, 1.0 + (mult - 1.0) * 1.10);
+            case HYBRID -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.45);
         };
     }
 
@@ -513,64 +461,6 @@ public final class PlayerCombatProfile {
             case TANK -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.30);
             case HYBRID -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.40);
         };
-    }
-
-    // ── Race biases ───────────────────────────────────────────────────────
-
-    private double raceDamageBias(DifficultyConfig cfg) {
-        double raceMult = Math.max(1.0, cfg.raceCounterMult);
-        String r = race == null ? "" : race;
-        // Regen / sustain — keep pressure between hits.
-        if (r.contains("majin") || r.contains("namek") || r.contains("bio")) {
-            return Math.max(1.0, 1.0 + (raceMult - 1.0) * 1.25);
-        }
-        // Transform / glass burst — denser hits so they can't one-shot free.
-        if (r.contains("saiyan") || r.contains("frost") || r.contains("frieza")
-                || r.contains("viltrum")) {
-            return Math.max(1.0, 1.0 + (raceMult - 1.0) * 1.05);
-        }
-        // Machine / synthetic — steady pressure through armor kits.
-        if (r.contains("android") || r.contains("machine") || r.contains("cyborg")) {
-            return Math.max(1.0, 1.0 + (raceMult - 1.0) * 0.90);
-        }
-        if (r.contains("human") || r.contains("monkey") || r.contains("truffle")) {
-            return Math.max(1.0, 1.0 + (raceMult - 1.0) * 0.65);
-        }
-        if (r.isBlank()) {
-            return 1.0;
-        }
-        return Math.max(1.0, 1.0 + (raceMult - 1.0) * 0.45);
-    }
-
-    private double raceHealthBias(DifficultyConfig cfg) {
-        double raceMult = Math.max(1.0, cfg.raceCounterMult);
-        String r = race == null ? "" : race;
-        if (r.contains("saiyan") || r.contains("frost") || r.contains("frieza")
-                || r.contains("viltrum")) {
-            return Math.max(1.0, 1.0 + (raceMult - 1.0) * 1.20);
-        }
-        if (r.contains("android") || r.contains("machine") || r.contains("cyborg")) {
-            return Math.max(1.0, 1.0 + (raceMult - 1.0) * 0.85);
-        }
-        if (r.contains("human") || r.contains("truffle")) {
-            return Math.max(1.0, 1.0 + (raceMult - 1.0) * 0.55);
-        }
-        if (r.contains("majin") || r.contains("namek") || r.contains("bio")) {
-            return Math.max(1.0, 1.0 + (raceMult - 1.0) * 0.40);
-        }
-        return 1.0;
-    }
-
-    private double raceArmorBias(DifficultyConfig cfg) {
-        double raceMult = Math.max(1.0, cfg.raceCounterMult);
-        String r = race == null ? "" : race;
-        if (r.contains("saiyan") || r.contains("human") || r.contains("viltrum")) {
-            return Math.max(1.0, 1.0 + (raceMult - 1.0) * 0.80);
-        }
-        if (r.contains("android") || r.contains("frost") || r.contains("frieza")) {
-            return Math.max(1.0, 1.0 + (raceMult - 1.0) * 0.60);
-        }
-        return 1.0;
     }
 
     private record StatBalance(WeakStat weakest, double imbalance, WeakStat[] topStats) {}
@@ -670,20 +560,15 @@ public final class PlayerCombatProfile {
         };
         Arrays.sort(ranked, Comparator.comparingDouble((Ranked r) -> r.norm).reversed());
 
-        // Top 3 highest stats (always track the peaks so mobs can counter strengths).
-        int topCount = Math.min(3, ranked.length);
-        WeakStat[] top = new WeakStat[topCount];
-        for (int i = 0; i < topCount; i++) {
-            top[i] = ranked[i].stat;
-        }
+        // Combat counters use only the single highest invested stat.
+        WeakStat[] top = { ranked[0].stat };
 
         WeakStat weakest = ranked[ranked.length - 1].stat;
         double lowest = ranked[ranked.length - 1].norm;
-        // Only tax dumps when the gap is meaningful (not a flat build).
+        // Display-only dump readout (no longer taxes mob damage).
         if (lowest > 0.85) {
             return new StatBalance(WeakStat.NONE, 0.0, top);
         }
-        // Soften near the flat threshold so mild spreads aren't taxed like dumps.
         double imbalance = Math.max(0.0, Math.min(1.0, (0.85 - lowest) / 0.85));
         return new StatBalance(weakest, imbalance, top);
     }
@@ -726,19 +611,16 @@ public final class PlayerCombatProfile {
         h = mix(h, style == null ? 0 : style.ordinal() + 1);
         // Include live counter formula knobs so admin retunes invalidate paint.
         DifficultyConfig cfg = DifficultyConfig.get();
-        h = mix(h, Math.round(cfg.weakStatCounterMult * 1000.0));
-        h = mix(h, Math.round(cfg.weakDefensePierceMult * 1000.0));
         h = mix(h, Math.round(cfg.strongStatCounterMult * 1000.0));
         h = mix(h, Math.round(cfg.classCounterDamageMult * 1000.0));
         h = mix(h, Math.round(cfg.classCounterHealthMult * 1000.0));
         h = mix(h, Math.round(cfg.classCounterArmorMult * 1000.0));
-        h = mix(h, Math.round(cfg.raceCounterMult * 1000.0));
         h = mix(h, Math.round(cfg.maxCounterOverlayMult * 1000.0));
         h = mix(h, Math.round(cfg.mobHealthScale * 1000.0));
         h = mix(h, cfg.enableClassCounters ? 1L : 0L);
         h = mix(h, cfg.enableStrongStatCounters ? 1L : 0L);
-        // Formula revision bump after counter-stack cap + config fingerprint.
-        h = mix(h, 5L);
+        // Formula revision: class + top-1 only (no race / weak / specialization stack).
+        h = mix(h, 6L);
         return h;
     }
 

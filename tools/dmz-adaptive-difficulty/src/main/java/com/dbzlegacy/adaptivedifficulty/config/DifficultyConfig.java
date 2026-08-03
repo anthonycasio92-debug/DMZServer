@@ -258,8 +258,11 @@ public final class DifficultyConfig {
      * Default {@code 0.5} = half of the previous full-match health scaling.
      */
     public double mobHealthScale = 0.5;
-    /** Extra pressure when countering the player's weakest combat stat. */
-    public double weakStatCounterMult = 1.45;
+    /**
+     * Legacy weak-stat dump multiplier (unused in combat as of 3.3.35).
+     * Kept for config/admin compat; default 1.0 = no effect.
+     */
+    public double weakStatCounterMult = 1.0;
     /** How hard tank / weak-offense counters pierce (mob damage vs player defense share). */
     public double weakDefensePierceMult = 1.75;
     /**
@@ -294,35 +297,43 @@ public final class DifficultyConfig {
      */
     public Boolean tierPercentLadderMigratedV3 = Boolean.FALSE;
     /**
-     * Extra mob damage for specialized builds: {@code damage × (1 + imbalance × tax)}.
-     * imbalance is 0 for even builds and approaches 1 for hard stat dumps.
+     * One-time: drop race / weak-stat / specialization stack and soften class + top-1
+     * counter stock values so existing configs match the lighter 3.3.35 model.
      */
-    public double specializationDamageTax = 0.60;
+    public Boolean counterSimplifyMigratedV1 = Boolean.FALSE;
     /**
-     * When true, mobs also counter the player's DMZ fighting class / race
-     * (warrior, spiritualist, tank, …) — not only raw stat dumps.
+     * Legacy specialization tax (unused in combat as of 3.3.35).
+     * Kept for config/admin compat; default 0.0 = no effect.
+     */
+    public double specializationDamageTax = 0.0;
+    /**
+     * When true, mobs also counter the player's DMZ fighting class
+     * (warrior, spiritualist, tank, …).
      */
     public boolean enableClassCounters = true;
     /**
-     * When true, mobs also counter the player's highest 3 invested combat stats
-     * (STR / SKP / RES / VIT / PWR) — denser HP vs DPS peaks, pierce vs RES/VIT peaks.
+     * When true, mobs also counter the player's single highest invested combat stat
+     * (STR / SKP / RES / VIT / PWR).
      */
     public boolean enableStrongStatCounters = true;
-    /** Strength of top-3-stat counter overlays (1.0 = off effect, higher = harder). */
-    public double strongStatCounterMult = 1.28;
+    /** Strength of top-stat counter overlays (1.0 = off effect, higher = harder). */
+    public double strongStatCounterMult = 1.15;
     /** Extra mob damage vs the player's fighting style (class overlay). */
-    public double classCounterDamageMult = 1.22;
+    public double classCounterDamageMult = 1.12;
     /** Extra mob HP vs glass / caster / ki classes. */
-    public double classCounterHealthMult = 1.18;
+    public double classCounterHealthMult = 1.10;
     /** Extra mob armor vs melee / strike classes. */
-    public double classCounterArmorMult = 1.20;
-    /** Race overlay on top of class counters (regen / glass / transform races). */
-    public double raceCounterMult = 1.12;
+    public double classCounterArmorMult = 1.12;
+    /**
+     * Legacy race overlay (unused in combat as of 3.3.35).
+     * Kept for config/admin compat; default 1.0 = no effect.
+     */
+    public double raceCounterMult = 1.0;
     /**
      * Cap on multiplicative counter overlays after pierce floors
-     * (specialization × top-3 × class × race). Prevents tank/dump stacking blow-ups.
+     * (class × top-stat only). Prevents stacking blow-ups.
      */
-    public double maxCounterOverlayMult = 2.25;
+    public double maxCounterOverlayMult = 1.55;
     /** Converts DMZ defense share into vanilla armor points: log1p(def) × factor. */
     public double defenseToArmorFactor = 2.5;
     /** Server ticks between nearby-player mob rescale pulses (per-player stagger). */
@@ -792,6 +803,34 @@ public final class DifficultyConfig {
             }
             cfg.tierPercentLadderMigratedV3 = Boolean.TRUE;
         }
+        // Soften counters: class + top-1 only (drop race / weak / specialization stock stack).
+        if (!Boolean.TRUE.equals(cfg.counterSimplifyMigratedV1)) {
+            if (nearly(cfg.weakStatCounterMult, 1.45)) {
+                cfg.weakStatCounterMult = 1.0;
+            }
+            if (nearly(cfg.specializationDamageTax, 0.60)) {
+                cfg.specializationDamageTax = 0.0;
+            }
+            if (nearly(cfg.raceCounterMult, 1.12)) {
+                cfg.raceCounterMult = 1.0;
+            }
+            if (nearly(cfg.strongStatCounterMult, 1.28)) {
+                cfg.strongStatCounterMult = 1.15;
+            }
+            if (nearly(cfg.classCounterDamageMult, 1.22)) {
+                cfg.classCounterDamageMult = 1.12;
+            }
+            if (nearly(cfg.classCounterHealthMult, 1.18)) {
+                cfg.classCounterHealthMult = 1.10;
+            }
+            if (nearly(cfg.classCounterArmorMult, 1.20)) {
+                cfg.classCounterArmorMult = 1.12;
+            }
+            if (nearly(cfg.maxCounterOverlayMult, 2.25)) {
+                cfg.maxCounterOverlayMult = 1.55;
+            }
+            cfg.counterSimplifyMigratedV1 = Boolean.TRUE;
+        }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
             cfg.guiBackend = "cmi";
         } else {
@@ -847,7 +886,7 @@ public final class DifficultyConfig {
             cfg.mobHealthScale = 0.5;
         }
         if (cfg.weakStatCounterMult < 1.0) {
-            cfg.weakStatCounterMult = 1.45;
+            cfg.weakStatCounterMult = 1.0;
         }
         if (cfg.weakDefensePierceMult < 1.0) {
             cfg.weakDefensePierceMult = 1.75;
@@ -859,7 +898,7 @@ public final class DifficultyConfig {
             cfg.tankDamageHealthRatio = 0.025;
         }
         if (cfg.specializationDamageTax < 0.0) {
-            cfg.specializationDamageTax = 0.60;
+            cfg.specializationDamageTax = 0.0;
         }
         if (cfg.classCounterDamageMult < 1.0) {
             cfg.classCounterDamageMult = 1.0;
@@ -880,7 +919,7 @@ public final class DifficultyConfig {
             cfg.classCounterArmorMult = 3.0;
         }
         if (cfg.strongStatCounterMult < 1.0) {
-            cfg.strongStatCounterMult = 1.28;
+            cfg.strongStatCounterMult = 1.15;
         }
         if (cfg.strongStatCounterMult > 3.0) {
             cfg.strongStatCounterMult = 3.0;
@@ -892,7 +931,7 @@ public final class DifficultyConfig {
             cfg.raceCounterMult = 2.0;
         }
         if (cfg.maxCounterOverlayMult < 1.0) {
-            cfg.maxCounterOverlayMult = 2.25;
+            cfg.maxCounterOverlayMult = 1.55;
         }
         if (cfg.maxCounterOverlayMult > 4.0) {
             cfg.maxCounterOverlayMult = 4.0;

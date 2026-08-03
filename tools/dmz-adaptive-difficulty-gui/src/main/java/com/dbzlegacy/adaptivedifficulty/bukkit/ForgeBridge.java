@@ -293,7 +293,7 @@ public final class ForgeBridge {
         return 0L;
     }
 
-    /** Class / race / top-3-stat counter identity for staff GUI + PAPI. */
+    /** Class / top-stat counter identity for staff GUI + PAPI. */
     private static void putCounterPlaceholders(Map<String, String> out, Object nms) {
         out.putIfAbsent("fighting_class", "");
         out.putIfAbsent("race", "");

@@ -549,8 +549,9 @@ public final class DifficultyCommands {
                         + "§e/difficulty admin set <key> <value>\n"
                         + "§8Master keys: enabled · whitelistEnabled\n"
                         + "§8Tier keys: unlockTier1Level…7 / Cost…7 / tier1statpercent…7 (0.15–2.0)\n"
-                        + "§8Nearby scale: weakStatCounterMult · weakDefensePierceMult\n"
-                        + "§8tankDamageDefenseRatio · tankDamageHealthRatio · specializationDamageTax\n"
+                        + "§8Counters: enableClassCounters · enableStrongStatCounters\n"
+                        + "§8classCounter*Mult · strongStatCounterMult · maxCounterOverlayMult\n"
+                        + "§8tankDamageDefenseRatio · tankDamageHealthRatio · weakDefensePierceMult\n"
                         + "§8eliteMinUnlockTier · mutationMinUnlockTier · adaptiveAiMinUnlockTier\n"
                         + "§8enemyEvolutionMinUnlockTier · bossMechanicsMinUnlockTier"
         ), false);
