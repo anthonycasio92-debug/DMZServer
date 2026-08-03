@@ -219,7 +219,7 @@ public final class DifficultyConfig {
     public double combatRatingDifficultyWeight = 1.0;
 
     // ── V3 Unlock tier requirements / ceilings / activation costs ───────────
-    public long unlockTier1Level = 100L;
+    public long unlockTier1Level = 1L;
     public long unlockTier2Level = 500L;
     public long unlockTier3Level = 1_000L;
     public long unlockTier4Level = 5_000L;
@@ -233,13 +233,14 @@ public final class DifficultyConfig {
     public long unlockTier5Max = 50_000L;
     public long unlockTier6Max = 100_000L;
     public long unlockTier7Max = 250_000L;
-    public long unlockTier1Cost = 100L;
-    public long unlockTier2Cost = 500L;
-    public long unlockTier3Cost = 1_500L;
-    public long unlockTier4Cost = 5_000L;
-    public long unlockTier5Cost = 15_000L;
-    public long unlockTier6Cost = 50_000L;
-    public long unlockTier7Cost = 150_000L;
+    /** Copper-value at the tier unlock level. T1 default = 1× Copper Ancient. */
+    public long unlockTier1Cost = 1L;
+    public long unlockTier2Cost = 5L;
+    public long unlockTier3Cost = 15L;
+    public long unlockTier4Cost = 50L;
+    public long unlockTier5Cost = 150L;
+    public long unlockTier6Cost = 500L;
+    public long unlockTier7Cost = 1_500L;
     /**
      * Tier purchase cost scales with how far above the tier's unlock level the
      * player is: {@code base × (1 + max(0, dmzLevel - requiredLevel) / divisor)}.
@@ -334,6 +335,11 @@ public final class DifficultyConfig {
      * One-time: soften transform→enemy scaling (weight 0.40→0.25 + soft curve).
      */
     public Boolean transformSoftMigratedV1 = Boolean.FALSE;
+    /**
+     * One-time: starter economy — T1 at level 1 costs 1× Copper (was 100 = 1× Gold).
+     * Only rewrites the stock cost ladder / T1 level gate; custom admin values kept.
+     */
+    public Boolean starterCopperCostMigratedV1 = Boolean.FALSE;
     /**
      * Bumped on every live sanitize/reload so claimed-mob NBT signatures cannot
      * early-return with stale paint after admin retunes.
@@ -907,6 +913,30 @@ public final class DifficultyConfig {
                 cfg.transformScaleExponent = 0.50;
             }
             cfg.transformSoftMigratedV1 = Boolean.TRUE;
+        }
+        // Starter economy (3.3.50): stock T1 cost was 100 copper-value → shown as 1× Gold.
+        if (!Boolean.TRUE.equals(cfg.starterCopperCostMigratedV1)) {
+            boolean stockCosts = cfg.unlockTier1Cost == 100L
+                    && cfg.unlockTier2Cost == 500L
+                    && cfg.unlockTier3Cost == 1_500L
+                    && cfg.unlockTier4Cost == 5_000L
+                    && cfg.unlockTier5Cost == 15_000L
+                    && cfg.unlockTier6Cost == 50_000L
+                    && cfg.unlockTier7Cost == 150_000L;
+            if (stockCosts) {
+                cfg.unlockTier1Cost = 1L;
+                cfg.unlockTier2Cost = 5L;
+                cfg.unlockTier3Cost = 15L;
+                cfg.unlockTier4Cost = 50L;
+                cfg.unlockTier5Cost = 150L;
+                cfg.unlockTier6Cost = 500L;
+                cfg.unlockTier7Cost = 1_500L;
+            }
+            // Stock T1 gate was level 100 — low-level players could never buy the 1× Copper tier.
+            if (cfg.unlockTier1Level == 100L) {
+                cfg.unlockTier1Level = 1L;
+            }
+            cfg.starterCopperCostMigratedV1 = Boolean.TRUE;
         }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
             cfg.guiBackend = "cmi";

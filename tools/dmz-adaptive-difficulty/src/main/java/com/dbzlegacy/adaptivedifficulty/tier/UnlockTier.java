@@ -7,13 +7,13 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
  * Distinct from combat-AI progression — these are purchase/activation gates.
  */
 public enum UnlockTier {
-    T1(1, "Awakened", 100L, 1_000L, 100L),
-    T2(2, "Enhanced", 500L, 5_000L, 500L),
-    T3(3, "Elite", 1_000L, 10_000L, 1_500L),
-    T4(4, "Advanced", 5_000L, 25_000L, 5_000L),
-    T5(5, "Master", 10_000L, 50_000L, 15_000L),
-    T6(6, "Legendary", 50_000L, 100_000L, 50_000L),
-    T7(7, "God", 100_000L, 250_000L, 150_000L);
+    T1(1, "Awakened", 1L, 1_000L, 1L),
+    T2(2, "Enhanced", 500L, 5_000L, 5L),
+    T3(3, "Elite", 1_000L, 10_000L, 15L),
+    T4(4, "Advanced", 5_000L, 25_000L, 50L),
+    T5(5, "Master", 10_000L, 50_000L, 150L),
+    T6(6, "Legendary", 50_000L, 100_000L, 500L),
+    T7(7, "God", 100_000L, 250_000L, 1_500L);
 
     public final int id;
     public final String display;

@@ -54,7 +54,7 @@ Live `admin set` is allowlisted + clamped; change `adminPermission` only in JSON
 - Coin ladder values: Copper 1 → Iron 10 → Gold 100 → Emerald 1k → Diamond 10k → Netherite 100k (9 letter variants equal). Lapis / Ender Pearl unused.
 - Example: a 1× Iron cost can be paid with 10+ Copper, or 1× Gold (overpay, no change).
 - Tier costs cap at 128 of one coin type, then promote to the next denomination (rounded up; top = 128× Netherite).
-- Level scaling uses levels above each tier’s unlock requirement (buying T7 at unlock ≈ base cost, not 100×). Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player.
+- Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - Mob damage uses blended offense + a DEF/HP tank pierce floor so high mitigation cannot zero hits. Pierce / counters ramp with tier% (full by ~50%), so T2 20% stays near 20%.
 - Tier scale vs player fight stats: T1 10% · T2 20% · T3 30% · T4 40% · T5 50% · T6 65% · T7 90%.
