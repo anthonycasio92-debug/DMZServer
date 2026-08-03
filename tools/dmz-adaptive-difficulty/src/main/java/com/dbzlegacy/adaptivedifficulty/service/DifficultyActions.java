@@ -2,16 +2,19 @@ package com.dbzlegacy.adaptivedifficulty.service;
 
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
+import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
+import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler;
 import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
 import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
+import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import net.minecraft.server.level.ServerPlayer;
@@ -85,6 +88,14 @@ public final class DifficultyActions {
             openGui(player, target);
             return Result.ok("");
         }
+        if (!DifficultyConfig.isEnabled()) {
+            openGui(player, page == null || page.isBlank() ? "main" : page);
+            return Result.fail("Adaptive Difficulty is disabled by an admin.");
+        }
+        if (!SystemGate.allows(player)) {
+            openGui(player, page == null || page.isBlank() ? "main" : page);
+            return Result.fail("Adaptive Difficulty is whitelist-only right now. Ask an admin to add you.");
+        }
         if (ACT_EQUIP_TITLE.equals(act) || "equip".equals(act)) {
             return equipTitle(player, arg, page == null || page.isBlank() ? "titles" : page);
         }
@@ -100,14 +111,6 @@ public final class DifficultyActions {
         }
         if (ACT_CHARACTER_RESET.equals(act) || "char_reset".equals(act) || "characterreset".equals(act)) {
             return characterReset(player, page);
-        }
-        if (!DifficultyConfig.isEnabled()) {
-            openGui(player, page == null || page.isBlank() ? "main" : page);
-            return Result.fail("Adaptive Difficulty is disabled by an admin.");
-        }
-        if (!SystemGate.allows(player)) {
-            openGui(player, page == null || page.isBlank() ? "main" : page);
-            return Result.fail("Adaptive Difficulty is whitelist-only right now. Ask an admin to add you.");
         }
         if (ACT_TEAM.equals(act)) {
             openGui(player, page == null || page.isBlank() ? "main" : page);
@@ -233,6 +236,10 @@ public final class DifficultyActions {
 
         long cost = AncientCoinEconomy.activationCost(tier, player);
         String costText = AncientCoinEconomy.formatExactCost(cost);
+        if (!canPersist(player)) {
+            openGui(player, returnPage);
+            return Result.fail("Could not save difficulty data — purchase cancelled (try relogging).");
+        }
         if (!AncientCoinEconomy.canAfford(player, cost)) {
             openGui(player, returnPage);
             return Result.fail(AncientCoinEconomy.missingText(player, cost));
@@ -283,7 +290,25 @@ public final class DifficultyActions {
         // Internal CR scale only — not shown as player-facing "points".
         data.setActiveDifficultyLevel(tier.maxDifficulty());
         DifficultyCache.save(player);
+        refreshCombatPaint(player);
+    }
+
+    /**
+     * Immediate combat-profile + claimed-mob repaint after form / tier changes.
+     * Avoids ~2s nearby-pulse lag where T7 paint lingered after lower/form-down.
+     */
+    public static void refreshCombatPaint(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        PlayerCombatProfile.clear(player.m_20148_());
         DifficultyCache.refresh(player);
+        ScaledMobTracker.forEachClaimedMob(player, mob -> MobScaling.retargetToPlayer(mob, player));
+    }
+
+    /** True when player NBT can persist paid tier changes. */
+    public static boolean canPersist(ServerPlayer player) {
+        return player != null && PersistentDataAccess.isWritable(PersistentDataAccess.get(player));
     }
 
     private static Result resetActive(ServerPlayer player, String page) {

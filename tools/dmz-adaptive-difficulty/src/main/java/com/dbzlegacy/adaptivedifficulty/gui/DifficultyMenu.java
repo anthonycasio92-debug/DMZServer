@@ -34,6 +34,19 @@ public final class DifficultyMenu {
         };
 
         if (!opened) {
+            // Companion plugin is up but open failed (Mohist player resolve flicker) —
+            // do not dump to chat when inventory was requested; log and stop.
+            if (backend != GuiBackend.CHAT
+                    && (CmiGuiBridge.available() || BukkitGuiBridge.available())) {
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] guiBackend={} open failed for {} (companion present) — "
+                                + "not falling back to chat. Try /dmzdiffgui.",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        backend.name().toLowerCase(),
+                        player.m_6302_()
+                );
+                return;
+            }
             if (backend != GuiBackend.AUTO && backend != GuiBackend.CHAT) {
                 AdaptiveDifficultyMod.LOGGER.warn(
                         "[{}] guiBackend={} unavailable; falling back to chat GUI "

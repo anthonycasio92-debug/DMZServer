@@ -294,7 +294,8 @@ public final class DifficultyEvents {
         if (player == null || !SystemGate.allows(player)) {
             return;
         }
-        DifficultyCache.refresh(player);
+        // Immediate claimed-mob repaint — don't wait for the nearby pulse.
+        com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.refreshCombatPaint(player);
     }
 
     @SubscribeEvent
@@ -306,7 +307,7 @@ public final class DifficultyEvents {
         if (player == null || !SystemGate.allows(player)) {
             return;
         }
-        DifficultyCache.refresh(player);
+        com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.refreshCombatPaint(player);
     }
 
     /**

@@ -265,7 +265,14 @@ public final class MobScaling {
                 || hasSddSpawnerMark(tag)
                 || tag.m_128471_(TAG_FROM_SPAWNER);
         if (owned) {
-            clearAdBookkeeping(entity, tag);
+            // Late SDD/spawner tags: AD may have already painted. Revert attrs first or
+            // clearAdBookkeeping alone leaves inflated ATTACK/HP while hurt-scaling skips.
+            if (tag.m_128471_(TAG_SCALED) && tag.m_128441_(TAG_BASE_HEALTH)) {
+                revertToBases(entity);
+            } else {
+                clearAdBookkeeping(entity, tag);
+            }
+            tag.m_128379_(TAG_EXEMPT, true);
             return;
         }
         if (tag.m_128471_(TAG_SCALED)
@@ -1011,28 +1018,20 @@ public final class MobScaling {
             float cached = tag.m_128457_(TAG_DMG_MULT); // getFloat
             return cached > 0.0f ? cached : 1.0f;
         }
+        // Profile-painted mobs stamp TAG_DMG_MULT=1. Missing stamp + ATTR scaled → flat 1
+        // (never rebuild legacy CR curve — that exploded fallback kiblasts).
+        if (tag.m_128471_(TAG_ATTR_DMG_SCALED) || tag.m_128471_(TAG_SCALED)) {
+            if (PersistentDataAccess.isWritable(tag)) {
+                tag.m_128350_(TAG_DMG_MULT, 1.0f);
+            }
+            return 1.0f;
+        }
         long d = tag.m_128441_(TAG_DIFFICULTY) ? tag.m_128454_(TAG_DIFFICULTY) : 0L;
         if (d <= 0) {
             return 1.0f;
         }
-        DifficultyConfig cfg = DifficultyConfig.get();
-        double mult = 1.0 + ScalingCurves.offenseBonus(d, cfg.damagePercentPerDifficulty);
-        boolean dmzStyle = tag.m_128471_(TAG_DMZ_STYLE)
-                || isDragonMineZMob(attacker)
-                || (cfg.applyDmzExtrasToAllHostiles && HostileMobs.isHostile(attacker));
-        if (dmzStyle) {
-            mult += ScalingCurves.offenseBonus(d, cfg.dmzExtraDamagePercent);
-            mult += ScalingCurves.offenseBonus(d, cfg.dmzExtraKiDamagePercent);
-        }
-        if (tag.m_128471_(EliteSystem.TAG_ELITE)) {
-            mult *= Math.max(1.0, cfg.eliteStatMultiplier);
-        }
-        if (tag.m_128471_(BossScaling.TAG_BOSS)) {
-            mult *= Math.max(1.0, cfg.bossStatMultiplier);
-        }
-        if (cfg.maxDamageMultiplier > 1.0) {
-            mult = Math.min(mult, cfg.maxDamageMultiplier);
-        }
+        // Unpainted legacy path only — soft floor, no elite/boss/DMZ curve stack.
+        double mult = 1.0 + Math.min(2.0, ScalingCurves.offenseBonus(d, DifficultyConfig.get().damagePercentPerDifficulty));
         if (PersistentDataAccess.isWritable(tag)) {
             tag.m_128350_(TAG_DMG_MULT, (float) mult);
         }

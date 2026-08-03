@@ -32,9 +32,11 @@ public final class CmiGuiBridge {
                 );
                 return false;
             }
-            Class<?> playerClass = Class.forName("org.bukkit.entity.Player");
-            // Forge already chose inventory backend — do not re-read chat preference.
-            Method open = plugin.getClass().getMethod("openMenu", playerClass, String.class);
+            // Resolve by name — avoid Class.forName(Player) CL mismatch on Mohist.
+            Method open = findOpenMethod(plugin.getClass(), "openMenu", bukkitPlayer.getClass());
+            if (open == null) {
+                throw new NoSuchMethodException("openMenu(Player,String)");
+            }
             open.invoke(plugin, bukkitPlayer, page == null || page.isBlank() ? "main" : page);
             return true;
         } catch (Throwable t) {
@@ -63,6 +65,31 @@ public final class CmiGuiBridge {
         Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
         Object pm = bukkit.getMethod("getPluginManager").invoke(null);
         return pm.getClass().getMethod("getPlugin", String.class).invoke(pm, name);
+    }
+
+    /** Find {@code name(PlayerLike, String)} without loading Player via Forge CL. */
+    static Method findOpenMethod(Class<?> pluginClass, String name, Class<?> playerRuntimeClass) {
+        if (pluginClass == null || name == null) {
+            return null;
+        }
+        for (Method m : pluginClass.getMethods()) {
+            if (!name.equals(m.getName()) || m.getParameterCount() != 2) {
+                continue;
+            }
+            Class<?>[] params = m.getParameterTypes();
+            if (params[1] != String.class) {
+                continue;
+            }
+            if (playerRuntimeClass != null && params[0].isAssignableFrom(playerRuntimeClass)) {
+                return m;
+            }
+            // Fallback: first arg looks like a Bukkit Player interface/class.
+            String pn = params[0].getName();
+            if ("org.bukkit.entity.Player".equals(pn) || pn.endsWith(".Player")) {
+                return m;
+            }
+        }
+        return null;
     }
 
     /**

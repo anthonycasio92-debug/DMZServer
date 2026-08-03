@@ -9,6 +9,7 @@ import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler;
+import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -571,6 +572,8 @@ public final class DifficultyCommands {
         data.resetTemporary();
         DifficultyCache.save(player);
         DifficultyCache.refresh(player);
+        ScaledMobTracker.releaseAndRevertPlayer(player);
+        NearbyMobScaler.processEvictions();
         AreaDifficulty.clearCache();
         source.m_288197_(() -> Component.m_237113_(
                 "§aCleared active tier. Unlocks & Ancient Coins kept."

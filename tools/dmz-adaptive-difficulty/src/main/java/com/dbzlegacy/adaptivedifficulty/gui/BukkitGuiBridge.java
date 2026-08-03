@@ -30,13 +30,14 @@ public final class BukkitGuiBridge {
                 );
                 return false;
             }
-            Class<?> playerClass = Class.forName("org.bukkit.entity.Player");
-            Method open;
-            try {
-                // Prefer chest-only when Forge selected guiBackend=chest.
-                open = plugin.getClass().getMethod("openChestMenu", playerClass, String.class);
-            } catch (NoSuchMethodException missing) {
-                open = plugin.getClass().getMethod("openMenu", playerClass, String.class);
+            Method open = CmiGuiBridge.findOpenMethod(
+                    plugin.getClass(), "openChestMenu", bukkitPlayer.getClass());
+            if (open == null) {
+                open = CmiGuiBridge.findOpenMethod(
+                        plugin.getClass(), "openMenu", bukkitPlayer.getClass());
+            }
+            if (open == null) {
+                throw new NoSuchMethodException("openChestMenu/openMenu(Player,String)");
             }
             open.invoke(plugin, bukkitPlayer, page == null || page.isBlank() ? "main" : page);
             return true;

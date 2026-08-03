@@ -1,7 +1,8 @@
 package com.dbzlegacy.adaptivedifficulty.elite;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
-import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockAbilityCaps;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.util.EntityDisplayNames;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import java.util.concurrent.ThreadLocalRandom;
@@ -55,9 +56,16 @@ public final class EliteSystem {
         tag.m_128379_(TAG_ELITE, true);
         tag.m_128350_("dmz_ad_elite_scale", 1.35f); // hint for client/Pehkui packs
 
-        DifficultyTier tier = DifficultyTier.of(difficulty);
+        // Label from unlock band, not DifficultyTier.of(unlock*10000) (that looked Divine at T4).
+        int unlock = tag.m_128441_("dmz_ad_unlock_tier")
+                ? tag.m_128451_("dmz_ad_unlock_tier")
+                : (int) Math.max(0L, Math.min(7L, difficulty / 10_000L));
+        UnlockTier unlockTier = UnlockTier.byId(unlock);
+        String band = unlockTier != null
+                ? unlockTier.display
+                : UnlockAbilityCaps.minAbilityTier(unlock).display;
         String typeName = EntityDisplayNames.of(entity);
-        entity.m_6593_(Component.m_237113_("§6✦ Elite §e" + typeName + " §7(" + tier.display + ")"));
+        entity.m_6593_(Component.m_237113_("§6✦ Elite §e" + typeName + " §7(" + band + ")"));
         entity.m_20340_(true); // glowing aura stand-in
     }
 }

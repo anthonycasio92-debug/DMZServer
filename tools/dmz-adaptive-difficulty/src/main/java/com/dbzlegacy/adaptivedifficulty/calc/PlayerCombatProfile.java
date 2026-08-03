@@ -276,7 +276,7 @@ public final class PlayerCombatProfile {
 
     /**
      * Target mob HP at this player's current transformed / released power.
-     * Scaled by {@link DifficultyConfig#mobHealthScale} (default 50%).
+     * Scaled by {@link DifficultyConfig#mobHealthScale} (default 65%).
      */
     public double targetMobHealth(DifficultyConfig cfg) {
         double base = maxHealth * tierPercent;
@@ -662,12 +662,13 @@ public final class PlayerCombatProfile {
         long h = 1469598103934665603L;
         h = mix(h, tier);
         h = mix(h, Math.round(pct * 1000.0));
-        h = mix(h, Math.round(melee));
-        h = mix(h, Math.round(strike));
-        h = mix(h, Math.round(ki));
-        h = mix(h, Math.round(def));
-        h = mix(h, Math.round(hp));
-        h = mix(h, Math.round(release));
+        // Fixed-point so soft form deltas under 0.5 still invalidate paint.
+        h = mix(h, Math.round(melee * 100.0));
+        h = mix(h, Math.round(strike * 100.0));
+        h = mix(h, Math.round(ki * 100.0));
+        h = mix(h, Math.round(def * 100.0));
+        h = mix(h, Math.round(hp * 100.0));
+        h = mix(h, Math.round(release * 100.0));
         h = mix(h, weakest == null ? 0 : weakest.ordinal() + 1);
         h = mix(h, Math.round(imbalance * 1000.0));
         if (topStats != null) {
@@ -679,7 +680,7 @@ public final class PlayerCombatProfile {
         h = mix(h, fightingClass == null ? 0 : fightingClass.hashCode());
         h = mix(h, race == null ? 0 : race.hashCode());
         h = mix(h, style == null ? 0 : style.ordinal() + 1);
-        // Include live counter formula knobs so admin retunes invalidate paint.
+        // Include live combat knobs so admin retunes invalidate paint.
         DifficultyConfig liveCfg = DifficultyConfig.get();
         h = mix(h, Math.round(liveCfg.strongStatCounterMult * 1000.0));
         h = mix(h, Math.round(liveCfg.classCounterDamageMult * 1000.0));
@@ -689,10 +690,18 @@ public final class PlayerCombatProfile {
         h = mix(h, Math.round(liveCfg.mobHealthScale * 1000.0));
         h = mix(h, Math.round(liveCfg.transformScaleWeight * 1000.0));
         h = mix(h, Math.round(liveCfg.transformScaleExponent * 1000.0));
+        h = mix(h, Math.round(liveCfg.tankDamageDefenseRatio * 1000.0));
+        h = mix(h, Math.round(liveCfg.tankDamageHealthRatio * 1000.0));
+        h = mix(h, Math.round(liveCfg.defenseToArmorFactor * 1000.0));
+        h = mix(h, Math.round(liveCfg.eliteStatMultiplier * 1000.0));
+        h = mix(h, Math.round(liveCfg.bossStatMultiplier * 1000.0));
+        h = mix(h, Math.round(liveCfg.maxScaledHealth * 10.0));
+        h = mix(h, Math.round(liveCfg.maxDamageMultiplier * 1000.0));
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
-        // Formula revision: soft (diminishing) transform damp + tier form damp.
-        h = mix(h, 11L);
+        h = mix(h, liveCfg.paintEpoch());
+        // Formula revision: fuller knob fingerprint + paint epoch.
+        h = mix(h, 12L);
         return h;
     }
 

@@ -13,7 +13,6 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
@@ -209,31 +208,31 @@ public final class KiAttackHelper {
         }
     }
 
-    /** Explosion blast — ki hit + small world explosion near the target. */
+    /**
+     * Explosion-flavored blast — ki packet only.
+     * World explosions were a second damage channel on top of painted kiblasts
+     * (AD creeper-style boom × painted attack), which one-shot at high kits.
+     */
     public static boolean fireExplosionBlast(Mob shooter, LivingEntity target, DifficultyTier tier) {
         if (!fireLargeBlast(shooter, target, tier)) {
             return false;
         }
-        if (shooter.m_9236_() instanceof ServerLevel level) {
-            float power = 1.6f + Math.min(3.5f, tier.ordinalPower() * 0.35f);
-            level.m_254849_(shooter, target.m_20185_(), target.m_20186_(), target.m_20189_(),
-                    power, Level.ExplosionInteraction.NONE);
+        // Cosmetic pressure only — no second entity-damage channel.
+        if (target != null && target.m_6084_()) {
             target.m_20254_(4);
         }
         return true;
     }
 
-    /** Explosive wave around the shooter. */
+    /**
+     * Explosive wave — charged ki beam only (no world MOB explosion double-dip).
+     */
     public static boolean fireExplosiveWave(Mob shooter, LivingEntity target, DifficultyTier tier) {
-        if (!ready(shooter, target) || !(shooter.m_9236_() instanceof ServerLevel level)) {
+        if (!ready(shooter, target) || !(shooter.m_9236_() instanceof ServerLevel)) {
             return false;
         }
         try {
-            fireKiBeam(shooter, target, tier, true, true);
-            float power = 2.2f + Math.min(4.0f, tier.ordinalPower() * 0.4f);
-            level.m_254849_(shooter, shooter.m_20185_(), shooter.m_20186_(), shooter.m_20189_(),
-                    power, Level.ExplosionInteraction.MOB);
-            return true;
+            return fireKiBeam(shooter, target, tier, true, true);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
                     "[{}] explosive wave failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());

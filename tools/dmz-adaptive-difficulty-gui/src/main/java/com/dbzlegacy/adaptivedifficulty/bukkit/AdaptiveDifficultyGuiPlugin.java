@@ -33,6 +33,15 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             getLogger().severe("Adaptive Difficulty Forge mod NOT reachable — GUI actions will fail."
                     + (err == null || err.isBlank() ? "" : " (" + err + ")"));
             getLogger().severe("Install mods/dmz_adaptive_difficulty-*.jar and restart.");
+        } else {
+            String modVer = ForgeBridge.modVersion();
+            String pluginVer = getDescription().getVersion();
+            if (modVer != null && pluginVer != null && !modVer.equals(pluginVer)) {
+                getLogger().severe("VERSION SKEW: Forge mod=" + modVer + " GUI plugin=" + pluginVer
+                        + " — install matching dmz_adaptive_difficulty jars or GUI reopen/actions may break.");
+            } else {
+                getLogger().info("Version handshake OK: " + pluginVer);
+            }
         }
         getLogger().info("Registered Bukkit /difficulty (CMI GUI preferred).");
     }
@@ -156,11 +165,13 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     }
                     player.sendMessage(msg);
                 }
-                // Reopen inventory GUI ourselves (CMI button commands close the chest).
-                // Chat backend is handled inside Forge DifficultyActions.
-                if (!"chat".equals(ForgeBridge.guiBackend())
-                        && reopen != null && !reopen.isBlank()) {
-                    openInventory(player, reopen);
+                // Bukkit owns reopen: inventory for cmi/chest/auto, chat menu for chat backend.
+                if (reopen != null && !reopen.isBlank()) {
+                    if ("chat".equals(ForgeBridge.guiBackend())) {
+                        ForgeBridge.openChatMenu(player, reopen);
+                    } else {
+                        openInventory(player, reopen);
+                    }
                 }
                 return true;
             }
@@ -184,7 +195,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     }
                     player.sendMessage(msg);
                 }
-                if (!"chat".equals(ForgeBridge.guiBackend())) {
+                if ("chat".equals(ForgeBridge.guiBackend())) {
+                    ForgeBridge.openChatMenu(player, "main");
+                } else {
                     openInventory(player, "main");
                 }
                 return true;
@@ -284,12 +297,29 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 sendAdminHelp(sender);
                 return true;
             }
-            case "resetpurchased", "characterreset" -> {
+            case "resetpurchased" -> {
                 if (player == null) {
                     sender.sendMessage("Players only.");
                     return true;
                 }
                 sender.sendMessage(ForgeBridge.resetPurchased(player));
+                return true;
+            }
+            case "characterreset" -> {
+                if (player == null) {
+                    sender.sendMessage("Players only.");
+                    return true;
+                }
+                ForgeBridge.ActionResult result =
+                        ForgeBridge.handleActionResult(player, "character_reset", "0", "");
+                String msg = result.message();
+                if (msg == null || msg.isBlank()) {
+                    msg = result.ok() ? "Character difficulty reset applied." : "Character reset failed.";
+                }
+                if (!msg.startsWith("§")) {
+                    msg = (result.ok() ? "§a" : "§c") + msg;
+                }
+                sender.sendMessage(msg);
                 return true;
             }
             case "reload" -> {

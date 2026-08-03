@@ -2,7 +2,8 @@ package com.dbzlegacy.adaptivedifficulty.boss;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
-import com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockAbilityCaps;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.util.EntityDisplayNames;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import net.minecraft.nbt.CompoundTag;
@@ -97,9 +98,15 @@ public final class BossScaling {
         tag.m_128379_(TAG_BOSS, true);
         tag.m_128405_(TAG_PHASE, 1);
 
-        DifficultyTier tier = DifficultyTier.of(difficulty);
+        int unlock = tag.m_128441_("dmz_ad_unlock_tier")
+                ? tag.m_128451_("dmz_ad_unlock_tier")
+                : (int) Math.max(0L, Math.min(7L, difficulty / 10_000L));
+        UnlockTier unlockTier = UnlockTier.byId(unlock);
+        String band = unlockTier != null
+                ? unlockTier.display
+                : UnlockAbilityCaps.minAbilityTier(unlock).display;
         String typeName = EntityDisplayNames.of(entity);
-        entity.m_6593_(Component.m_237113_("§c☠ Boss §4" + typeName + " §7[" + tier.display + "]"));
+        entity.m_6593_(Component.m_237113_("§c☠ Boss §4" + typeName + " §7[" + band + "]"));
         entity.m_20340_(true);
     }
 

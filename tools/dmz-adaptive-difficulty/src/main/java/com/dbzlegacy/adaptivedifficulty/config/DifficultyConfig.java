@@ -335,6 +335,11 @@ public final class DifficultyConfig {
      */
     public Boolean transformSoftMigratedV1 = Boolean.FALSE;
     /**
+     * Bumped on every live sanitize/reload so claimed-mob NBT signatures cannot
+     * early-return with stale paint after admin retunes.
+     */
+    private transient long paintEpoch = 0L;
+    /**
      * Legacy specialization tax (unused in combat as of 3.3.35).
      * Kept for config/admin compat; default 0.0 = no effect.
      */
@@ -494,32 +499,10 @@ public final class DifficultyConfig {
         };
     }
 
+    /** Range-only clamp for live tier percents — never remaps admin ladders. */
     private static double clampPercent(double value, double fallback) {
         if (!(value > 0.0) || Double.isNaN(value) || Double.isInfinite(value)) {
             return fallback;
-        }
-        // Migrate legacy CR-style multipliers (1.0–3.0+) into the new percent model.
-        if (value >= 1.0 && value == Math.rint(value) && value <= 3.0 && value != 1.0 && value != 2.0) {
-            // Keep explicit 1.0 / 2.0 (100% / 200%) — only remap old 1.15/1.35/… style values
-            // when they look like the previous enemy-mult ladder.
-        }
-        if (nearly(value, 1.15)) {
-            return 0.42;
-        }
-        if (nearly(value, 1.35)) {
-            return 0.65;
-        }
-        if (nearly(value, 1.60)) {
-            return 0.90;
-        }
-        if (nearly(value, 1.90)) {
-            return 1.25;
-        }
-        if (nearly(value, 2.30)) {
-            return 1.65;
-        }
-        if (nearly(value, 3.00)) {
-            return 2.00;
         }
         return Math.max(0.01, Math.min(10.0, value));
     }
@@ -917,7 +900,10 @@ public final class DifficultyConfig {
             if (nearly(cfg.transformScaleWeight, 0.40)) {
                 cfg.transformScaleWeight = 0.25;
             }
-            if (cfg.transformScaleExponent <= 0.0 || nearly(cfg.transformScaleExponent, 1.0)) {
+            // Only fill missing/invalid exponent — do not overwrite intentional linear (1.0).
+            if (cfg.transformScaleExponent <= 0.0
+                    || Double.isNaN(cfg.transformScaleExponent)
+                    || Double.isInfinite(cfg.transformScaleExponent)) {
                 cfg.transformScaleExponent = 0.50;
             }
             cfg.transformSoftMigratedV1 = Boolean.TRUE;
@@ -1104,6 +1090,7 @@ public final class DifficultyConfig {
             cfg.enemyEvolutionMinUnlockTier = 1;
         }
         // One-time migrate old CR enemy-mult ladder (1.0/1.15/…/3.0) → player-stat percents.
+        // Individual legacy remaps are NOT applied on every sanitize — that collapsed admin ladders.
         if (nearly(cfg.unlockTier1EnemyMult, 1.0)
                 && nearly(cfg.unlockTier2EnemyMult, 1.15)
                 && nearly(cfg.unlockTier7EnemyMult, 3.0)) {
@@ -1114,15 +1101,18 @@ public final class DifficultyConfig {
             cfg.unlockTier5EnemyMult = 0.50;
             cfg.unlockTier6EnemyMult = 0.65;
             cfg.unlockTier7EnemyMult = 0.90;
-        } else {
-            cfg.unlockTier1EnemyMult = clampPercent(cfg.unlockTier1EnemyMult, 0.10);
-            cfg.unlockTier2EnemyMult = clampPercent(cfg.unlockTier2EnemyMult, 0.20);
-            cfg.unlockTier3EnemyMult = clampPercent(cfg.unlockTier3EnemyMult, 0.30);
-            cfg.unlockTier4EnemyMult = clampPercent(cfg.unlockTier4EnemyMult, 0.40);
-            cfg.unlockTier5EnemyMult = clampPercent(cfg.unlockTier5EnemyMult, 0.50);
-            cfg.unlockTier6EnemyMult = clampPercent(cfg.unlockTier6EnemyMult, 0.65);
-            cfg.unlockTier7EnemyMult = clampPercent(cfg.unlockTier7EnemyMult, 0.90);
         }
+        cfg.unlockTier1EnemyMult = clampPercent(cfg.unlockTier1EnemyMult, 0.10);
+        cfg.unlockTier2EnemyMult = clampPercent(cfg.unlockTier2EnemyMult, 0.20);
+        cfg.unlockTier3EnemyMult = clampPercent(cfg.unlockTier3EnemyMult, 0.30);
+        cfg.unlockTier4EnemyMult = clampPercent(cfg.unlockTier4EnemyMult, 0.40);
+        cfg.unlockTier5EnemyMult = clampPercent(cfg.unlockTier5EnemyMult, 0.50);
+        cfg.unlockTier6EnemyMult = clampPercent(cfg.unlockTier6EnemyMult, 0.65);
+        cfg.unlockTier7EnemyMult = clampPercent(cfg.unlockTier7EnemyMult, 0.90);
+    }
+
+    public long paintEpoch() {
+        return paintEpoch;
     }
 
     private static boolean nearly(double value, double expected) {
@@ -1164,6 +1154,9 @@ public final class DifficultyConfig {
 
     /** Drop profile / applied-paint caches so config retunes re-scale claimed mobs. */
     public static void invalidateCombatPaintCaches() {
+        if (INSTANCE != null) {
+            INSTANCE.paintEpoch++;
+        }
         com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile.clearAll();
         com.dbzlegacy.adaptivedifficulty.scaling.MobScaling.clearAppliedProfiles();
     }

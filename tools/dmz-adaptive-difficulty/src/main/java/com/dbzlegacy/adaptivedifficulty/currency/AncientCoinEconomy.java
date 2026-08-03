@@ -400,8 +400,14 @@ public final class AncientCoinEconomy {
     /**
      * Spawn exact Ancient Coin item stacks in the world at the killed mob.
      * Does <b>not</b> put coins into the player's inventory.
+     * Prefer {@link #dropInWorld(LivingEntity, Drop, UUID)} so only the killer can pick up.
      */
     public static void dropInWorld(LivingEntity at, Drop drop) {
+        dropInWorld(at, drop, null);
+    }
+
+    /** World drop owned by {@code ownerId} (killer) — others cannot pick up. */
+    public static void dropInWorld(LivingEntity at, Drop drop, UUID ownerId) {
         if (at == null || drop == null || drop.count() <= 0 || drop.kind() == null) {
             return;
         }
@@ -427,7 +433,7 @@ public final class AncientCoinEconomy {
                 if (stack == null || stack.m_41619_()) {
                     break;
                 }
-                spawnDropEntity(server, x, y, z, stack);
+                spawnDropEntity(server, x, y, z, stack, ownerId);
                 left -= 1L;
             }
             return;
@@ -438,15 +444,28 @@ public final class AncientCoinEconomy {
             if (stack == null || stack.m_41619_()) {
                 break;
             }
-            spawnDropEntity(server, x, y, z, stack);
+            spawnDropEntity(server, x, y, z, stack, ownerId);
             left -= chunk;
         }
     }
 
-    private static void spawnDropEntity(ServerLevel server, double x, double y, double z, ItemStack stack) {
+    private static void spawnDropEntity(
+            ServerLevel server, double x, double y, double z, ItemStack stack, UUID ownerId
+    ) {
         ItemEntity entity = new ItemEntity(server, x, y, z, stack);
         // Short pickup delay so nearby killer can grab it, but still a world drop.
         entity.m_32061_(); // setDefaultPickUpDelay (10 ticks)
+        if (ownerId != null) {
+            // Only the killer can pick up (Mohist/Forge method name varies).
+            try {
+                entity.getClass().getMethod("setTarget", UUID.class).invoke(entity, ownerId);
+            } catch (Throwable ignored) {
+                try {
+                    entity.getClass().getMethod("m_261348_", UUID.class).invoke(entity, ownerId);
+                } catch (Throwable ignored2) {
+                }
+            }
+        }
         double spread = 0.12;
         entity.m_20334_(
                 (ThreadLocalRandom.current().nextDouble() - 0.5) * spread,
@@ -641,12 +660,18 @@ public final class AncientCoinEconomy {
                 break;
             }
             ItemStack copy = stack.m_41777_();
-            if (!player.m_150109_().m_36054_(copy)) {
-                // No room — stop without world-dropping.
+            int before = copy.m_41613_();
+            boolean fully = player.m_150109_().m_36054_(copy);
+            // Inventory.add may insert a partial stack and return false — credit that amount
+            // or migrateWalletToItems will restore too much NBT and dupe coins on relog.
+            int placed = Math.max(0, before - copy.m_41613_());
+            if (placed > 0) {
+                given += placed;
+                left -= placed;
+            }
+            if (!fully) {
                 break;
             }
-            given += chunk;
-            left -= chunk;
         }
         if (given > 0L) {
             DifficultyCache.refresh(player);
@@ -859,53 +884,70 @@ public final class AncientCoinEconomy {
             fromInv[idx] = invTake;
             fromWallet[idx] = walletTake;
         }
-        // Spend inventory first, then equipped wallet (never bank).
-        // If wallet fails after inventory take, refund inventory coins immediately.
-        if (!takeExactFromInventory(player, fromInv)) {
+        // Wallet first (in-memory + put), then inventory — on any failure restore both.
+        long[] takenInv = new long[CoinKind.values().length];
+        long[] takenWallet = new long[CoinKind.values().length];
+        if (!takeExactFromWalletTracked(player, fromWallet, takenWallet)) {
+            refundCoinsNoWorldDrop(player, takenWallet);
             return false;
         }
-        if (!takeExactFromWallet(player, fromWallet)) {
+        if (!takeExactFromInventoryTracked(player, fromInv, takenInv)) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] wallet shortfall after inventory charge for {} — refunding inventory coins",
+                    "[{}] inventory shortfall after wallet charge for {} — refunding",
                     AdaptiveDifficultyMod.MOD_ID,
                     player.m_6302_());
-            refundCoinsToInventory(player, fromInv);
+            refundCoinsNoWorldDrop(player, takenInv);
+            refundCoinsNoWorldDrop(player, takenWallet);
             return false;
         }
         DifficultyCache.refresh(player);
         return true;
     }
 
-    /** Restore coins taken from inventory when a later wallet charge fails. */
-    private static void refundCoinsToInventory(ServerPlayer player, long[] countsByKind) {
+    /**
+     * Restore coins without world-dropping (inventory, then NBT wallet fallback).
+     * Avoids lootable refund entities when inventory is full.
+     */
+    private static void refundCoinsNoWorldDrop(ServerPlayer player, long[] countsByKind) {
         if (player == null || countsByKind == null) {
             return;
         }
         for (CoinKind kind : CoinKind.values()) {
             long count = countsByKind[kind.ordinal()];
-            if (count > 0L) {
-                giveStacks(player, kind, count);
+            if (count <= 0L) {
+                continue;
+            }
+            long placed = giveStacksInventoryOnly(player, kind, count);
+            long missing = count - placed;
+            if (missing > 0L) {
+                PlayerDifficultyData data = DifficultyCache.data(player);
+                data.setAncientCopper(safeAdd(data.getAncientCopper(), safeMul(kind.copperValue, missing)));
+                DifficultyCache.save(player);
             }
         }
     }
 
-    private static boolean takeExactFromInventory(ServerPlayer player, long[] needByKind) {
+    private static boolean takeExactFromInventoryTracked(
+            ServerPlayer player, long[] needByKind, long[] takenOut
+    ) {
         if (player == null || needByKind == null) {
             return true;
         }
         Inventory inv = player.m_150109_();
         for (CoinKind kind : CoinKind.values()) {
-            long need = needByKind[kind.ordinal()];
+            int idx = kind.ordinal();
+            long need = needByKind[idx];
             if (need <= 0L) {
                 continue;
             }
-            for (int i = 0; i < inv.m_6643_() && need > 0L; i++) {
+            long remaining = need;
+            for (int i = 0; i < inv.m_6643_() && remaining > 0L; i++) {
                 ItemStack stack = inv.m_8020_(i);
                 if (kindOf(stack) != kind) {
                     continue;
                 }
                 int count = stack.m_41613_();
-                int take = (int) Math.min(count, Math.min(Integer.MAX_VALUE, need));
+                int take = (int) Math.min(count, Math.min(Integer.MAX_VALUE, remaining));
                 if (take <= 0) {
                     continue;
                 }
@@ -913,17 +955,22 @@ public final class AncientCoinEconomy {
                 if (stack.m_41619_()) {
                     inv.m_6836_(i, ItemStack.f_41583_);
                 }
-                need -= take;
+                remaining -= take;
+                if (takenOut != null) {
+                    takenOut[idx] += take;
+                }
             }
-            if (need > 0L) {
+            if (remaining > 0L) {
                 return false;
             }
         }
         return true;
     }
 
-    /** Take planned coins from the equipped wallet only (never bank). */
-    private static boolean takeExactFromWallet(ServerPlayer player, long[] needByKind) {
+    /** Take planned coins from the equipped wallet only (never bank). Tracks taken for rollback. */
+    private static boolean takeExactFromWalletTracked(
+            ServerPlayer player, long[] needByKind, long[] takenOut
+    ) {
         if (needByKind == null) {
             return true;
         }
@@ -950,18 +997,26 @@ public final class AncientCoinEconomy {
         if (walletInv == null) {
             return false;
         }
+        // Snapshot slots so putWalletInventory failure / shortfall can restore.
+        ItemStack[] snapshot = new ItemStack[walletInv.m_6643_()];
+        for (int i = 0; i < snapshot.length; i++) {
+            ItemStack s = walletInv.m_8020_(i);
+            snapshot[i] = s == null || s.m_41619_() ? ItemStack.f_41583_ : s.m_41777_();
+        }
         for (CoinKind kind : CoinKind.values()) {
-            long need = needByKind[kind.ordinal()];
+            int idx = kind.ordinal();
+            long need = needByKind[idx];
             if (need <= 0L) {
                 continue;
             }
-            for (int i = 0; i < walletInv.m_6643_() && need > 0L; i++) {
+            long remaining = need;
+            for (int i = 0; i < walletInv.m_6643_() && remaining > 0L; i++) {
                 ItemStack stack = walletInv.m_8020_(i);
                 if (kindOf(stack) != kind) {
                     continue;
                 }
                 int count = stack.m_41613_();
-                int take = (int) Math.min(count, Math.min(Integer.MAX_VALUE, need));
+                int take = (int) Math.min(count, Math.min(Integer.MAX_VALUE, remaining));
                 if (take <= 0) {
                     continue;
                 }
@@ -969,9 +1024,20 @@ public final class AncientCoinEconomy {
                 if (stack.m_41619_()) {
                     walletInv.m_6836_(i, ItemStack.f_41583_);
                 }
-                need -= take;
+                remaining -= take;
+                if (takenOut != null) {
+                    takenOut[idx] += take;
+                }
             }
-            if (need > 0L) {
+            if (remaining > 0L) {
+                restoreWalletSnapshot(walletInv, snapshot);
+                try {
+                    WalletItem.putWalletInventory(wallet, walletInv);
+                } catch (Throwable ignored) {
+                }
+                if (takenOut != null) {
+                    java.util.Arrays.fill(takenOut, 0L);
+                }
                 return false;
             }
         }
@@ -983,7 +1049,25 @@ public final class AncientCoinEconomy {
                     "[{}] failed to persist wallet after charge: {}",
                     AdaptiveDifficultyMod.MOD_ID,
                     t.toString());
+            restoreWalletSnapshot(walletInv, snapshot);
+            try {
+                WalletItem.putWalletInventory(wallet, walletInv);
+            } catch (Throwable ignored) {
+            }
+            if (takenOut != null) {
+                java.util.Arrays.fill(takenOut, 0L);
+            }
             return false;
+        }
+    }
+
+    private static void restoreWalletSnapshot(Container walletInv, ItemStack[] snapshot) {
+        if (walletInv == null || snapshot == null) {
+            return;
+        }
+        for (int i = 0; i < snapshot.length && i < walletInv.m_6643_(); i++) {
+            ItemStack s = snapshot[i];
+            walletInv.m_6836_(i, s == null || s.m_41619_() ? ItemStack.f_41583_ : s.m_41777_());
         }
     }
 

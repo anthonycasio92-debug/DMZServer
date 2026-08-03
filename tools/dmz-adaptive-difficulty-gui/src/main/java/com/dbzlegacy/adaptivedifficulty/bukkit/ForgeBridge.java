@@ -491,7 +491,7 @@ public final class ForgeBridge {
     public static String guiBackend() {
         try {
             ensureResolved();
-            Object cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+            Object cfg = loadClass("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig", preferredLoader())
                     .getMethod("get").invoke(null);
             Object raw = cfg.getClass().getField("guiBackend").get(cfg);
             if (raw == null) {
@@ -513,6 +513,30 @@ public final class ForgeBridge {
         }
     }
 
+    /** Forge mod version string, or null if unreachable. */
+    public static String modVersion() {
+        try {
+            ensureResolved();
+            Object v = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod", preferredLoader())
+                    .getField("VERSION").get(null);
+            return v == null ? null : String.valueOf(v);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static ClassLoader preferredLoader() {
+        try {
+            if (serverPlayerCls != null) {
+                return serverPlayerCls.getClassLoader();
+            }
+        } catch (Throwable ignored) {
+        }
+        ClassLoader ctx = Thread.currentThread().getContextClassLoader();
+        return ctx != null ? ctx : ForgeBridge.class.getClassLoader();
+    }
+
     public static String adminPermission() {
         try {
             Object cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
@@ -531,24 +555,25 @@ public final class ForgeBridge {
     /** Master Adaptive Difficulty switch ({@code DifficultyConfig.enabled}). */
     public static boolean systemEnabled() {
         try {
-            Object on = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+            Object on = loadClass("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig", preferredLoader())
                     .getMethod("isEnabled").invoke(null);
-            return !(on instanceof Boolean b) || b;
+            return on instanceof Boolean b && b;
         } catch (Throwable t) {
             try {
-                Object cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+                Object cfg = loadClass("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig", preferredLoader())
                         .getMethod("get").invoke(null);
                 Object raw = cfg.getClass().getField("enabled").get(cfg);
-                return !(raw instanceof Boolean b) || b;
+                return raw instanceof Boolean b && b;
             } catch (Throwable ignored) {
-                return true;
+                // Fail closed — UI must not claim the system is on when Forge is unreachable.
+                return false;
             }
         }
     }
 
     public static boolean whitelistEnabled() {
         try {
-            Object on = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+            Object on = loadClass("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig", preferredLoader())
                     .getMethod("isWhitelistEnabled").invoke(null);
             return on instanceof Boolean b && b;
         } catch (Throwable t) {
@@ -560,15 +585,18 @@ public final class ForgeBridge {
     public static boolean playerAllowed(Player player) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
+            // Fail closed when whitelist is on or Forge player resolve failed.
             return systemEnabled() && !whitelistEnabled();
         }
         try {
-            Object allowed = Class.forName("com.dbzlegacy.adaptivedifficulty.util.SystemGate")
-                    .getMethod("allows", Class.forName("net.minecraft.server.level.ServerPlayer"))
+            ClassLoader cl = nms.getClass().getClassLoader();
+            Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", cl);
+            Object allowed = loadClass("com.dbzlegacy.adaptivedifficulty.util.SystemGate", cl)
+                    .getMethod("allows", sp)
                     .invoke(null, nms);
             return allowed instanceof Boolean b && b;
         } catch (Throwable t) {
-            return systemEnabled();
+            return false;
         }
     }
 
@@ -941,6 +969,17 @@ public final class ForgeBridge {
             }
             cacheCls.getMethod("save", serverPlayerCls).invoke(null, nms);
             cacheRefresh.invoke(null, nms);
+            try {
+                loadClass("com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker",
+                        nms.getClass().getClassLoader())
+                        .getMethod("releaseAndRevertPlayer", serverPlayerCls)
+                        .invoke(null, nms);
+                loadClass("com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler",
+                        nms.getClass().getClassLoader())
+                        .getMethod("processEvictions")
+                        .invoke(null);
+            } catch (Throwable ignored) {
+            }
             loadClass("com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty", nms.getClass().getClassLoader())
                     .getMethod("clearCache").invoke(null);
             PLACEHOLDER_CACHE.remove(player.getUniqueId());
@@ -1470,7 +1509,10 @@ public final class ForgeBridge {
                 case "guiBackend" -> {
                     String s = String.valueOf(parsed).trim().toLowerCase(Locale.ROOT);
                     yield switch (s) {
-                        case "chat", "chest", "cmi", "auto" -> s;
+                        case "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm" -> "cmi";
+                        case "chest", "bukkit", "inventory", "gui" -> "chest";
+                        case "chat" -> "chat";
+                        case "auto" -> "auto";
                         default -> "auto";
                     };
                 }

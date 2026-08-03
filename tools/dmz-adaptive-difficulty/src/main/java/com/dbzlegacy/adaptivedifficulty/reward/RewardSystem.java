@@ -83,11 +83,12 @@ public final class RewardSystem {
 
         AncientCoinEconomy.KillLoot loot = AncientCoinEconomy.rollKillLoot(
                 killer, snap.combatRating, elite, boss);
+        UUID killerId = killer.m_20148_();
         if (loot.hasPrimary()) {
-            AncientCoinEconomy.dropInWorld(dead, loot.primary());
+            AncientCoinEconomy.dropInWorld(dead, loot.primary(), killerId);
         }
         if (loot.hasBonus()) {
-            AncientCoinEconomy.dropInWorld(dead, loot.bonus());
+            AncientCoinEconomy.dropInWorld(dead, loot.bonus(), killerId);
         }
         if (data.isCoinDropChat() && (loot.hasPrimary() || loot.hasBonus())) {
             AncientCoinEconomy.notifyGrant(killer, loot);
