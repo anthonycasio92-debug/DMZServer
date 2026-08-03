@@ -3,7 +3,7 @@
 Requires:
 - CMILib (shipped as CMILib1.5.9.6.jar)
 - CMI
-- `AdaptiveDifficultyGUI-1.0.4.jar` (must match Forge `AdaptiveDifficulty-1.0.4.jar`)
+- `AdaptiveDifficultyGUI-1.0.5.jar` (must match Forge `AdaptiveDifficulty-1.0.5.jar`)
 
 The companion plugin registers Bukkit `/difficulty` and opens a CMILib inventory GUI.
 Fallback order: CMI → Bukkit chest → clickable chat.

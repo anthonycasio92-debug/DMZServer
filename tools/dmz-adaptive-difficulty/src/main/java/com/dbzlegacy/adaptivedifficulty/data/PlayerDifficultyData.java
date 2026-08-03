@@ -28,7 +28,7 @@ public final class PlayerDifficultyData {
     private long ancientCopper;
     private final Set<String> titles = new LinkedHashSet<>();
     private String activeTitle = "";
-    /** Player opt-in: when false, no scaling / kill coins / death reset for them. */
+    /** Player opt-in: when false, no scaling / kill coins / AI / tier buy for them. Death reset still applies. */
     private boolean personalEnabled = true;
     /** When true, chat notifies on Ancient Coin kill drops. Default off (less spam). */
     private boolean coinDropChat = false;

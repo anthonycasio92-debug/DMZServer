@@ -48,13 +48,18 @@ public final class RewardSystem {
         }
         CompoundTag tag = PersistentDataAccess.get(dead);
         UUID deadId = dead.m_20148_();
-        // Only AD-scaled, claim-owned hostiles drop the kill ladder — no vanilla farm minting.
-        if (!tag.m_128471_(MobScaling.TAG_SCALED)) {
-            return;
-        }
-        UUID claimOwner = ScaledMobTracker.findClaimOwnerId(deadId);
-        if (claimOwner == null || !claimOwner.equals(killer.m_20148_())) {
-            return;
+        DifficultySnapshot snap = DifficultyCache.get(killer);
+        boolean preTier = snap.activeTier <= 0;
+        // With a purchased tier: only AD-scaled, claim-owned hostiles drop the ladder.
+        // Pre-T1: any hostile kill can drop starter Copper (nothing is claimed/scaled yet).
+        if (!preTier) {
+            if (!tag.m_128471_(MobScaling.TAG_SCALED)) {
+                return;
+            }
+            UUID claimOwner = ScaledMobTracker.findClaimOwnerId(deadId);
+            if (claimOwner == null || !claimOwner.equals(killer.m_20148_())) {
+                return;
+            }
         }
         if (PersistentDataAccess.isWritable(tag)) {
             if (tag.m_128471_(TAG_REWARDED)) {
@@ -74,11 +79,10 @@ public final class RewardSystem {
             }
         }
 
-        DifficultySnapshot snap = DifficultyCache.get(killer);
         PlayerDifficultyData data = DifficultyCache.data(killer);
         UnlockTier unlock = UnlockTier.byId(snap.activeTier);
-        boolean elite = EliteSystem.isElite(dead);
-        boolean boss = tag.m_128471_(BossScaling.TAG_BOSS);
+        boolean elite = !preTier && EliteSystem.isElite(dead);
+        boolean boss = !preTier && tag.m_128471_(BossScaling.TAG_BOSS);
         double mult = ScalingCurves.rewardMultiplier(Math.max(1L, snap.active));
 
         AncientCoinEconomy.KillLoot loot = AncientCoinEconomy.rollKillLoot(

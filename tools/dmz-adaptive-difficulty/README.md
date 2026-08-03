@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.4)
+# AdaptiveDifficulty (v1.0.5)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -25,8 +25,8 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Play
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.4.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.4.jar`
+1. `mods/AdaptiveDifficulty-1.0.5.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.5.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -65,4 +65,4 @@ Live `admin set` is allowlisted + clamped; change `adminPermission` only in JSON
 - **Counters (light):** class + single top combat stat only; intensity scales with tier%. No race / weak / top-3 / specialization stacks. Toggles: `enableClassCounters`, `enableStrongStatCounters`.
 - Scaled mob HP defaults to 65% of the previous match (`mobHealthScale`; damage unchanged). Elite rarity mult stock 1.50×.
 - Old NBT wallet balances migrate into Copper Ancient coins once per login.
-- AI + Enemy Evolution kits deepen with Buy Tier but stay **silent** (no kit nameplate/glow). Only true rarity rolls get cosmetics: Elite (`✦ Elite …`), Mutation (`§d…`), Boss (`☠ Boss …`). Soft floors: T1 Awakened · T2 Awakened→Enhanced · T3 Enhanced→Elite · T4 Advanced · T5 Master · T6 Legendary · T7 God (ceiling up to Zenith). Stock rarity chances: elite **2.25%**, mutation **3.75%** (bosses are natural T6+ hostiles — no % roll).
+- AI + Enemy Evolution kits deepen with Buy Tier but stay **silent** (no kit nameplate/glow). Only true rarity rolls get cosmetics: Elite (`✦ Elite …`), Mutation (`§d…`), Boss (`☠ Boss …`). Kit bands: T1 Awakened · T2 Awakened→Enhanced · T3 Enhanced→Elite · T4 Advanced→Master · T5 Master→Divine · T6 Legendary→Mythic · T7 God→Zenith. Stock rarity chances: elite **2.25%**, mutation **3.75%** (bosses are natural T6+ hostiles — no % roll).
