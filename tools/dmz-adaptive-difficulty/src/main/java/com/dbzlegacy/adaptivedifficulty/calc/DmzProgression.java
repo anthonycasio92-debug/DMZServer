@@ -79,6 +79,50 @@ public final class DmzProgression {
         }
     }
 
+    /**
+     * Stable active form identity for future custom races that skip FormChangeEvent
+     * or keep multipliers at 1 while swapping form strings.
+     * Empty when fully base. Format: {@code race|formGroup|form|stackGroup|stackForm}.
+     */
+    public static String activeFormKey(Player player) {
+        Character ch = character(player);
+        if (ch == null) {
+            return "";
+        }
+        try {
+            boolean form = false;
+            boolean stack = false;
+            try {
+                form = ch.hasActiveForm();
+            } catch (Throwable ignored) {
+            }
+            try {
+                stack = ch.hasActiveStackForm();
+            } catch (Throwable ignored) {
+            }
+            if (!form && !stack) {
+                return "";
+            }
+            String race = race(player);
+            String fg = safeStr(ch.getActiveFormGroup());
+            String f = safeStr(ch.getActiveForm());
+            String sg = "";
+            String s = "";
+            try {
+                sg = safeStr(ch.getActiveStackFormGroup());
+                s = safeStr(ch.getActiveStackForm());
+            } catch (Throwable ignored) {
+            }
+            return race + "|" + fg + "|" + f + "|" + sg + "|" + s;
+        } catch (Throwable ignored) {
+            return "";
+        }
+    }
+
+    private static String safeStr(String v) {
+        return v == null ? "" : v.trim().toLowerCase();
+    }
+
     /** Live DMZ {@code getLevel()} (may move with form on some race setups). */
     public static int dmzLevel(Player player) {
         StatsData data = stats(player);

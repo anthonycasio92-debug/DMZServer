@@ -65,6 +65,8 @@ public final class DifficultyEvents {
     private static final Map<UUID, Double> LAST_LIVE_OFFENSE = new ConcurrentHashMap<>();
     /** Last polled race id — clear form baselines when players swap custom races. */
     private static final Map<UUID, String> LAST_RACE = new ConcurrentHashMap<>();
+    /** Last polled form key — catches future races that swap forms without mult spikes. */
+    private static final Map<UUID, String> LAST_FORM_KEY = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
@@ -75,6 +77,7 @@ public final class DifficultyEvents {
         LAST_FORM_MULT.clear();
         LAST_LIVE_OFFENSE.clear();
         LAST_RACE.clear();
+        LAST_FORM_KEY.clear();
     }
 
     @SubscribeEvent
@@ -123,6 +126,7 @@ public final class DifficultyEvents {
             LAST_FORM_MULT.remove(player.m_20148_());
             LAST_LIVE_OFFENSE.remove(player.m_20148_());
             LAST_RACE.remove(player.m_20148_());
+            LAST_FORM_KEY.remove(player.m_20148_());
             AncientCoinEconomy.clearMigrateFlag(player.m_20148_());
             AreaDifficulty.clearCache();
         }
@@ -299,15 +303,22 @@ public final class DifficultyEvents {
         double formMult = PlayerCombatProfile.liveFormMultiplier(player);
         double liveOffense = liveOffensePeak(player);
         String race = DmzProgression.race(player);
+        String formKey = DmzProgression.activeFormKey(player);
         UUID id = player.m_20148_();
         String prevRace = LAST_RACE.put(id, race == null ? "" : race);
         if (prevRace != null && race != null && !prevRace.equals(race)) {
+            // New / swapped race — drop baselines so future custom races start clean.
             PlayerCombatProfile.clearFormBaseline(id);
             DmzProgression.clearBaseFormLevel(id);
             PlayerCombatProfile.clear(id);
+            LAST_FORM_KEY.remove(id);
+            LAST_FORM_MULT.remove(id);
+            LAST_LIVE_OFFENSE.remove(id);
         }
+        String prevFormKey = LAST_FORM_KEY.put(id, formKey == null ? "" : formKey);
         Double prevForm = LAST_FORM_MULT.put(id, formMult);
         Double prevOffense = LAST_LIVE_OFFENSE.put(id, liveOffense);
+        boolean formKeyChanged = prevFormKey != null && formKey != null && !prevFormKey.equals(formKey);
         boolean formChanged = prevForm != null && Math.abs(prevForm - formMult) > 0.08;
         // Lower threshold — custom forms sometimes step up in smaller mastery chunks.
         boolean offenseChanged = prevOffense != null && prevOffense > 1.0 && liveOffense > 1.0
@@ -315,7 +326,8 @@ public final class DifficultyEvents {
         boolean progressChanged = before.dmzLevel != level
                 || before.prestige != prestige
                 || Math.abs(before.transformationPower - transform) > 0.5;
-        if (formChanged || offenseChanged || Math.abs(before.transformationPower - transform) > 0.5
+        if (formChanged || formKeyChanged || offenseChanged
+                || Math.abs(before.transformationPower - transform) > 0.5
                 || (prevRace != null && race != null && !prevRace.equals(race))) {
             com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.refreshCombatPaint(player);
         } else if (progressChanged) {

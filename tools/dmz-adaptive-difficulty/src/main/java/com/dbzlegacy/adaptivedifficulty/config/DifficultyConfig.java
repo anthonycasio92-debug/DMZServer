@@ -266,6 +266,17 @@ public final class DifficultyConfig {
      */
     public double mobHealthScale = 0.65;
     /**
+     * Ceiling on detected form⊕stack multipliers (default {@code 100}).
+     * Future races with huge {@code maxStatsMultiplier} mastery still soft-curve;
+     * this only bounds detection / peel so a typo'd JSON cannot NaN the scaler.
+     */
+    public double maxFormBoost = 100.0;
+    /**
+     * Soft ceiling on a single live STR/SKP/VIT/RES channel fed into blend math
+     * (default {@code 5.0E7}). Prevents broken race getters from overflowing mob attrs.
+     */
+    public double maxLiveCombatChannel = 50_000_000.0;
+    /**
      * How much of a form/transform boost enemies scale to (0–1), after the soft curve.
      * {@code 0} = form-stripped base stats only · {@code 1} = strongest allowed form slice.
      * Default {@code 0.55}. Combined with {@link #transformScaleExponent} + tier damp /
@@ -1075,6 +1086,13 @@ public final class DifficultyConfig {
         }
         if (cfg.mobHealthScale <= 0.0 || cfg.mobHealthScale > 4.0) {
             cfg.mobHealthScale = 0.65;
+        }
+        if (!(cfg.maxFormBoost > 1.0) || cfg.maxFormBoost > 500.0 || Double.isNaN(cfg.maxFormBoost)) {
+            cfg.maxFormBoost = 100.0;
+        }
+        if (!(cfg.maxLiveCombatChannel > 1.0) || cfg.maxLiveCombatChannel > 1.0e12
+                || Double.isNaN(cfg.maxLiveCombatChannel)) {
+            cfg.maxLiveCombatChannel = 50_000_000.0;
         }
         if (cfg.transformScaleWeight < 0.0 || cfg.transformScaleWeight > 1.0
                 || Double.isNaN(cfg.transformScaleWeight)) {

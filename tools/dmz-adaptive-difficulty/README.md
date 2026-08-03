@@ -49,6 +49,21 @@ Live `admin set` is allowlisted + clamped; change `adminPermission` only in JSON
 - Alias: `wl`
 - When on, only listed players use AD (scaling, coins, purchases). Persists in config.
 
+## Adding a new race (future-proof)
+
+AD is **race-agnostic** — it never hardcodes race ids. Drop a new folder under `config/dragonminez/races/<id>/` with `character.json`, `stats.json`, and `forms/*.json` (DMZ loads it; AD reads live STR/SKP/VIT/RES + form⊕stack).
+
+Checklist so new races stay balanced:
+1. Set `character.json` → `raceName` to the **same** folder id (form mult lookup uses it).
+2. Put combat power in `strMultiplier` / `skpMultiplier` / `defMultiplier` / `vitMultiplier` (and mastery `maxStatsMultiplier` if desired). **PWR/ENE are ignored by AD.**
+3. Prefer DMZ form multipliers over baking power only into BonusStats/attributes (AD still has baselines + form-key polling as fallback).
+4. Re-run the sim after adding forms:  
+   `python3 tools/dmz-adaptive-difficulty/sim/simulate_race_forms.py`  
+   CI-style: `python3 tools/dmz-adaptive-difficulty/sim/simulate_race_forms.py --check`
+5. Optional clamps (already safe by default): `maxFormBoost` (100), `maxLiveCombatChannel` (5e7).
+
+Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged baselines (cleared on race swap), active form-key polling when FormChangeEvent is missing, fail-soft profile build.
+
 ## Notes
 
 - The End scales hostiles like other dimensions. The **Ender Dragon** is hard-exempt (End Strength script). To disable the whole End again, add `minecraft:the_end` to `disabledDimensions`.
@@ -58,7 +73,7 @@ Live `admin set` is allowlisted + clamped; change `adminPermission` only in JSON
 - Tier costs cap at 128 of one coin type, then promote to the next denomination (rounded up; top = 128× Netherite).
 - Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
-- Mob damage uses blended offense + a DEF/HP tank pierce floor so high mitigation cannot zero hits. Pierce / counters ramp with tier% (full by ~50%), so T2 20% stays near 20%.
+- Mob damage uses soft-blended STR/SKP × tier%, then a VIT-relative hit cap (ki-protection friendly). Counters (class + top STR/SKP/RES/VIT) ramp with tier%.
 - Tier scale vs player fight stats: T1 21% · T2 42% · T3 65% · T4 90% · T5 135% · T6 160% · T7 200%. Form soft curve stock: `transformScaleWeight` 0.55 · `transformScaleExponent` 0.75.
 - Side channels (creeper boom, gravity, early kiblasts) also follow tier%/unlock — not absolute offense proxy. Creeper explosions bake from painted attack damage (like kiblasts) so T1–T2 blasts are not cancelled to 0 by DMZ DEF.
 - Mob ki blasts/lasers/beams use the mob’s scaled attack damage (not vanilla 3–72), so DMZ DEF mitigation no longer cancels them to 0. Early unlock kiblasts are soft-ratio’d (~60% at T1–T2).

@@ -140,7 +140,13 @@ public final class PlayerCombatProfile {
         if (cached != null && cached.expiresAtMs > now) {
             return cached.profile;
         }
-        PlayerCombatProfile profile = build(player);
+        PlayerCombatProfile profile;
+        try {
+            profile = build(player);
+        } catch (Throwable t) {
+            // Future race/getter bugs must never take down nearby scaling.
+            profile = inactive();
+        }
         CACHE.put(id, new Cached(profile, now + CACHE_TTL_MS));
         if (CACHE.size() > 512) {
             pruneCache(now);
@@ -197,34 +203,39 @@ public final class PlayerCombatProfile {
         if (data != null) {
             // Read live channels independently — one bad custom-race getter must not
             // wipe the whole profile. PWR/ENE are read for display only, never offense.
-            double liveMelee = readStat(() -> data.getMeleeDamage(), 1.0);
-            double liveStrike = readStat(() -> data.getStrikeDamage(), 1.0);
-            double liveKi = readStat(() -> data.getKiDamage(), 1.0);
-            double liveDef = readStat(() -> data.getDefense(), 1.0);
-            double liveHp = readStat(() -> data.getMaxHealth(), 20.0);
-            // Physical live offense only (STR/SKP) — never PWR.
+            // CombatSanity clamps NaN / absurd values so future race JSON cannot explode AD.
+            double liveMelee = CombatSanity.saneLive(readStat(() -> data.getMeleeDamage(), 1.0), 1.0);
+            double liveStrike = CombatSanity.saneLive(readStat(() -> data.getStrikeDamage(), 1.0), 1.0);
+            double liveKi = CombatSanity.saneLive(readStat(() -> data.getKiDamage(), 1.0), 1.0);
+            double liveDef = CombatSanity.saneLive(readStat(() -> data.getDefense(), 1.0), 1.0);
+            double liveHp = CombatSanity.saneLive(readStat(() -> data.getMaxHealth(), 20.0), 20.0);
             liveOffense = physicalOffense(liveMelee, liveStrike);
             liveMaxHealth = liveHp;
 
-            // Per-channel form⊕stack peel (PWR excluded from formBoost / offense).
-            double strForm = statFormMultiplier(data, "STR");
-            double skpForm = statFormMultiplier(data, "SKP");
-            double vitForm = statFormMultiplier(data, "VIT");
-            double resForm = statFormMultiplier(data, "RES");
-            formBoost = Math.max(strForm, Math.max(skpForm, Math.max(vitForm, resForm)));
+            String raceId = DmzProgression.race(player);
+            double strForm = CombatSanity.saneFormMult(statFormMultiplier(data, "STR"));
+            double skpForm = CombatSanity.saneFormMult(statFormMultiplier(data, "SKP"));
+            double vitForm = CombatSanity.saneFormMult(statFormMultiplier(data, "VIT"));
+            double resForm = CombatSanity.saneFormMult(statFormMultiplier(data, "RES"));
+            formBoost = CombatSanity.saneFormMult(Math.max(strForm, Math.max(skpForm, Math.max(vitForm, resForm))));
             boolean dmzFormActive = isDmzFormActive(data) || formBoost > 1.12;
 
             UUID id = player.m_20148_();
-            FormBaseline baseline = FORM_BASELINES.get(id);
+            FormBaseline rawBaseline = FORM_BASELINES.get(id);
+            FormBaseline baseline = rawBaseline;
+            if (baseline != null && !CombatSanity.usableBaseline(baseline.atMs, baseline.race, raceId)) {
+                FORM_BASELINES.remove(id);
+                baseline = null;
+            }
 
             double baseMelee = peelChannel(liveMelee, strForm, baseline == null ? 0.0 : baseline.melee, dmzFormActive);
             double baseStrike = peelChannel(liveStrike, skpForm, baseline == null ? 0.0 : baseline.strike, dmzFormActive);
-            // Ki kept for profile display / class tags — never feeds mob scaling.
             double baseKi = liveKi;
 
             if (!dmzFormActive) {
                 FORM_BASELINES.put(id, new FormBaseline(
-                        liveMelee, liveStrike, liveKi, liveDef, liveHp, System.currentTimeMillis()));
+                        liveMelee, liveStrike, liveKi, liveDef, liveHp,
+                        System.currentTimeMillis(), raceId == null ? "" : raceId));
                 baseMelee = liveMelee;
                 baseStrike = liveStrike;
                 formBoost = 1.0;
@@ -233,7 +244,7 @@ public final class PlayerCombatProfile {
                 double fromBaseline = estimatePhysicalFormBoost(
                         liveMelee, baseline.melee, liveStrike, baseline.strike);
                 if (fromBaseline > formBoost + 0.05) {
-                    formBoost = fromBaseline;
+                    formBoost = CombatSanity.saneFormMult(fromBaseline);
                     baseMelee = Math.max(1.0, baseline.melee);
                     baseStrike = Math.max(1.0, baseline.strike);
                 }
@@ -249,6 +260,11 @@ public final class PlayerCombatProfile {
                 baseDef = Math.max(1.0, Math.min(baseDef, baseline.def));
                 baseHp = Math.max(20.0, Math.min(baseHp, baseline.hp));
             }
+            // Guard peel underflow from typo'd 0.001 form mults.
+            baseMelee = CombatSanity.saneLive(baseMelee, 1.0);
+            baseStrike = CombatSanity.saneLive(baseStrike, 1.0);
+            baseDef = CombatSanity.saneLive(baseDef, 1.0);
+            baseHp = CombatSanity.saneLive(baseHp, 20.0);
 
             double twBase = Math.max(0.0, Math.min(1.0, cfg.transformScaleWeight));
             double exp = Math.max(0.20, Math.min(1.0, cfg.transformScaleExponent));
@@ -632,8 +648,10 @@ public final class PlayerCombatProfile {
     private double classDamageBias(DifficultyConfig cfg) {
         double mult = Math.max(1.0, cfg.classCounterDamageMult);
         String cls = fightingClass == null ? "" : fightingClass;
-        // Spirit/cleric (PWR) — no damage inflation; PWR is not scaled against.
-        if (cls.contains("spirit") || cls.contains("cleric")) {
+        // Ki / caster classes (PWR) — no damage inflation; PWR is not scaled against.
+        // Match future custom class ids that contain these tokens.
+        if (cls.contains("spirit") || cls.contains("cleric") || cls.contains("mage")
+                || cls.contains("kiuser") || cls.contains("energy")) {
             return 1.0;
         }
         if (cls.contains("berserk")) {
@@ -846,8 +864,9 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: VIT hit-cap + mild durability floor (race/form sim).
-        h = mix(h, 21L);
+        // Formula revision: future-race sanity clamps + race-tagged baselines.
+        h = mix(h, 22L);
+        h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }
 
@@ -933,7 +952,7 @@ public final class PlayerCombatProfile {
         if (!(boost > 0.0) || Double.isNaN(boost) || Double.isInfinite(boost)) {
             return 1.0;
         }
-        return Math.max(1.0, Math.min(MAX_FORM_BOOST, boost));
+        return CombatSanity.saneFormMult(boost);
     }
 
     /** Form⊕stack for one combat channel (1.0 when unavailable / base). */
@@ -945,11 +964,7 @@ public final class PlayerCombatProfile {
             boolean multiply = dmzMultiplicationMode();
             double form = Math.max(0.0, data.getFormMultiplier(key));
             double stack = Math.max(0.0, data.getStackFormMultiplier(key));
-            double combined = combineDmzMults(form, stack, multiply);
-            if (!(combined > 0.0) || Double.isNaN(combined) || Double.isInfinite(combined)) {
-                return 1.0;
-            }
-            return Math.max(1.0, Math.min(MAX_FORM_BOOST, combined));
+            return CombatSanity.saneFormMult(combineDmzMults(form, stack, multiply));
         } catch (Throwable ignored) {
             return 1.0;
         }
@@ -994,12 +1009,10 @@ public final class PlayerCombatProfile {
     }
 
     private record FormBaseline(
-            double melee, double strike, double ki, double def, double hp, long atMs
+            double melee, double strike, double ki, double def, double hp, long atMs, String race
     ) {}
 
-    /** Detected form multiple ceiling (planned ×80 forms + headroom). */
-    private static final double MAX_FORM_BOOST = 100.0;
-    /** Mega-form compress anchor: log-lerp from ×6 → ×80. */
+    /** Mega-form compress anchor: log-lerp from ×6 → ×80 (works past ×80 via megaT&gt;1). */
     private static final double MEGA_FORM_START = 6.0;
     private static final double MEGA_FORM_TARGET = 80.0;
 

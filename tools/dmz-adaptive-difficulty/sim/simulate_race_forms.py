@@ -236,7 +236,11 @@ def simulate_ad(live_melee, live_strike, live_hp, str_form, skp_form, vit_form, 
 
 
 def main() -> None:
+    import sys
+
+    check_only = "--check" in sys.argv
     rows = []
+    # Auto-discovers any new race folders under config/dragonminez/races/
     races = sorted(p.name for p in RACES.iterdir() if p.is_dir() and (p / "stats.json").exists())
     for race in races:
         stats = load_stats(race)
@@ -348,19 +352,26 @@ def main() -> None:
             f"{s['hitCapFrac']} | `{s['topForm']}` |"
         )
 
-    issues = []
+    # Informational notes (glass packs vs mega forms are intentional — RES counters STR).
+    notes = []
+    # Hard --check failures: future races that would break the difficulty contract.
+    hard = []
     for s in summary:
-        if (s["hpJump"] or 0) > 2.0:
-            issues.append(f"- **{s['race']}**: HP jump {s['hpJump']}× on `{s['topForm']}`")
+        if (s["hpJump"] or 0) > 2.5:
+            hard.append(f"- **{s['race']}**: HP jump {s['hpJump']}× on `{s['topForm']}` (limit 2.5×)")
+        elif (s["hpJump"] or 0) > 2.0:
+            notes.append(f"- **{s['race']}**: HP jump {s['hpJump']}× on `{s['topForm']}`")
         if (s["topHitFrac"] or 0) > 0.45:
-            issues.append(f"- **{s['race']}**: hitFrac {s['topHitFrac']} exceeds 0.45 cap band")
+            hard.append(f"- **{s['race']}**: hitFrac {s['topHitFrac']} exceeds 0.45 VIT cap band")
+        if (s["dmgJump"] or 0) < 1.05 and s["topFormBoost"] >= 15:
+            hard.append(f"- **{s['race']}**: form ×{s['topFormBoost']} barely moves dmg ({s['dmgJump']}×)")
         if (s["topHitsToKill"] or 0) < 0.08:
-            issues.append(f"- **{s['race']}**: packs die in {s['topHitsToKill']} live hits")
-        if (s["dmgJump"] or 0) < 1.1 and s["topFormBoost"] >= 10:
-            issues.append(f"- **{s['race']}**: form ×{s['topFormBoost']} barely moves dmg ({s['dmgJump']}×)")
+            notes.append(f"- **{s['race']}**: packs die in {s['topHitsToKill']} live hits (glass OK if RES counters)")
 
-    md += ["", "## Flags", ""]
-    md.extend(issues or ["No heuristic flags."])
+    md += ["", "## Hard flags (--check)", ""]
+    md.extend(hard or ["None."])
+    md += ["", "## Notes", ""]
+    md.extend(notes or ["None."])
     md += ["", f"CSV: `{csv_path}`", ""]
     report = OUT / "ad-race-form-balance-report.md"
     report.write_text("\n".join(md))
@@ -372,9 +383,14 @@ def main() -> None:
             f"{s['race']:16} {s['topFormBoost']:7.1f} {s['dmgJump']:6} {s['hpJump']:5} "
             f"{s['topHitsToKill']:6.2f} {s['topHitFrac']:6.3f} {s['hitCapFrac']:5.3f} {s['topForm']}"
         )
-    print("\nFlags:")
-    print("\n".join(issues) if issues else "(none)")
+    print("\nHard flags:")
+    print("\n".join(hard) if hard else "(none)")
+    print("\nNotes:")
+    print("\n".join(notes) if notes else "(none)")
     print("Wrote", csv_path, report)
+    print(f"Discovered races ({len(races)}): {', '.join(races)}")
+    if check_only and hard:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
