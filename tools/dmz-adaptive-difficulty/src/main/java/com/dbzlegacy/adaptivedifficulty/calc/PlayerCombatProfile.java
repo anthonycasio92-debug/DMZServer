@@ -254,23 +254,19 @@ public final class PlayerCombatProfile {
             // Mild tier damp — floor 0.55 so admin ladders above 100% still inherit forms.
             double tierDamp = Math.max(0.55, 1.0 - 0.40 * Math.max(0.0, Math.min(1.0, pct)));
             double twOffense = twBase * tierDamp;
-            // T1–T3 + transformed: lift form on offense (soft curve was wiping threat).
-            // T1 stays mild — full-linear + high live floor made transformed T1 brutal.
-            if (tier <= 3 && formBoost > 1.12) {
-                double bump = switch (tier) {
-                    case 1 -> 0.10;
-                    case 2 -> 0.22;
-                    case 3 -> 0.18;
-                    default -> 0.0;
-                };
-                double minExp = switch (tier) {
-                    case 1 -> 0.70;
-                    case 2 -> 0.82;
-                    case 3 -> 0.85;
-                    default -> exp;
-                };
+            // Mild T2–T3 form lift only — T1 stays on the soft curve.
+            // Mega forms (×10+) compress harder so T1×49 STR cannot linear-explode mob damage.
+            if (tier >= 2 && tier <= 3 && formBoost > 1.12 && formBoost < 6.0) {
+                double bump = tier == 2 ? 0.14 : 0.10;
                 twOffense = Math.max(twOffense, Math.min(1.0, twBase + bump));
-                exp = Math.min(1.0, Math.max(exp, minExp));
+            }
+            if (formBoost >= 6.0) {
+                exp = Math.min(exp, 0.40);
+                twOffense = Math.min(twOffense, twBase * 0.85);
+            }
+            if (formBoost >= 20.0) {
+                exp = Math.min(exp, 0.32);
+                twOffense = Math.min(twOffense, twBase * 0.70);
             }
             // Bulk (HP/DEF) stays near-live so high-tier packs aren't deleted on form-up.
             double twBulk = Math.min(1.0, Math.max(twBase + 0.35, twBase * 1.55) * (0.85 + 0.15 * tierDamp));
@@ -376,15 +372,41 @@ public final class PlayerCombatProfile {
      */
     public double targetMobHealth(DifficultyConfig cfg) {
         double base = maxHealth * tierPercent;
-        // T1–T3 transformed: modest live-HP floor (T1 only a small bump over tier%).
+        // Soft-blended HP floor for early tiers (not raw live — VIT often doesn't rise with STR forms).
         if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
             double hpThreat = switch (activeTier) {
-                case 1 -> 0.24;
-                case 2 -> 0.40;
-                case 3 -> 0.50;
+                case 1 -> 0.22;
+                case 2 -> 0.36;
+                case 3 -> 0.48;
                 default -> 0.0;
             };
-            base = Math.max(base, liveMaxHealth * hpThreat);
+            base = Math.max(base, maxHealth * hpThreat);
+        }
+        // STR/SKP mega-forms delete packs when HP didn't transform — sponge off live offense.
+        // Soft mob damage ≠ player live punches; size the bag for a multi-hit fight.
+        if (formBoost > 1.12 && liveOffense > offense * 1.35) {
+            double hits = switch (activeTier) {
+                case 1 -> 5.0;
+                case 2 -> 4.25;
+                case 3 -> 3.75;
+                case 4 -> 3.25;
+                case 5 -> 2.85;
+                case 6 -> 2.6;
+                default -> 2.4;
+            };
+            // Mega forms mostly ignore tier% on sponge (player hits with full live).
+            // Mild forms keep more tier% so T1×2 doesn't become a raid boss.
+            double tierMix = formBoost >= 20.0 ? 0.12
+                    : formBoost >= 6.0 ? 0.35
+                    : 0.70;
+            if (formBoost >= 20.0 && activeTier <= 2) {
+                hits += 1.25;
+            } else if (formBoost >= 6.0 && activeTier <= 3) {
+                hits += 0.5;
+            }
+            double spongeTier = Math.max(0.15, tierPercent) * tierMix + (1.0 - tierMix);
+            double offenseSponge = liveOffense * hits * spongeTier;
+            base = Math.max(base, offenseSponge);
         }
         // Survive the player's strongest damage channel (class + top-stat, capped).
         // Counter intensity ramps with tier% so T2 20% stays near 20%.
@@ -423,16 +445,20 @@ public final class PlayerCombatProfile {
         }
         double base = Math.max(offenseShare, Math.max(defFloor, hpFloor));
 
-        // T1–T3 + transformed: live-form damage floor. T1 stays close to tier%
-        // (0.40 live was ~2× a 21% ladder and felt brutal in form).
+        // T1–T3 + transformed: floor from soft-blended offense only.
+        // Raw liveOffense×pct made ×49 STR forms one-shot players at T1.
         if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
             double threatPct = switch (activeTier) {
-                case 1 -> 0.27;
-                case 2 -> 0.48;
-                case 3 -> 0.60;
+                case 1 -> 0.24;
+                case 2 -> 0.42;
+                case 3 -> 0.55;
                 default -> 0.0;
             };
-            base = Math.max(base, liveOffense * threatPct);
+            double softFloor = offense * threatPct;
+            if (formBoost >= 6.0) {
+                softFloor = Math.min(softFloor, offenseShare * (formBoost >= 20.0 ? 1.15 : 1.35));
+            }
+            base = Math.max(base, softFloor);
         }
 
         // DEF:offense pierce floor — keeps DMZ mitigation from zeroing hits.
@@ -822,8 +848,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: T1–T3 early form threat floors.
-        h = mix(h, 15L);
+        // Formula revision: mega-form damp + offense HP sponge (no raw live dmg floors).
+        h = mix(h, 16L);
         return h;
     }
 
