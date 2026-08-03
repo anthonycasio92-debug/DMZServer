@@ -4,6 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dragonminez.common.stats.StatsData;
+import com.dragonminez.common.stats.character.Character;
 import com.dragonminez.common.stats.character.Resources;
 import com.dragonminez.common.stats.character.Stats;
 import java.util.Arrays;
@@ -169,6 +170,11 @@ public final class PlayerCombatProfile {
     /** Live DMZ form×stack multiplier peak (1.0 = base form). */
     public static double liveFormMultiplier(ServerPlayer player) {
         StatsData data = DmzProgression.stats(player);
+        return liveFormMultiplierPeak(data);
+    }
+
+    /** Package-visible for {@link DmzProgression} unlock-gate transform checks. */
+    public static double liveFormMultiplierPeak(StatsData data) {
         return data == null ? 1.0 : formMultiplierBoost(data);
     }
 
@@ -203,35 +209,57 @@ public final class PlayerCombatProfile {
             liveOffense = livePeak * 0.55 + liveAvg * 0.45;
             liveMaxHealth = liveHp;
 
-            double apiBaseMelee = readStat(() -> data.getMeleeDamageNoMultipliers(), liveMelee);
-            double apiBaseStrike = readStat(() -> data.getStrikeDamageNoForms(), liveStrike);
-            double apiBaseKi = readStat(() -> data.getKiDamageNoForms(), liveKi);
+            // NoForms / NoMultipliers strip ALL totalMult (form+stack+effects+secondary).
+            // Soft-curving that ratio also compresses racial passives — wrong for custom races.
+            // Peel ONLY form⊕stack so effects stay at full strength in the base channel.
+            double formOnly = formMultiplierBoost(data);
+            boolean dmzFormActive = isDmzFormActive(data) || formOnly > 1.12;
 
-            double apiBoost = estimateFormBoost(
-                    liveMelee, apiBaseMelee, liveStrike, apiBaseStrike, liveKi, apiBaseKi);
-            // Custom races often ignore NoForms but still set getFormMultiplier / stack form.
-            double multBoost = formMultiplierBoost(data);
-            formBoost = Math.max(apiBoost, multBoost);
-
-            double baseMelee = apiBaseMelee;
-            double baseStrike = apiBaseStrike;
-            double baseKi = apiBaseKi;
-            // When APIs claim "no form" but multipliers / live spike say otherwise, peel from live.
-            if (multBoost > apiBoost + 0.05 && apiBoost < 1.08) {
-                baseMelee = Math.max(1.0, liveMelee / multBoost);
-                baseStrike = Math.max(1.0, liveStrike / multBoost);
-                baseKi = Math.max(1.0, liveKi / multBoost);
-                formBoost = multBoost;
-            }
-
-            // Baseline fallback for custom races whose NoForms == live and form mult stays 1.
             UUID id = player.m_20148_();
             FormBaseline baseline = FORM_BASELINES.get(id);
-            boolean inDetectedForm = formBoost > 1.12 || multBoost > 1.12;
-            if (!inDetectedForm) {
+
+            double baseMelee;
+            double baseStrike;
+            double baseKi;
+            if (formOnly > 1.08) {
+                // Live / formOnly keeps effects+secondary in the base (full tier% scale).
+                baseMelee = Math.max(1.0, liveMelee / formOnly);
+                baseStrike = Math.max(1.0, liveStrike / formOnly);
+                baseKi = Math.max(1.0, liveKi / formOnly);
+                formBoost = formOnly;
+            } else if (dmzFormActive && baseline != null) {
+                // Active form string but multipliers stayed ~1 (misconfigured custom form).
+                double fromBaseline = estimateFormBoost(
+                        liveMelee, baseline.melee, liveStrike, baseline.strike, liveKi, baseline.ki);
+                if (fromBaseline > 1.12) {
+                    formBoost = fromBaseline;
+                    baseMelee = Math.max(1.0, baseline.melee);
+                    baseStrike = Math.max(1.0, baseline.strike);
+                    baseKi = Math.max(1.0, baseline.ki);
+                } else {
+                    baseMelee = liveMelee;
+                    baseStrike = liveStrike;
+                    baseKi = liveKi;
+                    formBoost = 1.0;
+                }
+            } else if (!dmzFormActive) {
+                // True base form — snapshot for later custom-race transforms.
                 FORM_BASELINES.put(id, new FormBaseline(
                         liveMelee, liveStrike, liveKi, liveDef, liveHp, System.currentTimeMillis()));
-            } else if (baseline != null) {
+                baseMelee = liveMelee;
+                baseStrike = liveStrike;
+                baseKi = liveKi;
+                formBoost = 1.0;
+            } else {
+                // Transformed on login with no baseline / no mults — don't soft-curve phantoms.
+                baseMelee = liveMelee;
+                baseStrike = liveStrike;
+                baseKi = liveKi;
+                formBoost = 1.0;
+            }
+
+            // Baseline can still beat formOnly when custom races bake power outside multipliers.
+            if (dmzFormActive && baseline != null && formBoost > 1.12) {
                 double fromBaseline = estimateFormBoost(
                         liveMelee, baseline.melee, liveStrike, baseline.strike, liveKi, baseline.ki);
                 if (fromBaseline > formBoost + 0.05) {
@@ -242,9 +270,13 @@ public final class PlayerCombatProfile {
                 }
             }
 
-            double baseDef = Math.max(1.0, liveDef / Math.max(1.0, formBoost));
-            double baseHp = Math.max(20.0, liveHp / Math.max(1.0, formBoost));
-            if (baseline != null && inDetectedForm && formBoost > 1.12) {
+            double baseDef = formBoost > 1.08
+                    ? Math.max(1.0, liveDef / formBoost)
+                    : liveDef;
+            double baseHp = formBoost > 1.08
+                    ? Math.max(20.0, liveHp / formBoost)
+                    : liveHp;
+            if (baseline != null && dmzFormActive && formBoost > 1.12) {
                 baseDef = Math.max(1.0, Math.min(baseDef, baseline.def));
                 baseHp = Math.max(20.0, Math.min(baseHp, baseline.hp));
             }
@@ -260,7 +292,8 @@ public final class PlayerCombatProfile {
                 twOffense = Math.max(twOffense, Math.min(1.0, twBase + bump));
             }
             // Continuous mega-form compress (design target ×80, headroom past that).
-            // Stepped ×6/×20 caps alone would still let ×80 feel like a linear nuke.
+            // Custom races with maxStatsMultiplier 20 turn ×4 forms into ×80 — keep a
+            // visible inherit so packs still react to higher forms.
             if (formBoost >= 6.0) {
                 double megaT = megaFormT(formBoost); // 0 at ×6 → 1 at ×80
                 exp = Math.min(exp, megaFormExpCap(megaT));
@@ -405,6 +438,11 @@ public final class PlayerCombatProfile {
             }
             double spongeTier = Math.max(0.15, tierPercent) * tierMix + (1.0 - tierMix);
             double offenseSponge = liveOffense * hits * spongeTier;
+            // Custom-race mastery forms (×40–×80): ensure pack HP tracks live punches harder.
+            if (formBoost >= 20.0) {
+                double megaT = megaFormT(formBoost);
+                offenseSponge *= 1.0 + 0.35 * Math.min(1.25, megaT);
+            }
             base = Math.max(base, offenseSponge);
         }
         // Survive the player's strongest damage channel (class + top-stat, capped).
@@ -461,6 +499,22 @@ public final class PlayerCombatProfile {
                 softFloor = Math.min(softFloor, offenseShare * Math.max(1.05, shareMul));
             }
             base = Math.max(base, softFloor);
+        }
+
+        // Mega / mastery forms (custom races often ×40–×80): soft curve alone asymptotes so
+        // hard that higher forms barely move mob damage. Add a capped live-threat floor.
+        if (formBoost >= 6.0 && liveOffense > offense * 1.5) {
+            double megaT = megaFormT(formBoost);
+            double liveShare = switch (activeTier) {
+                case 1 -> 0.05 + 0.04 * Math.min(1.25, megaT);
+                case 2 -> 0.08 + 0.06 * Math.min(1.25, megaT);
+                case 3 -> 0.11 + 0.08 * Math.min(1.25, megaT);
+                case 4 -> 0.15 + 0.10 * Math.min(1.25, megaT);
+                case 5 -> 0.19 + 0.12 * Math.min(1.25, megaT);
+                case 6 -> 0.23 + 0.14 * Math.min(1.25, megaT);
+                default -> 0.27 + 0.16 * Math.min(1.25, megaT);
+            };
+            base = Math.max(base, liveOffense * Math.max(0.15, tierPercent) * liveShare);
         }
 
         // DEF:offense pierce floor — keeps DMZ mitigation from zeroing hits.
@@ -850,8 +904,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: continuous mega-form compress (×80 future-proof).
-        h = mix(h, 17L);
+        // Formula revision: form-only peel + addition-mode stack + mega live floor.
+        h = mix(h, 18L);
         return h;
     }
 
@@ -872,25 +926,38 @@ public final class PlayerCombatProfile {
         }
     }
 
+    /** True when DMZ reports an active form / stack form (works before multipliers resolve). */
+    private static boolean isDmzFormActive(StatsData data) {
+        if (data == null) {
+            return false;
+        }
+        try {
+            Character ch = data.getCharacter();
+            if (ch == null) {
+                return false;
+            }
+            return ch.hasActiveForm() || ch.hasActiveStackForm();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     /**
-     * Peak form×stack multiplier across combat stats. Works for custom races that
-     * register forms via DMZ multipliers even when NoForms getters are wrong.
+     * Peak form⊕stack multiplier across combat stats.
+     * Honors DMZ {@code multiplicationInsteadOfAdditionForMultipliers} (this server: addition).
+     * Includes mastery / maxStatsMultiplier via {@code getFormMultiplier}.
      */
     private static double formMultiplierBoost(StatsData data) {
         if (data == null) {
             return 1.0;
         }
+        boolean multiply = dmzMultiplicationMode();
         double peak = 1.0;
         for (String key : new String[] {"STR", "SKP", "PWR", "RES", "VIT"}) {
             try {
                 double form = Math.max(0.0, data.getFormMultiplier(key));
                 double stack = Math.max(0.0, data.getStackFormMultiplier(key));
-                // DMZ may use multiply or add — treat both as factors ≥ 1.
-                double combined = Math.max(form, 1.0) * Math.max(stack, 1.0);
-                if (form > 0.0 && form < 1.0 && stack <= 1.0) {
-                    // Additive-style tiny form bonus.
-                    combined = 1.0 + form;
-                }
+                double combined = combineDmzMults(form, stack, multiply);
                 if (combined > peak) {
                     peak = combined;
                 }
@@ -902,6 +969,44 @@ public final class PlayerCombatProfile {
         }
         // Headroom past planned ×80 forms so detection never silently clamps.
         return Math.max(1.0, Math.min(MAX_FORM_BOOST, peak));
+    }
+
+    /**
+     * Match {@link com.dragonminez.common.stats.StatsData#getTotalMultiplier} form+stack fold.
+     * Addition (default here): {@code 1 + (a-1) + (b-1)}. Multiply: {@code a * b}.
+     */
+    static double combineDmzMults(double a, double b, boolean multiply) {
+        double fa = a > 0.0 ? a : 1.0;
+        double fb = b > 0.0 ? b : 1.0;
+        if (multiply) {
+            return Math.max(1.0, Math.max(fa, 1.0) * Math.max(fb, 1.0));
+        }
+        // Tiny sub-1 bonuses (rare) — treat as +fraction when the other side is idle.
+        if (fa > 0.0 && fa < 1.0 && fb <= 1.0) {
+            return 1.0 + fa;
+        }
+        if (fb > 0.0 && fb < 1.0 && fa <= 1.0) {
+            return 1.0 + fb;
+        }
+        return Math.max(0.01, 1.0 + (Math.max(fa, 1.0) - 1.0) + (Math.max(fb, 1.0) - 1.0));
+    }
+
+    private static boolean dmzMultiplicationMode() {
+        try {
+            var server = com.dragonminez.common.config.ConfigManager.getServerConfig();
+            if (server == null) {
+                return false;
+            }
+            var gameplay = server.getGameplay();
+            if (gameplay == null) {
+                return false;
+            }
+            Boolean flag = gameplay.getMultiplicationInsteadOfAdditionForMultipliers();
+            return Boolean.TRUE.equals(flag);
+        } catch (Throwable ignored) {
+            // This pack ships addition mode (false) — safer default than product inflation.
+            return false;
+        }
     }
 
     private record FormBaseline(
@@ -928,19 +1033,19 @@ public final class PlayerCombatProfile {
         return Math.log(formBoost / MEGA_FORM_START) / denom;
     }
 
-    /** Soft-curve exponent ceiling as mega-forms grow (×6→0.40, ×80→0.25, ×100≈0.23). */
+    /** Soft-curve exponent ceiling as mega-forms grow (×6→0.48, ×80→0.34, ×100≈0.30). */
     private static double megaFormExpCap(double megaT) {
         double t = Math.max(0.0, megaT);
         if (t <= 1.0) {
-            return 0.40 - 0.15 * t;
+            return 0.48 - 0.14 * t;
         }
-        return Math.max(0.20, 0.25 - 0.08 * (t - 1.0));
+        return Math.max(0.28, 0.34 - 0.08 * (t - 1.0));
     }
 
-    /** Offense weight scale vs twBase (×6→1.0, ×80→0.55, floor 0.45). */
+    /** Offense weight scale vs twBase (×6→1.0, ×80→0.72, floor 0.62). */
     private static double megaFormTwScale(double megaT) {
         double t = Math.max(0.0, Math.min(1.25, megaT));
-        return Math.max(0.45, 1.0 - 0.45 * Math.min(1.0, t));
+        return Math.max(0.62, 1.0 - 0.28 * Math.min(1.0, t));
     }
 
     /**

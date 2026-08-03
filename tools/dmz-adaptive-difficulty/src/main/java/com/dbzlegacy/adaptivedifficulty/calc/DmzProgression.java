@@ -198,26 +198,9 @@ public final class DmzProgression {
     }
 
     private static double formMultiplierPeak(StatsData data) {
-        double peak = 1.0;
-        for (String key : new String[] {"STR", "SKP", "PWR", "RES", "VIT"}) {
-            try {
-                double form = Math.max(0.0, data.getFormMultiplier(key));
-                double stack = Math.max(0.0, data.getStackFormMultiplier(key));
-                double combined = Math.max(form, 1.0) * Math.max(stack, 1.0);
-                if (form > 0.0 && form < 1.0 && stack <= 1.0) {
-                    combined = 1.0 + form;
-                }
-                if (combined > peak) {
-                    peak = combined;
-                }
-            } catch (Throwable ignored) {
-            }
-        }
-        if (!(peak > 0.0) || Double.isNaN(peak) || Double.isInfinite(peak)) {
-            return 1.0;
-        }
-        // Match PlayerCombatProfile — planned ×80 forms need headroom past 50.
-        return Math.max(1.0, Math.min(100.0, peak));
+        // Delegate to combat profile so unlock-gate transform detection matches
+        // addition-mode form⊕stack folding (this server disables product mode).
+        return PlayerCombatProfile.liveFormMultiplierPeak(data);
     }
 
     /**
