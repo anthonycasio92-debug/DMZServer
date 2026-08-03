@@ -125,6 +125,28 @@ public final class DmzProgression {
         return dmzLevelForProgression(player, 0L);
     }
 
+    /**
+     * DMZ level for unlock gates only.
+     * Never uses historical {@code highestDmzLevel} or form-inflated live level —
+     * those let post-prestige players keep high-tier access without Prestige N.
+     * Base form → live level · transformed → last base-form sample · else 1.
+     */
+    public static int dmzLevelForUnlockGate(Player player) {
+        if (player == null) {
+            return 1;
+        }
+        if (!isTransformed(player)) {
+            int live = dmzLevel(player);
+            BASE_FORM_LEVEL.put(player.m_20148_(), live);
+            return live;
+        }
+        Integer cached = BASE_FORM_LEVEL.get(player.m_20148_());
+        if (cached != null) {
+            return Math.max(1, cached);
+        }
+        return 1;
+    }
+
     public static void clearBaseFormLevel(UUID playerId) {
         if (playerId != null) {
             BASE_FORM_LEVEL.remove(playerId);

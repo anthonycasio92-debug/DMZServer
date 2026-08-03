@@ -43,11 +43,10 @@ public final class DifficultyCalculator {
         if (active != data.getActiveDifficultyLevel()) {
             data.setActiveDifficultyLevel(active);
         }
-        // Repair unlock-list desync — never wipe a valid purchased activation on
-        // login/refresh/logout. Older builds cleared activeTier here when the
-        // unlock set failed to load, which looked like "disconnect resets to 0".
+        // Repair unlock-list desync without granting free tiers.
+        // Only restore the unlock bit when the player still meets the live gate.
         if (activeTier > 0 && !data.hasUnlockedTier(activeTier)) {
-            if (tier != null) {
+            if (tier != null && UnlockSystem.isEligible(player, tier)) {
                 data.unlockTier(activeTier);
             } else {
                 data.resetTemporary();
@@ -57,8 +56,23 @@ public final class DifficultyCalculator {
                 personalMax = 0L;
                 thresholdBonus = 0L;
                 contribution = 0L;
+                tier = null;
+                tierMax = 0L;
             }
+        } else if (activeTier > 0 && tier != null && !UnlockSystem.isEligible(player, tier)) {
+            // Prestige/level reset while still carrying an active high tier.
+            data.revokeTier(activeTier);
+            data.resetTemporary();
+            activeTier = 0;
+            active = 0L;
+            availableMax = 0L;
+            personalMax = 0L;
+            thresholdBonus = 0L;
+            contribution = 0L;
+            tier = null;
+            tierMax = 0L;
         }
+        highest = UnlockSystem.highestUnlocked(data);
 
         long combatRating = CombatRating.compute(level, prestige, active, transform, DifficultyConfig.get());
         long ancientCopper = AncientCoinEconomy.balance(player);

@@ -319,7 +319,8 @@ public final class DifficultyChestGui implements Listener {
         for (int t = 1; t <= 7; t++) {
             String cost = ph.getOrDefault("tier_" + t + "_cost", "?");
             String name = ph.getOrDefault("tier_" + t + "_name", "T" + t);
-            boolean unlocked = highest >= t;
+            boolean unlocked = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_unlocked",
+                    highest >= t ? "true" : "false"));
             boolean active = activeTier == t;
             List<String> tip = new ArrayList<>();
             tip.add("&7" + name);

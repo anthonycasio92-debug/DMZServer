@@ -14,8 +14,8 @@ import net.minecraft.nbt.StringTag;
 /**
  * V3 player difficulty data.
  * <p>
- * Permanent: highest DMZ level, unlocked tiers, titles.<br>
- * Temporary: active tier / active difficulty level (reset on death).<br>
+ * Persistent: highest DMZ level (resets on prestige-up), unlock bits (live-reconciled), titles.<br>
+ * Temporary: active tier / active difficulty level (reset on death or when no longer eligible).<br>
  * Ancient Coins are real Lightman's {@code coin_ancient} inventory items;
  * {@code ancientCopper} is only kept for one-time migration from older builds.
  */
@@ -32,6 +32,11 @@ public final class PlayerDifficultyData {
     private boolean personalEnabled = true;
     /** When true, chat notifies on Ancient Coin kill drops. Default off (less spam). */
     private boolean coinDropChat = false;
+    /**
+     * Last observed DMZ prestige skill. {@code -1} = unset (first sync).
+     * Used to detect a prestige-up and restart the level high-water mark.
+     */
+    private int lastSeenPrestige = -1;
 
     // ── Temporary (death / character-reset clears) ─────────────────────────
     private int activeTier;
@@ -52,6 +57,19 @@ public final class PlayerDifficultyData {
         }
     }
 
+    /** Restart level high-water after a prestige-up (level ladder resets). */
+    public void resetHighestDmzLevel(int level) {
+        this.highestDmzLevel = Math.max(0L, level);
+    }
+
+    public int getLastSeenPrestige() {
+        return lastSeenPrestige;
+    }
+
+    public void setLastSeenPrestige(int prestige) {
+        this.lastSeenPrestige = Math.max(-1, prestige);
+    }
+
     public Set<Integer> getUnlockedTiers() {
         return new LinkedHashSet<>(unlockedTiers);
     }
@@ -66,6 +84,11 @@ public final class PlayerDifficultyData {
             return false;
         }
         return unlockedTiers.add(tierId);
+    }
+
+    /** @return true if the tier was present and removed */
+    public boolean revokeTier(int tierId) {
+        return tierId > 0 && unlockedTiers.remove(tierId);
     }
 
     public int getActiveTier() {
@@ -254,6 +277,8 @@ public final class PlayerDifficultyData {
         tag.m_128359_("activeTitle", getActiveTitle());
         tag.m_128379_("personalEnabled", personalEnabled);
         tag.m_128379_("coinDropChat", coinDropChat);
+        tag.m_128405_("lastSeenPrestige", Math.max(0, lastSeenPrestige));
+        tag.m_128379_("lastSeenPrestigeSet", lastSeenPrestige >= 0);
         // Keep legacy keys written as 0 so old tools don't explode on read.
         tag.m_128356_("purchased", 0L);
         tag.m_128356_("active", activeDifficultyLevel);
@@ -272,6 +297,13 @@ public final class PlayerDifficultyData {
         // Missing keys → defaults (on for personal, off for coin chat).
         personalEnabled = !tag.m_128441_("personalEnabled") || tag.m_128471_("personalEnabled");
         coinDropChat = tag.m_128441_("coinDropChat") && tag.m_128471_("coinDropChat");
+        if (tag.m_128441_("lastSeenPrestigeSet") && tag.m_128471_("lastSeenPrestigeSet")) {
+            lastSeenPrestige = Math.max(0, tag.m_128451_("lastSeenPrestige"));
+        } else if (tag.m_128441_("lastSeenPrestige")) {
+            lastSeenPrestige = Math.max(0, tag.m_128451_("lastSeenPrestige"));
+        } else {
+            lastSeenPrestige = -1;
+        }
         unlockedTiers.clear();
         if (tag.m_128425_("unlockedTiers", 10)) { // TAG_COMPOUND=10
             ListTag tiers = tag.m_128437_("unlockedTiers", 10);
@@ -298,24 +330,17 @@ public final class PlayerDifficultyData {
             activeTitle = "";
         }
 
-        // Migrate pre-V3 purchased/active → best-effort temporary activation.
+        // Pre-V3 purchased/active were difficulty POINTS, not unlock tiers.
+        // Never map those thresholds onto permanent unlocks (that granted T7 for free).
+        // Soft-migrate a copper token only; player must re-qualify + buy.
         legacyPurchased = Math.max(0L, tag.m_128454_("purchased"));
         legacyActive = Math.max(0L, tag.m_128454_("active"));
         if (activeTier <= 0 && (legacyActive > 0L || legacyPurchased > 0L)) {
-            long seed = Math.max(legacyActive, legacyPurchased);
-            UnlockTier best = UnlockTier.T1;
-            for (UnlockTier t : UnlockTier.values()) {
-                if (seed >= t.defaultRequiredLevel) {
-                    best = t;
-                }
-            }
-            unlockTier(best.id);
-            activeTier = best.id;
-            activeDifficultyLevel = Math.min(best.maxDifficulty(), Math.max(legacyActive, 1L));
             if (ancientCopper <= 0L && legacyPurchased > 0L) {
-                // Old "purchased" was difficulty points, not copper coins — soft token only.
                 ancientCopper = Math.min(1_000L, legacyPurchased);
             }
+            activeTier = 0;
+            activeDifficultyLevel = 0L;
         }
         if (activeTier > 0 && UnlockTier.byId(activeTier) == null) {
             activeTier = 0;

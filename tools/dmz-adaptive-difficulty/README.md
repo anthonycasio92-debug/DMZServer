@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.1)
+# AdaptiveDifficulty (v1.0.2)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -9,7 +9,7 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Play
 
 | System | Behavior |
 |--------|----------|
-| Unlock tiers (1–7) | Unlocked by DMZ level **or** Prestige ≥ tier id |
+| Unlock tiers (1–7) | Live gate: current DMZ level **or** Prestige ≥ tier id. Prestige-up / level reset revokes tiers you no longer qualify for (coins alone cannot keep them). |
 | Buy tier | Spend Ancient Coins (pay-up OK with lower/higher mix, no change) |
 | Active difficulty | Set only by tier purchase — no +difficulty upgrades |
 | Personal toggle | GUI on/off for that player only (default ON). OFF freezes scaling, kill coins, AI pressure, and tier buy/lower until turned back on |
@@ -25,8 +25,8 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Play
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.1.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.1.jar`
+1. `mods/AdaptiveDifficulty-1.0.2.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.2.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 

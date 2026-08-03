@@ -216,7 +216,8 @@ public final class DifficultyActions {
             openGui(player, returnPage);
             return Result.fail("Unknown tier. Use 1–7.");
         }
-        if (!data.hasUnlockedTier(tier.id)) {
+        // Live gate — unlock bits alone are not enough after prestige/level reset.
+        if (!UnlockSystem.isEligible(player, tier) || !data.hasUnlockedTier(tier.id)) {
             openGui(player, returnPage);
             return Result.fail("Tier " + tier.id + " locked. Need DMZ " + tier.requiredDmzLevel()
                     + " or Prestige " + tier.id + ".");
@@ -227,7 +228,7 @@ public final class DifficultyActions {
             return Result.ok("Already on " + tier.display + " (T" + tier.id + ").");
         }
 
-        // Lowering / lateral via buy menu is free.
+        // Lowering / lateral via buy menu is free (still must be eligible).
         if (tier.id < current) {
             applyTier(data, player, tier);
             openGui(player, returnPage);
@@ -271,9 +272,10 @@ public final class DifficultyActions {
             openGui(player, "buy");
             return Result.fail("Buy a higher tier to raise difficulty.");
         }
-        if (!data.hasUnlockedTier(tier.id)) {
+        if (!UnlockSystem.isEligible(player, tier) || !data.hasUnlockedTier(tier.id)) {
             openGui(player, returnPage);
-            return Result.fail("Tier " + tier.id + " is not unlocked.");
+            return Result.fail("Tier " + tier.id + " is not unlocked. Need DMZ "
+                    + tier.requiredDmzLevel() + " or Prestige " + tier.id + ".");
         }
         if (data.getActiveTier() == tier.id) {
             openGui(player, returnPage);
@@ -285,6 +287,9 @@ public final class DifficultyActions {
     }
 
     private static void applyTier(PlayerDifficultyData data, ServerPlayer player, UnlockTier tier) {
+        if (!UnlockSystem.isEligible(player, tier)) {
+            return;
+        }
         data.unlockTier(tier.id);
         data.setActiveTier(tier.id);
         // Internal CR scale only — not shown as player-facing "points".

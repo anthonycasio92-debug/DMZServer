@@ -376,7 +376,8 @@ public final class CmiDifficultyGui {
             int slot = TIER_SLOTS[t - 1];
             String cost = ph.getOrDefault("tier_" + t + "_cost", "?");
             String name = ph.getOrDefault("tier_" + t + "_name", "T" + t);
-            boolean unlocked = highest >= t;
+            boolean unlocked = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_unlocked",
+                    highest >= t ? "true" : "false"));
             boolean active = activeTier == t;
             List<String> lore = new ArrayList<>();
             lore.add("&7" + name);

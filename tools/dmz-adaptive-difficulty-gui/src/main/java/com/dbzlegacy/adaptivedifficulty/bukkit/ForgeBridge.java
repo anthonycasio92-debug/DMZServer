@@ -209,7 +209,14 @@ public final class ForgeBridge {
             out.put("coin_drop_chat", coinChatOn ? "true" : "false");
             putCounterPlaceholders(out, nms);
 
-            // UnlockTier 1–7 — level-scaled activation costs.
+            // UnlockTier 1–7 — level-scaled activation costs + live unlock flags.
+            Object playerData = null;
+            if (cacheData != null) {
+                try {
+                    playerData = cacheData.invoke(null, nms);
+                } catch (Throwable ignored) {
+                }
+            }
             if (unlockTierValues != null && economyFormatExactCost != null) {
                 try {
                     for (Object ut : (Object[]) unlockTierValues.invoke(null)) {
@@ -221,6 +228,20 @@ public final class ForgeBridge {
                         out.put("unlock_tier_" + id + "_cost", costText);
                         out.put("tier_" + id + "_cost", costText);
                         out.put("tier_" + id + "_cost_raw", String.valueOf(cost));
+                        boolean unlocked = false;
+                        if (playerData != null) {
+                            try {
+                                Object u = playerData.getClass()
+                                        .getMethod("hasUnlockedTier", int.class)
+                                        .invoke(playerData, id);
+                                unlocked = u instanceof Boolean b && b;
+                            } catch (Throwable ignored) {
+                                unlocked = highestUnlocked >= id;
+                            }
+                        } else {
+                            unlocked = highestUnlocked >= id;
+                        }
+                        out.put("tier_" + id + "_unlocked", unlocked ? "true" : "false");
                         Object defaultMax = field(ut, "defaultMaxDifficulty");
                         out.put("unlock_tier_" + id + "_max", String.valueOf(defaultMax));
                         if (unlockTierById != null && unlockTierMaxDifficulty != null) {
