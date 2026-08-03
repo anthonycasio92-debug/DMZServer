@@ -6,9 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Offense / health curves with a small LUT so combat paths avoid {@code Math.pow}.
- * <p>
- * Training Points are never scaled or granted by this mod.
- * Reward multiplier follows concept §15 for XP / drops only.
+ * Reward multiplier is used for XP only (Ancient Coin drops use their own ladder).
  */
 public final class ScalingCurves {
     /** Bucket size for LUT keys — balances precision vs cache size. */

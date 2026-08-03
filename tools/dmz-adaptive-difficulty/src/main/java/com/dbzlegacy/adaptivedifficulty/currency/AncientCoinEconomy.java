@@ -456,26 +456,10 @@ public final class AncientCoinEconomy {
         server.m_7967_(entity); // addFreshEntity
     }
 
-    /** @deprecated Kill rewards must use {@link #dropInWorld}; kept for non-kill grants only. */
-    @Deprecated
-    public static void grantDrop(ServerPlayer player, Drop drop) {
-        if (player == null || drop == null || drop.count() <= 0) {
-            return;
-        }
-        grantExact(player, drop.kind(), drop.count());
-    }
-
-    /**
-     * Roll an Ancient Coin drop at the mob.
-     * Pre-T1 (no active tier) still drops 1× Copper so players can start buying tiers.
-     */
-    public static Drop rollKillDrop(ServerPlayer killer, long combatRating, boolean elite, boolean boss) {
-        return rollKillLoot(killer, combatRating, elite, boss).primary();
-    }
-
     /**
      * Roll primary kill coins plus a rare chance for one higher-denomination bonus
      * (e.g. Copper + 2% Iron). Bonus is always 1× of the next ladder step.
+     * Pre-T1 (no active tier) still drops 1× Copper so players can start buying tiers.
      */
     public static KillLoot rollKillLoot(ServerPlayer killer, long combatRating, boolean elite, boolean boss) {
         DifficultyConfig cfg = DifficultyConfig.get();

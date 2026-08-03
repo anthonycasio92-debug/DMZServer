@@ -137,7 +137,6 @@ public final class DifficultyConfig {
     /** Percent chance a claimed T4+ hostile becomes elite (rare). Nameplate only on true rarity. */
     public double eliteChancePercent = 0.75;
     public double eliteStatMultiplier = 1.75;
-    public double eliteRewardBonus = 2.0;
     public boolean enableMutations = true;
     /** Percent chance a claimed T5+ hostile mutates. Elites get ×1.35. Nameplate only on true rarity. */
     public double mutationChancePercent = 1.25;
@@ -495,21 +494,6 @@ public final class DifficultyConfig {
             case APEX -> Math.max(0L, tierApex);
             case ZENITH -> Math.max(0L, tierZenith);
         };
-    }
-
-    /** Theoretical max at reference caps (level 100k × 10 prestiges by default). */
-    public long theoreticalMaxAtReferenceCaps() {
-        long levelPart = Math.round(Math.max(1L, referenceMaxLevel) * Math.max(0.0, levelMultiplier));
-        int p = Math.max(0, referenceMaxPrestige);
-        if (p <= 0) {
-            return Math.max(0L, levelPart);
-        }
-        long prestigeFactor = Math.round(p * Math.max(0.0, prestigeMultiplier));
-        try {
-            return Math.multiplyExact(levelPart, Math.max(1L, prestigeFactor));
-        } catch (ArithmeticException e) {
-            return Long.MAX_VALUE / 4L;
-        }
     }
 
     private DifficultyConfig() {}

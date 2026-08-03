@@ -25,7 +25,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 /**
  * Players: {@code /difficulty} opens the GUI.
  * GUI buttons use {@code /difficulty do ...} (not for normal player use).
- * Staff: {@code /difficulty admin …} (op or {@code difficulty.admin}) — no session toggle.
+ * Staff: {@code /difficulty admin …} (op or {@code difficulty.admin}).
  * Ops can still set vanilla world difficulty via {@code /difficulty hard|normal|easy|peaceful}
  * (this mod replaces the vanilla {@code /difficulty} command name).
  */
@@ -76,7 +76,7 @@ public final class DifficultyCommands {
                                 .executes(ctx -> reloadOrDeny(ctx.getSource())))
                         .then(Commands.m_82127_("settings")
                                 .executes(ctx -> openAdminSettingsOrDeny(ctx.getSource())))
-                        // Master system switch — ops only (no admin-mode session required).
+                        // Master system switch — ops / staff only.
                         .then(Commands.m_82127_("off")
                                 .executes(ctx -> setSystemEnabled(ctx.getSource(), false)))
                         .then(Commands.m_82127_("disable")

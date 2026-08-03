@@ -78,10 +78,6 @@ public final class DifficultyCalculator {
         );
     }
 
-    public static double rewardMultiplier(long activeDifficulty) {
-        return ScalingCurves.rewardMultiplier(activeDifficulty);
-    }
-
     private static long clampNonNegative(long value) {
         if (value < 0L) {
             return 0L;

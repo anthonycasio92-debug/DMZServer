@@ -25,13 +25,9 @@ public enum MutationType {
     VAMPIRIC("Vampiric");
 
     public final String shortName;
-    /** @deprecated use {@link #shortName} + live entity type */
-    @Deprecated
-    public final String displayName;
 
     MutationType(String shortName) {
         this.shortName = shortName;
-        this.displayName = shortName;
     }
 
     public static MutationType randomFor(LivingEntity entity) {

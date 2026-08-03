@@ -5,14 +5,6 @@ public enum TeamMode {
     THRESHOLD_BONUS_ONLY,
     FULL_TEAM_SCALING;
 
-    public String displayName() {
-        return switch (this) {
-            case PERSONAL_ONLY -> "Personal Only";
-            case THRESHOLD_BONUS_ONLY -> "Threshold Bonus";
-            case FULL_TEAM_SCALING -> "Full Team";
-        };
-    }
-
     public static TeamMode fromString(String raw) {
         if (raw == null || raw.isBlank()) {
             return PERSONAL_ONLY;

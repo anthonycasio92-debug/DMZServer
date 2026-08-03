@@ -16,7 +16,7 @@ if [[ ! -f "$FTB" ]]; then
   curl -fsSL -o "$FTB" \
     "https://maven.ftb.dev/releases/dev/ftb/mods/ftb-teams-forge/2001.3.1/ftb-teams-forge-2001.3.1.jar"
 fi
-VERSION="3.3.30"
+VERSION="3.3.31"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
@@ -52,6 +52,6 @@ javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
     -C "$RES" META-INF/mods.toml \
     -C "$RES" pack.mcmeta
 )
-cp -f "$JAR" "$ROOT/dmz_adaptive_difficulty-${VERSION}.jar"
+rm -f "$ROOT"/dmz_adaptive_difficulty-*.jar
 echo "Built $JAR"
 jar tf "$JAR"

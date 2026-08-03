@@ -105,19 +105,6 @@ public final class ScaledMobTracker {
         return player.m_20148_().equals(MOB_OWNER.get(mob.m_20148_()));
     }
 
-    public static int claimedCount(ServerPlayer player) {
-        if (player == null) {
-            return 0;
-        }
-        List<Claim> claims = CLAIMS.get(player.m_20148_());
-        if (claims == null) {
-            return 0;
-        }
-        synchronized (claims) {
-            return claims.size();
-        }
-    }
-
     public static void prunePlayer(ServerPlayer player) {
         if (player == null) {
             return;
@@ -287,10 +274,6 @@ public final class ScaledMobTracker {
         }
     }
 
-    public static UUID pollEvictedOwner(UUID mobId) {
-        return mobId == null ? null : PENDING_REVERT.remove(mobId);
-    }
-
     /**
      * Snapshot of pending reverts. Entries stay queued until
      * {@link #clearPendingRevert} after a successful revert — unloaded mobs
@@ -301,12 +284,6 @@ public final class ScaledMobTracker {
             return Map.of();
         }
         return Map.copyOf(PENDING_REVERT);
-    }
-
-    /** @deprecated use {@link #peekEvictions()} + {@link #clearPendingRevert(UUID)} */
-    @Deprecated
-    public static Map<UUID, UUID> drainEvictions() {
-        return peekEvictions();
     }
 
     private static boolean isOwnerOnline(UUID ownerId) {

@@ -250,11 +250,6 @@ public final class EnemyEvolution {
         }
     }
 
-    /** Called on creeper death — final explosion when killed before fuse detonation. */
-    public static void onCreeperDeath(Creeper creeper) {
-        onCreeperDeath(creeper, null);
-    }
-
     /**
      * Final boom only when the creeper did <b>not</b> already explode (fuse / other blast).
      * Fuse detonation kills via explosion damage — stacking another blast was near-instant death.

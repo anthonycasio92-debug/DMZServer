@@ -23,15 +23,11 @@ public final class ForgeBridge {
     private static volatile String resolveError;
     private static Class<?> serverPlayerCls;
     private static Class<?> cacheCls;
-    private static Class<?> teamCls;
     private static Class<?> actionsCls;
     private static Method getHandle;
     private static Method cacheGet;
     private static Method cacheRefresh;
     private static Method cacheData;
-    private static Method teamName;
-    private static Method teamSource;
-    private static Method teammates;
     private static Method economyBalanceText;
     private static Method economyFormat;
     private static Method economyFormatExactCost;
@@ -919,11 +915,8 @@ public final class ForgeBridge {
             try {
                 data.getClass().getMethod("resetTemporary").invoke(data);
             } catch (NoSuchMethodException legacy) {
-                try {
-                    data.getClass().getMethod("setPurchasedDifficulty", long.class).invoke(data, 0L);
-                } catch (NoSuchMethodException ignored) {
-                }
-                data.getClass().getMethod("setActiveDifficulty", long.class).invoke(data, 0L);
+                data.getClass().getMethod("setActiveDifficultyLevel", long.class).invoke(data, 0L);
+                data.getClass().getMethod("setActiveTier", int.class).invoke(data, 0);
             }
             cacheCls.getMethod("save", serverPlayerCls).invoke(null, nms);
             cacheRefresh.invoke(null, nms);
@@ -1014,19 +1007,6 @@ public final class ForgeBridge {
                 cacheGet = cacheCls.getMethod("get", serverPlayerCls);
                 cacheRefresh = cacheCls.getMethod("refresh", serverPlayerCls);
                 cacheData = cacheCls.getMethod("data", serverPlayerCls);
-
-                // Optional: team labels for Details.
-                try {
-                    teamCls = loadClass("com.dbzlegacy.adaptivedifficulty.team.TeamScaling", preferred);
-                    teamName = teamCls.getMethod("teamName", serverPlayerCls);
-                    teamSource = teamCls.getMethod("teamSourceLabel");
-                    teammates = teamCls.getMethod("teammates", serverPlayerCls);
-                } catch (Throwable missing) {
-                    teamCls = null;
-                    teamName = null;
-                    teamSource = null;
-                    teammates = null;
-                }
 
                 // Optional: Ancient Coin economy + UnlockTier costs.
                 try {

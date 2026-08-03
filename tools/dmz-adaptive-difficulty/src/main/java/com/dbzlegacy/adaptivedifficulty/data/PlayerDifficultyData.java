@@ -88,15 +88,6 @@ public final class PlayerDifficultyData {
         this.activeDifficultyLevel = Math.max(0L, level);
     }
 
-    /** Alias used by scaling/cache code paths that expect "active". */
-    public long getActiveDifficulty() {
-        return getActiveDifficultyLevel();
-    }
-
-    public void setActiveDifficulty(long level) {
-        setActiveDifficultyLevel(level);
-    }
-
     public boolean isPersonalEnabled() {
         return personalEnabled;
     }
@@ -166,11 +157,6 @@ public final class PlayerDifficultyData {
     }
 
     public void setTeamMode(TeamMode teamMode) {
-        this.teamMode = TeamMode.PERSONAL_ONLY;
-    }
-
-    /** No-op while team scaling is WIP. */
-    public void cycleTeamMode() {
         this.teamMode = TeamMode.PERSONAL_ONLY;
     }
 
