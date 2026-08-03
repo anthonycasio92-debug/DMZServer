@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.3.31)
+# DMZ Adaptive Difficulty (v3.3.32)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -23,7 +23,7 @@ Clients do **not** need this jar to join.
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.3.31.jar` (remove older AD jars)
+1. `mods/dmz_adaptive_difficulty-3.3.32.jar` (remove older AD jars)
 2. `plugins/dmz_adaptive_difficulty_gui-3.3.31.jar`
 3. Restart — config regenerates at `config/dmz_adaptive_difficulty.json`
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)

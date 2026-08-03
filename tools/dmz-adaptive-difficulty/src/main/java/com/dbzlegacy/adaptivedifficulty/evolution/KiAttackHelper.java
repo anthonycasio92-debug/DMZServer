@@ -12,7 +12,9 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -49,9 +51,9 @@ public final class KiAttackHelper {
             int border = burning ? COLOR_BURN_BORDER : COLOR_BORDER;
             KiBlastEntity blast = new KiBlastEntity(shooter.m_9236_(), shooter);
             blast.setupKiSmall(shooter, damage, speed, main, border);
+            hardenAgainstWalls(blast);
             // setupKiSmall adds the entity with firing=true but zero velocity — launch it.
             launchToward(blast, shooter, target, speed);
-            blast.setHomingTarget(target.m_19879_());
             if (burning) {
                 target.m_20254_(4);
             }
@@ -78,7 +80,7 @@ public final class KiAttackHelper {
             int cast = Math.max(6, 16 - tier.ordinalPower());
             blast.setupKiLargeBlast(
                     shooter, damage, speed, COLOR_LARGE, COLOR_BORDER, COLOR_OUTLINE, size, cast);
-            blast.setHomingTarget(target.m_19879_());
+            hardenAgainstWalls(blast);
             return true;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
@@ -104,7 +106,7 @@ public final class KiAttackHelper {
             int border = burning ? COLOR_BURN_BORDER : COLOR_BORDER;
             KiLaserEntity laser = new KiLaserEntity(shooter.m_9236_(), shooter);
             laser.setupKiLaser(shooter, damage, speed, main, border, COLOR_OUTLINE, cast);
-            laser.setHomingTarget(target.m_19879_());
+            hardenAgainstWalls(laser);
             if (burning) {
                 target.m_20254_(5);
             }
@@ -135,7 +137,7 @@ public final class KiAttackHelper {
             int border = burning ? COLOR_BURN_BORDER : COLOR_BORDER;
             KiWaveEntity wave = new KiWaveEntity(shooter.m_9236_(), shooter);
             wave.setupKiWave(shooter, damage, speed, main, border, COLOR_OUTLINE, size, cast);
-            wave.setHomingTarget(target.m_19879_());
+            hardenAgainstWalls(wave);
             if (burning) {
                 target.m_20254_(charged ? 7 : 5);
             }
@@ -194,8 +196,8 @@ public final class KiAttackHelper {
             int border = burning ? COLOR_BURN_BORDER : COLOR_BORDER;
             KiBlastEntity blast = new KiBlastEntity(shooter.m_9236_(), shooter);
             blast.setupKiSmall(shooter, damage, speed, main, border);
+            hardenAgainstWalls(blast);
             launchToward(blast, shooter, target, speed);
-            blast.setHomingTarget(target.m_19879_());
             if (burning) {
                 target.m_20254_(3);
             }
@@ -245,7 +247,54 @@ public final class KiAttackHelper {
                 && shooter.m_6084_()
                 && target.m_6084_()
                 && shooter.m_9236_() instanceof ServerLevel
-                && !shooter.m_9236_().f_46443_;
+                && !shooter.m_9236_().f_46443_
+                && hasClearShot(shooter, target);
+    }
+
+    /**
+     * Refuse to cast when a solid collider sits between eyes — stops wall-hacks /
+     * corner-peek spam. Uses vanilla LOS plus an explicit collider clip.
+     */
+    private static boolean hasClearShot(LivingEntity shooter, LivingEntity target) {
+        if (shooter == null || target == null || shooter.m_9236_() != target.m_9236_()) {
+            return false;
+        }
+        try {
+            // LivingEntity#hasLineOfSight — eye-to-eye collider ray.
+            if (!shooter.m_142582_(target)) {
+                return false;
+            }
+        } catch (Throwable ignored) {
+            // Fall through to explicit clip if the mapped helper is unavailable.
+        }
+        try {
+            Vec3 from = shooter.m_146892_(); // getEyePosition
+            Vec3 to = target.m_146892_();
+            var hit = shooter.m_9236_().m_45547_(new ClipContext(
+                    from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shooter));
+            return hit.m_6662_() == HitResult.Type.MISS;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
+     * AD mob shots must not chew through terrain. Also clear any accidental homing
+     * so projectiles fly straight and die on walls instead of steering through them.
+     */
+    private static void hardenAgainstWalls(AbstractKiProjectile projectile) {
+        if (projectile == null) {
+            return;
+        }
+        try {
+            projectile.setBlockDestructionEnabled(false);
+        } catch (Throwable ignored) {
+        }
+        try {
+            // -1 clears / disables homing target id in DMZ AbstractKiProjectile.
+            projectile.setHomingTarget(-1);
+        } catch (Throwable ignored) {
+        }
     }
 
     /**
