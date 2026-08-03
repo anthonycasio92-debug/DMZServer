@@ -264,11 +264,17 @@ public final class DifficultyConfig {
      */
     public double mobHealthScale = 0.65;
     /**
-     * How much of a form/transform boost enemies scale to (0–1).
-     * {@code 0} = form-stripped base stats only · {@code 1} = full live post-form stats.
-     * Default {@code 0.40} so transforming does not 1:1 spike mob/creeper damage.
+     * How much of a form/transform boost enemies scale to (0–1), after the soft curve.
+     * {@code 0} = form-stripped base stats only · {@code 1} = strongest allowed form slice.
+     * Default {@code 0.25}. Combined with {@link #transformScaleExponent} + tier damp so
+     * big forms (10–20×) do not linearly explode mob damage at T6–T7.
      */
-    public double transformScaleWeight = 0.40;
+    public double transformScaleWeight = 0.25;
+    /**
+     * Diminishing-returns exponent on form surplus ({@code (live/base - 1)^exp × weight}).
+     * {@code 1.0} = linear · {@code 0.50} = sqrt-ish (default) · lower = softer high forms.
+     */
+    public double transformScaleExponent = 0.50;
     /**
      * Legacy weak-stat dump multiplier (unused in combat as of 3.3.35).
      * Kept for config/admin compat; default 1.0 = no effect.
@@ -324,6 +330,10 @@ public final class DifficultyConfig {
      * One-time: balance pass — raise mob HP sponge, soften elite spike, nudge tank HP floor.
      */
     public Boolean balanceFeelMigratedV1 = Boolean.FALSE;
+    /**
+     * One-time: soften transform→enemy scaling (weight 0.40→0.25 + soft curve).
+     */
+    public Boolean transformSoftMigratedV1 = Boolean.FALSE;
     /**
      * Legacy specialization tax (unused in combat as of 3.3.35).
      * Kept for config/admin compat; default 0.0 = no effect.
@@ -902,6 +912,16 @@ public final class DifficultyConfig {
             }
             cfg.balanceFeelMigratedV1 = Boolean.TRUE;
         }
+        // Transform soft curve (3.3.44): linear 0.40 still one-tapped high-tier form swaps.
+        if (!Boolean.TRUE.equals(cfg.transformSoftMigratedV1)) {
+            if (nearly(cfg.transformScaleWeight, 0.40)) {
+                cfg.transformScaleWeight = 0.25;
+            }
+            if (cfg.transformScaleExponent <= 0.0 || nearly(cfg.transformScaleExponent, 1.0)) {
+                cfg.transformScaleExponent = 0.50;
+            }
+            cfg.transformSoftMigratedV1 = Boolean.TRUE;
+        }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
             cfg.guiBackend = "cmi";
         } else {
@@ -961,7 +981,11 @@ public final class DifficultyConfig {
         }
         if (cfg.transformScaleWeight < 0.0 || cfg.transformScaleWeight > 1.0
                 || Double.isNaN(cfg.transformScaleWeight)) {
-            cfg.transformScaleWeight = 0.40;
+            cfg.transformScaleWeight = 0.25;
+        }
+        if (cfg.transformScaleExponent < 0.20 || cfg.transformScaleExponent > 1.0
+                || Double.isNaN(cfg.transformScaleExponent)) {
+            cfg.transformScaleExponent = 0.50;
         }
         if (cfg.weakStatCounterMult < 1.0) {
             cfg.weakStatCounterMult = 1.0;

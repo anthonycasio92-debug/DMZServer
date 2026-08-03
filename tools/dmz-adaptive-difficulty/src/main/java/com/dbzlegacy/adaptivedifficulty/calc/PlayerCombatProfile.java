@@ -18,9 +18,10 @@ import net.minecraft.server.level.ServerPlayer;
  * Combat snapshot used to scale nearby hostiles to a fraction of the player's power.
  * <p>
  * Live DMZ combat getters include full form multipliers. Enemy scaling blends
- * form-stripped stats with only a portion of that transform boost
- * ({@link DifficultyConfig#transformScaleWeight}) so transforming does not
- * instantly spike mob/creeper damage 1:1 with your form.
+ * form-stripped stats with a <em>diminishing</em> slice of that transform boost
+ * ({@link DifficultyConfig#transformScaleWeight} + {@link DifficultyConfig#transformScaleExponent},
+ * further dampened at high unlock tiers) so transforming does not linearly
+ * explode mob/creeper damage — especially at T6–T7.
  * <p>
  * Counters are intentionally light:
  * <ul>
@@ -159,6 +160,7 @@ public final class PlayerCombatProfile {
         double def = 1.0;
         double hp = 20.0;
         double release = 100.0;
+        double formBoost = 1.0;
         if (data != null) {
             try {
                 double liveMelee = Math.max(1.0, data.getMeleeDamage());
@@ -170,17 +172,24 @@ public final class PlayerCombatProfile {
                 double baseMelee = Math.max(1.0, data.getMeleeDamageNoMultipliers());
                 double baseStrike = Math.max(1.0, data.getStrikeDamageNoForms());
                 double baseKi = Math.max(1.0, data.getKiDamageNoForms());
-                double formBoost = estimateFormBoost(
+                formBoost = estimateFormBoost(
                         liveMelee, baseMelee, liveStrike, baseStrike, liveKi, baseKi);
                 // DEF/HP have no no-form getters — peel the shared form boost.
                 double baseDef = Math.max(1.0, liveDef / formBoost);
                 double baseHp = Math.max(20.0, liveHp / formBoost);
-                double tw = Math.max(0.0, Math.min(1.0, cfg.transformScaleWeight));
-                melee = blendForm(baseMelee, liveMelee, tw);
-                strike = blendForm(baseStrike, liveStrike, tw);
-                ki = blendForm(baseKi, liveKi, tw);
-                def = blendForm(baseDef, liveDef, tw);
-                hp = blendForm(baseHp, liveHp, tw);
+                double twBase = Math.max(0.0, Math.min(1.0, cfg.transformScaleWeight));
+                double exp = Math.max(0.20, Math.min(1.0, cfg.transformScaleExponent));
+                // High unlock tiers already take a large % of stats — cut the form slice further
+                // so T7×SSJ does not compound into one-shots.
+                double tierDamp = 1.0 - 0.55 * Math.max(0.0, Math.min(1.0, pct));
+                double twOffense = twBase * tierDamp;
+                // Keep a bit more sponge on HP/DEF so packs aren't deleted on form-up.
+                double twBulk = Math.min(1.0, twBase * 1.45) * (0.70 + 0.30 * tierDamp);
+                melee = blendForm(baseMelee, liveMelee, twOffense, exp);
+                strike = blendForm(baseStrike, liveStrike, twOffense, exp);
+                ki = blendForm(baseKi, liveKi, twOffense, exp);
+                def = blendForm(baseDef, liveDef, twBulk, exp);
+                hp = blendForm(baseHp, liveHp, twBulk, exp);
                 Resources resources = data.getResources();
                 if (resources != null) {
                     // Prefer power-release (limit release) when available.
@@ -199,7 +208,8 @@ public final class PlayerCombatProfile {
         double peakOffense = Math.max(melee, Math.max(strike, ki));
         double avgOffense = (melee + strike + ki) / 3.0;
         double offense = peakOffense * 0.55 + avgOffense * 0.45;
-        StatBalance balance = resolveBalance(data, melee, strike, def, hp, ki);
+        // Counter identity from form-stripped investments — don't reshuffle on transform.
+        StatBalance balance = resolveBalance(data, melee, strike, def, hp, ki, formBoost);
         String fightingClass = DmzProgression.fightingClass(player);
         String race = DmzProgression.race(player);
         FightingStyle style = resolveStyle(fightingClass, melee, strike, ki, def, hp);
@@ -577,9 +587,11 @@ public final class PlayerCombatProfile {
             double strike,
             double defense,
             double health,
-            double ki
+            double ki,
+            double formBoost
     ) {
-        // Prefer raw invested stats (with form multipliers via combat getters as fallback).
+        // Prefer raw invested stats; strip form mult so transform doesn't reshuffle counters.
+        double peel = Math.max(1.0, formBoost);
         double str = melee;
         double skp = strike;
         double res = defense;
@@ -589,11 +601,16 @@ public final class PlayerCombatProfile {
             try {
                 Stats stats = data.getStats();
                 if (stats != null) {
-                    str = Math.max(1.0, stats.getStrength()) * Math.max(0.01, data.getTotalMultiplier("STR"));
-                    skp = Math.max(1.0, stats.getStrikePower()) * Math.max(0.01, data.getTotalMultiplier("SKP"));
-                    res = Math.max(1.0, stats.getResistance()) * Math.max(0.01, data.getTotalMultiplier("RES"));
-                    vit = Math.max(1.0, stats.getVitality()) * Math.max(0.01, data.getTotalMultiplier("VIT"));
-                    pwr = Math.max(1.0, stats.getKiPower()) * Math.max(0.01, data.getTotalMultiplier("PWR"));
+                    str = Math.max(1.0, stats.getStrength())
+                            * Math.max(0.01, data.getTotalMultiplier("STR")) / peel;
+                    skp = Math.max(1.0, stats.getStrikePower())
+                            * Math.max(0.01, data.getTotalMultiplier("SKP")) / peel;
+                    res = Math.max(1.0, stats.getResistance())
+                            * Math.max(0.01, data.getTotalMultiplier("RES")) / peel;
+                    vit = Math.max(1.0, stats.getVitality())
+                            * Math.max(0.01, data.getTotalMultiplier("VIT")) / peel;
+                    pwr = Math.max(1.0, stats.getKiPower())
+                            * Math.max(0.01, data.getTotalMultiplier("PWR")) / peel;
                 }
             } catch (Throwable ignored) {
             }
@@ -671,10 +688,11 @@ public final class PlayerCombatProfile {
         h = mix(h, Math.round(liveCfg.maxCounterOverlayMult * 1000.0));
         h = mix(h, Math.round(liveCfg.mobHealthScale * 1000.0));
         h = mix(h, Math.round(liveCfg.transformScaleWeight * 1000.0));
+        h = mix(h, Math.round(liveCfg.transformScaleExponent * 1000.0));
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
-        // Formula revision: transform-boost dampening for enemy scaling.
-        h = mix(h, 10L);
+        // Formula revision: soft (diminishing) transform damp + tier form damp.
+        h = mix(h, 11L);
         return h;
     }
 
@@ -702,12 +720,26 @@ public final class PlayerCombatProfile {
         return Math.max(1.0, Math.min(50.0, boost));
     }
 
-    /** {@code base + (live - base) × weight} — enemies only see part of the form spike. */
-    private static double blendForm(double base, double live, double weight) {
-        double b = Math.max(0.0, base);
+    /**
+     * Soft form blend: {@code base × (1 + (live/base - 1)^exp × weight)}.
+     * Linear weight alone still exploded on 10–20× forms; the exponent compresses surplus.
+     */
+    private static double blendForm(double base, double live, double weight, double exponent) {
+        double b = Math.max(1e-9, base);
         double l = Math.max(b, live);
         double w = Math.max(0.0, Math.min(1.0, weight));
-        return b + (l - b) * w;
+        if (w <= 0.0) {
+            return b;
+        }
+        double exp = Math.max(0.20, Math.min(1.0, exponent));
+        double surplus = Math.max(0.0, l / b - 1.0);
+        double seenRatio = 1.0 + Math.pow(surplus, exp) * w;
+        // Cap form multiple enemies can inherit (scales with weight so admin=1 stays strong).
+        double cap = 1.0 + 10.0 * w;
+        if (seenRatio > cap) {
+            seenRatio = cap;
+        }
+        return b * seenRatio;
     }
 
     private static long mix(long h, long v) {
