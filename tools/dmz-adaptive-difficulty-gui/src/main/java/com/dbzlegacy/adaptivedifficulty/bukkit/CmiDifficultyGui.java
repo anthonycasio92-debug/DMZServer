@@ -142,6 +142,21 @@ public final class CmiDifficultyGui {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         CMIGui gui = base(player, "&8Buy Higher Tier", 5);
 
+        boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
+        boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
+        boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
+        if (!bridgeOk || !systemOn || !allowed) {
+            CMIGuiButton locked = new CMIGuiButton(4, Material.BARRIER, "&c&lBuy Locked");
+            locked.lockField();
+            locked.addLore(unavailableLore(player, systemOn, bridgeOk));
+            gui.addButton(locked);
+            gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+            gui.addButton(closeBtn(44));
+            fillEmpty(gui, 5);
+            gui.open();
+            return;
+        }
+
         boolean personalOn = "true".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "false"));
         if (!personalOn) {
             CMIGuiButton locked = new CMIGuiButton(4, Material.BARRIER, "&c&lBuy Locked");
@@ -187,6 +202,21 @@ public final class CmiDifficultyGui {
     private static void openLower(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         CMIGui gui = base(player, "&8Lower Difficulty Tier", 5);
+
+        boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
+        boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
+        boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
+        if (!bridgeOk || !systemOn || !allowed) {
+            CMIGuiButton locked = new CMIGuiButton(4, Material.BARRIER, "&c&lLower Locked");
+            locked.lockField();
+            locked.addLore(unavailableLore(player, systemOn, bridgeOk));
+            gui.addButton(locked);
+            gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+            gui.addButton(closeBtn(44));
+            fillEmpty(gui, 5);
+            gui.open();
+            return;
+        }
 
         boolean personalOn = "true".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "false"));
         if (!personalOn) {
@@ -376,8 +406,7 @@ public final class CmiDifficultyGui {
             int slot = TIER_SLOTS[t - 1];
             String cost = ph.getOrDefault("tier_" + t + "_cost", "?");
             String name = ph.getOrDefault("tier_" + t + "_name", "T" + t);
-            boolean unlocked = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_unlocked",
-                    highest >= t ? "true" : "false"));
+            boolean unlocked = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_unlocked", "false"));
             boolean active = activeTier == t;
             List<String> lore = new ArrayList<>();
             lore.add("&7" + name);

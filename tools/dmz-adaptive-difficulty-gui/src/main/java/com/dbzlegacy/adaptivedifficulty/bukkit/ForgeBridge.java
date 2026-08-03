@@ -224,10 +224,14 @@ public final class ForgeBridge {
                         Object display = field(ut, "display");
                         out.put("tier_" + id + "_name", "T" + id + " " + (display == null ? "" : display));
                         long cost = resolveTierCost(ut, nms, level);
-                        String costText = String.valueOf(economyFormatExactCost.invoke(null, cost));
+                        // Never show resolve failures as "free" (formatExactCost(0)).
+                        String costText = cost <= 0L
+                                ? "?"
+                                : String.valueOf(economyFormatExactCost.invoke(null, cost));
                         out.put("unlock_tier_" + id + "_cost", costText);
                         out.put("tier_" + id + "_cost", costText);
-                        out.put("tier_" + id + "_cost_raw", String.valueOf(cost));
+                        out.put("tier_" + id + "_cost_raw", String.valueOf(Math.max(0L, cost)));
+                        // Fail closed — never invent unlocks from highest_unlocked.
                         boolean unlocked = false;
                         if (playerData != null) {
                             try {
@@ -236,10 +240,8 @@ public final class ForgeBridge {
                                         .invoke(playerData, id);
                                 unlocked = u instanceof Boolean b && b;
                             } catch (Throwable ignored) {
-                                unlocked = highestUnlocked >= id;
+                                unlocked = false;
                             }
-                        } else {
-                            unlocked = highestUnlocked >= id;
                         }
                         out.put("tier_" + id + "_unlocked", unlocked ? "true" : "false");
                         Object defaultMax = field(ut, "defaultMaxDifficulty");

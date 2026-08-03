@@ -121,6 +121,16 @@ public final class DifficultyChestGui implements Listener {
         holder.bind(inv);
         frame(inv, 45);
 
+        boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
+        boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
+        boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
+        if (!bridgeOk || !systemOn || !allowed) {
+            put(holder, inv, 4, item(Material.BARRIER, "&c&lBuy Locked", unavailableLore(player, systemOn, bridgeOk)));
+            put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+            put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+            return inv;
+        }
+
         boolean personalOn = "true".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "false"));
         List<String> info = new ArrayList<>();
         info.add("");
@@ -157,6 +167,16 @@ public final class DifficultyChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, color("&8Lower Difficulty Tier"));
         holder.bind(inv);
         frame(inv, 45);
+
+        boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
+        boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
+        boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
+        if (!bridgeOk || !systemOn || !allowed) {
+            put(holder, inv, 4, item(Material.BARRIER, "&c&lLower Locked", unavailableLore(player, systemOn, bridgeOk)));
+            put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+            put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+            return inv;
+        }
 
         boolean personalOn = "true".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "false"));
         if (!personalOn) {
@@ -319,8 +339,7 @@ public final class DifficultyChestGui implements Listener {
         for (int t = 1; t <= 7; t++) {
             String cost = ph.getOrDefault("tier_" + t + "_cost", "?");
             String name = ph.getOrDefault("tier_" + t + "_name", "T" + t);
-            boolean unlocked = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_unlocked",
-                    highest >= t ? "true" : "false"));
+            boolean unlocked = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_unlocked", "false"));
             boolean active = activeTier == t;
             List<String> tip = new ArrayList<>();
             tip.add("&7" + name);

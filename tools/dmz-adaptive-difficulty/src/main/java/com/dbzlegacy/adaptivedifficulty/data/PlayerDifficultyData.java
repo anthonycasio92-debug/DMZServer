@@ -277,8 +277,12 @@ public final class PlayerDifficultyData {
         tag.m_128359_("activeTitle", getActiveTitle());
         tag.m_128379_("personalEnabled", personalEnabled);
         tag.m_128379_("coinDropChat", coinDropChat);
-        tag.m_128405_("lastSeenPrestige", Math.max(0, lastSeenPrestige));
-        tag.m_128379_("lastSeenPrestigeSet", lastSeenPrestige >= 0);
+        if (lastSeenPrestige >= 0) {
+            tag.m_128405_("lastSeenPrestige", lastSeenPrestige);
+            tag.m_128379_("lastSeenPrestigeSet", true);
+        } else {
+            tag.m_128379_("lastSeenPrestigeSet", false);
+        }
         // Keep legacy keys written as 0 so old tools don't explode on read.
         tag.m_128356_("purchased", 0L);
         tag.m_128356_("active", activeDifficultyLevel);
@@ -297,9 +301,8 @@ public final class PlayerDifficultyData {
         // Missing keys → defaults (on for personal, off for coin chat).
         personalEnabled = !tag.m_128441_("personalEnabled") || tag.m_128471_("personalEnabled");
         coinDropChat = tag.m_128441_("coinDropChat") && tag.m_128471_("coinDropChat");
-        if (tag.m_128441_("lastSeenPrestigeSet") && tag.m_128471_("lastSeenPrestigeSet")) {
-            lastSeenPrestige = Math.max(0, tag.m_128451_("lastSeenPrestige"));
-        } else if (tag.m_128441_("lastSeenPrestige")) {
+        if (tag.m_128441_("lastSeenPrestigeSet") && tag.m_128471_("lastSeenPrestigeSet")
+                && tag.m_128441_("lastSeenPrestige")) {
             lastSeenPrestige = Math.max(0, tag.m_128451_("lastSeenPrestige"));
         } else {
             lastSeenPrestige = -1;

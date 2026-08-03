@@ -44,11 +44,12 @@ public final class DifficultyCalculator {
             data.setActiveDifficultyLevel(active);
         }
         // Repair unlock-list desync without granting free tiers.
-        // Only restore the unlock bit when the player still meets the live gate.
+        // Only restore / revoke when the unlock gate sample is reliable.
+        boolean gateReliable = DmzProgression.hasReliableUnlockGateSample(player);
         if (activeTier > 0 && !data.hasUnlockedTier(activeTier)) {
             if (tier != null && UnlockSystem.isEligible(player, tier)) {
                 data.unlockTier(activeTier);
-            } else {
+            } else if (gateReliable || tier == null) {
                 data.resetTemporary();
                 activeTier = 0;
                 active = 0L;
@@ -59,7 +60,7 @@ public final class DifficultyCalculator {
                 tier = null;
                 tierMax = 0L;
             }
-        } else if (activeTier > 0 && tier != null && !UnlockSystem.isEligible(player, tier)) {
+        } else if (gateReliable && activeTier > 0 && tier != null && !UnlockSystem.isEligible(player, tier)) {
             // Prestige/level reset while still carrying an active high tier.
             data.revokeTier(activeTier);
             data.resetTemporary();

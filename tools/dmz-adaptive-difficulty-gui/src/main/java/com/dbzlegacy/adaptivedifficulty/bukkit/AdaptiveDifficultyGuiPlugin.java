@@ -38,7 +38,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         } else {
             String modVer = ForgeBridge.modVersion();
             String pluginVer = getDescription().getVersion();
-            if (modVer != null && pluginVer != null && !modVer.equals(pluginVer)) {
+            if (modVer == null || modVer.isBlank()) {
+                getLogger().severe("VERSION HANDSHAKE FAILED: could not read AdaptiveDifficultyMod.VERSION"
+                        + " — GUI may call missing Forge APIs.");
+            } else if (pluginVer != null && !modVer.equals(pluginVer)) {
                 getLogger().severe("VERSION SKEW: Forge mod=" + modVer + " GUI plugin=" + pluginVer
                         + " — install matching AdaptiveDifficulty + AdaptiveDifficultyGUI jars (same version).");
             } else {

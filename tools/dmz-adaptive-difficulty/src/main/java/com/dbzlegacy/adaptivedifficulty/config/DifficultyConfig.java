@@ -325,6 +325,16 @@ public final class DifficultyConfig {
      */
     public Boolean tierPercentLadderMigratedV4 = Boolean.FALSE;
     /**
+     * One-time: remap legacy CR enemy-mult ladder (1.0/1.15/…/3.0) → percent ladder.
+     * Without this flag the remap re-ran every sanitize and blocked that ladder as admin intent.
+     */
+    public Boolean crEnemyMultPercentMigratedV1 = Boolean.FALSE;
+    /**
+     * One-time: drop legacy absolute HP caps (400 / 1024) → uncapped (0).
+     * Without this flag, intentional 1024 caps were wiped every reload.
+     */
+    public Boolean legacyMaxHealthCapMigratedV1 = Boolean.FALSE;
+    /**
      * One-time: drop race / weak-stat / specialization stack and soften class + top-1
      * counter stock values so existing configs match the lighter 3.3.35 model.
      */
@@ -1038,8 +1048,11 @@ public final class DifficultyConfig {
         if (cfg.rewardScaling < 1.0) {
             cfg.rewardScaling = 2_500.0;
         }
-        if (nearly(cfg.maxScaledHealth, 400.0) || nearly(cfg.maxScaledHealth, 1024.0)) {
-            cfg.maxScaledHealth = 0.0;
+        if (!Boolean.TRUE.equals(cfg.legacyMaxHealthCapMigratedV1)) {
+            if (nearly(cfg.maxScaledHealth, 400.0) || nearly(cfg.maxScaledHealth, 1024.0)) {
+                cfg.maxScaledHealth = 0.0;
+            }
+            cfg.legacyMaxHealthCapMigratedV1 = Boolean.TRUE;
         }
         if (cfg.maxDamageMultiplier < 0.0) {
             cfg.maxDamageMultiplier = 0.0;
@@ -1187,17 +1200,19 @@ public final class DifficultyConfig {
             cfg.enemyEvolutionMinUnlockTier = 1;
         }
         // One-time migrate old CR enemy-mult ladder (1.0/1.15/…/3.0) → player-stat percents.
-        // Individual legacy remaps are NOT applied on every sanitize — that collapsed admin ladders.
-        if (nearly(cfg.unlockTier1EnemyMult, 1.0)
-                && nearly(cfg.unlockTier2EnemyMult, 1.15)
-                && nearly(cfg.unlockTier7EnemyMult, 3.0)) {
-            cfg.unlockTier1EnemyMult = 0.21;
-            cfg.unlockTier2EnemyMult = 0.42;
-            cfg.unlockTier3EnemyMult = 0.65;
-            cfg.unlockTier4EnemyMult = 0.90;
-            cfg.unlockTier5EnemyMult = 1.35;
-            cfg.unlockTier6EnemyMult = 1.60;
-            cfg.unlockTier7EnemyMult = 2.00;
+        if (!Boolean.TRUE.equals(cfg.crEnemyMultPercentMigratedV1)) {
+            if (nearly(cfg.unlockTier1EnemyMult, 1.0)
+                    && nearly(cfg.unlockTier2EnemyMult, 1.15)
+                    && nearly(cfg.unlockTier7EnemyMult, 3.0)) {
+                cfg.unlockTier1EnemyMult = 0.21;
+                cfg.unlockTier2EnemyMult = 0.42;
+                cfg.unlockTier3EnemyMult = 0.65;
+                cfg.unlockTier4EnemyMult = 0.90;
+                cfg.unlockTier5EnemyMult = 1.35;
+                cfg.unlockTier6EnemyMult = 1.60;
+                cfg.unlockTier7EnemyMult = 2.00;
+            }
+            cfg.crEnemyMultPercentMigratedV1 = Boolean.TRUE;
         }
         cfg.unlockTier1EnemyMult = clampPercent(cfg.unlockTier1EnemyMult, 0.21);
         cfg.unlockTier2EnemyMult = clampPercent(cfg.unlockTier2EnemyMult, 0.42);
@@ -1255,7 +1270,8 @@ public final class DifficultyConfig {
             INSTANCE.paintEpoch++;
         }
         com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile.clearAll();
-        com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.clearAllBaseFormLevels();
+        // Do NOT clear base-form level samples here — that made transformed players look
+        // like level 1 and revoked paid unlock tiers on every admin reload/set.
         com.dbzlegacy.adaptivedifficulty.scaling.MobScaling.clearAppliedProfiles();
     }
 }

@@ -130,6 +130,8 @@ public final class DmzProgression {
      * Never uses historical {@code highestDmzLevel} or form-inflated live level —
      * those let post-prestige players keep high-tier access without Prestige N.
      * Base form → live level · transformed → last base-form sample · else 1.
+     * Callers that revoke unlocks must check {@link #hasReliableUnlockGateSample} first —
+     * a bare {@code 1} here means "unknown", not "player is level 1".
      */
     public static int dmzLevelForUnlockGate(Player player) {
         if (player == null) {
@@ -145,6 +147,21 @@ public final class DmzProgression {
             return Math.max(1, cached);
         }
         return 1;
+    }
+
+    /**
+     * True when unlock-gate level is safe to use for revoke / prestige-up resets.
+     * False when the player is transformed with no base-form sample this session
+     * (login-already-transformed, or caches cleared by admin reload).
+     */
+    public static boolean hasReliableUnlockGateSample(Player player) {
+        if (player == null) {
+            return false;
+        }
+        if (!isTransformed(player)) {
+            return true;
+        }
+        return BASE_FORM_LEVEL.containsKey(player.m_20148_());
     }
 
     public static void clearBaseFormLevel(UUID playerId) {
