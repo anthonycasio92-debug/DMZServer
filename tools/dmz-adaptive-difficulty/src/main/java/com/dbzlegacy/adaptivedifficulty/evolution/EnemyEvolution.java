@@ -329,9 +329,9 @@ public final class EnemyEvolution {
         double dist = mob.m_20270_(target);
         int power = tier.ordinalPower();
 
-        // Short dash — faster at high tiers
-        long dashCd = power >= DifficultyTier.MYTHIC.ordinalPower() ? 20
-                : power >= DifficultyTier.GOD.ordinalPower() ? 30 : 45;
+        // Short dash — faster at high tiers / vs countered class+top stats
+        long dashCd = kitCd(mob, power >= DifficultyTier.MYTHIC.ordinalPower() ? 20
+                : power >= DifficultyTier.GOD.ordinalPower() ? 30 : 45);
         if (dist > 2.0 && dist < 7.0 && age - tag.m_128454_("dmz_ad_dash") > dashCd
                 && power >= DifficultyTier.AWAKENED.ordinalPower()) {
             tag.m_128356_("dmz_ad_dash", age);
@@ -340,14 +340,14 @@ public final class EnemyEvolution {
         }
 
         // Leap — Enhanced+; chained Master+; rapid Transcendent+
-        int leapCd = power >= DifficultyTier.TRANSCENDENT.ordinalPower() ? 22
-                : power >= DifficultyTier.ADVANCED.ordinalPower() ? 35 : 60;
+        long leapCd = kitCd(mob, power >= DifficultyTier.TRANSCENDENT.ordinalPower() ? 22
+                : power >= DifficultyTier.ADVANCED.ordinalPower() ? 35 : 60);
         if (dist > 3.0 && dist < 14.0 && age - tag.m_128454_("dmz_ad_leap") > leapCd
                 && power >= DifficultyTier.ENHANCED.ordinalPower()) {
             tag.m_128356_("dmz_ad_leap", age);
             pushToward(mob, target, 1.25 + Math.min(0.6, power * 0.04), 0.58);
             if (power >= DifficultyTier.MASTER.ordinalPower()
-                    && age - tag.m_128454_("dmz_ad_leap2") > 20) {
+                    && age - tag.m_128454_("dmz_ad_leap2") > kitCd(mob, 20)) {
                 tag.m_128356_("dmz_ad_leap2", age);
                 mob.m_5997_(0, 0.25, 0);
             }
@@ -360,9 +360,9 @@ public final class EnemyEvolution {
             mob.m_21573_().m_5624_(target, power >= DifficultyTier.GOD.ordinalPower() ? 1.55 : 1.35);
         }
 
-        // Ground slam — Advanced+; more frequent Impossible+
-        int slamEvery = power >= DifficultyTier.IMPOSSIBLE.ordinalPower() ? 35
-                : power >= DifficultyTier.DIVINE.ordinalPower() ? 50 : 70;
+        // Ground slam — Advanced+; more frequent Impossible+ / vs tanks
+        long slamEvery = kitCd(mob, power >= DifficultyTier.IMPOSSIBLE.ordinalPower() ? 35
+                : power >= DifficultyTier.DIVINE.ordinalPower() ? 50 : 70);
         if (dist < 3.5 && power >= DifficultyTier.ADVANCED.ordinalPower() && age % slamEvery == 0) {
             int amp = power >= DifficultyTier.OMEGA.ordinalPower() ? 2 : 1;
             groundSlam(mob, target, 3.0 + Math.min(2.0, power * 0.1), amp);
@@ -402,22 +402,22 @@ public final class EnemyEvolution {
 
         // Global gap between ANY skeleton ki shot (tick kits + arrow-replace share this).
         // High tiers stay threatening without stunlocking players in place.
-        if (!skeletonKiReady(tag, age, tier)) {
+        if (!skeletonKiReady(mob, tag, age, tier)) {
             return;
         }
 
-        // Per-ability cooldowns — intentionally longer than older builds (was as low as 14 ticks).
-        long chargedCd = power >= DifficultyTier.ZENITH.ordinalPower() ? 100
+        // Per-ability cooldowns — tightened vs ki / high-PWR counter targets.
+        long chargedCd = kitCd(mob, power >= DifficultyTier.ZENITH.ordinalPower() ? 100
                 : power >= DifficultyTier.OMEGA.ordinalPower() ? 120
-                : power >= DifficultyTier.IMPOSSIBLE.ordinalPower() ? 140 : 160;
-        long beamCd = power >= DifficultyTier.MYTHIC.ordinalPower() ? 80
-                : power >= DifficultyTier.DIVINE.ordinalPower() ? 95 : 115;
-        long laserCd = power >= DifficultyTier.GOD.ordinalPower() ? 55
-                : power >= DifficultyTier.LEGENDARY.ordinalPower() ? 70 : 90;
-        long blastCd = power >= DifficultyTier.TRANSCENDENT.ordinalPower() ? 40
-                : power >= DifficultyTier.MASTER.ordinalPower() ? 50 : 65;
-        long barrageCd = power >= DifficultyTier.ZENITH.ordinalPower() ? 140
-                : power >= DifficultyTier.OMEGA.ordinalPower() ? 160 : 180;
+                : power >= DifficultyTier.IMPOSSIBLE.ordinalPower() ? 140 : 160);
+        long beamCd = kitCd(mob, power >= DifficultyTier.MYTHIC.ordinalPower() ? 80
+                : power >= DifficultyTier.DIVINE.ordinalPower() ? 95 : 115);
+        long laserCd = kitCd(mob, power >= DifficultyTier.GOD.ordinalPower() ? 55
+                : power >= DifficultyTier.LEGENDARY.ordinalPower() ? 70 : 90);
+        long blastCd = kitCd(mob, power >= DifficultyTier.TRANSCENDENT.ordinalPower() ? 40
+                : power >= DifficultyTier.MASTER.ordinalPower() ? 50 : 65);
+        long barrageCd = kitCd(mob, power >= DifficultyTier.ZENITH.ordinalPower() ? 140
+                : power >= DifficultyTier.OMEGA.ordinalPower() ? 160 : 180);
 
         if (power >= DifficultyTier.MASTER.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_ki_charged") >= chargedCd
@@ -465,28 +465,36 @@ public final class EnemyEvolution {
     }
 
     /** Minimum ticks between any skeleton ki projectile (shared by kits + arrow replace). */
-    private static long skeletonShotGap(DifficultyTier tier) {
+    private static long skeletonShotGap(LivingEntity entity, DifficultyTier tier) {
         int power = tier == null ? 0 : tier.ordinalPower();
+        long base;
         if (power >= DifficultyTier.ZENITH.ordinalPower()) {
-            return 28L;
+            base = 28L;
+        } else if (power >= DifficultyTier.MYTHIC.ordinalPower()) {
+            base = 32L;
+        } else if (power >= DifficultyTier.GOD.ordinalPower()) {
+            base = 36L;
+        } else if (power >= DifficultyTier.MASTER.ordinalPower()) {
+            base = 40L;
+        } else {
+            base = 45L;
         }
-        if (power >= DifficultyTier.MYTHIC.ordinalPower()) {
-            return 32L;
-        }
-        if (power >= DifficultyTier.GOD.ordinalPower()) {
-            return 36L;
-        }
-        if (power >= DifficultyTier.MASTER.ordinalPower()) {
-            return 40L;
-        }
-        return 45L;
+        return kitCd(entity, base);
     }
 
-    private static boolean skeletonKiReady(CompoundTag tag, long age, DifficultyTier tier) {
+    private static boolean skeletonKiReady(
+            LivingEntity entity, CompoundTag tag, long age, DifficultyTier tier
+    ) {
         if (tag == null) {
             return false;
         }
-        return age - tag.m_128454_("dmz_ad_ki_shot") >= skeletonShotGap(tier);
+        return age - tag.m_128454_("dmz_ad_ki_shot") >= skeletonShotGap(entity, tier);
+    }
+
+    /** Apply stamped class/race/top-stat counter cadence (&lt;1 = more aggressive kits). */
+    private static long kitCd(LivingEntity entity, long baseTicks) {
+        double scale = MobScaling.counterKitCooldownScale(entity);
+        return Math.max(8L, Math.round(Math.max(1L, baseTicks) * scale));
     }
 
     private static void markSkeletonKiShot(CompoundTag tag, long age, String abilityKey) {
@@ -651,12 +659,12 @@ public final class EnemyEvolution {
         }
 
         // Shared ki gap with vanilla fireball replace — prevents kit + projectile double-dump.
-        if (!blazeKiReady(tag, age, tier)) {
+        if (!blazeKiReady(blaze, tag, age, tier)) {
             return;
         }
 
         if (tier.ordinalPower() >= DifficultyTier.AWAKENED.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_barrage") >= 85
+                && age - tag.m_128454_("dmz_ad_ki_barrage") >= kitCd(blaze, 85)
                 && dist < 18.0f) {
             int shots = 2 + Math.min(1, tier.ordinalPower() / 5);
             if (KiAttackHelper.fireKiBarrage(blaze, target, tier, shots, true) > 0) {
@@ -665,7 +673,7 @@ public final class EnemyEvolution {
             }
         }
         if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_blast") >= 70
+                && age - tag.m_128454_("dmz_ad_ki_blast") >= kitCd(blaze, 70)
                 && dist < 20.0f) {
             if (KiAttackHelper.fireKiBlast(blaze, target, tier, true)) {
                 markBlazeKiShot(tag, age, "dmz_ad_ki_blast");
@@ -673,7 +681,7 @@ public final class EnemyEvolution {
             }
         }
         if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_explode") >= 120
+                && age - tag.m_128454_("dmz_ad_explode") >= kitCd(blaze, 120)
                 && dist < 16.0f) {
             if (KiAttackHelper.fireExplosionBlast(blaze, target, tier)) {
                 markBlazeKiShot(tag, age, "dmz_ad_explode");
@@ -682,22 +690,25 @@ public final class EnemyEvolution {
         // Intentionally no per-tick ignite — burning is applied by successful ki hits only.
     }
 
-    private static long blazeKiGap(DifficultyTier tier) {
+    private static long blazeKiGap(LivingEntity entity, DifficultyTier tier) {
         int power = tier == null ? 0 : tier.ordinalPower();
+        long base;
         if (power >= DifficultyTier.ZENITH.ordinalPower()) {
-            return 30L;
+            base = 30L;
+        } else if (power >= DifficultyTier.GOD.ordinalPower()) {
+            base = 36L;
+        } else if (power >= DifficultyTier.MASTER.ordinalPower()) {
+            base = 42L;
+        } else {
+            base = 48L;
         }
-        if (power >= DifficultyTier.GOD.ordinalPower()) {
-            return 36L;
-        }
-        if (power >= DifficultyTier.MASTER.ordinalPower()) {
-            return 42L;
-        }
-        return 48L;
+        return kitCd(entity, base);
     }
 
-    private static boolean blazeKiReady(CompoundTag tag, long age, DifficultyTier tier) {
-        return tag != null && age - tag.m_128454_("dmz_ad_ki_shot") >= blazeKiGap(tier);
+    private static boolean blazeKiReady(
+            LivingEntity entity, CompoundTag tag, long age, DifficultyTier tier
+    ) {
+        return tag != null && age - tag.m_128454_("dmz_ad_ki_shot") >= blazeKiGap(entity, tier);
     }
 
     private static void markBlazeKiShot(CompoundTag tag, long age, String abilityKey) {
@@ -974,13 +985,13 @@ public final class EnemyEvolution {
         if (shooter instanceof AbstractSkeleton) {
             CompoundTag tag = PersistentDataAccess.get(shooter);
             long age = shooter.f_19797_;
-            if (!skeletonKiReady(tag, age, tier)) {
+            if (!skeletonKiReady(shooter, tag, age, tier)) {
                 // Eat the arrow — do not fall back to unlimited vanilla/ki hybrid spam.
                 return true;
             }
             boolean burning = tier.ordinalPower() >= DifficultyTier.GOD.ordinalPower();
             boolean laserOk = tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
-                    && age - tag.m_128454_("dmz_ad_ki_laser") >= 55L;
+                    && age - tag.m_128454_("dmz_ad_ki_laser") >= kitCd(shooter, 55L);
             boolean fired = false;
             if (laserOk && ThreadLocalRandom.current().nextDouble() < 0.28) {
                 fired = KiAttackHelper.fireKiLaser(shooter, target, tier);
@@ -1000,7 +1011,7 @@ public final class EnemyEvolution {
         if (shooter instanceof Blaze) {
             CompoundTag tag = PersistentDataAccess.get(shooter);
             long age = shooter.f_19797_;
-            if (!blazeKiReady(tag, age, tier)) {
+            if (!blazeKiReady(shooter, tag, age, tier)) {
                 // Eat the vanilla fireball — do not stack with kit barrage.
                 return true;
             }

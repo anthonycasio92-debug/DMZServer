@@ -205,6 +205,7 @@ public final class ForgeBridge {
             out.put("personal_enabled", personalOn ? "true" : "false");
             out.put("personal_status", personalOn ? "ON" : "OFF");
             out.put("coin_drop_chat", coinChatOn ? "true" : "false");
+            putCounterPlaceholders(out, nms);
 
             // UnlockTier 1–7 — level-scaled activation costs.
             if (unlockTierValues != null && economyFormatExactCost != null) {
@@ -285,6 +286,39 @@ public final class ForgeBridge {
         } catch (Throwable ignored) {
         }
         return 0L;
+    }
+
+    /** Class / race / top-3-stat counter identity for staff GUI + PAPI. */
+    private static void putCounterPlaceholders(Map<String, String> out, Object nms) {
+        out.putIfAbsent("fighting_class", "");
+        out.putIfAbsent("race", "");
+        out.putIfAbsent("fighting_style", "HYBRID");
+        out.putIfAbsent("top_stats", "—");
+        out.putIfAbsent("weak_stat", "NONE");
+        if (nms == null) {
+            return;
+        }
+        try {
+            ensureResolved(nms.getClass().getClassLoader());
+            Class<?> profileCls = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile",
+                    nms.getClass().getClassLoader());
+            Object profile = profileCls.getMethod("of", serverPlayerCls).invoke(null, nms);
+            if (profile == null) {
+                return;
+            }
+            Object cls = profileCls.getField("fightingClass").get(profile);
+            Object race = profileCls.getField("race").get(profile);
+            Object style = profileCls.getField("style").get(profile);
+            Object weak = profileCls.getField("weakest").get(profile);
+            Object topLabel = profileCls.getMethod("topStatsLabel").invoke(profile);
+            out.put("fighting_class", cls == null ? "" : String.valueOf(cls));
+            out.put("race", race == null ? "" : String.valueOf(race));
+            out.put("fighting_style", style == null ? "HYBRID" : String.valueOf(style));
+            out.put("weak_stat", weak == null ? "NONE" : String.valueOf(weak));
+            out.put("top_stats", topLabel == null ? "—" : String.valueOf(topLabel));
+        } catch (Throwable ignored) {
+        }
     }
 
     private static void putCoinCounts(Map<String, String> out, Object nms) {
@@ -1137,7 +1171,23 @@ public final class ForgeBridge {
                 Map.entry("nearbyscaleinterval", "nearbyScaleIntervalTicks"),
                 Map.entry("maxscaledmobsperplayer", "maxScaledMobsPerPlayer"),
                 Map.entry("nearbyscalebudgetperplayer", "maxScaledMobsPerPlayer"),
-                Map.entry("tiercostleveldivisor", "tierCostLevelDivisor")
+                Map.entry("tiercostleveldivisor", "tierCostLevelDivisor"),
+                Map.entry("enableclasscounters", "enableClassCounters"),
+                Map.entry("classcounters", "enableClassCounters"),
+                Map.entry("enablestrongstatcounters", "enableStrongStatCounters"),
+                Map.entry("strongstatcounters", "enableStrongStatCounters"),
+                Map.entry("topstatcounters", "enableStrongStatCounters"),
+                Map.entry("strongstatcountermult", "strongStatCounterMult"),
+                Map.entry("strongcounter", "strongStatCounterMult"),
+                Map.entry("topstatmult", "strongStatCounterMult"),
+                Map.entry("classcounterdamagemult", "classCounterDamageMult"),
+                Map.entry("classdmg", "classCounterDamageMult"),
+                Map.entry("classcounterhealthmult", "classCounterHealthMult"),
+                Map.entry("classhp", "classCounterHealthMult"),
+                Map.entry("classcounterarmormult", "classCounterArmorMult"),
+                Map.entry("classarmor", "classCounterArmorMult"),
+                Map.entry("racecountermult", "raceCounterMult"),
+                Map.entry("racemult", "raceCounterMult")
         );
         String fieldName = aliases.getOrDefault(k, key);
         try {
@@ -1203,7 +1253,8 @@ public final class ForgeBridge {
                  "weakStatCounterMult", "weakDefensePierceMult",
                  "tankDamageDefenseRatio", "tankDamageHealthRatio",
                  "specializationDamageTax",
-                 "enableClassCounters", "classCounterDamageMult",
+                 "enableClassCounters", "enableStrongStatCounters",
+                 "strongStatCounterMult", "classCounterDamageMult",
                  "classCounterHealthMult", "classCounterArmorMult", "raceCounterMult",
                  "defenseToArmorFactor",
                  "nearbyScaleIntervalTicks", "maxScaledMobsPerPlayer",

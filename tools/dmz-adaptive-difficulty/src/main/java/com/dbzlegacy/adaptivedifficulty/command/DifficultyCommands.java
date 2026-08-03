@@ -749,6 +749,12 @@ public final class DifficultyCommands {
                         cfg.enableClassCounters = Boolean.parseBoolean(value)
                                 || "on".equalsIgnoreCase(value)
                                 || "true".equalsIgnoreCase(value);
+                case "enablestrongstatcounters", "strongstatcounters", "topstatcounters" ->
+                        cfg.enableStrongStatCounters = Boolean.parseBoolean(value)
+                                || "on".equalsIgnoreCase(value)
+                                || "true".equalsIgnoreCase(value);
+                case "strongstatcountermult", "strongcounter", "topstatmult" ->
+                        cfg.strongStatCounterMult = Math.max(1.0, Math.min(3.0, Double.parseDouble(value)));
                 case "classcounterdamagemult", "classdmg" ->
                         cfg.classCounterDamageMult = Math.max(1.0, Math.min(3.0, Double.parseDouble(value)));
                 case "classcounterhealthmult", "classhp" ->

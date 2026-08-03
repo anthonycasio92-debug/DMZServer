@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
@@ -257,17 +258,24 @@ public final class DifficultyChatMenu {
             return;
         }
         DifficultySnapshot snap = DifficultyCache.refresh(player);
+        PlayerCombatProfile profile = PlayerCombatProfile.of(player);
         send(player, Component.m_237113_("§8── §fDetails §8(staff) ──"));
         send(player, Component.m_237113_("§7Tier §f" + snap.activeTierName
                 + "  §8·  §7State §" + snap.stateColorCode() + snap.state()));
         send(player, Component.m_237113_("§7Combat Rating §f" + snap.combatRating
                 + "  §8·  §7DMZ §f" + snap.dmzLevel
                 + "  §8·  §7Prestige §f" + snap.prestige));
+        send(player, Component.m_237113_("§7Class §f"
+                + (profile.fightingClass.isBlank() ? "?" : profile.fightingClass)
+                + "  §8·  §7Race §f" + (profile.race.isBlank() ? "?" : profile.race)
+                + "  §8·  §7Style §f" + profile.style.name()));
+        send(player, Component.m_237113_("§7Top stats §f" + profile.topStatsLabel()
+                + "  §8·  §7Weak §f" + profile.weakest.name()));
         send(player, Component.m_237113_("§7Unlocked §fT" + snap.highestUnlockedTier
                 + "  §8·  §7Title §e" + TitleSystem.activeDisplay(player)));
         send(player, Component.m_237113_("§6Ancient Coins §f" + AncientCoinEconomy.inventoryBreakdown(player)));
         send(player, Component.m_237113_(
-                "§8Kits T1→T7 · T4 elite · T5 mutation · T6 boss · Teams WIP"));
+                "§8Counters: class · race · top-3 stats · kits cadence"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 

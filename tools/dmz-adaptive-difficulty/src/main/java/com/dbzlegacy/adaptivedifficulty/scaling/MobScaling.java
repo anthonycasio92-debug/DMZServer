@@ -59,6 +59,12 @@ public final class MobScaling {
     /** Fingerprint of the player combat profile this mob was last scaled to. */
     public static final String TAG_PROFILE_SIG = "dmz_ad_profile_sig";
     public static final String TAG_TIER_PERCENT = "dmz_ad_tier_pct";
+    /** Stamped fighting class / race / style / top stats for kit counter cadence. */
+    public static final String TAG_COUNTER_CLASS = "dmz_ad_counter_class";
+    public static final String TAG_COUNTER_RACE = "dmz_ad_counter_race";
+    public static final String TAG_COUNTER_STYLE = "dmz_ad_counter_style";
+    public static final String TAG_COUNTER_TOP = "dmz_ad_counter_top";
+    public static final String TAG_COUNTER_KIT_CD = "dmz_ad_counter_kit_cd";
     /** Mob is owned by another system (saga/quest/spawner/SDD) — never AD-convert. */
     public static final String TAG_EXEMPT = "dmz_ad_exempt";
     /** Stamped at FinalizeSpawn when {@code MobSpawnType.SPAWNER}. */
@@ -510,6 +516,7 @@ public final class MobScaling {
             tag.m_128350_(TAG_DMG_MULT, 1.0f);
             tag.m_128379_(TAG_ATTR_DMG_SCALED, false);
             tag.m_128405_("dmz_ad_unlock_tier", 0);
+            clearCounterIdentity(tag);
             APPLIED_PROFILE.remove(entity.m_20148_());
             // Leave-area / personal-off / logout: drop rarity nameplates + identity so the
             // hostile is a normal mob again. Bases + rarity_rolled stay for a clean reclaim.
@@ -775,6 +782,8 @@ public final class MobScaling {
 
         tag.m_128405_("dmz_ad_unlock_tier", profile.activeTier);
         tag.m_128350_(TAG_TIER_PERCENT, (float) profile.tierPercent);
+        // Counter identity — class / race / top-3 stats for kit cadence + debug.
+        stampCounterIdentity(tag, profile, cfg);
         // Keep TAG_DIFFICULTY as a readable proxy for AI/evolution curves.
         long proxyDifficulty = Math.max(1L, Math.round(profile.offense * profile.tierPercent));
         tag.m_128356_(TAG_DIFFICULTY, proxyDifficulty);
@@ -789,6 +798,47 @@ public final class MobScaling {
         tag.m_128350_(TAG_DMG_MULT, (float) Math.max(1.0, rarityDamage));
         APPLIED_PROFILE.put(entity.m_20148_(), profile.signature);
         pruneProfileCache();
+    }
+
+    private static void stampCounterIdentity(
+            CompoundTag tag, PlayerCombatProfile profile, DifficultyConfig cfg
+    ) {
+        if (tag == null || profile == null || !PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
+        tag.m_128359_(TAG_COUNTER_CLASS, profile.fightingClass == null ? "" : profile.fightingClass);
+        tag.m_128359_(TAG_COUNTER_RACE, profile.race == null ? "" : profile.race);
+        tag.m_128359_(TAG_COUNTER_STYLE, profile.style == null ? "HYBRID" : profile.style.name());
+        tag.m_128359_(TAG_COUNTER_TOP, profile.topStatsLabel());
+        float kitCd = (float) profile.kitCooldownScale(cfg == null ? DifficultyConfig.get() : cfg);
+        tag.m_128350_(TAG_COUNTER_KIT_CD, kitCd);
+    }
+
+    private static void clearCounterIdentity(CompoundTag tag) {
+        if (tag == null || !PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
+        tag.m_128473_(TAG_COUNTER_CLASS);
+        tag.m_128473_(TAG_COUNTER_RACE);
+        tag.m_128473_(TAG_COUNTER_STYLE);
+        tag.m_128473_(TAG_COUNTER_TOP);
+        tag.m_128473_(TAG_COUNTER_KIT_CD);
+    }
+
+    /** Kit cooldown multiplier stamped from the claiming player's counter profile (&lt;1 = faster kits). */
+    public static double counterKitCooldownScale(LivingEntity entity) {
+        if (entity == null) {
+            return 1.0;
+        }
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (tag == null || !tag.m_128441_(TAG_COUNTER_KIT_CD)) {
+            return 1.0;
+        }
+        double scale = tag.m_128457_(TAG_COUNTER_KIT_CD);
+        if (!(scale > 0.0) || Double.isNaN(scale) || Double.isInfinite(scale)) {
+            return 1.0;
+        }
+        return Math.max(0.55, Math.min(1.0, scale));
     }
 
     private static void pruneProfileCache() {

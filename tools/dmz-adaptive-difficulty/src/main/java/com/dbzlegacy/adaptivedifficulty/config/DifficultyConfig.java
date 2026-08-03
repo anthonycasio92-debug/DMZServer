@@ -290,14 +290,21 @@ public final class DifficultyConfig {
      * (warrior, spiritualist, tank, …) — not only raw stat dumps.
      */
     public boolean enableClassCounters = true;
+    /**
+     * When true, mobs also counter the player's highest 3 invested combat stats
+     * (STR / SKP / RES / VIT / PWR) — denser HP vs DPS peaks, pierce vs RES/VIT peaks.
+     */
+    public boolean enableStrongStatCounters = true;
+    /** Strength of top-3-stat counter overlays (1.0 = off effect, higher = harder). */
+    public double strongStatCounterMult = 1.28;
     /** Extra mob damage vs the player's fighting style (class overlay). */
     public double classCounterDamageMult = 1.22;
     /** Extra mob HP vs glass / caster / ki classes. */
     public double classCounterHealthMult = 1.18;
     /** Extra mob armor vs melee / strike classes. */
     public double classCounterArmorMult = 1.20;
-    /** Mild race overlay on top of class counters (regen / glass races). */
-    public double raceCounterMult = 1.08;
+    /** Race overlay on top of class counters (regen / glass / transform races). */
+    public double raceCounterMult = 1.12;
     /** Converts DMZ defense share into vanilla armor points: log1p(def) × factor. */
     public double defenseToArmorFactor = 2.5;
     /** Server ticks between nearby-player mob rescale pulses (per-player stagger). */
@@ -808,6 +815,12 @@ public final class DifficultyConfig {
         }
         if (cfg.classCounterArmorMult > 3.0) {
             cfg.classCounterArmorMult = 3.0;
+        }
+        if (cfg.strongStatCounterMult < 1.0) {
+            cfg.strongStatCounterMult = 1.28;
+        }
+        if (cfg.strongStatCounterMult > 3.0) {
+            cfg.strongStatCounterMult = 3.0;
         }
         if (cfg.raceCounterMult < 1.0) {
             cfg.raceCounterMult = 1.0;

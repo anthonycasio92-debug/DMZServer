@@ -331,14 +331,20 @@ public final class CmiDifficultyGui {
         ));
         gui.addButton(core);
 
-        CMIGuiButton team = new CMIGuiButton(13, Material.COMPASS, "&8&lTeams (WIP)");
-        team.lockField();
-        team.addLore(List.of(
+        CMIGuiButton counters = new CMIGuiButton(13, Material.IRON_SWORD, "&c&lCounters");
+        counters.lockField();
+        counters.addLore(List.of(
                 "",
-                "&7Not available yet.",
-                "&ePersonal difficulty only."
+                "&7Class &f" + blankAsNone(ph.getOrDefault("fighting_class", "")),
+                "&7Race  &f" + blankAsNone(ph.getOrDefault("race", "")),
+                "&7Style &f" + ph.getOrDefault("fighting_style", "HYBRID"),
+                "",
+                "&7Top stats &f" + ph.getOrDefault("top_stats", "—"),
+                "&7Weak     &f" + ph.getOrDefault("weak_stat", "NONE"),
+                "",
+                "&8Mobs counter class, race, and top 3 stats"
         ));
-        gui.addButton(team);
+        gui.addButton(counters);
 
         CMIGuiButton account = new CMIGuiButton(15, Material.GOLD_INGOT, "&f&lAncient Coins");
         account.lockField();

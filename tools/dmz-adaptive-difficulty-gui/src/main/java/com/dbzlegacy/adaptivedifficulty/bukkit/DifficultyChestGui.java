@@ -281,10 +281,16 @@ public final class DifficultyChestGui implements Listener {
                 "&7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"),
                 "&7Title &e" + blankAsNone(ph.getOrDefault("active_title", ""))
         )));
-        inv.setItem(13, item(Material.COMPASS, "&8&lTeams (WIP)", List.of(
+        inv.setItem(13, item(Material.IRON_SWORD, "&c&lCounters", List.of(
                 "",
-                "&7Not available yet.",
-                "&ePersonal difficulty only."
+                "&7Class &f" + blankAsNone(ph.getOrDefault("fighting_class", "")),
+                "&7Race  &f" + blankAsNone(ph.getOrDefault("race", "")),
+                "&7Style &f" + ph.getOrDefault("fighting_style", "HYBRID"),
+                "",
+                "&7Top stats &f" + ph.getOrDefault("top_stats", "—"),
+                "&7Weak     &f" + ph.getOrDefault("weak_stat", "NONE"),
+                "",
+                "&8Mobs counter class, race, and top 3 stats"
         )));
         List<String> coins = new ArrayList<>();
         coins.add("");
