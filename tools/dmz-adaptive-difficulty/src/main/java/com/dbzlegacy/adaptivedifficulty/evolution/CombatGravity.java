@@ -152,14 +152,20 @@ public final class CombatGravity {
     /** Same curve used by Enderman / Warden kits. */
     public static double gravityFor(Mob mob, DifficultyTier tier, long difficulty, double mult) {
         double base = 10.0 + tier.ordinalPower() * 8.0;
-        base += Math.min(80.0, difficulty / 40.0);
+        // Soft proxy add — tier% below gates the final amount so T2 ≠ max chamber.
+        base += Math.min(40.0, difficulty / 80.0);
         if (EliteSystem.isElite(mob)) {
-            base *= 1.35;
-        }
-        if (MutationSystem.get(mob) == MutationType.GRAVITY_ENDERMAN) {
             base *= 1.25;
         }
-        return Math.max(8.0, base * mult);
+        if (MutationSystem.get(mob) == MutationType.GRAVITY_ENDERMAN) {
+            base *= 1.20;
+        }
+        double tierPct = com.dbzlegacy.adaptivedifficulty.scaling.MobScaling.tierPercentOf(mob);
+        // Full gravity force from ~50% ladder up; T2 20% ≈ 40% of base chamber.
+        double tierScale = tierPct > 0.0
+                ? Math.max(0.15, Math.min(1.0, tierPct / 0.50))
+                : 0.35;
+        return Math.max(4.0, base * mult * tierScale);
     }
 
     public static void clearPlayer(ServerPlayer player) {

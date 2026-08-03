@@ -366,12 +366,30 @@ public final class KiAttackHelper {
      */
     private static float baseDamage(Mob shooter, DifficultyTier tier, float skillRatio) {
         float atk = readScaledAttack(shooter);
-        float ratio = Math.max(0.25f, skillRatio);
-        float tierSpice = 1.0f + Math.max(0, tier.ordinalPower()) * 0.025f;
+        float ratio = Math.max(0.25f, skillRatio) * earlyKitRatioScale(shooter, tier);
+        float tierSpice = 1.0f + Math.max(0, tier.ordinalPower()) * 0.018f;
         float dmg = atk * ratio * tierSpice;
         // Soft ceiling vs the mob's own melee so barrages cannot outpace a punch train.
-        float ceiling = Math.max(atk * 2.25f, atk + 50.0f);
-        return Math.max(8.0f, Math.min(ceiling, dmg));
+        float ceiling = Math.max(atk * 1.65f, atk + 25.0f);
+        // Floor scales with painted attack — avoid a hard 8 that overshoots tiny early kits.
+        float floor = Math.max(2.0f, Math.min(8.0f, atk * 0.20f));
+        return Math.max(floor, Math.min(ceiling, dmg));
+    }
+
+    /** Soften kiblast ratios on early unlock / kit bands so T1–T2 ≠ melee-parity barrages. */
+    private static float earlyKitRatioScale(Mob shooter, DifficultyTier tier) {
+        int unlock = MobScaling.unlockTierOf(shooter);
+        if (unlock > 0 && unlock <= 2) {
+            return 0.60f;
+        }
+        if (unlock == 3) {
+            return 0.78f;
+        }
+        if (unlock <= 0 && tier != null
+                && tier.ordinalPower() <= DifficultyTier.ENHANCED.ordinalPower()) {
+            return 0.70f;
+        }
+        return 1.0f;
     }
 
     /** Live AD-painted attack, with offense-mult fallback when attrs aren't ready yet. */

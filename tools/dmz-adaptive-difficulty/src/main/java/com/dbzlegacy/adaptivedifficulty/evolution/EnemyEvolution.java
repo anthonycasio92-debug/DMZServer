@@ -230,7 +230,8 @@ public final class EnemyEvolution {
             return;
         }
         float dist = creeper.m_20270_(target);
-        double speed = tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower() ? 1.45 : 1.25;
+        int unlock = MobScaling.unlockTierOf(creeper);
+        double speed = tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower() ? 1.35 : 1.20;
         // Chase earlier than Elite so Awakened+ creepers actually close the gap.
         if (dist < 18.0f) {
             creeper.m_21573_().m_26519_(target.m_20185_(), target.m_20186_(), target.m_20189_(), speed);
@@ -242,9 +243,11 @@ public final class EnemyEvolution {
             }
             creeper.m_32283_(1); // setSwellDir toward explosion
         }
-        // Concept §11 Tracking Explosion — keep pathing to the player while swelling.
-        if (creeper.m_32311_() && dist < 22.0f && target.m_6084_()) {
-            double trackSpeed = speed + (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower() ? 0.35 : 0.15);
+        // Tracking while swelling — Elite kits / T4+ only (early tiers fuse in place).
+        boolean track = unlock >= 4
+                || tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower();
+        if (track && creeper.m_32311_() && dist < 22.0f && target.m_6084_()) {
+            double trackSpeed = speed + (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower() ? 0.30 : 0.10);
             creeper.m_21573_().m_26519_(target.m_20185_(), target.m_20186_(), target.m_20189_(), trackSpeed);
             creeper.m_6710_(target);
         }
@@ -253,6 +256,7 @@ public final class EnemyEvolution {
     /**
      * Final boom only when the creeper did <b>not</b> already explode (fuse / other blast).
      * Fuse detonation kills via explosion damage — stacking another blast was near-instant death.
+     * Gated to Advanced+ kits so T1–T3 sword kills do not chain a second nuke.
      */
     public static void onCreeperDeath(Creeper creeper, DamageSource source) {
         if (creeper == null || creeper.m_9236_().f_46443_) {
@@ -264,7 +268,8 @@ public final class EnemyEvolution {
         }
         long difficulty = MobScaling.difficultyOf(creeper);
         DifficultyTier tier = resolveAbilityTier(creeper, difficulty, EliteSystem.isElite(creeper));
-        if (tier.ordinalPower() < DifficultyTier.AWAKENED.ordinalPower()) {
+        int unlock = MobScaling.unlockTierOf(creeper);
+        if (tier.ordinalPower() < DifficultyTier.ADVANCED.ordinalPower() && unlock < 4) {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(creeper);
@@ -272,16 +277,19 @@ public final class EnemyEvolution {
             return;
         }
         tag.m_128379_("dmz_ad_final_boom", true);
-        float power = creeperExplosionPower(tier, difficulty);
+        float power = creeperExplosionPower(creeper, tier);
         if (creeper.m_9236_() instanceof ServerLevel level) {
             level.m_254849_(creeper, creeper.m_20185_(), creeper.m_20186_(), creeper.m_20189_(),
                     power, Level.ExplosionInteraction.MOB);
         }
     }
 
-    private static float creeperExplosionPower(DifficultyTier tier, long difficulty) {
-        float power = 3.5f + tier.ordinalPower() * 0.65f + (float) Math.min(6.0, difficulty / 200.0);
-        return Math.min(12.0f, power);
+    private static float creeperExplosionPower(Creeper creeper, DifficultyTier tier) {
+        double tierPct = MobScaling.tierPercentOf(creeper);
+        int unlock = MobScaling.unlockTierOf(creeper);
+        float power = 3.0f + Math.max(0, tier.ordinalPower()) * 0.35f + (float) (tierPct * 3.0);
+        float cap = unlock <= 2 ? 4.0f : unlock <= 4 ? 6.5f : unlock <= 6 ? 8.5f : 10.0f;
+        return Math.min(cap, power);
     }
 
     private static void scaleCreeperBlast(Creeper creeper, DifficultyTier tier, long difficulty) {
@@ -290,17 +298,24 @@ public final class EnemyEvolution {
             return;
         }
         tag.m_128379_("dmz_ad_blast_scaled", true);
+        int unlock = MobScaling.unlockTierOf(creeper);
         int bonus = Math.max(0, tier.ordinalPower() - DifficultyTier.AWAKENED.ordinalPower());
-        bonus += (int) Math.min(8, difficulty / 500);
+        // Soft proxy bonus — early unlocks stay near vanilla radius/fuse.
+        if (unlock >= 4) {
+            bonus += (int) Math.min(4, difficulty / 1000);
+        }
         if (CREEPER_RADIUS == null || CREEPER_SWELL == null) {
             return;
         }
         try {
             int base = Math.max(3, CREEPER_RADIUS.getInt(creeper));
-            CREEPER_RADIUS.setInt(creeper, Math.min(12, base + Math.min(6, bonus / 2) + 1));
+            int radiusCap = unlock <= 2 ? 5 : unlock <= 4 ? 8 : 11;
+            int radiusAdd = unlock <= 2 ? Math.min(1, bonus / 3) : Math.min(5, bonus / 2);
+            CREEPER_RADIUS.setInt(creeper, Math.min(radiusCap, base + radiusAdd));
             int maxSwell = CREEPER_SWELL.getInt(creeper);
+            int fuseCut = unlock <= 2 ? Math.min(6, bonus + 2) : Math.min(14, bonus + 4);
             // Higher difficulty → faster fuse (vanilla default 30).
-            CREEPER_SWELL.setInt(creeper, Math.max(10, maxSwell - Math.min(18, bonus + 4)));
+            CREEPER_SWELL.setInt(creeper, Math.max(unlock <= 2 ? 18 : 12, maxSwell - fuseCut));
         } catch (Throwable ignored) {
         }
     }
@@ -735,7 +750,8 @@ public final class EnemyEvolution {
             return;
         }
 
-        if (tier.ordinalPower() >= DifficultyTier.AWAKENED.ordinalPower()
+        // Large blast starts at Enhanced — Awakened (T1) keeps vanilla fireballs only.
+        if (tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_large") >= kitCd(ghast, 50)
                 && dist < 40.0f) {
             if (KiAttackHelper.fireLargeBlast(ghast, target, tier)) {

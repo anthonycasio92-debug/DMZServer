@@ -272,7 +272,7 @@ public final class PlayerCombatProfile {
         double strength = counterStrength();
         double offenseShare = offense * tierPercent;
         // Early tiers lean on offense share; DEF/HP floors ramp in later.
-        double floorScale = 0.30 + 0.70 * strength;
+        double floorScale = 0.40 + 0.60 * strength;
         double defFloor = defense * tierPercent * Math.max(0.0, cfg.tankDamageDefenseRatio) * floorScale;
         double hpFloor = maxHealth * tierPercent * Math.max(0.0, cfg.tankDamageHealthRatio) * floorScale;
         // Class tanks always get the floor treatment even with "even" invested stats.
@@ -652,8 +652,8 @@ public final class PlayerCombatProfile {
         h = mix(h, Math.round(cfg.mobHealthScale * 1000.0));
         h = mix(h, cfg.enableClassCounters ? 1L : 0L);
         h = mix(h, cfg.enableStrongStatCounters ? 1L : 0L);
-        // Formula revision: early-tier counter/pierce ramp + softer kit cadence.
-        h = mix(h, 8L);
+        // Formula revision: balance pass — HP scale / pierce / early kit soft.
+        h = mix(h, 9L);
         return h;
     }
 

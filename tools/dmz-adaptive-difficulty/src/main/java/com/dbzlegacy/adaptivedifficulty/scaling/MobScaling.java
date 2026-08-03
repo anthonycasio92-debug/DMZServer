@@ -111,6 +111,31 @@ public final class MobScaling {
         return tag.m_128441_(TAG_DIFFICULTY) ? tag.m_128454_(TAG_DIFFICULTY) : 0L;
     }
 
+    /** Stamped unlock-tier ladder percent (0.10–0.90). 0 when unscaled. */
+    public static double tierPercentOf(LivingEntity entity) {
+        if (entity == null) {
+            return 0.0;
+        }
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (!tag.m_128441_(TAG_TIER_PERCENT)) {
+            return 0.0;
+        }
+        float pct = tag.m_128457_(TAG_TIER_PERCENT); // getFloat — stamped via putFloat
+        if (!(pct > 0.0f) || Float.isNaN(pct) || Float.isInfinite(pct)) {
+            return 0.0;
+        }
+        return Math.max(0.0, Math.min(4.0, pct));
+    }
+
+    /** Buy-tier id stamped on claim (1–7). 0 when unknown. */
+    public static int unlockTierOf(LivingEntity entity) {
+        if (entity == null) {
+            return 0;
+        }
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        return tag.m_128441_("dmz_ad_unlock_tier") ? Math.max(0, tag.m_128451_("dmz_ad_unlock_tier")) : 0;
+    }
+
     /**
      * Saga/quest (DMZ), vanilla cage spawners, SDD Advanced Spawner mobs, and the
      * Ender Dragon keep their own difficulty — AD must not convert them.
@@ -795,9 +820,9 @@ public final class MobScaling {
             tag.m_128359_("dmz_ad_ability_tier", kit.display);
         }
         tag.m_128356_(TAG_PROFILE_SIG, profile.signature);
-        // Hurt-event path: absolute attack already set — keep mult at 1 for melee;
-        // projectiles still get a modest boost from TAG_DMG_MULT when needed.
-        tag.m_128350_(TAG_DMG_MULT, (float) Math.max(1.0, rarityDamage));
+        // Rarity is already baked into ATTACK_DAMAGE / HP — keep hurt mult at 1 so
+        // elite/boss indirect hits do not double-apply rarityDamage.
+        tag.m_128350_(TAG_DMG_MULT, 1.0f);
         APPLIED_PROFILE.put(entity.m_20148_(), profile.signature);
         pruneProfileCache();
     }
@@ -1031,14 +1056,26 @@ public final class MobScaling {
         if (isExemptFromConversion(attacker)) {
             return amount;
         }
-        // Creeper / mob explosions: soft scale (full offense mult skips or melts these).
+        // Creeper / mob explosions: scale from stamped tier%, not absolute offense proxy.
+        // Old proxy curve easily hit a 500× cap on strong T2 glass characters.
         if (source.m_269533_(DamageTypeTags.f_268415_)) { // IS_EXPLOSION
-            long d = difficultyOf(attacker);
-            if (d <= 0L) {
+            if (!PersistentDataAccess.flag(attacker, TAG_SCALED) && difficultyOf(attacker) <= 0L) {
                 return amount;
             }
-            double boom = 1.0 + ScalingCurves.offenseEffective(d) * 0.003;
-            boom = Math.min(500.0, Math.max(1.0, boom));
+            double tierPct = tierPercentOf(attacker);
+            if (tierPct <= 0.0) {
+                // Unpainted hostiles — leave vanilla explosion damage alone.
+                return amount;
+            }
+            int unlock = unlockTierOf(attacker);
+            // T1 ≈ 1.25× · T2 ≈ 1.50× · T5 ≈ 2.25× · T7 ≈ 3.25× (soft).
+            double boom = 1.0 + tierPct * 2.5;
+            if (unlock > 0 && unlock <= 2) {
+                boom = Math.min(boom, 1.65);
+            } else if (unlock == 3) {
+                boom = Math.min(boom, 2.10);
+            }
+            boom = Math.min(3.50, Math.max(1.0, boom));
             return amount * (float) boom;
         }
         float mult = outgoingDamageMultiplier(attacker);

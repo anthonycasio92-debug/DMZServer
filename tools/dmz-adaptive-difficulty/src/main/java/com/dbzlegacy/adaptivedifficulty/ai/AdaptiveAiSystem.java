@@ -286,10 +286,10 @@ public final class AdaptiveAiSystem {
         return base;
     }
 
-    /** Advanced ~5% → Zenith ~32% (was uncapped scaling that maxed too early). */
+    /** Advanced ~3% → Zenith ~22% (keeps mid-tier fights readable). */
     private static double dodgeChance(DifficultyTier tier) {
         int steps = Math.max(0, tier.ordinalPower() - DifficultyTier.ADVANCED.ordinalPower());
-        return Math.min(0.32, 0.05 + steps * 0.018);
+        return Math.min(0.22, 0.03 + steps * 0.012);
     }
 
     private static double chance(DifficultyTier tier, double min, double max) {

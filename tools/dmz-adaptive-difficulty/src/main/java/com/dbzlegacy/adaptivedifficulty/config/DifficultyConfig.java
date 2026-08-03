@@ -136,7 +136,7 @@ public final class DifficultyConfig {
     public boolean enableElites = true;
     /** Percent chance a claimed T4+ hostile becomes elite (rare). Nameplate only on true rarity. */
     public double eliteChancePercent = 0.75;
-    public double eliteStatMultiplier = 1.75;
+    public double eliteStatMultiplier = 1.50;
     public boolean enableMutations = true;
     /** Percent chance a claimed T5+ hostile mutates. Elites get ×1.35. Nameplate only on true rarity. */
     public double mutationChancePercent = 1.25;
@@ -255,9 +255,9 @@ public final class DifficultyConfig {
     public double unlockTier7EnemyMult = 0.90;
     /**
      * Multiplier on final scaled mob max HP ({@code playerMaxHp × tier% × …}).
-     * Default {@code 0.5} = half of the previous full-match health scaling.
+     * Default {@code 0.65} — early tiers need sponge so fights last more than one punch.
      */
-    public double mobHealthScale = 0.5;
+    public double mobHealthScale = 0.65;
     /**
      * Legacy weak-stat dump multiplier (unused in combat as of 3.3.35).
      * Kept for config/admin compat; default 1.0 = no effect.
@@ -276,9 +276,9 @@ public final class DifficultyConfig {
     public double tankDamageDefenseRatio = 0.55;
     /**
      * Damage floor from player max HP × tier % — presses high-VIT tanks.
-     * Example: 0.015 → mob attack at least 1.5% of (maxHealth × tierPercent).
+     * Example: 0.020 → mob attack at least 2.0% of (maxHealth × tierPercent).
      */
-    public double tankDamageHealthRatio = 0.015;
+    public double tankDamageHealthRatio = 0.020;
     /**
      * One-time: raise soft T1–T3 percents + tank pierce so early difficulty
      * contests high-DEF / low-level players (old 15%/30%/55% + 0.40 floor).
@@ -309,6 +309,10 @@ public final class DifficultyConfig {
      * are not secretly ~DEF pierce + full class/top-stat stacks.
      */
     public Boolean lowTierCounterSoftMigratedV1 = Boolean.FALSE;
+    /**
+     * One-time: balance pass — raise mob HP sponge, soften elite spike, nudge tank HP floor.
+     */
+    public Boolean balanceFeelMigratedV1 = Boolean.FALSE;
     /**
      * Legacy specialization tax (unused in combat as of 3.3.35).
      * Kept for config/admin compat; default 0.0 = no effect.
@@ -864,6 +868,19 @@ public final class DifficultyConfig {
             }
             cfg.lowTierCounterSoftMigratedV1 = Boolean.TRUE;
         }
+        // Balance feel: sponge + elite spike + tank HP floor (3.3.38).
+        if (!Boolean.TRUE.equals(cfg.balanceFeelMigratedV1)) {
+            if (nearly(cfg.mobHealthScale, 0.5)) {
+                cfg.mobHealthScale = 0.65;
+            }
+            if (nearly(cfg.eliteStatMultiplier, 1.75)) {
+                cfg.eliteStatMultiplier = 1.50;
+            }
+            if (nearly(cfg.tankDamageHealthRatio, 0.015) || nearly(cfg.tankDamageHealthRatio, 0.025)) {
+                cfg.tankDamageHealthRatio = 0.020;
+            }
+            cfg.balanceFeelMigratedV1 = Boolean.TRUE;
+        }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
             cfg.guiBackend = "cmi";
         } else {
@@ -916,7 +933,7 @@ public final class DifficultyConfig {
             cfg.ancientCoinUpgradeChance = 0.02;
         }
         if (cfg.mobHealthScale <= 0.0 || cfg.mobHealthScale > 4.0) {
-            cfg.mobHealthScale = 0.5;
+            cfg.mobHealthScale = 0.65;
         }
         if (cfg.weakStatCounterMult < 1.0) {
             cfg.weakStatCounterMult = 1.0;
@@ -928,7 +945,7 @@ public final class DifficultyConfig {
             cfg.tankDamageDefenseRatio = 0.55;
         }
         if (cfg.tankDamageHealthRatio < 0.0) {
-            cfg.tankDamageHealthRatio = 0.015;
+            cfg.tankDamageHealthRatio = 0.020;
         }
         if (cfg.specializationDamageTax < 0.0) {
             cfg.specializationDamageTax = 0.0;
