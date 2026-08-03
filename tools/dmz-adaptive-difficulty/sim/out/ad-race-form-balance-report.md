@@ -18,17 +18,21 @@ Rows: 6032.
 | monkey | 6 | 21.8 | 0.099 | 1.57 | 1.0 | 0.03 | 0.26 | 0.26 | `legendaryforms.gear3` |
 | namekian | 8 | 21.8 | 0.099 | 1.57 | 1.0 | 0.03 | 0.26 | 0.26 | `legendaryforms.buffednamek` |
 
-## Flags
+## Hard flags (--check)
 
-- **ancient_saiyan**: packs die in 0.02 live hits
-- **bioandroid**: packs die in 0.03 live hits
-- **frostdemon**: packs die in 0.01 live hits
-- **human**: packs die in 0.01 live hits
-- **majin**: packs die in 0.03 live hits
-- **monkey**: packs die in 0.03 live hits
-- **namekian**: packs die in 0.03 live hits
-- **saiyan**: packs die in 0.02 live hits
+None.
+
+## Notes
+
+- **ancient_saiyan**: packs die in 0.02 live hits (glass OK if RES counters)
+- **bioandroid**: packs die in 0.03 live hits (glass OK if RES counters)
+- **frostdemon**: packs die in 0.01 live hits (glass OK if RES counters)
+- **human**: packs die in 0.01 live hits (glass OK if RES counters)
+- **majin**: packs die in 0.03 live hits (glass OK if RES counters)
+- **monkey**: packs die in 0.03 live hits (glass OK if RES counters)
+- **namekian**: packs die in 0.03 live hits (glass OK if RES counters)
+- **saiyan**: packs die in 0.02 live hits (glass OK if RES counters)
 - **viltrumite**: HP jump 2.01× on `androidforms.conquestfull`
-- **viltrumite**: packs die in 0.03 live hits
+- **viltrumite**: packs die in 0.03 live hits (glass OK if RES counters)
 
 CSV: `/opt/cursor/artifacts/ad-race-form-simulation.csv`

@@ -335,7 +335,7 @@ def main() -> None:
         )
 
     md = [
-        "# AdaptiveDifficulty race/form simulation (1.0.9)",
+        "# AdaptiveDifficulty race/form simulation (1.0.10)",
         "",
         "Source: `config/dragonminez/races/*`.",
         f"Rows: {len(rows)}.",
