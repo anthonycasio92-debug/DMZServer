@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.3.38)
+# DMZ Adaptive Difficulty (v3.3.39)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -23,7 +23,7 @@ Clients do **not** need this jar to join.
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.3.38.jar` (remove older AD jars)
+1. `mods/dmz_adaptive_difficulty-3.3.39.jar` (remove older AD jars)
 2. `plugins/dmz_adaptive_difficulty_gui-3.3.36.jar`
 3. Restart — config regenerates at `config/dmz_adaptive_difficulty.json`
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
@@ -63,4 +63,4 @@ Live `admin set` is allowlisted + clamped; change `adminPermission` only in JSON
 - **Counters (light):** class + single top combat stat only; intensity scales with tier%. No race / weak / top-3 / specialization stacks. Toggles: `enableClassCounters`, `enableStrongStatCounters`.
 - Scaled mob HP defaults to 65% of the previous match (`mobHealthScale`; damage unchanged). Elite rarity mult stock 1.50×.
 - Old NBT wallet balances migrate into Copper Ancient coins once per login.
-- AI + Enemy Evolution kits deepen with Buy Tier but stay **silent** (no kit nameplate/glow). Only true rarity rolls get cosmetics: Elite (`✦ Elite …`), Mutation (`§d…`), Boss (`☠ Boss …`). Soft floors: T1 Awakened · T2 Awakened→Enhanced · T3 Enhanced→Elite · T4 Advanced · T5 Master · T6 Legendary · T7 God (ceiling up to Zenith). Stock rarity chances: elite 0.75%, mutation 1.25%.
+- AI + Enemy Evolution kits deepen with Buy Tier but stay **silent** (no kit nameplate/glow). Only true rarity rolls get cosmetics: Elite (`✦ Elite …`), Mutation (`§d…`), Boss (`☠ Boss …`). Soft floors: T1 Awakened · T2 Awakened→Enhanced · T3 Enhanced→Elite · T4 Advanced · T5 Master · T6 Legendary · T7 God (ceiling up to Zenith). Stock rarity chances: elite **2.25%**, mutation **3.75%** (bosses are natural T6+ hostiles — no % roll).

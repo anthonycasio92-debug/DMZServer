@@ -135,11 +135,11 @@ public final class DifficultyConfig {
     // Phase 2 systems
     public boolean enableElites = true;
     /** Percent chance a claimed T4+ hostile becomes elite (rare). Nameplate only on true rarity. */
-    public double eliteChancePercent = 0.75;
+    public double eliteChancePercent = 2.25;
     public double eliteStatMultiplier = 1.50;
     public boolean enableMutations = true;
     /** Percent chance a claimed T5+ hostile mutates. Elites get ×1.35. Nameplate only on true rarity. */
-    public double mutationChancePercent = 1.25;
+    public double mutationChancePercent = 3.75;
     /**
      * One-time: stock 3%/5% chances felt common after the claim-seed +15% elite bug.
      * Migrates untouched defaults down to 1.25%/2%.
@@ -150,6 +150,11 @@ public final class DifficultyConfig {
      * defaults again (1.25%/2% → 0.75%/1.25%) when still on the prior stock values.
      */
     public Boolean rarityChanceMigratedV2 = Boolean.FALSE;
+    /**
+     * One-time: stock rarity ×3 (0.75%/1.25% → 2.25%/3.75%).
+     * Only rewrites untouched stock values; custom admin-set chances are kept.
+     */
+    public Boolean rarityChanceMigratedV3 = Boolean.FALSE;
     public boolean enableAdaptiveAi = true;
     public boolean enableEnemyEvolution = true;
     public boolean enableBossScaling = true;
@@ -737,6 +742,16 @@ public final class DifficultyConfig {
                 cfg.mutationChancePercent = 1.25;
             }
             cfg.rarityChanceMigratedV2 = Boolean.TRUE;
+        }
+        // Triple stock rarity chances (0.75%/1.25% → 2.25%/3.75%).
+        if (!Boolean.TRUE.equals(cfg.rarityChanceMigratedV3)) {
+            if (nearly(cfg.eliteChancePercent, 0.75)) {
+                cfg.eliteChancePercent = 2.25;
+            }
+            if (nearly(cfg.mutationChancePercent, 1.25)) {
+                cfg.mutationChancePercent = 3.75;
+            }
+            cfg.rarityChanceMigratedV3 = Boolean.TRUE;
         }
         // Raise soft early-tier pressure + tank pierce (stock values only).
         if (!Boolean.TRUE.equals(cfg.lowTierPressureMigrated)) {
