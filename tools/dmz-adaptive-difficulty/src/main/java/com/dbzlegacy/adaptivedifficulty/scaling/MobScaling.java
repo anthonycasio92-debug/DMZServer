@@ -1056,27 +1056,17 @@ public final class MobScaling {
         if (isExemptFromConversion(attacker)) {
             return amount;
         }
-        // Creeper / mob explosions: scale from stamped tier%, not absolute offense proxy.
-        // Old proxy curve easily hit a 500× cap on strong T2 glass characters.
+        // Creeper / mob explosions: bake from painted ATTACK_DAMAGE (same idea as kiblasts).
+        // Vanilla×tier% still got cancelled to 0 by DMZ DEF on real characters.
         if (source.m_269533_(DamageTypeTags.f_268415_)) { // IS_EXPLOSION
             if (!PersistentDataAccess.flag(attacker, TAG_SCALED) && difficultyOf(attacker) <= 0L) {
                 return amount;
             }
             double tierPct = tierPercentOf(attacker);
-            if (tierPct <= 0.0) {
-                // Unpainted hostiles — leave vanilla explosion damage alone.
+            if (tierPct <= 0.0 && !PersistentDataAccess.flag(attacker, TAG_ATTR_DMG_SCALED)) {
                 return amount;
             }
-            int unlock = unlockTierOf(attacker);
-            // T1 ≈ 1.25× · T2 ≈ 1.50× · T5 ≈ 2.25× · T7 ≈ 3.25× (soft).
-            double boom = 1.0 + tierPct * 2.5;
-            if (unlock > 0 && unlock <= 2) {
-                boom = Math.min(boom, 1.65);
-            } else if (unlock == 3) {
-                boom = Math.min(boom, 2.10);
-            }
-            boom = Math.min(3.50, Math.max(1.0, boom));
-            return amount * (float) boom;
+            return creeperStyleExplosionDamage(amount, attacker, tierPct);
         }
         float mult = outgoingDamageMultiplier(attacker);
         if (mult <= 1.0f) {
@@ -1097,5 +1087,59 @@ public final class MobScaling {
             return amount;
         }
         return amount * mult;
+    }
+
+    /**
+     * Explosion hurt for AD-painted hostiles.
+     * Uses painted melee as the real scale so T1–T2 creepers actually chip DMZ DEF,
+     * without returning to the old absolute-proxy 500× curve.
+     */
+    private static float creeperStyleExplosionDamage(
+            float vanillaAmount, LivingEntity attacker, double tierPct
+    ) {
+        int unlock = unlockTierOf(attacker);
+        double atk = readPaintedAttack(attacker);
+        // Blast vs painted melee — early tiers slightly above a punch, mid/high harder.
+        double ratio = unlock <= 0 ? 1.40
+                : unlock <= 2 ? 1.45
+                : unlock <= 4 ? 1.80
+                : unlock <= 6 ? 2.10
+                : 2.40;
+        double fromAtk = atk > 1.0 ? atk * ratio : 0.0;
+        // Soft vanilla bump as a floor only (never the primary path on DMZ chars).
+        double boom = 1.0 + Math.max(0.0, tierPct) * 2.5;
+        if (unlock > 0 && unlock <= 2) {
+            boom = Math.min(boom, 2.25);
+        } else if (unlock == 3) {
+            boom = Math.min(boom, 2.75);
+        }
+        boom = Math.min(4.0, Math.max(1.0, boom));
+        double fromVanilla = Math.max(0.0, vanillaAmount) * boom;
+        double out = Math.max(fromVanilla, fromAtk);
+        // Never soften below a meaningful painted hit once attrs exist.
+        if (atk > 1.0) {
+            out = Math.max(out, atk * 1.15);
+        }
+        if (!(out > 0.0) || Double.isNaN(out) || Double.isInfinite(out)) {
+            return vanillaAmount;
+        }
+        return (float) out;
+    }
+
+    private static double readPaintedAttack(LivingEntity attacker) {
+        if (attacker == null) {
+            return 0.0;
+        }
+        try {
+            var inst = attacker.m_21051_(Attributes.f_22281_); // ATTACK_DAMAGE
+            if (inst != null) {
+                double v = inst.m_22135_(); // getValue
+                if (v > 1.0 && !Double.isNaN(v) && !Double.isInfinite(v)) {
+                    return v;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return 0.0;
     }
 }

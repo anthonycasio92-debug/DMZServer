@@ -231,23 +231,28 @@ public final class EnemyEvolution {
         }
         float dist = creeper.m_20270_(target);
         int unlock = MobScaling.unlockTierOf(creeper);
-        double speed = tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower() ? 1.35 : 1.20;
+        double speed = tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower() ? 1.35 : 1.22;
         // Chase earlier than Elite so Awakened+ creepers actually close the gap.
-        if (dist < 18.0f) {
+        if (dist < 20.0f) {
             creeper.m_21573_().m_26519_(target.m_20185_(), target.m_20186_(), target.m_20189_(), speed);
         }
         // Fuse when close. m_32312_ = ignite(); m_32283_(1) = setSwellDir(1).
-        if (dist < 6.0f) {
+        // T1–T2 ignite a bit earlier so they actually get a boom off before dying.
+        float igniteDist = unlock > 0 && unlock <= 2 ? 7.0f : 6.0f;
+        if (dist < igniteDist) {
             if (!creeper.m_32311_()) { // isIgnited
                 creeper.m_32312_(); // ignite
             }
             creeper.m_32283_(1); // setSwellDir toward explosion
         }
-        // Tracking while swelling — Elite kits / T4+ only (early tiers fuse in place).
-        boolean track = unlock >= 4
-                || tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower();
-        if (track && creeper.m_32311_() && dist < 22.0f && target.m_6084_()) {
-            double trackSpeed = speed + (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower() ? 0.30 : 0.10);
+        // Light tracking on all unlocked tiers so fuse isn't wasted when the player sidesteps.
+        // T4+/Elite keeps the faster sticky chase.
+        if (creeper.m_32311_() && dist < 22.0f && target.m_6084_()) {
+            boolean sticky = unlock >= 4
+                    || tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower();
+            double trackSpeed = sticky
+                    ? speed + (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower() ? 0.30 : 0.12)
+                    : Math.max(1.05, speed - 0.05);
             creeper.m_21573_().m_26519_(target.m_20185_(), target.m_20186_(), target.m_20189_(), trackSpeed);
             creeper.m_6710_(target);
         }
@@ -300,7 +305,6 @@ public final class EnemyEvolution {
         tag.m_128379_("dmz_ad_blast_scaled", true);
         int unlock = MobScaling.unlockTierOf(creeper);
         int bonus = Math.max(0, tier.ordinalPower() - DifficultyTier.AWAKENED.ordinalPower());
-        // Soft proxy bonus — early unlocks stay near vanilla radius/fuse.
         if (unlock >= 4) {
             bonus += (int) Math.min(4, difficulty / 1000);
         }
@@ -309,13 +313,15 @@ public final class EnemyEvolution {
         }
         try {
             int base = Math.max(3, CREEPER_RADIUS.getInt(creeper));
-            int radiusCap = unlock <= 2 ? 5 : unlock <= 4 ? 8 : 11;
-            int radiusAdd = unlock <= 2 ? Math.min(1, bonus / 3) : Math.min(5, bonus / 2);
+            // T1–T2 need a real blast footprint; prior soft caps made them feel inert.
+            int radiusCap = unlock <= 2 ? 6 : unlock <= 4 ? 8 : 11;
+            int radiusAdd = unlock <= 2 ? 1 + Math.min(1, bonus / 2) : Math.min(5, bonus / 2);
             CREEPER_RADIUS.setInt(creeper, Math.min(radiusCap, base + radiusAdd));
             int maxSwell = CREEPER_SWELL.getInt(creeper);
-            int fuseCut = unlock <= 2 ? Math.min(6, bonus + 2) : Math.min(14, bonus + 4);
-            // Higher difficulty → faster fuse (vanilla default 30).
-            CREEPER_SWELL.setInt(creeper, Math.max(unlock <= 2 ? 18 : 12, maxSwell - fuseCut));
+            // Faster early fuses so they boom before a transformed player deletes them.
+            int fuseCut = unlock <= 2 ? Math.min(12, 8 + bonus) : Math.min(14, bonus + 4);
+            int fuseFloor = unlock <= 2 ? 14 : 12;
+            CREEPER_SWELL.setInt(creeper, Math.max(fuseFloor, maxSwell - fuseCut));
         } catch (Throwable ignored) {
         }
     }
