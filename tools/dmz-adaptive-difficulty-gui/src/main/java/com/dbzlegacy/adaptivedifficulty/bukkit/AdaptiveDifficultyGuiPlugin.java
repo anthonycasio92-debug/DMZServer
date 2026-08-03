@@ -48,6 +48,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         openInventory(player, page);
     }
 
+    /** Chest-only open for Forge {@code guiBackend=chest}. */
+    public void openChestMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        chestGui.open(player, page);
+    }
+
     /** Player-facing open that honors Forge {@code guiBackend}. */
     public void openMenuRespectingConfig(Player player, String page) {
         if (player == null) {
@@ -69,8 +77,15 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     }
 
     private void openInventory(Player player, String page) {
-        if (CmiDifficultyGui.open(player, page)) {
+        if (CmiDifficultyGui.available() && CmiDifficultyGui.open(player, page)) {
             return;
+        }
+        if (CmiDifficultyGui.available()) {
+            getLogger().warning("CMI GUI open failed for " + player.getName()
+                    + " — falling back to chest GUI. Check CMILib version.");
+        } else {
+            getLogger().warning("CMILib/CMI not available — using chest GUI for "
+                    + player.getName() + ". Install CMILib + CMI for the CMI inventory UI.");
         }
         chestGui.open(player, page);
     }

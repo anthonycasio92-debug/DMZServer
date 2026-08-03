@@ -27,20 +27,26 @@ public final class DifficultyMenu {
 
         GuiBackend backend = GuiBackend.fromConfig();
         boolean opened = switch (backend) {
-            case CMI -> CmiGuiBridge.open(player, target);
+            case CMI -> openInventory(player, target);
             case CHEST -> BukkitGuiBridge.open(player, target);
             case CHAT -> false;
-            case AUTO -> CmiGuiBridge.open(player, target) || BukkitGuiBridge.open(player, target);
+            case AUTO -> openInventory(player, target);
         };
 
         if (!opened) {
             if (backend != GuiBackend.AUTO && backend != GuiBackend.CHAT) {
                 AdaptiveDifficultyMod.LOGGER.warn(
-                        "[{}] guiBackend={} unavailable; falling back to chat GUI",
+                        "[{}] guiBackend={} unavailable; falling back to chat GUI "
+                                + "(is plugins/dmz_adaptive_difficulty_gui-*.jar enabled?)",
                         AdaptiveDifficultyMod.MOD_ID, backend.name().toLowerCase()
                 );
             }
             DifficultyChatMenu.open(player, target);
         }
+    }
+
+    /** CMI first, then plain chest — never skip the companion plugin for a CMILib check. */
+    private static boolean openInventory(ServerPlayer player, String page) {
+        return CmiGuiBridge.open(player, page) || BukkitGuiBridge.open(player, page);
     }
 }

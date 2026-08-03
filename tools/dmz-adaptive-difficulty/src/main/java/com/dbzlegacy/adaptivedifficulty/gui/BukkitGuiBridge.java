@@ -2,30 +2,18 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import java.lang.reflect.Method;
-import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Opens the companion Bukkit plugin chest GUI ({@code DMZAdaptiveDifficultyGUI}).
  */
 public final class BukkitGuiBridge {
-    public static final String PLUGIN_NAME = "DMZAdaptiveDifficultyGUI";
+    public static final String PLUGIN_NAME = CmiGuiBridge.PLUGIN_NAME;
 
     private BukkitGuiBridge() {}
 
     public static boolean available() {
-        try {
-            Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
-            Object pm = bukkit.getMethod("getPluginManager").invoke(null);
-            Object plugin = pm.getClass().getMethod("getPlugin", String.class).invoke(pm, PLUGIN_NAME);
-            if (plugin == null) {
-                return false;
-            }
-            Object enabled = plugin.getClass().getMethod("isEnabled").invoke(plugin);
-            return enabled instanceof Boolean b && b;
-        } catch (Throwable ignored) {
-            return false;
-        }
+        return CmiGuiBridge.pluginEnabled(PLUGIN_NAME);
     }
 
     public static boolean open(ServerPlayer player, String page) {
@@ -33,18 +21,20 @@ public final class BukkitGuiBridge {
             return false;
         }
         try {
-            Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
-            Object pm = bukkit.getMethod("getPluginManager").invoke(null);
-            Object plugin = pm.getClass().getMethod("getPlugin", String.class).invoke(pm, PLUGIN_NAME);
-            Class<?> playerClass = Class.forName("org.bukkit.entity.Player");
-            Object bukkitPlayer = bukkit.getMethod("getPlayer", UUID.class).invoke(null, player.m_20148_());
-            if (bukkitPlayer == null) {
+            Object plugin = CmiGuiBridge.getPlugin(PLUGIN_NAME);
+            Object bukkitPlayer = CmiGuiBridge.bukkitPlayer(player);
+            if (bukkitPlayer == null || plugin == null) {
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] Chest GUI open skipped — bukkit player unresolved for {}",
+                        AdaptiveDifficultyMod.MOD_ID, player.m_7755_().getString()
+                );
                 return false;
             }
-            // Prefer chest-only when Forge selected guiBackend=chest.
+            Class<?> playerClass = Class.forName("org.bukkit.entity.Player");
             Method open;
             try {
-                open = plugin.getClass().getMethod("openMenuRespectingConfig", playerClass, String.class);
+                // Prefer chest-only when Forge selected guiBackend=chest.
+                open = plugin.getClass().getMethod("openChestMenu", playerClass, String.class);
             } catch (NoSuchMethodException missing) {
                 open = plugin.getClass().getMethod("openMenu", playerClass, String.class);
             }

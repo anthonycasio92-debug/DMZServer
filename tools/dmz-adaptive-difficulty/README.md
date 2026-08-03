@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.3.41)
+# DMZ Adaptive Difficulty (v3.3.42)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -13,7 +13,7 @@ Clients do **not** need this jar to join.
 | Personal toggle | GUI on/off for that player only (default ON). OFF freezes scaling, kill coins, AI pressure, and tier buy/lower until turned back on |
 | Coin drop chat | GUI mute for "Dropped X Ancient Coins" (default OFF) |
 | Death | Clears active tier + level when personal ON (unlocks / prestige / coins kept). Disconnect / logout keeps the purchased tier |
-| Nearby scaling | Hostiles scale to player post-transform stats × tier % (max 5/player); leave range / personal off / logout reverts stats **and** strips elite/mutation/boss nameplates so they are normal mobs again. Rarity rolls once per mob (no leave/re-enter farming) |
+| Nearby scaling | Hostiles scale to player combat stats × tier % (max 5/player), with only part of form/transform boost counted (`transformScaleWeight`, default 0.40). Leave range / personal off / logout reverts stats **and** strips elite/mutation/boss nameplates so they are normal mobs again. Rarity rolls once per mob (no leave/re-enter farming) |
 | Combat Rating | Rewards / display / area readouts (not mob HP) |
 | Teams | WIP stub — personal difficulty only |
 | Titles | Restored; equip from GUI |
@@ -23,8 +23,8 @@ Clients do **not** need this jar to join.
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.3.41.jar` (remove older AD jars)
-2. `plugins/dmz_adaptive_difficulty_gui-3.3.41.jar`
+1. `mods/dmz_adaptive_difficulty-3.3.42.jar` (remove older AD jars)
+2. `plugins/dmz_adaptive_difficulty_gui-3.3.42.jar`
 3. Restart — config regenerates at `config/dmz_adaptive_difficulty.json`
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
