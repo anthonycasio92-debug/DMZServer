@@ -270,13 +270,18 @@ public final class PlayerCombatProfile {
                 }
             }
 
-            double baseDef = formBoost > 1.08
-                    ? Math.max(1.0, liveDef / formBoost)
-                    : liveDef;
-            double baseHp = formBoost > 1.08
-                    ? Math.max(20.0, liveHp / formBoost)
-                    : liveHp;
-            if (baseline != null && dmzFormActive && formBoost > 1.12) {
+            // Peel bulk by its own channel — many high-STR forms leave VIT at ×1.
+            // Dividing HP by peak offense formBoost invented a fake ×N HP surplus and
+            // made near-linear bulk inherit explode mob health on transform.
+            double vitForm = statFormMultiplier(data, "VIT");
+            double resForm = statFormMultiplier(data, "RES");
+            double baseDef = resForm > 1.08
+                    ? Math.max(1.0, liveDef / resForm)
+                    : (baseline != null && dmzFormActive ? Math.max(1.0, baseline.def) : liveDef);
+            double baseHp = vitForm > 1.08
+                    ? Math.max(20.0, liveHp / vitForm)
+                    : (baseline != null && dmzFormActive ? Math.max(20.0, baseline.hp) : liveHp);
+            if (baseline != null && dmzFormActive) {
                 baseDef = Math.max(1.0, Math.min(baseDef, baseline.def));
                 baseHp = Math.max(20.0, Math.min(baseHp, baseline.hp));
             }
@@ -294,20 +299,25 @@ public final class PlayerCombatProfile {
             // Continuous mega-form compress (design target ×80, headroom past that).
             // Custom races with maxStatsMultiplier 20 turn ×4 forms into ×80 — keep a
             // visible inherit so packs still react to higher forms.
+            double megaT = formBoost >= 6.0 ? megaFormT(formBoost) : 0.0;
             if (formBoost >= 6.0) {
-                double megaT = megaFormT(formBoost); // 0 at ×6 → 1 at ×80
                 exp = Math.min(exp, megaFormExpCap(megaT));
                 twOffense = Math.min(twOffense, twBase * megaFormTwScale(megaT));
             }
-            // Bulk (HP/DEF) stays near-live so high-tier packs aren't deleted on form-up.
-            double twBulk = Math.min(1.0, Math.max(twBase + 0.35, twBase * 1.55) * (0.85 + 0.15 * tierDamp));
+            // Bulk inherits more than offense, but mega forms must soft-curve too —
+            // near-linear HP on high mults made bags jump through the roof.
+            double twBulk = Math.min(1.0, Math.max(twBase + 0.20, twBase * 1.35) * (0.85 + 0.15 * tierDamp));
+            double bulkExp = 1.0;
+            if (formBoost >= 6.0) {
+                twBulk = Math.min(twBulk, Math.max(twOffense + 0.12, twBase * megaFormBulkTwScale(megaT)));
+                bulkExp = megaFormBulkExp(megaT);
+            }
 
             melee = blendForm(baseMelee, liveMelee, twOffense, exp);
             strike = blendForm(baseStrike, liveStrike, twOffense, exp);
             ki = blendForm(baseKi, liveKi, twOffense, exp);
-            // Near-linear sponge — exponent 1.0 on bulk.
-            def = blendForm(baseDef, liveDef, twBulk, 1.0);
-            hp = blendForm(baseHp, liveHp, twBulk, 1.0);
+            def = blendForm(baseDef, liveDef, twBulk, bulkExp);
+            hp = blendForm(baseHp, liveHp, twBulk, bulkExp);
 
             try {
                 Resources resources = data.getResources();
@@ -402,7 +412,8 @@ public final class PlayerCombatProfile {
      * Scaled by {@link DifficultyConfig#mobHealthScale} (default 65%).
      */
     public double targetMobHealth(DifficultyConfig cfg) {
-        double base = maxHealth * tierPercent;
+        double softHp = maxHealth * tierPercent;
+        double base = softHp;
         // Soft-blended HP floor for early tiers (not raw live — VIT often doesn't rise with STR forms).
         if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
             double hpThreat = switch (activeTier) {
@@ -415,33 +426,34 @@ public final class PlayerCombatProfile {
         }
         // STR/SKP mega-forms delete packs when HP didn't transform — sponge off live offense.
         // Soft mob damage ≠ player live punches; size the bag for a multi-hit fight (incl. ×80).
+        // Cap the sponge so high-mult transforms don't make mob HP jump through the roof.
         if (formBoost > 1.12 && liveOffense > offense * 1.35) {
             double hits = switch (activeTier) {
-                case 1 -> 5.0;
-                case 2 -> 4.25;
-                case 3 -> 3.75;
-                case 4 -> 3.25;
-                case 5 -> 2.85;
-                case 6 -> 2.6;
-                default -> 2.4;
+                case 1 -> 3.6;
+                case 2 -> 3.2;
+                case 3 -> 2.9;
+                case 4 -> 2.6;
+                case 5 -> 2.35;
+                case 6 -> 2.15;
+                default -> 2.0;
             };
-            // Mild forms keep tier%; mega→×80 mostly ignore tier% (full live punches).
+            // Keep more tier% damp on mega forms — ×80 used to drop tierMix to ~0.07.
             double tierMix = 0.70;
             if (formBoost >= 6.0) {
                 double megaT = megaFormT(formBoost);
-                tierMix = Math.max(0.05, 0.35 - 0.28 * Math.min(1.25, megaT)); // ×6→0.35, ×80→0.07
+                tierMix = Math.max(0.22, 0.55 - 0.28 * Math.min(1.25, megaT)); // ×6→0.55, ×80→0.27
                 if (activeTier <= 3) {
-                    hits += 0.5 + 1.75 * Math.min(1.25, megaT); // more hits as forms grow
+                    hits += 0.25 + 0.75 * Math.min(1.25, megaT);
                 } else if (activeTier <= 5) {
-                    hits += 0.25 + 0.85 * Math.min(1.0, megaT);
+                    hits += 0.15 + 0.40 * Math.min(1.0, megaT);
                 }
             }
             double spongeTier = Math.max(0.15, tierPercent) * tierMix + (1.0 - tierMix);
             double offenseSponge = liveOffense * hits * spongeTier;
-            // Custom-race mastery forms (×40–×80): ensure pack HP tracks live punches harder.
-            if (formBoost >= 20.0) {
-                double megaT = megaFormT(formBoost);
-                offenseSponge *= 1.0 + 0.35 * Math.min(1.25, megaT);
+            // Never let sponge outrun soft HP by more than a form-aware cap.
+            double spongeCap = softHp * megaHealthSpongeCap(formBoost);
+            if (offenseSponge > spongeCap) {
+                offenseSponge = spongeCap;
             }
             base = Math.max(base, offenseSponge);
         }
@@ -904,8 +916,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: form-only peel + addition-mode stack + mega live floor.
-        h = mix(h, 18L);
+        // Formula revision: VIT/RES peel + compressed mega HP sponge.
+        h = mix(h, 19L);
         return h;
     }
 
@@ -951,24 +963,33 @@ public final class PlayerCombatProfile {
         if (data == null) {
             return 1.0;
         }
-        boolean multiply = dmzMultiplicationMode();
         double peak = 1.0;
         for (String key : new String[] {"STR", "SKP", "PWR", "RES", "VIT"}) {
-            try {
-                double form = Math.max(0.0, data.getFormMultiplier(key));
-                double stack = Math.max(0.0, data.getStackFormMultiplier(key));
-                double combined = combineDmzMults(form, stack, multiply);
-                if (combined > peak) {
-                    peak = combined;
-                }
-            } catch (Throwable ignored) {
+            double combined = statFormMultiplier(data, key);
+            if (combined > peak) {
+                peak = combined;
             }
         }
-        if (!(peak > 0.0) || Double.isNaN(peak) || Double.isInfinite(peak)) {
+        return peak;
+    }
+
+    /** Form⊕stack for one combat channel (1.0 when unavailable / base). */
+    private static double statFormMultiplier(StatsData data, String key) {
+        if (data == null || key == null) {
             return 1.0;
         }
-        // Headroom past planned ×80 forms so detection never silently clamps.
-        return Math.max(1.0, Math.min(MAX_FORM_BOOST, peak));
+        try {
+            boolean multiply = dmzMultiplicationMode();
+            double form = Math.max(0.0, data.getFormMultiplier(key));
+            double stack = Math.max(0.0, data.getStackFormMultiplier(key));
+            double combined = combineDmzMults(form, stack, multiply);
+            if (!(combined > 0.0) || Double.isNaN(combined) || Double.isInfinite(combined)) {
+                return 1.0;
+            }
+            return Math.max(1.0, Math.min(MAX_FORM_BOOST, combined));
+        } catch (Throwable ignored) {
+            return 1.0;
+        }
     }
 
     /**
@@ -1046,6 +1067,35 @@ public final class PlayerCombatProfile {
     private static double megaFormTwScale(double megaT) {
         double t = Math.max(0.0, Math.min(1.25, megaT));
         return Math.max(0.62, 1.0 - 0.28 * Math.min(1.0, t));
+    }
+
+    /** Bulk (HP/DEF) weight scale vs twBase — higher than offense, still compresses mega. */
+    private static double megaFormBulkTwScale(double megaT) {
+        double t = Math.max(0.0, Math.min(1.25, megaT));
+        return Math.max(0.72, 1.15 - 0.35 * Math.min(1.0, t)); // ×6→1.15, ×80→0.80
+    }
+
+    /** Bulk soft-curve exponent (×6→0.85, ×80→0.55). */
+    private static double megaFormBulkExp(double megaT) {
+        double t = Math.max(0.0, Math.min(1.25, megaT));
+        return Math.max(0.50, 0.85 - 0.30 * Math.min(1.0, t));
+    }
+
+    /**
+     * Max offense-sponge / softHp ratio. Mild forms can still pad bags; mega forms
+     * must not turn a transform into a sudden HP wall.
+     */
+    private static double megaHealthSpongeCap(double formBoost) {
+        if (!(formBoost > 1.12)) {
+            return 1.0;
+        }
+        if (formBoost < 6.0) {
+            // ×1.12→~2.2× softHp, ×6→~3.5×
+            return Math.min(3.5, 1.8 + 0.35 * (formBoost - 1.0));
+        }
+        double megaT = megaFormT(formBoost);
+        // ×6→3.6×, ×80→5.2× softHp (was unbounded via liveOffense×hits).
+        return 3.6 + 1.6 * Math.min(1.25, megaT);
     }
 
     /**
