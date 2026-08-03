@@ -13,7 +13,7 @@ Clients do **not** need this jar to join.
 | Personal toggle | GUI on/off for that player only (default ON). OFF freezes scaling, kill coins, AI pressure, and tier buy/lower until turned back on |
 | Coin drop chat | GUI mute for "Dropped X Ancient Coins" (default OFF) |
 | Death | Clears active tier + level when personal ON (unlocks / prestige / coins kept). Disconnect / logout keeps the purchased tier |
-| Nearby scaling | Hostiles scale to player combat stats × tier % (max 5/player). Form boost uses a soft curve on **offense** (`transformScaleWeight` / `transformScaleExponent`); mega forms (×6 / ×20+) compress harder. **HP/DEF** stay near-live, plus a live-offense HP sponge so STR/SKP forms don’t delete packs. Custom races use `getFormMultiplier` + base-form baselines + offense polling when FormChangeEvent is missing. Ladders above 100% get extra HP sponge. Leave range / personal off / logout reverts stats **and** strips elite/mutation/boss nameplates. |
+| Nearby scaling | Hostiles scale to player combat stats × tier % (max 5/player). Form boost uses a soft curve on **offense** (`transformScaleWeight` / `transformScaleExponent`); mega forms compress continuously from ×6 → ×80 (headroom to ×100). **HP/DEF** stay near-live, plus a live-offense HP sponge so STR/SKP forms don’t delete packs. Custom races use `getFormMultiplier` + base-form baselines + offense polling when FormChangeEvent is missing. Ladders above 100% get extra HP sponge. Leave range / personal off / logout reverts stats **and** strips elite/mutation/boss nameplates. |
 | Combat Rating | Rewards / display / area readouts (not mob HP) |
 | Teams | WIP stub — personal difficulty only |
 | Titles | Restored; equip from GUI |

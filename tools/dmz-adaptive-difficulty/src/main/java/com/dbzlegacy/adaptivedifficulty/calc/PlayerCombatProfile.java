@@ -20,8 +20,8 @@ import net.minecraft.server.level.ServerPlayer;
  * Live DMZ combat getters include full form multipliers. Enemy scaling blends
  * form-stripped stats with a <em>diminishing</em> slice of that transform boost
  * ({@link DifficultyConfig#transformScaleWeight} + {@link DifficultyConfig#transformScaleExponent},
- * further dampened at high unlock tiers) so transforming does not linearly
- * explode mob/creeper damage — especially at T6–T7.
+ * further dampened for mega forms up to ×80+) so transforming does not linearly
+ * explode mob/creeper damage — especially at T1 and T6–T7.
  * <p>
  * Counters are intentionally light:
  * <ul>
@@ -255,18 +255,16 @@ public final class PlayerCombatProfile {
             double tierDamp = Math.max(0.55, 1.0 - 0.40 * Math.max(0.0, Math.min(1.0, pct)));
             double twOffense = twBase * tierDamp;
             // Mild T2–T3 form lift only — T1 stays on the soft curve.
-            // Mega forms (×10+) compress harder so T1×49 STR cannot linear-explode mob damage.
             if (tier >= 2 && tier <= 3 && formBoost > 1.12 && formBoost < 6.0) {
                 double bump = tier == 2 ? 0.14 : 0.10;
                 twOffense = Math.max(twOffense, Math.min(1.0, twBase + bump));
             }
+            // Continuous mega-form compress (design target ×80, headroom past that).
+            // Stepped ×6/×20 caps alone would still let ×80 feel like a linear nuke.
             if (formBoost >= 6.0) {
-                exp = Math.min(exp, 0.40);
-                twOffense = Math.min(twOffense, twBase * 0.85);
-            }
-            if (formBoost >= 20.0) {
-                exp = Math.min(exp, 0.32);
-                twOffense = Math.min(twOffense, twBase * 0.70);
+                double megaT = megaFormT(formBoost); // 0 at ×6 → 1 at ×80
+                exp = Math.min(exp, megaFormExpCap(megaT));
+                twOffense = Math.min(twOffense, twBase * megaFormTwScale(megaT));
             }
             // Bulk (HP/DEF) stays near-live so high-tier packs aren't deleted on form-up.
             double twBulk = Math.min(1.0, Math.max(twBase + 0.35, twBase * 1.55) * (0.85 + 0.15 * tierDamp));
@@ -383,7 +381,7 @@ public final class PlayerCombatProfile {
             base = Math.max(base, maxHealth * hpThreat);
         }
         // STR/SKP mega-forms delete packs when HP didn't transform — sponge off live offense.
-        // Soft mob damage ≠ player live punches; size the bag for a multi-hit fight.
+        // Soft mob damage ≠ player live punches; size the bag for a multi-hit fight (incl. ×80).
         if (formBoost > 1.12 && liveOffense > offense * 1.35) {
             double hits = switch (activeTier) {
                 case 1 -> 5.0;
@@ -394,15 +392,16 @@ public final class PlayerCombatProfile {
                 case 6 -> 2.6;
                 default -> 2.4;
             };
-            // Mega forms mostly ignore tier% on sponge (player hits with full live).
-            // Mild forms keep more tier% so T1×2 doesn't become a raid boss.
-            double tierMix = formBoost >= 20.0 ? 0.12
-                    : formBoost >= 6.0 ? 0.35
-                    : 0.70;
-            if (formBoost >= 20.0 && activeTier <= 2) {
-                hits += 1.25;
-            } else if (formBoost >= 6.0 && activeTier <= 3) {
-                hits += 0.5;
+            // Mild forms keep tier%; mega→×80 mostly ignore tier% (full live punches).
+            double tierMix = 0.70;
+            if (formBoost >= 6.0) {
+                double megaT = megaFormT(formBoost);
+                tierMix = Math.max(0.05, 0.35 - 0.28 * Math.min(1.25, megaT)); // ×6→0.35, ×80→0.07
+                if (activeTier <= 3) {
+                    hits += 0.5 + 1.75 * Math.min(1.25, megaT); // more hits as forms grow
+                } else if (activeTier <= 5) {
+                    hits += 0.25 + 0.85 * Math.min(1.0, megaT);
+                }
             }
             double spongeTier = Math.max(0.15, tierPercent) * tierMix + (1.0 - tierMix);
             double offenseSponge = liveOffense * hits * spongeTier;
@@ -456,7 +455,10 @@ public final class PlayerCombatProfile {
             };
             double softFloor = offense * threatPct;
             if (formBoost >= 6.0) {
-                softFloor = Math.min(softFloor, offenseShare * (formBoost >= 20.0 ? 1.15 : 1.35));
+                // Tighter as forms climb to ×80 — never pull raw-live threat through this floor.
+                double megaT = megaFormT(formBoost);
+                double shareMul = 1.35 - 0.28 * Math.min(1.25, megaT); // ×6→1.35, ×80→1.07
+                softFloor = Math.min(softFloor, offenseShare * Math.max(1.05, shareMul));
             }
             base = Math.max(base, softFloor);
         }
@@ -848,8 +850,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: mega-form damp + offense HP sponge (no raw live dmg floors).
-        h = mix(h, 16L);
+        // Formula revision: continuous mega-form compress (×80 future-proof).
+        h = mix(h, 17L);
         return h;
     }
 
@@ -898,12 +900,48 @@ public final class PlayerCombatProfile {
         if (!(peak > 0.0) || Double.isNaN(peak) || Double.isInfinite(peak)) {
             return 1.0;
         }
-        return Math.max(1.0, Math.min(50.0, peak));
+        // Headroom past planned ×80 forms so detection never silently clamps.
+        return Math.max(1.0, Math.min(MAX_FORM_BOOST, peak));
     }
 
     private record FormBaseline(
             double melee, double strike, double ki, double def, double hp, long atMs
     ) {}
+
+    /** Detected form multiple ceiling (planned ×80 forms + headroom). */
+    private static final double MAX_FORM_BOOST = 100.0;
+    /** Mega-form compress anchor: log-lerp from ×6 → ×80. */
+    private static final double MEGA_FORM_START = 6.0;
+    private static final double MEGA_FORM_TARGET = 80.0;
+
+    /**
+     * 0 at {@link #MEGA_FORM_START}, 1 at {@link #MEGA_FORM_TARGET}, can exceed 1 past ×80.
+     */
+    private static double megaFormT(double formBoost) {
+        if (!(formBoost >= MEGA_FORM_START)) {
+            return 0.0;
+        }
+        double denom = Math.log(MEGA_FORM_TARGET / MEGA_FORM_START);
+        if (!(denom > 0.0)) {
+            return 0.0;
+        }
+        return Math.log(formBoost / MEGA_FORM_START) / denom;
+    }
+
+    /** Soft-curve exponent ceiling as mega-forms grow (×6→0.40, ×80→0.25, ×100≈0.23). */
+    private static double megaFormExpCap(double megaT) {
+        double t = Math.max(0.0, megaT);
+        if (t <= 1.0) {
+            return 0.40 - 0.15 * t;
+        }
+        return Math.max(0.20, 0.25 - 0.08 * (t - 1.0));
+    }
+
+    /** Offense weight scale vs twBase (×6→1.0, ×80→0.55, floor 0.45). */
+    private static double megaFormTwScale(double megaT) {
+        double t = Math.max(0.0, Math.min(1.25, megaT));
+        return Math.max(0.45, 1.0 - 0.45 * Math.min(1.0, t));
+    }
 
     /**
      * How hard the live (form) stats outpace form-stripped offense.
@@ -926,12 +964,13 @@ public final class PlayerCombatProfile {
         if (!(boost > 0.0) || Double.isNaN(boost) || Double.isInfinite(boost)) {
             return 1.0;
         }
-        return Math.max(1.0, Math.min(50.0, boost));
+        return Math.max(1.0, Math.min(MAX_FORM_BOOST, boost));
     }
 
     /**
      * Soft form blend: {@code base × (1 + (live/base - 1)^exp × weight)}.
      * Linear weight alone still exploded on 10–20× forms; the exponent compresses surplus.
+     * Extreme surpluses (×50–×80) also hit a weight-scaled inherit cap.
      */
     private static double blendForm(double base, double live, double weight, double exponent) {
         double b = Math.max(1e-9, base);

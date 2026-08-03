@@ -177,7 +177,8 @@ public final class DmzProgression {
         if (!(peak > 0.0) || Double.isNaN(peak) || Double.isInfinite(peak)) {
             return 1.0;
         }
-        return Math.max(1.0, Math.min(50.0, peak));
+        // Match PlayerCombatProfile — planned ×80 forms need headroom past 50.
+        return Math.max(1.0, Math.min(100.0, peak));
     }
 
     /**
