@@ -245,15 +245,14 @@ public final class DifficultyConfig {
     public double tierCostLevelDivisor = 1_000.0;
     /**
      * Nearby-mob scale vs the player's post-transform / limit-release stats.
-     * Defaults: T1 28% · T2 42% · T3 65% · T4 80% · T5 110% · T6 130% · T7 200%.
-     * (Raised T1–T3 so early unlocks still contest high-DEF / low-level builds.)
+     * Defaults: T1 28% · T2 42% · T3 65% · T4 90% · T5 125% · T6 165% · T7 200%.
      */
     public double unlockTier1EnemyMult = 0.28;
     public double unlockTier2EnemyMult = 0.42;
     public double unlockTier3EnemyMult = 0.65;
-    public double unlockTier4EnemyMult = 0.80;
-    public double unlockTier5EnemyMult = 1.10;
-    public double unlockTier6EnemyMult = 1.30;
+    public double unlockTier4EnemyMult = 0.90;
+    public double unlockTier5EnemyMult = 1.25;
+    public double unlockTier6EnemyMult = 1.65;
     public double unlockTier7EnemyMult = 2.00;
     /**
      * Multiplier on final scaled mob max HP ({@code playerMaxHp × tier% × …}).
@@ -280,6 +279,11 @@ public final class DifficultyConfig {
      * contests high-DEF / low-level players (old 15%/30%/55% + 0.40 floor).
      */
     public Boolean lowTierPressureMigrated = Boolean.FALSE;
+    /**
+     * One-time: raise mid/high tier stock percents
+     * T4 80→90 · T5 110→125 · T6 130→165 (T1–T3/T7 already match the ladder).
+     */
+    public Boolean tierPercentLadderMigrated = Boolean.FALSE;
     /**
      * Extra mob damage for specialized builds: {@code damage × (1 + imbalance × tax)}.
      * imbalance is 0 for even builds and approaches 1 for hard stat dumps.
@@ -424,9 +428,9 @@ public final class DifficultyConfig {
             case 1 -> clampPercent(unlockTier1EnemyMult, 0.28);
             case 2 -> clampPercent(unlockTier2EnemyMult, 0.42);
             case 3 -> clampPercent(unlockTier3EnemyMult, 0.65);
-            case 4 -> clampPercent(unlockTier4EnemyMult, 0.80);
-            case 5 -> clampPercent(unlockTier5EnemyMult, 1.10);
-            case 6 -> clampPercent(unlockTier6EnemyMult, 1.30);
+            case 4 -> clampPercent(unlockTier4EnemyMult, 0.90);
+            case 5 -> clampPercent(unlockTier5EnemyMult, 1.25);
+            case 6 -> clampPercent(unlockTier6EnemyMult, 1.65);
             case 7 -> clampPercent(unlockTier7EnemyMult, 2.00);
             default -> 0.0;
         };
@@ -442,19 +446,19 @@ public final class DifficultyConfig {
             // when they look like the previous enemy-mult ladder.
         }
         if (nearly(value, 1.15)) {
-            return 0.30;
+            return 0.42;
         }
         if (nearly(value, 1.35)) {
-            return 0.55;
+            return 0.65;
         }
         if (nearly(value, 1.60)) {
-            return 0.80;
+            return 0.90;
         }
         if (nearly(value, 1.90)) {
-            return 1.10;
+            return 1.25;
         }
         if (nearly(value, 2.30)) {
-            return 1.30;
+            return 1.65;
         }
         if (nearly(value, 3.00)) {
             return 2.00;
@@ -729,6 +733,19 @@ public final class DifficultyConfig {
             }
             cfg.lowTierPressureMigrated = Boolean.TRUE;
         }
+        // Raise mid/high tier stock percents to the 28/42/65/90/125/165/200 ladder.
+        if (!Boolean.TRUE.equals(cfg.tierPercentLadderMigrated)) {
+            if (nearly(cfg.unlockTier4EnemyMult, 0.80)) {
+                cfg.unlockTier4EnemyMult = 0.90;
+            }
+            if (nearly(cfg.unlockTier5EnemyMult, 1.10)) {
+                cfg.unlockTier5EnemyMult = 1.25;
+            }
+            if (nearly(cfg.unlockTier6EnemyMult, 1.30)) {
+                cfg.unlockTier6EnemyMult = 1.65;
+            }
+            cfg.tierPercentLadderMigrated = Boolean.TRUE;
+        }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
             cfg.guiBackend = "cmi";
         } else {
@@ -900,17 +917,17 @@ public final class DifficultyConfig {
             cfg.unlockTier1EnemyMult = 0.28;
             cfg.unlockTier2EnemyMult = 0.42;
             cfg.unlockTier3EnemyMult = 0.65;
-            cfg.unlockTier4EnemyMult = 0.80;
-            cfg.unlockTier5EnemyMult = 1.10;
-            cfg.unlockTier6EnemyMult = 1.30;
+            cfg.unlockTier4EnemyMult = 0.90;
+            cfg.unlockTier5EnemyMult = 1.25;
+            cfg.unlockTier6EnemyMult = 1.65;
             cfg.unlockTier7EnemyMult = 2.00;
         } else {
             cfg.unlockTier1EnemyMult = clampPercent(cfg.unlockTier1EnemyMult, 0.28);
             cfg.unlockTier2EnemyMult = clampPercent(cfg.unlockTier2EnemyMult, 0.42);
             cfg.unlockTier3EnemyMult = clampPercent(cfg.unlockTier3EnemyMult, 0.65);
-            cfg.unlockTier4EnemyMult = clampPercent(cfg.unlockTier4EnemyMult, 0.80);
-            cfg.unlockTier5EnemyMult = clampPercent(cfg.unlockTier5EnemyMult, 1.10);
-            cfg.unlockTier6EnemyMult = clampPercent(cfg.unlockTier6EnemyMult, 1.30);
+            cfg.unlockTier4EnemyMult = clampPercent(cfg.unlockTier4EnemyMult, 0.90);
+            cfg.unlockTier5EnemyMult = clampPercent(cfg.unlockTier5EnemyMult, 1.25);
+            cfg.unlockTier6EnemyMult = clampPercent(cfg.unlockTier6EnemyMult, 1.65);
             cfg.unlockTier7EnemyMult = clampPercent(cfg.unlockTier7EnemyMult, 2.00);
         }
     }
