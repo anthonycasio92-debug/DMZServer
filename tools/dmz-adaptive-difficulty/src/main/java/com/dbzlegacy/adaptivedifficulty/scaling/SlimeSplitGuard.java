@@ -20,12 +20,16 @@ import net.minecraftforge.registries.ForgeRegistries;
  * scaled kill into several scaled cubs).
  * <p>
  * Forge 1.20.1 has no split event — we record a pending window on parent death and
- * stamp children that join nearby. Matching is intentionally loose for Mohist timing.
+ * stamp children that join nearby. Matching prefers exact half-size within a tight
+ * radius; a looser fallback covers late Mohist joins without exempting unrelated cubs.
  */
 public final class SlimeSplitGuard {
     /** Long enough for delayed Mohist join / next-tick addFreshEntity. */
-    private static final long WINDOW_TICKS = 60L;
-    private static final double MATCH_DIST_SQ = 24.0 * 24.0;
+    private static final long WINDOW_TICKS = 100L;
+    /** Prefer exact half-size cubs very near the death point. */
+    private static final double EXACT_DIST_SQ = 8.0 * 8.0;
+    /** Late / size-race fallback — still much tighter than a chunk-wide sweep. */
+    private static final double LOOSE_DIST_SQ = 14.0 * 14.0;
     /** Session fallback when entity persistent-data is not writable yet. */
     private static final Map<UUID, Long> MEMORY_EXEMPT = new ConcurrentHashMap<>();
     private static final Map<UUID, Pending> PENDING = new ConcurrentHashMap<>();
@@ -84,6 +88,31 @@ public final class SlimeSplitGuard {
         double z = child.m_20189_();
 
         prune(now);
+        // Pass 1: exact half-size near the death point (lowest false-exempt risk).
+        if (consumePending(dim, family, size, x, y, z, now, true)) {
+            MEMORY_EXEMPT.put(id, now + 1200L); // ~60s session guard
+            MobScaling.markFromSlimeSplit(child);
+            return true;
+        }
+        // Pass 2: late Mohist / size-race — strictly smaller cub, slightly looser radius.
+        if (consumePending(dim, family, size, x, y, z, now, false)) {
+            MEMORY_EXEMPT.put(id, now + 1200L);
+            MobScaling.markFromSlimeSplit(child);
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean consumePending(
+            ResourceKey<Level> dim,
+            String family,
+            int size,
+            double x,
+            double y,
+            double z,
+            long now,
+            boolean exactOnly
+    ) {
         for (Iterator<Map.Entry<UUID, Pending>> it = PENDING.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<UUID, Pending> e = it.next();
             Pending p = e.getValue();
@@ -94,23 +123,23 @@ public final class SlimeSplitGuard {
             if (!p.dimension.equals(dim) || !p.family.equals(family)) {
                 continue;
             }
-            // Prefer exact half-size; also accept any strictly smaller cub (Mohist size races).
-            boolean sizeOk = size == p.childSize || (size > 0 && size < p.parentSize);
+            boolean sizeOk = exactOnly
+                    ? size == p.childSize
+                    : (size > 0 && size < p.parentSize && size != p.childSize);
             if (!sizeOk) {
                 continue;
             }
-            double dx = x - p.x;
-            double dy = y - p.y;
-            double dz = z - p.z;
-            if (dx * dx + dy * dy + dz * dz > MATCH_DIST_SQ) {
+            double distSq = (x - p.x) * (x - p.x)
+                    + (y - p.y) * (y - p.y)
+                    + (z - p.z) * (z - p.z);
+            double maxDist = exactOnly ? EXACT_DIST_SQ : LOOSE_DIST_SQ;
+            if (distSq > maxDist) {
                 continue;
             }
             p.remaining--;
             if (p.remaining <= 0) {
                 it.remove();
             }
-            MEMORY_EXEMPT.put(id, now + 1200L); // ~60s session guard
-            MobScaling.markFromSlimeSplit(child);
             return true;
         }
         return false;

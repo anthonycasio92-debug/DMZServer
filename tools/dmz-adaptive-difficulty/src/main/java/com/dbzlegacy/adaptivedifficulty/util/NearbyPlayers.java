@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.util;
 
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -48,7 +49,33 @@ public final class NearbyPlayers {
         return nearest(level, from.m_20185_(), from.m_20186_(), from.m_20189_(), radius);
     }
 
+    /**
+     * Nearest player who currently participates in Adaptive Difficulty
+     * (system on, whitelist ok, personal difficulty on). Falls through
+     * personal-off / blocked players instead of stopping on them.
+     */
+    public static ServerPlayer nearestParticipating(LivingEntity from, double radius) {
+        if (from == null || !(from.m_9236_() instanceof ServerLevel level)) {
+            return null;
+        }
+        return nearestMatching(
+                level, from.m_20185_(), from.m_20186_(), from.m_20189_(), radius,
+                SystemGate::participates
+        );
+    }
+
     public static ServerPlayer nearest(ServerLevel level, double x, double y, double z, double radius) {
+        return nearestMatching(level, x, y, z, radius, null);
+    }
+
+    private static ServerPlayer nearestMatching(
+            ServerLevel level,
+            double x,
+            double y,
+            double z,
+            double radius,
+            Predicate<ServerPlayer> filter
+    ) {
         if (level == null || radius <= 0.0) {
             return null;
         }
@@ -57,6 +84,9 @@ public final class NearbyPlayers {
         double bestDist = Double.MAX_VALUE;
         for (ServerPlayer player : level.m_7654_().m_6846_().m_11314_()) {
             if (player == null || player.m_9236_() != level || !player.m_6084_() || player.m_5833_()) {
+                continue;
+            }
+            if (filter != null && !filter.test(player)) {
                 continue;
             }
             double dx = player.m_20185_() - x;
@@ -72,7 +102,18 @@ public final class NearbyPlayers {
     }
 
     public static ServerPlayer weakest(LivingEntity from, double radius) {
-        if (from == null || !(from.m_9236_() instanceof ServerLevel level)) {
+        return weakestMatching(from, radius, null);
+    }
+
+    /** Weakest nearby player who currently participates in Adaptive Difficulty. */
+    public static ServerPlayer weakestParticipating(LivingEntity from, double radius) {
+        return weakestMatching(from, radius, SystemGate::participates);
+    }
+
+    private static ServerPlayer weakestMatching(
+            LivingEntity from, double radius, Predicate<ServerPlayer> filter
+    ) {
+        if (from == null || !(from.m_9236_() instanceof ServerLevel level) || radius <= 0.0) {
             return null;
         }
         double rSq = radius * radius;
@@ -83,6 +124,9 @@ public final class NearbyPlayers {
         float lowest = Float.MAX_VALUE;
         for (ServerPlayer player : level.m_7654_().m_6846_().m_11314_()) {
             if (player == null || player.m_9236_() != level || !player.m_6084_() || player.m_5833_()) {
+                continue;
+            }
+            if (filter != null && !filter.test(player)) {
                 continue;
             }
             double dx = player.m_20185_() - x;

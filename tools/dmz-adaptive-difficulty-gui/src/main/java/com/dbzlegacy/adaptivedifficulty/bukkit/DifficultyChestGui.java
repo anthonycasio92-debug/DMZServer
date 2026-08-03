@@ -33,6 +33,8 @@ public final class DifficultyChestGui implements Listener {
     }
 
     public void open(Player player, String page) {
+        // Match chat menu: refresh unlock / title grants before painting slots.
+        ForgeBridge.syncPlayerProgress(player);
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         Inventory inv = switch (p) {
             case "adjust", "change", "set", "lower" -> lower(player);

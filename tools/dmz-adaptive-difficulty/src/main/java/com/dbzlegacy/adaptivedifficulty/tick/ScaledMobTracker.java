@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -253,23 +254,35 @@ public final class ScaledMobTracker {
             if (owner == null || !owner.m_6084_()) {
                 continue;
             }
-            List<Claim> claims = e.getValue();
-            if (claims == null || claims.isEmpty()) {
-                continue;
+            forEachClaimedMob(owner, mob -> consumer.accept(owner, mob));
+        }
+    }
+
+    /** Visit loaded hostiles currently claimed by {@code player}. */
+    public static void forEachClaimedMob(ServerPlayer player, Consumer<Mob> consumer) {
+        if (player == null || consumer == null) {
+            return;
+        }
+        List<Claim> claims = CLAIMS.get(player.m_20148_());
+        if (claims == null || claims.isEmpty()) {
+            return;
+        }
+        List<UUID> mobIds;
+        synchronized (claims) {
+            mobIds = new ArrayList<>(claims.size());
+            for (Claim c : claims) {
+                mobIds.add(c.mobId);
             }
-            List<UUID> mobIds;
-            synchronized (claims) {
-                mobIds = new ArrayList<>(claims.size());
-                for (Claim c : claims) {
-                    mobIds.add(c.mobId);
-                }
-            }
-            ServerLevel prefer = owner.m_9236_() instanceof ServerLevel sl ? sl : null;
-            for (UUID mobId : mobIds) {
-                Mob mob = findMob(server, prefer, mobId);
-                if (mob != null && mob.m_6084_()) {
-                    consumer.accept(owner, mob);
-                }
+        }
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            return;
+        }
+        ServerLevel prefer = player.m_9236_() instanceof ServerLevel sl ? sl : null;
+        for (UUID mobId : mobIds) {
+            Mob mob = findMob(server, prefer, mobId);
+            if (mob != null && mob.m_6084_()) {
+                consumer.accept(mob);
             }
         }
     }

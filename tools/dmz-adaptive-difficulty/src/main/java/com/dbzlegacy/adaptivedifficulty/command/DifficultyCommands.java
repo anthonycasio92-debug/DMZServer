@@ -524,10 +524,16 @@ public final class DifficultyCommands {
     }
 
     private static int reload(CommandSourceStack source) {
-        DifficultyConfig.reload();
+        boolean ok = DifficultyConfig.reload();
         DifficultyCache.invalidateAll();
-        source.m_288197_(() -> Component.m_237113_("§aAdaptive difficulty config reloaded."), true);
-        return 1;
+        if (ok) {
+            source.m_288197_(() -> Component.m_237113_("§aAdaptive difficulty config reloaded."), true);
+            return 1;
+        }
+        source.m_81352_(Component.m_237113_(
+                "§cConfig reload failed — check server log. Previous live values kept."
+        ));
+        return 0;
     }
 
     private static int adminHelp(CommandSourceStack source) {
@@ -621,16 +627,22 @@ public final class DifficultyCommands {
                 case "healthcurveexponent", "healthcurve" ->
                         cfg.healthCurveExponent = Math.max(0.05, Math.min(1.0, Double.parseDouble(value)));
                 case "healthcurvepivot" -> cfg.healthCurvePivot = Math.max(1L, Long.parseLong(value));
-                case "health", "healthpercentperdifficulty" -> cfg.healthPercentPerDifficulty = Double.parseDouble(value);
-                case "damage", "damagepercentperdifficulty" -> cfg.damagePercentPerDifficulty = Double.parseDouble(value);
-                case "defense", "defensepercentperdifficulty" -> cfg.defensePercentPerDifficulty = Double.parseDouble(value);
+                case "health", "healthpercentperdifficulty" ->
+                        cfg.healthPercentPerDifficulty = Math.max(0.0, Math.min(2.0, Double.parseDouble(value)));
+                case "damage", "damagepercentperdifficulty" ->
+                        cfg.damagePercentPerDifficulty = Math.max(0.0, Math.min(2.0, Double.parseDouble(value)));
+                case "defense", "defensepercentperdifficulty" ->
+                        cfg.defensePercentPerDifficulty = Math.max(0.0, Math.min(2.0, Double.parseDouble(value)));
                 case "movement", "movementpercentper100difficulty" ->
-                        cfg.movementPercentPer100Difficulty = Double.parseDouble(value);
-                case "dmzextrahealth", "dmzextrahealthpercent" -> cfg.dmzExtraHealthPercent = Double.parseDouble(value);
-                case "dmzextradamage", "dmzextradamagepercent" -> cfg.dmzExtraDamagePercent = Double.parseDouble(value);
-                case "dmzextradefense", "dmzextradefensepercent" -> cfg.dmzExtraDefensePercent = Double.parseDouble(value);
+                        cfg.movementPercentPer100Difficulty = Math.max(0.0, Math.min(5.0, Double.parseDouble(value)));
+                case "dmzextrahealth", "dmzextrahealthpercent" ->
+                        cfg.dmzExtraHealthPercent = Math.max(0.0, Math.min(2.0, Double.parseDouble(value)));
+                case "dmzextradamage", "dmzextradamagepercent" ->
+                        cfg.dmzExtraDamagePercent = Math.max(0.0, Math.min(2.0, Double.parseDouble(value)));
+                case "dmzextradefense", "dmzextradefensepercent" ->
+                        cfg.dmzExtraDefensePercent = Math.max(0.0, Math.min(2.0, Double.parseDouble(value)));
                 case "dmzextrakidamage", "dmzextrakidamagepercent" ->
-                        cfg.dmzExtraKiDamagePercent = Double.parseDouble(value);
+                        cfg.dmzExtraKiDamagePercent = Math.max(0.0, Math.min(2.0, Double.parseDouble(value)));
                 case "tierawakened" -> cfg.tierAwakened = Long.parseLong(value);
                 case "tierenhanced" -> cfg.tierEnhanced = Long.parseLong(value);
                 case "tierelite" -> cfg.tierElite = Long.parseLong(value);
@@ -658,25 +670,37 @@ public final class DifficultyCommands {
                         cfg.applyDmzExtrasToAllHostiles = Boolean.parseBoolean(value);
                 case "enablerewardscaling" -> cfg.enableRewardScaling = Boolean.parseBoolean(value);
                 case "enableelites" -> cfg.enableElites = Boolean.parseBoolean(value);
-                case "elitechance", "elitechancepercent" -> cfg.eliteChancePercent = Double.parseDouble(value);
+                case "elitechance", "elitechancepercent" ->
+                        cfg.eliteChancePercent = Math.max(0.0, Math.min(25.0, Double.parseDouble(value)));
                 case "enablemutations" -> cfg.enableMutations = Boolean.parseBoolean(value);
-                case "mutationchance", "mutationchancepercent" -> cfg.mutationChancePercent = Double.parseDouble(value);
+                case "mutationchance", "mutationchancepercent" ->
+                        cfg.mutationChancePercent = Math.max(0.0, Math.min(25.0, Double.parseDouble(value)));
                 case "enableadaptiveai" -> cfg.enableAdaptiveAi = Boolean.parseBoolean(value);
                 case "enableenemyevolution" -> cfg.enableEnemyEvolution = Boolean.parseBoolean(value);
                 case "enablebossscaling" -> cfg.enableBossScaling = Boolean.parseBoolean(value);
-                case "bossstatmultiplier" -> cfg.bossStatMultiplier = Double.parseDouble(value);
-                case "bosshealththreshold" -> cfg.bossHealthThreshold = Double.parseDouble(value);
-                case "maxhealthmultiplier" -> cfg.maxHealthMultiplier = Double.parseDouble(value);
+                case "bossstatmultiplier" ->
+                        cfg.bossStatMultiplier = Math.max(1.0, Math.min(5.0, Double.parseDouble(value)));
+                case "bosshealththreshold" ->
+                        cfg.bossHealthThreshold = Math.max(0.0, Math.min(100_000.0, Double.parseDouble(value)));
+                case "maxhealthmultiplier" -> {
+                    double m = Double.parseDouble(value);
+                    cfg.maxHealthMultiplier = m <= 0.0 ? 0.0 : Math.max(1.0, Math.min(20.0, m));
+                }
                 case "maxscaledhealth" ->
                         // 0 = uncapped (vanilla 1024 attribute wall is raised at mod boot)
-                        cfg.maxScaledHealth = Math.max(0.0, Double.parseDouble(value));
-                case "maxmovemultiplier" -> cfg.maxMoveMultiplier = Double.parseDouble(value);
+                        cfg.maxScaledHealth = Math.max(0.0, Math.min(100_000.0, Double.parseDouble(value)));
+                case "maxmovemultiplier" -> {
+                    double m = Double.parseDouble(value);
+                    cfg.maxMoveMultiplier = m <= 0.0 ? 0.0 : Math.max(1.0, Math.min(20.0, m));
+                }
                 case "maxarmorbonus" ->
                         // 0 = uncapped
-                        cfg.maxArmorBonus = Math.max(0.0, Double.parseDouble(value));
-                case "maxdamagemultiplier" ->
-                        // 0 / 1 = uncapped; only values > 1 apply a ceiling
-                        cfg.maxDamageMultiplier = Math.max(0.0, Double.parseDouble(value));
+                        cfg.maxArmorBonus = Math.max(0.0, Math.min(100_000.0, Double.parseDouble(value)));
+                case "maxdamagemultiplier" -> {
+                    // 0 / 1 = uncapped; only values > 1 apply a ceiling
+                    double m = Double.parseDouble(value);
+                    cfg.maxDamageMultiplier = m <= 0.0 ? 0.0 : Math.max(1.0, Math.min(20.0, m));
+                }
                 case "adminpermission" -> {
                     // Privilege escalation risk — change only in config JSON + reload.
                     source.m_81352_(Component.m_237113_(
@@ -726,29 +750,29 @@ public final class DifficultyCommands {
                 case "unlocktier6cost", "tier6cost" -> cfg.unlockTier6Cost = Math.max(0L, Long.parseLong(value));
                 case "unlocktier7cost", "tier7cost" -> cfg.unlockTier7Cost = Math.max(0L, Long.parseLong(value));
                 case "unlocktier1enemymult", "tier1enemymult", "tier1statpercent" ->
-                        cfg.unlockTier1EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                        cfg.unlockTier1EnemyMult = Math.max(0.05, Math.min(4.0, Double.parseDouble(value)));
                 case "unlocktier2enemymult", "tier2enemymult", "tier2statpercent" ->
-                        cfg.unlockTier2EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                        cfg.unlockTier2EnemyMult = Math.max(0.05, Math.min(4.0, Double.parseDouble(value)));
                 case "unlocktier3enemymult", "tier3enemymult", "tier3statpercent" ->
-                        cfg.unlockTier3EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                        cfg.unlockTier3EnemyMult = Math.max(0.05, Math.min(4.0, Double.parseDouble(value)));
                 case "unlocktier4enemymult", "tier4enemymult", "tier4statpercent" ->
-                        cfg.unlockTier4EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                        cfg.unlockTier4EnemyMult = Math.max(0.05, Math.min(4.0, Double.parseDouble(value)));
                 case "unlocktier5enemymult", "tier5enemymult", "tier5statpercent" ->
-                        cfg.unlockTier5EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                        cfg.unlockTier5EnemyMult = Math.max(0.05, Math.min(4.0, Double.parseDouble(value)));
                 case "unlocktier6enemymult", "tier6enemymult", "tier6statpercent" ->
-                        cfg.unlockTier6EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                        cfg.unlockTier6EnemyMult = Math.max(0.05, Math.min(4.0, Double.parseDouble(value)));
                 case "unlocktier7enemymult", "tier7enemymult", "tier7statpercent" ->
-                        cfg.unlockTier7EnemyMult = Math.max(0.0, Double.parseDouble(value));
+                        cfg.unlockTier7EnemyMult = Math.max(0.05, Math.min(4.0, Double.parseDouble(value)));
                 case "weakstatcountermult", "weakcounter" ->
-                        cfg.weakStatCounterMult = Math.max(1.0, Double.parseDouble(value));
+                        cfg.weakStatCounterMult = Math.max(1.0, Math.min(3.0, Double.parseDouble(value)));
                 case "weakdefensepiercemult", "defpierce" ->
-                        cfg.weakDefensePierceMult = Math.max(1.0, Double.parseDouble(value));
+                        cfg.weakDefensePierceMult = Math.max(1.0, Math.min(3.0, Double.parseDouble(value)));
                 case "tankdamagedefenseratio", "tankdeffloor" ->
-                        cfg.tankDamageDefenseRatio = Math.max(0.0, Double.parseDouble(value));
+                        cfg.tankDamageDefenseRatio = Math.max(0.0, Math.min(10.0, Double.parseDouble(value)));
                 case "tankdamagehealthratio", "tankhpfloor" ->
-                        cfg.tankDamageHealthRatio = Math.max(0.0, Double.parseDouble(value));
+                        cfg.tankDamageHealthRatio = Math.max(0.0, Math.min(10.0, Double.parseDouble(value)));
                 case "specializationdamagetax", "spectax" ->
-                        cfg.specializationDamageTax = Math.max(0.0, Double.parseDouble(value));
+                        cfg.specializationDamageTax = Math.max(0.0, Math.min(10.0, Double.parseDouble(value)));
                 case "enableclasscounters", "classcounters" ->
                         cfg.enableClassCounters = Boolean.parseBoolean(value)
                                 || "on".equalsIgnoreCase(value)
@@ -785,9 +809,13 @@ public final class DifficultyCommands {
                 case "enableancientcoindrops", "ancientcoindrops" ->
                         cfg.enableAncientCoinDrops = Boolean.parseBoolean(value);
                 case "ancientcoindropmult", "coindropmult" ->
-                        cfg.ancientCoinDropMult = Math.max(0.0, Double.parseDouble(value));
+                        cfg.ancientCoinDropMult = Math.max(0.0, Math.min(10.0, Double.parseDouble(value)));
                 case "ancientcoinratingdivisor", "coinratingdivisor" ->
-                        cfg.ancientCoinRatingDivisor = Math.max(1.0, Double.parseDouble(value));
+                        cfg.ancientCoinRatingDivisor = Math.max(1.0, Math.min(1_000_000.0, Double.parseDouble(value)));
+                case "ancientcoinupgradechance", "coinupgradechance" ->
+                        cfg.ancientCoinUpgradeChance = Math.max(0.0, Math.min(0.25, Double.parseDouble(value)));
+                case "elitestatmultiplier", "elitemult" ->
+                        cfg.eliteStatMultiplier = Math.max(1.0, Math.min(5.0, Double.parseDouble(value)));
                 case "deathresetsactivedifficulty", "deathreset" ->
                         cfg.deathResetsActiveDifficulty = Boolean.parseBoolean(value);
                 case "eliteminunlocktier", "elitemintier" ->

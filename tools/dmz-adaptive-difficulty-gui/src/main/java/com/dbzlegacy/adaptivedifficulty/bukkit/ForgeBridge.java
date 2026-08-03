@@ -857,13 +857,51 @@ public final class ForgeBridge {
         }
     }
 
-    public static void reloadConfig() {
+    /** @return true when Forge reload succeeded (false if mod missing / load failed). */
+    public static boolean reloadConfig() {
         try {
-            Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+            Object ok = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
                     .getMethod("reload").invoke(null);
             Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache")
                     .getMethod("invalidateAll").invoke(null);
             PLACEHOLDER_CACHE.clear();
+            if (ok instanceof Boolean b) {
+                return b;
+            }
+            return true;
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return false;
+        }
+    }
+
+    /**
+     * Refresh unlock-tier grants and difficulty titles from current DMZ / prestige
+     * (same sync chat menu runs when opening Buy / Titles).
+     */
+    public static void syncPlayerProgress(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return;
+        }
+        try {
+            ensureResolved(nms.getClass().getClassLoader());
+            if (cacheData == null) {
+                return;
+            }
+            Object data = cacheData.invoke(null, nms);
+            ClassLoader cl = nms.getClass().getClassLoader();
+            Class.forName("com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem", true, cl)
+                    .getMethod("syncUnlocks",
+                            Class.forName("net.minecraft.server.level.ServerPlayer", true, cl),
+                            Class.forName("com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData", true, cl))
+                    .invoke(null, nms, data);
+            Class.forName("com.dbzlegacy.adaptivedifficulty.title.TitleSystem", true, cl)
+                    .getMethod("syncTierTitles",
+                            Class.forName("net.minecraft.server.level.ServerPlayer", true, cl),
+                            boolean.class)
+                    .invoke(null, nms, false);
+            PLACEHOLDER_CACHE.remove(player.getUniqueId());
         } catch (Throwable ignored) {
         }
     }
@@ -1311,15 +1349,34 @@ public final class ForgeBridge {
                 }
                 case "ancientCoinUpgradeChance" -> {
                     double c = ((Number) parsed).doubleValue();
-                    yield Math.max(0.0, Math.min(1.0, c));
+                    yield Math.max(0.0, Math.min(0.25, c));
+                }
+                case "ancientCoinDropMult" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    yield Math.max(0.0, Math.min(10.0, m));
+                }
+                case "ancientCoinRatingDivisor" -> {
+                    double d = ((Number) parsed).doubleValue();
+                    yield Math.max(1.0, Math.min(1_000_000.0, d));
+                }
+                case "prestigeMultiplier", "levelMultiplier", "rewardScaling" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    yield Math.max(0.0, Math.min(50.0, m));
+                }
+                case "teamBonusPercent", "contributionPercent",
+                     "areaGroupBonusPercent", "areaDifficultyVariancePercent",
+                     "movementPercentPer100Difficulty" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    yield Math.max(0.0, Math.min(5.0, m));
                 }
                 case "eliteChancePercent", "mutationChancePercent" -> {
                     double c = ((Number) parsed).doubleValue();
-                    yield Math.max(0.0, Math.min(100.0, c));
+                    // Live admin set: keep rarities from becoming a free farm.
+                    yield Math.max(0.0, Math.min(25.0, c));
                 }
                 case "eliteStatMultiplier", "bossStatMultiplier" -> {
                     double m = ((Number) parsed).doubleValue();
-                    yield Math.max(1.0, Math.min(10.0, m));
+                    yield Math.max(1.0, Math.min(5.0, m));
                 }
                 case "maxDamageMultiplier", "maxHealthMultiplier", "maxMoveMultiplier" -> {
                     double m = ((Number) parsed).doubleValue();
@@ -1327,14 +1384,54 @@ public final class ForgeBridge {
                     if (m <= 0.0) {
                         yield 0.0;
                     }
-                    yield Math.max(1.0, Math.min(50.0, m));
+                    yield Math.max(1.0, Math.min(20.0, m));
+                }
+                case "maxScaledHealth", "maxArmorBonus", "bossHealthThreshold" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    if (m <= 0.0) {
+                        yield 0.0; // uncapped / disabled
+                    }
+                    yield Math.max(1.0, Math.min(100_000.0, m));
                 }
                 case "dmzExtraKiDamagePercent", "dmzExtraDamagePercent",
                      "dmzExtraHealthPercent", "dmzExtraDefensePercent",
                      "damagePercentPerDifficulty", "healthPercentPerDifficulty",
                      "defensePercentPerDifficulty" -> {
                     double m = ((Number) parsed).doubleValue();
-                    yield Math.max(0.0, Math.min(5.0, m));
+                    yield Math.max(0.0, Math.min(2.0, m));
+                }
+                case "unlockTier1EnemyMult", "unlockTier2EnemyMult", "unlockTier3EnemyMult",
+                     "unlockTier4EnemyMult", "unlockTier5EnemyMult", "unlockTier6EnemyMult",
+                     "unlockTier7EnemyMult" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    yield Math.max(0.05, Math.min(4.0, m));
+                }
+                case "weakStatCounterMult", "weakDefensePierceMult",
+                     "strongStatCounterMult", "classCounterDamageMult",
+                     "classCounterHealthMult", "classCounterArmorMult" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    yield Math.max(1.0, Math.min(3.0, m));
+                }
+                case "raceCounterMult" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    yield Math.max(1.0, Math.min(2.0, m));
+                }
+                case "maxCounterOverlayMult" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    yield Math.max(1.0, Math.min(4.0, m));
+                }
+                case "tankDamageDefenseRatio", "tankDamageHealthRatio",
+                     "specializationDamageTax" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    yield Math.max(0.0, Math.min(10.0, m));
+                }
+                case "defenseToArmorFactor" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    yield Math.max(0.1, Math.min(50.0, m));
+                }
+                case "tierCostLevelDivisor" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    yield Math.max(1.0, Math.min(10_000.0, m));
                 }
                 case "eliteMinUnlockTier", "mutationMinUnlockTier",
                      "adaptiveAiMinUnlockTier", "enemyEvolutionMinUnlockTier",

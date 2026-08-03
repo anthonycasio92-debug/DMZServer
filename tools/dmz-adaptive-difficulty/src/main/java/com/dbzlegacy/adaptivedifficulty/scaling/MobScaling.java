@@ -475,8 +475,10 @@ public final class MobScaling {
         tag.m_128356_(TAG_DIFFICULTY, 0L);
         tag.m_128356_(TAG_PROFILE_SIG, 0L);
         tag.m_128350_(TAG_DMG_MULT, 1.0f);
-        ServerPlayer nearby = NearbyPlayers.nearest(entity, Math.max(8.0, cfg.mobScaleRadius));
-        if (nearby != null && SystemGate.participates(nearby) && entity instanceof Mob mob) {
+        // Prefer an unlocked participant so spawn paint cannot lock onto a
+        // spectator / non-participant and then skip scaling forever.
+        ServerPlayer nearby = NearbyPlayers.nearestParticipating(entity, Math.max(8.0, cfg.mobScaleRadius));
+        if (nearby != null && entity instanceof Mob mob) {
             retargetToPlayer(mob, nearby);
         }
     }

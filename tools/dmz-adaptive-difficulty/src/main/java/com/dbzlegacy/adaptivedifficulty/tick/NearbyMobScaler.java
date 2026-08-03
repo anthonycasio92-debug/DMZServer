@@ -16,6 +16,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.server.ServerLifecycleHooks;
@@ -23,6 +24,9 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 /**
  * Rescales the closest hostiles near each player (hard cap: {@link ScaledMobTracker}).
  * When a player leaves range / turns personal off / has no tier, claimed mobs revert.
+ *
+ * <p>Mobs currently fighting this player (aggro target) stay scaled even if they
+ * briefly step outside the AABB, so mid-fight unscale cannot soft-reset HP/stats.
  */
 public final class NearbyMobScaler {
     private NearbyMobScaler() {}
@@ -74,7 +78,9 @@ public final class NearbyMobScaler {
         // Honor config radius (default 64); floor at 8 so tiny values still work.
         double radius = Math.max(8.0, cfg.mobScaleRadius);
         int max = ScaledMobTracker.maxSlots();
-        AABB box = player.m_20191_().m_82377_(radius, Math.min(16.0, radius), radius);
+        // Match horizontal radius for vertical reach so tall caves / towers
+        // don't leave combatants half-in / half-out of the retain AABB.
+        AABB box = player.m_20191_().m_82377_(radius, radius, radius);
         List<Mob> mobs;
         try {
             mobs = level.m_6443_(Mob.class, box, mob ->
@@ -86,41 +92,71 @@ public final class NearbyMobScaler {
         } catch (Throwable t) {
             return;
         }
-        if (mobs == null || mobs.isEmpty()) {
-            ScaledMobTracker.retainOnly(player, Set.of());
-            return;
-        }
-        double rSq = radius * radius;
-        double px = player.m_20185_();
-        double py = player.m_20186_();
-        double pz = player.m_20189_();
-        List<Mob> inRange = new ArrayList<>(Math.min(mobs.size(), 32));
-        for (Mob mob : mobs) {
-            double dx = mob.m_20185_() - px;
-            double dy = mob.m_20186_() - py;
-            double dz = mob.m_20189_() - pz;
-            if (dx * dx + dy * dy + dz * dz <= rSq) {
-                inRange.add(mob);
-            }
-        }
-        if (inRange.isEmpty()) {
-            ScaledMobTracker.retainOnly(player, Set.of());
-            return;
-        }
-        ScaledMobTracker.sortNearest(player, inRange);
+
         Set<UUID> kept = new HashSet<>(max);
-        for (Mob mob : inRange) {
-            if (kept.size() >= max) {
-                break;
+        // Mid-fight pin first: claimed mobs currently targeting this player keep
+        // their slot even when briefly outside the scan AABB.
+        pinCombatTargets(player, kept, max);
+
+        if (mobs != null && !mobs.isEmpty()) {
+            double rSq = radius * radius;
+            double px = player.m_20185_();
+            double py = player.m_20186_();
+            double pz = player.m_20189_();
+            List<Mob> inRange = new ArrayList<>(Math.min(mobs.size(), 32));
+            for (Mob mob : mobs) {
+                if (kept.contains(mob.m_20148_())) {
+                    continue;
+                }
+                double dx = mob.m_20185_() - px;
+                double dy = mob.m_20186_() - py;
+                double dz = mob.m_20189_() - pz;
+                if (dx * dx + dy * dy + dz * dz <= rSq) {
+                    inRange.add(mob);
+                }
             }
+            if (!inRange.isEmpty()) {
+                ScaledMobTracker.sortNearest(player, inRange);
+                for (Mob mob : inRange) {
+                    if (kept.size() >= max) {
+                        break;
+                    }
+                    MobScaling.retargetToPlayer(mob, player);
+                    if (ScaledMobTracker.isClaimed(player, mob)) {
+                        CombatIndex.mark(mob);
+                        kept.add(mob.m_20148_());
+                    }
+                }
+            }
+        }
+
+        // Anything previously claimed but now out of the kept set → revert to normal.
+        ScaledMobTracker.retainOnly(player, kept);
+    }
+
+    /**
+     * Keep claimed hostiles that are actively fighting this player so knockback /
+     * pathing / Y gaps cannot mid-fight unscale them.
+     */
+    private static void pinCombatTargets(ServerPlayer player, Set<UUID> kept, int max) {
+        if (player == null || kept == null || max <= 0) {
+            return;
+        }
+        ScaledMobTracker.forEachClaimedMob(player, mob -> {
+            if (kept.size() >= max || kept.contains(mob.m_20148_())) {
+                return;
+            }
+            LivingEntity target = mob.m_5448_();
+            if (target != player) {
+                return;
+            }
+            // Refresh paint while pinned so profile/config changes still apply.
             MobScaling.retargetToPlayer(mob, player);
             if (ScaledMobTracker.isClaimed(player, mob)) {
                 CombatIndex.mark(mob);
                 kept.add(mob.m_20148_());
             }
-        }
-        // Anything previously claimed but now out of the kept set → revert to normal.
-        ScaledMobTracker.retainOnly(player, kept);
+        });
     }
 
     /** Revert mobs that lost their difficulty slot (keeps unloaded UUIDs queued). */

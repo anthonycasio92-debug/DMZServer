@@ -534,15 +534,15 @@ public final class EnemyEvolution {
 
         // Solar Flare
         if (tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_flare") >= 90
+                && age - tag.m_128454_("dmz_ad_flare") >= kitCd(ender, 90)
                 && dist < 14.0f) {
             tag.m_128356_("dmz_ad_flare", age);
             solarFlare(level, ender, 10.0);
         }
 
         // Teleport combos — more aggressive at high tiers
-        int tpCd = tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower() ? 35
-                : tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower() ? 55 : 80;
+        long tpCd = kitCd(ender, tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower() ? 35
+                : tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower() ? 55 : 80);
         if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
                 && age - tag.m_128454_("dmz_ad_tp") > tpCd) {
             tag.m_128356_("dmz_ad_tp", age);
@@ -586,7 +586,7 @@ public final class EnemyEvolution {
         }
 
         // Leap
-        if (dist > 4.0 && dist < 16.0 && age - tag.m_128454_("dmz_ad_leap") > 50
+        if (dist > 4.0 && dist < 16.0 && age - tag.m_128454_("dmz_ad_leap") > kitCd(warden, 50)
                 && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
             tag.m_128356_("dmz_ad_leap", age);
             pushToward(warden, target, 1.35, 0.65);
@@ -594,7 +594,7 @@ public final class EnemyEvolution {
 
         // Rapid blasts / Ki barrage — longer CD, small volley (was up to 8 same-tick).
         if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_barrage") >= 95
+                && age - tag.m_128454_("dmz_ad_ki_barrage") >= kitCd(warden, 95)
                 && dist < 22.0f) {
             int shots = 2 + Math.min(1, tier.ordinalPower() / 4);
             if (KiAttackHelper.fireKiBarrage(warden, target, tier, shots) > 0) {
@@ -604,7 +604,7 @@ public final class EnemyEvolution {
 
         // Large blast
         if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_large") >= 85
+                && age - tag.m_128454_("dmz_ad_large") >= kitCd(warden, 85)
                 && dist < 24.0f) {
             if (KiAttackHelper.fireLargeBlast(warden, target, tier)) {
                 tag.m_128356_("dmz_ad_large", age);
@@ -613,7 +613,7 @@ public final class EnemyEvolution {
 
         // Explosive wave
         if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_wave") >= 140
+                && age - tag.m_128454_("dmz_ad_wave") >= kitCd(warden, 140)
                 && dist < 12.0f) {
             if (KiAttackHelper.fireExplosiveWave(warden, target, tier)) {
                 tag.m_128356_("dmz_ad_wave", age);
@@ -622,7 +622,7 @@ public final class EnemyEvolution {
 
         // Beam
         if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_beam") >= 100
+                && age - tag.m_128454_("dmz_ad_ki_beam") >= kitCd(warden, 100)
                 && dist < 26.0f) {
             if (KiAttackHelper.fireKiBeam(warden, target, tier,
                     tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower())) {
@@ -632,7 +632,7 @@ public final class EnemyEvolution {
 
         // Teleport
         if (tier.ordinalPower() >= DifficultyTier.MASTER.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_tp") >= 100
+                && age - tag.m_128454_("dmz_ad_tp") >= kitCd(warden, 100)
                 && dist > 5.0f) {
             tag.m_128356_("dmz_ad_tp", age);
             teleportNear(warden, target, 2.0);
@@ -741,7 +741,7 @@ public final class EnemyEvolution {
         }
 
         if (tier.ordinalPower() >= DifficultyTier.AWAKENED.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_large") >= 50
+                && age - tag.m_128454_("dmz_ad_large") >= kitCd(ghast, 50)
                 && dist < 40.0f) {
             if (KiAttackHelper.fireLargeBlast(ghast, target, tier)) {
                 tag.m_128356_("dmz_ad_large", age);
@@ -749,14 +749,14 @@ public final class EnemyEvolution {
             }
         }
         if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_beam") >= 80
+                && age - tag.m_128454_("dmz_ad_ki_beam") >= kitCd(ghast, 80)
                 && dist < 42.0f) {
             if (KiAttackHelper.fireKiBeam(ghast, target, tier, true, true)) {
                 tag.m_128356_("dmz_ad_ki_beam", age);
             }
         }
         if (tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_wave") >= 120
+                && age - tag.m_128454_("dmz_ad_wave") >= kitCd(ghast, 120)
                 && dist < 28.0f) {
             if (KiAttackHelper.fireExplosiveWave(ghast, target, tier)) {
                 tag.m_128356_("dmz_ad_wave", age);
@@ -780,13 +780,13 @@ public final class EnemyEvolution {
         long age = piglin.f_19797_;
         double dist = piglin.m_20270_(target);
 
-        if (dist > 3.0 && dist < 12.0 && age - tag.m_128454_("dmz_ad_leap") > 55
+        if (dist > 3.0 && dist < 12.0 && age - tag.m_128454_("dmz_ad_leap") > kitCd(piglin, 55)
                 && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
             tag.m_128356_("dmz_ad_leap", age);
             pushToward(piglin, target, 1.2, 0.55);
         }
         if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_blast") >= 50
+                && age - tag.m_128454_("dmz_ad_ki_blast") >= kitCd(piglin, 50)
                 && dist < 16.0) {
             if (KiAttackHelper.fireKiBlast(piglin, target, tier)) {
                 tag.m_128356_("dmz_ad_ki_blast", age);
@@ -796,7 +796,9 @@ public final class EnemyEvolution {
             piglin.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, 1, false, false));
             piglin.m_21573_().m_5624_(target, 1.4);
         }
-        if (dist < 3.0 && tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower() && age % 60 == 0) {
+        if (dist < 3.0 && tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_rush") >= kitCd(piglin, 60)) {
+            tag.m_128356_("dmz_ad_rush", age);
             // Rush combo — slam + brief strength
             groundSlam(piglin, target, 2.5, 0);
             piglin.m_7292_(new MobEffectInstance(MobEffects.f_19600_, 40, 1, false, true));
@@ -819,13 +821,13 @@ public final class EnemyEvolution {
         long age = zp.f_19797_;
         double dist = zp.m_20270_(target);
 
-        if (dist > 3.0 && dist < 13.0 && age - tag.m_128454_("dmz_ad_leap") > 50
+        if (dist > 3.0 && dist < 13.0 && age - tag.m_128454_("dmz_ad_leap") > kitCd(zp, 50)
                 && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
             tag.m_128356_("dmz_ad_leap", age);
             pushToward(zp, target, 1.3, 0.6);
         }
         if (tier.ordinalPower() >= DifficultyTier.ELITE.ordinalPower()
-                && age - tag.m_128454_("dmz_ad_ki_barrage") >= 65
+                && age - tag.m_128454_("dmz_ad_ki_barrage") >= kitCd(zp, 65)
                 && dist < 18.0) {
             int shots = 2 + Math.min(4, tier.ordinalPower() / 2);
             if (KiAttackHelper.fireKiBarrage(zp, target, tier, shots) > 0) {
@@ -866,7 +868,7 @@ public final class EnemyEvolution {
         CompoundTag tag = PersistentDataAccess.get(hoglin);
         long age = hoglin.f_19797_;
         double dist = hoglin.m_20270_(target);
-        if (dist > 14.0 || age - tag.m_128454_("dmz_ad_aerial") < 55) {
+        if (dist > 14.0 || age - tag.m_128454_("dmz_ad_aerial") < kitCd(hoglin, 55)) {
             return;
         }
         tag.m_128356_("dmz_ad_aerial", age);
@@ -888,8 +890,8 @@ public final class EnemyEvolution {
     // ── Shared helpers ────────────────────────────────────────────────────
 
     private static ServerPlayer nearestPlayer(ServerLevel level, Mob mob, double radius) {
-        // Player-list distance — avoids AABB entity queries on busy servers.
-        return NearbyPlayers.nearest(mob, radius);
+        // Prefer participants so kits don't lock onto personal-off / blocked players.
+        return NearbyPlayers.nearestParticipating(mob, radius);
     }
 
     private static void solarFlare(ServerLevel level, Mob source, double radius) {

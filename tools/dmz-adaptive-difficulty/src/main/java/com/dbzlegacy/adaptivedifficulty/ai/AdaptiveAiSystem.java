@@ -298,7 +298,7 @@ public final class AdaptiveAiSystem {
     }
 
     private static void focusWeakest(Mob mob, double radius) {
-        ServerPlayer weakest = NearbyPlayers.weakest(mob, Math.max(8.0, radius));
+        ServerPlayer weakest = NearbyPlayers.weakestParticipating(mob, Math.max(8.0, radius));
         if (weakest != null) {
             LivingEntity current = mob.m_5448_();
             if (current == null || current.m_21223_() > weakest.m_21223_() + 4.0f) {
@@ -307,9 +307,9 @@ public final class AdaptiveAiSystem {
         }
     }
 
-    /** Awakened fallback — lock the nearest living player so kits do not idle. */
+    /** Awakened fallback — lock the nearest participating player so kits do not idle. */
     private static void focusNearest(Mob mob, double radius) {
-        ServerPlayer nearest = NearbyPlayers.nearest(mob, Math.max(8.0, radius));
+        ServerPlayer nearest = NearbyPlayers.nearestParticipating(mob, Math.max(8.0, radius));
         if (nearest != null) {
             mob.m_6710_(nearest);
         }

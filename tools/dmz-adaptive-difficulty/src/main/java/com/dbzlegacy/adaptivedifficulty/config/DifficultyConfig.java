@@ -647,7 +647,8 @@ public final class DifficultyConfig {
         return FMLPaths.CONFIGDIR.get().resolve("dmz_adaptive_difficulty.json");
     }
 
-    public static void load() {
+    /** @return false when the JSON exists but could not be parsed. */
+    public static boolean load() {
         Path file = path();
         try {
             if (Files.exists(file)) {
@@ -660,9 +661,13 @@ public final class DifficultyConfig {
                 }
             }
             save();
+            return true;
         } catch (Exception e) {
             AdaptiveDifficultyMod.LOGGER.warn("[{}] failed to load config: {}", AdaptiveDifficultyMod.MOD_ID, e.toString());
-            INSTANCE = new DifficultyConfig();
+            if (INSTANCE == null) {
+                INSTANCE = new DifficultyConfig();
+            }
+            return false;
         }
     }
 
@@ -962,12 +967,14 @@ public final class DifficultyConfig {
         }
     }
 
-    public static void reload() {
-        load();
+    /** @return false when config JSON failed to parse (previous live values kept). */
+    public static boolean reload() {
+        boolean ok = load();
         com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier.invalidateThresholdCache();
         com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves.invalidateLut();
         com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty.clearCache();
         invalidateCombatPaintCaches();
+        return ok;
     }
 
     /** Re-run clamps on the live instance (Bukkit admin set / hot edits). */

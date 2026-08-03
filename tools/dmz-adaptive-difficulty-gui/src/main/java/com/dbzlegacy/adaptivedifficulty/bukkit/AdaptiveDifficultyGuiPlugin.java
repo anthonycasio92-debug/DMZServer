@@ -140,6 +140,12 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     }
                     player.sendMessage(msg);
                 }
+                // Reopen inventory GUI ourselves (CMI button commands close the chest).
+                // Chat backend is handled inside Forge DifficultyActions.
+                if (!"chat".equals(ForgeBridge.guiBackend())
+                        && reopen != null && !reopen.isBlank()) {
+                    openInventory(player, reopen);
+                }
                 return true;
             }
             case "admin" -> {
@@ -150,6 +156,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     sender.sendMessage("Players only.");
                     return true;
                 }
+                if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+                    player.sendMessage("§cNo permission: dmzdiff.gui");
+                    return true;
+                }
                 ForgeBridge.ActionResult result = ForgeBridge.handleActionResult(player, "reset", "0", "main");
                 if (result.message() != null && !result.message().isBlank()) {
                     String msg = result.message();
@@ -158,12 +168,19 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     }
                     player.sendMessage(msg);
                 }
+                if (!"chat".equals(ForgeBridge.guiBackend())) {
+                    openInventory(player, "main");
+                }
                 return true;
             }
             case "buy", "purchase", "unlock", "lower", "adjust", "titles", "title",
                  "team", "teams", "stats", "details" -> {
                 if (!(sender instanceof Player player)) {
                     sender.sendMessage("Players only.");
+                    return true;
+                }
+                if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+                    player.sendMessage("§cNo permission: dmzdiff.gui");
                     return true;
                 }
                 String page = switch (sub) {
@@ -182,7 +199,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 return true;
             }
             case "hard", "normal", "easy", "peaceful" -> {
-                if (!sender.isOp() && !sender.hasPermission("difficulty.admin")) {
+                boolean staff = sender instanceof Player p
+                        ? ForgeBridge.isStaff(p)
+                        : sender.isOp() || sender.hasPermission(ForgeBridge.adminPermission());
+                if (!staff) {
                     sender.sendMessage("§cOps only.");
                     return true;
                 }
@@ -257,8 +277,13 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 return true;
             }
             case "reload" -> {
-                ForgeBridge.reloadConfig();
-                sender.sendMessage("§aAdaptive difficulty config reloaded.");
+                if (ForgeBridge.reloadConfig()) {
+                    sender.sendMessage("§aAdaptive difficulty config reloaded.");
+                } else {
+                    String err = ForgeBridge.lastError();
+                    sender.sendMessage("§cConfig reload failed"
+                            + (err == null || err.isBlank() ? "." : ": " + err));
+                }
                 return true;
             }
             case "settings" -> {

@@ -213,8 +213,9 @@ public final class DifficultyEvents {
             return;
         }
         if (neu != null && HostileMobs.bothHostile(mob, neu)) {
-            ServerPlayer player = NearbyPlayers.nearest(mob, DifficultyConfig.get().mobScaleRadius);
-            if (player != null && SystemGate.participates(player)) {
+            ServerPlayer player = NearbyPlayers.nearestParticipating(
+                    mob, DifficultyConfig.get().mobScaleRadius);
+            if (player != null) {
                 event.setNewTarget(player);
                 CombatIndex.mark(mob);
                 MobScaling.retargetToPlayer(mob, player);
@@ -502,10 +503,12 @@ public final class DifficultyEvents {
     private static ServerPlayer focusPlayerOrClear(Mob mob, ServerPlayer hint) {
         HostileMobs.clearCivilWarAggro(mob);
         ServerPlayer player = hint;
-        if (player == null || !player.m_6084_() || player.m_9236_() != mob.m_9236_()) {
-            player = NearbyPlayers.nearest(mob, DifficultyConfig.get().mobScaleRadius);
+        if (player == null || !player.m_6084_() || player.m_9236_() != mob.m_9236_()
+                || !SystemGate.participates(player)) {
+            player = NearbyPlayers.nearestParticipating(
+                    mob, DifficultyConfig.get().mobScaleRadius);
         }
-        if (player != null && SystemGate.participates(player)) {
+        if (player != null) {
             LivingEntity current = mob.m_5448_();
             if (!(current instanceof Player) || !current.m_6084_()) {
                 mob.m_6710_(player);
