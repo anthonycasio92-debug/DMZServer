@@ -34,6 +34,8 @@ import net.minecraft.server.level.ServerPlayer;
 public final class PlayerCombatProfile {
     private static final long CACHE_TTL_MS = 250L;
     private static final Map<UUID, Cached> CACHE = new ConcurrentHashMap<>();
+    /** Base-form combat snapshot — used when NoForms getters ignore custom-race forms. */
+    private static final Map<UUID, FormBaseline> FORM_BASELINES = new ConcurrentHashMap<>();
     private static final WeakStat[] NO_TOP = new WeakStat[0];
 
     public enum WeakStat {
@@ -145,6 +147,19 @@ public final class PlayerCombatProfile {
         CACHE.clear();
     }
 
+    /** Drop form baseline (logout / race change). */
+    public static void clearFormBaseline(UUID playerId) {
+        if (playerId != null) {
+            FORM_BASELINES.remove(playerId);
+        }
+    }
+
+    /** Live DMZ form×stack multiplier peak (1.0 = base form). */
+    public static double liveFormMultiplier(ServerPlayer player) {
+        StatsData data = DmzProgression.stats(player);
+        return data == null ? 1.0 : formMultiplierBoost(data);
+    }
+
     private static PlayerCombatProfile build(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.get(player);
         int tier = Math.max(0, snap.activeTier);
@@ -162,37 +177,78 @@ public final class PlayerCombatProfile {
         double release = 100.0;
         double formBoost = 1.0;
         if (data != null) {
+            // Read live / no-form channels independently — one bad custom-race getter
+            // must not wipe the whole profile to wet-noodle defaults.
+            double liveMelee = readStat(() -> data.getMeleeDamage(), 1.0);
+            double liveStrike = readStat(() -> data.getStrikeDamage(), 1.0);
+            double liveKi = readStat(() -> data.getKiDamage(), 1.0);
+            double liveDef = readStat(() -> data.getDefense(), 1.0);
+            double liveHp = readStat(() -> data.getMaxHealth(), 20.0);
+
+            double apiBaseMelee = readStat(() -> data.getMeleeDamageNoMultipliers(), liveMelee);
+            double apiBaseStrike = readStat(() -> data.getStrikeDamageNoForms(), liveStrike);
+            double apiBaseKi = readStat(() -> data.getKiDamageNoForms(), liveKi);
+
+            double apiBoost = estimateFormBoost(
+                    liveMelee, apiBaseMelee, liveStrike, apiBaseStrike, liveKi, apiBaseKi);
+            // Custom races often ignore NoForms but still set getFormMultiplier / stack form.
+            double multBoost = formMultiplierBoost(data);
+            formBoost = Math.max(apiBoost, multBoost);
+
+            double baseMelee = apiBaseMelee;
+            double baseStrike = apiBaseStrike;
+            double baseKi = apiBaseKi;
+            // When APIs claim "no form" but multipliers / live spike say otherwise, peel from live.
+            if (multBoost > apiBoost + 0.05 && apiBoost < 1.08) {
+                baseMelee = Math.max(1.0, liveMelee / multBoost);
+                baseStrike = Math.max(1.0, liveStrike / multBoost);
+                baseKi = Math.max(1.0, liveKi / multBoost);
+                formBoost = multBoost;
+            }
+
+            // Baseline fallback for custom races whose NoForms == live and form mult stays 1.
+            UUID id = player.m_20148_();
+            FormBaseline baseline = FORM_BASELINES.get(id);
+            boolean inDetectedForm = formBoost > 1.12 || multBoost > 1.12;
+            if (!inDetectedForm) {
+                FORM_BASELINES.put(id, new FormBaseline(
+                        liveMelee, liveStrike, liveKi, liveDef, liveHp, System.currentTimeMillis()));
+            } else if (baseline != null) {
+                double fromBaseline = estimateFormBoost(
+                        liveMelee, baseline.melee, liveStrike, baseline.strike, liveKi, baseline.ki);
+                if (fromBaseline > formBoost + 0.05) {
+                    formBoost = fromBaseline;
+                    baseMelee = Math.max(1.0, baseline.melee);
+                    baseStrike = Math.max(1.0, baseline.strike);
+                    baseKi = Math.max(1.0, baseline.ki);
+                }
+            }
+
+            double baseDef = Math.max(1.0, liveDef / Math.max(1.0, formBoost));
+            double baseHp = Math.max(20.0, liveHp / Math.max(1.0, formBoost));
+            if (baseline != null && inDetectedForm && formBoost > 1.12) {
+                baseDef = Math.max(1.0, Math.min(baseDef, baseline.def));
+                baseHp = Math.max(20.0, Math.min(baseHp, baseline.hp));
+            }
+
+            double twBase = Math.max(0.0, Math.min(1.0, cfg.transformScaleWeight));
+            double exp = Math.max(0.20, Math.min(1.0, cfg.transformScaleExponent));
+            // Mild tier damp — floor 0.55 so admin ladders above 100% still inherit forms.
+            double tierDamp = Math.max(0.55, 1.0 - 0.40 * Math.max(0.0, Math.min(1.0, pct)));
+            double twOffense = twBase * tierDamp;
+            // Bulk (HP/DEF) stays near-live so high-tier packs aren't deleted on form-up.
+            double twBulk = Math.min(1.0, Math.max(twBase + 0.35, twBase * 1.55) * (0.85 + 0.15 * tierDamp));
+
+            melee = blendForm(baseMelee, liveMelee, twOffense, exp);
+            strike = blendForm(baseStrike, liveStrike, twOffense, exp);
+            ki = blendForm(baseKi, liveKi, twOffense, exp);
+            // Near-linear sponge — exponent 1.0 on bulk.
+            def = blendForm(baseDef, liveDef, twBulk, 1.0);
+            hp = blendForm(baseHp, liveHp, twBulk, 1.0);
+
             try {
-                double liveMelee = Math.max(1.0, data.getMeleeDamage());
-                double liveStrike = Math.max(1.0, data.getStrikeDamage());
-                double liveKi = Math.max(1.0, data.getKiDamage());
-                double liveDef = Math.max(1.0, data.getDefense());
-                double liveHp = Math.max(20.0, data.getMaxHealth());
-                // Form-stripped offense when DMZ exposes it.
-                double baseMelee = Math.max(1.0, data.getMeleeDamageNoMultipliers());
-                double baseStrike = Math.max(1.0, data.getStrikeDamageNoForms());
-                double baseKi = Math.max(1.0, data.getKiDamageNoForms());
-                formBoost = estimateFormBoost(
-                        liveMelee, baseMelee, liveStrike, baseStrike, liveKi, baseKi);
-                // DEF/HP have no no-form getters — peel the shared form boost.
-                double baseDef = Math.max(1.0, liveDef / formBoost);
-                double baseHp = Math.max(20.0, liveHp / formBoost);
-                double twBase = Math.max(0.0, Math.min(1.0, cfg.transformScaleWeight));
-                double exp = Math.max(0.20, Math.min(1.0, cfg.transformScaleExponent));
-                // High unlock tiers already take a large % of stats — cut the form slice further
-                // so T7×SSJ does not compound into one-shots.
-                double tierDamp = 1.0 - 0.55 * Math.max(0.0, Math.min(1.0, pct));
-                double twOffense = twBase * tierDamp;
-                // Keep a bit more sponge on HP/DEF so packs aren't deleted on form-up.
-                double twBulk = Math.min(1.0, twBase * 1.45) * (0.70 + 0.30 * tierDamp);
-                melee = blendForm(baseMelee, liveMelee, twOffense, exp);
-                strike = blendForm(baseStrike, liveStrike, twOffense, exp);
-                ki = blendForm(baseKi, liveKi, twOffense, exp);
-                def = blendForm(baseDef, liveDef, twBulk, exp);
-                hp = blendForm(baseHp, liveHp, twBulk, exp);
                 Resources resources = data.getResources();
                 if (resources != null) {
-                    // Prefer power-release (limit release) when available.
                     double powerRelease = resources.getPowerRelease();
                     double plainRelease = resources.getRelease();
                     release = Math.max(powerRelease, plainRelease);
@@ -201,7 +257,7 @@ public final class PlayerCombatProfile {
                     }
                 }
             } catch (Throwable ignored) {
-                // Fall through with defaults.
+                release = 100.0;
             }
         }
         // Peak-only let pure tanks face wet-noodle hits; blend in the average.
@@ -290,7 +346,11 @@ public final class PlayerCombatProfile {
             overlay *= blendCounter(classHealthBias(cfg));
         }
         overlay = clampCounterOverlay(overlay, cfg);
-        double scale = cfg == null ? 0.5 : Math.max(0.05, Math.min(4.0, cfg.mobHealthScale));
+        double scale = cfg == null ? 0.65 : Math.max(0.05, Math.min(4.0, cfg.mobHealthScale));
+        // Admin ladders above 100%: restore sponge so T5–T7 packs aren't deleted.
+        if (tierPercent > 1.0) {
+            scale = Math.min(4.0, scale * (1.0 + 0.40 * Math.min(2.0, tierPercent - 1.0)));
+        }
         return Math.max(10.0, base * overlay * scale);
     }
 
@@ -700,10 +760,62 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: fuller knob fingerprint + paint epoch.
-        h = mix(h, 12L);
+        // Formula revision: custom-race form mults + high-tier sponge.
+        h = mix(h, 13L);
         return h;
     }
+
+    @FunctionalInterface
+    private interface StatRead {
+        double get() throws Throwable;
+    }
+
+    private static double readStat(StatRead read, double fallback) {
+        try {
+            double v = read.get();
+            if (!(v > 0.0) || Double.isNaN(v) || Double.isInfinite(v)) {
+                return fallback;
+            }
+            return Math.max(fallback > 1.0 ? 1.0 : fallback, v);
+        } catch (Throwable ignored) {
+            return fallback;
+        }
+    }
+
+    /**
+     * Peak form×stack multiplier across combat stats. Works for custom races that
+     * register forms via DMZ multipliers even when NoForms getters are wrong.
+     */
+    private static double formMultiplierBoost(StatsData data) {
+        if (data == null) {
+            return 1.0;
+        }
+        double peak = 1.0;
+        for (String key : new String[] {"STR", "SKP", "PWR", "RES", "VIT"}) {
+            try {
+                double form = Math.max(0.0, data.getFormMultiplier(key));
+                double stack = Math.max(0.0, data.getStackFormMultiplier(key));
+                // DMZ may use multiply or add — treat both as factors ≥ 1.
+                double combined = Math.max(form, 1.0) * Math.max(stack, 1.0);
+                if (form > 0.0 && form < 1.0 && stack <= 1.0) {
+                    // Additive-style tiny form bonus.
+                    combined = 1.0 + form;
+                }
+                if (combined > peak) {
+                    peak = combined;
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        if (!(peak > 0.0) || Double.isNaN(peak) || Double.isInfinite(peak)) {
+            return 1.0;
+        }
+        return Math.max(1.0, Math.min(50.0, peak));
+    }
+
+    private record FormBaseline(
+            double melee, double strike, double ki, double def, double hp, long atMs
+    ) {}
 
     /**
      * How hard the live (form) stats outpace form-stripped offense.

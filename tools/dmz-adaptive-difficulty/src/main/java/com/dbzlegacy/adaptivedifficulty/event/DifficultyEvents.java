@@ -25,6 +25,9 @@ import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.dragonminez.common.events.DMZEvent;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import net.minecraft.tags.DamageTypeTags;
@@ -56,6 +59,10 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 public final class DifficultyEvents {
+    /** Last polled DMZ form×stack multiplier — catches custom races without FormChangeEvent. */
+    private static final Map<UUID, Double> LAST_FORM_MULT = new ConcurrentHashMap<>();
+    /** Last polled live offense peak — catches custom forms that never bump form multipliers. */
+    private static final Map<UUID, Double> LAST_LIVE_OFFENSE = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
@@ -63,6 +70,8 @@ public final class DifficultyEvents {
         DifficultyCache.invalidateAll();
         AreaDifficulty.clearCache();
         CombatIndex.clear();
+        LAST_FORM_MULT.clear();
+        LAST_LIVE_OFFENSE.clear();
     }
 
     @SubscribeEvent
@@ -106,6 +115,9 @@ public final class DifficultyEvents {
             ScaledMobTracker.releaseAndRevertPlayer(player);
             NearbyMobScaler.processEvictions();
             PlayerCombatProfile.clear(player.m_20148_());
+            PlayerCombatProfile.clearFormBaseline(player.m_20148_());
+            LAST_FORM_MULT.remove(player.m_20148_());
+            LAST_LIVE_OFFENSE.remove(player.m_20148_());
             AncientCoinEconomy.clearMigrateFlag(player.m_20148_());
             AreaDifficulty.clearCache();
         }
@@ -270,18 +282,45 @@ public final class DifficultyEvents {
                 || SystemGate.isDisabled() || !SystemGate.allows(player)) {
             return;
         }
-        // Level / prestige / transform-power poll — transform & limit-release change CR + mob scale.
-        if (player.f_19797_ % 40 != 0) {
+        // Level / prestige / transform-power / form-mult poll.
+        // Custom races often skip FormChangeEvent — catch form mult spikes here.
+        if (player.f_19797_ % 20 != 0) {
             return;
         }
         DifficultySnapshot before = DifficultyCache.get(player);
         int level = DmzProgression.dmzLevel(player);
         int prestige = DmzProgression.prestige(player);
         double transform = DmzProgression.transformationPower(player);
-        if (before.dmzLevel != level
+        double formMult = PlayerCombatProfile.liveFormMultiplier(player);
+        double liveOffense = liveOffensePeak(player);
+        UUID id = player.m_20148_();
+        Double prevForm = LAST_FORM_MULT.put(id, formMult);
+        Double prevOffense = LAST_LIVE_OFFENSE.put(id, liveOffense);
+        boolean formChanged = prevForm != null && Math.abs(prevForm - formMult) > 0.08;
+        boolean offenseChanged = prevOffense != null && prevOffense > 1.0 && liveOffense > 1.0
+                && Math.abs(liveOffense - prevOffense) / prevOffense > 0.12;
+        boolean progressChanged = before.dmzLevel != level
                 || before.prestige != prestige
-                || Math.abs(before.transformationPower - transform) > 0.5) {
+                || Math.abs(before.transformationPower - transform) > 0.5;
+        if (formChanged || offenseChanged || Math.abs(before.transformationPower - transform) > 0.5) {
+            com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.refreshCombatPaint(player);
+        } else if (progressChanged) {
             DifficultyCache.refresh(player);
+        }
+    }
+
+    private static double liveOffensePeak(ServerPlayer player) {
+        try {
+            var data = DmzProgression.stats(player);
+            if (data == null) {
+                return 1.0;
+            }
+            double m = Math.max(1.0, data.getMeleeDamage());
+            double s = Math.max(1.0, data.getStrikeDamage());
+            double k = Math.max(1.0, data.getKiDamage());
+            return Math.max(m, Math.max(s, k));
+        } catch (Throwable t) {
+            return 1.0;
         }
     }
 
