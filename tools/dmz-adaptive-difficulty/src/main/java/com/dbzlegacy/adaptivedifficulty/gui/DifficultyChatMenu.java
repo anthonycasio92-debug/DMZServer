@@ -149,7 +149,7 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_("§7Current §f" + (active <= 0 ? "None" : ("T" + active))
                 + "  §8·  §7DMZ §f" + level
                 + "  §8·  §7Costs scale with your level"));
-        send(player, Component.m_237113_("§8Ancient Coins — pay-up OK (lower coins OK), no change."));
+        send(player, Component.m_237113_("§8Ancient Coins — pay-up OK (lower/higher coins OK), change returned."));
         send(player, Component.m_237113_("§f" + AncientCoinEconomy.inventoryBreakdown(player)));
         send(player, Component.m_237113_(""));
         for (UnlockTier tier : UnlockTier.values()) {
@@ -165,7 +165,7 @@ public final class DifficultyChatMenu {
             } else if (unlocked) {
                 line = line.m_7220_(Component.m_237113_(" "))
                         .m_7220_(btn("§a[BUY]", "/difficulty do activate " + tier.id + " buy",
-                                "Pay Ancient Coins for Tier " + tier.id + " (pay-up OK, no change)"));
+                                "Pay Ancient Coins for Tier " + tier.id + " (pay-up OK, change returned)"));
             } else {
                 line = line.m_7220_(Component.m_237113_(
                         " §cLOCKED §8(DMZ " + tier.requiredDmzLevel() + " or Prestige " + tier.id + ")"));

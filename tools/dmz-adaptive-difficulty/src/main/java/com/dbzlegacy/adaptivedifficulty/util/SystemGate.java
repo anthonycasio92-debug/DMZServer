@@ -43,7 +43,8 @@ public final class SystemGate {
 
     /**
      * True when this player's personal difficulty is on — scaling, kill coins,
-     * death reset, AI pressure, and tier buy/lower driven by them.
+     * AI pressure, and tier buy/lower driven by them.
+     * Death reset uses {@link #allows} so personal OFF cannot skip the penalty.
      */
     public static boolean participates(ServerPlayer player) {
         if (!allows(player)) {

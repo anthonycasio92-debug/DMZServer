@@ -432,14 +432,15 @@ public final class DifficultyConfig {
     }
 
     public long tierRequiredLevel(int tierId) {
+        // Floor at 1 — unlockTierNLevel 0 must never mean "everyone unlocked".
         return switch (tierId) {
-            case 1 -> Math.max(0L, unlockTier1Level);
-            case 2 -> Math.max(0L, unlockTier2Level);
-            case 3 -> Math.max(0L, unlockTier3Level);
-            case 4 -> Math.max(0L, unlockTier4Level);
-            case 5 -> Math.max(0L, unlockTier5Level);
-            case 6 -> Math.max(0L, unlockTier6Level);
-            case 7 -> Math.max(0L, unlockTier7Level);
+            case 1 -> Math.max(1L, unlockTier1Level);
+            case 2 -> Math.max(1L, unlockTier2Level);
+            case 3 -> Math.max(1L, unlockTier3Level);
+            case 4 -> Math.max(1L, unlockTier4Level);
+            case 5 -> Math.max(1L, unlockTier5Level);
+            case 6 -> Math.max(1L, unlockTier6Level);
+            case 7 -> Math.max(1L, unlockTier7Level);
             default -> Long.MAX_VALUE / 4L;
         };
     }
@@ -1193,6 +1194,14 @@ public final class DifficultyConfig {
         cfg.unlockTier5Cost = Math.max(1L, cfg.unlockTier5Cost);
         cfg.unlockTier6Cost = Math.max(1L, cfg.unlockTier6Cost);
         cfg.unlockTier7Cost = Math.max(1L, cfg.unlockTier7Cost);
+        // Level gates floor at 1 — 0 would unlock every tier for every player.
+        cfg.unlockTier1Level = Math.max(1L, cfg.unlockTier1Level);
+        cfg.unlockTier2Level = Math.max(1L, cfg.unlockTier2Level);
+        cfg.unlockTier3Level = Math.max(1L, cfg.unlockTier3Level);
+        cfg.unlockTier4Level = Math.max(1L, cfg.unlockTier4Level);
+        cfg.unlockTier5Level = Math.max(1L, cfg.unlockTier5Level);
+        cfg.unlockTier6Level = Math.max(1L, cfg.unlockTier6Level);
+        cfg.unlockTier7Level = Math.max(1L, cfg.unlockTier7Level);
         if (cfg.adaptiveAiMinUnlockTier < 1) {
             cfg.adaptiveAiMinUnlockTier = 1;
         }

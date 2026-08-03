@@ -460,8 +460,9 @@ public final class DifficultyEvents {
             EnemyEvolution.onCreeperDeath(creeper, event.getSource());
         }
         // V3 death penalty: clear temporary active tier/level; unlocks & coins stay.
+        // Uses allows() (not participates) so toggling personal OFF cannot skip the penalty.
         if (dead instanceof ServerPlayer victim
-                && SystemGate.participates(victim)
+                && SystemGate.allows(victim)
                 && DifficultyConfig.get().deathResetsActiveDifficulty) {
             var data = DifficultyCache.data(victim);
             if (data.getActiveTier() > 0 || data.getActiveDifficultyLevel() > 0L) {

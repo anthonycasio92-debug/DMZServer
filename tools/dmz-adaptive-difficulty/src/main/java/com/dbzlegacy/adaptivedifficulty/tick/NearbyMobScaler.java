@@ -25,10 +25,14 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * Rescales the closest hostiles near each player (hard cap: {@link ScaledMobTracker}).
  * When a player leaves range / turns personal off / has no tier, claimed mobs revert.
  *
- * <p>Mobs currently fighting this player (aggro target) stay scaled even if they
- * briefly step outside the AABB, so mid-fight unscale cannot soft-reset HP/stats.
+ * <p>Mobs currently fighting this player (aggro target) stay scaled within a limited
+ * pin radius (scan radius × 1.5) so knockback cannot mid-fight unscale them — but
+ * dragging fights across the map no longer keeps infinite pin slots.
  */
 public final class NearbyMobScaler {
+    /** Extra reach for mid-fight pin beyond {@link DifficultyConfig#mobScaleRadius}. */
+    private static final double COMBAT_PIN_RADIUS_MULT = 1.5;
+
     private NearbyMobScaler() {}
 
     public static void pulse(MinecraftServer server, int gameTick) {
@@ -77,10 +81,11 @@ public final class NearbyMobScaler {
         }
         // Honor config radius (default 64); floor at 8 so tiny values still work.
         double radius = Math.max(8.0, cfg.mobScaleRadius);
+        double pinRadius = Math.max(radius, radius * COMBAT_PIN_RADIUS_MULT);
         int max = ScaledMobTracker.maxSlots();
         // Match horizontal radius for vertical reach so tall caves / towers
         // don't leave combatants half-in / half-out of the retain AABB.
-        AABB box = player.m_20191_().m_82377_(radius, radius, radius);
+        AABB box = player.m_20191_().m_82377_(pinRadius, pinRadius, pinRadius);
         List<Mob> mobs;
         try {
             mobs = level.m_6443_(Mob.class, box, mob ->
@@ -95,8 +100,8 @@ public final class NearbyMobScaler {
 
         Set<UUID> kept = new HashSet<>(max);
         // Mid-fight pin first: claimed mobs currently targeting this player keep
-        // their slot even when briefly outside the scan AABB.
-        pinCombatTargets(player, kept, max);
+        // their slot within pinRadius (not the whole dimension).
+        pinCombatTargets(player, kept, max, pinRadius);
 
         if (mobs != null && !mobs.isEmpty()) {
             double rSq = radius * radius;
@@ -135,19 +140,29 @@ public final class NearbyMobScaler {
     }
 
     /**
-     * Keep claimed hostiles that are actively fighting this player so knockback /
-     * pathing / Y gaps cannot mid-fight unscale them.
+     * Keep claimed hostiles that are actively fighting this player within
+     * {@code pinRadius} so knockback / pathing / Y gaps cannot mid-fight unscale them.
      */
-    private static void pinCombatTargets(ServerPlayer player, Set<UUID> kept, int max) {
+    private static void pinCombatTargets(ServerPlayer player, Set<UUID> kept, int max, double pinRadius) {
         if (player == null || kept == null || max <= 0) {
             return;
         }
+        double pinSq = Math.max(8.0, pinRadius) * Math.max(8.0, pinRadius);
+        double px = player.m_20185_();
+        double py = player.m_20186_();
+        double pz = player.m_20189_();
         ScaledMobTracker.forEachClaimedMob(player, mob -> {
             if (kept.size() >= max || kept.contains(mob.m_20148_())) {
                 return;
             }
             LivingEntity target = mob.m_5448_();
             if (target != player) {
+                return;
+            }
+            double dx = mob.m_20185_() - px;
+            double dy = mob.m_20186_() - py;
+            double dz = mob.m_20189_() - pz;
+            if (dx * dx + dy * dy + dz * dz > pinSq) {
                 return;
             }
             // Refresh paint while pinned so profile/config changes still apply.

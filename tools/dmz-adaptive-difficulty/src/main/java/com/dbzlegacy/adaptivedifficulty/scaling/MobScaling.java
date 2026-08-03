@@ -265,13 +265,10 @@ public final class MobScaling {
                 || hasSddSpawnerMark(tag)
                 || tag.m_128471_(TAG_FROM_SPAWNER);
         if (owned) {
-            // Late SDD/spawner tags: AD may have already painted. Revert attrs first or
-            // clearAdBookkeeping alone leaves inflated ATTACK/HP while hurt-scaling skips.
-            if (tag.m_128471_(TAG_SCALED) && tag.m_128441_(TAG_BASE_HEALTH)) {
-                revertToBases(entity);
-            } else {
-                clearAdBookkeeping(entity, tag);
-            }
+            // Never revertToBases — capture-time bases can be the saga default 300 HP
+            // while live attrs already hold quest/form values. Strip AD markers/cosmetics only.
+            clearAdCombatPaint(entity, tag);
+            clearAdBookkeeping(entity, tag);
             tag.m_128379_(TAG_EXEMPT, true);
             return;
         }
@@ -633,8 +630,10 @@ public final class MobScaling {
     }
 
     /**
-     * Elite / mutation / boss-mechanics rolls once per mob, keyed to the claim
-     * owner's unlock tier — not the highest area unlock at spawn.
+     * Elite / mutation / boss-mechanics rolls keyed to the claim owner's unlock tier.
+     * First roll is sticky against leave/re-enter farming, but when a later claim
+     * crosses elite/mutation/boss gates that were unavailable at first roll, those
+     * gates get one chance (so T1 first-claim cannot permanently lock out T4+ rarity).
      */
     private static void rollRarityForClaim(
             LivingEntity entity, CompoundTag tag, int ownerUnlockTier, DifficultyConfig cfg) {
@@ -644,13 +643,26 @@ public final class MobScaling {
         int unlock = Math.max(0, ownerUnlockTier);
         tag.m_128405_("dmz_ad_unlock_tier", unlock);
         long rollSeed = Math.max(1L, unlock) * 10_000L;
+        int rolledAt = tag.m_128441_("dmz_ad_rarity_unlock")
+                ? Math.max(0, tag.m_128451_("dmz_ad_rarity_unlock"))
+                : 0;
         // Leave-area wipe clears AD boss paint; natural bosses need it restored on reclaim
         // even when elite/mutation already rolled once for this mob.
         if (tag.m_128471_("dmz_ad_rarity_rolled")) {
             restoreNaturalBossPaint(entity, tag, unlock, rollSeed, cfg);
+            if (unlock > rolledAt) {
+                if (unlock >= cfg.eliteMinUnlockTier && rolledAt < cfg.eliteMinUnlockTier) {
+                    EliteSystem.maybePromote(entity, rollSeed);
+                }
+                if (unlock >= cfg.mutationMinUnlockTier && rolledAt < cfg.mutationMinUnlockTier) {
+                    MutationSystem.maybeMutate(entity, rollSeed);
+                }
+                tag.m_128405_("dmz_ad_rarity_unlock", unlock);
+            }
             return;
         }
         tag.m_128379_("dmz_ad_rarity_rolled", true);
+        tag.m_128405_("dmz_ad_rarity_unlock", unlock);
         if (isNaturalBossCandidate(entity, tag, cfg) && unlock >= cfg.bossMechanicsMinUnlockTier) {
             BossScaling.markBoss(entity, rollSeed);
         }

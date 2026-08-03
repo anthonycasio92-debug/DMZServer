@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.3)
+# AdaptiveDifficulty (v1.0.4)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -10,11 +10,11 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Play
 | System | Behavior |
 |--------|----------|
 | Unlock tiers (1–7) | Live gate: current DMZ level **or** Prestige ≥ tier id. Prestige-up / level reset revokes tiers you no longer qualify for (coins alone cannot keep them). |
-| Buy tier | Spend Ancient Coins (pay-up OK with lower/higher mix, no change) |
+| Buy tier | Spend Ancient Coins (pay-up OK with lower/higher mix; overpay returned as change) |
 | Active difficulty | Set only by tier purchase — no +difficulty upgrades |
 | Personal toggle | GUI on/off for that player only (default ON). OFF freezes scaling, kill coins, AI pressure, and tier buy/lower until turned back on |
 | Coin drop chat | GUI mute for "Dropped X Ancient Coins" (default OFF) |
-| Death | Clears active tier + level when personal ON (unlocks / prestige / coins kept). Disconnect / logout keeps the purchased tier |
+| Death | Clears active tier + level whenever the system allows the player (personal OFF cannot skip). Unlocks / prestige / coins kept. Disconnect / logout keeps the purchased tier |
 | Nearby scaling | Hostiles scale to player combat stats × tier % (max 5/player). Form boost uses a soft curve on **offense** (`transformScaleWeight` / `transformScaleExponent`); mega forms compress continuously from ×6 → ×80 (headroom to ×100). **HP/DEF** stay near-live, plus a live-offense HP sponge so STR/SKP forms don’t delete packs. Custom races use `getFormMultiplier` + base-form baselines + offense polling when FormChangeEvent is missing. Ladders above 100% get extra HP sponge. Leave range / personal off / logout reverts stats **and** strips elite/mutation/boss nameplates. |
 | Combat Rating | Rewards / display / area readouts (not mob HP) |
 | Teams | WIP stub — personal difficulty only |
@@ -25,8 +25,8 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Play
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.3.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.3.jar`
+1. `mods/AdaptiveDifficulty-1.0.4.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.4.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 

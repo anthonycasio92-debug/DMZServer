@@ -746,13 +746,13 @@ public final class DifficultyCommands {
                         cfg.combatRatingDifficultyWeight = Double.parseDouble(value);
 
                 // ── V3 Unlock tier levels / max / costs / enemy mults ───────
-                case "unlocktier1level", "tier1level" -> cfg.unlockTier1Level = Math.max(0L, Long.parseLong(value));
-                case "unlocktier2level", "tier2level" -> cfg.unlockTier2Level = Math.max(0L, Long.parseLong(value));
-                case "unlocktier3level", "tier3level" -> cfg.unlockTier3Level = Math.max(0L, Long.parseLong(value));
-                case "unlocktier4level", "tier4level" -> cfg.unlockTier4Level = Math.max(0L, Long.parseLong(value));
-                case "unlocktier5level", "tier5level" -> cfg.unlockTier5Level = Math.max(0L, Long.parseLong(value));
-                case "unlocktier6level", "tier6level" -> cfg.unlockTier6Level = Math.max(0L, Long.parseLong(value));
-                case "unlocktier7level", "tier7level" -> cfg.unlockTier7Level = Math.max(0L, Long.parseLong(value));
+                case "unlocktier1level", "tier1level" -> cfg.unlockTier1Level = Math.max(1L, Long.parseLong(value));
+                case "unlocktier2level", "tier2level" -> cfg.unlockTier2Level = Math.max(1L, Long.parseLong(value));
+                case "unlocktier3level", "tier3level" -> cfg.unlockTier3Level = Math.max(1L, Long.parseLong(value));
+                case "unlocktier4level", "tier4level" -> cfg.unlockTier4Level = Math.max(1L, Long.parseLong(value));
+                case "unlocktier5level", "tier5level" -> cfg.unlockTier5Level = Math.max(1L, Long.parseLong(value));
+                case "unlocktier6level", "tier6level" -> cfg.unlockTier6Level = Math.max(1L, Long.parseLong(value));
+                case "unlocktier7level", "tier7level" -> cfg.unlockTier7Level = Math.max(1L, Long.parseLong(value));
                 case "unlocktier1max", "tier1max" -> cfg.unlockTier1Max = Math.max(0L, Long.parseLong(value));
                 case "unlocktier2max", "tier2max" -> cfg.unlockTier2Max = Math.max(0L, Long.parseLong(value));
                 case "unlocktier3max", "tier3max" -> cfg.unlockTier3Max = Math.max(0L, Long.parseLong(value));
@@ -760,13 +760,13 @@ public final class DifficultyCommands {
                 case "unlocktier5max", "tier5max" -> cfg.unlockTier5Max = Math.max(0L, Long.parseLong(value));
                 case "unlocktier6max", "tier6max" -> cfg.unlockTier6Max = Math.max(0L, Long.parseLong(value));
                 case "unlocktier7max", "tier7max" -> cfg.unlockTier7Max = Math.max(0L, Long.parseLong(value));
-                case "unlocktier1cost", "tier1cost" -> cfg.unlockTier1Cost = Math.max(0L, Long.parseLong(value));
-                case "unlocktier2cost", "tier2cost" -> cfg.unlockTier2Cost = Math.max(0L, Long.parseLong(value));
-                case "unlocktier3cost", "tier3cost" -> cfg.unlockTier3Cost = Math.max(0L, Long.parseLong(value));
-                case "unlocktier4cost", "tier4cost" -> cfg.unlockTier4Cost = Math.max(0L, Long.parseLong(value));
-                case "unlocktier5cost", "tier5cost" -> cfg.unlockTier5Cost = Math.max(0L, Long.parseLong(value));
-                case "unlocktier6cost", "tier6cost" -> cfg.unlockTier6Cost = Math.max(0L, Long.parseLong(value));
-                case "unlocktier7cost", "tier7cost" -> cfg.unlockTier7Cost = Math.max(0L, Long.parseLong(value));
+                case "unlocktier1cost", "tier1cost" -> cfg.unlockTier1Cost = Math.max(1L, Long.parseLong(value));
+                case "unlocktier2cost", "tier2cost" -> cfg.unlockTier2Cost = Math.max(1L, Long.parseLong(value));
+                case "unlocktier3cost", "tier3cost" -> cfg.unlockTier3Cost = Math.max(1L, Long.parseLong(value));
+                case "unlocktier4cost", "tier4cost" -> cfg.unlockTier4Cost = Math.max(1L, Long.parseLong(value));
+                case "unlocktier5cost", "tier5cost" -> cfg.unlockTier5Cost = Math.max(1L, Long.parseLong(value));
+                case "unlocktier6cost", "tier6cost" -> cfg.unlockTier6Cost = Math.max(1L, Long.parseLong(value));
+                case "unlocktier7cost", "tier7cost" -> cfg.unlockTier7Cost = Math.max(1L, Long.parseLong(value));
                 case "unlocktier1enemymult", "tier1enemymult", "tier1statpercent" ->
                         cfg.unlockTier1EnemyMult = Math.max(0.05, Math.min(4.0, Double.parseDouble(value)));
                 case "unlocktier2enemymult", "tier2enemymult", "tier2statpercent" ->

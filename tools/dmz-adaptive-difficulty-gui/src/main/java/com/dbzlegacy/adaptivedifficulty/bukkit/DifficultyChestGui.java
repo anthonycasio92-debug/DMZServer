@@ -72,7 +72,7 @@ public final class DifficultyChestGui implements Listener {
                 statusLore(ph, stateColor, ForgeBridge.isStaff(player), personalOn)));
         // Primary actions — centered trio
         put(holder, inv, 20, pageBtn(Material.GOLD_INGOT, "&eBuy Tier",
-                "&7Purchase a higher Unlock Tier", "&8Ancient Coins · pay-up OK · no change"),
+                "&7Purchase a higher Unlock Tier", "&8Ancient Coins · pay-up OK · change returned"),
                 SlotAction.page("buy"));
         put(holder, inv, 22, pageBtn(Material.WHITE_CONCRETE, "&fLower Tier",
                 "&7Select a lower unlocked tier", "&8Or reset to None · always free"),
@@ -150,7 +150,7 @@ public final class DifficultyChestGui implements Listener {
         info.addAll(coinLore(ph));
         info.add("");
         info.add("&8Costs scale with your DMZ level");
-        info.add("&8Pay-up OK (e.g. Copper instead of Iron) — no change");
+        info.add("&8Pay-up OK (e.g. Copper instead of Iron) — change returned");
         put(holder, inv, 4, item(Material.GOLD_INGOT, "&e&lBuy Higher Tier", info));
 
         placeTierItems(holder, inv, ph, true);
@@ -322,7 +322,7 @@ public final class DifficultyChestGui implements Listener {
         coins.add("");
         coins.addAll(coinLore(ph));
         coins.add("");
-        coins.add("&8Tier purchases: pay-up OK, no change returned");
+        coins.add("&8Tier purchases: pay-up OK, change returned");
         put(holder, inv, 15, item(Material.GOLD_INGOT, "&f&lAncient Coins", coins));
         put(holder, inv, 27, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
@@ -351,7 +351,7 @@ public final class DifficultyChestGui implements Listener {
                 tip.add("&aCurrently active");
             } else if (buyMode && unlocked) {
                 tip.add("&aUnlocked &8· click to purchase");
-                tip.add("&8Pay-up OK · no change");
+                tip.add("&8Pay-up OK · change returned");
             } else if (!buyMode && unlocked && t < activeTier) {
                 tip.add("&aOwned &8· click to lower here");
             } else if (!unlocked) {

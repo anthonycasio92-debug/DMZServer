@@ -37,8 +37,8 @@ import net.minecraftforge.fml.ModList;
  * Lightman's bank accounts are never read or charged.
  * <p>
  * Charges prefer an exact copper total, but players may <b>pay up</b> with any
- * mix of denominations whose total value is ≥ the cost (lower coins can stand
- * in for higher ones). No change is returned — overpay is kept by the shop.
+ * mix of denominations whose total value is ≥ the cost (lower or higher coins).
+ * Overpay is returned as Ancient Coin change (largest denominations first).
  */
 public final class AncientCoinEconomy {
     private static final boolean LIGHTMANS = ModList.get().isLoaded("lightmanscurrency");
@@ -332,7 +332,7 @@ public final class AncientCoinEconomy {
         if (player == null) {
             return false;
         }
-        // Pay-up allowed: any mix whose copper-value is ≥ cost (no change given).
+        // Pay-up allowed: any mix whose copper-value is ≥ cost (change returned).
         return balance(player) >= copperCost;
     }
 
@@ -346,7 +346,7 @@ public final class AncientCoinEconomy {
         return "Need " + formatExactCost(copperCost)
                 + " — missing " + formatExactCost(missing)
                 + " (have " + inventoryBreakdown(player) + ")"
-                + " §8· pay-up OK, no change";
+                + " §8· pay-up OK · change returned";
     }
 
     public static boolean charge(ServerPlayer player, long copperCost) {
@@ -776,7 +776,7 @@ public final class AncientCoinEconomy {
     }
 
     /**
-     * Prefer exact payment; otherwise pay-up (value ≥ cost, no change).
+     * Prefer exact payment; otherwise pay-up (value ≥ cost, change returned later).
      * Returns take-counts per CoinKind ordinal, or null if unaffordable.
      */
     private static long[] planPayment(long[] available, long copperCost) {
@@ -813,10 +813,9 @@ public final class AncientCoinEconomy {
     }
 
     /**
-     * Pay-up plan: spend cheapest coins first until copper-value ≥ cost.
-     * Overpay is intentional — no change is returned.
-     * Example: cost of 1× Iron (10 copper-value) can be paid with 10+ Copper,
-     * or with 1× Gold (overpay, no change).
+     * Pay-up plan: spend largest coins first until copper-value ≥ cost.
+     * Overpay is returned as change by {@link #grantChange}.
+     * Example: cost of 1× Iron (10) paid with 1× Gold → take Gold, refund 90 copper-value.
      */
     private static long[] planPayUpPayment(long[] available, long copperCost) {
         if (copperCost <= 0L) {
@@ -827,23 +826,46 @@ public final class AncientCoinEconomy {
         }
         long[] plan = new long[CoinKind.values().length];
         long[] left = java.util.Arrays.copyOf(available, available.length);
-        long need = copperCost;
-        for (CoinKind kind : CoinKind.lowToHigh()) {
+        long paid = 0L;
+        for (CoinKind kind : CoinKind.highToLow()) {
             int idx = kind.ordinal();
             long unit = kind.copperValue;
             if (unit <= 0L) {
                 continue;
             }
-            while (need > 0L && left[idx] > 0L) {
+            while (paid < copperCost && left[idx] > 0L) {
                 plan[idx]++;
                 left[idx]--;
-                need -= unit;
+                paid = safeAdd(paid, unit);
             }
-            if (need <= 0L) {
+            if (paid >= copperCost) {
                 return plan;
             }
         }
-        return need <= 0L ? plan : null;
+        return paid >= copperCost ? plan : null;
+    }
+
+    /** Return {@code copperValue} as Ancient Coins (largest denominations first). */
+    private static void grantChange(ServerPlayer player, long copperValue) {
+        if (player == null || copperValue <= 0L) {
+            return;
+        }
+        long left = copperValue;
+        for (CoinKind kind : CoinKind.highToLow()) {
+            long unit = kind.copperValue;
+            if (unit <= 0L || left < unit) {
+                continue;
+            }
+            long count = left / unit;
+            if (count <= 0L) {
+                continue;
+            }
+            grantExact(player, kind, count);
+            left -= count * unit;
+        }
+        if (left > 0L) {
+            grantExact(player, CoinKind.COPPER, left);
+        }
     }
 
     private static long totalCopperValue(long[] counts) {
@@ -909,6 +931,11 @@ public final class AncientCoinEconomy {
             refundCoinsNoWorldDrop(player, takenInv);
             refundCoinsNoWorldDrop(player, takenWallet);
             return false;
+        }
+        long paid = totalCopperValue(plan);
+        long overpay = paid - copperCost;
+        if (overpay > 0L) {
+            grantChange(player, overpay);
         }
         DifficultyCache.refresh(player);
         return true;
