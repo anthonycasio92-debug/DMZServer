@@ -329,10 +329,10 @@ public final class DifficultyEvents {
             if (data == null) {
                 return 1.0;
             }
+            // STR/SKP only — PWR/ENE are never scaled against.
             double m = Math.max(1.0, data.getMeleeDamage());
             double s = Math.max(1.0, data.getStrikeDamage());
-            double k = Math.max(1.0, data.getKiDamage());
-            return Math.max(m, Math.max(s, k));
+            return Math.max(m, s);
         } catch (Throwable t) {
             return 1.0;
         }

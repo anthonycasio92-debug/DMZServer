@@ -18,19 +18,17 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * Combat snapshot used to scale nearby hostiles to a fraction of the player's power.
  * <p>
- * Live DMZ combat getters include full form multipliers. Enemy scaling blends
- * form-stripped stats with a <em>diminishing</em> slice of that transform boost
- * ({@link DifficultyConfig#transformScaleWeight} + {@link DifficultyConfig#transformScaleExponent},
- * further dampened for mega forms up to ×80+) so transforming does not linearly
- * explode mob/creeper damage — especially at T1 and T6–T7.
- * <p>
- * Counters are intentionally light:
+ * Design (player-side counters stay in DMZ):
  * <ul>
- *   <li>DMZ fighting class overlay</li>
- *   <li>single highest combat stat (STR/SKP/RES/VIT/PWR)</li>
+ *   <li><b>Mob damage</b> tracks soft-blended <b>STR/SKP only</b> × tier%</li>
+ *   <li><b>Mob HP</b> tracks soft <b>VIT</b> only — never drastic, never sponged off offense</li>
+ *   <li><b>PWR / ENE are not scaled against</b></li>
+ *   <li>Player <b>RES</b> and <b>ki protection</b> counter hits; AD must not inflate
+ *       mob ATK to pierce RES or dump a full ki bar in one punch</li>
  * </ul>
- * Race overlays, weak-stat dump multipliers, and specialization tax are off.
- * Baseline DEF/VIT tank pierce floors remain so high mitigation cannot zero hits.
+ * Form boost uses a diminishing soft curve
+ * ({@link DifficultyConfig#transformScaleWeight} / {@link DifficultyConfig#transformScaleExponent},
+ * mega compress ×6→×80) on STR/SKP only.
  */
 public final class PlayerCombatProfile {
     private static final long CACHE_TTL_MS = 250L;
@@ -197,84 +195,50 @@ public final class PlayerCombatProfile {
         double liveOffense = 1.0;
         double liveMaxHealth = 20.0;
         if (data != null) {
-            // Read live / no-form channels independently — one bad custom-race getter
-            // must not wipe the whole profile to wet-noodle defaults.
+            // Read live channels independently — one bad custom-race getter must not
+            // wipe the whole profile. PWR/ENE are read for display only, never offense.
             double liveMelee = readStat(() -> data.getMeleeDamage(), 1.0);
             double liveStrike = readStat(() -> data.getStrikeDamage(), 1.0);
             double liveKi = readStat(() -> data.getKiDamage(), 1.0);
             double liveDef = readStat(() -> data.getDefense(), 1.0);
             double liveHp = readStat(() -> data.getMaxHealth(), 20.0);
-            double livePeak = Math.max(liveMelee, Math.max(liveStrike, liveKi));
-            double liveAvg = (liveMelee + liveStrike + liveKi) / 3.0;
-            liveOffense = livePeak * 0.55 + liveAvg * 0.45;
+            // Physical live offense only (STR/SKP) — never PWR.
+            liveOffense = physicalOffense(liveMelee, liveStrike);
             liveMaxHealth = liveHp;
 
-            // NoForms / NoMultipliers strip ALL totalMult (form+stack+effects+secondary).
-            // Soft-curving that ratio also compresses racial passives — wrong for custom races.
-            // Peel ONLY form⊕stack so effects stay at full strength in the base channel.
-            double formOnly = formMultiplierBoost(data);
-            boolean dmzFormActive = isDmzFormActive(data) || formOnly > 1.12;
+            // Per-channel form⊕stack peel (PWR excluded from formBoost / offense).
+            double strForm = statFormMultiplier(data, "STR");
+            double skpForm = statFormMultiplier(data, "SKP");
+            double vitForm = statFormMultiplier(data, "VIT");
+            double resForm = statFormMultiplier(data, "RES");
+            formBoost = Math.max(strForm, Math.max(skpForm, Math.max(vitForm, resForm)));
+            boolean dmzFormActive = isDmzFormActive(data) || formBoost > 1.12;
 
             UUID id = player.m_20148_();
             FormBaseline baseline = FORM_BASELINES.get(id);
 
-            double baseMelee;
-            double baseStrike;
-            double baseKi;
-            if (formOnly > 1.08) {
-                // Live / formOnly keeps effects+secondary in the base (full tier% scale).
-                baseMelee = Math.max(1.0, liveMelee / formOnly);
-                baseStrike = Math.max(1.0, liveStrike / formOnly);
-                baseKi = Math.max(1.0, liveKi / formOnly);
-                formBoost = formOnly;
-            } else if (dmzFormActive && baseline != null) {
-                // Active form string but multipliers stayed ~1 (misconfigured custom form).
-                double fromBaseline = estimateFormBoost(
-                        liveMelee, baseline.melee, liveStrike, baseline.strike, liveKi, baseline.ki);
-                if (fromBaseline > 1.12) {
-                    formBoost = fromBaseline;
-                    baseMelee = Math.max(1.0, baseline.melee);
-                    baseStrike = Math.max(1.0, baseline.strike);
-                    baseKi = Math.max(1.0, baseline.ki);
-                } else {
-                    baseMelee = liveMelee;
-                    baseStrike = liveStrike;
-                    baseKi = liveKi;
-                    formBoost = 1.0;
-                }
-            } else if (!dmzFormActive) {
-                // True base form — snapshot for later custom-race transforms.
+            double baseMelee = peelChannel(liveMelee, strForm, baseline == null ? 0.0 : baseline.melee, dmzFormActive);
+            double baseStrike = peelChannel(liveStrike, skpForm, baseline == null ? 0.0 : baseline.strike, dmzFormActive);
+            // Ki kept for profile display / class tags — never feeds mob scaling.
+            double baseKi = liveKi;
+
+            if (!dmzFormActive) {
                 FORM_BASELINES.put(id, new FormBaseline(
                         liveMelee, liveStrike, liveKi, liveDef, liveHp, System.currentTimeMillis()));
                 baseMelee = liveMelee;
                 baseStrike = liveStrike;
-                baseKi = liveKi;
                 formBoost = 1.0;
-            } else {
-                // Transformed on login with no baseline / no mults — don't soft-curve phantoms.
-                baseMelee = liveMelee;
-                baseStrike = liveStrike;
-                baseKi = liveKi;
-                formBoost = 1.0;
-            }
-
-            // Baseline can still beat formOnly when custom races bake power outside multipliers.
-            if (dmzFormActive && baseline != null && formBoost > 1.12) {
-                double fromBaseline = estimateFormBoost(
-                        liveMelee, baseline.melee, liveStrike, baseline.strike, liveKi, baseline.ki);
+            } else if (baseline != null) {
+                // Custom races that bake STR/SKP outside multipliers.
+                double fromBaseline = estimatePhysicalFormBoost(
+                        liveMelee, baseline.melee, liveStrike, baseline.strike);
                 if (fromBaseline > formBoost + 0.05) {
                     formBoost = fromBaseline;
                     baseMelee = Math.max(1.0, baseline.melee);
                     baseStrike = Math.max(1.0, baseline.strike);
-                    baseKi = Math.max(1.0, baseline.ki);
                 }
             }
 
-            // Peel bulk by its own channel — many high-STR forms leave VIT at ×1.
-            // Dividing HP by peak offense formBoost invented a fake ×N HP surplus and
-            // made near-linear bulk inherit explode mob health on transform.
-            double vitForm = statFormMultiplier(data, "VIT");
-            double resForm = statFormMultiplier(data, "RES");
             double baseDef = resForm > 1.08
                     ? Math.max(1.0, liveDef / resForm)
                     : (baseline != null && dmzFormActive ? Math.max(1.0, baseline.def) : liveDef);
@@ -296,26 +260,22 @@ public final class PlayerCombatProfile {
                 double bump = tier == 2 ? 0.14 : 0.10;
                 twOffense = Math.max(twOffense, Math.min(1.0, twBase + bump));
             }
-            // Continuous mega-form compress (design target ×80, headroom past that).
-            // Custom races with maxStatsMultiplier 20 turn ×4 forms into ×80 — keep a
-            // visible inherit so packs still react to higher forms.
             double megaT = formBoost >= 6.0 ? megaFormT(formBoost) : 0.0;
             if (formBoost >= 6.0) {
                 exp = Math.min(exp, megaFormExpCap(megaT));
                 twOffense = Math.min(twOffense, twBase * megaFormTwScale(megaT));
             }
-            // Bulk inherits more than offense, but mega forms must soft-curve too —
-            // near-linear HP on high mults made bags jump through the roof.
-            double twBulk = Math.min(1.0, Math.max(twBase + 0.20, twBase * 1.35) * (0.85 + 0.15 * tierDamp));
-            double bulkExp = 1.0;
+            // VIT/RES inherit gently — never near-linear on mega forms (HP must not jump).
+            double twBulk = Math.min(0.85, Math.max(twBase, twBase * 1.15) * (0.80 + 0.20 * tierDamp));
+            double bulkExp = 0.85;
             if (formBoost >= 6.0) {
-                twBulk = Math.min(twBulk, Math.max(twOffense + 0.12, twBase * megaFormBulkTwScale(megaT)));
+                twBulk = Math.min(twBulk, twBase * megaFormBulkTwScale(megaT));
                 bulkExp = megaFormBulkExp(megaT);
             }
 
             melee = blendForm(baseMelee, liveMelee, twOffense, exp);
             strike = blendForm(baseStrike, liveStrike, twOffense, exp);
-            ki = blendForm(baseKi, liveKi, twOffense, exp);
+            ki = baseKi; // unused for scaling — leave unboosted
             def = blendForm(baseDef, liveDef, twBulk, bulkExp);
             hp = blendForm(baseHp, liveHp, twBulk, bulkExp);
 
@@ -333,12 +293,10 @@ public final class PlayerCombatProfile {
                 release = 100.0;
             }
         }
-        // Peak-only let pure tanks face wet-noodle hits; blend in the average.
-        double peakOffense = Math.max(melee, Math.max(strike, ki));
-        double avgOffense = (melee + strike + ki) / 3.0;
-        double offense = peakOffense * 0.55 + avgOffense * 0.45;
-        // Counter identity from form-stripped investments — don't reshuffle on transform.
-        StatBalance balance = resolveBalance(data, melee, strike, def, hp, ki, formBoost);
+        // STR/SKP only — PWR/ENE never feed mob damage or HP.
+        double offense = physicalOffense(melee, strike);
+        // Counter identity: STR/SKP/RES/VIT only (no PWR).
+        StatBalance balance = resolveBalance(data, melee, strike, def, hp, formBoost);
         String fightingClass = DmzProgression.fightingClass(player);
         String race = DmzProgression.race(player);
         FightingStyle style = resolveStyle(fightingClass, melee, strike, ki, def, hp);
@@ -408,57 +366,29 @@ public final class PlayerCombatProfile {
     }
 
     /**
-     * Target mob HP at this player's current transformed / released power.
-     * Scaled by {@link DifficultyConfig#mobHealthScale} (default 65%).
+     * Target mob HP — soft VIT share only.
+     * Never sponges off STR/SKP/PWR. Player VIT is their HP pool; RES + ki protection
+     * counter hits. Scaled by {@link DifficultyConfig#mobHealthScale}.
      */
     public double targetMobHealth(DifficultyConfig cfg) {
-        double softHp = maxHealth * tierPercent;
-        double base = softHp;
-        // Soft-blended HP floor for early tiers (not raw live — VIT often doesn't rise with STR forms).
-        if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
-            double hpThreat = switch (activeTier) {
-                case 1 -> 0.22;
-                case 2 -> 0.36;
-                case 3 -> 0.48;
-                default -> 0.0;
-            };
-            base = Math.max(base, maxHealth * hpThreat);
+        // Pure VIT channel × tier% — no offense sponge, no form HP walls.
+        double base = maxHealth * tierPercent;
+        // Tiny early-tier floor so T1 packs aren't wet paper when VIT is still low.
+        if (activeTier >= 1 && activeTier <= 2 && formBoost > 1.12) {
+            double floor = maxHealth * (activeTier == 1 ? 0.12 : 0.18);
+            base = Math.max(base, floor);
         }
-        // STR/SKP mega-forms delete packs when HP didn't transform — sponge off live offense.
-        // Soft mob damage ≠ player live punches; size the bag for a multi-hit fight (incl. ×80).
-        // Cap the sponge so high-mult transforms don't make mob HP jump through the roof.
-        if (formBoost > 1.12 && liveOffense > offense * 1.35) {
-            double hits = switch (activeTier) {
-                case 1 -> 3.6;
-                case 2 -> 3.2;
-                case 3 -> 2.9;
-                case 4 -> 2.6;
-                case 5 -> 2.35;
-                case 6 -> 2.15;
-                default -> 2.0;
-            };
-            // Keep more tier% damp on mega forms — ×80 used to drop tierMix to ~0.07.
-            double tierMix = 0.70;
-            if (formBoost >= 6.0) {
-                double megaT = megaFormT(formBoost);
-                tierMix = Math.max(0.22, 0.55 - 0.28 * Math.min(1.25, megaT)); // ×6→0.55, ×80→0.27
-                if (activeTier <= 3) {
-                    hits += 0.25 + 0.75 * Math.min(1.25, megaT);
-                } else if (activeTier <= 5) {
-                    hits += 0.15 + 0.40 * Math.min(1.0, megaT);
-                }
-            }
-            double spongeTier = Math.max(0.15, tierPercent) * tierMix + (1.0 - tierMix);
-            double offenseSponge = liveOffense * hits * spongeTier;
-            // Never let sponge outrun soft HP by more than a form-aware cap.
-            double spongeCap = softHp * megaHealthSpongeCap(formBoost);
-            if (offenseSponge > spongeCap) {
-                offenseSponge = spongeCap;
-            }
-            base = Math.max(base, offenseSponge);
+        // Hard cap: transforms must not invent drastic HP. Soft VIT × modest form pad.
+        double formPad = 1.0;
+        if (formBoost > 1.12) {
+            // ×2→1.08, ×6→1.20, ×80→1.35 — never a health wall.
+            formPad = 1.0 + 0.35 * Math.min(1.0, Math.log(formBoost) / Math.log(80.0));
         }
-        // Survive the player's strongest damage channel (class + top-stat, capped).
-        // Counter intensity ramps with tier% so T2 20% stays near 20%.
+        double hardCap = maxHealth * Math.max(tierPercent, 0.15) * formPad * 1.35;
+        if (base > hardCap) {
+            base = hardCap;
+        }
+        // Mild class/top-stat HP overlay — never PWR, never huge.
         double overlay = 1.0;
         if (cfg.enableStrongStatCounters) {
             overlay *= blendCounter(strongStatHealthBias(cfg));
@@ -466,84 +396,52 @@ public final class PlayerCombatProfile {
         if (cfg.enableClassCounters) {
             overlay *= blendCounter(classHealthBias(cfg));
         }
-        overlay = clampCounterOverlay(overlay, cfg);
-        double scale = cfg == null ? 0.65 : Math.max(0.05, Math.min(4.0, cfg.mobHealthScale));
-        // Admin ladders above 100%: restore sponge so T5–T7 packs aren't deleted.
-        if (tierPercent > 1.0) {
-            scale = Math.min(4.0, scale * (1.0 + 0.40 * Math.min(2.0, tierPercent - 1.0)));
-        }
+        overlay = Math.min(1.15, clampCounterOverlay(overlay, cfg));
+        double scale = cfg == null ? 0.65 : Math.max(0.05, Math.min(2.0, cfg.mobHealthScale));
         return Math.max(10.0, base * overlay * scale);
     }
 
     /**
-     * Target mob attack. Uses blended offense, a light tankiness floor so high
-     * DEF cannot cancel hits to 0, plus class + top-stat overlays only.
+     * Target mob attack — soft-blended STR/SKP × tier% only.
+     * Player RES mitigates in DMZ; ki protection tanks the rest. No DEF/HP pierce
+     * inflation (that fought RES) and no PWR/ENE contribution.
      */
     public double targetMobDamage(DifficultyConfig cfg) {
-        double strength = counterStrength();
+        // Physical offense only.
         double offenseShare = offense * tierPercent;
-        // Early tiers lean on offense share; DEF/HP floors ramp in later.
-        double floorScale = 0.40 + 0.60 * strength;
-        double defFloor = defense * tierPercent * Math.max(0.0, cfg.tankDamageDefenseRatio) * floorScale;
-        double hpFloor = maxHealth * tierPercent * Math.max(0.0, cfg.tankDamageHealthRatio) * floorScale;
-        // Class tanks always get the floor treatment even with "even" invested stats.
-        if (cfg.enableClassCounters && style == FightingStyle.TANK) {
-            double tankBump = 1.0 + 0.08 * strength;
-            defFloor *= tankBump;
-            hpFloor *= tankBump;
-        }
-        double base = Math.max(offenseShare, Math.max(defFloor, hpFloor));
+        double base = offenseShare;
 
-        // T1–T3 + transformed: floor from soft-blended offense only.
-        // Raw liveOffense×pct made ×49 STR forms one-shot players at T1.
+        // T1–T3 + transformed: mild floor from soft-blended STR/SKP (not raw live).
         if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
             double threatPct = switch (activeTier) {
-                case 1 -> 0.24;
-                case 2 -> 0.42;
-                case 3 -> 0.55;
+                case 1 -> 0.20;
+                case 2 -> 0.34;
+                case 3 -> 0.46;
                 default -> 0.0;
             };
             double softFloor = offense * threatPct;
             if (formBoost >= 6.0) {
-                // Tighter as forms climb to ×80 — never pull raw-live threat through this floor.
                 double megaT = megaFormT(formBoost);
-                double shareMul = 1.35 - 0.28 * Math.min(1.25, megaT); // ×6→1.35, ×80→1.07
-                softFloor = Math.min(softFloor, offenseShare * Math.max(1.05, shareMul));
+                // Keep pressure for ki-protection use, but never raw-live one-shots.
+                double shareMul = 1.20 - 0.20 * Math.min(1.25, megaT); // ×6→1.20, ×80→1.0
+                softFloor = Math.min(softFloor, offenseShare * Math.max(1.0, shareMul));
             }
             base = Math.max(base, softFloor);
         }
 
-        // Mega / mastery forms (custom races often ×40–×80): soft curve alone asymptotes so
-        // hard that higher forms barely move mob damage. Add a capped live-threat floor.
-        if (formBoost >= 6.0 && liveOffense > offense * 1.5) {
-            double megaT = megaFormT(formBoost);
-            double liveShare = switch (activeTier) {
-                case 1 -> 0.05 + 0.04 * Math.min(1.25, megaT);
-                case 2 -> 0.08 + 0.06 * Math.min(1.25, megaT);
-                case 3 -> 0.11 + 0.08 * Math.min(1.25, megaT);
-                case 4 -> 0.15 + 0.10 * Math.min(1.25, megaT);
-                case 5 -> 0.19 + 0.12 * Math.min(1.25, megaT);
-                case 6 -> 0.23 + 0.14 * Math.min(1.25, megaT);
-                default -> 0.27 + 0.16 * Math.min(1.25, megaT);
+        // Higher tiers: nudge toward soft offense so ki protection matters, without
+        // dumping a full ki bar in one punch (no raw liveOffense pull-through).
+        if (activeTier >= 4 && formBoost > 1.12) {
+            double nudge = switch (activeTier) {
+                case 4 -> 1.05;
+                case 5 -> 1.08;
+                case 6 -> 1.10;
+                default -> 1.12;
             };
-            base = Math.max(base, liveOffense * Math.max(0.15, tierPercent) * liveShare);
+            base = Math.max(base, offenseShare * nudge);
         }
 
-        // DEF:offense pierce floor — keeps DMZ mitigation from zeroing hits.
-        // Soft at low tier% so "20%" is not secretly ~DEF×0.3 after pierce+overlay.
-        double tankiness = defense / Math.max(1.0, offense);
-        boolean tankBuild = tankiness > 1.15
-                || isTopStat(WeakStat.DEFENSE)
-                || isTopStat(WeakStat.VITALITY)
-                || (cfg.enableClassCounters && style == FightingStyle.TANK);
-        if (tankBuild) {
-            double pierce = Math.max(0.0, cfg.tankDamageDefenseRatio) * floorScale;
-            double tankExtra = 1.0 + Math.min(0.12, Math.max(0.0, tankiness - 1.0) * 0.12) * strength;
-            double throughDefense = defense * tierPercent * pierce * tankExtra;
-            base = Math.max(base, throughDefense);
-        }
-
-        // Class + top-stat overlays only (no race / weak-stat / specialization stack).
+        // Class + top-stat overlays (STR/SKP/RES/VIT only — PWR is a no-op).
         double overlay = 1.0;
         if (cfg.enableStrongStatCounters) {
             overlay *= blendCounter(strongStatDamageBias(cfg));
@@ -566,9 +464,8 @@ public final class PlayerCombatProfile {
         if (cfg.enableClassCounters) {
             if (style == FightingStyle.MELEE || style == FightingStyle.STRIKE) {
                 overlay *= blendCounter(Math.max(1.0, cfg.classCounterArmorMult));
-            } else if (style == FightingStyle.KI) {
-                overlay *= blendCounter(Math.max(1.0, 1.0 + (cfg.classCounterArmorMult - 1.0) * 0.45));
             }
+            // KI style: no armor pad — PWR/ENE are not scaled against.
         }
         overlay = clampCounterOverlay(overlay, cfg);
         armor *= overlay;
@@ -623,9 +520,8 @@ public final class PlayerCombatProfile {
         if (cfg.enableStrongStatCounters && topStats.length > 0) {
             scale *= switch (topStats[0]) {
                 case STRENGTH, STRIKE -> 0.97;
-                case KI_POWER -> 0.96;
                 case DEFENSE, VITALITY -> 0.98;
-                case NONE -> 1.0;
+                case KI_POWER, NONE -> 1.0; // PWR never accelerates kits
             };
         }
         // Blend toward 1.0 when still ramping into mid tiers.
@@ -638,46 +534,43 @@ public final class PlayerCombatProfile {
     private double strongStatHealthBias(DifficultyConfig cfg) {
         double mult = Math.max(1.0, cfg.strongStatCounterMult);
         WeakStat top = topStat();
-        if (top == WeakStat.NONE) {
-            return 1.0;
+        if (top == WeakStat.NONE || top == WeakStat.KI_POWER) {
+            return 1.0; // PWR is never scaled against
         }
         double bump = mult - 1.0;
         return switch (top) {
-            case STRENGTH, STRIKE -> 1.0 + bump * 0.70;
-            case KI_POWER -> 1.0 + bump * 0.85;
-            case DEFENSE, VITALITY -> 1.0 + bump * 0.30;
-            case NONE -> 1.0;
+            case STRENGTH, STRIKE -> 1.0 + bump * 0.35; // mild bag pad only
+            case DEFENSE, VITALITY -> 1.0 + bump * 0.15;
+            case KI_POWER, NONE -> 1.0;
         };
     }
 
     private double strongStatDamageBias(DifficultyConfig cfg) {
         double mult = Math.max(1.0, cfg.strongStatCounterMult);
         WeakStat top = topStat();
-        if (top == WeakStat.NONE) {
-            return 1.0;
+        if (top == WeakStat.NONE || top == WeakStat.KI_POWER) {
+            return 1.0; // PWR is never scaled against
         }
         double bump = mult - 1.0;
         return switch (top) {
             case STRENGTH, STRIKE -> 1.0 + bump * 0.55;
-            case KI_POWER -> 1.0 + bump * 0.65;
-            case DEFENSE -> 1.0 + bump * 0.85;
-            case VITALITY -> 1.0 + bump * 0.75;
-            case NONE -> 1.0;
+            // RES/VIT are player counters — do not inflate mob ATK to pierce them.
+            case DEFENSE, VITALITY -> 1.0;
+            case KI_POWER, NONE -> 1.0;
         };
     }
 
     private double strongStatArmorBias(DifficultyConfig cfg) {
         double mult = Math.max(1.0, cfg.strongStatCounterMult);
         WeakStat top = topStat();
-        if (top == WeakStat.NONE) {
+        if (top == WeakStat.NONE || top == WeakStat.KI_POWER) {
             return 1.0;
         }
         double bump = mult - 1.0;
         return switch (top) {
-            case STRENGTH, STRIKE -> 1.0 + bump * 0.80;
-            case KI_POWER -> 1.0 + bump * 0.40;
-            case DEFENSE, VITALITY -> 1.0 + bump * 0.20;
-            case NONE -> 1.0;
+            case STRENGTH, STRIKE -> 1.0 + bump * 0.50;
+            case DEFENSE, VITALITY -> 1.0;
+            case KI_POWER, NONE -> 1.0;
         };
     }
 
@@ -693,11 +586,16 @@ public final class PlayerCombatProfile {
     private double classDamageBias(DifficultyConfig cfg) {
         double mult = Math.max(1.0, cfg.classCounterDamageMult);
         String cls = fightingClass == null ? "" : fightingClass;
+        // Spirit/cleric (PWR) — no damage inflation; PWR is not scaled against.
+        if (cls.contains("spirit") || cls.contains("cleric")) {
+            return 1.0;
+        }
         if (cls.contains("berserk")) {
             return Math.max(1.0, 1.0 + (mult - 1.0) * 1.10);
         }
         if (cls.contains("tank") || cls.contains("paladin")) {
-            return Math.max(1.0, 1.0 + (mult - 1.0) * 1.12);
+            // RES is the player counter — don't inflate ATK to pierce tanks.
+            return Math.max(1.0, 1.0 + (mult - 1.0) * 0.35);
         }
         if (cls.contains("warrior")) {
             return mult;
@@ -705,40 +603,32 @@ public final class PlayerCombatProfile {
         if (cls.contains("martial")) {
             return Math.max(1.0, 1.0 + (mult - 1.0) * 1.00);
         }
-        if (cls.contains("spirit") || cls.contains("cleric")) {
-            return Math.max(1.0, 1.0 + (mult - 1.0) * 0.90);
-        }
         return switch (style) {
             case MELEE, STRIKE -> mult;
-            case KI -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.80);
-            case TANK -> Math.max(1.0, 1.0 + (mult - 1.0) * 1.10);
+            case KI -> 1.0;
+            case TANK -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.35);
             case HYBRID -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.45);
         };
     }
 
     private double classHealthBias(DifficultyConfig cfg) {
+        // HP overlays stay mild — VIT owns bag size; never pad vs PWR/ki classes.
         double mult = Math.max(1.0, cfg.classCounterHealthMult);
         String cls = fightingClass == null ? "" : fightingClass;
         if (cls.contains("spirit") || cls.contains("cleric")) {
-            return mult;
+            return 1.0;
         }
-        if (cls.contains("martial")) {
-            return Math.max(1.0, 1.0 + (mult - 1.0) * 0.90);
-        }
-        if (cls.contains("berserk")) {
-            return Math.max(1.0, 1.0 + (mult - 1.0) * 0.75);
-        }
-        if (cls.contains("warrior")) {
-            return Math.max(1.0, 1.0 + (mult - 1.0) * 0.55);
-        }
-        if (cls.contains("tank") || cls.contains("paladin")) {
+        if (cls.contains("martial") || cls.contains("berserk") || cls.contains("warrior")) {
             return Math.max(1.0, 1.0 + (mult - 1.0) * 0.35);
         }
+        if (cls.contains("tank") || cls.contains("paladin")) {
+            return Math.max(1.0, 1.0 + (mult - 1.0) * 0.15);
+        }
         return switch (style) {
-            case KI, STRIKE -> mult;
-            case MELEE -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.45);
-            case TANK -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.30);
-            case HYBRID -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.40);
+            case KI -> 1.0;
+            case STRIKE, MELEE -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.30);
+            case TANK -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.15);
+            case HYBRID -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.20);
         };
     }
 
@@ -780,19 +670,17 @@ public final class PlayerCombatProfile {
     private static FightingStyle styleFromOffense(
             double melee, double strike, double ki, double defense, double health
     ) {
-        double peakOff = Math.max(melee, Math.max(strike, ki));
+        // Physical peak only — PWR never decides style for scaling counters.
+        double peakOff = Math.max(melee, strike);
         double tankiness = Math.max(defense, health / 50.0);
         if (tankiness > peakOff * 1.15) {
             return FightingStyle.TANK;
         }
-        if (melee >= strike && melee >= ki) {
+        if (melee >= strike) {
             return FightingStyle.MELEE;
         }
-        if (strike >= melee && strike >= ki) {
+        if (strike > melee) {
             return FightingStyle.STRIKE;
-        }
-        if (ki >= melee && ki >= strike) {
-            return FightingStyle.KI;
         }
         return FightingStyle.HYBRID;
     }
@@ -803,16 +691,15 @@ public final class PlayerCombatProfile {
             double strike,
             double defense,
             double health,
-            double ki,
             double formBoost
     ) {
         // Prefer raw invested stats; strip form mult so transform doesn't reshuffle counters.
+        // PWR/ENE are intentionally excluded — never top-stat for scaling.
         double peel = Math.max(1.0, formBoost);
         double str = melee;
         double skp = strike;
         double res = defense;
         double vit = health;
-        double pwr = ki;
         if (data != null) {
             try {
                 Stats stats = data.getStats();
@@ -825,13 +712,11 @@ public final class PlayerCombatProfile {
                             * Math.max(0.01, data.getTotalMultiplier("RES")) / peel;
                     vit = Math.max(1.0, stats.getVitality())
                             * Math.max(0.01, data.getTotalMultiplier("VIT")) / peel;
-                    pwr = Math.max(1.0, stats.getKiPower())
-                            * Math.max(0.01, data.getTotalMultiplier("PWR")) / peel;
                 }
             } catch (Throwable ignored) {
             }
         }
-        double peak = Math.max(str, Math.max(skp, Math.max(res, Math.max(vit, pwr))));
+        double peak = Math.max(str, Math.max(skp, Math.max(res, vit)));
         if (!(peak > 0.0)) {
             return new StatBalance(WeakStat.NONE, 0.0, NO_TOP);
         }
@@ -841,12 +726,11 @@ public final class PlayerCombatProfile {
                 new Ranked(WeakStat.STRENGTH, str / peak),
                 new Ranked(WeakStat.STRIKE, skp / peak),
                 new Ranked(WeakStat.DEFENSE, res / peak),
-                new Ranked(WeakStat.VITALITY, vit / peak),
-                new Ranked(WeakStat.KI_POWER, pwr / peak)
+                new Ranked(WeakStat.VITALITY, vit / peak)
         };
         Arrays.sort(ranked, Comparator.comparingDouble((Ranked r) -> r.norm).reversed());
 
-        // Combat counters use only the single highest invested stat.
+        // Combat counters use only the single highest invested physical/bulk stat.
         WeakStat[] top = { ranked[0].stat };
 
         WeakStat weakest = ranked[ranked.length - 1].stat;
@@ -916,8 +800,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: VIT/RES peel + compressed mega HP sponge.
-        h = mix(h, 19L);
+        // Formula revision: STR/SKP offense, VIT-only HP, no PWR/ENE, no HP sponge.
+        h = mix(h, 20L);
         return h;
     }
 
@@ -955,22 +839,55 @@ public final class PlayerCombatProfile {
     }
 
     /**
-     * Peak form⊕stack multiplier across combat stats.
-     * Honors DMZ {@code multiplicationInsteadOfAdditionForMultipliers} (this server: addition).
-     * Includes mastery / maxStatsMultiplier via {@code getFormMultiplier}.
+     * Peak form⊕stack across <b>physical/bulk</b> channels only (STR/SKP/RES/VIT).
+     * PWR/ENE are never included — they are not scaled against.
      */
     private static double formMultiplierBoost(StatsData data) {
         if (data == null) {
             return 1.0;
         }
         double peak = 1.0;
-        for (String key : new String[] {"STR", "SKP", "PWR", "RES", "VIT"}) {
+        for (String key : new String[] {"STR", "SKP", "RES", "VIT"}) {
             double combined = statFormMultiplier(data, key);
             if (combined > peak) {
                 peak = combined;
             }
         }
         return peak;
+    }
+
+    /** Soft STR/SKP offense blend used for mob damage (never PWR). */
+    private static double physicalOffense(double melee, double strike) {
+        double m = Math.max(1.0, melee);
+        double s = Math.max(1.0, strike);
+        double peak = Math.max(m, s);
+        double avg = (m + s) * 0.5;
+        return peak * 0.55 + avg * 0.45;
+    }
+
+    /** Peel one live channel by its form⊕stack factor, with baseline fallback. */
+    private static double peelChannel(double live, double formMult, double baseline, boolean inForm) {
+        if (formMult > 1.08) {
+            return Math.max(1.0, live / formMult);
+        }
+        if (inForm && baseline > 0.0) {
+            return Math.max(1.0, baseline);
+        }
+        return Math.max(1.0, live);
+    }
+
+    /** Physical-only form ratio from a base-form baseline (melee/strike). */
+    private static double estimatePhysicalFormBoost(
+            double liveMelee, double baseMelee,
+            double liveStrike, double baseStrike
+    ) {
+        double rMelee = liveMelee / Math.max(1.0, baseMelee);
+        double rStrike = liveStrike / Math.max(1.0, baseStrike);
+        double boost = (rMelee + rStrike) * 0.5;
+        if (!(boost > 0.0) || Double.isNaN(boost) || Double.isInfinite(boost)) {
+            return 1.0;
+        }
+        return Math.max(1.0, Math.min(MAX_FORM_BOOST, boost));
     }
 
     /** Form⊕stack for one combat channel (1.0 when unavailable / base). */
@@ -1081,46 +998,6 @@ public final class PlayerCombatProfile {
         return Math.max(0.50, 0.85 - 0.30 * Math.min(1.0, t));
     }
 
-    /**
-     * Max offense-sponge / softHp ratio. Mild forms can still pad bags; mega forms
-     * must not turn a transform into a sudden HP wall.
-     */
-    private static double megaHealthSpongeCap(double formBoost) {
-        if (!(formBoost > 1.12)) {
-            return 1.0;
-        }
-        if (formBoost < 6.0) {
-            // ×1.12→~2.2× softHp, ×6→~3.5×
-            return Math.min(3.5, 1.8 + 0.35 * (formBoost - 1.0));
-        }
-        double megaT = megaFormT(formBoost);
-        // ×6→3.6×, ×80→5.2× softHp (was unbounded via liveOffense×hits).
-        return 3.6 + 1.6 * Math.min(1.25, megaT);
-    }
-
-    /**
-     * How hard the live (form) stats outpace form-stripped offense.
-     * 1.0 = base form / no detectable boost.
-     */
-    private static double estimateFormBoost(
-            double liveMelee, double baseMelee,
-            double liveStrike, double baseStrike,
-            double liveKi, double baseKi
-    ) {
-        double rMelee = liveMelee / Math.max(1.0, baseMelee);
-        double rStrike = liveStrike / Math.max(1.0, baseStrike);
-        double rKi = liveKi / Math.max(1.0, baseKi);
-        // Median-ish: average of the two closest ratios to ignore one weird channel.
-        double sum = rMelee + rStrike + rKi;
-        double max = Math.max(rMelee, Math.max(rStrike, rKi));
-        double min = Math.min(rMelee, Math.min(rStrike, rKi));
-        double mid = sum - max - min;
-        double boost = mid > 0.0 ? mid : (sum / 3.0);
-        if (!(boost > 0.0) || Double.isNaN(boost) || Double.isInfinite(boost)) {
-            return 1.0;
-        }
-        return Math.max(1.0, Math.min(MAX_FORM_BOOST, boost));
-    }
 
     /**
      * Soft form blend: {@code base × (1 + (live/base - 1)^exp × weight)}.

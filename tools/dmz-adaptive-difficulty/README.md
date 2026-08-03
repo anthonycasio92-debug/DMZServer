@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.7)
+# AdaptiveDifficulty (v1.0.8)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -15,7 +15,7 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Play
 | Personal toggle | GUI on/off for that player only (default ON). OFF freezes scaling, kill coins, AI pressure, and tier buy/lower until turned back on |
 | Coin drop chat | GUI mute for "Dropped X Ancient Coins" (default OFF) |
 | Death | Clears active tier + level whenever the system allows the player (personal OFF cannot skip). Unlocks / prestige / coins kept. Disconnect / logout keeps the purchased tier |
-| Nearby scaling | Hostiles scale to player combat stats × tier % (max 5/player). Form boost uses a soft curve on **offense** (`transformScaleWeight` / `transformScaleExponent`); mega forms compress continuously from ×6 → ×80 (headroom to ×100). **HP/DEF** stay near-live, plus a live-offense HP sponge so STR/SKP forms don’t delete packs. Custom races peel form⊕stack only (DMZ addition mode), keep racial effects at full strength, baseline on race change, apply a live-threat floor so ×40–×80 forms still move mob damage, and soft-curve + cap HP so high-mult transforms do not explode pack health. Ladders above 100% get extra HP sponge. Leave range / personal off / logout reverts stats **and** strips elite/mutation/boss nameplates. |
+| Nearby scaling | Hostiles scale to **STR/SKP** × tier % for damage and soft **VIT** for HP (max 5/player). **PWR/ENE are never scaled against.** Mob HP never sponges off offense and stays hard-capped so transforms do not invent health walls — player **RES** and **ki protection** are the hit counters. Form boost soft-curves STR/SKP only (mega compress ×6→×80). Custom races peel form⊕stack per channel (DMZ addition mode). Leave range / personal off / logout reverts stats **and** strips elite/mutation/boss nameplates. |
 | Combat Rating | Rewards / display / area readouts (not mob HP) |
 | Teams | WIP stub — personal difficulty only |
 | Titles | Restored; equip from GUI |
@@ -25,8 +25,8 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Play
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.7.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.7.jar`
+1. `mods/AdaptiveDifficulty-1.0.8.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.8.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
