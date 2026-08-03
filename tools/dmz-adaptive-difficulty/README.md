@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.3.36)
+# DMZ Adaptive Difficulty (v3.3.37)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -23,7 +23,7 @@ Clients do **not** need this jar to join.
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.3.36.jar` (remove older AD jars)
+1. `mods/dmz_adaptive_difficulty-3.3.37.jar` (remove older AD jars)
 2. `plugins/dmz_adaptive_difficulty_gui-3.3.36.jar`
 3. Restart — config regenerates at `config/dmz_adaptive_difficulty.json`
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
@@ -56,10 +56,10 @@ Live `admin set` is allowlisted + clamped; change `adminPermission` only in JSON
 - Tier costs cap at 128 of one coin type, then promote to the next denomination (rounded up; top = 128× Netherite).
 - Level scaling uses levels above each tier’s unlock requirement (buying T7 at unlock ≈ base cost, not 100×). Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
-- Mob damage uses blended offense + a DEF/HP tank pierce floor so high mitigation cannot zero hits.
-- Tier scale vs player fight stats: T1 10% · T2 20% · T3 30% · T4 40% · T5 50% · T6 65% · T7 90%. High-DEF / tank builds always get a pierce floor so DMZ mitigation cannot zero mob hits.
+- Mob damage uses blended offense + a DEF/HP tank pierce floor so high mitigation cannot zero hits. Pierce / counters ramp with tier% (full by ~50%), so T2 20% stays near 20%.
+- Tier scale vs player fight stats: T1 10% · T2 20% · T3 30% · T4 40% · T5 50% · T6 65% · T7 90%.
 - Mob ki blasts/lasers/beams use the mob’s scaled attack damage (not vanilla 3–72), so DMZ DEF mitigation no longer cancels them to 0.
-- **Counters (light):** mobs press DMZ fighting class + the player’s single top combat stat only. Race overlays, weak-stat dump mults, top-3 stacking, and specialization tax are off. Toggles: `enableClassCounters`, `enableStrongStatCounters`.
+- **Counters (light):** class + single top combat stat only; intensity scales with tier%. No race / weak / top-3 / specialization stacks. Toggles: `enableClassCounters`, `enableStrongStatCounters`.
 - Scaled mob HP defaults to 50% of the previous match (`mobHealthScale` in config; damage unchanged).
 - Old NBT wallet balances migrate into Copper Ancient coins once per login.
-- AI + Enemy Evolution kits deepen with Buy Tier but stay **silent** (no kit nameplate/glow). Only true rarity rolls get cosmetics: Elite (`✦ Elite …`), Mutation (`§d…`), Boss (`☠ Boss …`). Soft floors: T1 Awakened · T2 Enhanced · T3 Elite kit · T4 Advanced · T5 Master · T6 Legendary · T7 God (ceiling up to Zenith). Stock rarity chances: elite 0.75%, mutation 1.25%.
+- AI + Enemy Evolution kits deepen with Buy Tier but stay **silent** (no kit nameplate/glow). Only true rarity rolls get cosmetics: Elite (`✦ Elite …`), Mutation (`§d…`), Boss (`☠ Boss …`). Soft floors: T1 Awakened · T2 Awakened→Enhanced · T3 Enhanced→Elite · T4 Advanced · T5 Master · T6 Legendary · T7 God (ceiling up to Zenith). Stock rarity chances: elite 0.75%, mutation 1.25%.

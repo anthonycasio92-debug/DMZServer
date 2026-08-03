@@ -251,12 +251,13 @@ public final class PlayerCombatProfile {
     public double targetMobHealth(DifficultyConfig cfg) {
         double base = maxHealth * tierPercent;
         // Survive the player's strongest damage channel (class + top-stat, capped).
+        // Counter intensity ramps with tier% so T2 20% stays near 20%.
         double overlay = 1.0;
         if (cfg.enableStrongStatCounters) {
-            overlay *= strongStatHealthBias(cfg);
+            overlay *= blendCounter(strongStatHealthBias(cfg));
         }
         if (cfg.enableClassCounters) {
-            overlay *= classHealthBias(cfg);
+            overlay *= blendCounter(classHealthBias(cfg));
         }
         overlay = clampCounterOverlay(overlay, cfg);
         double scale = cfg == null ? 0.5 : Math.max(0.05, Math.min(4.0, cfg.mobHealthScale));
@@ -268,26 +269,30 @@ public final class PlayerCombatProfile {
      * DEF cannot cancel hits to 0, plus class + top-stat overlays only.
      */
     public double targetMobDamage(DifficultyConfig cfg) {
+        double strength = counterStrength();
         double offenseShare = offense * tierPercent;
-        double defFloor = defense * tierPercent * Math.max(0.0, cfg.tankDamageDefenseRatio);
-        double hpFloor = maxHealth * tierPercent * Math.max(0.0, cfg.tankDamageHealthRatio);
+        // Early tiers lean on offense share; DEF/HP floors ramp in later.
+        double floorScale = 0.30 + 0.70 * strength;
+        double defFloor = defense * tierPercent * Math.max(0.0, cfg.tankDamageDefenseRatio) * floorScale;
+        double hpFloor = maxHealth * tierPercent * Math.max(0.0, cfg.tankDamageHealthRatio) * floorScale;
         // Class tanks always get the floor treatment even with "even" invested stats.
         if (cfg.enableClassCounters && style == FightingStyle.TANK) {
-            defFloor *= 1.08;
-            hpFloor *= 1.08;
+            double tankBump = 1.0 + 0.08 * strength;
+            defFloor *= tankBump;
+            hpFloor *= tankBump;
         }
         double base = Math.max(offenseShare, Math.max(defFloor, hpFloor));
 
         // DEF:offense pierce floor — keeps DMZ mitigation from zeroing hits.
-        // Strong-stat pressure is applied once via the capped overlay below (no double-dip).
+        // Soft at low tier% so "20%" is not secretly ~DEF×0.3 after pierce+overlay.
         double tankiness = defense / Math.max(1.0, offense);
         boolean tankBuild = tankiness > 1.15
                 || isTopStat(WeakStat.DEFENSE)
                 || isTopStat(WeakStat.VITALITY)
                 || (cfg.enableClassCounters && style == FightingStyle.TANK);
         if (tankBuild) {
-            double pierce = Math.max(0.0, cfg.tankDamageDefenseRatio);
-            double tankExtra = Math.min(1.15, 1.0 + Math.max(0.0, tankiness - 1.0) * 0.18);
+            double pierce = Math.max(0.0, cfg.tankDamageDefenseRatio) * floorScale;
+            double tankExtra = 1.0 + Math.min(0.12, Math.max(0.0, tankiness - 1.0) * 0.12) * strength;
             double throughDefense = defense * tierPercent * pierce * tankExtra;
             base = Math.max(base, throughDefense);
         }
@@ -295,10 +300,10 @@ public final class PlayerCombatProfile {
         // Class + top-stat overlays only (no race / weak-stat / specialization stack).
         double overlay = 1.0;
         if (cfg.enableStrongStatCounters) {
-            overlay *= strongStatDamageBias(cfg);
+            overlay *= blendCounter(strongStatDamageBias(cfg));
         }
         if (cfg.enableClassCounters) {
-            overlay *= classDamageBias(cfg);
+            overlay *= blendCounter(classDamageBias(cfg));
         }
         overlay = clampCounterOverlay(overlay, cfg);
         return Math.max(1.0, base * overlay);
@@ -310,13 +315,13 @@ public final class PlayerCombatProfile {
         double armor = Math.log1p(Math.max(0.0, share)) * cfg.defenseToArmorFactor;
         double overlay = 1.0;
         if (cfg.enableStrongStatCounters) {
-            overlay *= strongStatArmorBias(cfg);
+            overlay *= blendCounter(strongStatArmorBias(cfg));
         }
         if (cfg.enableClassCounters) {
             if (style == FightingStyle.MELEE || style == FightingStyle.STRIKE) {
-                overlay *= Math.max(1.0, cfg.classCounterArmorMult);
+                overlay *= blendCounter(Math.max(1.0, cfg.classCounterArmorMult));
             } else if (style == FightingStyle.KI) {
-                overlay *= Math.max(1.0, 1.0 + (cfg.classCounterArmorMult - 1.0) * 0.45);
+                overlay *= blendCounter(Math.max(1.0, 1.0 + (cfg.classCounterArmorMult - 1.0) * 0.45));
             }
         }
         overlay = clampCounterOverlay(overlay, cfg);
@@ -327,37 +332,59 @@ public final class PlayerCombatProfile {
         return Math.max(0.0, armor);
     }
 
+    /**
+     * How hard class/top-stat counters apply (0–1).
+     * Full strength from ~50% tier ladder up; T2 20% ≈ 40% counter power.
+     */
+    private double counterStrength() {
+        return Math.max(0.0, Math.min(1.0, tierPercent / 0.50));
+    }
+
+    /** Lerp a counter bias toward 1.0 at low unlock tiers. */
+    private double blendCounter(double bias) {
+        double s = counterStrength();
+        return 1.0 + (Math.max(1.0, bias) - 1.0) * s;
+    }
+
     private static double clampCounterOverlay(double overlay, DifficultyConfig cfg) {
-        double cap = cfg == null ? 1.55 : Math.max(1.0, Math.min(4.0, cfg.maxCounterOverlayMult));
+        double cap = cfg == null ? 1.25 : Math.max(1.0, Math.min(4.0, cfg.maxCounterOverlayMult));
         return Math.max(1.0, Math.min(cap, overlay));
     }
 
     /**
      * Kit cooldown scale for evolution abilities (&lt; 1 = more aggressive).
      * Driven only by fighting class + single top combat stat.
+     * No kit-cadence acceleration on early tiers (keeps T1/T2 near raw tier%).
      */
     public double kitCooldownScale(DifficultyConfig cfg) {
         if (cfg == null || (!cfg.enableClassCounters && !cfg.enableStrongStatCounters)) {
             return 1.0;
         }
+        double strength = counterStrength();
+        if (strength < 0.45) {
+            // Below ~T3 (22.5% of the 50% full-counter mark) — no faster kits.
+            return 1.0;
+        }
         double scale = 1.0;
         if (cfg.enableClassCounters) {
             scale *= switch (style) {
-                case MELEE, STRIKE -> 0.94;
-                case TANK -> 0.92;
-                case KI -> 0.95;
-                case HYBRID -> 0.98;
+                case MELEE, STRIKE -> 0.96;
+                case TANK -> 0.95;
+                case KI -> 0.97;
+                case HYBRID -> 0.99;
             };
         }
         if (cfg.enableStrongStatCounters && topStats.length > 0) {
             scale *= switch (topStats[0]) {
-                case STRENGTH, STRIKE -> 0.96;
-                case KI_POWER -> 0.95;
-                case DEFENSE, VITALITY -> 0.97;
+                case STRENGTH, STRIKE -> 0.97;
+                case KI_POWER -> 0.96;
+                case DEFENSE, VITALITY -> 0.98;
                 case NONE -> 1.0;
             };
         }
-        return Math.max(0.85, Math.min(1.0, scale));
+        // Blend toward 1.0 when still ramping into mid tiers.
+        scale = 1.0 + (scale - 1.0) * strength;
+        return Math.max(0.90, Math.min(1.0, scale));
     }
 
     // ── Strong-stat (top-1) biases ─────────────────────────────────────────
@@ -625,8 +652,8 @@ public final class PlayerCombatProfile {
         h = mix(h, Math.round(cfg.mobHealthScale * 1000.0));
         h = mix(h, cfg.enableClassCounters ? 1L : 0L);
         h = mix(h, cfg.enableStrongStatCounters ? 1L : 0L);
-        // Formula revision: class + top-1 only; pierce no longer double-dips strong-stat.
-        h = mix(h, 7L);
+        // Formula revision: early-tier counter/pierce ramp + softer kit cadence.
+        h = mix(h, 8L);
         return h;
     }
 

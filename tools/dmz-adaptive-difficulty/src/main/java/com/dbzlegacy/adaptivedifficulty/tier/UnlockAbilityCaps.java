@@ -8,14 +8,15 @@ package com.dbzlegacy.adaptivedifficulty.tier;
  * up to the hard ceiling — they cannot grant Zenith kits on a low unlock.
  * <pre>
  * Unlock  Soft floor   Hard ceiling
- * T1      Awakened     Enhanced
- * T2      Enhanced     Elite
- * T3      Elite        Advanced
+ * T1      Awakened     Awakened
+ * T2      Awakened     Enhanced
+ * T3      Enhanced     Elite
  * T4      Advanced     Master
  * T5      Master       Divine
  * T6      Legendary    Mythic
  * T7      God          Zenith
  * </pre>
+ * Early unlocks stay kit-light so 10–20% tier ladders are not Elite-kit stomps.
  */
 public final class UnlockAbilityCaps {
     private UnlockAbilityCaps() {}
@@ -27,8 +28,8 @@ public final class UnlockAbilityCaps {
     public static DifficultyTier minAbilityTier(int unlockTier) {
         return switch (Math.max(0, unlockTier)) {
             case 1 -> DifficultyTier.AWAKENED;
-            case 2 -> DifficultyTier.ENHANCED;
-            case 3 -> DifficultyTier.ELITE;
+            case 2 -> DifficultyTier.AWAKENED;
+            case 3 -> DifficultyTier.ENHANCED;
             case 4 -> DifficultyTier.ADVANCED;
             case 5 -> DifficultyTier.MASTER;
             case 6 -> DifficultyTier.LEGENDARY;
@@ -42,9 +43,9 @@ public final class UnlockAbilityCaps {
      */
     public static DifficultyTier maxAbilityTier(int unlockTier) {
         return switch (Math.max(0, unlockTier)) {
-            case 1 -> DifficultyTier.ENHANCED;
-            case 2 -> DifficultyTier.ELITE;
-            case 3 -> DifficultyTier.ADVANCED;
+            case 1 -> DifficultyTier.AWAKENED;
+            case 2 -> DifficultyTier.ENHANCED;
+            case 3 -> DifficultyTier.ELITE;
             case 4 -> DifficultyTier.MASTER;
             case 5 -> DifficultyTier.DIVINE;
             case 6 -> DifficultyTier.MYTHIC;

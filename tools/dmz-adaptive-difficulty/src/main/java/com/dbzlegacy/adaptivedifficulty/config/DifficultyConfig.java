@@ -270,15 +270,15 @@ public final class DifficultyConfig {
     public double weakDefensePierceMult = 1.75;
     /**
      * Damage floor from player defense × tier % — stops DEF dumps from facing soft hits.
-     * Example: 0.90 → mob attack at least 90% of (defense × tierPercent).
-     * Must stay high enough that DMZ DEF mitigation does not cancel the hit to 0.
+     * Example: 0.55 → mob attack at least 55% of (defense × tierPercent) at full counter strength.
+     * Early tiers further damp this floor so 10–20% ladders stay near raw offense share.
      */
-    public double tankDamageDefenseRatio = 0.90;
+    public double tankDamageDefenseRatio = 0.55;
     /**
      * Damage floor from player max HP × tier % — presses high-VIT tanks.
-     * Example: 0.025 → mob attack at least 2.5% of (maxHealth × tierPercent).
+     * Example: 0.015 → mob attack at least 1.5% of (maxHealth × tierPercent).
      */
-    public double tankDamageHealthRatio = 0.025;
+    public double tankDamageHealthRatio = 0.015;
     /**
      * One-time: raise soft T1–T3 percents + tank pierce so early difficulty
      * contests high-DEF / low-level players (old 15%/30%/55% + 0.40 floor).
@@ -305,6 +305,11 @@ public final class DifficultyConfig {
      */
     public Boolean counterSimplifyMigratedV1 = Boolean.FALSE;
     /**
+     * One-time: soften stock pierce / counter overlays so early 10–20% tiers
+     * are not secretly ~DEF pierce + full class/top-stat stacks.
+     */
+    public Boolean lowTierCounterSoftMigratedV1 = Boolean.FALSE;
+    /**
      * Legacy specialization tax (unused in combat as of 3.3.35).
      * Kept for config/admin compat; default 0.0 = no effect.
      */
@@ -320,13 +325,13 @@ public final class DifficultyConfig {
      */
     public boolean enableStrongStatCounters = true;
     /** Strength of top-stat counter overlays (1.0 = off effect, higher = harder). */
-    public double strongStatCounterMult = 1.15;
+    public double strongStatCounterMult = 1.08;
     /** Extra mob damage vs the player's fighting style (class overlay). */
-    public double classCounterDamageMult = 1.12;
+    public double classCounterDamageMult = 1.06;
     /** Extra mob HP vs glass / caster / ki classes. */
-    public double classCounterHealthMult = 1.10;
+    public double classCounterHealthMult = 1.05;
     /** Extra mob armor vs melee / strike classes. */
-    public double classCounterArmorMult = 1.12;
+    public double classCounterArmorMult = 1.06;
     /**
      * Legacy race overlay (unused in combat as of 3.3.35).
      * Kept for config/admin compat; default 1.0 = no effect.
@@ -336,7 +341,7 @@ public final class DifficultyConfig {
      * Cap on multiplicative counter overlays after pierce floors
      * (class × top-stat only). Prevents stacking blow-ups.
      */
-    public double maxCounterOverlayMult = 1.55;
+    public double maxCounterOverlayMult = 1.25;
     /** Converts DMZ defense share into vanilla armor points: log1p(def) × factor. */
     public double defenseToArmorFactor = 2.5;
     /** Server ticks between nearby-player mob rescale pulses (per-player stagger). */
@@ -834,6 +839,31 @@ public final class DifficultyConfig {
             }
             cfg.counterSimplifyMigratedV1 = Boolean.TRUE;
         }
+        // Soften early-tier stock pierce / counter overlays (post 3.3.35 light model).
+        if (!Boolean.TRUE.equals(cfg.lowTierCounterSoftMigratedV1)) {
+            if (nearly(cfg.tankDamageDefenseRatio, 0.90)) {
+                cfg.tankDamageDefenseRatio = 0.55;
+            }
+            if (nearly(cfg.tankDamageHealthRatio, 0.025)) {
+                cfg.tankDamageHealthRatio = 0.015;
+            }
+            if (nearly(cfg.strongStatCounterMult, 1.15) || nearly(cfg.strongStatCounterMult, 1.28)) {
+                cfg.strongStatCounterMult = 1.08;
+            }
+            if (nearly(cfg.classCounterDamageMult, 1.12) || nearly(cfg.classCounterDamageMult, 1.22)) {
+                cfg.classCounterDamageMult = 1.06;
+            }
+            if (nearly(cfg.classCounterHealthMult, 1.10) || nearly(cfg.classCounterHealthMult, 1.18)) {
+                cfg.classCounterHealthMult = 1.05;
+            }
+            if (nearly(cfg.classCounterArmorMult, 1.12) || nearly(cfg.classCounterArmorMult, 1.20)) {
+                cfg.classCounterArmorMult = 1.06;
+            }
+            if (nearly(cfg.maxCounterOverlayMult, 1.55) || nearly(cfg.maxCounterOverlayMult, 2.25)) {
+                cfg.maxCounterOverlayMult = 1.25;
+            }
+            cfg.lowTierCounterSoftMigratedV1 = Boolean.TRUE;
+        }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
             cfg.guiBackend = "cmi";
         } else {
@@ -895,10 +925,10 @@ public final class DifficultyConfig {
             cfg.weakDefensePierceMult = 1.75;
         }
         if (cfg.tankDamageDefenseRatio < 0.0) {
-            cfg.tankDamageDefenseRatio = 0.90;
+            cfg.tankDamageDefenseRatio = 0.55;
         }
         if (cfg.tankDamageHealthRatio < 0.0) {
-            cfg.tankDamageHealthRatio = 0.025;
+            cfg.tankDamageHealthRatio = 0.015;
         }
         if (cfg.specializationDamageTax < 0.0) {
             cfg.specializationDamageTax = 0.0;
@@ -922,7 +952,7 @@ public final class DifficultyConfig {
             cfg.classCounterArmorMult = 3.0;
         }
         if (cfg.strongStatCounterMult < 1.0) {
-            cfg.strongStatCounterMult = 1.15;
+            cfg.strongStatCounterMult = 1.08;
         }
         if (cfg.strongStatCounterMult > 3.0) {
             cfg.strongStatCounterMult = 3.0;
@@ -934,7 +964,7 @@ public final class DifficultyConfig {
             cfg.raceCounterMult = 2.0;
         }
         if (cfg.maxCounterOverlayMult < 1.0) {
-            cfg.maxCounterOverlayMult = 1.55;
+            cfg.maxCounterOverlayMult = 1.25;
         }
         if (cfg.maxCounterOverlayMult > 4.0) {
             cfg.maxCounterOverlayMult = 4.0;
