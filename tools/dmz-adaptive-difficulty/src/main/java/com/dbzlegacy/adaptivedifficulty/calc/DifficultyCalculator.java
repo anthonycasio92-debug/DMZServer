@@ -15,10 +15,14 @@ public final class DifficultyCalculator {
     public static DifficultySnapshot snapshot(ServerPlayer player, PlayerDifficultyData data) {
         UnlockSystem.syncUnlocks(player, data);
 
-        int level = DmzProgression.dmzLevel(player);
+        // Form-stable level for costs / unlocks / CR level term (transform is separate).
+        int level = DmzProgression.dmzLevelForProgression(player, data.getHighestDmzLevel());
         int prestige = DmzProgression.prestige(player);
         double transform = DmzProgression.transformationPower(player);
-        data.noteDmzLevel(level);
+        // Never ratchet highest DMZ level from a form-inflated reading.
+        if (!DmzProgression.isTransformed(player)) {
+            data.noteDmzLevel(level);
+        }
 
         int highest = UnlockSystem.highestUnlocked(data);
         int activeTier = data.getActiveTier();

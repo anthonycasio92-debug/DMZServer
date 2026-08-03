@@ -1188,6 +1188,7 @@ public final class DifficultyConfig {
             INSTANCE.paintEpoch++;
         }
         com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile.clearAll();
+        com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.clearAllBaseFormLevels();
         com.dbzlegacy.adaptivedifficulty.scaling.MobScaling.clearAppliedProfiles();
     }
 }

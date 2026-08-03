@@ -18,7 +18,13 @@ public final class UnlockSystem {
         if (player == null || tier == null) {
             return false;
         }
-        int level = DmzProgression.dmzLevel(player);
+        long fallback = 0L;
+        try {
+            fallback = com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache
+                    .data(player).getHighestDmzLevel();
+        } catch (Throwable ignored) {
+        }
+        int level = DmzProgression.dmzLevelForProgression(player, fallback);
         int prestige = DmzProgression.prestige(player);
         return level >= tier.requiredDmzLevel() || prestige >= tier.id;
     }
@@ -32,8 +38,10 @@ public final class UnlockSystem {
         if (player == null || data == null) {
             return newly;
         }
-        int level = DmzProgression.dmzLevel(player);
-        data.noteDmzLevel(level);
+        int level = DmzProgression.dmzLevelForProgression(player, data.getHighestDmzLevel());
+        if (!DmzProgression.isTransformed(player)) {
+            data.noteDmzLevel(level);
+        }
         for (UnlockTier tier : UnlockTier.values()) {
             if (isEligible(player, tier) && data.unlockTier(tier.id)) {
                 newly.add(tier.id);

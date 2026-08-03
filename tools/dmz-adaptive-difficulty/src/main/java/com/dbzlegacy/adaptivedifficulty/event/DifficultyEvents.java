@@ -116,6 +116,7 @@ public final class DifficultyEvents {
             NearbyMobScaler.processEvictions();
             PlayerCombatProfile.clear(player.m_20148_());
             PlayerCombatProfile.clearFormBaseline(player.m_20148_());
+            DmzProgression.clearBaseFormLevel(player.m_20148_());
             LAST_FORM_MULT.remove(player.m_20148_());
             LAST_LIVE_OFFENSE.remove(player.m_20148_());
             AncientCoinEconomy.clearMigrateFlag(player.m_20148_());
@@ -288,7 +289,7 @@ public final class DifficultyEvents {
             return;
         }
         DifficultySnapshot before = DifficultyCache.get(player);
-        int level = DmzProgression.dmzLevel(player);
+        int level = DmzProgression.dmzLevelForProgression(player);
         int prestige = DmzProgression.prestige(player);
         double transform = DmzProgression.transformationPower(player);
         double formMult = PlayerCombatProfile.liveFormMultiplier(player);

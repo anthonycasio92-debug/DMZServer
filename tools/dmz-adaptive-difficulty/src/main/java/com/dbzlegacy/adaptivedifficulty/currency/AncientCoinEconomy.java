@@ -567,8 +567,18 @@ public final class AncientCoinEconomy {
         if (tier == null) {
             return 0L;
         }
-        int level = player == null ? 0
-                : com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.dmzLevel(player);
+        // Form-stable level only — transforming must not change buy prices.
+        if (player == null) {
+            return normalizeCost(tier.activationCostForLevel(0));
+        }
+        long fallback = 0L;
+        try {
+            fallback = com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache
+                    .data(player).getHighestDmzLevel();
+        } catch (Throwable ignored) {
+        }
+        int level = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression
+                .dmzLevelForProgression(player, fallback);
         return normalizeCost(tier.activationCostForLevel(level));
     }
 

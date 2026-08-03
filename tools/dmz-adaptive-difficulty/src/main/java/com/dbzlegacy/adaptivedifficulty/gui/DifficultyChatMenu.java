@@ -137,7 +137,7 @@ public final class DifficultyChatMenu {
     private static void buy(ServerPlayer player) {
         PlayerDifficultyData data = DifficultyCache.data(player);
         UnlockSystem.syncUnlocks(player, data);
-        int level = DmzProgression.dmzLevel(player);
+        int level = DmzProgression.dmzLevelForProgression(player);
         int active = data.getActiveTier();
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§8──────── §aBuy Higher Tier §8────────"));

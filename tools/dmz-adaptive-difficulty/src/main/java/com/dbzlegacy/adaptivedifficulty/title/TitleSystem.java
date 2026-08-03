@@ -25,7 +25,7 @@ public final class TitleSystem {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         PlayerDifficultyData data = DifficultyCache.data(player);
         boolean dirty = data.normalizeTitles();
-        int level = DmzProgression.dmzLevel(player);
+        int level = DmzProgression.dmzLevelForProgression(player);
         int prestige = DmzProgression.prestige(player);
         for (DifficultyTitle title : DifficultyTitle.values()) {
             if (title.kind != DifficultyTitle.Kind.TIER || title.unlockTier == null) {
