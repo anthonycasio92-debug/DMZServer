@@ -20,26 +20,35 @@ public final class BukkitGuiBridge {
         if (player == null || !available()) {
             return false;
         }
+        String target = page == null || page.isBlank() ? "main" : page;
         try {
             Object plugin = CmiGuiBridge.getPlugin(PLUGIN_NAME);
+            if (plugin == null) {
+                return false;
+            }
+            if (CmiGuiBridge.invokeUuidOpen(plugin, "openChestMenuForUuid", player.m_20148_(), target)) {
+                return true;
+            }
+            // Older companion jars — fall back to Player open.
+            if (CmiGuiBridge.invokeUuidOpen(plugin, "openMenuForUuid", player.m_20148_(), target)) {
+                return true;
+            }
             Object bukkitPlayer = CmiGuiBridge.bukkitPlayer(player);
-            if (bukkitPlayer == null || plugin == null) {
+            if (bukkitPlayer == null) {
                 AdaptiveDifficultyMod.LOGGER.warn(
                         "[{}] Chest GUI open skipped — bukkit player unresolved for {}",
-                        AdaptiveDifficultyMod.MOD_ID, player.m_7755_().getString()
+                        AdaptiveDifficultyMod.MOD_ID, player.m_6302_()
                 );
                 return false;
             }
-            Method open = CmiGuiBridge.findOpenMethod(
-                    plugin.getClass(), "openChestMenu", bukkitPlayer.getClass());
+            Method open = CmiGuiBridge.findOpenMethod(plugin.getClass(), "openChestMenu");
             if (open == null) {
-                open = CmiGuiBridge.findOpenMethod(
-                        plugin.getClass(), "openMenu", bukkitPlayer.getClass());
+                open = CmiGuiBridge.findOpenMethod(plugin.getClass(), "openMenu");
             }
             if (open == null) {
-                throw new NoSuchMethodException("openChestMenu/openMenu(Player,String)");
+                throw new NoSuchMethodException("openChestMenu/openMenu");
             }
-            open.invoke(plugin, bukkitPlayer, page == null || page.isBlank() ? "main" : page);
+            open.invoke(plugin, bukkitPlayer, target);
             return true;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(

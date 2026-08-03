@@ -22,27 +22,54 @@ public final class CmiGuiBridge {
         if (player == null || !available()) {
             return false;
         }
+        String target = page == null || page.isBlank() ? "main" : page;
         try {
             Object plugin = getPlugin(PLUGIN_NAME);
+            if (plugin == null) {
+                return false;
+            }
+            // Prefer UUID entry — avoids Mohist Player classloader mismatch and
+            // schedules onto the Bukkit primary thread inside the plugin.
+            if (invokeUuidOpen(plugin, "openMenuForUuid", player.m_20148_(), target)) {
+                return true;
+            }
             Object bukkitPlayer = bukkitPlayer(player);
-            if (bukkitPlayer == null || plugin == null) {
+            if (bukkitPlayer == null) {
                 AdaptiveDifficultyMod.LOGGER.warn(
                         "[{}] CMI GUI open skipped — bukkit player unresolved for {}",
-                        AdaptiveDifficultyMod.MOD_ID, player.m_7755_().getString()
+                        AdaptiveDifficultyMod.MOD_ID, player.m_6302_()
                 );
                 return false;
             }
-            // Resolve by name — avoid Class.forName(Player) CL mismatch on Mohist.
-            Method open = findOpenMethod(plugin.getClass(), "openMenu", bukkitPlayer.getClass());
+            Method open = findOpenMethod(plugin.getClass(), "openMenu");
             if (open == null) {
-                throw new NoSuchMethodException("openMenu(Player,String)");
+                throw new NoSuchMethodException("openMenu(Player,String) / openMenuForUuid");
             }
-            open.invoke(plugin, bukkitPlayer, page == null || page.isBlank() ? "main" : page);
+            open.invoke(plugin, bukkitPlayer, target);
             return true;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] CMI GUI open failed: {}",
                     AdaptiveDifficultyMod.MOD_ID, t.toString()
+            );
+            return false;
+        }
+    }
+
+    static boolean invokeUuidOpen(Object plugin, String methodName, UUID id, String page) {
+        if (plugin == null || methodName == null || id == null) {
+            return false;
+        }
+        try {
+            Method m = plugin.getClass().getMethod(methodName, UUID.class, String.class);
+            m.invoke(plugin, id, page == null || page.isBlank() ? "main" : page);
+            return true;
+        } catch (NoSuchMethodException missing) {
+            return false;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] {} failed: {}",
+                    AdaptiveDifficultyMod.MOD_ID, methodName, t.toString()
             );
             return false;
         }
@@ -67,11 +94,15 @@ public final class CmiGuiBridge {
         return pm.getClass().getMethod("getPlugin", String.class).invoke(pm, name);
     }
 
-    /** Find {@code name(PlayerLike, String)} without loading Player via Forge CL. */
-    static Method findOpenMethod(Class<?> pluginClass, String name, Class<?> playerRuntimeClass) {
+    /**
+     * Find {@code name(*, String)} by arity/name only — do not check Player assignability
+     * across Mohist classloaders (that always fails and previously broke opens).
+     */
+    static Method findOpenMethod(Class<?> pluginClass, String name) {
         if (pluginClass == null || name == null) {
             return null;
         }
+        Method named = null;
         for (Method m : pluginClass.getMethods()) {
             if (!name.equals(m.getName()) || m.getParameterCount() != 2) {
                 continue;
@@ -80,21 +111,20 @@ public final class CmiGuiBridge {
             if (params[1] != String.class) {
                 continue;
             }
-            if (playerRuntimeClass != null && params[0].isAssignableFrom(playerRuntimeClass)) {
+            // Prefer exact Bukkit Player parameter when present.
+            if ("org.bukkit.entity.Player".equals(params[0].getName())) {
                 return m;
             }
-            // Fallback: first arg looks like a Bukkit Player interface/class.
-            String pn = params[0].getName();
-            if ("org.bukkit.entity.Player".equals(pn) || pn.endsWith(".Player")) {
-                return m;
+            if (named == null) {
+                named = m;
             }
         }
-        return null;
+        return named;
     }
 
     /**
      * Mohist-safe Bukkit player resolve: prefer NMS {@code getBukkitEntity()},
-     * then UUID / name lookups.
+     * then UUID / name lookups via Bukkit from the companion plugin's classloader.
      */
     static Object bukkitPlayer(ServerPlayer player) {
         if (player == null) {
@@ -108,14 +138,26 @@ public final class CmiGuiBridge {
             }
         } catch (Throwable ignored) {
         }
+        UUID id = player.m_20148_();
+        // Prefer plugin CL so the Player type matches openMenu's parameter.
+        try {
+            Object plugin = getPlugin(PLUGIN_NAME);
+            if (plugin != null) {
+                ClassLoader pcl = plugin.getClass().getClassLoader();
+                Class<?> bukkit = Class.forName("org.bukkit.Bukkit", true, pcl);
+                Object byId = bukkit.getMethod("getPlayer", UUID.class).invoke(null, id);
+                if (byId != null) {
+                    return byId;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
         try {
             Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
-            UUID id = player.m_20148_();
             Object byId = bukkit.getMethod("getPlayer", UUID.class).invoke(null, id);
             if (byId != null) {
                 return byId;
             }
-            // Prefer scoreboard/login name over display Component (nicknames break lookup).
             String name = null;
             try {
                 name = player.m_6302_();

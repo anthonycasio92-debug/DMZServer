@@ -1,5 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.bukkit;
 
+import java.util.UUID;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -57,12 +59,55 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         openInventory(player, page);
     }
 
+    /**
+     * Preferred Forge entry — UUID only, no Player crossing Mohist classloaders.
+     * Always runs on the Bukkit primary thread (CMI requires it).
+     */
+    public void openMenuForUuid(UUID playerId, String page) {
+        if (playerId == null) {
+            return;
+        }
+        String target = page == null || page.isBlank() ? "main" : page;
+        Runnable task = () -> {
+            Player p = Bukkit.getPlayer(playerId);
+            if (p != null && p.isOnline()) {
+                openInventory(p, target);
+            } else {
+                getLogger().warning("openMenuForUuid: player offline/unresolved " + playerId);
+            }
+        };
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+        } else {
+            Bukkit.getScheduler().runTask(this, task);
+        }
+    }
+
     /** Chest-only open for Forge {@code guiBackend=chest}. */
     public void openChestMenu(Player player, String page) {
         if (player == null) {
             return;
         }
         chestGui.open(player, page);
+    }
+
+    /** UUID chest open — Mohist-safe Forge entry for {@code guiBackend=chest}. */
+    public void openChestMenuForUuid(UUID playerId, String page) {
+        if (playerId == null) {
+            return;
+        }
+        String target = page == null || page.isBlank() ? "main" : page;
+        Runnable task = () -> {
+            Player p = Bukkit.getPlayer(playerId);
+            if (p != null && p.isOnline()) {
+                chestGui.open(p, target);
+            }
+        };
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+        } else {
+            Bukkit.getScheduler().runTask(this, task);
+        }
     }
 
     /** Player-facing open that honors Forge {@code guiBackend}. */
