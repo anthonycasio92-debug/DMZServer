@@ -1,4 +1,4 @@
-# DMZ Adaptive Difficulty (v3.3.32)
+# DMZ Adaptive Difficulty (v3.3.33)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -23,7 +23,7 @@ Clients do **not** need this jar to join.
 
 ## Install
 
-1. `mods/dmz_adaptive_difficulty-3.3.32.jar` (remove older AD jars)
+1. `mods/dmz_adaptive_difficulty-3.3.33.jar` (remove older AD jars)
 2. `plugins/dmz_adaptive_difficulty_gui-3.3.31.jar`
 3. Restart — config regenerates at `config/dmz_adaptive_difficulty.json`
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
@@ -57,7 +57,7 @@ Live `admin set` is allowlisted + clamped; change `adminPermission` only in JSON
 - Level scaling uses levels above each tier’s unlock requirement (buying T7 at unlock ≈ base cost, not 100×). Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - Mob damage uses blended offense + a DEF/HP tank floor + specialization tax so 1–3 stat dumps cannot shrug tiered hits vs even builds.
-- Early tiers: T1 28% · T2 42% · T3 65% of player fight stats. High-DEF / tank builds always get a pierce floor so DMZ mitigation cannot zero mob hits.
+- Tier scale vs player fight stats: T1 13% · T2 28% · T3 42% · T4 58% · T5 76% · T6 90% · T7 116%. High-DEF / tank builds always get a pierce floor so DMZ mitigation cannot zero mob hits.
 - Mob ki blasts/lasers/beams use the mob’s scaled attack damage (not vanilla 3–72), so DMZ DEF mitigation no longer cancels them to 0.
 - **Class/race counters:** mobs also press DMZ fighting classes (warrior/berserker melee, martial artist strike, spiritualist/cleric ki, tank/paladin) and mild race overlays (saiyan/majin/namekian/…). Toggle: `enableClassCounters`.
 - Scaled mob HP defaults to 50% of the previous match (`mobHealthScale` in config; damage unchanged).
