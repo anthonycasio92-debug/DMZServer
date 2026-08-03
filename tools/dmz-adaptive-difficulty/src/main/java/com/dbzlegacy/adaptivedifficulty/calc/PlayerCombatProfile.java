@@ -65,6 +65,12 @@ public final class PlayerCombatProfile {
     public final double maxHealth;
     /** Blended offensive threat (peak + average), not peak-only. */
     public final double offense;
+    /** Full live form offense (pre soft-curve) — used for T1–T3 transform pressure. */
+    public final double liveOffense;
+    /** Full live form max HP (pre soft-curve). */
+    public final double liveMaxHealth;
+    /** Detected form boost (≥1). */
+    public final double formBoost;
     public final double releasePercent;
     public final WeakStat weakest;
     /**
@@ -92,6 +98,9 @@ public final class PlayerCombatProfile {
             double defense,
             double maxHealth,
             double offense,
+            double liveOffense,
+            double liveMaxHealth,
+            double formBoost,
             double releasePercent,
             WeakStat weakest,
             double imbalance,
@@ -109,6 +118,9 @@ public final class PlayerCombatProfile {
         this.defense = defense;
         this.maxHealth = maxHealth;
         this.offense = offense;
+        this.liveOffense = Math.max(offense, liveOffense);
+        this.liveMaxHealth = Math.max(maxHealth, liveMaxHealth);
+        this.formBoost = Math.max(1.0, formBoost);
         this.releasePercent = releasePercent;
         this.weakest = weakest == null ? WeakStat.NONE : weakest;
         this.imbalance = Math.max(0.0, Math.min(1.0, imbalance));
@@ -176,6 +188,8 @@ public final class PlayerCombatProfile {
         double hp = 20.0;
         double release = 100.0;
         double formBoost = 1.0;
+        double liveOffense = 1.0;
+        double liveMaxHealth = 20.0;
         if (data != null) {
             // Read live / no-form channels independently — one bad custom-race getter
             // must not wipe the whole profile to wet-noodle defaults.
@@ -184,6 +198,10 @@ public final class PlayerCombatProfile {
             double liveKi = readStat(() -> data.getKiDamage(), 1.0);
             double liveDef = readStat(() -> data.getDefense(), 1.0);
             double liveHp = readStat(() -> data.getMaxHealth(), 20.0);
+            double livePeak = Math.max(liveMelee, Math.max(liveStrike, liveKi));
+            double liveAvg = (liveMelee + liveStrike + liveKi) / 3.0;
+            liveOffense = livePeak * 0.55 + liveAvg * 0.45;
+            liveMaxHealth = liveHp;
 
             double apiBaseMelee = readStat(() -> data.getMeleeDamageNoMultipliers(), liveMelee);
             double apiBaseStrike = readStat(() -> data.getStrikeDamageNoForms(), liveStrike);
@@ -236,6 +254,12 @@ public final class PlayerCombatProfile {
             // Mild tier damp — floor 0.55 so admin ladders above 100% still inherit forms.
             double tierDamp = Math.max(0.55, 1.0 - 0.40 * Math.max(0.0, Math.min(1.0, pct)));
             double twOffense = twBase * tierDamp;
+            // T1–T3 + transformed: inherit far more form on offense (soft curve was wiping threat).
+            if (tier <= 3 && formBoost > 1.12) {
+                double earlyTw = Math.min(1.0, twBase + 0.22 * (4 - tier)); // T1+0.66, T2+0.44, T3+0.22
+                twOffense = Math.max(twOffense, earlyTw);
+                exp = Math.min(1.0, Math.max(exp, 0.90)); // near-linear early
+            }
             // Bulk (HP/DEF) stays near-live so high-tier packs aren't deleted on form-up.
             double twBulk = Math.min(1.0, Math.max(twBase + 0.35, twBase * 1.55) * (0.85 + 0.15 * tierDamp));
 
@@ -274,8 +298,11 @@ public final class PlayerCombatProfile {
                 balance.weakest, balance.imbalance, balance.topStats,
                 fightingClass, race, style
         );
+        sig = mix(sig, Math.round(formBoost * 100.0));
+        sig = mix(sig, Math.round(liveOffense));
         return new PlayerCombatProfile(
-                tier, pct, melee, strike, ki, def, hp, offense, release,
+                tier, pct, melee, strike, ki, def, hp, offense,
+                liveOffense, liveMaxHealth, formBoost, release,
                 balance.weakest, balance.imbalance, balance.topStats,
                 fightingClass, race, style, sig
         );
@@ -283,7 +310,8 @@ public final class PlayerCombatProfile {
 
     private static PlayerCombatProfile inactive() {
         return new PlayerCombatProfile(
-                0, 0.0, 1.0, 1.0, 1.0, 1.0, 20.0, 1.0, 100.0,
+                0, 0.0, 1.0, 1.0, 1.0, 1.0, 20.0, 1.0,
+                1.0, 20.0, 1.0, 100.0,
                 WeakStat.NONE, 0.0, NO_TOP, "", "", FightingStyle.HYBRID, 0L
         );
     }
@@ -336,6 +364,16 @@ public final class PlayerCombatProfile {
      */
     public double targetMobHealth(DifficultyConfig cfg) {
         double base = maxHealth * tierPercent;
+        // T1–T3 transformed: sponge off full live HP so early form fights aren't free.
+        if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
+            double hpThreat = switch (activeTier) {
+                case 1 -> 0.34;
+                case 2 -> 0.44;
+                case 3 -> 0.55;
+                default -> 0.0;
+            };
+            base = Math.max(base, liveMaxHealth * hpThreat);
+        }
         // Survive the player's strongest damage channel (class + top-stat, capped).
         // Counter intensity ramps with tier% so T2 20% stays near 20%.
         double overlay = 1.0;
@@ -372,6 +410,18 @@ public final class PlayerCombatProfile {
             hpFloor *= tankBump;
         }
         double base = Math.max(offenseShare, Math.max(defFloor, hpFloor));
+
+        // T1–T3 + transformed: mobs swing a real slice of full live form power.
+        // Soft-curve × low tier% was leaving transformed T1/T2 with wet-noodle hits.
+        if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
+            double threatPct = switch (activeTier) {
+                case 1 -> 0.40;
+                case 2 -> 0.52;
+                case 3 -> 0.64;
+                default -> 0.0;
+            };
+            base = Math.max(base, liveOffense * threatPct);
+        }
 
         // DEF:offense pierce floor — keeps DMZ mitigation from zeroing hits.
         // Soft at low tier% so "20%" is not secretly ~DEF×0.3 after pierce+overlay.
@@ -760,8 +810,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: custom-race form mults + high-tier sponge.
-        h = mix(h, 13L);
+        // Formula revision: T1–T3 early form threat floors.
+        h = mix(h, 14L);
         return h;
     }
 
