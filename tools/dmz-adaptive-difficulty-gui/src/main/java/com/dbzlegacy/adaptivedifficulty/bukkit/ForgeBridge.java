@@ -1226,7 +1226,10 @@ public final class ForgeBridge {
                 Map.entry("classarmor", "classCounterArmorMult"),
                 Map.entry("maxcounteroverlaymult", "maxCounterOverlayMult"),
                 Map.entry("countercap", "maxCounterOverlayMult"),
-                Map.entry("overlaycap", "maxCounterOverlayMult")
+                Map.entry("overlaycap", "maxCounterOverlayMult"),
+                Map.entry("transformscaleweight", "transformScaleWeight"),
+                Map.entry("transformweight", "transformScaleWeight"),
+                Map.entry("formscaleweight", "transformScaleWeight")
         );
         String fieldName = aliases.getOrDefault(k, key);
         try {
@@ -1305,7 +1308,7 @@ public final class ForgeBridge {
                  "enableClassCounters", "enableStrongStatCounters",
                  "strongStatCounterMult", "classCounterDamageMult",
                  "classCounterHealthMult", "classCounterArmorMult",
-                 "maxCounterOverlayMult",
+                 "maxCounterOverlayMult", "transformScaleWeight",
                  "defenseToArmorFactor",
                  "nearbyScaleIntervalTicks", "maxScaledMobsPerPlayer",
                  "nearbyScaleBudgetPerPlayer", "tierCostLevelDivisor",
@@ -1407,6 +1410,10 @@ public final class ForgeBridge {
                 case "maxCounterOverlayMult" -> {
                     double m = ((Number) parsed).doubleValue();
                     yield Math.max(1.0, Math.min(4.0, m));
+                }
+                case "transformScaleWeight" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    yield Math.max(0.0, Math.min(1.0, m));
                 }
                 case "tankDamageDefenseRatio", "tankDamageHealthRatio" -> {
                     double m = ((Number) parsed).doubleValue();

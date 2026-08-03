@@ -551,7 +551,7 @@ public final class DifficultyCommands {
                         + "§8Tier keys: unlockTier1Level…7 / Cost…7 / tier1statpercent…7 (0.15–2.0)\n"
                         + "§8Counters: enableClassCounters · enableStrongStatCounters\n"
                         + "§8classCounter*Mult · strongStatCounterMult · maxCounterOverlayMult\n"
-                        + "§8tankDamageDefenseRatio · tankDamageHealthRatio\n"
+                        + "§8transformScaleWeight · tankDamageDefenseRatio · tankDamageHealthRatio\n"
                         + "§8eliteMinUnlockTier · mutationMinUnlockTier · adaptiveAiMinUnlockTier\n"
                         + "§8enemyEvolutionMinUnlockTier · bossMechanicsMinUnlockTier"
         ), false);
@@ -796,6 +796,8 @@ public final class DifficultyCommands {
                         cfg.classCounterArmorMult = Math.max(1.0, Math.min(3.0, Double.parseDouble(value)));
                 case "maxcounteroverlaymult", "countercap", "overlaycap" ->
                         cfg.maxCounterOverlayMult = Math.max(1.0, Math.min(4.0, Double.parseDouble(value)));
+                case "transformscaleweight", "transformweight", "formscaleweight" ->
+                        cfg.transformScaleWeight = Math.max(0.0, Math.min(1.0, Double.parseDouble(value)));
                 case "defensetoarmorfactor" ->
                         cfg.defenseToArmorFactor = Math.max(0.1, Double.parseDouble(value));
                 case "nearbyscaleintervalticks", "nearbyscaleinterval" ->

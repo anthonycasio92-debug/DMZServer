@@ -15,8 +15,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Post-transform / limit-release combat snapshot used to scale nearby hostiles
- * to a fraction of the player's real fighting power.
+ * Combat snapshot used to scale nearby hostiles to a fraction of the player's power.
+ * <p>
+ * Live DMZ combat getters include full form multipliers. Enemy scaling blends
+ * form-stripped stats with only a portion of that transform boost
+ * ({@link DifficultyConfig#transformScaleWeight}) so transforming does not
+ * instantly spike mob/creeper damage 1:1 with your form.
  * <p>
  * Counters are intentionally light:
  * <ul>
@@ -146,7 +150,8 @@ public final class PlayerCombatProfile {
         if (tier <= 0) {
             return inactive();
         }
-        double pct = DifficultyConfig.get().tierPlayerStatPercent(tier);
+        DifficultyConfig cfg = DifficultyConfig.get();
+        double pct = cfg.tierPlayerStatPercent(tier);
         StatsData data = DmzProgression.stats(player);
         double melee = 1.0;
         double strike = 1.0;
@@ -156,11 +161,26 @@ public final class PlayerCombatProfile {
         double release = 100.0;
         if (data != null) {
             try {
-                melee = Math.max(1.0, data.getMeleeDamage());
-                strike = Math.max(1.0, data.getStrikeDamage());
-                ki = Math.max(1.0, data.getKiDamage());
-                def = Math.max(1.0, data.getDefense());
-                hp = Math.max(20.0, data.getMaxHealth());
+                double liveMelee = Math.max(1.0, data.getMeleeDamage());
+                double liveStrike = Math.max(1.0, data.getStrikeDamage());
+                double liveKi = Math.max(1.0, data.getKiDamage());
+                double liveDef = Math.max(1.0, data.getDefense());
+                double liveHp = Math.max(20.0, data.getMaxHealth());
+                // Form-stripped offense when DMZ exposes it.
+                double baseMelee = Math.max(1.0, data.getMeleeDamageNoMultipliers());
+                double baseStrike = Math.max(1.0, data.getStrikeDamageNoForms());
+                double baseKi = Math.max(1.0, data.getKiDamageNoForms());
+                double formBoost = estimateFormBoost(
+                        liveMelee, baseMelee, liveStrike, baseStrike, liveKi, baseKi);
+                // DEF/HP have no no-form getters — peel the shared form boost.
+                double baseDef = Math.max(1.0, liveDef / formBoost);
+                double baseHp = Math.max(20.0, liveHp / formBoost);
+                double tw = Math.max(0.0, Math.min(1.0, cfg.transformScaleWeight));
+                melee = blendForm(baseMelee, liveMelee, tw);
+                strike = blendForm(baseStrike, liveStrike, tw);
+                ki = blendForm(baseKi, liveKi, tw);
+                def = blendForm(baseDef, liveDef, tw);
+                hp = blendForm(baseHp, liveHp, tw);
                 Resources resources = data.getResources();
                 if (resources != null) {
                     // Prefer power-release (limit release) when available.
@@ -643,18 +663,51 @@ public final class PlayerCombatProfile {
         h = mix(h, race == null ? 0 : race.hashCode());
         h = mix(h, style == null ? 0 : style.ordinal() + 1);
         // Include live counter formula knobs so admin retunes invalidate paint.
-        DifficultyConfig cfg = DifficultyConfig.get();
-        h = mix(h, Math.round(cfg.strongStatCounterMult * 1000.0));
-        h = mix(h, Math.round(cfg.classCounterDamageMult * 1000.0));
-        h = mix(h, Math.round(cfg.classCounterHealthMult * 1000.0));
-        h = mix(h, Math.round(cfg.classCounterArmorMult * 1000.0));
-        h = mix(h, Math.round(cfg.maxCounterOverlayMult * 1000.0));
-        h = mix(h, Math.round(cfg.mobHealthScale * 1000.0));
-        h = mix(h, cfg.enableClassCounters ? 1L : 0L);
-        h = mix(h, cfg.enableStrongStatCounters ? 1L : 0L);
-        // Formula revision: balance pass — HP scale / pierce / early kit soft.
-        h = mix(h, 9L);
+        DifficultyConfig liveCfg = DifficultyConfig.get();
+        h = mix(h, Math.round(liveCfg.strongStatCounterMult * 1000.0));
+        h = mix(h, Math.round(liveCfg.classCounterDamageMult * 1000.0));
+        h = mix(h, Math.round(liveCfg.classCounterHealthMult * 1000.0));
+        h = mix(h, Math.round(liveCfg.classCounterArmorMult * 1000.0));
+        h = mix(h, Math.round(liveCfg.maxCounterOverlayMult * 1000.0));
+        h = mix(h, Math.round(liveCfg.mobHealthScale * 1000.0));
+        h = mix(h, Math.round(liveCfg.transformScaleWeight * 1000.0));
+        h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
+        h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
+        // Formula revision: transform-boost dampening for enemy scaling.
+        h = mix(h, 10L);
         return h;
+    }
+
+    /**
+     * How hard the live (form) stats outpace form-stripped offense.
+     * 1.0 = base form / no detectable boost.
+     */
+    private static double estimateFormBoost(
+            double liveMelee, double baseMelee,
+            double liveStrike, double baseStrike,
+            double liveKi, double baseKi
+    ) {
+        double rMelee = liveMelee / Math.max(1.0, baseMelee);
+        double rStrike = liveStrike / Math.max(1.0, baseStrike);
+        double rKi = liveKi / Math.max(1.0, baseKi);
+        // Median-ish: average of the two closest ratios to ignore one weird channel.
+        double sum = rMelee + rStrike + rKi;
+        double max = Math.max(rMelee, Math.max(rStrike, rKi));
+        double min = Math.min(rMelee, Math.min(rStrike, rKi));
+        double mid = sum - max - min;
+        double boost = mid > 0.0 ? mid : (sum / 3.0);
+        if (!(boost > 0.0) || Double.isNaN(boost) || Double.isInfinite(boost)) {
+            return 1.0;
+        }
+        return Math.max(1.0, Math.min(50.0, boost));
+    }
+
+    /** {@code base + (live - base) × weight} — enemies only see part of the form spike. */
+    private static double blendForm(double base, double live, double weight) {
+        double b = Math.max(0.0, base);
+        double l = Math.max(b, live);
+        double w = Math.max(0.0, Math.min(1.0, weight));
+        return b + (l - b) * w;
     }
 
     private static long mix(long h, long v) {

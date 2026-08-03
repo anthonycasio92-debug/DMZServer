@@ -264,6 +264,12 @@ public final class DifficultyConfig {
      */
     public double mobHealthScale = 0.65;
     /**
+     * How much of a form/transform boost enemies scale to (0–1).
+     * {@code 0} = form-stripped base stats only · {@code 1} = full live post-form stats.
+     * Default {@code 0.40} so transforming does not 1:1 spike mob/creeper damage.
+     */
+    public double transformScaleWeight = 0.40;
+    /**
      * Legacy weak-stat dump multiplier (unused in combat as of 3.3.35).
      * Kept for config/admin compat; default 1.0 = no effect.
      */
@@ -949,6 +955,10 @@ public final class DifficultyConfig {
         }
         if (cfg.mobHealthScale <= 0.0 || cfg.mobHealthScale > 4.0) {
             cfg.mobHealthScale = 0.65;
+        }
+        if (cfg.transformScaleWeight < 0.0 || cfg.transformScaleWeight > 1.0
+                || Double.isNaN(cfg.transformScaleWeight)) {
+            cfg.transformScaleWeight = 0.40;
         }
         if (cfg.weakStatCounterMult < 1.0) {
             cfg.weakStatCounterMult = 1.0;
