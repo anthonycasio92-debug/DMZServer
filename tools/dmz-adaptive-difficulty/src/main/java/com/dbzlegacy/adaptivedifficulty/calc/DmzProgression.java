@@ -8,7 +8,7 @@ import com.dragonminez.common.stats.skills.Skills;
 import net.minecraft.world.entity.player.Player;
 
 /**
- * Reads DMZ progression for V3 unlocks + combat rating + class/race counters.
+ * Reads DMZ progression for V3 unlocks + combat rating + class / race identity.
  */
 public final class DmzProgression {
     private DmzProgression() {}

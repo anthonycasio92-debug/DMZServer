@@ -218,7 +218,7 @@ public final class PlayerCombatProfile {
         return topStats[0] == stat;
     }
 
-    /** Compact label for GUI/staff: {@code STR>SKP>RES} or {@code —}. */
+    /** Compact label for GUI/staff: single top stat ({@code STR}) or {@code —}. */
     public String topStatsLabel() {
         if (topStats.length == 0) {
             return "—";
@@ -250,15 +250,17 @@ public final class PlayerCombatProfile {
      */
     public double targetMobHealth(DifficultyConfig cfg) {
         double base = maxHealth * tierPercent;
-        // Survive the player's strongest damage channel.
+        // Survive the player's strongest damage channel (class + top-stat, capped).
+        double overlay = 1.0;
         if (cfg.enableStrongStatCounters) {
-            base *= strongStatHealthBias(cfg);
+            overlay *= strongStatHealthBias(cfg);
         }
         if (cfg.enableClassCounters) {
-            base *= classHealthBias(cfg);
+            overlay *= classHealthBias(cfg);
         }
+        overlay = clampCounterOverlay(overlay, cfg);
         double scale = cfg == null ? 0.5 : Math.max(0.05, Math.min(4.0, cfg.mobHealthScale));
-        return Math.max(10.0, base * scale);
+        return Math.max(10.0, base * overlay * scale);
     }
 
     /**
@@ -277,18 +279,15 @@ public final class PlayerCombatProfile {
         double base = Math.max(offenseShare, Math.max(defFloor, hpFloor));
 
         // DEF:offense pierce floor — keeps DMZ mitigation from zeroing hits.
-        // Extra bite only when DEF/VIT is the player's single top invested stat.
+        // Strong-stat pressure is applied once via the capped overlay below (no double-dip).
         double tankiness = defense / Math.max(1.0, offense);
         boolean tankBuild = tankiness > 1.15
                 || isTopStat(WeakStat.DEFENSE)
                 || isTopStat(WeakStat.VITALITY)
                 || (cfg.enableClassCounters && style == FightingStyle.TANK);
         if (tankBuild) {
-            double pierce = Math.max(cfg.tankDamageDefenseRatio, 1.0);
-            double tankExtra = Math.min(1.22, 1.0 + Math.max(0.0, tankiness - 1.0) * 0.20);
-            if (cfg.enableStrongStatCounters && (isTopStat(WeakStat.DEFENSE) || isTopStat(WeakStat.VITALITY))) {
-                tankExtra *= Math.max(1.0, 1.0 + (cfg.strongStatCounterMult - 1.0) * 0.25);
-            }
+            double pierce = Math.max(0.0, cfg.tankDamageDefenseRatio);
+            double tankExtra = Math.min(1.15, 1.0 + Math.max(0.0, tankiness - 1.0) * 0.18);
             double throughDefense = defense * tierPercent * pierce * tankExtra;
             base = Math.max(base, throughDefense);
         }
@@ -301,8 +300,7 @@ public final class PlayerCombatProfile {
         if (cfg.enableClassCounters) {
             overlay *= classDamageBias(cfg);
         }
-        double overlayCap = Math.max(1.0, Math.min(4.0, cfg.maxCounterOverlayMult));
-        overlay = Math.max(1.0, Math.min(overlayCap, overlay));
+        overlay = clampCounterOverlay(overlay, cfg);
         return Math.max(1.0, base * overlay);
     }
 
@@ -310,20 +308,28 @@ public final class PlayerCombatProfile {
     public double targetMobArmor(DifficultyConfig cfg) {
         double share = defense * tierPercent;
         double armor = Math.log1p(Math.max(0.0, share)) * cfg.defenseToArmorFactor;
+        double overlay = 1.0;
         if (cfg.enableStrongStatCounters) {
-            armor *= strongStatArmorBias(cfg);
+            overlay *= strongStatArmorBias(cfg);
         }
         if (cfg.enableClassCounters) {
             if (style == FightingStyle.MELEE || style == FightingStyle.STRIKE) {
-                armor *= Math.max(1.0, cfg.classCounterArmorMult);
+                overlay *= Math.max(1.0, cfg.classCounterArmorMult);
             } else if (style == FightingStyle.KI) {
-                armor *= Math.max(1.0, 1.0 + (cfg.classCounterArmorMult - 1.0) * 0.45);
+                overlay *= Math.max(1.0, 1.0 + (cfg.classCounterArmorMult - 1.0) * 0.45);
             }
         }
+        overlay = clampCounterOverlay(overlay, cfg);
+        armor *= overlay;
         if (cfg.maxArmorBonus > 0.0) {
             armor = Math.min(cfg.maxArmorBonus, armor);
         }
         return Math.max(0.0, armor);
+    }
+
+    private static double clampCounterOverlay(double overlay, DifficultyConfig cfg) {
+        double cap = cfg == null ? 1.55 : Math.max(1.0, Math.min(4.0, cfg.maxCounterOverlayMult));
+        return Math.max(1.0, Math.min(cap, overlay));
     }
 
     /**
@@ -619,8 +625,8 @@ public final class PlayerCombatProfile {
         h = mix(h, Math.round(cfg.mobHealthScale * 1000.0));
         h = mix(h, cfg.enableClassCounters ? 1L : 0L);
         h = mix(h, cfg.enableStrongStatCounters ? 1L : 0L);
-        // Formula revision: class + top-1 only (no race / weak / specialization stack).
-        h = mix(h, 6L);
+        // Formula revision: class + top-1 only; pierce no longer double-dips strong-stat.
+        h = mix(h, 7L);
         return h;
     }
 

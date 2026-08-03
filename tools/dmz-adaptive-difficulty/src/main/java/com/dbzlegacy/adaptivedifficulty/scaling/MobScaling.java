@@ -59,7 +59,7 @@ public final class MobScaling {
     /** Fingerprint of the player combat profile this mob was last scaled to. */
     public static final String TAG_PROFILE_SIG = "dmz_ad_profile_sig";
     public static final String TAG_TIER_PERCENT = "dmz_ad_tier_pct";
-    /** Stamped fighting class / race / style / top stats for kit counter cadence. */
+    /** Stamped class / style / top-stat identity; kit CD uses class + top-1 only. */
     public static final String TAG_COUNTER_CLASS = "dmz_ad_counter_class";
     public static final String TAG_COUNTER_RACE = "dmz_ad_counter_race";
     public static final String TAG_COUNTER_STYLE = "dmz_ad_counter_style";
@@ -784,7 +784,7 @@ public final class MobScaling {
 
         tag.m_128405_("dmz_ad_unlock_tier", profile.activeTier);
         tag.m_128350_(TAG_TIER_PERCENT, (float) profile.tierPercent);
-        // Counter identity — class / race / top-3 stats for kit cadence + debug.
+        // Counter identity — class + top-1 for kit cadence (+ race stamped for debug).
         stampCounterIdentity(tag, profile, cfg);
         // Keep TAG_DIFFICULTY as a readable proxy for AI/evolution curves.
         long proxyDifficulty = Math.max(1L, Math.round(profile.offense * profile.tierPercent));

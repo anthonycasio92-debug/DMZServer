@@ -656,6 +656,9 @@ public final class ForgeBridge {
                 return "Unknown key: " + key;
             }
             // Block mutating collections / migration flags via raw reflection.
+            if (isLegacyUnusedCounterField(field.getName())) {
+                return key + " is unused as of 3.3.35 (class + top-stat counters only)";
+            }
             if (!isSafeAdminField(field.getName())) {
                 return "Key not settable here: " + key + " (use a dedicated admin command)";
             }
@@ -1221,8 +1224,6 @@ public final class ForgeBridge {
                 Map.entry("classhp", "classCounterHealthMult"),
                 Map.entry("classcounterarmormult", "classCounterArmorMult"),
                 Map.entry("classarmor", "classCounterArmorMult"),
-                Map.entry("racecountermult", "raceCounterMult"),
-                Map.entry("racemult", "raceCounterMult"),
                 Map.entry("maxcounteroverlaymult", "maxCounterOverlayMult"),
                 Map.entry("countercap", "maxCounterOverlayMult"),
                 Map.entry("overlaycap", "maxCounterOverlayMult")
@@ -1238,6 +1239,18 @@ public final class ForgeBridge {
             }
             return null;
         }
+    }
+
+    /** Legacy counter knobs kept in JSON for migrate/compat; no combat effect. */
+    private static boolean isLegacyUnusedCounterField(String fieldName) {
+        if (fieldName == null) {
+            return false;
+        }
+        return switch (fieldName) {
+            case "weakStatCounterMult", "weakDefensePierceMult",
+                 "specializationDamageTax", "raceCounterMult" -> true;
+            default -> false;
+        };
     }
 
     /**
@@ -1288,12 +1301,10 @@ public final class ForgeBridge {
                  "unlockTier1EnemyMult", "unlockTier2EnemyMult", "unlockTier3EnemyMult",
                  "unlockTier4EnemyMult", "unlockTier5EnemyMult", "unlockTier6EnemyMult",
                  "unlockTier7EnemyMult",
-                 "weakStatCounterMult", "weakDefensePierceMult",
                  "tankDamageDefenseRatio", "tankDamageHealthRatio",
-                 "specializationDamageTax",
                  "enableClassCounters", "enableStrongStatCounters",
                  "strongStatCounterMult", "classCounterDamageMult",
-                 "classCounterHealthMult", "classCounterArmorMult", "raceCounterMult",
+                 "classCounterHealthMult", "classCounterArmorMult",
                  "maxCounterOverlayMult",
                  "defenseToArmorFactor",
                  "nearbyScaleIntervalTicks", "maxScaledMobsPerPlayer",
@@ -1304,6 +1315,8 @@ public final class ForgeBridge {
                  "eliteMinUnlockTier", "mutationMinUnlockTier",
                  "adaptiveAiMinUnlockTier", "enemyEvolutionMinUnlockTier",
                  "bossMechanicsMinUnlockTier" -> true;
+            // Legacy unused-as-of-3.3.35: weakStatCounterMult, weakDefensePierceMult,
+            // specializationDamageTax, raceCounterMult — not live-settable.
             default -> false;
         };
     }
@@ -1386,22 +1399,16 @@ public final class ForgeBridge {
                     double m = ((Number) parsed).doubleValue();
                     yield Math.max(0.05, Math.min(4.0, m));
                 }
-                case "weakStatCounterMult", "weakDefensePierceMult",
-                     "strongStatCounterMult", "classCounterDamageMult",
+                case "strongStatCounterMult", "classCounterDamageMult",
                      "classCounterHealthMult", "classCounterArmorMult" -> {
                     double m = ((Number) parsed).doubleValue();
                     yield Math.max(1.0, Math.min(3.0, m));
-                }
-                case "raceCounterMult" -> {
-                    double m = ((Number) parsed).doubleValue();
-                    yield Math.max(1.0, Math.min(2.0, m));
                 }
                 case "maxCounterOverlayMult" -> {
                     double m = ((Number) parsed).doubleValue();
                     yield Math.max(1.0, Math.min(4.0, m));
                 }
-                case "tankDamageDefenseRatio", "tankDamageHealthRatio",
-                     "specializationDamageTax" -> {
+                case "tankDamageDefenseRatio", "tankDamageHealthRatio" -> {
                     double m = ((Number) parsed).doubleValue();
                     yield Math.max(0.0, Math.min(10.0, m));
                 }

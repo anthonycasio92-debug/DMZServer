@@ -551,7 +551,7 @@ public final class DifficultyCommands {
                         + "§8Tier keys: unlockTier1Level…7 / Cost…7 / tier1statpercent…7 (0.15–2.0)\n"
                         + "§8Counters: enableClassCounters · enableStrongStatCounters\n"
                         + "§8classCounter*Mult · strongStatCounterMult · maxCounterOverlayMult\n"
-                        + "§8tankDamageDefenseRatio · tankDamageHealthRatio · weakDefensePierceMult\n"
+                        + "§8tankDamageDefenseRatio · tankDamageHealthRatio\n"
                         + "§8eliteMinUnlockTier · mutationMinUnlockTier · adaptiveAiMinUnlockTier\n"
                         + "§8enemyEvolutionMinUnlockTier · bossMechanicsMinUnlockTier"
         ), false);
@@ -764,16 +764,20 @@ public final class DifficultyCommands {
                         cfg.unlockTier6EnemyMult = Math.max(0.05, Math.min(4.0, Double.parseDouble(value)));
                 case "unlocktier7enemymult", "tier7enemymult", "tier7statpercent" ->
                         cfg.unlockTier7EnemyMult = Math.max(0.05, Math.min(4.0, Double.parseDouble(value)));
-                case "weakstatcountermult", "weakcounter" ->
-                        cfg.weakStatCounterMult = Math.max(1.0, Math.min(3.0, Double.parseDouble(value)));
-                case "weakdefensepiercemult", "defpierce" ->
-                        cfg.weakDefensePierceMult = Math.max(1.0, Math.min(3.0, Double.parseDouble(value)));
+                case "weakstatcountermult", "weakcounter",
+                     "weakdefensepiercemult", "defpierce",
+                     "specializationdamagetax", "spectax",
+                     "racecountermult", "racemult" -> {
+                    source.m_81352_(Component.m_237113_(
+                            "§c" + key + " §7is unused as of 3.3.35 (class + top-stat counters only). "
+                                    + "Edit JSON only if you need the legacy field."
+                    ));
+                    return 0;
+                }
                 case "tankdamagedefenseratio", "tankdeffloor" ->
                         cfg.tankDamageDefenseRatio = Math.max(0.0, Math.min(10.0, Double.parseDouble(value)));
                 case "tankdamagehealthratio", "tankhpfloor" ->
                         cfg.tankDamageHealthRatio = Math.max(0.0, Math.min(10.0, Double.parseDouble(value)));
-                case "specializationdamagetax", "spectax" ->
-                        cfg.specializationDamageTax = Math.max(0.0, Math.min(10.0, Double.parseDouble(value)));
                 case "enableclasscounters", "classcounters" ->
                         cfg.enableClassCounters = Boolean.parseBoolean(value)
                                 || "on".equalsIgnoreCase(value)
@@ -790,8 +794,6 @@ public final class DifficultyCommands {
                         cfg.classCounterHealthMult = Math.max(1.0, Math.min(3.0, Double.parseDouble(value)));
                 case "classcounterarmormult", "classarmor" ->
                         cfg.classCounterArmorMult = Math.max(1.0, Math.min(3.0, Double.parseDouble(value)));
-                case "racecountermult", "racemult" ->
-                        cfg.raceCounterMult = Math.max(1.0, Math.min(2.0, Double.parseDouble(value)));
                 case "maxcounteroverlaymult", "countercap", "overlaycap" ->
                         cfg.maxCounterOverlayMult = Math.max(1.0, Math.min(4.0, Double.parseDouble(value)));
                 case "defensetoarmorfactor" ->

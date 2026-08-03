@@ -263,7 +263,10 @@ public final class DifficultyConfig {
      * Kept for config/admin compat; default 1.0 = no effect.
      */
     public double weakStatCounterMult = 1.0;
-    /** How hard tank / weak-offense counters pierce (mob damage vs player defense share). */
+    /**
+     * Legacy pierce knob (unused in combat as of 3.3.35).
+     * Live floors use {@link #tankDamageDefenseRatio} / {@link #tankDamageHealthRatio}.
+     */
     public double weakDefensePierceMult = 1.75;
     /**
      * Damage floor from player defense × tier % — stops DEF dumps from facing soft hits.

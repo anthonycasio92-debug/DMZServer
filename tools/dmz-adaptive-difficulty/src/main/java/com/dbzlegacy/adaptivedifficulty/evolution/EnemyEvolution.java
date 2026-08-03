@@ -486,7 +486,7 @@ public final class EnemyEvolution {
         return age - tag.m_128454_("dmz_ad_ki_shot") >= skeletonShotGap(entity, tier);
     }
 
-    /** Apply stamped class/race/top-stat counter cadence (&lt;1 = more aggressive kits). */
+    /** Apply stamped class + top-stat kit cadence (&lt;1 = more aggressive kits). */
     private static long kitCd(LivingEntity entity, long baseTicks) {
         double scale = MobScaling.counterKitCooldownScale(entity);
         return Math.max(8L, Math.round(Math.max(1L, baseTicks) * scale));
