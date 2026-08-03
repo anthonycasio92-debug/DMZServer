@@ -254,11 +254,23 @@ public final class PlayerCombatProfile {
             // Mild tier damp — floor 0.55 so admin ladders above 100% still inherit forms.
             double tierDamp = Math.max(0.55, 1.0 - 0.40 * Math.max(0.0, Math.min(1.0, pct)));
             double twOffense = twBase * tierDamp;
-            // T1–T3 + transformed: inherit far more form on offense (soft curve was wiping threat).
+            // T1–T3 + transformed: lift form on offense (soft curve was wiping threat).
+            // T1 stays mild — full-linear + high live floor made transformed T1 brutal.
             if (tier <= 3 && formBoost > 1.12) {
-                double earlyTw = Math.min(1.0, twBase + 0.22 * (4 - tier)); // T1+0.66, T2+0.44, T3+0.22
-                twOffense = Math.max(twOffense, earlyTw);
-                exp = Math.min(1.0, Math.max(exp, 0.90)); // near-linear early
+                double bump = switch (tier) {
+                    case 1 -> 0.10;
+                    case 2 -> 0.22;
+                    case 3 -> 0.18;
+                    default -> 0.0;
+                };
+                double minExp = switch (tier) {
+                    case 1 -> 0.70;
+                    case 2 -> 0.82;
+                    case 3 -> 0.85;
+                    default -> exp;
+                };
+                twOffense = Math.max(twOffense, Math.min(1.0, twBase + bump));
+                exp = Math.min(1.0, Math.max(exp, minExp));
             }
             // Bulk (HP/DEF) stays near-live so high-tier packs aren't deleted on form-up.
             double twBulk = Math.min(1.0, Math.max(twBase + 0.35, twBase * 1.55) * (0.85 + 0.15 * tierDamp));
@@ -364,12 +376,12 @@ public final class PlayerCombatProfile {
      */
     public double targetMobHealth(DifficultyConfig cfg) {
         double base = maxHealth * tierPercent;
-        // T1–T3 transformed: sponge off full live HP so early form fights aren't free.
+        // T1–T3 transformed: modest live-HP floor (T1 only a small bump over tier%).
         if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
             double hpThreat = switch (activeTier) {
-                case 1 -> 0.34;
-                case 2 -> 0.44;
-                case 3 -> 0.55;
+                case 1 -> 0.24;
+                case 2 -> 0.40;
+                case 3 -> 0.50;
                 default -> 0.0;
             };
             base = Math.max(base, liveMaxHealth * hpThreat);
@@ -411,13 +423,13 @@ public final class PlayerCombatProfile {
         }
         double base = Math.max(offenseShare, Math.max(defFloor, hpFloor));
 
-        // T1–T3 + transformed: mobs swing a real slice of full live form power.
-        // Soft-curve × low tier% was leaving transformed T1/T2 with wet-noodle hits.
+        // T1–T3 + transformed: live-form damage floor. T1 stays close to tier%
+        // (0.40 live was ~2× a 21% ladder and felt brutal in form).
         if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
             double threatPct = switch (activeTier) {
-                case 1 -> 0.40;
-                case 2 -> 0.52;
-                case 3 -> 0.64;
+                case 1 -> 0.27;
+                case 2 -> 0.48;
+                case 3 -> 0.60;
                 default -> 0.0;
             };
             base = Math.max(base, liveOffense * threatPct);
@@ -811,7 +823,7 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
         // Formula revision: T1–T3 early form threat floors.
-        h = mix(h, 14L);
+        h = mix(h, 15L);
         return h;
     }
 

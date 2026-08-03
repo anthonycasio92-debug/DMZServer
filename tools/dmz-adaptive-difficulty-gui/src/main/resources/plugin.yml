@@ -1,5 +1,5 @@
 name: DMZAdaptiveDifficultyGUI
-version: '3.3.48'
+version: '3.3.49'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn

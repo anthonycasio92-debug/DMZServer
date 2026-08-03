@@ -4,12 +4,12 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_adaptive_difficulty"
-version = "3.3.48"
+version = "3.3.49"
 displayName = "DMZ Adaptive Difficulty"
 authors = "DBZ Legacy Reborn"
 displayTest = "IGNORE_SERVER_VERSION"
 description = '''
-Server-side Adaptive Difficulty for DragonMineZ (3.3.48).
+Server-side Adaptive Difficulty for DragonMineZ (3.3.49).
 Unlock tiers bought with Lightman's Ancient Coins, nearby mobs scale to
 player fight stats × tier %, titles, gated elites/mutations/AI/boss.
 Low-tier + high-DEF pressure raised; ki uses scaled attack. Teams WIP.
