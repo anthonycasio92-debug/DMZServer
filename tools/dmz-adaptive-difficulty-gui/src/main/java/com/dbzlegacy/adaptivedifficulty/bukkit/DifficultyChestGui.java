@@ -377,7 +377,7 @@ public final class DifficultyChestGui implements Listener {
         if (!bridgeOk) {
             if (staff) {
                 return List.of("", "&cForge Adaptive Difficulty mod unreachable",
-                        "&7Check mods/ for dmz_adaptive_difficulty",
+                        "&7Check mods/ for AdaptiveDifficulty-*.jar",
                         "&8GUI actions are disabled until the mod loads");
             }
             return List.of("", "&cAdaptive Difficulty is unavailable", "&7Please try again later");

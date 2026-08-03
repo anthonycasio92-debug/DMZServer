@@ -7,7 +7,10 @@ import net.minecraft.server.level.ServerPlayer;
 
 /** Opens the companion plugin's CMILib/CMI inventory GUI. */
 public final class CmiGuiBridge {
-    public static final String PLUGIN_NAME = "DMZAdaptiveDifficultyGUI";
+    /** Bukkit plugin.yml {@code name} for AdaptiveDifficultyGUI 1.0+. */
+    public static final String PLUGIN_NAME = "AdaptiveDifficultyGUI";
+    /** Pre-1.0 companion plugin name — kept as a lookup fallback. */
+    public static final String LEGACY_PLUGIN_NAME = "DMZAdaptiveDifficultyGUI";
 
     private CmiGuiBridge() {}
 
@@ -15,7 +18,16 @@ public final class CmiGuiBridge {
         // Only require the companion plugin. It chooses CMI vs chest itself —
         // requiring CMILib here caused Forge to skip the plugin and dump to chat
         // when the Mohist plugin lookup for CMILib was flaky.
-        return pluginEnabled(PLUGIN_NAME);
+        try {
+            Object plugin = getCompanionPlugin();
+            if (plugin == null) {
+                return false;
+            }
+            Object enabled = plugin.getClass().getMethod("isEnabled").invoke(plugin);
+            return enabled instanceof Boolean b && b;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     public static boolean open(ServerPlayer player, String page) {
@@ -24,7 +36,7 @@ public final class CmiGuiBridge {
         }
         String target = page == null || page.isBlank() ? "main" : page;
         try {
-            Object plugin = getPlugin(PLUGIN_NAME);
+            Object plugin = getCompanionPlugin();
             if (plugin == null) {
                 return false;
             }
@@ -94,6 +106,15 @@ public final class CmiGuiBridge {
         return pm.getClass().getMethod("getPlugin", String.class).invoke(pm, name);
     }
 
+    /** Resolve AdaptiveDifficultyGUI, falling back to the pre-1.0 plugin name. */
+    static Object getCompanionPlugin() throws Exception {
+        Object plugin = getPlugin(PLUGIN_NAME);
+        if (plugin != null) {
+            return plugin;
+        }
+        return getPlugin(LEGACY_PLUGIN_NAME);
+    }
+
     /**
      * Find {@code name(*, String)} by arity/name only — do not check Player assignability
      * across Mohist classloaders (that always fails and previously broke opens).
@@ -141,7 +162,7 @@ public final class CmiGuiBridge {
         UUID id = player.m_20148_();
         // Prefer plugin CL so the Player type matches openMenu's parameter.
         try {
-            Object plugin = getPlugin(PLUGIN_NAME);
+            Object plugin = getCompanionPlugin();
             if (plugin != null) {
                 ClassLoader pcl = plugin.getClass().getClassLoader();
                 Class<?> bukkit = Class.forName("org.bukkit.Bukkit", true, pcl);

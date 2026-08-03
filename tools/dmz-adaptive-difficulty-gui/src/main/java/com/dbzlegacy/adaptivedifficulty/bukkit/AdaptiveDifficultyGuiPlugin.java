@@ -32,15 +32,15 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 + " forgeMod=" + forge);
         if (!forge) {
             String err = ForgeBridge.lastError();
-            getLogger().severe("Adaptive Difficulty Forge mod NOT reachable — GUI actions will fail."
+            getLogger().severe("AdaptiveDifficulty Forge mod NOT reachable — GUI actions will fail."
                     + (err == null || err.isBlank() ? "" : " (" + err + ")"));
-            getLogger().severe("Install mods/dmz_adaptive_difficulty-*.jar and restart.");
+            getLogger().severe("Install mods/AdaptiveDifficulty-*.jar and restart.");
         } else {
             String modVer = ForgeBridge.modVersion();
             String pluginVer = getDescription().getVersion();
             if (modVer != null && pluginVer != null && !modVer.equals(pluginVer)) {
                 getLogger().severe("VERSION SKEW: Forge mod=" + modVer + " GUI plugin=" + pluginVer
-                        + " — install matching dmz_adaptive_difficulty jars or GUI reopen/actions may break.");
+                        + " — install matching AdaptiveDifficulty + AdaptiveDifficultyGUI jars (same version).");
             } else {
                 getLogger().info("Version handshake OK: " + pluginVer);
             }

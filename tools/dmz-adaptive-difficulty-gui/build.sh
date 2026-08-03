@@ -10,11 +10,12 @@ ADV_KEY="$ROOT/libraries/adventure-key-4.14.0.jar"
 EXAM_API="$ROOT/libraries/examination-api-1.3.0.jar"
 EXAM_STR="$ROOT/libraries/examination-string-1.3.0.jar"
 BUNGEE="$ROOT/libraries/bungeecord-chat-1.20-R0.2.jar"
-VERSION="3.3.53"
+VERSION="1.0"
+NAME="AdaptiveDifficultyGUI"
 SRC="$HERE/src/main/java"
 RES="$HERE/src/main/resources"
 OUT="$HERE/build/classes"
-JAR="$ROOT/plugins/dmz_adaptive_difficulty_gui-${VERSION}.jar"
+JAR="$ROOT/plugins/${NAME}-${VERSION}.jar"
 
 for f in "$PAPER" "$PAPI" "$CMILIB" "$ADV_API" "$ADV_KEY" "$EXAM_API" "$EXAM_STR" "$BUNGEE"; do
   if [[ ! -f "$f" ]]; then
@@ -23,7 +24,9 @@ for f in "$PAPER" "$PAPI" "$CMILIB" "$ADV_API" "$ADV_KEY" "$EXAM_API" "$EXAM_STR
   fi
 done
 
-rm -f "$ROOT"/plugins/dmz_adaptive_difficulty_gui-*.jar
+# Remove new + legacy jar names so only one AD GUI jar ships.
+rm -f "$ROOT"/plugins/AdaptiveDifficultyGUI-*.jar \
+      "$ROOT"/plugins/dmz_adaptive_difficulty_gui-*.jar
 rm -rf "$OUT"
 mkdir -p "$OUT"
 

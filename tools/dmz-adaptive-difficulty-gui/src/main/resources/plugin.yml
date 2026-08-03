@@ -1,22 +1,23 @@
-name: DMZAdaptiveDifficultyGUI
-version: '3.3.53'
+name: AdaptiveDifficultyGUI
+version: '1.0'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
-description: CMI/CMILib inventory GUI + PlaceholderAPI bridge for DMZ Adaptive Difficulty
+description: CMI/CMILib inventory GUI + PlaceholderAPI bridge for AdaptiveDifficulty
 softdepend: [CMILib, CMI, PlaceholderAPI]
 commands:
   difficulty:
-    description: Open adaptive difficulty GUI
+    description: Open AdaptiveDifficulty GUI
     usage: /difficulty
-    aliases: [adifficulty, dmzdifficulty]
+    aliases: [adifficulty, dmzdifficulty, adaptivedifficulty]
   dmzdiffgui:
-    description: Force-open adaptive difficulty chest/CMI GUI
+    description: Force-open AdaptiveDifficulty chest/CMI GUI
     usage: /dmzdiffgui [page]
+    aliases: [adiffgui]
 permissions:
   dmzdiff.gui:
-    description: Open the adaptive difficulty GUI
+    description: Open the AdaptiveDifficulty GUI
     default: true
   difficulty.admin:
-    description: Use adaptive difficulty admin commands (op or this node)
+    description: Use AdaptiveDifficulty admin commands (op or this node)
     default: op

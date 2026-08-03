@@ -16,14 +16,18 @@ if [[ ! -f "$FTB" ]]; then
   curl -fsSL -o "$FTB" \
     "https://maven.ftb.dev/releases/dev/ftb/mods/ftb-teams-forge/2001.3.1/ftb-teams-forge-2001.3.1.jar"
 fi
-VERSION="3.3.53"
+VERSION="1.0"
+NAME="AdaptiveDifficulty"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
-JAR="$ROOT/mods/dmz_adaptive_difficulty-${VERSION}.jar"
+JAR="$ROOT/mods/${NAME}-${VERSION}.jar"
 
-rm -f "$ROOT"/mods/dmz_adaptive_difficulty-*.jar
-rm -f "$ROOT"/dmz_adaptive_difficulty-*.jar
+# Remove new + legacy jar names so only one AD Forge jar ships.
+rm -f "$ROOT"/mods/AdaptiveDifficulty-*.jar \
+      "$ROOT"/mods/dmz_adaptive_difficulty-*.jar \
+      "$ROOT"/AdaptiveDifficulty-*.jar \
+      "$ROOT"/dmz_adaptive_difficulty-*.jar
 
 CP="$SRG:$FORGE_S:$FORGE_U:$GSON:$LIGHTMANS:$FTB:\
 $ROOT/libraries/net/minecraftforge/fmlcore/1.20.1-47.4.10/fmlcore-1.20.1-47.4.10.jar:\
@@ -52,6 +56,5 @@ javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
     -C "$RES" META-INF/mods.toml \
     -C "$RES" pack.mcmeta
 )
-rm -f "$ROOT"/dmz_adaptive_difficulty-*.jar
 echo "Built $JAR"
 jar tf "$JAR"

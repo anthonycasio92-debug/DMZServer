@@ -31,7 +31,7 @@ Typical workflow when TPS is stuck around 6–8:
 
 ## Isolating adaptive difficulty
 
-1. Note TPS with `dmz_adaptive_difficulty-*.jar` installed
+1. Note TPS with `AdaptiveDifficulty-*.jar` installed
 2. Stop server, move that jar out of `mods/`, restart
 3. `/spark tps` again under the same load
 4. If TPS recovers a lot → this mod (or its combat load) is involved

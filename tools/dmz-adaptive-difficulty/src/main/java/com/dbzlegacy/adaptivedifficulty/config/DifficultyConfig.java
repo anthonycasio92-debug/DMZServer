@@ -17,7 +17,7 @@ import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fml.loading.FMLPaths;
 
-/** Mirrors the concept doc admin settings. Saved at {@code config/dmz_adaptive_difficulty.json}. */
+/** Mirrors the concept doc admin settings. Saved at {@code config/adaptivedifficulty.json}. */
 public final class DifficultyConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static DifficultyConfig INSTANCE = new DifficultyConfig();
@@ -670,14 +670,39 @@ public final class DifficultyConfig {
         }
     }
 
+    /** Current config filename (AdaptiveDifficulty 1.0+). */
     public static Path path() {
+        return FMLPaths.CONFIGDIR.get().resolve("adaptivedifficulty.json");
+    }
+
+    /** Pre-1.0 filename — auto-migrated on first load. */
+    public static Path legacyPath() {
         return FMLPaths.CONFIGDIR.get().resolve("dmz_adaptive_difficulty.json");
     }
 
     /** @return false when the JSON exists but could not be parsed. */
     public static boolean load() {
         Path file = path();
+        Path legacy = legacyPath();
         try {
+            if (!Files.exists(file) && Files.exists(legacy)) {
+                try {
+                    Files.move(legacy, file);
+                    AdaptiveDifficultyMod.LOGGER.info(
+                            "[{}] migrated config {} → {}",
+                            AdaptiveDifficultyMod.MOD_ID,
+                            legacy.getFileName(),
+                            file.getFileName());
+                } catch (Exception moveFail) {
+                    AdaptiveDifficultyMod.LOGGER.warn(
+                            "[{}] could not rename legacy config; loading {} then re-saving as {}",
+                            AdaptiveDifficultyMod.MOD_ID,
+                            legacy.getFileName(),
+                            file.getFileName(),
+                            moveFail);
+                    file = legacy;
+                }
+            }
             if (Files.exists(file)) {
                 try (Reader reader = Files.newBufferedReader(file)) {
                     DifficultyConfig loaded = GSON.fromJson(reader, DifficultyConfig.class);

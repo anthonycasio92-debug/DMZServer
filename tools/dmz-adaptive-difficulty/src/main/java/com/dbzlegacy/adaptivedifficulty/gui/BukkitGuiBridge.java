@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Opens the companion Bukkit plugin chest GUI ({@code DMZAdaptiveDifficultyGUI}).
+ * Opens the companion Bukkit plugin chest GUI ({@code AdaptiveDifficultyGUI}).
  */
 public final class BukkitGuiBridge {
     public static final String PLUGIN_NAME = CmiGuiBridge.PLUGIN_NAME;
@@ -13,7 +13,7 @@ public final class BukkitGuiBridge {
     private BukkitGuiBridge() {}
 
     public static boolean available() {
-        return CmiGuiBridge.pluginEnabled(PLUGIN_NAME);
+        return CmiGuiBridge.available();
     }
 
     public static boolean open(ServerPlayer player, String page) {
@@ -22,7 +22,7 @@ public final class BukkitGuiBridge {
         }
         String target = page == null || page.isBlank() ? "main" : page;
         try {
-            Object plugin = CmiGuiBridge.getPlugin(PLUGIN_NAME);
+            Object plugin = CmiGuiBridge.getCompanionPlugin();
             if (plugin == null) {
                 return false;
             }

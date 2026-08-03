@@ -708,7 +708,7 @@ public final class DifficultyCommands {
                 case "adminpermission" -> {
                     // Privilege escalation risk — change only in config JSON + reload.
                     source.m_81352_(Component.m_237113_(
-                            "adminPermission cannot be set live. Edit config/dmz_adaptive_difficulty.json and /difficulty admin reload."
+                            "adminPermission cannot be set live. Edit config/adaptivedifficulty.json and /difficulty admin reload."
                     ));
                     return 0;
                 }

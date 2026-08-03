@@ -3,47 +3,46 @@ loaderVersion = "[47,)"
 license = "MIT"
 
 [[mods]]
-modId = "dmz_adaptive_difficulty"
-version = "3.3.53"
-displayName = "DMZ Adaptive Difficulty"
+modId = "adaptivedifficulty"
+version = "1.0"
+displayName = "AdaptiveDifficulty"
 authors = "DBZ Legacy Reborn"
 displayTest = "IGNORE_SERVER_VERSION"
 description = '''
-Server-side Adaptive Difficulty for DragonMineZ (3.3.53).
+Server-side AdaptiveDifficulty for DragonMineZ (1.0).
 Unlock tiers bought with Lightman's Ancient Coins, nearby mobs scale to
 player fight stats × tier %, titles, gated elites/mutations/AI/boss.
-Low-tier + high-DEF pressure raised; ki uses scaled attack. Teams WIP.
 '''
 
-[[dependencies.dmz_adaptive_difficulty]]
+[[dependencies.adaptivedifficulty]]
 modId = "forge"
 mandatory = true
 versionRange = "[47,)"
 ordering = "NONE"
 side = "SERVER"
 
-[[dependencies.dmz_adaptive_difficulty]]
+[[dependencies.adaptivedifficulty]]
 modId = "minecraft"
 mandatory = true
 versionRange = "[1.20.1,1.20.2)"
 ordering = "NONE"
 side = "SERVER"
 
-[[dependencies.dmz_adaptive_difficulty]]
+[[dependencies.adaptivedifficulty]]
 modId = "dragonminez"
 mandatory = true
 versionRange = "[2.1,)"
 ordering = "AFTER"
 side = "SERVER"
 
-[[dependencies.dmz_adaptive_difficulty]]
+[[dependencies.adaptivedifficulty]]
 modId = "lightmanscurrency"
 mandatory = false
 versionRange = "[0,)"
 ordering = "AFTER"
 side = "SERVER"
 
-[[dependencies.dmz_adaptive_difficulty]]
+[[dependencies.adaptivedifficulty]]
 modId = "ftbteams"
 mandatory = false
 versionRange = "[0,)"

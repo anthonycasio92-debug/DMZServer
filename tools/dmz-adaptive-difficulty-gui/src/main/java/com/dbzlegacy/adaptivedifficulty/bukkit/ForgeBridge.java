@@ -418,9 +418,9 @@ public final class ForgeBridge {
         Object nms = nmsPlayer(player);
         if (nms == null) {
             String detail = resolveError == null || resolveError.isBlank()
-                    ? "is dmz_adaptive_difficulty loaded in mods/?"
+                    ? "is AdaptiveDifficulty-*.jar loaded in mods/?"
                     : resolveError;
-            return ActionResult.fail("Could not reach adaptive difficulty mod (" + detail + ").");
+            return ActionResult.fail("Could not reach AdaptiveDifficulty mod (" + detail + ").");
         }
         try {
             ensureResolved(nms.getClass().getClassLoader());
