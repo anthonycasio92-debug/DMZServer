@@ -35,6 +35,13 @@ public final class DifficultyActions {
     public static final String ACT_TOGGLE_PERSONAL = "toggle_personal";
     public static final String ACT_TOGGLE_COIN_CHAT = "toggle_coin_chat";
 
+    /**
+     * When true, {@link #openGui} syncs unlocks/titles but does not reopen a menu.
+     * Used by the Bukkit companion so it owns inventory reopen after {@code /difficulty do}.
+     */
+    private static final ThreadLocal<Boolean> SUPPRESS_GUI_REOPEN =
+            ThreadLocal.withInitial(() -> Boolean.FALSE);
+
     private DifficultyActions() {}
 
     public static void openGui(ServerPlayer player, String page) {
@@ -43,11 +50,26 @@ public final class DifficultyActions {
             TitleSystem.syncTierTitles(player, true);
         }
         UnlockSystem.syncUnlocks(player, DifficultyCache.data(player));
+        if (Boolean.TRUE.equals(SUPPRESS_GUI_REOPEN.get())) {
+            return;
+        }
         DifficultyMenu.open(player, target);
     }
 
     public static Result handle(ServerPlayer player, String action, long amount, String page) {
         return handleArg(player, action, String.valueOf(amount), page);
+    }
+
+    /**
+     * Same as {@link #handleArg} but never reopens chat/inventory — Bukkit owns reopen.
+     */
+    public static Result handleArgNoReopen(ServerPlayer player, String action, String arg, String page) {
+        SUPPRESS_GUI_REOPEN.set(Boolean.TRUE);
+        try {
+            return handleArg(player, action, arg, page);
+        } finally {
+            SUPPRESS_GUI_REOPEN.set(Boolean.FALSE);
+        }
     }
 
     public static Result handleArg(ServerPlayer player, String action, String arg, String page) {

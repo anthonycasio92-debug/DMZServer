@@ -27,8 +27,9 @@ public final class CmiDifficultyGui {
         try {
             Class.forName("net.Zrips.CMILib.GUI.CMIGui");
             Class.forName("net.Zrips.CMILib.CMILib");
-            return org.bukkit.Bukkit.getPluginManager().getPlugin("CMILib") != null
-                    || org.bukkit.Bukkit.getPluginManager().getPlugin("CMI") != null;
+            org.bukkit.plugin.Plugin lib = org.bukkit.Bukkit.getPluginManager().getPlugin("CMILib");
+            org.bukkit.plugin.Plugin cmi = org.bukkit.Bukkit.getPluginManager().getPlugin("CMI");
+            return (lib != null && lib.isEnabled()) || (cmi != null && cmi.isEnabled());
         } catch (Throwable t) {
             return false;
         }

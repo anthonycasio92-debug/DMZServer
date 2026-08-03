@@ -709,7 +709,21 @@ public final class DifficultyCommands {
                     ));
                     return 0;
                 }
-                case "guibackend" -> cfg.guiBackend = value.trim().toLowerCase();
+                case "guibackend" -> {
+                    String gui = switch (value.trim().toLowerCase()) {
+                        case "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm" -> "cmi";
+                        case "chest", "bukkit", "inventory", "gui" -> "chest";
+                        case "chat" -> "chat";
+                        case "auto" -> "auto";
+                        default -> null;
+                    };
+                    if (gui == null) {
+                        source.m_81352_(Component.m_237113_(
+                                "Unknown guiBackend. Use: cmi, chest, chat, auto."));
+                        return 0;
+                    }
+                    cfg.guiBackend = gui;
+                }
                 case "vanilladifficulty" -> cfg.vanillaDifficulty = value.trim().toLowerCase();
                 case "restorevanilladifficultyfrompeaceful" ->
                         cfg.restoreVanillaDifficultyFromPeaceful = Boolean.valueOf(value);

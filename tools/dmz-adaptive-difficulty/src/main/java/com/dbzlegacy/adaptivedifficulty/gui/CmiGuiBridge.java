@@ -88,7 +88,15 @@ public final class CmiGuiBridge {
             if (byId != null) {
                 return byId;
             }
-            String name = player.m_7755_().getString();
+            // Prefer scoreboard/login name over display Component (nicknames break lookup).
+            String name = null;
+            try {
+                name = player.m_6302_();
+            } catch (Throwable ignored) {
+            }
+            if (name == null || name.isBlank()) {
+                name = player.m_7755_().getString();
+            }
             if (name != null && !name.isBlank()) {
                 Object byName = bukkit.getMethod("getPlayerExact", String.class).invoke(null, name);
                 if (byName != null) {

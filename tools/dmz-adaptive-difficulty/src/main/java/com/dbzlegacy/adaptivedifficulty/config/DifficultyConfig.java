@@ -905,11 +905,14 @@ public final class DifficultyConfig {
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
             cfg.guiBackend = "cmi";
         } else {
-            String gui = cfg.guiBackend.trim().toLowerCase();
-            // Legacy DeluxeMenus configs → CMI
-            if (gui.equals("deluxemenus") || gui.equals("deluxe") || gui.equals("dm")) {
-                cfg.guiBackend = "cmi";
-            }
+            // Canonicalize aliases so Forge + Bukkit agree.
+            cfg.guiBackend = switch (cfg.guiBackend.trim().toLowerCase()) {
+                case "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm" -> "cmi";
+                case "chest", "bukkit", "inventory", "gui" -> "chest";
+                case "chat" -> "chat";
+                case "auto" -> "auto";
+                default -> "auto";
+            };
         }
         if (cfg.vanillaDifficulty == null || cfg.vanillaDifficulty.isBlank()) {
             cfg.vanillaDifficulty = "hard";

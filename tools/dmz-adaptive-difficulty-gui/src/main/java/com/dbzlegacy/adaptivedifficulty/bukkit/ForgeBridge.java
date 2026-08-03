@@ -49,6 +49,7 @@ public final class ForgeBridge {
     private static Method snapshotStateColor;
     private static Method actionsHandle;
     private static Method actionsHandleArg;
+    private static Method actionsHandleArgNoReopen;
     private static Method resultMessage;
     private static Method resultOk;
     private static Method chatMenuOpen;
@@ -432,7 +433,11 @@ public final class ForgeBridge {
                 page = arg == null || arg.isBlank() ? "main" : arg;
             }
             Object result;
-            if (actionsHandleArg != null) {
+            // Prefer no-reopen: Bukkit already owns inventory reopen after /difficulty do.
+            // Avoids Forge DifficultyMenu dumping chat when reflection player resolve flickers.
+            if (actionsHandleArgNoReopen != null) {
+                result = actionsHandleArgNoReopen.invoke(null, nms, act, arg == null ? "" : arg, page);
+            } else if (actionsHandleArg != null) {
                 result = actionsHandleArg.invoke(null, nms, act, arg == null ? "" : arg, page);
             } else {
                 long amount = 0L;
@@ -478,7 +483,11 @@ public final class ForgeBridge {
         };
     }
 
-    /** Forge {@code guiBackend} config value (lowercased), or {@code cmi} default. */
+    /**
+     * Canonical Forge {@code guiBackend}: {@code cmi|chest|chat|auto}.
+     * Aliases ({@code bukkit}, {@code cmilib}, legacy deluxe, …) are normalized here
+     * so Bukkit open paths match Forge {@code GuiBackend.fromConfig()}.
+     */
     public static String guiBackend() {
         try {
             ensureResolved();
@@ -489,7 +498,16 @@ public final class ForgeBridge {
                 return "cmi";
             }
             String v = String.valueOf(raw).trim().toLowerCase(Locale.ROOT);
-            return v.isEmpty() ? "cmi" : v;
+            if (v.isEmpty()) {
+                return "cmi";
+            }
+            return switch (v) {
+                case "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm" -> "cmi";
+                case "chest", "bukkit", "inventory", "gui" -> "chest";
+                case "chat" -> "chat";
+                case "auto" -> "auto";
+                default -> "auto";
+            };
         } catch (Throwable t) {
             return "cmi";
         }
@@ -1108,6 +1126,12 @@ public final class ForgeBridge {
                             "handleArg", serverPlayerCls, String.class, String.class, String.class);
                 } catch (NoSuchMethodException missing) {
                     actionsHandleArg = null;
+                }
+                try {
+                    actionsHandleArgNoReopen = actionsCls.getMethod(
+                            "handleArgNoReopen", serverPlayerCls, String.class, String.class, String.class);
+                } catch (NoSuchMethodException missing) {
+                    actionsHandleArgNoReopen = null;
                 }
                 Class<?> resultCls = loadClass(
                         "com.dbzlegacy.adaptivedifficulty.service.DifficultyActions$Result", preferred);

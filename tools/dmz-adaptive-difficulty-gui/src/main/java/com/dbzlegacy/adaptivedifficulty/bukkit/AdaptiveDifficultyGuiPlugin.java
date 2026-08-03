@@ -109,7 +109,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 player.sendMessage("§cStaff only.");
                 page = "main";
             }
-            openMenuRespectingConfig(player, page);
+            // Force inventory — ignore guiBackend=chat (debug / recovery).
+            openInventory(player, page);
             return true;
         }
         if (!"difficulty".equals(name)) {
