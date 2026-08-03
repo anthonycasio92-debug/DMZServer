@@ -841,6 +841,11 @@ public final class MobScaling {
         return Math.max(0.55, Math.min(1.0, scale));
     }
 
+    /** Drop applied-signature cache so the next retarget always re-paints. */
+    public static void clearAppliedProfiles() {
+        APPLIED_PROFILE.clear();
+    }
+
     private static void pruneProfileCache() {
         if (APPLIED_PROFILE.size() <= 4096) {
             return;

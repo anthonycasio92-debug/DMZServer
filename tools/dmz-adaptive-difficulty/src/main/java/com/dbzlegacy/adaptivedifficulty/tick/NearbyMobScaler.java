@@ -33,6 +33,9 @@ public final class NearbyMobScaler {
         }
         DifficultyConfig cfg = DifficultyConfig.get();
         if (!cfg.enabled || !cfg.enableMobScaling) {
+            // Master / scaling OFF: strip every claim and revert what is loaded.
+            ScaledMobTracker.releaseAllPlayers();
+            processEvictions();
             return;
         }
         processEvictions();
@@ -120,9 +123,9 @@ public final class NearbyMobScaler {
         ScaledMobTracker.retainOnly(player, kept);
     }
 
-    /** Revert mobs that lost their difficulty slot. */
+    /** Revert mobs that lost their difficulty slot (keeps unloaded UUIDs queued). */
     public static void processEvictions() {
-        Map<UUID, UUID> evicted = ScaledMobTracker.drainEvictions();
+        Map<UUID, UUID> evicted = ScaledMobTracker.peekEvictions();
         if (evicted.isEmpty()) {
             return;
         }
@@ -133,6 +136,7 @@ public final class NearbyMobScaler {
         for (UUID mobId : evicted.keySet()) {
             Mob mob = findMob(server, mobId);
             if (mob == null) {
+                // Chunk unloaded — retry when the mob is next found / joins.
                 continue;
             }
             if (MobScaling.isExemptFromConversion(mob)) {
@@ -141,7 +145,14 @@ public final class NearbyMobScaler {
                 MobScaling.revertToBases(mob);
             }
             CombatIndex.unmark(mobId);
+            ScaledMobTracker.clearPendingRevert(mobId);
         }
+    }
+
+    /** Force-release every claim and revert loaded scaled hostiles (admin off / scaling off). */
+    public static void shutdownAllScaling() {
+        ScaledMobTracker.releaseAllPlayers();
+        processEvictions();
     }
 
     private static Mob findMob(MinecraftServer server, UUID id) {

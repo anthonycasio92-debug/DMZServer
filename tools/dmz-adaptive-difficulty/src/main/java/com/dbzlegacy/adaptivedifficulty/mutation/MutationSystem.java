@@ -32,7 +32,8 @@ public final class MutationSystem {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);
-        if (tag.m_128441_(TAG_MUTATION) && !tag.m_128461_(TAG_MUTATION).isEmpty()) {
+        if (!PersistentDataAccess.isWritable(tag)
+                || (tag.m_128441_(TAG_MUTATION) && !tag.m_128461_(TAG_MUTATION).isEmpty())) {
             return;
         }
         // Flat config %; elites get a small bump (not double — that felt common in packs).
@@ -55,6 +56,9 @@ public final class MutationSystem {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);
+        if (!PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
         tag.m_128359_(TAG_MUTATION, type.name());
 
         String prefix = EliteSystem.isElite(entity) ? "§6Elite " : "";

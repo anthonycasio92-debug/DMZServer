@@ -49,6 +49,9 @@ public final class EliteSystem {
 
     public static void promote(LivingEntity entity, long difficulty) {
         CompoundTag tag = PersistentDataAccess.get(entity);
+        if (!PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
         tag.m_128379_(TAG_ELITE, true);
         tag.m_128350_("dmz_ad_elite_scale", 1.35f); // hint for client/Pehkui packs
 

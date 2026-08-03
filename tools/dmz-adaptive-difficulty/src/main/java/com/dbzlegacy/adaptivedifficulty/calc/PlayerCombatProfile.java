@@ -319,27 +319,28 @@ public final class PlayerCombatProfile {
                     || weakest == WeakStat.KI_POWER) {
                 base *= Math.max(1.0, cfg.weakStatCounterMult);
             }
-        }
-
-        if (weakest == WeakStat.DEFENSE || weakest == WeakStat.VITALITY) {
+        } else if (weakest == WeakStat.DEFENSE || weakest == WeakStat.VITALITY) {
+            // Glass path only when not already on the tank pierce path (avoids double-press).
             double counter = Math.max(1.0, cfg.weakStatCounterMult);
-            // Glass cannons: aim through their thin defense share.
             double throughDefense = defense * tierPercent * Math.max(1.25, cfg.weakDefensePierceMult);
             base = Math.max(base * counter, throughDefense);
         }
 
+        // Multiplicative overlays after pierce floors — hard-capped to stop stack blow-ups.
+        double overlay = 1.0;
         if (imbalance > 0.0) {
-            base *= 1.0 + imbalance * Math.max(0.0, cfg.specializationDamageTax);
+            overlay *= 1.0 + imbalance * Math.max(0.0, cfg.specializationDamageTax);
         }
-
         if (cfg.enableStrongStatCounters) {
-            base *= strongStatDamageBias(cfg);
+            overlay *= strongStatDamageBias(cfg);
         }
         if (cfg.enableClassCounters) {
-            base *= classDamageBias(cfg);
-            base *= raceDamageBias(cfg);
+            overlay *= classDamageBias(cfg);
+            overlay *= raceDamageBias(cfg);
         }
-        return Math.max(1.0, base);
+        double overlayCap = Math.max(1.0, Math.min(4.0, cfg.maxCounterOverlayMult));
+        overlay = Math.max(1.0, Math.min(overlayCap, overlay));
+        return Math.max(1.0, base * overlay);
     }
 
     /** Vanilla-ish armor contribution derived from player defense share. */
@@ -723,8 +724,21 @@ public final class PlayerCombatProfile {
         h = mix(h, fightingClass == null ? 0 : fightingClass.hashCode());
         h = mix(h, race == null ? 0 : race.hashCode());
         h = mix(h, style == null ? 0 : style.ordinal() + 1);
-        // Formula revision bump so cached mobs re-paint after strong-stat counters.
-        h = mix(h, 4L);
+        // Include live counter formula knobs so admin retunes invalidate paint.
+        DifficultyConfig cfg = DifficultyConfig.get();
+        h = mix(h, Math.round(cfg.weakStatCounterMult * 1000.0));
+        h = mix(h, Math.round(cfg.weakDefensePierceMult * 1000.0));
+        h = mix(h, Math.round(cfg.strongStatCounterMult * 1000.0));
+        h = mix(h, Math.round(cfg.classCounterDamageMult * 1000.0));
+        h = mix(h, Math.round(cfg.classCounterHealthMult * 1000.0));
+        h = mix(h, Math.round(cfg.classCounterArmorMult * 1000.0));
+        h = mix(h, Math.round(cfg.raceCounterMult * 1000.0));
+        h = mix(h, Math.round(cfg.maxCounterOverlayMult * 1000.0));
+        h = mix(h, Math.round(cfg.mobHealthScale * 1000.0));
+        h = mix(h, cfg.enableClassCounters ? 1L : 0L);
+        h = mix(h, cfg.enableStrongStatCounters ? 1L : 0L);
+        // Formula revision bump after counter-stack cap + config fingerprint.
+        h = mix(h, 5L);
         return h;
     }
 

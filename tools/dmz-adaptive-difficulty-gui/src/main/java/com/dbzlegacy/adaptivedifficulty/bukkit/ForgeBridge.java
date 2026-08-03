@@ -101,8 +101,13 @@ public final class ForgeBridge {
 
     private static Map<String, String> buildPlaceholders(Player player) {
         Map<String, String> out = new HashMap<>();
+        // Fail-closed defaults — GUI must not look healthy when Forge is unreachable.
+        out.put("bridge_ok", "false");
+        out.put("system_enabled", "false");
+        out.put("player_allowed", "false");
+        out.put("personal_enabled", "false");
         Object nms = nmsPlayer(player);
-        if (nms == null) {
+        if (nms == null || !forgeAvailable()) {
             return out;
         }
         try {
@@ -251,8 +256,12 @@ public final class ForgeBridge {
                 out.put("state", "Off");
                 out.put("state_color", "c");
             }
+            out.put("bridge_ok", "true");
         } catch (Throwable ignored) {
-            // Forge mod not loaded / partial API
+            // Forge mod not loaded / partial API — keep fail-closed defaults.
+            out.put("bridge_ok", "false");
+            out.put("system_enabled", "false");
+            out.put("player_allowed", "false");
         }
         return out;
     }
@@ -683,6 +692,14 @@ public final class ForgeBridge {
                     .invoke(null, on);
             Class.forName("com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache")
                     .getMethod("invalidateAll").invoke(null);
+            if (!on) {
+                try {
+                    Class.forName("com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler")
+                            .getMethod("shutdownAllScaling")
+                            .invoke(null);
+                } catch (Throwable ignored) {
+                }
+            }
             clearAreaCache();
             PLACEHOLDER_CACHE.clear();
             return on
@@ -1187,7 +1204,10 @@ public final class ForgeBridge {
                 Map.entry("classcounterarmormult", "classCounterArmorMult"),
                 Map.entry("classarmor", "classCounterArmorMult"),
                 Map.entry("racecountermult", "raceCounterMult"),
-                Map.entry("racemult", "raceCounterMult")
+                Map.entry("racemult", "raceCounterMult"),
+                Map.entry("maxcounteroverlaymult", "maxCounterOverlayMult"),
+                Map.entry("countercap", "maxCounterOverlayMult"),
+                Map.entry("overlaycap", "maxCounterOverlayMult")
         );
         String fieldName = aliases.getOrDefault(k, key);
         try {
@@ -1256,6 +1276,7 @@ public final class ForgeBridge {
                  "enableClassCounters", "enableStrongStatCounters",
                  "strongStatCounterMult", "classCounterDamageMult",
                  "classCounterHealthMult", "classCounterArmorMult", "raceCounterMult",
+                 "maxCounterOverlayMult",
                  "defenseToArmorFactor",
                  "nearbyScaleIntervalTicks", "maxScaledMobsPerPlayer",
                  "nearbyScaleBudgetPerPlayer", "tierCostLevelDivisor",

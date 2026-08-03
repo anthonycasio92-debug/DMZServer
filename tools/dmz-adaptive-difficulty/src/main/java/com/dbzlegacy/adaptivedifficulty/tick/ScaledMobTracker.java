@@ -165,6 +165,31 @@ public final class ScaledMobTracker {
         clearPlayer(player.m_20148_());
     }
 
+    /**
+     * Drop every player's claims and queue all claimed mobs for revert.
+     * Used when master Adaptive Difficulty / mob scaling is turned off.
+     */
+    public static void releaseAllPlayers() {
+        if (CLAIMS.isEmpty()) {
+            return;
+        }
+        for (UUID playerId : List.copyOf(CLAIMS.keySet())) {
+            clearPlayer(playerId);
+        }
+    }
+
+    /** True when this mob UUID is waiting for a base-stat revert (may be unloaded). */
+    public static boolean isPendingRevert(UUID mobId) {
+        return mobId != null && PENDING_REVERT.containsKey(mobId);
+    }
+
+    /** Remove a pending eviction after a successful revert (or death cleanup). */
+    public static void clearPendingRevert(UUID mobId) {
+        if (mobId != null) {
+            PENDING_REVERT.remove(mobId);
+        }
+    }
+
     public static void release(ServerPlayer player, UUID mobId) {
         if (player == null || mobId == null) {
             return;
@@ -253,13 +278,22 @@ public final class ScaledMobTracker {
         return mobId == null ? null : PENDING_REVERT.remove(mobId);
     }
 
-    public static Map<UUID, UUID> drainEvictions() {
+    /**
+     * Snapshot of pending reverts. Entries stay queued until
+     * {@link #clearPendingRevert} after a successful revert — unloaded mobs
+     * are retried on later pulses / chunk load instead of becoming scaled orphans.
+     */
+    public static Map<UUID, UUID> peekEvictions() {
         if (PENDING_REVERT.isEmpty()) {
             return Map.of();
         }
-        Map<UUID, UUID> out = new ConcurrentHashMap<>(PENDING_REVERT);
-        PENDING_REVERT.keySet().removeAll(out.keySet());
-        return out;
+        return Map.copyOf(PENDING_REVERT);
+    }
+
+    /** @deprecated use {@link #peekEvictions()} + {@link #clearPendingRevert(UUID)} */
+    @Deprecated
+    public static Map<UUID, UUID> drainEvictions() {
+        return peekEvictions();
     }
 
     private static boolean isOwnerOnline(UUID ownerId) {

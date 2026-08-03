@@ -309,6 +309,11 @@ public final class DifficultyConfig {
     public double classCounterArmorMult = 1.20;
     /** Race overlay on top of class counters (regen / glass / transform races). */
     public double raceCounterMult = 1.12;
+    /**
+     * Cap on multiplicative counter overlays after pierce floors
+     * (specialization × top-3 × class × race). Prevents tank/dump stacking blow-ups.
+     */
+    public double maxCounterOverlayMult = 2.25;
     /** Converts DMZ defense share into vanilla armor points: log1p(def) × factor. */
     public double defenseToArmorFactor = 2.5;
     /** Server ticks between nearby-player mob rescale pulses (per-player stagger). */
@@ -845,6 +850,12 @@ public final class DifficultyConfig {
         if (cfg.raceCounterMult > 2.0) {
             cfg.raceCounterMult = 2.0;
         }
+        if (cfg.maxCounterOverlayMult < 1.0) {
+            cfg.maxCounterOverlayMult = 2.25;
+        }
+        if (cfg.maxCounterOverlayMult > 4.0) {
+            cfg.maxCounterOverlayMult = 4.0;
+        }
         if (cfg.defenseToArmorFactor <= 0.0) {
             cfg.defenseToArmorFactor = 2.5;
         }
@@ -956,6 +967,7 @@ public final class DifficultyConfig {
         com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier.invalidateThresholdCache();
         com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves.invalidateLut();
         com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty.clearCache();
+        invalidateCombatPaintCaches();
     }
 
     /** Re-run clamps on the live instance (Bukkit admin set / hot edits). */
@@ -963,5 +975,12 @@ public final class DifficultyConfig {
         if (INSTANCE != null) {
             normalize(INSTANCE);
         }
+        invalidateCombatPaintCaches();
+    }
+
+    /** Drop profile / applied-paint caches so config retunes re-scale claimed mobs. */
+    public static void invalidateCombatPaintCaches() {
+        com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile.clearAll();
+        com.dbzlegacy.adaptivedifficulty.scaling.MobScaling.clearAppliedProfiles();
     }
 }

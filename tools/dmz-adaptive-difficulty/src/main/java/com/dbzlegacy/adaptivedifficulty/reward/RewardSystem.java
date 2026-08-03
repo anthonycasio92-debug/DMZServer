@@ -10,6 +10,7 @@ import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.elite.EliteSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
+import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
@@ -47,6 +48,14 @@ public final class RewardSystem {
         }
         CompoundTag tag = PersistentDataAccess.get(dead);
         UUID deadId = dead.m_20148_();
+        // Only AD-scaled, claim-owned hostiles drop the kill ladder — no vanilla farm minting.
+        if (!tag.m_128471_(MobScaling.TAG_SCALED)) {
+            return;
+        }
+        UUID claimOwner = ScaledMobTracker.findClaimOwnerId(deadId);
+        if (claimOwner == null || !claimOwner.equals(killer.m_20148_())) {
+            return;
+        }
         if (PersistentDataAccess.isWritable(tag)) {
             if (tag.m_128471_(TAG_REWARDED)) {
                 return;
@@ -56,7 +65,13 @@ public final class RewardSystem {
             return;
         }
         if (SESSION_REWARDED.size() > 4096) {
-            SESSION_REWARDED.clear();
+            // Prune instead of wipe — avoids double-pay once the set fills.
+            int remove = SESSION_REWARDED.size() / 2;
+            var it = SESSION_REWARDED.iterator();
+            while (it.hasNext() && remove-- > 0) {
+                it.next();
+                it.remove();
+            }
         }
 
         DifficultySnapshot snap = DifficultyCache.get(killer);

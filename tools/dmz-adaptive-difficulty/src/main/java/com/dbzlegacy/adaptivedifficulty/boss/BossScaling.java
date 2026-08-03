@@ -88,6 +88,9 @@ public final class BossScaling {
             return;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);
+        if (!PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
         if (tag.m_128471_(TAG_BOSS) && tag.m_128451_(TAG_PHASE) > 0) {
             return;
         }

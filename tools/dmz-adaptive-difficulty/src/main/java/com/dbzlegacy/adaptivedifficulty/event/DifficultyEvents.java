@@ -174,6 +174,22 @@ public final class DifficultyEvents {
         }
         if (MobScaling.isExemptFromConversion(living)) {
             MobScaling.ensureExempt(living);
+            return;
+        }
+        // Finish deferred leave-area / admin-off reverts once the chunk loads again.
+        if (living instanceof Mob mob && ScaledMobTracker.isPendingRevert(mob.m_20148_())) {
+            MobScaling.revertToBases(mob);
+            CombatIndex.unmark(mob.m_20148_());
+            ScaledMobTracker.clearPendingRevert(mob.m_20148_());
+            return;
+        }
+        // Orphan scaled paint with no living claim owner → strip on join.
+        if (living instanceof Mob mob
+                && PersistentDataAccess.get(mob).m_128471_(MobScaling.TAG_SCALED)
+                && ScaledMobTracker.findClaimOwnerId(mob.m_20148_()) == null
+                && !ScaledMobTracker.isPendingRevert(mob.m_20148_())) {
+            MobScaling.revertToBases(mob);
+            CombatIndex.unmark(mob.m_20148_());
         }
     }
 
@@ -236,13 +252,14 @@ public final class DifficultyEvents {
      */
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || SystemGate.isDisabled()) {
+        if (event.phase != TickEvent.Phase.END) {
             return;
         }
         var server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) {
             return;
         }
+        // Even when master is OFF, drain claims + revert scaled hostiles.
         BehaviorScheduler.pulse(server, server.m_129921_()); // getTickCount
     }
 

@@ -44,7 +44,9 @@ public final class BehaviorScheduler {
             return;
         }
         DifficultyConfig cfg = DifficultyConfig.get();
-        if (!cfg.enabled) {
+        if (!cfg.enabled || !cfg.enableMobScaling) {
+            NearbyMobScaler.shutdownAllScaling();
+            CombatIndex.clear();
             return;
         }
         List<ServerPlayer> online = server.m_6846_().m_11314_();
@@ -168,8 +170,8 @@ public final class BehaviorScheduler {
                 return false;
             }
             tag.m_128405_("dmz_ad_unlock_tier", DifficultyCache.get(sp).activeTier);
-        } else if (DifficultyConfig.isWhitelistEnabled()) {
-            // Whitelist on + no claim/target: do not invent kits for random hostiles.
+        } else {
+            // No claim and no participating player target — never kit orphan leftovers.
             return false;
         }
 

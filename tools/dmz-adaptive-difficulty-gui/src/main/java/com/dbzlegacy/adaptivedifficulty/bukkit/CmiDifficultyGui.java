@@ -65,18 +65,20 @@ public final class CmiDifficultyGui {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         CMIGui gui = base(player, "&8Adaptive Difficulty", 4);
 
-        boolean systemOn = !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "true"));
-        boolean allowed = !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "true"));
-        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
+        boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
+        boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
+        boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
+        boolean personalOn = "true".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "false"));
         String stateColor = personalOn ? ph.getOrDefault("state_color", "f") : "c";
         CMIGuiButton status = new CMIGuiButton(13, Material.NETHER_STAR,
-                !systemOn ? "&c&lSYSTEM DISABLED"
+                !bridgeOk ? "&c&lUNAVAILABLE"
+                        : !systemOn ? "&c&lSYSTEM DISABLED"
                         : !allowed ? "&e&lWHITELIST ONLY"
                         : !personalOn ? "&c&lDIFFICULTY OFF"
                         : "&f&lAdaptive Difficulty");
         status.lockField();
-        if (!systemOn || !allowed) {
-            status.addLore(unavailableLore(player, systemOn));
+        if (!bridgeOk || !systemOn || !allowed) {
+            status.addLore(unavailableLore(player, systemOn, bridgeOk));
             gui.addButton(status);
             gui.addButton(closeBtn(31));
             fillEmpty(gui, 4);
@@ -137,7 +139,7 @@ public final class CmiDifficultyGui {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         CMIGui gui = base(player, "&8Buy Higher Tier", 5);
 
-        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
+        boolean personalOn = "true".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "false"));
         if (!personalOn) {
             CMIGuiButton locked = new CMIGuiButton(4, Material.BARRIER, "&c&lBuy Locked");
             locked.lockField();
@@ -183,7 +185,7 @@ public final class CmiDifficultyGui {
         Map<String, String> ph = ForgeBridge.placeholders(player);
         CMIGui gui = base(player, "&8Lower Difficulty Tier", 5);
 
-        boolean personalOn = !"false".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "true"));
+        boolean personalOn = "true".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "false"));
         if (!personalOn) {
             CMIGuiButton locked = new CMIGuiButton(4, Material.BARRIER, "&c&lLower Locked");
             locked.lockField();
@@ -421,8 +423,16 @@ public final class CmiDifficultyGui {
     }
 
     /** Clean copy for players; command tips only for staff. */
-    private static List<String> unavailableLore(Player player, boolean systemOn) {
+    private static List<String> unavailableLore(Player player, boolean systemOn, boolean bridgeOk) {
         boolean staff = ForgeBridge.isStaff(player);
+        if (!bridgeOk) {
+            if (staff) {
+                return List.of("", "&cForge Adaptive Difficulty mod unreachable",
+                        "&7Check mods/ for dmz_adaptive_difficulty",
+                        "&8GUI actions are disabled until the mod loads");
+            }
+            return List.of("", "&cAdaptive Difficulty is unavailable", "&7Please try again later");
+        }
         if (!systemOn) {
             if (staff) {
                 return List.of("", "&cAdaptive Difficulty is off",

@@ -876,18 +876,33 @@ public final class AncientCoinEconomy {
             fromWallet[idx] = walletTake;
         }
         // Spend inventory first, then equipped wallet (never bank).
+        // If wallet fails after inventory take, refund inventory coins immediately.
         if (!takeExactFromInventory(player, fromInv)) {
             return false;
         }
         if (!takeExactFromWallet(player, fromWallet)) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] wallet shortfall after inventory charge for {}",
+                    "[{}] wallet shortfall after inventory charge for {} — refunding inventory coins",
                     AdaptiveDifficultyMod.MOD_ID,
                     player.m_6302_());
+            refundCoinsToInventory(player, fromInv);
             return false;
         }
         DifficultyCache.refresh(player);
         return true;
+    }
+
+    /** Restore coins taken from inventory when a later wallet charge fails. */
+    private static void refundCoinsToInventory(ServerPlayer player, long[] countsByKind) {
+        if (player == null || countsByKind == null) {
+            return;
+        }
+        for (CoinKind kind : CoinKind.values()) {
+            long count = countsByKind[kind.ordinal()];
+            if (count > 0L) {
+                giveStacks(player, kind, count);
+            }
+        }
     }
 
     private static boolean takeExactFromInventory(ServerPlayer player, long[] needByKind) {

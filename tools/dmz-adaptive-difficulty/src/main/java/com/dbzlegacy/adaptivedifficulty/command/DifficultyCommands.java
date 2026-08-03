@@ -8,6 +8,7 @@ import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
 import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
+import com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -216,6 +217,9 @@ public final class DifficultyCommands {
         DifficultyConfig.setEnabled(on);
         DifficultyCache.invalidateAll();
         AreaDifficulty.clearCache();
+        if (!on) {
+            NearbyMobScaler.shutdownAllScaling();
+        }
         if (on) {
             source.m_288197_(() -> Component.m_237113_(
                     "§aAdaptive Difficulty ENABLED.\n"
@@ -763,6 +767,8 @@ public final class DifficultyCommands {
                         cfg.classCounterArmorMult = Math.max(1.0, Math.min(3.0, Double.parseDouble(value)));
                 case "racecountermult", "racemult" ->
                         cfg.raceCounterMult = Math.max(1.0, Math.min(2.0, Double.parseDouble(value)));
+                case "maxcounteroverlaymult", "countercap", "overlaycap" ->
+                        cfg.maxCounterOverlayMult = Math.max(1.0, Math.min(4.0, Double.parseDouble(value)));
                 case "defensetoarmorfactor" ->
                         cfg.defenseToArmorFactor = Math.max(0.1, Double.parseDouble(value));
                 case "nearbyscaleintervalticks", "nearbyscaleinterval" ->
