@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.8)
+# AdaptiveDifficulty (v1.0.9)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -15,7 +15,7 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Play
 | Personal toggle | GUI on/off for that player only (default ON). OFF freezes scaling, kill coins, AI pressure, and tier buy/lower until turned back on |
 | Coin drop chat | GUI mute for "Dropped X Ancient Coins" (default OFF) |
 | Death | Clears active tier + level whenever the system allows the player (personal OFF cannot skip). Unlocks / prestige / coins kept. Disconnect / logout keeps the purchased tier |
-| Nearby scaling | Hostiles scale to **STR/SKP** × tier % for damage and soft **VIT** for HP (max 5/player). **PWR/ENE are never scaled against.** Mob HP never sponges off offense and stays hard-capped so transforms do not invent health walls — player **RES** and **ki protection** are the hit counters. Form boost soft-curves STR/SKP only (mega compress ×6→×80). Custom races peel form⊕stack per channel (DMZ addition mode). Leave range / personal off / logout reverts stats **and** strips elite/mutation/boss nameplates. |
+| Nearby scaling | Hostiles scale to **STR/SKP** × tier % for damage and soft **VIT** for HP (max 5/player). **PWR/ENE never scaled against.** Mob damage is VIT-capped so higher tiers pressure **ki protection** without one-punch bag dumps; mild durability floor keeps mega forms from vaporizing packs without becoming HP walls. Form soft-curve on STR/SKP only. Tuned from a full sim of `config/dragonminez/races/*` (10 races / 106 forms). Leave range / personal off / logout reverts stats **and** strips elite/mutation/boss nameplates. |
 | Combat Rating | Rewards / display / area readouts (not mob HP) |
 | Teams | WIP stub — personal difficulty only |
 | Titles | Restored; equip from GUI |
@@ -25,8 +25,8 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Play
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.8.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.8.jar`
+1. `mods/AdaptiveDifficulty-1.0.9.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.9.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 

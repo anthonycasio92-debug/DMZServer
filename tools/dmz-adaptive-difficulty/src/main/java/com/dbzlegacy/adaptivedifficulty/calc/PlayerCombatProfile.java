@@ -371,24 +371,39 @@ public final class PlayerCombatProfile {
      * counter hits. Scaled by {@link DifficultyConfig#mobHealthScale}.
      */
     public double targetMobHealth(DifficultyConfig cfg) {
-        // Pure VIT channel × tier% — no offense sponge, no form HP walls.
-        double base = maxHealth * tierPercent;
+        // Soft VIT × tier% — never an offense sponge / health wall.
+        double vitShare = maxHealth * tierPercent;
+        double base = vitShare;
         // Tiny early-tier floor so T1 packs aren't wet paper when VIT is still low.
         if (activeTier >= 1 && activeTier <= 2 && formBoost > 1.12) {
             double floor = maxHealth * (activeTier == 1 ? 0.12 : 0.18);
             base = Math.max(base, floor);
         }
-        // Hard cap: transforms must not invent drastic HP. Soft VIT × modest form pad.
+        // Mild durability floor from soft STR/SKP so ×50–×80 forms don't vaporize
+        // packs in 0.01 hits — still capped ≤ ~2× soft VIT (not a drastic sponge).
+        if (formBoost > 1.12 && offense > maxHealth * 0.5) {
+            double hits = switch (activeTier) {
+                case 1 -> 0.55;
+                case 2 -> 0.50;
+                case 3 -> 0.45;
+                case 4 -> 0.40;
+                case 5 -> 0.35;
+                case 6 -> 0.32;
+                default -> 0.30;
+            };
+            double durability = offense * tierPercent * hits;
+            double vitCap = vitShare * 2.0;
+            base = Math.max(base, Math.min(durability, vitCap));
+        }
+        // Hard cap: transforms must not invent drastic HP.
         double formPad = 1.0;
         if (formBoost > 1.12) {
-            // ×2→1.08, ×6→1.20, ×80→1.35 — never a health wall.
-            formPad = 1.0 + 0.35 * Math.min(1.0, Math.log(formBoost) / Math.log(80.0));
+            formPad = 1.0 + 0.25 * Math.min(1.0, Math.log(formBoost) / Math.log(80.0));
         }
-        double hardCap = maxHealth * Math.max(tierPercent, 0.15) * formPad * 1.35;
+        double hardCap = maxHealth * Math.max(tierPercent, 0.15) * formPad * 1.25;
         if (base > hardCap) {
             base = hardCap;
         }
-        // Mild class/top-stat HP overlay — never PWR, never huge.
         double overlay = 1.0;
         if (cfg.enableStrongStatCounters) {
             overlay *= blendCounter(strongStatHealthBias(cfg));
@@ -396,52 +411,47 @@ public final class PlayerCombatProfile {
         if (cfg.enableClassCounters) {
             overlay *= blendCounter(classHealthBias(cfg));
         }
-        overlay = Math.min(1.15, clampCounterOverlay(overlay, cfg));
+        overlay = Math.min(1.12, clampCounterOverlay(overlay, cfg));
         double scale = cfg == null ? 0.65 : Math.max(0.05, Math.min(2.0, cfg.mobHealthScale));
         return Math.max(10.0, base * overlay * scale);
     }
 
     /**
-     * Target mob attack — soft-blended STR/SKP × tier% only.
-     * Player RES mitigates in DMZ; ki protection tanks the rest. No DEF/HP pierce
-     * inflation (that fought RES) and no PWR/ENE contribution.
+     * Target mob attack — soft-blended STR/SKP × tier% only, then capped to a
+     * VIT-relative hit fraction so higher tiers pressure ki protection without
+     * dumping a full ki bar / player bag in one unprotected punch.
      */
     public double targetMobDamage(DifficultyConfig cfg) {
-        // Physical offense only.
         double offenseShare = offense * tierPercent;
         double base = offenseShare;
 
         // T1–T3 + transformed: mild floor from soft-blended STR/SKP (not raw live).
         if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
             double threatPct = switch (activeTier) {
-                case 1 -> 0.20;
-                case 2 -> 0.34;
-                case 3 -> 0.46;
+                case 1 -> 0.18;
+                case 2 -> 0.30;
+                case 3 -> 0.40;
                 default -> 0.0;
             };
             double softFloor = offense * threatPct;
             if (formBoost >= 6.0) {
                 double megaT = megaFormT(formBoost);
-                // Keep pressure for ki-protection use, but never raw-live one-shots.
-                double shareMul = 1.20 - 0.20 * Math.min(1.25, megaT); // ×6→1.20, ×80→1.0
+                double shareMul = 1.15 - 0.18 * Math.min(1.25, megaT);
                 softFloor = Math.min(softFloor, offenseShare * Math.max(1.0, shareMul));
             }
             base = Math.max(base, softFloor);
         }
 
-        // Higher tiers: nudge toward soft offense so ki protection matters, without
-        // dumping a full ki bar in one punch (no raw liveOffense pull-through).
         if (activeTier >= 4 && formBoost > 1.12) {
             double nudge = switch (activeTier) {
-                case 4 -> 1.05;
-                case 5 -> 1.08;
-                case 6 -> 1.10;
-                default -> 1.12;
+                case 4 -> 1.04;
+                case 5 -> 1.06;
+                case 6 -> 1.08;
+                default -> 1.10;
             };
             base = Math.max(base, offenseShare * nudge);
         }
 
-        // Class + top-stat overlays (STR/SKP/RES/VIT only — PWR is a no-op).
         double overlay = 1.0;
         if (cfg.enableStrongStatCounters) {
             overlay *= blendCounter(strongStatDamageBias(cfg));
@@ -450,7 +460,43 @@ public final class PlayerCombatProfile {
             overlay *= blendCounter(classDamageBias(cfg));
         }
         overlay = clampCounterOverlay(overlay, cfg);
-        return Math.max(1.0, base * overlay);
+        base = Math.max(1.0, base * overlay);
+
+        // VIT-relative cap — calibrated from server race/form sim so T5–T7 force
+        // ki protection without one-punching the player bag before RES.
+        double hitCap = maxHealth * kiProtectionHitFrac();
+        if (base > hitCap) {
+            base = hitCap;
+        }
+        return Math.max(1.0, base);
+    }
+
+    /**
+     * Max fraction of player soft VIT a single mob hit may deal (pre-RES / ki protect).
+     * <p>
+     * Base form only uses ~55% of the tier budget so transforming still raises pressure.
+     * Full mastery mega forms reach the tier ceiling (+small pad) — enough to force
+     * ki protection, never a full-bag dump. Calibrated from server race/form sim.
+     */
+    private double kiProtectionHitFrac() {
+        double tierFrac = switch (activeTier) {
+            case 1 -> 0.10;
+            case 2 -> 0.14;
+            case 3 -> 0.18;
+            case 4 -> 0.24;
+            case 5 -> 0.30;
+            case 6 -> 0.34;
+            default -> 0.38;
+        };
+        double formFactor;
+        if (formBoost <= 1.12) {
+            formFactor = 0.55; // base — leave headroom for transforms
+        } else {
+            // ×1.12→~0.55, ×6→~0.72, ×80→1.0
+            double t = Math.min(1.0, Math.log(Math.max(1.12, formBoost)) / Math.log(80.0));
+            formFactor = 0.55 + 0.45 * t;
+        }
+        return Math.max(0.06, Math.min(0.42, tierFrac * formFactor));
     }
 
     /** Vanilla-ish armor contribution derived from player defense share. */
@@ -800,8 +846,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: STR/SKP offense, VIT-only HP, no PWR/ENE, no HP sponge.
-        h = mix(h, 20L);
+        // Formula revision: VIT hit-cap + mild durability floor (race/form sim).
+        h = mix(h, 21L);
         return h;
     }
 

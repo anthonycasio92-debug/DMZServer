@@ -1,0 +1,381 @@
+#!/usr/bin/env python3
+"""Simulate AdaptiveDifficulty against all DMZ race/class/forms on this pack.
+
+Reads:  config/dragonminez/races/*/stats.json + forms/*.json
+Writes: /opt/cursor/artifacts/ad-race-form-simulation.csv
+        /opt/cursor/artifacts/ad-race-form-balance-report.md
+
+Mirrors PlayerCombatProfile 1.0.9 formulas (STR/SKP damage, VIT HP,
+VIT-relative hit cap, mild durability floor, no PWR/ENE).
+"""
+from __future__ import annotations
+
+import csv
+import json
+import math
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+RACES = ROOT / "config" / "dragonminez" / "races"
+OUT = Path("/opt/cursor/artifacts")
+OUT.mkdir(parents=True, exist_ok=True)
+
+TIER_PCT = {1: 0.21, 2: 0.42, 3: 0.65, 4: 0.90, 5: 1.35, 6: 1.60, 7: 2.00}
+TW_BASE = 0.55
+TW_EXP = 0.75
+MOB_HP_SCALE = 0.65
+MEGA_START, MEGA_TARGET = 6.0, 80.0
+MAX_FORM = 100.0
+RELEASE = 1.0
+
+INVEST = {
+    "warrior": dict(STR=800, SKP=200, RES=300, VIT=400, PWR=100),
+    "berserker": dict(STR=900, SKP=150, RES=200, VIT=500, PWR=50),
+    "martialartist": dict(STR=300, SKP=900, RES=250, VIT=450, PWR=150),
+    "spiritualist": dict(STR=150, SKP=200, RES=250, VIT=350, PWR=900),
+    "cleric": dict(STR=100, SKP=150, RES=350, VIT=500, PWR=800),
+    "paladin": dict(STR=350, SKP=350, RES=700, VIT=500, PWR=200),
+    "tank": dict(STR=200, SKP=200, RES=800, VIT=700, PWR=100),
+}
+
+
+def mega_t(fb: float) -> float:
+    if fb < MEGA_START:
+        return 0.0
+    return math.log(fb / MEGA_START) / math.log(MEGA_TARGET / MEGA_START)
+
+
+def mega_exp_cap(t: float) -> float:
+    t = max(0.0, t)
+    if t <= 1.0:
+        return 0.48 - 0.14 * t
+    return max(0.28, 0.34 - 0.08 * (t - 1.0))
+
+
+def mega_tw_scale(t: float) -> float:
+    t = max(0.0, min(1.25, t))
+    return max(0.62, 1.0 - 0.28 * min(1.0, t))
+
+
+def mega_bulk_tw(t: float) -> float:
+    t = max(0.0, min(1.25, t))
+    return max(0.72, 1.15 - 0.35 * min(1.0, t))
+
+
+def mega_bulk_exp(t: float) -> float:
+    t = max(0.0, min(1.25, t))
+    return max(0.50, 0.85 - 0.30 * min(1.0, t))
+
+
+def blend_form(base: float, live: float, weight: float, exp: float) -> float:
+    b = max(1e-9, base)
+    l = max(b, live)
+    w = max(0.0, min(1.0, weight))
+    if w <= 0:
+        return b
+    e = max(0.20, min(1.0, exp))
+    surplus = max(0.0, l / b - 1.0)
+    seen = 1.0 + (surplus**e) * w
+    cap = 1.0 + 10.0 * w
+    return b * min(seen, cap)
+
+
+def physical_offense(melee: float, strike: float) -> float:
+    m, s = max(1.0, melee), max(1.0, strike)
+    peak, avg = max(m, s), (m + s) * 0.5
+    return peak * 0.55 + avg * 0.45
+
+
+def apply_mastery(base_mult: float, max_mastery: float, max_stats_mult: float, mastery_pct: float) -> float:
+    if base_mult <= 1.0 or max_mastery <= 0:
+        return max(1.0, base_mult)
+    frac = max(0.0, min(1.0, mastery_pct))
+    return base_mult * (1.0 + frac * (max(1.0, max_stats_mult) - 1.0))
+
+
+def load_forms(race: str):
+    forms = []
+    fdir = RACES / race / "forms"
+    if not fdir.is_dir():
+        return forms
+    for p in sorted(fdir.glob("*.json")):
+        d = json.loads(p.read_text())
+        group = d.get("groupName") or p.stem
+        raw = d.get("forms") or {}
+        if not isinstance(raw, dict):
+            continue
+        for name, f in raw.items():
+            if not isinstance(f, dict):
+                continue
+            forms.append(
+                {
+                    "group": group,
+                    "name": f.get("name") or name,
+                    "str": float(f.get("strMultiplier") or 1),
+                    "skp": float(f.get("skpMultiplier") or 1),
+                    "def": float(f.get("defMultiplier") or 1),
+                    "vit": float(f.get("vitMultiplier") or 1),
+                    "pwr": float(f.get("pwrMultiplier") or 1),
+                    "maxMastery": float(f.get("maxMastery") or 0),
+                    "maxStats": float(f.get("maxStatsMultiplier") or 1),
+                }
+            )
+    return forms
+
+
+def load_stats(race: str):
+    d = json.loads((RACES / race / "stats.json").read_text())
+    out = {}
+    for cls, c in (d.get("classes") or {}).items():
+        base = c.get("baseStats") or {}
+        sc = c.get("statScaling") or {}
+        out[cls] = {
+            "base": {k: float(base.get(k, 0) or 0) for k in ("STR", "SKP", "RES", "VIT", "PWR", "ENE")},
+            "scale": {
+                "STR": float(sc.get("STR_scaling") or 1),
+                "SKP": float(sc.get("SKP_scaling") or 1),
+                "RES": float(sc.get("DEF_scaling") or sc.get("RES_scaling") or 1),
+                "VIT": float(sc.get("VIT_scaling") or 1),
+                "PWR": float(sc.get("PWR_scaling") or 1),
+            },
+        }
+    return out
+
+
+def channel_damage(stat_points: float, scaling: float, form_mult: float) -> float:
+    return max(1.0, stat_points * scaling * form_mult * RELEASE)
+
+
+def channel_hp(vit_points: float, vit_scaling: float, vit_form: float) -> float:
+    return max(20.0, 20.0 + vit_points * vit_scaling * vit_form)
+
+
+def ki_protection_hit_frac(tier: int, form_boost: float) -> float:
+    tier_frac = {1: 0.10, 2: 0.14, 3: 0.18, 4: 0.24, 5: 0.30, 6: 0.34, 7: 0.38}[tier]
+    if form_boost <= 1.12:
+        form_factor = 0.55
+    else:
+        t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
+        form_factor = 0.55 + 0.45 * t
+    return max(0.06, min(0.42, tier_frac * form_factor))
+
+
+def simulate_ad(live_melee, live_strike, live_hp, str_form, skp_form, vit_form, res_form, tier: int):
+    pct = TIER_PCT[tier]
+    form_boost = min(MAX_FORM, max(str_form, skp_form, vit_form, res_form, 1.0))
+
+    base_melee = live_melee / str_form if str_form > 1.08 else live_melee
+    base_strike = live_strike / skp_form if skp_form > 1.08 else live_strike
+    base_hp = live_hp / vit_form if vit_form > 1.08 else live_hp
+
+    tier_damp = max(0.55, 1.0 - 0.40 * min(1.0, pct))
+    tw_off = TW_BASE * tier_damp
+    exp = TW_EXP
+    if 2 <= tier <= 3 and 1.12 < form_boost < 6.0:
+        tw_off = max(tw_off, min(1.0, TW_BASE + (0.14 if tier == 2 else 0.10)))
+    if form_boost >= 6.0:
+        t = mega_t(form_boost)
+        exp = min(exp, mega_exp_cap(t))
+        tw_off = min(tw_off, TW_BASE * mega_tw_scale(t))
+
+    tw_bulk = min(0.85, max(TW_BASE, TW_BASE * 1.15) * (0.80 + 0.20 * tier_damp))
+    bulk_exp = 0.85
+    if form_boost >= 6.0:
+        t = mega_t(form_boost)
+        tw_bulk = min(tw_bulk, TW_BASE * mega_bulk_tw(t))
+        bulk_exp = mega_bulk_exp(t)
+
+    melee = blend_form(base_melee, live_melee, tw_off, exp)
+    strike = blend_form(base_strike, live_strike, tw_off, exp)
+    hp = blend_form(base_hp, live_hp, tw_bulk, bulk_exp)
+    offense = physical_offense(melee, strike)
+    live_off = physical_offense(live_melee, live_strike)
+
+    dmg = offense * pct
+    if 1 <= tier <= 3 and form_boost > 1.12:
+        threat = {1: 0.18, 2: 0.30, 3: 0.40}[tier]
+        soft = offense * threat
+        if form_boost >= 6.0:
+            t = mega_t(form_boost)
+            soft = min(soft, dmg * max(1.0, 1.15 - 0.18 * min(1.25, t)))
+        dmg = max(dmg, soft)
+    if tier >= 4 and form_boost > 1.12:
+        nudge = {4: 1.04, 5: 1.06, 6: 1.08, 7: 1.10}[tier]
+        dmg = max(dmg, offense * pct * nudge)
+
+    hit_cap = hp * ki_protection_hit_frac(tier, form_boost)
+    dmg = min(dmg, hit_cap)
+
+    vit_share = hp * pct
+    base_hp_mob = vit_share
+    if form_boost > 1.12 and offense > hp * 0.5:
+        hits = {1: 0.55, 2: 0.50, 3: 0.45, 4: 0.40, 5: 0.35, 6: 0.32, 7: 0.30}[tier]
+        durability = offense * pct * hits
+        base_hp_mob = max(base_hp_mob, min(durability, vit_share * 2.0))
+    form_pad = 1.0
+    if form_boost > 1.12:
+        form_pad = 1.0 + 0.25 * min(1.0, math.log(form_boost) / math.log(80.0))
+    hard = hp * max(pct, 0.15) * form_pad * 1.25
+    mob_hp = min(base_hp_mob, hard) * MOB_HP_SCALE
+    mob_hp = max(10.0, mob_hp)
+
+    player_punch = max(live_melee, live_strike)
+    return dict(
+        formBoost=round(form_boost, 2),
+        softOffense=round(offense, 1),
+        liveOffense=round(live_off, 1),
+        inherit=round(offense / max(1.0, live_off), 3),
+        mobDmg=round(dmg, 1),
+        mobHp=round(mob_hp, 1),
+        hitsToKill=round(mob_hp / max(1.0, player_punch), 2),
+        hitFracPlayer=round(dmg / max(1.0, live_hp), 3),
+        hitCapFrac=round(ki_protection_hit_frac(tier, form_boost), 3),
+        softHp=round(hp, 1),
+        liveHp=round(live_hp, 1),
+    )
+
+
+def main() -> None:
+    rows = []
+    races = sorted(p.name for p in RACES.iterdir() if p.is_dir() and (p / "stats.json").exists())
+    for race in races:
+        stats = load_stats(race)
+        forms = load_forms(race)
+        form_list = [
+            {
+                "group": "base",
+                "name": "Base",
+                "str": 1,
+                "skp": 1,
+                "def": 1,
+                "vit": 1,
+                "pwr": 1,
+                "maxMastery": 0,
+                "maxStats": 1,
+            }
+        ] + forms
+        for cls, st in stats.items():
+            inv = INVEST.get(cls) or INVEST["warrior"]
+            pts = {k: st["base"].get(k, 0) + inv.get(k, 0) for k in ("STR", "SKP", "RES", "VIT", "PWR")}
+            for f in form_list:
+                for mastery_pct, mlabel in ((0.0, "m0"), (1.0, "m100")):
+                    if f["name"] == "Base" and mastery_pct > 0:
+                        continue
+                    str_f = apply_mastery(f["str"], f["maxMastery"], f["maxStats"], mastery_pct) if f["name"] != "Base" else 1.0
+                    skp_f = apply_mastery(f["skp"], f["maxMastery"], f["maxStats"], mastery_pct) if f["name"] != "Base" else 1.0
+                    vit_f = apply_mastery(f["vit"], f["maxMastery"], f["maxStats"], mastery_pct) if f["name"] != "Base" else 1.0
+                    res_f = apply_mastery(f["def"], f["maxMastery"], f["maxStats"], mastery_pct) if f["name"] != "Base" else 1.0
+                    str_f = min(MAX_FORM, max(1.0, str_f))
+                    skp_f = min(MAX_FORM, max(1.0, skp_f))
+                    vit_f = min(MAX_FORM, max(1.0, vit_f))
+                    res_f = min(MAX_FORM, max(1.0, res_f))
+                    live_melee = channel_damage(pts["STR"], st["scale"]["STR"], str_f)
+                    live_strike = channel_damage(pts["SKP"], st["scale"]["SKP"], skp_f)
+                    live_hp = channel_hp(pts["VIT"], st["scale"]["VIT"], vit_f)
+                    for tier in (1, 3, 5, 7):
+                        ad = simulate_ad(live_melee, live_strike, live_hp, str_f, skp_f, vit_f, res_f, tier)
+                        rows.append(
+                            {
+                                "race": race,
+                                "class": cls,
+                                "formGroup": f["group"],
+                                "form": f["name"],
+                                "mastery": mlabel,
+                                "tier": tier,
+                                "strForm": round(str_f, 2),
+                                "skpForm": round(skp_f, 2),
+                                "vitForm": round(vit_f, 2),
+                                "resForm": round(res_f, 2),
+                                "liveMelee": round(live_melee, 1),
+                                "liveStrike": round(live_strike, 1),
+                                **ad,
+                            }
+                        )
+
+    csv_path = OUT / "ad-race-form-simulation.csv"
+    with csv_path.open("w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
+        w.writeheader()
+        w.writerows(rows)
+
+    summary = []
+    for race in races:
+        sub = [
+            r
+            for r in rows
+            if r["race"] == race and r["tier"] == 5 and r["mastery"] == "m100" and r["class"] == "warrior" and r["form"] != "Base"
+        ]
+        base = [r for r in rows if r["race"] == race and r["tier"] == 5 and r["class"] == "warrior" and r["form"] == "Base"]
+        if not sub:
+            sub = [r for r in rows if r["race"] == race and r["tier"] == 5 and r["mastery"] == "m100" and r["class"] == "berserker" and r["form"] != "Base"]
+            base = [r for r in rows if r["race"] == race and r["tier"] == 5 and r["class"] == "berserker" and r["form"] == "Base"]
+        if not sub:
+            continue
+        top = max(sub, key=lambda r: r["formBoost"])
+        b = base[0] if base else None
+        summary.append(
+            {
+                "race": race,
+                "forms": len({(r["formGroup"], r["form"]) for r in rows if r["race"] == race and r["form"] != "Base"}),
+                "topForm": f"{top['formGroup']}.{top['form']}",
+                "topFormBoost": top["formBoost"],
+                "topInherit": top["inherit"],
+                "topMobDmg": top["mobDmg"],
+                "topMobHp": top["mobHp"],
+                "topHitsToKill": top["hitsToKill"],
+                "topHitFrac": top["hitFracPlayer"],
+                "hitCapFrac": top["hitCapFrac"],
+                "dmgJump": round(top["mobDmg"] / max(1.0, b["mobDmg"]), 2) if b else None,
+                "hpJump": round(top["mobHp"] / max(1.0, b["mobHp"]), 2) if b else None,
+            }
+        )
+
+    md = [
+        "# AdaptiveDifficulty race/form simulation (1.0.9)",
+        "",
+        "Source: `config/dragonminez/races/*`.",
+        f"Rows: {len(rows)}.",
+        "",
+        "## Per-race peak (T5, mastery 100%, physical class)",
+        "",
+        "| Race | Forms | Top boost | Inherit | Dmg jump | HP jump | Hits | Hit/playerHP | Cap | Top form |",
+        "|------|------:|----------:|--------:|---------:|--------:|-----:|-------------:|----:|----------|",
+    ]
+    for s in sorted(summary, key=lambda x: -x["topFormBoost"]):
+        md.append(
+            f"| {s['race']} | {s['forms']} | {s['topFormBoost']:.1f} | {s['topInherit']:.3f} | "
+            f"{s['dmgJump']} | {s['hpJump']} | {s['topHitsToKill']} | {s['topHitFrac']} | "
+            f"{s['hitCapFrac']} | `{s['topForm']}` |"
+        )
+
+    issues = []
+    for s in summary:
+        if (s["hpJump"] or 0) > 2.0:
+            issues.append(f"- **{s['race']}**: HP jump {s['hpJump']}× on `{s['topForm']}`")
+        if (s["topHitFrac"] or 0) > 0.45:
+            issues.append(f"- **{s['race']}**: hitFrac {s['topHitFrac']} exceeds 0.45 cap band")
+        if (s["topHitsToKill"] or 0) < 0.08:
+            issues.append(f"- **{s['race']}**: packs die in {s['topHitsToKill']} live hits")
+        if (s["dmgJump"] or 0) < 1.1 and s["topFormBoost"] >= 10:
+            issues.append(f"- **{s['race']}**: form ×{s['topFormBoost']} barely moves dmg ({s['dmgJump']}×)")
+
+    md += ["", "## Flags", ""]
+    md.extend(issues or ["No heuristic flags."])
+    md += ["", f"CSV: `{csv_path}`", ""]
+    report = OUT / "ad-race-form-balance-report.md"
+    report.write_text("\n".join(md))
+
+    print("=== T5 m100 physical peak ===")
+    print(f"{'race':16} {'boost':>7} {'dmgJ':>6} {'hpJ':>5} {'hits':>6} {'hitF':>6} {'cap':>5} form")
+    for s in sorted(summary, key=lambda x: -x["topFormBoost"]):
+        print(
+            f"{s['race']:16} {s['topFormBoost']:7.1f} {s['dmgJump']:6} {s['hpJump']:5} "
+            f"{s['topHitsToKill']:6.2f} {s['topHitFrac']:6.3f} {s['hitCapFrac']:5.3f} {s['topForm']}"
+        )
+    print("\nFlags:")
+    print("\n".join(issues) if issues else "(none)")
+    print("Wrote", csv_path, report)
+
+
+if __name__ == "__main__":
+    main()
