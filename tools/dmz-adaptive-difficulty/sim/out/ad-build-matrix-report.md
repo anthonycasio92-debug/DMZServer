@@ -1,4 +1,4 @@
-# AdaptiveDifficulty build matrix (1.0.13)
+# AdaptiveDifficulty build matrix (1.0.15)
 
 Race × class × archetype × skill loadout × tier.
 Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).
@@ -24,9 +24,21 @@ Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).
 - ✅ bioandroid infusion sponges more HP at T5
 - ✅ frostdemon infusion sponges more HP at T5
 - ✅ saiyan vit_dump T7 > T1 pressure
+- ✅ saiyan vit_dump T5 ≥ 28% bag
+- ✅ saiyan vit_dump T5 ≥ 60% of even
 - ✅ saiyan res_dump T7 > T1 pressure
+- ✅ saiyan res_dump T5 ≥ 28% bag
+- ✅ saiyan res_dump T5 ≥ 60% of even
 - ✅ saiyan str_dump T7 > T1 pressure
+- ✅ saiyan str_dump T5 ≥ 28% bag
+- ✅ saiyan str_dump T5 ≥ 60% of even
 - ✅ saiyan pwr_dump T7 > T1 pressure
+- ✅ saiyan pwr_dump T5 ≥ 28% bag
+- ✅ saiyan pwr_dump T5 ≥ 60% of even
+- ✅ saiyan tank class T5 ≥ 28% bag
+- ✅ ancient_saiyan transformed full loadout sponges vs none
+- ✅ bioandroid transformed full loadout sponges vs none
+- ✅ frostdemon transformed full loadout sponges vs none
 - ✅ T5 transformed warrior softHits ≥0.35 for most races
 
 ## Sample: saiyan warrior even (base, no skills)

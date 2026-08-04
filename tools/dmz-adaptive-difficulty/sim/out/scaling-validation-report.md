@@ -1,11 +1,11 @@
-# AdaptiveDifficulty 1.0.14 scaling validation
+# AdaptiveDifficulty 1.0.15 scaling validation
 
 
 ## 1) PWR/ENE in offense
 
 - ✅ ki offense > STR/SKP-only offense — full=1696 vs noPWR=349
 - ✅ ki pre-cap mob dmg > old STR/SKP-only — newRaw=9981 vs oldRaw=725 (both hit-capped after)
-- ✅ high-VIT ki final dmg > STR/SKP-only — new=4297 vs old=1311 (capBound=True floorBound=True)
+- ✅ high-VIT ki final dmg > STR/SKP-only — new=4297 vs old=2885 (capBound=True floorBound=True)
 - ✅ high ENE raises soft offense — highENE=2684 vs lowENE=90
 
 ## 2) Class counters
@@ -71,18 +71,20 @@
 
 - ✅ even: T5 hitFrac > T1 — T1=0.156 T5=0.429
 - ✅ even: T7 hitFrac > T5 — T5=0.429 T7=0.530
-- ✅ even: T5 pressure ≥ 8% bag — hitFrac=0.429
-- ✅ vit_dump: T5 hitFrac > T1 — T1=0.024 T5=0.166
-- ✅ vit_dump: T7 hitFrac > T5 — T5=0.166 T7=0.246
-- ✅ vit_dump: T5 pressure ≥ 8% bag — hitFrac=0.166
+- ✅ even: T5 pressure ≥ 25% bag — hitFrac=0.429
+- ✅ vit_dump: T5 hitFrac > T1 — T1=0.032 T5=0.347
+- ✅ vit_dump: T7 hitFrac > T5 — T5=0.347 T7=0.513
+- ✅ vit_dump: T5 pressure ≥ 25% bag — hitFrac=0.347
 - ✅ res_dump: T5 hitFrac > T1 — T1=0.156 T5=0.429
 - ✅ res_dump: T7 hitFrac > T5 — T5=0.429 T7=0.530
-- ✅ res_dump: T5 pressure ≥ 8% bag — hitFrac=0.429
+- ✅ res_dump: T5 pressure ≥ 25% bag — hitFrac=0.429
 - ✅ str_dump: T5 hitFrac > T1 — T1=0.156 T5=0.429
 - ✅ str_dump: T7 hitFrac > T5 — T5=0.429 T7=0.530
-- ✅ str_dump: T5 pressure ≥ 8% bag — hitFrac=0.429
-- ✅ extreme VIT dump HP-floor binds — floor=True cap=False dmg=320
-- ✅ VIT dump T5 bag pressure ≥ 12% — hitFrac=0.167 dmg=204
+- ✅ str_dump: T5 pressure ≥ 25% bag — hitFrac=0.429
+- ✅ extreme VIT dump HP-floor binds — floor=True cap=False dmg=705
+- ✅ VIT dump T5 bag pressure ≥ 28% — hitFrac=0.349 dmg=426
+- ✅ VIT dump T5 ≥ 60% of even bag pressure — vit=0.349 even=0.429
+- ✅ tank class T5 bag pressure ≥ 28% — hitFrac=0.429 dmg=309
 - ✅ RES dump uses DEF floor (or near-cap) — floor=True cap=True dmg=137
 - ✅ STR dump pack sponge ≥ 0.35 soft hits — softHits=0.65 mobHp=1703 softOffShare=2618
 - ✅ stock mobHealthScale 1.15 — got 1.15
@@ -122,4 +124,4 @@
 
 ## Summary
 
-**PASS** — 71 checks
+**PASS** — 73 checks

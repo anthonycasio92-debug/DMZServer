@@ -522,10 +522,13 @@ public final class PlayerCombatProfile {
         // Early tiers damp floors so 21–42% ladders stay near raw offense share.
         double floorStrength = Math.max(0.35, Math.min(1.0, counterStrength()));
         double defRatio = cfg == null ? 0.45 : Math.max(0.0, Math.min(10.0, cfg.tankDamageDefenseRatio));
-        double hpRatio = cfg == null ? 0.10 : Math.max(0.0, Math.min(1.0, cfg.tankDamageHealthRatio));
+        // Stock 0.22 — VIT dumps track ~60–80% of even-build bag pressure at T5+.
+        double hpRatio = cfg == null ? 0.22 : Math.max(0.0, Math.min(1.0, cfg.tankDamageHealthRatio));
         double defFloor = defense * tierPercent * defRatio * floorStrength;
-        // Floor against the live-aware bag so high-VIT god forms still get pressed.
-        double hpFloor = hitCapHealth() * tierPercent * hpRatio * floorStrength;
+        // Floor against the live-aware bag so high-VIT / tank class still get pressed.
+        // HP floor uses a higher early-tier floorStrength floor so T1–T2 dumps aren't free.
+        double hpFloorStrength = Math.max(0.65, floorStrength);
+        double hpFloor = hitCapHealth() * tierPercent * hpRatio * hpFloorStrength;
         base = Math.max(base, Math.max(defFloor, hpFloor));
 
         // T1–T3 + transformed: stronger soft-offense floors (god forms were shrugging these).
@@ -1033,8 +1036,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: live-bag hit-cap + god-form pressure (1.0.14).
-        h = mix(h, 27L);
+        // Formula revision: VIT-dump / tank ladder pressure (1.0.15).
+        h = mix(h, 28L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

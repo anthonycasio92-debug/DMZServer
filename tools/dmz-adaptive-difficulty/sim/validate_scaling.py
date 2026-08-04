@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate AdaptiveDifficulty 1.0.14 scaling against the intended combat model.
+"""Validate AdaptiveDifficulty 1.0.15 scaling against the intended combat model.
 
 Checks (fail-closed):
 1. Soft offense includes STR/SKP/PWR + mild ENE
@@ -219,8 +219,9 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     dmg = offense_share
     cap_hp = hit_cap_health(hp, live_hp, form_boost)
     floor_strength = max(0.35, min(1.0, counter_strength(pct)))
+    hp_floor_strength = max(0.65, floor_strength)
     dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
-    dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * floor_strength)
+    dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
         threat = {1: 0.32, 2: 0.48, 3: 0.62}[tier]
         soft = offense * threat
@@ -252,7 +253,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     # STR/SKP-only offense (old 1.0.10) with counters still on — for delta proof.
     dmg_old_raw = offense_no_pwr * pct
     dmg_old_raw = max(dmg_old_raw, defense * pct * TANK_DEF_RATIO * floor_strength)
-    dmg_old_raw = max(dmg_old_raw, cap_hp * pct * TANK_HP_RATIO * floor_strength)
+    dmg_old_raw = max(dmg_old_raw, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
         threat = {1: 0.32, 2: 0.48, 3: 0.62}[tier]
         dmg_old_raw = max(dmg_old_raw, offense_no_pwr * threat)
@@ -321,7 +322,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
 def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
-    lines: list[str] = ["# AdaptiveDifficulty 1.0.14 scaling validation", ""]
+    lines: list[str] = ["# AdaptiveDifficulty 1.0.15 scaling validation", ""]
 
     def check(label: str, cond: bool, detail: str = "") -> None:
         if cond:
@@ -511,8 +512,8 @@ def main() -> int:
             f"T5={t5['hitFrac']:.3f} T7={t7['hitFrac']:.3f}",
         )
         check(
-            f"{name}: T5 pressure ≥ 8% bag",
-            t5["hitFrac"] >= 0.08,
+            f"{name}: T5 pressure ≥ 25% bag",
+            t5["hitFrac"] >= 0.25,
             f"hitFrac={t5['hitFrac']:.3f}",
         )
     vit = simulate_full(INVEST["vit_dump"], scales, base_form, "tank", 5)
@@ -531,9 +532,21 @@ def main() -> int:
         f"floor={wet['floorBound']} cap={wet['hitCapBound']} dmg={wet['mobDmg']:.0f}",
     )
     check(
-        "VIT dump T5 bag pressure ≥ 12%",
-        vit["hitFrac"] >= 0.12,
+        "VIT dump T5 bag pressure ≥ 28%",
+        vit["hitFrac"] >= 0.28,
         f"hitFrac={vit['hitFrac']:.3f} dmg={vit['mobDmg']:.0f}",
+    )
+    even_ref = simulate_full(INVEST["even"], scales, base_form, "warrior", 5)
+    check(
+        "VIT dump T5 ≥ 60% of even bag pressure",
+        vit["hitFrac"] >= even_ref["hitFrac"] * 0.60,
+        f"vit={vit['hitFrac']:.3f} even={even_ref['hitFrac']:.3f}",
+    )
+    tank_cls = simulate_full(INVEST["tank"], scales, base_form, "tank", 5)
+    check(
+        "tank class T5 bag pressure ≥ 28%",
+        tank_cls["hitFrac"] >= 0.28,
+        f"hitFrac={tank_cls['hitFrac']:.3f} dmg={tank_cls['mobDmg']:.0f}",
     )
     check(
         "RES dump uses DEF floor (or near-cap)",

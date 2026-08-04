@@ -5,7 +5,7 @@ Reads:  config/dragonminez/races/*/stats.json + forms/*.json
 Writes: /opt/cursor/artifacts/ad-race-form-simulation.csv
         /opt/cursor/artifacts/ad-race-form-balance-report.md
 
-Mirrors PlayerCombatProfile 1.0.14 formulas:
+Mirrors PlayerCombatProfile 1.0.15 formulas:
 STR/SKP/PWR (+ mild ENE) offense, VIT HP, class + top-2 counters,
 VIT/RES floors, live-bag hit-cap, live-offense transform pressure, skill sponge.
 """
@@ -28,7 +28,7 @@ TW_BASE = 0.65
 TW_EXP = 0.75
 MOB_HP_SCALE = 1.15
 TANK_DEF_RATIO = 0.45
-TANK_HP_RATIO = 0.10
+TANK_HP_RATIO = 0.22
 MEGA_START, MEGA_TARGET = 6.0, 80.0
 MAX_FORM = 100.0
 RELEASE = 1.0
@@ -184,7 +184,7 @@ def hit_cap_health(soft_hp: float, live_hp: float, form_boost: float) -> float:
 
 
 def ki_protection_hit_frac(tier: int, form_boost: float, kp_level: int = 0) -> float:
-    # 1.0.14 — sized so post-DEF (~65% mit) still bites on god forms.
+    # 1.0.15 — sized so post-DEF (~65% mit) still bites on god forms.
     del kp_level
     tier_frac = {1: 0.20, 2: 0.28, 3: 0.36, 4: 0.46, 5: 0.55, 6: 0.62, 7: 0.68}[tier]
     if form_boost <= 1.12:
@@ -330,8 +330,9 @@ def simulate_ad(
     cap_hp = hit_cap_health(hp, live_hp, form_boost)
     # Live VIT/RES floors — tank dumps / god forms must feel the ladder.
     floor_strength = max(0.35, min(1.0, _counter_strength(pct)))
+    hp_floor_strength = max(0.65, floor_strength)
     dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
-    dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * floor_strength)
+    dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
         threat = {1: 0.32, 2: 0.48, 3: 0.62}[tier]
         soft = offense * threat
@@ -529,7 +530,7 @@ def main() -> None:
         )
 
     md = [
-        "# AdaptiveDifficulty race/form simulation (1.0.14)",
+        "# AdaptiveDifficulty race/form simulation (1.0.15)",
         "",
         "Source: `config/dragonminez/races/*`.",
         "Model: soft STR/SKP/PWR (+ mild ENE) × tier% + live-bag hit-cap + god-form live-offense pressure.",

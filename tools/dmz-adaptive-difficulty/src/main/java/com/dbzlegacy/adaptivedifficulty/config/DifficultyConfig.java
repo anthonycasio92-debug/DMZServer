@@ -307,9 +307,9 @@ public final class DifficultyConfig {
     /**
      * Live damage floor from player soft VIT × tier % — presses high-VIT bags so
      * "stack VIT, ignore offense" still feels the tier ladder.
-     * Example: 0.10 → mob attack at least 10% of (maxHealth × tierPercent).
+     * Example: 0.22 → mob attack at least 22% of (hitCapHealth × tierPercent).
      */
-    public double tankDamageHealthRatio = 0.10;
+    public double tankDamageHealthRatio = 0.22;
     /**
      * One-time: raise soft T1–T3 percents + tank pierce so early difficulty
      * contests high-DEF / low-level players (old 15%/30%/55% + 0.40 floor).
@@ -374,6 +374,11 @@ public final class DifficultyConfig {
      * One-time (1.0.14): god-form pressure — sponge 1.05→1.15 + transform weight 0.55→0.65.
      */
     public Boolean godFormPressureMigratedV1 = Boolean.FALSE;
+    /**
+     * One-time (1.0.15): VIT-dump / tank pressure — stock {@code tankDamageHealthRatio}
+     * 0.10 → 0.22 so high-VIT builds track the same ladder as even builds.
+     */
+    public Boolean vitDumpPressureMigratedV1 = Boolean.FALSE;
     /**
      * One-time: soften transform→enemy scaling (weight 0.40→0.25 + soft curve).
      */
@@ -1137,6 +1142,14 @@ public final class DifficultyConfig {
             }
             cfg.godFormPressureMigratedV1 = Boolean.TRUE;
         }
+        // 1.0.15: VIT dumps / tank class must feel the buy-tier ladder (not shrug packs).
+        if (!Boolean.TRUE.equals(cfg.vitDumpPressureMigratedV1)) {
+            if (nearly(cfg.tankDamageHealthRatio, 0.10) || nearly(cfg.tankDamageHealthRatio, 0.020)
+                    || nearly(cfg.tankDamageHealthRatio, 0.015) || nearly(cfg.tankDamageHealthRatio, 0.025)) {
+                cfg.tankDamageHealthRatio = 0.22;
+            }
+            cfg.vitDumpPressureMigratedV1 = Boolean.TRUE;
+        }
         if (!(cfg.maxFormBoost > 1.0) || cfg.maxFormBoost > 500.0 || Double.isNaN(cfg.maxFormBoost)) {
             cfg.maxFormBoost = 100.0;
         }
@@ -1164,7 +1177,7 @@ public final class DifficultyConfig {
         }
         if (cfg.tankDamageHealthRatio < 0.0 || cfg.tankDamageHealthRatio > 1.0
                 || Double.isNaN(cfg.tankDamageHealthRatio)) {
-            cfg.tankDamageHealthRatio = 0.10;
+            cfg.tankDamageHealthRatio = 0.22;
         }
         if (cfg.specializationDamageTax < 0.0) {
             cfg.specializationDamageTax = 0.0;

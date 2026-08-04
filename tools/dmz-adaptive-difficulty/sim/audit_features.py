@@ -86,7 +86,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.14", 'VERSION = "1.0.14"' in mod)
+    check("VERSION 1.0.15", 'VERSION = "1.0.15"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -101,7 +101,7 @@ def main() -> int:
         "transformScaleExponent": "0.75",
         "mobHealthScale": "1.15",
         "tankDamageDefenseRatio": "0.45",
-        "tankDamageHealthRatio": "0.10",
+        "tankDamageHealthRatio": "0.22",
         "maxScaledMobsPerPlayer": "5",
         "eliteMinUnlockTier": "4",
         "mutationMinUnlockTier": "5",
@@ -137,10 +137,12 @@ def main() -> int:
     check("strong-stat top-2 combine", has(profile, "combineTopStatBiases", "0.60"))
     check("VIT hit cap kept", has(profile, "kiProtectionHitFrac", "targetMobDamage", "hitCap"))
     check(
-        "raised hit-cap budgets (1.0.14)",
+        "raised hit-cap budgets (1.0.15)",
         "case 1 -> 0.20" in profile and "default -> 0.68" in profile and "formFactor = 0.78" in profile,
     )
     check("VIT/RES damage floors live", has(profile, "tankDamageDefenseRatio", "tankDamageHealthRatio", "defFloor", "hpFloor"))
+    check("VIT floor uses raised early-tier strength", "hpFloorStrength" in profile)
+    check("vitDumpPressureMigratedV1 present", "vitDumpPressureMigratedV1" in cfg)
     check("reads kiprotection / ki_infusion / potentialunlock", has(profile, '"kiprotection"', '"ki_infusion"', '"potentialunlock"'))
     check("skill sponge on mob HP", has(profile, "kiInfusionLevel", "potentialUnlockLevel", "skillHp"))
     check("live-bag hit-cap", "hitCapHealth" in profile)
@@ -180,7 +182,7 @@ def main() -> int:
     check("teams WIP", "work in progress" in actions.lower() or "WIP" in actions)
     check("GUI ABI package stable", "com.dbzlegacy.adaptivedifficulty" in bridge and "DifficultyCache" in bridge)
 
-    print("\n=== Live challenge knobs (1.0.14) ===")
+    print("\n=== Live challenge knobs (1.0.15) ===")
     check("Forge admin sets tankDamageDefenseRatio", "tankdamagedefenseratio" in cmds and "tankDamageDefenseRatio =" in cmds)
     check("Forge admin sets tankDamageHealthRatio", "tankdamagehealthratio" in cmds and "tankDamageHealthRatio =" in cmds)
     check("Forge admin sets mobHealthScale", "mobhealthscale" in cmds and "mobHealthScale =" in cmds)
@@ -207,7 +209,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.14", "1.0.14" in readme)
+    check("README version 1.0.15", "1.0.15" in readme)
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Full AdaptiveDifficulty 1.0.14 build matrix — race × class × archetype × skills × tier.
+"""Full AdaptiveDifficulty 1.0.15 build matrix — race × class × archetype × skills × tier.
 
 Concept targets (Buy Tier feel):
   T1 Awakened  — warm-up pressure; AI/evo Awakened only
@@ -231,8 +231,9 @@ def simulate(
     dmg = offense_share
     cap_hp = hit_cap_health(hp, live_hp, form_boost)
     floor_strength = max(0.35, min(1.0, _counter_strength(pct)))
+    hp_floor_strength = max(0.65, floor_strength)
     dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
-    dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * floor_strength)
+    dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
         threat = {1: 0.32, 2: 0.48, 3: 0.62}[tier]
         soft = offense * threat
@@ -326,7 +327,7 @@ def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
     lines = [
-        "# AdaptiveDifficulty build matrix (1.0.13)",
+        "# AdaptiveDifficulty build matrix (1.0.15)",
         "",
         "Race × class × archetype × skill loadout × tier.",
         "Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).",
@@ -515,7 +516,20 @@ def main() -> int:
                 f"none={none['mobHp']:.0f} inf={inf['mobHp']:.0f}",
             )
 
-    # 4) Dump builds feel ladder
+    # 4) Dump builds feel ladder + VIT dumps track even builds
+    even_t5 = next(
+        (
+            r
+            for r in rows
+            if r["race"] == "saiyan"
+            and r["cls"] == "warrior"
+            and r["arch"] == "even"
+            and r["form"] == "base"
+            and r["skills"] == "none"
+            and r["tier"] == 5
+        ),
+        None,
+    )
     for arch in ("vit_dump", "res_dump", "str_dump", "pwr_dump"):
         sample = [
             r
@@ -532,6 +546,72 @@ def main() -> int:
                 f"saiyan {arch} T7 > T1 pressure",
                 by_t[7]["hitFrac"] > by_t[1]["hitFrac"] * 1.8,
                 f"T1={by_t[1]['hitFrac']:.3f} T7={by_t[7]['hitFrac']:.3f}",
+            )
+            check(
+                f"saiyan {arch} T5 ≥ 28% bag",
+                by_t[5]["hitFrac"] >= 0.28,
+                f"T5={by_t[5]['hitFrac']:.3f}",
+            )
+            if even_t5 is not None:
+                check(
+                    f"saiyan {arch} T5 ≥ 60% of even",
+                    by_t[5]["hitFrac"] >= even_t5["hitFrac"] * 0.60,
+                    f"{arch}={by_t[5]['hitFrac']:.3f} even={even_t5['hitFrac']:.3f}",
+                )
+    tank_t5 = next(
+        (
+            r
+            for r in rows
+            if r["race"] == "saiyan"
+            and r["cls"] == "tank"
+            and r["arch"] == "class_default"
+            and r["form"] == "base"
+            and r["skills"] == "none"
+            and r["tier"] == 5
+        ),
+        None,
+    )
+    if tank_t5 is not None:
+        check(
+            "saiyan tank class T5 ≥ 28% bag",
+            tank_t5["hitFrac"] >= 0.28,
+            f"T5={tank_t5['hitFrac']:.3f}",
+        )
+
+    # 4b) Potential Unlock sponge when transformed
+    for race in races[:3]:
+        none = next(
+            (
+                r
+                for r in rows
+                if r["race"] == race
+                and r["cls"] == "warrior"
+                and r["arch"] == "even"
+                and r["form"] != "base"
+                and r["skills"] == "none"
+                and r["tier"] == 5
+            ),
+            None,
+        )
+        # pu30 only on base in sparse grid — use full vs none on transformed for PU+infusion
+        full = next(
+            (
+                r
+                for r in rows
+                if r["race"] == race
+                and r["cls"] == "warrior"
+                and r["arch"] == "even"
+                and r["form"] != "base"
+                and r["skills"] == "full"
+                and r["tier"] == 5
+            ),
+            None,
+        )
+        if none and full:
+            check(
+                f"{race} transformed full loadout sponges vs none",
+                full["mobHp"] > none["mobHp"] * 1.20,
+                f"none={none['mobHp']:.0f} full={full['mobHp']:.0f}",
             )
 
     # 5) Soft hits — transformed packs shouldn't vaporize instantly for typical warrior

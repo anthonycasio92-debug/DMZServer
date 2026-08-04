@@ -1,4 +1,4 @@
-# AdaptiveDifficulty race/form simulation (1.0.14)
+# AdaptiveDifficulty race/form simulation (1.0.15)
 
 Source: `config/dragonminez/races/*`.
 Model: soft STR/SKP/PWR (+ mild ENE) × tier% + live-bag hit-cap + god-form live-offense pressure.
