@@ -1,4 +1,4 @@
-# AdaptiveDifficulty 1.0.17 scaling validation
+# AdaptiveDifficulty 1.0.18 scaling validation
 
 
 ## 1) PWR/ENE in offense

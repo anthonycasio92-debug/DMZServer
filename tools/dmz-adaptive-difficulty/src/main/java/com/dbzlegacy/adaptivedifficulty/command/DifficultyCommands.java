@@ -168,7 +168,9 @@ public final class DifficultyCommands {
                 .then(Commands.m_82127_("status")
                         .executes(ctx -> telemetryStatus(ctx.getSource())))
                 .then(Commands.m_82127_("flush")
-                        .executes(ctx -> telemetryFlush(ctx.getSource())));
+                        .executes(ctx -> telemetryFlush(ctx.getSource())))
+                .then(Commands.m_82127_("test")
+                        .executes(ctx -> telemetryTest(ctx.getSource())));
     }
 
     private static int guiDo(CommandSourceStack source, String action, String arg, String page) {
@@ -415,6 +417,14 @@ public final class DifficultyCommands {
         if (denyAdmin(source) == 0) {
             return 0;
         }
+        // Auto-list the running staffer so the first fight actually logs.
+        if (on) {
+            ServerPlayer player = source.m_230896_();
+            if (player != null && !DifficultyConfig.isWhitelisted(player)) {
+                DifficultyConfig.addWhitelistEntry(player.m_6302_());
+                DifficultyConfig.addWhitelistEntry(player.m_20148_().toString());
+            }
+        }
         com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.setEnabled(on);
         int n = DifficultyConfig.whitelistEntries().size();
         source.m_288197_(() -> Component.m_237113_(
@@ -438,7 +448,7 @@ public final class DifficultyCommands {
                         + com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.statusLine()
                         + "\n§7Whitelist entries: §f" + n
                         + "\n§8Only listed players are sampled (gate on/off does not matter)."
-                        + "\n§8/difficulty admin telemetry on|off|flush"
+                        + "\n§8/difficulty admin telemetry on|off|flush|test"
         ), false);
         return 1;
     }
@@ -451,6 +461,28 @@ public final class DifficultyCommands {
         source.m_288197_(() -> Component.m_237113_(
                 "§aTelemetry flushed.\n§8"
                         + com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.telemetryDir()
+        ), true);
+        return 1;
+    }
+
+    private static int telemetryTest(CommandSourceStack source) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        ServerPlayer player = source.m_230896_();
+        String name = player != null ? player.m_6302_() : "console";
+        // Ensure logging is on so the probe is meaningful.
+        if (!com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.isEnabled()) {
+            com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.setEnabled(true);
+        }
+        String path = com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.writeTestProbe(name);
+        if (path == null || path.isBlank()) {
+            source.m_81352_(Component.m_237113_("§cTelemetry probe failed — check server log."));
+            return 0;
+        }
+        source.m_288197_(() -> Component.m_237113_(
+                "§aTelemetry probe written.\n§7File: §f" + path
+                        + "\n§7Remember: live hits only log for §fwhitelisted§7 players."
         ), true);
         return 1;
     }
@@ -609,7 +641,7 @@ public final class DifficultyCommands {
                         + "§e/difficulty hard|normal|easy|peaceful §7— vanilla world difficulty (ops)\n"
                         + "§e/difficulty admin off|on|toggle|status §7— master system switch\n"
                         + "§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist\n"
-                        + "§e/difficulty admin telemetry on|off|status|flush §7— log whitelist combat hits\n"
+                        + "§e/difficulty admin telemetry on|off|status|flush|test §7— log whitelist combat hits\n"
                         + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased|characterreset\n"
                         + "§e/difficulty admin set <key> <value>\n"
                         + "§8Master keys: enabled · whitelistEnabled · balanceTelemetryEnabled\n"

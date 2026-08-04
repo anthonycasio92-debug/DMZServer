@@ -169,6 +169,33 @@ public final class BalanceTelemetry {
         }
     }
 
+    /**
+     * Write one synthetic probe line so admins can verify the telemetry folder
+     * without needing a live fight. Returns the file path written.
+     */
+    public static String writeTestProbe(String playerName) {
+        String name = playerName == null || playerName.isBlank() ? "console" : playerName.trim();
+        String line = new StringBuilder(220)
+                .append('{')
+                .append("\"ts\":\"").append(Instant.now()).append('"')
+                .append(",\"player\":\"").append(escape(name)).append('"')
+                .append(",\"probe\":true")
+                .append(",\"note\":\"telemetry test probe\"")
+                .append('}')
+                .append('\n')
+                .toString();
+        try {
+            writeLine(line);
+            WRITTEN.incrementAndGet();
+            flushAndClose();
+            String day = LocalDate.now(ZoneOffset.UTC).format(DAY);
+            return telemetryDir().resolve("hits-" + day + ".jsonl").toAbsolutePath().toString();
+        } catch (IOException e) {
+            AdaptiveDifficultyMod.LOGGER.warn("[{}] telemetry probe failed: {}", AdaptiveDifficultyMod.MOD_ID, e.toString());
+            return "";
+        }
+    }
+
     private static boolean allowRate(ServerPlayer player) {
         DifficultyConfig cfg = DifficultyConfig.get();
         int maxPerSec = cfg == null ? 8 : Math.max(1, Math.min(40, cfg.balanceTelemetryMaxPerSecond));

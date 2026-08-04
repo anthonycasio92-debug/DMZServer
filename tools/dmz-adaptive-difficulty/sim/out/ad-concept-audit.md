@@ -1,4 +1,4 @@
-# AdaptiveDifficulty concept audit (1.0.17)
+# AdaptiveDifficulty concept audit (1.0.18)
 
 Fail-closed checks against the player's stated balance concept.
 
@@ -57,7 +57,7 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 1.0.17
+- ✅ VERSION 1.0.18
 - ✅ formula revision 29
 - ✅ hpFloorStrength present
 - ✅ whitelist combat telemetry present

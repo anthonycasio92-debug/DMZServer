@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.bukkit;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -718,6 +719,14 @@ public final class ForgeBridge {
                 boolean on = "true".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value);
                 return setWhitelistEnabled(on);
             }
+            if ("balancetelemetryenabled".equals(k) || "telemetry".equals(k) || "telemetryenabled".equals(k)) {
+                if (!("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)
+                        || "on".equalsIgnoreCase(value) || "off".equalsIgnoreCase(value))) {
+                    return "Use true/false, or: /difficulty admin telemetry on|off";
+                }
+                boolean on = "true".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value);
+                return setTelemetryEnabled(on);
+            }
             Class<?> cfgCls = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig");
             Object cfg = cfgCls.getMethod("get").invoke(null);
             Field field = findConfigField(cfgCls, key);
@@ -895,6 +904,117 @@ public final class ForgeBridge {
         } catch (Throwable t) {
             return "§cWhitelist remove failed: " + t.getMessage();
         }
+    }
+
+    public static boolean isPlayerWhitelisted(String name) {
+        if (name == null || name.isBlank()) {
+            return false;
+        }
+        String key = name.trim().toLowerCase(Locale.ROOT);
+        for (String entry : whitelistEntries()) {
+            if (entry != null && entry.equalsIgnoreCase(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean telemetryEnabled() {
+        try {
+            Object on = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
+                    .getMethod("isEnabled").invoke(null);
+            return on instanceof Boolean b && b;
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return false;
+        }
+    }
+
+    public static String setTelemetryEnabled(boolean on) {
+        try {
+            loadClass("com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
+                    .getMethod("setEnabled", boolean.class).invoke(null, on);
+            int n = whitelistEntries().size();
+            Path dir = telemetryDir();
+            return (on ? "§aBalance telemetry ON" : "§eBalance telemetry OFF")
+                    + "\n§7Logs AD hits on §fwhitelisted§7 players only (§f" + n + "§7 listed)."
+                    + (on && n == 0
+                    ? "\n§eWhitelist is empty — §f/difficulty admin whitelist add <player>"
+                    : "")
+                    + "\n§8" + dir;
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cFailed to toggle telemetry: " + t.getMessage()
+                    + "\n§8Install matching AdaptiveDifficulty 1.0.18+ jar.";
+        }
+    }
+
+    public static String telemetryStatusText() {
+        try {
+            Object line = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
+                    .getMethod("statusLine").invoke(null);
+            int n = whitelistEntries().size();
+            return "§6Balance telemetry\n§7" + line
+                    + "\n§7Whitelist entries: §f" + n
+                    + "\n§8Only listed players are sampled (gate on/off does not matter)."
+                    + "\n§8/difficulty admin telemetry on|off|flush|test";
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cTelemetry unavailable: " + t.getMessage()
+                    + "\n§8Need AdaptiveDifficulty 1.0.18+ with BalanceTelemetry.";
+        }
+    }
+
+    public static String telemetryFlush() {
+        try {
+            loadClass("com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
+                    .getMethod("flushAndClose").invoke(null);
+            return "§aTelemetry flushed.\n§8" + telemetryDir();
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cTelemetry flush failed: " + t.getMessage();
+        }
+    }
+
+    public static String telemetryTest(String playerName) {
+        try {
+            if (!telemetryEnabled()) {
+                setTelemetryEnabled(true);
+            }
+            Object path = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
+                    .getMethod("writeTestProbe", String.class)
+                    .invoke(null, playerName == null ? "console" : playerName);
+            String p = path == null ? "" : String.valueOf(path);
+            if (p.isBlank()) {
+                return "§cTelemetry probe failed — check server log / jar version.";
+            }
+            return "§aTelemetry probe written.\n§7File: §f" + p
+                    + "\n§7Live hits only log for §fwhitelisted§7 players with an active buy tier.";
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cTelemetry test failed: " + t.getMessage()
+                    + "\n§8Install AdaptiveDifficulty 1.0.18+ (BalanceTelemetry).";
+        }
+    }
+
+    public static Path telemetryDir() {
+        try {
+            Object path = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
+                    .getMethod("telemetryDir").invoke(null);
+            if (path instanceof Path p) {
+                return p;
+            }
+            if (path != null) {
+                return Path.of(String.valueOf(path));
+            }
+        } catch (Throwable ignored) {
+            // fall through
+        }
+        return Path.of("config", "adaptivedifficulty", "telemetry");
     }
 
     public static String whitelistClear() {
@@ -1355,7 +1475,8 @@ public final class ForgeBridge {
             return false;
         }
         return switch (fieldName) {
-            case "enabled", "whitelistEnabled",
+            case "enabled", "whitelistEnabled", "balanceTelemetryEnabled",
+                 "balanceTelemetryMaxPerSecond",
                  "prestigeMultiplier", "levelMultiplier", "teamBonusPercent",
                  "contributionPercent", "rewardScaling",
                  "combatCurveExponent", "combatCurvePivot",

@@ -29,6 +29,7 @@ EVO = SRC / "com/dbzlegacy/adaptivedifficulty/evolution/EnemyEvolution.java"
 AI = SRC / "com/dbzlegacy/adaptivedifficulty/ai/AdaptiveAiSystem.java"
 PROGRESSION = SRC / "com/dbzlegacy/adaptivedifficulty/calc/DmzProgression.java"
 BRIDGE = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/ForgeBridge.java"
+GUI_PLUGIN = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/AdaptiveDifficultyGuiPlugin.java"
 README = ROOT / "tools" / "dmz-adaptive-difficulty" / "README.md"
 MOD = SRC / "com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java"
 
@@ -86,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.17", 'VERSION = "1.0.17"' in mod)
+    check("VERSION 1.0.18", 'VERSION = "1.0.18"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -189,12 +190,18 @@ def main() -> int:
 
     print("\n=== Balance telemetry ===")
     tel = read(SRC / "com/dbzlegacy/adaptivedifficulty/telemetry/BalanceTelemetry.java")
+    gui_plugin = read(GUI_PLUGIN)
     check("BalanceTelemetry class", "class BalanceTelemetry" in tel)
     check("whitelist-gated shouldLog", "isWhitelisted" in tel and "shouldLog" in tel)
     check("JSONL hits path", "hits-" in tel and "telemetry" in tel)
     check("admin telemetry commands", "telemetryRoot" in cmds or '"telemetry"' in cmds)
     check("logs before/with safety net", "logIncomingHit" in events)
     check("default telemetry off", "balanceTelemetryEnabled = false" in cfg)
+    check("writeTestProbe", "writeTestProbe" in tel)
+    # Mohist: Bukkit owns /difficulty — telemetry must be wired through GUI, not Forge-only.
+    check("Bukkit telemetry subcommand", "handleTelemetry" in gui_plugin and '"telemetry"' in gui_plugin)
+    check("Bukkit ForgeBridge telemetry API", "setTelemetryEnabled" in bridge and "telemetryTest" in bridge)
+    check("Bukkit auto-whitelist on telemetry on", "whitelistAdd" in gui_plugin and "telemetry" in gui_plugin)
 
     print("\n=== Live challenge knobs (1.0.17) ===")
     check("Forge admin sets tankDamageDefenseRatio", "tankdamagedefenseratio" in cmds and "tankDamageDefenseRatio =" in cmds)
@@ -223,7 +230,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.17", "1.0.17" in readme)
+    check("README version 1.0.18", "1.0.18" in readme)
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")

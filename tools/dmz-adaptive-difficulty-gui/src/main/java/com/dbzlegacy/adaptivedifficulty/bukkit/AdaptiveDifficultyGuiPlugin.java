@@ -433,7 +433,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     private static boolean isDirectStaffSubcommand(String sub) {
         return switch (sub) {
             case "off", "disable", "on", "enable", "toggle", "status",
-                 "whitelist", "wl" -> true;
+                 "whitelist", "wl",
+                 "telemetry", "tel", "balancelog", "combatlog" -> true;
             default -> false;
         };
     }
@@ -458,6 +459,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             case "whitelist", "wl" -> {
                 return handleWhitelist(sender, args);
+            }
+            case "telemetry", "tel", "balancelog", "combatlog" -> {
+                return handleTelemetry(sender, args);
             }
             default -> {
                 return false;
@@ -524,6 +528,50 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         }
     }
 
+    private boolean handleTelemetry(CommandSender sender, String[] args) {
+        // /difficulty admin telemetry
+        if (args.length == 2) {
+            sender.sendMessage(ForgeBridge.telemetryStatusText());
+            return true;
+        }
+        String op = args[2].toLowerCase();
+        switch (op) {
+            case "on", "enable" -> {
+                // Auto-list the running staffer so the first fight actually logs.
+                if (sender instanceof Player p && !ForgeBridge.isPlayerWhitelisted(p.getName())) {
+                    ForgeBridge.whitelistAdd(p.getName());
+                }
+                sender.sendMessage(ForgeBridge.setTelemetryEnabled(true));
+                return true;
+            }
+            case "off", "disable" -> {
+                sender.sendMessage(ForgeBridge.setTelemetryEnabled(false));
+                return true;
+            }
+            case "toggle" -> {
+                sender.sendMessage(ForgeBridge.setTelemetryEnabled(!ForgeBridge.telemetryEnabled()));
+                return true;
+            }
+            case "status" -> {
+                sender.sendMessage(ForgeBridge.telemetryStatusText());
+                return true;
+            }
+            case "flush" -> {
+                sender.sendMessage(ForgeBridge.telemetryFlush());
+                return true;
+            }
+            case "test", "probe" -> {
+                String name = sender instanceof Player p ? p.getName() : "console";
+                sender.sendMessage(ForgeBridge.telemetryTest(name));
+                return true;
+            }
+            default -> {
+                sender.sendMessage("§cUsage: /difficulty admin telemetry on|off|status|flush|test");
+                return true;
+            }
+        }
+    }
+
     private static void sendAdminHelp(CommandSender sender) {
         sendStaffHelp(sender);
     }
@@ -536,8 +584,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§e/difficulty reset §7— clear active tier");
         sender.sendMessage("§e/difficulty admin off|on|toggle|status §7— master system switch");
         sender.sendMessage("§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist");
+        sender.sendMessage("§e/difficulty admin telemetry on|off|status|flush|test §7— balance hit logs");
         sender.sendMessage("§e/difficulty admin reload|settings|area|set §7— config tools");
         sender.sendMessage("§e/difficulty hard|normal|easy|peaceful §7— vanilla difficulty");
-        sender.sendMessage("§8Master keys: enabled · whitelistEnabled");
+        sender.sendMessage("§8Master keys: enabled · whitelistEnabled · balanceTelemetryEnabled");
     }
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed concept audit for AdaptiveDifficulty 1.0.17.
+"""Fail-closed concept audit for AdaptiveDifficulty 1.0.18.
 
 Encodes the player's stated balance intent:
   1. Buy tiers 1–7 feel progressively harder (stock 21→200%).
@@ -50,7 +50,7 @@ def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
     lines = [
-        "# AdaptiveDifficulty concept audit (1.0.17)",
+        "# AdaptiveDifficulty concept audit (1.0.18)",
         "",
         "Fail-closed checks against the player's stated balance concept.",
         "",
@@ -227,7 +227,7 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 1.0.17", 'VERSION = "1.0.17"' in mod)
+    check("VERSION 1.0.18", 'VERSION = "1.0.18"' in mod)
     check("formula revision 29", "mix(h, 29L)" in profile)
     check("hpFloorStrength present", "hpFloorStrength" in profile)
     tel = (
