@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed concept audit for AdaptiveDifficulty 1.0.15.
+"""Fail-closed concept audit for AdaptiveDifficulty 1.0.16.
 
 Encodes the player's stated balance intent:
   1. Buy tiers 1–7 feel progressively harder (stock 21→200%).
@@ -50,7 +50,7 @@ def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
     lines = [
-        "# AdaptiveDifficulty concept audit (1.0.15)",
+        "# AdaptiveDifficulty concept audit (1.0.16)",
         "",
         "Fail-closed checks against the player's stated balance concept.",
         "",
@@ -174,15 +174,16 @@ def main() -> int:
         f"pre={god_none['hitFrac']:.3f} afterKp={god_kp['hitFracAfterKp']:.3f}",
     )
 
-    lines += ["", "## 4) God forms do not out-tank", ""]
+    lines += ["", "## 4) God forms do not out-tank (incl. DMZ DEF-cancel)", ""]
     check(
         f"god-form T5 post-DEF ≥12% ({form_name})",
         god_none["hitFrac"] * 0.35 >= 0.12,
         f"pre={god_none['hitFrac']:.3f} postDef~={god_none['hitFrac']*0.35:.3f} ×{god_none['formBoost']:.1f}",
     )
-    # Named SSJG / SSJB if present
+    # Named SSJG / SSJB if present — must NOT hard-cancel at T7.
     for needle, label in (("supersaiyangod", "SSJG"), ("supersaiyanblue", "SSJB")):
         hit = None
+        hit7 = None
         for f in forms:
             key = f"{f['group']}.{f['name']}".lower()
             if needle in key:
@@ -195,12 +196,25 @@ def main() -> int:
                     "RES": min(MAX_FORM, apply_mastery(f["def"], f["maxMastery"], f["maxStats"], 1.0)),
                 }
                 hit = simulate(pts("even"), st["scale"], fmap, "warrior", 5, SKILL_LOADOUTS["none"])
+                hit7 = simulate(pts("even"), st["scale"], fmap, "warrior", 7, SKILL_LOADOUTS["none"])
                 break
         if hit is not None:
             check(
                 f"{label} T5 post-DEF ≥12% live",
                 hit["hitFrac"] * 0.35 >= 0.12,
                 f"pre={hit['hitFrac']:.3f} postDef~={hit['hitFrac']*0.35:.3f}",
+            )
+        if hit7 is not None:
+            check(
+                f"{label} T7 does not DMZ hard-cancel",
+                not hit7.get("wouldCancel", True),
+                f"dmg={hit7['mobDmg']:.0f} flatMit={hit7.get('liveFlatMit', 0):.0f} "
+                f"ratio={hit7.get('liveFlatMit', 0)/max(1, hit7['mobDmg']):.2f}",
+            )
+            check(
+                f"{label} T7 landing safety-net ≥8% bag",
+                hit7.get("landingFrac", 0) >= 0.08,
+                f"landingFrac={hit7.get('landingFrac', 0):.3f}",
             )
 
     lines += ["", "## 5) Melee AD parity (feature gates)", ""]
@@ -213,8 +227,8 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 1.0.15", 'VERSION = "1.0.15"' in mod)
-    check("formula revision 28", "mix(h, 28L)" in profile)
+    check("VERSION 1.0.16", 'VERSION = "1.0.16"' in mod)
+    check("formula revision 29", "mix(h, 29L)" in profile)
     check("hpFloorStrength present", "hpFloorStrength" in profile)
 
     lines += ["", "## Sample numbers (saiyan warrior)", ""]

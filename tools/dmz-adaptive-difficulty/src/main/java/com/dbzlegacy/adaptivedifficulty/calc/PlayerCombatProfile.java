@@ -71,6 +71,12 @@ public final class PlayerCombatProfile {
     public final double liveOffense;
     /** Full live form max HP (pre soft-curve). */
     public final double liveMaxHealth;
+    /**
+     * Live DMZ flat mitigation ({@code getDefense() × DEF form mult}).
+     * Used to clear {@code cancelDamageMitigationThreshold} (stock 2.5×) so
+     * SSJB-style DEF≫VIT forms cannot hard-cancel painted hits to 0.
+     */
+    public final double liveFlatMitigation;
     /** Detected form boost (≥1). */
     public final double formBoost;
     public final double releasePercent;
@@ -110,6 +116,7 @@ public final class PlayerCombatProfile {
             double offense,
             double liveOffense,
             double liveMaxHealth,
+            double liveFlatMitigation,
             double formBoost,
             double releasePercent,
             WeakStat weakest,
@@ -134,6 +141,7 @@ public final class PlayerCombatProfile {
         this.offense = offense;
         this.liveOffense = Math.max(offense, liveOffense);
         this.liveMaxHealth = Math.max(maxHealth, liveMaxHealth);
+        this.liveFlatMitigation = Math.max(0.0, liveFlatMitigation);
         this.formBoost = Math.max(1.0, formBoost);
         this.releasePercent = releasePercent;
         this.weakest = weakest == null ? WeakStat.NONE : weakest;
@@ -219,6 +227,7 @@ public final class PlayerCombatProfile {
         double formBoost = 1.0;
         double liveOffense = 1.0;
         double liveMaxHealth = 20.0;
+        double liveFlatMitigation = 1.0;
         double energy = 1.0;
         if (data != null) {
             // Read live channels independently — one bad custom-race getter must not
@@ -229,8 +238,12 @@ public final class PlayerCombatProfile {
             double liveEnergy = CombatSanity.saneLive(readStat(() -> data.getMaxEnergy(), 1.0), 1.0);
             double liveDef = CombatSanity.saneLive(readStat(() -> data.getDefense(), 1.0), 1.0);
             double liveHp = CombatSanity.saneLive(readStat(() -> data.getMaxHealth(), 20.0), 20.0);
+            // Flat mit includes DEF form mult — getDefense() alone understates SSJB cancel bar.
+            double liveFlat = CombatSanity.saneLive(
+                    readStat(() -> data.getFlatMitigation(), liveDef), liveDef);
             liveOffense = blendedOffense(liveMelee, liveStrike, liveKi, liveEnergy);
             liveMaxHealth = liveHp;
+            liveFlatMitigation = Math.max(liveDef, liveFlat);
 
             String raceId = DmzProgression.race(player);
             double strForm = CombatSanity.saneFormMult(statFormMultiplier(data, "STR"));
@@ -361,13 +374,14 @@ public final class PlayerCombatProfile {
         );
         sig = mix(sig, Math.round(formBoost * 100.0));
         sig = mix(sig, Math.round(liveOffense));
+        sig = mix(sig, Math.round(liveFlatMitigation));
         sig = mix(sig, kiProtect);
         sig = mix(sig, kiInfusion);
         sig = mix(sig, infusionOn ? 1L : 0L);
         sig = mix(sig, potential);
         return new PlayerCombatProfile(
                 tier, pct, melee, strike, ki, def, hp, offense,
-                liveOffense, liveMaxHealth, formBoost, release,
+                liveOffense, liveMaxHealth, liveFlatMitigation, formBoost, release,
                 balance.weakest, balance.imbalance, balance.topStats,
                 fightingClass, race, style,
                 kiProtect, kiInfusion, infusionOn, potential, sig
@@ -377,7 +391,7 @@ public final class PlayerCombatProfile {
     private static PlayerCombatProfile inactive() {
         return new PlayerCombatProfile(
                 0, 0.0, 1.0, 1.0, 1.0, 1.0, 20.0, 1.0,
-                1.0, 20.0, 1.0, 100.0,
+                1.0, 20.0, 1.0, 1.0, 100.0,
                 WeakStat.NONE, 0.0, NO_TOP, "", "", FightingStyle.HYBRID,
                 0, 0, false, 0, 0L
         );
@@ -595,7 +609,55 @@ public final class PlayerCombatProfile {
         if (base > hitCap) {
             base = hitCap;
         }
+
+        // DMZ hard-cancels when flatMitigation >= damage × threshold (stock 2.5).
+        // SSJB has DEF×32.75 / VIT×1 — HP hit-cap alone always loses. Clear the bar
+        // on T4+ (and any tier where painted damage would cancel) so hits land.
+        double thr = dmzCancelMitigationThreshold();
+        if (liveFlatMitigation > 1.0 && thr > 1.0 && base * thr <= liveFlatMitigation) {
+            double pierce = liveFlatMitigation / thr * 1.08;
+            // Early tiers: don't fully pierce (preserves T1–T3 ladder); safety net lands %.
+            // Mid/high tiers: pierce so the normal DMZ path + KP apply.
+            if (activeTier >= 4) {
+                base = Math.max(base, pierce);
+            }
+        }
         return Math.max(1.0, base);
+    }
+
+    /**
+     * Post-mitigation HP that should come off the bag when DMZ hard-cancels a hit
+     * (knockback with 0 damage). Tier-scaled so T1 stays mild and T7 still bites.
+     */
+    public double targetLandingDamage(DifficultyConfig cfg) {
+        double bag = hitCapHealth();
+        double preFrac = kiProtectionHitFrac();
+        // Model ~65% flat absorb (combat.json flatMitigationMaxAbsorbFraction).
+        double land = bag * preFrac * 0.35;
+        // KP (when trained) still matters on the safety-net path.
+        if (kiProtectionLevel > 0) {
+            land *= Math.max(0.70, 1.0 - kiProtectionLevel * 0.01);
+        }
+        // Never below a tiny tier bite; never above the pre-mit hit budget.
+        land = Math.max(bag * Math.max(0.02, tierPercent * 0.05), land);
+        land = Math.min(land, bag * preFrac);
+        return Math.max(1.0, land);
+    }
+
+    /** Stock DMZ {@code cancelDamageMitigationThreshold} (2.5). */
+    public static double dmzCancelMitigationThreshold() {
+        try {
+            var combat = com.dragonminez.common.config.ConfigManager.getCombatConfig();
+            if (combat != null) {
+                double t = combat.getCancelDamageMitigationThreshold();
+                if (t > 1.0 && t < 20.0 && !Double.isNaN(t) && !Double.isInfinite(t)) {
+                    return t;
+                }
+            }
+        } catch (Throwable ignored) {
+            // fall through
+        }
+        return 2.5;
     }
 
     /**
@@ -1036,8 +1098,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: VIT-dump / tank ladder pressure (1.0.15).
-        h = mix(h, 28L);
+        // Formula revision: DMZ DEF-cancel pierce + landing safety net (1.0.16).
+        h = mix(h, 29L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

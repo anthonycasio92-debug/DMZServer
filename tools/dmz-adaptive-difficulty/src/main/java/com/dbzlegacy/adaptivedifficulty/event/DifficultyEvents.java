@@ -50,6 +50,7 @@ import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -462,16 +463,52 @@ public final class DifficultyEvents {
     }
 
     /**
-     * Post-mitigation safety net — only for hostiles at ≤0 HP.
+     * Post-mitigation safety net.
+     * <ul>
+     *   <li>Hostiles at ≤0 HP — force terminate</li>
+     *   <li>AD mob → player hard-cancelled by DMZ DEF ({@code flatMit ≥ dmg×2.5}) —
+     *       restore tier-scaled landing damage so SSJB/T7 cannot knock without hurting</li>
+     * </ul>
      */
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public void onDamageDone(net.minecraftforge.event.entity.living.LivingDamageEvent event) {
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public void onDamageDone(LivingDamageEvent event) {
         if (SystemGate.isDisabled()) {
             return;
         }
         LivingEntity victim = event.getEntity();
         if (victim != null && HostileMobs.isHostile(victim) && victim.m_21223_() <= 0.0f) {
             MobScaling.terminateIfZeroHealth(victim);
+        }
+        if (!(victim instanceof ServerPlayer player) || !SystemGate.allows(player)) {
+            return;
+        }
+        if (DimensionGates.isDisabled(player)) {
+            return;
+        }
+        var source = event.getSource();
+        Entity causing = source == null ? null : source.m_7639_();
+        if (!(causing instanceof Mob mob) || !HostileMobs.isHostile(mob)) {
+            return;
+        }
+        if (!MobScaling.isAdPainted(mob)) {
+            return;
+        }
+        float amount = event.getAmount();
+        boolean cancelled = event.isCanceled() || amount <= 0.0f;
+        PlayerCombatProfile profile = PlayerCombatProfile.of(player);
+        if (!profile.active()) {
+            return;
+        }
+        double land = profile.targetLandingDamage(DifficultyConfig.get());
+        if (cancelled) {
+            // DMZ applyFullNegation zeroed the hit — put the tier bite back.
+            event.setCanceled(false);
+            event.setAmount((float) Math.max(1.0, land));
+            return;
+        }
+        // Partial shrug: landing far below the intended post-DEF bite.
+        if (amount < land * 0.45f) {
+            event.setAmount((float) Math.max(amount, land));
         }
     }
 

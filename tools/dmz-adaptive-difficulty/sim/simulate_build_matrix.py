@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Full AdaptiveDifficulty 1.0.15 build matrix — race × class × archetype × skills × tier.
+"""Full AdaptiveDifficulty 1.0.16 build matrix — race × class × archetype × skills × tier.
 
 Concept targets (Buy Tier feel):
   T1 Awakened  — warm-up pressure; AI/evo Awakened only
@@ -260,6 +260,19 @@ def simulate(
     hit_cap = cap_hp * cap_frac
     dmg = min(dmg, hit_cap)
 
+    # DMZ hard-cancel: flatMit (= baseDEF × DEF form) ≥ damage × 2.5 → 0 damage.
+    # Mirror PlayerCombatProfile T4+ pierce so SSJB/T7 cannot shrug packs.
+    base_def = channel_damage(pts["RES"], scales.get("RES", 1), 1.0)
+    live_flat = base_def * max(res_f, 1.0)
+    cancel_thr = 2.5
+    would_cancel = live_flat >= dmg * cancel_thr
+    if would_cancel and tier >= 4 and live_flat > 1.0:
+        dmg = max(dmg, live_flat / cancel_thr * 1.08)
+        would_cancel = live_flat >= dmg * cancel_thr
+    landing = cap_hp * cap_frac * 0.35
+    if skills["kp"] > 0:
+        landing *= max(0.70, 1.0 - skills["kp"] * 0.01)
+
     # Post-KP landing (DMZ 1%/lvl)
     kp_mit = min(0.10, skills["kp"] * KP_MITIGATION_PER_LEVEL)
     dmg_after_kp = dmg * (1.0 - kp_mit)
@@ -319,6 +332,10 @@ def simulate(
         kpSave=dmg - dmg_after_kp,
         liveHp=live_hp,
         livePunch=player_punch,
+        liveFlatMit=live_flat,
+        wouldCancel=would_cancel,
+        landing=landing,
+        landingFrac=landing / max(1.0, live_hp),
     )
 
 
@@ -327,7 +344,7 @@ def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
     lines = [
-        "# AdaptiveDifficulty build matrix (1.0.15)",
+        "# AdaptiveDifficulty build matrix (1.0.16)",
         "",
         "Race × class × archetype × skill loadout × tier.",
         "Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).",

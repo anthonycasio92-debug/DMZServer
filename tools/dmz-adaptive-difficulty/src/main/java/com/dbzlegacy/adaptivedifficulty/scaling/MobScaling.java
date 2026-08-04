@@ -1037,6 +1037,17 @@ public final class MobScaling {
         return Math.max(min, Math.min(max, value));
     }
 
+    /** True when this hostile carries AD paint (profile-scaled attrs / claim). */
+    public static boolean isAdPainted(LivingEntity entity) {
+        if (entity == null) {
+            return false;
+        }
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        return tag.m_128471_(TAG_ATTR_DMG_SCALED)
+                || tag.m_128471_(TAG_SCALED)
+                || (tag.m_128441_(TAG_PROFILE_SIG) && tag.m_128454_(TAG_PROFILE_SIG) != 0L);
+    }
+
     public static float outgoingDamageMultiplier(LivingEntity attacker) {
         if (attacker == null) {
             return 1.0f;

@@ -1,4 +1,4 @@
-# AdaptiveDifficulty 1.0.15 scaling validation
+# AdaptiveDifficulty 1.0.16 scaling validation
 
 
 ## 1) PWR/ENE in offense
@@ -70,22 +70,22 @@
 ## 6) Archetype challenge feel
 
 - ✅ even: T5 hitFrac > T1 — T1=0.156 T5=0.429
-- ✅ even: T7 hitFrac > T5 — T5=0.429 T7=0.530
-- ✅ even: T5 pressure ≥ 25% bag — hitFrac=0.429
+- ✅ even: T7 hitFrac > T5 — T5=0.429 T7=0.530 pierceBound=False
+- ✅ even: T5 pressure ≥ 25% bag — pressure=0.429
 - ✅ vit_dump: T5 hitFrac > T1 — T1=0.032 T5=0.347
-- ✅ vit_dump: T7 hitFrac > T5 — T5=0.347 T7=0.513
-- ✅ vit_dump: T5 pressure ≥ 25% bag — hitFrac=0.347
-- ✅ res_dump: T5 hitFrac > T1 — T1=0.156 T5=0.429
-- ✅ res_dump: T7 hitFrac > T5 — T5=0.429 T7=0.530
-- ✅ res_dump: T5 pressure ≥ 25% bag — hitFrac=0.429
+- ✅ vit_dump: T7 hitFrac > T5 — T5=0.347 T7=0.513 pierceBound=False
+- ✅ vit_dump: T5 pressure ≥ 25% bag — pressure=0.347
+- ✅ res_dump: T5 hitFrac > T1 — T1=0.156 T5=0.567
+- ✅ res_dump: T7 hitFrac > T5 — T5=0.567 T7=0.567 pierceBound=True
+- ✅ res_dump: T5 pressure ≥ 25% bag — pressure=0.567
 - ✅ str_dump: T5 hitFrac > T1 — T1=0.156 T5=0.429
-- ✅ str_dump: T7 hitFrac > T5 — T5=0.429 T7=0.530
-- ✅ str_dump: T5 pressure ≥ 25% bag — hitFrac=0.429
+- ✅ str_dump: T7 hitFrac > T5 — T5=0.429 T7=0.530 pierceBound=False
+- ✅ str_dump: T5 pressure ≥ 25% bag — pressure=0.429
 - ✅ extreme VIT dump HP-floor binds — floor=True cap=False dmg=705
 - ✅ VIT dump T5 bag pressure ≥ 28% — hitFrac=0.349 dmg=426
 - ✅ VIT dump T5 ≥ 60% of even bag pressure — vit=0.349 even=0.429
-- ✅ tank class T5 bag pressure ≥ 28% — hitFrac=0.429 dmg=309
-- ✅ RES dump uses DEF floor (or near-cap) — floor=True cap=True dmg=137
+- ✅ tank class T5 bag pressure ≥ 28% — hitFrac=0.480 dmg=346
+- ✅ RES dump uses DEF floor (or near-cap) — floor=True cap=True dmg=518
 - ✅ STR dump pack sponge ≥ 0.35 soft hits — softHits=0.65 mobHp=1703 softOffShare=2618
 - ✅ stock mobHealthScale 1.15 — got 1.15
 - ✅ stock transformScaleWeight 0.65 — got 0.65
@@ -119,8 +119,8 @@
 | martialartist | SKP>VIT | 1.145 | 202 | 1.000× | 1.000× |
 | spiritualist | PWR>ENE | 1.142 | 159 | 1.000× | 1.000× |
 | cleric | ENE>PWR | 1.142 | 223 | 1.000× | 1.000× |
-| paladin | RES>VIT | 1.178 | 223 | 1.000× | 1.000× |
-| tank | RES>VIT | 1.178 | 309 | 1.000× | 1.000× |
+| paladin | RES>VIT | 1.178 | 302 | 1.000× | 1.356× |
+| tank | RES>VIT | 1.178 | 346 | 1.000× | 1.119× |
 
 ## Summary
 

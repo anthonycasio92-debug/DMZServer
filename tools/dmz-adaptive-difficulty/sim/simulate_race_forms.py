@@ -360,6 +360,12 @@ def simulate_ad(
     hit_cap = cap_hp * ki_protection_hit_frac(tier, form_boost)
     dmg = min(dmg, hit_cap)
 
+    # DMZ DEF-cancel pierce (T4+) — flatMit = baseDEF × DEF form.
+    live_flat = base_def * max(res_form, 1.0)
+    cancel_thr = 2.5
+    if live_flat > 1.0 and dmg * cancel_thr <= live_flat and tier >= 4:
+        dmg = max(dmg, live_flat / cancel_thr * 1.08)
+
     hp_ov = 1.0
     hp_ov *= _blend_counter(_combine_top2(_hp_stat_bias, top), pct)
     hp_ov *= _blend_counter(_class_hp_bias(fighting_class), pct)
