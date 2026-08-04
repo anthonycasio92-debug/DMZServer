@@ -511,7 +511,8 @@ public final class PlayerCombatProfile {
 
     /**
      * Target mob attack — soft offense × tier%, with VIT/RES floors so tank dumps
-     * feel the ladder, then VIT hit-capped so unprotected punches don't dump the bag.
+     * feel the ladder, then hit-capped against a soft↔live HP blend so god forms
+     * cannot out-tank packs after DMZ DEF mitigation.
      */
     public double targetMobDamage(DifficultyConfig cfg) {
         double offenseShare = offense * tierPercent;
@@ -523,34 +524,57 @@ public final class PlayerCombatProfile {
         double defRatio = cfg == null ? 0.45 : Math.max(0.0, Math.min(10.0, cfg.tankDamageDefenseRatio));
         double hpRatio = cfg == null ? 0.10 : Math.max(0.0, Math.min(1.0, cfg.tankDamageHealthRatio));
         double defFloor = defense * tierPercent * defRatio * floorStrength;
-        double hpFloor = maxHealth * tierPercent * hpRatio * floorStrength;
+        // Floor against the live-aware bag so high-VIT god forms still get pressed.
+        double hpFloor = hitCapHealth() * tierPercent * hpRatio * floorStrength;
         base = Math.max(base, Math.max(defFloor, hpFloor));
 
-        // T1–T3 + transformed: mild floor from soft-blended offense (not raw live).
+        // T1–T3 + transformed: stronger soft-offense floors (god forms were shrugging these).
         if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
             double threatPct = switch (activeTier) {
-                case 1 -> 0.22;
-                case 2 -> 0.35;
-                case 3 -> 0.48;
+                case 1 -> 0.32;
+                case 2 -> 0.48;
+                case 3 -> 0.62;
                 default -> 0.0;
             };
             double softFloor = offense * threatPct;
             if (formBoost >= 6.0) {
                 double megaT = megaFormT(formBoost);
-                double shareMul = 1.20 - 0.15 * Math.min(1.25, megaT);
-                softFloor = Math.min(softFloor, offenseShare * Math.max(1.0, shareMul));
+                // Less mega compression — high forms must still raise bag pressure.
+                double shareMul = 1.45 - 0.10 * Math.min(1.25, megaT);
+                softFloor = Math.min(softFloor, offenseShare * Math.max(1.15, shareMul));
             }
             base = Math.max(base, softFloor);
         }
 
+        // T4–T7 + transformed: aggressive soft-share nudge (was 1.06–1.18 — too mild).
         if (activeTier >= 4 && formBoost > 1.12) {
             double nudge = switch (activeTier) {
-                case 4 -> 1.06;
-                case 5 -> 1.10;
-                case 6 -> 1.14;
-                default -> 1.18;
+                case 4 -> 1.22;
+                case 5 -> 1.35;
+                case 6 -> 1.48;
+                default -> 1.60;
             };
             base = Math.max(base, offenseShare * nudge);
+        }
+
+        // Live-offense pressure: soft-curve alone under-represents god forms. Pull a
+        // bounded slice of live offense×tier% so transforms actually raise threat.
+        if (formBoost > 1.12 && liveOffense > offense * 1.05) {
+            double liveShare = switch (activeTier) {
+                case 1 -> 0.18;
+                case 2 -> 0.26;
+                case 3 -> 0.34;
+                case 4 -> 0.42;
+                case 5 -> 0.50;
+                case 6 -> 0.56;
+                default -> 0.62;
+            };
+            // Mega forms: more of the live slice (still hit-capped after).
+            double megaBoost = formBoost >= 6.0
+                    ? 1.0 + 0.35 * Math.min(1.0, megaFormT(formBoost))
+                    : 1.0;
+            double liveFloor = liveOffense * tierPercent * liveShare * megaBoost;
+            base = Math.max(base, liveFloor);
         }
 
         double overlay = 1.0;
@@ -563,9 +587,8 @@ public final class PlayerCombatProfile {
         overlay = clampCounterOverlay(overlay, cfg);
         base = Math.max(1.0, base * overlay);
 
-        // VIT-relative cap — room for DMZ Ki Protection (1%/lvl) to stay load-bearing
-        // at mid/high tiers without one-punch bag dumps for unprotected players.
-        double hitCap = maxHealth * kiProtectionHitFrac();
+        // Hit-cap against soft↔live HP blend — sized so post-DEF (~65% mit cap) still bites.
+        double hitCap = hitCapHealth() * kiProtectionHitFrac();
         if (base > hitCap) {
             base = hitCap;
         }
@@ -573,31 +596,51 @@ public final class PlayerCombatProfile {
     }
 
     /**
-     * Max fraction of player soft VIT a single mob hit may deal (pre-RES / ki protect).
+     * HP used for the VIT hit-cap. Blends soft VIT toward live max health as forms
+     * climb — god forms inflate the real bag far above soft peel, and capping only
+     * on soft let transformed players out-tank packs.
+     */
+    private double hitCapHealth() {
+        double soft = Math.max(20.0, maxHealth);
+        double live = Math.max(soft, liveMaxHealth);
+        double blend;
+        if (formBoost <= 1.12) {
+            blend = 0.20; // equipment / small buffs
+        } else {
+            // ×1.12→~0.30, ×6→~0.55, ×80→0.75
+            double t = Math.min(1.0, Math.log(Math.max(1.12, formBoost)) / Math.log(80.0));
+            blend = 0.30 + 0.45 * t;
+        }
+        return soft + (live - soft) * blend;
+    }
+
+    /**
+     * Max fraction of {@link #hitCapHealth()} a single mob hit may deal
+     * (pre-RES / ki protect).
      * <p>
-     * Tier ladder is felt pre-mitigation so mid/high tiers make Ki Protection
-     * load-bearing; DMZ then applies KP mitigation (1%/lvl, max 10%) on top.
-     * Same painted hit for KP0 and KP10 — the skill is a pure survival advantage.
+     * Sized for DMZ adaptive DEF (up to ~65% mitigation): a T5 transformed hit at
+     * ~50% of the blend bag lands ~17% after worst-case DEF — KP then shaves more.
+     * Base form uses a lower formFactor so transforming still raises pressure.
      */
     private double kiProtectionHitFrac() {
         double tierFrac = switch (activeTier) {
-            case 1 -> 0.15;
-            case 2 -> 0.21;
-            case 3 -> 0.27;
-            case 4 -> 0.35;
-            case 5 -> 0.43;
-            case 6 -> 0.50;
-            default -> 0.56;
+            case 1 -> 0.20;
+            case 2 -> 0.28;
+            case 3 -> 0.36;
+            case 4 -> 0.46;
+            case 5 -> 0.55;
+            case 6 -> 0.62;
+            default -> 0.68;
         };
         double formFactor;
         if (formBoost <= 1.12) {
-            formFactor = 0.72; // base — leave headroom for transforms
+            formFactor = 0.78; // base — leave headroom for transforms
         } else {
-            // ×1.12→~0.72, ×6→~0.86, ×80→1.0
+            // ×1.12→~0.78, ×6→~0.90, ×80→1.0
             double t = Math.min(1.0, Math.log(Math.max(1.12, formBoost)) / Math.log(80.0));
-            formFactor = 0.72 + 0.28 * t;
+            formFactor = 0.78 + 0.22 * t;
         }
-        return Math.max(0.10, Math.min(0.60, tierFrac * formFactor));
+        return Math.max(0.12, Math.min(0.75, tierFrac * formFactor));
     }
 
     /** Vanilla-ish armor contribution derived from player defense share. */
@@ -990,8 +1033,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: skill-aware sponge + melee parity + HP scale (1.0.13).
-        h = mix(h, 26L);
+        // Formula revision: live-bag hit-cap + god-form pressure (1.0.14).
+        h = mix(h, 27L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }
@@ -1159,19 +1202,19 @@ public final class PlayerCombatProfile {
         return Math.log(formBoost / MEGA_FORM_START) / denom;
     }
 
-    /** Soft-curve exponent ceiling as mega-forms grow (×6→0.48, ×80→0.34, ×100≈0.30). */
+    /** Soft-curve exponent ceiling as mega-forms grow (×6→0.58, ×80→0.42, ×100≈0.38). */
     private static double megaFormExpCap(double megaT) {
         double t = Math.max(0.0, megaT);
         if (t <= 1.0) {
-            return 0.48 - 0.14 * t;
+            return 0.58 - 0.16 * t;
         }
-        return Math.max(0.28, 0.34 - 0.08 * (t - 1.0));
+        return Math.max(0.36, 0.42 - 0.08 * (t - 1.0));
     }
 
-    /** Offense weight scale vs twBase (×6→1.0, ×80→0.72, floor 0.62). */
+    /** Offense weight scale vs twBase (×6→1.0, ×80→0.82, floor 0.72). */
     private static double megaFormTwScale(double megaT) {
         double t = Math.max(0.0, Math.min(1.25, megaT));
-        return Math.max(0.62, 1.0 - 0.28 * Math.min(1.0, t));
+        return Math.max(0.72, 1.0 - 0.18 * Math.min(1.0, t));
     }
 
     /** Bulk (HP/DEF) weight scale vs twBase — higher than offense, still compresses mega. */

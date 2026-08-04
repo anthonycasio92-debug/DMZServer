@@ -264,7 +264,7 @@ public final class DifficultyConfig {
      * Multiplier on final scaled mob max HP ({@code playerMaxHp × tier% × …}).
      * Default {@code 1.05} — packs trade hits vs STR/PWR dumps and transformed forms.
      */
-    public double mobHealthScale = 1.05;
+    public double mobHealthScale = 1.15;
     /**
      * Ceiling on detected form⊕stack multipliers (default {@code 100}).
      * Future races with huge {@code maxStatsMultiplier} mastery still soft-curve;
@@ -279,10 +279,10 @@ public final class DifficultyConfig {
     /**
      * How much of a form/transform boost enemies scale to (0–1), after the soft curve.
      * {@code 0} = form-stripped base stats only · {@code 1} = strongest allowed form slice.
-     * Default {@code 0.55}. Combined with {@link #transformScaleExponent} + tier damp /
-     * mega-form compress so big forms do not linearly explode mob damage at T6–T7.
+     * Default {@code 0.65}. Combined with {@link #transformScaleExponent} + tier damp /
+     * mega-form compress so big forms raise pressure without linearly exploding T6–T7.
      */
-    public double transformScaleWeight = 0.55;
+    public double transformScaleWeight = 0.65;
     /**
      * Diminishing-returns exponent on form surplus ({@code (live/base - 1)^exp × weight}).
      * {@code 1.0} = linear · {@code 0.75} = stock · lower = softer high forms.
@@ -370,6 +370,10 @@ public final class DifficultyConfig {
      * 0.90 → 1.05 so Ki Infusion / mega forms still trade hits.
      */
     public Boolean skillChallengeMigratedV1 = Boolean.FALSE;
+    /**
+     * One-time (1.0.14): god-form pressure — sponge 1.05→1.15 + transform weight 0.55→0.65.
+     */
+    public Boolean godFormPressureMigratedV1 = Boolean.FALSE;
     /**
      * One-time: soften transform→enemy scaling (weight 0.40→0.25 + soft curve).
      */
@@ -1096,7 +1100,7 @@ public final class DifficultyConfig {
             cfg.ancientCoinUpgradeChance = 0.02;
         }
         if (cfg.mobHealthScale <= 0.0 || cfg.mobHealthScale > 4.0) {
-            cfg.mobHealthScale = 1.05;
+            cfg.mobHealthScale = 1.15;
         }
         // 1.0.12: raise sponge so offense dumps don't one-punch packs.
         if (!Boolean.TRUE.equals(cfg.challengeFeelMigratedV1)) {
@@ -1121,6 +1125,18 @@ public final class DifficultyConfig {
             }
             cfg.skillChallengeMigratedV1 = Boolean.TRUE;
         }
+        // 1.0.14: god-form pressure — higher sponge + more form inheritance.
+        if (!Boolean.TRUE.equals(cfg.godFormPressureMigratedV1)) {
+            if (nearly(cfg.mobHealthScale, 1.05) || nearly(cfg.mobHealthScale, 0.90)
+                    || nearly(cfg.mobHealthScale, 0.65)) {
+                cfg.mobHealthScale = 1.15;
+            }
+            if (nearly(cfg.transformScaleWeight, 0.55) || nearly(cfg.transformScaleWeight, 0.40)
+                    || nearly(cfg.transformScaleWeight, 0.25)) {
+                cfg.transformScaleWeight = 0.65;
+            }
+            cfg.godFormPressureMigratedV1 = Boolean.TRUE;
+        }
         if (!(cfg.maxFormBoost > 1.0) || cfg.maxFormBoost > 500.0 || Double.isNaN(cfg.maxFormBoost)) {
             cfg.maxFormBoost = 100.0;
         }
@@ -1130,7 +1146,7 @@ public final class DifficultyConfig {
         }
         if (cfg.transformScaleWeight < 0.0 || cfg.transformScaleWeight > 1.0
                 || Double.isNaN(cfg.transformScaleWeight)) {
-            cfg.transformScaleWeight = 0.55;
+            cfg.transformScaleWeight = 0.65;
         }
         if (cfg.transformScaleExponent < 0.20 || cfg.transformScaleExponent > 1.0
                 || Double.isNaN(cfg.transformScaleExponent)) {

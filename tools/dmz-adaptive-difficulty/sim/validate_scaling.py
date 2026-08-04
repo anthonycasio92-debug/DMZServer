@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate AdaptiveDifficulty 1.0.13 scaling against the intended combat model.
+"""Validate AdaptiveDifficulty 1.0.14 scaling against the intended combat model.
 
 Checks (fail-closed):
 1. Soft offense includes STR/SKP/PWR + mild ENE
@@ -32,6 +32,7 @@ from simulate_race_forms import (  # noqa: E402
     blend_form,
     channel_damage,
     channel_hp,
+    hit_cap_health,
     ki_protection_hit_frac,
     load_forms,
     load_stats,
@@ -214,20 +215,26 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     )
 
     offense_share = offense * pct
+    live_off = blended_offense(live_m, live_s, live_k, live_e)
     dmg = offense_share
+    cap_hp = hit_cap_health(hp, live_hp, form_boost)
     floor_strength = max(0.35, min(1.0, counter_strength(pct)))
     dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
-    dmg = max(dmg, hp * pct * TANK_HP_RATIO * floor_strength)
+    dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.22, 2: 0.35, 3: 0.48}[tier]
+        threat = {1: 0.32, 2: 0.48, 3: 0.62}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
-            soft = min(soft, offense_share * max(1.0, 1.20 - 0.15 * min(1.25, t)))
+            soft = min(soft, offense_share * max(1.15, 1.45 - 0.10 * min(1.25, t)))
         dmg = max(dmg, soft)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.06, 5: 1.10, 6: 1.14, 7: 1.18}[tier]
+        nudge = {4: 1.22, 5: 1.35, 6: 1.48, 7: 1.60}[tier]
         dmg = max(dmg, offense_share * nudge)
+    if form_boost > 1.12 and live_off > offense * 1.05:
+        live_share = {1: 0.18, 2: 0.26, 3: 0.34, 4: 0.42, 5: 0.50, 6: 0.56, 7: 0.62}[tier]
+        mega_boost = 1.0 + 0.35 * min(1.0, mega_t(form_boost)) if form_boost >= 6.0 else 1.0
+        dmg = max(dmg, live_off * pct * live_share * mega_boost)
 
     top = top2_stats(pts)
     dmg_overlay = 1.0
@@ -236,7 +243,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     dmg_overlay = clamp_overlay(dmg_overlay)
     dmg_with = max(1.0, dmg * dmg_overlay)
 
-    hit_cap = hp * ki_protection_hit_frac(tier, form_boost)
+    hit_cap = cap_hp * ki_protection_hit_frac(tier, form_boost)
     dmg_capped = min(dmg_with, hit_cap)
 
     # No-counter baseline (still with PWR/ENE offense + floors).
@@ -245,12 +252,12 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     # STR/SKP-only offense (old 1.0.10) with counters still on — for delta proof.
     dmg_old_raw = offense_no_pwr * pct
     dmg_old_raw = max(dmg_old_raw, defense * pct * TANK_DEF_RATIO * floor_strength)
-    dmg_old_raw = max(dmg_old_raw, hp * pct * TANK_HP_RATIO * floor_strength)
+    dmg_old_raw = max(dmg_old_raw, cap_hp * pct * TANK_HP_RATIO * floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.22, 2: 0.35, 3: 0.48}[tier]
+        threat = {1: 0.32, 2: 0.48, 3: 0.62}[tier]
         dmg_old_raw = max(dmg_old_raw, offense_no_pwr * threat)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.06, 5: 1.10, 6: 1.14, 7: 1.18}[tier]
+        nudge = {4: 1.22, 5: 1.35, 6: 1.48, 7: 1.60}[tier]
         dmg_old_raw = max(dmg_old_raw, offense_no_pwr * pct * nudge)
     dmg_old_raw = max(1.0, dmg_old_raw * dmg_overlay)
     dmg_old = min(dmg_old_raw, hit_cap)
@@ -314,7 +321,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
 def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
-    lines: list[str] = ["# AdaptiveDifficulty 1.0.13 scaling validation", ""]
+    lines: list[str] = ["# AdaptiveDifficulty 1.0.14 scaling validation", ""]
 
     def check(label: str, cond: bool, detail: str = "") -> None:
         if cond:
@@ -452,8 +459,8 @@ def main() -> int:
     for cls in ("spiritualist", "berserker", "tank"):
         r = simulate_full(INVEST[cls], scales, mega, cls, 7)
         check(
-            f"T7 {cls} hitFrac ≤ 0.60",
-            r["hitFrac"] <= 0.60 + 1e-6,
+            f"T7 {cls} hitFrac ≤ 0.75",
+            r["hitFrac"] <= 0.75 + 1e-6,
             f"hitFrac={r['hitFrac']:.3f} cap={r['hitCap']:.0f}",
         )
         check(
@@ -464,14 +471,27 @@ def main() -> int:
     # Raised budgets: T5 base form even build should feel >10% bag pressure.
     even_t5 = simulate_full(INVEST["even"], scales, base_form, "warrior", 5)
     check(
-        "T5 even-build hitCapFrac ≥ 0.28",
-        even_t5["hitCapFrac"] >= 0.28,
+        "T5 even-build hitCapFrac ≥ 0.35",
+        even_t5["hitCapFrac"] >= 0.35,
         f"capFrac={even_t5['hitCapFrac']:.3f}",
     )
     check(
-        "T5 even-build pressure ≥ 18% bag (KP recommended band)",
-        even_t5["hitFrac"] >= 0.18,
+        "T5 even-build pressure ≥ 25% bag (KP recommended band)",
+        even_t5["hitFrac"] >= 0.25,
         f"hitFrac={even_t5['hitFrac']:.3f}",
+    )
+    # God-form pressure: transformed mega must land harder vs live bag than base.
+    god = simulate_full(INVEST["warrior"], scales, mega, "warrior", 5)
+    base_w = simulate_full(INVEST["warrior"], scales, base_form, "warrior", 5)
+    check(
+        "T5 god-form hitFrac ≥ base",
+        god["hitFrac"] >= base_w["hitFrac"] * 0.95,
+        f"base={base_w['hitFrac']:.3f} god={god['hitFrac']:.3f}",
+    )
+    check(
+        "T5 god-form post-DEF ≥ 12% live bag",
+        god["hitFrac"] * 0.35 >= 0.12,
+        f"pre={god['hitFrac']:.3f} postDef~={god['hitFrac']*0.35:.3f}",
     )
 
     print("\n=== 6) Archetype challenge feel ===")
@@ -529,7 +549,8 @@ def main() -> int:
         soft_hits >= 0.35,
         f"softHits={soft_hits:.2f} mobHp={str_d['mobHp']:.0f} softOffShare={str_d['offense'] * str_d['pct']:.0f}",
     )
-    check("stock mobHealthScale 1.05", abs(MOB_HP_SCALE - 1.05) < 1e-9, f"got {MOB_HP_SCALE}")
+    check("stock mobHealthScale 1.15", abs(MOB_HP_SCALE - 1.15) < 1e-9, f"got {MOB_HP_SCALE}")
+    check("stock transformScaleWeight 0.65", abs(TW_BASE - 0.65) < 1e-9, f"got {TW_BASE}")
 
     print("\n=== 7) Full pack race/form sim ===")
     lines += ["", "## 7) Full pack race/form sim", ""]
@@ -567,7 +588,7 @@ def main() -> int:
         r5 = simulate_full(pts, st["scale"], form_map, cls, 5)
         r1 = simulate_full(pts, st["scale"], form_map, cls, 1)
         samples.append((race, f"{f['group']}.{f['name']}", r5, r1))
-        if r5["hitFrac"] > 0.60:
+        if r5["hitFrac"] > 0.75:
             hard.append(f"{race}: hitFrac {r5['hitFrac']:.3f}")
         if r5["mobDmg"] <= r1["mobDmg"] * 1.05 and best_boost >= 8:
             hard.append(f"{race}: T5 barely above T1 with form ×{best_boost:.1f}")

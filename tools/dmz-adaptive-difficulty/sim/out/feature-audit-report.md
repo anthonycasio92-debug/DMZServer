@@ -1,20 +1,12 @@
-# AdaptiveDifficulty feature audit (1.0.13)
+# AdaptiveDifficulty feature audit (1.0.14)
 
 See `feature-audit-report.txt` for the full fail-closed checklist.
 
-## Combat model (1.0.13)
+## Combat model (1.0.14) — god-form pressure
 
-- Soft offense: **STR/SKP/PWR** + mild **ENE**
-- Soft HP: **VIT** + stronger offense durability sponge × `mobHealthScale` **1.05**
-- Damage floors: **VIT/RES** via `tankDamageHealthRatio` / `tankDamageDefenseRatio`
-- Skills: reads `kiprotection`, `ki_infusion`, `potentialunlock` — infusion/PU raise pack sponge; KP is post-mitigation survival
-- Raised VIT hit-cap budgets (T1 15% → T7 56%, base formFactor 0.72, hard ceiling 0.60)
-- Class counters + top-2 combat stats
-- Melee AI parity: Awakened+ chase, painted shock/slam, tier move bump
-
-## Sims
-
-- `validate_scaling.py` — formula regression
-- `simulate_race_forms.py` — all races/forms
-- `simulate_build_matrix.py` — race × class × archetype × skills × tier concept checks
-- `audit_gui_abi.py` — Forge↔GUI reflection + version handshake
+- Soft offense: **STR/SKP/PWR** + mild **ENE**, higher form inherit (`transformScaleWeight` **0.65**)
+- Hit-cap blends **soft↔live HP** so god forms cannot out-tank on soft peel alone
+- Live-offense transform floor pulls bounded live threat when forms compress soft stats
+- Stronger T4–T7 transform nudges; less mega-form compression
+- Hit budgets sized for DMZ DEF (~65% mit): T5 transformed ~15%+ of live bag post-DEF
+- `mobHealthScale` **1.15** + skill sponge (infusion/PU)

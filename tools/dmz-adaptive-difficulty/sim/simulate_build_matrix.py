@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Full AdaptiveDifficulty 1.0.13 build matrix — race × class × archetype × skills × tier.
+"""Full AdaptiveDifficulty 1.0.14 build matrix — race × class × archetype × skills × tier.
 
 Concept targets (Buy Tier feel):
   T1 Awakened  — warm-up pressure; AI/evo Awakened only
@@ -43,6 +43,7 @@ from simulate_race_forms import (  # noqa: E402
     blended_offense,
     channel_damage,
     channel_hp,
+    hit_cap_health,
     ki_protection_hit_frac,
     load_forms,
     load_stats,
@@ -166,18 +167,6 @@ def _combine_top2(bias_fn, top: list[str]) -> float:
     return 1.0 + (primary - 1.0) + (secondary - 1.0) * TOP2_SECONDARY
 
 
-def hit_frac(tier: int, form_boost: float, kp: int = 0) -> float:
-    # Mirrors PlayerCombatProfile.kiProtectionHitFrac 1.0.13 (KP does not expand cap).
-    del kp
-    tier_frac = {1: 0.15, 2: 0.21, 3: 0.27, 4: 0.35, 5: 0.43, 6: 0.50, 7: 0.56}[tier]
-    if form_boost <= 1.12:
-        form_factor = 0.72
-    else:
-        t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
-        form_factor = 0.72 + 0.28 * t
-    return max(0.10, min(0.60, tier_frac * form_factor))
-
-
 def simulate(
     pts: dict[str, float],
     scales: dict[str, float],
@@ -236,22 +225,28 @@ def simulate(
     defense = blend_form(base_def, live_def, tw_bulk, bulk_exp)
     hp = blend_form(base_hp, live_hp, tw_bulk, bulk_exp)
     offense = blended_offense(melee, strike, ki, energy)
+    live_off = blended_offense(live_m, live_s, live_k, live_e)
 
     offense_share = offense * pct
     dmg = offense_share
+    cap_hp = hit_cap_health(hp, live_hp, form_boost)
     floor_strength = max(0.35, min(1.0, _counter_strength(pct)))
     dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
-    dmg = max(dmg, hp * pct * TANK_HP_RATIO * floor_strength)
+    dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.22, 2: 0.35, 3: 0.48}[tier]
+        threat = {1: 0.32, 2: 0.48, 3: 0.62}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
-            soft = min(soft, offense_share * max(1.0, 1.20 - 0.15 * min(1.25, t)))
+            soft = min(soft, offense_share * max(1.15, 1.45 - 0.10 * min(1.25, t)))
         dmg = max(dmg, soft)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.06, 5: 1.10, 6: 1.14, 7: 1.18}[tier]
+        nudge = {4: 1.22, 5: 1.35, 6: 1.48, 7: 1.60}[tier]
         dmg = max(dmg, offense_share * nudge)
+    if form_boost > 1.12 and live_off > offense * 1.05:
+        live_share = {1: 0.18, 2: 0.26, 3: 0.34, 4: 0.42, 5: 0.50, 6: 0.56, 7: 0.62}[tier]
+        mega_boost = 1.0 + 0.35 * min(1.0, mega_t(form_boost)) if form_boost >= 6.0 else 1.0
+        dmg = max(dmg, live_off * pct * live_share * mega_boost)
 
     top = _top2(pts)
     dmg_ov = 1.0
@@ -260,8 +255,8 @@ def simulate(
     dmg_ov = max(1.0, min(OVERLAY_CAP, dmg_ov))
     dmg = max(1.0, dmg * dmg_ov)
 
-    cap_frac = hit_frac(tier, form_boost, skills["kp"])
-    hit_cap = hp * cap_frac
+    cap_frac = ki_protection_hit_frac(tier, form_boost)
+    hit_cap = cap_hp * cap_frac
     dmg = min(dmg, hit_cap)
 
     # Post-KP landing (DMZ 1%/lvl)
@@ -426,10 +421,28 @@ def main() -> int:
             f"T5={by_t[5]['hitFrac']:.3f} T7={by_t[7]['hitFrac']:.3f}",
         )
         check(
-            f"{race} even T4+ unprotected ≥18% bag",
-            by_t[5]["hitFrac"] >= 0.18,
+            f"{race} even T4+ unprotected ≥25% bag",
+            by_t[5]["hitFrac"] >= 0.25,
             f"T5 hitFrac={by_t[5]['hitFrac']:.3f}",
         )
+        # God-form: peak form at T5 must still hurt after worst-case 65% DEF.
+        god_rows = [
+            r
+            for r in rows
+            if r["race"] == race
+            and r["cls"] == "warrior"
+            and r["arch"] == "even"
+            and r["form"] != "base"
+            and r["skills"] == "none"
+            and r["tier"] == 5
+        ]
+        if god_rows:
+            g = max(god_rows, key=lambda x: x["formBoost"])
+            check(
+                f"{race} god-form T5 post-DEF ≥12% live",
+                g["hitFrac"] * 0.35 >= 0.12,
+                f"pre={g['hitFrac']:.3f} postDef~={g['hitFrac']*0.35:.3f} form×{g['formBoost']:.0f}",
+            )
 
     # 2) KP saves damage at T5+
     for race in races[:3]:

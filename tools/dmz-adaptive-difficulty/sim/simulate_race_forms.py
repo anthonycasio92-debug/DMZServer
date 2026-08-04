@@ -5,9 +5,9 @@ Reads:  config/dragonminez/races/*/stats.json + forms/*.json
 Writes: /opt/cursor/artifacts/ad-race-form-simulation.csv
         /opt/cursor/artifacts/ad-race-form-balance-report.md
 
-Mirrors PlayerCombatProfile 1.0.13 formulas:
+Mirrors PlayerCombatProfile 1.0.14 formulas:
 STR/SKP/PWR (+ mild ENE) offense, VIT HP, class + top-2 counters,
-VIT/RES damage floors, skill-aware sponge (infusion/PU), raised VIT hit cap.
+VIT/RES floors, live-bag hit-cap, live-offense transform pressure, skill sponge.
 """
 from __future__ import annotations
 
@@ -24,9 +24,9 @@ REPO_OUT = Path(__file__).resolve().parent / "out"
 REPO_OUT.mkdir(parents=True, exist_ok=True)
 
 TIER_PCT = {1: 0.21, 2: 0.42, 3: 0.65, 4: 0.90, 5: 1.35, 6: 1.60, 7: 2.00}
-TW_BASE = 0.55
+TW_BASE = 0.65
 TW_EXP = 0.75
-MOB_HP_SCALE = 1.05
+MOB_HP_SCALE = 1.15
 TANK_DEF_RATIO = 0.45
 TANK_HP_RATIO = 0.10
 MEGA_START, MEGA_TARGET = 6.0, 80.0
@@ -63,13 +63,13 @@ def mega_t(fb: float) -> float:
 def mega_exp_cap(t: float) -> float:
     t = max(0.0, t)
     if t <= 1.0:
-        return 0.48 - 0.14 * t
-    return max(0.28, 0.34 - 0.08 * (t - 1.0))
+        return 0.58 - 0.16 * t
+    return max(0.36, 0.42 - 0.08 * (t - 1.0))
 
 
 def mega_tw_scale(t: float) -> float:
     t = max(0.0, min(1.25, t))
-    return max(0.62, 1.0 - 0.28 * min(1.0, t))
+    return max(0.72, 1.0 - 0.18 * min(1.0, t))
 
 
 def mega_bulk_tw(t: float) -> float:
@@ -172,16 +172,27 @@ def channel_hp(vit_points: float, vit_scaling: float, vit_form: float) -> float:
     return max(20.0, 20.0 + vit_points * vit_scaling * vit_form)
 
 
-def ki_protection_hit_frac(tier: int, form_boost: float, kp_level: int = 0) -> float:
-    # 1.0.13 — same pre-mitigation budget for all; KP is pure DMZ mitigation.
-    del kp_level  # kept for call-site compat; does not expand the cap
-    tier_frac = {1: 0.15, 2: 0.21, 3: 0.27, 4: 0.35, 5: 0.43, 6: 0.50, 7: 0.56}[tier]
+def hit_cap_health(soft_hp: float, live_hp: float, form_boost: float) -> float:
+    soft = max(20.0, soft_hp)
+    live = max(soft, live_hp)
     if form_boost <= 1.12:
-        form_factor = 0.72
+        blend = 0.20
     else:
         t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
-        form_factor = 0.72 + 0.28 * t
-    return max(0.10, min(0.60, tier_frac * form_factor))
+        blend = 0.30 + 0.45 * t
+    return soft + (live - soft) * blend
+
+
+def ki_protection_hit_frac(tier: int, form_boost: float, kp_level: int = 0) -> float:
+    # 1.0.14 — sized so post-DEF (~65% mit) still bites on god forms.
+    del kp_level
+    tier_frac = {1: 0.20, 2: 0.28, 3: 0.36, 4: 0.46, 5: 0.55, 6: 0.62, 7: 0.68}[tier]
+    if form_boost <= 1.12:
+        form_factor = 0.78
+    else:
+        t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
+        form_factor = 0.78 + 0.22 * t
+    return max(0.12, min(0.75, tier_frac * form_factor))
 
 
 def _counter_strength(pct: float) -> float:
@@ -316,20 +327,25 @@ def simulate_ad(
 
     offense_share = offense * pct
     dmg = offense_share
-    # Live VIT/RES floors (1.0.12) — tank dumps must feel the ladder.
+    cap_hp = hit_cap_health(hp, live_hp, form_boost)
+    # Live VIT/RES floors — tank dumps / god forms must feel the ladder.
     floor_strength = max(0.35, min(1.0, _counter_strength(pct)))
     dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
-    dmg = max(dmg, hp * pct * TANK_HP_RATIO * floor_strength)
+    dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.22, 2: 0.35, 3: 0.48}[tier]
+        threat = {1: 0.32, 2: 0.48, 3: 0.62}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
-            soft = min(soft, offense_share * max(1.0, 1.20 - 0.15 * min(1.25, t)))
+            soft = min(soft, offense_share * max(1.15, 1.45 - 0.10 * min(1.25, t)))
         dmg = max(dmg, soft)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.06, 5: 1.10, 6: 1.14, 7: 1.18}[tier]
+        nudge = {4: 1.22, 5: 1.35, 6: 1.48, 7: 1.60}[tier]
         dmg = max(dmg, offense_share * nudge)
+    if form_boost > 1.12 and live_off > offense * 1.05:
+        live_share = {1: 0.18, 2: 0.26, 3: 0.34, 4: 0.42, 5: 0.50, 6: 0.56, 7: 0.62}[tier]
+        mega_boost = 1.0 + 0.35 * min(1.0, mega_t(form_boost)) if form_boost >= 6.0 else 1.0
+        dmg = max(dmg, live_off * pct * live_share * mega_boost)
 
     # Class + top-2 counter overlays.
     pts = invested or {"STR": 1, "SKP": 1, "RES": 1, "VIT": 1, "PWR": 1, "ENE": 1}
@@ -340,7 +356,7 @@ def simulate_ad(
     dmg_ov = max(1.0, min(OVERLAY_CAP, dmg_ov))
     dmg = max(1.0, dmg * dmg_ov)
 
-    hit_cap = hp * ki_protection_hit_frac(tier, form_boost)
+    hit_cap = cap_hp * ki_protection_hit_frac(tier, form_boost)
     dmg = min(dmg, hit_cap)
 
     hp_ov = 1.0
@@ -384,6 +400,7 @@ def simulate_ad(
         hitsToKill=round(mob_hp / max(1.0, player_punch), 2),
         hitFracPlayer=round(dmg / max(1.0, live_hp), 3),
         hitCapFrac=round(ki_protection_hit_frac(tier, form_boost), 3),
+        hitCapHp=round(cap_hp, 1),
         softHp=round(hp, 1),
         liveHp=round(live_hp, 1),
     )
@@ -512,10 +529,10 @@ def main() -> None:
         )
 
     md = [
-        "# AdaptiveDifficulty race/form simulation (1.0.13)",
+        "# AdaptiveDifficulty race/form simulation (1.0.14)",
         "",
         "Source: `config/dragonminez/races/*`.",
-        "Model: soft STR/SKP/PWR (+ mild ENE) × tier% + VIT/RES floors + class/top-2 + skill sponge + raised VIT hit cap.",
+        "Model: soft STR/SKP/PWR (+ mild ENE) × tier% + live-bag hit-cap + god-form live-offense pressure.",
         f"Rows: {len(rows)}.",
         "",
         "## Per-race peak (T5, mastery 100%, physical class)",
@@ -539,8 +556,8 @@ def main() -> None:
             hard.append(f"- **{s['race']}**: HP jump {s['hpJump']}× on `{s['topForm']}` (limit 2.5×)")
         elif (s["hpJump"] or 0) > 2.0:
             notes.append(f"- **{s['race']}**: HP jump {s['hpJump']}× on `{s['topForm']}`")
-        if (s["topHitFrac"] or 0) > 0.60:
-            hard.append(f"- **{s['race']}**: hitFrac {s['topHitFrac']} exceeds 0.60 VIT hard ceiling")
+        if (s["topHitFrac"] or 0) > 0.75:
+            hard.append(f"- **{s['race']}**: hitFrac {s['topHitFrac']} exceeds 0.75 VIT hard ceiling")
         if (s["dmgJump"] or 0) < 1.05 and s["topFormBoost"] >= 15:
             hard.append(f"- **{s['race']}**: form ×{s['topFormBoost']} barely moves dmg ({s['dmgJump']}×)")
         if (s["topHitsToKill"] or 0) < 0.08:

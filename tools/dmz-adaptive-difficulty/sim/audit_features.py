@@ -86,7 +86,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.13", 'VERSION = "1.0.13"' in mod)
+    check("VERSION 1.0.14", 'VERSION = "1.0.14"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -97,9 +97,9 @@ def main() -> int:
         "unlockTier5EnemyMult": "1.35",
         "unlockTier6EnemyMult": "1.60",
         "unlockTier7EnemyMult": "2.00",
-        "transformScaleWeight": "0.55",
+        "transformScaleWeight": "0.65",
         "transformScaleExponent": "0.75",
-        "mobHealthScale": "1.05",
+        "mobHealthScale": "1.15",
         "tankDamageDefenseRatio": "0.45",
         "tankDamageHealthRatio": "0.10",
         "maxScaledMobsPerPlayer": "5",
@@ -137,13 +137,15 @@ def main() -> int:
     check("strong-stat top-2 combine", has(profile, "combineTopStatBiases", "0.60"))
     check("VIT hit cap kept", has(profile, "kiProtectionHitFrac", "targetMobDamage", "hitCap"))
     check(
-        "raised hit-cap budgets (1.0.13)",
-        "case 1 -> 0.15" in profile and "default -> 0.56" in profile and "formFactor = 0.72" in profile,
+        "raised hit-cap budgets (1.0.14)",
+        "case 1 -> 0.20" in profile and "default -> 0.68" in profile and "formFactor = 0.78" in profile,
     )
     check("VIT/RES damage floors live", has(profile, "tankDamageDefenseRatio", "tankDamageHealthRatio", "defFloor", "hpFloor"))
     check("reads kiprotection / ki_infusion / potentialunlock", has(profile, '"kiprotection"', '"ki_infusion"', '"potentialunlock"'))
     check("skill sponge on mob HP", has(profile, "kiInfusionLevel", "potentialUnlockLevel", "skillHp"))
-    check("KP is post-mitigation advantage", "kiProtectionLevel" in profile and "formFactor = 0.72" in profile)
+    check("live-bag hit-cap", "hitCapHealth" in profile)
+    check("live-offense transform pressure", "liveOffense" in profile and "liveShare" in profile or "liveFloor" in profile)
+    check("KP is post-mitigation advantage", "kiProtectionLevel" in profile and "formFactor = 0.78" in profile)
     check("CombatSanity clamps", has(sanity, "saneFormMult", "saneLive", "usableBaseline"))
     check("live offense poll includes PWR/ENE", has(events, "getKiDamage", "getMaxEnergy"))
 
@@ -178,7 +180,7 @@ def main() -> int:
     check("teams WIP", "work in progress" in actions.lower() or "WIP" in actions)
     check("GUI ABI package stable", "com.dbzlegacy.adaptivedifficulty" in bridge and "DifficultyCache" in bridge)
 
-    print("\n=== Live challenge knobs (1.0.13) ===")
+    print("\n=== Live challenge knobs (1.0.14) ===")
     check("Forge admin sets tankDamageDefenseRatio", "tankdamagedefenseratio" in cmds and "tankDamageDefenseRatio =" in cmds)
     check("Forge admin sets tankDamageHealthRatio", "tankdamagehealthratio" in cmds and "tankDamageHealthRatio =" in cmds)
     check("Forge admin sets mobHealthScale", "mobhealthscale" in cmds and "mobHealthScale =" in cmds)
@@ -205,7 +207,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.13", "1.0.13" in readme)
+    check("README version 1.0.14", "1.0.14" in readme)
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")
