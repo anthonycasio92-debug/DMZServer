@@ -262,9 +262,9 @@ public final class DifficultyConfig {
     public double unlockTier7EnemyMult = 2.00;
     /**
      * Multiplier on final scaled mob max HP ({@code playerMaxHp × tier% × …}).
-     * Default {@code 0.90} — packs must last more than a punch vs STR/PWR dumps.
+     * Default {@code 1.05} — packs trade hits vs STR/PWR dumps and transformed forms.
      */
-    public double mobHealthScale = 0.90;
+    public double mobHealthScale = 1.05;
     /**
      * Ceiling on detected form⊕stack multipliers (default {@code 100}).
      * Future races with huge {@code maxStatsMultiplier} mastery still soft-curve;
@@ -365,6 +365,11 @@ public final class DifficultyConfig {
      * damage floors so even / dump builds feel the tier ladder.
      */
     public Boolean challengeFeelMigratedV1 = Boolean.FALSE;
+    /**
+     * One-time (1.0.13): skill-aware sponge — raise stock {@code mobHealthScale}
+     * 0.90 → 1.05 so Ki Infusion / mega forms still trade hits.
+     */
+    public Boolean skillChallengeMigratedV1 = Boolean.FALSE;
     /**
      * One-time: soften transform→enemy scaling (weight 0.40→0.25 + soft curve).
      */
@@ -1091,7 +1096,7 @@ public final class DifficultyConfig {
             cfg.ancientCoinUpgradeChance = 0.02;
         }
         if (cfg.mobHealthScale <= 0.0 || cfg.mobHealthScale > 4.0) {
-            cfg.mobHealthScale = 0.90;
+            cfg.mobHealthScale = 1.05;
         }
         // 1.0.12: raise sponge so offense dumps don't one-punch packs.
         if (!Boolean.TRUE.equals(cfg.challengeFeelMigratedV1)) {
@@ -1107,6 +1112,14 @@ public final class DifficultyConfig {
                 cfg.tankDamageDefenseRatio = 0.45;
             }
             cfg.challengeFeelMigratedV1 = Boolean.TRUE;
+        }
+        // 1.0.13: skill-aware sponge for infusion / mega forms.
+        if (!Boolean.TRUE.equals(cfg.skillChallengeMigratedV1)) {
+            if (nearly(cfg.mobHealthScale, 0.90) || nearly(cfg.mobHealthScale, 0.65)
+                    || nearly(cfg.mobHealthScale, 0.50)) {
+                cfg.mobHealthScale = 1.05;
+            }
+            cfg.skillChallengeMigratedV1 = Boolean.TRUE;
         }
         if (!(cfg.maxFormBoost > 1.0) || cfg.maxFormBoost > 500.0 || Double.isNaN(cfg.maxFormBoost)) {
             cfg.maxFormBoost = 100.0;

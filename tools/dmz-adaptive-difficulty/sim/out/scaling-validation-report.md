@@ -1,36 +1,36 @@
-# AdaptiveDifficulty 1.0.12 scaling validation
+# AdaptiveDifficulty 1.0.13 scaling validation
 
 
 ## 1) PWR/ENE in offense
 
 - ✅ ki offense > STR/SKP-only offense — full=1332 vs noPWR=285
 - ✅ ki pre-cap mob dmg > old STR/SKP-only — newRaw=2259 vs oldRaw=483 (both hit-capped after)
-- ✅ high-VIT ki final dmg > STR/SKP-only — new=2196 vs old=863 (capBound=True floorBound=True)
+- ✅ high-VIT ki final dmg > STR/SKP-only — new=2162 vs old=863 (capBound=True floorBound=True)
 - ✅ high ENE raises soft offense — highENE=2684 vs lowENE=90
 
 ## 2) Class counters
 
 - ✅ class counter bias >1 for warrior — bias=1.060
 - ✅ class+top2 overlay >1 at T5 for warrior — overlay=1.145 top2=STR>VIT
-- ✅ counters apply (hit-cap bound) for warrior — overlay=1.145 capped@129
+- ✅ counters apply (hit-cap bound) for warrior — overlay=1.145 capped@130
 - ✅ class counter bias >1 for berserker — bias=1.066
 - ✅ class+top2 overlay >1 at T5 for berserker — overlay=1.151 top2=STR>VIT
-- ✅ counters apply (hit-cap bound) for berserker — overlay=1.151 capped@160
+- ✅ counters apply (hit-cap bound) for berserker — overlay=1.151 capped@161
 - ✅ class counter bias >1 for martialartist — bias=1.060
 - ✅ class+top2 overlay >1 at T5 for martialartist — overlay=1.145 top2=SKP>VIT
-- ✅ counters apply (hit-cap bound) for martialartist — overlay=1.145 capped@145
+- ✅ counters apply (hit-cap bound) for martialartist — overlay=1.145 capped@146
 - ✅ class counter bias >1 for spiritualist — bias=1.054
 - ✅ class+top2 overlay >1 at T5 for spiritualist — overlay=1.142 top2=PWR>ENE
-- ✅ counters apply (hit-cap bound) for spiritualist — overlay=1.142 capped@114
+- ✅ counters apply (hit-cap bound) for spiritualist — overlay=1.142 capped@115
 - ✅ class counter bias >1 for cleric — bias=1.054
 - ✅ class+top2 overlay >1 at T5 for cleric — overlay=1.142 top2=ENE>PWR
-- ✅ counters apply (hit-cap bound) for cleric — overlay=1.142 capped@160
+- ✅ counters apply (hit-cap bound) for cleric — overlay=1.142 capped@161
 - ✅ class counter bias >1 for paladin — bias=1.067
 - ✅ class+top2 overlay >1 at T5 for paladin — overlay=1.178 top2=RES>VIT
-- ✅ counters apply (hit-cap bound) for paladin — overlay=1.178 capped@160
+- ✅ counters apply (hit-cap bound) for paladin — overlay=1.178 capped@161
 - ✅ class counter bias >1 for tank — bias=1.067
 - ✅ class+top2 overlay >1 at T5 for tank — overlay=1.178 top2=RES>VIT
-- ✅ counters apply (hit-cap bound) for tank — overlay=1.178 capped@222
+- ✅ counters apply (hit-cap bound) for tank — overlay=1.178 capped@223
 
 ## 3) Top-2 stats
 
@@ -45,44 +45,45 @@
 
 ## 4) Tier ladder
 
-- ✅ T1→T2 mob dmg rises — 129 → 177 (pct 0.21→0.42)
-- ✅ T2→T3 mob dmg rises — 177 → 226 (pct 0.42→0.65)
-- ✅ T3→T4 mob dmg rises — 226 → 290 (pct 0.65→0.9)
-- ✅ T4→T5 mob dmg rises — 290 → 355 (pct 0.9→1.35)
-- ✅ T5→T6 mob dmg rises — 355 → 403 (pct 1.35→1.6)
-- ✅ T6→T7 mob dmg rises — 403 → 444 (pct 1.6→2.0)
-- ✅ T7 >> T1 pressure — T1=129 T7=444
+- ✅ T1→T2 mob dmg rises — 122 → 171 (pct 0.21→0.42)
+- ✅ T2→T3 mob dmg rises — 171 → 219 (pct 0.42→0.65)
+- ✅ T3→T4 mob dmg rises — 219 → 285 (pct 0.65→0.9)
+- ✅ T4→T5 mob dmg rises — 285 → 350 (pct 0.9→1.35)
+- ✅ T5→T6 mob dmg rises — 350 → 406 (pct 1.35→1.6)
+- ✅ T6→T7 mob dmg rises — 406 → 455 (pct 1.6→2.0)
+- ✅ T7 >> T1 pressure — T1=122 T7=455
 - ✅ stock percents
 
 ## 5) Hit cap / safety
 
-- ✅ T7 spiritualist hitFrac ≤ 0.58 — hitFrac=0.274 cap=389
-- ✅ T7 spiritualist mobDmg ≤ hitCap — dmg=389 cap=389
-- ✅ T7 berserker hitFrac ≤ 0.58 — hitFrac=0.274 cap=553
-- ✅ T7 berserker mobDmg ≤ hitCap — dmg=553 cap=553
-- ✅ T7 tank hitFrac ≤ 0.58 — hitFrac=0.274 cap=772
-- ✅ T7 tank mobDmg ≤ hitCap — dmg=772 cap=772
-- ✅ T5 even-build hitCapFrac ≥ 0.28 — capFrac=0.308
+- ✅ T7 spiritualist hitFrac ≤ 0.60 — hitFrac=0.281 cap=399
+- ✅ T7 spiritualist mobDmg ≤ hitCap — dmg=399 cap=399
+- ✅ T7 berserker hitFrac ≤ 0.60 — hitFrac=0.281 cap=568
+- ✅ T7 berserker mobDmg ≤ hitCap — dmg=568 cap=568
+- ✅ T7 tank hitFrac ≤ 0.60 — hitFrac=0.281 cap=792
+- ✅ T7 tank mobDmg ≤ hitCap — dmg=792 cap=792
+- ✅ T5 even-build hitCapFrac ≥ 0.28 — capFrac=0.310
+- ✅ T5 even-build pressure ≥ 18% bag (KP recommended band) — hitFrac=0.310
 
 ## 6) Archetype challenge feel
 
-- ✅ even: T5 hitFrac > T1 — T1=0.112 T5=0.308
-- ✅ even: T7 hitFrac > T5 — T5=0.308 T7=0.385
-- ✅ even: T5 pressure ≥ 8% bag — hitFrac=0.308
+- ✅ even: T5 hitFrac > T1 — T1=0.108 T5=0.310
+- ✅ even: T7 hitFrac > T5 — T5=0.310 T7=0.403
+- ✅ even: T5 pressure ≥ 8% bag — hitFrac=0.310
 - ✅ vit_dump: T5 hitFrac > T1 — T1=0.024 T5=0.166
 - ✅ vit_dump: T7 hitFrac > T5 — T5=0.166 T7=0.246
 - ✅ vit_dump: T5 pressure ≥ 8% bag — hitFrac=0.166
-- ✅ res_dump: T5 hitFrac > T1 — T1=0.112 T5=0.308
-- ✅ res_dump: T7 hitFrac > T5 — T5=0.308 T7=0.385
-- ✅ res_dump: T5 pressure ≥ 8% bag — hitFrac=0.308
-- ✅ str_dump: T5 hitFrac > T1 — T1=0.112 T5=0.308
-- ✅ str_dump: T7 hitFrac > T5 — T5=0.308 T7=0.385
-- ✅ str_dump: T5 pressure ≥ 8% bag — hitFrac=0.308
+- ✅ res_dump: T5 hitFrac > T1 — T1=0.108 T5=0.310
+- ✅ res_dump: T7 hitFrac > T5 — T5=0.310 T7=0.403
+- ✅ res_dump: T5 pressure ≥ 8% bag — hitFrac=0.310
+- ✅ str_dump: T5 hitFrac > T1 — T1=0.108 T5=0.310
+- ✅ str_dump: T7 hitFrac > T5 — T5=0.310 T7=0.403
+- ✅ str_dump: T5 pressure ≥ 8% bag — hitFrac=0.310
 - ✅ extreme VIT dump HP-floor binds — floor=True cap=False dmg=320
 - ✅ VIT dump T5 bag pressure ≥ 12% — hitFrac=0.167 dmg=204
 - ✅ RES dump uses DEF floor (or near-cap) — floor=True cap=True dmg=99
-- ✅ STR dump pack sponge ≥ 0.35 soft hits — softHits=0.48 mobHp=1034 softOffShare=2137
-- ✅ stock mobHealthScale 0.90 — got 0.9
+- ✅ STR dump pack sponge ≥ 0.35 soft hits — softHits=0.66 mobHp=1414 softOffShare=2137
+- ✅ stock mobHealthScale 1.05 — got 1.05
 
 ## 7) Full pack race/form sim
 
@@ -93,29 +94,29 @@
 
 | Race | Form | Top2 | Overlay | MobDmg | HitFrac | Offense |
 |------|------|------|--------:|-------:|--------:|--------:|
-| ancient_saiyan | `primalssj.primalgod` | STR>VIT | 1.145 | 4866 | 0.440 | 8779 |
-| sento_saiyan | `ancestral_bloodline.ancestral_justice` | STR>VIT | 1.151 | 3525 | 0.244 | 2429 |
-| viltrumite | `androidforms.conquestfull` | STR>VIT | 1.145 | 624 | 0.206 | 2012 |
-| saiyan | `androidforms.ssdroid4` | STR>VIT | 1.145 | 538 | 0.244 | 1805 |
-| frostdemon | `android_enhancement_a.metal_overheat` | STR>VIT | 1.145 | 533 | 0.242 | 1908 |
-| human | `android_enhancement.overheat` | STR>VIT | 1.145 | 319 | 0.426 | 1842 |
-| bioandroid | `legendaryforms.xenomax` | STR>VIT | 1.145 | 300 | 0.401 | 1675 |
-| majin | `pureforms.ultra` | STR>VIT | 1.145 | 300 | 0.401 | 1675 |
-| monkey | `oozaru.wukongzero` | STR>VIT | 1.145 | 300 | 0.401 | 1675 |
-| namekian | `superforms.supernamekian` | STR>VIT | 1.145 | 300 | 0.401 | 1675 |
+| ancient_saiyan | `primalssj.primalgod` | STR>VIT | 1.145 | 4756 | 0.430 | 8779 |
+| sento_saiyan | `ancestral_bloodline.ancestral_justice` | STR>VIT | 1.151 | 3452 | 0.239 | 2429 |
+| viltrumite | `androidforms.conquestfull` | STR>VIT | 1.145 | 612 | 0.202 | 2012 |
+| saiyan | `androidforms.ssdroid4` | STR>VIT | 1.145 | 527 | 0.239 | 1805 |
+| frostdemon | `android_enhancement_a.metal_overheat` | STR>VIT | 1.145 | 521 | 0.236 | 1908 |
+| human | `android_enhancement.overheat` | STR>VIT | 1.145 | 312 | 0.417 | 1842 |
+| bioandroid | `legendaryforms.xenomax` | STR>VIT | 1.145 | 295 | 0.394 | 1675 |
+| majin | `pureforms.ultra` | STR>VIT | 1.145 | 295 | 0.394 | 1675 |
+| monkey | `oozaru.wukongzero` | STR>VIT | 1.145 | 295 | 0.394 | 1675 |
+| namekian | `superforms.supernamekian` | STR>VIT | 1.145 | 295 | 0.394 | 1675 |
 
 ### Class matrix (T5 base form)
 
 | Class | Top2 | Overlay | MobDmg | vs no-counter | vs no-PWR |
 |-------|------|--------:|-------:|--------------:|----------:|
-| warrior | STR>VIT | 1.145 | 129 | 1.000× | 1.000× |
-| berserker | STR>VIT | 1.151 | 160 | 1.000× | 1.000× |
-| martialartist | SKP>VIT | 1.145 | 145 | 1.000× | 1.000× |
-| spiritualist | PWR>ENE | 1.142 | 114 | 1.000× | 1.000× |
-| cleric | ENE>PWR | 1.142 | 160 | 1.000× | 1.000× |
-| paladin | RES>VIT | 1.178 | 160 | 1.000× | 1.000× |
-| tank | RES>VIT | 1.178 | 222 | 1.000× | 1.000× |
+| warrior | STR>VIT | 1.145 | 130 | 1.000× | 1.000× |
+| berserker | STR>VIT | 1.151 | 161 | 1.000× | 1.000× |
+| martialartist | SKP>VIT | 1.145 | 146 | 1.000× | 1.000× |
+| spiritualist | PWR>ENE | 1.142 | 115 | 1.000× | 1.000× |
+| cleric | ENE>PWR | 1.142 | 161 | 1.000× | 1.000× |
+| paladin | RES>VIT | 1.178 | 161 | 1.000× | 1.000× |
+| tank | RES>VIT | 1.178 | 223 | 1.000× | 1.000× |
 
 ## Summary
 
-**PASS** — 67 checks
+**PASS** — 68 checks

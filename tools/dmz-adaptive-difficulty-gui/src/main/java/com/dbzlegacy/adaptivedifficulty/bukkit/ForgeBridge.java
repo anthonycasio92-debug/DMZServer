@@ -1432,7 +1432,7 @@ public final class ForgeBridge {
                 case "mobHealthScale" -> {
                     double h = ((Number) parsed).doubleValue();
                     // Match DifficultyConfig.sanitizeLive stock default.
-                    yield h <= 0.0 || h > 4.0 ? 0.90 : h;
+                    yield h <= 0.0 || h > 4.0 ? 1.05 : h;
                 }
                 case "tankDamageDefenseRatio" -> {
                     double r = ((Number) parsed).doubleValue();

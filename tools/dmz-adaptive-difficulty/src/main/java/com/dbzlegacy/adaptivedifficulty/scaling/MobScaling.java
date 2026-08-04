@@ -810,8 +810,24 @@ public final class MobScaling {
 
         double baseSpeed = tag.m_128441_(TAG_BASE_SPEED) ? Math.max(0.0, tag.m_128459_(TAG_BASE_SPEED)) : 0.0;
         if (baseSpeed > 0.0) {
+            // Mild unlock-tier chase bump so painted melee close gaps vs ki kits.
+            // Elites stay at their rarity moveMult (already 0.92×); bosses unchanged.
+            if (!elite && !boss) {
+                double tierBump = switch (profile.activeTier) {
+                    case 1 -> 1.06;
+                    case 2 -> 1.10;
+                    case 3 -> 1.14;
+                    case 4 -> 1.18;
+                    case 5 -> 1.22;
+                    case 6 -> 1.26;
+                    default -> 1.30;
+                };
+                moveMult *= tierBump;
+            }
             if (cfg.maxMoveMultiplier > 1.0) {
                 moveMult = clamp(moveMult, 0.05, cfg.maxMoveMultiplier);
+            } else {
+                moveMult = clamp(moveMult, 0.05, 2.0);
             }
             double nextSpeed = baseSpeed * Math.max(0.05, moveMult);
             if (nextSpeed > 0.0 && !Double.isNaN(nextSpeed) && !Double.isInfinite(nextSpeed)) {

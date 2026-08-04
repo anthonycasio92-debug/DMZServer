@@ -24,6 +24,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Blaze;
@@ -331,7 +332,7 @@ public final class EnemyEvolution {
     private static void zombieTick(Mob mob, LivingEntity target, DifficultyTier tier) {
         if (target == null) {
             if (mob.m_9236_() instanceof ServerLevel level) {
-                target = nearestPlayer(level, mob, 18.0);
+                target = nearestPlayer(level, mob, 20.0);
                 if (target != null) {
                     mob.m_6710_(target);
                 }
@@ -345,43 +346,63 @@ public final class EnemyEvolution {
         double dist = mob.m_20270_(target);
         int power = tier.ordinalPower();
 
+        // Close the gap — Awakened+ chase speed so melee aren't wet noodles vs ki kits.
+        if (dist < 22.0 && power >= DifficultyTier.AWAKENED.ordinalPower()) {
+            int amp = power >= DifficultyTier.MYTHIC.ordinalPower() ? 2
+                    : power >= DifficultyTier.ELITE.ordinalPower() ? 1 : 0;
+            mob.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, amp, false, false));
+            double chase = power >= DifficultyTier.GOD.ordinalPower() ? 1.55
+                    : power >= DifficultyTier.ELITE.ordinalPower() ? 1.40
+                    : power >= DifficultyTier.ENHANCED.ordinalPower() ? 1.28 : 1.18;
+            mob.m_21573_().m_5624_(target, chase);
+        }
+
         // Short dash — faster at high tiers / vs countered class+top stats
-        long dashCd = kitCd(mob, power >= DifficultyTier.MYTHIC.ordinalPower() ? 20
-                : power >= DifficultyTier.GOD.ordinalPower() ? 30 : 45);
-        if (dist > 2.0 && dist < 7.0 && age - tag.m_128454_("dmz_ad_dash") > dashCd
+        long dashCd = kitCd(mob, power >= DifficultyTier.MYTHIC.ordinalPower() ? 16
+                : power >= DifficultyTier.GOD.ordinalPower() ? 24
+                : power >= DifficultyTier.ELITE.ordinalPower() ? 32 : 40);
+        if (dist > 1.8 && dist < 8.0 && age - tag.m_128454_("dmz_ad_dash") > dashCd
                 && power >= DifficultyTier.AWAKENED.ordinalPower()) {
             tag.m_128356_("dmz_ad_dash", age);
-            double force = power >= DifficultyTier.OMEGA.ordinalPower() ? 1.35 : 0.95;
-            pushToward(mob, target, force, 0.12);
+            double force = power >= DifficultyTier.OMEGA.ordinalPower() ? 1.45
+                    : power >= DifficultyTier.ELITE.ordinalPower() ? 1.15 : 1.00;
+            pushToward(mob, target, force, 0.14);
         }
 
         // Leap — Enhanced+; chained Master+; rapid Transcendent+
-        long leapCd = kitCd(mob, power >= DifficultyTier.TRANSCENDENT.ordinalPower() ? 22
-                : power >= DifficultyTier.ADVANCED.ordinalPower() ? 35 : 60);
-        if (dist > 3.0 && dist < 14.0 && age - tag.m_128454_("dmz_ad_leap") > leapCd
+        long leapCd = kitCd(mob, power >= DifficultyTier.TRANSCENDENT.ordinalPower() ? 18
+                : power >= DifficultyTier.ADVANCED.ordinalPower() ? 30 : 50);
+        if (dist > 2.5 && dist < 15.0 && age - tag.m_128454_("dmz_ad_leap") > leapCd
                 && power >= DifficultyTier.ENHANCED.ordinalPower()) {
             tag.m_128356_("dmz_ad_leap", age);
-            pushToward(mob, target, 1.25 + Math.min(0.6, power * 0.04), 0.58);
+            pushToward(mob, target, 1.35 + Math.min(0.7, power * 0.045), 0.62);
             if (power >= DifficultyTier.MASTER.ordinalPower()
-                    && age - tag.m_128454_("dmz_ad_leap2") > kitCd(mob, 20)) {
+                    && age - tag.m_128454_("dmz_ad_leap2") > kitCd(mob, 18)) {
                 tag.m_128356_("dmz_ad_leap2", age);
-                mob.m_5997_(0, 0.25, 0);
+                mob.m_5997_(0, 0.28, 0);
             }
         }
 
-        // Rush — Elite+
-        if (dist < 18.0 && power >= DifficultyTier.ELITE.ordinalPower()) {
-            int amp = power >= DifficultyTier.MYTHIC.ordinalPower() ? 2 : 1;
-            mob.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, amp, false, false));
-            mob.m_21573_().m_5624_(target, power >= DifficultyTier.GOD.ordinalPower() ? 1.55 : 1.35);
+        // Close-range shock pulse — Elite+ painted ATK so melee threaten without contact RNG.
+        long shockCd = kitCd(mob, power >= DifficultyTier.MYTHIC.ordinalPower() ? 28
+                : power >= DifficultyTier.GOD.ordinalPower() ? 36 : 48);
+        if (dist < 3.8 && power >= DifficultyTier.ELITE.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_melee_shock") > shockCd) {
+            tag.m_128356_("dmz_ad_melee_shock", age);
+            double ratio = power >= DifficultyTier.OMEGA.ordinalPower() ? 0.72
+                    : power >= DifficultyTier.GOD.ordinalPower() ? 0.60
+                    : power >= DifficultyTier.MASTER.ordinalPower() ? 0.52 : 0.42;
+            paintedMeleeHit(mob, target, (float) ratio);
         }
 
         // Ground slam — Advanced+; more frequent Impossible+ / vs tanks
-        long slamEvery = kitCd(mob, power >= DifficultyTier.IMPOSSIBLE.ordinalPower() ? 35
-                : power >= DifficultyTier.DIVINE.ordinalPower() ? 50 : 70);
-        if (dist < 3.5 && power >= DifficultyTier.ADVANCED.ordinalPower() && age % slamEvery == 0) {
+        long slamEvery = kitCd(mob, power >= DifficultyTier.IMPOSSIBLE.ordinalPower() ? 30
+                : power >= DifficultyTier.DIVINE.ordinalPower() ? 42 : 58);
+        if (dist < 3.8 && power >= DifficultyTier.ADVANCED.ordinalPower()
+                && age - tag.m_128454_("dmz_ad_slam") > slamEvery) {
+            tag.m_128356_("dmz_ad_slam", age);
             int amp = power >= DifficultyTier.OMEGA.ordinalPower() ? 2 : 1;
-            groundSlam(mob, target, 3.0 + Math.min(2.0, power * 0.1), amp);
+            groundSlam(mob, target, 3.2 + Math.min(2.2, power * 0.12), amp);
             if (power >= DifficultyTier.ABSOLUTE.ordinalPower() && target instanceof ServerPlayer sp) {
                 sp.m_7292_(new MobEffectInstance(MobEffects.f_19615_, 50, 0, false, true)); // WITHER
             }
@@ -923,11 +944,25 @@ public final class EnemyEvolution {
     private static void groundSlam(Mob mob, LivingEntity target, double radius, int slowAmp) {
         target.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 60, slowAmp, false, true));
         target.m_5997_(0, 0.35, 0);
+        // Painted ATK slice — slam was control-only before, so melee felt toothless vs ki kits.
+        paintedMeleeHit(mob, target, 0.55f);
         NearbyPlayers.forEachWithin(mob, radius, p -> {
             if (p != target) {
                 p.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 40, 0, false, true));
+                paintedMeleeHit(mob, p, 0.28f);
             }
         });
+    }
+
+    /** Deal a fraction of the mob's painted ATTACK_DAMAGE (melee parity with ki kits). */
+    private static void paintedMeleeHit(Mob mob, LivingEntity target, float ratio) {
+        if (mob == null || target == null || !target.m_6084_() || !(ratio > 0.0f)) {
+            return;
+        }
+        var atk = mob.m_21051_(Attributes.f_22281_); // ATTACK_DAMAGE
+        double painted = atk == null ? 4.0 : Math.max(1.0, atk.m_22135_());
+        float dmg = (float) Math.max(2.0, painted * Math.max(0.05, Math.min(1.5, ratio)));
+        target.m_6469_(mob.m_269291_().m_269333_(mob), dmg);
     }
 
     private static void pushToward(Mob mob, LivingEntity target, double horizontal, double upward) {

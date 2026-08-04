@@ -5,9 +5,9 @@ Reads:  config/dragonminez/races/*/stats.json + forms/*.json
 Writes: /opt/cursor/artifacts/ad-race-form-simulation.csv
         /opt/cursor/artifacts/ad-race-form-balance-report.md
 
-Mirrors PlayerCombatProfile 1.0.12 formulas:
+Mirrors PlayerCombatProfile 1.0.13 formulas:
 STR/SKP/PWR (+ mild ENE) offense, VIT HP, class + top-2 counters,
-VIT/RES damage floors, raised VIT hit cap, stronger HP sponge.
+VIT/RES damage floors, skill-aware sponge (infusion/PU), raised VIT hit cap.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ REPO_OUT.mkdir(parents=True, exist_ok=True)
 TIER_PCT = {1: 0.21, 2: 0.42, 3: 0.65, 4: 0.90, 5: 1.35, 6: 1.60, 7: 2.00}
 TW_BASE = 0.55
 TW_EXP = 0.75
-MOB_HP_SCALE = 0.90
+MOB_HP_SCALE = 1.05
 TANK_DEF_RATIO = 0.45
 TANK_HP_RATIO = 0.10
 MEGA_START, MEGA_TARGET = 6.0, 80.0
@@ -172,15 +172,16 @@ def channel_hp(vit_points: float, vit_scaling: float, vit_form: float) -> float:
     return max(20.0, 20.0 + vit_points * vit_scaling * vit_form)
 
 
-def ki_protection_hit_frac(tier: int, form_boost: float) -> float:
-    # 1.0.12 — raised so offense×tier% lands for even/glass builds.
-    tier_frac = {1: 0.16, 2: 0.22, 3: 0.28, 4: 0.36, 5: 0.44, 6: 0.50, 7: 0.55}[tier]
+def ki_protection_hit_frac(tier: int, form_boost: float, kp_level: int = 0) -> float:
+    # 1.0.13 — same pre-mitigation budget for all; KP is pure DMZ mitigation.
+    del kp_level  # kept for call-site compat; does not expand the cap
+    tier_frac = {1: 0.15, 2: 0.21, 3: 0.27, 4: 0.35, 5: 0.43, 6: 0.50, 7: 0.56}[tier]
     if form_boost <= 1.12:
-        form_factor = 0.70
+        form_factor = 0.72
     else:
         t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
-        form_factor = 0.70 + 0.30 * t
-    return max(0.10, min(0.58, tier_frac * form_factor))
+        form_factor = 0.72 + 0.28 * t
+    return max(0.10, min(0.60, tier_frac * form_factor))
 
 
 def _counter_strength(pct: float) -> float:
@@ -345,28 +346,28 @@ def simulate_ad(
     hp_ov = 1.0
     hp_ov *= _blend_counter(_combine_top2(_hp_stat_bias, top), pct)
     hp_ov *= _blend_counter(_class_hp_bias(fighting_class), pct)
-    hp_ov = min(1.18, max(1.0, min(OVERLAY_CAP, hp_ov)))
+    hp_ov = min(1.20, max(1.0, min(OVERLAY_CAP, hp_ov)))
 
     vit_share = hp * pct
     base_hp_mob = vit_share
     if 1 <= tier <= 2 and form_boost > 1.12:
-        base_hp_mob = max(base_hp_mob, hp * (0.18 if tier == 1 else 0.26))
-    if offense > hp * 0.35:
-        hits = {1: 0.85, 2: 0.75, 3: 0.65, 4: 0.55, 5: 0.48, 6: 0.42, 7: 0.38}[tier]
+        base_hp_mob = max(base_hp_mob, hp * (0.20 if tier == 1 else 0.28))
+    if offense > hp * 0.30:
+        hits = {1: 1.00, 2: 0.90, 3: 0.78, 4: 0.68, 5: 0.58, 6: 0.52, 7: 0.48}[tier]
         durability = offense * pct * hits
         offense_vit = offense / max(1.0, hp)
-        vit_cap_mul = 2.8
-        if offense_vit > 1.25:
-            vit_cap_mul = min(6.5, 2.8 + (offense_vit - 1.25) * 0.95)
+        vit_cap_mul = 3.2
+        if offense_vit > 1.15:
+            vit_cap_mul = min(8.0, 3.2 + (offense_vit - 1.15) * 1.05)
         base_hp_mob = max(base_hp_mob, min(durability, vit_share * vit_cap_mul))
     form_pad = 1.0
     if form_boost > 1.12:
-        form_pad = 1.0 + 0.35 * min(1.0, math.log(form_boost) / math.log(80.0))
-    hard = hp * max(pct, 0.18) * form_pad * 1.45
-    if offense > hp * 1.25:
-        glass_hits = {1: 0.70, 2: 0.60, 3: 0.52, 4: 0.45, 5: 0.40, 6: 0.36, 7: 0.32}[tier]
+        form_pad = 1.0 + 0.40 * min(1.0, math.log(form_boost) / math.log(80.0))
+    hard = hp * max(pct, 0.20) * form_pad * 1.55
+    if offense > hp * 1.15:
+        glass_hits = {1: 0.82, 2: 0.72, 3: 0.62, 4: 0.54, 5: 0.48, 6: 0.44, 7: 0.40}[tier]
         glass_hard = offense * pct * glass_hits
-        hard = max(hard, min(glass_hard, vit_share * 6.5))
+        hard = max(hard, min(glass_hard, vit_share * 8.0))
     mob_hp = min(base_hp_mob, hard) * MOB_HP_SCALE * hp_ov
     mob_hp = max(10.0, mob_hp)
 
@@ -511,10 +512,10 @@ def main() -> None:
         )
 
     md = [
-        "# AdaptiveDifficulty race/form simulation (1.0.12)",
+        "# AdaptiveDifficulty race/form simulation (1.0.13)",
         "",
         "Source: `config/dragonminez/races/*`.",
-        "Model: soft STR/SKP/PWR (+ mild ENE) × tier% + VIT/RES floors + class/top-2 + raised VIT hit cap.",
+        "Model: soft STR/SKP/PWR (+ mild ENE) × tier% + VIT/RES floors + class/top-2 + skill sponge + raised VIT hit cap.",
         f"Rows: {len(rows)}.",
         "",
         "## Per-race peak (T5, mastery 100%, physical class)",
@@ -538,8 +539,8 @@ def main() -> None:
             hard.append(f"- **{s['race']}**: HP jump {s['hpJump']}× on `{s['topForm']}` (limit 2.5×)")
         elif (s["hpJump"] or 0) > 2.0:
             notes.append(f"- **{s['race']}**: HP jump {s['hpJump']}× on `{s['topForm']}`")
-        if (s["topHitFrac"] or 0) > 0.58:
-            hard.append(f"- **{s['race']}**: hitFrac {s['topHitFrac']} exceeds 0.58 VIT hard ceiling")
+        if (s["topHitFrac"] or 0) > 0.60:
+            hard.append(f"- **{s['race']}**: hitFrac {s['topHitFrac']} exceeds 0.60 VIT hard ceiling")
         if (s["dmgJump"] or 0) < 1.05 and s["topFormBoost"] >= 15:
             hard.append(f"- **{s['race']}**: form ×{s['topFormBoost']} barely moves dmg ({s['dmgJump']}×)")
         if (s["topHitsToKill"] or 0) < 0.08:

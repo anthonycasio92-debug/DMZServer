@@ -88,6 +88,14 @@ public final class PlayerCombatProfile {
     public final String fightingClass;
     public final String race;
     public final FightingStyle style;
+    /** DMZ {@code kiprotection} level (0–10). Used for hit-cap headroom so KP stays load-bearing. */
+    public final int kiProtectionLevel;
+    /** DMZ {@code ki_infusion} level (0–10). Raises pack sponge when trained / active. */
+    public final int kiInfusionLevel;
+    /** True when {@code ki_infusion} is toggled on. */
+    public final boolean kiInfusionActive;
+    /** DMZ {@code potentialunlock} level (0–30). Mild form-sponge when transformed. */
+    public final int potentialUnlockLevel;
     /** Stable fingerprint for mob re-scale cache invalidation. */
     public final long signature;
 
@@ -110,6 +118,10 @@ public final class PlayerCombatProfile {
             String fightingClass,
             String race,
             FightingStyle style,
+            int kiProtectionLevel,
+            int kiInfusionLevel,
+            boolean kiInfusionActive,
+            int potentialUnlockLevel,
             long signature
     ) {
         this.activeTier = activeTier;
@@ -130,6 +142,10 @@ public final class PlayerCombatProfile {
         this.fightingClass = fightingClass == null ? "" : fightingClass;
         this.race = race == null ? "" : race;
         this.style = style == null ? FightingStyle.HYBRID : style;
+        this.kiProtectionLevel = Math.max(0, Math.min(10, kiProtectionLevel));
+        this.kiInfusionLevel = Math.max(0, Math.min(10, kiInfusionLevel));
+        this.kiInfusionActive = kiInfusionActive;
+        this.potentialUnlockLevel = Math.max(0, Math.min(30, potentialUnlockLevel));
         this.signature = signature;
     }
 
@@ -334,6 +350,10 @@ public final class PlayerCombatProfile {
         String fightingClass = DmzProgression.fightingClass(player);
         String race = DmzProgression.race(player);
         FightingStyle style = resolveStyle(fightingClass, melee, strike, ki, def, hp);
+        int kiProtect = DmzProgression.skillLevel(player, "kiprotection");
+        int kiInfusion = DmzProgression.skillLevel(player, "ki_infusion");
+        boolean infusionOn = DmzProgression.skillActive(player, "ki_infusion");
+        int potential = DmzProgression.skillLevel(player, "potentialunlock");
         long sig = fingerprint(
                 tier, pct, melee, strike, ki, def, hp, release,
                 balance.weakest, balance.imbalance, balance.topStats,
@@ -341,11 +361,16 @@ public final class PlayerCombatProfile {
         );
         sig = mix(sig, Math.round(formBoost * 100.0));
         sig = mix(sig, Math.round(liveOffense));
+        sig = mix(sig, kiProtect);
+        sig = mix(sig, kiInfusion);
+        sig = mix(sig, infusionOn ? 1L : 0L);
+        sig = mix(sig, potential);
         return new PlayerCombatProfile(
                 tier, pct, melee, strike, ki, def, hp, offense,
                 liveOffense, liveMaxHealth, formBoost, release,
                 balance.weakest, balance.imbalance, balance.topStats,
-                fightingClass, race, style, sig
+                fightingClass, race, style,
+                kiProtect, kiInfusion, infusionOn, potential, sig
         );
     }
 
@@ -353,7 +378,8 @@ public final class PlayerCombatProfile {
         return new PlayerCombatProfile(
                 0, 0.0, 1.0, 1.0, 1.0, 1.0, 20.0, 1.0,
                 1.0, 20.0, 1.0, 100.0,
-                WeakStat.NONE, 0.0, NO_TOP, "", "", FightingStyle.HYBRID, 0L
+                WeakStat.NONE, 0.0, NO_TOP, "", "", FightingStyle.HYBRID,
+                0, 0, false, 0, 0L
         );
     }
 
@@ -407,7 +433,8 @@ public final class PlayerCombatProfile {
 
     /**
      * Target mob HP — soft VIT share with an offense durability floor so STR/PWR
-     * dumps cannot one-punch packs. Scaled by {@link DifficultyConfig#mobHealthScale}.
+     * dumps cannot one-punch packs. Ki Infusion / Potential Unlock raise sponge
+     * when those skills are trained. Scaled by {@link DifficultyConfig#mobHealthScale}.
      */
     public double targetMobHealth(DifficultyConfig cfg) {
         // Soft VIT × tier%.
@@ -415,26 +442,26 @@ public final class PlayerCombatProfile {
         double base = vitShare;
         // Early-tier floor so T1 packs aren't wet paper when VIT is still low.
         if (activeTier >= 1 && activeTier <= 2 && formBoost > 1.12) {
-            double floor = maxHealth * (activeTier == 1 ? 0.18 : 0.26);
+            double floor = maxHealth * (activeTier == 1 ? 0.20 : 0.28);
             base = Math.max(base, floor);
         }
         // Durability floor from soft offense — STR/PWR dumps must still trade hits.
         // Glass cannons (offense >> VIT) get a higher VIT-share pad; pure tanks stay bounded.
-        if (offense > maxHealth * 0.35) {
+        if (offense > maxHealth * 0.30) {
             double hits = switch (activeTier) {
-                case 1 -> 0.85;
-                case 2 -> 0.75;
-                case 3 -> 0.65;
-                case 4 -> 0.55;
-                case 5 -> 0.48;
-                case 6 -> 0.42;
-                default -> 0.38;
+                case 1 -> 1.00;
+                case 2 -> 0.90;
+                case 3 -> 0.78;
+                case 4 -> 0.68;
+                case 5 -> 0.58;
+                case 6 -> 0.52;
+                default -> 0.48;
             };
             double durability = offense * tierPercent * hits;
             double offenseVitRatio = offense / Math.max(1.0, maxHealth);
-            double vitCapMul = 2.8;
-            if (offenseVitRatio > 1.25) {
-                vitCapMul = Math.min(6.5, 2.8 + (offenseVitRatio - 1.25) * 0.95);
+            double vitCapMul = 3.2;
+            if (offenseVitRatio > 1.15) {
+                vitCapMul = Math.min(8.0, 3.2 + (offenseVitRatio - 1.15) * 1.05);
             }
             double vitCap = vitShare * vitCapMul;
             base = Math.max(base, Math.min(durability, vitCap));
@@ -443,25 +470,33 @@ public final class PlayerCombatProfile {
         // still keeps a sponge floor near soft durability.
         double formPad = 1.0;
         if (formBoost > 1.12) {
-            formPad = 1.0 + 0.35 * Math.min(1.0, Math.log(formBoost) / Math.log(80.0));
+            formPad = 1.0 + 0.40 * Math.min(1.0, Math.log(formBoost) / Math.log(80.0));
         }
-        double hardCap = maxHealth * Math.max(tierPercent, 0.18) * formPad * 1.45;
-        if (offense > maxHealth * 1.25) {
+        double hardCap = maxHealth * Math.max(tierPercent, 0.20) * formPad * 1.55;
+        if (offense > maxHealth * 1.15) {
             double glassHits = switch (activeTier) {
-                case 1 -> 0.70;
-                case 2 -> 0.60;
-                case 3 -> 0.52;
-                case 4 -> 0.45;
-                case 5 -> 0.40;
-                case 6 -> 0.36;
-                default -> 0.32;
+                case 1 -> 0.82;
+                case 2 -> 0.72;
+                case 3 -> 0.62;
+                case 4 -> 0.54;
+                case 5 -> 0.48;
+                case 6 -> 0.44;
+                default -> 0.40;
             };
             double glassHard = offense * tierPercent * glassHits;
-            hardCap = Math.max(hardCap, Math.min(glassHard, vitShare * 6.5));
+            hardCap = Math.max(hardCap, Math.min(glassHard, vitShare * 8.0));
         }
         if (base > hardCap) {
             base = hardCap;
         }
+        // Skill sponge: Ki Infusion (+2.5%/lvl outgoing in DMZ) → packs need more HP.
+        // Potential Unlock raises form access — mild extra sponge while transformed.
+        double skillHp = 1.0
+                + Math.min(0.22, kiInfusionLevel * 0.022)
+                + (kiInfusionActive ? 0.06 : 0.0)
+                + (formBoost > 1.12 ? Math.min(0.12, potentialUnlockLevel / 30.0 * 0.12) : 0.0);
+        base *= skillHp;
+
         double overlay = 1.0;
         if (cfg.enableStrongStatCounters) {
             overlay *= blendCounter(strongStatHealthBias(cfg));
@@ -469,8 +504,8 @@ public final class PlayerCombatProfile {
         if (cfg.enableClassCounters) {
             overlay *= blendCounter(classHealthBias(cfg));
         }
-        overlay = Math.min(1.18, clampCounterOverlay(overlay, cfg));
-        double scale = cfg == null ? 0.90 : Math.max(0.05, Math.min(2.0, cfg.mobHealthScale));
+        overlay = Math.min(1.20, clampCounterOverlay(overlay, cfg));
+        double scale = cfg == null ? 1.05 : Math.max(0.05, Math.min(2.0, cfg.mobHealthScale));
         return Math.max(10.0, base * overlay * scale);
     }
 
@@ -528,8 +563,8 @@ public final class PlayerCombatProfile {
         overlay = clampCounterOverlay(overlay, cfg);
         base = Math.max(1.0, base * overlay);
 
-        // VIT-relative cap — raised in 1.0.12 so offense×tier% can land for even /
-        // glass builds; still stops unprotected full-bag dumps.
+        // VIT-relative cap — room for DMZ Ki Protection (1%/lvl) to stay load-bearing
+        // at mid/high tiers without one-punch bag dumps for unprotected players.
         double hitCap = maxHealth * kiProtectionHitFrac();
         if (base > hitCap) {
             base = hitCap;
@@ -540,29 +575,29 @@ public final class PlayerCombatProfile {
     /**
      * Max fraction of player soft VIT a single mob hit may deal (pre-RES / ki protect).
      * <p>
-     * Raised so the tier ladder (21→200%) is actually felt. Base form uses ~70% of
-     * the tier budget so transforming still raises pressure. Mega forms reach the
-     * tier ceiling — enough to force ki protection, not a full-bag dump.
+     * Tier ladder is felt pre-mitigation so mid/high tiers make Ki Protection
+     * load-bearing; DMZ then applies KP mitigation (1%/lvl, max 10%) on top.
+     * Same painted hit for KP0 and KP10 — the skill is a pure survival advantage.
      */
     private double kiProtectionHitFrac() {
         double tierFrac = switch (activeTier) {
-            case 1 -> 0.16;
-            case 2 -> 0.22;
-            case 3 -> 0.28;
-            case 4 -> 0.36;
-            case 5 -> 0.44;
+            case 1 -> 0.15;
+            case 2 -> 0.21;
+            case 3 -> 0.27;
+            case 4 -> 0.35;
+            case 5 -> 0.43;
             case 6 -> 0.50;
-            default -> 0.55;
+            default -> 0.56;
         };
         double formFactor;
         if (formBoost <= 1.12) {
-            formFactor = 0.70; // base — leave headroom for transforms
+            formFactor = 0.72; // base — leave headroom for transforms
         } else {
-            // ×1.12→~0.70, ×6→~0.85, ×80→1.0
+            // ×1.12→~0.72, ×6→~0.86, ×80→1.0
             double t = Math.min(1.0, Math.log(Math.max(1.12, formBoost)) / Math.log(80.0));
-            formFactor = 0.70 + 0.30 * t;
+            formFactor = 0.72 + 0.28 * t;
         }
-        return Math.max(0.10, Math.min(0.58, tierFrac * formFactor));
+        return Math.max(0.10, Math.min(0.60, tierFrac * formFactor));
     }
 
     /** Vanilla-ish armor contribution derived from player defense share. */
@@ -955,8 +990,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: raised hit-cap + VIT/RES floors + HP sponge (1.0.12).
-        h = mix(h, 25L);
+        // Formula revision: skill-aware sponge + melee parity + HP scale (1.0.13).
+        h = mix(h, 26L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

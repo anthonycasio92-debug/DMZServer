@@ -147,9 +147,10 @@ public final class AdaptiveAiSystem {
             maybeRetreat(mob, target, tier);
         }
 
-        // Advanced+: light speed pressure while chasing
-        if (target != null && tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower()) {
-            int amp = tier.ordinalPower() >= DifficultyTier.MYTHIC.ordinalPower() ? 2 : 1;
+        // Enhanced+: light speed pressure while chasing (was Advanced+ — melee closed gaps too late)
+        if (target != null && tier.ordinalPower() >= DifficultyTier.ENHANCED.ordinalPower()) {
+            int amp = tier.ordinalPower() >= DifficultyTier.MYTHIC.ordinalPower() ? 2
+                    : tier.ordinalPower() >= DifficultyTier.ADVANCED.ordinalPower() ? 1 : 0;
             mob.m_7292_(new MobEffectInstance(MobEffects.f_19596_, 40, amp, false, false)); // SPEED
         }
 

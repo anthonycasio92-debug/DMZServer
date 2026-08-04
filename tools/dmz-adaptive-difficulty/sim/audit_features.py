@@ -25,6 +25,9 @@ REWARD = SRC / "com/dbzlegacy/adaptivedifficulty/reward/RewardSystem.java"
 TRACKER = SRC / "com/dbzlegacy/adaptivedifficulty/tick/ScaledMobTracker.java"
 SANITY = SRC / "com/dbzlegacy/adaptivedifficulty/calc/CombatSanity.java"
 CMDS = SRC / "com/dbzlegacy/adaptivedifficulty/command/DifficultyCommands.java"
+EVO = SRC / "com/dbzlegacy/adaptivedifficulty/evolution/EnemyEvolution.java"
+AI = SRC / "com/dbzlegacy/adaptivedifficulty/ai/AdaptiveAiSystem.java"
+PROGRESSION = SRC / "com/dbzlegacy/adaptivedifficulty/calc/DmzProgression.java"
 BRIDGE = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/ForgeBridge.java"
 README = ROOT / "tools" / "dmz-adaptive-difficulty" / "README.md"
 MOD = SRC / "com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java"
@@ -56,7 +59,10 @@ def main() -> int:
             errors.append(f"{label}: {detail or 'failed'}")
             print(f" FAIL {label}" + (f" — {detail}" if detail else ""))
 
-    for p in (CFG, PROFILE, UNLOCK, MOB, EVENTS, ACTIONS, GATE, REWARD, TRACKER, SANITY, CMDS, BRIDGE, README, MOD):
+    for p in (
+        CFG, PROFILE, UNLOCK, MOB, EVENTS, ACTIONS, GATE, REWARD, TRACKER,
+        SANITY, CMDS, EVO, AI, PROGRESSION, BRIDGE, README, MOD,
+    ):
         if not p.is_file():
             print(f"FAIL: missing {p}", file=sys.stderr)
             return 2
@@ -68,6 +74,9 @@ def main() -> int:
     events = read(EVENTS)
     actions = read(ACTIONS)
     gate = read(GATE)
+    evo = read(EVO)
+    ai = read(AI)
+    progression = read(PROGRESSION)
     reward = read(REWARD)
     tracker = read(TRACKER)
     sanity = read(SANITY)
@@ -77,7 +86,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.12", 'VERSION = "1.0.12"' in mod)
+    check("VERSION 1.0.13", 'VERSION = "1.0.13"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -90,7 +99,7 @@ def main() -> int:
         "unlockTier7EnemyMult": "2.00",
         "transformScaleWeight": "0.55",
         "transformScaleExponent": "0.75",
-        "mobHealthScale": "0.90",
+        "mobHealthScale": "1.05",
         "tankDamageDefenseRatio": "0.45",
         "tankDamageHealthRatio": "0.10",
         "maxScaledMobsPerPlayer": "5",
@@ -128,10 +137,13 @@ def main() -> int:
     check("strong-stat top-2 combine", has(profile, "combineTopStatBiases", "0.60"))
     check("VIT hit cap kept", has(profile, "kiProtectionHitFrac", "targetMobDamage", "hitCap"))
     check(
-        "raised hit-cap budgets (1.0.12)",
-        "case 1 -> 0.16" in profile and "default -> 0.55" in profile and "formFactor = 0.70" in profile,
+        "raised hit-cap budgets (1.0.13)",
+        "case 1 -> 0.15" in profile and "default -> 0.56" in profile and "formFactor = 0.72" in profile,
     )
     check("VIT/RES damage floors live", has(profile, "tankDamageDefenseRatio", "tankDamageHealthRatio", "defFloor", "hpFloor"))
+    check("reads kiprotection / ki_infusion / potentialunlock", has(profile, '"kiprotection"', '"ki_infusion"', '"potentialunlock"'))
+    check("skill sponge on mob HP", has(profile, "kiInfusionLevel", "potentialUnlockLevel", "skillHp"))
+    check("KP is post-mitigation advantage", "kiProtectionLevel" in profile and "formFactor = 0.72" in profile)
     check("CombatSanity clamps", has(sanity, "saneFormMult", "saneLive", "usableBaseline"))
     check("live offense poll includes PWR/ENE", has(events, "getKiDamage", "getMaxEnergy"))
 
@@ -166,7 +178,7 @@ def main() -> int:
     check("teams WIP", "work in progress" in actions.lower() or "WIP" in actions)
     check("GUI ABI package stable", "com.dbzlegacy.adaptivedifficulty" in bridge and "DifficultyCache" in bridge)
 
-    print("\n=== Live challenge knobs (1.0.12) ===")
+    print("\n=== Live challenge knobs (1.0.13) ===")
     check("Forge admin sets tankDamageDefenseRatio", "tankdamagedefenseratio" in cmds and "tankDamageDefenseRatio =" in cmds)
     check("Forge admin sets tankDamageHealthRatio", "tankdamagehealthratio" in cmds and "tankDamageHealthRatio =" in cmds)
     check("Forge admin sets mobHealthScale", "mobhealthscale" in cmds and "mobHealthScale =" in cmds)
@@ -183,11 +195,18 @@ def main() -> int:
     dmg_fn = m.group(1) if m else profile
     check("targetMobDamage uses tankDamage*", "tankDamage" in dmg_fn)
 
+    print("\n=== Skills + melee AI parity ===")
+    check("DmzProgression.skillLevel helper", "skillLevel(" in progression and "skillActive(" in progression)
+    check("melee painted shock / slam damage", has(evo, "paintedMeleeHit", "dmz_ad_melee_shock"))
+    check("zombie Awakened+ chase speed", "AWAKENED" in evo and "m_21573_" in evo)
+    check("Adaptive AI speed from Enhanced+", "ENHANCED" in ai and "f_19596_" in ai)
+    check("tier move bump on paint", "tierBump" in mob or "case 1 -> 1.06" in mob)
+
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.12", "1.0.12" in readme)
-    check("README mobHealthScale 90%", "90%" in readme or "0.90" in readme or "mobHealthScale" in readme)
+    check("README version 1.0.13", "1.0.13" in readme)
+    check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")
     for w in warns:

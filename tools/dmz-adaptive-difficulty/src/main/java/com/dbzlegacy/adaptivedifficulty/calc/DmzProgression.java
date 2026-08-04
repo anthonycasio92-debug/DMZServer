@@ -251,6 +251,14 @@ public final class DmzProgression {
      * DMZ prestige skill level (synced from Fabled Prestige class level - 1).
      */
     public static int prestige(Player player) {
+        return skillLevel(player, "prestige");
+    }
+
+    /** Safe skill level lookup (0 when missing / getter fails). */
+    public static int skillLevel(Player player, String skillId) {
+        if (player == null || skillId == null || skillId.isBlank()) {
+            return 0;
+        }
         StatsData data = stats(player);
         if (data == null) {
             return 0;
@@ -260,9 +268,26 @@ public final class DmzProgression {
             if (skills == null) {
                 return 0;
             }
-            return Math.max(0, skills.getSkillLevel("prestige"));
+            return Math.max(0, skills.getSkillLevel(skillId));
         } catch (Throwable ignored) {
             return 0;
+        }
+    }
+
+    /** True when a toggleable skill is currently active. */
+    public static boolean skillActive(Player player, String skillId) {
+        if (player == null || skillId == null || skillId.isBlank()) {
+            return false;
+        }
+        StatsData data = stats(player);
+        if (data == null) {
+            return false;
+        }
+        try {
+            Skills skills = data.getSkills();
+            return skills != null && skills.isSkillActive(skillId);
+        } catch (Throwable ignored) {
+            return false;
         }
     }
 

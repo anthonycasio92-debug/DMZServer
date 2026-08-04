@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate AdaptiveDifficulty 1.0.12 scaling against the intended combat model.
+"""Validate AdaptiveDifficulty 1.0.13 scaling against the intended combat model.
 
 Checks (fail-closed):
 1. Soft offense includes STR/SKP/PWR + mild ENE
@@ -258,28 +258,28 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     hp_overlay = 1.0
     hp_overlay *= blend_counter(combine_top2(health_bias_for_stat, top), pct)
     hp_overlay *= blend_counter(class_health_bias(cls), pct)
-    hp_overlay = min(1.18, clamp_overlay(hp_overlay))
+    hp_overlay = min(1.20, clamp_overlay(hp_overlay))
 
     vit_share = hp * pct
     base_hp_mob = vit_share
     if 1 <= tier <= 2 and form_boost > 1.12:
-        base_hp_mob = max(base_hp_mob, hp * (0.18 if tier == 1 else 0.26))
-    if offense > hp * 0.35:
-        hits = {1: 0.85, 2: 0.75, 3: 0.65, 4: 0.55, 5: 0.48, 6: 0.42, 7: 0.38}[tier]
+        base_hp_mob = max(base_hp_mob, hp * (0.20 if tier == 1 else 0.28))
+    if offense > hp * 0.30:
+        hits = {1: 1.00, 2: 0.90, 3: 0.78, 4: 0.68, 5: 0.58, 6: 0.52, 7: 0.48}[tier]
         durability = offense * pct * hits
         offense_vit = offense / max(1.0, hp)
-        vit_cap_mul = 2.8
-        if offense_vit > 1.25:
-            vit_cap_mul = min(6.5, 2.8 + (offense_vit - 1.25) * 0.95)
+        vit_cap_mul = 3.2
+        if offense_vit > 1.15:
+            vit_cap_mul = min(8.0, 3.2 + (offense_vit - 1.15) * 1.05)
         base_hp_mob = max(base_hp_mob, min(durability, vit_share * vit_cap_mul))
     form_pad = 1.0
     if form_boost > 1.12:
-        form_pad = 1.0 + 0.35 * min(1.0, math.log(form_boost) / math.log(80.0))
-    hard = hp * max(pct, 0.18) * form_pad * 1.45
-    if offense > hp * 1.25:
-        glass_hits = {1: 0.70, 2: 0.60, 3: 0.52, 4: 0.45, 5: 0.40, 6: 0.36, 7: 0.32}[tier]
+        form_pad = 1.0 + 0.40 * min(1.0, math.log(form_boost) / math.log(80.0))
+    hard = hp * max(pct, 0.20) * form_pad * 1.55
+    if offense > hp * 1.15:
+        glass_hits = {1: 0.82, 2: 0.72, 3: 0.62, 4: 0.54, 5: 0.48, 6: 0.44, 7: 0.40}[tier]
         glass_hard = offense * pct * glass_hits
-        hard = max(hard, min(glass_hard, vit_share * 6.5))
+        hard = max(hard, min(glass_hard, vit_share * 8.0))
     mob_hp = max(10.0, min(base_hp_mob, hard) * MOB_HP_SCALE * hp_overlay)
 
     return {
@@ -299,7 +299,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
         "mobHp": mob_hp,
         "hitCap": hit_cap,
         "hitFrac": dmg_capped / max(1.0, live_hp),
-        "hitCapFrac": ki_protection_hit_frac(tier, form_boost),
+        "hitCapFrac": ki_protection_hit_frac(tier, form_boost, 0),
         "dmgOverlay": dmg_overlay,
         "liveHp": live_hp,
         "liveKi": live_k,
@@ -314,7 +314,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
 def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
-    lines: list[str] = ["# AdaptiveDifficulty 1.0.12 scaling validation", ""]
+    lines: list[str] = ["# AdaptiveDifficulty 1.0.13 scaling validation", ""]
 
     def check(label: str, cond: bool, detail: str = "") -> None:
         if cond:
@@ -452,8 +452,8 @@ def main() -> int:
     for cls in ("spiritualist", "berserker", "tank"):
         r = simulate_full(INVEST[cls], scales, mega, cls, 7)
         check(
-            f"T7 {cls} hitFrac ≤ 0.58",
-            r["hitFrac"] <= 0.58 + 1e-6,
+            f"T7 {cls} hitFrac ≤ 0.60",
+            r["hitFrac"] <= 0.60 + 1e-6,
             f"hitFrac={r['hitFrac']:.3f} cap={r['hitCap']:.0f}",
         )
         check(
@@ -467,6 +467,11 @@ def main() -> int:
         "T5 even-build hitCapFrac ≥ 0.28",
         even_t5["hitCapFrac"] >= 0.28,
         f"capFrac={even_t5['hitCapFrac']:.3f}",
+    )
+    check(
+        "T5 even-build pressure ≥ 18% bag (KP recommended band)",
+        even_t5["hitFrac"] >= 0.18,
+        f"hitFrac={even_t5['hitFrac']:.3f}",
     )
 
     print("\n=== 6) Archetype challenge feel ===")
@@ -524,7 +529,7 @@ def main() -> int:
         soft_hits >= 0.35,
         f"softHits={soft_hits:.2f} mobHp={str_d['mobHp']:.0f} softOffShare={str_d['offense'] * str_d['pct']:.0f}",
     )
-    check("stock mobHealthScale 0.90", abs(MOB_HP_SCALE - 0.90) < 1e-9, f"got {MOB_HP_SCALE}")
+    check("stock mobHealthScale 1.05", abs(MOB_HP_SCALE - 1.05) < 1e-9, f"got {MOB_HP_SCALE}")
 
     print("\n=== 7) Full pack race/form sim ===")
     lines += ["", "## 7) Full pack race/form sim", ""]
@@ -562,7 +567,7 @@ def main() -> int:
         r5 = simulate_full(pts, st["scale"], form_map, cls, 5)
         r1 = simulate_full(pts, st["scale"], form_map, cls, 1)
         samples.append((race, f"{f['group']}.{f['name']}", r5, r1))
-        if r5["hitFrac"] > 0.58:
+        if r5["hitFrac"] > 0.60:
             hard.append(f"{race}: hitFrac {r5['hitFrac']:.3f}")
         if r5["mobDmg"] <= r1["mobDmg"] * 1.05 and best_boost >= 8:
             hard.append(f"{race}: T5 barely above T1 with form ×{best_boost:.1f}")
