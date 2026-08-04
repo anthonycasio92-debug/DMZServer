@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.20", 'VERSION = "1.0.20"' in mod)
+    check("VERSION 1.0.21", 'VERSION = "1.0.21"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -138,7 +138,7 @@ def main() -> int:
     check("strong-stat top-2 combine", has(profile, "combineTopStatBiases", "0.60"))
     check("VIT hit cap kept", has(profile, "kiProtectionHitFrac", "targetMobDamage", "hitCap"))
     check(
-        "raised hit-cap budgets (1.0.20)",
+        "raised hit-cap budgets (1.0.21)",
         "case 1 -> 0.26" in profile and "default -> 0.64" in profile and "formFactor = 0.78" in profile,
     )
     check("live-bag landing ladder", "liveMaxHealth" in profile and "landFrac" in profile)
@@ -231,10 +231,17 @@ def main() -> int:
     check("Adaptive AI speed from Enhanced+", "ENHANCED" in ai and "f_19596_" in ai)
     check("tier move bump on paint", "tierBump" in mob or "case 1 -> 1.06" in mob)
 
+    print("\n=== Combat gravity cleanup (1.0.21) ===")
+    gravity = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/CombatGravity.java")
+    check("removeSource API", "removeSource(" in gravity)
+    check("zero-crossing always applies", "Crossing to/from ~0" in gravity or "boolean clearing" in gravity)
+    check("death clears Enderman/Warden gravity", has(events, "CombatGravity.removeSource", "EnderMan", "Warden"))
+    check("README sticky-gravity fix", "gravity" in readme.lower() and "1.0.21" in readme)
+
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.20", "1.0.20" in readme)
+    check("README version 1.0.21", "1.0.21" in readme)
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")

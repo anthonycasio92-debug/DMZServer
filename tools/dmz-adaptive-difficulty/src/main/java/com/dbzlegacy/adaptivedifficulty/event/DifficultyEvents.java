@@ -542,6 +542,11 @@ public final class DifficultyEvents {
             return;
         }
         LivingEntity dead = event.getEntity();
+        // Combat gravity must drop the moment the chamber source dies — do not wait
+        // for contribution TTL (and never leave a sticky GravityDeviceManager zone).
+        if (dead instanceof EnderMan || dead instanceof Warden) {
+            CombatGravity.removeSource(dead.m_20148_());
+        }
         // Register before vanilla remove() spawns smaller slime/magma cubs.
         SlimeSplitGuard.onParentDeath(dead);
         if (dead instanceof Creeper creeper) {

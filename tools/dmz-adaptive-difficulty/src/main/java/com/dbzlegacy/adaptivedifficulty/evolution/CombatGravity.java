@@ -18,6 +18,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
  * Stacks DMZ gravity-chamber pressure from Enderman / Warden kits.
@@ -94,6 +95,51 @@ public final class CombatGravity {
 
     /** Apply / clear the player's combat gravity zone. Call from player tick. */
     public static void tickPlayer(ServerPlayer player) {
+        applyPlayer(player, false);
+    }
+
+    /**
+     * Drop every contribution from a dead/despawned source (Enderman, Warden, …)
+     * and force an immediate re-apply so gravity cannot linger on the victim.
+     */
+    public static void removeSource(UUID sourceId) {
+        if (sourceId == null || BY_PLAYER.isEmpty()) {
+            return;
+        }
+        java.util.ArrayList<UUID> affected = new java.util.ArrayList<>();
+        for (UUID playerId : new java.util.ArrayList<>(BY_PLAYER.keySet())) {
+            Map<UUID, Contribution> sources = BY_PLAYER.get(playerId);
+            if (sources == null || sources.remove(sourceId) == null) {
+                continue;
+            }
+            if (sources.isEmpty()) {
+                BY_PLAYER.remove(playerId, sources);
+            }
+            affected.add(playerId);
+        }
+        if (affected.isEmpty()) {
+            return;
+        }
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            // No live server — keep a non-zero LAST_APPLIED sentinel so tickActive
+            // residual cleanup still runs when the server is available again.
+            for (UUID playerId : affected) {
+                LAST_APPLIED.putIfAbsent(playerId, 2.0);
+            }
+            return;
+        }
+        for (UUID playerId : affected) {
+            ServerPlayer player = server.m_6846_().m_11259_(playerId); // getPlayer
+            if (player != null) {
+                applyPlayer(player, true);
+            } else {
+                LAST_APPLIED.remove(playerId);
+            }
+        }
+    }
+
+    private static void applyPlayer(ServerPlayer player, boolean force) {
         if (player == null || player.m_9236_().f_46443_) {
             return;
         }
@@ -106,7 +152,7 @@ public final class CombatGravity {
         if ((sources == null || sources.isEmpty()) && (prev == null || prev <= 0.05)) {
             return;
         }
-        if (player.f_19797_ % APPLY_INTERVAL_TICKS != 0) {
+        if (!force && player.f_19797_ % APPLY_INTERVAL_TICKS != 0) {
             return;
         }
 
@@ -128,16 +174,22 @@ public final class CombatGravity {
         }
 
         double gravity = total <= 0.05 ? 0.0 : Math.min(400.0, total);
-        if (prev != null && Math.abs(prev - gravity) < 2.0) {
+        // Hysteresis only while gravity stays active. Crossing to/from ~0 must always
+        // apply — otherwise a small residual (<2) never unregisters and sticks forever
+        // after the last Enderman/Warden contribution expires or the mob dies.
+        boolean clearing = gravity <= 0.05;
+        boolean wasClear = prev == null || prev <= 0.05;
+        if (!force && !clearing && !wasClear && Math.abs(prev - gravity) < 2.0) {
             return;
         }
         LAST_APPLIED.put(player.m_20148_(), gravity);
 
         BlockPos key = keyFor(player);
         try {
-            if (gravity <= 0.05) {
+            if (clearing) {
                 GravityDeviceManager.unregister(level, key);
                 GravityStateSync.sync(player);
+                LAST_APPLIED.remove(player.m_20148_());
                 return;
             }
             AABB box = player.m_20191_().m_82377_(4.0, 3.0, 4.0); // inflate(x,y,z)
