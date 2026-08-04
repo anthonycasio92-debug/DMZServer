@@ -59,9 +59,10 @@ javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
 echo "Built $JAR"
 jar tf "$JAR"
 
-# Fail-closed audits: GUI ABI + intended product features.
+# Fail-closed audits: product features, combat scaling sim, GUI ABI.
 HERE_SIM="$(cd "$(dirname "$0")" && pwd)/sim"
 python3 "$HERE_SIM/audit_features.py"
+python3 "$HERE_SIM/validate_scaling.py"
 if [[ -f "$ROOT/plugins/AdaptiveDifficultyGUI-${VERSION}.jar" ]]; then
   python3 "$HERE_SIM/audit_gui_abi.py"
 else

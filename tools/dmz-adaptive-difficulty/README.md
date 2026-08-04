@@ -10,6 +10,8 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Play
 ```bash
 python3 tools/dmz-adaptive-difficulty/sim/audit_gui_abi.py   # Forge↔GUI reflection + version handshake
 python3 tools/dmz-adaptive-difficulty/sim/audit_features.py  # intended product features vs source
+python3 tools/dmz-adaptive-difficulty/sim/validate_scaling.py # PWR/ENE + class/top-2 combat sim
+python3 tools/dmz-adaptive-difficulty/sim/simulate_race_forms.py --check  # full race/form pack
 ```
 
 Keep Forge `AdaptiveDifficultyMod.VERSION` = GUI `plugin.yml` version (both jars same).  

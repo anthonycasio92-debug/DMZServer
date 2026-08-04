@@ -32,3 +32,4 @@ tools/dmz-adaptive-difficulty/build/
 
 # Local convenience copies from adaptive-difficulty build.sh
 /dmz_adaptive_difficulty-*.jar
+tools/dmz-adaptive-difficulty/sim/__pycache__/
