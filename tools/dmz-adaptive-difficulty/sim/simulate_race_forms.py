@@ -5,8 +5,9 @@ Reads:  config/dragonminez/races/*/stats.json + forms/*.json
 Writes: /opt/cursor/artifacts/ad-race-form-simulation.csv
         /opt/cursor/artifacts/ad-race-form-balance-report.md
 
-Mirrors PlayerCombatProfile 1.0.9 formulas (STR/SKP damage, VIT HP,
-VIT-relative hit cap, mild durability floor, STR/SKP/PWR + mild ENE).
+Mirrors PlayerCombatProfile 1.0.11 formulas:
+STR/SKP/PWR (+ mild ENE) offense, VIT HP, class + top-2 counters,
+VIT-relative hit cap, mild durability floor.
 """
 from __future__ import annotations
 
@@ -19,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[3]
 RACES = ROOT / "config" / "dragonminez" / "races"
 OUT = Path("/opt/cursor/artifacts")
 OUT.mkdir(parents=True, exist_ok=True)
+REPO_OUT = Path(__file__).resolve().parent / "out"
+REPO_OUT.mkdir(parents=True, exist_ok=True)
 
 TIER_PCT = {1: 0.21, 2: 0.42, 3: 0.65, 4: 0.90, 5: 1.35, 6: 1.60, 7: 2.00}
 TW_BASE = 0.55
@@ -27,6 +30,11 @@ MOB_HP_SCALE = 0.65
 MEGA_START, MEGA_TARGET = 6.0, 80.0
 MAX_FORM = 100.0
 RELEASE = 1.0
+STRONG_MULT = 1.08
+CLASS_DMG_MULT = 1.06
+CLASS_HP_MULT = 1.05
+OVERLAY_CAP = 1.25
+TOP2_SECONDARY = 0.60
 
 INVEST = {
     "warrior": dict(STR=800, SKP=200, RES=300, VIT=400, PWR=100, ENE=200),
@@ -167,6 +175,81 @@ def ki_protection_hit_frac(tier: int, form_boost: float) -> float:
     return max(0.06, min(0.42, tier_frac * form_factor))
 
 
+def _counter_strength(pct: float) -> float:
+    return max(0.0, min(1.0, pct / 0.50))
+
+
+def _blend_counter(bias: float, pct: float) -> float:
+    s = _counter_strength(pct)
+    return 1.0 + (max(1.0, bias) - 1.0) * s
+
+
+def _top2(pts: dict[str, float]) -> list[str]:
+    return [k for k, _ in sorted(pts.items(), key=lambda kv: kv[1], reverse=True)[:2]]
+
+
+def _class_dmg_bias(cls: str) -> float:
+    mult = CLASS_DMG_MULT
+    c = (cls or "").lower()
+    if "berserk" in c:
+        return 1.0 + (mult - 1.0) * 1.10
+    if "tank" in c or "paladin" in c:
+        return 1.0 + (mult - 1.0) * 1.12
+    if "warrior" in c:
+        return mult
+    if "martial" in c:
+        return 1.0 + (mult - 1.0) * 1.00
+    if any(x in c for x in ("spirit", "cleric", "mage", "kiuser", "energy")):
+        return 1.0 + (mult - 1.0) * 0.90
+    return mult
+
+
+def _class_hp_bias(cls: str) -> float:
+    mult = CLASS_HP_MULT
+    c = (cls or "").lower()
+    if any(x in c for x in ("spirit", "cleric", "mage", "kiuser", "energy")):
+        return 1.0 + (mult - 1.0) * 0.90
+    if any(x in c for x in ("martial", "berserk", "warrior")):
+        return 1.0 + (mult - 1.0) * 0.55
+    if "tank" in c or "paladin" in c:
+        return 1.0 + (mult - 1.0) * 0.35
+    return 1.0 + (mult - 1.0) * 0.40
+
+
+def _dmg_stat_bias(stat: str) -> float:
+    bump = STRONG_MULT - 1.0
+    return {
+        "STR": 1.0 + bump * 0.55,
+        "SKP": 1.0 + bump * 0.55,
+        "PWR": 1.0 + bump * 0.65,
+        "ENE": 1.0 + bump * 0.65,
+        "RES": 1.0 + bump * 0.85,
+        "VIT": 1.0 + bump * 0.75,
+    }.get(stat, 1.0)
+
+
+def _hp_stat_bias(stat: str) -> float:
+    bump = STRONG_MULT - 1.0
+    return {
+        "STR": 1.0 + bump * 0.70,
+        "SKP": 1.0 + bump * 0.70,
+        "PWR": 1.0 + bump * 0.85,
+        "ENE": 1.0 + bump * 0.85,
+        "RES": 1.0 + bump * 0.30,
+        "VIT": 1.0 + bump * 0.30,
+    }.get(stat, 1.0)
+
+
+def _combine_top2(bias_fn, top: list[str]) -> float:
+    if not top:
+        return 1.0
+    primary = max(1.0, bias_fn(top[0]))
+    if len(top) < 2:
+        return primary
+    secondary = max(1.0, bias_fn(top[1]))
+    return 1.0 + (primary - 1.0) + (secondary - 1.0) * TOP2_SECONDARY
+
+
 def simulate_ad(
     live_melee,
     live_strike,
@@ -180,6 +263,8 @@ def simulate_ad(
     vit_form,
     res_form,
     tier: int,
+    invested: dict[str, float] | None = None,
+    fighting_class: str = "warrior",
 ):
     pct = TIER_PCT[tier]
     form_boost = min(MAX_FORM, max(str_form, skp_form, pwr_form, ene_form, vit_form, res_form, 1.0))
@@ -227,8 +312,22 @@ def simulate_ad(
         nudge = {4: 1.04, 5: 1.06, 6: 1.08, 7: 1.10}[tier]
         dmg = max(dmg, offense * pct * nudge)
 
+    # Class + top-2 counter overlays (1.0.11).
+    pts = invested or {"STR": 1, "SKP": 1, "RES": 1, "VIT": 1, "PWR": 1, "ENE": 1}
+    top = _top2(pts)
+    dmg_ov = 1.0
+    dmg_ov *= _blend_counter(_combine_top2(_dmg_stat_bias, top), pct)
+    dmg_ov *= _blend_counter(_class_dmg_bias(fighting_class), pct)
+    dmg_ov = max(1.0, min(OVERLAY_CAP, dmg_ov))
+    dmg = max(1.0, dmg * dmg_ov)
+
     hit_cap = hp * ki_protection_hit_frac(tier, form_boost)
     dmg = min(dmg, hit_cap)
+
+    hp_ov = 1.0
+    hp_ov *= _blend_counter(_combine_top2(_hp_stat_bias, top), pct)
+    hp_ov *= _blend_counter(_class_hp_bias(fighting_class), pct)
+    hp_ov = min(1.12, max(1.0, min(OVERLAY_CAP, hp_ov)))
 
     vit_share = hp * pct
     base_hp_mob = vit_share
@@ -240,7 +339,7 @@ def simulate_ad(
     if form_boost > 1.12:
         form_pad = 1.0 + 0.25 * min(1.0, math.log(form_boost) / math.log(80.0))
     hard = hp * max(pct, 0.15) * form_pad * 1.25
-    mob_hp = min(base_hp_mob, hard) * MOB_HP_SCALE
+    mob_hp = min(base_hp_mob, hard) * MOB_HP_SCALE * hp_ov
     mob_hp = max(10.0, mob_hp)
 
     player_punch = max(live_melee, live_strike, live_ki)
@@ -249,6 +348,8 @@ def simulate_ad(
         softOffense=round(offense, 1),
         liveOffense=round(live_off, 1),
         inherit=round(offense / max(1.0, live_off), 3),
+        top2=">".join(top),
+        dmgOverlay=round(dmg_ov, 3),
         mobDmg=round(dmg, 1),
         mobHp=round(mob_hp, 1),
         hitsToKill=round(mob_hp / max(1.0, player_punch), 2),
@@ -311,6 +412,8 @@ def main() -> None:
                         ad = simulate_ad(
                             live_melee, live_strike, live_ki, live_energy, live_hp,
                             str_f, skp_f, pwr_f, ene_f, vit_f, res_f, tier,
+                            invested=pts,
+                            fighting_class=cls,
                         )
                         rows.append(
                             {
@@ -335,6 +438,12 @@ def main() -> None:
 
     csv_path = OUT / "ad-race-form-simulation.csv"
     with csv_path.open("w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
+        w.writeheader()
+        w.writerows(rows)
+    # Mirror into repo sim/out for source control.
+    repo_csv = REPO_OUT / "ad-race-form-simulation.csv"
+    with repo_csv.open("w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
         w.writeheader()
         w.writerows(rows)
@@ -372,9 +481,10 @@ def main() -> None:
         )
 
     md = [
-        "# AdaptiveDifficulty race/form simulation (1.0.10)",
+        "# AdaptiveDifficulty race/form simulation (1.0.11)",
         "",
         "Source: `config/dragonminez/races/*`.",
+        "Model: soft STR/SKP/PWR (+ mild ENE) × tier% + class/top-2 counters + VIT hit cap.",
         f"Rows: {len(rows)}.",
         "",
         "## Per-race peak (T5, mastery 100%, physical class)",
@@ -412,6 +522,7 @@ def main() -> None:
     md += ["", f"CSV: `{csv_path}`", ""]
     report = OUT / "ad-race-form-balance-report.md"
     report.write_text("\n".join(md))
+    (REPO_OUT / "ad-race-form-balance-report.md").write_text("\n".join(md))
 
     print("=== T5 m100 physical peak ===")
     print(f"{'race':16} {'boost':>7} {'dmgJ':>6} {'hpJ':>5} {'hits':>6} {'hitF':>6} {'cap':>5} form")
