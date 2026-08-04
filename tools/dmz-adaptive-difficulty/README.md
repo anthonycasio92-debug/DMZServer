@@ -1,9 +1,17 @@
-# AdaptiveDifficulty (v1.0.9)
+# AdaptiveDifficulty (v1.0.10)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
 
 Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Player NBT root `dmz_adaptive_difficulty` and PlaceholderAPI `%dmzdiff_*%` are unchanged.
+
+**GUI ABI:** keep Forge `AdaptiveDifficultyMod.VERSION` = GUI `plugin.yml` version (both jars same). After build:
+
+```bash
+python3 tools/dmz-adaptive-difficulty/sim/audit_gui_abi.py
+```
+
+Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fields, or Bukkit `openMenu*` / `openChestMenu*` entrypoints.
 
 ## Model
 
@@ -25,8 +33,8 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Play
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.9.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.9.jar`
+1. `mods/AdaptiveDifficulty-1.0.10.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.10.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 

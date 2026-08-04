@@ -1404,6 +1404,7 @@ public final class ForgeBridge {
                  "enableAncientCoinDrops", "ancientCoinDropMult",
                  "ancientCoinRatingDivisor", "ancientCoinUpgradeChance",
                  "deathResetsActiveDifficulty", "mobHealthScale",
+                 "maxFormBoost", "maxLiveCombatChannel",
                  "eliteMinUnlockTier", "mutationMinUnlockTier",
                  "adaptiveAiMinUnlockTier", "enemyEvolutionMinUnlockTier",
                  "bossMechanicsMinUnlockTier" -> true;
@@ -1431,6 +1432,21 @@ public final class ForgeBridge {
                 case "mobHealthScale" -> {
                     double h = ((Number) parsed).doubleValue();
                     yield h <= 0.0 || h > 4.0 ? 0.5 : h;
+                }
+                case "maxFormBoost" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    // Matches DifficultyConfig.sanitizeLive bounds.
+                    if (!(m > 1.0) || m > 500.0 || Double.isNaN(m)) {
+                        yield 100.0;
+                    }
+                    yield m;
+                }
+                case "maxLiveCombatChannel" -> {
+                    double m = ((Number) parsed).doubleValue();
+                    if (!(m > 1.0) || m > 1.0e12 || Double.isNaN(m)) {
+                        yield 50_000_000.0;
+                    }
+                    yield m;
                 }
                 case "ancientCoinUpgradeChance" -> {
                     double c = ((Number) parsed).doubleValue();

@@ -41,3 +41,10 @@ javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
 jar uf "$JAR" -C "$RES" plugin.yml
 echo "Built $JAR"
 jar tf "$JAR"
+
+# Cross-check Forge reflection surface after GUI rebuild.
+if [[ -f "$ROOT/mods/AdaptiveDifficulty-${VERSION}.jar" ]]; then
+  python3 "$ROOT/tools/dmz-adaptive-difficulty/sim/audit_gui_abi.py"
+else
+  echo "WARN: AdaptiveDifficulty-${VERSION}.jar missing — skip GUI ABI audit" >&2
+fi
