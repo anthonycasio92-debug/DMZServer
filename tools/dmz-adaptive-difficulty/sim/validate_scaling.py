@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate AdaptiveDifficulty 1.0.16 scaling against the intended combat model.
+"""Validate AdaptiveDifficulty 1.0.17 scaling against the intended combat model.
 
 Checks (fail-closed):
 1. Soft offense includes STR/SKP/PWR + mild ENE
@@ -333,7 +333,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
 def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
-    lines: list[str] = ["# AdaptiveDifficulty 1.0.16 scaling validation", ""]
+    lines: list[str] = ["# AdaptiveDifficulty 1.0.17 scaling validation", ""]
 
     def check(label: str, cond: bool, detail: str = "") -> None:
         if cond:

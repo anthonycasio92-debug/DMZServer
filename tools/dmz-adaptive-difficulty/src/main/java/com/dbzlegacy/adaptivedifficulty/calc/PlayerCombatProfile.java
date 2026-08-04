@@ -1098,7 +1098,7 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: DMZ DEF-cancel pierce + landing safety net (1.0.16).
+        // Formula revision: DMZ DEF-cancel pierce + landing safety net (1.0.17).
         h = mix(h, 29L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;

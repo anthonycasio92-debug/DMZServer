@@ -17,6 +17,7 @@ import com.dbzlegacy.adaptivedifficulty.scaling.SlimeSplitGuard;
 import com.dbzlegacy.adaptivedifficulty.tick.BehaviorScheduler;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler;
+import com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry;
 import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
@@ -56,6 +57,7 @@ import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
@@ -84,6 +86,11 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
         VanillaDifficultyGuard.restoreIfPeaceful(event.getServer());
+    }
+
+    @SubscribeEvent
+    public void onServerStopping(ServerStoppingEvent event) {
+        BalanceTelemetry.flushAndClose();
     }
 
     @SubscribeEvent
@@ -493,8 +500,8 @@ public final class DifficultyEvents {
         if (!MobScaling.isAdPainted(mob)) {
             return;
         }
-        float amount = event.getAmount();
-        boolean cancelled = event.isCanceled() || amount <= 0.0f;
+        float preAmount = event.getAmount();
+        boolean cancelled = event.isCanceled() || preAmount <= 0.0f;
         PlayerCombatProfile profile = PlayerCombatProfile.of(player);
         if (!profile.active()) {
             return;
@@ -504,11 +511,14 @@ public final class DifficultyEvents {
             // DMZ applyFullNegation zeroed the hit — put the tier bite back.
             event.setCanceled(false);
             event.setAmount((float) Math.max(1.0, land));
-            return;
+        } else if (preAmount < land * 0.45f) {
+            // Partial shrug: landing far below the intended post-DEF bite.
+            event.setAmount((float) Math.max(preAmount, land));
         }
-        // Partial shrug: landing far below the intended post-DEF bite.
-        if (amount < land * 0.45f) {
-            event.setAmount((float) Math.max(amount, land));
+        // Whitelist telemetry — log pre/post so cancelled zeros stay visible.
+        if (BalanceTelemetry.shouldLog(player)) {
+            BalanceTelemetry.logIncomingHit(
+                    player, mob, profile, preAmount, cancelled, event.getAmount());
         }
     }
 

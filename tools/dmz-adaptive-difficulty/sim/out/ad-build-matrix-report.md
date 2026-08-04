@@ -1,4 +1,4 @@
-# AdaptiveDifficulty build matrix (1.0.16)
+# AdaptiveDifficulty build matrix (1.0.17)
 
 Race × class × archetype × skill loadout × tier.
 Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).

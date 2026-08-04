@@ -1,4 +1,4 @@
-# AdaptiveDifficulty concept audit (1.0.16)
+# AdaptiveDifficulty concept audit (1.0.17)
 
 Fail-closed checks against the player's stated balance concept.
 
@@ -57,9 +57,10 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 1.0.16
+- ✅ VERSION 1.0.17
 - ✅ formula revision 29
 - ✅ hpFloorStrength present
+- ✅ whitelist combat telemetry present
 
 ## Sample numbers (saiyan warrior)
 
@@ -76,4 +77,4 @@ Fail-closed checks against the player's stated balance concept.
 |------|--------:|---------:|---------:|
 | androidforms.ssdroid4 | 0.970 | 0.340 | 1.21 |
 
-**Result:** PASS — 41 ok, 0 error(s).
+**Result:** PASS — 42 ok, 0 error(s).

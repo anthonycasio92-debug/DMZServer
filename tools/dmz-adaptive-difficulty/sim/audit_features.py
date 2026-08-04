@@ -86,7 +86,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.16", 'VERSION = "1.0.16"' in mod)
+    check("VERSION 1.0.17", 'VERSION = "1.0.17"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -137,7 +137,7 @@ def main() -> int:
     check("strong-stat top-2 combine", has(profile, "combineTopStatBiases", "0.60"))
     check("VIT hit cap kept", has(profile, "kiProtectionHitFrac", "targetMobDamage", "hitCap"))
     check(
-        "raised hit-cap budgets (1.0.16)",
+        "raised hit-cap budgets (1.0.17)",
         "case 1 -> 0.20" in profile and "default -> 0.68" in profile and "formFactor = 0.78" in profile,
     )
     check("VIT/RES damage floors live", has(profile, "tankDamageDefenseRatio", "tankDamageHealthRatio", "defFloor", "hpFloor"))
@@ -187,7 +187,16 @@ def main() -> int:
     check("teams WIP", "work in progress" in actions.lower() or "WIP" in actions)
     check("GUI ABI package stable", "com.dbzlegacy.adaptivedifficulty" in bridge and "DifficultyCache" in bridge)
 
-    print("\n=== Live challenge knobs (1.0.16) ===")
+    print("\n=== Balance telemetry ===")
+    tel = read(SRC / "com/dbzlegacy/adaptivedifficulty/telemetry/BalanceTelemetry.java")
+    check("BalanceTelemetry class", "class BalanceTelemetry" in tel)
+    check("whitelist-gated shouldLog", "isWhitelisted" in tel and "shouldLog" in tel)
+    check("JSONL hits path", "hits-" in tel and "telemetry" in tel)
+    check("admin telemetry commands", "telemetryRoot" in cmds or '"telemetry"' in cmds)
+    check("logs before/with safety net", "logIncomingHit" in events)
+    check("default telemetry off", "balanceTelemetryEnabled = false" in cfg)
+
+    print("\n=== Live challenge knobs (1.0.17) ===")
     check("Forge admin sets tankDamageDefenseRatio", "tankdamagedefenseratio" in cmds and "tankDamageDefenseRatio =" in cmds)
     check("Forge admin sets tankDamageHealthRatio", "tankdamagehealthratio" in cmds and "tankDamageHealthRatio =" in cmds)
     check("Forge admin sets mobHealthScale", "mobhealthscale" in cmds and "mobHealthScale =" in cmds)
@@ -214,7 +223,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.16", "1.0.16" in readme)
+    check("README version 1.0.17", "1.0.17" in readme)
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")

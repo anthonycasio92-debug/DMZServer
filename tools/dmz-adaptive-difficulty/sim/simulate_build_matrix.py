@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Full AdaptiveDifficulty 1.0.16 build matrix — race × class × archetype × skills × tier.
+"""Full AdaptiveDifficulty 1.0.17 build matrix — race × class × archetype × skills × tier.
 
 Concept targets (Buy Tier feel):
   T1 Awakened  — warm-up pressure; AI/evo Awakened only
@@ -344,7 +344,7 @@ def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
     lines = [
-        "# AdaptiveDifficulty build matrix (1.0.16)",
+        "# AdaptiveDifficulty build matrix (1.0.17)",
         "",
         "Race × class × archetype × skill loadout × tier.",
         "Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).",

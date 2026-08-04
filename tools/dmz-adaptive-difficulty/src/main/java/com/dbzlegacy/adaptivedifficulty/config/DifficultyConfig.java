@@ -38,6 +38,14 @@ public final class DifficultyConfig {
      * Managed via {@code /difficulty admin whitelist add|remove}.
      */
     public List<String> whitelist = new ArrayList<>();
+    /**
+     * When {@code true}, AD mob hits on <b>whitelisted</b> players are appended to
+     * {@code config/adaptivedifficulty/telemetry/hits-YYYY-MM-DD.jsonl} for balance tuning.
+     * Toggle: {@code /difficulty admin telemetry on|off}.
+     */
+    public boolean balanceTelemetryEnabled = false;
+    /** Max telemetry hit lines per player per second (spam guard). */
+    public int balanceTelemetryMaxPerSecond = 8;
 
     public double prestigeMultiplier = 10.0;
     public double levelMultiplier = 1.0;
@@ -1220,6 +1228,9 @@ public final class DifficultyConfig {
         }
         if (cfg.defenseToArmorFactor <= 0.0) {
             cfg.defenseToArmorFactor = 2.5;
+        }
+        if (cfg.balanceTelemetryMaxPerSecond < 1 || cfg.balanceTelemetryMaxPerSecond > 40) {
+            cfg.balanceTelemetryMaxPerSecond = 8;
         }
         if (cfg.nearbyScaleIntervalTicks < 10) {
             cfg.nearbyScaleIntervalTicks = 40;
