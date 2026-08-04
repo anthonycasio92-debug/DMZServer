@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Full AdaptiveDifficulty 1.0.19 build matrix — race × class × archetype × skills × tier.
+"""Full AdaptiveDifficulty 1.0.20 build matrix — race × class × archetype × skills × tier.
 
 Concept targets (Buy Tier feel):
   T1 Awakened  — warm-up pressure; AI/evo Awakened only
@@ -235,7 +235,7 @@ def simulate(
     dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
     dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.42, 2: 0.58, 3: 0.72}[tier]
+        threat = {1: 0.48, 2: 0.64, 3: 0.78}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
@@ -263,19 +263,27 @@ def simulate(
     hit_cap = cap_hp * cap_frac
     dmg = min(dmg, hit_cap)
 
-    # DMZ hard-cancel pierce (T4+) — must clear cancel bar (do not soft-cap below it).
+    # DMZ hard-cancel pierce — T4+ always; T3 god-forms (1.0.20).
     base_def = channel_damage(pts["RES"], scales.get("RES", 1), 1.0)
     live_flat = base_def * max(res_f, 1.0)
     cancel_thr = 2.5
     would_cancel = live_flat >= dmg * cancel_thr
-    if would_cancel and tier >= 4 and live_flat > 1.0:
+    allow_pierce = tier >= 4 or (tier >= 3 and form_boost >= 6.0)
+    if would_cancel and allow_pierce and live_flat > 1.0:
         dmg = max(dmg, live_flat / cancel_thr * 1.08)
         would_cancel = live_flat >= dmg * cancel_thr
-    landing = cap_hp * cap_frac * 0.35
+    # Live-bag landing ladder (1.0.20) — cancel path IS the early-tier ladder.
+    land_frac = {1: 0.12, 2: 0.16, 3: 0.22, 4: 0.28, 5: 0.36, 6: 0.42, 7: 0.48}[tier]
+    if form_boost > 1.12:
+        t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
+        land_frac *= 1.0 + 0.18 * t
+    bag = max(cap_hp, live_hp * 0.90)
+    landing = bag * land_frac
     if skills["kp"] > 0:
         landing *= max(0.70, 1.0 - skills["kp"] * 0.01)
-    land_cap = 0.38 if tier >= 7 else (0.42 if tier >= 5 else 0.50)
-    landing = min(landing, cap_hp * land_cap)
+    land_cap = {1: 0.40, 2: 0.40, 3: 0.40, 4: 0.42, 5: 0.46, 6: 0.50, 7: 0.52}[tier]
+    landing = max(live_hp * max(0.05, pct * 0.08), landing)
+    landing = min(landing, live_hp * land_cap)
 
     # Post-KP landing (DMZ 1%/lvl)
     kp_mit = min(0.10, skills["kp"] * KP_MITIGATION_PER_LEVEL)
@@ -348,7 +356,7 @@ def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
     lines = [
-        "# AdaptiveDifficulty build matrix (1.0.19)",
+        "# AdaptiveDifficulty build matrix (1.0.20)",
         "",
         "Race × class × archetype × skill loadout × tier.",
         "Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).",

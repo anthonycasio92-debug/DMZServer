@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed concept audit for AdaptiveDifficulty 1.0.19.
+"""Fail-closed concept audit for AdaptiveDifficulty 1.0.20.
 
 Encodes the player's stated balance intent:
   1. Buy tiers 1–7 feel progressively harder (stock 21→200%).
@@ -50,7 +50,7 @@ def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
     lines = [
-        "# AdaptiveDifficulty concept audit (1.0.19)",
+        "# AdaptiveDifficulty concept audit (1.0.20)",
         "",
         "Fail-closed checks against the player's stated balance concept.",
         "",
@@ -212,8 +212,8 @@ def main() -> int:
                 f"ratio={hit7.get('liveFlatMit', 0)/max(1, hit7['mobDmg']):.2f}",
             )
             check(
-                f"{label} T7 landing safety-net ≥8% bag",
-                hit7.get("landingFrac", 0) >= 0.08,
+                f"{label} T7 landing safety-net ≥35% bag",
+                hit7.get("landingFrac", 0) >= 0.35,
                 f"landingFrac={hit7.get('landingFrac', 0):.3f}",
             )
 
@@ -227,16 +227,44 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 1.0.19", 'VERSION = "1.0.19"' in mod)
-    check("formula revision 30", "mix(h, 30L)" in profile)
+    check("VERSION 1.0.20", 'VERSION = "1.0.20"' in mod)
+    check("formula revision 31", "mix(h, 31L)" in profile)
     check("hpFloorStrength present", "hpFloorStrength" in profile)
-    check("T1–T3 god-form floors raised", "case 1 -> 0.42" in profile and "case 3 -> 0.72" in profile)
-    check("T7 incoming soft-cap in events", "maxFrac" in (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java").read_text(encoding="utf-8", errors="replace"))
+    check("T1–T3 god-form floors raised", "case 1 -> 0.48" in profile and "case 3 -> 0.78" in profile)
+    events = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java").read_text(
+        encoding="utf-8", errors="replace"
+    )
+    check("T7 incoming soft-cap in events", "maxFrac" in events and "0.52" in events)
+    check("T5 soft-cap ≤50%", "case 5 -> 0.50" in events or "0.50" in events)
     tel = (
         ROOT
         / "src/main/java/com/dbzlegacy/adaptivedifficulty/telemetry/BalanceTelemetry.java"
     ).read_text(encoding="utf-8", errors="replace")
     check("whitelist combat telemetry present", "shouldLog" in tel and "logIncomingHit" in tel)
+    # Landing ladder (cancel path) must rise with tier for god-form tanks.
+    land_t1 = simulate(pts("even"), st["scale"], fmap, "warrior", 1, SKILL_LOADOUTS["none"])
+    land_t5 = simulate(pts("even"), st["scale"], fmap, "warrior", 5, SKILL_LOADOUTS["none"])
+    land_t7 = simulate(pts("even"), st["scale"], fmap, "warrior", 7, SKILL_LOADOUTS["none"])
+    check(
+        "god-form landing T1≥10%",
+        land_t1.get("landingFrac", 0) >= 0.10,
+        f"landingFrac={land_t1.get('landingFrac', 0):.3f}",
+    )
+    check(
+        "god-form landing T5≥28%",
+        land_t5.get("landingFrac", 0) >= 0.28,
+        f"landingFrac={land_t5.get('landingFrac', 0):.3f}",
+    )
+    check(
+        "god-form landing T7≥40%",
+        land_t7.get("landingFrac", 0) >= 0.40,
+        f"landingFrac={land_t7.get('landingFrac', 0):.3f}",
+    )
+    check(
+        "god-form landing T7>T1×2.5",
+        land_t7.get("landingFrac", 0) > land_t1.get("landingFrac", 0) * 2.5,
+        f"T1={land_t1.get('landingFrac', 0):.3f} T7={land_t7.get('landingFrac', 0):.3f}",
+    )
 
     lines += ["", "## Sample numbers (saiyan warrior)", ""]
     lines += [

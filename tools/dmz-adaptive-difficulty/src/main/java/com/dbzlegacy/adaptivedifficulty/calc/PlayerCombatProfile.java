@@ -547,12 +547,12 @@ public final class PlayerCombatProfile {
         base = Math.max(base, Math.max(defFloor, hpFloor));
 
         // T1–T3 + transformed: raise soft floors so god forms stop tapping at early buys.
-        // Telemetry (1.0.18): T1 god ≈6% bag, T3 tank god ≈14% — too soft.
+        // Telemetry (1.0.20): tank god still ~7%/13% via cancel path — floors + landing.
         if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
             double threatPct = switch (activeTier) {
-                case 1 -> 0.42;
-                case 2 -> 0.58;
-                case 3 -> 0.72;
+                case 1 -> 0.48;
+                case 2 -> 0.64;
+                case 3 -> 0.78;
                 default -> 0.0;
             };
             double softFloor = offense * threatPct;
@@ -617,14 +617,14 @@ public final class PlayerCombatProfile {
         }
 
         // DMZ hard-cancels when flatMitigation >= damage × threshold (stock 2.5).
-        // SSJB has DEF×32.75 / VIT×1 — HP hit-cap alone always loses. Clear the bar
-        // on T4+ so hits land. Do NOT soft-cap pierce below the cancel clear —
-        // that reintroduces zero-damage knockbacks. T7 one-shots are controlled by
-        // kiProtectionHitFrac + landing soft-cap instead.
+        // Pierce T4+ always; T3 god-forms too (telemetry: tanks lived only on safety-net
+        // at ~7–13% bag because T1–T3 never cleared the cancel bar).
         double thr = dmzCancelMitigationThreshold();
         if (liveFlatMitigation > 1.0 && thr > 1.0 && base * thr <= liveFlatMitigation) {
             double pierce = liveFlatMitigation / thr * 1.08;
-            if (activeTier >= 4) {
+            boolean allowPierce = activeTier >= 4
+                    || (activeTier >= 3 && formBoost >= 6.0);
+            if (allowPierce) {
                 base = Math.max(base, pierce);
             }
         }
@@ -632,25 +632,46 @@ public final class PlayerCombatProfile {
     }
 
     /**
-     * Post-mitigation HP that should come off the bag when DMZ hard-cancels a hit
-     * (knockback with 0 damage). Tier-scaled so T1 stays mild and T7 still bites
-     * without free one-shots (1.0.19 soft-cap).
+     * Post-mitigation HP restored when DMZ hard-cancels a hit.
+     * <p>
+     * 1.0.20: sized against the <b>live</b> bag (not only soft hit-cap blend).
+     * Telemetry showed high-DEF god forms almost always cancel on T1–T4, so this
+     * landing path <em>is</em> the ladder — it must rise 12%→45% across tiers.
      */
     public double targetLandingDamage(DifficultyConfig cfg) {
-        double bag = hitCapHealth();
-        double preFrac = kiProtectionHitFrac();
-        // Model ~65% flat absorb (combat.json flatMitigationMaxAbsorbFraction).
-        double land = bag * preFrac * 0.35;
+        double liveBag = Math.max(20.0, liveMaxHealth);
+        double blendBag = hitCapHealth();
+        // Prefer live HP so god-form restores read as real bag % in telemetry.
+        double bag = Math.max(blendBag, liveBag * 0.90);
+        // Tier landing fractions (post-mitigation feel targets from concept + live data).
+        double landFrac = switch (activeTier) {
+            case 1 -> 0.12;
+            case 2 -> 0.16;
+            case 3 -> 0.22;
+            case 4 -> 0.28;
+            case 5 -> 0.36;
+            case 6 -> 0.42;
+            default -> 0.48;
+        };
+        if (formBoost > 1.12) {
+            double t = Math.min(1.0, Math.log(Math.max(1.12, formBoost)) / Math.log(80.0));
+            landFrac *= 1.0 + 0.18 * t;
+        }
+        double land = bag * landFrac;
         // KP (when trained) still matters on the safety-net path.
         if (kiProtectionLevel > 0) {
             land *= Math.max(0.70, 1.0 - kiProtectionLevel * 0.01);
         }
-        // Never below a tiny tier bite; never above the pre-mit hit budget.
-        land = Math.max(bag * Math.max(0.02, tierPercent * 0.05), land);
-        land = Math.min(land, bag * preFrac);
-        // Soft-cap safety-net landings — T7 telemetry saw 80–300% bag restores.
-        double landCap = activeTier >= 7 ? 0.38 : (activeTier >= 5 ? 0.42 : 0.50);
-        land = Math.min(land, bag * landCap);
+        // Floor: never a free tap; cap: never a free one-shot.
+        land = Math.max(liveBag * Math.max(0.05, tierPercent * 0.08), land);
+        double landCap = switch (activeTier) {
+            case 7 -> 0.52;
+            case 6 -> 0.50;
+            case 5 -> 0.46;
+            case 4 -> 0.42;
+            default -> 0.40;
+        };
+        land = Math.min(land, liveBag * landCap);
         return Math.max(1.0, land);
     }
 
@@ -1114,8 +1135,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: telemetry T1–T6 stretch + T7 soft-cap (1.0.19).
-        h = mix(h, 30L);
+        // Formula revision: live-bag landing ladder + T3 god pierce (1.0.20).
+        h = mix(h, 31L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

@@ -515,13 +515,15 @@ public final class DifficultyEvents {
             // Partial shrug: landing far below the intended post-DEF bite.
             event.setAmount((float) Math.max(preAmount, land));
         }
-        // Soft-cap crushing hits — telemetry T7 saw 80–300% bag landings (1.0.19).
+        // Soft-cap crushing hits (1.0.20): T5 was stuck at 62% ceiling in live data;
+        // T7 tank cancels were too soft via landing — landing retune + these caps.
         double bag = Math.max(20.0, profile.liveMaxHealth);
         double maxFrac = switch (profile.activeTier) {
-            case 7 -> 0.48;
-            case 6 -> 0.58;
-            case 5 -> 0.62;
-            default -> 0.75;
+            case 7 -> 0.52;
+            case 6 -> 0.55;
+            case 5 -> 0.50;
+            case 4 -> 0.55;
+            default -> 0.65;
         };
         float softCap = (float) (bag * maxFrac);
         if (event.getAmount() > softCap) {

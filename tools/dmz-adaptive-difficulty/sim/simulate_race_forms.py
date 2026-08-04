@@ -336,7 +336,7 @@ def simulate_ad(
     dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
     dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.42, 2: 0.58, 3: 0.72}[tier]
+        threat = {1: 0.48, 2: 0.64, 3: 0.78}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
@@ -365,10 +365,11 @@ def simulate_ad(
     hit_cap = cap_hp * ki_protection_hit_frac(tier, form_boost)
     dmg = min(dmg, hit_cap)
 
-    # DMZ DEF-cancel pierce (T4+) — must clear cancel bar (do not soft-cap below it).
+    # DMZ DEF-cancel pierce — T4+ always; T3 god-forms (1.0.20).
     live_flat = base_def * max(res_form, 1.0)
     cancel_thr = 2.5
-    if live_flat > 1.0 and dmg * cancel_thr <= live_flat and tier >= 4:
+    allow_pierce = tier >= 4 or (tier >= 3 and form_boost >= 6.0)
+    if live_flat > 1.0 and dmg * cancel_thr <= live_flat and allow_pierce:
         dmg = max(dmg, live_flat / cancel_thr * 1.08)
 
     hp_ov = 1.0

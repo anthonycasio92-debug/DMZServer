@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate AdaptiveDifficulty 1.0.19 scaling against the intended combat model.
+"""Validate AdaptiveDifficulty 1.0.20 scaling against the intended combat model.
 
 Checks (fail-closed):
 1. Soft offense includes STR/SKP/PWR + mild ENE
@@ -224,7 +224,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     # DEF-cancel pierce applied after hit-cap (below).
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.42, 2: 0.58, 3: 0.72}[tier]
+        threat = {1: 0.48, 2: 0.64, 3: 0.78}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
@@ -253,20 +253,21 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     # DMZ DEF-cancel pierce (T4+) — must clear cancel bar.
     base_def_raw = live_def / res_f if res_f > 1.08 else live_def
     live_flat = base_def_raw * max(res_f, 1.0)
-    if live_flat > 1.0 and dmg_capped * 2.5 <= live_flat and tier >= 4:
+    allow_pierce = tier >= 4 or (tier >= 3 and form_boost >= 6.0)
+    if live_flat > 1.0 and dmg_capped * 2.5 <= live_flat and allow_pierce:
         dmg_capped = max(dmg_capped, live_flat / 2.5 * 1.08)
 
     # No-counter baseline (still with PWR/ENE offense + floors).
     dmg_no_counter_raw = max(1.0, dmg)
     dmg_no_counter = min(dmg_no_counter_raw, hit_cap)
-    if live_flat > 1.0 and dmg_no_counter * 2.5 <= live_flat and tier >= 4:
+    if live_flat > 1.0 and dmg_no_counter * 2.5 <= live_flat and allow_pierce:
         dmg_no_counter = max(dmg_no_counter, live_flat / 2.5 * 1.08)
     # STR/SKP-only offense (old 1.0.10) with counters still on — for delta proof.
     dmg_old_raw = offense_no_pwr * pct
     dmg_old_raw = max(dmg_old_raw, defense * pct * TANK_DEF_RATIO * floor_strength)
     dmg_old_raw = max(dmg_old_raw, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.42, 2: 0.58, 3: 0.72}[tier]
+        threat = {1: 0.48, 2: 0.64, 3: 0.78}[tier]
         dmg_old_raw = max(dmg_old_raw, offense_no_pwr * threat)
     if tier >= 4 and form_boost > 1.12:
         nudge = {4: 1.35, 5: 1.50, 6: 1.65, 7: 1.42}[tier]
@@ -302,9 +303,15 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     mob_hp = max(10.0, min(base_hp_mob, hard) * MOB_HP_SCALE * hp_overlay)
 
     hit_frac = dmg_capped / max(1.0, live_hp)
-    landing = cap_hp * ki_protection_hit_frac(tier, form_boost) * 0.35
-    land_cap = 0.38 if tier >= 7 else (0.42 if tier >= 5 else 0.50)
-    landing = min(landing, cap_hp * land_cap)
+    land_frac = {1: 0.12, 2: 0.16, 3: 0.22, 4: 0.28, 5: 0.36, 6: 0.42, 7: 0.48}[tier]
+    if form_boost > 1.12:
+        t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
+        land_frac *= 1.0 + 0.18 * t
+    bag = max(cap_hp, live_hp * 0.90)
+    landing = bag * land_frac
+    land_cap = {1: 0.40, 2: 0.40, 3: 0.40, 4: 0.42, 5: 0.46, 6: 0.50, 7: 0.52}[tier]
+    landing = max(live_hp * max(0.05, pct * 0.08), landing)
+    landing = min(landing, live_hp * land_cap)
     return {
         "tier": tier,
         "pct": pct,
@@ -338,7 +345,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
 def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
-    lines: list[str] = ["# AdaptiveDifficulty 1.0.19 scaling validation", ""]
+    lines: list[str] = ["# AdaptiveDifficulty 1.0.20 scaling validation", ""]
 
     def check(label: str, cond: bool, detail: str = "") -> None:
         if cond:
@@ -466,7 +473,7 @@ def main() -> int:
         )
     check(
         "T7 >> T1 pressure",
-        # 1.0.19: T1 god-form floors raised + T7 soft-cap → expect ~2.2×+, not 2.5×.
+        # 1.0.20: T1 god-form floors raised + T7 soft-cap → expect ~2.2×+, not 2.5×.
         ladder[-1]["mobDmg"] > ladder[0]["mobDmg"] * 2.2,
         f"T1={ladder[0]['mobDmg']:.0f} T7={ladder[-1]['mobDmg']:.0f}",
     )

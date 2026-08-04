@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.19)
+# AdaptiveDifficulty (v1.0.20)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -37,8 +37,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.19.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.19.jar`
+1. `mods/AdaptiveDifficulty-1.0.20.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.20.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -86,6 +86,12 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
+### Live balance (1.0.20)
+Second telemetry pass: high-DEF god forms lived on the **safety-net landing** path.
+- Live-bag landing ladder (~12%→48% across T1–T7)
+- T3 god-form DEF-cancel pierce (was T4+ only)
+- Soft-caps: T5 50% · T6 55% · T7 52% live bag
+
 ### Live balance (1.0.19)
 Tuned from whitelist combat telemetry (`hits-2026-08-04.jsonl`):
 - Raise T1–T3 god-form pressure (soft floors + live-share + hitFrac)
