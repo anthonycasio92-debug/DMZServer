@@ -1340,8 +1340,7 @@ public final class ForgeBridge {
         }
         return switch (fieldName) {
             case "weakStatCounterMult", "weakDefensePierceMult",
-                 "specializationDamageTax", "raceCounterMult",
-                 "tankDamageDefenseRatio", "tankDamageHealthRatio" -> true;
+                 "specializationDamageTax", "raceCounterMult" -> true;
             default -> false;
         };
     }
@@ -1404,12 +1403,13 @@ public final class ForgeBridge {
                  "enableAncientCoinDrops", "ancientCoinDropMult",
                  "ancientCoinRatingDivisor", "ancientCoinUpgradeChance",
                  "deathResetsActiveDifficulty", "mobHealthScale",
+                 "tankDamageDefenseRatio", "tankDamageHealthRatio",
                  "maxFormBoost", "maxLiveCombatChannel",
                  "eliteMinUnlockTier", "mutationMinUnlockTier",
                  "adaptiveAiMinUnlockTier", "enemyEvolutionMinUnlockTier",
                  "bossMechanicsMinUnlockTier" -> true;
             // Legacy unused: weakStatCounterMult, weakDefensePierceMult,
-            // specializationDamageTax, raceCounterMult, tankDamage* — not live-settable.
+            // specializationDamageTax, raceCounterMult — not live-settable.
             default -> false;
         };
     }
@@ -1432,7 +1432,15 @@ public final class ForgeBridge {
                 case "mobHealthScale" -> {
                     double h = ((Number) parsed).doubleValue();
                     // Match DifficultyConfig.sanitizeLive stock default.
-                    yield h <= 0.0 || h > 4.0 ? 0.65 : h;
+                    yield h <= 0.0 || h > 4.0 ? 0.90 : h;
+                }
+                case "tankDamageDefenseRatio" -> {
+                    double r = ((Number) parsed).doubleValue();
+                    yield r < 0.0 || r > 10.0 || Double.isNaN(r) ? 0.45 : r;
+                }
+                case "tankDamageHealthRatio" -> {
+                    double r = ((Number) parsed).doubleValue();
+                    yield r < 0.0 || r > 1.0 || Double.isNaN(r) ? 0.10 : r;
                 }
                 case "maxFormBoost" -> {
                     double m = ((Number) parsed).doubleValue();

@@ -553,7 +553,8 @@ public final class DifficultyCommands {
                         + "§8Counters: enableClassCounters · enableStrongStatCounters\n"
                         + "§8classCounter*Mult · strongStatCounterMult · maxCounterOverlayMult\n"
                         + "§8transformScaleWeight · transformScaleExponent · maxFormBoost · maxLiveCombatChannel\n"
-                        + "§8mobHealthScale · eliteMinUnlockTier · mutationMinUnlockTier · adaptiveAiMinUnlockTier\n"
+                        + "§8mobHealthScale · tankDamageDefenseRatio · tankDamageHealthRatio\n"
+                        + "§8eliteMinUnlockTier · mutationMinUnlockTier · adaptiveAiMinUnlockTier\n"
                         + "§8enemyEvolutionMinUnlockTier · bossMechanicsMinUnlockTier"
         ), false);
         return 1;
@@ -784,15 +785,21 @@ public final class DifficultyCommands {
                 case "weakstatcountermult", "weakcounter",
                      "weakdefensepiercemult", "defpierce",
                      "specializationdamagetax", "spectax",
-                     "racecountermult", "racemult",
-                     "tankdamagedefenseratio", "tankdeffloor",
-                     "tankdamagehealthratio", "tankhpfloor" -> {
+                     "racecountermult", "racemult" -> {
                     source.m_81352_(Component.m_237113_(
-                            "§c" + key + " §7is unused (combat uses soft STR/SKP + VIT hit cap; "
-                                    + "class + top STR/SKP/RES/VIT counters only). "
+                            "§c" + key + " §7is unused (combat uses soft STR/SKP/PWR + VIT hit cap; "
+                                    + "class + top-2 counters only). "
                                     + "Edit JSON only if you need the legacy field."
                     ));
                     return 0;
+                }
+                case "tankdamagedefenseratio", "tankdeffloor" ->
+                        cfg.tankDamageDefenseRatio = Math.max(0.0, Math.min(10.0, Double.parseDouble(value)));
+                case "tankdamagehealthratio", "tankhpfloor" ->
+                        cfg.tankDamageHealthRatio = Math.max(0.0, Math.min(1.0, Double.parseDouble(value)));
+                case "mobhealthscale", "hpscale" -> {
+                    double h = Double.parseDouble(value);
+                    cfg.mobHealthScale = (h <= 0.0 || h > 4.0) ? 0.90 : h;
                 }
                 case "enableclasscounters", "classcounters" ->
                         cfg.enableClassCounters = Boolean.parseBoolean(value)

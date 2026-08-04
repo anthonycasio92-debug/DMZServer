@@ -406,40 +406,59 @@ public final class PlayerCombatProfile {
     }
 
     /**
-     * Target mob HP — soft VIT share with a mild offense durability floor.
-     * Scaled by {@link DifficultyConfig#mobHealthScale}.
+     * Target mob HP — soft VIT share with an offense durability floor so STR/PWR
+     * dumps cannot one-punch packs. Scaled by {@link DifficultyConfig#mobHealthScale}.
      */
     public double targetMobHealth(DifficultyConfig cfg) {
-        // Soft VIT × tier% — never an offense sponge / health wall.
+        // Soft VIT × tier%.
         double vitShare = maxHealth * tierPercent;
         double base = vitShare;
-        // Tiny early-tier floor so T1 packs aren't wet paper when VIT is still low.
+        // Early-tier floor so T1 packs aren't wet paper when VIT is still low.
         if (activeTier >= 1 && activeTier <= 2 && formBoost > 1.12) {
-            double floor = maxHealth * (activeTier == 1 ? 0.12 : 0.18);
+            double floor = maxHealth * (activeTier == 1 ? 0.18 : 0.26);
             base = Math.max(base, floor);
         }
-        // Mild durability floor from soft offense so ×50–×80 forms don't vaporize
-        // packs in 0.01 hits — still capped ≤ ~2× soft VIT (not a drastic sponge).
-        if (formBoost > 1.12 && offense > maxHealth * 0.5) {
+        // Durability floor from soft offense — STR/PWR dumps must still trade hits.
+        // Glass cannons (offense >> VIT) get a higher VIT-share pad; pure tanks stay bounded.
+        if (offense > maxHealth * 0.35) {
             double hits = switch (activeTier) {
-                case 1 -> 0.55;
-                case 2 -> 0.50;
-                case 3 -> 0.45;
-                case 4 -> 0.40;
-                case 5 -> 0.35;
-                case 6 -> 0.32;
-                default -> 0.30;
+                case 1 -> 0.85;
+                case 2 -> 0.75;
+                case 3 -> 0.65;
+                case 4 -> 0.55;
+                case 5 -> 0.48;
+                case 6 -> 0.42;
+                default -> 0.38;
             };
             double durability = offense * tierPercent * hits;
-            double vitCap = vitShare * 2.0;
+            double offenseVitRatio = offense / Math.max(1.0, maxHealth);
+            double vitCapMul = 2.8;
+            if (offenseVitRatio > 1.25) {
+                vitCapMul = Math.min(6.5, 2.8 + (offenseVitRatio - 1.25) * 0.95);
+            }
+            double vitCap = vitShare * vitCapMul;
             base = Math.max(base, Math.min(durability, vitCap));
         }
-        // Hard cap: transforms must not invent drastic HP.
+        // Hard cap: transforms must not invent drastic HP — but glass offense
+        // still keeps a sponge floor near soft durability.
         double formPad = 1.0;
         if (formBoost > 1.12) {
-            formPad = 1.0 + 0.25 * Math.min(1.0, Math.log(formBoost) / Math.log(80.0));
+            formPad = 1.0 + 0.35 * Math.min(1.0, Math.log(formBoost) / Math.log(80.0));
         }
-        double hardCap = maxHealth * Math.max(tierPercent, 0.15) * formPad * 1.25;
+        double hardCap = maxHealth * Math.max(tierPercent, 0.18) * formPad * 1.45;
+        if (offense > maxHealth * 1.25) {
+            double glassHits = switch (activeTier) {
+                case 1 -> 0.70;
+                case 2 -> 0.60;
+                case 3 -> 0.52;
+                case 4 -> 0.45;
+                case 5 -> 0.40;
+                case 6 -> 0.36;
+                default -> 0.32;
+            };
+            double glassHard = offense * tierPercent * glassHits;
+            hardCap = Math.max(hardCap, Math.min(glassHard, vitShare * 6.5));
+        }
         if (base > hardCap) {
             base = hardCap;
         }
@@ -450,32 +469,40 @@ public final class PlayerCombatProfile {
         if (cfg.enableClassCounters) {
             overlay *= blendCounter(classHealthBias(cfg));
         }
-        overlay = Math.min(1.12, clampCounterOverlay(overlay, cfg));
-        double scale = cfg == null ? 0.65 : Math.max(0.05, Math.min(2.0, cfg.mobHealthScale));
+        overlay = Math.min(1.18, clampCounterOverlay(overlay, cfg));
+        double scale = cfg == null ? 0.90 : Math.max(0.05, Math.min(2.0, cfg.mobHealthScale));
         return Math.max(10.0, base * overlay * scale);
     }
 
     /**
-     * Target mob attack — soft-blended STR/SKP/PWR (+ mild ENE) × tier%, then
-     * capped to a VIT-relative hit fraction so higher tiers pressure ki protection
-     * without dumping a full player bag in one unprotected punch.
+     * Target mob attack — soft offense × tier%, with VIT/RES floors so tank dumps
+     * feel the ladder, then VIT hit-capped so unprotected punches don't dump the bag.
      */
     public double targetMobDamage(DifficultyConfig cfg) {
         double offenseShare = offense * tierPercent;
         double base = offenseShare;
 
+        // Live tank floors — VIT/RES dumps must still feel tier pressure.
+        // Early tiers damp floors so 21–42% ladders stay near raw offense share.
+        double floorStrength = Math.max(0.35, Math.min(1.0, counterStrength()));
+        double defRatio = cfg == null ? 0.45 : Math.max(0.0, Math.min(10.0, cfg.tankDamageDefenseRatio));
+        double hpRatio = cfg == null ? 0.10 : Math.max(0.0, Math.min(1.0, cfg.tankDamageHealthRatio));
+        double defFloor = defense * tierPercent * defRatio * floorStrength;
+        double hpFloor = maxHealth * tierPercent * hpRatio * floorStrength;
+        base = Math.max(base, Math.max(defFloor, hpFloor));
+
         // T1–T3 + transformed: mild floor from soft-blended offense (not raw live).
         if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
             double threatPct = switch (activeTier) {
-                case 1 -> 0.18;
-                case 2 -> 0.30;
-                case 3 -> 0.40;
+                case 1 -> 0.22;
+                case 2 -> 0.35;
+                case 3 -> 0.48;
                 default -> 0.0;
             };
             double softFloor = offense * threatPct;
             if (formBoost >= 6.0) {
                 double megaT = megaFormT(formBoost);
-                double shareMul = 1.15 - 0.18 * Math.min(1.25, megaT);
+                double shareMul = 1.20 - 0.15 * Math.min(1.25, megaT);
                 softFloor = Math.min(softFloor, offenseShare * Math.max(1.0, shareMul));
             }
             base = Math.max(base, softFloor);
@@ -483,10 +510,10 @@ public final class PlayerCombatProfile {
 
         if (activeTier >= 4 && formBoost > 1.12) {
             double nudge = switch (activeTier) {
-                case 4 -> 1.04;
-                case 5 -> 1.06;
-                case 6 -> 1.08;
-                default -> 1.10;
+                case 4 -> 1.06;
+                case 5 -> 1.10;
+                case 6 -> 1.14;
+                default -> 1.18;
             };
             base = Math.max(base, offenseShare * nudge);
         }
@@ -501,8 +528,8 @@ public final class PlayerCombatProfile {
         overlay = clampCounterOverlay(overlay, cfg);
         base = Math.max(1.0, base * overlay);
 
-        // VIT-relative cap — calibrated from server race/form sim so T5–T7 force
-        // ki protection without one-punching the player bag before RES.
+        // VIT-relative cap — raised in 1.0.12 so offense×tier% can land for even /
+        // glass builds; still stops unprotected full-bag dumps.
         double hitCap = maxHealth * kiProtectionHitFrac();
         if (base > hitCap) {
             base = hitCap;
@@ -513,29 +540,29 @@ public final class PlayerCombatProfile {
     /**
      * Max fraction of player soft VIT a single mob hit may deal (pre-RES / ki protect).
      * <p>
-     * Base form only uses ~55% of the tier budget so transforming still raises pressure.
-     * Full mastery mega forms reach the tier ceiling (+small pad) — enough to force
-     * ki protection, never a full-bag dump. Calibrated from server race/form sim.
+     * Raised so the tier ladder (21→200%) is actually felt. Base form uses ~70% of
+     * the tier budget so transforming still raises pressure. Mega forms reach the
+     * tier ceiling — enough to force ki protection, not a full-bag dump.
      */
     private double kiProtectionHitFrac() {
         double tierFrac = switch (activeTier) {
-            case 1 -> 0.10;
-            case 2 -> 0.14;
-            case 3 -> 0.18;
-            case 4 -> 0.24;
-            case 5 -> 0.30;
-            case 6 -> 0.34;
-            default -> 0.38;
+            case 1 -> 0.16;
+            case 2 -> 0.22;
+            case 3 -> 0.28;
+            case 4 -> 0.36;
+            case 5 -> 0.44;
+            case 6 -> 0.50;
+            default -> 0.55;
         };
         double formFactor;
         if (formBoost <= 1.12) {
-            formFactor = 0.55; // base — leave headroom for transforms
+            formFactor = 0.70; // base — leave headroom for transforms
         } else {
-            // ×1.12→~0.55, ×6→~0.72, ×80→1.0
+            // ×1.12→~0.70, ×6→~0.85, ×80→1.0
             double t = Math.min(1.0, Math.log(Math.max(1.12, formBoost)) / Math.log(80.0));
-            formFactor = 0.55 + 0.45 * t;
+            formFactor = 0.70 + 0.30 * t;
         }
-        return Math.max(0.06, Math.min(0.42, tierFrac * formFactor));
+        return Math.max(0.10, Math.min(0.58, tierFrac * formFactor));
     }
 
     /** Vanilla-ish armor contribution derived from player defense share. */
@@ -916,6 +943,8 @@ public final class PlayerCombatProfile {
         h = mix(h, Math.round(liveCfg.classCounterArmorMult * 1000.0));
         h = mix(h, Math.round(liveCfg.maxCounterOverlayMult * 1000.0));
         h = mix(h, Math.round(liveCfg.mobHealthScale * 1000.0));
+        h = mix(h, Math.round(liveCfg.tankDamageDefenseRatio * 1000.0));
+        h = mix(h, Math.round(liveCfg.tankDamageHealthRatio * 1000.0));
         h = mix(h, Math.round(liveCfg.transformScaleWeight * 1000.0));
         h = mix(h, Math.round(liveCfg.transformScaleExponent * 1000.0));
         h = mix(h, Math.round(liveCfg.defenseToArmorFactor * 1000.0));
@@ -926,8 +955,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: PWR/ENE offense + class counters + top-2 stats.
-        h = mix(h, 24L);
+        // Formula revision: raised hit-cap + VIT/RES floors + HP sponge (1.0.12).
+        h = mix(h, 25L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

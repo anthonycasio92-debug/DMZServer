@@ -77,7 +77,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.11", 'VERSION = "1.0.11"' in mod)
+    check("VERSION 1.0.12", 'VERSION = "1.0.12"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -90,7 +90,9 @@ def main() -> int:
         "unlockTier7EnemyMult": "2.00",
         "transformScaleWeight": "0.55",
         "transformScaleExponent": "0.75",
-        "mobHealthScale": "0.65",
+        "mobHealthScale": "0.90",
+        "tankDamageDefenseRatio": "0.45",
+        "tankDamageHealthRatio": "0.10",
         "maxScaledMobsPerPlayer": "5",
         "eliteMinUnlockTier": "4",
         "mutationMinUnlockTier": "5",
@@ -125,6 +127,11 @@ def main() -> int:
     check("class counters enabled in damage path", has(profile, "enableClassCounters", "classDamageBias"))
     check("strong-stat top-2 combine", has(profile, "combineTopStatBiases", "0.60"))
     check("VIT hit cap kept", has(profile, "kiProtectionHitFrac", "targetMobDamage", "hitCap"))
+    check(
+        "raised hit-cap budgets (1.0.12)",
+        "case 1 -> 0.16" in profile and "default -> 0.55" in profile and "formFactor = 0.70" in profile,
+    )
+    check("VIT/RES damage floors live", has(profile, "tankDamageDefenseRatio", "tankDamageHealthRatio", "defFloor", "hpFloor"))
     check("CombatSanity clamps", has(sanity, "saneFormMult", "saneLive", "usableBaseline"))
     check("live offense poll includes PWR/ENE", has(events, "getKiDamage", "getMaxEnergy"))
 
@@ -159,17 +166,28 @@ def main() -> int:
     check("teams WIP", "work in progress" in actions.lower() or "WIP" in actions)
     check("GUI ABI package stable", "com.dbzlegacy.adaptivedifficulty" in bridge and "DifficultyCache" in bridge)
 
-    print("\n=== Dead knobs must not be live-settable ===")
-    check("Forge admin rejects tankDamage*", "tankdamagedefenseratio" in cmds and "is unused" in cmds)
-    check("config marks tankDamage unused", "unused in combat as of 1.0.8" in cfg)
+    print("\n=== Live challenge knobs (1.0.12) ===")
+    check("Forge admin sets tankDamageDefenseRatio", "tankdamagedefenseratio" in cmds and "tankDamageDefenseRatio =" in cmds)
+    check("Forge admin sets tankDamageHealthRatio", "tankdamagehealthratio" in cmds and "tankDamageHealthRatio =" in cmds)
+    check("Forge admin sets mobHealthScale", "mobhealthscale" in cmds and "mobHealthScale =" in cmds)
+    check("GUI allowlists tankDamage*", '"tankDamageDefenseRatio"' in bridge and '"tankDamageHealthRatio"' in bridge)
+    unused_fn = re.search(
+        r"isLegacyUnusedCounterField\(.*?\{(.*?)\n    \}", bridge, re.S
+    )
+    unused_body = unused_fn.group(1) if unused_fn else ""
+    check(
+        "GUI does not mark tankDamage unused",
+        "tankDamageDefenseRatio" not in unused_body and "tankDamageHealthRatio" not in unused_body,
+    )
     m = re.search(r"public double targetMobDamage\(.*?\{(.*?)\n    \}", profile, re.S)
     dmg_fn = m.group(1) if m else profile
-    check("targetMobDamage ignores tankDamage*", "tankDamage" not in dmg_fn)
+    check("targetMobDamage uses tankDamage*", "tankDamage" in dmg_fn)
 
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.11", "1.0.11" in readme)
+    check("README version 1.0.12", "1.0.12" in readme)
+    check("README mobHealthScale 90%", "90%" in readme or "0.90" in readme or "mobHealthScale" in readme)
 
     print("\n=== Summary ===")
     for w in warns:

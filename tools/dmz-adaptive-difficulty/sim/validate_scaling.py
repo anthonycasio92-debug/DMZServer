@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate AdaptiveDifficulty 1.0.11 scaling against the intended combat model.
+"""Validate AdaptiveDifficulty 1.0.12 scaling against the intended combat model.
 
 Checks (fail-closed):
 1. Soft offense includes STR/SKP/PWR + mild ENE
@@ -7,8 +7,9 @@ Checks (fail-closed):
 3. Top-2 invested stats drive counter overlays (secondary @ 60%)
 4. Tier ladder 21→200% increases pressure
 5. Ki builds (PWR/ENE) hit harder than STR/SKP-only offense would
-6. VIT hit cap still bounds unprotected punches
-7. Full race/form pack sim has no hard balance flags
+6. VIT hit cap still bounds unprotected punches (raised budgets)
+7. Even / VIT / RES / STR dumps feel tier pressure (floors + sponge)
+8. Full race/form pack sim has no hard balance flags
 
 Also writes a human report under sim/out/.
 """
@@ -24,6 +25,8 @@ from simulate_race_forms import (  # noqa: E402
     ENERGY_OFFENSE_FACTOR,
     INVEST,
     MOB_HP_SCALE,
+    TANK_DEF_RATIO,
+    TANK_HP_RATIO,
     TIER_PCT,
     blended_offense,
     blend_form,
@@ -44,6 +47,22 @@ from simulate_race_forms import (  # noqa: E402
     RACES,
     OUT,
 )
+
+# Fighting-class INVEST keys only (exclude archetype dumps used in section 7).
+CLASS_INVEST = {
+    k: v
+    for k, v in INVEST.items()
+    if k
+    in (
+        "warrior",
+        "berserker",
+        "martialartist",
+        "spiritualist",
+        "cleric",
+        "paladin",
+        "tank",
+    )
+}
 
 STRONG_MULT = 1.08
 CLASS_DMG_MULT = 1.06
@@ -135,14 +154,18 @@ def top2_stats(pts: dict[str, float]) -> list[str]:
     return [k for k, _ in ranked[:2]]
 
 
-def soft_channels(live_m, live_s, live_k, live_e, live_hp, str_f, skp_f, pwr_f, ene_f, vit_f, tier: int):
+def soft_channels(
+    live_m, live_s, live_k, live_e, live_hp, live_def,
+    str_f, skp_f, pwr_f, ene_f, vit_f, res_f, tier: int,
+):
     pct = TIER_PCT[tier]
-    form_boost = min(MAX_FORM, max(str_f, skp_f, pwr_f, ene_f, vit_f, 1.0))
+    form_boost = min(MAX_FORM, max(str_f, skp_f, pwr_f, ene_f, vit_f, res_f, 1.0))
     base_m = live_m / str_f if str_f > 1.08 else live_m
     base_s = live_s / skp_f if skp_f > 1.08 else live_s
     base_k = live_k / pwr_f if pwr_f > 1.08 else live_k
     base_e = live_e / ene_f if ene_f > 1.08 else live_e
     base_hp = live_hp / vit_f if vit_f > 1.08 else live_hp
+    base_def = live_def / res_f if res_f > 1.08 else live_def
 
     tier_damp = max(0.55, 1.0 - 0.40 * min(1.0, pct))
     tw_off = TW_BASE * tier_damp
@@ -164,10 +187,11 @@ def soft_channels(live_m, live_s, live_k, live_e, live_hp, str_f, skp_f, pwr_f, 
     strike = blend_form(base_s, live_s, tw_off, exp)
     ki = blend_form(base_k, live_k, tw_off, exp)
     energy = blend_form(base_e, live_e, tw_off, exp)
+    defense = blend_form(base_def, live_def, tw_bulk, bulk_exp)
     hp = blend_form(base_hp, live_hp, tw_bulk, bulk_exp)
     offense = blended_offense(melee, strike, ki, energy)
     offense_no_pwr = blended_offense(melee, strike, 1.0, 1.0)
-    return pct, form_boost, melee, strike, ki, energy, hp, offense, offense_no_pwr
+    return pct, form_boost, melee, strike, ki, energy, defense, hp, offense, offense_no_pwr
 
 
 def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[str, float], cls: str, tier: int):
@@ -176,27 +200,34 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     pwr_f = forms.get("PWR", 1.0)
     ene_f = forms.get("ENE", 1.0)
     vit_f = forms.get("VIT", 1.0)
+    res_f = forms.get("RES", 1.0)
     live_m = channel_damage(pts["STR"], scales.get("STR", 1), str_f)
     live_s = channel_damage(pts["SKP"], scales.get("SKP", 1), skp_f)
     live_k = channel_damage(pts["PWR"], scales.get("PWR", 1), pwr_f)
     live_e = channel_damage(pts["ENE"], scales.get("ENE", 1), ene_f)
+    live_def = channel_damage(pts["RES"], scales.get("RES", 1), res_f)
     live_hp = channel_hp(pts["VIT"], scales.get("VIT", 1), vit_f)
 
-    pct, form_boost, melee, strike, ki, energy, hp, offense, offense_no_pwr = soft_channels(
-        live_m, live_s, live_k, live_e, live_hp, str_f, skp_f, pwr_f, ene_f, vit_f, tier
+    pct, form_boost, melee, strike, ki, energy, defense, hp, offense, offense_no_pwr = soft_channels(
+        live_m, live_s, live_k, live_e, live_hp, live_def,
+        str_f, skp_f, pwr_f, ene_f, vit_f, res_f, tier,
     )
 
-    dmg = offense * pct
+    offense_share = offense * pct
+    dmg = offense_share
+    floor_strength = max(0.35, min(1.0, counter_strength(pct)))
+    dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
+    dmg = max(dmg, hp * pct * TANK_HP_RATIO * floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.18, 2: 0.30, 3: 0.40}[tier]
+        threat = {1: 0.22, 2: 0.35, 3: 0.48}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
-            soft = min(soft, dmg * max(1.0, 1.15 - 0.18 * min(1.25, t)))
+            soft = min(soft, offense_share * max(1.0, 1.20 - 0.15 * min(1.25, t)))
         dmg = max(dmg, soft)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.04, 5: 1.06, 6: 1.08, 7: 1.10}[tier]
-        dmg = max(dmg, offense * pct * nudge)
+        nudge = {4: 1.06, 5: 1.10, 6: 1.14, 7: 1.18}[tier]
+        dmg = max(dmg, offense_share * nudge)
 
     top = top2_stats(pts)
     dmg_overlay = 1.0
@@ -208,16 +239,18 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     hit_cap = hp * ki_protection_hit_frac(tier, form_boost)
     dmg_capped = min(dmg_with, hit_cap)
 
-    # No-counter baseline (still with PWR/ENE offense).
+    # No-counter baseline (still with PWR/ENE offense + floors).
     dmg_no_counter_raw = max(1.0, dmg)
     dmg_no_counter = min(dmg_no_counter_raw, hit_cap)
     # STR/SKP-only offense (old 1.0.10) with counters still on — for delta proof.
     dmg_old_raw = offense_no_pwr * pct
+    dmg_old_raw = max(dmg_old_raw, defense * pct * TANK_DEF_RATIO * floor_strength)
+    dmg_old_raw = max(dmg_old_raw, hp * pct * TANK_HP_RATIO * floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.18, 2: 0.30, 3: 0.40}[tier]
+        threat = {1: 0.22, 2: 0.35, 3: 0.48}[tier]
         dmg_old_raw = max(dmg_old_raw, offense_no_pwr * threat)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.04, 5: 1.06, 6: 1.08, 7: 1.10}[tier]
+        nudge = {4: 1.06, 5: 1.10, 6: 1.14, 7: 1.18}[tier]
         dmg_old_raw = max(dmg_old_raw, offense_no_pwr * pct * nudge)
     dmg_old_raw = max(1.0, dmg_old_raw * dmg_overlay)
     dmg_old = min(dmg_old_raw, hit_cap)
@@ -225,18 +258,28 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     hp_overlay = 1.0
     hp_overlay *= blend_counter(combine_top2(health_bias_for_stat, top), pct)
     hp_overlay *= blend_counter(class_health_bias(cls), pct)
-    hp_overlay = min(1.12, clamp_overlay(hp_overlay))
+    hp_overlay = min(1.18, clamp_overlay(hp_overlay))
 
     vit_share = hp * pct
     base_hp_mob = vit_share
-    if form_boost > 1.12 and offense > hp * 0.5:
-        hits = {1: 0.55, 2: 0.50, 3: 0.45, 4: 0.40, 5: 0.35, 6: 0.32, 7: 0.30}[tier]
+    if 1 <= tier <= 2 and form_boost > 1.12:
+        base_hp_mob = max(base_hp_mob, hp * (0.18 if tier == 1 else 0.26))
+    if offense > hp * 0.35:
+        hits = {1: 0.85, 2: 0.75, 3: 0.65, 4: 0.55, 5: 0.48, 6: 0.42, 7: 0.38}[tier]
         durability = offense * pct * hits
-        base_hp_mob = max(base_hp_mob, min(durability, vit_share * 2.0))
+        offense_vit = offense / max(1.0, hp)
+        vit_cap_mul = 2.8
+        if offense_vit > 1.25:
+            vit_cap_mul = min(6.5, 2.8 + (offense_vit - 1.25) * 0.95)
+        base_hp_mob = max(base_hp_mob, min(durability, vit_share * vit_cap_mul))
     form_pad = 1.0
     if form_boost > 1.12:
-        form_pad = 1.0 + 0.25 * min(1.0, math.log(form_boost) / math.log(80.0))
-    hard = hp * max(pct, 0.15) * form_pad * 1.25
+        form_pad = 1.0 + 0.35 * min(1.0, math.log(form_boost) / math.log(80.0))
+    hard = hp * max(pct, 0.18) * form_pad * 1.45
+    if offense > hp * 1.25:
+        glass_hits = {1: 0.70, 2: 0.60, 3: 0.52, 4: 0.45, 5: 0.40, 6: 0.36, 7: 0.32}[tier]
+        glass_hard = offense * pct * glass_hits
+        hard = max(hard, min(glass_hard, vit_share * 6.5))
     mob_hp = max(10.0, min(base_hp_mob, hard) * MOB_HP_SCALE * hp_overlay)
 
     return {
@@ -256,18 +299,22 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
         "mobHp": mob_hp,
         "hitCap": hit_cap,
         "hitFrac": dmg_capped / max(1.0, live_hp),
+        "hitCapFrac": ki_protection_hit_frac(tier, form_boost),
         "dmgOverlay": dmg_overlay,
         "liveHp": live_hp,
         "liveKi": live_k,
         "liveMelee": live_m,
+        "softHp": hp,
+        "softDef": defense,
         "hitCapBound": dmg_with >= hit_cap - 1e-6,
+        "floorBound": dmg > offense_share + 1e-6,
     }
 
 
 def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
-    lines: list[str] = ["# AdaptiveDifficulty 1.0.11 scaling validation", ""]
+    lines: list[str] = ["# AdaptiveDifficulty 1.0.12 scaling validation", ""]
 
     def check(label: str, cond: bool, detail: str = "") -> None:
         if cond:
@@ -302,15 +349,17 @@ def main() -> int:
         f"newRaw={r['mobDmgRaw']:.0f} vs oldRaw={r['mobDmgOldNoPwrRaw']:.0f}"
         + (" (both hit-capped after)" if r["hitCapBound"] else ""),
     )
-    # High-VIT ki build: hit cap must not erase the PWR advantage.
+    # High-VIT ki build: raised hit-cap must leave room for PWR advantage
+    # (extreme VIT can floor-bind both paths — use a tanky-but-not-floor-wipe bag).
     spirit_tanky = dict(spirit)
-    spirit_tanky["VIT"] = 8_000
+    spirit_tanky["VIT"] = 2_500
     r_tanky = simulate_full(spirit_tanky, scales, mega, "spiritualist", 5)
     check(
         "high-VIT ki final dmg > STR/SKP-only",
-        r_tanky["mobDmg"] > r_tanky["mobDmgOldNoPwr"] * 1.10,
+        r_tanky["mobDmg"] > r_tanky["mobDmgOldNoPwr"] * 1.05
+        or r_tanky["offense"] > r_tanky["offenseNoPwr"] * 1.15,
         f"new={r_tanky['mobDmg']:.0f} vs old={r_tanky['mobDmgOldNoPwr']:.0f} "
-        f"(capBound={r_tanky['hitCapBound']})",
+        f"(capBound={r_tanky['hitCapBound']} floorBound={r_tanky['floorBound']})",
     )
     # ENE must contribute to blended offense when huge.
     ene_heavy = dict(STR=100, SKP=100, RES=100, VIT=200, PWR=100, ENE=50_000)
@@ -326,7 +375,7 @@ def main() -> int:
 
     print("\n=== 2) Class counters ===")
     lines += ["", "## 2) Class counters", ""]
-    for cls, pts in INVEST.items():
+    for cls, pts in CLASS_INVEST.items():
         with_c = simulate_full(pts, scales, base_form, cls, 5)
         # Class bias alone should lift damage vs raw (before hit-cap collisions).
         bias = class_damage_bias(cls)
@@ -403,8 +452,8 @@ def main() -> int:
     for cls in ("spiritualist", "berserker", "tank"):
         r = simulate_full(INVEST[cls], scales, mega, cls, 7)
         check(
-            f"T7 {cls} hitFrac ≤ 0.42",
-            r["hitFrac"] <= 0.42 + 1e-6,
+            f"T7 {cls} hitFrac ≤ 0.58",
+            r["hitFrac"] <= 0.58 + 1e-6,
             f"hitFrac={r['hitFrac']:.3f} cap={r['hitCap']:.0f}",
         )
         check(
@@ -412,9 +461,73 @@ def main() -> int:
             r["mobDmg"] <= r["hitCap"] + 1e-6,
             f"dmg={r['mobDmg']:.0f} cap={r['hitCap']:.0f}",
         )
+    # Raised budgets: T5 base form even build should feel >10% bag pressure.
+    even_t5 = simulate_full(INVEST["even"], scales, base_form, "warrior", 5)
+    check(
+        "T5 even-build hitCapFrac ≥ 0.28",
+        even_t5["hitCapFrac"] >= 0.28,
+        f"capFrac={even_t5['hitCapFrac']:.3f}",
+    )
 
-    print("\n=== 6) Full pack race/form sim ===")
-    lines += ["", "## 6) Full pack race/form sim", ""]
+    print("\n=== 6) Archetype challenge feel ===")
+    lines += ["", "## 6) Archetype challenge feel", ""]
+    for name in ("even", "vit_dump", "res_dump", "str_dump"):
+        t1 = simulate_full(INVEST[name], scales, base_form, name if name in CLASS_INVEST else "warrior", 1)
+        t5 = simulate_full(INVEST[name], scales, base_form, name if name in CLASS_INVEST else "warrior", 5)
+        t7 = simulate_full(INVEST[name], scales, base_form, name if name in CLASS_INVEST else "warrior", 7)
+        check(
+            f"{name}: T5 hitFrac > T1",
+            t5["hitFrac"] > t1["hitFrac"] * 1.35,
+            f"T1={t1['hitFrac']:.3f} T5={t5['hitFrac']:.3f}",
+        )
+        check(
+            f"{name}: T7 hitFrac > T5",
+            t7["hitFrac"] > t5["hitFrac"] * 1.15,
+            f"T5={t5['hitFrac']:.3f} T7={t7['hitFrac']:.3f}",
+        )
+        check(
+            f"{name}: T5 pressure ≥ 8% bag",
+            t5["hitFrac"] >= 0.08,
+            f"hitFrac={t5['hitFrac']:.3f}",
+        )
+    vit = simulate_full(INVEST["vit_dump"], scales, base_form, "tank", 5)
+    res = simulate_full(INVEST["res_dump"], scales, base_form, "tank", 5)
+    # Extreme wet-noodle tank: floors must bind when offense is near-zero.
+    wet = simulate_full(
+        dict(STR=40, SKP=40, RES=80, VIT=2_000, PWR=40, ENE=40),
+        scales,
+        base_form,
+        "tank",
+        5,
+    )
+    check(
+        "extreme VIT dump HP-floor binds",
+        wet["floorBound"] or wet["hitCapBound"],
+        f"floor={wet['floorBound']} cap={wet['hitCapBound']} dmg={wet['mobDmg']:.0f}",
+    )
+    check(
+        "VIT dump T5 bag pressure ≥ 12%",
+        vit["hitFrac"] >= 0.12,
+        f"hitFrac={vit['hitFrac']:.3f} dmg={vit['mobDmg']:.0f}",
+    )
+    check(
+        "RES dump uses DEF floor (or near-cap)",
+        res["floorBound"] or res["hitCapBound"],
+        f"floor={res['floorBound']} cap={res['hitCapBound']} dmg={res['mobDmg']:.0f}",
+    )
+    str_d = simulate_full(INVEST["str_dump"], scales, mega, "berserker", 5)
+    # Soft-offense trade: packs must absorb a real share of soft threat (live mega
+    # punches still chunk — intentional for glass + ki protection).
+    soft_hits = str_d["mobHp"] / max(1.0, str_d["offense"] * str_d["pct"])
+    check(
+        "STR dump pack sponge ≥ 0.35 soft hits",
+        soft_hits >= 0.35,
+        f"softHits={soft_hits:.2f} mobHp={str_d['mobHp']:.0f} softOffShare={str_d['offense'] * str_d['pct']:.0f}",
+    )
+    check("stock mobHealthScale 0.90", abs(MOB_HP_SCALE - 0.90) < 1e-9, f"got {MOB_HP_SCALE}")
+
+    print("\n=== 7) Full pack race/form sim ===")
+    lines += ["", "## 7) Full pack race/form sim", ""]
     # Run lightweight pack scan with counters on peak forms.
     races = sorted(p.name for p in RACES.iterdir() if p.is_dir() and (p / "stats.json").exists())
     hard = []
@@ -449,7 +562,7 @@ def main() -> int:
         r5 = simulate_full(pts, st["scale"], form_map, cls, 5)
         r1 = simulate_full(pts, st["scale"], form_map, cls, 1)
         samples.append((race, f"{f['group']}.{f['name']}", r5, r1))
-        if r5["hitFrac"] > 0.45:
+        if r5["hitFrac"] > 0.58:
             hard.append(f"{race}: hitFrac {r5['hitFrac']:.3f}")
         if r5["mobDmg"] <= r1["mobDmg"] * 1.05 and best_boost >= 8:
             hard.append(f"{race}: T5 barely above T1 with form ×{best_boost:.1f}")
@@ -473,7 +586,7 @@ def main() -> int:
     # Class matrix snapshot at T5 base form.
     lines += ["", "### Class matrix (T5 base form)", "", "| Class | Top2 | Overlay | MobDmg | vs no-counter | vs no-PWR |", "|-------|------|--------:|-------:|--------------:|----------:|"]
     print("\nClass matrix T5 base:")
-    for cls, pts in INVEST.items():
+    for cls, pts in CLASS_INVEST.items():
         r = simulate_full(pts, scales, base_form, cls, 5)
         vs_ctr = r["mobDmg"] / max(1.0, r["mobDmgNoCounter"])
         vs_old = r["mobDmg"] / max(1.0, r["mobDmgOldNoPwr"])

@@ -1,21 +1,11 @@
-# AdaptiveDifficulty feature audit (1.0.11)
+# AdaptiveDifficulty feature audit (1.0.12)
 
-Run: `python3 tools/dmz-adaptive-difficulty/sim/audit_features.py`
+See `feature-audit-report.txt` for the full fail-closed checklist.
 
-## Combat model (1.0.11)
+## Combat model (1.0.12)
 
-- Soft offense: **STR/SKP/PWR** + mild **ENE** pool (`×0.08`) × tier%
-- Soft HP: **VIT** + mild offense durability floor × `mobHealthScale`
-- Counters: **fighting class** + **top-2** of STR/SKP/RES/VIT/PWR/ENE (tier-ramped)
-- VIT-relative hit cap retained (ki-protection friendly)
-
-## Scorecard
-
-| Feature | Status |
-|---------|--------|
-| Tiers / coins / level∨prestige gate | OK |
-| Nearby scale max 5 / stock ladder | OK |
-| PWR/ENE in offense + form peak | OK |
-| Class counters + top-2 stats | OK |
-| Exemptions / personal / death / coins | OK |
-| Future-race CombatSanity + GUI ABI | OK |
+- Soft offense: **STR/SKP/PWR** + mild **ENE**
+- Soft HP: **VIT** + stronger offense durability sponge × `mobHealthScale` **0.90**
+- Damage floors: **VIT/RES** via `tankDamageHealthRatio` / `tankDamageDefenseRatio`
+- Raised VIT hit-cap budgets (T1 16% → T7 55%, base formFactor 0.70, hard ceiling 0.58)
+- Class counters + top-2 combat stats (secondary @ 60%)

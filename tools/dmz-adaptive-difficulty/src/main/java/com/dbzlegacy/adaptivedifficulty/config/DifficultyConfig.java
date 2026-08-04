@@ -262,9 +262,9 @@ public final class DifficultyConfig {
     public double unlockTier7EnemyMult = 2.00;
     /**
      * Multiplier on final scaled mob max HP ({@code playerMaxHp × tier% × …}).
-     * Default {@code 0.65} — early tiers need sponge so fights last more than one punch.
+     * Default {@code 0.90} — packs must last more than a punch vs STR/PWR dumps.
      */
-    public double mobHealthScale = 0.65;
+    public double mobHealthScale = 0.90;
     /**
      * Ceiling on detected form⊕stack multipliers (default {@code 100}).
      * Future races with huge {@code maxStatsMultiplier} mastery still soft-curve;
@@ -299,16 +299,17 @@ public final class DifficultyConfig {
      */
     public double weakDefensePierceMult = 1.75;
     /**
-     * Legacy DEF pierce floor (unused in combat as of 1.0.8).
-     * Mob damage is soft STR/SKP × tier% then VIT hit-capped — RES + ki protection
-     * are the tank counters. Kept for JSON migrate/compat only.
+     * Live damage floor from player soft RES × tier % — keeps pure RES dumps from
+     * facing wet-noodle hits. Still bounded by the VIT hit cap afterward.
+     * Example: 0.45 → mob attack at least 45% of (defense × tierPercent).
      */
-    public double tankDamageDefenseRatio = 0.55;
+    public double tankDamageDefenseRatio = 0.45;
     /**
-     * Legacy VIT pierce floor (unused in combat as of 1.0.8).
-     * Kept for JSON migrate/compat only — see {@link #tankDamageDefenseRatio}.
+     * Live damage floor from player soft VIT × tier % — presses high-VIT bags so
+     * "stack VIT, ignore offense" still feels the tier ladder.
+     * Example: 0.10 → mob attack at least 10% of (maxHealth × tierPercent).
      */
-    public double tankDamageHealthRatio = 0.020;
+    public double tankDamageHealthRatio = 0.10;
     /**
      * One-time: raise soft T1–T3 percents + tank pierce so early difficulty
      * contests high-DEF / low-level players (old 15%/30%/55% + 0.40 floor).
@@ -359,6 +360,11 @@ public final class DifficultyConfig {
      * One-time: balance pass — raise mob HP sponge, soften elite spike, nudge tank HP floor.
      */
     public Boolean balanceFeelMigratedV1 = Boolean.FALSE;
+    /**
+     * One-time (1.0.12): challenge feel — raise mob sponge, restore live VIT/RES
+     * damage floors so even / dump builds feel the tier ladder.
+     */
+    public Boolean challengeFeelMigratedV1 = Boolean.FALSE;
     /**
      * One-time: soften transform→enemy scaling (weight 0.40→0.25 + soft curve).
      */
@@ -1085,7 +1091,22 @@ public final class DifficultyConfig {
             cfg.ancientCoinUpgradeChance = 0.02;
         }
         if (cfg.mobHealthScale <= 0.0 || cfg.mobHealthScale > 4.0) {
-            cfg.mobHealthScale = 0.65;
+            cfg.mobHealthScale = 0.90;
+        }
+        // 1.0.12: raise sponge so offense dumps don't one-punch packs.
+        if (!Boolean.TRUE.equals(cfg.challengeFeelMigratedV1)) {
+            if (nearly(cfg.mobHealthScale, 0.65) || nearly(cfg.mobHealthScale, 0.50)) {
+                cfg.mobHealthScale = 0.90;
+            }
+            if (nearly(cfg.tankDamageHealthRatio, 0.020) || nearly(cfg.tankDamageHealthRatio, 0.015)
+                    || nearly(cfg.tankDamageHealthRatio, 0.025)) {
+                cfg.tankDamageHealthRatio = 0.10;
+            }
+            if (nearly(cfg.tankDamageDefenseRatio, 0.55) || nearly(cfg.tankDamageDefenseRatio, 0.90)
+                    || nearly(cfg.tankDamageDefenseRatio, 0.40)) {
+                cfg.tankDamageDefenseRatio = 0.45;
+            }
+            cfg.challengeFeelMigratedV1 = Boolean.TRUE;
         }
         if (!(cfg.maxFormBoost > 1.0) || cfg.maxFormBoost > 500.0 || Double.isNaN(cfg.maxFormBoost)) {
             cfg.maxFormBoost = 100.0;
@@ -1108,11 +1129,13 @@ public final class DifficultyConfig {
         if (cfg.weakDefensePierceMult < 1.0) {
             cfg.weakDefensePierceMult = 1.75;
         }
-        if (cfg.tankDamageDefenseRatio < 0.0) {
-            cfg.tankDamageDefenseRatio = 0.55;
+        if (cfg.tankDamageDefenseRatio < 0.0 || cfg.tankDamageDefenseRatio > 10.0
+                || Double.isNaN(cfg.tankDamageDefenseRatio)) {
+            cfg.tankDamageDefenseRatio = 0.45;
         }
-        if (cfg.tankDamageHealthRatio < 0.0) {
-            cfg.tankDamageHealthRatio = 0.020;
+        if (cfg.tankDamageHealthRatio < 0.0 || cfg.tankDamageHealthRatio > 1.0
+                || Double.isNaN(cfg.tankDamageHealthRatio)) {
+            cfg.tankDamageHealthRatio = 0.10;
         }
         if (cfg.specializationDamageTax < 0.0) {
             cfg.specializationDamageTax = 0.0;

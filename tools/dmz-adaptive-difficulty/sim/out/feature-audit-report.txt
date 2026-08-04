@@ -1,5 +1,5 @@
 === Version ===
-  OK  VERSION 1.0.11
+  OK  VERSION 1.0.12
 
 === Stock ladder / form / HP scale ===
   OK  default unlockTier1EnemyMult — got 0.21
@@ -11,7 +11,9 @@
   OK  default unlockTier7EnemyMult — got 2.00
   OK  default transformScaleWeight — got 0.55
   OK  default transformScaleExponent — got 0.75
-  OK  default mobHealthScale — got 0.65
+  OK  default mobHealthScale — got 0.90
+  OK  default tankDamageDefenseRatio — got 0.45
+  OK  default tankDamageHealthRatio — got 0.10
   OK  default maxScaledMobsPerPlayer — got 5
   OK  default eliteMinUnlockTier — got 4
   OK  default mutationMinUnlockTier — got 5
@@ -39,6 +41,8 @@
   OK  class counters enabled in damage path
   OK  strong-stat top-2 combine
   OK  VIT hit cap kept
+  OK  raised hit-cap budgets (1.0.12)
+  OK  VIT/RES damage floors live
   OK  CombatSanity clamps
   OK  live offense poll includes PWR/ENE
 
@@ -70,15 +74,19 @@
   OK  teams WIP
   OK  GUI ABI package stable
 
-=== Dead knobs must not be live-settable ===
-  OK  Forge admin rejects tankDamage*
-  OK  config marks tankDamage unused
-  OK  targetMobDamage ignores tankDamage*
+=== Live challenge knobs (1.0.12) ===
+  OK  Forge admin sets tankDamageDefenseRatio
+  OK  Forge admin sets tankDamageHealthRatio
+  OK  Forge admin sets mobHealthScale
+  OK  GUI allowlists tankDamage*
+  OK  GUI does not mark tankDamage unused
+  OK  targetMobDamage uses tankDamage*
 
 === README alignment ===
   OK  README stock percents
   OK  README PWR/ENE + top-2
-  OK  README version 1.0.11
+  OK  README version 1.0.12
+  OK  README mobHealthScale 90%
 
 === Summary ===
-PASS — intended features intact (60 checks, 0 warning(s))
+PASS — intended features intact (68 checks, 0 warning(s))
