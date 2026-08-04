@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Full AdaptiveDifficulty 1.0.18 build matrix — race × class × archetype × skills × tier.
+"""Full AdaptiveDifficulty 1.0.19 build matrix — race × class × archetype × skills × tier.
 
 Concept targets (Buy Tier feel):
   T1 Awakened  — warm-up pressure; AI/evo Awakened only
@@ -231,22 +231,25 @@ def simulate(
     dmg = offense_share
     cap_hp = hit_cap_health(hp, live_hp, form_boost)
     floor_strength = max(0.35, min(1.0, _counter_strength(pct)))
-    hp_floor_strength = max(0.65, floor_strength)
+    hp_floor_strength = max(0.80, floor_strength)
     dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
     dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.32, 2: 0.48, 3: 0.62}[tier]
+        threat = {1: 0.42, 2: 0.58, 3: 0.72}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
-            soft = min(soft, offense_share * max(1.15, 1.45 - 0.10 * min(1.25, t)))
+            soft = min(soft, offense_share * max(1.25, 1.55 - 0.08 * min(1.25, t)))
         dmg = max(dmg, soft)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.22, 5: 1.35, 6: 1.48, 7: 1.60}[tier]
+        nudge = {4: 1.35, 5: 1.50, 6: 1.65, 7: 1.42}[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
-        live_share = {1: 0.18, 2: 0.26, 3: 0.34, 4: 0.42, 5: 0.50, 6: 0.56, 7: 0.62}[tier]
-        mega_boost = 1.0 + 0.35 * min(1.0, mega_t(form_boost)) if form_boost >= 6.0 else 1.0
+        live_share = {1: 0.28, 2: 0.40, 3: 0.50, 4: 0.55, 5: 0.62, 6: 0.68, 7: 0.48}[tier]
+        if form_boost >= 6.0:
+            mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
+        else:
+            mega_boost = 1.0
         dmg = max(dmg, live_off * pct * live_share * mega_boost)
 
     top = _top2(pts)
@@ -260,8 +263,7 @@ def simulate(
     hit_cap = cap_hp * cap_frac
     dmg = min(dmg, hit_cap)
 
-    # DMZ hard-cancel: flatMit (= baseDEF × DEF form) ≥ damage × 2.5 → 0 damage.
-    # Mirror PlayerCombatProfile T4+ pierce so SSJB/T7 cannot shrug packs.
+    # DMZ hard-cancel pierce (T4+) — must clear cancel bar (do not soft-cap below it).
     base_def = channel_damage(pts["RES"], scales.get("RES", 1), 1.0)
     live_flat = base_def * max(res_f, 1.0)
     cancel_thr = 2.5
@@ -272,6 +274,8 @@ def simulate(
     landing = cap_hp * cap_frac * 0.35
     if skills["kp"] > 0:
         landing *= max(0.70, 1.0 - skills["kp"] * 0.01)
+    land_cap = 0.38 if tier >= 7 else (0.42 if tier >= 5 else 0.50)
+    landing = min(landing, cap_hp * land_cap)
 
     # Post-KP landing (DMZ 1%/lvl)
     kp_mit = min(0.10, skills["kp"] * KP_MITIGATION_PER_LEVEL)
@@ -344,7 +348,7 @@ def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
     lines = [
-        "# AdaptiveDifficulty build matrix (1.0.18)",
+        "# AdaptiveDifficulty build matrix (1.0.19)",
         "",
         "Race × class × archetype × skill loadout × tier.",
         "Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).",

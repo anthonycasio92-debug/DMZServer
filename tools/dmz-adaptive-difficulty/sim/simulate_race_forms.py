@@ -28,7 +28,7 @@ TW_BASE = 0.65
 TW_EXP = 0.75
 MOB_HP_SCALE = 1.15
 TANK_DEF_RATIO = 0.45
-TANK_HP_RATIO = 0.22
+TANK_HP_RATIO = 0.28
 MEGA_START, MEGA_TARGET = 6.0, 80.0
 MAX_FORM = 100.0
 RELEASE = 1.0
@@ -184,14 +184,16 @@ def hit_cap_health(soft_hp: float, live_hp: float, form_boost: float) -> float:
 
 
 def ki_protection_hit_frac(tier: int, form_boost: float, kp_level: int = 0) -> float:
-    # 1.0.15 — sized so post-DEF (~65% mit) still bites on god forms.
+    # 1.0.19 — raise T1–T6 bite; soft-cap T7 (live telemetry one-shots).
     del kp_level
-    tier_frac = {1: 0.20, 2: 0.28, 3: 0.36, 4: 0.46, 5: 0.55, 6: 0.62, 7: 0.68}[tier]
+    tier_frac = {1: 0.26, 2: 0.34, 3: 0.42, 4: 0.52, 5: 0.58, 6: 0.64, 7: 0.64}[tier]
     if form_boost <= 1.12:
         form_factor = 0.78
     else:
         t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
         form_factor = 0.78 + 0.22 * t
+        if tier >= 7 and form_boost >= 25.0:
+            form_factor = min(form_factor, 0.88)
     return max(0.12, min(0.75, tier_frac * form_factor))
 
 
@@ -330,22 +332,25 @@ def simulate_ad(
     cap_hp = hit_cap_health(hp, live_hp, form_boost)
     # Live VIT/RES floors — tank dumps / god forms must feel the ladder.
     floor_strength = max(0.35, min(1.0, _counter_strength(pct)))
-    hp_floor_strength = max(0.65, floor_strength)
+    hp_floor_strength = max(0.80, floor_strength)
     dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
     dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.32, 2: 0.48, 3: 0.62}[tier]
+        threat = {1: 0.42, 2: 0.58, 3: 0.72}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
-            soft = min(soft, offense_share * max(1.15, 1.45 - 0.10 * min(1.25, t)))
+            soft = min(soft, offense_share * max(1.25, 1.55 - 0.08 * min(1.25, t)))
         dmg = max(dmg, soft)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.22, 5: 1.35, 6: 1.48, 7: 1.60}[tier]
+        nudge = {4: 1.35, 5: 1.50, 6: 1.65, 7: 1.42}[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
-        live_share = {1: 0.18, 2: 0.26, 3: 0.34, 4: 0.42, 5: 0.50, 6: 0.56, 7: 0.62}[tier]
-        mega_boost = 1.0 + 0.35 * min(1.0, mega_t(form_boost)) if form_boost >= 6.0 else 1.0
+        live_share = {1: 0.28, 2: 0.40, 3: 0.50, 4: 0.55, 5: 0.62, 6: 0.68, 7: 0.48}[tier]
+        if form_boost >= 6.0:
+            mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
+        else:
+            mega_boost = 1.0
         dmg = max(dmg, live_off * pct * live_share * mega_boost)
 
     # Class + top-2 counter overlays.
@@ -360,7 +365,7 @@ def simulate_ad(
     hit_cap = cap_hp * ki_protection_hit_frac(tier, form_boost)
     dmg = min(dmg, hit_cap)
 
-    # DMZ DEF-cancel pierce (T4+) — flatMit = baseDEF × DEF form.
+    # DMZ DEF-cancel pierce (T4+) — must clear cancel bar (do not soft-cap below it).
     live_flat = base_def * max(res_form, 1.0)
     cancel_thr = 2.5
     if live_flat > 1.0 and dmg * cancel_thr <= live_flat and tier >= 4:

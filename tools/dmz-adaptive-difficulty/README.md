@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.18)
+# AdaptiveDifficulty (v1.0.19)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -37,8 +37,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.18.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.18.jar`
+1. `mods/AdaptiveDifficulty-1.0.19.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.19.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -86,9 +86,15 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
+### Live balance (1.0.19)
+Tuned from whitelist combat telemetry (`hits-2026-08-04.jsonl`):
+- Raise T1–T3 god-form pressure (soft floors + live-share + hitFrac)
+- Stretch T4–T6 for tanks (`tankDamageHealthRatio` 0.22→0.28, nudges, live-share)
+- Soft-cap crushing T5–T7 landings at 62/58/48% live bag (event clamp)
+
 - **Balance telemetry (Bukkit owns `/difficulty` on Mohist):** `/difficulty admin telemetry on|off|status|flush|test` — logs AD hits on **whitelisted** players to `config/adaptivedifficulty/telemetry/hits-YYYY-MM-DD.jsonl`. `on` auto-lists the staffer running the command. Use `test` to write a probe line and confirm the folder. Summarize with `sim/summarize_telemetry.py --dir <that folder>`.
 - **Skills:** Ki Protection leaves mid/high-tier hits load-bearing (DMZ 1%/lvl mitigation); Ki Infusion / Potential Unlock raise pack HP sponge. Melee kits chase earlier and deal painted shock/slam damage so zombies are not toothless vs skeleton ki.
-- Mob damage uses soft-blended STR/SKP/PWR (+ mild ENE) × tier%, then **VIT/RES floors** (`tankDamageHealthRatio` **0.22** / `tankDamageDefenseRatio` 0.45) so VIT dumps and tank class track the same ladder as even builds, then a raised VIT-relative hit cap (ki-protection friendly). Counters (class + top-2 of STR/SKP/RES/VIT/PWR/ENE) ramp with tier%.
+- Mob damage uses soft-blended STR/SKP/PWR (+ mild ENE) × tier%, then **VIT/RES floors** (`tankDamageHealthRatio` **0.28** / `tankDamageDefenseRatio` 0.45) so VIT dumps and tank class track the same ladder as even builds, then a raised VIT-relative hit cap (ki-protection friendly). Counters (class + top-2 of STR/SKP/RES/VIT/PWR/ENE) ramp with tier%.
 - Tier scale vs player fight stats: T1 21% · T2 42% · T3 65% · T4 90% · T5 135% · T6 160% · T7 200%. Form soft curve stock: `transformScaleWeight` 0.65 · `transformScaleExponent` 0.75.
 - Side channels (creeper boom, gravity, early kiblasts) also follow tier%/unlock — not absolute offense proxy. Creeper explosions bake from painted attack damage (like kiblasts) so T1–T2 blasts are not cancelled to 0 by DMZ DEF.
 - Mob ki blasts/lasers/beams use the mob’s scaled attack damage (not vanilla 3–72), so DMZ DEF mitigation no longer cancels them to 0. Early unlock kiblasts are soft-ratio’d (~60% at T1–T2).

@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.18", 'VERSION = "1.0.18"' in mod)
+    check("VERSION 1.0.19", 'VERSION = "1.0.19"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -102,7 +102,7 @@ def main() -> int:
         "transformScaleExponent": "0.75",
         "mobHealthScale": "1.15",
         "tankDamageDefenseRatio": "0.45",
-        "tankDamageHealthRatio": "0.22",
+        "tankDamageHealthRatio": "0.28",
         "maxScaledMobsPerPlayer": "5",
         "eliteMinUnlockTier": "4",
         "mutationMinUnlockTier": "5",
@@ -138,9 +138,12 @@ def main() -> int:
     check("strong-stat top-2 combine", has(profile, "combineTopStatBiases", "0.60"))
     check("VIT hit cap kept", has(profile, "kiProtectionHitFrac", "targetMobDamage", "hitCap"))
     check(
-        "raised hit-cap budgets (1.0.17)",
-        "case 1 -> 0.20" in profile and "default -> 0.68" in profile and "formFactor = 0.78" in profile,
+        "raised hit-cap budgets (1.0.19)",
+        "case 1 -> 0.26" in profile and "default -> 0.64" in profile and "formFactor = 0.78" in profile,
     )
+    check("T7 landing soft-cap", "landCap" in profile and "0.38" in profile)
+    check("telemetryFeelMigratedV1", "telemetryFeelMigratedV1" in cfg)
+    check("event incoming soft-cap", "softCap" in events or "maxFrac" in events)
     check("VIT/RES damage floors live", has(profile, "tankDamageDefenseRatio", "tankDamageHealthRatio", "defFloor", "hpFloor"))
     check("VIT floor uses raised early-tier strength", "hpFloorStrength" in profile)
     check("vitDumpPressureMigratedV1 present", "vitDumpPressureMigratedV1" in cfg)
@@ -230,7 +233,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.18", "1.0.18" in readme)
+    check("README version 1.0.19", "1.0.19" in readme)
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")

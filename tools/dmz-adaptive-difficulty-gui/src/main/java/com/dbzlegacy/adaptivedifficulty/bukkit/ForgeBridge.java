@@ -1561,7 +1561,7 @@ public final class ForgeBridge {
                 }
                 case "tankDamageHealthRatio" -> {
                     double r = ((Number) parsed).doubleValue();
-                    yield r < 0.0 || r > 1.0 || Double.isNaN(r) ? 0.22 : r;
+                    yield r < 0.0 || r > 1.0 || Double.isNaN(r) ? 0.28 : r;
                 }
                 case "maxFormBoost" -> {
                     double m = ((Number) parsed).doubleValue();

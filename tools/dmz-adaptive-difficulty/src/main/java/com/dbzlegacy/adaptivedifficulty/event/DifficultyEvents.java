@@ -515,6 +515,18 @@ public final class DifficultyEvents {
             // Partial shrug: landing far below the intended post-DEF bite.
             event.setAmount((float) Math.max(preAmount, land));
         }
+        // Soft-cap crushing hits — telemetry T7 saw 80–300% bag landings (1.0.19).
+        double bag = Math.max(20.0, profile.liveMaxHealth);
+        double maxFrac = switch (profile.activeTier) {
+            case 7 -> 0.48;
+            case 6 -> 0.58;
+            case 5 -> 0.62;
+            default -> 0.75;
+        };
+        float softCap = (float) (bag * maxFrac);
+        if (event.getAmount() > softCap) {
+            event.setAmount(softCap);
+        }
         // Whitelist telemetry — log pre/post so cancelled zeros stay visible.
         if (BalanceTelemetry.shouldLog(player)) {
             BalanceTelemetry.logIncomingHit(

@@ -315,9 +315,9 @@ public final class DifficultyConfig {
     /**
      * Live damage floor from player soft VIT × tier % — presses high-VIT bags so
      * "stack VIT, ignore offense" still feels the tier ladder.
-     * Example: 0.22 → mob attack at least 22% of (hitCapHealth × tierPercent).
+     * Example: 0.28 → mob attack at least 28% of (hitCapHealth × tierPercent).
      */
-    public double tankDamageHealthRatio = 0.22;
+    public double tankDamageHealthRatio = 0.28;
     /**
      * One-time: raise soft T1–T3 percents + tank pierce so early difficulty
      * contests high-DEF / low-level players (old 15%/30%/55% + 0.40 floor).
@@ -387,6 +387,11 @@ public final class DifficultyConfig {
      * 0.10 → 0.22 so high-VIT builds track the same ladder as even builds.
      */
     public Boolean vitDumpPressureMigratedV1 = Boolean.FALSE;
+    /**
+     * One-time (1.0.19): telemetry feel — stock {@code tankDamageHealthRatio}
+     * 0.22 → 0.28 so T3→T6 tanks keep climbing (live data plateaued ~14–17%).
+     */
+    public Boolean telemetryFeelMigratedV1 = Boolean.FALSE;
     /**
      * One-time: soften transform→enemy scaling (weight 0.40→0.25 + soft curve).
      */
@@ -1158,6 +1163,14 @@ public final class DifficultyConfig {
             }
             cfg.vitDumpPressureMigratedV1 = Boolean.TRUE;
         }
+        // 1.0.19: telemetry — stretch tank HP floor so T4–T6 buys keep biting.
+        if (!Boolean.TRUE.equals(cfg.telemetryFeelMigratedV1)) {
+            if (nearly(cfg.tankDamageHealthRatio, 0.22) || nearly(cfg.tankDamageHealthRatio, 0.10)
+                    || nearly(cfg.tankDamageHealthRatio, 0.020)) {
+                cfg.tankDamageHealthRatio = 0.28;
+            }
+            cfg.telemetryFeelMigratedV1 = Boolean.TRUE;
+        }
         if (!(cfg.maxFormBoost > 1.0) || cfg.maxFormBoost > 500.0 || Double.isNaN(cfg.maxFormBoost)) {
             cfg.maxFormBoost = 100.0;
         }
@@ -1185,7 +1198,7 @@ public final class DifficultyConfig {
         }
         if (cfg.tankDamageHealthRatio < 0.0 || cfg.tankDamageHealthRatio > 1.0
                 || Double.isNaN(cfg.tankDamageHealthRatio)) {
-            cfg.tankDamageHealthRatio = 0.22;
+            cfg.tankDamageHealthRatio = 0.28;
         }
         if (cfg.specializationDamageTax < 0.0) {
             cfg.specializationDamageTax = 0.0;

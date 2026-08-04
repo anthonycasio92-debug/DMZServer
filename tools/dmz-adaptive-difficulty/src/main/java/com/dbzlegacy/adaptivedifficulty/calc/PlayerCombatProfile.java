@@ -536,40 +536,42 @@ public final class PlayerCombatProfile {
         // Early tiers damp floors so 21–42% ladders stay near raw offense share.
         double floorStrength = Math.max(0.35, Math.min(1.0, counterStrength()));
         double defRatio = cfg == null ? 0.45 : Math.max(0.0, Math.min(10.0, cfg.tankDamageDefenseRatio));
-        // Stock 0.22 — VIT dumps track ~60–80% of even-build bag pressure at T5+.
-        double hpRatio = cfg == null ? 0.22 : Math.max(0.0, Math.min(1.0, cfg.tankDamageHealthRatio));
+        // Stock 0.28 — VIT dumps / tanks keep climbing T3→T6 (telemetry 1.0.19).
+        double hpRatio = cfg == null ? 0.28 : Math.max(0.0, Math.min(1.0, cfg.tankDamageHealthRatio));
         double defFloor = defense * tierPercent * defRatio * floorStrength;
         // Floor against the live-aware bag so high-VIT / tank class still get pressed.
         // HP floor uses a higher early-tier floorStrength floor so T1–T2 dumps aren't free.
-        double hpFloorStrength = Math.max(0.65, floorStrength);
+        // 1.0.19: 0.65→0.80 — telemetry tanks plateaued T3→T5 at ~14–17% bag.
+        double hpFloorStrength = Math.max(0.80, floorStrength);
         double hpFloor = hitCapHealth() * tierPercent * hpRatio * hpFloorStrength;
         base = Math.max(base, Math.max(defFloor, hpFloor));
 
-        // T1–T3 + transformed: stronger soft-offense floors (god forms were shrugging these).
+        // T1–T3 + transformed: raise soft floors so god forms stop tapping at early buys.
+        // Telemetry (1.0.18): T1 god ≈6% bag, T3 tank god ≈14% — too soft.
         if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
             double threatPct = switch (activeTier) {
-                case 1 -> 0.32;
-                case 2 -> 0.48;
-                case 3 -> 0.62;
+                case 1 -> 0.42;
+                case 2 -> 0.58;
+                case 3 -> 0.72;
                 default -> 0.0;
             };
             double softFloor = offense * threatPct;
             if (formBoost >= 6.0) {
                 double megaT = megaFormT(formBoost);
                 // Less mega compression — high forms must still raise bag pressure.
-                double shareMul = 1.45 - 0.10 * Math.min(1.25, megaT);
-                softFloor = Math.min(softFloor, offenseShare * Math.max(1.15, shareMul));
+                double shareMul = 1.55 - 0.08 * Math.min(1.25, megaT);
+                softFloor = Math.min(softFloor, offenseShare * Math.max(1.25, shareMul));
             }
             base = Math.max(base, softFloor);
         }
 
-        // T4–T7 + transformed: aggressive soft-share nudge (was 1.06–1.18 — too mild).
+        // T4–T6 stretch ladder for tanks; T7 nudge softened (telemetry one-shots).
         if (activeTier >= 4 && formBoost > 1.12) {
             double nudge = switch (activeTier) {
-                case 4 -> 1.22;
-                case 5 -> 1.35;
-                case 6 -> 1.48;
-                default -> 1.60;
+                case 4 -> 1.35;
+                case 5 -> 1.50;
+                case 6 -> 1.65;
+                default -> 1.42; // T7 soft — hit-cap + pierce soft-cap carry the bite
             };
             base = Math.max(base, offenseShare * nudge);
         }
@@ -578,18 +580,22 @@ public final class PlayerCombatProfile {
         // bounded slice of live offense×tier% so transforms actually raise threat.
         if (formBoost > 1.12 && liveOffense > offense * 1.05) {
             double liveShare = switch (activeTier) {
-                case 1 -> 0.18;
-                case 2 -> 0.26;
-                case 3 -> 0.34;
-                case 4 -> 0.42;
-                case 5 -> 0.50;
-                case 6 -> 0.56;
-                default -> 0.62;
+                case 1 -> 0.28;
+                case 2 -> 0.40;
+                case 3 -> 0.50;
+                case 4 -> 0.55;
+                case 5 -> 0.62;
+                case 6 -> 0.68;
+                default -> 0.48; // T7: less live-slice (was overshooting ×6–×50 forms)
             };
             // Mega forms: more of the live slice (still hit-capped after).
             double megaBoost = formBoost >= 6.0
                     ? 1.0 + 0.35 * Math.min(1.0, megaFormT(formBoost))
                     : 1.0;
+            // T7: damp mega live-slice so ×50 forms aren't free one-shots before hit-cap.
+            if (activeTier >= 7 && formBoost >= 6.0) {
+                megaBoost = 1.0 + 0.18 * Math.min(1.0, megaFormT(formBoost));
+            }
             double liveFloor = liveOffense * tierPercent * liveShare * megaBoost;
             base = Math.max(base, liveFloor);
         }
@@ -612,12 +618,12 @@ public final class PlayerCombatProfile {
 
         // DMZ hard-cancels when flatMitigation >= damage × threshold (stock 2.5).
         // SSJB has DEF×32.75 / VIT×1 — HP hit-cap alone always loses. Clear the bar
-        // on T4+ (and any tier where painted damage would cancel) so hits land.
+        // on T4+ so hits land. Do NOT soft-cap pierce below the cancel clear —
+        // that reintroduces zero-damage knockbacks. T7 one-shots are controlled by
+        // kiProtectionHitFrac + landing soft-cap instead.
         double thr = dmzCancelMitigationThreshold();
         if (liveFlatMitigation > 1.0 && thr > 1.0 && base * thr <= liveFlatMitigation) {
             double pierce = liveFlatMitigation / thr * 1.08;
-            // Early tiers: don't fully pierce (preserves T1–T3 ladder); safety net lands %.
-            // Mid/high tiers: pierce so the normal DMZ path + KP apply.
             if (activeTier >= 4) {
                 base = Math.max(base, pierce);
             }
@@ -627,7 +633,8 @@ public final class PlayerCombatProfile {
 
     /**
      * Post-mitigation HP that should come off the bag when DMZ hard-cancels a hit
-     * (knockback with 0 damage). Tier-scaled so T1 stays mild and T7 still bites.
+     * (knockback with 0 damage). Tier-scaled so T1 stays mild and T7 still bites
+     * without free one-shots (1.0.19 soft-cap).
      */
     public double targetLandingDamage(DifficultyConfig cfg) {
         double bag = hitCapHealth();
@@ -641,6 +648,9 @@ public final class PlayerCombatProfile {
         // Never below a tiny tier bite; never above the pre-mit hit budget.
         land = Math.max(bag * Math.max(0.02, tierPercent * 0.05), land);
         land = Math.min(land, bag * preFrac);
+        // Soft-cap safety-net landings — T7 telemetry saw 80–300% bag restores.
+        double landCap = activeTier >= 7 ? 0.38 : (activeTier >= 5 ? 0.42 : 0.50);
+        land = Math.min(land, bag * landCap);
         return Math.max(1.0, land);
     }
 
@@ -688,14 +698,16 @@ public final class PlayerCombatProfile {
      * Base form uses a lower formFactor so transforming still raises pressure.
      */
     private double kiProtectionHitFrac() {
+        // 1.0.19 telemetry: raise T1–T6 bag bite; T7 stays high but event soft-caps
+        // crushing landings (was free one-shots at 80–300% bag).
         double tierFrac = switch (activeTier) {
-            case 1 -> 0.20;
-            case 2 -> 0.28;
-            case 3 -> 0.36;
-            case 4 -> 0.46;
-            case 5 -> 0.55;
-            case 6 -> 0.62;
-            default -> 0.68;
+            case 1 -> 0.26;
+            case 2 -> 0.34;
+            case 3 -> 0.42;
+            case 4 -> 0.52;
+            case 5 -> 0.58;
+            case 6 -> 0.64;
+            default -> 0.64;
         };
         double formFactor;
         if (formBoost <= 1.12) {
@@ -704,6 +716,10 @@ public final class PlayerCombatProfile {
             // ×1.12→~0.78, ×6→~0.90, ×80→1.0
             double t = Math.min(1.0, Math.log(Math.max(1.12, formBoost)) / Math.log(80.0));
             formFactor = 0.78 + 0.22 * t;
+            // Extreme forms at T7: don't grow the hit budget with form (soft-cap).
+            if (activeTier >= 7 && formBoost >= 25.0) {
+                formFactor = Math.min(formFactor, 0.88);
+            }
         }
         return Math.max(0.12, Math.min(0.75, tierFrac * formFactor));
     }
@@ -1098,8 +1114,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: DMZ DEF-cancel pierce + landing safety net (1.0.17).
-        h = mix(h, 29L);
+        // Formula revision: telemetry T1–T6 stretch + T7 soft-cap (1.0.19).
+        h = mix(h, 30L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

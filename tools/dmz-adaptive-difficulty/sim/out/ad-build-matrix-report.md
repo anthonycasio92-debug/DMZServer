@@ -1,4 +1,4 @@
-# AdaptiveDifficulty build matrix (1.0.18)
+# AdaptiveDifficulty build matrix (1.0.19)
 
 Race × class × archetype × skill loadout × tier.
 Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).
@@ -46,17 +46,17 @@ Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).
 | Tier | HitFrac | After KP0 | SoftHits | MobDmg | MobHp |
 |-----:|--------:|----------:|---------:|-------:|------:|
 | T1 | 0.135 | 0.135 | 1.98 | 101 | 188 |
-| T3 | 0.281 | 0.281 | 2.09 | 210 | 616 |
-| T5 | 0.429 | 0.429 | 2.09 | 321 | 1279 |
-| T7 | 0.530 | 0.530 | 2.09 | 397 | 1895 |
+| T3 | 0.328 | 0.328 | 2.09 | 245 | 616 |
+| T5 | 0.452 | 0.452 | 2.09 | 339 | 1279 |
+| T7 | 0.499 | 0.499 | 2.09 | 374 | 1895 |
 
 ## Sample: skills at T5 saiyan warrior even (base)
 
 | Skills | HitFrac | AfterKP | MobHp | KP save |
 |--------|--------:|--------:|------:|--------:|
-| none | 0.429 | 0.429 | 1279 | 0 |
-| kp10 | 0.429 | 0.386 | 1279 | 32 |
-| inf10 | 0.429 | 0.429 | 1637 | 0 |
-| full | 0.429 | 0.386 | 1637 | 32 |
+| none | 0.452 | 0.452 | 1279 | 0 |
+| kp10 | 0.452 | 0.407 | 1279 | 34 |
+| inf10 | 0.452 | 0.452 | 1637 | 0 |
+| full | 0.452 | 0.407 | 1637 | 34 |
 
 Rows: 9792. Races: ancient_saiyan, bioandroid, frostdemon, human, majin, monkey, namekian, saiyan, sento_saiyan, viltrumite.
