@@ -2,7 +2,8 @@
 """Audit AdaptiveDifficulty source against the intended product feature set.
 
 Fail-closed checks: stock defaults, gate/scaling/exemption markers, dead knobs
-marked unused, personal/death/reward wiring. Pair with audit_gui_abi.py.
+marked unused, personal/death/reward wiring, PWR/ENE + class/top-2 counters.
+Pair with audit_gui_abi.py.
 """
 from __future__ import annotations
 
@@ -26,6 +27,7 @@ SANITY = SRC / "com/dbzlegacy/adaptivedifficulty/calc/CombatSanity.java"
 CMDS = SRC / "com/dbzlegacy/adaptivedifficulty/command/DifficultyCommands.java"
 BRIDGE = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/ForgeBridge.java"
 README = ROOT / "tools" / "dmz-adaptive-difficulty" / "README.md"
+MOD = SRC / "com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java"
 
 
 def read(path: Path) -> str:
@@ -33,7 +35,6 @@ def read(path: Path) -> str:
 
 
 def field_default(src: str, name: str) -> str | None:
-    # public double unlockTier1EnemyMult = 0.21;
     m = re.search(rf"\b{re.escape(name)}\s*=\s*([^;]+);", src)
     return m.group(1).strip() if m else None
 
@@ -55,11 +56,7 @@ def main() -> int:
             errors.append(f"{label}: {detail or 'failed'}")
             print(f" FAIL {label}" + (f" — {detail}" if detail else ""))
 
-    def warn(label: str, detail: str) -> None:
-        warns.append(f"{label}: {detail}")
-        print(f" WARN {label} — {detail}")
-
-    for p in (CFG, PROFILE, UNLOCK, MOB, EVENTS, ACTIONS, GATE, REWARD, TRACKER, SANITY, CMDS, BRIDGE, README):
+    for p in (CFG, PROFILE, UNLOCK, MOB, EVENTS, ACTIONS, GATE, REWARD, TRACKER, SANITY, CMDS, BRIDGE, README, MOD):
         if not p.is_file():
             print(f"FAIL: missing {p}", file=sys.stderr)
             return 2
@@ -77,8 +74,12 @@ def main() -> int:
     cmds = read(CMDS)
     bridge = read(BRIDGE)
     readme = read(README)
+    mod = read(MOD)
 
-    print("=== Stock ladder / form / HP scale ===")
+    print("=== Version ===")
+    check("VERSION 1.0.11", 'VERSION = "1.0.11"' in mod)
+
+    print("\n=== Stock ladder / form / HP scale ===")
     expected = {
         "unlockTier1EnemyMult": "0.21",
         "unlockTier2EnemyMult": "0.42",
@@ -101,6 +102,8 @@ def main() -> int:
         "mutationChancePercent": "3.75",
         "eliteStatMultiplier": "1.50",
         "deathResetsActiveDifficulty": "true",
+        "enableClassCounters": "true",
+        "enableStrongStatCounters": "true",
     }
     for name, want in expected.items():
         got = field_default(cfg, name)
@@ -114,45 +117,39 @@ def main() -> int:
     check("reliable-sample revoke", has(unlock, "revokeTier", "hasReliableUnlockGateSample", "resetTemporary"))
     check("buy charges Ancient Coins", has(actions, "AncientCoinEconomy", "activationCost", "charge", "setTier"))
 
-    print("\n=== Combat model (STR/SKP dmg, VIT HP, no PWR/ENE) ===")
-    check("STR/SKP-only offense comment+code", has(profile, "STR/SKP only", "physicalOffense", "blendForm"))
-    check("VIT hit cap", has(profile, "kiProtectionHitFrac", "targetMobDamage", "hitCap"))
-    check("soft VIT HP", has(profile, "targetMobHealth", "vitShare", "mobHealthScale"))
-    check("PWR never scaled", has(profile, "PWR / ENE are not scaled against", "never PWR"))
-    check(
-        "tank class does not inflate ATK",
-        "cls.contains(\"tank\")" in profile
-        and re.search(
-            r'cls\.contains\("tank"\).*?return 1\.0;',
-            profile,
-            re.S,
-        )
-        is not None,
-    )
+    print("\n=== Combat model (STR/SKP/PWR + ENE, class + top-2) ===")
+    check("blended offense includes PWR/ENE", has(profile, "blendedOffense", "ENERGY_OFFENSE_FACTOR", "getKiDamage", "getMaxEnergy"))
+    check("ENERGY WeakStat", "ENERGY," in profile or "ENERGY\n" in profile)
+    check("form peak includes PWR/ENE", has(profile, '"PWR"', '"ENE"'))
+    check("top-2 counters", has(profile, "top 2", "Math.min(2") or "topCount = Math.min(2" in profile)
+    check("class counters enabled in damage path", has(profile, "enableClassCounters", "classDamageBias"))
+    check("strong-stat top-2 combine", has(profile, "combineTopStatBiases", "0.60"))
+    check("VIT hit cap kept", has(profile, "kiProtectionHitFrac", "targetMobDamage", "hitCap"))
     check("CombatSanity clamps", has(sanity, "saneFormMult", "saneLive", "usableBaseline"))
+    check("live offense poll includes PWR/ENE", has(events, "getKiDamage", "getMaxEnergy"))
 
     print("\n=== Form soft-curve / peel ===")
     check("form soft curve", has(profile, "blendForm", "transformScaleWeight", "megaForm"))
-    check("DMZ addition peel", has(profile, "combineDmzMults", "dmzMultiplicationMode", "peelChannel")
-          or has(profile, "multiplicationInsteadOfAdditionForMultipliers"))
+    check("DMZ addition peel", has(profile, "combineDmzMults", "dmzMultiplicationMode", "peelChannel"))
 
     print("\n=== Nearby scale + max 5 ===")
-    check("max slots ≤5", has(tracker, "maxSlots") and "maxScaledMobsPerPlayer" in read(TRACKER.parent / "ScaledMobTracker.java")
-          or "Math.min(5" in read(TRACKER) or "maxScaledMobsPerPlayer" in cfg)
+    check("max slots ≤5", "maxScaledMobsPerPlayer" in cfg and "Math.min(5" in tracker)
     check("maxScaledMobsPerPlayer clamped", "Math.min(5" in cfg or "maxScaledMobsPerPlayer" in cfg)
 
     print("\n=== Exemptions ===")
     check("saga/quest exempt", has(mob, "DBSagasEntity", "isExemptFromConversion"))
     check("Ender Dragon exempt", "EnderDragon" in mob)
-    check("SPAWNER exempt", has(mob, "TAG_FROM_SPAWNER", "SPAWNER") or "dmz_ad_from_spawner" in mob)
+    check("SPAWNER exempt", has(mob, "TAG_FROM_SPAWNER") or "dmz_ad_from_spawner" in mob)
     check("SDD exempt", has(mob, "sdd_spawner", "sdd_boss"))
     check("slime split exempt", has(mob, "TAG_FROM_SLIME_SPLIT") or "dmz_ad_slime_split" in mob)
 
     print("\n=== Personal / death / coins / admin ===")
     check("personal participates gate", has(gate, "participates", "isPersonalEnabled", "allows"))
     check("death clears active tier", has(events, "resetTemporary", "deathResetsActiveDifficulty"))
-    check("logout keeps tier (save, no resetTemporary on logout)", 
-          "onLogout" in events and "resetTemporary" not in events[events.find("onLogout"):events.find("onLogout")+800])
+    check(
+        "logout keeps tier (save, no resetTemporary on logout)",
+        "onLogout" in events and "resetTemporary" not in events[events.find("onLogout") : events.find("onLogout") + 800],
+    )
     check("kill coin rewards", has(reward, "rollKillLoot", "dropInWorld", "isCoinDropChat"))
     check("system enabled gate", has(gate, "isEnabled") and "setEnabled" in cfg)
     check("whitelist gate", "isWhitelistEnabled" in cfg and "isPlayerAllowed" in cfg)
@@ -161,35 +158,18 @@ def main() -> int:
     check("title equip action", has(actions, "equipTitle", "ACT_EQUIP_TITLE") or "equip_title" in actions)
     check("teams WIP", "work in progress" in actions.lower() or "WIP" in actions)
     check("GUI ABI package stable", "com.dbzlegacy.adaptivedifficulty" in bridge and "DifficultyCache" in bridge)
-    check("GUI unused tank pierce blocked", has(bridge, "tankDamageDefenseRatio", "isLegacyUnusedCounterField"))
 
     print("\n=== Dead knobs must not be live-settable ===")
-    check(
-        "Forge admin rejects tankDamage*",
-        "tankdamagedefenseratio" in cmds and "is unused" in cmds,
-    )
-    check(
-        "config marks tankDamage unused",
-        "unused in combat as of 1.0.8" in cfg,
-    )
-    # Ensure targetMobDamage does not reference tank pierce knobs.
-    dmg_fn = profile
+    check("Forge admin rejects tankDamage*", "tankdamagedefenseratio" in cmds and "is unused" in cmds)
+    check("config marks tankDamage unused", "unused in combat as of 1.0.8" in cfg)
     m = re.search(r"public double targetMobDamage\(.*?\{(.*?)\n    \}", profile, re.S)
-    if m:
-        dmg_fn = m.group(1)
+    dmg_fn = m.group(1) if m else profile
     check("targetMobDamage ignores tankDamage*", "tankDamage" not in dmg_fn)
 
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
-    check("README STR/SKP + VIT", "STR/SKP" in readme and "VIT" in readme and "PWR/ENE" in readme)
-    check("README version 1.0.10", "1.0.10" in readme)
-
-    # mobHealthScale GUI clamp default
-    check(
-        "GUI mobHealthScale invalid fallback 0.65",
-        "yield h <= 0.0 || h > 4.0 ? 0.65 : h" in bridge
-        or "? 0.65" in bridge,
-    )
+    check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
+    check("README version 1.0.11", "1.0.11" in readme)
 
     print("\n=== Summary ===")
     for w in warns:

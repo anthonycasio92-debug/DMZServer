@@ -6,7 +6,7 @@ Writes: /opt/cursor/artifacts/ad-race-form-simulation.csv
         /opt/cursor/artifacts/ad-race-form-balance-report.md
 
 Mirrors PlayerCombatProfile 1.0.9 formulas (STR/SKP damage, VIT HP,
-VIT-relative hit cap, mild durability floor, no PWR/ENE).
+VIT-relative hit cap, mild durability floor, STR/SKP/PWR + mild ENE).
 """
 from __future__ import annotations
 
@@ -29,13 +29,13 @@ MAX_FORM = 100.0
 RELEASE = 1.0
 
 INVEST = {
-    "warrior": dict(STR=800, SKP=200, RES=300, VIT=400, PWR=100),
-    "berserker": dict(STR=900, SKP=150, RES=200, VIT=500, PWR=50),
-    "martialartist": dict(STR=300, SKP=900, RES=250, VIT=450, PWR=150),
-    "spiritualist": dict(STR=150, SKP=200, RES=250, VIT=350, PWR=900),
-    "cleric": dict(STR=100, SKP=150, RES=350, VIT=500, PWR=800),
-    "paladin": dict(STR=350, SKP=350, RES=700, VIT=500, PWR=200),
-    "tank": dict(STR=200, SKP=200, RES=800, VIT=700, PWR=100),
+    "warrior": dict(STR=800, SKP=200, RES=300, VIT=400, PWR=100, ENE=200),
+    "berserker": dict(STR=900, SKP=150, RES=200, VIT=500, PWR=50, ENE=150),
+    "martialartist": dict(STR=300, SKP=900, RES=250, VIT=450, PWR=150, ENE=250),
+    "spiritualist": dict(STR=150, SKP=200, RES=250, VIT=350, PWR=900, ENE=800),
+    "cleric": dict(STR=100, SKP=150, RES=350, VIT=500, PWR=800, ENE=900),
+    "paladin": dict(STR=350, SKP=350, RES=700, VIT=500, PWR=200, ENE=300),
+    "tank": dict(STR=200, SKP=200, RES=800, VIT=700, PWR=100, ENE=200),
 }
 
 
@@ -80,9 +80,14 @@ def blend_form(base: float, live: float, weight: float, exp: float) -> float:
     return b * min(seen, cap)
 
 
-def physical_offense(melee: float, strike: float) -> float:
-    m, s = max(1.0, melee), max(1.0, strike)
-    peak, avg = max(m, s), (m + s) * 0.5
+ENERGY_OFFENSE_FACTOR = 0.08
+
+
+def blended_offense(melee: float, strike: float, ki: float = 1.0, energy: float = 1.0) -> float:
+    m, s, k = max(1.0, melee), max(1.0, strike), max(1.0, ki)
+    e = max(1.0, energy * ENERGY_OFFENSE_FACTOR)
+    peak = max(m, s, k, e)
+    avg = (m + s + k + e) * 0.25
     return peak * 0.55 + avg * 0.45
 
 
@@ -116,6 +121,7 @@ def load_forms(race: str):
                     "def": float(f.get("defMultiplier") or 1),
                     "vit": float(f.get("vitMultiplier") or 1),
                     "pwr": float(f.get("pwrMultiplier") or 1),
+                    "ene": float(f.get("eneMultiplier") or 1),
                     "maxMastery": float(f.get("maxMastery") or 0),
                     "maxStats": float(f.get("maxStatsMultiplier") or 1),
                 }
@@ -137,6 +143,7 @@ def load_stats(race: str):
                 "RES": float(sc.get("DEF_scaling") or sc.get("RES_scaling") or 1),
                 "VIT": float(sc.get("VIT_scaling") or 1),
                 "PWR": float(sc.get("PWR_scaling") or 1),
+                "ENE": float(sc.get("ENE_scaling") or 1),
             },
         }
     return out
@@ -160,12 +167,27 @@ def ki_protection_hit_frac(tier: int, form_boost: float) -> float:
     return max(0.06, min(0.42, tier_frac * form_factor))
 
 
-def simulate_ad(live_melee, live_strike, live_hp, str_form, skp_form, vit_form, res_form, tier: int):
+def simulate_ad(
+    live_melee,
+    live_strike,
+    live_ki,
+    live_energy,
+    live_hp,
+    str_form,
+    skp_form,
+    pwr_form,
+    ene_form,
+    vit_form,
+    res_form,
+    tier: int,
+):
     pct = TIER_PCT[tier]
-    form_boost = min(MAX_FORM, max(str_form, skp_form, vit_form, res_form, 1.0))
+    form_boost = min(MAX_FORM, max(str_form, skp_form, pwr_form, ene_form, vit_form, res_form, 1.0))
 
     base_melee = live_melee / str_form if str_form > 1.08 else live_melee
     base_strike = live_strike / skp_form if skp_form > 1.08 else live_strike
+    base_ki = live_ki / pwr_form if pwr_form > 1.08 else live_ki
+    base_energy = live_energy / ene_form if ene_form > 1.08 else live_energy
     base_hp = live_hp / vit_form if vit_form > 1.08 else live_hp
 
     tier_damp = max(0.55, 1.0 - 0.40 * min(1.0, pct))
@@ -187,9 +209,11 @@ def simulate_ad(live_melee, live_strike, live_hp, str_form, skp_form, vit_form, 
 
     melee = blend_form(base_melee, live_melee, tw_off, exp)
     strike = blend_form(base_strike, live_strike, tw_off, exp)
+    ki = blend_form(base_ki, live_ki, tw_off, exp)
+    energy = blend_form(base_energy, live_energy, tw_off, exp)
     hp = blend_form(base_hp, live_hp, tw_bulk, bulk_exp)
-    offense = physical_offense(melee, strike)
-    live_off = physical_offense(live_melee, live_strike)
+    offense = blended_offense(melee, strike, ki, energy)
+    live_off = blended_offense(live_melee, live_strike, live_ki, live_energy)
 
     dmg = offense * pct
     if 1 <= tier <= 3 and form_boost > 1.12:
@@ -219,7 +243,7 @@ def simulate_ad(live_melee, live_strike, live_hp, str_form, skp_form, vit_form, 
     mob_hp = min(base_hp_mob, hard) * MOB_HP_SCALE
     mob_hp = max(10.0, mob_hp)
 
-    player_punch = max(live_melee, live_strike)
+    player_punch = max(live_melee, live_strike, live_ki)
     return dict(
         formBoost=round(form_boost, 2),
         softOffense=round(offense, 1),
@@ -254,30 +278,40 @@ def main() -> None:
                 "def": 1,
                 "vit": 1,
                 "pwr": 1,
+                "ene": 1,
                 "maxMastery": 0,
                 "maxStats": 1,
             }
         ] + forms
         for cls, st in stats.items():
             inv = INVEST.get(cls) or INVEST["warrior"]
-            pts = {k: st["base"].get(k, 0) + inv.get(k, 0) for k in ("STR", "SKP", "RES", "VIT", "PWR")}
+            pts = {k: st["base"].get(k, 0) + inv.get(k, 0) for k in ("STR", "SKP", "RES", "VIT", "PWR", "ENE")}
             for f in form_list:
                 for mastery_pct, mlabel in ((0.0, "m0"), (1.0, "m100")):
                     if f["name"] == "Base" and mastery_pct > 0:
                         continue
                     str_f = apply_mastery(f["str"], f["maxMastery"], f["maxStats"], mastery_pct) if f["name"] != "Base" else 1.0
                     skp_f = apply_mastery(f["skp"], f["maxMastery"], f["maxStats"], mastery_pct) if f["name"] != "Base" else 1.0
+                    pwr_f = apply_mastery(f["pwr"], f["maxMastery"], f["maxStats"], mastery_pct) if f["name"] != "Base" else 1.0
+                    ene_f = apply_mastery(f.get("ene", 1), f["maxMastery"], f["maxStats"], mastery_pct) if f["name"] != "Base" else 1.0
                     vit_f = apply_mastery(f["vit"], f["maxMastery"], f["maxStats"], mastery_pct) if f["name"] != "Base" else 1.0
                     res_f = apply_mastery(f["def"], f["maxMastery"], f["maxStats"], mastery_pct) if f["name"] != "Base" else 1.0
                     str_f = min(MAX_FORM, max(1.0, str_f))
                     skp_f = min(MAX_FORM, max(1.0, skp_f))
+                    pwr_f = min(MAX_FORM, max(1.0, pwr_f))
+                    ene_f = min(MAX_FORM, max(1.0, ene_f))
                     vit_f = min(MAX_FORM, max(1.0, vit_f))
                     res_f = min(MAX_FORM, max(1.0, res_f))
                     live_melee = channel_damage(pts["STR"], st["scale"]["STR"], str_f)
                     live_strike = channel_damage(pts["SKP"], st["scale"]["SKP"], skp_f)
+                    live_ki = channel_damage(pts["PWR"], st["scale"].get("PWR", 1), pwr_f)
+                    live_energy = channel_damage(pts["ENE"], st["scale"].get("ENE", 1), ene_f)
                     live_hp = channel_hp(pts["VIT"], st["scale"]["VIT"], vit_f)
                     for tier in (1, 3, 5, 7):
-                        ad = simulate_ad(live_melee, live_strike, live_hp, str_f, skp_f, vit_f, res_f, tier)
+                        ad = simulate_ad(
+                            live_melee, live_strike, live_ki, live_energy, live_hp,
+                            str_f, skp_f, pwr_f, ene_f, vit_f, res_f, tier,
+                        )
                         rows.append(
                             {
                                 "race": race,
@@ -288,10 +322,13 @@ def main() -> None:
                                 "tier": tier,
                                 "strForm": round(str_f, 2),
                                 "skpForm": round(skp_f, 2),
+                                "pwrForm": round(pwr_f, 2),
+                                "eneForm": round(ene_f, 2),
                                 "vitForm": round(vit_f, 2),
                                 "resForm": round(res_f, 2),
                                 "liveMelee": round(live_melee, 1),
                                 "liveStrike": round(live_strike, 1),
+                                "liveKi": round(live_ki, 1),
                                 **ad,
                             }
                         )

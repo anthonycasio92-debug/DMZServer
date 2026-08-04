@@ -385,7 +385,7 @@ public final class DifficultyConfig {
     public boolean enableClassCounters = true;
     /**
      * When true, mobs also counter the player's single highest invested combat stat
-     * (STR / SKP / RES / VIT — never PWR/ENE).
+     * (STR / SKP / RES / VIT / PWR / ENE — top 2).
      */
     public boolean enableStrongStatCounters = true;
     /** Strength of top-stat counter overlays (1.0 = off effect, higher = harder). */

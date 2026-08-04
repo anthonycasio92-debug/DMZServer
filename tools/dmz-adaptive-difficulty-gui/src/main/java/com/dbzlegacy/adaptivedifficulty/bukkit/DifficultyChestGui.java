@@ -314,7 +314,7 @@ public final class DifficultyChestGui implements Listener {
                 "&7Class &f" + blankAsNone(ph.getOrDefault("fighting_class", "")),
                 "&7Style &f" + ph.getOrDefault("fighting_style", "HYBRID"),
                 "",
-                "&7Top stat &f" + ph.getOrDefault("top_stats", "—"),
+                "&7Top stats &f" + ph.getOrDefault("top_stats", "—"),
                 "",
                 "&8Mobs counter class and top stat"
         )));

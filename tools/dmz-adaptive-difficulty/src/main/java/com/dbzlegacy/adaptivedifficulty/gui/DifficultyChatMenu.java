@@ -268,7 +268,7 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_("§7Class §f"
                 + (profile.fightingClass.isBlank() ? "?" : profile.fightingClass)
                 + "  §8·  §7Style §f" + profile.style.name()));
-        send(player, Component.m_237113_("§7Top stat §f" + profile.topStatsLabel()));
+        send(player, Component.m_237113_("§7Top stats §f" + profile.topStatsLabel()));
         send(player, Component.m_237113_("§7Unlocked §fT" + snap.highestUnlockedTier
                 + "  §8·  §7Title §e" + TitleSystem.activeDisplay(player)));
         send(player, Component.m_237113_("§6Ancient Coins §f" + AncientCoinEconomy.inventoryBreakdown(player)));

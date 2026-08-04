@@ -1,3 +1,6 @@
+=== Version ===
+  OK  VERSION 1.0.11
+
 === Stock ladder / form / HP scale ===
   OK  default unlockTier1EnemyMult — got 0.21
   OK  default unlockTier2EnemyMult — got 0.42
@@ -20,19 +23,24 @@
   OK  default mutationChancePercent — got 3.75
   OK  default eliteStatMultiplier — got 1.50
   OK  default deathResetsActiveDifficulty — got true
+  OK  default enableClassCounters — got true
+  OK  default enableStrongStatCounters — got true
 
 === Unlock gate / revoke ===
   OK  prestige OR level eligibility
   OK  reliable-sample revoke
   OK  buy charges Ancient Coins
 
-=== Combat model (STR/SKP dmg, VIT HP, no PWR/ENE) ===
-  OK  STR/SKP-only offense comment+code
-  OK  VIT hit cap
-  OK  soft VIT HP
-  OK  PWR never scaled
-  OK  tank class does not inflate ATK
+=== Combat model (STR/SKP/PWR + ENE, class + top-2) ===
+  OK  blended offense includes PWR/ENE
+  OK  ENERGY WeakStat
+  OK  form peak includes PWR/ENE
+  OK  top-2 counters
+  OK  class counters enabled in damage path
+  OK  strong-stat top-2 combine
+  OK  VIT hit cap kept
   OK  CombatSanity clamps
+  OK  live offense poll includes PWR/ENE
 
 === Form soft-curve / peel ===
   OK  form soft curve
@@ -61,7 +69,6 @@
   OK  title equip action
   OK  teams WIP
   OK  GUI ABI package stable
-  OK  GUI unused tank pierce blocked
 
 === Dead knobs must not be live-settable ===
   OK  Forge admin rejects tankDamage*
@@ -70,9 +77,8 @@
 
 === README alignment ===
   OK  README stock percents
-  OK  README STR/SKP + VIT
-  OK  README version 1.0.10
-  OK  GUI mobHealthScale invalid fallback 0.65
+  OK  README PWR/ENE + top-2
+  OK  README version 1.0.11
 
 === Summary ===
-PASS — intended features intact (56 checks, 0 warning(s))
+PASS — intended features intact (60 checks, 0 warning(s))
