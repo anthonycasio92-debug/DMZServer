@@ -658,8 +658,8 @@ public final class PlayerCombatProfile {
             return Math.max(1.0, 1.0 + (mult - 1.0) * 1.10);
         }
         if (cls.contains("tank") || cls.contains("paladin")) {
-            // RES is the player counter — don't inflate ATK to pierce tanks.
-            return Math.max(1.0, 1.0 + (mult - 1.0) * 0.35);
+            // RES + ki protection counter tanks — never inflate mob ATK to pierce them.
+            return 1.0;
         }
         if (cls.contains("warrior")) {
             return mult;
@@ -669,8 +669,7 @@ public final class PlayerCombatProfile {
         }
         return switch (style) {
             case MELEE, STRIKE -> mult;
-            case KI -> 1.0;
-            case TANK -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.35);
+            case KI, TANK -> 1.0;
             case HYBRID -> Math.max(1.0, 1.0 + (mult - 1.0) * 0.45);
         };
     }
@@ -854,8 +853,6 @@ public final class PlayerCombatProfile {
         h = mix(h, Math.round(liveCfg.mobHealthScale * 1000.0));
         h = mix(h, Math.round(liveCfg.transformScaleWeight * 1000.0));
         h = mix(h, Math.round(liveCfg.transformScaleExponent * 1000.0));
-        h = mix(h, Math.round(liveCfg.tankDamageDefenseRatio * 1000.0));
-        h = mix(h, Math.round(liveCfg.tankDamageHealthRatio * 1000.0));
         h = mix(h, Math.round(liveCfg.defenseToArmorFactor * 1000.0));
         h = mix(h, Math.round(liveCfg.eliteStatMultiplier * 1000.0));
         h = mix(h, Math.round(liveCfg.bossStatMultiplier * 1000.0));
@@ -864,8 +861,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: future-race sanity clamps + race-tagged baselines.
-        h = mix(h, 22L);
+        // Formula revision: tank class ATK pierce removed; unused tankDamage* out of fingerprint.
+        h = mix(h, 23L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

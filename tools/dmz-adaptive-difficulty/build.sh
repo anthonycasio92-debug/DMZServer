@@ -59,9 +59,11 @@ javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
 echo "Built $JAR"
 jar tf "$JAR"
 
-# GUI reflection ABI — fail closed if Forge surface drifts from AdaptiveDifficultyGUI.
+# Fail-closed audits: GUI ABI + intended product features.
+HERE_SIM="$(cd "$(dirname "$0")" && pwd)/sim"
+python3 "$HERE_SIM/audit_features.py"
 if [[ -f "$ROOT/plugins/AdaptiveDifficultyGUI-${VERSION}.jar" ]]; then
-  python3 "$(cd "$(dirname "$0")" && pwd)/sim/audit_gui_abi.py"
+  python3 "$HERE_SIM/audit_gui_abi.py"
 else
   echo "WARN: AdaptiveDifficultyGUI-${VERSION}.jar missing — skip GUI ABI audit" >&2
 fi

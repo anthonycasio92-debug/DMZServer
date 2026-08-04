@@ -5,12 +5,14 @@ Clients do **not** need this jar to join.
 
 Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Player NBT root `dmz_adaptive_difficulty` and PlaceholderAPI `%dmzdiff_*%` are unchanged.
 
-**GUI ABI:** keep Forge `AdaptiveDifficultyMod.VERSION` = GUI `plugin.yml` version (both jars same). After build:
+**Audits** (run after build / before ship):
 
 ```bash
-python3 tools/dmz-adaptive-difficulty/sim/audit_gui_abi.py
+python3 tools/dmz-adaptive-difficulty/sim/audit_gui_abi.py   # Forge↔GUI reflection + version handshake
+python3 tools/dmz-adaptive-difficulty/sim/audit_features.py  # intended product features vs source
 ```
 
+Keep Forge `AdaptiveDifficultyMod.VERSION` = GUI `plugin.yml` version (both jars same).  
 Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fields, or Bukkit `openMenu*` / `openChestMenu*` entrypoints.
 
 ## Model

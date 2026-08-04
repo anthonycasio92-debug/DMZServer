@@ -295,18 +295,18 @@ public final class DifficultyConfig {
     public double weakStatCounterMult = 1.0;
     /**
      * Legacy pierce knob (unused in combat as of 3.3.35).
-     * Live floors use {@link #tankDamageDefenseRatio} / {@link #tankDamageHealthRatio}.
+     * Kept for config/admin compat; default has no combat effect.
      */
     public double weakDefensePierceMult = 1.75;
     /**
-     * Damage floor from player defense × tier % — stops DEF dumps from facing soft hits.
-     * Example: 0.55 → mob attack at least 55% of (defense × tierPercent) at full counter strength.
-     * Early tiers further damp this floor so 10–20% ladders stay near raw offense share.
+     * Legacy DEF pierce floor (unused in combat as of 1.0.8).
+     * Mob damage is soft STR/SKP × tier% then VIT hit-capped — RES + ki protection
+     * are the tank counters. Kept for JSON migrate/compat only.
      */
     public double tankDamageDefenseRatio = 0.55;
     /**
-     * Damage floor from player max HP × tier % — presses high-VIT tanks.
-     * Example: 0.020 → mob attack at least 2.0% of (maxHealth × tierPercent).
+     * Legacy VIT pierce floor (unused in combat as of 1.0.8).
+     * Kept for JSON migrate/compat only — see {@link #tankDamageDefenseRatio}.
      */
     public double tankDamageHealthRatio = 0.020;
     /**
@@ -385,7 +385,7 @@ public final class DifficultyConfig {
     public boolean enableClassCounters = true;
     /**
      * When true, mobs also counter the player's single highest invested combat stat
-     * (STR / SKP / RES / VIT / PWR).
+     * (STR / SKP / RES / VIT — never PWR/ENE).
      */
     public boolean enableStrongStatCounters = true;
     /** Strength of top-stat counter overlays (1.0 = off effect, higher = harder). */

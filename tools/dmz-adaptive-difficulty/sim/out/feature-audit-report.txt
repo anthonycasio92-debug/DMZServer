@@ -1,0 +1,78 @@
+=== Stock ladder / form / HP scale ===
+  OK  default unlockTier1EnemyMult — got 0.21
+  OK  default unlockTier2EnemyMult — got 0.42
+  OK  default unlockTier3EnemyMult — got 0.65
+  OK  default unlockTier4EnemyMult — got 0.90
+  OK  default unlockTier5EnemyMult — got 1.35
+  OK  default unlockTier6EnemyMult — got 1.60
+  OK  default unlockTier7EnemyMult — got 2.00
+  OK  default transformScaleWeight — got 0.55
+  OK  default transformScaleExponent — got 0.75
+  OK  default mobHealthScale — got 0.65
+  OK  default maxScaledMobsPerPlayer — got 5
+  OK  default eliteMinUnlockTier — got 4
+  OK  default mutationMinUnlockTier — got 5
+  OK  default adaptiveAiMinUnlockTier — got 1
+  OK  default enemyEvolutionMinUnlockTier — got 1
+  OK  default bossMechanicsMinUnlockTier — got 6
+  OK  default ancientCoinUpgradeChance — got 0.02
+  OK  default eliteChancePercent — got 2.25
+  OK  default mutationChancePercent — got 3.75
+  OK  default eliteStatMultiplier — got 1.50
+  OK  default deathResetsActiveDifficulty — got true
+
+=== Unlock gate / revoke ===
+  OK  prestige OR level eligibility
+  OK  reliable-sample revoke
+  OK  buy charges Ancient Coins
+
+=== Combat model (STR/SKP dmg, VIT HP, no PWR/ENE) ===
+  OK  STR/SKP-only offense comment+code
+  OK  VIT hit cap
+  OK  soft VIT HP
+  OK  PWR never scaled
+  OK  tank class does not inflate ATK
+  OK  CombatSanity clamps
+
+=== Form soft-curve / peel ===
+  OK  form soft curve
+  OK  DMZ addition peel
+
+=== Nearby scale + max 5 ===
+  OK  max slots ≤5
+  OK  maxScaledMobsPerPlayer clamped
+
+=== Exemptions ===
+  OK  saga/quest exempt
+  OK  Ender Dragon exempt
+  OK  SPAWNER exempt
+  OK  SDD exempt
+  OK  slime split exempt
+
+=== Personal / death / coins / admin ===
+  OK  personal participates gate
+  OK  death clears active tier
+  OK  logout keeps tier (save, no resetTemporary on logout)
+  OK  kill coin rewards
+  OK  system enabled gate
+  OK  whitelist gate
+
+=== Titles / teams stub / GUI ===
+  OK  title equip action
+  OK  teams WIP
+  OK  GUI ABI package stable
+  OK  GUI unused tank pierce blocked
+
+=== Dead knobs must not be live-settable ===
+  OK  Forge admin rejects tankDamage*
+  OK  config marks tankDamage unused
+  OK  targetMobDamage ignores tankDamage*
+
+=== README alignment ===
+  OK  README stock percents
+  OK  README STR/SKP + VIT
+  OK  README version 1.0.10
+  OK  GUI mobHealthScale invalid fallback 0.65
+
+=== Summary ===
+PASS — intended features intact (56 checks, 0 warning(s))

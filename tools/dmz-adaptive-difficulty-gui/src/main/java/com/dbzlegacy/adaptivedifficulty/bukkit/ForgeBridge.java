@@ -1340,7 +1340,8 @@ public final class ForgeBridge {
         }
         return switch (fieldName) {
             case "weakStatCounterMult", "weakDefensePierceMult",
-                 "specializationDamageTax", "raceCounterMult" -> true;
+                 "specializationDamageTax", "raceCounterMult",
+                 "tankDamageDefenseRatio", "tankDamageHealthRatio" -> true;
             default -> false;
         };
     }
@@ -1393,7 +1394,6 @@ public final class ForgeBridge {
                  "unlockTier1EnemyMult", "unlockTier2EnemyMult", "unlockTier3EnemyMult",
                  "unlockTier4EnemyMult", "unlockTier5EnemyMult", "unlockTier6EnemyMult",
                  "unlockTier7EnemyMult",
-                 "tankDamageDefenseRatio", "tankDamageHealthRatio",
                  "enableClassCounters", "enableStrongStatCounters",
                  "strongStatCounterMult", "classCounterDamageMult",
                  "classCounterHealthMult", "classCounterArmorMult",
@@ -1408,8 +1408,8 @@ public final class ForgeBridge {
                  "eliteMinUnlockTier", "mutationMinUnlockTier",
                  "adaptiveAiMinUnlockTier", "enemyEvolutionMinUnlockTier",
                  "bossMechanicsMinUnlockTier" -> true;
-            // Legacy unused-as-of-3.3.35: weakStatCounterMult, weakDefensePierceMult,
-            // specializationDamageTax, raceCounterMult — not live-settable.
+            // Legacy unused: weakStatCounterMult, weakDefensePierceMult,
+            // specializationDamageTax, raceCounterMult, tankDamage* — not live-settable.
             default -> false;
         };
     }
@@ -1431,7 +1431,8 @@ public final class ForgeBridge {
                 }
                 case "mobHealthScale" -> {
                     double h = ((Number) parsed).doubleValue();
-                    yield h <= 0.0 || h > 4.0 ? 0.5 : h;
+                    // Match DifficultyConfig.sanitizeLive stock default.
+                    yield h <= 0.0 || h > 4.0 ? 0.65 : h;
                 }
                 case "maxFormBoost" -> {
                     double m = ((Number) parsed).doubleValue();
@@ -1523,10 +1524,6 @@ public final class ForgeBridge {
                 case "transformScaleExponent" -> {
                     double m = ((Number) parsed).doubleValue();
                     yield Math.max(0.20, Math.min(1.0, m));
-                }
-                case "tankDamageDefenseRatio", "tankDamageHealthRatio" -> {
-                    double m = ((Number) parsed).doubleValue();
-                    yield Math.max(0.0, Math.min(10.0, m));
                 }
                 case "defenseToArmorFactor" -> {
                     double m = ((Number) parsed).doubleValue();
