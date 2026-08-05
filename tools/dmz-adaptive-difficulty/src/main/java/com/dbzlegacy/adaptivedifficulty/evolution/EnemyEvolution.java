@@ -384,23 +384,30 @@ public final class EnemyEvolution {
         }
 
         // Close-range shock pulse — Elite+ painted ATK so melee threaten without contact RNG.
+        // Shares dmz_ad_melee_kit with slam so T6 openers cannot double-claim landing fills.
         long shockCd = kitCd(mob, power >= DifficultyTier.MYTHIC.ordinalPower() ? 28
                 : power >= DifficultyTier.GOD.ordinalPower() ? 36 : 48);
+        boolean meleeKitReady = age - tag.m_128454_("dmz_ad_melee_kit") >= 16;
         if (dist < 3.8 && power >= DifficultyTier.ELITE.ordinalPower()
+                && meleeKitReady
                 && age - tag.m_128454_("dmz_ad_melee_shock") > shockCd) {
             tag.m_128356_("dmz_ad_melee_shock", age);
-            double ratio = power >= DifficultyTier.OMEGA.ordinalPower() ? 0.72
-                    : power >= DifficultyTier.GOD.ordinalPower() ? 0.60
-                    : power >= DifficultyTier.MASTER.ordinalPower() ? 0.52 : 0.42;
+            tag.m_128356_("dmz_ad_melee_kit", age);
+            double ratio = power >= DifficultyTier.OMEGA.ordinalPower() ? 0.55
+                    : power >= DifficultyTier.GOD.ordinalPower() ? 0.48
+                    : power >= DifficultyTier.MASTER.ordinalPower() ? 0.40 : 0.35;
             paintedMeleeHit(mob, target, (float) ratio);
         }
 
         // Ground slam — Advanced+; more frequent Impossible+ / vs tanks
         long slamEvery = kitCd(mob, power >= DifficultyTier.IMPOSSIBLE.ordinalPower() ? 30
                 : power >= DifficultyTier.DIVINE.ordinalPower() ? 42 : 58);
+        meleeKitReady = age - tag.m_128454_("dmz_ad_melee_kit") >= 16;
         if (dist < 3.8 && power >= DifficultyTier.ADVANCED.ordinalPower()
+                && meleeKitReady
                 && age - tag.m_128454_("dmz_ad_slam") > slamEvery) {
             tag.m_128356_("dmz_ad_slam", age);
+            tag.m_128356_("dmz_ad_melee_kit", age);
             int amp = power >= DifficultyTier.OMEGA.ordinalPower() ? 2 : 1;
             groundSlam(mob, target, 3.2 + Math.min(2.2, power * 0.12), amp);
             if (power >= DifficultyTier.ABSOLUTE.ordinalPower() && target instanceof ServerPlayer sp) {
@@ -947,7 +954,8 @@ public final class EnemyEvolution {
         target.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 60, slowAmp, false, true));
         target.m_5997_(0, 0.35, 0);
         // Painted ATK slice — slam was control-only before, so melee felt toothless vs ki kits.
-        paintedMeleeHit(mob, target, 0.55f);
+        // 1.0.32: 0.55→0.40 — with landing-fill, old ratio stacked into T6 opener melts.
+        paintedMeleeHit(mob, target, 0.40f);
         NearbyPlayers.forEachWithin(mob, radius, p -> {
             if (p != target) {
                 p.m_7292_(new MobEffectInstance(MobEffects.f_19597_, 40, 0, false, true));
