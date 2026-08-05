@@ -86,8 +86,8 @@
 - ✅ VIT dump T5 ≥ 60% of even bag pressure — vit=0.444 even=0.468
 - ✅ tank class T5 bag pressure ≥ 28% — hitFrac=0.468 dmg=337
 - ✅ RES dump uses DEF floor (or near-cap) — floor=True cap=True dmg=166
-- ✅ STR dump pack sponge ≥ 0.35 soft hits — softHits=0.65 mobHp=1703 softOffShare=2618
-- ✅ stock mobHealthScale 1.15 — got 1.15
+- ✅ STR dump pack sponge ≥ 0.35 soft hits — softHits=0.52 mobHp=1363 softOffShare=2618
+- ✅ stock mobHealthScale 0.92 — got 0.92
 - ✅ stock transformScaleWeight 0.65 — got 0.65
 
 ## 7) Full pack race/form sim

@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.28)
+# AdaptiveDifficulty (v1.0.29)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -38,8 +38,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.28.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.28.jar`
+1. `mods/AdaptiveDifficulty-1.0.29.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.29.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -87,6 +87,10 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Stock `tierCostLevelDivisor` is **50000** (was 1000) so a DMZ 100k player pays ~15× Gold for T7 instead of a ladder-inflated Emerald pile. Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
+### Economy (1.0.29)
+Stock `mobHealthScale` **1.15 → 0.92** (80% of prior HP sponge). Mob damage,
+defense, and other attrs are unchanged — only max HP / TP-from-kill pace.
+
 ### Live balance (1.0.28)
 Retuned from claimed hits in `hits-2026-08-05.jsonl` (8821 hits):
 - Raise T1–T2 landing / hit-cap bite (T1 high-form packs were ~11% bag)
@@ -146,6 +150,6 @@ Tuned from whitelist combat telemetry (`hits-2026-08-04.jsonl`):
 - Side channels (creeper boom, gravity, early kiblasts) also follow tier%/unlock — not absolute offense proxy. Creeper explosions bake from painted attack damage (like kiblasts) so T1–T2 blasts are not cancelled to 0 by DMZ DEF.
 - Mob ki blasts/lasers/beams use the mob’s scaled attack damage (not vanilla 3–72), so DMZ DEF mitigation no longer cancels them to 0. Early unlock kiblasts are soft-ratio’d (~60% at T1–T2).
 - **Counters:** fighting class + top-2 combat stats; intensity scales with tier%. No race / weak / specialization stacks. Toggles: `enableClassCounters`, `enableStrongStatCounters`.
-- Scaled mob HP sponge stock **115%** (`mobHealthScale`) with a stronger offense durability floor so glass STR/PWR dumps trade hits. Elite rarity mult stock 1.50×.
+- Scaled mob HP sponge stock **92%** (`mobHealthScale`, was 115%) with a stronger offense durability floor so glass STR/PWR dumps trade hits. Elite rarity mult stock 1.50×.
 - Old NBT wallet balances migrate into Copper Ancient coins once per login.
 - AI + Enemy Evolution kits deepen with Buy Tier but stay **silent** (no kit nameplate/glow). Only true rarity rolls get cosmetics: Elite (`✦ Elite …`), Mutation (`§d…`), Boss (`☠ Boss …`). Kit bands: T1 Awakened · T2 Awakened→Enhanced · T3 Enhanced→Elite · T4 Advanced→Master · T5 Master→Divine · T6 Legendary→Mythic · T7 God→Zenith. Stock rarity chances: elite **2.25%**, mutation **3.75%** (bosses are natural T6+ hostiles — no % roll).

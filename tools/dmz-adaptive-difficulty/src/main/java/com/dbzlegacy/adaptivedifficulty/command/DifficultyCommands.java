@@ -909,7 +909,7 @@ public final class DifficultyCommands {
                         cfg.tankDamageHealthRatio = Math.max(0.0, Math.min(1.0, Double.parseDouble(value)));
                 case "mobhealthscale", "hpscale" -> {
                     double h = Double.parseDouble(value);
-                    cfg.mobHealthScale = (h <= 0.0 || h > 4.0) ? 1.15 : h;
+                    cfg.mobHealthScale = (h <= 0.0 || h > 4.0) ? 0.92 : h;
                 }
                 case "enableclasscounters", "classcounters" ->
                         cfg.enableClassCounters = Boolean.parseBoolean(value)
