@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.25", 'VERSION = "1.0.25"' in mod)
+    check("VERSION 1.0.26", 'VERSION = "1.0.26"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -116,6 +116,7 @@ def main() -> int:
         "deathResetsActiveDifficulty": "true",
         "enableClassCounters": "true",
         "enableStrongStatCounters": "true",
+        "tierCostLevelDivisor": "50_000.0",
     }
     for name, want in expected.items():
         got = field_default(cfg, name)
@@ -260,6 +261,8 @@ def main() -> int:
     check("fill-to-landing floor", "preAmount < land)" in events and "land * 0.45" not in events)
     check("progressive soft-caps", "case 4 -> 0.48" in events and "case 7 -> 0.58" in events)
     check("README 1.0.25 balance", "1.0.25" in readme and "T4 tank" in readme)
+    check("README 1.0.26 tier costs", "1.0.26" in readme and "tierCostLevelDivisor" in readme)
+    check("tierCostDivisorMigratedV1", "tierCostDivisorMigratedV1" in cfg)
 
     print("\n=== Ghost scaling fix (1.0.23) ===")
     check(
@@ -275,7 +278,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.25", "1.0.25" in readme)
+    check("README version 1.0.26", "1.0.26" in readme)
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")

@@ -4,12 +4,12 @@ license = "MIT"
 
 [[mods]]
 modId = "adaptivedifficulty"
-version = "1.0.25"
+version = "1.0.26"
 displayName = "AdaptiveDifficulty"
 authors = "DBZ Legacy Reborn"
 displayTest = "IGNORE_SERVER_VERSION"
 description = '''
-Server-side AdaptiveDifficulty for DragonMineZ (1.0.25).
+Server-side AdaptiveDifficulty for DragonMineZ (1.0.26).
 Unlock tiers bought with Lightman's Ancient Coins, nearby mobs scale to
 player fight stats × tier %, titles, gated elites/mutations/AI/boss.
 '''

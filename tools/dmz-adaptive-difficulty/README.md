@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.25)
+# AdaptiveDifficulty (v1.0.26)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -12,6 +12,7 @@ python3 tools/dmz-adaptive-difficulty/sim/audit_gui_abi.py   # Forge↔GUI refle
 python3 tools/dmz-adaptive-difficulty/sim/audit_features.py  # intended product features vs source
 python3 tools/dmz-adaptive-difficulty/sim/validate_scaling.py # PWR/ENE + class/top-2 combat sim
 python3 tools/dmz-adaptive-difficulty/sim/simulate_race_forms.py --check  # full race/form pack
+python3 tools/dmz-adaptive-difficulty/sim/validate_tier_costs.py  # buy-cost ladder at unlock / 100k
 ```
 
 Keep Forge `AdaptiveDifficultyMod.VERSION` = GUI `plugin.yml` version (both jars same).  
@@ -37,8 +38,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.25.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.25.jar`
+1. `mods/AdaptiveDifficulty-1.0.26.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.26.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -83,9 +84,14 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Coin ladder values: Copper 1 → Iron 10 → Gold 100 → Emerald 1k → Diamond 10k → Netherite 100k (9 letter variants equal). Lapis / Ender Pearl unused.
 - Example: a 1× Iron cost can be paid with 10+ Copper, or 1× Gold (overpay returned as change).
 - Tier costs cap at 128 of one coin type, then promote to the next denomination (rounded up; top = 128× Netherite).
-- Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
+- Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Stock `tierCostLevelDivisor` is **50000** (was 1000) so a DMZ 100k player pays ~15× Gold for T7 instead of a ladder-inflated Emerald pile. Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
+### Bugfix (1.0.26)
+Tier buy costs at DMZ ~100k: stock `tierCostLevelDivisor` 1000 → 50000 so excess
+scaling no longer makes T6 ≫ T7 at God unlock (monotonic floor was dragging T7 to
+~33× Emerald). Buying T7 at unlock is ~15× Gold again.
+
 ### Bugfix (1.0.25)
 Post-pierce mob ATK clamped to the live incoming soft-cap so high-DEF god forms
 no longer paint hitFrac ≫ 0.75 (race/form audit). Soft-cap event path unchanged.

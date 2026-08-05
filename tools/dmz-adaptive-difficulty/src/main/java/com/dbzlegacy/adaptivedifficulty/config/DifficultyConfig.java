@@ -252,10 +252,14 @@ public final class DifficultyConfig {
     /**
      * Tier purchase cost scales with how far above the tier's unlock level the
      * player is: {@code base × (1 + max(0, dmzLevel - requiredLevel) / divisor)}.
-     * Buying at the unlock threshold ≈ base cost (T7 is no longer 100×+ at lvl 100k).
-     * Default 1000 → 1000 levels above unlock ≈ 2× base.
+     * Buying at the unlock threshold ≈ base cost.
+     * <p>
+     * Default {@code 50000} matches the T6→T7 unlock gap so a player at DMZ 100k
+     * pays ~T7 base (15× Gold), not a ladder-inflated mid-tier pile. The old
+     * {@code 1000} divisor made T6 ≈ 51× base at 100k, then the monotonic floor
+     * dragged T7 to ~33× Emerald.
      */
-    public double tierCostLevelDivisor = 1_000.0;
+    public double tierCostLevelDivisor = 50_000.0;
     /**
      * Nearby-mob scale vs the player's post-transform / limit-release stats.
      * Defaults (1.0.1): T1 21% · T2 42% · T3 65% · T4 90% · T5 135% · T6 160% · T7 200%.
@@ -401,6 +405,12 @@ public final class DifficultyConfig {
      * Only rewrites the stock cost ladder / T1 level gate; custom admin values kept.
      */
     public Boolean starterCopperCostMigratedV1 = Boolean.FALSE;
+    /**
+     * One-time (1.0.26): stock {@code tierCostLevelDivisor} 1000 → 50000 so T7 at
+     * unlock stays near base (excess scaling no longer inverts T6≫T7).
+     * Custom admin divisors are kept.
+     */
+    public Boolean tierCostDivisorMigratedV1 = Boolean.FALSE;
     /**
      * Bumped on every live sanitize/reload so claimed-mob NBT signatures cannot
      * early-return with stale paint after admin retunes.
@@ -1111,8 +1121,16 @@ public final class DifficultyConfig {
         if (cfg.hardCapDifficulty < 0L || cfg.hardCapDifficulty == 1_000_000L) {
             cfg.hardCapDifficulty = 0L;
         }
+        // 1.0.26: stock divisor 1000 made T6≫T7 at DMZ 100k; ladder floor then
+        // inflated God-tier buys far above the documented unlock≈base price.
+        if (!Boolean.TRUE.equals(cfg.tierCostDivisorMigratedV1)) {
+            if (nearly(cfg.tierCostLevelDivisor, 1_000.0)) {
+                cfg.tierCostLevelDivisor = 50_000.0;
+            }
+            cfg.tierCostDivisorMigratedV1 = Boolean.TRUE;
+        }
         if (cfg.tierCostLevelDivisor < 1.0) {
-            cfg.tierCostLevelDivisor = 1_000.0;
+            cfg.tierCostLevelDivisor = 50_000.0;
         }
         if (cfg.ancientCoinUpgradeChance < 0.0 || cfg.ancientCoinUpgradeChance > 1.0) {
             cfg.ancientCoinUpgradeChance = 0.02;
