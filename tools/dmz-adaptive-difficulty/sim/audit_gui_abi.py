@@ -107,6 +107,9 @@ OPTIONAL_METHODS = {
         ("activationCost", ""),
         ("maxDifficulty", ""),
         ("activationCostForLevel", "int"),
+        ("requiredDmzLevel", ""),
+        ("requiredPrestige", ""),
+        ("requirementTip", ""),
     ],
     "com.dbzlegacy.adaptivedifficulty.title.TitleSystem": [
         ("activeDisplay", "ServerPlayer"),

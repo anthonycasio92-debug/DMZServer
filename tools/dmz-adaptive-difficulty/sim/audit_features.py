@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.26", 'VERSION = "1.0.26"' in mod)
+    check("VERSION 1.0.27", 'VERSION = "1.0.27"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -263,6 +263,11 @@ def main() -> int:
     check("README 1.0.25 balance", "1.0.25" in readme and "T4 tank" in readme)
     check("README 1.0.26 tier costs", "1.0.26" in readme and "tierCostLevelDivisor" in readme)
     check("tierCostDivisorMigratedV1", "tierCostDivisorMigratedV1" in cfg)
+    unlock_tier = read(SRC / "com/dbzlegacy/adaptivedifficulty/tier/UnlockTier.java")
+    cmi_gui = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/CmiDifficultyGui.java")
+    check("UnlockTier.requirementTip", "requirementTip" in unlock_tier and "requiredPrestige" in unlock_tier)
+    check("GUI shows DMZ or Prestige req", "Need &fDMZ" in cmi_gui and "_req_level" in bridge)
+    check("README 1.0.27 unlock req UX", "1.0.27" in readme and "Need DMZ" in readme)
 
     print("\n=== Ghost scaling fix (1.0.23) ===")
     check(
@@ -278,7 +283,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.26", "1.0.26" in readme)
+    check("README version 1.0.27", "1.0.27" in readme)
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")

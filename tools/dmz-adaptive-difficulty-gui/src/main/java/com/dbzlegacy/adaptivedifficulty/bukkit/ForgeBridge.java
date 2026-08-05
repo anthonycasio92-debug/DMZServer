@@ -41,6 +41,9 @@ public final class ForgeBridge {
     private static Method unlockTierActivationCost;
     private static Method unlockTierActivationCostForLevel;
     private static Method unlockTierMaxDifficulty;
+    private static Method unlockTierRequiredDmzLevel;
+    private static Method unlockTierRequiredPrestige;
+    private static Method unlockTierRequirementTip;
     private static Method titleActiveDisplay;
     private static Method titleActiveId;
     private static Method titleHas;
@@ -245,6 +248,15 @@ public final class ForgeBridge {
                             }
                         }
                         out.put("tier_" + id + "_unlocked", unlocked ? "true" : "false");
+                        long reqLevel = resolveTierRequiredLevel(ut, id);
+                        int reqPrestige = resolveTierRequiredPrestige(ut, id);
+                        String reqTip = resolveTierRequirementTip(ut, reqLevel, reqPrestige);
+                        out.put("tier_" + id + "_req_level", String.valueOf(reqLevel));
+                        out.put("tier_" + id + "_req_prestige", String.valueOf(reqPrestige));
+                        out.put("tier_" + id + "_req", reqTip);
+                        out.put("unlock_tier_" + id + "_req_level", String.valueOf(reqLevel));
+                        out.put("unlock_tier_" + id + "_req_prestige", String.valueOf(reqPrestige));
+                        out.put("unlock_tier_" + id + "_req", reqTip);
                         Object defaultMax = field(ut, "defaultMaxDifficulty");
                         out.put("unlock_tier_" + id + "_max", String.valueOf(defaultMax));
                         if (unlockTierById != null && unlockTierMaxDifficulty != null) {
@@ -285,6 +297,65 @@ public final class ForgeBridge {
             out.put("player_allowed", "false");
         }
         return out;
+    }
+
+    private static long resolveTierRequiredLevel(Object unlockTier, int tierId) {
+        try {
+            if (unlockTierRequiredDmzLevel != null && unlockTier != null) {
+                Object v = unlockTierRequiredDmzLevel.invoke(unlockTier);
+                if (v instanceof Number n) {
+                    return Math.max(0L, n.longValue());
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            Object fallback = field(unlockTier, "defaultRequiredLevel");
+            if (fallback instanceof Number n) {
+                return Math.max(0L, n.longValue());
+            }
+        } catch (Throwable ignored) {
+        }
+        // Stock gates when reflection fails.
+        return switch (tierId) {
+            case 1 -> 1L;
+            case 2 -> 500L;
+            case 3 -> 1_000L;
+            case 4 -> 5_000L;
+            case 5 -> 10_000L;
+            case 6 -> 50_000L;
+            case 7 -> 100_000L;
+            default -> 0L;
+        };
+    }
+
+    private static int resolveTierRequiredPrestige(Object unlockTier, int tierId) {
+        try {
+            if (unlockTierRequiredPrestige != null && unlockTier != null) {
+                Object v = unlockTierRequiredPrestige.invoke(unlockTier);
+                if (v instanceof Number n) {
+                    return Math.max(0, n.intValue());
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return Math.max(0, tierId);
+    }
+
+    private static String resolveTierRequirementTip(Object unlockTier, long reqLevel, int reqPrestige) {
+        try {
+            if (unlockTierRequirementTip != null && unlockTier != null) {
+                Object tip = unlockTierRequirementTip.invoke(unlockTier);
+                if (tip != null) {
+                    String text = String.valueOf(tip).trim();
+                    if (!text.isEmpty()) {
+                        return text;
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return "DMZ " + reqLevel + " or Prestige " + reqPrestige;
     }
 
     private static long resolveTierCost(Object unlockTier, Object nmsPlayer, int dmzLevel) {
@@ -1266,12 +1337,30 @@ public final class ForgeBridge {
                     } catch (NoSuchMethodException ignored) {
                         unlockTierActivationCostForLevel = null;
                     }
+                    try {
+                        unlockTierRequiredDmzLevel = unlockTierCls.getMethod("requiredDmzLevel");
+                    } catch (NoSuchMethodException ignored) {
+                        unlockTierRequiredDmzLevel = null;
+                    }
+                    try {
+                        unlockTierRequiredPrestige = unlockTierCls.getMethod("requiredPrestige");
+                    } catch (NoSuchMethodException ignored) {
+                        unlockTierRequiredPrestige = null;
+                    }
+                    try {
+                        unlockTierRequirementTip = unlockTierCls.getMethod("requirementTip");
+                    } catch (NoSuchMethodException ignored) {
+                        unlockTierRequirementTip = null;
+                    }
                 } catch (Throwable missing) {
                     unlockTierValues = null;
                     unlockTierById = null;
                     unlockTierActivationCost = null;
                     unlockTierActivationCostForLevel = null;
                     unlockTierMaxDifficulty = null;
+                    unlockTierRequiredDmzLevel = null;
+                    unlockTierRequiredPrestige = null;
+                    unlockTierRequirementTip = null;
                 }
                 try {
                     Class<?> titleSys = loadClass(

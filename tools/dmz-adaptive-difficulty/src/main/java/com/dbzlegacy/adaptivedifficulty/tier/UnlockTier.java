@@ -42,6 +42,19 @@ public enum UnlockTier {
         return DifficultyConfig.get().tierRequiredLevel(id);
     }
 
+    /**
+     * Prestige skill level that bypasses the DMZ level gate
+     * ({@link UnlockSystem}: prestige ≥ tier id).
+     */
+    public int requiredPrestige() {
+        return id;
+    }
+
+    /** Short unlock gate for GUI / chat: {@code DMZ 100000 or Prestige 7}. */
+    public String requirementTip() {
+        return "DMZ " + requiredDmzLevel() + " or Prestige " + requiredPrestige();
+    }
+
     public long maxDifficulty() {
         return DifficultyConfig.get().tierMaxDifficulty(id);
     }

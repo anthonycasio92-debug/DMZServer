@@ -146,9 +146,11 @@ public final class DifficultyChatMenu {
             send(player, btn("§7« Back", "/difficulty do page main", "Return"));
             return;
         }
+        int prestige = DmzProgression.prestige(player);
         send(player, Component.m_237113_("§7Current §f" + (active <= 0 ? "None" : ("T" + active))
                 + "  §8·  §7DMZ §f" + level
-                + "  §8·  §7Costs scale with your level"));
+                + "  §8·  §7Prestige §f" + prestige));
+        send(player, Component.m_237113_("§8Unlock with §fDMZ level §8OR §fPrestige §8(either one). Costs scale with level."));
         send(player, Component.m_237113_("§8Ancient Coins — pay-up OK (lower/higher coins OK), change returned."));
         send(player, Component.m_237113_("§f" + AncientCoinEconomy.inventoryBreakdown(player)));
         send(player, Component.m_237113_(""));
@@ -168,7 +170,7 @@ public final class DifficultyChatMenu {
                                 "Pay Ancient Coins for Tier " + tier.id + " (pay-up OK, change returned)"));
             } else {
                 line = line.m_7220_(Component.m_237113_(
-                        " §cLOCKED §8(DMZ " + tier.requiredDmzLevel() + " or Prestige " + tier.id + ")"));
+                        " §cLOCKED §8(" + tier.requirementTip() + ")"));
             }
             send(player, line);
         }

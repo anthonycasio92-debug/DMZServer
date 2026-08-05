@@ -219,8 +219,7 @@ public final class DifficultyActions {
         // Live gate — unlock bits alone are not enough after prestige/level reset.
         if (!UnlockSystem.isEligible(player, tier) || !data.hasUnlockedTier(tier.id)) {
             openGui(player, returnPage);
-            return Result.fail("Tier " + tier.id + " locked. Need DMZ " + tier.requiredDmzLevel()
-                    + " or Prestige " + tier.id + ".");
+            return Result.fail("Tier " + tier.id + " locked. Need " + tier.requirementTip() + ".");
         }
         int current = data.getActiveTier();
         if (current == tier.id) {
@@ -274,8 +273,8 @@ public final class DifficultyActions {
         }
         if (!UnlockSystem.isEligible(player, tier) || !data.hasUnlockedTier(tier.id)) {
             openGui(player, returnPage);
-            return Result.fail("Tier " + tier.id + " is not unlocked. Need DMZ "
-                    + tier.requiredDmzLevel() + " or Prestige " + tier.id + ".");
+            return Result.fail("Tier " + tier.id + " is not unlocked. Need "
+                    + tier.requirementTip() + ".");
         }
         if (data.getActiveTier() == tier.id) {
             openGui(player, returnPage);

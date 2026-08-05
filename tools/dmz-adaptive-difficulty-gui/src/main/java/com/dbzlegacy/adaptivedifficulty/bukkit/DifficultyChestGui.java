@@ -147,6 +147,9 @@ public final class DifficultyChestGui implements Listener {
         info.add("&7DMZ Level &f" + ph.getOrDefault("level", "?")
                 + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"));
         info.add("");
+        info.add("&eUnlock with DMZ level &7OR &ePrestige");
+        info.add("&8Either one qualifies — prestige is not required");
+        info.add("");
         info.addAll(coinLore(ph));
         info.add("");
         info.add("&8Costs scale with your DMZ level");
@@ -343,6 +346,12 @@ public final class DifficultyChestGui implements Listener {
             boolean active = activeTier == t;
             List<String> tip = new ArrayList<>();
             tip.add("&7" + name);
+            String reqTip = ph.getOrDefault("tier_" + t + "_req",
+                    "DMZ " + ph.getOrDefault("tier_" + t + "_req_level", "?")
+                            + " or Prestige " + ph.getOrDefault("tier_" + t + "_req_prestige",
+                            String.valueOf(t)));
+            String reqLevel = ph.getOrDefault("tier_" + t + "_req_level", "?");
+            String reqPrestige = ph.getOrDefault("tier_" + t + "_req_prestige", String.valueOf(t));
             if (buyMode) {
                 tip.add("&7Cost &e" + cost);
                 tip.add("&8Scaled for your DMZ level");
@@ -355,7 +364,11 @@ public final class DifficultyChestGui implements Listener {
             } else if (!buyMode && unlocked && t < activeTier) {
                 tip.add("&aOwned &8· click to lower here");
             } else if (!unlocked) {
-                tip.add("&cLocked &8· need DMZ level or Prestige " + t);
+                tip.add("&cLocked");
+                tip.add("&7Need &fDMZ " + reqLevel + " &7or &fPrestige " + reqPrestige);
+                tip.add("&8" + reqTip);
+                tip.add("&8You: DMZ " + ph.getOrDefault("level", "?")
+                        + " · Prestige " + ph.getOrDefault("prestige", "?"));
             } else if (!buyMode) {
                 tip.add("&8Higher than current — use Buy");
             }

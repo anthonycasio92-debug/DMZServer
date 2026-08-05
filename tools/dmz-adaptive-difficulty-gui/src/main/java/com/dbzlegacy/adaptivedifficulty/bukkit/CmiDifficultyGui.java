@@ -183,6 +183,9 @@ public final class CmiDifficultyGui {
         infoLore.add("&7DMZ Level &f" + ph.getOrDefault("level", "?")
                 + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"));
         infoLore.add("");
+        infoLore.add("&eUnlock with DMZ level &7OR &ePrestige");
+        infoLore.add("&8Either one qualifies — prestige is not required");
+        infoLore.add("");
         infoLore.addAll(coinLore(ph));
         infoLore.add("");
         infoLore.add("&8Costs scale with your DMZ level");
@@ -410,6 +413,12 @@ public final class CmiDifficultyGui {
             boolean active = activeTier == t;
             List<String> lore = new ArrayList<>();
             lore.add("&7" + name);
+            String reqTip = ph.getOrDefault("tier_" + t + "_req",
+                    "DMZ " + ph.getOrDefault("tier_" + t + "_req_level", "?")
+                            + " or Prestige " + ph.getOrDefault("tier_" + t + "_req_prestige",
+                            String.valueOf(t)));
+            String reqLevel = ph.getOrDefault("tier_" + t + "_req_level", "?");
+            String reqPrestige = ph.getOrDefault("tier_" + t + "_req_prestige", String.valueOf(t));
             if (buyMode) {
                 lore.add("&7Cost &e" + cost);
                 lore.add("&8Scaled for your DMZ level");
@@ -422,7 +431,11 @@ public final class CmiDifficultyGui {
             } else if (!buyMode && unlocked && t < activeTier) {
                 lore.add("&aOwned &8· click to lower here");
             } else if (!unlocked) {
-                lore.add("&cLocked &8· need DMZ level or Prestige " + t);
+                lore.add("&cLocked");
+                lore.add("&7Need &fDMZ " + reqLevel + " &7or &fPrestige " + reqPrestige);
+                lore.add("&8" + reqTip);
+                lore.add("&8You: DMZ " + ph.getOrDefault("level", "?")
+                        + " · Prestige " + ph.getOrDefault("prestige", "?"));
             } else if (!buyMode) {
                 lore.add("&8Higher than current — use Buy");
             }
