@@ -138,8 +138,8 @@ def main() -> int:
     check("strong-stat top-2 combine", has(profile, "combineTopStatBiases", "0.60"))
     check("VIT hit cap kept", has(profile, "kiProtectionHitFrac", "targetMobDamage", "hitCap"))
     check(
-        "raised hit-cap budgets (1.0.21)",
-        "case 1 -> 0.26" in profile and "default -> 0.64" in profile and "formFactor = 0.78" in profile,
+        "raised hit-cap budgets (1.0.24)",
+        "case 1 -> 0.26" in profile and "default -> 0.70" in profile and "formFactor = 0.78" in profile,
     )
     check("live-bag landing ladder", "liveMaxHealth" in profile and "landFrac" in profile)
     check("T3 god-form pierce", "activeTier >= 3 && formBoost >= 6.0" in profile or "formBoost >= 6.0" in profile)
