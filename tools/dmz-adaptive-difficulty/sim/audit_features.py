@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.30", 'VERSION = "1.0.30"' in mod)
+    check("VERSION 1.0.31", 'VERSION = "1.0.31"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -296,7 +296,16 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.30", "1.0.30" in readme)
+    check("README version 1.0.31", "1.0.31" in readme)
+
+    print("\n=== Ghast aim fix (1.0.31) ===")
+    ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
+    check("large blast cast 0", "setupKiLargeBlast(" in ki and ", 0);" in ki)
+    check("large blast launchToward", "fireLargeBlast" in ki and "launchToward(blast, shooter, target, speed)" in ki)
+    check("laser/beam launchToward", "launchToward(laser" in ki and "launchToward(wave" in ki)
+    check("faceTarget public", "public static void faceTarget" in ki)
+    check("ghastTick faceTarget", "KiAttackHelper.faceTarget(ghast, target)" in evo)
+    check("README ghast aim", "Ghast" in readme and ("aim" in readme.lower() or "look" in readme.lower()))
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")

@@ -75,11 +75,13 @@ public final class KiAttackHelper {
             float speed = 1.05f + Math.min(0.5f, tier.ordinalPower() * 0.04f);
             float size = 1.6f + Math.min(1.2f, tier.ordinalPower() * 0.08f);
             KiBlastEntity blast = new KiBlastEntity(shooter.m_9236_(), shooter);
-            // Cast-then-fire path; aim the caster so fireHability shoots at the player.
-            int cast = Math.max(6, 16 - tier.ordinalPower());
+            // Cast must be 0 for mobs: fireHability() uses owner look angle, and flying AI
+            // (especially Ghasts) overwrites aim during a multi-tick cast.
             blast.setupKiLargeBlast(
-                    shooter, damage, speed, COLOR_LARGE, COLOR_BORDER, COLOR_OUTLINE, size, cast);
+                    shooter, damage, speed, COLOR_LARGE, COLOR_BORDER, COLOR_OUTLINE, size, 0);
             hardenAgainstWalls(blast);
+            // Direct velocity — same path as small blasts; do not rely on look alone.
+            launchToward(blast, shooter, target, speed);
             return true;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
@@ -100,12 +102,13 @@ public final class KiAttackHelper {
             aimAt(shooter, target);
             float damage = baseDamage(shooter, tier, burning ? 1.15f : 1.05f);
             float speed = 1.6f + Math.min(0.6f, tier.ordinalPower() * 0.05f);
-            int cast = Math.max(4, 14 - tier.ordinalPower());
             int main = burning ? COLOR_BURN : COLOR_MAIN;
             int border = burning ? COLOR_BURN_BORDER : COLOR_BORDER;
             KiLaserEntity laser = new KiLaserEntity(shooter.m_9236_(), shooter);
-            laser.setupKiLaser(shooter, damage, speed, main, border, COLOR_OUTLINE, cast);
+            // Instant cast + launchToward — mob look drifts during cast (Ghast flight AI).
+            laser.setupKiLaser(shooter, damage, speed, main, border, COLOR_OUTLINE, 0);
             hardenAgainstWalls(laser);
+            launchToward(laser, shooter, target, speed);
             if (burning) {
                 target.m_20254_(5);
             }
@@ -131,12 +134,13 @@ public final class KiAttackHelper {
             float damage = baseDamage(shooter, tier, charged ? 1.35f : 1.15f);
             float speed = charged ? 0.95f : 1.15f;
             float size = charged ? 1.4f : 0.9f;
-            int cast = charged ? 28 : 16;
             int main = burning ? COLOR_BURN : (charged ? COLOR_CHARGED : COLOR_MAIN);
             int border = burning ? COLOR_BURN_BORDER : COLOR_BORDER;
             KiWaveEntity wave = new KiWaveEntity(shooter.m_9236_(), shooter);
-            wave.setupKiWave(shooter, damage, speed, main, border, COLOR_OUTLINE, size, cast);
+            // Instant cast + launchToward — same look-drift fix as large blasts.
+            wave.setupKiWave(shooter, damage, speed, main, border, COLOR_OUTLINE, size, 0);
             hardenAgainstWalls(wave);
+            launchToward(wave, shooter, target, speed);
             if (burning) {
                 target.m_20254_(charged ? 7 : 5);
             }
@@ -294,6 +298,17 @@ public final class KiAttackHelper {
             projectile.setHomingTarget(-1);
         } catch (Throwable ignored) {
         }
+    }
+
+    /**
+     * Keep a flying / ranged mob facing its combat target (Ghast flight AI otherwise
+     * wanders look away from the player between shots).
+     */
+    public static void faceTarget(Mob shooter, LivingEntity target) {
+        if (shooter == null || target == null || !shooter.m_6084_() || !target.m_6084_()) {
+            return;
+        }
+        aimAt(shooter, target);
     }
 
     /**

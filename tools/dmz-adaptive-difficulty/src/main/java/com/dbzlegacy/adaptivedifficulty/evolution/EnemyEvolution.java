@@ -770,6 +770,8 @@ public final class EnemyEvolution {
         if (target == null) {
             return;
         }
+        // Flying AI wanders look; keep facing the player so vanilla charge + our kits aim.
+        KiAttackHelper.faceTarget(ghast, target);
         CompoundTag tag = PersistentDataAccess.get(ghast);
         long age = ghast.f_19797_;
         float dist = ghast.m_20270_(target);
