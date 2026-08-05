@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Full AdaptiveDifficulty 1.0.21 build matrix — race × class × archetype × skills × tier.
+"""Full AdaptiveDifficulty 1.0.22 build matrix — race × class × archetype × skills × tier.
 
 Concept targets (Buy Tier feel):
   T1 Awakened  — warm-up pressure; AI/evo Awakened only
@@ -263,7 +263,7 @@ def simulate(
     hit_cap = cap_hp * cap_frac
     dmg = min(dmg, hit_cap)
 
-    # DMZ hard-cancel pierce — T4+ always; T3 god-forms (1.0.21).
+    # DMZ hard-cancel pierce — T4+ always; T3 god-forms (1.0.22).
     base_def = channel_damage(pts["RES"], scales.get("RES", 1), 1.0)
     live_flat = base_def * max(res_f, 1.0)
     cancel_thr = 2.5
@@ -272,7 +272,7 @@ def simulate(
     if would_cancel and allow_pierce and live_flat > 1.0:
         dmg = max(dmg, live_flat / cancel_thr * 1.08)
         would_cancel = live_flat >= dmg * cancel_thr
-    # Live-bag landing ladder (1.0.21) — cancel path IS the early-tier ladder.
+    # Live-bag landing ladder (1.0.22) — cancel path IS the early-tier ladder.
     land_frac = {1: 0.12, 2: 0.16, 3: 0.22, 4: 0.28, 5: 0.36, 6: 0.42, 7: 0.48}[tier]
     if form_boost > 1.12:
         t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
@@ -356,7 +356,7 @@ def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
     lines = [
-        "# AdaptiveDifficulty build matrix (1.0.21)",
+        "# AdaptiveDifficulty build matrix (1.0.22)",
         "",
         "Race × class × archetype × skill loadout × tier.",
         "Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).",

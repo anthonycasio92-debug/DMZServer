@@ -28,8 +28,12 @@ public final class PlayerDifficultyData {
     private long ancientCopper;
     private final Set<String> titles = new LinkedHashSet<>();
     private String activeTitle = "";
-    /** Player opt-in: when false, no scaling / kill coins / AI / tier buy for them. Death reset still applies. */
-    private boolean personalEnabled = true;
+    /**
+     * Player opt-in: when false, no scaling / kill coins / AI / tier buy for them.
+     * Death reset still applies. Default OFF; also forced OFF on each server boot
+     * (see {@code DifficultyEvents} first-login reset).
+     */
+    private boolean personalEnabled = false;
     /** When true, chat notifies on Ancient Coin kill drops. Default off (less spam). */
     private boolean coinDropChat = false;
     /**
@@ -298,8 +302,8 @@ public final class PlayerDifficultyData {
         activeDifficultyLevel = Math.max(0L, tag.m_128454_("activeLevel"));
         ancientCopper = Math.max(0L, tag.m_128454_("ancientCopper"));
         teamMode = TeamMode.fromString(tag.m_128461_("teamMode"));
-        // Missing keys → defaults (on for personal, off for coin chat).
-        personalEnabled = !tag.m_128441_("personalEnabled") || tag.m_128471_("personalEnabled");
+        // Missing keys → defaults (OFF for personal, OFF for coin chat).
+        personalEnabled = tag.m_128441_("personalEnabled") && tag.m_128471_("personalEnabled");
         coinDropChat = tag.m_128441_("coinDropChat") && tag.m_128471_("coinDropChat");
         if (tag.m_128441_("lastSeenPrestigeSet") && tag.m_128471_("lastSeenPrestigeSet")
                 && tag.m_128441_("lastSeenPrestige")) {

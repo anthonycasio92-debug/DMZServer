@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.21)
+# AdaptiveDifficulty (v1.0.22)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -24,7 +24,7 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 | Unlock tiers (1–7) | Live gate: current DMZ level **or** Prestige ≥ tier id. Prestige-up / level reset revokes tiers you no longer qualify for (coins alone cannot keep them). |
 | Buy tier | Spend Ancient Coins (pay-up OK with lower/higher mix; overpay returned as change) |
 | Active difficulty | Set only by tier purchase — no +difficulty upgrades |
-| Personal toggle | GUI on/off for that player only (default ON). OFF freezes scaling, kill coins, AI pressure, and tier buy/lower until turned back on |
+| Personal toggle | GUI on/off for that player only (default OFF). Every server restart forces personal OFF on first login that boot; mid-session reconnect keeps the toggle. OFF freezes scaling, kill coins, AI pressure, and tier buy/lower until turned back on |
 | Coin drop chat | GUI mute for "Dropped X Ancient Coins" (default OFF) |
 | Death | Clears active tier + level whenever the system allows the player (personal OFF cannot skip). Unlocks / prestige / coins kept. Disconnect / logout keeps the purchased tier |
 | Nearby scaling | Hostiles scale to soft-blended **STR/SKP/PWR** (+ mild **ENE** pool) × tier % for damage and soft **VIT** for HP (max 5/player). **VIT/RES damage floors** press tank dumps; **Ki Infusion / Potential Unlock** raise pack sponge; **class counters** + **top-2 combat stats** (STR/SKP/RES/VIT/PWR/ENE) ramp with tier%. Mob damage is VIT-capped (raised budgets) so higher tiers pressure **ki protection** without one-punch bag dumps; stronger durability sponge keeps STR/PWR dumps from vaporizing packs. Form soft-curve on STR/SKP/PWR/ENE. Leave range / personal off / logout reverts stats **and** strips elite/mutation/boss nameplates. |
@@ -37,8 +37,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.21.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.21.jar`
+1. `mods/AdaptiveDifficulty-1.0.22.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.22.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -86,6 +86,9 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
+### Behavior (1.0.22)
+Personal difficulty starts **OFF** for everyone after each server restart (first login that boot). Mid-session reconnect keeps the toggle. New players default OFF.
+
 ### Bugfix (1.0.21)
 Enderman/Warden combat gravity no longer sticks after the mob dies.
 - Clear contributions on death (`CombatGravity.removeSource`)

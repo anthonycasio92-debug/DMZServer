@@ -62,6 +62,13 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 public final class DifficultyEvents {
+    /**
+     * Players whose personal toggle was forced OFF for this server boot.
+     * Cleared on {@link ServerStartingEvent}; first login that boot resets personal OFF.
+     * Mid-session reconnects keep the in-session toggle.
+     */
+    private static final java.util.Set<UUID> PERSONAL_OFF_THIS_BOOT =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
     /** Last polled DMZ form×stack multiplier — catches custom races without FormChangeEvent. */
     private static final Map<UUID, Double> LAST_FORM_MULT = new ConcurrentHashMap<>();
     /** Last polled live offense peak — catches custom forms that never bump form multipliers. */
@@ -77,6 +84,7 @@ public final class DifficultyEvents {
         DifficultyCache.invalidateAll();
         AreaDifficulty.clearCache();
         CombatIndex.clear();
+        PERSONAL_OFF_THIS_BOOT.clear();
         LAST_FORM_MULT.clear();
         LAST_LIVE_OFFENSE.clear();
         LAST_RACE.clear();
@@ -96,7 +104,14 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            DifficultyCache.data(player);
+            var data = DifficultyCache.data(player);
+            // Every server boot: personal difficulty starts OFF for everyone.
+            // First login that boot forces it; reconnects later in the same uptime keep the toggle.
+            if (PERSONAL_OFF_THIS_BOOT.add(player.m_20148_()) && data.isPersonalEnabled()) {
+                data.setPersonalEnabled(false);
+                ScaledMobTracker.releaseAndRevertPlayer(player);
+                NearbyMobScaler.processEvictions();
+            }
             // Convert any leftover NBT Ancient Coin wallet into real Lightman's items (once/session).
             AncientCoinEconomy.migrateWalletToItems(player);
             DifficultyCache.refresh(player);
