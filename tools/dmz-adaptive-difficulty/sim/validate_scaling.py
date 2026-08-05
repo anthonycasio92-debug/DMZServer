@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate AdaptiveDifficulty 1.0.22 scaling against the intended combat model.
+"""Validate AdaptiveDifficulty 1.0.23 scaling against the intended combat model.
 
 Checks (fail-closed):
 1. Soft offense includes STR/SKP/PWR + mild ENE
@@ -345,7 +345,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
 def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
-    lines: list[str] = ["# AdaptiveDifficulty 1.0.22 scaling validation", ""]
+    lines: list[str] = ["# AdaptiveDifficulty 1.0.23 scaling validation", ""]
 
     def check(label: str, cond: bool, detail: str = "") -> None:
         if cond:
@@ -473,7 +473,7 @@ def main() -> int:
         )
     check(
         "T7 >> T1 pressure",
-        # 1.0.22: T1 god-form floors raised + T7 soft-cap → expect ~2.2×+, not 2.5×.
+        # 1.0.23: T1 god-form floors raised + T7 soft-cap → expect ~2.2×+, not 2.5×.
         ladder[-1]["mobDmg"] > ladder[0]["mobDmg"] * 2.2,
         f"T1={ladder[0]['mobDmg']:.0f} T7={ladder[-1]['mobDmg']:.0f}",
     )

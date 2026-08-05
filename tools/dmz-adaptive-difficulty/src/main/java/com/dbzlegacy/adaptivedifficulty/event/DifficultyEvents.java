@@ -501,7 +501,9 @@ public final class DifficultyEvents {
         if (victim != null && HostileMobs.isHostile(victim) && victim.m_21223_() <= 0.0f) {
             MobScaling.terminateIfZeroHealth(victim);
         }
-        if (!(victim instanceof ServerPlayer player) || !SystemGate.allows(player)) {
+        // Personal OFF / whitelist-blocked: never inject landing damage.
+        // (allows() alone let stored active tiers bite players with personal OFF.)
+        if (!(victim instanceof ServerPlayer player) || !SystemGate.participates(player)) {
             return;
         }
         if (DimensionGates.isDisabled(player)) {
@@ -512,6 +514,7 @@ public final class DifficultyEvents {
         if (!(causing instanceof Mob mob) || !HostileMobs.isHostile(mob)) {
             return;
         }
+        // Claimed/profile-scaled only — spawn-init TAG_SCALED shells are not difficulty.
         if (!MobScaling.isAdPainted(mob)) {
             return;
         }

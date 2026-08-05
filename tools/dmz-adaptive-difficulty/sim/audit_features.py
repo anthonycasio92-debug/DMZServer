@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.22", 'VERSION = "1.0.22"' in mod)
+    check("VERSION 1.0.23", 'VERSION = "1.0.23"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -238,7 +238,7 @@ def main() -> int:
     check("death clears Enderman/Warden gravity", has(events, "CombatGravity.removeSource", "EnderMan", "Warden"))
     check("README sticky-gravity fix", "gravity" in readme.lower() and "1.0.21" in readme)
 
-    print("\n=== Personal OFF on boot (1.0.22) ===")
+    print("\n=== Personal OFF on boot (1.0.23) ===")
     pdata = read(SRC / "com/dbzlegacy/adaptivedifficulty/data/PlayerDifficultyData.java")
     check("personal default false", "personalEnabled = false" in pdata)
     check("NBT missing personal → false", "tag.m_128441_(\"personalEnabled\") && tag.m_128471_(\"personalEnabled\")" in pdata)
@@ -249,7 +249,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.22", "1.0.22" in readme)
+    check("README version 1.0.23", "1.0.23" in readme)
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")

@@ -1037,15 +1037,26 @@ public final class MobScaling {
         return Math.max(min, Math.min(max, value));
     }
 
-    /** True when this hostile carries AD paint (profile-scaled attrs / claim). */
+    /**
+     * True when this hostile is actively difficulty-scaled for combat
+     * (claimed profile paint), not merely spawn-initialized.
+     * <p>
+     * Spawn init stamps {@link #TAG_SCALED} with unlock_tier=0 / vanilla ATK while
+     * waiting for a claim slot — those shells must NOT count as painted, or the
+     * landing safety net treats random world mobs as tier difficulty.
+     */
     public static boolean isAdPainted(LivingEntity entity) {
         if (entity == null) {
             return false;
         }
         CompoundTag tag = PersistentDataAccess.get(entity);
-        return tag.m_128471_(TAG_ATTR_DMG_SCALED)
-                || tag.m_128471_(TAG_SCALED)
-                || (tag.m_128441_(TAG_PROFILE_SIG) && tag.m_128454_(TAG_PROFILE_SIG) != 0L);
+        if (tag.m_128471_(TAG_ATTR_DMG_SCALED)) {
+            return true;
+        }
+        if (tag.m_128441_(TAG_PROFILE_SIG) && tag.m_128454_(TAG_PROFILE_SIG) != 0L) {
+            return true;
+        }
+        return unlockTierOf(entity) > 0;
     }
 
     public static float outgoingDamageMultiplier(LivingEntity attacker) {
