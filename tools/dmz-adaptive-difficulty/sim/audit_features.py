@@ -238,13 +238,24 @@ def main() -> int:
     check("death clears Enderman/Warden gravity", has(events, "CombatGravity.removeSource", "EnderMan", "Warden"))
     check("README sticky-gravity fix", "gravity" in readme.lower() and "1.0.21" in readme)
 
-    print("\n=== Personal OFF on boot (1.0.23) ===")
+    print("\n=== Personal OFF on boot (1.0.22) ===")
     pdata = read(SRC / "com/dbzlegacy/adaptivedifficulty/data/PlayerDifficultyData.java")
     check("personal default false", "personalEnabled = false" in pdata)
     check("NBT missing personal → false", "tag.m_128441_(\"personalEnabled\") && tag.m_128471_(\"personalEnabled\")" in pdata)
     check("boot reset set cleared on starting", "PERSONAL_OFF_THIS_BOOT.clear()" in events)
     check("first login forces personal OFF", "PERSONAL_OFF_THIS_BOOT.add" in events and "setPersonalEnabled(false)" in events)
     check("README personal OFF on restart", "forces personal OFF" in readme or "Personal difficulty starts **OFF**" in readme)
+
+    print("\n=== Ghost scaling fix (1.0.23) ===")
+    check(
+        "isAdPainted ignores bare TAG_SCALED",
+        "unlockTierOf(entity) > 0" in mob and ("Spawn init stamps" in mob or "spawn-init" in mob.lower()),
+    )
+    check(
+        "landing safety net requires participates",
+        "onDamageDone" in events and "SystemGate.participates(player)" in events[events.find("onDamageDone"):events.find("onDamageDone")+900],
+    )
+    check("README ghost-scaling fix", "Ghost difficulty" in readme or "spawn-init shells" in readme)
 
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
