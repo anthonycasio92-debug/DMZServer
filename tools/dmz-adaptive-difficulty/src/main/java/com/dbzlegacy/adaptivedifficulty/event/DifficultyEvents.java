@@ -21,7 +21,6 @@ import com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry;
 import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
-import com.dbzlegacy.adaptivedifficulty.util.IncomingBurstGuard;
 import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
@@ -100,7 +99,6 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
         BalanceTelemetry.flushAndClose();
-        IncomingBurstGuard.clearAll();
     }
 
     @SubscribeEvent
@@ -148,7 +146,6 @@ public final class DifficultyEvents {
             PlayerCombatProfile.clear(player.m_20148_());
             PlayerCombatProfile.clearFormBaseline(player.m_20148_());
             DmzProgression.clearBaseFormLevel(player.m_20148_());
-            IncomingBurstGuard.clear(player);
             LAST_FORM_MULT.remove(player.m_20148_());
             LAST_LIVE_OFFENSE.remove(player.m_20148_());
             LAST_RACE.remove(player.m_20148_());
@@ -552,20 +549,6 @@ public final class DifficultyEvents {
         if (event.getAmount() > softCap) {
             event.setAmount(softCap);
         }
-        // 1.0.32: per-attacker 1s burst budget — T6 shock+slam+melee each filled to
-        // land, dumping 1.2–2.0× bag from one mob while later singles sat ~0.4×.
-        float naturalFloor = cancelled ? 0.0f : Math.min(preAmount, softCap);
-        float clamped = IncomingBurstGuard.clamp(
-                player,
-                mob,
-                event.getAmount(),
-                naturalFloor,
-                bag,
-                IncomingBurstGuard.budgetFrac(profile.activeTier));
-        if (clamped != event.getAmount()) {
-            event.setAmount(Math.max(1.0f, clamped));
-        }
-        IncomingBurstGuard.record(player, mob, event.getAmount());
         // Whitelist telemetry — log pre/post so cancelled zeros stay visible.
         if (BalanceTelemetry.shouldLog(player)) {
             BalanceTelemetry.logIncomingHit(

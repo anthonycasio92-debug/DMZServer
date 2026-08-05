@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.32", 'VERSION = "1.0.32"' in mod)
+    check("VERSION 1.0.31", 'VERSION = "1.0.31"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -296,7 +296,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.32", "1.0.32" in readme)
+    check("README version 1.0.31", "1.0.31" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -306,16 +306,6 @@ def main() -> int:
     check("faceTarget public", "public static void faceTarget" in ki)
     check("ghastTick faceTarget", "KiAttackHelper.faceTarget(ghast, target)" in evo)
     check("README ghast aim", "Ghast" in readme and ("aim" in readme.lower() or "look" in readme.lower()))
-
-    print("\n=== T6 opener burst (1.0.32) ===")
-    burst = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/IncomingBurstGuard.java")
-    check("IncomingBurstGuard class", "class IncomingBurstGuard" in burst)
-    check("per-attacker budget", "attacker" in burst.lower() and "budgetFrac" in burst)
-    check("T6 budget 0.80", "case 6 -> 0.80" in burst)
-    check("onDamageDone uses burst guard", "IncomingBurstGuard.clamp" in events and "IncomingBurstGuard.record" in events)
-    check("shared melee kit CD", "dmz_ad_melee_kit" in evo)
-    check("slam ratio 0.40", "paintedMeleeHit(mob, target, 0.40f)" in evo)
-    check("README T6 opener", "1.0.32" in readme and "burst" in readme.lower())
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")
