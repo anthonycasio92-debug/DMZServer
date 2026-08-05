@@ -26,7 +26,7 @@ REPO_OUT.mkdir(parents=True, exist_ok=True)
 TIER_PCT = {1: 0.21, 2: 0.42, 3: 0.65, 4: 0.90, 5: 1.35, 6: 1.60, 7: 2.00}
 TW_BASE = 0.65
 TW_EXP = 0.75
-MOB_HP_SCALE = 0.92
+MOB_HP_SCALE = 0.75
 TANK_DEF_RATIO = 0.45
 TANK_HP_RATIO = 0.28
 MEGA_START, MEGA_TARGET = 6.0, 80.0

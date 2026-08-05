@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.29", 'VERSION = "1.0.29"' in mod)
+    check("VERSION 1.0.30", 'VERSION = "1.0.30"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -100,7 +100,7 @@ def main() -> int:
         "unlockTier7EnemyMult": "2.00",
         "transformScaleWeight": "0.65",
         "transformScaleExponent": "0.75",
-        "mobHealthScale": "0.92",
+        "mobHealthScale": "0.75",
         "tankDamageDefenseRatio": "0.45",
         "tankDamageHealthRatio": "0.28",
         "maxScaledMobsPerPlayer": "5",
@@ -259,10 +259,11 @@ def main() -> int:
     check("T6 liveShare 0.74", "case 6 -> 0.74" in profile)
     check("README 1.0.28 retune", "1.0.28" in readme and "hits-2026-08-05" in readme)
 
-    print("\n=== Mob HP trim (1.0.29) ===")
-    check("stock mobHealthScale 0.92", field_default(cfg, "mobHealthScale") == "0.92")
+    print("\n=== Mob HP trim (1.0.29 / 1.0.30) ===")
+    check("stock mobHealthScale 0.75", field_default(cfg, "mobHealthScale") == "0.75")
     check("mobHpTrimMigratedV1", "mobHpTrimMigratedV1" in cfg)
-    check("README 1.0.29 HP trim", "1.0.29" in readme and "0.92" in readme)
+    check("mobHpTrimMigratedV2", "mobHpTrimMigratedV2" in cfg)
+    check("README 1.0.30 HP trim", "1.0.30" in readme and "0.75" in readme)
 
     print("\n=== Telemetry retune (1.0.24) ===")
     check("formula revision 34", "mix(h, 34L)" in profile)
@@ -295,7 +296,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.29", "1.0.29" in readme)
+    check("README version 1.0.30", "1.0.30" in readme)
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")

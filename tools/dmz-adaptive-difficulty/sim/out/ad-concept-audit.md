@@ -1,4 +1,4 @@
-# AdaptiveDifficulty concept audit (1.0.29)
+# AdaptiveDifficulty concept audit (1.0.30)
 
 Fail-closed checks against the player's stated balance concept.
 
@@ -35,8 +35,8 @@ Fail-closed checks against the player's stated balance concept.
 ## 3) Skills matter
 
 - ✅ KP10 reduces landing dmg (pre hitFrac unchanged) — none=0.468 afterKp=0.421
-- ✅ Ki Infusion sponges more pack HP — none=1073 inf=1373
-- ✅ Potential Unlock sponges when transformed — androidforms.ssdroid4 none=1847 pu=2069
+- ✅ Ki Infusion sponges more pack HP — none=874 inf=1119
+- ✅ Potential Unlock sponges when transformed — androidforms.ssdroid4 none=1506 pu=1686
 - ✅ KP still saves on god form — pre=0.520 afterKp=0.468
 
 ## 4) God forms do not out-tank (incl. DMZ DEF-cancel)
@@ -57,7 +57,7 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 1.0.29
+- ✅ VERSION 1.0.30
 - ✅ formula revision 34
 - ✅ hpFloorStrength present
 - ✅ T1–T3 god-form floors raised
@@ -83,6 +83,6 @@ Fail-closed checks against the player's stated balance concept.
 
 | Form | hitFrac | post-DEF | softHits |
 |------|--------:|---------:|---------:|
-| androidforms.ssdroid4 | 0.520 | 0.182 | 0.97 |
+| androidforms.ssdroid4 | 0.520 | 0.182 | 0.79 |
 
 **Result:** PASS — 50 ok, 0 error(s).

@@ -274,10 +274,10 @@ public final class DifficultyConfig {
     public double unlockTier7EnemyMult = 2.00;
     /**
      * Multiplier on final scaled mob max HP ({@code playerMaxHp × tier% × …}).
-     * Default {@code 0.92} — 80% of the prior 1.15 sponge so TP-from-HP leveling
+     * Default {@code 0.75} — ~65% of the old 1.15 sponge so TP-from-HP leveling
      * is less free; damage / defense / other mob attrs are unchanged.
      */
-    public double mobHealthScale = 0.92;
+    public double mobHealthScale = 0.75;
     /**
      * Ceiling on detected form⊕stack multipliers (default {@code 100}).
      * Future races with huge {@code maxStatsMultiplier} mastery still soft-curve;
@@ -402,6 +402,11 @@ public final class DifficultyConfig {
      * Damage / defense / other mob attrs unchanged. Custom admin scales kept.
      */
     public Boolean mobHpTrimMigratedV1 = Boolean.FALSE;
+    /**
+     * One-time (1.0.30): stock {@code mobHealthScale} 0.92 (or leftover 1.15) → 0.75.
+     * Custom admin scales kept.
+     */
+    public Boolean mobHpTrimMigratedV2 = Boolean.FALSE;
     /**
      * One-time: soften transform→enemy scaling (weight 0.40→0.25 + soft curve).
      */
@@ -1142,7 +1147,7 @@ public final class DifficultyConfig {
             cfg.ancientCoinUpgradeChance = 0.02;
         }
         if (cfg.mobHealthScale <= 0.0 || cfg.mobHealthScale > 4.0) {
-            cfg.mobHealthScale = 0.92;
+            cfg.mobHealthScale = 0.75;
         }
         // 1.0.12: raise sponge so offense dumps don't one-punch packs.
         if (!Boolean.TRUE.equals(cfg.challengeFeelMigratedV1)) {
@@ -1186,6 +1191,13 @@ public final class DifficultyConfig {
                 cfg.mobHealthScale = 0.92;
             }
             cfg.mobHpTrimMigratedV1 = Boolean.TRUE;
+        }
+        // 1.0.30: further trim 0.92 → 0.75 (also catches leftover 1.15).
+        if (!Boolean.TRUE.equals(cfg.mobHpTrimMigratedV2)) {
+            if (nearly(cfg.mobHealthScale, 0.92) || nearly(cfg.mobHealthScale, 1.15)) {
+                cfg.mobHealthScale = 0.75;
+            }
+            cfg.mobHpTrimMigratedV2 = Boolean.TRUE;
         }
         // 1.0.15: VIT dumps / tank class must feel the buy-tier ladder (not shrug packs).
         if (!Boolean.TRUE.equals(cfg.vitDumpPressureMigratedV1)) {

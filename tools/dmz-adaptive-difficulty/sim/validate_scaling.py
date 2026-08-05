@@ -598,7 +598,7 @@ def main() -> int:
         soft_hits >= 0.35,
         f"softHits={soft_hits:.2f} mobHp={str_d['mobHp']:.0f} softOffShare={str_d['offense'] * str_d['pct']:.0f}",
     )
-    check("stock mobHealthScale 0.92", abs(MOB_HP_SCALE - 0.92) < 1e-9, f"got {MOB_HP_SCALE}")
+    check("stock mobHealthScale 0.75", abs(MOB_HP_SCALE - 0.75) < 1e-9, f"got {MOB_HP_SCALE}")
     check("stock transformScaleWeight 0.65", abs(TW_BASE - 0.65) < 1e-9, f"got {TW_BASE}")
 
     print("\n=== 7) Full pack race/form sim ===")
