@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate AdaptiveDifficulty 1.0.23 scaling against the intended combat model.
+"""Validate AdaptiveDifficulty 1.0.24 scaling against the intended combat model.
 
 Checks (fail-closed):
 1. Soft offense includes STR/SKP/PWR + mild ENE
@@ -231,10 +231,10 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
             soft = min(soft, offense_share * max(1.25, 1.55 - 0.08 * min(1.25, t)))
         dmg = max(dmg, soft)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.35, 5: 1.50, 6: 1.65, 7: 1.42}[tier]
+        nudge = {4: 1.48, 5: 1.55, 6: 1.68, 7: 1.42}[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
-        live_share = {1: 0.28, 2: 0.40, 3: 0.50, 4: 0.55, 5: 0.62, 6: 0.68, 7: 0.48}[tier]
+        live_share = {1: 0.28, 2: 0.40, 3: 0.50, 4: 0.55, 5: 0.60, 6: 0.66, 7: 0.58}[tier]
         if form_boost >= 6.0:
             mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
         else:
@@ -270,7 +270,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
         threat = {1: 0.48, 2: 0.64, 3: 0.78}[tier]
         dmg_old_raw = max(dmg_old_raw, offense_no_pwr * threat)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.35, 5: 1.50, 6: 1.65, 7: 1.42}[tier]
+        nudge = {4: 1.48, 5: 1.55, 6: 1.68, 7: 1.42}[tier]
         dmg_old_raw = max(dmg_old_raw, offense_no_pwr * pct * nudge)
     dmg_old_raw = max(1.0, dmg_old_raw * dmg_overlay)
     dmg_old = min(dmg_old_raw, hit_cap)
@@ -303,13 +303,13 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     mob_hp = max(10.0, min(base_hp_mob, hard) * MOB_HP_SCALE * hp_overlay)
 
     hit_frac = dmg_capped / max(1.0, live_hp)
-    land_frac = {1: 0.12, 2: 0.16, 3: 0.22, 4: 0.28, 5: 0.36, 6: 0.42, 7: 0.48}[tier]
+    land_frac = {1: 0.11, 2: 0.17, 3: 0.24, 4: 0.32, 5: 0.38, 6: 0.44, 7: 0.50}[tier]
     if form_boost > 1.12:
         t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
-        land_frac *= 1.0 + 0.18 * t
+        land_frac *= 1.0 + 0.12 * t
     bag = max(cap_hp, live_hp * 0.90)
     landing = bag * land_frac
-    land_cap = {1: 0.40, 2: 0.40, 3: 0.40, 4: 0.42, 5: 0.46, 6: 0.50, 7: 0.52}[tier]
+    land_cap = {1: 0.18, 2: 0.24, 3: 0.34, 4: 0.42, 5: 0.48, 6: 0.54, 7: 0.58}[tier]
     landing = max(live_hp * max(0.05, pct * 0.08), landing)
     landing = min(landing, live_hp * land_cap)
     return {
@@ -345,7 +345,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
 def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
-    lines: list[str] = ["# AdaptiveDifficulty 1.0.23 scaling validation", ""]
+    lines: list[str] = ["# AdaptiveDifficulty 1.0.24 scaling validation", ""]
 
     def check(label: str, cond: bool, detail: str = "") -> None:
         if cond:
@@ -473,7 +473,7 @@ def main() -> int:
         )
     check(
         "T7 >> T1 pressure",
-        # 1.0.23: T1 god-form floors raised + T7 soft-cap → expect ~2.2×+, not 2.5×.
+        # 1.0.24: T1 god-form floors raised + T7 soft-cap → expect ~2.2×+, not 2.5×.
         ladder[-1]["mobDmg"] > ladder[0]["mobDmg"] * 2.2,
         f"T1={ladder[0]['mobDmg']:.0f} T7={ladder[-1]['mobDmg']:.0f}",
     )

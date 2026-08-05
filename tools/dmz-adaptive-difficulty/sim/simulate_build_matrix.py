@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Full AdaptiveDifficulty 1.0.23 build matrix — race × class × archetype × skills × tier.
+"""Full AdaptiveDifficulty 1.0.24 build matrix — race × class × archetype × skills × tier.
 
 Concept targets (Buy Tier feel):
   T1 Awakened  — warm-up pressure; AI/evo Awakened only
@@ -242,10 +242,10 @@ def simulate(
             soft = min(soft, offense_share * max(1.25, 1.55 - 0.08 * min(1.25, t)))
         dmg = max(dmg, soft)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.35, 5: 1.50, 6: 1.65, 7: 1.42}[tier]
+        nudge = {4: 1.48, 5: 1.55, 6: 1.68, 7: 1.42}[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
-        live_share = {1: 0.28, 2: 0.40, 3: 0.50, 4: 0.55, 5: 0.62, 6: 0.68, 7: 0.48}[tier]
+        live_share = {1: 0.28, 2: 0.40, 3: 0.50, 4: 0.55, 5: 0.60, 6: 0.66, 7: 0.58}[tier]
         if form_boost >= 6.0:
             mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
         else:
@@ -263,7 +263,7 @@ def simulate(
     hit_cap = cap_hp * cap_frac
     dmg = min(dmg, hit_cap)
 
-    # DMZ hard-cancel pierce — T4+ always; T3 god-forms (1.0.23).
+    # DMZ hard-cancel pierce — T4+ always; T3 god-forms (1.0.24).
     base_def = channel_damage(pts["RES"], scales.get("RES", 1), 1.0)
     live_flat = base_def * max(res_f, 1.0)
     cancel_thr = 2.5
@@ -272,16 +272,16 @@ def simulate(
     if would_cancel and allow_pierce and live_flat > 1.0:
         dmg = max(dmg, live_flat / cancel_thr * 1.08)
         would_cancel = live_flat >= dmg * cancel_thr
-    # Live-bag landing ladder (1.0.23) — cancel path IS the early-tier ladder.
-    land_frac = {1: 0.12, 2: 0.16, 3: 0.22, 4: 0.28, 5: 0.36, 6: 0.42, 7: 0.48}[tier]
+    # Live-bag landing ladder (1.0.24) — cancel path IS the early-tier ladder.
+    land_frac = {1: 0.11, 2: 0.17, 3: 0.24, 4: 0.32, 5: 0.38, 6: 0.44, 7: 0.50}[tier]
     if form_boost > 1.12:
         t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
-        land_frac *= 1.0 + 0.18 * t
+        land_frac *= 1.0 + 0.12 * t
     bag = max(cap_hp, live_hp * 0.90)
     landing = bag * land_frac
     if skills["kp"] > 0:
-        landing *= max(0.70, 1.0 - skills["kp"] * 0.01)
-    land_cap = {1: 0.40, 2: 0.40, 3: 0.40, 4: 0.42, 5: 0.46, 6: 0.50, 7: 0.52}[tier]
+        landing *= max(0.65, 1.0 - skills["kp"] * 0.015)
+    land_cap = {1: 0.18, 2: 0.24, 3: 0.34, 4: 0.42, 5: 0.48, 6: 0.54, 7: 0.58}[tier]
     landing = max(live_hp * max(0.05, pct * 0.08), landing)
     landing = min(landing, live_hp * land_cap)
 
@@ -356,7 +356,7 @@ def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
     lines = [
-        "# AdaptiveDifficulty build matrix (1.0.23)",
+        "# AdaptiveDifficulty build matrix (1.0.24)",
         "",
         "Race × class × archetype × skill loadout × tier.",
         "Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).",

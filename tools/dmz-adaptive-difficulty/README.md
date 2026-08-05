@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.23)
+# AdaptiveDifficulty (v1.0.24)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -37,8 +37,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.23.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.23.jar`
+1. `mods/AdaptiveDifficulty-1.0.24.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.24.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -86,6 +86,13 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
+### Live balance (1.0.24)
+Retuned from claimed hits in `hits-2026-08-04.jsonl` + `hits-2026-08-05.jsonl`:
+- Fix T4 tank ladder dip (fill-to-landing + T4 hitFrac/nudge)
+- Cap T1–T2 god landing (was ~38% bag on spiritualist)
+- Progressive soft-caps T4→T7 (0.48→0.58)
+- KP10 saves ~15% on landing path (was ~10%)
+
 ### Bugfix (1.0.23)
 Ghost difficulty from unclaimed / personal-OFF fights:
 - Landing safety net requires personal ON (`participates`)

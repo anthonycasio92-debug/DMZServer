@@ -529,19 +529,21 @@ public final class DifficultyEvents {
             // DMZ applyFullNegation zeroed the hit — put the tier bite back.
             event.setCanceled(false);
             event.setAmount((float) Math.max(1.0, land));
-        } else if (preAmount < land * 0.45f) {
-            // Partial shrug: landing far below the intended post-DEF bite.
+        } else if (preAmount < land) {
+            // 1.0.24: always fill up to the landing floor when short.
+            // Old 0.45× gate left T4 tanks below T3 (Got2takeitez 0.17 vs 0.24).
             event.setAmount((float) Math.max(preAmount, land));
         }
-        // Soft-cap crushing hits (1.0.20): T5 was stuck at 62% ceiling in live data;
-        // T7 tank cancels were too soft via landing — landing retune + these caps.
+        // Soft-cap crushing hits — progressive ceilings so T4≠T6 crush feel.
+        // Live data: T4/T6 both pinned at 0.55; T1 gods overshot via landing.
         double bag = Math.max(20.0, profile.liveMaxHealth);
         double maxFrac = switch (profile.activeTier) {
-            case 7 -> 0.52;
-            case 6 -> 0.55;
+            case 7 -> 0.58;
+            case 6 -> 0.54;
             case 5 -> 0.50;
-            case 4 -> 0.55;
-            default -> 0.65;
+            case 4 -> 0.48;
+            case 3 -> 0.55;
+            default -> 0.60;
         };
         float softCap = (float) (bag * maxFrac);
         if (event.getAmount() > softCap) {

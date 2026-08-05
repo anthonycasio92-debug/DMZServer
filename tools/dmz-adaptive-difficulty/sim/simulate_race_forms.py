@@ -186,7 +186,7 @@ def hit_cap_health(soft_hp: float, live_hp: float, form_boost: float) -> float:
 def ki_protection_hit_frac(tier: int, form_boost: float, kp_level: int = 0) -> float:
     # 1.0.19 — raise T1–T6 bite; soft-cap T7 (live telemetry one-shots).
     del kp_level
-    tier_frac = {1: 0.26, 2: 0.34, 3: 0.42, 4: 0.52, 5: 0.58, 6: 0.64, 7: 0.64}[tier]
+    tier_frac = {1: 0.26, 2: 0.34, 3: 0.44, 4: 0.56, 5: 0.58, 6: 0.62, 7: 0.70}[tier]
     if form_boost <= 1.12:
         form_factor = 0.78
     else:
@@ -343,7 +343,7 @@ def simulate_ad(
             soft = min(soft, offense_share * max(1.25, 1.55 - 0.08 * min(1.25, t)))
         dmg = max(dmg, soft)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.35, 5: 1.50, 6: 1.65, 7: 1.42}[tier]
+        nudge = {4: 1.48, 5: 1.55, 6: 1.68, 7: 1.42}[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
         live_share = {1: 0.28, 2: 0.40, 3: 0.50, 4: 0.55, 5: 0.62, 6: 0.68, 7: 0.48}[tier]

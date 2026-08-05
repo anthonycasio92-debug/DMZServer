@@ -1,4 +1,4 @@
-# AdaptiveDifficulty build matrix (1.0.23)
+# AdaptiveDifficulty build matrix (1.0.24)
 
 Race × class × archetype × skill loadout × tier.
 Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).
@@ -46,9 +46,9 @@ Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).
 | Tier | HitFrac | After KP0 | SoftHits | MobDmg | MobHp |
 |-----:|--------:|----------:|---------:|-------:|------:|
 | T1 | 0.135 | 0.135 | 1.98 | 101 | 188 |
-| T3 | 0.328 | 0.328 | 2.09 | 245 | 616 |
+| T3 | 0.343 | 0.343 | 2.09 | 257 | 616 |
 | T5 | 0.452 | 0.452 | 2.09 | 339 | 1279 |
-| T7 | 0.499 | 0.499 | 2.09 | 374 | 1895 |
+| T7 | 0.546 | 0.546 | 2.09 | 409 | 1895 |
 
 ## Sample: skills at T5 saiyan warrior even (base)
 

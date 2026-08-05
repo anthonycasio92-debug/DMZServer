@@ -566,11 +566,12 @@ public final class PlayerCombatProfile {
         }
 
         // T4–T6 stretch ladder for tanks; T7 nudge softened (telemetry one-shots).
+        // 1.0.24: T4 nudge raised — live tank (Got2takeitez) dipped T3→T4 (0.24→0.17).
         if (activeTier >= 4 && formBoost > 1.12) {
             double nudge = switch (activeTier) {
-                case 4 -> 1.35;
-                case 5 -> 1.50;
-                case 6 -> 1.65;
+                case 4 -> 1.48;
+                case 5 -> 1.55;
+                case 6 -> 1.68;
                 default -> 1.42; // T7 soft — hit-cap + pierce soft-cap carry the bite
             };
             base = Math.max(base, offenseShare * nudge);
@@ -584,9 +585,9 @@ public final class PlayerCombatProfile {
                 case 2 -> 0.40;
                 case 3 -> 0.50;
                 case 4 -> 0.55;
-                case 5 -> 0.62;
-                case 6 -> 0.68;
-                default -> 0.48; // T7: less live-slice (was overshooting ×6–×50 forms)
+                case 5 -> 0.60;
+                case 6 -> 0.66;
+                default -> 0.58; // T7: climb vs T5/T6; event soft-cap 58% holds crush
             };
             // Mega forms: more of the live slice (still hit-capped after).
             double megaBoost = formBoost >= 6.0
@@ -634,42 +635,47 @@ public final class PlayerCombatProfile {
     /**
      * Post-mitigation HP restored when DMZ hard-cancels a hit.
      * <p>
-     * 1.0.20: sized against the <b>live</b> bag (not only soft hit-cap blend).
-     * Telemetry showed high-DEF god forms almost always cancel on T1–T4, so this
-     * landing path <em>is</em> the ladder — it must rise 12%→45% across tiers.
+     * 1.0.24 (hits-2026-08-04/05): cancel/landing path is the early–mid ladder for
+     * high-DEF kits. Retuned so T1 god cannot pin ~38% bag, T4 tanks no longer dip
+     * below T3, and KP10 saves ~15% on the safety-net path.
      */
     public double targetLandingDamage(DifficultyConfig cfg) {
         double liveBag = Math.max(20.0, liveMaxHealth);
         double blendBag = hitCapHealth();
         // Prefer live HP so god-form restores read as real bag % in telemetry.
         double bag = Math.max(blendBag, liveBag * 0.90);
-        // Tier landing fractions (post-mitigation feel targets from concept + live data).
+        // Tier landing fractions — progressive ladder from live claimed hits.
         double landFrac = switch (activeTier) {
-            case 1 -> 0.12;
-            case 2 -> 0.16;
-            case 3 -> 0.22;
-            case 4 -> 0.28;
-            case 5 -> 0.36;
-            case 6 -> 0.42;
-            default -> 0.48;
+            case 1 -> 0.11;
+            case 2 -> 0.17;
+            case 3 -> 0.24;
+            case 4 -> 0.32;
+            case 5 -> 0.38;
+            case 6 -> 0.44;
+            default -> 0.50;
         };
         if (formBoost > 1.12) {
             double t = Math.min(1.0, Math.log(Math.max(1.12, formBoost)) / Math.log(80.0));
-            landFrac *= 1.0 + 0.18 * t;
+            // Milder form bump — T1 gods were overshooting via landCap before.
+            landFrac *= 1.0 + 0.12 * t;
         }
         double land = bag * landFrac;
         // KP (when trained) still matters on the safety-net path.
+        // 1.0.24: 1.5%/lvl (KP10 ≈ 15% save) — live aggregate showed KP barely moving pressure.
         if (kiProtectionLevel > 0) {
-            land *= Math.max(0.70, 1.0 - kiProtectionLevel * 0.01);
+            land *= Math.max(0.65, 1.0 - kiProtectionLevel * 0.015);
         }
         // Floor: never a free tap; cap: never a free one-shot.
         land = Math.max(liveBag * Math.max(0.05, tierPercent * 0.08), land);
+        // Early-tier caps tight (T1 god was pinning ~38%); mid/high climb with buys.
         double landCap = switch (activeTier) {
-            case 7 -> 0.52;
-            case 6 -> 0.50;
-            case 5 -> 0.46;
+            case 1 -> 0.18;
+            case 2 -> 0.24;
+            case 3 -> 0.34;
             case 4 -> 0.42;
-            default -> 0.40;
+            case 5 -> 0.48;
+            case 6 -> 0.54;
+            default -> 0.58;
         };
         land = Math.min(land, liveBag * landCap);
         return Math.max(1.0, land);
@@ -719,16 +725,16 @@ public final class PlayerCombatProfile {
      * Base form uses a lower formFactor so transforming still raises pressure.
      */
     private double kiProtectionHitFrac() {
-        // 1.0.19 telemetry: raise T1–T6 bag bite; T7 stays high but event soft-caps
-        // crushing landings (was free one-shots at 80–300% bag).
+        // 1.0.24 telemetry: raise T4 bite so tank ladder doesn't dip T3→T4;
+        // T7 budget above T5/T6 so the top buy still climbs.
         double tierFrac = switch (activeTier) {
             case 1 -> 0.26;
             case 2 -> 0.34;
-            case 3 -> 0.42;
-            case 4 -> 0.52;
+            case 3 -> 0.44;
+            case 4 -> 0.56;
             case 5 -> 0.58;
-            case 6 -> 0.64;
-            default -> 0.64;
+            case 6 -> 0.62;
+            default -> 0.70;
         };
         double formFactor;
         if (formBoost <= 1.12) {
@@ -1135,8 +1141,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: live-bag landing ladder + T3 god pierce (1.0.20).
-        h = mix(h, 31L);
+        // Formula revision: telemetry ladder retune — T4 dip / T1 god cap / KP (1.0.24).
+        h = mix(h, 32L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

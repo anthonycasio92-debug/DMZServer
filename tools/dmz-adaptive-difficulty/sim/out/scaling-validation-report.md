@@ -1,10 +1,10 @@
-# AdaptiveDifficulty 1.0.23 scaling validation
+# AdaptiveDifficulty 1.0.24 scaling validation
 
 
 ## 1) PWR/ENE in offense
 
 - ✅ ki offense > STR/SKP-only offense — full=1696 vs noPWR=349
-- ✅ ki pre-cap mob dmg > old STR/SKP-only — newRaw=12376 vs oldRaw=806 (both hit-capped after)
+- ✅ ki pre-cap mob dmg > old STR/SKP-only — newRaw=11977 vs oldRaw=833 (both hit-capped after)
 - ✅ high-VIT ki final dmg > STR/SKP-only — new=4531 vs old=3671 (capBound=True floorBound=True)
 - ✅ high ENE raises soft offense — highENE=2684 vs lowENE=90
 
@@ -46,22 +46,22 @@
 ## 4) Tier ladder
 
 - ✅ T1→T2 mob dmg rises — 328 → 429 (pct 0.21→0.42)
-- ✅ T2→T3 mob dmg rises — 429 → 530 (pct 0.42→0.65)
-- ✅ T3→T4 mob dmg rises — 530 → 657 (pct 0.65→0.9)
-- ✅ T4→T5 mob dmg rises — 657 → 733 (pct 0.9→1.35)
-- ✅ T5→T6 mob dmg rises — 733 → 808 (pct 1.35→1.6)
-- ✅ T6→T7 mob dmg rises — 808 → 808 (pct 1.6→2.0)
-- ✅ T7 >> T1 pressure — T1=328 T7=808
+- ✅ T2→T3 mob dmg rises — 429 → 556 (pct 0.42→0.65)
+- ✅ T3→T4 mob dmg rises — 556 → 707 (pct 0.65→0.9)
+- ✅ T4→T5 mob dmg rises — 707 → 733 (pct 0.9→1.35)
+- ✅ T5→T6 mob dmg rises — 733 → 783 (pct 1.35→1.6)
+- ✅ T6→T7 mob dmg rises — 783 → 884 (pct 1.6→2.0)
+- ✅ T7 >> T1 pressure — T1=328 T7=884
 - ✅ stock percents
 
 ## 5) Hit cap / safety
 
-- ✅ T7 spiritualist hitFrac ≤ 0.75 — hitFrac=0.499 cap=709
-- ✅ T7 spiritualist mobDmg ≤ hitCap — dmg=709 cap=709
-- ✅ T7 berserker hitFrac ≤ 0.75 — hitFrac=0.499 cap=1008
-- ✅ T7 berserker mobDmg ≤ hitCap — dmg=1008 cap=1008
-- ✅ T7 tank hitFrac ≤ 0.75 — hitFrac=0.499 cap=1407
-- ✅ T7 tank mobDmg ≤ hitCap — dmg=1407 cap=1407
+- ✅ T7 spiritualist hitFrac ≤ 0.75 — hitFrac=0.546 cap=775
+- ✅ T7 spiritualist mobDmg ≤ hitCap — dmg=775 cap=775
+- ✅ T7 berserker hitFrac ≤ 0.75 — hitFrac=0.546 cap=1102
+- ✅ T7 berserker mobDmg ≤ hitCap — dmg=1102 cap=1102
+- ✅ T7 tank hitFrac ≤ 0.75 — hitFrac=0.546 cap=1539
+- ✅ T7 tank mobDmg ≤ hitCap — dmg=1539 cap=1539
 - ✅ T5 even-build hitCapFrac ≥ 0.35 — capFrac=0.452
 - ✅ T5 even-build pressure ≥ 25% bag (KP recommended band) — hitFrac=0.452
 - ✅ T5 god-form hitFrac ≥ base — base=0.452 god=0.452
@@ -70,16 +70,16 @@
 ## 6) Archetype challenge feel
 
 - ✅ even: T5 hitFrac > T1 — T1=0.189 T5=0.452
-- ✅ even: T7 hitFrac > T5 — T5=0.452 T7=0.499 pierceBound=False
+- ✅ even: T7 hitFrac > T5 — T5=0.452 T7=0.546 pierceBound=False
 - ✅ even: T5 pressure ≥ 25% bag — pressure=0.452
 - ✅ vit_dump: T5 hitFrac > T1 — T1=0.050 T5=0.441
-- ✅ vit_dump: T7 hitFrac > T5 — T5=0.441 T7=0.499 pierceBound=False
+- ✅ vit_dump: T7 hitFrac > T5 — T5=0.441 T7=0.546 pierceBound=False
 - ✅ vit_dump: T5 pressure ≥ 25% bag — pressure=0.441
 - ✅ res_dump: T5 hitFrac > T1 — T1=0.159 T5=0.567
 - ✅ res_dump: T7 hitFrac > T5 — T5=0.567 T7=0.567 pierceBound=True
 - ✅ res_dump: T5 pressure ≥ 25% bag — pressure=0.567
 - ✅ str_dump: T5 hitFrac > T1 — T1=0.203 T5=0.452
-- ✅ str_dump: T7 hitFrac > T5 — T5=0.452 T7=0.499 pierceBound=False
+- ✅ str_dump: T7 hitFrac > T5 — T5=0.452 T7=0.546 pierceBound=False
 - ✅ str_dump: T5 pressure ≥ 25% bag — pressure=0.452
 - ✅ extreme VIT dump HP-floor binds — floor=True cap=False dmg=897
 - ✅ VIT dump T5 bag pressure ≥ 28% — hitFrac=0.444 dmg=542
