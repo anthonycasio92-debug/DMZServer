@@ -186,7 +186,7 @@ def hit_cap_health(soft_hp: float, live_hp: float, form_boost: float) -> float:
 def ki_protection_hit_frac(tier: int, form_boost: float, kp_level: int = 0) -> float:
     # 1.0.19 — raise T1–T6 bite; soft-cap T7 (live telemetry one-shots).
     del kp_level
-    tier_frac = {1: 0.26, 2: 0.34, 3: 0.44, 4: 0.56, 5: 0.58, 6: 0.62, 7: 0.70}[tier]
+    tier_frac = {1: 0.30, 2: 0.37, 3: 0.45, 4: 0.56, 5: 0.60, 6: 0.68, 7: 0.74}[tier]
     if form_boost <= 1.12:
         form_factor = 0.78
     else:
@@ -336,17 +336,17 @@ def simulate_ad(
     dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
     dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.48, 2: 0.64, 3: 0.78}[tier]
+        threat = {1: 0.56, 2: 0.70, 3: 0.80}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
             soft = min(soft, offense_share * max(1.25, 1.55 - 0.08 * min(1.25, t)))
         dmg = max(dmg, soft)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.48, 5: 1.55, 6: 1.68, 7: 1.42}[tier]
+        nudge = {4: 1.50, 5: 1.58, 6: 1.82, 7: 1.48}[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
-        live_share = {1: 0.28, 2: 0.40, 3: 0.50, 4: 0.55, 5: 0.60, 6: 0.66, 7: 0.58}[tier]
+        live_share = {1: 0.32, 2: 0.42, 3: 0.52, 4: 0.56, 5: 0.62, 6: 0.74, 7: 0.66}[tier]
         if form_boost >= 6.0:
             mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
         else:
@@ -372,7 +372,7 @@ def simulate_ad(
     if live_flat > 1.0 and dmg * cancel_thr <= live_flat and allow_pierce:
         dmg = max(dmg, live_flat / cancel_thr * 1.08)
     # 1.0.25: clamp post-pierce to live incoming soft-cap (mirrors DifficultyEvents).
-    soft_cap_frac = {1: 0.60, 2: 0.60, 3: 0.55, 4: 0.48, 5: 0.50, 6: 0.54, 7: 0.58}[tier]
+    soft_cap_frac = {1: 0.60, 2: 0.60, 3: 0.55, 4: 0.48, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
     bag_cap = max(20.0, live_hp) * soft_cap_frac
     dmg = min(dmg, bag_cap)
 
@@ -573,10 +573,10 @@ def main() -> None:
             hard.append(f"- **{s['race']}**: HP jump {s['hpJump']}× on `{s['topForm']}` (limit 2.5×)")
         elif (s["hpJump"] or 0) > 2.0:
             notes.append(f"- **{s['race']}**: HP jump {s['hpJump']}× on `{s['topForm']}`")
-        # T5 peaks are soft-capped at 50% live bag (1.0.25); 0.75 is the absolute ceiling.
-        if (s["topHitFrac"] or 0) > 0.50 + 1e-6:
+        # T5 peaks soft-capped at 52% live bag (1.0.28); 0.75 is the absolute ceiling.
+        if (s["topHitFrac"] or 0) > 0.52 + 1e-6:
             hard.append(
-                f"- **{s['race']}**: hitFrac {s['topHitFrac']} exceeds T5 live soft-cap (0.50)"
+                f"- **{s['race']}**: hitFrac {s['topHitFrac']} exceeds T5 live soft-cap (0.52)"
             )
         if (s["topHitFrac"] or 0) > 0.75 + 1e-9:
             hard.append(f"- **{s['race']}**: hitFrac {s['topHitFrac']} exceeds 0.75 VIT hard ceiling")

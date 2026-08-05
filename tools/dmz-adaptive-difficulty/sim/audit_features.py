@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.27", 'VERSION = "1.0.27"' in mod)
+    check("VERSION 1.0.28", 'VERSION = "1.0.28"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -139,8 +139,8 @@ def main() -> int:
     check("strong-stat top-2 combine", has(profile, "combineTopStatBiases", "0.60"))
     check("VIT hit cap kept", has(profile, "kiProtectionHitFrac", "targetMobDamage", "hitCap"))
     check(
-        "raised hit-cap budgets (1.0.25)",
-        "case 1 -> 0.26" in profile and "default -> 0.70" in profile and "formFactor = 0.78" in profile,
+        "raised hit-cap budgets (1.0.28)",
+        "case 1 -> 0.30" in profile and "default -> 0.74" in profile and "formFactor = 0.78" in profile,
     )
     check("live-bag landing ladder", "liveMaxHealth" in profile and "landFrac" in profile)
     check("T3 god-form pierce", "activeTier >= 3 && formBoost >= 6.0" in profile or "formBoost >= 6.0" in profile)
@@ -250,16 +250,23 @@ def main() -> int:
     print("\n=== Post-pierce soft-cap clamp (1.0.25) ===")
     check("incomingSoftCapFrac helper", "incomingSoftCapFrac" in profile)
     check("post-pierce bagCap clamp", "bagCap" in profile and "incomingSoftCapFrac()" in profile)
-    check("formula revision 33", "mix(h, 33L)" in profile)
+    check("formula revision 34", "mix(h, 34L)" in profile)
     check("README pierce clamp", "Post-pierce" in readme or "post-pierce" in readme)
 
+    print("\n=== Telemetry retune (1.0.28) ===")
+    check("T1 threat floor 0.56", "case 1 -> 0.56" in profile)
+    check("T6 form nudge 1.82", "case 6 -> 1.82" in profile)
+    check("T6 liveShare 0.74", "case 6 -> 0.74" in profile)
+    check("README 1.0.28 retune", "1.0.28" in readme and "hits-2026-08-05" in readme)
+
     print("\n=== Telemetry retune (1.0.24) ===")
-    check("formula revision 33", "mix(h, 33L)" in profile)
-    check("T1 landCap 0.18", "case 1 -> 0.18" in profile)
-    check("T4 landFrac 0.32", "case 4 -> 0.32" in profile)
+    check("formula revision 34", "mix(h, 34L)" in profile)
+    check("T1 landCap 0.21", "case 1 -> 0.21" in profile)
+    check("T1 landFrac 0.14", "case 1 -> 0.14" in profile)
+    check("T6 landFrac 0.48", "case 6 -> 0.48" in profile)
     check("KP landing 1.5%/lvl", "kiProtectionLevel * 0.015" in profile)
     check("fill-to-landing floor", "preAmount < land)" in events and "land * 0.45" not in events)
-    check("progressive soft-caps", "case 4 -> 0.48" in events and "case 7 -> 0.58" in events)
+    check("progressive soft-caps", "case 5 -> 0.52" in events and "case 6 -> 0.58" in events and "case 7 -> 0.62" in events)
     check("README 1.0.25 balance", "1.0.25" in readme and "T4 tank" in readme)
     check("README 1.0.26 tier costs", "1.0.26" in readme and "tierCostLevelDivisor" in readme)
     check("tierCostDivisorMigratedV1", "tierCostDivisorMigratedV1" in cfg)
@@ -267,7 +274,7 @@ def main() -> int:
     cmi_gui = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/CmiDifficultyGui.java")
     check("UnlockTier.requirementTip", "requirementTip" in unlock_tier and "requiredPrestige" in unlock_tier)
     check("GUI shows DMZ or Prestige req", "Need &fDMZ" in cmi_gui and "_req_level" in bridge)
-    check("README 1.0.27 unlock req UX", "1.0.27" in readme and "Need DMZ" in readme)
+    check("README unlock req UX", "Need DMZ" in readme and "Prestige" in readme)
 
     print("\n=== Ghost scaling fix (1.0.23) ===")
     check(
@@ -283,7 +290,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.27", "1.0.27" in readme)
+    check("README version 1.0.28", "1.0.28" in readme)
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")

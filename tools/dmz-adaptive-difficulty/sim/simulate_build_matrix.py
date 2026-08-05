@@ -235,17 +235,17 @@ def simulate(
     dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
     dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.48, 2: 0.64, 3: 0.78}[tier]
+        threat = {1: 0.56, 2: 0.70, 3: 0.80}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
             soft = min(soft, offense_share * max(1.25, 1.55 - 0.08 * min(1.25, t)))
         dmg = max(dmg, soft)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.48, 5: 1.55, 6: 1.68, 7: 1.42}[tier]
+        nudge = {4: 1.50, 5: 1.58, 6: 1.82, 7: 1.48}[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
-        live_share = {1: 0.28, 2: 0.40, 3: 0.50, 4: 0.55, 5: 0.60, 6: 0.66, 7: 0.58}[tier]
+        live_share = {1: 0.32, 2: 0.42, 3: 0.52, 4: 0.56, 5: 0.62, 6: 0.74, 7: 0.66}[tier]
         if form_boost >= 6.0:
             mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
         else:
@@ -273,11 +273,11 @@ def simulate(
         dmg = max(dmg, live_flat / cancel_thr * 1.08)
         would_cancel = live_flat >= dmg * cancel_thr
     # 1.0.25: clamp post-pierce to live incoming soft-cap.
-    soft_cap_frac = {1: 0.60, 2: 0.60, 3: 0.55, 4: 0.48, 5: 0.50, 6: 0.54, 7: 0.58}[tier]
+    soft_cap_frac = {1: 0.60, 2: 0.60, 3: 0.55, 4: 0.48, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
     dmg = min(dmg, max(20.0, live_hp) * soft_cap_frac)
     would_cancel = live_flat >= dmg * cancel_thr
     # Live-bag landing ladder (1.0.25) — cancel path IS the early-tier ladder.
-    land_frac = {1: 0.11, 2: 0.17, 3: 0.24, 4: 0.32, 5: 0.38, 6: 0.44, 7: 0.50}[tier]
+    land_frac = {1: 0.14, 2: 0.19, 3: 0.25, 4: 0.33, 5: 0.40, 6: 0.48, 7: 0.54}[tier]
     if form_boost > 1.12:
         t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
         land_frac *= 1.0 + 0.12 * t
@@ -285,7 +285,7 @@ def simulate(
     landing = bag * land_frac
     if skills["kp"] > 0:
         landing *= max(0.65, 1.0 - skills["kp"] * 0.015)
-    land_cap = {1: 0.18, 2: 0.24, 3: 0.34, 4: 0.42, 5: 0.48, 6: 0.54, 7: 0.58}[tier]
+    land_cap = {1: 0.21, 2: 0.27, 3: 0.35, 4: 0.43, 5: 0.50, 6: 0.58, 7: 0.62}[tier]
     landing = max(live_hp * max(0.05, pct * 0.08), landing)
     landing = min(landing, live_hp * land_cap)
 

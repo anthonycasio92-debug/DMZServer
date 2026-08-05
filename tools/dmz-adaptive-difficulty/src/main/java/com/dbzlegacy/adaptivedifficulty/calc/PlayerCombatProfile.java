@@ -547,12 +547,12 @@ public final class PlayerCombatProfile {
         base = Math.max(base, Math.max(defFloor, hpFloor));
 
         // T1–T3 + transformed: raise soft floors so god forms stop tapping at early buys.
-        // Telemetry (1.0.20): tank god still ~7%/13% via cancel path — floors + landing.
+        // 1.0.28 (hits-2026-08-05): T1 high-form packs still ~11–15% bag — bump early threat.
         if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
             double threatPct = switch (activeTier) {
-                case 1 -> 0.48;
-                case 2 -> 0.64;
-                case 3 -> 0.78;
+                case 1 -> 0.56;
+                case 2 -> 0.70;
+                case 3 -> 0.80;
                 default -> 0.0;
             };
             double softFloor = offense * threatPct;
@@ -566,13 +566,13 @@ public final class PlayerCombatProfile {
         }
 
         // T4–T6 stretch ladder for tanks; T7 nudge softened (telemetry one-shots).
-        // 1.0.24: T4 nudge raised — live tank (Got2takeitez) dipped T3→T4 (0.24→0.17).
+        // 1.0.28: T6 nudge up — live T6 sat under T5 soft-cap glue (0.44 vs 0.48).
         if (activeTier >= 4 && formBoost > 1.12) {
             double nudge = switch (activeTier) {
-                case 4 -> 1.48;
-                case 5 -> 1.55;
-                case 6 -> 1.68;
-                default -> 1.42; // T7 soft — hit-cap + pierce soft-cap carry the bite
+                case 4 -> 1.50;
+                case 5 -> 1.58;
+                case 6 -> 1.82;
+                default -> 1.48; // T7 soft — hit-cap + pierce soft-cap carry the bite
             };
             base = Math.max(base, offenseShare * nudge);
         }
@@ -581,13 +581,13 @@ public final class PlayerCombatProfile {
         // bounded slice of live offense×tier% so transforms actually raise threat.
         if (formBoost > 1.12 && liveOffense > offense * 1.05) {
             double liveShare = switch (activeTier) {
-                case 1 -> 0.28;
-                case 2 -> 0.40;
-                case 3 -> 0.50;
-                case 4 -> 0.55;
-                case 5 -> 0.60;
-                case 6 -> 0.66;
-                default -> 0.58; // T7: climb vs T5/T6; event soft-cap 58% holds crush
+                case 1 -> 0.32;
+                case 2 -> 0.42;
+                case 3 -> 0.52;
+                case 4 -> 0.56;
+                case 5 -> 0.62;
+                case 6 -> 0.74;
+                default -> 0.66; // T7 climbs; event soft-cap holds crush
             };
             // Mega forms: more of the live slice (still hit-capped after).
             double megaBoost = formBoost >= 6.0
@@ -642,10 +642,11 @@ public final class PlayerCombatProfile {
 
     /** Same progressive ceilings as {@code DifficultyEvents.onDamageDone}. */
     public double incomingSoftCapFrac() {
+        // 1.0.28: space T5→T7 so soft-cap glue can't invert the buy ladder.
         return switch (activeTier) {
-            case 7 -> 0.58;
-            case 6 -> 0.54;
-            case 5 -> 0.50;
+            case 7 -> 0.62;
+            case 6 -> 0.58;
+            case 5 -> 0.52;
             case 4 -> 0.48;
             case 3 -> 0.55;
             default -> 0.60;
@@ -655,9 +656,9 @@ public final class PlayerCombatProfile {
     /**
      * Post-mitigation HP restored when DMZ hard-cancels a hit.
      * <p>
-     * 1.0.24 (hits-2026-08-04/05): cancel/landing path is the early–mid ladder for
-     * high-DEF kits. Retuned so T1 god cannot pin ~38% bag, T4 tanks no longer dip
-     * below T3, and KP10 saves ~15% on the safety-net path.
+     * 1.0.28 (hits-2026-08-05, 8821 hits): raise T1–T2 landing bite (T1 high-form
+     * packs still ~11% bag), keep early landCaps from god overshoot, and push T6
+     * landing above the T5 soft-cap plateau.
      */
     public double targetLandingDamage(DifficultyConfig cfg) {
         double liveBag = Math.max(20.0, liveMaxHealth);
@@ -666,13 +667,13 @@ public final class PlayerCombatProfile {
         double bag = Math.max(blendBag, liveBag * 0.90);
         // Tier landing fractions — progressive ladder from live claimed hits.
         double landFrac = switch (activeTier) {
-            case 1 -> 0.11;
-            case 2 -> 0.17;
-            case 3 -> 0.24;
-            case 4 -> 0.32;
-            case 5 -> 0.38;
-            case 6 -> 0.44;
-            default -> 0.50;
+            case 1 -> 0.14;
+            case 2 -> 0.19;
+            case 3 -> 0.25;
+            case 4 -> 0.33;
+            case 5 -> 0.40;
+            case 6 -> 0.48;
+            default -> 0.54;
         };
         if (formBoost > 1.12) {
             double t = Math.min(1.0, Math.log(Math.max(1.12, formBoost)) / Math.log(80.0));
@@ -689,13 +690,13 @@ public final class PlayerCombatProfile {
         land = Math.max(liveBag * Math.max(0.05, tierPercent * 0.08), land);
         // Early-tier caps tight (T1 god was pinning ~38%); mid/high climb with buys.
         double landCap = switch (activeTier) {
-            case 1 -> 0.18;
-            case 2 -> 0.24;
-            case 3 -> 0.34;
-            case 4 -> 0.42;
-            case 5 -> 0.48;
-            case 6 -> 0.54;
-            default -> 0.58;
+            case 1 -> 0.21;
+            case 2 -> 0.27;
+            case 3 -> 0.35;
+            case 4 -> 0.43;
+            case 5 -> 0.50;
+            case 6 -> 0.58;
+            default -> 0.62;
         };
         land = Math.min(land, liveBag * landCap);
         return Math.max(1.0, land);
@@ -745,16 +746,15 @@ public final class PlayerCombatProfile {
      * Base form uses a lower formFactor so transforming still raises pressure.
      */
     private double kiProtectionHitFrac() {
-        // 1.0.24 telemetry: raise T4 bite so tank ladder doesn't dip T3→T4;
-        // T7 budget above T5/T6 so the top buy still climbs.
+        // 1.0.28 telemetry: T1 bite up; T6 budget clears T5 soft-cap glue.
         double tierFrac = switch (activeTier) {
-            case 1 -> 0.26;
-            case 2 -> 0.34;
-            case 3 -> 0.44;
+            case 1 -> 0.30;
+            case 2 -> 0.37;
+            case 3 -> 0.45;
             case 4 -> 0.56;
-            case 5 -> 0.58;
-            case 6 -> 0.62;
-            default -> 0.70;
+            case 5 -> 0.60;
+            case 6 -> 0.68;
+            default -> 0.74;
         };
         double formFactor;
         if (formBoost <= 1.12) {
@@ -1161,8 +1161,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: post-pierce live soft-cap clamp (1.0.25).
-        h = mix(h, 33L);
+        // Formula revision: Aug 5 telemetry retune — T1 bite + T5/T6 soft-cap space (1.0.28).
+        h = mix(h, 34L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

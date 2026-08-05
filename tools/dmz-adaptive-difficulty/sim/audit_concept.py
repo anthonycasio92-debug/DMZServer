@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed concept audit for AdaptiveDifficulty 1.0.27.
+"""Fail-closed concept audit for AdaptiveDifficulty 1.0.28.
 
 Encodes the player's stated balance intent:
   1. Buy tiers 1–7 feel progressively harder (stock 21→200%).
@@ -50,7 +50,7 @@ def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
     lines = [
-        "# AdaptiveDifficulty concept audit (1.0.27)",
+        "# AdaptiveDifficulty concept audit (1.0.28)",
         "",
         "Fail-closed checks against the player's stated balance concept.",
         "",
@@ -232,15 +232,16 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 1.0.27", 'VERSION = "1.0.27"' in mod)
-    check("formula revision 33", "mix(h, 33L)" in profile)
+    check("VERSION 1.0.28", 'VERSION = "1.0.28"' in mod)
+    check("formula revision 34", "mix(h, 34L)" in profile)
     check("hpFloorStrength present", "hpFloorStrength" in profile)
-    check("T1–T3 god-form floors raised", "case 1 -> 0.48" in profile and "case 3 -> 0.78" in profile)
+    check("T1–T3 god-form floors raised", "case 1 -> 0.56" in profile and "case 3 -> 0.80" in profile)
     events = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java").read_text(
         encoding="utf-8", errors="replace"
     )
-    check("T7 incoming soft-cap in events", "maxFrac" in events and "0.58" in events)
-    check("T5 soft-cap ≤50%", "case 5 -> 0.50" in events or "0.50" in events)
+    check("T7 incoming soft-cap in events", "maxFrac" in events and "0.62" in events)
+    check("T5 soft-cap 52%", "case 5 -> 0.52" in events)
+    check("T6 soft-cap 58%", "case 6 -> 0.58" in events)
     tel = (
         ROOT
         / "src/main/java/com/dbzlegacy/adaptivedifficulty/telemetry/BalanceTelemetry.java"

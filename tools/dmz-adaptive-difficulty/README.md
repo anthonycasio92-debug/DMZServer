@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.27)
+# AdaptiveDifficulty (v1.0.28)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -38,8 +38,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.27.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.27.jar`
+1. `mods/AdaptiveDifficulty-1.0.28.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.28.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -87,6 +87,12 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Stock `tierCostLevelDivisor` is **50000** (was 1000) so a DMZ 100k player pays ~15× Gold for T7 instead of a ladder-inflated Emerald pile. Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
+### Live balance (1.0.28)
+Retuned from claimed hits in `hits-2026-08-05.jsonl` (8821 hits):
+- Raise T1–T2 landing / hit-cap bite (T1 high-form packs were ~11% bag)
+- Space soft-caps T5/T6/T7 → **0.52 / 0.58 / 0.62** (T6 was under T5 glue)
+- Push T6 form nudge + live-offense share so the buy ladder climbs past T5
+
 ### UX (1.0.27)
 Buy Tier GUI / chat now shows each locked tier’s real gate:
 **DMZ level or Prestige N** (either one qualifies), plus your current DMZ/Prestige.

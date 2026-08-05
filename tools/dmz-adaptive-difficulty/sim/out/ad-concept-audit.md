@@ -1,4 +1,4 @@
-# AdaptiveDifficulty concept audit (1.0.27)
+# AdaptiveDifficulty concept audit (1.0.28)
 
 Fail-closed checks against the player's stated balance concept.
 
@@ -6,48 +6,48 @@ Fail-closed checks against the player's stated balance concept.
 
 - ✅ stock percents 21→200%
 - ✅ stock tankDamageHealthRatio 0.28 — got 0.28
-- ✅ even T1→T5 hitFrac rises ≥1.4× — T1=0.135 T5=0.452
-- ✅ even T5→T7 hitFrac rises ≥1.10× — T5=0.452 T7=0.546
-- ✅ even T5 unprotected ≥25% bag (KP recommended) — hitFrac=0.452
-- ✅ even T7 unprotected ≥40% bag — hitFrac=0.546
+- ✅ even T1→T5 hitFrac rises ≥1.4× — T1=0.135 T5=0.468
+- ✅ even T5→T7 hitFrac rises ≥1.10× — T5=0.468 T7=0.577
+- ✅ even T5 unprotected ≥25% bag (KP recommended) — hitFrac=0.468
+- ✅ even T7 unprotected ≥40% bag — hitFrac=0.577
 
 ## 2) Dump builds feel the ladder (not shrug)
 
 - ✅ vit_dump T5 ≥ 28% bag — hitFrac=0.441
-- ✅ vit_dump T5 ≥ 60% of even — 0.441 vs even 0.452
-- ✅ vit_dump T7 > T1 ×1.8 — T1=0.050 T7=0.546
+- ✅ vit_dump T5 ≥ 60% of even — 0.441 vs even 0.468
+- ✅ vit_dump T7 > T1 ×1.8 — T1=0.050 T7=0.577
 - ✅ vit_dump T5 post-DEF ≥ 10% live — postDef~=0.154
-- ✅ res_dump T5 ≥ 28% bag — hitFrac=0.452
-- ✅ res_dump T5 ≥ 60% of even — 0.452 vs even 0.452
-- ✅ res_dump T7 > T1 ×1.8 — T1=0.068 T7=0.546
-- ✅ res_dump T5 post-DEF ≥ 10% live — postDef~=0.158
-- ✅ str_dump T5 ≥ 28% bag — hitFrac=0.452
-- ✅ str_dump T5 ≥ 60% of even — 0.452 vs even 0.452
-- ✅ str_dump T7 > T1 ×1.8 — T1=0.203 T7=0.546
-- ✅ str_dump T5 post-DEF ≥ 10% live — postDef~=0.158
-- ✅ pwr_dump T5 ≥ 28% bag — hitFrac=0.452
-- ✅ pwr_dump T5 ≥ 60% of even — 0.452 vs even 0.452
-- ✅ pwr_dump T7 > T1 ×1.8 — T1=0.203 T7=0.546
-- ✅ pwr_dump T5 post-DEF ≥ 10% live — postDef~=0.158
+- ✅ res_dump T5 ≥ 28% bag — hitFrac=0.468
+- ✅ res_dump T5 ≥ 60% of even — 0.468 vs even 0.468
+- ✅ res_dump T7 > T1 ×1.8 — T1=0.068 T7=0.577
+- ✅ res_dump T5 post-DEF ≥ 10% live — postDef~=0.164
+- ✅ str_dump T5 ≥ 28% bag — hitFrac=0.468
+- ✅ str_dump T5 ≥ 60% of even — 0.468 vs even 0.468
+- ✅ str_dump T7 > T1 ×1.8 — T1=0.234 T7=0.577
+- ✅ str_dump T5 post-DEF ≥ 10% live — postDef~=0.164
+- ✅ pwr_dump T5 ≥ 28% bag — hitFrac=0.468
+- ✅ pwr_dump T5 ≥ 60% of even — 0.468 vs even 0.468
+- ✅ pwr_dump T7 > T1 ×1.8 — T1=0.206 T7=0.577
+- ✅ pwr_dump T5 post-DEF ≥ 10% live — postDef~=0.164
 - ✅ tank class T5 ≥ 28% bag — hitFrac=0.445
-- ✅ tank class T5 ≥ 60% of even — tank=0.445 even=0.452
+- ✅ tank class T5 ≥ 60% of even — tank=0.445 even=0.468
 
 ## 3) Skills matter
 
-- ✅ KP10 reduces landing dmg (pre hitFrac unchanged) — none=0.452 afterKp=0.407
+- ✅ KP10 reduces landing dmg (pre hitFrac unchanged) — none=0.468 afterKp=0.421
 - ✅ Ki Infusion sponges more pack HP — none=1341 inf=1716
 - ✅ Potential Unlock sponges when transformed — androidforms.ssdroid4 none=2309 pu=2586
-- ✅ KP still saves on god form — pre=0.500 afterKp=0.450
+- ✅ KP still saves on god form — pre=0.520 afterKp=0.468
 
 ## 4) God forms do not out-tank (incl. DMZ DEF-cancel)
 
-- ✅ god-form T5 post-DEF ≥12% (androidforms.ssdroid4) — pre=0.500 postDef~=0.175 ×54.0
-- ✅ SSJG T5 post-DEF ≥12% live — pre=0.500 postDef~=0.175
-- ✅ SSJG T7 clears cancel or landing ≥35% — wouldCancel=True dmg=434 flatMit=2442 landingFrac=0.544
-- ✅ SSJG T7 landing safety-net ≥35% bag — landingFrac=0.544
-- ✅ SSJB T5 post-DEF ≥12% live — pre=0.500 postDef~=0.175
-- ✅ SSJB T7 clears cancel or landing ≥35% — wouldCancel=True dmg=434 flatMit=4775 landingFrac=0.553
-- ✅ SSJB T7 landing safety-net ≥35% bag — landingFrac=0.553
+- ✅ god-form T5 post-DEF ≥12% (androidforms.ssdroid4) — pre=0.520 postDef~=0.182 ×54.0
+- ✅ SSJG T5 post-DEF ≥12% live — pre=0.520 postDef~=0.182
+- ✅ SSJG T7 clears cancel or landing ≥35% — wouldCancel=True dmg=464 flatMit=2442 landingFrac=0.588
+- ✅ SSJG T7 landing safety-net ≥35% bag — landingFrac=0.588
+- ✅ SSJB T5 post-DEF ≥12% live — pre=0.520 postDef~=0.182
+- ✅ SSJB T7 clears cancel or landing ≥35% — wouldCancel=True dmg=464 flatMit=4775 landingFrac=0.598
+- ✅ SSJB T7 landing safety-net ≥35% bag — landingFrac=0.598
 
 ## 5) Melee AD parity (feature gates)
 
@@ -57,31 +57,32 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 1.0.27
-- ✅ formula revision 33
+- ✅ VERSION 1.0.28
+- ✅ formula revision 34
 - ✅ hpFloorStrength present
 - ✅ T1–T3 god-form floors raised
 - ✅ T7 incoming soft-cap in events
-- ✅ T5 soft-cap ≤50%
+- ✅ T5 soft-cap 52%
+- ✅ T6 soft-cap 58%
 - ✅ whitelist combat telemetry present
-- ✅ god-form landing T1≥10% — landingFrac=0.122
-- ✅ god-form landing T5≥28% — landingFrac=0.421
-- ✅ god-form landing T7≥40% — landingFrac=0.553
-- ✅ god-form landing T7>T1×2.5 — T1=0.122 T7=0.553
+- ✅ god-form landing T1≥10% — landingFrac=0.155
+- ✅ god-form landing T5≥28% — landingFrac=0.443
+- ✅ god-form landing T7≥40% — landingFrac=0.598
+- ✅ god-form landing T7>T1×2.5 — T1=0.155 T7=0.598
 
 ## Sample numbers (saiyan warrior)
 
 | Build | T1 | T5 | T5 post-DEF | T7 | vs even T5 |
 |-------|---:|---:|------------:|---:|-----------:|
-| even | 0.135 | 0.452 | 0.158 | 0.546 | 1.00× |
-| vit_dump | 0.050 | 0.441 | 0.154 | 0.546 | 0.97× |
-| res_dump | 0.068 | 0.452 | 0.158 | 0.546 | 1.00× |
-| str_dump | 0.203 | 0.452 | 0.158 | 0.546 | 1.00× |
-| pwr_dump | 0.203 | 0.452 | 0.158 | 0.546 | 1.00× |
-| tank class | — | 0.445 | 0.156 | — | 0.98× |
+| even | 0.135 | 0.468 | 0.164 | 0.577 | 1.00× |
+| vit_dump | 0.050 | 0.441 | 0.154 | 0.577 | 0.94× |
+| res_dump | 0.068 | 0.468 | 0.164 | 0.577 | 1.00× |
+| str_dump | 0.234 | 0.468 | 0.164 | 0.577 | 1.00× |
+| pwr_dump | 0.206 | 0.468 | 0.164 | 0.577 | 1.00× |
+| tank class | — | 0.445 | 0.156 | — | 0.95× |
 
 | Form | hitFrac | post-DEF | softHits |
 |------|--------:|---------:|---------:|
-| androidforms.ssdroid4 | 0.500 | 0.175 | 1.21 |
+| androidforms.ssdroid4 | 0.520 | 0.182 | 1.21 |
 
-**Result:** PASS — 49 ok, 0 error(s).
+**Result:** PASS — 50 ok, 0 error(s).
