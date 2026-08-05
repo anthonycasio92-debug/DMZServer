@@ -1,4 +1,4 @@
-# AdaptiveDifficulty concept audit (1.0.24)
+# AdaptiveDifficulty concept audit (1.0.25)
 
 Fail-closed checks against the player's stated balance concept.
 
@@ -37,16 +37,16 @@ Fail-closed checks against the player's stated balance concept.
 - ✅ KP10 reduces landing dmg (pre hitFrac unchanged) — none=0.452 afterKp=0.407
 - ✅ Ki Infusion sponges more pack HP — none=1341 inf=1716
 - ✅ Potential Unlock sponges when transformed — androidforms.ssdroid4 none=2309 pu=2586
-- ✅ KP still saves on god form — pre=0.970 afterKp=0.873
+- ✅ KP still saves on god form — pre=0.500 afterKp=0.450
 
 ## 4) God forms do not out-tank (incl. DMZ DEF-cancel)
 
-- ✅ god-form T5 post-DEF ≥12% (androidforms.ssdroid4) — pre=0.970 postDef~=0.340 ×54.0
-- ✅ SSJG T5 post-DEF ≥12% live — pre=1.409 postDef~=0.493
-- ✅ SSJG T7 does not DMZ hard-cancel — dmg=1055 flatMit=2442 ratio=2.31
+- ✅ god-form T5 post-DEF ≥12% (androidforms.ssdroid4) — pre=0.500 postDef~=0.175 ×54.0
+- ✅ SSJG T5 post-DEF ≥12% live — pre=0.500 postDef~=0.175
+- ✅ SSJG T7 clears cancel or landing ≥35% — wouldCancel=True dmg=434 flatMit=2442 landingFrac=0.544
 - ✅ SSJG T7 landing safety-net ≥35% bag — landingFrac=0.544
-- ✅ SSJB T5 post-DEF ≥12% live — pre=2.754 postDef~=0.964
-- ✅ SSJB T7 does not DMZ hard-cancel — dmg=2063 flatMit=4775 ratio=2.31
+- ✅ SSJB T5 post-DEF ≥12% live — pre=0.500 postDef~=0.175
+- ✅ SSJB T7 clears cancel or landing ≥35% — wouldCancel=True dmg=434 flatMit=4775 landingFrac=0.553
 - ✅ SSJB T7 landing safety-net ≥35% bag — landingFrac=0.553
 
 ## 5) Melee AD parity (feature gates)
@@ -57,8 +57,8 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 1.0.24
-- ✅ formula revision 32
+- ✅ VERSION 1.0.25
+- ✅ formula revision 33
 - ✅ hpFloorStrength present
 - ✅ T1–T3 god-form floors raised
 - ✅ T7 incoming soft-cap in events
@@ -82,6 +82,6 @@ Fail-closed checks against the player's stated balance concept.
 
 | Form | hitFrac | post-DEF | softHits |
 |------|--------:|---------:|---------:|
-| androidforms.ssdroid4 | 0.970 | 0.340 | 1.21 |
+| androidforms.ssdroid4 | 0.500 | 0.175 | 1.21 |
 
 **Result:** PASS — 49 ok, 0 error(s).

@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.24", 'VERSION = "1.0.24"' in mod)
+    check("VERSION 1.0.25", 'VERSION = "1.0.25"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -138,7 +138,7 @@ def main() -> int:
     check("strong-stat top-2 combine", has(profile, "combineTopStatBiases", "0.60"))
     check("VIT hit cap kept", has(profile, "kiProtectionHitFrac", "targetMobDamage", "hitCap"))
     check(
-        "raised hit-cap budgets (1.0.24)",
+        "raised hit-cap budgets (1.0.25)",
         "case 1 -> 0.26" in profile and "default -> 0.70" in profile and "formFactor = 0.78" in profile,
     )
     check("live-bag landing ladder", "liveMaxHealth" in profile and "landFrac" in profile)
@@ -246,14 +246,20 @@ def main() -> int:
     check("first login forces personal OFF", "PERSONAL_OFF_THIS_BOOT.add" in events and "setPersonalEnabled(false)" in events)
     check("README personal OFF on restart", "forces personal OFF" in readme or "Personal difficulty starts **OFF**" in readme)
 
+    print("\n=== Post-pierce soft-cap clamp (1.0.25) ===")
+    check("incomingSoftCapFrac helper", "incomingSoftCapFrac" in profile)
+    check("post-pierce bagCap clamp", "bagCap" in profile and "incomingSoftCapFrac()" in profile)
+    check("formula revision 33", "mix(h, 33L)" in profile)
+    check("README pierce clamp", "Post-pierce" in readme or "post-pierce" in readme)
+
     print("\n=== Telemetry retune (1.0.24) ===")
-    check("formula revision 32", "mix(h, 32L)" in profile)
+    check("formula revision 33", "mix(h, 33L)" in profile)
     check("T1 landCap 0.18", "case 1 -> 0.18" in profile)
     check("T4 landFrac 0.32", "case 4 -> 0.32" in profile)
     check("KP landing 1.5%/lvl", "kiProtectionLevel * 0.015" in profile)
     check("fill-to-landing floor", "preAmount < land)" in events and "land * 0.45" not in events)
     check("progressive soft-caps", "case 4 -> 0.48" in events and "case 7 -> 0.58" in events)
-    check("README 1.0.24 balance", "1.0.24" in readme and "T4 tank" in readme)
+    check("README 1.0.25 balance", "1.0.25" in readme and "T4 tank" in readme)
 
     print("\n=== Ghost scaling fix (1.0.23) ===")
     check(
@@ -269,7 +275,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.24", "1.0.24" in readme)
+    check("README version 1.0.25", "1.0.25" in readme)
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Summary ===")

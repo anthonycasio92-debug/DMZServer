@@ -346,7 +346,7 @@ def simulate_ad(
         nudge = {4: 1.48, 5: 1.55, 6: 1.68, 7: 1.42}[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
-        live_share = {1: 0.28, 2: 0.40, 3: 0.50, 4: 0.55, 5: 0.62, 6: 0.68, 7: 0.48}[tier]
+        live_share = {1: 0.28, 2: 0.40, 3: 0.50, 4: 0.55, 5: 0.60, 6: 0.66, 7: 0.58}[tier]
         if form_boost >= 6.0:
             mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
         else:
@@ -371,6 +371,10 @@ def simulate_ad(
     allow_pierce = tier >= 4 or (tier >= 3 and form_boost >= 6.0)
     if live_flat > 1.0 and dmg * cancel_thr <= live_flat and allow_pierce:
         dmg = max(dmg, live_flat / cancel_thr * 1.08)
+    # 1.0.25: clamp post-pierce to live incoming soft-cap (mirrors DifficultyEvents).
+    soft_cap_frac = {1: 0.60, 2: 0.60, 3: 0.55, 4: 0.48, 5: 0.50, 6: 0.54, 7: 0.58}[tier]
+    bag_cap = max(20.0, live_hp) * soft_cap_frac
+    dmg = min(dmg, bag_cap)
 
     hp_ov = 1.0
     hp_ov *= _blend_counter(_combine_top2(_hp_stat_bias, top), pct)
@@ -542,7 +546,7 @@ def main() -> None:
         )
 
     md = [
-        "# AdaptiveDifficulty race/form simulation (1.0.15)",
+        "# AdaptiveDifficulty race/form simulation (1.0.25)",
         "",
         "Source: `config/dragonminez/races/*`.",
         "Model: soft STR/SKP/PWR (+ mild ENE) × tier% + live-bag hit-cap + god-form live-offense pressure.",
@@ -569,7 +573,12 @@ def main() -> None:
             hard.append(f"- **{s['race']}**: HP jump {s['hpJump']}× on `{s['topForm']}` (limit 2.5×)")
         elif (s["hpJump"] or 0) > 2.0:
             notes.append(f"- **{s['race']}**: HP jump {s['hpJump']}× on `{s['topForm']}`")
-        if (s["topHitFrac"] or 0) > 0.75:
+        # T5 peaks are soft-capped at 50% live bag (1.0.25); 0.75 is the absolute ceiling.
+        if (s["topHitFrac"] or 0) > 0.50 + 1e-6:
+            hard.append(
+                f"- **{s['race']}**: hitFrac {s['topHitFrac']} exceeds T5 live soft-cap (0.50)"
+            )
+        if (s["topHitFrac"] or 0) > 0.75 + 1e-9:
             hard.append(f"- **{s['race']}**: hitFrac {s['topHitFrac']} exceeds 0.75 VIT hard ceiling")
         if (s["dmgJump"] or 0) < 1.05 and s["topFormBoost"] >= 15:
             hard.append(f"- **{s['race']}**: form ×{s['topFormBoost']} barely moves dmg ({s['dmgJump']}×)")

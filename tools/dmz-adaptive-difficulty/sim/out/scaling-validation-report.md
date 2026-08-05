@@ -1,4 +1,4 @@
-# AdaptiveDifficulty 1.0.24 scaling validation
+# AdaptiveDifficulty 1.0.25 scaling validation
 
 
 ## 1) PWR/ENE in offense
@@ -75,9 +75,9 @@
 - ✅ vit_dump: T5 hitFrac > T1 — T1=0.050 T5=0.441
 - ✅ vit_dump: T7 hitFrac > T5 — T5=0.441 T7=0.546 pierceBound=False
 - ✅ vit_dump: T5 pressure ≥ 25% bag — pressure=0.441
-- ✅ res_dump: T5 hitFrac > T1 — T1=0.159 T5=0.567
-- ✅ res_dump: T7 hitFrac > T5 — T5=0.567 T7=0.567 pierceBound=True
-- ✅ res_dump: T5 pressure ≥ 25% bag — pressure=0.567
+- ✅ res_dump: T5 hitFrac > T1 — T1=0.159 T5=0.500
+- ✅ res_dump: T7 hitFrac > T5 — T5=0.500 T7=0.580 pierceBound=False
+- ✅ res_dump: T5 pressure ≥ 25% bag — pressure=0.500
 - ✅ str_dump: T5 hitFrac > T1 — T1=0.203 T5=0.452
 - ✅ str_dump: T7 hitFrac > T5 — T5=0.452 T7=0.546 pierceBound=False
 - ✅ str_dump: T5 pressure ≥ 25% bag — pressure=0.452
@@ -85,7 +85,7 @@
 - ✅ VIT dump T5 bag pressure ≥ 28% — hitFrac=0.444 dmg=542
 - ✅ VIT dump T5 ≥ 60% of even bag pressure — vit=0.444 even=0.452
 - ✅ tank class T5 bag pressure ≥ 28% — hitFrac=0.452 dmg=326
-- ✅ RES dump uses DEF floor (or near-cap) — floor=True cap=True dmg=518
+- ✅ RES dump uses DEF floor (or near-cap) — floor=True cap=True dmg=160
 - ✅ STR dump pack sponge ≥ 0.35 soft hits — softHits=0.65 mobHp=1703 softOffShare=2618
 - ✅ stock mobHealthScale 1.15 — got 1.15
 - ✅ stock transformScaleWeight 0.65 — got 0.65
@@ -99,16 +99,16 @@
 
 | Race | Form | Top2 | Overlay | MobDmg | HitFrac | Offense |
 |------|------|------|--------:|-------:|--------:|--------:|
-| sento_saiyan | `ancestral_bloodline.ancestral_justice` | STR>VIT | 1.151 | 7235 | 0.502 | 3249 |
-| ancient_saiyan | `primalssj.primalgod` | STR>VIT | 1.145 | 6415 | 0.580 | 12293 |
+| sento_saiyan | `ancestral_bloodline.ancestral_justice` | STR>VIT | 1.151 | 7210 | 0.500 | 3249 |
+| ancient_saiyan | `primalssj.primalgod` | STR>VIT | 1.145 | 5530 | 0.500 | 12293 |
 | viltrumite | `androidforms.conquestfull` | STR>VIT | 1.145 | 1423 | 0.470 | 2689 |
-| frostdemon | `android_enhancement_a.metal_overheat` | STR>VIT | 1.145 | 1142 | 0.517 | 2663 |
-| saiyan | `androidforms.ssdroid4` | STR>VIT | 1.145 | 1114 | 0.505 | 2442 |
-| human | `android_enhancement.overheat` | STR>VIT | 1.145 | 424 | 0.566 | 2516 |
-| bioandroid | `legendaryforms.xenomax` | STR>VIT | 1.145 | 406 | 0.542 | 2169 |
-| majin | `pureforms.ultra` | STR>VIT | 1.145 | 406 | 0.542 | 2169 |
-| monkey | `oozaru.wukongzero` | STR>VIT | 1.145 | 406 | 0.542 | 2169 |
-| namekian | `superforms.supernamekian` | STR>VIT | 1.145 | 406 | 0.542 | 2169 |
+| frostdemon | `android_enhancement_a.metal_overheat` | STR>VIT | 1.145 | 1104 | 0.500 | 2663 |
+| saiyan | `androidforms.ssdroid4` | STR>VIT | 1.145 | 1104 | 0.500 | 2442 |
+| bioandroid | `legendaryforms.xenomax` | STR>VIT | 1.145 | 374 | 0.500 | 2169 |
+| human | `android_enhancement.overheat` | STR>VIT | 1.145 | 374 | 0.500 | 2516 |
+| majin | `pureforms.ultra` | STR>VIT | 1.145 | 374 | 0.500 | 2169 |
+| monkey | `oozaru.wukongzero` | STR>VIT | 1.145 | 374 | 0.500 | 2169 |
+| namekian | `superforms.supernamekian` | STR>VIT | 1.145 | 374 | 0.500 | 2169 |
 
 ### Class matrix (T5 base form)
 
@@ -119,7 +119,7 @@
 | martialartist | SKP>VIT | 1.145 | 213 | 1.000× | 1.000× |
 | spiritualist | PWR>ENE | 1.142 | 167 | 1.000× | 1.000× |
 | cleric | ENE>PWR | 1.142 | 235 | 1.000× | 1.000× |
-| paladin | RES>VIT | 1.178 | 302 | 1.000× | 1.285× |
+| paladin | RES>VIT | 1.178 | 260 | 1.000× | 1.105× |
 | tank | RES>VIT | 1.178 | 326 | 1.000× | 1.000× |
 
 ## Summary

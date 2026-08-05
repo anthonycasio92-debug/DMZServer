@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate AdaptiveDifficulty 1.0.24 scaling against the intended combat model.
+"""Validate AdaptiveDifficulty 1.0.25 scaling against the intended combat model.
 
 Checks (fail-closed):
 1. Soft offense includes STR/SKP/PWR + mild ENE
@@ -256,12 +256,15 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     allow_pierce = tier >= 4 or (tier >= 3 and form_boost >= 6.0)
     if live_flat > 1.0 and dmg_capped * 2.5 <= live_flat and allow_pierce:
         dmg_capped = max(dmg_capped, live_flat / 2.5 * 1.08)
+    soft_cap_frac = {1: 0.60, 2: 0.60, 3: 0.55, 4: 0.48, 5: 0.50, 6: 0.54, 7: 0.58}[tier]
+    dmg_capped = min(dmg_capped, max(20.0, live_hp) * soft_cap_frac)
 
     # No-counter baseline (still with PWR/ENE offense + floors).
     dmg_no_counter_raw = max(1.0, dmg)
     dmg_no_counter = min(dmg_no_counter_raw, hit_cap)
     if live_flat > 1.0 and dmg_no_counter * 2.5 <= live_flat and allow_pierce:
         dmg_no_counter = max(dmg_no_counter, live_flat / 2.5 * 1.08)
+    dmg_no_counter = min(dmg_no_counter, max(20.0, live_hp) * soft_cap_frac)
     # STR/SKP-only offense (old 1.0.10) with counters still on — for delta proof.
     dmg_old_raw = offense_no_pwr * pct
     dmg_old_raw = max(dmg_old_raw, defense * pct * TANK_DEF_RATIO * floor_strength)
@@ -345,7 +348,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
 def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
-    lines: list[str] = ["# AdaptiveDifficulty 1.0.24 scaling validation", ""]
+    lines: list[str] = ["# AdaptiveDifficulty 1.0.25 scaling validation", ""]
 
     def check(label: str, cond: bool, detail: str = "") -> None:
         if cond:
@@ -473,7 +476,7 @@ def main() -> int:
         )
     check(
         "T7 >> T1 pressure",
-        # 1.0.24: T1 god-form floors raised + T7 soft-cap → expect ~2.2×+, not 2.5×.
+        # 1.0.25: T1 god-form floors raised + T7 soft-cap → expect ~2.2×+, not 2.5×.
         ladder[-1]["mobDmg"] > ladder[0]["mobDmg"] * 2.2,
         f"T1={ladder[0]['mobDmg']:.0f} T7={ladder[-1]['mobDmg']:.0f}",
     )

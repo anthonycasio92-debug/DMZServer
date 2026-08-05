@@ -629,7 +629,27 @@ public final class PlayerCombatProfile {
                 base = Math.max(base, pierce);
             }
         }
+        // 1.0.25: never paint ATK above the live incoming soft-cap.
+        // Unclamped pierce on high-DEF god forms produced hitFrac ≫ 0.75 (race/form
+        // audit) while LivingDamageEvent would soft-cap anyway — kiblasts/explosions
+        // still read the inflated ATTACK_DAMAGE. Match the event ceiling here.
+        double bagCap = Math.max(20.0, liveMaxHealth) * incomingSoftCapFrac();
+        if (base > bagCap) {
+            base = bagCap;
+        }
         return Math.max(1.0, base);
+    }
+
+    /** Same progressive ceilings as {@code DifficultyEvents.onDamageDone}. */
+    public double incomingSoftCapFrac() {
+        return switch (activeTier) {
+            case 7 -> 0.58;
+            case 6 -> 0.54;
+            case 5 -> 0.50;
+            case 4 -> 0.48;
+            case 3 -> 0.55;
+            default -> 0.60;
+        };
     }
 
     /**
@@ -1141,8 +1161,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: telemetry ladder retune — T4 dip / T1 god cap / KP (1.0.24).
-        h = mix(h, 32L);
+        // Formula revision: post-pierce live soft-cap clamp (1.0.25).
+        h = mix(h, 33L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }
