@@ -4,7 +4,7 @@
 ## 1) PWR/ENE in offense
 
 - ✅ ki offense > STR/SKP-only offense — full=1696 vs noPWR=349
-- ✅ ki pre-cap mob dmg > old STR/SKP-only — newRaw=12376 vs oldRaw=849 (both hit-capped after)
+- ✅ ki pre-cap mob dmg > old STR/SKP-only — newRaw=13973 vs oldRaw=924 (both hit-capped after)
 - ✅ high-VIT ki final dmg > STR/SKP-only — new=4687 vs old=3671 (capBound=True floorBound=True)
 - ✅ high ENE raises soft offense — highENE=2684 vs lowENE=90
 

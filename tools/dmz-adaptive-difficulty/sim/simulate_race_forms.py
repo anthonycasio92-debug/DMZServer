@@ -343,10 +343,10 @@ def simulate_ad(
             soft = min(soft, offense_share * max(1.25, 1.55 - 0.08 * min(1.25, t)))
         dmg = max(dmg, soft)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.50, 5: 1.58, 6: 1.82, 7: 1.48}[tier]
+        nudge = {4: 1.68, 5: 1.72, 6: 1.82, 7: 1.48}[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
-        live_share = {1: 0.32, 2: 0.42, 3: 0.52, 4: 0.56, 5: 0.62, 6: 0.74, 7: 0.66}[tier]
+        live_share = {1: 0.32, 2: 0.42, 3: 0.52, 4: 0.66, 5: 0.70, 6: 0.74, 7: 0.66}[tier]
         if form_boost >= 6.0:
             mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
         else:

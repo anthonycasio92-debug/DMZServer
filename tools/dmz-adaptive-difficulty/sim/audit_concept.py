@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed concept audit for AdaptiveDifficulty 1.0.33.
+"""Fail-closed concept audit for AdaptiveDifficulty 1.0.34.
 
 Encodes the player's stated balance intent:
   1. Buy tiers 1–7 feel progressively harder (stock 21→200%).
@@ -50,7 +50,7 @@ def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
     lines = [
-        "# AdaptiveDifficulty concept audit (1.0.33)",
+        "# AdaptiveDifficulty concept audit (1.0.34)",
         "",
         "Fail-closed checks against the player's stated balance concept.",
         "",
@@ -232,8 +232,8 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 1.0.33", 'VERSION = "1.0.33"' in mod)
-    check("formula revision 35", "mix(h, 35L)" in profile)
+    check("VERSION 1.0.34", 'VERSION = "1.0.34"' in mod)
+    check("formula revision 36", "mix(h, 36L)" in profile)
     check("hpFloorStrength present", "hpFloorStrength" in profile)
     check("T1–T3 god-form floors raised", "case 1 -> 0.56" in profile and "case 3 -> 0.80" in profile)
     events = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java").read_text(

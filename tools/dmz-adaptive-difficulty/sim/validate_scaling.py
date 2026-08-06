@@ -231,10 +231,10 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
             soft = min(soft, offense_share * max(1.25, 1.55 - 0.08 * min(1.25, t)))
         dmg = max(dmg, soft)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.50, 5: 1.58, 6: 1.82, 7: 1.48}[tier]
+        nudge = {4: 1.68, 5: 1.72, 6: 1.82, 7: 1.48}[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
-        live_share = {1: 0.32, 2: 0.42, 3: 0.52, 4: 0.56, 5: 0.62, 6: 0.74, 7: 0.66}[tier]
+        live_share = {1: 0.32, 2: 0.42, 3: 0.52, 4: 0.66, 5: 0.70, 6: 0.74, 7: 0.66}[tier]
         if form_boost >= 6.0:
             mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
         else:
@@ -273,7 +273,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
         threat = {1: 0.56, 2: 0.70, 3: 0.80}[tier]
         dmg_old_raw = max(dmg_old_raw, offense_no_pwr * threat)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.50, 5: 1.58, 6: 1.82, 7: 1.48}[tier]
+        nudge = {4: 1.68, 5: 1.72, 6: 1.82, 7: 1.48}[tier]
         dmg_old_raw = max(dmg_old_raw, offense_no_pwr * pct * nudge)
     dmg_old_raw = max(1.0, dmg_old_raw * dmg_overlay)
     dmg_old = min(dmg_old_raw, hit_cap)
@@ -306,13 +306,13 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     mob_hp = max(10.0, min(base_hp_mob, hard) * MOB_HP_SCALE * hp_overlay)
 
     hit_frac = dmg_capped / max(1.0, live_hp)
-    land_frac = {1: 0.14, 2: 0.19, 3: 0.25, 4: 0.33, 5: 0.40, 6: 0.48, 7: 0.54}[tier]
+    land_frac = {1: 0.14, 2: 0.19, 3: 0.25, 4: 0.39, 5: 0.45, 6: 0.48, 7: 0.54}[tier]
     if form_boost > 1.12:
         t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
         land_frac *= 1.0 + 0.12 * t
     bag = max(cap_hp, live_hp * 0.90)
     landing = bag * land_frac
-    land_cap = {1: 0.21, 2: 0.27, 3: 0.35, 4: 0.43, 5: 0.50, 6: 0.58, 7: 0.62}[tier]
+    land_cap = {1: 0.21, 2: 0.27, 3: 0.35, 4: 0.48, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
     landing = max(live_hp * max(0.05, pct * 0.08), landing)
     landing = min(landing, live_hp * land_cap)
     return {
