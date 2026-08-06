@@ -273,7 +273,7 @@ def simulate(
         dmg = max(dmg, live_flat / cancel_thr * 1.08)
         would_cancel = live_flat >= dmg * cancel_thr
     # 1.0.25: clamp post-pierce to live incoming soft-cap.
-    soft_cap_frac = {1: 0.60, 2: 0.60, 3: 0.55, 4: 0.48, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
+    soft_cap_frac = {1: 0.40, 2: 0.43, 3: 0.46, 4: 0.50, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
     dmg = min(dmg, max(20.0, live_hp) * soft_cap_frac)
     would_cancel = live_flat >= dmg * cancel_thr
     # Live-bag landing ladder (1.0.25) — cancel path IS the early-tier ladder.

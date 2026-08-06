@@ -534,16 +534,18 @@ public final class DifficultyEvents {
             // Old 0.45× gate left T4 tanks below T3 (Got2takeitez 0.17 vs 0.24).
             event.setAmount((float) Math.max(preAmount, land));
         }
-        // Soft-cap crushing hits — progressive ceilings so T5≠T6 crush feel.
-        // 1.0.28: T5 0.52 · T6 0.58 · T7 0.62 (was 0.50/0.54/0.58 — T6 under T5 live).
+        // Soft-cap crushing hits — monotonic buy ladder (hits-2026-08-05 + concept).
+        // 1.0.33: T3 was 0.55 > T4 0.48 (god forms got easier after buying T4).
+        // Ladder: T1 0.40 · T2 0.43 · T3 0.46 · T4 0.50 · T5 0.52 · T6 0.58 · T7 0.62.
         double bag = Math.max(20.0, profile.liveMaxHealth);
         double maxFrac = switch (profile.activeTier) {
             case 7 -> 0.62;
             case 6 -> 0.58;
             case 5 -> 0.52;
-            case 4 -> 0.48;
-            case 3 -> 0.55;
-            default -> 0.60;
+            case 4 -> 0.50;
+            case 3 -> 0.46;
+            case 2 -> 0.43;
+            default -> 0.40; // T1
         };
         float softCap = (float) (bag * maxFrac);
         if (event.getAmount() > softCap) {

@@ -256,7 +256,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     allow_pierce = tier >= 4 or (tier >= 3 and form_boost >= 6.0)
     if live_flat > 1.0 and dmg_capped * 2.5 <= live_flat and allow_pierce:
         dmg_capped = max(dmg_capped, live_flat / 2.5 * 1.08)
-    soft_cap_frac = {1: 0.60, 2: 0.60, 3: 0.55, 4: 0.48, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
+    soft_cap_frac = {1: 0.40, 2: 0.43, 3: 0.46, 4: 0.50, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
     dmg_capped = min(dmg_capped, max(20.0, live_hp) * soft_cap_frac)
 
     # No-counter baseline (still with PWR/ENE offense + floors).

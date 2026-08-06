@@ -1,4 +1,4 @@
-# AdaptiveDifficulty concept audit (1.0.31)
+# AdaptiveDifficulty concept audit (1.0.33)
 
 Fail-closed checks against the player's stated balance concept.
 
@@ -57,13 +57,16 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 1.0.31
-- ✅ formula revision 34
+- ✅ VERSION 1.0.33
+- ✅ formula revision 35
 - ✅ hpFloorStrength present
 - ✅ T1–T3 god-form floors raised
 - ✅ T7 incoming soft-cap in events
 - ✅ T5 soft-cap 52%
 - ✅ T6 soft-cap 58%
+- ✅ T3 soft-cap ≤ T4
+- ✅ T4 soft-cap ≤ T5
+- ✅ god soft-cap ladder T3≤T4 — T3=0.460 T4=0.500
 - ✅ whitelist combat telemetry present
 - ✅ god-form landing T1≥10% — landingFrac=0.155
 - ✅ god-form landing T5≥28% — landingFrac=0.443
@@ -85,4 +88,4 @@ Fail-closed checks against the player's stated balance concept.
 |------|--------:|---------:|---------:|
 | androidforms.ssdroid4 | 0.520 | 0.182 | 0.79 |
 
-**Result:** PASS — 50 ok, 0 error(s).
+**Result:** PASS — 53 ok, 0 error(s).

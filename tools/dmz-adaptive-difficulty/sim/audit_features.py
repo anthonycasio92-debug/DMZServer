@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.31", 'VERSION = "1.0.31"' in mod)
+    check("VERSION 1.0.33", 'VERSION = "1.0.33"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -250,7 +250,7 @@ def main() -> int:
     print("\n=== Post-pierce soft-cap clamp (1.0.25) ===")
     check("incomingSoftCapFrac helper", "incomingSoftCapFrac" in profile)
     check("post-pierce bagCap clamp", "bagCap" in profile and "incomingSoftCapFrac()" in profile)
-    check("formula revision 34", "mix(h, 34L)" in profile)
+    check("formula revision 35", "mix(h, 35L)" in profile)
     check("README pierce clamp", "Post-pierce" in readme or "post-pierce" in readme)
 
     print("\n=== Telemetry retune (1.0.28) ===")
@@ -266,7 +266,7 @@ def main() -> int:
     check("README 1.0.30 HP trim", "1.0.30" in readme and "0.75" in readme)
 
     print("\n=== Telemetry retune (1.0.24) ===")
-    check("formula revision 34", "mix(h, 34L)" in profile)
+    check("formula revision 35", "mix(h, 35L)" in profile)
     check("T1 landCap 0.21", "case 1 -> 0.21" in profile)
     check("T1 landFrac 0.14", "case 1 -> 0.14" in profile)
     check("T6 landFrac 0.48", "case 6 -> 0.48" in profile)
@@ -296,7 +296,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.31", "1.0.31" in readme)
+    check("README version 1.0.33", "1.0.33" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -307,6 +307,13 @@ def main() -> int:
     check("ghastTick faceTarget", "KiAttackHelper.faceTarget(ghast, target)" in evo)
     check("README ghast aim", "Ghast" in readme and ("aim" in readme.lower() or "look" in readme.lower()))
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
+
+    print("\n=== Soft-cap ladder (1.0.33) ===")
+    check("T3 soft-cap 0.46", "case 3 -> 0.46" in events and "case 3 -> 0.46" in profile)
+    check("T4 soft-cap 0.50", "case 4 -> 0.50" in events and "case 4 -> 0.50" in profile)
+    check("T1 soft-cap 0.40", "default -> 0.40" in events and "default -> 0.40" in profile)
+    check("T2 soft-cap 0.43", "case 2 -> 0.43" in events and "case 2 -> 0.43" in profile)
+    check("README 1.0.33 soft-cap", "1.0.33" in readme and "0.46" in readme and "soft-cap" in readme.lower())
 
     print("\n=== Summary ===")
     for w in warns:

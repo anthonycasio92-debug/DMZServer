@@ -642,14 +642,15 @@ public final class PlayerCombatProfile {
 
     /** Same progressive ceilings as {@code DifficultyEvents.onDamageDone}. */
     public double incomingSoftCapFrac() {
-        // 1.0.28: space T5→T7 so soft-cap glue can't invert the buy ladder.
+        // 1.0.33: full monotonic soft-cap ladder (T3 was above T4 for god forms).
         return switch (activeTier) {
             case 7 -> 0.62;
             case 6 -> 0.58;
             case 5 -> 0.52;
-            case 4 -> 0.48;
-            case 3 -> 0.55;
-            default -> 0.60;
+            case 4 -> 0.50;
+            case 3 -> 0.46;
+            case 2 -> 0.43;
+            default -> 0.40; // T1
         };
     }
 
@@ -1161,8 +1162,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: Aug 5 telemetry retune — T1 bite + T5/T6 soft-cap space (1.0.28).
-        h = mix(h, 34L);
+        // Formula revision: monotonic soft-cap ladder T1→T7 (1.0.33).
+        h = mix(h, 35L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }
