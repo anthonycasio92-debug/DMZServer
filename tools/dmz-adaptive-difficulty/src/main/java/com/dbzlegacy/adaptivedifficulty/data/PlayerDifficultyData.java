@@ -52,18 +52,35 @@ public final class PlayerDifficultyData {
     private long legacyActive;
 
     public long getHighestDmzLevel() {
+        try {
+            long max = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.configuredMaxDmzLevel(null);
+            if (highestDmzLevel > max) {
+                highestDmzLevel = max;
+            }
+        } catch (Throwable ignored) {
+        }
         return highestDmzLevel;
     }
 
     public void noteDmzLevel(int level) {
-        if (level > highestDmzLevel) {
-            highestDmzLevel = level;
+        int clamped = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.clampDmzLevel(level);
+        if (clamped > highestDmzLevel) {
+            highestDmzLevel = clamped;
+        }
+        // Repair legacy NBT that stored an unclamped / inflated high-water mark.
+        try {
+            long max = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.configuredMaxDmzLevel(null);
+            if (highestDmzLevel > max) {
+                highestDmzLevel = max;
+            }
+        } catch (Throwable ignored) {
         }
     }
 
     /** Restart level high-water after a prestige-up (level ladder resets). */
     public void resetHighestDmzLevel(int level) {
-        this.highestDmzLevel = Math.max(0L, level);
+        int clamped = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.clampDmzLevel(level);
+        this.highestDmzLevel = Math.max(0L, clamped);
     }
 
     public int getLastSeenPrestige() {
@@ -298,6 +315,14 @@ public final class PlayerDifficultyData {
             return;
         }
         highestDmzLevel = Math.max(0L, tag.m_128454_("highestDmzLevel"));
+        // Clamp legacy inflated high-water (pre-1.0.35 unclamped getLevel reads).
+        try {
+            long max = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.configuredMaxDmzLevel(null);
+            if (highestDmzLevel > max) {
+                highestDmzLevel = max;
+            }
+        } catch (Throwable ignored) {
+        }
         activeTier = Math.max(0, tag.m_128451_("activeTier")); // getInt
         activeDifficultyLevel = Math.max(0L, tag.m_128454_("activeLevel"));
         ancientCopper = Math.max(0L, tag.m_128454_("ancientCopper"));

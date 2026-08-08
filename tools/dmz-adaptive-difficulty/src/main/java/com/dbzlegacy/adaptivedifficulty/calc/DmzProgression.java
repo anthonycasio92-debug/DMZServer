@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.calc;
 
+import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dragonminez.common.stats.StatsCapability;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.StatsProvider;
@@ -123,17 +124,71 @@ public final class DmzProgression {
         return v == null ? "" : v.trim().toLowerCase();
     }
 
-    /** Live DMZ {@code getLevel()} (may move with form on some race setups). */
+    /**
+     * Live DMZ {@code getLevel()} — a <b>stat-progress</b> estimate, not a stored
+     * character counter. Clamp to the configured DMZ/AD max so costs / GUI never
+     * show values above the server level ceiling (e.g. 100k players reading as
+     * ~987k when maxValue / max-stats mode disagrees).
+     */
     public static int dmzLevel(Player player) {
         StatsData data = stats(player);
         if (data == null) {
             return 1;
         }
         try {
-            return Math.max(1, data.getLevel());
+            return clampDmzLevel(data.getLevel(), data);
         } catch (Throwable ignored) {
             return 1;
         }
+    }
+
+    /**
+     * Hard ceiling for AD level reads: min(DMZ gameplay maxValue, AD referenceMaxLevel).
+     * Always ≥ 1.
+     */
+    public static int configuredMaxDmzLevel(StatsData data) {
+        int dmzMax = 0;
+        try {
+            if (data != null) {
+                dmzMax = data.getConfiguredMaxValue();
+            }
+        } catch (Throwable ignored) {
+        }
+        if (dmzMax <= 1) {
+            try {
+                var gameplay = com.dragonminez.common.config.ConfigManager.getServerConfig().getGameplay();
+                if (gameplay != null && gameplay.getMaxValue() != null) {
+                    dmzMax = gameplay.getMaxValue();
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        long adMax = 100_000L;
+        try {
+            adMax = Math.max(1L, DifficultyConfig.get().referenceMaxLevel);
+        } catch (Throwable ignored) {
+        }
+        int ceiling;
+        if (dmzMax > 1 && adMax > 0L) {
+            ceiling = (int) Math.min(dmzMax, Math.min(Integer.MAX_VALUE, adMax));
+        } else if (dmzMax > 1) {
+            ceiling = dmzMax;
+        } else {
+            ceiling = (int) Math.min(Integer.MAX_VALUE, Math.max(1L, adMax));
+        }
+        return Math.max(1, ceiling);
+    }
+
+    public static int clampDmzLevel(int raw) {
+        return clampDmzLevel(raw, null);
+    }
+
+    public static int clampDmzLevel(int raw, StatsData data) {
+        int max = configuredMaxDmzLevel(data);
+        if (raw < 1) {
+            return 1;
+        }
+        return Math.min(raw, max);
     }
 
     /**
@@ -156,10 +211,11 @@ public final class DmzProgression {
         }
         Integer cached = BASE_FORM_LEVEL.get(id);
         if (cached != null) {
-            return Math.max(1, cached);
+            return clampDmzLevel(cached);
         }
         if (fallbackWhenTransformed > 0L) {
-            return (int) Math.max(1L, Math.min(Integer.MAX_VALUE, fallbackWhenTransformed));
+            long capped = Math.min(fallbackWhenTransformed, configuredMaxDmzLevel(stats(player)));
+            return (int) Math.max(1L, Math.min(Integer.MAX_VALUE, capped));
         }
         // Last resort: live level (may be form-sensitive on some race setups).
         return live;

@@ -435,6 +435,14 @@ public final class DifficultyEvents {
         boolean whitelistBlocksPlayers = DifficultyConfig.isWhitelistEnabled()
                 && !SystemGate.allowsAny(victim, causing);
 
+        // Rider↔mount: skeleton/spider jockeys + skeleton horses — ki spawns on the rider
+        // and otherwise kills their own vehicle (mount may not be HostileMobs-tagged).
+        if (causing != null && causing != victim && HostileMobs.isMountPair(causing, victim)) {
+            event.setCanceled(true);
+            event.setAmount(0.0f);
+            return;
+        }
+
         // Block hostile→hostile (and hostile booms on other hostiles). Allow self-damage
         // so creeper fuse can finish killing the exploding creeper on some Mohist paths.
         if (victimHostile && !causerPlayer && causing != victim) {

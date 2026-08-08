@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.34)
+# AdaptiveDifficulty (v1.0.35)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -38,8 +38,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.34.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.34.jar`
+1. `mods/AdaptiveDifficulty-1.0.35.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.35.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -87,13 +87,18 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Stock `tierCostLevelDivisor` is **50000** (was 1000) so a DMZ 100k player pays ~15× Gold for T7 instead of a ladder-inflated Emerald pile. Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
+### Live balance + fixes (1.0.35)
+From `hits-2026-08-06..08.jsonl` (14770 hits) + reported bugs:
+- **DMZ level clamp:** `getLevel()` is a stat-progress estimate; AD now clamps to
+  `min(DMZ maxValue, referenceMaxLevel)` and repairs inflated `highestDmzLevel` NBT
+  so a 100k ceiling never displays as ~987k.
+- **Skeleton mounts:** cancel rider↔mount damage; kits refuse mount targets (spider
+  jockey / skeleton-horse self-kills).
+- **Ladder:** T3 landFrac 0.30 · T4 0.37 (ease cliff) · T5 0.48 · T6 0.50 · T7 0.58;
+  T7 nudge/liveShare up so T6≉T7. Soft-caps unchanged. Formula fingerprint **37**.
+
 ### Live balance (1.0.34)
-From rewritten `hits-2026-08-05.jsonl` + new `hits-2026-08-06.jsonl` (5586 hits,
-post-1.0.28 fingerprint):
-- **T4** was ~91% landing-fill at ~36% bag while **T3** still soft-cap glued at 0.55
-  → buy step felt easier. Raise T4/T5 landFrac (0.39/0.45), landCap (0.48/0.52),
-  form nudge (1.68/1.72), liveShare (0.66/0.70).
-- Keep 1.0.33 monotonic soft-caps. Formula fingerprint **36**.
+T4/T5 landing pressure from Aug 6 hits (superseded landFrac by 1.0.35).
 
 ### Soft-cap ladder (1.0.33)
 T3 soft-cap was **0.55 > T4 0.48**, so god forms got *easier* after buying T4.

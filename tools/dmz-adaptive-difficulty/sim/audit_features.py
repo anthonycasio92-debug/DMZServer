@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.34", 'VERSION = "1.0.34"' in mod)
+    check("VERSION 1.0.35", 'VERSION = "1.0.35"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -250,7 +250,7 @@ def main() -> int:
     print("\n=== Post-pierce soft-cap clamp (1.0.25) ===")
     check("incomingSoftCapFrac helper", "incomingSoftCapFrac" in profile)
     check("post-pierce bagCap clamp", "bagCap" in profile and "incomingSoftCapFrac()" in profile)
-    check("formula revision 36", "mix(h, 36L)" in profile)
+    check("formula revision 37", "mix(h, 37L)" in profile)
     check("README pierce clamp", "Post-pierce" in readme or "post-pierce" in readme)
 
     print("\n=== Telemetry retune (1.0.28) ===")
@@ -266,12 +266,12 @@ def main() -> int:
     check("README 1.0.30 HP trim", "1.0.30" in readme and "0.75" in readme)
 
     print("\n=== Telemetry retune (1.0.24) ===")
-    check("formula revision 36", "mix(h, 36L)" in profile)
+    check("formula revision 37", "mix(h, 37L)" in profile)
     check("T1 landCap 0.21", "case 1 -> 0.21" in profile)
     check("T1 landFrac 0.14", "case 1 -> 0.14" in profile)
-    check("T6 landFrac 0.48", "case 6 -> 0.48" in profile)
-    check("T4 landFrac 0.39", "case 4 -> 0.39" in profile)
-    check("T5 landFrac 0.45", "case 5 -> 0.45" in profile)
+    check("T6 landFrac 0.50", "case 6 -> 0.50" in profile)
+    check("T4 landFrac 0.37", "case 4 -> 0.37" in profile)
+    check("T5 landFrac 0.48", "case 5 -> 0.48" in profile)
     check("KP landing 1.5%/lvl", "kiProtectionLevel * 0.015" in profile)
     check("fill-to-landing floor", "preAmount < land)" in events and "land * 0.45" not in events)
     check("progressive soft-caps", "case 5 -> 0.52" in events and "case 6 -> 0.58" in events and "case 7 -> 0.62" in events)
@@ -298,7 +298,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.34", "1.0.34" in readme)
+    check("README version 1.0.35", "1.0.35" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -317,14 +317,28 @@ def main() -> int:
     check("T2 soft-cap 0.43", "case 2 -> 0.43" in events and "case 2 -> 0.43" in profile)
     check("README soft-cap ladder", "0.46" in readme and "soft-cap" in readme.lower())
 
-    print("\n=== T4/T5 landing retune (1.0.34) ===")
-    check("T4 form nudge 1.68", "case 4 -> 1.68" in profile)
-    check("T5 form nudge 1.72", "case 5 -> 1.72" in profile)
-    check("T4 liveShare 0.66", "case 4 -> 0.66" in profile)
-    check("T5 liveShare 0.70", "case 5 -> 0.70" in profile)
+    print("\n=== Ladder retune (1.0.35) ===")
+    check("T4 form nudge 1.58", "case 4 -> 1.58" in profile)
+    check("T5 form nudge 1.78", "case 5 -> 1.78" in profile)
+    check("T7 form nudge 1.62", "default -> 1.62" in profile)
+    check("T4 liveShare 0.60", "case 4 -> 0.60" in profile)
+    check("T5 liveShare 0.74", "case 5 -> 0.74" in profile)
     check("T4 landCap 0.48", "case 4 -> 0.48" in profile)
     check("T5 landCap 0.52", "case 5 -> 0.52" in profile)
-    check("README 1.0.34 retune", "1.0.34" in readme and "hits-2026-08-06" in readme)
+    check("T3 landFrac 0.30", "case 3 -> 0.30" in profile)
+    check("T7 landFrac 0.58", "default -> 0.58" in profile)
+    check("README 1.0.35 retune", "1.0.35" in readme and "hits-2026-08-06" in readme)
+
+    print("\n=== Level clamp + mount guard (1.0.35) ===")
+    prog = read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/DmzProgression.java")
+    host = read(SRC / "com/dbzlegacy/adaptivedifficulty/scaling/HostileMobs.java")
+    check("clampDmzLevel helper", "clampDmzLevel" in prog and "configuredMaxDmzLevel" in prog)
+    check("dmzLevel uses clamp", "clampDmzLevel(data.getLevel()" in prog)
+    check("HostileMobs.isMountPair", "isMountPair" in host and "m_20202_" in host)
+    check("hurt cancels mount pair", "isMountPair" in events)
+    check("skeleton rejects mount target", "isMountPair(mob, target)" in evo)
+    check("README level clamp", "level clamp" in readme.lower() or "maxValue" in readme)
+    check("README skeleton mount", "mount" in readme.lower() and "jockey" in readme.lower())
 
     print("\n=== Summary ===")
     for w in warns:

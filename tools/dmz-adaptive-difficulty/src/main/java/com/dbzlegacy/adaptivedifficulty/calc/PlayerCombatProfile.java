@@ -565,15 +565,13 @@ public final class PlayerCombatProfile {
             base = Math.max(base, softFloor);
         }
 
-        // T4–T6 stretch ladder for tanks; T7 nudge softened (telemetry one-shots).
-        // 1.0.34 (hits-2026-08-06): T4 was 91% landing-fill @~0.36 while T3 soft-cap
-        // glued @0.55 — buy step felt easier. Raise T4/T5 nudges under new soft-caps.
+        // T4–T7 form nudges — 1.0.35 (hits-2026-08-06..08): ease T4 cliff, push T5/T7.
         if (activeTier >= 4 && formBoost > 1.12) {
             double nudge = switch (activeTier) {
-                case 4 -> 1.68;
-                case 5 -> 1.72;
+                case 4 -> 1.58;
+                case 5 -> 1.78;
                 case 6 -> 1.82;
-                default -> 1.48; // T7 soft — hit-cap + pierce soft-cap carry the bite
+                default -> 1.62; // T7 — was soft-capped rarely; raise painted bite
             };
             base = Math.max(base, offenseShare * nudge);
         }
@@ -585,10 +583,10 @@ public final class PlayerCombatProfile {
                 case 1 -> 0.32;
                 case 2 -> 0.42;
                 case 3 -> 0.52;
-                case 4 -> 0.66;
-                case 5 -> 0.70;
+                case 4 -> 0.60;
+                case 5 -> 0.74;
                 case 6 -> 0.74;
-                default -> 0.66; // T7 climbs; event soft-cap holds crush
+                default -> 0.74; // T7 align with T5/T6 live slice
             };
             // Mega forms: more of the live slice (still hit-capped after).
             double megaBoost = formBoost >= 6.0
@@ -658,9 +656,8 @@ public final class PlayerCombatProfile {
     /**
      * Post-mitigation HP restored when DMZ hard-cancels a hit.
      * <p>
-     * 1.0.34 (hits-2026-08-05 rewrite + hits-2026-08-06, 5586 hits): T4 was ~91%
-     * landing-fill at ~36% bag while T3 soft-cap glued higher — raise T4/T5
-     * landFrac under the monotonic soft-cap ladder (1.0.33).
+     * 1.0.35 (hits-2026-08-06..08): lift KP-god T3 landing, ease T4 cliff, separate
+     * T6≈T7 flatline. Soft-caps stay monotonic (1.0.33).
      */
     public double targetLandingDamage(DifficultyConfig cfg) {
         double liveBag = Math.max(20.0, liveMaxHealth);
@@ -671,11 +668,11 @@ public final class PlayerCombatProfile {
         double landFrac = switch (activeTier) {
             case 1 -> 0.14;
             case 2 -> 0.19;
-            case 3 -> 0.25;
-            case 4 -> 0.39;
-            case 5 -> 0.45;
-            case 6 -> 0.48;
-            default -> 0.54;
+            case 3 -> 0.30;
+            case 4 -> 0.37;
+            case 5 -> 0.48;
+            case 6 -> 0.50;
+            default -> 0.58;
         };
         if (formBoost > 1.12) {
             double t = Math.min(1.0, Math.log(Math.max(1.12, formBoost)) / Math.log(80.0));
@@ -694,7 +691,7 @@ public final class PlayerCombatProfile {
         double landCap = switch (activeTier) {
             case 1 -> 0.21;
             case 2 -> 0.27;
-            case 3 -> 0.35;
+            case 3 -> 0.38;
             case 4 -> 0.48;
             case 5 -> 0.52;
             case 6 -> 0.58;
@@ -1163,8 +1160,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: T4/T5 landing ladder from Aug 6 telemetry (1.0.34).
-        h = mix(h, 36L);
+        // Formula revision: Aug 6–8 ladder + level clamp (1.0.35).
+        h = mix(h, 37L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

@@ -429,6 +429,19 @@ public final class EnemyEvolution {
         if (target == null) {
             return;
         }
+        // Never aim kits at our own mount (spider jockey / skeleton horse).
+        if (HostileMobs.isMountPair(mob, target)) {
+            mob.m_6710_(null);
+            if (mob.m_9236_() instanceof ServerLevel level) {
+                target = nearestPlayer(level, mob, 28.0);
+                if (target != null) {
+                    mob.m_6710_(target);
+                }
+            }
+            if (target == null || HostileMobs.isMountPair(mob, target)) {
+                return;
+            }
+        }
         float dist = mob.m_20270_(target);
         if (dist > 32.0f) {
             return;

@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.scaling;
 
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
@@ -47,6 +48,29 @@ public final class HostileMobs {
     /** True when both sides are hostiles — used to block friendly fire / mob civil wars. */
     public static boolean bothHostile(LivingEntity a, LivingEntity b) {
         return isHostile(a) && isHostile(b);
+    }
+
+    /**
+     * True when {@code a}/{@code b} are vehicle↔passenger (spider jockey, skeleton horse,
+     * etc.). Skeleton ki blasts spawn on the rider and otherwise nuke their own mount.
+     */
+    public static boolean isMountPair(Entity a, Entity b) {
+        if (a == null || b == null || a == b) {
+            return false;
+        }
+        try {
+            if (a.m_20202_() == b || b.m_20202_() == a) { // getVehicle
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            if (a.m_20197_().contains(b) || b.m_20197_().contains(a)) { // getPassengers
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
     }
 
     /**

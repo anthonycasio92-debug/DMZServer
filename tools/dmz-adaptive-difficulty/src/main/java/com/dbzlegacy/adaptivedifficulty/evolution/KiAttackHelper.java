@@ -251,6 +251,8 @@ public final class KiAttackHelper {
                 && target.m_6084_()
                 && shooter.m_9236_() instanceof ServerLevel
                 && !shooter.m_9236_().f_46443_
+                // Never paint ki into our own mount (spider jockey / skeleton horse).
+                && !com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs.isMountPair(shooter, target)
                 && hasClearShot(shooter, target);
     }
 

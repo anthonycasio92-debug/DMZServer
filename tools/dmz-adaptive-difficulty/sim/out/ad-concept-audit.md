@@ -1,4 +1,4 @@
-# AdaptiveDifficulty concept audit (1.0.34)
+# AdaptiveDifficulty concept audit (1.0.35)
 
 Fail-closed checks against the player's stated balance concept.
 
@@ -43,11 +43,11 @@ Fail-closed checks against the player's stated balance concept.
 
 - ✅ god-form T5 post-DEF ≥12% (androidforms.ssdroid4) — pre=0.520 postDef~=0.182 ×54.0
 - ✅ SSJG T5 post-DEF ≥12% live — pre=0.520 postDef~=0.182
-- ✅ SSJG T7 clears cancel or landing ≥35% — wouldCancel=True dmg=464 flatMit=2442 landingFrac=0.588
-- ✅ SSJG T7 landing safety-net ≥35% bag — landingFrac=0.588
+- ✅ SSJG T7 clears cancel or landing ≥35% — wouldCancel=True dmg=464 flatMit=2442 landingFrac=0.620
+- ✅ SSJG T7 landing safety-net ≥35% bag — landingFrac=0.620
 - ✅ SSJB T5 post-DEF ≥12% live — pre=0.520 postDef~=0.182
-- ✅ SSJB T7 clears cancel or landing ≥35% — wouldCancel=True dmg=464 flatMit=4775 landingFrac=0.598
-- ✅ SSJB T7 landing safety-net ≥35% bag — landingFrac=0.598
+- ✅ SSJB T7 clears cancel or landing ≥35% — wouldCancel=True dmg=464 flatMit=4775 landingFrac=0.620
+- ✅ SSJB T7 landing safety-net ≥35% bag — landingFrac=0.620
 
 ## 5) Melee AD parity (feature gates)
 
@@ -57,8 +57,8 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 1.0.34
-- ✅ formula revision 36
+- ✅ VERSION 1.0.35
+- ✅ formula revision 37
 - ✅ hpFloorStrength present
 - ✅ T1–T3 god-form floors raised
 - ✅ T7 incoming soft-cap in events
@@ -69,9 +69,9 @@ Fail-closed checks against the player's stated balance concept.
 - ✅ god soft-cap ladder T3≤T4 — T3=0.460 T4=0.500
 - ✅ whitelist combat telemetry present
 - ✅ god-form landing T1≥10% — landingFrac=0.155
-- ✅ god-form landing T5≥28% — landingFrac=0.498
-- ✅ god-form landing T7≥40% — landingFrac=0.598
-- ✅ god-form landing T7>T1×2.5 — T1=0.155 T7=0.598
+- ✅ god-form landing T5≥28% — landingFrac=0.520
+- ✅ god-form landing T7≥40% — landingFrac=0.620
+- ✅ god-form landing T7>T1×2.5 — T1=0.155 T7=0.620
 
 ## Sample numbers (saiyan warrior)
 
