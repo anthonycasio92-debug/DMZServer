@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.35)
+# AdaptiveDifficulty (v1.0.36)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -32,14 +32,14 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 | Combat Rating | Rewards / display / area readouts (not mob HP) |
 | Teams | WIP stub — personal difficulty only |
 | Titles | Restored; equip from GUI |
-| Kill rewards | Personal ON: pre-T1 drops 1× Copper; with tier, normal ladder drops on the ground |
-| Upgrade drop | 2% chance for +1 next-higher coin (e.g. Copper + rare Iron) |
+| Kill rewards | Personal ON: **5%** chance per eligible kill — pre-T1 Copper; with tier, normal ladder |
+| Upgrade drop | **0.5%** dual drop: original coin + next-higher (e.g. Copper + Iron) |
 | Feature gates | T1+ AI/evo kits by unlock band · T4 elite · T5 mutation · T6 boss · T7 Zenith ceiling |
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.35.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.35.jar`
+1. `mods/AdaptiveDifficulty-1.0.36.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.36.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -87,6 +87,12 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Stock `tierCostLevelDivisor` is **50000** (was 1000) so a DMZ 100k player pays ~15× Gold for T7 instead of a ladder-inflated Emerald pile. Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
+### Economy (1.0.36)
+Kill coin drops are chance-gated (was always-on):
+- `ancientCoinDropChance` **0.05** (5% any coin)
+- `ancientCoinUpgradeChance` **0.005** (0.5% original + next-higher dual)
+Existing configs auto-migrate stock 2% upgrade → 0.5%.
+
 ### Live balance + fixes (1.0.35)
 From `hits-2026-08-06..08.jsonl` (14770 hits) + reported bugs:
 - **DMZ level clamp:** `getLevel()` is a stat-progress estimate; AD now clamps to

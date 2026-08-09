@@ -954,10 +954,12 @@ public final class DifficultyCommands {
                         cfg.enableAncientCoinDrops = Boolean.parseBoolean(value);
                 case "ancientcoindropmult", "coindropmult" ->
                         cfg.ancientCoinDropMult = Math.max(0.0, Math.min(10.0, Double.parseDouble(value)));
+                case "ancientcoindropchance", "coindropchance" ->
+                        cfg.ancientCoinDropChance = Math.max(0.0, Math.min(1.0, Double.parseDouble(value)));
                 case "ancientcoinratingdivisor", "coinratingdivisor" ->
                         cfg.ancientCoinRatingDivisor = Math.max(1.0, Math.min(1_000_000.0, Double.parseDouble(value)));
                 case "ancientcoinupgradechance", "coinupgradechance" ->
-                        cfg.ancientCoinUpgradeChance = Math.max(0.0, Math.min(0.25, Double.parseDouble(value)));
+                        cfg.ancientCoinUpgradeChance = Math.max(0.0, Math.min(1.0, Double.parseDouble(value)));
                 case "elitestatmultiplier", "elitemult" ->
                         cfg.eliteStatMultiplier = Math.max(1.0, Math.min(5.0, Double.parseDouble(value)));
                 case "deathresetsactivedifficulty", "deathreset" ->

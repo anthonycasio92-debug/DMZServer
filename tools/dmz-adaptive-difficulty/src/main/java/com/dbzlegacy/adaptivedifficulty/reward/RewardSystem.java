@@ -24,8 +24,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
 /**
- * Kill rewards: Ancient Coins drop in the world at the mob + modest XP.
- * Requires personal difficulty on. Pre-T1 still drops Copper so players can buy T1.
+ * Kill rewards: chance-gated Ancient Coins drop in the world at the mob + modest XP.
+ * Requires personal difficulty on. Pre-T1 still rolls Copper so players can buy T1.
  */
 public final class RewardSystem {
     private static final String TAG_REWARDED = "dmz_ad_kill_rewarded";

@@ -297,7 +297,11 @@ public final class DifficultyChatMenu {
                 + " §8(stock 50000 · cost × (1 + levelsAboveUnlock / divisor))"));
         send(player, Component.m_237113_("§7Coin drops §f" + cfg.enableAncientCoinDrops
                 + "  §7Death reset §f" + cfg.deathResetsActiveDifficulty));
+        send(player, Component.m_237113_("§7Drop chance §f" + cfg.ancientCoinDropChance
+                + "  §7Dual upgrade §f" + cfg.ancientCoinUpgradeChance
+                + " §8(stock 0.05 / 0.005)"));
         send(player, Component.m_237113_("§8/difficulty admin set tierCostLevelDivisor <n>"));
+        send(player, Component.m_237113_("§8/difficulty admin set ancientCoinDropChance|ancientCoinUpgradeChance <0-1>"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 

@@ -423,6 +423,11 @@ public final class DifficultyConfig {
      */
     public Boolean tierCostDivisorMigratedV1 = Boolean.FALSE;
     /**
+     * One-time (1.0.36): stock coin drop 100%→5%, upgrade duo 2%→0.5%.
+     * Custom admin chances are kept.
+     */
+    public Boolean coinDropChanceMigratedV1 = Boolean.FALSE;
+    /**
      * Bumped on every live sanitize/reload so claimed-mob NBT signatures cannot
      * early-return with stale paint after admin retunes.
      */
@@ -477,10 +482,16 @@ public final class DifficultyConfig {
     public boolean enableAncientCoinDrops = true;
     public double ancientCoinDropMult = 1.0;
     /**
-     * Chance (0–1) on each kill to also drop one coin of the next higher denomination
-     * alongside the normal drop (e.g. T0/T1 Copper + rare Iron). Default 2%.
+     * Chance (0–1) on each eligible kill to drop any Ancient Coin(s). Default 5%.
+     * Rolls below {@link #ancientCoinUpgradeChance} also grant the next-higher coin.
      */
-    public double ancientCoinUpgradeChance = 0.02;
+    public double ancientCoinDropChance = 0.05;
+    /**
+     * Chance (0–1) on each eligible kill to drop the normal coin <em>and</em> one
+     * next-higher denomination (e.g. Copper + Iron). Must be ≤
+     * {@link #ancientCoinDropChance}. Default 0.5%.
+     */
+    public double ancientCoinUpgradeChance = 0.005;
     public double ancientCoinRatingDivisor = 25_000.0;
     /** V3: reset active tier/level on player death (unlocks stay). */
     public boolean deathResetsActiveDifficulty = true;
@@ -1143,8 +1154,24 @@ public final class DifficultyConfig {
         if (cfg.tierCostLevelDivisor < 1.0) {
             cfg.tierCostLevelDivisor = 50_000.0;
         }
+        // 1.0.36: stock kill coins are chance-gated (was always-on + 2% upgrade).
+        if (!Boolean.TRUE.equals(cfg.coinDropChanceMigratedV1)) {
+            if (cfg.ancientCoinDropChance <= 0.0 || nearly(cfg.ancientCoinDropChance, 1.0)) {
+                cfg.ancientCoinDropChance = 0.05;
+            }
+            if (nearly(cfg.ancientCoinUpgradeChance, 0.02)) {
+                cfg.ancientCoinUpgradeChance = 0.005;
+            }
+            cfg.coinDropChanceMigratedV1 = Boolean.TRUE;
+        }
+        if (cfg.ancientCoinDropChance < 0.0 || cfg.ancientCoinDropChance > 1.0) {
+            cfg.ancientCoinDropChance = 0.05;
+        }
         if (cfg.ancientCoinUpgradeChance < 0.0 || cfg.ancientCoinUpgradeChance > 1.0) {
-            cfg.ancientCoinUpgradeChance = 0.02;
+            cfg.ancientCoinUpgradeChance = 0.005;
+        }
+        if (cfg.ancientCoinUpgradeChance > cfg.ancientCoinDropChance) {
+            cfg.ancientCoinUpgradeChance = cfg.ancientCoinDropChance;
         }
         if (cfg.mobHealthScale <= 0.0 || cfg.mobHealthScale > 4.0) {
             cfg.mobHealthScale = 0.75;

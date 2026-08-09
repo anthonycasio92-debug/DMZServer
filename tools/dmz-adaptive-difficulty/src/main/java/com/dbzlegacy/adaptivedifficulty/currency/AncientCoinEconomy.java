@@ -476,13 +476,19 @@ public final class AncientCoinEconomy {
     }
 
     /**
-     * Roll primary kill coins plus a rare chance for one higher-denomination bonus
-     * (e.g. Copper + 2% Iron). Bonus is always 1× of the next ladder step.
-     * Pre-T1 (no active tier) still drops 1× Copper so players can start buying tiers.
+     * Roll kill coins: stock 5% chance for the primary denomination, of which
+     * stock 0.5% is a dual drop (primary + next-higher, e.g. Copper + Iron).
+     * Pre-T1 (no active tier) still uses Copper as the primary kind.
      */
     public static KillLoot rollKillLoot(ServerPlayer killer, long combatRating, boolean elite, boolean boss) {
         DifficultyConfig cfg = DifficultyConfig.get();
         if (!cfg.enableAncientCoinDrops || killer == null) {
+            return new KillLoot(new Drop(CoinKind.COPPER, 0), null);
+        }
+        double dropChance = Math.max(0.0, Math.min(1.0, cfg.ancientCoinDropChance));
+        double upgradeChance = Math.max(0.0, Math.min(dropChance, cfg.ancientCoinUpgradeChance));
+        double roll = ThreadLocalRandom.current().nextDouble();
+        if (dropChance <= 0.0 || roll >= dropChance) {
             return new KillLoot(new Drop(CoinKind.COPPER, 0), null);
         }
         PlayerDifficultyData data = DifficultyCache.data(killer);
@@ -512,10 +518,9 @@ public final class AncientCoinEconomy {
         }
         Drop primary = new Drop(kind, Math.min(MAX_KILL_DROP_COUNT, Math.max(1, count)));
         Drop bonus = null;
-        double upgradeChance = Math.max(0.0, Math.min(1.0, cfg.ancientCoinUpgradeChance));
         CoinKind upgrade = kind.nextHigher();
-        if (upgrade != null && upgradeChance > 0.0
-                && ThreadLocalRandom.current().nextDouble() < upgradeChance) {
+        // Dual band: roll in [0, upgradeChance) → primary + next-higher.
+        if (upgrade != null && upgradeChance > 0.0 && roll < upgradeChance) {
             bonus = new Drop(upgrade, 1);
         }
         return new KillLoot(primary, bonus);
