@@ -1,10 +1,16 @@
 # Mohist M1: animation but no damage
 
-## Fix v2.12.16
+## Fix v2.12.17
 
-`mods/dmz_mohist_melee_fix-2.12.16.jar`
+`mods/dmz_mohist_melee_fix-2.12.17.jar`
 
-https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/priceless-stack-spam-fix-c766/mods/dmz_mohist_melee_fix-2.12.16.jar
+https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/saga-party-progress-guard-c766/mods/dmz_mohist_melee_fix-2.12.17.jar
+
+### Personal saga earn guard (2.12.17)
+- Party sync can no longer copy already-`SUCCESS` quests onto a player who did not earn them and was not actively on the quest
+- `QuestRewardClaimEvent` cancels claims unless the player personally earned that quest (solo turn-in or present in party at completion)
+- Saga/quest resets clear personal earn marks so reset → rejoin-friend cannot reclaim TP/rewards
+- First login bootstraps earn marks from currently completed quests (grandfather existing progress)
 
 ### Skill set maxLevel refresh (2.12.11)
 - `/dmzskill set` refreshes skill `maxLevel` from `skills.json` costs before applying the level
@@ -49,8 +55,8 @@ https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/priceless-stack-spa
 
 ### Install
 
-1. Only **2.12.16** in server `mods/` (client too if using Precision skip)
+1. Only **2.12.17** in server `mods/` (client too if using Precision skip)
 2. Delete older `dmz_mohist_melee_fix-*.jar`
-3. Restart — server log: `v2.12.16`
+3. Restart — server log: `v2.12.17`
 4. Full reset → race select: `/dmzstats reset` (requires `gameplay.forceCharacterCreation=true`)
 5. Soft-reset example: `/dmzstats reset 100 true` (self) or `/dmzstats reset <player> 100 true`

@@ -19,10 +19,11 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.16: block priceless stack buys (UpdateSkillC2S + SDU BuyStackSkillC2S)",
+                "[{}] v2.12.17: personal saga earn guard (block party completion cheese + unearned claims)",
                 MOD_ID
         );
         ReachRepairEvents.register();
+        PersonalSagaEvents.register();
         StatsResetCommands.register();
         MeleeFixSelfTest.registerIfEnabled();
     }

@@ -22,7 +22,10 @@
     "SkillBlockPricelessAddLevelMixin",
     "SkillsSetSkillLevelMixin",
     "FixVanillaEventsNaNMixin",
-    "CombatEventHurtSanitizeMixin"
+    "CombatEventHurtSanitizeMixin",
+    "PartyManagerSyncQuestMixin",
+    "QuestProgressMergeMixin",
+    "PlayerQuestDataResetMixin"
   ],
   "client": [
     "UltimateChallengeNoPrecisionMixin"
