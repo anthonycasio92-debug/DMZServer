@@ -5,11 +5,13 @@ import com.dragonminez.common.quest.PlayerQuestData.QuestStatus;
 import com.dragonminez.common.stats.StatsCapability;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.StatsProvider;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -36,6 +38,7 @@ public final class PersonalSagaGuard {
 
     private static final ConcurrentHashMap<UUID, Set<String>> CACHE = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<UUID, Boolean> BOOTSTRAPPED = new ConcurrentHashMap<>();
+    private static final AtomicInteger PURGE_LOGS = new AtomicInteger();
 
     private PersonalSagaGuard() {}
 
@@ -55,8 +58,51 @@ public final class PersonalSagaGuard {
         if (hasEarned(target, questKey)) {
             return true;
         }
-        // Already on the quest (true co-op) or already complete — allow sync.
-        return ownStatus == QuestStatus.ACCEPTED || ownStatus == QuestStatus.SUCCESS;
+        // True co-op only: member must already be on the quest. Never keep a borrowed SUCCESS.
+        return ownStatus == QuestStatus.ACCEPTED;
+    }
+
+    /**
+     * Removes {@code SUCCESS} quests the player did not personally earn.
+     * Used after party merges, on party leave, and on login to unstick borrowed completions.
+     *
+     * @return true if any quest state was changed
+     */
+    public static boolean purgeUnearnedCompletions(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        ensureBootstrapped(player);
+        PlayerQuestData pqd = questData(player);
+        if (pqd == null) {
+            return false;
+        }
+        boolean changed = false;
+        for (String questId : new ArrayList<>(pqd.getCompletedQuestIds())) {
+            if (questId == null || questId.isBlank() || hasEarned(player, questId)) {
+                continue;
+            }
+            pqd.resetQuest(questId);
+            changed = true;
+            int n = PURGE_LOGS.incrementAndGet();
+            if (n <= 60) {
+                LOGGER.info(
+                        "[{}] purged unearned SUCCESS: player={} quest={}",
+                        DmzMohistMeleeFix.MOD_ID,
+                        player.m_36316_().getName(),
+                        questId
+                );
+            }
+        }
+        String tracked = pqd.getTrackedQuestId();
+        if (tracked != null
+                && !tracked.isBlank()
+                && !pqd.isQuestAccepted(tracked)
+                && !pqd.isQuestCompleted(tracked)) {
+            pqd.setTrackedQuestId(null);
+            changed = true;
+        }
+        return changed;
     }
 
     public static void markEarned(ServerPlayer player, String questKey) {

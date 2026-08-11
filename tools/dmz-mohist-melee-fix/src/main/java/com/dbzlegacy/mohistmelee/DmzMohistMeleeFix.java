@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.17: personal saga earn guard (block party completion cheese + unearned claims)",
+                "[{}] v2.12.18: purge unearned saga SUCCESS on party merge/leave/login",
                 MOD_ID
         );
         ReachRepairEvents.register();

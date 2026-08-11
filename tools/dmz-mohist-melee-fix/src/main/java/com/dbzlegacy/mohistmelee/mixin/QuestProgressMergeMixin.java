@@ -41,18 +41,20 @@ public abstract class QuestProgressMergeMixin {
         String questId = getQuestId();
         QuestStatus own = getStatus();
         if (PersonalSagaGuard.canInheritCompletion(target, questId, own)) {
-            // Co-op member who was on the quest (or already earned) — credit them.
+            // Co-op member who was actively on the quest — credit them, then allow SUCCESS.
             PersonalSagaGuard.markEarned(target, questId);
             return;
         }
+        // Refuse borrowed completions entirely (purge after merge is the safety net).
         ci.cancel();
         int n = LOGS.incrementAndGet();
         if (n <= 40) {
             LOGGER.info(
-                    "[{}] blocked party SUCCESS merge: player={} quest={}",
+                    "[{}] blocked party SUCCESS merge: player={} quest={} ownStatus={}",
                     DmzMohistMeleeFix.MOD_ID,
                     target.m_36316_().getName(),
-                    questId
+                    questId,
+                    own
             );
         }
     }

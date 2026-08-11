@@ -1,6 +1,8 @@
 package com.dbzlegacy.mohistmelee;
 
 import com.dragonminez.common.events.DMZEvent;
+import com.dragonminez.common.network.NetworkHandler;
+import com.dragonminez.common.network.S2C.ProgressionSyncS2C;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.network.chat.Component;
@@ -71,6 +73,15 @@ public final class PersonalSagaEvents {
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
             PersonalSagaGuard.ensureBootstrapped(sp);
+            // Repair players stuck with borrowed SUCCESS from earlier party joins.
+            if (PersonalSagaGuard.purgeUnearnedCompletions(sp)) {
+                NetworkHandler.sendToPlayer(new ProgressionSyncS2C(sp), sp);
+                LOGGER.info(
+                        "[{}] login purge removed unearned completions for {}",
+                        DmzMohistMeleeFix.MOD_ID,
+                        sp.m_36316_().getName()
+                );
+            }
         }
     }
 

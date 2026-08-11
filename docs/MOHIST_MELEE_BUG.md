@@ -1,10 +1,15 @@
 # Mohist M1: animation but no damage
 
-## Fix v2.12.17
+## Fix v2.12.18
 
-`mods/dmz_mohist_melee_fix-2.12.17.jar`
+`mods/dmz_mohist_melee_fix-2.12.18.jar`
 
-https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/saga-party-progress-guard-c766/mods/dmz_mohist_melee_fix-2.12.17.jar
+https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/saga-party-progress-guard-c766/mods/dmz_mohist_melee_fix-2.12.18.jar
+
+### Personal saga stuck-completion fix (2.12.18)
+- After party merge, on party leave, and on login: **purge** any `SUCCESS` quest the player did not personally earn
+- Stops “shows completed / can’t claim / stuck after leave” when joining a friend who already finished the saga
+- True co-op still works if you were `ACCEPTED` on the quest when it completed
 
 ### Personal saga earn guard (2.12.17)
 - Party sync can no longer copy already-`SUCCESS` quests onto a player who did not earn them and was not actively on the quest
@@ -55,8 +60,8 @@ https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/saga-party-progress
 
 ### Install
 
-1. Only **2.12.17** in server `mods/` (client too if using Precision skip)
+1. Only **2.12.18** in server `mods/` (client too if using Precision skip)
 2. Delete older `dmz_mohist_melee_fix-*.jar`
-3. Restart — server log: `v2.12.17`
+3. Restart — server log: `v2.12.18`
 4. Full reset → race select: `/dmzstats reset` (requires `gameplay.forceCharacterCreation=true`)
 5. Soft-reset example: `/dmzstats reset 100 true` (self) or `/dmzstats reset <player> 100 true`
