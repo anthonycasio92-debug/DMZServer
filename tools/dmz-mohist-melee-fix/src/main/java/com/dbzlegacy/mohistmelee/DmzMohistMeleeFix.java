@@ -19,10 +19,11 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.14: block priceless buys via handle enqueueWork + level guards",
+                "[{}] v2.12.18: purge unearned saga SUCCESS on party merge/leave/login",
                 MOD_ID
         );
         ReachRepairEvents.register();
+        PersonalSagaEvents.register();
         StatsResetCommands.register();
         MeleeFixSelfTest.registerIfEnabled();
     }

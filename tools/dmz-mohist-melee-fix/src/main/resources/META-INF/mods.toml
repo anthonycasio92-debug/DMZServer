@@ -4,7 +4,7 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.12.14"
+version = "2.12.18"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
@@ -17,6 +17,8 @@ work (recreate only applies base stats when primaries are 0). Adds self
 /dmzstats reset <keepPercentage> [keepSkills]. Instant Transmission to players
 (party/external) is disabled; master IT still works. Master NPC disables,
 priceless (-1) skill costs, /dmzskill set refreshes maxLevel, Old Kai skips Precision (client mixin too).
+Blocks saga completion cheese: party sync cannot grant already-finished quests to
+players who did not earn them, and unearned reward claims are cancelled.
 No ki_damage writes / damage redirects.
 '''
 
@@ -25,6 +27,9 @@ config = "dmz_mohist_melee_fix.mixins.json"
 
 [[mixins]]
 config = "dmz_mohist_melee_fix.raid.mixins.json"
+
+[[mixins]]
+config = "dmz_mohist_melee_fix.sdu.mixins.json"
 
 [[dependencies.dmz_mohist_melee_fix]]
 modId = "forge"
