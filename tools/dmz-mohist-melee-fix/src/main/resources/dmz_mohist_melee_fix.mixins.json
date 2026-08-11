@@ -1,0 +1,34 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.dbzlegacy.mohistmelee.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "dmz_mohist_melee_fix.refmap.json",
+  "mixins": [
+    "PlayerAttackHelperReachMixin",
+    "CombatAttackRequestHandleMixin",
+    "CombatAttackRequestDecodeMixin",
+    "ServerPlayerTeleportUnlockMixin",
+    "ServerPlayerChangeDimensionMixin",
+    "StatsDataSecondaryAttrMixin",
+    "StatsPrimaryAttrMixin",
+    "StatsSetPrimaryMixin",
+    "StatsDataResetMixin",
+    "NpcActionDisableMixin",
+    "InstantTransmissionBlockPlayerTravelMixin",
+    "InstantTransmissionFilterMenuMixin",
+    "UpdateSkillPricelessMixin",
+    "SkillsBlockPricelessLevelMixin",
+    "SkillBlockPricelessAddLevelMixin",
+    "SkillsSetSkillLevelMixin",
+    "FixVanillaEventsNaNMixin",
+    "CombatEventHurtSanitizeMixin"
+  ],
+  "client": [
+    "UltimateChallengeNoPrecisionMixin"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

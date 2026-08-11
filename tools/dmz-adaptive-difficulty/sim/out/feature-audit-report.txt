@@ -1,0 +1,104 @@
+=== Version ===
+  OK  VERSION 1.0.14
+
+=== Stock ladder / form / HP scale ===
+  OK  default unlockTier1EnemyMult — got 0.21
+  OK  default unlockTier2EnemyMult — got 0.42
+  OK  default unlockTier3EnemyMult — got 0.65
+  OK  default unlockTier4EnemyMult — got 0.90
+  OK  default unlockTier5EnemyMult — got 1.35
+  OK  default unlockTier6EnemyMult — got 1.60
+  OK  default unlockTier7EnemyMult — got 2.00
+  OK  default transformScaleWeight — got 0.65
+  OK  default transformScaleExponent — got 0.75
+  OK  default mobHealthScale — got 1.15
+  OK  default tankDamageDefenseRatio — got 0.45
+  OK  default tankDamageHealthRatio — got 0.10
+  OK  default maxScaledMobsPerPlayer — got 5
+  OK  default eliteMinUnlockTier — got 4
+  OK  default mutationMinUnlockTier — got 5
+  OK  default adaptiveAiMinUnlockTier — got 1
+  OK  default enemyEvolutionMinUnlockTier — got 1
+  OK  default bossMechanicsMinUnlockTier — got 6
+  OK  default ancientCoinUpgradeChance — got 0.02
+  OK  default eliteChancePercent — got 2.25
+  OK  default mutationChancePercent — got 3.75
+  OK  default eliteStatMultiplier — got 1.50
+  OK  default deathResetsActiveDifficulty — got true
+  OK  default enableClassCounters — got true
+  OK  default enableStrongStatCounters — got true
+
+=== Unlock gate / revoke ===
+  OK  prestige OR level eligibility
+  OK  reliable-sample revoke
+  OK  buy charges Ancient Coins
+
+=== Combat model (STR/SKP/PWR + ENE, class + top-2) ===
+  OK  blended offense includes PWR/ENE
+  OK  ENERGY WeakStat
+  OK  form peak includes PWR/ENE
+  OK  top-2 counters
+  OK  class counters enabled in damage path
+  OK  strong-stat top-2 combine
+  OK  VIT hit cap kept
+  OK  raised hit-cap budgets (1.0.14)
+  OK  VIT/RES damage floors live
+  OK  reads kiprotection / ki_infusion / potentialunlock
+  OK  skill sponge on mob HP
+  OK  live-bag hit-cap
+  OK  live-offense transform pressure
+  OK  KP is post-mitigation advantage
+  OK  CombatSanity clamps
+  OK  live offense poll includes PWR/ENE
+
+=== Form soft-curve / peel ===
+  OK  form soft curve
+  OK  DMZ addition peel
+
+=== Nearby scale + max 5 ===
+  OK  max slots ≤5
+  OK  maxScaledMobsPerPlayer clamped
+
+=== Exemptions ===
+  OK  saga/quest exempt
+  OK  Ender Dragon exempt
+  OK  SPAWNER exempt
+  OK  SDD exempt
+  OK  slime split exempt
+
+=== Personal / death / coins / admin ===
+  OK  personal participates gate
+  OK  death clears active tier
+  OK  logout keeps tier (save, no resetTemporary on logout)
+  OK  kill coin rewards
+  OK  system enabled gate
+  OK  whitelist gate
+
+=== Titles / teams stub / GUI ===
+  OK  title equip action
+  OK  teams WIP
+  OK  GUI ABI package stable
+
+=== Live challenge knobs (1.0.14) ===
+  OK  Forge admin sets tankDamageDefenseRatio
+  OK  Forge admin sets tankDamageHealthRatio
+  OK  Forge admin sets mobHealthScale
+  OK  GUI allowlists tankDamage*
+  OK  GUI does not mark tankDamage unused
+  OK  targetMobDamage uses tankDamage*
+
+=== Skills + melee AI parity ===
+  OK  DmzProgression.skillLevel helper
+  OK  melee painted shock / slam damage
+  OK  zombie Awakened+ chase speed
+  OK  Adaptive AI speed from Enhanced+
+  OK  tier move bump on paint
+
+=== README alignment ===
+  OK  README stock percents
+  OK  README PWR/ENE + top-2
+  OK  README version 1.0.14
+  OK  README skill-aware / sponge
+
+=== Summary ===
+PASS — intended features intact (78 checks, 0 warning(s))

@@ -1,0 +1,51 @@
+{
+  "configVersion": "2.1.3",
+  "raceName": "viltrumite",
+  "hasGender": true,
+  "useVanillaSkin": false,
+  "customModel": "human",
+  "isLayered": true,
+  "headBones": [
+    "hair"
+  ],
+  "racialSkill": "saiyan",
+  "hasSaiyanTail": false,
+  "auraType": "kakarot",
+  "defaultModelScaling": [
+    1.0,
+    1.0,
+    1.0
+  ],
+  "defaultBodyType": 0,
+  "defaultHairType": 1,
+  "defaultEyesType": 0,
+  "defaultNoseType": 0,
+  "defaultMouthType": 0,
+  "defaultTattooType": 0,
+  "defaultBodyColor": "#FFD3C9",
+  "defaultBodyColor2": "#FFD3C9",
+  "defaultBodyColor3": "#FFD3C9",
+  "defaultHairColor": "#1C1917",
+  "defaultEye1Color": "#1C1917",
+  "defaultEye2Color": "#1C1917",
+  "defaultAuraColor": "#B91C1C",
+  "formSkillsCosts": {
+    "superforms": {
+      "buyFromMaster": false,
+      "prices": [
+        -1,
+        75000,
+        200000,
+        500000
+      ]
+    },
+    "androidforms": {
+      "buyFromMaster": false,
+      "prices": [
+        100000,
+        250000,
+        650000
+      ]
+    }
+  }
+}

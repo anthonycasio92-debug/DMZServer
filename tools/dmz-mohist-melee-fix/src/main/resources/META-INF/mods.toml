@@ -1,0 +1,48 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "MIT"
+
+[[mods]]
+modId = "dmz_mohist_melee_fix"
+version = "2.12.14"
+displayName = "DMZ Mohist Melee Fix"
+authors = "DBZ Legacy Reborn"
+description = '''
+Fixes M1 animation-with-no-hit after world changes (empty/stale entity ID rescue),
+clamps >64 ID packets, Shurui raid unlock, respawn-like attribute recovery.
+Intentional DMZ stat resets update/clear the primary snapshot so restore cannot
+resurrect old STR/etc. Does not override hasCreatedCharacter — vanilla DMZ
+clears it so reset reopens race select. Soft keepPercentage/keepSkills still
+work (recreate only applies base stats when primaries are 0). Adds self
+/dmzstats reset <keepPercentage> [keepSkills]. Instant Transmission to players
+(party/external) is disabled; master IT still works. Master NPC disables,
+priceless (-1) skill costs, /dmzskill set refreshes maxLevel, Old Kai skips Precision (client mixin too).
+No ki_damage writes / damage redirects.
+'''
+
+[[mixins]]
+config = "dmz_mohist_melee_fix.mixins.json"
+
+[[mixins]]
+config = "dmz_mohist_melee_fix.raid.mixins.json"
+
+[[dependencies.dmz_mohist_melee_fix]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.dmz_mohist_melee_fix]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.20.2)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.dmz_mohist_melee_fix]]
+modId = "dragonminez"
+mandatory = true
+versionRange = "[2.1,)"
+ordering = "AFTER"
+side = "BOTH"

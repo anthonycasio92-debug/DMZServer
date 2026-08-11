@@ -1,0 +1,45 @@
+{
+  "configVersion": 6,
+  "raceName": "APE",
+  "hasGender": true,
+  "useVanillaSkin": false,
+  "customModel": "oozaru",
+  "isLayered": false,
+  "headBones": [
+    "hair"
+  ],
+  "racialSkill": "saiyan",
+  "hasSaiyanTail": true,
+  "auraType": "kakarot",
+  "defaultModelScaling": [
+    3.0000,
+    3.0000,
+    3.0000
+  ],
+  "defaultBodyType": 1,
+  "defaultHairType": 1,
+  "defaultEyesType": 1,
+  "defaultNoseType": 1,
+  "defaultMouthType": 1,
+  "defaultTattooType": 1,
+  "defaultBodyColor": "#FFD3C9",
+  "defaultBodyColor2": "#572117",
+  "defaultBodyColor3": "#FFD3C9",
+  "defaultHairColor": "#222629",
+  "defaultEye1Color": "#222629",
+  "defaultEye2Color": "#222629",
+  "defaultAuraColor": "#7FFFFF",
+  "formSkillsCosts": {
+    "legendaryforms": [
+      -1,
+      -1,
+      -1
+    ],
+    "godforms": [],
+    "superforms": [
+      12000,
+      16000,
+      20000
+    ]
+  }
+}

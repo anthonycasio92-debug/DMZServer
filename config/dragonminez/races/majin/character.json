@@ -1,0 +1,60 @@
+{
+  "configVersion": "2.1.3",
+  "raceName": "majin",
+  "hasGender": true,
+  "useVanillaSkin": false,
+  "customModel": "",
+  "isLayered": true,
+  "headBones": [
+    "majin1",
+    "majin2",
+    "majin3"
+  ],
+  "racialSkill": "majin",
+  "hasSaiyanTail": false,
+  "auraType": "kakarot",
+  "defaultModelScaling": [
+    0.9375,
+    0.9375,
+    0.9375
+  ],
+  "defaultBodyType": 0,
+  "defaultHairType": 0,
+  "defaultEyesType": 0,
+  "defaultNoseType": 0,
+  "defaultMouthType": 0,
+  "defaultTattooType": 0,
+  "defaultBodyColor": "#FFA4FF",
+  "defaultBodyColor2": "#FFA4FF",
+  "defaultBodyColor3": "#FFA4FF",
+  "defaultHairColor": "#FFA4FF",
+  "defaultEye1Color": "#B40000",
+  "defaultEye2Color": "#B40000",
+  "defaultAuraColor": "#FF6DFF",
+  "formSkillsCosts": {
+    "superforms": {
+      "buyFromMaster": false,
+      "prices": [
+        -1,
+        75000,
+        200000,
+        500000
+      ]
+    },
+    "legendaryforms": {
+      "buyFromMaster": false,
+      "prices": [
+        -1,
+        -1,
+        -1
+      ]
+    },
+    "godforms": {
+      "buyFromMaster": false,
+      "prices": [
+        -1,
+        -1
+      ]
+    }
+  }
+}

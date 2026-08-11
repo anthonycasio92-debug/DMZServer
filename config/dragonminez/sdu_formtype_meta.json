@@ -1,0 +1,32 @@
+{
+  "types": {
+    "uniquegforms": {
+      "iconBase": "godforms",
+      "tintArgb": 16732939
+    },
+    "the_dragon": {
+      "iconBase": "superforms",
+      "tintArgb": -1
+    },
+    "raditz": {
+      "iconBase": "superforms",
+      "tintArgb": -1
+    },
+    "droid_gforms": {
+      "iconBase": "androidforms",
+      "tintArgb": 65355
+    },
+    "red_pharma": {
+      "iconBase": "androidforms",
+      "tintArgb": 9175040
+    },
+    "darkness": {
+      "iconBase": "superforms",
+      "tintArgb": 1381653
+    },
+    "brilliance": {
+      "iconBase": "superforms",
+      "tintArgb": 6605567
+    }
+  }
+}

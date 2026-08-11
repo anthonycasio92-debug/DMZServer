@@ -1,0 +1,58 @@
+{
+  "configVersion": "2.1.3",
+  "raceName": "monkey",
+  "hasGender": true,
+  "useVanillaSkin": false,
+  "customModel": "oozaru",
+  "isLayered": true,
+  "headBones": [
+    "hair",
+    "ears1",
+    "ears2",
+    "ears3",
+    "horns1",
+    "horns2",
+    "horns3",
+    "horns4",
+    "horns5"
+  ],
+  "racialSkill": "saiyan",
+  "hasSaiyanTail": true,
+  "auraType": "kakarot",
+  "defaultModelScaling": [
+    3.1,
+    3.1,
+    3.1
+  ],
+  "defaultBodyType": 1,
+  "defaultHairType": 1,
+  "defaultEyesType": 1,
+  "defaultNoseType": 1,
+  "defaultMouthType": 1,
+  "defaultTattooType": 1,
+  "defaultBodyColor": "#FFD3C9",
+  "defaultBodyColor2": "#572117",
+  "defaultBodyColor3": "#FFD3C9",
+  "defaultHairColor": "#222629",
+  "defaultEye1Color": "#222629",
+  "defaultEye2Color": "#222629",
+  "defaultAuraColor": "#7FFFFF",
+  "formSkillsCosts": {
+    "superforms": {
+      "buyFromMaster": false,
+      "prices": [
+        -1,
+        50000,
+        200000
+      ]
+    },
+    "legendaryforms": {
+      "buyFromMaster": false,
+      "prices": [
+        -1,
+        -1,
+        -1
+      ]
+    }
+  }
+}

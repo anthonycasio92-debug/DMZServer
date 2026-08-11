@@ -1,0 +1,35 @@
+# Forge installer leftovers
+forge-*-installer.jar
+forge-*-installer.jar.log
+*.log
+
+# Runtime / world data (regenerated) — root only (do not ignore Java packages named world)
+/world/
+/logs/
+/crash-reports/
+.cache/
+local/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Hybrid / CNPC / KubeJS runtime noise
+plugins/.paper-remapped/
+plugins/CMI/
+plugins/Fabled/
+plugins/Updater/
+customnpcs/playerdata/
+customnpcs/clones/
+customnpcs/logs/
+kubejs/probe/
+kubejs/config/
+kubejs/exported/
+
+# Adaptive difficulty GUI build output
+tools/dmz-adaptive-difficulty-gui/build/
+tools/dmz-adaptive-difficulty/build/
+
+# Local convenience copies from adaptive-difficulty build.sh
+/dmz_adaptive_difficulty-*.jar
+tools/dmz-adaptive-difficulty/sim/__pycache__/

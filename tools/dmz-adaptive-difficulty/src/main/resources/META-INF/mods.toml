@@ -1,0 +1,50 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "MIT"
+
+[[mods]]
+modId = "adaptivedifficulty"
+version = "1.0.36"
+displayName = "AdaptiveDifficulty"
+authors = "DBZ Legacy Reborn"
+displayTest = "IGNORE_SERVER_VERSION"
+description = '''
+Server-side AdaptiveDifficulty for DragonMineZ (1.0.36).
+Unlock tiers bought with Lightman's Ancient Coins, nearby mobs scale to
+player fight stats × tier %, titles, gated elites/mutations/AI/boss.
+'''
+
+[[dependencies.adaptivedifficulty]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "SERVER"
+
+[[dependencies.adaptivedifficulty]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.20.2)"
+ordering = "NONE"
+side = "SERVER"
+
+[[dependencies.adaptivedifficulty]]
+modId = "dragonminez"
+mandatory = true
+versionRange = "[2.1,)"
+ordering = "AFTER"
+side = "SERVER"
+
+[[dependencies.adaptivedifficulty]]
+modId = "lightmanscurrency"
+mandatory = false
+versionRange = "[0,)"
+ordering = "AFTER"
+side = "SERVER"
+
+[[dependencies.adaptivedifficulty]]
+modId = "ftbteams"
+mandatory = false
+versionRange = "[0,)"
+ordering = "AFTER"
+side = "SERVER"

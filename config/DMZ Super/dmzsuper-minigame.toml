@@ -1,0 +1,53 @@
+
+["Ultra Instinct Minigame"]
+	#Speed of the white cursor bar (pixels per tick, default: 12)
+	#Range: 1 ~ 100
+	cursorSpeed = 12
+	#Width of the green zone target (in pixels, default: 38)
+	#Range: 5 ~ 200
+	greenZoneWidth = 38
+	#Reaction time to press SPACE when cursor hits green zone (in ticks, default: 20)
+	#Range: 5 ~ 100
+	greenZoneWindowTicks = 20
+	#Reaction time to press A or D when prompted (in ticks, default: 20)
+	#Range: 5 ~ 100
+	maxKeyTime = 20
+	#Minimum delay between A/D prompts (in ticks, default: 10)
+	#Range: 0 ~ 1000
+	minKeyDelay = 10
+	#Maximum delay between A/D prompts (in ticks, default: 50)
+	#Range: 0 ~ 1000
+	maxKeyDelay = 50
+	#Number of correct A/D inputs required to win (default: 10)
+	#Range: 1 ~ 100
+	maxProgress = 10
+	#Number of mistakes allowed before failing (default: 5)
+	#Range: 1 ~ 20
+	maxFailures = 5
+
+["Ultra Ego Minigame"]
+	#Speed of the white cursor bar (pixels per tick, default: 12)
+	#Range: 1 ~ 100
+	cursorSpeed = 12
+	#Width of the green zone target (in pixels, default: 38)
+	#Range: 5 ~ 200
+	greenZoneWidth = 38
+	#Reaction time to press SPACE when cursor hits green zone (in ticks, default: 20)
+	#Range: 5 ~ 100
+	greenZoneWindowTicks = 20
+	#Reaction time to press A or D when prompted (in ticks, default: 20)
+	#Range: 5 ~ 100
+	maxKeyTime = 20
+	#Minimum delay between A/D prompts (in ticks, default: 10)
+	#Range: 0 ~ 1000
+	minKeyDelay = 10
+	#Maximum delay between A/D prompts (in ticks, default: 50)
+	#Range: 0 ~ 1000
+	maxKeyDelay = 50
+	#Number of correct A/D inputs required to win (default: 10)
+	#Range: 1 ~ 100
+	maxProgress = 10
+	#Number of mistakes allowed before failing (default: 5)
+	#Range: 1 ~ 20
+	maxFailures = 5
+

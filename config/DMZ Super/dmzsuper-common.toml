@@ -1,0 +1,194 @@
+
+["Ultra Ego Settings"]
+	#Rage decay rate per tick (every 20 ticks) when Ultra Ego is inactive.
+	#Range: 0.0 ~ 1.0
+	rageDecayInactive = 0.05
+	#Mastery gain per second for Ultra Ego when active.
+	#Range: 0.0 ~ 100.0
+	ueMasteryGainPerSecond = 0.01
+	#Base Rage drain per tick (at 0% mastery) when Ultra Ego is active. Scales down by up to 99% with mastery. Note: This subtracts from the total Rage pool (2.5 or 3.5), it is not a percentage.
+	#1 second = 20 ticks
+	#Range: 0.0 ~ 1.0
+	ueBaseRageDrain = 0.002
+	#Mastery gain for Ultra Ego when taking damage.
+	#Range: 0.0 ~ 100.0
+	ueHurtMasteryGain = 0.02
+	#Cooldown in seconds for Ultra Ego after de-transforming due to 0 Rage.
+	#Range: 0 ~ 3600
+	ueCooldownSeconds = 20
+	#If true, the Ultra Ego skill will be granted at level 0 and will require completing a minigame to reach level 1 (0 TP cost for level 1).
+	ueMinigameEnabled = true
+
+	["Ultra Ego Settings"."Ultra Ego Customization"]
+		#Base multiplier for Ultra Ego Sign (0% mastery)
+		#Range: 1.0 ~ 1000.0
+		ueBaseMultiplierSign = 4.0
+		#Max multiplier for Ultra Ego Sign (100% mastery)
+		#Range: 1.0 ~ 1000.0
+		ueMaxMultiplierSign = 9.0
+		#Base RES multiplier for Ultra Ego Sign (0% mastery)
+		#Note: The base DragonMineZ mod adds +0.3 to this stat.
+		#Range: 0.01 ~ 1000.0
+		ueBaseResMultiplierSign = 1.0
+		#Max RES multiplier for Ultra Ego Sign (100% mastery)
+		#Note: The base DragonMineZ mod adds +0.3 to this stat.
+		#Range: 0.01 ~ 1000.0
+		ueMaxResMultiplierSign = 1.0
+		#Max multiplier bonus from Rage for Ultra Ego Sign
+		#Range: 0.0 ~ 1000.0
+		ueMaxRageBonusSign = 2.5
+		#Base multiplier for Ultra Ego Mastered (0% mastery)
+		#Range: 1.0 ~ 1000.0
+		ueBaseMultiplierMastered = 6.0
+		#Max multiplier for Ultra Ego Mastered (100% mastery)
+		#Range: 1.0 ~ 1000.0
+		ueMaxMultiplierMastered = 14.0
+		#Base RES multiplier for Ultra Ego Mastered (0% mastery)
+		#Note: The base DragonMineZ mod adds +0.3 to this stat.
+		#Range: 0.01 ~ 1000.0
+		ueBaseResMultiplierMastered = 1.0
+		#Max RES multiplier for Ultra Ego Mastered (100% mastery)
+		#Note: The base DragonMineZ mod adds +0.3 to this stat.
+		#Range: 0.01 ~ 1000.0
+		ueMaxResMultiplierMastered = 1.0
+		#Max multiplier bonus from Rage for Ultra Ego Mastered
+		#Range: 0.0 ~ 1000.0
+		ueMaxRageBonusMastered = 3.5
+
+		["Ultra Ego Settings"."Ultra Ego Customization"."UE Sign Visuals"]
+			#UE Sign eye color (Hex format)
+			ueSignEyeColor = "#FF00FF"
+			#UE Sign aura color (Hex format)
+			ueSignAuraColor = "#CC00FF"
+			#UE Sign divine particle color (Hex format)
+			ueSignDivineParticleColor = "#FF00FF"
+			#UE Sign calm particle color (Hex format)
+			ueSignCalmParticleColor = "#FF00FF"
+			#Enable Calm particles for UE Sign during Ki charging.
+			ueSignEnableCalmParticles = false
+
+		["Ultra Ego Settings"."Ultra Ego Customization"."UE Mastered Visuals"]
+			#UE Mastered hair color (Hex format, e.g., #720A72)
+			ueMasteredHairColor = "#720A72"
+			#UE Mastered eye color (Hex format)
+			ueMasteredEyeColor = "#720A72"
+			#UE Mastered aura color (Hex format)
+			ueMasteredAuraColor = "#CC00FF"
+			#UE Mastered divine particle color (Hex format)
+			ueMasteredDivineParticleColor = "#FF00FF"
+			#UE Mastered calm particle color (Hex format)
+			ueMasteredCalmParticleColor = "#FF00FF"
+			#Enable Calm particles for UE Mastered during Ki charging.
+			ueMasteredEnableCalmParticles = false
+
+["Ultra Instinct Settings"]
+	#If true, UI Mastered cannot be activated if the player has any Rage (from UE).
+	restrictUIMasteredWithRage = true
+	#Mastery gain per second for Ultra Instinct when active.
+	#Range: 0.0 ~ 100.0
+	uiMasteryGainPerSecond = 0.02
+	#Mastery gain for Ultra Instinct when successfully dodging an attack.
+	#Range: 0.0 ~ 100.0
+	uiDodgeMasteryGain = 0.5
+	#If true, the Ultra Instinct skill will be granted at level 0 and will require completing a minigame to reach level 1 (0 TP cost for level 1).
+	uiMinigameEnabled = true
+	#If true, the 'androidbase' form will be treated as a transformation for UI physical exhaustion calculation (applying the penalty).
+	#If false, 'androidbase' will be ignored (no penalty), allowing Androids to use UI in base form efficiently.
+	androidBaseUIExhaustionAsAForm = false
+
+	["Ultra Instinct Settings"."Ultra Instinct Customization"]
+		#Base multiplier for Ultra Instinct Sign (0% mastery)
+		#Range: 1.0 ~ 1000.0
+		uiBaseMultiplierSign = 4.0
+		#Max multiplier for Ultra Instinct Sign (100% mastery)
+		#Range: 1.0 ~ 1000.0
+		uiMaxMultiplierSign = 9.0
+		#Base RES multiplier for Ultra Instinct Sign (0% mastery)
+		#Note: The base DragonMineZ mod adds +0.3 to this stat.
+		#Range: 0.01 ~ 1000.0
+		uiBaseResMultiplierSign = 1.0
+		#Max RES multiplier for Ultra Instinct Sign (100% mastery)
+		#Note: The base DragonMineZ mod adds +0.3 to this stat.
+		#Range: 0.01 ~ 1000.0
+		uiMaxResMultiplierSign = 1.0
+		#Base dodge chance for Ultra Instinct Sign (0% mastery)
+		#Range: 0.0 ~ 1.0
+		uiBaseDodgeSign = 0.1
+		#Max dodge chance for Ultra Instinct Sign (at 100% mastery)
+		#Range: 0.0 ~ 1.0
+		uiMaxDodgeSign = 0.7
+		#Base multiplier for Ultra Instinct Mastered (0% mastery)
+		#Range: 1.0 ~ 1000.0
+		uiBaseMultiplierMastered = 6.0
+		#Max multiplier for Ultra Instinct Mastered (100% mastery)
+		#Range: 1.0 ~ 1000.0
+		uiMaxMultiplierMastered = 14.0
+		#Base RES multiplier for Ultra Instinct Mastered (0% mastery)
+		#Note: The base DragonMineZ mod adds +0.3 to this stat.
+		#Range: 0.01 ~ 1000.0
+		uiBaseResMultiplierMastered = 1.0
+		#Max RES multiplier for Ultra Instinct Mastered (100% mastery)
+		#Note: The base DragonMineZ mod adds +0.3 to this stat.
+		#Range: 0.01 ~ 1000.0
+		uiMaxResMultiplierMastered = 1.0
+		#Base dodge chance for Ultra Instinct Mastered (0% mastery)
+		#Range: 0.0 ~ 1.0
+		uiBaseDodgeMastered = 0.4
+		#Max dodge chance for Ultra Instinct Mastered (at 100% mastery)
+		#Range: 0.0 ~ 1.0
+		uiMaxDodgeMastered = 0.8
+
+		["Ultra Instinct Settings"."Ultra Instinct Customization"."UI Sign Visuals"]
+			#UI Sign eye color 1 (Hex format)
+			uiSignEyeColor1 = "#C0C0C0"
+			#UI Sign eye color 2 (Hex format)
+			uiSignEyeColor2 = "#E8E8E8"
+			#UI Sign aura color (Hex format)
+			uiSignAuraColor = "#FFFFFF"
+			#UI Sign divine particle color (Hex format)
+			uiSignDivineParticleColor = "#FFFFFF"
+			#UI Sign calm particle color (Hex format)
+			uiSignCalmParticleColor = "#FFFFFF"
+			#Enable Calm particles for UI Sign during Ki charging.
+			uiSignEnableCalmParticles = true
+
+		["Ultra Instinct Settings"."Ultra Instinct Customization"."UI Mastered Visuals"]
+			#UI Mastered hair color (Hex format)
+			uiMasteredHairColor = "#FFFFFF"
+			#UI Mastered eye color 1 (Hex format)
+			uiMasteredEyeColor1 = "#C0C0C0"
+			#UI Mastered eye color 2 (Hex format)
+			uiMasteredEyeColor2 = "#E8E8E8"
+			#UI Mastered aura color (Hex format)
+			uiMasteredAuraColor = "#FFFFFF"
+			#UI Mastered divine particle color (Hex format)
+			uiMasteredDivineParticleColor = "#FFFFFF"
+			#UI Mastered calm particle color (Hex format)
+			uiMasteredCalmParticleColor = "#FFFFFF"
+			#Enable Calm particles for UI Mastered during Ki charging.
+			uiMasteredEnableCalmParticles = true
+
+["General Mastery and HTC Settings"]
+	#Rate at which physical exhaustion decays periodically (per tick).
+	#Range: 0.0 ~ 100.0
+	exhaustionDecayRate = 0.05
+	#Multiplier for Rage drain when inside the Hyperbolic Time Chamber (HTC).
+	#Range: 0.0 ~ 1000.0
+	htcRageDrainMultiplier = 1.0
+	#Multiplier for Mastery gain when inside the Hyperbolic Time Chamber (HTC).
+	#Range: 0.0 ~ 1000.0
+	htcMasteryGainMultiplier = 1.0
+	#Skill Points (TP) cost to purchase Ultra Instinct. Set to -1 to make it unbuyable.
+	#if you set it to -1 it will be unbuyable
+	#Range: > -1
+	uiPurchaseCost = 500000
+	#Skill Points (TP) cost to purchase Ultra Ego. Set to -1 to make it unbuyable.
+	#if you set it to -1 it will be unbuyable
+	#Range: > -1
+	uePurchaseCost = 500000
+
+[Internal]
+	#Internal version of the configuration file. Do not change manually.
+	#Range: > 1
+	configVersion = 2
+

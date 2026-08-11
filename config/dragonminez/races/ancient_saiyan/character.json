@@ -1,0 +1,55 @@
+{
+  "configVersion": "2.1.3",
+  "raceName": "ancient_saiyan",
+  "hasGender": true,
+  "useVanillaSkin": false,
+  "customModel": "saiyan",
+  "isLayered": true,
+  "headBones": [
+    "hair"
+  ],
+  "racialSkill": "ancientsaiyan",
+  "hasSaiyanTail": true,
+  "auraType": "kakarot",
+  "defaultModelScaling": [
+    0.9375,
+    0.9375,
+    0.9375
+  ],
+  "defaultBodyType": 0,
+  "defaultHairType": 0,
+  "defaultEyesType": 0,
+  "defaultNoseType": 0,
+  "defaultMouthType": 0,
+  "defaultTattooType": 0,
+  "defaultBodyColor": "#FFD3C9",
+  "defaultBodyColor2": "#000000",
+  "defaultBodyColor3": "#FFD3C9",
+  "defaultHairColor": "#FFFFFF",
+  "defaultEye1Color": "#EDD640",
+  "defaultEye2Color": "#EDD640",
+  "defaultAuraColor": "#FF0000",
+  "formSkillsCosts": {
+    "legendaryforms": {
+      "buyFromMaster": false,
+      "prices": []
+    },
+    "godforms": {
+      "buyFromMaster": false,
+      "prices": []
+    },
+    "superforms": {
+      "buyFromMaster": false,
+      "prices": [
+        -1,
+        1000000,
+        10000000,
+        100000000
+      ]
+    }
+  },
+  "sduDisplayName": "Ancient Saiyan",
+  "sduDescription": "The long exstinct ancestors of Saiyans, these beings are much more animalistic and battle hungry than normal saiyans it is said...",
+  "sduRacialName": "Primal Bloodlust",
+  "sduRacialDesc": "Killing enemies gives a boost to all non resource stats, as well as kick starts health and ki regen and adds 10% resistance for 10 seconds."
+}
