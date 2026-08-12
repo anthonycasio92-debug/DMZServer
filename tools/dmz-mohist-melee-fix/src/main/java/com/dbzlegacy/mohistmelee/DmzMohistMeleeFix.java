@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.18: purge unearned saga SUCCESS on party merge/leave/login",
+                "[{}] v2.12.19: saga guard — no progress wipe on party/death; strip new borrows only",
                 MOD_ID
         );
         ReachRepairEvents.register();

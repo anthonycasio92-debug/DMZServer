@@ -23,8 +23,15 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Tracks quests a player personally earned (solo or while in the party at completion).
- * Blocks inheriting already-{@code SUCCESS} saga progress from party leaders and blocks
- * reward claims for completions the player did not earn themselves.
+ * <p>
+ * Anti-cheese rules:
+ * <ul>
+ *   <li>Party sync must not copy already-{@code SUCCESS} quests onto someone who was not
+ *       actively on that quest / had not earned it.</li>
+ *   <li>Reward claims are cancelled unless the quest is personally earned.</li>
+ * </ul>
+ * Never wipe existing saga progress on party leave, login, or death. Only strip completions
+ * that appeared <em>during</em> a party merge and were not earned / not previously accepted.
  */
 public final class PersonalSagaGuard {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
@@ -38,7 +45,7 @@ public final class PersonalSagaGuard {
 
     private static final ConcurrentHashMap<UUID, Set<String>> CACHE = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<UUID, Boolean> BOOTSTRAPPED = new ConcurrentHashMap<>();
-    private static final AtomicInteger PURGE_LOGS = new AtomicInteger();
+    private static final AtomicInteger STRIP_LOGS = new AtomicInteger();
 
     private PersonalSagaGuard() {}
 
@@ -58,51 +65,68 @@ public final class PersonalSagaGuard {
         if (hasEarned(target, questKey)) {
             return true;
         }
-        // True co-op only: member must already be on the quest. Never keep a borrowed SUCCESS.
+        // True co-op only: member must already be on the quest.
         return ownStatus == QuestStatus.ACCEPTED;
     }
 
     /**
-     * Removes {@code SUCCESS} quests the player did not personally earn.
-     * Used after party merges, on party leave, and on login to unstick borrowed completions.
+     * After a party quest merge: remove only completions that were newly applied by this merge
+     * and were not personally earned / previously accepted. Never touches older progress.
      *
-     * @return true if any quest state was changed
+     * @return true if any quest was stripped
      */
-    public static boolean purgeUnearnedCompletions(ServerPlayer player) {
-        if (player == null) {
+    public static boolean stripNewlyBorrowedCompletions(
+            ServerPlayer player,
+            PlayerQuestData data,
+            Set<String> completedBefore,
+            Set<String> acceptedBefore
+    ) {
+        if (player == null || data == null) {
             return false;
         }
         ensureBootstrapped(player);
-        PlayerQuestData pqd = questData(player);
-        if (pqd == null) {
-            return false;
-        }
+        Set<String> beforeCompleted = completedBefore != null ? completedBefore : Set.of();
+        Set<String> beforeAccepted = acceptedBefore != null ? acceptedBefore : Set.of();
         boolean changed = false;
-        for (String questId : new ArrayList<>(pqd.getCompletedQuestIds())) {
-            if (questId == null || questId.isBlank() || hasEarned(player, questId)) {
+        for (String questId : new ArrayList<>(data.getCompletedQuestIds())) {
+            if (questId == null || questId.isBlank()) {
                 continue;
             }
-            pqd.resetQuest(questId);
+            if (beforeCompleted.contains(questId)) {
+                continue; // already had this completion — never wipe
+            }
+            if (beforeAccepted.contains(questId) || hasEarned(player, questId)) {
+                // Co-op member who was on the quest, or already credited.
+                markEarned(player, questId);
+                continue;
+            }
+            data.resetQuest(questId);
             changed = true;
-            int n = PURGE_LOGS.incrementAndGet();
+            int n = STRIP_LOGS.incrementAndGet();
             if (n <= 60) {
                 LOGGER.info(
-                        "[{}] purged unearned SUCCESS: player={} quest={}",
+                        "[{}] stripped newly borrowed SUCCESS: player={} quest={}",
                         DmzMohistMeleeFix.MOD_ID,
                         player.m_36316_().getName(),
                         questId
                 );
             }
         }
-        String tracked = pqd.getTrackedQuestId();
-        if (tracked != null
-                && !tracked.isBlank()
-                && !pqd.isQuestAccepted(tracked)
-                && !pqd.isQuestCompleted(tracked)) {
-            pqd.setTrackedQuestId(null);
-            changed = true;
-        }
         return changed;
+    }
+
+    public static Set<String> snapshotCompleted(PlayerQuestData data) {
+        if (data == null) {
+            return Set.of();
+        }
+        return new HashSet<>(data.getCompletedQuestIds());
+    }
+
+    public static Set<String> snapshotAccepted(PlayerQuestData data) {
+        if (data == null) {
+            return Set.of();
+        }
+        return new HashSet<>(data.getAcceptedQuestIds());
     }
 
     public static void markEarned(ServerPlayer player, String questKey) {
@@ -173,20 +197,85 @@ public final class PersonalSagaGuard {
         BOOTSTRAPPED.remove(playerId);
     }
 
+    /**
+     * Death/respawn: same UUID — keep memory cache and copy earn NBT onto the new entity.
+     * Do <b>not</b> unload/re-bootstrap from an empty new player (that wiped earn marks).
+     */
+    public static void carryOverAfterClone(ServerPlayer original, ServerPlayer respawned) {
+        if (original == null || respawned == null) {
+            return;
+        }
+        UUID id = respawned.m_20148_();
+        if (!CACHE.containsKey(id)) {
+            // Prefer reading from the original entity (still has NBT).
+            loadFromEntity(original, id);
+        }
+        if (!Boolean.TRUE.equals(BOOTSTRAPPED.get(id))) {
+            // Seed from original quest data if present, else respawned.
+            PlayerQuestData pqd = questData(original);
+            if (pqd == null) {
+                pqd = questData(respawned);
+            }
+            seedBootstrap(respawned, id, pqd);
+        }
+        save(respawned);
+    }
+
     public static void ensureBootstrapped(ServerPlayer player) {
         if (player == null) {
             return;
         }
         UUID id = player.m_20148_();
         if (!CACHE.containsKey(id)) {
-            load(player);
+            loadFromEntity(player, id);
         }
-        if (Boolean.TRUE.equals(BOOTSTRAPPED.get(id))) {
+        if (!Boolean.TRUE.equals(BOOTSTRAPPED.get(id))) {
+            seedBootstrap(player, id, questData(player));
             return;
         }
-        // First install: grandfather currently completed quests so legit players are not locked out.
-        Set<String> seeded = CACHE.computeIfAbsent(id, u -> ConcurrentHashMap.newKeySet());
+        // Repair death/clone desync: bootstrapped with empty earns but live SUCCESS remains.
+        // Safe because party merge no longer grants borrowed SUCCESS (and delta-strips if it does).
+        repairEmptyEarnFromCompletions(player);
+    }
+
+    /**
+     * If earn marks were lost (e.g. old clone bug) but quest completions remain, re-credit them
+     * so legitimate claims are not blocked forever.
+     */
+    public static void repairEmptyEarnFromCompletions(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        UUID id = player.m_20148_();
+        Set<String> earned = CACHE.get(id);
+        if (earned == null || !earned.isEmpty()) {
+            return;
+        }
         PlayerQuestData pqd = questData(player);
+        if (pqd == null) {
+            return;
+        }
+        Set<String> completed = pqd.getCompletedQuestIds();
+        if (completed == null || completed.isEmpty()) {
+            return;
+        }
+        for (String questId : completed) {
+            if (questId != null && !questId.isBlank()) {
+                earned.add(questId);
+            }
+        }
+        BOOTSTRAPPED.put(id, Boolean.TRUE);
+        save(player);
+        LOGGER.info(
+                "[{}] repaired empty earn marks from {} live completion(s) for {}",
+                DmzMohistMeleeFix.MOD_ID,
+                earned.size(),
+                player.m_36316_().getName()
+            );
+    }
+
+    private static void seedBootstrap(ServerPlayer player, UUID id, PlayerQuestData pqd) {
+        Set<String> seeded = CACHE.computeIfAbsent(id, u -> ConcurrentHashMap.newKeySet());
         if (pqd != null) {
             for (String questId : pqd.getCompletedQuestIds()) {
                 if (questId != null && !questId.isBlank()) {
@@ -242,8 +331,7 @@ public final class PersonalSagaGuard {
         return earned == null ? Collections.emptySet() : Collections.unmodifiableSet(new HashSet<>(earned));
     }
 
-    private static void load(ServerPlayer player) {
-        UUID id = player.m_20148_();
+    private static void loadFromEntity(ServerPlayer player, UUID id) {
         CompoundTag root = PersistentDataAccess.get(player);
         CompoundTag mod = root.m_128469_(ROOT_KEY);
         Set<String> earned = ConcurrentHashMap.newKeySet();
