@@ -1,8 +1,6 @@
 package com.dbzlegacy.mohistmelee;
 
 import com.dragonminez.common.events.DMZEvent;
-import com.dragonminez.common.network.NetworkHandler;
-import com.dragonminez.common.network.S2C.ProgressionSyncS2C;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.network.chat.Component;
@@ -16,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Personal saga completion earn tracking + reward claim gate.
+ * Does <b>not</b> wipe saga progress on login, leave, or death.
  */
 public final class PersonalSagaEvents {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
@@ -72,16 +71,8 @@ public final class PersonalSagaEvents {
     @SubscribeEvent
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
+            // Bootstrap only — never purge existing saga progress on login/respawn.
             PersonalSagaGuard.ensureBootstrapped(sp);
-            // Repair players stuck with borrowed SUCCESS from earlier party joins.
-            if (PersonalSagaGuard.purgeUnearnedCompletions(sp)) {
-                NetworkHandler.sendToPlayer(new ProgressionSyncS2C(sp), sp);
-                LOGGER.info(
-                        "[{}] login purge removed unearned completions for {}",
-                        DmzMohistMeleeFix.MOD_ID,
-                        sp.m_36316_().getName()
-                );
-            }
         }
     }
 
@@ -98,8 +89,7 @@ public final class PersonalSagaEvents {
                 || !(event.getOriginal() instanceof ServerPlayer old)) {
             return;
         }
-        // Persistent data is usually copied by Forge; refresh cache from the new entity tag.
-        PersonalSagaGuard.unload(old.m_20148_());
-        PersonalSagaGuard.ensureBootstrapped(neu);
+        // Same UUID across death — keep earn marks; do not unload/rebootstrap empty.
+        PersonalSagaGuard.carryOverAfterClone(old, neu);
     }
 }
