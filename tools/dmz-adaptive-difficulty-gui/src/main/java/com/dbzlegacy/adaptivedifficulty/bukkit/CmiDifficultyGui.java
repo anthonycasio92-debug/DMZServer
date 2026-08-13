@@ -264,46 +264,70 @@ public final class CmiDifficultyGui {
 
     private static void openTitles(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
-        CMIGui gui = base(player, "&8Difficulty Titles", 5);
+        CMIGui gui = base(player, "&8Titles", 6);
 
+        String perk = ph.getOrDefault("title_perk", "");
         CMIGuiButton info = new CMIGuiButton(4, Material.NAME_TAG, "&d&lTitles");
         info.lockField();
         info.addLore(List.of(
                 "",
                 "&7Equipped &e" + blankAsNone(ph.getOrDefault("active_title", "")),
-                "&7Current Tier &f" + ph.getOrDefault("active_tier_name", "None"),
-                "&7CR &f" + ph.getOrDefault("combat_rating", "?"),
+                perk.isBlank() ? "&8No equipped perk" : "&7Perk &f" + perk,
                 "",
-                "&8Tier titles need active tier + higher DMZ/Prestige",
-                "&8Combat titles need harder kill feats"
+                "&7Title Score &6" + ph.getOrDefault("title_score", "0"),
+                "&7Unlocked &f" + ph.getOrDefault("titles_unlocked", "0")
+                        + " &8/ &f" + ph.getOrDefault("titles_total", "0"),
+                "&7Elites &f" + ph.getOrDefault("elites_killed", "0")
+                        + "  &7Bosses &f" + ph.getOrDefault("bosses_killed", "0"),
+                "&7Nearby Elites &f" + ph.getOrDefault("nearby_elites", "0"),
+                "",
+                "&8Small perks only — tiers stay primary power"
         ));
         gui.addButton(info);
+        boolean senseOn = "true".equalsIgnoreCase(ph.getOrDefault("title_sense", "true"));
+        gui.addButton(actionBtn(7, senseOn ? Material.BELL : Material.NOTE_BLOCK,
+                senseOn ? "&aTitle Sense ON" : "&8Title Sense OFF",
+                "toggle_title_sense", "0", "titles",
+                List.of("&7Elite / Boss recognition chat", "&8Click to toggle")));
         gui.addButton(actionBtn(8, Material.BARRIER, "&cClear Title", "clear_title", "0", "titles",
                 List.of("&7Unequip your title")));
 
         String[] ids = {
                 "t1_awakened", "t2_enhanced", "t3_elite", "t4_advanced",
                 "t5_master", "t6_legendary", "t7_god",
-                "boss_slayer", "elite_hunter", "ascendant"
+                "elite_hunter", "boss_slayer", "ascendant",
+                "mutation_hunter", "untouchable", "immortal",
+                "coin_lord", "survivor", "worldbreaker"
         };
         Material[] mats = {
                 Material.COPPER_INGOT, Material.IRON_INGOT, Material.GOLD_INGOT, Material.DIAMOND,
                 Material.EMERALD, Material.NETHERITE_INGOT, Material.NETHER_STAR,
-                Material.WITHER_SKELETON_SKULL, Material.DRAGON_HEAD, Material.ENCHANTED_GOLDEN_APPLE
+                Material.DRAGON_HEAD, Material.WITHER_SKELETON_SKULL, Material.ENCHANTED_GOLDEN_APPLE,
+                Material.AMETHYST_SHARD, Material.SHIELD, Material.TOTEM_OF_UNDYING,
+                Material.GOLD_BLOCK, Material.CLOCK, Material.END_CRYSTAL
         };
-        int[] slots = {19, 20, 21, 22, 23, 24, 25, 29, 31, 33};
+        int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 37, 39, 41};
         String equipped = ph.getOrDefault("active_title_id", "");
         for (int i = 0; i < ids.length; i++) {
             String id = ids[i];
             boolean earned = "true".equalsIgnoreCase(ph.getOrDefault("title_" + id + "_earned", "false"));
             String name = ph.getOrDefault("title_" + id + "_name", id);
             String tip = ph.getOrDefault("title_" + id + "_req", "");
+            String titlePerk = ph.getOrDefault("title_" + id + "_perk", "");
+            String rarity = ph.getOrDefault("title_" + id + "_rarity", "");
+            String rarityColor = ph.getOrDefault("title_" + id + "_rarity_color", "7");
             boolean isEquipped = id.equalsIgnoreCase(equipped);
             String title = isEquipped ? "&a● " + name
                     : earned ? "&e" + name
                     : "&8" + name;
             List<String> lore = new ArrayList<>();
+            if (!rarity.isBlank()) {
+                lore.add("&" + rarityColor + rarity);
+            }
             lore.add("&7" + tip);
+            if (!titlePerk.isBlank()) {
+                lore.add("&f" + titlePerk);
+            }
             if (isEquipped) {
                 lore.add("&aCurrently equipped &8· click to unequip");
             } else if (earned) {
@@ -321,9 +345,9 @@ public final class CmiDifficultyGui {
             }
         }
 
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
-        gui.addButton(closeBtn(44));
-        fillEmpty(gui, 5);
+        gui.addButton(pageBtn(45, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(closeBtn(53));
+        fillEmpty(gui, 6);
         gui.open();
     }
 
