@@ -77,6 +77,13 @@ public final class DifficultyEvents {
     private static final Map<UUID, String> LAST_RACE = new ConcurrentHashMap<>();
     /** Last polled form key — catches future races that swap forms without mult spikes. */
     private static final Map<UUID, String> LAST_FORM_KEY = new ConcurrentHashMap<>();
+    /**
+     * Login / respawn resample attempts while DMZ {@code StatsData} is still missing.
+     * Value = consecutive 1s polls; removed once a reliable unlock-gate sample exists
+     * or after {@link #LOGIN_RESAMPLE_MAX} tries.
+     */
+    private static final Map<UUID, Integer> LOGIN_RESAMPLE_ATTEMPTS = new ConcurrentHashMap<>();
+    private static final int LOGIN_RESAMPLE_MAX = 15;
 
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
@@ -89,6 +96,7 @@ public final class DifficultyEvents {
         LAST_LIVE_OFFENSE.clear();
         LAST_RACE.clear();
         LAST_FORM_KEY.clear();
+        LOGIN_RESAMPLE_ATTEMPTS.clear();
     }
 
     @SubscribeEvent
@@ -114,9 +122,15 @@ public final class DifficultyEvents {
             }
             // Convert any leftover NBT Ancient Coin wallet into real Lightman's items (once/session).
             AncientCoinEconomy.migrateWalletToItems(player);
+            // DMZ StatsData often attaches a few ticks after login. Refreshing + saving
+            // while stats are null used to cache level 1 and revoke every tier.
             DifficultyCache.refresh(player);
-            // Persist any unlock-list repairs from refresh so the next disconnect keeps the tier.
-            DifficultyCache.save(player);
+            if (DmzProgression.hasReliableUnlockGateSample(player)) {
+                DifficultyCache.save(player);
+                LOGIN_RESAMPLE_ATTEMPTS.remove(player.m_20148_());
+            } else {
+                LOGIN_RESAMPLE_ATTEMPTS.put(player.m_20148_(), 0);
+            }
             TitleSystem.syncTierTitles(player, false);
         }
     }
@@ -150,6 +164,7 @@ public final class DifficultyEvents {
             LAST_LIVE_OFFENSE.remove(player.m_20148_());
             LAST_RACE.remove(player.m_20148_());
             LAST_FORM_KEY.remove(player.m_20148_());
+            LOGIN_RESAMPLE_ATTEMPTS.remove(player.m_20148_());
             AncientCoinEconomy.clearMigrateFlag(player.m_20148_());
             AreaDifficulty.clearCache();
         }
@@ -169,6 +184,10 @@ public final class DifficultyEvents {
         DifficultyCache.putData(neu, data);
         DifficultyCache.remove(old.m_20148_());
         CombatGravity.clearPlayer(old);
+        // Respawn often lands in base form with fresh StatsData — clear any polluted
+        // session sample and resample on the next tick pulse.
+        DmzProgression.clearBaseFormLevel(neu.m_20148_());
+        LOGIN_RESAMPLE_ATTEMPTS.put(neu.m_20148_(), 0);
     }
 
     @SubscribeEvent(priority = EventPriority.LOW)
@@ -349,6 +368,26 @@ public final class DifficultyEvents {
         boolean progressChanged = before.dmzLevel != level
                 || before.prestige != prestige
                 || Math.abs(before.transformationPower - transform) > 0.5;
+
+        // Deferred login/respawn resample — wait until DMZ stats attach so unlocks
+        // re-grant from the real level instead of staying wiped at placeholder 1.
+        Integer resample = LOGIN_RESAMPLE_ATTEMPTS.get(id);
+        if (resample != null) {
+            boolean reliable = DmzProgression.hasReliableUnlockGateSample(player);
+            if (reliable || resample >= LOGIN_RESAMPLE_MAX) {
+                LOGIN_RESAMPLE_ATTEMPTS.remove(id);
+                DifficultyCache.refresh(player);
+                if (reliable) {
+                    DifficultyCache.save(player);
+                    TitleSystem.syncTierTitles(player, false);
+                }
+            } else {
+                LOGIN_RESAMPLE_ATTEMPTS.put(id, resample + 1);
+                DifficultyCache.refresh(player);
+            }
+            return;
+        }
+
         if (formChanged || formKeyChanged || offenseChanged
                 || Math.abs(before.transformationPower - transform) > 0.5
                 || (prevRace != null && race != null && !prevRace.equals(race))) {

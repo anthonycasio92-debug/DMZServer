@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.36", 'VERSION = "1.0.36"' in mod)
+    check("VERSION 1.0.37", 'VERSION = "1.0.37"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -129,6 +129,14 @@ def main() -> int:
         has(unlock, "prestige >= tier.id", "dmzLevelForUnlockGate", "requiredDmzLevel"),
     )
     check("reliable-sample revoke", has(unlock, "revokeTier", "hasReliableUnlockGateSample", "resetTemporary"))
+    check("hasStats helper", "public static boolean hasStats" in progression)
+    check("stats-null unlock sample unreliable",
+          "DMZ stats are not attached yet" in progression
+          or ("hasReliableUnlockGateSample" in progression and "data == null" in progression
+              and "return false" in progression))
+    check("no BASE_FORM poison on null stats", "poison BASE_FORM_LEVEL" in progression)
+    check("deferred login resample",
+          "LOGIN_RESAMPLE_ATTEMPTS" in events and "hasReliableUnlockGateSample" in events)
     check("buy charges Ancient Coins", has(actions, "AncientCoinEconomy", "activationCost", "charge", "setTier"))
 
     print("\n=== Combat model (STR/SKP/PWR + ENE, class + top-2) ===")
@@ -299,7 +307,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.36", "1.0.36" in readme)
+    check("README version 1.0.37", "1.0.37" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -341,13 +349,13 @@ def main() -> int:
     check("README level clamp", "level clamp" in readme.lower() or "maxValue" in readme)
     check("README skeleton mount", "mount" in readme.lower() and "jockey" in readme.lower())
 
-    print("\n=== Coin drop chances (1.0.36) ===")
+    print("\n=== Coin drop chances (1.0.36+) ===")
     coins = read(SRC / "com/dbzlegacy/adaptivedifficulty/currency/AncientCoinEconomy.java")
     check("drop chance gate in rollKillLoot", "ancientCoinDropChance" in coins and "roll >= dropChance" in coins)
     check("dual upgrade band uses same roll", "roll < upgradeChance" in coins)
     check("coinDropChanceMigratedV1", "coinDropChanceMigratedV1" in cfg)
     check("admin set drop chance", "ancientcoindropchance" in cmds or "coindropchance" in cmds)
-    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "1.0.36" in readme)
+    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme)
 
     print("\n=== Summary ===")
     for w in warns:
