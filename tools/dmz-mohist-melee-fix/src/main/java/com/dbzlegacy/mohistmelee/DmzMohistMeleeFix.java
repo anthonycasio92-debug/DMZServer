@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.19: saga guard — no progress wipe on party/death; strip new borrows only",
+                "[{}] v2.12.20: ghost party heal + saga guard (no wipe on party/death)",
                 MOD_ID
         );
         ReachRepairEvents.register();

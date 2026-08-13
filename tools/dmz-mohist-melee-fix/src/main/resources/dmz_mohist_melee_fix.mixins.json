@@ -24,6 +24,7 @@
     "FixVanillaEventsNaNMixin",
     "CombatEventHurtSanitizeMixin",
     "PartyManagerSyncQuestMixin",
+    "LeavePartyC2SGhostHealMixin",
     "QuestProgressMergeMixin",
     "PlayerQuestDataResetMixin"
   ],

@@ -73,6 +73,8 @@ public final class PersonalSagaEvents {
         if (event.getEntity() instanceof ServerPlayer sp) {
             // Bootstrap only — never purge existing saga progress on login/respawn.
             PersonalSagaGuard.ensureBootstrapped(sp);
+            // Belt-and-suspenders: clear V-menu ghost party if SavedData is solo.
+            GhostPartyHeal.healIfGhost(sp);
         }
     }
 

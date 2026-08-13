@@ -245,14 +245,20 @@ function leaveDmzParty(mcPlayer) {
     if (mcPlayer == null) {
         return false;
     }
+
+    /*
+     * PartyManager.leaveParty no-ops when PartySavedData has no party,
+     * but PlayerQuestData can still hold a ghost activePartyId (V-menu).
+     * Always clear quest party state + sync after the leave attempt.
+     */
     try {
         var PartyManager = Java.type(
             "com.dragonminez.common.quest.PartyManager"
         );
         PartyManager.leaveParty(mcPlayer);
-        return true;
     } catch (err1) {}
 
+    var cleared = false;
     try {
         var StatsProvider = Java.type(
             "com.dragonminez.common.stats.StatsProvider"
@@ -264,12 +270,19 @@ function leaveDmzParty(mcPlayer) {
             .get(StatsCapability.INSTANCE, mcPlayer)
             .orElse(null);
         if (dmzData != null) {
-            dmzData.getPlayerQuestData().clearPartyState();
-            return true;
+            var questData = dmzData.getPlayerQuestData();
+            if (questData != null && questData.isInParty() === true) {
+                questData.clearPartyState();
+                cleared = true;
+            }
         }
     } catch (err2) {}
 
-    return false;
+    try {
+        syncProgression(mcPlayer);
+    } catch (syncErr) {}
+
+    return cleared;
 }
 
 function clearStuckSagaDifficulty(player, dmzData, notify) {
