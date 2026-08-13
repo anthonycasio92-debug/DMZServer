@@ -59,6 +59,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if (player == null) {
             return;
         }
+        AdminInspectSessions.clear(player.getUniqueId());
         openInventory(player, page);
     }
 
@@ -74,10 +75,47 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         Runnable task = () -> {
             Player p = Bukkit.getPlayer(playerId);
             if (p != null && p.isOnline()) {
+                AdminInspectSessions.clear(p.getUniqueId());
                 openInventory(p, target);
             } else {
                 getLogger().warning("openMenuForUuid: player offline/unresolved " + playerId);
             }
+        };
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+        } else {
+            Bukkit.getScheduler().runTask(this, task);
+        }
+    }
+
+    /**
+     * Staff inspect: open chest GUI for admin while painting/editing {@code subjectId}.
+     * Chest-only so clicks are bound to the subject (CMI buttons would edit the admin).
+     */
+    public void openInspectForUuid(UUID adminId, UUID subjectId, String page) {
+        if (adminId == null || subjectId == null) {
+            return;
+        }
+        String target = page == null || page.isBlank() ? "main" : page;
+        Runnable task = () -> {
+            Player admin = Bukkit.getPlayer(adminId);
+            Player subject = Bukkit.getPlayer(subjectId);
+            if (admin == null || !admin.isOnline()) {
+                getLogger().warning("openInspectForUuid: admin offline " + adminId);
+                return;
+            }
+            if (subject == null || !subject.isOnline()) {
+                admin.sendMessage("§cThat player is not online.");
+                return;
+            }
+            if (!ForgeBridge.isStaff(admin)) {
+                admin.sendMessage("§cStaff only.");
+                return;
+            }
+            AdminInspectSessions.set(admin.getUniqueId(), subject.getUniqueId());
+            admin.sendMessage("§eInspecting §f" + subject.getName()
+                    + "§e's Adaptive Difficulty GUI (chest). Edits apply to them.");
+            chestGui.openAs(admin, subject, target);
         };
         if (Bukkit.isPrimaryThread()) {
             task.run();
@@ -91,6 +129,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if (player == null) {
             return;
         }
+        AdminInspectSessions.clear(player.getUniqueId());
         chestGui.open(player, page);
     }
 
@@ -103,6 +142,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         Runnable task = () -> {
             Player p = Bukkit.getPlayer(playerId);
             if (p != null && p.isOnline()) {
+                AdminInspectSessions.clear(p.getUniqueId());
                 chestGui.open(p, target);
             }
         };
@@ -118,6 +158,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if (player == null) {
             return;
         }
+        AdminInspectSessions.clear(player.getUniqueId());
         String backend = ForgeBridge.guiBackend();
         if ("chat".equals(backend)) {
             if (!ForgeBridge.openChatMenu(player, page)) {
@@ -147,6 +188,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         chestGui.open(player, page);
     }
 
+    private void openInspect(Player admin, Player subject, String page) {
+        AdminInspectSessions.set(admin.getUniqueId(), subject.getUniqueId());
+        admin.sendMessage("§eInspecting §f" + subject.getName()
+                + "§e's Adaptive Difficulty GUI. Edits apply to them.");
+        admin.sendMessage("§8Exit: §f/difficulty §8or §f/difficulty admin gui clear");
+        chestGui.openAs(admin, subject, page == null || page.isBlank() ? "main" : page);
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         String name = command.getName().toLowerCase();
@@ -167,6 +216,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 page = "main";
             }
             // Force inventory — ignore guiBackend=chat (debug / recovery).
+            AdminInspectSessions.clear(player.getUniqueId());
             openInventory(player, page);
             return true;
         }
@@ -345,27 +395,36 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 sendAdminHelp(sender);
                 return true;
             }
+            case "gui", "inspect", "view", "playergui" -> {
+                return handleAdminGui(sender, args);
+            }
             case "resetpurchased" -> {
-                if (player == null) {
-                    sender.sendMessage("Players only.");
+                Player target = resolveAdminTarget(sender, args, 2);
+                if (target == null) {
                     return true;
                 }
-                sender.sendMessage(ForgeBridge.resetPurchased(player));
+                sender.sendMessage(ForgeBridge.resetPurchased(target));
+                if (player != null && !player.getUniqueId().equals(target.getUniqueId())) {
+                    sender.sendMessage("§7Applied to §f" + target.getName());
+                }
                 return true;
             }
             case "characterreset" -> {
-                if (player == null) {
-                    sender.sendMessage("Players only.");
+                Player target = resolveAdminTarget(sender, args, 2);
+                if (target == null) {
                     return true;
                 }
                 ForgeBridge.ActionResult result =
-                        ForgeBridge.handleActionResult(player, "character_reset", "0", "");
+                        ForgeBridge.handleActionResult(target, "character_reset", "0", "");
                 String msg = result.message();
                 if (msg == null || msg.isBlank()) {
                     msg = result.ok() ? "Character difficulty reset applied." : "Character reset failed.";
                 }
                 if (!msg.startsWith("§")) {
                     msg = (result.ok() ? "§a" : "§c") + msg;
+                }
+                if (player != null && !player.getUniqueId().equals(target.getUniqueId())) {
+                    msg = "§8[" + target.getName() + "] " + msg;
                 }
                 sender.sendMessage(msg);
                 return true;
@@ -572,6 +631,88 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         }
     }
 
+    private boolean handleAdminGui(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player admin)) {
+            sender.sendMessage("Players only (open inspect from in-game).");
+            return true;
+        }
+        if (args.length < 3
+                || "clear".equalsIgnoreCase(args[2])
+                || "self".equalsIgnoreCase(args[2])
+                || "me".equalsIgnoreCase(args[2])) {
+            AdminInspectSessions.clear(admin.getUniqueId());
+            openMenuRespectingConfig(admin, "main");
+            admin.sendMessage("§7Inspect closed — showing your own GUI.");
+            return true;
+        }
+        String page = "main";
+        String name = args[2];
+        if (args.length >= 4
+                && ("main".equalsIgnoreCase(args[3])
+                || "buy".equalsIgnoreCase(args[3])
+                || "lower".equalsIgnoreCase(args[3])
+                || "titles".equalsIgnoreCase(args[3])
+                || "stats".equalsIgnoreCase(args[3])
+                || "details".equalsIgnoreCase(args[3]))) {
+            page = "details".equalsIgnoreCase(args[3]) ? "stats" : args[3].toLowerCase();
+        } else if (args.length >= 4) {
+            // Allow names with spaces: /difficulty admin gui <name...> [page]
+            StringBuilder sb = new StringBuilder(args[2]);
+            int last = args.length - 1;
+            String maybePage = args[last].toLowerCase();
+            boolean hasPage = switch (maybePage) {
+                case "main", "buy", "lower", "titles", "stats", "details" -> true;
+                default -> false;
+            };
+            int end = hasPage ? last : args.length;
+            for (int i = 3; i < end; i++) {
+                sb.append(' ').append(args[i]);
+            }
+            name = sb.toString();
+            if (hasPage) {
+                page = "details".equals(maybePage) ? "stats" : maybePage;
+            }
+        }
+        Player subject = Bukkit.getPlayerExact(name);
+        if (subject == null) {
+            subject = Bukkit.getPlayer(name);
+        }
+        if (subject == null || !subject.isOnline()) {
+            admin.sendMessage("§cPlayer not online: §f" + name);
+            return true;
+        }
+        openInspect(admin, subject, page);
+        return true;
+    }
+
+    /**
+     * Resolve optional online target for admin player-scoped actions.
+     * When args[index] is missing, uses the sender (players only).
+     */
+    private static Player resolveAdminTarget(CommandSender sender, String[] args, int index) {
+        if (args.length > index) {
+            StringBuilder sb = new StringBuilder(args[index]);
+            for (int i = index + 1; i < args.length; i++) {
+                sb.append(' ').append(args[i]);
+            }
+            String name = sb.toString();
+            Player target = Bukkit.getPlayerExact(name);
+            if (target == null) {
+                target = Bukkit.getPlayer(name);
+            }
+            if (target == null || !target.isOnline()) {
+                sender.sendMessage("§cPlayer not online: §f" + name);
+                return null;
+            }
+            return target;
+        }
+        if (sender instanceof Player player) {
+            return player;
+        }
+        sender.sendMessage("§cUsage requires a player name from console.");
+        return null;
+    }
+
     private static void sendAdminHelp(CommandSender sender) {
         sendStaffHelp(sender);
     }
@@ -582,10 +723,13 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§e/difficulty §7— open GUI");
         sender.sendMessage("§e/difficulty buy|lower|titles|details §7— open those pages");
         sender.sendMessage("§e/difficulty reset §7— clear active tier");
+        sender.sendMessage("§e/difficulty admin gui <player> [page] §7— open their GUI (edit + see their state)");
+        sender.sendMessage("§e/difficulty admin gui clear §7— stop inspecting");
         sender.sendMessage("§e/difficulty admin off|on|toggle|status §7— master system switch");
         sender.sendMessage("§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist");
         sender.sendMessage("§e/difficulty admin telemetry on|off|status|flush|test §7— balance hit logs");
         sender.sendMessage("§e/difficulty admin reload|settings|area|set §7— config tools");
+        sender.sendMessage("§e/difficulty admin resetpurchased|characterreset [player] §7— player tools");
         sender.sendMessage("§e/difficulty hard|normal|easy|peaceful §7— vanilla difficulty");
         sender.sendMessage("§8Master keys: enabled · whitelistEnabled · balanceTelemetryEnabled");
     }

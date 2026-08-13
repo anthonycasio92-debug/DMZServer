@@ -87,6 +87,36 @@ public final class CmiGuiBridge {
         }
     }
 
+    /** Staff inspect: open companion chest GUI as admin while editing subject. */
+    public static boolean openInspect(ServerPlayer admin, ServerPlayer subject, String page) {
+        if (admin == null || subject == null || !available()) {
+            return false;
+        }
+        String target = page == null || page.isBlank() ? "main" : page;
+        try {
+            Object plugin = getCompanionPlugin();
+            if (plugin == null) {
+                return false;
+            }
+            Method m = plugin.getClass().getMethod(
+                    "openInspectForUuid", UUID.class, UUID.class, String.class);
+            m.invoke(plugin, admin.m_20148_(), subject.m_20148_(), target);
+            return true;
+        } catch (NoSuchMethodException missing) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] openInspectForUuid missing — update AdaptiveDifficultyGUI jar",
+                    AdaptiveDifficultyMod.MOD_ID
+            );
+            return false;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] openInspect failed: {}",
+                    AdaptiveDifficultyMod.MOD_ID, t.toString()
+            );
+            return false;
+        }
+    }
+
     static boolean pluginEnabled(String name) {
         try {
             Object plugin = getPlugin(name);
