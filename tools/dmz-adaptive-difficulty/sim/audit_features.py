@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.39", 'VERSION = "1.0.39"' in mod)
+    check("VERSION 1.0.40", 'VERSION = "1.0.40"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -126,7 +126,11 @@ def main() -> int:
     print("\n=== Unlock gate / revoke ===")
     check(
         "prestige OR level eligibility",
-        has(unlock, "prestige >= tier.id", "dmzLevelForUnlockGate", "requiredDmzLevel"),
+        has(unlock, "prestige >= tier.id", "requiredDmzLevel", "gateLevelForEligibility"),
+    )
+    check(
+        "persisted high-water when transformed",
+        has(unlock, "persistedGateLevel", "getHighestDmzLevel", "getLastSeenPrestige"),
     )
     check("reliable-sample revoke", has(unlock, "revokeTier", "hasReliableUnlockGateSample", "resetTemporary"))
     check("hasStats helper", "public static boolean hasStats" in progression)
@@ -307,7 +311,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.39", "1.0.39" in readme)
+    check("README version 1.0.40", "1.0.40" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")

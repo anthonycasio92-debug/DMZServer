@@ -201,6 +201,8 @@ public final class DifficultyChestGui implements Listener {
         info.add("");
         info.add("&eUnlock with DMZ level &7OR &ePrestige");
         info.add("&8Either one qualifies — prestige is not required");
+        info.add("&cCR / Battle Power does NOT unlock tiers");
+        info.add("&8If stuck transformed: drop to base form once to sync");
         info.add("");
         info.addAll(coinLore(ph));
         info.add("");
@@ -456,6 +458,7 @@ public final class DifficultyChestGui implements Listener {
                 tip.add("&8" + reqTip);
                 tip.add("&8You: DMZ " + ph.getOrDefault("level", "?")
                         + " · Prestige " + ph.getOrDefault("prestige", "?"));
+                tip.add("&8CR/BP ignored — use DMZ level or Prestige");
             } else if (!buyMode) {
                 tip.add("&8Higher than current — use Buy");
             }

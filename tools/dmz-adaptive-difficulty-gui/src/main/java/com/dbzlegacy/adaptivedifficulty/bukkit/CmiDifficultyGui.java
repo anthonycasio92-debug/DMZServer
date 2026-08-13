@@ -185,6 +185,8 @@ public final class CmiDifficultyGui {
         infoLore.add("");
         infoLore.add("&eUnlock with DMZ level &7OR &ePrestige");
         infoLore.add("&8Either one qualifies — prestige is not required");
+        infoLore.add("&cCR / Battle Power does NOT unlock tiers");
+        infoLore.add("&8If stuck transformed: drop to base form once to sync");
         infoLore.add("");
         infoLore.addAll(coinLore(ph));
         infoLore.add("");
@@ -460,6 +462,7 @@ public final class CmiDifficultyGui {
                 lore.add("&8" + reqTip);
                 lore.add("&8You: DMZ " + ph.getOrDefault("level", "?")
                         + " · Prestige " + ph.getOrDefault("prestige", "?"));
+                lore.add("&8CR/BP ignored — use DMZ level or Prestige");
             } else if (!buyMode) {
                 lore.add("&8Higher than current — use Buy");
             }
