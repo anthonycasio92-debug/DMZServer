@@ -337,7 +337,10 @@ public final class DmzProgression {
     }
 
     /**
-     * True when an active form / stack form is set, or form multipliers clearly exceed base.
+     * True when a real combat form / stack form is active, or form multipliers clearly exceed base.
+     * DMZ often leaves {@code activeForm = "base"} with a non-empty group — that is NOT transformed
+     * ({@code getFormMultiplier} already returns 1.0 for {@code "base"}). Treating it as transformed
+     * blocked base-form DMZ level sampling and made unlocks look prestige-only.
      */
     public static boolean isTransformed(Player player) {
         StatsData data = stats(player);
@@ -347,16 +350,25 @@ public final class DmzProgression {
         try {
             Character ch = data.getCharacter();
             if (ch != null) {
-                if (ch.hasActiveForm()) {
+                if (ch.hasActiveForm() && isRealFormName(ch.getActiveForm())) {
                     return true;
                 }
-                if (ch.hasActiveStackForm()) {
+                if (ch.hasActiveStackForm() && isRealFormName(ch.getActiveStackForm())) {
                     return true;
                 }
             }
         } catch (Throwable ignored) {
         }
         return formMultiplierPeak(data) > 1.12;
+    }
+
+    /** False for null/blank/{@code base} — those are not combat forms. */
+    private static boolean isRealFormName(String form) {
+        if (form == null) {
+            return false;
+        }
+        String t = form.trim();
+        return !t.isEmpty() && !"base".equalsIgnoreCase(t);
     }
 
     private static double formMultiplierPeak(StatsData data) {

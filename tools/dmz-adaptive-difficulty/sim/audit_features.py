@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.40", 'VERSION = "1.0.40"' in mod)
+    check("VERSION 1.0.41", 'VERSION = "1.0.41"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -131,6 +131,14 @@ def main() -> int:
     check(
         "persisted high-water when transformed",
         has(unlock, "persistedGateLevel", "getHighestDmzLevel", "getLastSeenPrestige"),
+    )
+    check(
+        "base form name not treated as transformed",
+        "isRealFormName" in progression and '"base"' in progression,
+    )
+    check(
+        "no first-sync wipe while unreliable",
+        "Do NOT wipe highestDmzLevel" in unlock or "leave lastSeen unset" in unlock,
     )
     check("reliable-sample revoke", has(unlock, "revokeTier", "hasReliableUnlockGateSample", "resetTemporary"))
     check("hasStats helper", "public static boolean hasStats" in progression)
@@ -311,7 +319,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.40", "1.0.40" in readme)
+    check("README version 1.0.41", "1.0.41" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")

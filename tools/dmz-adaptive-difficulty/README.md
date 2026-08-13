@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.40)
+# AdaptiveDifficulty (v1.0.41)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -22,7 +22,7 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 | System | Behavior |
 |--------|----------|
-| Unlock tiers (1–7) | Live gate: current DMZ level **or** Prestige ≥ tier id (**not** CR/Battle Power). Prestige-up / level reset revokes tiers you no longer qualify for. Login-in-form uses the prestige-scoped DMZ high-water so tiers stay unlocked; drop to base form once if the high-water was never sampled. |
+| Unlock tiers (1–7) | Live gate: current DMZ level **or** Prestige ≥ tier id (**not** CR/Battle Power). Both are checked — prestige is a bypass, not the only path. DMZ `activeForm=base` counts as base form so level sampling works. Prestige-up resets the level high-water; Buy GUI shows the same gate level unlocks use. |
 | Buy tier | Spend Ancient Coins (pay-up OK with lower/higher mix; overpay returned as change) |
 | Active difficulty | Set only by tier purchase — no +difficulty upgrades |
 | Personal toggle | GUI on/off for that player only (default OFF). Every server restart forces personal OFF on first login that boot; mid-session reconnect keeps the toggle. OFF freezes scaling, kill coins, AI pressure, and tier buy/lower until turned back on |
@@ -38,8 +38,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.40.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.40.jar`
+1. `mods/AdaptiveDifficulty-1.0.41.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.41.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
