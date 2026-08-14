@@ -80,9 +80,10 @@ var RESTRICTED_RACE_DISPLAY_NAMES = [
 ];
 
 
-// Optional LuckPerms / Bukkit permission nodes for clearer tips.
-// Empty string = skill-only unlock (no separate permission gate).
-// Ancient Saiyan Prestige skill uses needs-permission + unlockrace.
+// Optional LuckPerms / Bukkit permission nodes for clearer tips ONLY.
+// Empty string = skill-only unlock (Sento Saiyan).
+// Unlock gate itself is always Fabled skill level >= 1.
+// Ancient Saiyan also needs fabled.skill.ancient-saiyan to buy its skill.
 var REQUIRED_PERMISSIONS = [
     "fabled.skill.ancient-saiyan",
     ""
@@ -92,8 +93,8 @@ var REQUIRED_PERMISSIONS = [
 // Short how-to lines shown if a locked race somehow gets past the GUI padlock.
 // Each position must match RESTRICTED_RACE_IDS.
 var UNLOCK_VIA_PRESTIGE_HINTS = [
-    "Unlock via Prestige: get Ancient Rights, then unlock Ancient Saiyan in the Prestige skill tree.",
-    "Unlock via Prestige: buy Sento Saiyan in the Prestige skill tree."
+    "Ancient Saiyan: needs permission fabled.skill.ancient-saiyan (Ancient Rights), then unlock the Ancient Saiyan Fabled skill.",
+    "Sento Saiyan: no permission needed — unlock the Sento Saiyan Fabled skill in the Prestige skill tree."
 ];
 
 
@@ -1414,7 +1415,9 @@ function tick(event) {
         player.message(
             "\u00A7c" +
             raceDisplayName +
-            "\u00A77 is prestige-locked. Unlock it in the Prestige skill tree."
+            "\u00A77 requires the Fabled skill \u00A7f" +
+            requiredSkill +
+            "\u00A77."
         );
 
         if (DEBUG) {
