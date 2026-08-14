@@ -4,16 +4,16 @@
 // Channel: dmz_race_locks
 // Payload: { locked: string[], required: { [raceId]: number } }
 //
-// required = prestige level shown in GUI tooltip ("Requires Prestige N").
-// locked = races this player cannot Select yet.
+// Unlock gate (permanent): Fabled race-unlock skill level >= 1.
+// Players spend prestige tokens (from prestiginging) to buy that skill once.
+// After purchase they stay unlocked forever — current/active prestige is NOT checked.
+//
+// required = tooltip only while locked ("Requires Prestige N").
+//   Ancient Saiyan → Prestige 10 · Sento Saiyan → Prestige 1
 
 var CHANNEL = "dmz_race_locks";
 var SYNC_INTERVAL_TICKS = 40;
 
-// Keep in sync with DMZ RACE LOCK.js restricted races.
-// Unlock = Fabled skill level >= 1 only (no LP permission check here).
-// Padlock tooltip uses prestigeLevel ("Requires Prestige N"):
-//   Ancient Saiyan → Prestige 10 · Sento Saiyan → Prestige 1
 var RESTRICTED = [
   { id: "ancient_saiyan", skill: "Ancient Saiyan", prestigeLevel: 10 },
   { id: "sento_saiyan", skill: "Sento Saiyan", prestigeLevel: 1 },
@@ -65,11 +65,13 @@ function buildPayload(player) {
 
   for (var i = 0; i < RESTRICTED.length; i++) {
     var entry = RESTRICTED[i];
-    required[entry.id] = entry.prestigeLevel;
     var level = bp == null ? 0 : getFabledSkillLevel(bp, entry.skill);
-    if (!(level >= 1)) {
-      locked.push(entry.id);
+    // Skill owned = permanent unlock. Never gate on current prestige class level.
+    if (level >= 1) {
+      continue;
     }
+    locked.push(entry.id);
+    required[entry.id] = entry.prestigeLevel;
   }
 
   return { locked: locked, required: required };

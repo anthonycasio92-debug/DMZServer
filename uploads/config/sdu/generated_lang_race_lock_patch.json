@@ -1,6 +1,6 @@
 {
   "race.dragonminez.ancient_saiyan": "Ancient Saiyan &7(Requires Prestige 10)",
-  "race.dragonminez.ancient_saiyan.desc": "&cLocked — requires &fPrestige 10&c.&r Unlock the &fAncient Saiyan &cFabled skill in the Prestige tree (Ancient Rights / unlockrace grants the skill permission). You can preview this race, but Select stays locked until then. The long extinct ancestors of Saiyans — more animalistic and battle-hungry than normal Saiyans.",
+  "race.dragonminez.ancient_saiyan.desc": "&cLocked until unlocked with &fPrestige tokens &c(earn by prestiginging &f10 &ctimes), then buy the &fAncient Saiyan &cskill.&r Once purchased, Select stays unlocked forever — you do &nnot&r need to stay at Prestige 10. The long extinct ancestors of Saiyans — more animalistic and battle-hungry than normal Saiyans.",
   "race.dragonminez.sento_saiyan": "&eSento Saiyan &7(Requires Prestige 1)",
-  "race.dragonminez.sento_saiyan.desc": "&cLocked — requires &fPrestige 1&c.&r Unlock the &fSento Saiyan &cFabled skill in the Prestige skill tree. You can preview this race freely. A Saiyan race that evolved on a hot water planet."
+  "race.dragonminez.sento_saiyan.desc": "&cLocked until unlocked with &fPrestige tokens &c(earn by prestiginging &f1 &ctime), then buy the &fSento Saiyan &cskill.&r Once purchased, Select stays unlocked forever — you do &nnot&r need an active Prestige level. A Saiyan race that evolved on a hot water planet."
 }

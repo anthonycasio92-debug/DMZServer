@@ -9,9 +9,12 @@
 // - After they finish create/select without the unlock skill, they
 //   are reset and told to unlock the race via Prestiging.
 //
-// Unlock check = Fabled skill level >= 1 (Prestige skill tree).
+// Unlock check = Fabled skill level >= 1 (Prestige skill tree purchase).
+// Prestige N on the GUI is the token path (prestiginge N times), NOT an
+// ongoing "must currently be Prestige N" requirement.
 // Ancient Saiyan also needs LP fabled.skill.ancient-saiyan to buy
 // the skill (unlockrace / Ancient Rights item grants that).
+// After the skill is owned, race Select stays unlocked forever.
 //
 // Reset command: dmzstats reset <player> 0 false
 // ============================================================
@@ -92,9 +95,10 @@ var REQUIRED_PERMISSIONS = [
 
 // Short how-to lines shown if a locked race somehow gets past the GUI padlock.
 // Each position must match RESTRICTED_RACE_IDS.
+// Prestige N = token cost path only. Unlock is permanent after the Fabled skill is bought.
 var UNLOCK_VIA_PRESTIGE_HINTS = [
-    "Ancient Saiyan: Requires Prestige 10 (unlock the Ancient Saiyan Fabled skill).",
-    "Sento Saiyan: Requires Prestige 1 (unlock the Sento Saiyan Fabled skill)."
+    "Ancient Saiyan: buy with Prestige tokens (from prestiginging 10 times). Once unlocked, permanent — no active Prestige 10 needed.",
+    "Sento Saiyan: buy with Prestige tokens (from prestiginging 1 time). Once unlocked, permanent."
 ];
 
 
@@ -1412,12 +1416,11 @@ function tick(event) {
 
 
         // Prefer GUI padlock (SDU RaceLockClient). Keep one short fallback line.
+        // Unlock is the purchased Fabled skill — not current/active prestige level.
         player.message(
             "\u00A7c" +
             raceDisplayName +
-            "\u00A77 requires the Fabled skill \u00A7f" +
-            requiredSkill +
-            "\u00A77."
+            "\u00A77 is locked until you buy its Prestige unlock skill. Once purchased it stays unlocked."
         );
 
         if (DEBUG) {
