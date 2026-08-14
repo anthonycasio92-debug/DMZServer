@@ -337,10 +337,15 @@ public final class DmzProgression {
     }
 
     /**
-     * True when a real combat form / stack form is active, or form multipliers clearly exceed base.
-     * DMZ often leaves {@code activeForm = "base"} with a non-empty group — that is NOT transformed
-     * ({@code getFormMultiplier} already returns 1.0 for {@code "base"}). Treating it as transformed
-     * blocked base-form DMZ level sampling and made unlocks look prestige-only.
+     * True when a real combat form / stack form is active.
+     * <p>
+     * DMZ often leaves {@code activeForm = "base"} with a non-empty group — that is NOT transformed.
+     * Do <b>not</b> treat elevated form-multiplier noise (racial passives / baselines slightly above
+     * 1.0) as transformed when the character form name is blank/{@code base}: that froze
+     * {@code BASE_FORM_LEVEL} (e.g. stuck at ~7k while live DMZ level is 30k+) and the Buy GUI
+     * kept showing the stale sample.
+     * <p>
+     * Multiplier peak is only a fallback when character form fields are unavailable.
      */
     public static boolean isTransformed(Player player) {
         StatsData data = stats(player);
@@ -356,10 +361,13 @@ public final class DmzProgression {
                 if (ch.hasActiveStackForm() && isRealFormName(ch.getActiveStackForm())) {
                     return true;
                 }
+                // Character attached and only base/blank forms → base form for AD sampling.
+                return false;
             }
         } catch (Throwable ignored) {
         }
-        return formMultiplierPeak(data) > 1.12;
+        // No character object — last resort. Use a high bar so mild passive boosts do not stick.
+        return formMultiplierPeak(data) > 2.0;
     }
 
     /** False for null/blank/{@code base} — those are not combat forms. */
@@ -369,6 +377,23 @@ public final class DmzProgression {
         }
         String t = form.trim();
         return !t.isEmpty() && !"base".equalsIgnoreCase(t);
+    }
+
+    /**
+     * Force-clear the session base-form level cache so the next sample reads live DMZ level.
+     * Safe to call from admin commands after a stuck GUI reading.
+     */
+    public static int refreshBaseFormSample(Player player) {
+        if (player == null) {
+            return 1;
+        }
+        clearBaseFormLevel(player.m_20148_());
+        if (!isTransformed(player)) {
+            int live = dmzLevel(player);
+            BASE_FORM_LEVEL.put(player.m_20148_(), live);
+            return live;
+        }
+        return dmzLevelForUnlockGate(player);
     }
 
     private static double formMultiplierPeak(StatsData data) {

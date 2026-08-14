@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.command;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
@@ -10,6 +11,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler;
 import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -105,6 +107,12 @@ public final class DifficultyCommands {
                                 .executes(ctx -> adminResetPurchasedOrDeny(ctx.getSource())))
                         .then(Commands.m_82127_("characterreset")
                                 .executes(ctx -> adminCharacterResetOrDeny(ctx.getSource())))
+                        .then(Commands.m_82127_("resynclevel")
+                                .executes(ctx -> adminResyncLevelOrDeny(ctx.getSource(), null))
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .executes(ctx -> adminResyncLevelOrDeny(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player")))))
                         .then(Commands.m_82127_("gui")
                                 .executes(ctx -> adminInspectGuiOrDeny(ctx.getSource(), null, "main"))
                                 .then(Commands.m_82129_("player", StringArgumentType.word())
@@ -667,6 +675,7 @@ public final class DifficultyCommands {
                         + "§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist\n"
                         + "§e/difficulty admin telemetry on|off|status|flush|test §7— log whitelist combat hits\n"
                         + "§e/difficulty admin gui|inspect <player> [page] §7— open their GUI (edit/see their state)\n"
+                        + "§e/difficulty admin resynclevel [player] §7— clear stuck DMZ level sample + refresh GUI level\n"
                         + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased|characterreset\n"
                         + "§e/difficulty admin set <key> <value>\n"
                         + "§8Master keys: enabled · whitelistEnabled · balanceTelemetryEnabled\n"
@@ -755,6 +764,54 @@ public final class DifficultyCommands {
         AreaDifficulty.clearCache();
         source.m_288197_(() -> Component.m_237113_("§aCharacter difficulty reset applied."), true);
         return result.ok() ? 1 : 0;
+    }
+
+    /**
+     * Clear stuck session DMZ level sample and refresh Buy GUI reading.
+     * Use when a player's live DMZ level is far above what AD shows (e.g. 30k live, 7k GUI).
+     */
+    private static int adminResyncLevelOrDeny(CommandSourceStack source, String playerName) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        ServerPlayer target;
+        if (playerName == null || playerName.isBlank()) {
+            target = source.m_230896_();
+            if (target == null) {
+                source.m_81352_(Component.m_237113_("Usage: /difficulty admin resynclevel <player>"));
+                return 0;
+            }
+        } else {
+            var server = source.m_81377_();
+            if (server == null) {
+                source.m_81352_(Component.m_237113_("§cNo server."));
+                return 0;
+            }
+            target = server.m_6846_().m_11255_(playerName); // getPlayerByName
+            if (target == null) {
+                source.m_81352_(Component.m_237113_("§cPlayer not online: " + playerName));
+                return 0;
+            }
+        }
+
+        int sampled = DmzProgression.refreshBaseFormSample(target);
+        var data = DifficultyCache.data(target);
+        if (!DmzProgression.isTransformed(target)) {
+            data.noteDmzLevel(sampled);
+        }
+        DifficultyCache.refresh(target);
+        DifficultyCache.save(target);
+
+        int live = DmzProgression.dmzLevel(target);
+        long shown = UnlockSystem.gateLevelForEligibility(target);
+        boolean transformed = DmzProgression.isTransformed(target);
+        String msg = "§aResynced §f" + target.m_6302_()
+                + "§a — sample §f" + sampled
+                + "§a · live DMZ §f" + live
+                + "§a · GUI gate §f" + shown
+                + (transformed ? "§7 (currently transformed — drop to base to raise sample)" : "");
+        source.m_288197_(() -> Component.m_237113_(msg), true);
+        return 1;
     }
 
     private static int adminSet(CommandSourceStack source, String key, String value) {
