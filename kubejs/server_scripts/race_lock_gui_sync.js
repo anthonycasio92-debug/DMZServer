@@ -12,9 +12,10 @@ var SYNC_INTERVAL_TICKS = 40;
 
 // Keep in sync with DMZ RACE LOCK.js restricted races.
 // Unlock = Fabled skill level >= 1 only (no LP permission check here).
-// Ancient Saiyan's Fabled skill itself needs LP to purchase; Sento does not.
+// Padlock tooltip uses prestigeLevel ("Requires Prestige N"):
+//   Ancient Saiyan → Prestige 10 · Sento Saiyan → Prestige 1
 var RESTRICTED = [
-  { id: "ancient_saiyan", skill: "Ancient Saiyan", prestigeLevel: 1 },
+  { id: "ancient_saiyan", skill: "Ancient Saiyan", prestigeLevel: 10 },
   { id: "sento_saiyan", skill: "Sento Saiyan", prestigeLevel: 1 },
 ];
 

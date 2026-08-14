@@ -93,8 +93,8 @@ var REQUIRED_PERMISSIONS = [
 // Short how-to lines shown if a locked race somehow gets past the GUI padlock.
 // Each position must match RESTRICTED_RACE_IDS.
 var UNLOCK_VIA_PRESTIGE_HINTS = [
-    "Ancient Saiyan: needs permission fabled.skill.ancient-saiyan (Ancient Rights), then unlock the Ancient Saiyan Fabled skill.",
-    "Sento Saiyan: no permission needed — unlock the Sento Saiyan Fabled skill in the Prestige skill tree."
+    "Ancient Saiyan: Requires Prestige 10 (unlock the Ancient Saiyan Fabled skill).",
+    "Sento Saiyan: Requires Prestige 1 (unlock the Sento Saiyan Fabled skill)."
 ];
 
 

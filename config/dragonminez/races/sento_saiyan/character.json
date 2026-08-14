@@ -55,8 +55,8 @@
       ]
     }
   },
-  "sduDisplayName": "&eSento Saiyan &7(Requires Fabled Skill)",
-  "sduDescription": "&cLocked — requires the &fSento Saiyan &cFabled skill.&r Unlock/buy that skill in the Prestige skill tree (no LuckPerms permission). You can preview this race freely. A Saiyan race that evolved on a hot water planet.",
+  "sduDisplayName": "&eSento Saiyan &7(Requires Prestige 1)",
+  "sduDescription": "&cLocked — requires &fPrestige 1&c.&r Unlock the &fSento Saiyan &cFabled skill in the Prestige skill tree. You can preview this race freely. A Saiyan race that evolved on a hot water planet.",
   "sduRacialName": "&eAncestral Lineage",
   "sduRacialDesc": "Your race survived for centuries in harsh conditions, causing you to adapt to most physical phenomena"
 }
