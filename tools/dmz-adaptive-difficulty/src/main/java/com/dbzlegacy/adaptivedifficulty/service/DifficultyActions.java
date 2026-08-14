@@ -51,6 +51,11 @@ public final class DifficultyActions {
 
     public static void openGui(ServerPlayer player, String page) {
         String target = page == null || page.isBlank() ? "main" : page;
+        // Re-read DMZ level when the menu opens (not only on death with personal ON).
+        int sampled = DmzProgression.sampleLevelOnGuiOpen(player);
+        if (!DmzProgression.isTransformed(player)) {
+            DifficultyCache.data(player).noteDmzLevel(sampled);
+        }
         if ("titles".equalsIgnoreCase(target) || "title".equalsIgnoreCase(target)) {
             TitleSystem.syncTierTitles(player, true);
         }

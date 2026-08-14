@@ -380,20 +380,31 @@ public final class DmzProgression {
     }
 
     /**
-     * Force-clear the session base-form level cache so the next sample reads live DMZ level.
-     * Safe to call from admin commands after a stuck GUI reading.
+     * Re-read live DMZ level into the session base-form sample.
+     * <p>
+     * Call from GUI open (and admin resync) so Buy / unlocks do not stay stuck on an
+     * old sample until death/respawn. Only overwrites while in base form — transforming
+     * must not inflate (or wipe) the gate level.
      */
     public static int refreshBaseFormSample(Player player) {
         if (player == null) {
             return 1;
         }
-        clearBaseFormLevel(player.m_20148_());
         if (!isTransformed(player)) {
             int live = dmzLevel(player);
             BASE_FORM_LEVEL.put(player.m_20148_(), live);
             return live;
         }
-        return dmzLevelForUnlockGate(player);
+        Integer cached = BASE_FORM_LEVEL.get(player.m_20148_());
+        return cached != null ? Math.max(1, cached) : 1;
+    }
+
+    /**
+     * GUI-open hook: refresh the base-form DMZ sample, then return the unlock-gate level.
+     * Does not require personal difficulty ON — opening the menu alone is enough.
+     */
+    public static int sampleLevelOnGuiOpen(Player player) {
+        return refreshBaseFormSample(player);
     }
 
     private static double formMultiplierPeak(StatsData data) {

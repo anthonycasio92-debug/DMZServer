@@ -794,6 +794,7 @@ public final class DifficultyCommands {
             }
         }
 
+        DmzProgression.clearBaseFormLevel(target.m_20148_());
         int sampled = DmzProgression.refreshBaseFormSample(target);
         var data = DifficultyCache.data(target);
         if (!DmzProgression.isTransformed(target)) {
