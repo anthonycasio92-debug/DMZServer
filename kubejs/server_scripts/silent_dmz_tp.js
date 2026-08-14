@@ -8,6 +8,8 @@
 //
 // Keep Fabled Building "Value Set" (counts:true) so the skill still levels.
 // REMOVE any Building "Command" mechanic that calls dmzpoints/silentdmztp.
+// IMPORTANT: Fabled also loads plugins/Fabled/dynamic/skill/Building.yml — that
+// file overrides skills.yml. Strip Command there too or console spam returns.
 
 console.info("[SilentDMZTP] loading (block-place hook, no commands)...");
 
