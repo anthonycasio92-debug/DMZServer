@@ -1,67 +1,54 @@
 // kubejs/server_scripts/silent_dmz_tp.js
-// Silent Building TP (no chat, no console).
+// Silent DMZ Training Point grant for Fabled Building.
 //
-// Fabled Building used to run /dmzpoints add which ALWAYS prints feedback
-// to the command source (player chat for OP, console for Console).
+// Fabled Building computes TP via Value Set:
+//   value = value-base + (skillLevel - 1) * value-scale
+//   (base 1, scale 1 => TP equals Building skill level)
+// Then attribute scaling may apply via Fabled scaleDynamic.
 //
-// This script awards the same TP on block place with zero feedback.
-// Disable the Fabled Building "Command" mechanic (keep Value Set for leveling).
+// Do NOT reimplement that math here — Fabled already puts the final
+// amount in {TPB}. This command only applies it quietly.
 //
-// Formula (matches Fabled Value Set base 1 / scale 1):
-//   TP = 1 + (BuildingLevel - 1) = BuildingLevel   (requires level >= 1)
+// Fabled Building Command (Console):
+//   silentdmztp {player} {TPB}
+//
+// /dmzpoints always prints to the command source (chat or console).
+// This command intentionally sends no feedback.
 
 console.info("[SilentDMZTP] loading...");
 
-function playerUuid(player) {
+function resolveNmsFromBukkit(bukkitPlayer) {
+  if (!bukkitPlayer) return null;
   try {
-    if (player.uuid) return String(player.uuid);
-  } catch (e) {}
+    if (typeof bukkitPlayer.getHandle === "function") {
+      return bukkitPlayer.getHandle();
+    }
+  } catch (e0) {}
   try {
-    if (player.getUuid) return String(player.getUuid());
-  } catch (e) {}
-  try {
-    if (player.stringUuid) return String(player.stringUuid);
-  } catch (e) {}
+    // Mohist / CraftPlayer field fallbacks
+    var cls = bukkitPlayer.getClass();
+    var names = ["entity", "handle", "nmsEntity"];
+    for (var i = 0; i < names.length; i++) {
+      try {
+        var f = cls.getDeclaredField(names[i]);
+        f.setAccessible(true);
+        var v = f.get(bukkitPlayer);
+        if (v) return v;
+      } catch (e1) {}
+    }
+  } catch (e2) {}
   return null;
 }
 
-function getBukkitPlayer(player) {
-  try {
-    var Bukkit = Java.loadClass("org.bukkit.Bukkit");
-    var id = playerUuid(player);
-    if (!id) return null;
-    var UUID = Java.loadClass("java.util.UUID");
-    return Bukkit.getPlayer(UUID.fromString(id));
-  } catch (err) {
-    return null;
-  }
-}
-
-function getBuildingLevel(player) {
-  try {
-    var bp = getBukkitPlayer(player);
-    if (bp == null) return 0;
-    var Fabled = Java.loadClass("studio.magemonkey.fabled.Fabled");
-    if (!Fabled.isLoaded()) return 0;
-    var data = Fabled.getData(bp);
-    if (data == null) return 0;
-    return Math.max(0, Number(data.getSkillLevel("Building")) || 0);
-  } catch (err) {
-    console.error("[SilentDMZTP] Fabled level read failed: " + err);
-    return 0;
-  }
-}
-
-function addTrainingPointsSilent(player, amount) {
-  if (!player || !(amount > 0) || !isFinite(amount)) return false;
+function addTrainingPointsSilentNms(nmsPlayer, amount) {
+  if (!nmsPlayer || !(amount > 0) || !isFinite(amount)) return false;
   try {
     var StatsProvider = Java.loadClass("com.dragonminez.common.stats.StatsProvider");
     var StatsCapability = Java.loadClass("com.dragonminez.common.stats.StatsCapability");
     var NetworkHandler = Java.loadClass("com.dragonminez.common.network.NetworkHandler");
     var ResourceSyncS2C = Java.loadClass("com.dragonminez.common.network.S2C.ResourceSyncS2C");
 
-    // KubeJS player works with StatsProvider on this pack (see dmz_bridge_example.js).
-    var lazy = StatsProvider.get(StatsCapability.INSTANCE, player);
+    var lazy = StatsProvider.get(StatsCapability.INSTANCE, nmsPlayer);
     if (lazy == null) return false;
     var data = lazy.orElse(null);
     if (data == null) return false;
@@ -75,7 +62,7 @@ function addTrainingPointsSilent(player, amount) {
 
     resources.setTrainingPoints(next);
     try {
-      NetworkHandler.sendToTrackingEntityAndSelf(new ResourceSyncS2C(player), player);
+      NetworkHandler.sendToTrackingEntityAndSelf(new ResourceSyncS2C(nmsPlayer), nmsPlayer);
     } catch (syncErr) {}
     return true;
   } catch (err) {
@@ -84,22 +71,42 @@ function addTrainingPointsSilent(player, amount) {
   }
 }
 
-BlockEvents.placed(function (event) {
-  try {
-    var player = event.player;
-    if (!player) return;
-    try {
-      if (player.level && player.level.clientSide) return;
-    } catch (e0) {}
+ServerEvents.commandRegistry(function (event) {
+  var Commands = event.commands;
+  var Arguments = event.arguments;
 
-    var level = getBuildingLevel(player);
-    if (level < 1) return;
+  event.register(
+    Commands.literal("silentdmztp")
+      .requires(function (src) {
+        return src.hasPermission(2);
+      })
+      .then(
+        Commands.argument("player", Arguments.PLAYER.create(event)).then(
+          Commands.argument("amount", Arguments.FLOAT.create(event)).executes(function (ctx) {
+            try {
+              var player = Arguments.PLAYER.getResult(ctx, "player");
+              var amount = Number(Arguments.FLOAT.getResult(ctx, "amount"));
+              if (!player || !(amount > 0) || !isFinite(amount)) {
+                return 0;
+              }
 
-    var amount = 1 + Math.max(0, level - 1);
-    addTrainingPointsSilent(player, amount);
-  } catch (err) {
-    console.error("[SilentDMZTP] place handler: " + err);
-  }
+              // Arguments.PLAYER is a Bukkit Player on Mohist/Paper bridges.
+              var nms = resolveNmsFromBukkit(player);
+              if (!nms) {
+                // Some KubeJS builds already wrap ServerPlayer
+                nms = player.minecraftPlayer || player.minecraftEntity || player;
+              }
+              var ok = addTrainingPointsSilentNms(nms, amount);
+              // No src.tell / sendSuccess — silent on purpose.
+              return ok ? 1 : 0;
+            } catch (err) {
+              console.error("[SilentDMZTP] command error: " + err);
+              return 0;
+            }
+          })
+        )
+      )
+  );
+
+  console.info("[SilentDMZTP] registered /silentdmztp <player> <amount> (silent, scales via Fabled {TPB})");
 });
-
-console.info("[SilentDMZTP] Block place Building TP hook ready (silent).");
