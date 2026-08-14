@@ -6,7 +6,7 @@
   - `kineticValidationFrequency = 1200` — reduces Mohist kinetic detach (was resetting to 60)
 - Also copy to `defaultconfigs/create-server.toml` so new worlds inherit it
 - `../config/logbegone.toml` → `config/logbegone.toml` (filters `[DMZ-Points]` console spam)
-- Disable incompatible: `mods/Create-Better-Storages-*.jar` → `.disabled` (Create 6 mixin miss)
+- Leave Create Better Storages enabled (mixin warn on Create 6 is non-fatal; do not disable)
 
 ## server.properties (TPS)
 - `view-distance=8`
