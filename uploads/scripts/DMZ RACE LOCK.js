@@ -89,7 +89,7 @@ var REQUIRED_PERMISSIONS = [
 ];
 
 
-// Short how-to lines shown on lock / preview tip.
+// Short how-to lines shown if a locked race somehow gets past the GUI padlock.
 // Each position must match RESTRICTED_RACE_IDS.
 var UNLOCK_VIA_PRESTIGE_HINTS = [
     "Unlock via Prestige: get Ancient Rights, then unlock Ancient Saiyan in the Prestige skill tree.",
@@ -100,45 +100,6 @@ var UNLOCK_VIA_PRESTIGE_HINTS = [
 // Player-facing race lock messages stay on.
 // Verbose [Race Lock Debug] spam stays off.
 var DEBUG = false;
-
-// ============================================================
-// PREVIEW TIP (character not created yet)
-// ============================================================
-
-function findRestrictedRaceIndex(lowerRaceId) {
-    if (lowerRaceId == null || lowerRaceId == "") {
-        return -1;
-    }
-
-    var raceIndex;
-    for (
-        raceIndex = 0;
-        raceIndex < RESTRICTED_RACE_IDS.length;
-        raceIndex++
-    ) {
-        var configuredRaceId =
-            ("" + RESTRICTED_RACE_IDS[raceIndex])
-                .trim()
-                .toLowerCase();
-
-        if (lowerRaceId == configuredRaceId) {
-            return raceIndex;
-        }
-    }
-
-    return -1;
-}
-
-
-function maybePreviewLockedRaceTip(player, temp, lowerRaceId) {
-    // GUI messaging is handled by SDU race description + RaceLockClient padlock.
-    // Keep this as a no-op so browsing does not spam chat.
-    return;
-}
-
-
-
-
 
 /*
  * ============================================================
@@ -1105,8 +1066,8 @@ function tick(event) {
             raceId.toLowerCase();
 
 
-        // Character not finished yet: allow full preview in the
-        // race carousel, but tip once when browsing a locked race.
+        // Character not finished yet: allow full GUI preview.
+        // No chat here — players cannot see chat in race selection.
         if (!status.isHasCreatedCharacter()) {
             maybeAutoUnlockStuckDifficulty(
                 player,
@@ -1118,11 +1079,6 @@ function tick(event) {
                 "restricted_race_command_last_state"
             );
 
-            maybePreviewLockedRaceTip(
-                player,
-                temp,
-                lowerRaceId
-            );
 
             return;
         }
