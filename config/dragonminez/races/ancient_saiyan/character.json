@@ -48,8 +48,8 @@
       ]
     }
   },
-  "sduDisplayName": "Ancient Saiyan",
-  "sduDescription": "&c[PRESTIGE LOCKED]&r Preview freely. Unlock via Prestige (Ancient Rights + Ancient Saiyan skill) to select. The long exstinct ancestors of Saiyans, these beings are much more animalistic and battle hungry than normal saiyans it is said...",
+  "sduDisplayName": "&c[Prestige Locked] &rAncient Saiyan",
+  "sduDescription": "&cLocked — unlock via Prestiging.&r Get Ancient Rights, then unlock Ancient Saiyan in the Prestige skill tree. You can preview this race, but Select stays locked until then. The long extinct ancestors of Saiyans — more animalistic and battle-hungry than normal Saiyans.",
   "sduRacialName": "Primal Bloodlust",
   "sduRacialDesc": "Killing enemies gives a boost to all non resource stats, as well as kick starts health and ki regen and adds 10% resistance for 10 seconds."
 }

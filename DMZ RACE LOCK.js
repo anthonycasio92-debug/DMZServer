@@ -131,61 +131,9 @@ function findRestrictedRaceIndex(lowerRaceId) {
 
 
 function maybePreviewLockedRaceTip(player, temp, lowerRaceId) {
-    if (player == null || temp == null) {
-        return;
-    }
-
-    var restrictedIndex =
-        findRestrictedRaceIndex(lowerRaceId);
-
-    if (restrictedIndex < 0) {
-        temp.remove("race_lock_preview_tip_race");
-        return;
-    }
-
-    var tipKey = "race_lock_preview_tip_race";
-    var lastTipRace = temp.get(tipKey);
-    if (
-        lastTipRace != null &&
-        ("" + lastTipRace) == ("" + lowerRaceId)
-    ) {
-        return;
-    }
-
-    temp.put(tipKey, "" + lowerRaceId);
-
-    var raceDisplayName =
-        "" + RESTRICTED_RACE_DISPLAY_NAMES[restrictedIndex];
-    var requiredSkill =
-        "" + REQUIRED_FABLED_SKILLS[restrictedIndex];
-
-    player.message(
-        "\u00A76\u00A7lPREVIEW ONLY"
-    );
-    player.message(
-        "\u00A7f" +
-        raceDisplayName +
-        "\u00A77 is locked. You can look at it, but selecting it will not stick."
-    );
-    player.message(
-        "\u00A7eUnlock it by Prestiging, then unlock \u00A7f" +
-        requiredSkill +
-        "\u00A7e in the Prestige skill tree."
-    );
-
-    try {
-        if (
-            typeof UNLOCK_VIA_PRESTIGE_HINTS !== "undefined" &&
-            UNLOCK_VIA_PRESTIGE_HINTS != null &&
-            restrictedIndex < UNLOCK_VIA_PRESTIGE_HINTS.length
-        ) {
-            var hint =
-                ("" + UNLOCK_VIA_PRESTIGE_HINTS[restrictedIndex]).trim();
-            if (hint != "") {
-                player.message("\u00A77" + hint);
-            }
-        }
-    } catch (e) {}
+    // GUI messaging is handled by SDU race description + RaceLockClient padlock.
+    // Keep this as a no-op so browsing does not spam chat.
+    return;
 }
 
 
@@ -1506,72 +1454,12 @@ function tick(event) {
             " 0 false";
 
 
+        // Prefer GUI padlock (SDU RaceLockClient). Keep one short fallback line.
         player.message(
-            "\u00A7c\u00A7lRACE LOCKED"
-        );
-
-        player.message(
-            "\u00A77You can preview \u00A7f" +
+            "\u00A7c" +
             raceDisplayName +
-            "\u00A77, but you cannot select it yet."
+            "\u00A77 is prestige-locked. Unlock it in the Prestige skill tree."
         );
-
-        player.message(
-            "\u00A7eUnlock this race by Prestiging, then unlock \u00A7f" +
-            requiredSkill +
-            "\u00A7e in the Prestige skill tree."
-        );
-
-        var prestigeHint = "";
-        try {
-            if (
-                typeof UNLOCK_VIA_PRESTIGE_HINTS !== "undefined" &&
-                UNLOCK_VIA_PRESTIGE_HINTS != null &&
-                restrictedIndex < UNLOCK_VIA_PRESTIGE_HINTS.length
-            ) {
-                prestigeHint =
-                    "" + UNLOCK_VIA_PRESTIGE_HINTS[restrictedIndex];
-            }
-        } catch (hintErr) {}
-
-        if (prestigeHint != null && ("" + prestigeHint).trim() != "") {
-            player.message(
-                "\u00A77" + ("" + prestigeHint).trim()
-            );
-        }
-
-        var requiredPerm = "";
-        try {
-            if (
-                typeof REQUIRED_PERMISSIONS !== "undefined" &&
-                REQUIRED_PERMISSIONS != null &&
-                restrictedIndex < REQUIRED_PERMISSIONS.length
-            ) {
-                requiredPerm =
-                    ("" + REQUIRED_PERMISSIONS[restrictedIndex]).trim();
-            }
-        } catch (permErr) {}
-
-        if (requiredPerm != "") {
-            var hasPerm = false;
-            try {
-                hasPerm =
-                    bukkitPlayer.hasPermission(requiredPerm) === true;
-            } catch (hpErr) {
-                hasPerm = false;
-            }
-
-            if (!hasPerm) {
-                player.message(
-                    "\u00A77Missing permission: \u00A7f" +
-                    requiredPerm
-                );
-            } else {
-                player.message(
-                    "\u00A77You have the permission, but still need to unlock the Prestige skill."
-                );
-            }
-        }
 
         if (DEBUG) {
             player.message(
