@@ -2,28 +2,18 @@
 // Restricted DMZ Race Unlock System
 // CustomNPCs 1.20.1 Global Player Script
 //
-// Checks a configured list of exact DMZ race IDs.
+// Preview vs select:
+// - DMZ race carousel already lists every loaded race (preview OK).
+// - While browsing (character not created yet), this script shows a
+//   one-time tip: locked races need Prestige unlock.
+// - After they finish create/select without the unlock skill, they
+//   are reset and told to unlock the race via Prestiging.
 //
-// When a player's race is restricted, the script checks the
-// configured Fabled skill using the same Fabled classloader
-// method used by the working Fabled attribute script.
+// Unlock check = Fabled skill level >= 1 (Prestige skill tree).
+// Ancient Saiyan also needs LP fabled.skill.ancient-saiyan to buy
+// the skill (unlockrace / Ancient Rights item grants that).
 //
-// If the required Fabled skill is below level 1, the script runs:
-//
-//     dmzstats reset <player> 0 false
-//
-// The reset is executed as a server command rather than by
-// directly calling DMZ's resetPlayerProgress method.
-//
-// Also clears stuck saga difficultyChosen after resets so the
-// Quest Tree difficulty picker works again. No extra script.
-// Enable Tick (required) and Trigger (for unlock command).
-// Chat is optional and often broken on hybrid servers.
-// Unlock without chat:
-//   /noppes script trigger 120
-//   /noppes script trigger 120 <playerName>
-// Also leaves DMZ party if you are a non-leader, because DMZ
-// blocks difficulty selection for party members.
+// Reset command: dmzstats reset <player> 0 false
 // ============================================================
 
 
@@ -53,45 +43,153 @@ var RESET_RETRY_CHECKS = 5;
 // Each entry must line up with the corresponding entry in
 // REQUIRED_FABLED_SKILLS.
 var RESTRICTED_RACE_IDS = [
-    "ancient_saiyan"
+    "ancient_saiyan",
+    "sento_saiyan"
 ];
 
 
 // Exact Fabled skill key OR displayed skill name required for
-// each restricted race.
-//
-// For the current test, the race "test" requires a Fabled skill
-// whose key or displayed name is also "test".
+// each restricted race. Must line up with RESTRICTED_RACE_IDS.
 //
 // Example for later:
 //
 // var RESTRICTED_RACE_IDS = [
-//     "test",
+//     "ancient_saiyan",
+//     "sento_saiyan",
 //     "viltrumite",
 //     "yardrat"
 // ];
 //
 // var REQUIRED_FABLED_SKILLS = [
-//     "test",
+//     "Ancient Saiyan",
+//     "Sento Saiyan",
 //     "race_unlock_viltrumite",
 //     "race_unlock_yardrat"
 // ];
 var REQUIRED_FABLED_SKILLS = [
-    "Ancient Saiyan"
+    "Ancient Saiyan",
+    "Sento Saiyan"
 ];
 
 
 // Friendly race names used in player messages.
-//
 // Each position must match RESTRICTED_RACE_IDS.
 var RESTRICTED_RACE_DISPLAY_NAMES = [
-    "Ancient Saiyan"
+    "Ancient Saiyan",
+    "Sento Saiyan"
+];
+
+
+// Optional LuckPerms / Bukkit permission nodes for clearer tips.
+// Empty string = skill-only unlock (no separate permission gate).
+// Ancient Saiyan Prestige skill uses needs-permission + unlockrace.
+var REQUIRED_PERMISSIONS = [
+    "fabled.skill.ancient-saiyan",
+    ""
+];
+
+
+// Short how-to lines shown on lock / preview tip.
+// Each position must match RESTRICTED_RACE_IDS.
+var UNLOCK_VIA_PRESTIGE_HINTS = [
+    "Unlock via Prestige: get Ancient Rights, then unlock Ancient Saiyan in the Prestige skill tree.",
+    "Unlock via Prestige: buy Sento Saiyan in the Prestige skill tree."
 ];
 
 
 // Player-facing race lock messages stay on.
 // Verbose [Race Lock Debug] spam stays off.
 var DEBUG = false;
+
+// ============================================================
+// PREVIEW TIP (character not created yet)
+// ============================================================
+
+function findRestrictedRaceIndex(lowerRaceId) {
+    if (lowerRaceId == null || lowerRaceId == "") {
+        return -1;
+    }
+
+    var raceIndex;
+    for (
+        raceIndex = 0;
+        raceIndex < RESTRICTED_RACE_IDS.length;
+        raceIndex++
+    ) {
+        var configuredRaceId =
+            ("" + RESTRICTED_RACE_IDS[raceIndex])
+                .trim()
+                .toLowerCase();
+
+        if (lowerRaceId == configuredRaceId) {
+            return raceIndex;
+        }
+    }
+
+    return -1;
+}
+
+
+function maybePreviewLockedRaceTip(player, temp, lowerRaceId) {
+    if (player == null || temp == null) {
+        return;
+    }
+
+    var restrictedIndex =
+        findRestrictedRaceIndex(lowerRaceId);
+
+    if (restrictedIndex < 0) {
+        temp.remove("race_lock_preview_tip_race");
+        return;
+    }
+
+    var tipKey = "race_lock_preview_tip_race";
+    var lastTipRace = temp.get(tipKey);
+    if (
+        lastTipRace != null &&
+        ("" + lastTipRace) == ("" + lowerRaceId)
+    ) {
+        return;
+    }
+
+    temp.put(tipKey, "" + lowerRaceId);
+
+    var raceDisplayName =
+        "" + RESTRICTED_RACE_DISPLAY_NAMES[restrictedIndex];
+    var requiredSkill =
+        "" + REQUIRED_FABLED_SKILLS[restrictedIndex];
+
+    player.message(
+        "\u00A76\u00A7lPREVIEW ONLY"
+    );
+    player.message(
+        "\u00A7f" +
+        raceDisplayName +
+        "\u00A77 is locked. You can look at it, but selecting it will not stick."
+    );
+    player.message(
+        "\u00A7eUnlock it by Prestiging, then unlock \u00A7f" +
+        requiredSkill +
+        "\u00A7e in the Prestige skill tree."
+    );
+
+    try {
+        if (
+            typeof UNLOCK_VIA_PRESTIGE_HINTS !== "undefined" &&
+            UNLOCK_VIA_PRESTIGE_HINTS != null &&
+            restrictedIndex < UNLOCK_VIA_PRESTIGE_HINTS.length
+        ) {
+            var hint =
+                ("" + UNLOCK_VIA_PRESTIGE_HINTS[restrictedIndex]).trim();
+            if (hint != "") {
+                player.message("\u00A77" + hint);
+            }
+        }
+    } catch (e) {}
+}
+
+
+
 
 
 /*
@@ -245,14 +343,20 @@ function leaveDmzParty(mcPlayer) {
     if (mcPlayer == null) {
         return false;
     }
+
+    /*
+     * PartyManager.leaveParty no-ops when PartySavedData has no party,
+     * but PlayerQuestData can still hold a ghost activePartyId (V-menu).
+     * Always clear quest party state + sync after the leave attempt.
+     */
     try {
         var PartyManager = Java.type(
             "com.dragonminez.common.quest.PartyManager"
         );
         PartyManager.leaveParty(mcPlayer);
-        return true;
     } catch (err1) {}
 
+    var cleared = false;
     try {
         var StatsProvider = Java.type(
             "com.dragonminez.common.stats.StatsProvider"
@@ -264,12 +368,19 @@ function leaveDmzParty(mcPlayer) {
             .get(StatsCapability.INSTANCE, mcPlayer)
             .orElse(null);
         if (dmzData != null) {
-            dmzData.getPlayerQuestData().clearPartyState();
-            return true;
+            var questData = dmzData.getPlayerQuestData();
+            if (questData != null && questData.isInParty() === true) {
+                questData.clearPartyState();
+                cleared = true;
+            }
         }
     } catch (err2) {}
 
-    return false;
+    try {
+        syncProgression(mcPlayer);
+    } catch (syncErr) {}
+
+    return cleared;
 }
 
 function clearStuckSagaDifficulty(player, dmzData, notify) {
@@ -880,6 +991,32 @@ function tick(event) {
             );
         }
 
+        if (
+            typeof REQUIRED_PERMISSIONS !== "undefined" &&
+            REQUIRED_PERMISSIONS != null &&
+            REQUIRED_PERMISSIONS.length !=
+                RESTRICTED_RACE_IDS.length
+        ) {
+            throw (
+                "REQUIRED_PERMISSIONS and " +
+                "RESTRICTED_RACE_IDS must contain " +
+                "the same number of entries."
+            );
+        }
+
+        if (
+            typeof UNLOCK_VIA_PRESTIGE_HINTS !== "undefined" &&
+            UNLOCK_VIA_PRESTIGE_HINTS != null &&
+            UNLOCK_VIA_PRESTIGE_HINTS.length !=
+                RESTRICTED_RACE_IDS.length
+        ) {
+            throw (
+                "UNLOCK_VIA_PRESTIGE_HINTS and " +
+                "RESTRICTED_RACE_IDS must contain " +
+                "the same number of entries."
+            );
+        }
+
 
         // ====================================================
         // JAVA CLASSES
@@ -981,20 +1118,6 @@ function tick(event) {
         // reset leaves difficultyChosen true, which blocks the
         // picker until requestDifficultyReselect runs.
 
-        if (!status.isHasCreatedCharacter()) {
-            maybeAutoUnlockStuckDifficulty(
-                player,
-                dmzData,
-                temp
-            );
-
-            temp.remove(
-                "restricted_race_command_last_state"
-            );
-
-            return;
-        }
-
         var character =
             dmzData.getCharacter();
 
@@ -1032,6 +1155,29 @@ function tick(event) {
 
         var lowerRaceId =
             raceId.toLowerCase();
+
+
+        // Character not finished yet: allow full preview in the
+        // race carousel, but tip once when browsing a locked race.
+        if (!status.isHasCreatedCharacter()) {
+            maybeAutoUnlockStuckDifficulty(
+                player,
+                dmzData,
+                temp
+            );
+
+            temp.remove(
+                "restricted_race_command_last_state"
+            );
+
+            maybePreviewLockedRaceTip(
+                player,
+                temp,
+                lowerRaceId
+            );
+
+            return;
+        }
 
 
         // ====================================================
@@ -1365,15 +1511,67 @@ function tick(event) {
         );
 
         player.message(
-            "\u00A77You have not unlocked the race \u00A7f" +
+            "\u00A77You can preview \u00A7f" +
             raceDisplayName +
-            "\u00A77."
+            "\u00A77, but you cannot select it yet."
         );
 
         player.message(
-            "\u00A77Required Fabled skill: \u00A7f" +
-            requiredSkill
+            "\u00A7eUnlock this race by Prestiging, then unlock \u00A7f" +
+            requiredSkill +
+            "\u00A7e in the Prestige skill tree."
         );
+
+        var prestigeHint = "";
+        try {
+            if (
+                typeof UNLOCK_VIA_PRESTIGE_HINTS !== "undefined" &&
+                UNLOCK_VIA_PRESTIGE_HINTS != null &&
+                restrictedIndex < UNLOCK_VIA_PRESTIGE_HINTS.length
+            ) {
+                prestigeHint =
+                    "" + UNLOCK_VIA_PRESTIGE_HINTS[restrictedIndex];
+            }
+        } catch (hintErr) {}
+
+        if (prestigeHint != null && ("" + prestigeHint).trim() != "") {
+            player.message(
+                "\u00A77" + ("" + prestigeHint).trim()
+            );
+        }
+
+        var requiredPerm = "";
+        try {
+            if (
+                typeof REQUIRED_PERMISSIONS !== "undefined" &&
+                REQUIRED_PERMISSIONS != null &&
+                restrictedIndex < REQUIRED_PERMISSIONS.length
+            ) {
+                requiredPerm =
+                    ("" + REQUIRED_PERMISSIONS[restrictedIndex]).trim();
+            }
+        } catch (permErr) {}
+
+        if (requiredPerm != "") {
+            var hasPerm = false;
+            try {
+                hasPerm =
+                    bukkitPlayer.hasPermission(requiredPerm) === true;
+            } catch (hpErr) {
+                hasPerm = false;
+            }
+
+            if (!hasPerm) {
+                player.message(
+                    "\u00A77Missing permission: \u00A7f" +
+                    requiredPerm
+                );
+            } else {
+                player.message(
+                    "\u00A77You have the permission, but still need to unlock the Prestige skill."
+                );
+            }
+        }
 
         if (DEBUG) {
             player.message(

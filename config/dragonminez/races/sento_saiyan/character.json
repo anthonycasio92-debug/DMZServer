@@ -43,7 +43,6 @@
       -1,
       5000000
     ],
-
     "darkness": [
       -1,
       5000000
@@ -57,7 +56,7 @@
     }
   },
   "sduDisplayName": "&eSento Saiyan",
-  "sduDescription": "A saiyan race that evolved on a hot water planet",
+  "sduDescription": "&c[PRESTIGE LOCKED]&r Preview freely. Unlock via Prestige (Sento Saiyan skill) to select. A saiyan race that evolved on a hot water planet",
   "sduRacialName": "&eAncestral Lineage",
   "sduRacialDesc": "Your race survived for centuries in harsh conditions, causing you to adapt to most physical phenomena"
 }

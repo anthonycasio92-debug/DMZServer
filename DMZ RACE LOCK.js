@@ -2,18 +2,18 @@
 // Restricted DMZ Race Unlock System
 // CustomNPCs 1.20.1 Global Player Script
 //
-// Checks a configured list of exact DMZ race IDs.
+// Preview vs select:
+// - DMZ race carousel already lists every loaded race (preview OK).
+// - While browsing (character not created yet), this script shows a
+//   one-time tip: locked races need Prestige unlock.
+// - After they finish create/select without the unlock skill, they
+//   are reset and told to unlock the race via Prestiging.
 //
-// When a player's race is restricted, the script checks the
-// configured Fabled skill using the same Fabled classloader
-// method used by the working Fabled attribute script.
+// Unlock check = Fabled skill level >= 1 (Prestige skill tree).
+// Ancient Saiyan also needs LP fabled.skill.ancient-saiyan to buy
+// the skill (unlockrace / Ancient Rights item grants that).
 //
-// If the required Fabled skill is below level 1, the script runs:
-//
-//     dmzstats reset <player> 0 false
-//
-// The reset is executed as a server command rather than by
-// directly calling DMZ's resetPlayerProgress method.
+// Reset command: dmzstats reset <player> 0 false
 // ============================================================
 
 
@@ -43,58 +43,839 @@ var RESET_RETRY_CHECKS = 5;
 // Each entry must line up with the corresponding entry in
 // REQUIRED_FABLED_SKILLS.
 var RESTRICTED_RACE_IDS = [
-    "ancient_saiyan"
+    "ancient_saiyan",
+    "sento_saiyan"
 ];
 
 
 // Exact Fabled skill key OR displayed skill name required for
-// each restricted race.
-//
-// For the current test, the race "test" requires a Fabled skill
-// whose key or displayed name is also "test".
+// each restricted race. Must line up with RESTRICTED_RACE_IDS.
 //
 // Example for later:
 //
 // var RESTRICTED_RACE_IDS = [
-//     "test",
+//     "ancient_saiyan",
+//     "sento_saiyan",
 //     "viltrumite",
 //     "yardrat"
 // ];
 //
 // var REQUIRED_FABLED_SKILLS = [
-//     "test",
+//     "Ancient Saiyan",
+//     "Sento Saiyan",
 //     "race_unlock_viltrumite",
 //     "race_unlock_yardrat"
 // ];
 var REQUIRED_FABLED_SKILLS = [
-    "Ancient Saiyan"
+    "Ancient Saiyan",
+    "Sento Saiyan"
 ];
 
 
 // Friendly race names used in player messages.
-//
 // Each position must match RESTRICTED_RACE_IDS.
 var RESTRICTED_RACE_DISPLAY_NAMES = [
-    "Ancient Saiyan"
+    "Ancient Saiyan",
+    "Sento Saiyan"
 ];
 
 
-// Keep this enabled until the test race resets correctly.
-//
-// It reports:
-// - Actual race ID
-// - Restricted-list match
-// - Required Fabled skill
-// - Fabled skill level
-// - Exact reset command
-// - Command-dispatch result
-// - Immediate reset verification
-var DEBUG = true;
+// Optional LuckPerms / Bukkit permission nodes for clearer tips.
+// Empty string = skill-only unlock (no separate permission gate).
+// Ancient Saiyan Prestige skill uses needs-permission + unlockrace.
+var REQUIRED_PERMISSIONS = [
+    "fabled.skill.ancient-saiyan",
+    ""
+];
 
 
+// Short how-to lines shown on lock / preview tip.
+// Each position must match RESTRICTED_RACE_IDS.
+var UNLOCK_VIA_PRESTIGE_HINTS = [
+    "Unlock via Prestige: get Ancient Rights, then unlock Ancient Saiyan in the Prestige skill tree.",
+    "Unlock via Prestige: buy Sento Saiyan in the Prestige skill tree."
+];
+
+
+// Player-facing race lock messages stay on.
+// Verbose [Race Lock Debug] spam stays off.
+var DEBUG = false;
+
 // ============================================================
-// GLOBAL PLAYER TICK
+// PREVIEW TIP (character not created yet)
 // ============================================================
+
+function findRestrictedRaceIndex(lowerRaceId) {
+    if (lowerRaceId == null || lowerRaceId == "") {
+        return -1;
+    }
+
+    var raceIndex;
+    for (
+        raceIndex = 0;
+        raceIndex < RESTRICTED_RACE_IDS.length;
+        raceIndex++
+    ) {
+        var configuredRaceId =
+            ("" + RESTRICTED_RACE_IDS[raceIndex])
+                .trim()
+                .toLowerCase();
+
+        if (lowerRaceId == configuredRaceId) {
+            return raceIndex;
+        }
+    }
+
+    return -1;
+}
+
+
+function maybePreviewLockedRaceTip(player, temp, lowerRaceId) {
+    if (player == null || temp == null) {
+        return;
+    }
+
+    var restrictedIndex =
+        findRestrictedRaceIndex(lowerRaceId);
+
+    if (restrictedIndex < 0) {
+        temp.remove("race_lock_preview_tip_race");
+        return;
+    }
+
+    var tipKey = "race_lock_preview_tip_race";
+    var lastTipRace = temp.get(tipKey);
+    if (
+        lastTipRace != null &&
+        ("" + lastTipRace) == ("" + lowerRaceId)
+    ) {
+        return;
+    }
+
+    temp.put(tipKey, "" + lowerRaceId);
+
+    var raceDisplayName =
+        "" + RESTRICTED_RACE_DISPLAY_NAMES[restrictedIndex];
+    var requiredSkill =
+        "" + REQUIRED_FABLED_SKILLS[restrictedIndex];
+
+    player.message(
+        "\u00A76\u00A7lPREVIEW ONLY"
+    );
+    player.message(
+        "\u00A7f" +
+        raceDisplayName +
+        "\u00A77 is locked. You can look at it, but selecting it will not stick."
+    );
+    player.message(
+        "\u00A7eUnlock it by Prestiging, then unlock \u00A7f" +
+        requiredSkill +
+        "\u00A7e in the Prestige skill tree."
+    );
+
+    try {
+        if (
+            typeof UNLOCK_VIA_PRESTIGE_HINTS !== "undefined" &&
+            UNLOCK_VIA_PRESTIGE_HINTS != null &&
+            restrictedIndex < UNLOCK_VIA_PRESTIGE_HINTS.length
+        ) {
+            var hint =
+                ("" + UNLOCK_VIA_PRESTIGE_HINTS[restrictedIndex]).trim();
+            if (hint != "") {
+                player.message("\u00A77" + hint);
+            }
+        }
+    } catch (e) {}
+}
+
+
+
+
+
+/*
+ * ============================================================
+ * SAGA DIFFICULTY HELPERS
+ * ============================================================
+ *
+ * DMZ SetStoryDifficultyC2S ignores clicks when
+ * PlayerQuestData.difficultyChosen is already true.
+ * dmzstats reset does NOT clear that flag.
+ *
+ * Extra blockers from DMZ itself:
+ * - Party non-leaders cannot select difficulty at all
+ * - Joining a party forces difficultyChosen = true
+ *
+ * Unlock runs from Tick (no Bukkit needed) and from chat:
+ *   !unlockdifficulty
+ */
+
+var SAGA_UNLOCK_RETRY_TICKS = 40;
+
+function syncProgression(mcPlayer) {
+    if (mcPlayer == null) {
+        return false;
+    }
+
+    try {
+        var ProgressionSyncS2C = Java.type(
+            "com.dragonminez.common.network.S2C.ProgressionSyncS2C"
+        );
+        var NetworkHandler = Java.type(
+            "com.dragonminez.common.network.NetworkHandler"
+        );
+
+        NetworkHandler.sendToPlayer(
+            new ProgressionSyncS2C(mcPlayer),
+            mcPlayer
+        );
+        return true;
+    } catch (err1) {}
+
+    try {
+        var StatsSyncS2C = Java.type(
+            "com.dragonminez.common.network.S2C.StatsSyncS2C"
+        );
+        var NetworkHandler2 = Java.type(
+            "com.dragonminez.common.network.NetworkHandler"
+        );
+
+        NetworkHandler2.sendToTrackingEntityAndSelf(
+            new StatsSyncS2C(mcPlayer),
+            mcPlayer
+        );
+        return true;
+    } catch (err2) {}
+
+    return false;
+}
+
+function getMcPlayer(player) {
+    if (player == null) {
+        return null;
+    }
+    try {
+        return player.getMCEntity
+            ? player.getMCEntity()
+            : null;
+    } catch (err) {
+        return null;
+    }
+}
+
+function loadDmzData(player) {
+    try {
+        var StatsProvider = Java.type(
+            "com.dragonminez.common.stats.StatsProvider"
+        );
+        var StatsCapability = Java.type(
+            "com.dragonminez.common.stats.StatsCapability"
+        );
+        var mcPlayer = getMcPlayer(player);
+        if (mcPlayer == null) {
+            return null;
+        }
+        var lazy = StatsProvider.get(
+            StatsCapability.INSTANCE,
+            mcPlayer
+        );
+        if (lazy == null) {
+            return null;
+        }
+        return lazy.orElse(null);
+    } catch (err) {
+        return null;
+    }
+}
+
+function isDifficultyChosen(questData) {
+    if (questData == null) {
+        return false;
+    }
+    try {
+        return questData.isDifficultyChosen() === true;
+    } catch (err) {
+        return false;
+    }
+}
+
+function hasCreatedCharacter(status) {
+    if (status == null) {
+        return false;
+    }
+    try {
+        return status.isHasCreatedCharacter() === true;
+    } catch (err) {
+        return false;
+    }
+}
+
+function isInDmzParty(questData) {
+    if (questData == null) {
+        return false;
+    }
+    try {
+        return questData.isInParty() === true;
+    } catch (err) {
+        return false;
+    }
+}
+
+function isDmzPartyLeader(questData, mcPlayer) {
+    if (questData == null || mcPlayer == null) {
+        return false;
+    }
+    try {
+        return questData.isPartyLeader(
+            mcPlayer.m_20148_()
+        ) === true;
+    } catch (err1) {
+        try {
+            return questData.isPartyLeader(
+                mcPlayer.getUUID()
+            ) === true;
+        } catch (err2) {
+            return false;
+        }
+    }
+}
+
+function leaveDmzParty(mcPlayer) {
+    if (mcPlayer == null) {
+        return false;
+    }
+
+    /*
+     * PartyManager.leaveParty no-ops when PartySavedData has no party,
+     * but PlayerQuestData can still hold a ghost activePartyId (V-menu).
+     * Always clear quest party state + sync after the leave attempt.
+     */
+    try {
+        var PartyManager = Java.type(
+            "com.dragonminez.common.quest.PartyManager"
+        );
+        PartyManager.leaveParty(mcPlayer);
+    } catch (err1) {}
+
+    var cleared = false;
+    try {
+        var StatsProvider = Java.type(
+            "com.dragonminez.common.stats.StatsProvider"
+        );
+        var StatsCapability = Java.type(
+            "com.dragonminez.common.stats.StatsCapability"
+        );
+        var dmzData = StatsProvider
+            .get(StatsCapability.INSTANCE, mcPlayer)
+            .orElse(null);
+        if (dmzData != null) {
+            var questData = dmzData.getPlayerQuestData();
+            if (questData != null && questData.isInParty() === true) {
+                questData.clearPartyState();
+                cleared = true;
+            }
+        }
+    } catch (err2) {}
+
+    try {
+        syncProgression(mcPlayer);
+    } catch (syncErr) {}
+
+    return cleared;
+}
+
+function clearStuckSagaDifficulty(player, dmzData, notify) {
+    if (dmzData == null) {
+        return false;
+    }
+
+    try {
+        var questData =
+            dmzData.getPlayerQuestData();
+
+        if (questData == null) {
+            return false;
+        }
+
+        var mcPlayer = getMcPlayer(player);
+        var wasChosen = isDifficultyChosen(questData);
+        var wasInParty = isInDmzParty(questData);
+        var wasLeader = isDmzPartyLeader(
+            questData,
+            mcPlayer
+        );
+
+        /*
+         * Non-leaders never get a working picker even after
+         * unlocking difficultyChosen. Leave party so solo
+         * selection works again.
+         */
+        if (wasInParty && !wasLeader) {
+            leaveDmzParty(mcPlayer);
+            try {
+                questData =
+                    dmzData.getPlayerQuestData();
+            } catch (refreshErr) {}
+        }
+
+        try {
+            questData.requestDifficultyReselect();
+        } catch (reselectErr) {
+            try {
+                questData.setDifficultyChosen(false);
+            } catch (setErr) {
+                if (notify && player != null) {
+                    player.message(
+                        "\u00A7c[Race Lock] Could not clear difficultyChosen: " +
+                        setErr
+                    );
+                }
+                return false;
+            }
+        }
+
+        try {
+            questData.setDifficultyChosen(false);
+        } catch (forceErr) {}
+
+        var synced = syncProgression(mcPlayer);
+        var stillChosen = isDifficultyChosen(questData);
+
+        if (notify && player != null) {
+            if (!stillChosen) {
+                player.message(
+                    "\u00A75[Race Lock] \u00A7aSaga difficulty unlocked."
+                );
+                player.message(
+                    "\u00A77Close and reopen the Saga / Quest Tree, then choose Easy, Normal, or Hard."
+                );
+            } else {
+                player.message(
+                    "\u00A7c[Race Lock] Unlock ran but difficultyChosen is still true."
+                );
+            }
+
+            if (!synced) {
+                player.message(
+                    "\u00A7c[Race Lock] Client sync failed — relog after unlock."
+                );
+            }
+
+            if (wasInParty && !wasLeader) {
+                player.message(
+                    "\u00A7e[Race Lock] Left DMZ party so difficulty selection is allowed."
+                );
+            }
+
+        } else if (DEBUG && wasChosen && player != null) {
+            player.message(
+                "\u00A76[Race Lock Debug] \u00A77Cleared stuck saga difficultyChosen so the picker can open again."
+            );
+        }
+
+        return !stillChosen;
+    } catch (err) {
+        if (notify && player != null) {
+            player.message(
+                "\u00A7c[Race Lock] Difficulty unlock error: " +
+                err
+            );
+        }
+        return false;
+    }
+}
+
+/*
+ * Keep retrying while character creation is incomplete and
+ * difficulty/party state blocks the picker. No Bukkit needed.
+ */
+function maybeAutoUnlockStuckDifficulty(player, dmzData, temp) {
+    if (player == null || dmzData == null || temp == null) {
+        return false;
+    }
+
+    var questData = null;
+    var status = null;
+    try {
+        questData = dmzData.getPlayerQuestData();
+    } catch (qErr) {}
+    try {
+        status = dmzData.getStatus();
+    } catch (sErr) {}
+
+    var created = hasCreatedCharacter(status);
+    var chosen = isDifficultyChosen(questData);
+    var inParty = isInDmzParty(questData);
+    var leader = isDmzPartyLeader(
+        questData,
+        getMcPlayer(player)
+    );
+
+    /*
+     * Finished characters keep their chosen difficulty.
+     * Use !unlockdifficulty to force reselect.
+     */
+    if (created) {
+        return false;
+    }
+
+    var stuck = chosen || (inParty && !leader);
+    if (!stuck) {
+        return false;
+    }
+
+    var coolKey = "race_lock_saga_diff_cooldown";
+    var cool = 0;
+    try {
+        cool = parseInt("" + temp.get(coolKey), 10);
+        if (isNaN(cool)) {
+            cool = 0;
+        }
+    } catch (coolErr) {
+        cool = 0;
+    }
+
+    if (cool > 0) {
+        temp.put(coolKey, "" + (cool - 1));
+        return false;
+    }
+
+    temp.put(coolKey, "" + SAGA_UNLOCK_RETRY_TICKS);
+    return clearStuckSagaDifficulty(
+        player,
+        dmzData,
+        true
+    );
+}
+
+var SAGA_TRIGGER_ID = 120;
+
+function resolveScriptPlayer(event) {
+    if (event == null) {
+        return null;
+    }
+
+    /*
+     * Player events (tick/login/chat) expose event.player.
+     * ScriptTriggerEvent exposes event.entity + event.arguments.
+     * Using only event.player makes /noppes script trigger do nothing.
+     */
+    try {
+        if (event.player != null) {
+            return event.player;
+        }
+    } catch (playerErr) {}
+
+    try {
+        if (event.entity != null) {
+            var ent = event.entity;
+            try {
+                if (ent.getMCEntity && ent.getMCEntity() != null) {
+                    var mc = ent.getMCEntity();
+                    if (
+                        mc != null &&
+                        (
+                            "" + mc.getClass().getName()
+                        ).indexOf("Player") >= 0
+                    ) {
+                        return ent;
+                    }
+                }
+            } catch (entTypeErr) {}
+
+            try {
+                if (ent.getName && ent.getUUID) {
+                    return ent;
+                }
+            } catch (entErr) {}
+        }
+    } catch (entityErr) {}
+
+    try {
+        if (
+            event.arguments != null &&
+            event.arguments.length > 0 &&
+            event.arguments[0] != null &&
+            ("" + event.arguments[0]).length > 0
+        ) {
+            var name = ("" + event.arguments[0]).trim();
+            var world = null;
+
+            try {
+                if (event.player != null) {
+                    world = event.player.getWorld();
+                }
+            } catch (w1) {}
+
+            try {
+                if (world == null && event.entity != null) {
+                    world = event.entity.getWorld();
+                }
+            } catch (w2) {}
+
+            try {
+                if (world == null && event.level != null) {
+                    /* some CNPC builds expose level/world on WorldEvent */
+                    var players = event.level.getAllPlayers
+                        ? event.level.getAllPlayers()
+                        : null;
+                    if (players != null) {
+                        for (var i = 0; i < players.length; i++) {
+                            if (
+                                ("" + players[i].getName())
+                                    .toLowerCase() ===
+                                name.toLowerCase()
+                            ) {
+                                return players[i];
+                            }
+                        }
+                    }
+                }
+            } catch (w3) {}
+
+            if (world != null) {
+                try {
+                    var found = world.getPlayer(name);
+                    if (found != null) {
+                        return found;
+                    }
+                } catch (getErr) {}
+
+                try {
+                    var all = world.getAllPlayers();
+                    for (var j = 0; j < all.length; j++) {
+                        if (
+                            ("" + all[j].getName())
+                                .toLowerCase() ===
+                            name.toLowerCase()
+                        ) {
+                            return all[j];
+                        }
+                    }
+                } catch (scanErr) {}
+            }
+
+            /* Bukkit fallback used by other scripts on this server */
+            try {
+                var Bukkit = Java.type("org.bukkit.Bukkit");
+                var bp = Bukkit.getPlayer(name);
+                if (bp == null) {
+                    bp = Bukkit.getPlayerExact(name);
+                }
+                if (bp != null) {
+                    var NPCAPI = Java.type(
+                        "noppes.npcs.api.NpcAPI"
+                    ).Instance();
+                    var mcBp = bp.getPlayer
+                        ? bp.getPlayer()
+                        : null;
+                    /* CraftBukkit player -> MC -> IPlayer */
+                    try {
+                        var handle = bp.getClass()
+                            .getMethod("getHandle")
+                            .invoke(bp);
+                        return NPCAPI.getIEntity(handle);
+                    } catch (handleErr) {}
+                }
+            } catch (bukkitErr) {}
+        }
+    } catch (argErr) {}
+
+    return null;
+}
+
+function runManualSagaDifficultyUnlock(player, sourceLabel) {
+    if (player == null) {
+        return false;
+    }
+
+    var dmzData = loadDmzData(player);
+    if (dmzData == null) {
+        try {
+            player.message(
+                "\u00A7c[Race Lock] Could not read DMZ data."
+            );
+        } catch (err2) {}
+        return false;
+    }
+
+    return clearStuckSagaDifficulty(player, dmzData, true);
+}
+
+/*
+ * Chat often does nothing on hybrid / plugin chat bridges.
+ * Keep it, but prefer Trigger:
+ *   /noppes script trigger 120
+ *   /noppes script trigger 120 <player>
+ */
+function chat(event) {
+    try {
+        var message = "" + event.message;
+        if (message == null) {
+            return;
+        }
+
+        var trimmed = message.trim().toLowerCase();
+        if (
+            trimmed !== "!unlockdifficulty" &&
+            trimmed !== "!sagadifficulty"
+        ) {
+            return;
+        }
+
+        try {
+            event.setCanceled(true);
+        } catch (cancelErr) {}
+
+        var player = resolveScriptPlayer(event);
+        if (player == null) {
+            return;
+        }
+        runManualSagaDifficultyUnlock(player, "chat");
+    } catch (err) {
+        try {
+            var p = resolveScriptPlayer(event);
+            if (p != null) {
+                p.message(
+                    "\u00A7c[Race Lock] Difficulty unlock error: " +
+                    err
+                );
+            }
+        } catch (msgErr) {}
+    }
+}
+
+function trigger(event) {
+    try {
+        if (
+            event.id != null &&
+            Number(event.id) !== SAGA_TRIGGER_ID
+        ) {
+            return;
+        }
+    } catch (idErr) {}
+
+    try {
+        var player = resolveScriptPlayer(event);
+        if (player == null) {
+            try {
+                print(
+                    "[Race Lock] trigger " +
+                    SAGA_TRIGGER_ID +
+                    " could not resolve a player. Use: /noppes script trigger " +
+                    SAGA_TRIGGER_ID +
+                    " <playerName>"
+                );
+            } catch (printErr) {}
+            return;
+        }
+
+        runManualSagaDifficultyUnlock(
+            player,
+            "trigger " + SAGA_TRIGGER_ID
+        );
+    } catch (err) {
+        try {
+            var p2 = resolveScriptPlayer(event);
+            if (p2 != null) {
+                p2.message(
+                    "\u00A7c[Race Lock] Difficulty unlock error: " +
+                    err
+                );
+            }
+            print("[Race Lock] trigger error: " + err);
+        } catch (msgErr) {}
+    }
+}
+
+function login(event) {
+    try {
+        runSessionSagaDifficultyCheck(event.player, true);
+    } catch (err) {}
+}
+
+/*
+ * Once per login session (Tick or Login).
+ *
+ * Only unlock difficulty when the player is STUCK after a wipe:
+ * hasCreatedCharacter == false but difficultyChosen/party still
+ * blocks the picker.
+ *
+ * Do NOT clear difficultyChosen for finished characters. That was
+ * forcing every relog to re-pick difficulty (quest progress kept,
+ * only rewards scaled) even when Dragon Balls were never used.
+ */
+function runSessionSagaDifficultyCheck(player, fromLogin) {
+    if (player == null) {
+        return;
+    }
+
+    var temp = player.getTempdata();
+    var doneKey = "race_lock_saga_session_check";
+    try {
+        if (temp.get(doneKey) != null) {
+            return;
+        }
+    } catch (err) {}
+
+    try {
+        temp.put(doneKey, "1");
+    } catch (putErr) {}
+
+    var dmzData = loadDmzData(player);
+    if (dmzData == null) {
+        return;
+    }
+
+    var questData = null;
+    var status = null;
+    try {
+        questData = dmzData.getPlayerQuestData();
+    } catch (qErr) {}
+    try {
+        status = dmzData.getStatus();
+    } catch (sErr) {}
+
+    /*
+     * Finished characters already chose difficulty. Leave them alone.
+     * Manual unlock: /noppes script trigger 120  or  !unlockdifficulty
+     */
+    if (hasCreatedCharacter(status)) {
+        return;
+    }
+
+    var chosen = isDifficultyChosen(questData);
+    var inParty = isInDmzParty(questData);
+    var leader = isDmzPartyLeader(
+        questData,
+        getMcPlayer(player)
+    );
+
+    if (chosen || (inParty && !leader)) {
+        clearStuckSagaDifficulty(player, dmzData, true);
+    }
+}
+
+function tryEarlySagaDifficultyUnlock(player) {
+    try {
+        if (player == null) {
+            return;
+        }
+
+        /* Session check first so Tick-only installs still unlock. */
+        runSessionSagaDifficultyCheck(player, false);
+
+        var temp = player.getTempdata();
+        var dmzData = loadDmzData(player);
+        if (dmzData == null) {
+            return;
+        }
+        maybeAutoUnlockStuckDifficulty(
+            player,
+            dmzData,
+            temp
+        );
+    } catch (err) {}
+}
 
 function tick(event) {
     try {
@@ -103,6 +884,12 @@ function tick(event) {
         if (player == null) {
             return;
         }
+
+        /*
+         * Unlock saga difficulty before any Bukkit-dependent
+         * race-lock logic. Missing Bukkit must not block this.
+         */
+        tryEarlySagaDifficultyUnlock(player);
 
         var temp =
             player.getTempdata();
@@ -204,6 +991,32 @@ function tick(event) {
             );
         }
 
+        if (
+            typeof REQUIRED_PERMISSIONS !== "undefined" &&
+            REQUIRED_PERMISSIONS != null &&
+            REQUIRED_PERMISSIONS.length !=
+                RESTRICTED_RACE_IDS.length
+        ) {
+            throw (
+                "REQUIRED_PERMISSIONS and " +
+                "RESTRICTED_RACE_IDS must contain " +
+                "the same number of entries."
+            );
+        }
+
+        if (
+            typeof UNLOCK_VIA_PRESTIGE_HINTS !== "undefined" &&
+            UNLOCK_VIA_PRESTIGE_HINTS != null &&
+            UNLOCK_VIA_PRESTIGE_HINTS.length !=
+                RESTRICTED_RACE_IDS.length
+        ) {
+            throw (
+                "UNLOCK_VIA_PRESTIGE_HINTS and " +
+                "RESTRICTED_RACE_IDS must contain " +
+                "the same number of entries."
+            );
+        }
+
 
         // ====================================================
         // JAVA CLASSES
@@ -243,7 +1056,7 @@ function tick(event) {
         if (bukkitPlayer == null) {
             if (DEBUG) {
                 player.message(
-                    "§c[Race Lock Debug] Bukkit player was unavailable."
+                    "\u00A7c[Race Lock Debug] Bukkit player was unavailable."
                 );
             }
 
@@ -263,7 +1076,7 @@ function tick(event) {
         if (lazy == null) {
             if (DEBUG) {
                 player.message(
-                    "§c[Race Lock Debug] DMZ LazyOptional was unavailable."
+                    "\u00A7c[Race Lock Debug] DMZ LazyOptional was unavailable."
                 );
             }
 
@@ -276,7 +1089,7 @@ function tick(event) {
         if (dmzData == null) {
             if (DEBUG) {
                 player.message(
-                    "§c[Race Lock Debug] DMZ player data was unavailable."
+                    "\u00A7c[Race Lock Debug] DMZ player data was unavailable."
                 );
             }
 
@@ -289,7 +1102,7 @@ function tick(event) {
         if (status == null) {
             if (DEBUG) {
                 player.message(
-                    "§c[Race Lock Debug] DMZ status data was unavailable."
+                    "\u00A7c[Race Lock Debug] DMZ status data was unavailable."
                 );
             }
 
@@ -300,14 +1113,10 @@ function tick(event) {
         // After a successful reset, DMZ marks the character as
         // not created. Stop checking until the player creates
         // another character.
-
-        if (!status.isHasCreatedCharacter()) {
-            temp.remove(
-                "restricted_race_command_last_state"
-            );
-
-            return;
-        }
+        //
+        // Also unlock stuck saga difficulty once — dmzstats
+        // reset leaves difficultyChosen true, which blocks the
+        // picker until requestDifficultyReselect runs.
 
         var character =
             dmzData.getCharacter();
@@ -315,7 +1124,7 @@ function tick(event) {
         if (character == null) {
             if (DEBUG) {
                 player.message(
-                    "§c[Race Lock Debug] DMZ character data was unavailable."
+                    "\u00A7c[Race Lock Debug] DMZ character data was unavailable."
                 );
             }
 
@@ -346,6 +1155,29 @@ function tick(event) {
 
         var lowerRaceId =
             raceId.toLowerCase();
+
+
+        // Character not finished yet: allow full preview in the
+        // race carousel, but tip once when browsing a locked race.
+        if (!status.isHasCreatedCharacter()) {
+            maybeAutoUnlockStuckDifficulty(
+                player,
+                dmzData,
+                temp
+            );
+
+            temp.remove(
+                "restricted_race_command_last_state"
+            );
+
+            maybePreviewLockedRaceTip(
+                player,
+                temp,
+                lowerRaceId
+            );
+
+            return;
+        }
 
 
         // ====================================================
@@ -409,13 +1241,13 @@ function tick(event) {
                     );
 
                     player.message(
-                        "§6[Race Lock Debug] §7Actual race ID: §f[" +
+                        "\u00A76[Race Lock Debug] \u00A77Actual race ID: \u00A7f[" +
                         raceId +
                         "]"
                     );
 
                     player.message(
-                        "§6[Race Lock Debug] §7This race is not restricted."
+                        "\u00A76[Race Lock Debug] \u00A77This race is not restricted."
                     );
                 }
             }
@@ -483,7 +1315,7 @@ function tick(event) {
         ) {
             if (DEBUG) {
                 player.message(
-                    "§c[Race Lock Debug] Fabled is not loaded or enabled."
+                    "\u00A7c[Race Lock Debug] Fabled is not loaded or enabled."
                 );
             }
 
@@ -535,7 +1367,7 @@ function tick(event) {
         if (getDataMethod == null) {
             if (DEBUG) {
                 player.message(
-                    "§c[Race Lock Debug] Fabled getData method was not found."
+                    "\u00A7c[Race Lock Debug] Fabled getData method was not found."
                 );
             }
 
@@ -551,7 +1383,7 @@ function tick(event) {
         if (fabledData == null) {
             if (DEBUG) {
                 player.message(
-                    "§c[Race Lock Debug] Fabled player data was unavailable."
+                    "\u00A7c[Race Lock Debug] Fabled player data was unavailable."
                 );
             }
 
@@ -583,7 +1415,7 @@ function tick(event) {
         } catch (skillError) {
             if (DEBUG) {
                 player.message(
-                    "§c[Race Lock Debug] getSkillLevel failed: §f" +
+                    "\u00A7c[Race Lock Debug] getSkillLevel failed: \u00A7f" +
                     skillError
                 );
             }
@@ -625,23 +1457,23 @@ function tick(event) {
                 );
 
                 player.message(
-                    "§6[Race Lock Debug] §7Actual race ID: §f[" +
+                    "\u00A76[Race Lock Debug] \u00A77Actual race ID: \u00A7f[" +
                     raceId +
                     "]"
                 );
 
                 player.message(
-                    "§6[Race Lock Debug] §7Restricted race matched: §f" +
+                    "\u00A76[Race Lock Debug] \u00A77Restricted race matched: \u00A7f" +
                     raceId
                 );
 
                 player.message(
-                    "§6[Race Lock Debug] §7Required Fabled skill: §f" +
+                    "\u00A76[Race Lock Debug] \u00A77Required Fabled skill: \u00A7f" +
                     requiredSkill
                 );
 
                 player.message(
-                    "§6[Race Lock Debug] §7Current skill level: §f" +
+                    "\u00A76[Race Lock Debug] \u00A77Current skill level: \u00A7f" +
                     skillLevel
                 );
             }
@@ -675,23 +1507,75 @@ function tick(event) {
 
 
         player.message(
-            "§c§lRACE LOCKED"
+            "\u00A7c\u00A7lRACE LOCKED"
         );
 
         player.message(
-            "§7You have not unlocked the race §f" +
+            "\u00A77You can preview \u00A7f" +
             raceDisplayName +
-            "§7."
+            "\u00A77, but you cannot select it yet."
         );
 
         player.message(
-            "§7Required Fabled skill: §f" +
-            requiredSkill
+            "\u00A7eUnlock this race by Prestiging, then unlock \u00A7f" +
+            requiredSkill +
+            "\u00A7e in the Prestige skill tree."
         );
+
+        var prestigeHint = "";
+        try {
+            if (
+                typeof UNLOCK_VIA_PRESTIGE_HINTS !== "undefined" &&
+                UNLOCK_VIA_PRESTIGE_HINTS != null &&
+                restrictedIndex < UNLOCK_VIA_PRESTIGE_HINTS.length
+            ) {
+                prestigeHint =
+                    "" + UNLOCK_VIA_PRESTIGE_HINTS[restrictedIndex];
+            }
+        } catch (hintErr) {}
+
+        if (prestigeHint != null && ("" + prestigeHint).trim() != "") {
+            player.message(
+                "\u00A77" + ("" + prestigeHint).trim()
+            );
+        }
+
+        var requiredPerm = "";
+        try {
+            if (
+                typeof REQUIRED_PERMISSIONS !== "undefined" &&
+                REQUIRED_PERMISSIONS != null &&
+                restrictedIndex < REQUIRED_PERMISSIONS.length
+            ) {
+                requiredPerm =
+                    ("" + REQUIRED_PERMISSIONS[restrictedIndex]).trim();
+            }
+        } catch (permErr) {}
+
+        if (requiredPerm != "") {
+            var hasPerm = false;
+            try {
+                hasPerm =
+                    bukkitPlayer.hasPermission(requiredPerm) === true;
+            } catch (hpErr) {
+                hasPerm = false;
+            }
+
+            if (!hasPerm) {
+                player.message(
+                    "\u00A77Missing permission: \u00A7f" +
+                    requiredPerm
+                );
+            } else {
+                player.message(
+                    "\u00A77You have the permission, but still need to unlock the Prestige skill."
+                );
+            }
+        }
 
         if (DEBUG) {
             player.message(
-                "§6[Race Lock Debug] §7Running command: §f" +
+                "\u00A76[Race Lock Debug] \u00A77Running command: \u00A7f" +
                 resetCommand
             );
         }
@@ -722,7 +1606,7 @@ function tick(event) {
         } catch (bukkitCommandError) {
             if (DEBUG) {
                 player.message(
-                    "§c[Race Lock Debug] Bukkit command error: §f" +
+                    "\u00A7c[Race Lock Debug] Bukkit command error: \u00A7f" +
                     bukkitCommandError
                 );
             }
@@ -742,12 +1626,12 @@ function tick(event) {
 
             } catch (cnpcCommandError) {
                 player.message(
-                    "§c[Race Lock] Both command execution methods failed."
+                    "\u00A7c[Race Lock] Both command execution methods failed."
                 );
 
                 if (DEBUG) {
                     player.message(
-                        "§c[Race Lock Debug] CNPC command error: §f" +
+                        "\u00A7c[Race Lock Debug] CNPC command error: \u00A7f" +
                         cnpcCommandError
                     );
                 }
@@ -771,6 +1655,17 @@ function tick(event) {
             "" + RESET_RETRY_CHECKS
         );
 
+        /*
+         * Clear stuck saga difficulty as soon as the reset
+         * command is issued. Do not wait for the character-
+         * created flag to flip — that is what blocks the picker.
+         */
+        clearStuckSagaDifficulty(
+            player,
+            dmzData,
+            true
+        );
+
 
         // ====================================================
         // COMMAND RESULT DEBUGGING
@@ -778,13 +1673,13 @@ function tick(event) {
 
         if (DEBUG) {
             player.message(
-                "§6[Race Lock Debug] §7Bukkit dispatch result: §f" +
+                "\u00A76[Race Lock Debug] \u00A77Bukkit dispatch result: \u00A7f" +
                 dispatchedThroughBukkit
             );
 
             if (customNpcCommandOutput != null) {
                 player.message(
-                    "§6[Race Lock Debug] §7CNPC command output: §f" +
+                    "\u00A76[Race Lock Debug] \u00A77CNPC command output: \u00A7f" +
                     customNpcCommandOutput
                 );
             }
@@ -809,16 +1704,28 @@ function tick(event) {
             updatedStatus != null &&
             !updatedStatus.isHasCreatedCharacter()
         ) {
-            player.message(
-                "§a[Race Lock] Your DMZ character was reset."
+            /*
+             * dmzstats reset clears quest progress but does NOT
+             * clear difficultyChosen. If that flag stays true,
+             * SetStoryDifficultyC2S rejects every click and the
+             * saga difficulty picker never works again.
+             */
+            clearStuckSagaDifficulty(
+                player,
+                dmzData,
+                true
             );
 
             player.message(
-                "§7Purchase §f" +
+                "\u00A7a[Race Lock] Your DMZ character was reset."
+            );
+
+            player.message(
+                "\u00A77Purchase \u00A7f" +
                 requiredSkill +
-                " §7before selecting §f" +
+                " \u00A77before selecting \u00A7f" +
                 raceDisplayName +
-                " §7again."
+                " \u00A77again."
             );
 
             temp.remove(
@@ -827,13 +1734,13 @@ function tick(event) {
 
         } else {
             player.message(
-                "§e[Race Lock] The reset command was issued, but DMZ " +
+                "\u00A7e[Race Lock] The reset command was issued, but DMZ " +
                 "still reports the character as created."
             );
 
             if (DEBUG) {
                 player.message(
-                    "§e[Race Lock Debug] The script will retry after " +
+                    "\u00A7e[Race Lock Debug] The script will retry after " +
                     RESET_RETRY_CHECKS +
                     " checks."
                 );
@@ -867,7 +1774,7 @@ function tick(event) {
                 );
 
                 playerForError.message(
-                    "§c[Race Lock Error] §f" +
+                    "\u00A7c[Race Lock Error] \u00A7f" +
                     errorText
                 );
 
