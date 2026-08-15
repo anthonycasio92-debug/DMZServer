@@ -1,16 +1,18 @@
 // ============================================================
-// DMZ Training Points -> Fabled Skill Points
+// DMZ Training Points <-> Fabled Skill Points
 // CNPC Global Player Tick Script
 //
-// DMZ TP is authoritative. Fabled SP mirrors available TP
-// (capped at Integer.MAX_VALUE for display only).
+// DMZ TP is authoritative. Fabled SP only *displays* available TP
+// (capped at Integer.MAX_VALUE).
 //
-// Spend detection uses getInvestedSkillPoints() — that only
-// rises when a skill is actually purchased. Do NOT debit TP
-// from raw SP drops (reload/race can zero SP briefly).
+// DO NOT use getInvestedSkillPoints() for economy math — it is an
+// int sum and overflows once Prestige costs exceed ~2.1B total
+// (Ancient 2B + Mutant 1B, etc.). That overflow caused:
+//   - purchases not debiting TP
+//   - refunds looking like huge "spends" that wiped TP
 //
-// Prestige costs go up to 2,000,000,000 SP; Jobs Building /
-// Farming / Fishing cost 10,000 SP each.
+// Instead track each skill's level and apply getCost(level) with
+// JS numbers (safe well past Prestige costs).
 // ============================================================
 
 var TICK_INTERVAL = 5;
@@ -18,9 +20,7 @@ var DEBUG = false;
 var MAX_FABLED_SP = 2147483647;
 
 var KEY_INITIALIZED = "dmz_fabled_sp_initialized";
-var KEY_LAST_DISPLAYED_SP = "dmz_fabled_sp_last_displayed";
-var KEY_LAST_TP = "dmz_fabled_tp_last";
-var KEY_LAST_INVESTED = "dmz_fabled_sp_last_invested";
+var KEY_LAST_LEVELS = "dmz_fabled_sp_skill_levels";
 
 function tick(event) {
     try {
@@ -104,113 +104,78 @@ function tick(event) {
         var currentTp = Number(resources.getTrainingPoints());
         if (isNaN(currentTp) || currentTp < 0) currentTp = 0;
 
-        var currentSp = parseInt("" + fabledData.getPoints(), 10);
+        // Negative SP = Java int overflow after refund at MAX — ignore.
+        var currentSpRaw = Number(fabledData.getPoints());
+        var currentSp = currentSpRaw;
         if (isNaN(currentSp) || currentSp < 0) currentSp = 0;
-
-        var invested = 0;
-        try {
-            invested = parseInt(
-                "" + fabledData.getInvestedSkillPoints(),
-                10
-            );
-        } catch (invErr) {
-            invested = 0;
-        }
-        if (isNaN(invested) || invested < 0) invested = 0;
+        if (currentSp > MAX_FABLED_SP) currentSp = MAX_FABLED_SP;
 
         var stored = player.getStoreddata();
-
-        var targetDisplayedSp = Math.floor(currentTp);
-        if (targetDisplayedSp > MAX_FABLED_SP) {
-            targetDisplayedSp = MAX_FABLED_SP;
-        }
-        if (targetDisplayedSp < 0) targetDisplayedSp = 0;
+        var levelsNow = readSkillLevels(fabledData);
 
         // ----------------------------------------------------
-        // First sync — mirror SP from TP, record invested
+        // First sync / migration: snapshot levels, mirror SP.
+        // Never debit on snapshot — that would wipe TP for
+        // everyone who already owns Prestige/Jobs skills.
         // ----------------------------------------------------
-        if (
+        var needsSnapshot =
             !stored.has(KEY_INITIALIZED) ||
-            "" + stored.get(KEY_INITIALIZED) != "true"
-        ) {
-            if (currentSp != targetDisplayedSp) {
-                fabledData.setPoints(targetDisplayedSp);
-                currentSp = targetDisplayedSp;
-                try {
-                    fabledData.updateScoreboard();
-                } catch (ignoreSb) {}
-            }
+            "" + stored.get(KEY_INITIALIZED) != "true" ||
+            !stored.has(KEY_LAST_LEVELS) ||
+            "" + stored.get(KEY_LAST_LEVELS) === "";
 
+        if (needsSnapshot) {
+            mirrorSp(fabledData, currentTp);
             stored.put(KEY_INITIALIZED, "true");
-            stored.put(KEY_LAST_DISPLAYED_SP, "" + targetDisplayedSp);
-            stored.put(KEY_LAST_TP, "" + currentTp);
-            stored.put(KEY_LAST_INVESTED, "" + invested);
-
-            if (DEBUG) {
-                player.message(
-                    "\u00A7a[TP/SP Sync] Init TP=" +
-                    formatNumber(currentTp) +
-                    " SP=" +
-                    formatNumber(targetDisplayedSp) +
-                    " invested=" +
-                    formatNumber(invested)
-                );
-            }
+            stored.put(KEY_LAST_LEVELS, serializeLevels(levelsNow));
+            // Drop obsolete invested key from prior broken versions
+            try {
+                if (stored.has("dmz_fabled_sp_last_invested")) {
+                    stored.remove("dmz_fabled_sp_last_invested");
+                }
+            } catch (rmErr) {}
             return;
         }
 
-        var lastInvested = invested;
-        if (stored.has(KEY_LAST_INVESTED)) {
-            lastInvested = parseInt(
-                "" + stored.get(KEY_LAST_INVESTED),
-                10
-            );
-            if (isNaN(lastInvested) || lastInvested < 0) {
-                lastInvested = invested;
-            }
-        }
+        var levelsPrev = deserializeLevels(
+            "" + stored.get(KEY_LAST_LEVELS)
+        );
 
-        // ----------------------------------------------------
-        // Real spend = invested skill points went UP (purchase).
-        // Raw SP drops without invested change = reload glitch —
-        // remirror only, never wipe TP.
-        // ----------------------------------------------------
-        var spentSp = 0;
-        if (invested > lastInvested) {
-            spentSp = invested - lastInvested;
-        }
+        // positive = remove TP (purchase), negative = add TP (refund)
+        var tpDelta = netTpDeltaFromLevelChanges(
+            fabledData,
+            levelsPrev,
+            levelsNow
+        );
 
         var tpChanged = false;
-        var spChanged = false;
-
-        if (spentSp > 0) {
-            var newTp = currentTp - spentSp;
+        if (tpDelta !== 0) {
+            var newTp = currentTp - tpDelta;
             if (newTp < 0) newTp = 0;
             resources.setTrainingPoints(newTp);
             currentTp = newTp;
             tpChanged = true;
 
             if (DEBUG) {
-                player.message(
-                    "\u00A7e[TP/SP Sync] Purchase cost \u00A7c" +
-                    formatNumber(spentSp) +
-                    "\u00A7e. TP left: \u00A7a" +
-                    formatNumber(currentTp)
-                );
+                if (tpDelta > 0) {
+                    player.message(
+                        "\u00A7e[TP/SP] Purchased \u00A7c-" +
+                        formatNumber(tpDelta) +
+                        "\u00A7e TP \u00A77→ \u00A7a" +
+                        formatNumber(currentTp)
+                    );
+                } else {
+                    player.message(
+                        "\u00A7a[TP/SP] Refunded \u00A7a+" +
+                        formatNumber(-tpDelta) +
+                        "\u00A7a TP \u00A77→ \u00A7a" +
+                        formatNumber(currentTp)
+                    );
+                }
             }
         }
 
-        targetDisplayedSp = Math.floor(currentTp);
-        if (targetDisplayedSp > MAX_FABLED_SP) {
-            targetDisplayedSp = MAX_FABLED_SP;
-        }
-        if (targetDisplayedSp < 0) targetDisplayedSp = 0;
-
-        if (currentSp != targetDisplayedSp) {
-            fabledData.setPoints(targetDisplayedSp);
-            currentSp = targetDisplayedSp;
-            spChanged = true;
-        }
+        var spChanged = mirrorSp(fabledData, currentTp);
 
         if (tpChanged) {
             try {
@@ -218,18 +183,16 @@ function tick(event) {
                     new StatsSyncS2C(mcEntity),
                     mcEntity
                 );
-            } catch (dmzSyncError) {}
+            } catch (syncErr) {}
         }
 
         if (spChanged) {
             try {
                 fabledData.updateScoreboard();
-            } catch (scoreboardError) {}
+            } catch (sbErr) {}
         }
 
-        stored.put(KEY_LAST_DISPLAYED_SP, "" + targetDisplayedSp);
-        stored.put(KEY_LAST_TP, "" + currentTp);
-        stored.put(KEY_LAST_INVESTED, "" + invested);
+        stored.put(KEY_LAST_LEVELS, serializeLevels(levelsNow));
     } catch (error) {
         if (event.player != null && DEBUG) {
             event.player.message(
@@ -237,6 +200,144 @@ function tick(event) {
             );
         }
     }
+}
+
+function mirrorSp(fabledData, currentTp) {
+    var target = Math.floor(Number(currentTp));
+    if (isNaN(target) || target < 0) target = 0;
+    if (target > MAX_FABLED_SP) target = MAX_FABLED_SP;
+
+    var cur = Number(fabledData.getPoints());
+    if (isNaN(cur) || cur < 0) cur = -1; // force fix overflow
+    if (cur !== target) {
+        fabledData.setPoints(target);
+        return true;
+    }
+    return false;
+}
+
+function readSkillLevels(fabledData) {
+    var map = {};
+    try {
+        var skills = fabledData.getSkills();
+        if (skills == null) return map;
+        var it = skills.iterator();
+        while (it.hasNext()) {
+            var ps = it.next();
+            if (ps == null) continue;
+            var level = 0;
+            try {
+                level = parseInt("" + ps.getLevel(), 10);
+            } catch (e0) {
+                level = 0;
+            }
+            if (isNaN(level) || level < 0) level = 0;
+            if (level <= 0) continue;
+
+            var name = null;
+            try {
+                name = "" + ps.getData().getName();
+            } catch (e1) {
+                try {
+                    name = "" + ps.getData().getKey();
+                } catch (e2) {
+                    name = null;
+                }
+            }
+            if (name == null || name === "" || name === "null") continue;
+            map[name] = level;
+        }
+    } catch (err) {}
+    return map;
+}
+
+function skillCostAtLevel(skillData, fromLevel) {
+    // Skill.getCost(fromLevel) = cost to go from fromLevel -> fromLevel+1
+    try {
+        var c = Number(skillData.getCost(fromLevel));
+        if (isNaN(c) || c < 0) return 0;
+        return c;
+    } catch (err) {
+        return 0;
+    }
+}
+
+function findSkillData(fabledData, skillName) {
+    try {
+        var ps = fabledData.getSkill(skillName);
+        if (ps != null) return ps.getData();
+    } catch (e0) {}
+    try {
+        var skills = fabledData.getSkills();
+        var it = skills.iterator();
+        while (it.hasNext()) {
+            var ps2 = it.next();
+            var n = "" + ps2.getData().getName();
+            if (n === skillName) return ps2.getData();
+        }
+    } catch (e1) {}
+    return null;
+}
+
+function netTpDeltaFromLevelChanges(fabledData, prev, now) {
+    var debit = 0; // >0 remove TP, <0 add TP
+    var names = {};
+    var k;
+    for (k in prev) names[k] = true;
+    for (k in now) names[k] = true;
+
+    for (k in names) {
+        if (!names.hasOwnProperty(k)) continue;
+        var oldL = prev[k] ? parseInt("" + prev[k], 10) : 0;
+        var newL = now[k] ? parseInt("" + now[k], 10) : 0;
+        if (isNaN(oldL) || oldL < 0) oldL = 0;
+        if (isNaN(newL) || newL < 0) newL = 0;
+        if (oldL === newL) continue;
+
+        var data = findSkillData(fabledData, k);
+        if (data == null) continue;
+
+        var L;
+        if (newL > oldL) {
+            for (L = oldL; L < newL; L++) {
+                debit += skillCostAtLevel(data, L);
+            }
+        } else {
+            for (L = newL; L < oldL; L++) {
+                debit -= skillCostAtLevel(data, L);
+            }
+        }
+    }
+    return debit;
+}
+
+function serializeLevels(map) {
+    // name:level|name:level
+    var parts = [];
+    for (var k in map) {
+        if (!map.hasOwnProperty(k)) continue;
+        parts.push(
+            encodeURIComponent(k) + ":" + map[k]
+        );
+    }
+    return parts.join("|");
+}
+
+function deserializeLevels(text) {
+    var map = {};
+    if (text == null || text === "") return map;
+    var parts = ("" + text).split("|");
+    for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        if (!p) continue;
+        var idx = p.lastIndexOf(":");
+        if (idx <= 0) continue;
+        var name = decodeURIComponent(p.substring(0, idx));
+        var level = parseInt(p.substring(idx + 1), 10);
+        if (!name || isNaN(level) || level <= 0) continue;
+        map[name] = level;
+    }
+    return map;
 }
 
 function formatNumber(value) {
