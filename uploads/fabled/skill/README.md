@@ -13,6 +13,11 @@
 | Farming | `level-base: 1`, `cost-base/scale: 10000` (like Building) |
 | Spiritualist | valid YAML matching other class skills |
 
+## Building TP (silent)
+`Building.yml` awards via kubejs `/silentdmztp {TPB}` (not `/dmzpoints`).
+Requires `kubejs/server_scripts/silent_dmz_tp.js`. Restart once so the
+command registers; then `/fabled reload` after Building.yml updates.
+
 ## Deploy
 Copy into `plugins/Fabled/dynamic/skill/` then `/fabled reload` (or restart).
 
