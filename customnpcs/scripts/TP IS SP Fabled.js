@@ -13,6 +13,9 @@
 //
 // Instead track each skill's level and apply getCost(level) with
 // JS numbers (safe well past Prestige costs).
+//
+// Refunds/downgrades never return currency: TP stays spent, and
+// remirroring SP from TP strips any SP Fabled tries to refund.
 // ============================================================
 
 var TICK_INTERVAL = 5;
@@ -141,7 +144,7 @@ function tick(event) {
             "" + stored.get(KEY_LAST_LEVELS)
         );
 
-        // positive = remove TP (purchase), negative = add TP (refund)
+        // positive = remove TP (purchase). Refunds never credit TP.
         var tpDelta = netTpDeltaFromLevelChanges(
             fabledData,
             levelsPrev,
@@ -149,7 +152,7 @@ function tick(event) {
         );
 
         var tpChanged = false;
-        if (tpDelta !== 0) {
+        if (tpDelta > 0) {
             var newTp = currentTp - tpDelta;
             if (newTp < 0) newTp = 0;
             resources.setTrainingPoints(newTp);
@@ -157,24 +160,17 @@ function tick(event) {
             tpChanged = true;
 
             if (DEBUG) {
-                if (tpDelta > 0) {
-                    player.message(
-                        "\u00A7e[TP/SP] Purchased \u00A7c-" +
-                        formatNumber(tpDelta) +
-                        "\u00A7e TP \u00A77→ \u00A7a" +
-                        formatNumber(currentTp)
-                    );
-                } else {
-                    player.message(
-                        "\u00A7a[TP/SP] Refunded \u00A7a+" +
-                        formatNumber(-tpDelta) +
-                        "\u00A7a TP \u00A77→ \u00A7a" +
-                        formatNumber(currentTp)
-                    );
-                }
+                player.message(
+                    "\u00A7e[TP/SP] Purchased \u00A7c-" +
+                    formatNumber(tpDelta) +
+                    "\u00A7e TP \u00A77→ \u00A7a" +
+                    formatNumber(currentTp)
+                );
             }
         }
 
+        // Always remirror SP from TP. This also removes any SP
+        // Fabled refunded on downgrade — refunds give back nothing.
         var spChanged = mirrorSp(fabledData, currentTp);
 
         if (tpChanged) {
@@ -280,7 +276,8 @@ function findSkillData(fabledData, skillName) {
 }
 
 function netTpDeltaFromLevelChanges(fabledData, prev, now) {
-    var debit = 0; // >0 remove TP, <0 add TP
+    // Only purchases debit TP. Refunds/downgrades return nothing.
+    var debit = 0;
     var names = {};
     var k;
     for (k in prev) names[k] = true;
@@ -292,20 +289,13 @@ function netTpDeltaFromLevelChanges(fabledData, prev, now) {
         var newL = now[k] ? parseInt("" + now[k], 10) : 0;
         if (isNaN(oldL) || oldL < 0) oldL = 0;
         if (isNaN(newL) || newL < 0) newL = 0;
-        if (oldL === newL) continue;
+        if (newL <= oldL) continue; // ignore refunds / unchanged
 
         var data = findSkillData(fabledData, k);
         if (data == null) continue;
 
-        var L;
-        if (newL > oldL) {
-            for (L = oldL; L < newL; L++) {
-                debit += skillCostAtLevel(data, L);
-            }
-        } else {
-            for (L = newL; L < oldL; L++) {
-                debit -= skillCostAtLevel(data, L);
-            }
+        for (var L = oldL; L < newL; L++) {
+            debit += skillCostAtLevel(data, L);
         }
     }
     return debit;
