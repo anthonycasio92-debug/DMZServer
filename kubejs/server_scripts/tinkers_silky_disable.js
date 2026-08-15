@@ -1,24 +1,28 @@
 /*
- * DBZ Legacy Reborn - Disable Tinkers' Construct Silky (silk touch).
+ * DBZ Legacy Reborn - Disable Tinkers' Construct Silky + Silky Cloth.
  *
  * Pure ASCII so KubeJS UTF-8 reader never hits MalformedInputException.
  *
- * 1) Removes the Silky ability + salvage recipes (cannot apply / crystal).
- * 2) Datapack override (kubejs/data + highPriorityData) zeros the modifier
+ * 1) Removes Silky ability + salvage recipes (cannot apply / crystal).
+ * 2) Removes Silky Cloth casting + melting recipes (cannot craft / melt).
+ * 3) Datapack override (kubejs/data + highPriorityData) zeros the modifier
  *    modules so existing tools no longer grant silk touch.
  *
  * Existing tools may still list Silky, but it will no longer silk-touch.
+ * Existing Silky Cloth stacks remain until used/discarded (no inventory wipe).
  * Reload: /reload  or  /kubejs reload server_scripts then /reload
  */
 
 console.info(
-    "[Tinkers Silky] Disabling Silky silk-touch modifier..."
+    "[Tinkers Silky] Disabling Silky silk-touch modifier and Silky Cloth..."
 );
 
 ServerEvents.recipes(function (event) {
     var ids = [
         "tconstruct:tools/modifiers/ability/silky",
-        "tconstruct:tools/modifiers/salvage/ability/silky"
+        "tconstruct:tools/modifiers/salvage/ability/silky",
+        "tconstruct:tools/modifiers/silky_cloth",
+        "tconstruct:smeltery/melting/metal/rose_gold/silky_cloth"
     ];
     var removed = 0;
     for (var i = 0; i < ids.length; i++) {
@@ -31,6 +35,19 @@ ServerEvents.recipes(function (event) {
                 "[Tinkers Silky] Could not remove " + ids[i] + ": " + eRem
             );
         }
+    }
+
+    /* Catch any recipe that outputs silky cloth. */
+    try {
+        event.remove({ output: "tconstruct:silky_cloth" });
+        removed++;
+        console.info(
+            "[Tinkers Silky] Removed recipes with output tconstruct:silky_cloth"
+        );
+    } catch (eOut) {
+        console.info(
+            "[Tinkers Silky] output remove silky_cloth: " + eOut
+        );
     }
 
     /* Catch any other recipe that results in tconstruct:silky. */
@@ -69,7 +86,7 @@ ServerEvents.recipes(function (event) {
     } catch (eForEach) {}
 
     console.info(
-        "[DBZ Legacy Reborn] Tinkers Silky recipes removed (" +
+        "[DBZ Legacy Reborn] Tinkers Silky / Silky Cloth recipes removed (" +
             removed +
             "). Modifier datapack zeroed."
     );
