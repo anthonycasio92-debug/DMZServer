@@ -2,28 +2,18 @@
 // Restricted DMZ Race Unlock System
 // CustomNPCs 1.20.1 Global Player Script
 //
-// Checks a configured list of exact DMZ race IDs.
+// Preview vs select:
+// - DMZ race carousel already lists every loaded race (preview OK).
+// - After they finish create/select without the unlock, they are reset.
 //
-// When a player's race is restricted, the script checks the
-// configured Fabled skill using the same Fabled classloader
-// method used by the working Fabled attribute script.
+// Unlock checks:
+//   Ancient Saiyan → LuckPerms fabled.skill.ancient-saiyan ONLY
+//                    (Ancient Rights / unlockrace). NOT prestige level,
+//                    NOT current Prestige class level, NOT Fabled skill.
+//   Sento Saiyan   → Fabled skill level >= 1 (prestige-token purchase).
+//                    Once owned, permanent — no active Prestige needed.
 //
-// If the required Fabled skill is below level 1, the script runs:
-//
-//     dmzstats reset <player> 0 false
-//
-// The reset is executed as a server command rather than by
-// directly calling DMZ's resetPlayerProgress method.
-//
-// Also clears stuck saga difficultyChosen after resets so the
-// Quest Tree difficulty picker works again. No extra script.
-// Enable Tick (required) and Trigger (for unlock command).
-// Chat is optional and often broken on hybrid servers.
-// Unlock without chat:
-//   /noppes script trigger 120
-//   /noppes script trigger 120 <playerName>
-// Also leaves DMZ party if you are a non-leader, because DMZ
-// blocks difficulty selection for party members.
+// Reset command: dmzstats reset <player> 0 false
 // ============================================================
 
 
@@ -53,46 +43,70 @@ var RESET_RETRY_CHECKS = 5;
 // Each entry must line up with the corresponding entry in
 // REQUIRED_FABLED_SKILLS.
 var RESTRICTED_RACE_IDS = [
-    "ancient_saiyan"
+    "ancient_saiyan",
+    "sento_saiyan"
 ];
 
 
 // Exact Fabled skill key OR displayed skill name required for
-// each restricted race.
-//
-// For the current test, the race "test" requires a Fabled skill
-// whose key or displayed name is also "test".
+// each restricted race. Must line up with RESTRICTED_RACE_IDS.
 //
 // Example for later:
 //
 // var RESTRICTED_RACE_IDS = [
-//     "test",
+//     "ancient_saiyan",
+//     "sento_saiyan",
 //     "viltrumite",
 //     "yardrat"
 // ];
 //
 // var REQUIRED_FABLED_SKILLS = [
-//     "test",
+//     "Ancient Saiyan",
+//     "Sento Saiyan",
 //     "race_unlock_viltrumite",
 //     "race_unlock_yardrat"
 // ];
 var REQUIRED_FABLED_SKILLS = [
-    "Ancient Saiyan"
+    "Ancient Saiyan",
+    "Sento Saiyan"
 ];
 
 
 // Friendly race names used in player messages.
-//
 // Each position must match RESTRICTED_RACE_IDS.
 var RESTRICTED_RACE_DISPLAY_NAMES = [
-    "Ancient Saiyan"
+    "Ancient Saiyan",
+    "Sento Saiyan"
+];
+
+
+// Unlock mode per race (must line up with RESTRICTED_RACE_IDS):
+//   "permission" = LuckPerms / Bukkit permission in REQUIRED_PERMISSIONS
+//   "skill"      = Fabled skill level >= 1 in REQUIRED_FABLED_SKILLS
+var UNLOCK_MODES = [
+    "permission",
+    "skill"
+];
+
+// LuckPerms / Bukkit permission nodes when UNLOCK_MODES[i] == "permission".
+// Empty string when that race uses skill unlock.
+var REQUIRED_PERMISSIONS = [
+    "fabled.skill.ancient-saiyan",
+    ""
+];
+
+
+// Short how-to lines shown if a locked race somehow gets past the GUI padlock.
+// Each position must match RESTRICTED_RACE_IDS.
+var UNLOCK_VIA_PRESTIGE_HINTS = [
+    "Ancient Saiyan: needs LP fabled.skill.ancient-saiyan (Ancient Rights / unlockrace). Prestige level is not checked.",
+    "Sento Saiyan: buy with Prestige tokens (from prestiginging 1 time). Once unlocked, permanent."
 ];
 
 
 // Player-facing race lock messages stay on.
 // Verbose [Race Lock Debug] spam stays off.
 var DEBUG = false;
-
 
 /*
  * ============================================================
@@ -245,14 +259,20 @@ function leaveDmzParty(mcPlayer) {
     if (mcPlayer == null) {
         return false;
     }
+
+    /*
+     * PartyManager.leaveParty no-ops when PartySavedData has no party,
+     * but PlayerQuestData can still hold a ghost activePartyId (V-menu).
+     * Always clear quest party state + sync after the leave attempt.
+     */
     try {
         var PartyManager = Java.type(
             "com.dragonminez.common.quest.PartyManager"
         );
         PartyManager.leaveParty(mcPlayer);
-        return true;
     } catch (err1) {}
 
+    var cleared = false;
     try {
         var StatsProvider = Java.type(
             "com.dragonminez.common.stats.StatsProvider"
@@ -264,12 +284,19 @@ function leaveDmzParty(mcPlayer) {
             .get(StatsCapability.INSTANCE, mcPlayer)
             .orElse(null);
         if (dmzData != null) {
-            dmzData.getPlayerQuestData().clearPartyState();
-            return true;
+            var questData = dmzData.getPlayerQuestData();
+            if (questData != null && questData.isInParty() === true) {
+                questData.clearPartyState();
+                cleared = true;
+            }
         }
     } catch (err2) {}
 
-    return false;
+    try {
+        syncProgression(mcPlayer);
+    } catch (syncErr) {}
+
+    return cleared;
 }
 
 function clearStuckSagaDifficulty(player, dmzData, notify) {
@@ -880,6 +907,45 @@ function tick(event) {
             );
         }
 
+        if (
+            typeof REQUIRED_PERMISSIONS !== "undefined" &&
+            REQUIRED_PERMISSIONS != null &&
+            REQUIRED_PERMISSIONS.length !=
+                RESTRICTED_RACE_IDS.length
+        ) {
+            throw (
+                "REQUIRED_PERMISSIONS and " +
+                "RESTRICTED_RACE_IDS must contain " +
+                "the same number of entries."
+            );
+        }
+
+        if (
+            typeof UNLOCK_MODES !== "undefined" &&
+            UNLOCK_MODES != null &&
+            UNLOCK_MODES.length !=
+                RESTRICTED_RACE_IDS.length
+        ) {
+            throw (
+                "UNLOCK_MODES and " +
+                "RESTRICTED_RACE_IDS must contain " +
+                "the same number of entries."
+            );
+        }
+
+        if (
+            typeof UNLOCK_VIA_PRESTIGE_HINTS !== "undefined" &&
+            UNLOCK_VIA_PRESTIGE_HINTS != null &&
+            UNLOCK_VIA_PRESTIGE_HINTS.length !=
+                RESTRICTED_RACE_IDS.length
+        ) {
+            throw (
+                "UNLOCK_VIA_PRESTIGE_HINTS and " +
+                "RESTRICTED_RACE_IDS must contain " +
+                "the same number of entries."
+            );
+        }
+
 
         // ====================================================
         // JAVA CLASSES
@@ -981,20 +1047,6 @@ function tick(event) {
         // reset leaves difficultyChosen true, which blocks the
         // picker until requestDifficultyReselect runs.
 
-        if (!status.isHasCreatedCharacter()) {
-            maybeAutoUnlockStuckDifficulty(
-                player,
-                dmzData,
-                temp
-            );
-
-            temp.remove(
-                "restricted_race_command_last_state"
-            );
-
-            return;
-        }
-
         var character =
             dmzData.getCharacter();
 
@@ -1032,6 +1084,24 @@ function tick(event) {
 
         var lowerRaceId =
             raceId.toLowerCase();
+
+
+        // Character not finished yet: allow full GUI preview.
+        // No chat here — players cannot see chat in race selection.
+        if (!status.isHasCreatedCharacter()) {
+            maybeAutoUnlockStuckDifficulty(
+                player,
+                dmzData,
+                temp
+            );
+
+            temp.remove(
+                "restricted_race_command_last_state"
+            );
+
+
+            return;
+        }
 
 
         // ====================================================
@@ -1123,14 +1193,6 @@ function tick(event) {
         requiredSkill =
             requiredSkill.trim();
 
-        if (requiredSkill == "") {
-            throw (
-                "Race " +
-                raceId +
-                " has no required Fabled skill configured."
-            );
-        }
-
         var raceDisplayName =
             "" +
             RESTRICTED_RACE_DISPLAY_NAMES[
@@ -1147,197 +1209,249 @@ function tick(event) {
 
 
         // ====================================================
-        // GET THE FABLED PLUGIN
-        //
-        // This follows the working script exactly:
-        //
-        // 1. Get plugin from Bukkit.
-        // 2. Get the plugin's own classloader.
-        // 3. Load studio.magemonkey.fabled.Fabled through it.
-        // 4. Find getData.
-        // 5. Invoke getData for the Bukkit player.
+        // UNLOCK CHECK
+        //   permission → LuckPerms / Bukkit hasPermission
+        //   skill      → Fabled skill level >= 1
         // ====================================================
 
-        var plugin =
-            Bukkit
-                .getPluginManager()
-                .getPlugin("Fabled");
-
-        if (
-            plugin == null ||
-            !plugin.isEnabled()
-        ) {
-            if (DEBUG) {
-                player.message(
-                    "\u00A7c[Race Lock Debug] Fabled is not loaded or enabled."
-                );
-            }
-
-            return;
-        }
-
-        var loader =
-            plugin
-                .getClass()
-                .getClassLoader();
-
-        var fabledClass =
-            loader.loadClass(
-                "studio.magemonkey.fabled.Fabled"
-            );
-
-        var getDataMethod = null;
-
-        var methods =
-            fabledClass.getMethods();
-
-        var methodIndex;
-
-        for (
-            methodIndex = 0;
-            methodIndex <
-                methods.length;
-            methodIndex++
-        ) {
-            if (
-                String(
-                    methods[
-                        methodIndex
-                    ].getName()
-                ) == "getData" &&
-                methods[
-                    methodIndex
-                ].getParameterTypes().length == 1
-            ) {
-                getDataMethod =
-                    methods[
-                        methodIndex
-                    ];
-
-                break;
-            }
-        }
-
-        if (getDataMethod == null) {
-            if (DEBUG) {
-                player.message(
-                    "\u00A7c[Race Lock Debug] Fabled getData method was not found."
-                );
-            }
-
-            return;
-        }
-
-        var fabledData =
-            getDataMethod.invoke(
-                null,
-                bukkitPlayer
-            );
-
-        if (fabledData == null) {
-            if (DEBUG) {
-                player.message(
-                    "\u00A7c[Race Lock Debug] Fabled player data was unavailable."
-                );
-            }
-
-            return;
-        }
-
-
-        // ====================================================
-        // CHECK THE REQUIRED FABLED SKILL
-        // ====================================================
-        //
-        // Verified Fabled method:
-        //
-        // PlayerData.getSkillLevel(String)
-        //
-        // This accepts a skill key or displayed skill name.
-        // ====================================================
-
-        var skillLevel = 0;
-
+        var unlockMode = "skill";
         try {
-            skillLevel =
-                Number(
-                    fabledData.getSkillLevel(
-                        requiredSkill
-                    )
-                );
+            if (
+                typeof UNLOCK_MODES !== "undefined" &&
+                UNLOCK_MODES != null &&
+                restrictedIndex < UNLOCK_MODES.length
+            ) {
+                unlockMode =
+                    ("" + UNLOCK_MODES[restrictedIndex])
+                        .trim()
+                        .toLowerCase();
+            }
+        } catch (modeErr) {
+            unlockMode = "skill";
+        }
 
-        } catch (skillError) {
+        if (unlockMode == "permission") {
+            var requiredPerm = "";
+            try {
+                requiredPerm =
+                    "" +
+                    REQUIRED_PERMISSIONS[restrictedIndex];
+                requiredPerm = requiredPerm.trim();
+            } catch (permReadErr) {
+                requiredPerm = "";
+            }
+
+            var hasPerm = false;
+            if (requiredPerm != "") {
+                try {
+                    hasPerm = !!bukkitPlayer.hasPermission(
+                        requiredPerm
+                    );
+                } catch (permCheckErr) {
+                    hasPerm = false;
+                }
+            }
+
             if (DEBUG) {
                 player.message(
-                    "\u00A7c[Race Lock Debug] getSkillLevel failed: \u00A7f" +
-                    skillError
+                    "\u00A76[Race Lock Debug] \u00A77Unlock mode: permission | node: \u00A7f" +
+                    requiredPerm +
+                    "\u00A77 | has: \u00A7f" +
+                    hasPerm
                 );
             }
 
-            return;
-        }
+            if (hasPerm) {
+                return;
+            }
 
-        if (isNaN(skillLevel)) {
-            skillLevel = 0;
-        }
-
-
-        // ====================================================
-        // DEBUG THE RACE AND FABLED RESULT
-        // ====================================================
-
-        if (DEBUG) {
-            var restrictedState =
-                "restricted|" +
-                lowerRaceId +
-                "|" +
-                requiredSkill.toLowerCase() +
-                "|" +
-                skillLevel;
-
-            var oldRestrictedState =
-                temp.get(
-                    "restricted_race_command_last_state"
+            player.message(
+                "\u00A7c" +
+                raceDisplayName +
+                "\u00A77 is locked until you have permission \u00A7f" +
+                requiredPerm +
+                "\u00A77 (Ancient Rights / unlockrace). Prestige level is not checked."
+            );
+        } else {
+            if (requiredSkill == "") {
+                throw (
+                    "Race " +
+                    raceId +
+                    " has no required Fabled skill configured."
                 );
+            }
+
+            // ====================================================
+            // GET THE FABLED PLUGIN + SKILL LEVEL
+            // ====================================================
+
+            var plugin =
+                Bukkit
+                    .getPluginManager()
+                    .getPlugin("Fabled");
 
             if (
-                oldRestrictedState == null ||
-                ("" + oldRestrictedState) !=
-                    restrictedState
+                plugin == null ||
+                !plugin.isEnabled()
             ) {
-                temp.put(
-                    "restricted_race_command_last_state",
-                    restrictedState
-                );
+                if (DEBUG) {
+                    player.message(
+                        "\u00A7c[Race Lock Debug] Fabled is not loaded or enabled."
+                    );
+                }
 
-                player.message(
-                    "\u00A76[Race Lock Debug] \u00A77Actual race ID: \u00A7f[" +
-                    raceId +
-                    "]"
-                );
-
-                player.message(
-                    "\u00A76[Race Lock Debug] \u00A77Restricted race matched: \u00A7f" +
-                    raceId
-                );
-
-                player.message(
-                    "\u00A76[Race Lock Debug] \u00A77Required Fabled skill: \u00A7f" +
-                    requiredSkill
-                );
-
-                player.message(
-                    "\u00A76[Race Lock Debug] \u00A77Current skill level: \u00A7f" +
-                    skillLevel
-                );
+                return;
             }
-        }
 
+            var loader =
+                plugin
+                    .getClass()
+                    .getClassLoader();
 
-        // The player has purchased the required race unlock.
+            var fabledClass =
+                loader.loadClass(
+                    "studio.magemonkey.fabled.Fabled"
+                );
 
-        if (skillLevel >= 1) {
-            return;
+            var getDataMethod = null;
+
+            var methods =
+                fabledClass.getMethods();
+
+            var methodIndex;
+
+            for (
+                methodIndex = 0;
+                methodIndex <
+                    methods.length;
+                methodIndex++
+            ) {
+                if (
+                    String(
+                        methods[
+                            methodIndex
+                        ].getName()
+                    ) == "getData" &&
+                    methods[
+                        methodIndex
+                    ].getParameterTypes().length == 1
+                ) {
+                    getDataMethod =
+                        methods[
+                            methodIndex
+                        ];
+
+                    break;
+                }
+            }
+
+            if (getDataMethod == null) {
+                if (DEBUG) {
+                    player.message(
+                        "\u00A7c[Race Lock Debug] Fabled getData method was not found."
+                    );
+                }
+
+                return;
+            }
+
+            var fabledData =
+                getDataMethod.invoke(
+                    null,
+                    bukkitPlayer
+                );
+
+            if (fabledData == null) {
+                if (DEBUG) {
+                    player.message(
+                        "\u00A7c[Race Lock Debug] Fabled player data was unavailable."
+                    );
+                }
+
+                return;
+            }
+
+            var skillLevel = 0;
+
+            try {
+                skillLevel =
+                    Number(
+                        fabledData.getSkillLevel(
+                            requiredSkill
+                        )
+                    );
+
+            } catch (skillError) {
+                if (DEBUG) {
+                    player.message(
+                        "\u00A7c[Race Lock Debug] getSkillLevel failed: \u00A7f" +
+                        skillError
+                    );
+                }
+
+                return;
+            }
+
+            if (isNaN(skillLevel)) {
+                skillLevel = 0;
+            }
+
+            if (DEBUG) {
+                var restrictedState =
+                    "restricted|" +
+                    lowerRaceId +
+                    "|" +
+                    requiredSkill.toLowerCase() +
+                    "|" +
+                    skillLevel;
+
+                var oldRestrictedState =
+                    temp.get(
+                        "restricted_race_command_last_state"
+                    );
+
+                if (
+                    oldRestrictedState == null ||
+                    ("" + oldRestrictedState) !=
+                        restrictedState
+                ) {
+                    temp.put(
+                        "restricted_race_command_last_state",
+                        restrictedState
+                    );
+
+                    player.message(
+                        "\u00A76[Race Lock Debug] \u00A77Actual race ID: \u00A7f[" +
+                        raceId +
+                        "]"
+                    );
+
+                    player.message(
+                        "\u00A76[Race Lock Debug] \u00A77Restricted race matched: \u00A7f" +
+                        raceId
+                    );
+
+                    player.message(
+                        "\u00A76[Race Lock Debug] \u00A77Required Fabled skill: \u00A7f" +
+                        requiredSkill
+                    );
+
+                    player.message(
+                        "\u00A76[Race Lock Debug] \u00A77Current skill level: \u00A7f" +
+                        skillLevel
+                    );
+                }
+            }
+
+            if (skillLevel >= 1) {
+                return;
+            }
+
+            player.message(
+                "\u00A7c" +
+                raceDisplayName +
+                "\u00A77 is locked until you buy its Prestige unlock skill. Once purchased it stays unlocked."
+            );
         }
 
 
@@ -1359,21 +1473,6 @@ function tick(event) {
             player.getName() +
             " 0 false";
 
-
-        player.message(
-            "\u00A7c\u00A7lRACE LOCKED"
-        );
-
-        player.message(
-            "\u00A77You have not unlocked the race \u00A7f" +
-            raceDisplayName +
-            "\u00A77."
-        );
-
-        player.message(
-            "\u00A77Required Fabled skill: \u00A7f" +
-            requiredSkill
-        );
 
         if (DEBUG) {
             player.message(

@@ -43,7 +43,6 @@
       -1,
       5000000
     ],
-
     "darkness": [
       -1,
       5000000
@@ -56,8 +55,8 @@
       ]
     }
   },
-  "sduDisplayName": "&eSento Saiyan",
-  "sduDescription": "A saiyan race that evolved on a hot water planet",
+  "sduDisplayName": "&eSento Saiyan &7(Requires Prestige 1)",
+  "sduDescription": "&cLocked until unlocked with &fPrestige tokens &c(earn by prestiginging &f1 &ctime), then buy the &fSento Saiyan &cskill.&r Once purchased, Select stays unlocked forever — you do &nnot&r need an active Prestige level. A Saiyan race that evolved on a hot water planet.",
   "sduRacialName": "&eAncestral Lineage",
   "sduRacialDesc": "Your race survived for centuries in harsh conditions, causing you to adapt to most physical phenomena"
 }
