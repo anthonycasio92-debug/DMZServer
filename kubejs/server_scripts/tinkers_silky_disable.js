@@ -7,28 +7,49 @@
  * 2) Removes Silky Cloth casting + melting recipes (cannot craft / melt).
  * 3) Datapack override zeros Silky modules (no silk touch effect).
  * 4) Strips Silky from existing tools (tool kept, ability slot freed).
- * 5) Converts existing Silky Cloth / Silky modifier crystals to cobwebs
- *    (slot kept, banned item replaced — never clears to empty wipe).
+ * 5) Converts Silky Cloth / Silky modifier crystals to cobwebs
+ *    (uses Forge item IDs so Mohist raw ItemStacks are detected).
  *
- * Reload: /reload  or  /kubejs reload server_scripts then /reload
+ * JEI hide: kubejs/client_scripts/tinkers_silky_hide.js (clients need that file).
+ * Reload: /kubejs reload server_scripts then /reload
+ * Client JEI: reconnect or /jei reload after client_scripts update.
  */
 
 console.info(
     "[Tinkers Silky] Disabling Silky / Silky Cloth (recipes + strip)..."
 );
 
-var PLAYER_SCAN_INTERVAL = 100; /* 5s at 20 tps */
+var CLOTH_SCAN_INTERVAL = 20; /* 1s — match ItemBan tick */
+var TOOL_SCAN_INTERVAL = 100; /* 5s */
 var DEBUG_SILKY = false;
 
 var ToolStack = null;
 var ModifierId = null;
 var ModifierCrystalItem = null;
+var ForgeRegistries = null;
+var ServerPlayer = null;
 var SilkyId = null;
 var JAVA_READY = false;
+var FORGE_ID_READY = false;
+
+function initForgeId() {
+    if (FORGE_ID_READY) return true;
+    try {
+        ForgeRegistries = Java.loadClass(
+            "net.minecraftforge.registries.ForgeRegistries"
+        );
+        FORGE_ID_READY = ForgeRegistries != null;
+    } catch (err) {
+        FORGE_ID_READY = false;
+        console.error("[Tinkers Silky] ForgeRegistries load failed: " + err);
+    }
+    return FORGE_ID_READY;
+}
 
 function initJava() {
     if (JAVA_READY) return true;
     try {
+        initForgeId();
         ToolStack = Java.loadClass(
             "slimeknights.tconstruct.library.tools.nbt.ToolStack"
         );
@@ -41,6 +62,13 @@ function initJava() {
             );
         } catch (eCrystal) {
             ModifierCrystalItem = null;
+        }
+        try {
+            ServerPlayer = Java.loadClass(
+                "net.minecraft.server.level.ServerPlayer"
+            );
+        } catch (eSp) {
+            ServerPlayer = null;
         }
         try {
             SilkyId = new ModifierId("tconstruct", "silky");
@@ -66,23 +94,110 @@ function initJava() {
     return JAVA_READY;
 }
 
+function asServerPlayer(player) {
+    if (player == null) return null;
+    var p = player;
+    try {
+        if (p.minecraftPlayer) p = p.minecraftPlayer;
+    } catch (e1) {}
+    try {
+        if (p.player) p = p.player;
+    } catch (e2) {}
+    try {
+        if (ServerPlayer != null && ServerPlayer.class.isInstance(p)) return p;
+    } catch (e3) {}
+    try {
+        if (ServerPlayer != null && p instanceof ServerPlayer) return p;
+    } catch (e4) {}
+    return p;
+}
+
 function isEmptyStack(stack) {
     if (stack == null) return true;
     try {
         if (stack.isEmpty()) return true;
     } catch (e) {}
     try {
+        if (stack.empty === true) return true;
+    } catch (e0) {}
+    try {
         if (String(stack.id) === "minecraft:air") return true;
     } catch (e2) {}
-    return false;
+    var id = stackId(stack);
+    return id === "" || id === "minecraft:air";
 }
 
+/*
+ * Resolve item id for KubeJS wrappers AND raw Forge/Bukkit ItemStacks.
+ * Previous bug: container.getItem() returns vanilla stacks with no .id,
+ * so silky_cloth was never detected / converted.
+ */
 function stackId(stack) {
+    if (stack == null) return "";
+
     try {
-        return String(stack.id);
-    } catch (e) {
-        return "";
-    }
+        if (stack.id != null && String(stack.id) !== "" && String(stack.id) !== "undefined") {
+            return String(stack.id);
+        }
+    } catch (e0) {}
+
+    try {
+        if (typeof stack.getId === "function") {
+            var gid = String(stack.getId());
+            if (gid && gid !== "undefined") return gid;
+        }
+    } catch (e1) {}
+
+    try {
+        if (typeof stack.is === "function") {
+            if (stack.is("tconstruct:silky_cloth")) return "tconstruct:silky_cloth";
+            if (stack.is("tconstruct:modifier_crystal")) {
+                return "tconstruct:modifier_crystal";
+            }
+        }
+    } catch (e2) {}
+
+    try {
+        initForgeId();
+        if (ForgeRegistries != null) {
+            var mc = getMcItemStack(stack);
+            if (mc != null) {
+                var item = null;
+                try {
+                    item = mc.getItem();
+                } catch (eGet) {
+                    try {
+                        item = mc.item;
+                    } catch (eItem) {}
+                }
+                if (item != null) {
+                    var key = ForgeRegistries.ITEMS.getKey(item);
+                    if (key != null) return String(key);
+                }
+            }
+        }
+    } catch (e3) {}
+
+    try {
+        var desc = "";
+        if (typeof stack.getDescriptionId === "function") {
+            desc = String(stack.getDescriptionId());
+        } else if (typeof stack.getItem === "function") {
+            desc = String(stack.getItem().getDescriptionId());
+        }
+        /* item.tconstruct.silky_cloth */
+        if (desc.indexOf("silky_cloth") >= 0) return "tconstruct:silky_cloth";
+        if (desc.indexOf("modifier_crystal") >= 0) {
+            return "tconstruct:modifier_crystal";
+        }
+    } catch (e4) {}
+
+    try {
+        var s = String(stack);
+        if (s.indexOf("silky_cloth") >= 0) return "tconstruct:silky_cloth";
+    } catch (e5) {}
+
+    return "";
 }
 
 function getMcItemStack(stack) {
@@ -102,24 +217,29 @@ function nbtMentionsSilky(stack) {
     if (isEmptyStack(stack)) return false;
     try {
         var snbt = "";
-        if (stack.nbtString) snbt = String(stack.nbtString);
-        else if (stack.nbt) snbt = String(stack.nbt);
+        try {
+            if (stack.nbtString) snbt = String(stack.nbtString);
+        } catch (eA) {}
+        try {
+            if (!snbt && stack.nbt) snbt = String(stack.nbt);
+        } catch (eB) {}
+        try {
+            if (!snbt && typeof stack.getTag === "function" && stack.getTag()) {
+                snbt = String(stack.getTag());
+            }
+        } catch (eC) {}
         if (snbt === "") return false;
         var lower = snbt.toLowerCase();
         return (
             lower.indexOf("tconstruct:silky") >= 0 ||
-            lower.indexOf('"name":"tconstruct:silky"') >= 0 ||
-            lower.indexOf("silky") >= 0
+            lower.indexOf("silky_cloth") >= 0 ||
+            (lower.indexOf('"name":"tconstruct:silky"') >= 0)
         );
     } catch (e) {
         return false;
     }
 }
 
-/*
- * Strip Silky upgrade from a Tinkers tool. Keeps the tool; frees the slot.
- * Returns true if Silky was removed.
- */
 function stripSilkyFromTool(stack) {
     if (!initJava()) return false;
     if (isEmptyStack(stack)) return false;
@@ -162,14 +282,10 @@ function stripSilkyFromTool(stack) {
         }
         return true;
     } catch (err) {
-        if (DEBUG_SILKY) {
-            console.info("[Tinkers Silky] strip tool failed: " + err);
-        }
         return stripSilkyViaRawNbt(mc) || stripSilkyViaRawNbt(stack);
     }
 }
 
-/* Fallback: remove silky entries from tic_upgrades list in NBT. */
 function stripSilkyViaRawNbt(stack) {
     if (stack == null) return false;
     var tag = null;
@@ -177,9 +293,13 @@ function stripSilkyViaRawNbt(stack) {
         tag = stack.nbt;
     } catch (e1) {
         try {
-            tag = stack.getOrCreateTag ? stack.getOrCreateTag() : null;
+            tag = stack.getTag ? stack.getTag() : null;
         } catch (e2) {
-            tag = null;
+            try {
+                tag = stack.getOrCreateTag ? stack.getOrCreateTag() : null;
+            } catch (e3) {
+                tag = null;
+            }
         }
     }
     if (tag == null) return false;
@@ -197,7 +317,7 @@ function filterModifierList(tag, key) {
         return false;
     }
     try {
-        var list = tag.getList(key, 10); /* 10 = compound */
+        var list = tag.getList(key, 10);
         if (list == null) return false;
         var removed = false;
         for (var i = list.size() - 1; i >= 0; i--) {
@@ -233,38 +353,50 @@ function stackCount(stack) {
         var c = Number(stack.count);
         if (!isNaN(c) && c > 0) return c;
     } catch (e) {}
+    try {
+        var c2 = Number(stack.getCount());
+        if (!isNaN(c2) && c2 > 0) return c2;
+    } catch (e2) {}
     return 1;
 }
 
-/*
- * Convert banned silky cloth / silky crystals to cobwebs (same count).
- * Never wipes the slot to empty without a replacement.
- */
+function isSilkyCloth(stack) {
+    return stackId(stack) === "tconstruct:silky_cloth";
+}
+
+function isSilkyCrystal(stack) {
+    if (stackId(stack) !== "tconstruct:modifier_crystal") return false;
+    try {
+        if (initJava() && ModifierCrystalItem != null) {
+            var mid = ModifierCrystalItem.getModifier(getMcItemStack(stack));
+            if (mid != null && String(mid).toLowerCase().indexOf("silky") >= 0) {
+                return true;
+            }
+        }
+    } catch (eMid) {}
+    return nbtMentionsSilky(stack);
+}
+
+function cobwebReplacement(count) {
+    var c = count;
+    if (isNaN(c) || c < 1) c = 1;
+    try {
+        return Item.of(c + "x minecraft:cobweb");
+    } catch (e1) {
+        try {
+            var stack = Item.of("minecraft:cobweb");
+            stack.count = c;
+            return stack;
+        } catch (e2) {
+            return Item.of("minecraft:cobweb");
+        }
+    }
+}
+
 function convertBannedSilkyItem(stack) {
     if (isEmptyStack(stack)) return null;
-    var id = stackId(stack);
-    var count = stackCount(stack);
-
-    if (id === "tconstruct:silky_cloth") {
-        return Item.of(count + "x minecraft:cobweb");
-    }
-
-    if (id === "tconstruct:modifier_crystal") {
-        var isSilkyCrystal = false;
-        try {
-            if (initJava() && ModifierCrystalItem != null) {
-                var mid = ModifierCrystalItem.getModifier(getMcItemStack(stack));
-                if (mid != null && String(mid).toLowerCase().indexOf("silky") >= 0) {
-                    isSilkyCrystal = true;
-                }
-            }
-        } catch (eMid) {}
-        if (!isSilkyCrystal && nbtMentionsSilky(stack)) {
-            isSilkyCrystal = true;
-        }
-        if (isSilkyCrystal) {
-            return Item.of(count + "x minecraft:cobweb");
-        }
+    if (isSilkyCloth(stack) || isSilkyCrystal(stack)) {
+        return cobwebReplacement(stackCount(stack));
     }
     return null;
 }
@@ -295,6 +427,9 @@ function readSlot(container, slot) {
             return container.getStackInSlot(slot);
         }
     } catch (e2) {}
+    try {
+        if (typeof container.get === "function") return container.get(slot);
+    } catch (e3) {}
     return null;
 }
 
@@ -311,120 +446,178 @@ function writeSlot(container, slot, stack) {
             return true;
         }
     } catch (e2) {}
+    try {
+        if (typeof container.set === "function") {
+            container.set(slot, stack);
+            return true;
+        }
+    } catch (e3) {}
     return false;
 }
 
-function processStackInSlot(container, slot, label) {
+function processStackInSlot(container, slot, label, doTools) {
     var stack = readSlot(container, slot);
     if (isEmptyStack(stack)) return 0;
-    var changed = 0;
 
     var replacement = convertBannedSilkyItem(stack);
     if (replacement != null) {
         if (writeSlot(container, slot, replacement)) {
-            if (DEBUG_SILKY) {
-                console.info(
-                    "[Tinkers Silky] Converted " +
-                        stackId(stack) +
-                        " -> cobweb in " +
-                        label +
-                        " slot " +
-                        slot
-                );
-            }
+            console.info(
+                "[Tinkers Silky] Converted " +
+                    stackId(stack) +
+                    " x" +
+                    stackCount(stack) +
+                    " -> cobweb in " +
+                    label +
+                    " slot " +
+                    slot
+            );
             return 1;
         }
+        console.info(
+            "[Tinkers Silky] FAILED to write cobweb over " +
+                stackId(stack) +
+                " in " +
+                label +
+                " slot " +
+                slot
+        );
     }
 
-    if (nbtMentionsSilky(stack) || stackId(stack).indexOf("tconstruct:") === 0) {
-        if (stripSilkyFromTool(stack)) {
-            writeSlot(container, slot, stack);
-            changed = 1;
-            if (DEBUG_SILKY) {
-                console.info(
-                    "[Tinkers Silky] Stripped Silky from tool in " +
-                        label +
-                        " slot " +
-                        slot
-                );
+    if (doTools) {
+        var id = stackId(stack);
+        if (nbtMentionsSilky(stack) || id.indexOf("tconstruct:") === 0) {
+            if (stripSilkyFromTool(stack)) {
+                writeSlot(container, slot, stack);
+                if (DEBUG_SILKY) {
+                    console.info(
+                        "[Tinkers Silky] Stripped Silky from tool in " +
+                            label +
+                            " slot " +
+                            slot
+                    );
+                }
+                return 1;
             }
         }
     }
-    return changed;
+    return 0;
 }
 
-function purgeContainer(container, label) {
+function purgeContainer(container, label, doTools) {
     var changed = 0;
     if (container == null) return 0;
     var size = containerSize(container);
     for (var slot = 0; slot < size; slot++) {
         try {
-            changed += processStackInSlot(container, slot, label);
+            changed += processStackInSlot(container, slot, label, doTools);
         } catch (eSlot) {}
     }
     return changed;
 }
 
-function purgePlayerSilky(player, announce) {
+function purgePlayerSilky(player, announce, doTools) {
     if (player == null) return;
-    if (!initJava()) return;
+    initJava();
+    initForgeId();
 
     var changed = 0;
+    var sp = asServerPlayer(player);
+
+    /* Prefer Forge ServerPlayer inventory (raw ItemStacks). */
     try {
-        changed += purgeContainer(player.getInventory(), "inventory");
+        if (sp != null && typeof sp.getInventory === "function") {
+            changed += purgeContainer(sp.getInventory(), "forgeInv", doTools);
+        }
+    } catch (eForge) {}
+
+    try {
+        changed += purgeContainer(player.getInventory(), "inventory", doTools);
     } catch (eInv) {
         try {
-            changed += purgeContainer(player.inventory, "inventoryKJS");
+            changed += purgeContainer(player.inventory, "inventoryKJS", doTools);
         } catch (eInv2) {}
     }
+
     try {
-        changed += purgeContainer(player.getEnderChestInventory(), "ender");
+        if (sp != null && typeof sp.getEnderChestInventory === "function") {
+            changed += purgeContainer(
+                sp.getEnderChestInventory(),
+                "forgeEnder",
+                doTools
+            );
+        }
+    } catch (eFe) {}
+
+    try {
+        changed += purgeContainer(
+            player.getEnderChestInventory(),
+            "ender",
+            doTools
+        );
     } catch (eEnder) {
         try {
-            changed += purgeContainer(player.enderChestInventory, "enderKJS");
+            changed += purgeContainer(
+                player.enderChestInventory,
+                "enderKJS",
+                doTools
+            );
         } catch (eEnder2) {}
     }
 
     try {
-        if (player.mainHandItem && stripSilkyFromTool(player.mainHandItem)) {
-            changed += 1;
-        } else if (player.mainHandItem) {
-            var rep = convertBannedSilkyItem(player.mainHandItem);
+        var main = player.mainHandItem;
+        if (main) {
+            var rep = convertBannedSilkyItem(main);
             if (rep != null) {
                 try {
-                    player.mainHandItem = rep;
+                    player.setMainHandItem(rep);
                     changed += 1;
-                } catch (eHand) {}
+                } catch (eSetM) {
+                    try {
+                        player.mainHandItem = rep;
+                        changed += 1;
+                    } catch (eSetM2) {}
+                }
+            } else if (doTools && stripSilkyFromTool(main)) {
+                changed += 1;
             }
         }
     } catch (eMain) {}
+
     try {
-        if (player.offHandItem && stripSilkyFromTool(player.offHandItem)) {
-            changed += 1;
-        } else if (player.offHandItem) {
-            var repOff = convertBannedSilkyItem(player.offHandItem);
+        var off = player.offHandItem;
+        if (off) {
+            var repOff = convertBannedSilkyItem(off);
             if (repOff != null) {
                 try {
-                    player.offHandItem = repOff;
+                    player.setOffHandItem(repOff);
                     changed += 1;
-                } catch (eOff) {}
+                } catch (eSetO) {
+                    try {
+                        player.offHandItem = repOff;
+                        changed += 1;
+                    } catch (eSetO2) {}
+                }
+            } else if (doTools && stripSilkyFromTool(off)) {
+                changed += 1;
             }
         }
-    } catch (eOff2) {}
+    } catch (eOff) {}
 
     if (changed > 0 && announce) {
         try {
             player.tell(
-                "\u00A77Silky was removed from " +
+                "\u00A77Silky Cloth removed (" +
                     changed +
-                    " item(s). Tools were kept; Silky Cloth became cobwebs."
+                    "). Replaced with cobwebs; tools were kept."
             );
         } catch (eTell) {}
         console.info(
-            "[Tinkers Silky] Purged Silky from " +
+            "[Tinkers Silky] Purged " +
                 changed +
                 " stack(s) for " +
-                player.username
+                (player.username || player.name || "?")
         );
     }
 }
@@ -460,36 +653,22 @@ ServerEvents.recipes(function (event) {
     }
 
     try {
-        event.forEachRecipe({ type: "tconstruct:modifier" }, function (recipe) {
-            var keep = true;
+        event.forEachRecipe({}, function (recipe) {
+            var rid = "";
             try {
-                var rid = String(recipe.getId()).toLowerCase();
-                if (rid.indexOf("silky") >= 0) keep = false;
-            } catch (eId) {}
-            try {
-                var json = recipe.json;
-                var result = null;
-                try {
-                    result = json.get("result");
-                } catch (e1) {
-                    try {
-                        result = json.result;
-                    } catch (e2) {}
-                }
-                if (result != null && String(result).indexOf("silky") >= 0) {
-                    keep = false;
-                }
-            } catch (eJ) {}
-            if (!keep) {
-                try {
-                    event.remove({ id: recipe.getId() });
-                    removed++;
-                    console.info(
-                        "[Tinkers Silky] Removed modifier recipe " +
-                            recipe.getId()
-                    );
-                } catch (eR2) {}
+                rid = String(recipe.getId()).toLowerCase();
+            } catch (eId) {
+                return;
             }
+            if (rid.indexOf("silky_cloth") < 0 && rid.indexOf("/silky") < 0) {
+                return;
+            }
+            if (rid.indexOf("silky") < 0) return;
+            try {
+                event.remove({ id: recipe.getId() });
+                removed++;
+                console.info("[Tinkers Silky] Removed recipe scan " + rid);
+            } catch (eR2) {}
         });
     } catch (eForEach) {}
 
@@ -509,9 +688,21 @@ ServerEvents.highPriorityData(function (event) {
     console.info("[Tinkers Silky] highPriorityData applied (modifier empty).");
 });
 
+/* Block using / picking up silky cloth if somehow present. */
+ItemEvents.rightClicked("tconstruct:silky_cloth", function (event) {
+    try {
+        event.cancel();
+    } catch (e) {}
+    try {
+        var rep = cobwebReplacement(stackCount(event.item));
+        event.player.setMainHandItem(rep);
+        event.player.tell("\u00A77Silky Cloth is disabled and was replaced with cobwebs.");
+    } catch (e2) {}
+});
+
 PlayerEvents.loggedIn(function (event) {
     try {
-        purgePlayerSilky(event.player, true);
+        purgePlayerSilky(event.player, true, true);
     } catch (err) {
         console.error("[Tinkers Silky] loggedIn error: " + err);
     }
@@ -521,8 +712,16 @@ PlayerEvents.tick(function (event) {
     try {
         var player = event.player;
         if (player == null) return;
-        if (player.age % PLAYER_SCAN_INTERVAL !== 0) return;
-        purgePlayerSilky(player, true);
+        var age = 0;
+        try {
+            age = Number(player.age);
+        } catch (eAge) {
+            return;
+        }
+        if (age % CLOTH_SCAN_INTERVAL === 0) {
+            /* Cloth every 1s; tools only on the slower cadence. */
+            purgePlayerSilky(player, true, age % TOOL_SCAN_INTERVAL === 0);
+        }
     } catch (err) {
         console.error("[Tinkers Silky] tick error: " + err);
     }
@@ -538,6 +737,9 @@ EntityEvents.spawned("minecraft:item", function (event) {
         if (replacement != null) {
             try {
                 entity.item = replacement;
+                console.info(
+                    "[Tinkers Silky] Ground silky item converted to cobweb."
+                );
             } catch (eSet) {}
             return;
         }
@@ -549,5 +751,5 @@ EntityEvents.spawned("minecraft:item", function (event) {
 });
 
 console.info(
-    "[DBZ Legacy Reborn] Tinkers Silky strip handlers registered (tools kept)."
+    "[DBZ Legacy Reborn] Tinkers Silky strip handlers registered (Forge ID + cobweb convert)."
 );
