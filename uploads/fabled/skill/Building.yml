@@ -1,0 +1,66 @@
+Building: 
+  name: 'Building'
+  type: 'Jobs'
+  'max-level': 100
+  'skill-req-lvl': 0
+  'needs-permission': 'false'
+  'cooldown-message': 'true'
+  incompatible: []
+  attributes: 
+    'level-base': '1'
+    'level-scale': '0'
+    'cost-base': '10000'
+    'cost-scale': '10000'
+    'cooldown-base': '0'
+    'cooldown-scale': '0'
+    'mana-base': '0'
+    'mana-scale': '0'
+    'points-spent-req-base': '0'
+    'points-spent-req-scale': '0'
+  msg: '&6{player} &2has cast &6{skill}'
+  icon: 'bricks'
+  'icon-data': 0
+  'icon-durability': 0
+  'icon-lore': 
+  - '&d{name} &7({level}/{max})'
+  - '&2Type: &6{type}'
+  - ''
+  - '{req:level}Level: {attr:level}'
+  - '{req:cost}Cost: {attr:cost}'
+  - ''
+  - 'Place Blocks for TP. Gain 1 more TP per level.'
+  desc: []
+  components: 
+    'Block Place': 
+      type: 'trigger'
+      data: 
+        mana: 'false'
+        cooldown: 'false'
+        material: 
+        - 'Any'
+        data: '-1'
+      preview: 
+        enabled: 'false'
+      children: 
+        'Value Set': 
+          type: 'mechanic'
+          data: 
+            'icon-key': ''
+            counts: 'true'
+            key: 'TPB'
+            'value-base': '1'
+            'value-scale': '1'
+            save: 'false'
+          preview: 
+            enabled: 'false'
+          children: {}
+        Command: 
+          type: 'mechanic'
+          data: 
+            'icon-key': ''
+            counts: 'true'
+            command: 'silentdmztp {TPB}'
+            type: 'OP'
+          preview: 
+            enabled: 'false'
+          children: {}

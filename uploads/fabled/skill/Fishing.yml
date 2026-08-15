@@ -1,0 +1,278 @@
+Fishing: 
+  name: 'Fishing'
+  type: 'Jobs'
+  'max-level': 500
+  'skill-req-lvl': 0
+  'needs-permission': 'false'
+  'cooldown-message': 'true'
+  incompatible: []
+  attributes: 
+    'level-base': '1'
+    'level-scale': '0'
+    'cost-base': '10000'
+    'cost-scale': '10000'
+    'cooldown-base': '0'
+    'cooldown-scale': '0'
+    'mana-base': '0'
+    'mana-scale': '0'
+    'points-spent-req-base': '0'
+    'points-spent-req-scale': '0'
+  msg: '&6{player} &2has cast &6{skill}'
+  icon: 'salmon'
+  'icon-data': 0
+  'icon-durability': 0
+  'icon-lore': 
+  - '&d{name} &7({level}/{max})'
+  - '&2Type: &6{type}'
+  - ''
+  - '{req:level}Level: {attr:level}'
+  - '{req:cost}Cost: {attr:cost}'
+  - ''
+  - 'Awards TP for Fishing. TP Gain increases per level. Higher levels will also give a chance to award prizes.'
+  desc: []
+  components: 
+    'Fishing Grab': 
+      type: 'trigger'
+      data: 
+        mana: 'false'
+        cooldown: 'false'
+      preview: 
+        enabled: 'false'
+      children: 
+        'Value Set': 
+          type: 'mechanic'
+          data: 
+            'icon-key': ''
+            counts: 'true'
+            key: 'TP'
+            'value-base': '10'
+            'value-scale': '10'
+            save: 'false'
+          preview: 
+            enabled: 'false'
+          children: {}
+        Command: 
+          type: 'mechanic'
+          data: 
+            'icon-key': ''
+            counts: 'true'
+            command: 'dmzpoints add {TP}'
+            type: 'OP'
+          preview: 
+            enabled: 'false'
+          children: {}
+        Chance: 
+          type: 'condition'
+          data: 
+            'icon-key': ''
+            'chance-base': '10'
+            'chance-scale': '0.1'
+          preview: 
+            enabled: 'false'
+          children: 
+            Item: 
+              type: 'mechanic'
+              data: 
+                'icon-key': ''
+                counts: 'true'
+                material: 'betteritem_tp100'
+                amount: '1'
+                byte: '0'
+                'hide-flags': []
+                custom: 'true'
+                name: '&2&l 100 TP Gem'
+                lore: 
+                - 'TP: 100'
+                enchants: []
+              preview: 
+                enabled: 'false'
+              children: {}
+            Message: 
+              type: 'mechanic'
+              data: 
+                'icon-key': ''
+                counts: 'true'
+                message: 'Hey! That one dropped a TP Gem!'
+              preview: 
+                enabled: 'false'
+              children: {}
+        'Skill Level': 
+          type: 'condition'
+          data: 
+            'icon-key': ''
+            skill: 'Fishing'
+            'min-level': '10'
+            'max-level': '501'
+          preview: 
+            enabled: 'false'
+          children: 
+            Chance: 
+              type: 'condition'
+              data: 
+                'icon-key': ''
+                'chance-base': '5'
+                'chance-scale': '0.05'
+              preview: 
+                enabled: 'false'
+              children: 
+                Item: 
+                  type: 'mechanic'
+                  data: 
+                    'icon-key': ''
+                    counts: 'true'
+                    material: 'betteritem_tp1k'
+                    amount: '1'
+                    byte: '0'
+                    'hide-flags': []
+                    custom: 'true'
+                    name: '&e&l 1k TP Gem'
+                    lore: 
+                    - 'TP: 1000'
+                    enchants: []
+                  preview: 
+                    enabled: 'false'
+                  children: {}
+                Message: 
+                  type: 'mechanic'
+                  data: 
+                    'icon-key': ''
+                    counts: 'true'
+                    message: "Nice! That's a big TP Gem!"
+                  preview: 
+                    enabled: 'false'
+                  children: {}
+        'Skill Level-b': 
+          type: 'condition'
+          data: 
+            'icon-key': ''
+            skill: 'Fishing'
+            'min-level': '50'
+            'max-level': '501'
+          preview: 
+            enabled: 'false'
+          children: 
+            Chance: 
+              type: 'condition'
+              data: 
+                'icon-key': ''
+                'chance-base': '2.5'
+                'chance-scale': '0.025'
+              preview: 
+                enabled: 'false'
+              children: 
+                Item: 
+                  type: 'mechanic'
+                  data: 
+                    'icon-key': ''
+                    counts: 'true'
+                    material: 'betteritem_tp10k'
+                    amount: '1'
+                    byte: '0'
+                    'hide-flags': []
+                    custom: 'true'
+                    name: '&6&l 10k TP Gem'
+                    lore: 
+                    - 'TP: 10000'
+                    enchants: []
+                  preview: 
+                    enabled: 'false'
+                  children: {}
+                Message: 
+                  type: 'mechanic'
+                  data: 
+                    'icon-key': ''
+                    counts: 'true'
+                    message: 'Wow! This TP Gem is huge!'
+                  preview: 
+                    enabled: 'false'
+                  children: {}
+        'Skill Level-c': 
+          type: 'condition'
+          data: 
+            'icon-key': ''
+            skill: 'Fishing'
+            'min-level': '100'
+            'max-level': '501'
+          preview: 
+            enabled: 'false'
+          children: 
+            Chance: 
+              type: 'condition'
+              data: 
+                'icon-key': ''
+                'chance-base': '1'
+                'chance-scale': '0.01'
+              preview: 
+                enabled: 'false'
+              children: 
+                Item: 
+                  type: 'mechanic'
+                  data: 
+                    'icon-key': ''
+                    counts: 'true'
+                    material: 'betteritem_tp100k'
+                    amount: '1'
+                    byte: '0'
+                    'hide-flags': []
+                    custom: 'true'
+                    name: '&4&l 100k TP Gem'
+                    lore: 
+                    - 'TP: 100000'
+                    enchants: []
+                  preview: 
+                    enabled: 'false'
+                  children: {}
+                Message: 
+                  type: 'mechanic'
+                  data: 
+                    'icon-key': ''
+                    counts: 'true'
+                    message: "INCREDIBLE! NOW THAT'S A TP GEM!"
+                  preview: 
+                    enabled: 'false'
+                  children: {}
+        'Skill Level-d': 
+          type: 'condition'
+          data: 
+            'icon-key': ''
+            skill: 'Fishing'
+            'min-level': '150'
+            'max-level': '501'
+          preview: 
+            enabled: 'false'
+          children: 
+            Chance: 
+              type: 'condition'
+              data: 
+                'icon-key': ''
+                'chance-base': '1'
+                'chance-scale': '0.01'
+              preview: 
+                enabled: 'false'
+              children: 
+                Item: 
+                  type: 'mechanic'
+                  data: 
+                    'icon-key': ''
+                    counts: 'true'
+                    material: 'betteritem_tp1m'
+                    amount: '1'
+                    byte: '0'
+                    'hide-flags': []
+                    custom: 'true'
+                    name: '&5&l 1M TP Gem'
+                    lore: 
+                    - 'TP: 1000000'
+                    enchants: []
+                  preview: 
+                    enabled: 'false'
+                  children: {}
+                Message: 
+                  type: 'mechanic'
+                  data: 
+                    'icon-key': ''
+                    counts: 'true'
+                    message: 'WOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
+                  preview: 
+                    enabled: 'false'
+                  children: {}

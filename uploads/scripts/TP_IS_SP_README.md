@@ -1,10 +1,12 @@
 # TP IS SP Fabled
 
-Jobs skills (Building / Farming / Fishing) cost **10000 SP**, which is **10000 DMZ TP** via this sync.
+Mirrors DMZ Training Points into Fabled skill points (capped at 2,147,483,647 for display).
 
-## Bug fixed
-Spend detection treated a temporary Fabled `getPoints()==0` (reload/race) as spending all SP, which wiped DMZ TP and left players unable to buy 10k-cost Jobs skills.
+## Spend detection
+TP is only removed when `getInvestedSkillPoints()` increases (a real skill purchase).
+Raw SP drops without invested-cost change are treated as reload glitches and remirrored — they do **not** wipe TP.
 
-Guards now:
-- Ignore SP drops to 0 while TP is still high (desync)
-- Cap SP→TP debit per tick at 50,000,000
+This matters for Prestige skills costing up to 2,000,000,000 SP and Jobs skills costing 10,000 SP.
+
+## Jobs
+Building / Farming / Fishing: `type: Jobs`, first unlock cost 10000 SP (= 10000 TP).
