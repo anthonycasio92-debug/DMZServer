@@ -54,9 +54,6 @@ Building:
           preview: 
             enabled: 'false'
           children: {}
-        # Silent award — never call /dmzpoints (spams chat/console).
-        # Requires kubejs silent_dmz_tp.js (/silentdmztp). Same-tick dedupe
-        # with the BlockEvents backup so TP is not doubled.
         Command: 
           type: 'mechanic'
           data: 
