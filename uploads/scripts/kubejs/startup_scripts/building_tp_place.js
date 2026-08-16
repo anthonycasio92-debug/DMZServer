@@ -1,12 +1,14 @@
-// kubejs/server_scripts/building_tp.js
-// Silent Building TP backup via BlockEvents.placed.
-// Primary hook is startup_scripts/building_tp_place.js (Forge EntityPlaceEvent).
-// Same-tick dedupe prevents double awards if both fire.
+// kubejs/startup_scripts/building_tp_place.js
+// Silent Building TP on block place (Forge EntityPlaceEvent).
+// MUST be startup_scripts — ForgeEvents.onEvent only registers on first load.
 //
-// Reload: /kubejs reload server_scripts
-// Startup hook needs a full restart once.
+// Fabled Building.yml: Value Set only (no Command / no dmzpoints).
+// Award: BuildingLevel TP via getCapability + addTrainingPoints (silent).
+//
+// Requires full restart once after adding/changing this file.
+// server_scripts/building_tp.js also has BlockEvents.placed as a backup.
 
-console.info("[BuildingTP] server BlockEvents.placed backup loading...");
+console.info("[BuildingTP-Startup] registering EntityPlaceEvent...");
 
 var SKILL_NAME = "Building";
 var VALUE_BASE = 1.0;
@@ -14,54 +16,15 @@ var VALUE_SCALE = 1.0;
 var MAX_AWARD = 10000;
 
 var lastAwardTick = {};
-var ServerPlayerCls = null;
-var StatsCapabilityCls = null;
-var NetworkHandlerCls = null;
-var ResourceSyncS2CCls = null;
-var JAVA_READY = false;
 
-function initJava() {
-    if (JAVA_READY) return true;
+function asServerPlayer(entity) {
+    if (entity == null) return null;
     try {
-        ServerPlayerCls = Java.loadClass(
+        var ServerPlayer = Java.loadClass(
             "net.minecraft.server.level.ServerPlayer"
         );
-        StatsCapabilityCls = Java.loadClass(
-            "com.dragonminez.common.stats.StatsCapability"
-        );
-        try {
-            NetworkHandlerCls = Java.loadClass(
-                "com.dragonminez.common.network.NetworkHandler"
-            );
-            ResourceSyncS2CCls = Java.loadClass(
-                "com.dragonminez.common.network.S2C.ResourceSyncS2C"
-            );
-        } catch (eNet) {}
-        JAVA_READY = ServerPlayerCls != null && StatsCapabilityCls != null;
-    } catch (err) {
-        console.error("[BuildingTP] Java init failed: " + err);
-    }
-    return JAVA_READY;
-}
-
-function asServerPlayer(player) {
-    if (!player || !initJava()) return null;
-    var p = player;
-    try {
-        if (p.minecraftPlayer) p = p.minecraftPlayer;
-    } catch (e0) {}
-    try {
-        if (p.getMinecraftPlayer) p = p.getMinecraftPlayer();
-    } catch (e1) {}
-    try {
-        if (p.getHandle) p = p.getHandle();
-    } catch (e2) {}
-    try {
-        if (ServerPlayerCls.class.isInstance(p)) return p;
-    } catch (e3) {}
-    try {
-        if (p instanceof ServerPlayerCls) return p;
-    } catch (e4) {}
+        if (ServerPlayer.class.isInstance(entity)) return entity;
+    } catch (e) {}
     return null;
 }
 
@@ -140,16 +103,22 @@ function amountFromLevel(level) {
 }
 
 function getStatsData(sp) {
-    if (sp == null || !initJava()) return null;
+    if (sp == null) return null;
     try {
-        var lazy = sp.getCapability(StatsCapabilityCls.INSTANCE);
+        var StatsCapability = Java.loadClass(
+            "com.dragonminez.common.stats.StatsCapability"
+        );
+        var lazy = sp.getCapability(StatsCapability.INSTANCE);
         if (lazy != null) {
             var data = lazy.orElse(null);
             if (data != null) return data;
         }
     } catch (e1) {}
     try {
-        var lazy2 = sp.getCapability(StatsCapabilityCls.INSTANCE, null);
+        var StatsCapability2 = Java.loadClass(
+            "com.dragonminez.common.stats.StatsCapability"
+        );
+        var lazy2 = sp.getCapability(StatsCapability2.INSTANCE, null);
         if (lazy2 != null) {
             var data2 = lazy2.orElse(null);
             if (data2 != null) return data2;
@@ -192,31 +161,42 @@ function addTrainingPointsSilent(sp, amount) {
     }
 
     try {
-        if (NetworkHandlerCls != null && ResourceSyncS2CCls != null) {
-            NetworkHandlerCls.sendToTrackingEntityAndSelf(
-                new ResourceSyncS2CCls(sp),
-                sp
-            );
-        }
+        var NetworkHandler = Java.loadClass(
+            "com.dragonminez.common.network.NetworkHandler"
+        );
+        var ResourceSyncS2C = Java.loadClass(
+            "com.dragonminez.common.network.S2C.ResourceSyncS2C"
+        );
+        NetworkHandler.sendToTrackingEntityAndSelf(
+            new ResourceSyncS2C(sp),
+            sp
+        );
     } catch (eSync) {}
 
     if (id) lastAwardTick[id] = tick;
     return true;
 }
 
-BlockEvents.placed(function (event) {
-    try {
-        var sp = asServerPlayer(event.player);
-        if (sp == null) return;
-        var level = buildingLevelFor(sp);
-        var amount = amountFromLevel(level);
-        if (amount < 1) return;
-        addTrainingPointsSilent(sp, amount);
-    } catch (err) {
-        console.error("[BuildingTP] BlockEvents.placed: " + err);
+ForgeEvents.onEvent(
+    "net.minecraftforge.event.level.BlockEvent$EntityPlaceEvent",
+    function (event) {
+        try {
+            var entity = null;
+            try {
+                entity = event.getEntity();
+            } catch (e1) {}
+            var sp = asServerPlayer(entity);
+            if (sp == null) return;
+            var level = buildingLevelFor(sp);
+            var amount = amountFromLevel(level);
+            if (amount < 1) return;
+            addTrainingPointsSilent(sp, amount);
+        } catch (err) {
+            console.error("[BuildingTP-Startup] place error: " + err);
+        }
     }
-});
+);
 
 console.info(
-    "[BuildingTP] BlockEvents.placed backup ready (startup Forge hook is primary)"
+    "[BuildingTP-Startup] EntityPlaceEvent registered (silent Building TP)"
 );
