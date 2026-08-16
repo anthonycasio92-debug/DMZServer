@@ -3,7 +3,7 @@
 // MUST be startup_scripts — ForgeEvents.onEvent only registers on first load.
 //
 // Fabled Building.yml: Value Set only (no Command / no dmzpoints).
-// Award: BuildingLevel TP via getCapability + addTrainingPoints (silent).
+// Award: BuildingLevel TP via StatsProvider.get + addTrainingPoints (silent).
 //
 // Requires full restart once after adding/changing this file.
 // server_scripts/building_tp.js also has BlockEvents.placed as a backup.
@@ -14,17 +14,86 @@ var SKILL_NAME = "Building";
 var VALUE_BASE = 1.0;
 var VALUE_SCALE = 1.0;
 var MAX_AWARD = 10000;
+var DEBUG = true;
+var DEBUG_SKIPS = true;
 
 var lastAwardTick = {};
+var lastSkipLog = {};
+var ServerPlayerCls = null;
+var StatsProviderCls = null;
+var StatsCapabilityCls = null;
+var NetworkHandlerCls = null;
+var ResourceSyncS2CCls = null;
+
+function loadJava() {
+    if (ServerPlayerCls != null && StatsProviderCls != null) return true;
+    try {
+        ServerPlayerCls = Java.loadClass(
+            "net.minecraft.server.level.ServerPlayer"
+        );
+        StatsProviderCls = Java.loadClass(
+            "com.dragonminez.common.stats.StatsProvider"
+        );
+        StatsCapabilityCls = Java.loadClass(
+            "com.dragonminez.common.stats.StatsCapability"
+        );
+        try {
+            NetworkHandlerCls = Java.loadClass(
+                "com.dragonminez.common.network.NetworkHandler"
+            );
+            ResourceSyncS2CCls = Java.loadClass(
+                "com.dragonminez.common.network.S2C.ResourceSyncS2C"
+            );
+        } catch (eNet) {}
+        return true;
+    } catch (err) {
+        console.error("[BuildingTP-Startup] Java load failed: " + err);
+        return false;
+    }
+}
+
+function className(obj) {
+    try {
+        return String(obj.getClass().getName());
+    } catch (e) {
+        return String(obj);
+    }
+}
+
+function isServerPlayer(entity) {
+    if (entity == null || !loadJava()) return false;
+    // KubeJS loadClass returns java.lang.Class — use Class.isInstance, NOT .class.isInstance
+    try {
+        if (ServerPlayerCls.isInstance(entity)) return true;
+    } catch (e0) {}
+    try {
+        if (entity instanceof ServerPlayerCls) return true;
+    } catch (e1) {}
+    try {
+        if (entity.isPlayer && entity.isPlayer()) return true;
+    } catch (e2) {}
+    try {
+        var cn = className(entity);
+        if (cn.indexOf("ServerPlayer") >= 0) return true;
+    } catch (e3) {}
+    return false;
+}
 
 function asServerPlayer(entity) {
     if (entity == null) return null;
     try {
-        var ServerPlayer = Java.loadClass(
-            "net.minecraft.server.level.ServerPlayer"
-        );
-        if (ServerPlayer.class.isInstance(entity)) return entity;
-    } catch (e) {}
+        if (entity.minecraftPlayer) entity = entity.minecraftPlayer;
+    } catch (e0) {}
+    try {
+        if (entity.getMinecraftPlayer) entity = entity.getMinecraftPlayer();
+    } catch (e1) {}
+    try {
+        if (entity.getHandle) entity = entity.getHandle();
+    } catch (e2) {}
+    try {
+        if (entity.getMCEntity) entity = entity.getMCEntity();
+    } catch (e3) {}
+    if (isServerPlayer(entity)) return entity;
     return null;
 }
 
@@ -36,6 +105,19 @@ function playerUuid(sp) {
         return String(sp.getStringUUID()).toLowerCase();
     } catch (e1) {}
     return null;
+}
+
+function playerName(sp) {
+    try {
+        return String(sp.getGameProfile().getName());
+    } catch (e0) {}
+    try {
+        return String(sp.getName().getString());
+    } catch (e1) {}
+    try {
+        return String(sp.getScoreboardName());
+    } catch (e2) {}
+    return "?";
 }
 
 function readBuildingLevelYaml(uuid) {
@@ -103,28 +185,52 @@ function amountFromLevel(level) {
 }
 
 function getStatsData(sp) {
-    if (sp == null) return null;
+    if (sp == null || !loadJava()) return null;
+    // Farming-style path (works in CNPC; same API from KubeJS when entity type is correct)
     try {
-        var StatsCapability = Java.loadClass(
-            "com.dragonminez.common.stats.StatsCapability"
-        );
-        var lazy = sp.getCapability(StatsCapability.INSTANCE);
+        var lazy = StatsProviderCls.get(StatsCapabilityCls.INSTANCE, sp);
         if (lazy != null) {
             var data = lazy.orElse(null);
             if (data != null) return data;
         }
-    } catch (e1) {}
+    } catch (e1) {
+        if (DEBUG) {
+            console.error(
+                "[BuildingTP-Startup] StatsProvider.get failed: " + e1
+            );
+        }
+    }
     try {
-        var StatsCapability2 = Java.loadClass(
-            "com.dragonminez.common.stats.StatsCapability"
-        );
-        var lazy2 = sp.getCapability(StatsCapability2.INSTANCE, null);
+        var lazy2 = sp.getCapability(StatsCapabilityCls.INSTANCE);
         if (lazy2 != null) {
             var data2 = lazy2.orElse(null);
             if (data2 != null) return data2;
         }
     } catch (e2) {}
+    try {
+        var lazy3 = sp.getCapability(StatsCapabilityCls.INSTANCE, null);
+        if (lazy3 != null) {
+            var data3 = lazy3.orElse(null);
+            if (data3 != null) return data3;
+        }
+    } catch (e3) {}
     return null;
+}
+
+function logSkip(sp, reason) {
+    if (!DEBUG || !DEBUG_SKIPS) return;
+    var id = playerUuid(sp) || className(sp);
+    var now = Date.now();
+    if (lastSkipLog[id] && now - lastSkipLog[id] < 2000) return;
+    lastSkipLog[id] = now;
+    console.info(
+        "[BuildingTP-Startup] skip " +
+            playerName(sp) +
+            " (" +
+            id +
+            "): " +
+            reason
+    );
 }
 
 function addTrainingPointsSilent(sp, amount) {
@@ -141,12 +247,21 @@ function addTrainingPointsSilent(sp, amount) {
         } catch (e1) {}
     }
     var id = playerUuid(sp);
-    if (id && lastAwardTick[id] === tick) return false;
+    if (id && lastAwardTick[id] === tick) {
+        logSkip(sp, "same-tick dedupe");
+        return false;
+    }
 
     var data = getStatsData(sp);
-    if (data == null) return false;
+    if (data == null) {
+        logSkip(sp, "no StatsData");
+        return false;
+    }
     var resources = data.getResources();
-    if (resources == null) return false;
+    if (resources == null) {
+        logSkip(sp, "no Resources");
+        return false;
+    }
 
     try {
         resources.addTrainingPoints(amount * 1.0);
@@ -156,25 +271,53 @@ function addTrainingPointsSilent(sp, amount) {
             if (!isFinite(cur) || cur < 0) cur = 0;
             resources.setTrainingPoints(cur + amount);
         } catch (eSet) {
+            logSkip(sp, "addTrainingPoints failed: " + eAdd + " / " + eSet);
             return false;
         }
     }
 
     try {
-        var NetworkHandler = Java.loadClass(
-            "com.dragonminez.common.network.NetworkHandler"
-        );
-        var ResourceSyncS2C = Java.loadClass(
-            "com.dragonminez.common.network.S2C.ResourceSyncS2C"
-        );
-        NetworkHandler.sendToTrackingEntityAndSelf(
-            new ResourceSyncS2C(sp),
-            sp
-        );
+        if (NetworkHandlerCls != null && ResourceSyncS2CCls != null) {
+            NetworkHandlerCls.sendToTrackingEntityAndSelf(
+                new ResourceSyncS2CCls(sp),
+                sp
+            );
+        }
     } catch (eSync) {}
 
     if (id) lastAwardTick[id] = tick;
+    if (DEBUG) {
+        console.info(
+            "[BuildingTP-Startup] +" +
+                amount +
+                " TP -> " +
+                playerName(sp) +
+                " (silent)"
+        );
+    }
     return true;
+}
+
+function handlePlace(entity) {
+    var sp = asServerPlayer(entity);
+    if (sp == null) {
+        if (DEBUG && DEBUG_SKIPS && entity != null) {
+            var cn = className(entity);
+            if (cn.indexOf("Player") >= 0) {
+                console.info(
+                    "[BuildingTP-Startup] skip non-ServerPlayer entity: " + cn
+                );
+            }
+        }
+        return;
+    }
+    var level = buildingLevelFor(sp);
+    var amount = amountFromLevel(level);
+    if (amount < 1) {
+        logSkip(sp, "Building level=" + level + " (need >= 1)");
+        return;
+    }
+    addTrainingPointsSilent(sp, amount);
 }
 
 ForgeEvents.onEvent(
@@ -184,13 +327,12 @@ ForgeEvents.onEvent(
             var entity = null;
             try {
                 entity = event.getEntity();
-            } catch (e1) {}
-            var sp = asServerPlayer(entity);
-            if (sp == null) return;
-            var level = buildingLevelFor(sp);
-            var amount = amountFromLevel(level);
-            if (amount < 1) return;
-            addTrainingPointsSilent(sp, amount);
+            } catch (e1) {
+                try {
+                    entity = event.entity;
+                } catch (e2) {}
+            }
+            handlePlace(entity);
         } catch (err) {
             console.error("[BuildingTP-Startup] place error: " + err);
         }
@@ -198,5 +340,7 @@ ForgeEvents.onEvent(
 );
 
 console.info(
-    "[BuildingTP-Startup] EntityPlaceEvent registered (silent Building TP)"
+    "[BuildingTP-Startup] EntityPlaceEvent registered (silent Building TP, DEBUG=" +
+        DEBUG +
+        ")"
 );

@@ -12,9 +12,13 @@ var SKILL_NAME = "Building";
 var VALUE_BASE = 1.0;
 var VALUE_SCALE = 1.0;
 var MAX_AWARD = 10000;
+var DEBUG = true;
+var DEBUG_SKIPS = true;
 
 var lastAwardTick = {};
+var lastSkipLog = {};
 var ServerPlayerCls = null;
+var StatsProviderCls = null;
 var StatsCapabilityCls = null;
 var NetworkHandlerCls = null;
 var ResourceSyncS2CCls = null;
@@ -25,6 +29,9 @@ function initJava() {
     try {
         ServerPlayerCls = Java.loadClass(
             "net.minecraft.server.level.ServerPlayer"
+        );
+        StatsProviderCls = Java.loadClass(
+            "com.dragonminez.common.stats.StatsProvider"
         );
         StatsCapabilityCls = Java.loadClass(
             "com.dragonminez.common.stats.StatsCapability"
@@ -37,11 +44,40 @@ function initJava() {
                 "com.dragonminez.common.network.S2C.ResourceSyncS2C"
             );
         } catch (eNet) {}
-        JAVA_READY = ServerPlayerCls != null && StatsCapabilityCls != null;
+        JAVA_READY =
+            ServerPlayerCls != null &&
+            StatsProviderCls != null &&
+            StatsCapabilityCls != null;
     } catch (err) {
         console.error("[BuildingTP] Java init failed: " + err);
     }
     return JAVA_READY;
+}
+
+function className(obj) {
+    try {
+        return String(obj.getClass().getName());
+    } catch (e) {
+        return String(obj);
+    }
+}
+
+function isServerPlayer(entity) {
+    if (entity == null || !initJava()) return false;
+    try {
+        if (ServerPlayerCls.isInstance(entity)) return true;
+    } catch (e0) {}
+    try {
+        if (entity instanceof ServerPlayerCls) return true;
+    } catch (e1) {}
+    try {
+        if (entity.isPlayer && entity.isPlayer()) return true;
+    } catch (e2) {}
+    try {
+        var cn = className(entity);
+        if (cn.indexOf("ServerPlayer") >= 0) return true;
+    } catch (e3) {}
+    return false;
 }
 
 function asServerPlayer(player) {
@@ -57,11 +93,9 @@ function asServerPlayer(player) {
         if (p.getHandle) p = p.getHandle();
     } catch (e2) {}
     try {
-        if (ServerPlayerCls.class.isInstance(p)) return p;
+        if (p.getMCEntity) p = p.getMCEntity();
     } catch (e3) {}
-    try {
-        if (p instanceof ServerPlayerCls) return p;
-    } catch (e4) {}
+    if (isServerPlayer(p)) return p;
     return null;
 }
 
@@ -73,6 +107,19 @@ function playerUuid(sp) {
         return String(sp.getStringUUID()).toLowerCase();
     } catch (e1) {}
     return null;
+}
+
+function playerName(sp) {
+    try {
+        return String(sp.getGameProfile().getName());
+    } catch (e0) {}
+    try {
+        return String(sp.getName().getString());
+    } catch (e1) {}
+    try {
+        return String(sp.getScoreboardName());
+    } catch (e2) {}
+    return "?";
 }
 
 function readBuildingLevelYaml(uuid) {
@@ -142,20 +189,42 @@ function amountFromLevel(level) {
 function getStatsData(sp) {
     if (sp == null || !initJava()) return null;
     try {
-        var lazy = sp.getCapability(StatsCapabilityCls.INSTANCE);
+        var lazy = StatsProviderCls.get(StatsCapabilityCls.INSTANCE, sp);
         if (lazy != null) {
             var data = lazy.orElse(null);
             if (data != null) return data;
         }
-    } catch (e1) {}
+    } catch (e1) {
+        if (DEBUG) {
+            console.error("[BuildingTP] StatsProvider.get failed: " + e1);
+        }
+    }
     try {
-        var lazy2 = sp.getCapability(StatsCapabilityCls.INSTANCE, null);
+        var lazy2 = sp.getCapability(StatsCapabilityCls.INSTANCE);
         if (lazy2 != null) {
             var data2 = lazy2.orElse(null);
             if (data2 != null) return data2;
         }
     } catch (e2) {}
+    try {
+        var lazy3 = sp.getCapability(StatsCapabilityCls.INSTANCE, null);
+        if (lazy3 != null) {
+            var data3 = lazy3.orElse(null);
+            if (data3 != null) return data3;
+        }
+    } catch (e3) {}
     return null;
+}
+
+function logSkip(sp, reason) {
+    if (!DEBUG || !DEBUG_SKIPS) return;
+    var id = playerUuid(sp) || className(sp);
+    var now = Date.now();
+    if (lastSkipLog[id] && now - lastSkipLog[id] < 2000) return;
+    lastSkipLog[id] = now;
+    console.info(
+        "[BuildingTP] skip " + playerName(sp) + " (" + id + "): " + reason
+    );
 }
 
 function addTrainingPointsSilent(sp, amount) {
@@ -172,12 +241,21 @@ function addTrainingPointsSilent(sp, amount) {
         } catch (e1) {}
     }
     var id = playerUuid(sp);
-    if (id && lastAwardTick[id] === tick) return false;
+    if (id && lastAwardTick[id] === tick) {
+        logSkip(sp, "same-tick dedupe");
+        return false;
+    }
 
     var data = getStatsData(sp);
-    if (data == null) return false;
+    if (data == null) {
+        logSkip(sp, "no StatsData");
+        return false;
+    }
     var resources = data.getResources();
-    if (resources == null) return false;
+    if (resources == null) {
+        logSkip(sp, "no Resources");
+        return false;
+    }
 
     try {
         resources.addTrainingPoints(amount * 1.0);
@@ -187,6 +265,7 @@ function addTrainingPointsSilent(sp, amount) {
             if (!isFinite(cur) || cur < 0) cur = 0;
             resources.setTrainingPoints(cur + amount);
         } catch (eSet) {
+            logSkip(sp, "addTrainingPoints failed: " + eAdd + " / " + eSet);
             return false;
         }
     }
@@ -201,16 +280,33 @@ function addTrainingPointsSilent(sp, amount) {
     } catch (eSync) {}
 
     if (id) lastAwardTick[id] = tick;
+    if (DEBUG) {
+        console.info(
+            "[BuildingTP] +" + amount + " TP -> " + playerName(sp) + " (silent)"
+        );
+    }
     return true;
 }
 
 BlockEvents.placed(function (event) {
     try {
         var sp = asServerPlayer(event.player);
-        if (sp == null) return;
+        if (sp == null) {
+            if (DEBUG && DEBUG_SKIPS) {
+                console.info(
+                    "[BuildingTP] BlockEvents.placed: could not unwrap player (" +
+                        className(event.player) +
+                        ")"
+                );
+            }
+            return;
+        }
         var level = buildingLevelFor(sp);
         var amount = amountFromLevel(level);
-        if (amount < 1) return;
+        if (amount < 1) {
+            logSkip(sp, "Building level=" + level + " (need >= 1)");
+            return;
+        }
         addTrainingPointsSilent(sp, amount);
     } catch (err) {
         console.error("[BuildingTP] BlockEvents.placed: " + err);
@@ -218,5 +314,5 @@ BlockEvents.placed(function (event) {
 });
 
 console.info(
-    "[BuildingTP] BlockEvents.placed backup ready (startup Forge hook is primary)"
+    "[BuildingTP] BlockEvents.placed backup ready (DEBUG=" + DEBUG + ")"
 );
