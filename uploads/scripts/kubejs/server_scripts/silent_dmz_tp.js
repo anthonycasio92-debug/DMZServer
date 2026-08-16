@@ -16,7 +16,8 @@ var VALUE_BASE = 1.0;
 var VALUE_SCALE = 1.0;
 var SKILL_NAME = "Building";
 var MAX_AWARD = 10000;
-var DEBUG = true; /* temporarily verbose so we can confirm awards in kubejs log */
+var DEBUG = false;
+var LOG_AWARDS = true; /* log successful +TP lines to confirm it works */
 
 var lastAwardTick = {};
 
@@ -289,7 +290,7 @@ function addTrainingPointsSilent(player, amount) {
         } catch (syncErr2) {}
 
         if (id) lastAwardTick[id] = tick;
-        if (DEBUG) {
+        if (DEBUG || LOG_AWARDS) {
             console.info("[BuildingTP] +" + amount + " TP -> " + id);
         }
         return true;
@@ -309,14 +310,7 @@ BlockEvents.placed(function (event) {
 
         var level = buildingLevelFor(player);
         var amount = amountFromBuildingLevel(level);
-        if (amount < 1) {
-            if (DEBUG) {
-                console.info(
-                    "[BuildingTP] skip place — Building Lv." + level
-                );
-            }
-            return;
-        }
+        if (amount < 1) return;
 
         addTrainingPointsSilent(player, amount);
     } catch (err) {
