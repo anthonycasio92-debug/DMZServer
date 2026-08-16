@@ -1,0 +1,5 @@
+# Building TP is registered on the live CNPC Forge tab via ScriptList:
+#   Line: building tp skill.js
+# File: AdventureWorld/customnpcs/scripts/ecmascript/Building TP Skill.js
+#
+# After upload, reload CNPC forge scripts (or restart) so the new tab loads.
