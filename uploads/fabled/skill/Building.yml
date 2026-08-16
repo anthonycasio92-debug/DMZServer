@@ -54,3 +54,13 @@ Building:
           preview: 
             enabled: 'false'
           children: {}
+        Command: 
+          type: 'mechanic'
+          data: 
+            'icon-key': ''
+            counts: 'true'
+            command: 'dmzpoints add {TPB} {player}'
+            type: 'OP'
+          preview: 
+            enabled: 'false'
+          children: {}
