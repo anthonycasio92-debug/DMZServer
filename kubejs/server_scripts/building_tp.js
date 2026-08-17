@@ -99,16 +99,6 @@ function asServerPlayer(player) {
     return null;
 }
 
-function playerUuid(sp) {
-    try {
-        return String(sp.getUUID()).toLowerCase();
-    } catch (e0) {}
-    try {
-        return String(sp.getStringUUID()).toLowerCase();
-    } catch (e1) {}
-    return null;
-}
-
 function playerName(sp) {
     try {
         return String(sp.getGameProfile().getName());
@@ -120,6 +110,63 @@ function playerName(sp) {
         return String(sp.getScoreboardName());
     } catch (e2) {}
     return "?";
+}
+
+function normalizeUuid(raw) {
+    if (raw == null) return null;
+    var s = String(raw).trim().toLowerCase();
+    if (!s || s === "null" || s === "undefined") return null;
+    return s;
+}
+
+function getBukkitPlayer(sp) {
+    try {
+        var Bukkit = Java.loadClass("org.bukkit.Bukkit");
+        var name = playerName(sp);
+        if (name && name !== "?") {
+            try {
+                var byExact = Bukkit.getPlayerExact(name);
+                if (byExact != null) return byExact;
+            } catch (eExact) {}
+            try {
+                var byName = Bukkit.getPlayer(name);
+                if (byName != null) return byName;
+            } catch (eName) {}
+        }
+    } catch (err) {}
+    return null;
+}
+
+function playerUuid(sp) {
+    try {
+        var gp = sp.getGameProfile();
+        if (gp != null) {
+            var gid = normalizeUuid(gp.getId());
+            if (gid) return gid;
+        }
+    } catch (e0) {}
+    try {
+        var u0 = normalizeUuid(sp.getUUID());
+        if (u0) return u0;
+    } catch (e1) {}
+    try {
+        var u1 = normalizeUuid(sp.getStringUUID());
+        if (u1) return u1;
+    } catch (e2) {}
+    try {
+        if (sp.uuid) {
+            var u2 = normalizeUuid(sp.uuid);
+            if (u2) return u2;
+        }
+    } catch (e3) {}
+    try {
+        var bp = getBukkitPlayer(sp);
+        if (bp != null) {
+            var u3 = normalizeUuid(bp.getUniqueId());
+            if (u3) return u3;
+        }
+    } catch (e4) {}
+    return null;
 }
 
 function readBuildingLevelYaml(uuid) {
@@ -154,29 +201,39 @@ function readBuildingLevelYaml(uuid) {
     return 0;
 }
 
-function buildingLevelFor(sp) {
-    var uuid = playerUuid(sp);
+function fabledSkillLevel(bp) {
+    if (bp == null) return 0;
     try {
-        var Bukkit = Java.loadClass("org.bukkit.Bukkit");
-        var UUID = Java.loadClass("java.util.UUID");
-        if (uuid) {
-            var bp = Bukkit.getPlayer(UUID.fromString(uuid));
-            if (bp != null) {
-                var Fabled = Java.loadClass("studio.magemonkey.fabled.Fabled");
-                if (Fabled.isLoaded()) {
-                    var data = Fabled.getData(bp);
-                    if (data != null) {
-                        var level = Math.max(
-                            0,
-                            Number(data.getSkillLevel(SKILL_NAME)) || 0
-                        );
-                        if (level >= 1) return level;
-                    }
-                }
-            }
+        var Fabled = Java.loadClass("studio.magemonkey.fabled.Fabled");
+        if (!Fabled.isLoaded()) return 0;
+        var data = Fabled.getData(bp);
+        if (data == null) return 0;
+        var level = Number(data.getSkillLevel(SKILL_NAME));
+        if (!isFinite(level) || level < 0) return 0;
+        return level;
+    } catch (err) {
+        return 0;
+    }
+}
+
+function buildingLevelFor(sp) {
+    try {
+        var bp = getBukkitPlayer(sp);
+        var apiLevel = fabledSkillLevel(bp);
+        if (apiLevel >= 1) return apiLevel;
+        if (bp != null) {
+            try {
+                var bpUuid = normalizeUuid(bp.getUniqueId());
+                var yamlFromBp = readBuildingLevelYaml(bpUuid);
+                if (yamlFromBp >= 1) return yamlFromBp;
+            } catch (eYamlBp) {}
         }
     } catch (err) {}
-    return readBuildingLevelYaml(uuid);
+
+    var uuid = playerUuid(sp);
+    var yamlLevel = readBuildingLevelYaml(uuid);
+    if (yamlLevel >= 1) return yamlLevel;
+    return 0;
 }
 
 function amountFromLevel(level) {
