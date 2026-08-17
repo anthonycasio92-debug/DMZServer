@@ -12,8 +12,8 @@ var SKILL_NAME = "Building";
 var VALUE_BASE = 1.0;
 var VALUE_SCALE = 1.0;
 var MAX_AWARD = 10000;
-var DEBUG = true;
-var DEBUG_SKIPS = true;
+var DEBUG = false;
+var DEBUG_SKIPS = false;
 
 var lastAwardTick = {};
 var lastSkipLog = {};
