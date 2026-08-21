@@ -1,72 +1,42 @@
-// ============================================================================
-// SUPERSEDED BY KUBEJS
-// Use: kubejs/server_scripts/dmz_weapon_bonus_scale.js
-// Disable this file on the CNPC Player tab after installing the KubeJS port.
-// ============================================================================
+// kubejs/server_scripts/dmz_weapon_bonus_scale.js
+// Port of dmzweaponbonusscale.js (CNPC Global Player Script) → KubeJS server script.
+//
+// Weapons grant ONLY multiplicative DMZ bonus stats (*). No flat + bonuses.
+// Recalc on login + every UPDATE_INTERVAL ticks.
+//
+// Disable the CNPC player-tab copy of dmzweaponbonusscale.js after installing this.
+// Reload: /kubejs reload server_scripts
 
-// ============================================================================
-// DMZ LEGACY - WEAPON MULTIPLIER BRIDGE V9
-// CustomNPCs Global Player Script
-// Minecraft 1.20.1
-// DragonMineZ 2.1.3
-//
-// IMPORTANT:
-// THIS IS A CUSTOMNPCS NASHORN SCRIPT.
-// NOT KUBEJS.
-//
-// PURPOSE:
-// Weapons grant ONLY multiplicative DMZ stat bonuses.
-//
-// Example:
-//
-// +40% STR
-// = x1.40
-//
-// Every modifier is added as:
-//
-// bonus.addBonus(stat, name, "*", factor, true);
-//
-// Resistance uses:
-//
-// bonus.addBonusSplit("RES", name, "*", factor, true);
-//
-// THERE ARE NO "+" WEAPON BONUSES.
-// THERE IS NO UPPER MULTIPLIER CAP.
-//
-// ============================================================================
-
-
-// ============================================================================
 // JAVA CLASSES
 // ============================================================================
 
 var StatsProvider =
-    Java.type("com.dragonminez.common.stats.StatsProvider");
+    Java.loadClass("com.dragonminez.common.stats.StatsProvider");
 
 var StatsCapability =
-    Java.type("com.dragonminez.common.stats.StatsCapability");
+    Java.loadClass("com.dragonminez.common.stats.StatsCapability");
 
 var StatsSyncS2C =
-    Java.type("com.dragonminez.common.network.S2C.StatsSyncS2C");
+    Java.loadClass("com.dragonminez.common.network.S2C.StatsSyncS2C");
 
 var NetworkHandler =
-    Java.type("com.dragonminez.common.network.NetworkHandler");
+    Java.loadClass("com.dragonminez.common.network.NetworkHandler");
 
 var EquipmentSlot =
-    Java.type("net.minecraft.world.entity.EquipmentSlot");
+    Java.loadClass("net.minecraft.world.entity.EquipmentSlot");
 
 var Attributes =
-    Java.type("net.minecraft.world.entity.ai.attributes.Attributes");
+    Java.loadClass("net.minecraft.world.entity.ai.attributes.Attributes");
 
 var ShieldItem =
-    Java.type("net.minecraft.world.item.ShieldItem");
+    Java.loadClass("net.minecraft.world.item.ShieldItem");
 
 
 // ============================================================================
 // CONFIG
 // ============================================================================
 
-var DEBUG_WEAPON_STATS = true;
+var DEBUG_WEAPON_STATS = false;
 
 // Recalculate equipment twice per second.
 var UPDATE_INTERVAL = 10;
@@ -1241,62 +1211,56 @@ function getPath(id) {
 // ============================================================================
 
 function getItemId(stack) {
-
-    if (
-        stack == null
-    ) {
-
-        return "";
-    }
-
-
+    if (stack == null) return "";
     try {
-
-        if (
-            stack.isEmpty()
-        ) {
-
-            return "";
-        }
-
-
-        return String(
-            stack.getName()
+        if (stack.isEmpty && stack.isEmpty()) return "";
+    } catch (e0) {}
+    try {
+        if (stack.empty) return "";
+    } catch (e1) {}
+    // KubeJS ItemStackJS
+    try {
+        if (stack.id) return String(stack.id);
+    } catch (e2) {}
+    // CNPC IItemStack
+    try {
+        var n = stack.getName();
+        if (n) return String(n);
+    } catch (e3) {}
+    // Forge ItemStack
+    try {
+        var ForgeRegistries = Java.loadClass(
+            "net.minecraftforge.registries.ForgeRegistries"
         );
-
-    } catch (err) {
-
-        return "";
-    }
+        var mc = getMCStack(stack);
+        if (mc != null) {
+            var key = ForgeRegistries.ITEMS.getKey(mc.getItem());
+            if (key != null) return String(key);
+        }
+    } catch (e4) {}
+    return "";
 }
 
 
 function getMCStack(stack) {
-
-    if (
-        stack == null
-    ) {
-
-        return null;
-    }
-
-
+    if (stack == null) return null;
     try {
-
-        if (
-            stack.isEmpty()
-        ) {
-
-            return null;
-        }
-
-
-        return stack.getMCItemStack();
-
-    } catch (err) {
-
-        return null;
-    }
+        if (stack.isEmpty && stack.isEmpty()) return null;
+    } catch (e0) {}
+    try {
+        if (stack.empty) return null;
+    } catch (e1) {}
+    try {
+        if (stack.getMCItemStack) return stack.getMCItemStack();
+    } catch (e2) {}
+    try {
+        if (stack.itemStack) return stack.itemStack;
+    } catch (e3) {}
+    try {
+        if (stack.minecraftItemStack) return stack.minecraftItemStack;
+    } catch (e4) {}
+    // Already a Forge ItemStack
+    return stack;
 }
 
 
@@ -2323,7 +2287,7 @@ function identifyWeapon(stack) {
                 DEBUG_WEAPON_STATS
             ) {
 
-                print(
+                console.info(
                     "[DMZ Weapon V9] UNMATCHED SIMPLY ITEM: " +
                     id
                 );
@@ -3404,7 +3368,7 @@ function debugResult(
     }
 
 
-    print(
+    console.info(
 
         "[DMZ Weapon V9] " +
 
@@ -3551,7 +3515,7 @@ function syncDmz(mcPlayer) {
             DEBUG_WEAPON_STATS
         ) {
 
-            print(
+            console.info(
                 "[DMZ Weapon V9] Sync error: " +
                 err
             );
@@ -3938,12 +3902,12 @@ function updateWeaponMultipliers(
                 player.getName();
 
 
-            print(
+            console.info(
                 "======================================================"
             );
 
 
-            print(
+            console.info(
 
                 "[DMZ Weapon V9] Recalculated " +
 
@@ -3963,7 +3927,7 @@ function updateWeaponMultipliers(
                 mainInfo.family == "UNMATCHED"
             ) {
 
-                print(
+                console.info(
 
                     "[DMZ Weapon V9] UNMATCHED TINKERS MAIN: " +
 
@@ -3984,7 +3948,7 @@ function updateWeaponMultipliers(
                 offInfo.family == "UNMATCHED"
             ) {
 
-                print(
+                console.info(
 
                     "[DMZ Weapon V9] UNMATCHED TINKERS OFF: " +
 
@@ -4005,7 +3969,7 @@ function updateWeaponMultipliers(
                 slot9Info.family == "UNMATCHED"
             ) {
 
-                print(
+                console.info(
 
                     "[DMZ Weapon V9] UNMATCHED TINKERS SLOT9: " +
 
@@ -4048,33 +4012,33 @@ function updateWeaponMultipliers(
                 slot9Result == null
             ) {
 
-                print(
+                console.info(
                     "[DMZ Weapon V9] No active weapon multiplier bonuses."
                 );
             }
 
 
-            print(
+            console.info(
                 "[DMZ Weapon V9] Weapon operation: * ONLY"
             );
 
 
-            print(
+            console.info(
                 "[DMZ Weapon V9] applyMultipliers: TRUE"
             );
 
 
-            print(
+            console.info(
                 "[DMZ Weapon V9] Upper multiplier cap: NONE"
             );
 
 
-            print(
+            console.info(
                 "[DMZ Weapon V9] TagKey usage: NONE"
             );
 
 
-            print(
+            console.info(
                 "======================================================"
             );
         }
@@ -4082,7 +4046,7 @@ function updateWeaponMultipliers(
 
     } catch (err) {
 
-        print(
+        console.info(
 
             "[DMZ Weapon V9 ERROR] " +
 
@@ -4163,111 +4127,146 @@ function cleanupApothicFlats(player) {
 
 
 // ============================================================================
-// INIT
+
+
+// ============================================================================
+// KUBEJS PLAYER ADAPTER (CNPC-compatible surface for updateWeaponMultipliers)
 // ============================================================================
 
-function init(event) {
+var TempByPlayer = {};
 
+function playerUuid(player) {
     try {
-
-        var player =
-            event.player;
-
-
-        if (
-            player == null
-        ) {
-
-            return;
-        }
-
-
-        player
-            .getTempdata()
-            .remove(
-                TEMP_SIGNATURE
-            );
-
-
-        updateWeaponMultipliers(
-
-            player,
-
-            true
-        );
-
-    } catch (err) {
-
-        print(
-
-            "[DMZ Weapon V9 INIT ERROR] " +
-
-            err
-        );
-    }
+        if (player.uuid) return String(player.uuid).toLowerCase();
+    } catch (e0) {}
+    try {
+        var mc = unwrapMcPlayer(player);
+        if (mc != null) return String(mc.getUUID()).toLowerCase();
+    } catch (e1) {}
+    try {
+        return String(player.getStringUUID()).toLowerCase();
+    } catch (e2) {}
+    return null;
 }
 
-
-// ============================================================================
-// TICK
-// ============================================================================
-
-function tick(event) {
-
-    try {
-
-        var player =
-            event.player;
-
-
-        if (
-            player == null
-        ) {
-
-            return;
-        }
-
-
-        // ====================================================================
-        // FLAT CLEANUP
-        // ====================================================================
-
-        cleanupApothicFlats(
-            player
-        );
-
-
-        // ====================================================================
-        // EQUIPMENT RECALCULATION
-        // ====================================================================
-
-        if (
-            (
-                player.getAge()
-                %
-                UPDATE_INTERVAL
-            )
-            != 0
-        ) {
-
-            return;
-        }
-
-
-        updateWeaponMultipliers(
-
-            player,
-
-            false
-        );
-
-    } catch (err) {
-
-        print(
-
-            "[DMZ Weapon V9 TICK ERROR] " +
-
-            err
-        );
-    }
+function unwrapMcPlayer(player) {
+    if (player == null) return null;
+    var p = player;
+    try { if (p.minecraftPlayer) p = p.minecraftPlayer; } catch (e0) {}
+    try { if (p.getMinecraftPlayer) p = p.getMinecraftPlayer(); } catch (e1) {}
+    try { if (p.getPlayer) p = p.getPlayer(); } catch (e2) {}
+    try { if (p.getMCEntity) p = p.getMCEntity(); } catch (e3) {}
+    try { if (p.getHandle) p = p.getHandle(); } catch (e4) {}
+    return p;
 }
+
+function makeTempData(uuid) {
+    if (!uuid) uuid = "_";
+    if (!TempByPlayer[uuid]) TempByPlayer[uuid] = {};
+    var store = TempByPlayer[uuid];
+    return {
+        has: function (key) {
+            return Object.prototype.hasOwnProperty.call(store, key);
+        },
+        get: function (key) {
+            return store[key];
+        },
+        put: function (key, value) {
+            store[key] = value;
+        },
+        remove: function (key) {
+            delete store[key];
+        }
+    };
+}
+
+function wrapPlayer(kjsPlayer) {
+    var uuid = playerUuid(kjsPlayer);
+    var temp = makeTempData(uuid);
+    return {
+        _kjs: kjsPlayer,
+        getMCEntity: function () {
+            return unwrapMcPlayer(kjsPlayer);
+        },
+        getMainhandItem: function () {
+            try { return kjsPlayer.mainHandItem; } catch (e0) {}
+            try { return kjsPlayer.getMainHandItem(); } catch (e1) {}
+            try {
+                var mc = unwrapMcPlayer(kjsPlayer);
+                return mc.getMainHandItem();
+            } catch (e2) {}
+            return null;
+        },
+        getOffhandItem: function () {
+            try { return kjsPlayer.offHandItem; } catch (e0) {}
+            try { return kjsPlayer.getOffHandItem(); } catch (e1) {}
+            try {
+                var mc = unwrapMcPlayer(kjsPlayer);
+                return mc.getOffhandItem();
+            } catch (e2) {}
+            return null;
+        },
+        getInventory: function () {
+            var self = this;
+            return {
+                getSlot: function (index) {
+                    try {
+                        return kjsPlayer.inventory.get(index);
+                    } catch (e0) {}
+                    try {
+                        return kjsPlayer.inventory.getStackInSlot(index);
+                    } catch (e1) {}
+                    try {
+                        var mc = unwrapMcPlayer(kjsPlayer);
+                        return mc.getInventory().getItem(index);
+                    } catch (e2) {}
+                    return null;
+                }
+            };
+        },
+        getTempdata: function () {
+            return temp;
+        },
+        getName: function () {
+            try { return String(kjsPlayer.name.string); } catch (e0) {}
+            try { return String(kjsPlayer.getName().getString()); } catch (e1) {}
+            try { return String(kjsPlayer.username); } catch (e2) {}
+            return "?";
+        },
+        getAge: function () {
+            try { return Number(kjsPlayer.age); } catch (e0) {}
+            try {
+                var mc = unwrapMcPlayer(kjsPlayer);
+                return Number(mc.tickCount);
+            } catch (e1) {}
+            return 0;
+        }
+    };
+}
+
+// ============================================================================
+// KUBEJS EVENTS
+// ============================================================================
+
+PlayerEvents.loggedIn(function (event) {
+    try {
+        var player = wrapPlayer(event.player);
+        player.getTempdata().remove(TEMP_SIGNATURE);
+        updateWeaponMultipliers(player, true);
+    } catch (err) {
+        console.info("[DMZ Weapon V9 INIT ERROR] " + err);
+    }
+});
+
+PlayerEvents.tick(function (event) {
+    try {
+        var player = wrapPlayer(event.player);
+        cleanupApothicFlats(player);
+        if ((player.getAge() % UPDATE_INTERVAL) != 0) return;
+        updateWeaponMultipliers(player, false);
+    } catch (err) {
+        console.info("[DMZ Weapon V9 TICK ERROR] " + err);
+    }
+});
+
+console.info("[DMZ Weapon V9] KubeJS server script loaded (multiplicative weapon bonuses).");
