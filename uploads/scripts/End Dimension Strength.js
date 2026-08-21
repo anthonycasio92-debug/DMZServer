@@ -2403,15 +2403,23 @@ function isKiProjectileEntity(ent) {
 
 function discardEntitySafe(ent) {
     if (ent == null) return false;
-    try { ent.despawn(); return true; } catch (e0) {}
-    try { ent.kill(); return true; } catch (e1) {}
+    /* CNPC IEntity path */
+    try { if (typeof ent.despawn === "function") { ent.despawn(); return true; } } catch (e0) {}
+    try { if (typeof ent.kill === "function") { ent.kill(); return true; } } catch (e1) {}
     try {
-        var mc = ent.getMCEntity();
-        if (mc == null) return false;
-        try { mc.discard(); return true; } catch (e2) {
-            try { mc.m_146870_(); return true; } catch (e3) {}
+        if (typeof ent.getMCEntity === "function") {
+            var mc = ent.getMCEntity();
+            if (mc != null) {
+                try { mc.discard(); return true; } catch (e2) {
+                    try { mc.m_146870_(); return true; } catch (e3) {}
+                }
+            }
         }
     } catch (e4) {}
+    /* Raw MC Entity path (from typed ServerLevel collect) */
+    try { if (typeof ent.discard === "function") { ent.discard(); return true; } } catch (e5) {}
+    try { if (typeof ent.m_146870_ === "function") { ent.m_146870_(); return true; } } catch (e6) {}
+    try { if (typeof ent.kill === "function") { ent.kill(); return true; } } catch (e7) {}
     return false;
 }
 
@@ -2427,8 +2435,67 @@ function purgeEndKiCommands(world) {
     } catch (e2) {}
 }
 
+function resolveDmzKiEntityTypes() {
+    var out = [];
+    try {
+        var ResourceLocation = Java.type("net.minecraft.resources.ResourceLocation");
+        var BuiltInRegistries = null;
+        try { BuiltInRegistries = Java.type("net.minecraft.core.registries.BuiltInRegistries"); } catch (e1) {}
+        var registry = null;
+        if (BuiltInRegistries != null) {
+            try { registry = BuiltInRegistries.ENTITY_TYPE; } catch (e2) {
+                try { registry = BuiltInRegistries.f_257034_; } catch (e3) {}
+            }
+        }
+        if (registry == null) return out;
+        var ids = ["dragonminez:ki_laser", "dragonminez:ki_blast"];
+        for (var i = 0; i < ids.length; i++) {
+            try {
+                var loc = null;
+                try { loc = ResourceLocation.parse(ids[i]); } catch (e4) {
+                    loc = new ResourceLocation("dragonminez", ids[i].split(":")[1]);
+                }
+                var type = null;
+                try { type = registry.get(loc); } catch (e5) {
+                    try { type = registry.m_7745_(loc); } catch (e6) {}
+                }
+                if (type != null) out.push(type);
+            } catch (e7) {}
+        }
+    } catch (e8) {}
+    return out;
+}
+
+/**
+ * Collect End ki projectiles. Prefer typed ServerLevel queries (cheap even
+ * when flooded). Falls back to CNPC getAllEntities only if types unresolved.
+ * Returns a mix of CNPC IEntity and raw MC Entity — discardEntitySafe handles both.
+ */
 function collectEndKiEntities(world) {
     var out = [];
+    try {
+        var endLevel = getEndServerLevel();
+        var types = resolveDmzKiEntityTypes();
+        if (endLevel != null && types.length > 0) {
+            var AABB = Java.type("net.minecraft.world.phys.AABB");
+            var box = new AABB(-800.0, 0.0, -800.0, 800.0, 320.0, 800.0);
+            for (var t = 0; t < types.length; t++) {
+                var mcList = null;
+                try {
+                    mcList = endLevel.getEntities(types[t], box, function (e) { return e != null; });
+                } catch (e1) {
+                    try {
+                        mcList = endLevel.m_45976_(types[t], box, function (e) { return e != null; });
+                    } catch (e2) {}
+                }
+                if (mcList == null) continue;
+                var it = mcList.iterator();
+                while (it.hasNext()) out.push(it.next());
+            }
+            return out;
+        }
+    } catch (eTyped) {}
+
     if (world == null) return out;
     try {
         var list = world.getAllEntities(-1);
@@ -3614,11 +3681,7 @@ function tickDragonExtraAttacks(world, player) {
     if (DRAGON_EXTRA_ATTACKS_ENABLED !== true) return;
     if (world == null || !isInTheEnd(world)) return;
 
-    /* Only the single kept dragon may fire — prevents N dragons × ki spam. */
-    var dragon = null;
-    try { dragon = enforceSingleDragon(world); } catch (eEnf) {}
-    if (dragon == null || !isLivingDragon(dragon)) return;
-
+    /* World-throttle FIRST so we do not scan dragons every End player tick. */
     var t = nowMs();
     try {
         var stored = world.getStoreddata();
@@ -3635,7 +3698,10 @@ function tickDragonExtraAttacks(world, player) {
         } catch (eLock2) { return; }
     }
 
-    if (!isLivingDragon(dragon)) return;
+    /* Only the single kept dragon may fire — prevents N dragons × ki spam. */
+    var dragon = null;
+    try { dragon = enforceSingleDragon(world); } catch (eEnf) {}
+    if (dragon == null || !isLivingDragon(dragon)) return;
 
     var target = nearestPlayerToEntity(dragon, world, DRAGON_ATTACK_RANGE);
     if (target == null) target = player;
