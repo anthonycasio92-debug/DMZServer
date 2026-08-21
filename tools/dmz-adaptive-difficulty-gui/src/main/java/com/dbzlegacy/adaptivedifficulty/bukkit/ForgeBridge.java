@@ -1227,6 +1227,9 @@ public final class ForgeBridge {
     /**
      * Refresh unlock-tier grants and difficulty titles from current DMZ / prestige
      * (same sync chat menu runs when opening Buy / Titles).
+     * <p>
+     * Also re-reads the base-form DMZ level on every GUI paint so Buy "You: DMZ …"
+     * does not stay stuck until the player dies.
      */
     public static void syncPlayerProgress(Player player) {
         Object nms = nmsPlayer(player);
@@ -1238,16 +1241,32 @@ public final class ForgeBridge {
             if (cacheData == null) {
                 return;
             }
-            Object data = cacheData.invoke(null, nms);
             ClassLoader cl = nms.getClass().getClassLoader();
+            Class<?> playerCls = Class.forName("net.minecraft.world.entity.player.Player", true, cl);
+            Class<?> serverPlayerClsLocal =
+                    Class.forName("net.minecraft.server.level.ServerPlayer", true, cl);
+            Class<?> progression = Class.forName(
+                    "com.dbzlegacy.adaptivedifficulty.calc.DmzProgression", true, cl);
+            Object sampled = progression.getMethod("sampleLevelOnGuiOpen", playerCls).invoke(null, nms);
+            Object transformed = progression.getMethod("isTransformed", playerCls).invoke(null, nms);
+            Object data = cacheData.invoke(null, nms);
+            if (transformed instanceof Boolean t && !t && sampled instanceof Number n) {
+                try {
+                    data.getClass().getMethod("noteDmzLevel", int.class).invoke(data, n.intValue());
+                } catch (Throwable ignored) {
+                }
+            }
+            if (cacheRefresh != null) {
+                cacheRefresh.invoke(null, nms);
+            }
             Class.forName("com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem", true, cl)
                     .getMethod("syncUnlocks",
-                            Class.forName("net.minecraft.server.level.ServerPlayer", true, cl),
+                            serverPlayerClsLocal,
                             Class.forName("com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData", true, cl))
                     .invoke(null, nms, data);
             Class.forName("com.dbzlegacy.adaptivedifficulty.title.TitleSystem", true, cl)
                     .getMethod("syncTierTitles",
-                            Class.forName("net.minecraft.server.level.ServerPlayer", true, cl),
+                            serverPlayerClsLocal,
                             boolean.class)
                     .invoke(null, nms, false);
             PLACEHOLDER_CACHE.remove(player.getUniqueId());

@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.41)
+# AdaptiveDifficulty (v1.0.43)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -38,8 +38,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.41.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.41.jar`
+1. `mods/AdaptiveDifficulty-1.0.43.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.43.jar`
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -61,6 +61,7 @@ Live `admin set` is allowlisted + clamped; change `adminPermission` only in JSON
 - `/difficulty admin whitelist add <player>` / `remove <player>` / `list` / `clear`
 - Alias: `wl`
 - When on, only listed players use AD (scaling, coins, purchases). Persists in config.
+- `/difficulty admin resynclevel [player]` — clear stuck DMZ level sample (Buy GUI "You: DMZ …") and re-read live base-form level
 
 ## Adding a new race (future-proof)
 
@@ -116,6 +117,20 @@ attaches. That used to revoke every unlock (GUI “everything locked” with per
 ON) until death forced a base-form resample. Deferred 1s re-sync waits for DMZ
 stats; polluted session samples of level 1 are rejected when live level is clearly
 higher.
+
+### Base-form level sample (1.0.42)
+DMZ often leaves `activeForm=base` while racial/passive form multipliers sit above
+1.0. Older builds treated that multiplier noise as “transformed,” froze the session
+base-form sample (Buy GUI stuck at e.g. 7k while live DMZ was 30k+), and never
+refreshed. **1.0.42** only treats real form names as transformed when Character is
+present; multiplier fallback requires >2× and only when Character is missing.
+Staff: `/difficulty admin resynclevel [player]` clears a stuck sample immediately.
+
+### GUI level refresh (1.0.43)
+Opening `/difficulty` (chest or chat) re-reads live base-form DMZ level into the
+Buy GUI / unlock gate — you no longer need to die with personal difficulty ON
+for the level display to catch up.
+
 
 ### Economy (1.0.36)
 Kill coin drops are chance-gated (was always-on):

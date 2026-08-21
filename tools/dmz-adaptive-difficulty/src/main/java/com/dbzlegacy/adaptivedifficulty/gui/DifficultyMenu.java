@@ -1,6 +1,9 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -15,6 +18,13 @@ public final class DifficultyMenu {
         if (player == null) {
             return;
         }
+        // Re-read DMZ level on every open — do not wait for death/respawn.
+        int sampled = DmzProgression.sampleLevelOnGuiOpen(player);
+        if (!DmzProgression.isTransformed(player)) {
+            PlayerDifficultyData data = DifficultyCache.data(player);
+            data.noteDmzLevel(sampled);
+        }
+        DifficultyCache.refresh(player);
         String target = page == null || page.isBlank() ? "main" : page;
         if ("settings".equalsIgnoreCase(target)) {
             if (!StaffAccess.isStaff(player)) {
