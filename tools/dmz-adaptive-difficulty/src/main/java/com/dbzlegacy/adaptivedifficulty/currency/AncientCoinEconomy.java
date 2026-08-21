@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
+import com.dbzlegacy.adaptivedifficulty.title.TitleEffects;
 import io.github.lightman314.lightmanscurrency.api.money.coins.CoinAPI;
 import io.github.lightman314.lightmanscurrency.common.core.ModItems;
 import io.github.lightman314.lightmanscurrency.common.items.AncientCoinItem;
@@ -485,14 +486,21 @@ public final class AncientCoinEconomy {
         if (!cfg.enableAncientCoinDrops || killer == null) {
             return new KillLoot(new Drop(CoinKind.COPPER, 0), null);
         }
+        PlayerDifficultyData data = DifficultyCache.data(killer);
+        int tier = data.getActiveTier();
         double dropChance = Math.max(0.0, Math.min(1.0, cfg.ancientCoinDropChance));
+        dropChance = Math.min(1.0, dropChance + TitleEffects.coinDropChanceBonus(killer));
+        if (boss) {
+            dropChance = Math.min(1.0, dropChance + TitleEffects.bossCoinChanceBonus(killer));
+        }
+        if (elite) {
+            dropChance = Math.min(1.0, dropChance + TitleEffects.eliteRewardBonus(killer) * 0.5);
+        }
         double upgradeChance = Math.max(0.0, Math.min(dropChance, cfg.ancientCoinUpgradeChance));
         double roll = ThreadLocalRandom.current().nextDouble();
         if (dropChance <= 0.0 || roll >= dropChance) {
             return new KillLoot(new Drop(CoinKind.COPPER, 0), null);
         }
-        PlayerDifficultyData data = DifficultyCache.data(killer);
-        int tier = data.getActiveTier();
         CoinKind kind;
         int count = 1;
         if (tier <= 0) {
@@ -500,6 +508,14 @@ public final class AncientCoinEconomy {
             kind = CoinKind.COPPER;
         } else {
             kind = rollKind(tier);
+            // Title quality bump: small chance to promote denomination one step.
+            double quality = TitleEffects.coinQualityBumpChance(killer, elite, boss, tier);
+            if (quality > 0.0 && ThreadLocalRandom.current().nextDouble() < quality) {
+                CoinKind up = kind.nextHigher();
+                if (up != null) {
+                    kind = up;
+                }
+            }
             if (elite) {
                 count += 1;
             }
@@ -513,6 +529,10 @@ public final class AncientCoinEconomy {
             }
             if (combatRating > cfg.ancientCoinRatingDivisor
                     && ThreadLocalRandom.current().nextDouble() < 0.15) {
+                count += 1;
+            }
+            double qtyBonus = TitleEffects.coinQuantityBonus(killer);
+            if (qtyBonus > 0.0 && ThreadLocalRandom.current().nextDouble() < Math.min(0.75, qtyBonus * 4.0)) {
                 count += 1;
             }
         }

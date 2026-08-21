@@ -37,6 +37,7 @@ public final class DifficultyActions {
     public static final String ACT_CLEAR_TITLE = "clear_title";
     public static final String ACT_TOGGLE_PERSONAL = "toggle_personal";
     public static final String ACT_TOGGLE_COIN_CHAT = "toggle_coin_chat";
+    public static final String ACT_TOGGLE_TITLE_SENSE = "toggle_title_sense";
 
     /**
      * When true, {@link #openGui} syncs unlocks/titles but does not reopen a menu.
@@ -124,6 +125,10 @@ public final class DifficultyActions {
                 || "toggle_chat".equals(act) || "chat_drops".equals(act)) {
             return toggleCoinChat(player, page);
         }
+        if (ACT_TOGGLE_TITLE_SENSE.equals(act) || "title_sense".equals(act)
+                || "toggle_sense".equals(act) || "sense_chat".equals(act)) {
+            return toggleTitleSense(player, page);
+        }
 
         // Personal OFF freezes buy / lower / reset until the player turns it back on.
         if (!SystemGate.participates(player)
@@ -178,6 +183,18 @@ public final class DifficultyActions {
         return Result.ok(on
                 ? "Coin drop chat ON — you'll see Ancient Coin drop messages."
                 : "Coin drop chat OFF — drop messages muted.");
+    }
+
+    private static Result toggleTitleSense(ServerPlayer player, String page) {
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        boolean on = !data.titleProgress().titleSenseChat();
+        data.titleProgress().setTitleSenseChat(on);
+        DifficultyCache.save(player);
+        String returnPage = page == null || page.isBlank() ? "titles" : page;
+        openGui(player, returnPage);
+        return Result.ok(on
+                ? "Title Sense ON — Elite/Boss recognition chat enabled."
+                : "Title Sense OFF — recognition chat muted.");
     }
 
     private static Result equipTitle(ServerPlayer player, String titleId, String page) {

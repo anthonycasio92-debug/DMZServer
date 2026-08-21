@@ -268,43 +268,82 @@ public final class DifficultyChestGui implements Listener {
     private Inventory titles(Player viewer, Player subject) {
         Map<String, String> ph = ForgeBridge.placeholders(subject);
         Holder holder = holderFor(viewer, subject, "titles");
-        Inventory inv = Bukkit.createInventory(holder, 45, titleFor(viewer, subject, "Difficulty Titles"));
+        Inventory inv = Bukkit.createInventory(holder, 54, titleFor(viewer, subject, "Titles"));
         holder.bind(inv);
-        frame(inv, 45);
+        frame(inv, 54);
 
+        String equippedName = blankAsNone(ph.getOrDefault("active_title", ""));
+        String perk = ph.getOrDefault("title_perk", "");
         put(holder, inv, 4, item(Material.NAME_TAG, "&d&lTitles", List.of(
                 "",
-                "&7Equipped &e" + blankAsNone(ph.getOrDefault("active_title", "")),
-                "&7Current Tier &f" + ph.getOrDefault("active_tier_name", "None"),
-                "&7CR &f" + ph.getOrDefault("combat_rating", "?"),
+                "&7Equipped &e" + equippedName,
+                perk.isBlank() ? "&8No equipped perk" : "&7Perk &f" + perk,
                 "",
-                "&8Tier titles need active tier + higher DMZ/Prestige",
-                "&8Combat titles need harder kill feats"
+                "&7Title Score &6" + ph.getOrDefault("title_score", "0"),
+                "&7Unlocked &f" + ph.getOrDefault("titles_unlocked", "0")
+                        + " &8/ &f" + ph.getOrDefault("titles_total", "0"),
+                "&7Elites &f" + ph.getOrDefault("elites_killed", "0")
+                        + "  &7Bosses &f" + ph.getOrDefault("bosses_killed", "0"),
+                "&7Nearby Elites &f" + ph.getOrDefault("nearby_elites", "0"),
+                "",
+                "&8Small perks only — tiers stay primary power"
         )));
+        boolean senseOn = "true".equalsIgnoreCase(ph.getOrDefault("title_sense", "true"));
+        put(holder, inv, 7, tipBtn(senseOn ? Material.BELL : Material.NOTE_BLOCK,
+                senseOn ? "&aTitle Sense ON" : "&8Title Sense OFF",
+                List.of("&7Elite / Boss recognition chat", "&8Click to toggle")),
+                SlotAction.act("toggle_title_sense", "0", "titles"));
         put(holder, inv, 8, tipBtn(Material.BARRIER, "&cClear Title",
                 List.of("&7Unequip your title")), SlotAction.act("clear_title", "0", "titles"));
 
-        String[] ids = {
+        // Tier titles row
+        putTitleRow(holder, inv, ph, new String[]{
                 "t1_awakened", "t2_enhanced", "t3_elite", "t4_advanced",
-                "t5_master", "t6_legendary", "t7_god",
-                "boss_slayer", "elite_hunter", "ascendant"
-        };
-        Material[] mats = {
+                "t5_master", "t6_legendary", "t7_god"
+        }, new Material[]{
                 Material.COPPER_INGOT, Material.IRON_INGOT, Material.GOLD_INGOT, Material.DIAMOND,
-                Material.EMERALD, Material.NETHERITE_INGOT, Material.NETHER_STAR,
-                Material.WITHER_SKELETON_SKULL, Material.DRAGON_HEAD, Material.ENCHANTED_GOLDEN_APPLE
-        };
-        int[] slots = {19, 20, 21, 22, 23, 24, 25, 29, 31, 33};
+                Material.EMERALD, Material.NETHERITE_INGOT, Material.NETHER_STAR
+        }, new int[]{19, 20, 21, 22, 23, 24, 25});
+
+        // Combat + challenge titles
+        putTitleRow(holder, inv, ph, new String[]{
+                "elite_hunter", "boss_slayer", "ascendant",
+                "mutation_hunter", "untouchable", "immortal",
+                "coin_lord", "survivor", "worldbreaker"
+        }, new Material[]{
+                Material.DRAGON_HEAD, Material.WITHER_SKELETON_SKULL, Material.ENCHANTED_GOLDEN_APPLE,
+                Material.AMETHYST_SHARD, Material.SHIELD, Material.TOTEM_OF_UNDYING,
+                Material.GOLD_BLOCK, Material.CLOCK, Material.END_CRYSTAL
+        }, new int[]{28, 29, 30, 31, 32, 33, 37, 39, 41});
+
+        put(holder, inv, 45, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private void putTitleRow(
+            Holder holder, Inventory inv, Map<String, String> ph,
+            String[] ids, Material[] mats, int[] slots
+    ) {
         String equipped = ph.getOrDefault("active_title_id", "");
         for (int i = 0; i < ids.length; i++) {
             String id = ids[i];
             boolean earned = "true".equalsIgnoreCase(ph.getOrDefault("title_" + id + "_earned", "false"));
             String name = ph.getOrDefault("title_" + id + "_name", id);
             String tip = ph.getOrDefault("title_" + id + "_req", "");
+            String perk = ph.getOrDefault("title_" + id + "_perk", "");
+            String rarity = ph.getOrDefault("title_" + id + "_rarity", "");
+            String rarityColor = ph.getOrDefault("title_" + id + "_rarity_color", "7");
             boolean isEquipped = id.equalsIgnoreCase(equipped);
             String title = isEquipped ? "&a● " + name : earned ? "&e" + name : "&8" + name;
             List<String> tipLore = new ArrayList<>();
+            if (!rarity.isBlank()) {
+                tipLore.add("&" + rarityColor + rarity);
+            }
             tipLore.add("&7" + tip);
+            if (!perk.isBlank()) {
+                tipLore.add("&f" + perk);
+            }
             if (isEquipped) {
                 tipLore.add("&aCurrently equipped &8· click to unequip");
             } else if (earned) {
@@ -319,10 +358,6 @@ public final class DifficultyChestGui implements Listener {
                 put(holder, inv, slots[i], item(mats[i], title, prependBlank(tipLore)));
             }
         }
-
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
-        return inv;
     }
 
     private Inventory teamsWip(Player viewer, Player subject) {
