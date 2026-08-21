@@ -15,6 +15,13 @@ From Spark: `TimerQueue` → `dmz_actual_damage:loop` → `execute` + `@a`/`@e` 
 
 Datapack on disk: `DMZ_Actual_Attack_Damage_ItemStack_Datapack_v1.zip` (namespace `dmz_actual_damage`).
 
+## Replacement (no lag)
+Use KubeJS instead of the datapack:
+
+`kubejs/server_scripts/dmz_actual_attack_damage.js`
+
+See `tools/DMZ_ACTUAL_ATTACK_DAMAGE_KUBEJS.md`.
+
 ## Kill it (pick one)
 
 ### Live (server running)
