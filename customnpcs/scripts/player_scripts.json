@@ -9,10 +9,10 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "rival system.js"
+                    "Line": "farming tp skill.js"
                 },
                 {
-                    "Line": "farming tp skill.js"
+                    "Line": "rival system.js"
                 },
                 {
                     "Line": "skillcheckcommand.js"
@@ -25,13 +25,13 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "sparring tp system.js"
-                },
-                {
                     "Line": "playerstatchecker.js"
                 },
                 {
                     "Line": "sparring command handler.js"
+                },
+                {
+                    "Line": "sparring tp system.js"
                 }
             ]
         },
@@ -40,11 +40,11 @@
             "Console": [
             ],
             "ScriptList": [
-                {
-                    "Line": "meditation new.js"
-                },
                 {
                     "Line": "changebiomemed.js"
+                },
+                {
+                    "Line": "meditation new.js"
                 }
             ]
         },
@@ -54,10 +54,10 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "potential.js"
+                    "Line": "flight.js"
                 },
                 {
-                    "Line": "fly.js"
+                    "Line": "potential.js"
                 },
                 {
                     "Line": "tp boost end.js"
@@ -70,13 +70,13 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "kiweapons.js"
-                },
-                {
-                    "Line": "jump.js"
-                },
-                {
                     "Line": "andrioidconversion.js"
+                },
+                {
+                    "Line": "sprintjump.js"
+                },
+                {
+                    "Line": "kiweapons.js"
                 }
             ]
         },
@@ -85,9 +85,6 @@
             "Console": [
             ],
             "ScriptList": [
-                {
-                    "Line": "end dimension strength.js"
-                },
                 {
                     "Line": "rival command handler.js"
                 }
@@ -110,9 +107,6 @@
             "ScriptList": [
                 {
                     "Line": "apothicfireandcolddamage.js"
-                },
-                {
-                    "Line": "sprint.js"
                 }
             ]
         },
@@ -125,7 +119,7 @@
                     "Line": "damageovertime.js"
                 },
                 {
-                    "Line": "dmz energy.js"
+                    "Line": "dmz fabled bridge.js"
                 }
             ]
         },
@@ -165,36 +159,6 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "dmz stat screen.js"
-                }
-            ]
-        },
-        {
-            "Script": "",
-            "Console": [
-            ],
-            "ScriptList": [
-                {
-                    "Line": "fabled prestige faction sync.js"
-                }
-            ]
-        },
-        {
-            "Script": "",
-            "Console": [
-            ],
-            "ScriptList": [
-                {
-                    "Line": "flight suppression.js"
-                }
-            ]
-        },
-        {
-            "Script": "",
-            "Console": [
-            ],
-            "ScriptList": [
-                {
                     "Line": "global tp boost.js"
                 }
             ]
@@ -215,7 +179,7 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "prestige sync fabled.js"
+                    "Line": "fabled sync.js"
                 }
             ]
         },
@@ -245,6 +209,16 @@
             ],
             "ScriptList": [
                 {
+                    "Line": "dmz class permission.js"
+                }
+            ]
+        },
+        {
+            "Script": "",
+            "Console": [
+            ],
+            "ScriptList": [
+                {
                     "Line": "tp is sp fabled.js"
                 }
             ]
@@ -255,7 +229,7 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "universal fabled value cleaner.js"
+                    "Line": "yardrat.js"
                 }
             ]
         },
@@ -265,27 +239,7 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "viltrumitefly.js"
-                }
-            ]
-        },
-        {
-            "Script": "",
-            "Console": [
-            ],
-            "ScriptList": [
-                {
-                    "Line": "yardratrace.js"
-                }
-            ]
-        },
-        {
-            "Script": "",
-            "Console": [
-            ],
-            "ScriptList": [
-                {
-                    "Line": "yardratskills.js"
+                    "Line": "end dimension strength.js"
                 }
             ]
         }

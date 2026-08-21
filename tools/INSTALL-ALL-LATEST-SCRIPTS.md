@@ -1,12 +1,12 @@
 # ALL LATEST SCRIPTS PACK (use this branch only)
 
-**Branch:** `cursor/all-latest-scripts-dd5f`  
-**PR:** install from this pack only.
+**Branch:** `cursor/all-latest-scripts-dd5f` (upstream) — merged into DMZServer with server-only keeps.  
+**Layout:** `tools/SCRIPT_LAYOUT.md` · **Audit:** `tools/SCRIPT_PACK_AUDIT.md` · **Archive:** `archive/`
 
 Supersedes older open PRs: **#44**, **#45**, **#46**, **#47**, **#48**.  
 Do not mix those branches on top of this one.
 
-Versions: Rival **v4.7.7** / Sparring **v3.2.8** / End Strength **v2.11.0**
+Versions: Rival **v4.7.7** / Sparring **v3.2.8** / End Strength **v2.12.0**
 
 ---
 

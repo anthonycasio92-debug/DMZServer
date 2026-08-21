@@ -2516,8 +2516,6 @@ function cleanupEndKiProjectiles(world, hasDragon) {
 
     if (!hasDragon && KI_PURGE_WHEN_NO_DRAGON === true) {
         purgeEndKiCommands(world);
-        var leftover = collectEndKiEntities(world);
-        for (var i = 0; i < leftover.length; i++) discardEntitySafe(leftover[i]);
         return;
     }
 
@@ -2528,21 +2526,29 @@ function cleanupEndKiProjectiles(world, hasDragon) {
     var cap = Math.max(1, num(KI_MAX_ALIVE_WHILE_DRAGON, 32));
     if (n <= cap) return;
 
+    /* Flooded End: command purge is far cheaper than discarding thousands 1-by-1. */
+    if (n > cap * 2) {
+        purgeEndKiCommands(world);
+        try {
+            print("[EndStrength] Ki flood (" + n + " > " + (cap * 2) + "); purged all End ki projectiles");
+        } catch (e1) {}
+        return;
+    }
+
     var over = n - cap;
     var killed = 0;
     for (var j = 0; j < ents.length && killed < over; j++) {
         if (discardEntitySafe(ents[j])) killed++;
     }
-    if (killed < over || n > cap * 4) {
-        /* Safety: BeamClash piles thousands — full purge is cheaper than MSPT stall. */
+    if (killed < over) {
         purgeEndKiCommands(world);
         try {
             print("[EndStrength] Ki cap exceeded (" + n + "); purged all End ki projectiles");
-        } catch (e1) {}
+        } catch (e2) {}
     } else if (killed > 0) {
         try {
             print("[EndStrength] Ki cap: discarded " + killed + " (had " + n + ")");
-        } catch (e2) {}
+        } catch (e3) {}
     }
 }
 
