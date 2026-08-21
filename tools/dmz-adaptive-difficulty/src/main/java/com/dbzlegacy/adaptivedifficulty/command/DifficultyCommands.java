@@ -105,6 +105,30 @@ public final class DifficultyCommands {
                                 .executes(ctx -> adminResetPurchasedOrDeny(ctx.getSource())))
                         .then(Commands.m_82127_("characterreset")
                                 .executes(ctx -> adminCharacterResetOrDeny(ctx.getSource())))
+                        .then(Commands.m_82127_("gui")
+                                .executes(ctx -> adminInspectGuiOrDeny(ctx.getSource(), null, "main"))
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .executes(ctx -> adminInspectGuiOrDeny(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player"),
+                                                "main"))
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> adminInspectGuiOrDeny(
+                                                        ctx.getSource(),
+                                                        StringArgumentType.getString(ctx, "player"),
+                                                        StringArgumentType.getString(ctx, "page"))))))
+                        .then(Commands.m_82127_("inspect")
+                                .executes(ctx -> adminInspectGuiOrDeny(ctx.getSource(), null, "main"))
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .executes(ctx -> adminInspectGuiOrDeny(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player"),
+                                                "main"))
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> adminInspectGuiOrDeny(
+                                                        ctx.getSource(),
+                                                        StringArgumentType.getString(ctx, "player"),
+                                                        StringArgumentType.getString(ctx, "page"))))))
                         .then(Commands.m_82127_("set")
                                 .then(Commands.m_82129_("key", StringArgumentType.word())
                                         .then(Commands.m_82129_("value", StringArgumentType.greedyString())
@@ -642,6 +666,7 @@ public final class DifficultyCommands {
                         + "§e/difficulty admin off|on|toggle|status §7— master system switch\n"
                         + "§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist\n"
                         + "§e/difficulty admin telemetry on|off|status|flush|test §7— log whitelist combat hits\n"
+                        + "§e/difficulty admin gui|inspect <player> [page] §7— open their GUI (edit/see their state)\n"
                         + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased|characterreset\n"
                         + "§e/difficulty admin set <key> <value>\n"
                         + "§8Master keys: enabled · whitelistEnabled · balanceTelemetryEnabled\n"
@@ -654,6 +679,43 @@ public final class DifficultyCommands {
                         + "§8enemyEvolutionMinUnlockTier · bossMechanicsMinUnlockTier"
         ), false);
         return 1;
+    }
+
+    private static int adminInspectGuiOrDeny(CommandSourceStack source, String playerName, String page) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        ServerPlayer admin = source.m_230896_();
+        if (admin == null) {
+            source.m_81352_(Component.m_237113_("Players only (open inspect from in-game)."));
+            return 0;
+        }
+        if (playerName == null || playerName.isBlank()
+                || "clear".equalsIgnoreCase(playerName)
+                || "self".equalsIgnoreCase(playerName)
+                || "me".equalsIgnoreCase(playerName)) {
+            DifficultyMenu.open(admin, "main");
+            source.m_288197_(() -> Component.m_237113_("§7Inspect closed — showing your own GUI."), false);
+            return 1;
+        }
+        ServerPlayer subject = source.m_81377_().m_6846_().m_11255_(playerName);
+        if (subject == null) {
+            source.m_81352_(Component.m_237113_("Player not online: " + playerName));
+            return 0;
+        }
+        String targetPage = page == null || page.isBlank() ? "main" : page;
+        if ("details".equalsIgnoreCase(targetPage)) {
+            targetPage = "stats";
+        }
+        if (com.dbzlegacy.adaptivedifficulty.gui.CmiGuiBridge.openInspect(admin, subject, targetPage)) {
+            return 1;
+        }
+        source.m_81352_(Component.m_237113_(
+                "§cCould not open inspect GUI. Is AdaptiveDifficultyGUI loaded? "
+                        + "Try §f/difficulty admin gui " + subject.m_6302_()
+                        + " §cfrom Bukkit."
+        ));
+        return 0;
     }
 
     private static int adminResetPurchasedOrDeny(CommandSourceStack source) {
