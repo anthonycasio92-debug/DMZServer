@@ -48,8 +48,8 @@
       ]
     }
   },
-  "sduDisplayName": "Ancient Saiyan",
-  "sduDescription": "The long exstinct ancestors of Saiyans, these beings are much more animalistic and battle hungry than normal saiyans it is said...",
+  "sduDisplayName": "Ancient Saiyan &7(Requires Unlock)",
+  "sduDescription": "&cLocked until you have the &ffabled.skill.ancient-saiyan &cpermission (Ancient Rights / unlockrace).&r Prestige level is &nnot&r checked. The long extinct ancestors of Saiyans — more animalistic and battle-hungry than normal Saiyans.",
   "sduRacialName": "Primal Bloodlust",
   "sduRacialDesc": "Killing enemies gives a boost to all non resource stats, as well as kick starts health and ki regen and adds 10% resistance for 10 seconds."
 }
