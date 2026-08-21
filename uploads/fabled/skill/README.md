@@ -8,7 +8,7 @@
 ## Fix
 | Skill | Change |
 |-------|--------|
-| Ancient Saiyan | Race Select = LP `fabled.skill.ancient-saiyan` (not prestige). Skill: `needs-permission: true`, `level-base: 1` |
+| Ancient Saiyan | `needs-permission: false`, `level-base: 11` (Prestige 10) |
 | Sento Saiyan | keep `level-base: 2` (Prestige 1), lore clarified |
 | Farming | `level-base: 1`, `cost-base/scale: 10000` (like Building) |
 | Spiritualist | valid YAML matching other class skills |

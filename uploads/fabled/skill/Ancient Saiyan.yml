@@ -3,13 +3,13 @@
   type: 'Race'
   'max-level': 1
   'skill-req-lvl': 0
-  # Race Select unlock is LP fabled.skill.ancient-saiyan (not prestige level).
-  # needs-permission mirrors that gate for skill-tree purchase.
-  'needs-permission': 'true'
+  # Prestige-gated by level-base only (Prestige class lvl 11 = prestiged 10 times).
+  # needs-permission true silently blocked clicks without LP — do not re-enable.
+  'needs-permission': 'false'
   'cooldown-message': 'true'
   incompatible: []
   attributes: 
-    'level-base': '1'
+    'level-base': '11'
     'level-scale': '0'
     'cost-base': '2000000000'
     'cost-scale': '0'
@@ -31,7 +31,7 @@
   - '{req:cost}Cost: {attr:cost}'
   - ''
   - 'Unlock the Ancient Saiyan Race'
-  - '&7Requires LP fabled.skill.ancient-saiyan'
-  - '&7(Ancient Rights / unlockrace). Not prestige level.'
+  - '&7Requires Prestige 10 (class level 11) + TP cost.'
+  - '&7Once purchased, stays unlocked.'
   desc: []
   components: {}

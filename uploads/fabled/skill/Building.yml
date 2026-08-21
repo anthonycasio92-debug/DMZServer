@@ -28,7 +28,7 @@ Building:
   - '{req:level}Level: {attr:level}'
   - '{req:cost}Cost: {attr:cost}'
   - ''
-  - 'Place Blocks for TP. Gain 1 TP per Building level.'
+  - 'Place Blocks for TP. Gain 1 more TP per level.'
   desc: []
   components: 
     'Block Place': 
@@ -51,6 +51,16 @@ Building:
             'value-base': '1'
             'value-scale': '1'
             save: 'false'
+          preview: 
+            enabled: 'false'
+          children: {}
+        Command: 
+          type: 'mechanic'
+          data: 
+            'icon-key': ''
+            counts: 'true'
+            command: 'silentdmztp {TPB}'
+            type: 'OP'
           preview: 
             enabled: 'false'
           children: {}
