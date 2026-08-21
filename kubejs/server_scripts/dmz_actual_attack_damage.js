@@ -202,20 +202,6 @@ function hasMarker(stack) {
     return false;
 }
 
-function setMarker(stack) {
-    try {
-        var tag = stack.getOrCreateTag ? stack.getOrCreateTag() : null;
-        if (tag != null && tag.putByte) {
-            tag.putByte(MARKER, 1);
-            return;
-        }
-    } catch (e1) {}
-    try {
-        stack.nbt = stack.nbt || {};
-        stack.nbt[MARKER] = 1;
-    } catch (e2) {}
-}
-
 function modifierTag(attributeId, amount, uuid) {
     var tag = new CompoundTag();
     tag.putString("AttributeName", attributeId);
