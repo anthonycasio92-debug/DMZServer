@@ -1,33 +1,22 @@
-// Sync race locks to clients for SDU's RaceSelectionScreen padlock UI.
+// Sync prestige-locked races to clients for SDU's RaceSelectionScreen padlock UI.
 // SDU already has RaceLockClient + padlock overlay; nothing was feeding it.
 //
 // Channel: dmz_race_locks
 // Payload: { locked: string[], required: { [raceId]: number } }
 //
-// Unlock gates:
-//   Ancient Saiyan → LuckPerms fabled.skill.ancient-saiyan (NOT prestige level)
-//   Sento Saiyan   → Fabled skill level >= 1 (bought with prestige tokens)
+// Unlock gate (permanent): Fabled race-unlock skill level >= 1.
+// Players spend prestige tokens (from prestiginging) to buy that skill once.
+// After purchase they stay unlocked forever — current/active prestige is NOT checked.
 //
-// required = SDU padlock tooltip number only ("Requires Prestige N" is hardcoded
-// in SDU). Ancient still sends a placeholder; real unlock is LP permission.
+// required = tooltip only while locked ("Requires Prestige N").
+//   Ancient Saiyan → Prestige 10 · Sento Saiyan → Prestige 1
 
 var CHANNEL = "dmz_race_locks";
 var SYNC_INTERVAL_TICKS = 40;
 
 var RESTRICTED = [
-  {
-    id: "ancient_saiyan",
-    unlock: "permission",
-    permission: "fabled.skill.ancient-saiyan",
-    // SDU tooltip only (hardcoded "Requires Prestige N") — not the unlock check
-    prestigeLevel: 10,
-  },
-  {
-    id: "sento_saiyan",
-    unlock: "skill",
-    skill: "Sento Saiyan",
-    prestigeLevel: 1,
-  },
+  { id: "ancient_saiyan", skill: "Ancient Saiyan", prestigeLevel: 10 },
+  { id: "sento_saiyan", skill: "Sento Saiyan", prestigeLevel: 1 },
 ];
 
 function playerUuid(player) {
@@ -69,26 +58,6 @@ function getFabledSkillLevel(bukkitPlayer, skillName) {
   }
 }
 
-function hasPermission(bukkitPlayer, node) {
-  if (bukkitPlayer == null || !node) return false;
-  try {
-    return !!bukkitPlayer.hasPermission(String(node));
-  } catch (err) {
-    return false;
-  }
-}
-
-function isUnlocked(bukkitPlayer, entry) {
-  if (entry.unlock === "permission") {
-    return hasPermission(bukkitPlayer, entry.permission);
-  }
-  if (entry.unlock === "skill") {
-    if (bukkitPlayer == null) return false;
-    return getFabledSkillLevel(bukkitPlayer, entry.skill) >= 1;
-  }
-  return false;
-}
-
 function buildPayload(player) {
   var locked = [];
   var required = {};
@@ -96,7 +65,9 @@ function buildPayload(player) {
 
   for (var i = 0; i < RESTRICTED.length; i++) {
     var entry = RESTRICTED[i];
-    if (isUnlocked(bp, entry)) {
+    var level = bp == null ? 0 : getFabledSkillLevel(bp, entry.skill);
+    // Skill owned = permanent unlock. Never gate on current prestige class level.
+    if (level >= 1) {
       continue;
     }
     locked.push(entry.id);
@@ -138,4 +109,4 @@ PlayerEvents.tick(function (event) {
   } catch (err) {}
 });
 
-console.info("[RaceLockGUI] server sync ready (" + CHANNEL + ") — Ancient=LP, Sento=skill");
+console.info("[RaceLockGUI] server sync ready (" + CHANNEL + ")");
