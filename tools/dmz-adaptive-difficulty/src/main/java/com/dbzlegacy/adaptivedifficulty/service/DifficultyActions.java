@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.service;
 
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
@@ -233,10 +234,22 @@ public final class DifficultyActions {
             openGui(player, returnPage);
             return Result.fail("Unknown tier. Use 1–7.");
         }
-        // Live gate — unlock bits alone are not enough after prestige/level reset.
-        if (!UnlockSystem.isEligible(player, tier) || !data.hasUnlockedTier(tier.id)) {
+        // Live gate — unlock bits alone are not enough after a reliable prestige/level reset.
+        // While the base-form sample is unavailable, keep already-unlocked tiers usable.
+        boolean reliable = DmzProgression.hasReliableUnlockGateSample(player);
+        boolean eligible = UnlockSystem.isEligible(player, tier);
+        boolean owned = data.hasUnlockedTier(tier.id);
+        if (!(eligible && owned) && !(owned && !reliable)) {
             openGui(player, returnPage);
-            return Result.fail("Tier " + tier.id + " locked. Need " + tier.requirementTip() + ".");
+            long gate = UnlockSystem.gateLevelForEligibility(player);
+            int prestige = DmzProgression.prestige(player);
+            String tip = !reliable && !owned
+                    ? " Return to base form once so your DMZ level can sync (CR/BP does not unlock tiers)."
+                    : " You: DMZ " + gate + " · Prestige " + prestige + " (CR/BP does not unlock tiers).";
+            return Result.fail("Tier " + tier.id + " locked. Need " + tier.requirementTip() + "." + tip);
+        }
+        if (!owned && eligible) {
+            data.unlockTier(tier.id);
         }
         int current = data.getActiveTier();
         if (current == tier.id) {
@@ -288,10 +301,16 @@ public final class DifficultyActions {
             openGui(player, "buy");
             return Result.fail("Buy a higher tier to raise difficulty.");
         }
-        if (!UnlockSystem.isEligible(player, tier) || !data.hasUnlockedTier(tier.id)) {
+        boolean reliable = DmzProgression.hasReliableUnlockGateSample(player);
+        boolean eligible = UnlockSystem.isEligible(player, tier);
+        boolean owned = data.hasUnlockedTier(tier.id);
+        if (!(eligible && owned) && !(owned && !reliable)) {
             openGui(player, returnPage);
+            long gate = UnlockSystem.gateLevelForEligibility(player);
+            int prestige = DmzProgression.prestige(player);
             return Result.fail("Tier " + tier.id + " is not unlocked. Need "
-                    + tier.requirementTip() + ".");
+                    + tier.requirementTip() + ". You: DMZ " + gate + " · Prestige " + prestige
+                    + " (CR/BP does not unlock tiers).");
         }
         if (data.getActiveTier() == tier.id) {
             openGui(player, returnPage);

@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.tier;
 
+import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import java.util.ArrayList;
@@ -12,6 +13,8 @@ import net.minecraft.server.level.ServerPlayer;
  * Unlock bits are live-reconciled when a reliable base-form level is known —
  * never revoke from a "level 1" placeholder while transformed with no sample.
  * No free coin bootstrap — coins come from kill drops.
+ * <p>
+ * Combat Rating / Battle Power does <b>not</b> unlock tiers.
  */
 public final class UnlockSystem {
     private UnlockSystem() {}
@@ -24,18 +27,51 @@ public final class UnlockSystem {
         if (prestige >= tier.id) {
             return true;
         }
-        if (!DmzProgression.hasReliableUnlockGateSample(player)) {
-            // Unknown base level — do not treat as level-eligible.
-            return false;
-        }
-        int level = DmzProgression.dmzLevelForUnlockGate(player);
+        long level = gateLevelForEligibility(player);
         return level >= tier.requiredDmzLevel();
     }
 
     /**
+     * DMZ level used for unlock eligibility (and Buy GUI "You: DMZ …").
+     * Prefer a reliable base-form sample. When unavailable, fall back to the
+     * prestige-scoped high-water mark. Returns {@code 0} when no safe level is known.
+     */
+    public static long gateLevelForEligibility(ServerPlayer player) {
+        if (player == null) {
+            return 0L;
+        }
+        if (DmzProgression.hasReliableUnlockGateSample(player)) {
+            return DmzProgression.dmzLevelForUnlockGate(player);
+        }
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        return persistedGateLevel(player, data);
+    }
+
+    /**
+     * Prestige-scoped high-water level for eligibility when the live base-form
+     * sample is unavailable. Never uses form-inflated live {@code getLevel()}.
+     */
+    static long persistedGateLevel(ServerPlayer player, PlayerDifficultyData data) {
+        if (player == null || data == null) {
+            return 0L;
+        }
+        int prestige = DmzProgression.prestige(player);
+        int seen = data.getLastSeenPrestige();
+        // Untrusted pre-tracking high-water while already prestiged — wait for a
+        // real base-form sample (first reliable sync clamps it).
+        if (seen < 0 && prestige > 0) {
+            return 0L;
+        }
+        if (seen >= 0 && seen != prestige) {
+            return 0L;
+        }
+        long hw = data.getHighestDmzLevel();
+        return hw > 0L ? hw : 0L;
+    }
+
+    /**
      * Sync permanent unlocks from current DMZ level + prestige.
-     * Grants newly eligible tiers. Revokes only when the unlock gate sample is reliable
-     * (base form, or transformed with a base-form sample this session).
+     * Grants newly eligible tiers. Revokes only when the unlock gate sample is reliable.
      *
      * @return newly unlocked tier ids
      */
@@ -50,23 +86,27 @@ public final class UnlockSystem {
         int gateLevel = reliable ? DmzProgression.dmzLevelForUnlockGate(player) : 0;
         int prevPrestige = data.getLastSeenPrestige();
 
-        if (prevPrestige < 0) {
-            // First sync on tracked-prestige builds: clamp leftover pre-prestige high-water
-            // when the player already has Prestige and we can see their live base level.
-            if (prestige > 0 && reliable) {
-                data.resetHighestDmzLevel(gateLevel);
-            } else if (prestige > 0) {
-                data.resetHighestDmzLevel(0);
-            }
-        } else if (prestige > prevPrestige) {
+        if (prevPrestige >= 0 && prestige > prevPrestige) {
             // Prestige-up restarts the DMZ level ladder.
             if (reliable) {
                 data.resetHighestDmzLevel(gateLevel);
             } else {
                 data.resetHighestDmzLevel(0);
             }
+            data.setLastSeenPrestige(prestige);
+        } else if (reliable && prevPrestige < 0) {
+            // First reliable sync — clamp any leftover high-water to this prestige cycle.
+            if (prestige > 0) {
+                data.resetHighestDmzLevel(gateLevel);
+            }
+            data.setLastSeenPrestige(prestige);
+        } else if (reliable) {
+            data.setLastSeenPrestige(prestige);
+        } else if (prevPrestige < 0 && prestige <= 0) {
+            data.setLastSeenPrestige(0);
         }
-        data.setLastSeenPrestige(prestige);
+        // If prestige > 0, lastSeen < 0, and !reliable: leave lastSeen unset and do NOT
+        // wipe highestDmzLevel. Prestige still unlocks T1..TP; level catches up in base form.
 
         if (reliable && !DmzProgression.isTransformed(player)) {
             data.noteDmzLevel(gateLevel);
@@ -78,8 +118,6 @@ public final class UnlockSystem {
             }
         }
 
-        // Never revoke while the level sample is unknown — that wiped paid tiers on
-        // early login (StatsData null → fake level 1), transformed login, or admin reload.
         if (reliable) {
             for (Integer id : new ArrayList<>(data.getUnlockedTiers())) {
                 UnlockTier tier = UnlockTier.byId(id);
@@ -92,16 +130,11 @@ public final class UnlockSystem {
                 data.resetTemporary();
             }
         } else {
-            // Prestige-only grants still apply above; prestige-only revokes are safe.
             for (Integer id : new ArrayList<>(data.getUnlockedTiers())) {
                 UnlockTier tier = UnlockTier.byId(id);
                 if (tier == null) {
                     data.revokeTier(id);
-                    continue;
                 }
-                // Keep level-gated unlocks until we have a real base-form sample.
-                // Drop only if prestige alone cannot justify and we somehow know they
-                // never had level eligibility — skipped while unreliable.
             }
         }
         return newly;
