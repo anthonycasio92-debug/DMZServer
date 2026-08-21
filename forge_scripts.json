@@ -1,0 +1,2487 @@
+{
+    "ScriptEnabled": 1b,
+    "Scripts": [
+        {
+            "Script": "// ============================================================================
+// Shurui's DMZ Dungeons -> Iron's Spellbooks Mob Stat Bridge
+// GLOBAL FORGE SCRIPT
+//
+// Minecraft 1.20.1
+//
+// VERIFIED AGAINST:
+// - CustomNPCs GBPort 2026-02-27
+// - Shurui's DMZ Dungeons 2.0.5
+// - SDU 3.0.5
+// - Iron's Spells 'n Spellbooks 3.16.2
+// - dmz_spellbooks 1.0.2
+//
+// ============================================================================
+//
+// PURPOSE:
+//
+// When a mob is spawned by a Shurui Advanced Spawner:
+//
+//      Shurui Melee Damage
+//          -> LEFT ALONE
+//          -> existing ATTACK_DAMAGE continues working
+//
+//      Shurui Ki Damage
+//          -> Iron's SPELL_POWER
+//          -> Iron's SUMMON_DAMAGE
+//
+//      Every Shurui-spawned mob
+//          -> 1,000,000 MAX_MANA
+//          -> 1,000,000 current mana
+//
+// The bridge is applied ONLY ONCE PER MOB.
+//
+// Persistent marker:
+//
+//      sdd_irons_bridge_complete
+//
+// prevents the same mob from being configured again when chunks reload.
+//
+// ============================================================================
+
+
+// ============================================================================
+// CONFIG
+// ============================================================================
+
+
+// Every Shurui-spawned mob gets this much Iron's mana.
+var MAX_MANA = 1000000;
+
+
+// ============================================================================
+// SPELL POWER SCALING
+// ============================================================================
+//
+// Formula:
+//
+//      Spell Power = Ki Damage / SPELL_POWER_DIVISOR
+//
+// Default:
+//
+//      Ki Damage 20     -> 1x
+//      Ki Damage 100    -> 5x
+//      Ki Damage 500    -> 25x
+//      Ki Damage 1000   -> 50x
+//      Ki Damage 2000   -> 100x
+//
+// 20 is also consistent with the basic Ki/spell relationship used by
+// your dmz_spellbooks addon.
+//
+var SPELL_POWER_DIVISOR = 20.0;
+
+
+// Never intentionally reduce a mob below normal Iron's spell power.
+var MINIMUM_SPELL_POWER = 1.0;
+
+
+// 0 = no script-side maximum.
+var MAXIMUM_SPELL_POWER = 0;
+
+
+// ============================================================================
+// SUMMON DAMAGE
+// ============================================================================
+
+var SCALE_SUMMON_DAMAGE = true;
+
+
+// 1.0 = same multiplier as Spell Power.
+var SUMMON_DAMAGE_MULTIPLIER = 1.0;
+
+
+var MINIMUM_SUMMON_DAMAGE = 1.0;
+
+
+// 0 = no script-side maximum.
+var MAXIMUM_SUMMON_DAMAGE = 0;
+
+
+// ============================================================================
+// PRESERVE NATIVE IRON'S POWER
+// ============================================================================
+//
+// If an Iron's mob naturally has a higher base Spell Power or Summon Damage,
+// keep the higher value.
+//
+var PRESERVE_HIGHER_NATIVE_VALUES = true;
+
+
+// ============================================================================
+// DEBUG
+// ============================================================================
+//
+// You should see ONE:
+//
+//      [Shurui Iron Bridge] INITIALIZED ONCE
+//
+// for each newly spawned Shurui mob.
+//
+// You should NOT see another one for the same mob after chunk reloads.
+//
+var DEBUG = true;
+
+
+// ============================================================================
+// ENTITY JOIN LEVEL EVENT
+// ============================================================================
+
+function entityJoinLevelEvent(event) {
+
+    try {
+
+        // ====================================================================
+        // BASIC CHECKS
+        // ====================================================================
+
+        if (event == null) {
+            return;
+        }
+
+        if (event.entity == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // CUSTOMNPCS PERSISTENT NBT
+        // ====================================================================
+        //
+        // VERIFIED:
+        //
+        // IEntity.getNbt()
+        //
+        // returns the entity's Forge persistent data already wrapped as
+        // CustomNPCs INbt.
+        //
+        // Therefore DO NOT use:
+        //
+        //      entity.getPersistentData()
+        //
+        // and DO NOT manually construct NBTWrapper.
+        // ====================================================================
+
+        var data = event.entity.getNbt();
+
+        if (data == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // REQUIRE SHURUI SPAWNER TAG
+        // ====================================================================
+        //
+        // Shurui writes:
+        //
+        //      sdd_spawner = BlockPos.asLong()
+        //
+        // BEFORE addFreshEntity().
+        // ====================================================================
+
+        if (!data.has(\"sdd_spawner\")) {
+            return;
+        }
+
+
+        // ====================================================================
+        // ONE-TIME EXECUTION
+        // ====================================================================
+
+        if (data.has(\"sdd_irons_bridge_complete\")) {
+
+            if (data.getBoolean(\"sdd_irons_bridge_complete\")) {
+                return;
+            }
+        }
+
+
+        // ====================================================================
+        // RAW MINECRAFT ENTITY
+        // ====================================================================
+
+        var entity = event.entity.getMCEntity();
+
+        if (entity == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // ONLY LIVING ENTITIES
+        // ====================================================================
+
+        var LivingEntity = Java.type(
+            \"net.minecraft.world.entity.LivingEntity\"
+        );
+
+
+        if (!(entity instanceof LivingEntity)) {
+            return;
+        }
+
+
+        // ====================================================================
+        // CUSTOMNPCS WORLD
+        // ====================================================================
+
+        var world = event.entity.getWorld();
+
+        if (world == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // DECODE SHURUI SPAWNER POSITION
+        // ====================================================================
+        //
+        // Shurui stores BlockPos.asLong().
+        //
+        // Production/reobfuscated Minecraft 1.20.1 does NOT expose:
+        //
+        //      BlockPos.of(long)
+        //
+        // to Nashorn.
+        //
+        // VERIFIED from SDU 3.0.5:
+        //
+        //      BlockPos.m_122022_(long)
+        //
+        // is the actual production method for converting the packed long
+        // back into BlockPos.
+        // ====================================================================
+
+        var packedSpawnerPos =
+            data.getLong(
+                \"sdd_spawner\"
+            );
+
+
+        var BlockPos = Java.type(
+            \"net.minecraft.core.BlockPos\"
+        );
+
+
+        var spawnerMcPos =
+            BlockPos.m_122022_(
+                packedSpawnerPos
+            );
+
+
+        if (spawnerMcPos == null) {
+
+            if (DEBUG) {
+
+                print(
+                    \"[Shurui Iron Bridge] \" +
+                    \"Could not decode spawner position for \" +
+                    event.entity.getName()
+                );
+            }
+
+            return;
+        }
+
+
+        // ====================================================================
+        // WRAP BLOCKPOS FOR CUSTOMNPCS
+        // ====================================================================
+        //
+        // IWorld.getBlock() expects CustomNPCs IPos.
+        // ====================================================================
+
+        var BlockPosWrapper = Java.type(
+            \"noppes.npcs.api.wrapper.BlockPosWrapper\"
+        );
+
+
+        var spawnerPos =
+            new BlockPosWrapper(
+                spawnerMcPos
+            );
+
+
+        // ====================================================================
+        // GET SPAWNER THROUGH CUSTOMNPCS WORLD API
+        // ====================================================================
+
+        var spawnerBlock =
+            world.getBlock(
+                spawnerPos
+            );
+
+
+        if (spawnerBlock == null) {
+
+            if (DEBUG) {
+
+                print(
+                    \"[Shurui Iron Bridge] \" +
+                    \"Spawner block missing at \" +
+                    spawnerPos.getX() +
+                    \", \" +
+                    spawnerPos.getY() +
+                    \", \" +
+                    spawnerPos.getZ()
+                );
+            }
+
+            return;
+        }
+
+
+        if (!spawnerBlock.hasTileEntity()) {
+
+            if (DEBUG) {
+
+                print(
+                    \"[Shurui Iron Bridge] \" +
+                    \"Block at saved spawner position has no tile entity.\"
+                );
+            }
+
+            return;
+        }
+
+
+        // ====================================================================
+        // GET REAL BLOCK ENTITY
+        // ====================================================================
+
+        var blockEntity =
+            spawnerBlock.getMCTileEntity();
+
+
+        if (blockEntity == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // VERIFY SHURUI ADVANCED SPAWNER
+        // ====================================================================
+
+        var AdvancedSpawnerBlockEntity = Java.type(
+            \"net.shurui.dev.shuruis_dmz_dungeons.block.AdvancedSpawnerBlockEntity\"
+        );
+
+
+        if (!(blockEntity instanceof AdvancedSpawnerBlockEntity)) {
+
+            if (DEBUG) {
+
+                print(
+                    \"[Shurui Iron Bridge] \" +
+                    \"sdd_spawner did not point to an Advanced Spawner.\"
+                );
+            }
+
+            return;
+        }
+
+
+        // ====================================================================
+        // GET SHURUI SPAWNER CONFIG
+        // ====================================================================
+
+        var config =
+            blockEntity.getConfig();
+
+
+        if (config == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // DETERMINE BOSS STATUS
+        // ====================================================================
+
+        var isBoss = false;
+
+
+        if (data.has(\"sdd_boss\")) {
+
+            isBoss =
+                data.getBoolean(
+                    \"sdd_boss\"
+                );
+        }
+
+
+        // ====================================================================
+        // READ SPAWNER KI CONFIG
+        // ====================================================================
+
+        var kiMin = 0;
+        var kiMax = 0;
+        var kiFallback = 0;
+        var savedNpcRef = \"\";
+
+
+        if (isBoss) {
+
+            kiMin =
+                Number(
+                    config.bossKiDmgMin
+                );
+
+
+            kiMax =
+                Number(
+                    config.bossKiDmgMax
+                );
+
+
+            kiFallback =
+                Number(
+                    config.bossKiPower
+                );
+
+
+            if (config.bossSavedNpcRef != null) {
+
+                savedNpcRef =
+                    \"\" +
+                    config.bossSavedNpcRef;
+            }
+
+        }
+        else {
+
+            kiMin =
+                Number(
+                    config.kiDmgMin
+                );
+
+
+            kiMax =
+                Number(
+                    config.kiDmgMax
+                );
+
+
+            kiFallback =
+                Number(
+                    config.kiPower
+                );
+
+
+            if (config.savedNpcRef != null) {
+
+                savedNpcRef =
+                    \"\" +
+                    config.savedNpcRef;
+            }
+        }
+
+
+        // ====================================================================
+        // CLEAN VALUES
+        // ====================================================================
+
+        if (isNaN(kiMin)) {
+            kiMin = 0;
+        }
+
+        if (isNaN(kiMax)) {
+            kiMax = 0;
+        }
+
+        if (isNaN(kiFallback)) {
+            kiFallback = 0;
+        }
+
+
+        kiMin =
+            Math.max(
+                0,
+                Math.floor(
+                    kiMin
+                )
+            );
+
+
+        kiMax =
+            Math.max(
+                0,
+                Math.floor(
+                    kiMax
+                )
+            );
+
+
+        kiFallback =
+            Math.max(
+                0,
+                kiFallback
+            );
+
+
+        // ====================================================================
+        // FIND THIS MOB'S KI DAMAGE
+        // ====================================================================
+        //
+        // FIRST CHOICE:
+        //
+        // If this is an actual DMZ/SDU fighter and NOT using a Saved NPC
+        // clone reference, use its real already-rolled:
+        //
+        //      getKiBlastDamage()
+        //
+        // This means Iron spell strength exactly matches the fighter's
+        // actual Ki Damage.
+        //
+        //
+        // FALLBACK:
+        //
+        // For normal Iron's mobs, vanilla mobs, or Saved NPC / clone mobs,
+        // use the Advanced Spawner's Ki Damage configuration.
+        //
+        // Saved NPC mobs deliberately use the spawner config because cloned
+        // NPC initialization is one of the situations where the fighter's
+        // own Ki Damage can be unreliable.
+        // ====================================================================
+
+        var kiDamage = 0;
+
+        var kiSource =
+            \"Spawner\";
+
+
+        var hasSavedNpc =
+            savedNpcRef.trim().length > 0;
+
+
+        var DBSagasEntity = Java.type(
+            \"com.dragonminez.common.init.entities.sagas.DBSagasEntity\"
+        );
+
+
+        if (
+            !hasSavedNpc
+            &&
+            entity instanceof DBSagasEntity
+        ) {
+
+            try {
+
+                var actualKiDamage =
+                    Number(
+                        entity.getKiBlastDamage()
+                    );
+
+
+                if (
+                    !isNaN(actualKiDamage)
+                    &&
+                    actualKiDamage > 0
+                ) {
+
+                    kiDamage =
+                        actualKiDamage;
+
+                    kiSource =
+                        \"Actual DMZ Fighter\";
+                }
+
+            }
+            catch (kiGetterError) {
+
+                kiDamage = 0;
+            }
+        }
+
+
+        // ====================================================================
+        // SPAWNER FALLBACK
+        // ====================================================================
+
+        if (kiDamage <= 0) {
+
+            var low =
+                Math.min(
+                    kiMin,
+                    kiMax
+                );
+
+
+            var high =
+                Math.max(
+                    kiMin,
+                    kiMax
+                );
+
+
+            if (high <= 0) {
+
+                kiDamage =
+                    kiFallback;
+
+                kiSource =
+                    \"Spawner KiPower\";
+
+            }
+            else if (low >= high) {
+
+                kiDamage =
+                    low;
+
+                kiSource =
+                    \"Spawner Fixed Ki Range\";
+
+            }
+            else {
+
+                kiDamage =
+                    low
+                    +
+                    Math.floor(
+                        Math.random()
+                        *
+                        (
+                            (high - low)
+                            +
+                            1
+                        )
+                    );
+
+                kiSource =
+                    \"Spawner Ki Range\";
+            }
+        }
+
+
+        if (isNaN(kiDamage)) {
+            kiDamage = 0;
+        }
+
+
+        if (kiDamage < 0) {
+            kiDamage = 0;
+        }
+
+
+        // Save the value actually used by the Iron bridge.
+
+        data.setDouble(
+            \"sdd_irons_ki_damage\",
+            kiDamage
+        );
+
+
+        // ====================================================================
+        // IRON'S ATTRIBUTE REGISTRY
+        // ====================================================================
+
+        var AttributeRegistry = Java.type(
+            \"io.redspace.ironsspellbooks.api.registry.AttributeRegistry\"
+        );
+
+
+        // ====================================================================
+        // MAX MANA
+        // ====================================================================
+        //
+        // Production 1.20.1 mappings verified from Iron's:
+        //
+        // LivingEntity.m_21051_(Attribute)
+        //      = getAttribute(Attribute)
+        //
+        // AttributeInstance.m_22115_()
+        //      = getBaseValue()
+        //
+        // AttributeInstance.m_22100_(double)
+        //      = setBaseValue(double)
+        //
+        // AttributeInstance.m_22135_()
+        //      = getValue()
+        // ====================================================================
+
+        var maxManaAttribute =
+            AttributeRegistry.MAX_MANA.get();
+
+
+        var maxManaInstance =
+            entity.m_21051_(
+                maxManaAttribute
+            );
+
+
+        var oldMaxMana = 0;
+        var appliedMaxMana = 0;
+
+
+        if (maxManaInstance != null) {
+
+            oldMaxMana =
+                Number(
+                    maxManaInstance.m_22115_()
+                );
+
+
+            maxManaInstance.m_22100_(
+                Number(
+                    MAX_MANA
+                )
+            );
+
+
+            appliedMaxMana =
+                Number(
+                    maxManaInstance.m_22135_()
+                );
+        }
+
+
+        // ====================================================================
+        // CURRENT MANA
+        // ====================================================================
+
+        try {
+
+            var MagicData = Java.type(
+                \"io.redspace.ironsspellbooks.api.magic.MagicData\"
+            );
+
+
+            var magicData =
+                MagicData.getPlayerMagicData(
+                    entity
+                );
+
+
+            if (magicData != null) {
+
+                magicData.setMana(
+                    Number(
+                        MAX_MANA
+                    )
+                );
+            }
+
+        }
+        catch (manaError) {
+
+            if (DEBUG) {
+
+                print(
+                    \"[Shurui Iron Bridge] \" +
+                    \"Mana fill warning for \" +
+                    event.entity.getName() +
+                    \": \" +
+                    manaError
+                );
+            }
+        }
+
+
+        // ====================================================================
+        // CALCULATE SPELL POWER
+        // ====================================================================
+
+        var calculatedSpellPower =
+            kiDamage
+            /
+            SPELL_POWER_DIVISOR;
+
+
+        if (
+            calculatedSpellPower
+            <
+            MINIMUM_SPELL_POWER
+        ) {
+
+            calculatedSpellPower =
+                MINIMUM_SPELL_POWER;
+        }
+
+
+        if (
+            MAXIMUM_SPELL_POWER > 0
+            &&
+            calculatedSpellPower
+            >
+            MAXIMUM_SPELL_POWER
+        ) {
+
+            calculatedSpellPower =
+                MAXIMUM_SPELL_POWER;
+        }
+
+
+        // ====================================================================
+        // APPLY SPELL POWER
+        // ====================================================================
+
+        var spellPowerAttribute =
+            AttributeRegistry.SPELL_POWER.get();
+
+
+        var spellPowerInstance =
+            entity.m_21051_(
+                spellPowerAttribute
+            );
+
+
+        var oldSpellPower = 0;
+
+        var requestedSpellPower =
+            calculatedSpellPower;
+
+        var appliedSpellPower = 0;
+
+
+        if (spellPowerInstance != null) {
+
+            oldSpellPower =
+                Number(
+                    spellPowerInstance.m_22115_()
+                );
+
+
+            if (
+                PRESERVE_HIGHER_NATIVE_VALUES
+                &&
+                oldSpellPower
+                >
+                requestedSpellPower
+            ) {
+
+                requestedSpellPower =
+                    oldSpellPower;
+            }
+
+
+            spellPowerInstance.m_22100_(
+                Number(
+                    requestedSpellPower
+                )
+            );
+
+
+            appliedSpellPower =
+                Number(
+                    spellPowerInstance.m_22135_()
+                );
+        }
+
+
+        // ====================================================================
+        // CALCULATE SUMMON DAMAGE
+        // ====================================================================
+
+        var calculatedSummonDamage =
+            calculatedSpellPower
+            *
+            SUMMON_DAMAGE_MULTIPLIER;
+
+
+        if (
+            calculatedSummonDamage
+            <
+            MINIMUM_SUMMON_DAMAGE
+        ) {
+
+            calculatedSummonDamage =
+                MINIMUM_SUMMON_DAMAGE;
+        }
+
+
+        if (
+            MAXIMUM_SUMMON_DAMAGE > 0
+            &&
+            calculatedSummonDamage
+            >
+            MAXIMUM_SUMMON_DAMAGE
+        ) {
+
+            calculatedSummonDamage =
+                MAXIMUM_SUMMON_DAMAGE;
+        }
+
+
+        // ====================================================================
+        // APPLY SUMMON DAMAGE
+        // ====================================================================
+
+        var oldSummonDamage = 0;
+
+        var requestedSummonDamage =
+            calculatedSummonDamage;
+
+        var appliedSummonDamage = 0;
+
+
+        if (SCALE_SUMMON_DAMAGE) {
+
+            var summonDamageAttribute =
+                AttributeRegistry.SUMMON_DAMAGE.get();
+
+
+            var summonDamageInstance =
+                entity.m_21051_(
+                    summonDamageAttribute
+                );
+
+
+            if (summonDamageInstance != null) {
+
+                oldSummonDamage =
+                    Number(
+                        summonDamageInstance.m_22115_()
+                    );
+
+
+                if (
+                    PRESERVE_HIGHER_NATIVE_VALUES
+                    &&
+                    oldSummonDamage
+                    >
+                    requestedSummonDamage
+                ) {
+
+                    requestedSummonDamage =
+                        oldSummonDamage;
+                }
+
+
+                summonDamageInstance.m_22100_(
+                    Number(
+                        requestedSummonDamage
+                    )
+                );
+
+
+                appliedSummonDamage =
+                    Number(
+                        summonDamageInstance.m_22135_()
+                    );
+            }
+        }
+
+
+        // ====================================================================
+        // SAVE DEBUG VALUES
+        // ====================================================================
+
+        data.setDouble(
+            \"sdd_irons_spell_power\",
+            appliedSpellPower
+        );
+
+
+        data.setDouble(
+            \"sdd_irons_summon_damage\",
+            appliedSummonDamage
+        );
+
+
+        data.setDouble(
+            \"sdd_irons_max_mana\",
+            appliedMaxMana
+        );
+
+
+        // ====================================================================
+        // PERMANENT ONE-TIME MARKER
+        // ====================================================================
+        //
+        // This is only written AFTER the bridge successfully reaches the end.
+        //
+        // Once this exists and is true, the mob exits at the top of the
+        // function forever.
+        // ====================================================================
+
+        data.setBoolean(
+            \"sdd_irons_bridge_complete\",
+            true
+        );
+
+
+        // ====================================================================
+        // DEBUG
+        // ====================================================================
+
+        if (DEBUG) {
+
+            print(
+                \"[Shurui Iron Bridge] INITIALIZED ONCE\" +
+
+                \" | Mob=\" +
+                event.entity.getName() +
+
+                \" | Type=\" +
+                event.entity.getTypeName() +
+
+                \" | Boss=\" +
+                isBoss +
+
+                \" | Spawner=\" +
+                spawnerPos.getX() +
+                \",\" +
+                spawnerPos.getY() +
+                \",\" +
+                spawnerPos.getZ() +
+
+                \" | KiSource=\" +
+                kiSource +
+
+                \" | KiDamage=\" +
+                kiDamage +
+
+                \" | OldSpellPower=\" +
+                oldSpellPower +
+
+                \" | SpellPower=\" +
+                appliedSpellPower +
+
+                \" | OldSummonDamage=\" +
+                oldSummonDamage +
+
+                \" | SummonDamage=\" +
+                appliedSummonDamage +
+
+                \" | OldMaxMana=\" +
+                oldMaxMana +
+
+                \" | MaxMana=\" +
+                appliedMaxMana
+            );
+        }
+
+    }
+    catch (error) {
+
+        print(
+            \"[Shurui Iron Bridge ERROR] \" +
+            error
+        );
+    }
+}",
+            "Console": [
+                {
+                    "Long": 1786394237847L,
+                    "String": "[Shurui Iron Bridge] INITIALIZED ONCE | Mob=Skeleton | Type=minecraft:skeleton | Boss=false | Spawner=-35,73,-92 | KiSource=Spawner Fixed Ki Range | KiDamage=10000000 | OldSpellPower=1 | SpellPower=500000 | OldSummonDamage=1 | SummonDamage=500000 | OldMaxMana=100 | MaxMana=1000000"
+                }
+            ],
+            "ScriptList": [
+            ]
+        },
+        {
+            "Script": "// ============================================================================
+// Shurui Advanced Spawner -> Native DMZ Ki Damage Bridge
+// GLOBAL FORGE SCRIPT
+//
+// Minecraft 1.20.1
+//
+// VERIFIED AGAINST:
+// - Dragon Mine Z 2.1.3
+// - Shurui's DMZ Dungeons 2.0.5
+// - SDU 3.0.5
+// - CustomNPCs GBPort 2026-02-27
+//
+// PURPOSE:
+//
+// Fixes native DMZ saga mobs spawned from a Shurui Advanced Spawner.
+//
+// Shurui normally writes:
+//
+//      KiPower
+//
+// into the initial spawn NBT.
+//
+// SDU's:
+//
+//      sdu:dmz_fighter
+//
+// understands KiPower and converts it into DMZ Ki Blast Damage.
+//
+// Native DMZ DBSagasEntity mobs DO NOT.
+//
+// They use:
+//
+//      EntityAttributes.KI_BLAST_DAMAGE
+//
+// exposed through:
+//
+//      setKiBlastDamage()
+//      getKiBlastDamage()
+//
+// This script reads the Advanced Spawner's configured Ki Damage
+// and applies it directly to the native DMZ mob.
+//
+// ============================================================================
+
+
+// ============================================================================
+// CONFIG
+// ============================================================================
+
+
+// Multiply the Advanced Spawner Ki Damage by this before applying it.
+//
+// 1.0 = exact Advanced Spawner value.
+//
+// Examples:
+//
+// 1.0 = 100%
+// 1.5 = 150%
+// 2.0 = 200%
+//
+var KI_DAMAGE_MULTIPLIER = 1.0;
+
+
+// If the Advanced Spawner has Ki Damage set to 0:
+//
+// true:
+//      Leave the native DMZ mob's existing Ki Damage alone.
+//
+// false:
+//      Set its Ki Damage to 0.
+//
+var KEEP_NATIVE_KI_IF_SPAWNER_ZERO = true;
+
+
+// DMZ 2.1.3 KI_BLAST_DAMAGE attribute maximum.
+//
+// Verified from:
+//
+// com.dragonminez.common.init.EntityAttributes
+//
+var DMZ_MAX_KI_DAMAGE = 2000000000;
+
+
+// Debug.
+//
+// Prints exactly once when a newly spawned native DMZ mob
+// is successfully processed.
+//
+// Chunk reloads will NOT print this.
+//
+var DEBUG = true;
+
+
+// ============================================================================
+// ENTITY JOIN LEVEL EVENT
+// ============================================================================
+
+function entityJoinLevelEvent(event) {
+
+    try {
+
+        // ====================================================================
+        // BASIC CHECKS
+        // ====================================================================
+
+        if (event == null) {
+            return;
+        }
+
+        if (event.entity == null) {
+            return;
+        }
+
+        if (event.event == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // ONLY RUN ON A REAL NEW SPAWN
+        // ====================================================================
+        //
+        // VERIFIED Forge 1.20.1 method:
+        //
+        //      EntityJoinLevelEvent.loadedFromDisk()
+        //
+        // EntityJoinLevelEvent also fires when entities are restored from
+        // disk during chunk loading.
+        //
+        // We specifically DO NOT want to execute the bridge then.
+        //
+        // Shurui calls addFreshEntity() for new Advanced Spawner mobs,
+        // which produces:
+        //
+        //      loadedFromDisk() == false
+        //
+        // ====================================================================
+
+        if (event.event.loadedFromDisk()) {
+            return;
+        }
+
+
+        // ====================================================================
+        // CUSTOMNPCS PERSISTENT DATA
+        // ====================================================================
+
+        var data =
+            event.entity.getNbt();
+
+
+        if (data == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // REQUIRE SHURUI ADVANCED SPAWNER
+        // ====================================================================
+        //
+        // Shurui writes:
+        //
+        //      sdd_spawner
+        //
+        // before calling addFreshEntity().
+        //
+        // The value is the packed BlockPos of the exact Advanced Spawner
+        // responsible for this mob.
+        // ====================================================================
+
+        if (!data.has(\"sdd_spawner\")) {
+            return;
+        }
+
+
+        // ====================================================================
+        // SECONDARY ONE-TIME SAFETY
+        // ====================================================================
+        //
+        // loadedFromDisk() already prevents chunk-reload execution.
+        //
+        // This is an additional safeguard so the same entity can never
+        // accidentally receive the bridge twice.
+        // ====================================================================
+
+        if (data.has(\"sdd_native_dmz_ki_bridge_complete\")) {
+
+            if (
+                data.getBoolean(
+                    \"sdd_native_dmz_ki_bridge_complete\"
+                )
+            ) {
+
+                return;
+            }
+        }
+
+
+        // ====================================================================
+        // GET REAL ENTITY
+        // ====================================================================
+
+        var entity =
+            event.entity.getMCEntity();
+
+
+        if (entity == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // REQUIRE A DMZ SAGA/FIGHTER ENTITY
+        // ====================================================================
+        //
+        // All of DMZ's normal combat/saga fighters that use the native
+        // SkillManager Ki system derive from DBSagasEntity.
+        //
+        // This prevents us from touching:
+        //
+        // - vanilla mobs
+        // - Iron's mobs
+        // - random modded mobs
+        // - animals
+        // - players
+        //
+        // ====================================================================
+
+        var DBSagasEntity = Java.type(
+            \"com.dragonminez.common.init.entities.sagas.DBSagasEntity\"
+        );
+
+
+        if (!(entity instanceof DBSagasEntity)) {
+            return;
+        }
+
+
+        // ====================================================================
+        // EXCLUDE SDU FIGHTERS
+        // ====================================================================
+        //
+        // Your request is specifically for NORMAL native DMZ mobs where
+        // we are NOT using the SDU fighter/model system.
+        //
+        // SduDmzFighter extends DBSagasEntity, so it must be explicitly
+        // excluded here.
+        // ====================================================================
+
+        var SduDmzFighter = Java.type(
+            \"net.shurui.dev.sdu.entity.SduDmzFighter\"
+        );
+
+
+        if (entity instanceof SduDmzFighter) {
+            return;
+        }
+
+
+        // ====================================================================
+        // GET THE EXACT SHURUI SPAWNER POSITION
+        // ====================================================================
+
+        var packedSpawnerPos =
+            data.getLong(
+                \"sdd_spawner\"
+            );
+
+
+        // ====================================================================
+        // DECODE THE PACKED BLOCK POSITION
+        // ====================================================================
+        //
+        // Shurui stored:
+        //
+        //      BlockPos.asLong()
+        //
+        // In the production Minecraft 1.20.1 mappings used by these jars,
+        // the corresponding packed-long decoder is:
+        //
+        //      BlockPos.m_122022_(long)
+        //
+        // We avoid doing 64-bit BlockPos math in JavaScript because JS
+        // numbers cannot safely represent every packed Minecraft position.
+        // ====================================================================
+
+        var BlockPos = Java.type(
+            \"net.minecraft.core.BlockPos\"
+        );
+
+
+        var mcSpawnerPos =
+            BlockPos.m_122022_(
+                packedSpawnerPos
+            );
+
+
+        if (mcSpawnerPos == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // CONVERT TO CUSTOMNPCS POSITION
+        // ====================================================================
+
+        var BlockPosWrapper = Java.type(
+            \"noppes.npcs.api.wrapper.BlockPosWrapper\"
+        );
+
+
+        var spawnerPos =
+            new BlockPosWrapper(
+                mcSpawnerPos
+            );
+
+
+        // ====================================================================
+        // GET WORLD THROUGH CUSTOMNPCS
+        // ====================================================================
+
+        var world =
+            event.entity.getWorld();
+
+
+        if (world == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // GET THE SPAWNER BLOCK
+        // ====================================================================
+
+        var spawnerBlock =
+            world.getBlock(
+                spawnerPos
+            );
+
+
+        if (spawnerBlock == null) {
+
+            if (DEBUG) {
+
+                print(
+                    \"[Native DMZ Ki Bridge] \" +
+                    \"Could not locate Advanced Spawner block at \" +
+                    spawnerPos.getX() +
+                    \",\" +
+                    spawnerPos.getY() +
+                    \",\" +
+                    spawnerPos.getZ()
+                );
+            }
+
+            return;
+        }
+
+
+        // ====================================================================
+        // REQUIRE TILE/BLOCK ENTITY
+        // ====================================================================
+
+        if (!spawnerBlock.hasTileEntity()) {
+
+            if (DEBUG) {
+
+                print(
+                    \"[Native DMZ Ki Bridge] \" +
+                    \"Saved Shurui spawner position does not contain \" +
+                    \"a block entity.\"
+                );
+            }
+
+            return;
+        }
+
+
+        // ====================================================================
+        // GET REAL MINECRAFT BLOCK ENTITY
+        // ====================================================================
+
+        var blockEntity =
+            spawnerBlock.getMCTileEntity();
+
+
+        if (blockEntity == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // VERIFY SHURUI ADVANCED SPAWNER
+        // ====================================================================
+
+        var AdvancedSpawnerBlockEntity = Java.type(
+            \"net.shurui.dev.shuruis_dmz_dungeons.block.AdvancedSpawnerBlockEntity\"
+        );
+
+
+        if (
+            !(
+                blockEntity
+                instanceof
+                AdvancedSpawnerBlockEntity
+            )
+        ) {
+
+            return;
+        }
+
+
+        // ====================================================================
+        // GET ADVANCED SPAWNER CONFIG
+        // ====================================================================
+
+        var config =
+            blockEntity.getConfig();
+
+
+        if (config == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // DETECT WHETHER THIS ENTITY IS THE SPAWNER BOSS
+        // ====================================================================
+
+        var isBoss = false;
+
+
+        if (data.has(\"sdd_boss\")) {
+
+            if (
+                data.getBoolean(
+                    \"sdd_boss\"
+                )
+            ) {
+
+                isBoss = true;
+            }
+        }
+
+
+        // ====================================================================
+        // READ THE APPROPRIATE KI DAMAGE SETTINGS
+        // ====================================================================
+        //
+        // Normal:
+        //
+        //      kiPower
+        //      kiDmgMin
+        //      kiDmgMax
+        //
+        // Boss:
+        //
+        //      bossKiPower
+        //      bossKiDmgMin
+        //      bossKiDmgMax
+        //
+        // ====================================================================
+
+        var kiPower = 0;
+        var kiMin = 0;
+        var kiMax = 0;
+
+
+        if (isBoss) {
+
+            kiPower =
+                Number(
+                    config.bossKiPower
+                );
+
+
+            kiMin =
+                Number(
+                    config.bossKiDmgMin
+                );
+
+
+            kiMax =
+                Number(
+                    config.bossKiDmgMax
+                );
+
+        }
+        else {
+
+            kiPower =
+                Number(
+                    config.kiPower
+                );
+
+
+            kiMin =
+                Number(
+                    config.kiDmgMin
+                );
+
+
+            kiMax =
+                Number(
+                    config.kiDmgMax
+                );
+        }
+
+
+        // ====================================================================
+        // CLEAN VALUES
+        // ====================================================================
+
+        if (isNaN(kiPower)) {
+            kiPower = 0;
+        }
+
+        if (isNaN(kiMin)) {
+            kiMin = 0;
+        }
+
+        if (isNaN(kiMax)) {
+            kiMax = 0;
+        }
+
+
+        kiPower =
+            Math.max(
+                0,
+                kiPower
+            );
+
+
+        kiMin =
+            Math.max(
+                0,
+                Math.floor(
+                    kiMin
+                )
+            );
+
+
+        kiMax =
+            Math.max(
+                0,
+                Math.floor(
+                    kiMax
+                )
+            );
+
+
+        // ====================================================================
+        // MIRROR SHURUI'S Ki DAMAGE ROLL
+        // ====================================================================
+        //
+        // This matches SpawnerConfig.rollKiDamage():
+        //
+        // If Min/Max are both zero:
+        //
+        //      use KiPower
+        //
+        // If Min == Max:
+        //
+        //      use that value
+        //
+        // Otherwise:
+        //
+        //      inclusive random value from Min through Max
+        //
+        //
+        // IMPORTANT:
+        //
+        // Shurui already rolled KiPower once into the initial spawn NBT.
+        //
+        // Native DBSagasEntity ignored that NBT field completely.
+        //
+        // There is therefore no usable \"original roll\" left to retrieve.
+        //
+        // This roll becomes the REAL Ki Damage roll for the native mob.
+        // ====================================================================
+
+        var low =
+            Math.max(
+                0,
+                Math.min(
+                    kiMin,
+                    kiMax
+                )
+            );
+
+
+        var high =
+            Math.max(
+                0,
+                Math.max(
+                    kiMin,
+                    kiMax
+                )
+            );
+
+
+        var spawnerKiDamage = 0;
+
+        var kiSource = \"\";
+
+
+        if (high <= 0) {
+
+            spawnerKiDamage =
+                kiPower;
+
+            kiSource =
+                \"KiPower\";
+
+        }
+        else if (low >= high) {
+
+            spawnerKiDamage =
+                low;
+
+            kiSource =
+                \"Fixed Ki Range\";
+
+        }
+        else {
+
+            spawnerKiDamage =
+                low
+                +
+                Math.floor(
+                    Math.random()
+                    *
+                    (
+                        (high - low)
+                        +
+                        1
+                    )
+                );
+
+            kiSource =
+                \"Ki Range\";
+        }
+
+
+        // ====================================================================
+        // READ NATIVE DMZ KI DAMAGE BEFORE FIX
+        // ====================================================================
+
+        var oldKiDamage =
+            Number(
+                entity.getKiBlastDamage()
+            );
+
+
+        if (isNaN(oldKiDamage)) {
+            oldKiDamage = 0;
+        }
+
+
+        // ====================================================================
+        // APPLY OPTIONAL GLOBAL MULTIPLIER
+        // ====================================================================
+
+        var requestedKiDamage =
+            spawnerKiDamage
+            *
+            KI_DAMAGE_MULTIPLIER;
+
+
+        if (isNaN(requestedKiDamage)) {
+            requestedKiDamage = 0;
+        }
+
+
+        if (requestedKiDamage < 0) {
+            requestedKiDamage = 0;
+        }
+
+
+        // ====================================================================
+        // CLAMP TO DMZ'S REAL ATTRIBUTE LIMIT
+        // ====================================================================
+
+        if (
+            requestedKiDamage
+            >
+            DMZ_MAX_KI_DAMAGE
+        ) {
+
+            requestedKiDamage =
+                DMZ_MAX_KI_DAMAGE;
+        }
+
+
+        // ====================================================================
+        // APPLY THE UNIVERSAL DMZ KI DAMAGE STAT
+        // ====================================================================
+        //
+        // This is the important line.
+        //
+        // DBSagasEntity SkillManager calls getKiBlastDamage() whenever
+        // it calculates a native Ki skill's damage.
+        //
+        // We DO NOT need to modify individual projectiles.
+        // ====================================================================
+
+        if (requestedKiDamage > 0) {
+
+            entity.setKiBlastDamage(
+                Number(
+                    requestedKiDamage
+                )
+            );
+
+        }
+        else {
+
+            if (!KEEP_NATIVE_KI_IF_SPAWNER_ZERO) {
+
+                entity.setKiBlastDamage(
+                    0
+                );
+            }
+        }
+
+
+        // ====================================================================
+        // READ IT BACK
+        // ====================================================================
+
+        var finalKiDamage =
+            Number(
+                entity.getKiBlastDamage()
+            );
+
+
+        if (isNaN(finalKiDamage)) {
+            finalKiDamage = 0;
+        }
+
+
+        // ====================================================================
+        // STORE DEBUG INFORMATION
+        // ====================================================================
+
+        data.setFloat(
+            \"sdd_native_dmz_spawner_ki\",
+            Number(
+                spawnerKiDamage
+            )
+        );
+
+
+        data.setFloat(
+            \"sdd_native_dmz_applied_ki\",
+            Number(
+                finalKiDamage
+            )
+        );
+
+
+        // ====================================================================
+        // PERMANENT ONE-TIME MARKER
+        // ====================================================================
+
+        data.setBoolean(
+            \"sdd_native_dmz_ki_bridge_complete\",
+            true
+        );
+
+
+        // ====================================================================
+        // DEBUG
+        // ====================================================================
+
+        if (DEBUG) {
+
+            print(
+                \"[Native DMZ Ki Bridge] INITIALIZED ON SPAWN\" +
+
+                \" | Mob=\" +
+                event.entity.getName() +
+
+                \" | Class=\" +
+                entity.getClass().getName() +
+
+                \" | Boss=\" +
+                isBoss +
+
+                \" | Spawner=\" +
+                spawnerPos.getX() +
+                \",\" +
+                spawnerPos.getY() +
+                \",\" +
+                spawnerPos.getZ() +
+
+                \" | Source=\" +
+                kiSource +
+
+                \" | SpawnerKi=\" +
+                spawnerKiDamage +
+
+                \" | OldKi=\" +
+                oldKiDamage +
+
+                \" | AppliedKi=\" +
+                finalKiDamage
+            );
+        }
+
+    }
+    catch (error) {
+
+        print(
+            \"[Native DMZ Ki Bridge ERROR] \" +
+            error
+        );
+    }
+}",
+            "Console": [
+            ],
+            "ScriptList": [
+            ]
+        },
+        {
+            "Script": "// ============================================================================
+// Shurui Advanced Spawner -> Direct Bow / Arrow Damage Bridge
+// GLOBAL FORGE SCRIPT
+//
+// Minecraft 1.20.1
+//
+// PURPOSE:
+//
+// Directly scales arrows fired by Shurui Advanced Spawner mobs.
+//
+// DOES NOT USE:
+// - Apothic Arrow Damage
+// - AttributesLib ranged attributes
+// - LivingHurtEvent
+//
+// Instead it changes the actual AbstractArrow base damage as soon
+// as the projectile enters the world.
+//
+// Only activates when the Shurui mob is holding a Minecraft
+// ProjectileWeaponItem, such as a Bow or Crossbow.
+//
+// ============================================================================
+
+
+// ============================================================================
+// CONFIG
+// ============================================================================
+
+
+// --------------------------------------------------------------------------
+// REFERENCE PHYSICAL DAMAGE
+// --------------------------------------------------------------------------
+//
+// We preserve the arrow's original damage characteristics and multiply
+// them according to the Shurui mob's ATTACK_DAMAGE.
+//
+// Formula:
+//
+//      Scale = Mob Attack Damage / REFERENCE_PHYSICAL_DAMAGE
+//
+//      New Arrow Base Damage = Original Arrow Base Damage * Scale
+//
+//
+// Example:
+//
+// Mob Attack Damage = 1000
+// Reference = 4
+//
+// Scale = 250x
+//
+// Original arrow base damage = 2
+//
+// New arrow base damage = 500
+//
+// This preserves differences between:
+// - bows
+// - crossbows
+// - Power enchantments
+// - modded arrows
+//
+var REFERENCE_PHYSICAL_DAMAGE = 4.0;
+
+
+// Additional global multiplier.
+//
+// 1.0 = default
+// 2.0 = twice as strong
+// 0.5 = half strength
+//
+var PROJECTILE_DAMAGE_MULTIPLIER = 1.0;
+
+
+// Never reduce an arrow below its original damage.
+var ONLY_INCREASE_DAMAGE = true;
+
+
+// Optional maximum arrow BASE damage.
+//
+// 0 = unlimited.
+//
+var MAX_ARROW_BASE_DAMAGE = 0;
+
+
+// Debug every qualifying arrow when it is created.
+var DEBUG = true;
+
+
+// ============================================================================
+// ENTITY JOIN LEVEL EVENT
+// ============================================================================
+
+function entityJoinLevelEvent(event) {
+
+    try {
+
+        // ====================================================================
+        // BASIC CHECKS
+        // ====================================================================
+
+        if (event == null) {
+            return;
+        }
+
+        if (event.entity == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // GET RAW ENTITY
+        // ====================================================================
+
+        var entity =
+            event.entity.getMCEntity();
+
+
+        if (entity == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // ONLY ABSTRACT ARROWS
+        // ====================================================================
+        //
+        // Includes:
+        //
+        // - vanilla arrows
+        // - spectral arrows
+        // - tipped arrows
+        // - bow arrows
+        // - crossbow arrows
+        // - many modded arrow subclasses
+        //
+        // ====================================================================
+
+        var AbstractArrow = Java.type(
+            \"net.minecraft.world.entity.projectile.AbstractArrow\"
+        );
+
+
+        if (!(entity instanceof AbstractArrow)) {
+            return;
+        }
+
+
+        var arrow =
+            entity;
+
+
+        // ====================================================================
+        // GET OWNER / SHOOTER
+        // ====================================================================
+        //
+        // VERIFIED production mapping:
+        //
+        //      Entity.m_19749_()
+        //
+        // on projectile entities = getOwner()
+        //
+        // ====================================================================
+
+        var shooter =
+            arrow.m_19749_();
+
+
+        if (shooter == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // REQUIRE LIVING SHOOTER
+        // ====================================================================
+
+        var LivingEntity = Java.type(
+            \"net.minecraft.world.entity.LivingEntity\"
+        );
+
+
+        if (!(shooter instanceof LivingEntity)) {
+            return;
+        }
+
+
+        // ====================================================================
+        // WRAP SHOOTER WITH CUSTOMNPCS
+        // ====================================================================
+
+        var NpcAPI = Java.type(
+            \"noppes.npcs.api.NpcAPI\"
+        );
+
+
+        var shooterWrapper =
+            NpcAPI.Instance().getIEntity(
+                shooter
+            );
+
+
+        if (shooterWrapper == null) {
+            return;
+        }
+
+
+        // ====================================================================
+        // ONLY SHURUI ADVANCED SPAWNER MOBS
+        // ====================================================================
+
+        var shooterData =
+            shooterWrapper.getNbt();
+
+
+        if (shooterData == null) {
+            return;
+        }
+
+
+        if (!shooterData.has(\"sdd_spawner\")) {
+            return;
+        }
+
+
+        // ====================================================================
+        // CHECK HELD PROJECTILE WEAPON
+        // ====================================================================
+        //
+        // CustomNPCs exposes:
+        //
+        //      getMainhandItem()
+        //      getOffhandItem()
+        //
+        // We then check the actual Minecraft Item class.
+        //
+        // ProjectileWeaponItem covers normal BowItem and CrossbowItem,
+        // along with compatible modded projectile weapons that inherit
+        // Minecraft's normal projectile weapon class.
+        // ====================================================================
+
+        var ProjectileWeaponItem = Java.type(
+            \"net.minecraft.world.item.ProjectileWeaponItem\"
+        );
+
+
+        var validProjectileWeapon = false;
+
+        var weaponName = \"unknown\";
+
+
+        // --------------------------------------------------------------------
+        // MAIN HAND
+        // --------------------------------------------------------------------
+
+        try {
+
+            var mainItem =
+                shooterWrapper.getMainhandItem();
+
+
+            if (
+                mainItem != null
+                &&
+                !mainItem.isEmpty()
+            ) {
+
+                var mainStack =
+                    mainItem.getMCItemStack();
+
+
+                if (mainStack != null) {
+
+                    // ItemStack.getItem()
+                    var mainMcItem =
+                        mainStack.m_41720_();
+
+
+                    if (
+                        mainMcItem
+                        instanceof
+                        ProjectileWeaponItem
+                    ) {
+
+                        validProjectileWeapon = true;
+
+                        weaponName =
+                            mainItem.getName();
+                    }
+                }
+            }
+
+        }
+        catch (mainError) {
+        }
+
+
+        // --------------------------------------------------------------------
+        // OFF HAND FALLBACK
+        // --------------------------------------------------------------------
+
+        if (!validProjectileWeapon) {
+
+            try {
+
+                var offItem =
+                    shooterWrapper.getOffhandItem();
+
+
+                if (
+                    offItem != null
+                    &&
+                    !offItem.isEmpty()
+                ) {
+
+                    var offStack =
+                        offItem.getMCItemStack();
+
+
+                    if (offStack != null) {
+
+                        var offMcItem =
+                            offStack.m_41720_();
+
+
+                        if (
+                            offMcItem
+                            instanceof
+                            ProjectileWeaponItem
+                        ) {
+
+                            validProjectileWeapon = true;
+
+                            weaponName =
+                                offItem.getName();
+                        }
+                    }
+                }
+
+            }
+            catch (offError) {
+            }
+        }
+
+
+        // ====================================================================
+        // NOT HOLDING A BOW / CROSSBOW STYLE WEAPON
+        // ====================================================================
+
+        if (!validProjectileWeapon) {
+            return;
+        }
+
+
+        // ====================================================================
+        // GET SHOOTER ATTACK DAMAGE
+        // ====================================================================
+        //
+        // Shurui already scales ATTACK_DAMAGE from the Advanced Spawner.
+        //
+        // Attributes.f_22281_
+        //      = ATTACK_DAMAGE
+        //
+        // LivingEntity.m_21051_(Attribute)
+        //      = getAttribute()
+        //
+        // AttributeInstance.m_22135_()
+        //      = getValue()
+        //
+        // ====================================================================
+
+        var Attributes = Java.type(
+            \"net.minecraft.world.entity.ai.attributes.Attributes\"
+        );
+
+
+        var attackInstance =
+            shooter.m_21051_(
+                Attributes.f_22281_
+            );
+
+
+        if (attackInstance == null) {
+            return;
+        }
+
+
+        var physicalPower =
+            Number(
+                attackInstance.m_22135_()
+            );
+
+
+        if (isNaN(physicalPower)) {
+            return;
+        }
+
+
+        if (physicalPower <= 0) {
+            return;
+        }
+
+
+        // ====================================================================
+        // GET ARROW'S ACTUAL BASE DAMAGE
+        // ====================================================================
+        //
+        // VERIFIED production 1.20.1 mapping:
+        //
+        //      AbstractArrow.m_36789_()
+        //
+        //          = getBaseDamage()
+        //
+        // ====================================================================
+
+        var oldBaseDamage =
+            Number(
+                arrow.m_36789_()
+            );
+
+
+        if (isNaN(oldBaseDamage)) {
+            return;
+        }
+
+
+        if (oldBaseDamage <= 0) {
+            return;
+        }
+
+
+        // ====================================================================
+        // CALCULATE SCALE
+        // ====================================================================
+
+        var scale =
+            physicalPower
+            /
+            REFERENCE_PHYSICAL_DAMAGE;
+
+
+        scale =
+            scale
+            *
+            PROJECTILE_DAMAGE_MULTIPLIER;
+
+
+        if (isNaN(scale)) {
+            return;
+        }
+
+
+        if (scale < 0) {
+            scale = 0;
+        }
+
+
+        // ====================================================================
+        // CALCULATE NEW ARROW BASE DAMAGE
+        // ====================================================================
+
+        var newBaseDamage =
+            oldBaseDamage
+            *
+            scale;
+
+
+        if (
+            ONLY_INCREASE_DAMAGE
+            &&
+            newBaseDamage < oldBaseDamage
+        ) {
+
+            newBaseDamage =
+                oldBaseDamage;
+        }
+
+
+        if (
+            MAX_ARROW_BASE_DAMAGE > 0
+            &&
+            newBaseDamage > MAX_ARROW_BASE_DAMAGE
+        ) {
+
+            newBaseDamage =
+                MAX_ARROW_BASE_DAMAGE;
+        }
+
+
+        // ====================================================================
+        // DIRECTLY MODIFY THE PROJECTILE
+        // ====================================================================
+        //
+        // VERIFIED production 1.20.1 mapping:
+        //
+        //      AbstractArrow.m_36781_(double)
+        //
+        //          = setBaseDamage(double)
+        //
+        // ====================================================================
+
+        arrow.m_36781_(
+            Number(
+                newBaseDamage
+            )
+        );
+
+
+        // ====================================================================
+        // READ BACK
+        // ====================================================================
+
+        var appliedDamage =
+            Number(
+                arrow.m_36789_()
+            );
+
+
+        // ====================================================================
+        // DEBUG
+        // ====================================================================
+
+        if (DEBUG) {
+
+            print(
+                \"[Shurui Direct Ranged Bridge]\" +
+
+                \" Shooter=\" +
+                shooterWrapper.getName() +
+
+                \" | Weapon=\" +
+                weaponName +
+
+                \" | PhysicalPower=\" +
+                physicalPower +
+
+                \" | OriginalArrowBase=\" +
+                oldBaseDamage +
+
+                \" | Scale=\" +
+                scale +
+
+                \" | NewArrowBase=\" +
+                appliedDamage
+            );
+        }
+
+    }
+    catch (error) {
+
+        print(
+            \"[Shurui Direct Ranged Bridge ERROR] \" +
+            error
+        );
+    }
+}",
+            "Console": [
+                {
+                    "Long": 1786394242195L,
+                    "String": "[Shurui Direct Ranged Bridge] Shooter=Skeleton | Weapon=minecraft:bow | PhysicalPower=2 | OriginalArrowBase=2.7209086175917414 | Scale=0.5 | NewArrowBase=2.7209086175917414"
+                },
+                {
+                    "Long": 1786394244123L,
+                    "String": "[Shurui Direct Ranged Bridge] Shooter=Skeleton | Weapon=minecraft:bow | PhysicalPower=2 | OriginalArrowBase=2.186194327485163 | Scale=0.5 | NewArrowBase=2.186194327485163"
+                },
+                {
+                    "Long": 1786394246244L,
+                    "String": "[Shurui Direct Ranged Bridge] Shooter=Skeleton | Weapon=minecraft:bow | PhysicalPower=2 | OriginalArrowBase=2.6398621978635672 | Scale=0.5 | NewArrowBase=2.6398621978635672"
+                },
+                {
+                    "Long": 1786394248201L,
+                    "String": "[Shurui Direct Ranged Bridge] Shooter=Skeleton | Weapon=minecraft:bow | PhysicalPower=2 | OriginalArrowBase=2.15710455580877 | Scale=0.5 | NewArrowBase=2.15710455580877"
+                },
+                {
+                    "Long": 1786394250603L,
+                    "String": "[Shurui Direct Ranged Bridge] Shooter=Skeleton | Weapon=minecraft:bow | PhysicalPower=2 | OriginalArrowBase=2.3687162527203323 | Scale=0.5 | NewArrowBase=2.3687162527203323"
+                },
+                {
+                    "Long": 1786394252814L,
+                    "String": "[Shurui Direct Ranged Bridge] Shooter=Skeleton | Weapon=minecraft:bow | PhysicalPower=2 | OriginalArrowBase=2.302677518867601 | Scale=0.5 | NewArrowBase=2.302677518867601"
+                }
+            ],
+            "ScriptList": [
+            ]
+        }
+    ],
+    "ScriptLanguage": "ECMAScript"
+}
