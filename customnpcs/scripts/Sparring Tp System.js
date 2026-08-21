@@ -1,7 +1,7 @@
 /*
 ============================================================
  DBZ Legacy Reborn - Sparring TP System
- Version: 3.2.8
+ Version: 3.2.9
 
  Combat-Based Training (Sparring v3)
 
@@ -59,6 +59,9 @@
     no longer full-heals on every FF hit.
   - v3.2.8: admin /spar mentor resetcd [player] clears mentor + apprentice
     change cooldowns (op / permission level 2).
+  - v3.2.9: register /spar Bukkit hook + boot log ONCE per server process
+    (plugin metadata). CNPC Global Player init runs per player and was
+    re-registering listeners + spamming console every join/tick reload.
 
  PLACE AS:
   CustomNPCs Global Player Script
@@ -4078,8 +4081,44 @@ function findHookPlugin() {
     return null;
 }
 
-/* In-memory only so script reload re-registers cleanly. */
+/*
+ * CNPC Global Player scripts get a fresh JS scope per player, so an in-memory
+ * boolean cannot gate server-wide registration. Use Bukkit plugin metadata
+ * (lives for the process; cleared on plugin disable / server restart).
+ */
 var SPAR_SLASH_HOOK_READY = false;
+var SPAR_SLASH_HOOK_META = "spar.v3.slashHookRegistered";
+var SPAR_BOOT_LOG_META = "spar.v3.bootLogged";
+
+function getSparHookPluginMeta(plugin, key) {
+    if (plugin == null) return false;
+    try {
+        if (plugin.hasMetadata(key) !== true) return false;
+        var list = plugin.getMetadata(key);
+        if (list == null || list.isEmpty()) return false;
+        try { return list.get(0).asBoolean() === true; } catch (e1) {
+            try { return String(list.get(0).value()) === "true"; } catch (e2) { return true; }
+        }
+    } catch (e3) { return false; }
+}
+
+function setSparHookPluginMeta(plugin, key, value) {
+    if (plugin == null) return false;
+    try {
+        var FixedMetadataValue = Java.type("org.bukkit.metadata.FixedMetadataValue");
+        plugin.setMetadata(key, new FixedMetadataValue(plugin, value === true));
+        return true;
+    } catch (e) { return false; }
+}
+
+function isSparSlashHookAlreadyRegistered(plugin) {
+    if (SPAR_SLASH_HOOK_READY === true) return true;
+    if (getSparHookPluginMeta(plugin, SPAR_SLASH_HOOK_META)) {
+        SPAR_SLASH_HOOK_READY = true;
+        return true;
+    }
+    return false;
+}
 
 function isSparSlashMessage(msg) {
     var lower = String(msg || "").toLowerCase();
@@ -4119,12 +4158,16 @@ function isSparSlashMessage(msg) {
  * Intercept /spar before Bukkit prints "Unknown command".
  */
 function registerSparSlashCommandHook() {
-    if (SPAR_SLASH_HOOK_READY === true) return;
-
     try {
         var plugin = findHookPlugin();
+        if (isSparSlashHookAlreadyRegistered(plugin)) return;
+
         if (plugin == null) {
-            try { print("[Sparring v3] slash hook: no host plugin found"); } catch (e0) {}
+            /* Do not spam: only log once per process via in-memory if no plugin. */
+            if (SPAR_SLASH_HOOK_READY !== true) {
+                SPAR_SLASH_HOOK_READY = true;
+                try { print("[Sparring v3] slash hook: no host plugin found"); } catch (e0) {}
+            }
             return;
         }
 
@@ -4191,21 +4234,29 @@ function registerSparSlashCommandHook() {
         );
 
         SPAR_SLASH_HOOK_READY = true;
+        setSparHookPluginMeta(plugin, SPAR_SLASH_HOOK_META, true);
         try { print("[Sparring v3] /spar slash command hook registered via " + plugin.getName()); } catch (eLog) {}
     } catch (err) {
         try { print("[Sparring v3] slash hook register failed: " + err); } catch (e2) {}
     }
 }
 
+function logSparBootOnce() {
+    try {
+        var plugin = findHookPlugin();
+        if (getSparHookPluginMeta(plugin, SPAR_BOOT_LOG_META)) return;
+        setSparHookPluginMeta(plugin, SPAR_BOOT_LOG_META, true);
+        print("[Sparring v3.2.9] mentor resetcd admin | BeamClashManager=" +
+            (BeamClashManager != null ? "hooked" : "MISSING") +
+            " MainDamageTypes=" + (MainDamageTypes != null ? "hooked" : "MISSING") +
+            " AbstractKiProjectile=" + (AbstractKiProjectile != null ? "ok" : "MISSING"));
+    } catch (eLog) {}
+}
+
 function init(event) {
     try {
         registerSparSlashCommandHook();
-        try {
-            print("[Sparring v3.2.8] mentor resetcd admin | BeamClashManager=" +
-                (BeamClashManager != null ? "hooked" : "MISSING") +
-                " MainDamageTypes=" + (MainDamageTypes != null ? "hooked" : "MISSING") +
-                " AbstractKiProjectile=" + (AbstractKiProjectile != null ? "ok" : "MISSING"));
-        } catch (eLog) {}
+        logSparBootOnce();
     } catch (e) {
         try { print("[Sparring v3] init " + e); } catch (x) {}
     }
