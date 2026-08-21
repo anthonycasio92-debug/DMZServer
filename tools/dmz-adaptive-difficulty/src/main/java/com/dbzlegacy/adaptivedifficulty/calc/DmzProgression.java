@@ -124,11 +124,19 @@ public final class DmzProgression {
         return v == null ? "" : v.trim().toLowerCase();
     }
 
+    /** True when DMZ {@link StatsData} is attached and readable. */
+    public static boolean hasStats(Player player) {
+        return stats(player) != null;
+    }
+
     /**
      * Live DMZ {@code getLevel()} — a <b>stat-progress</b> estimate, not a stored
      * character counter. Clamp to the configured DMZ/AD max so costs / GUI never
      * show values above the server level ceiling (e.g. 100k players reading as
      * ~987k when maxValue / max-stats mode disagrees).
+     * <p>
+     * Returns {@code 1} when stats are missing — callers that cache / revoke must
+     * use {@link #hasStats} / {@link #hasReliableUnlockGateSample} first.
      */
     public static int dmzLevel(Player player) {
         StatsData data = stats(player);
@@ -203,8 +211,26 @@ public final class DmzProgression {
         if (player == null) {
             return 1;
         }
-        int live = dmzLevel(player);
         UUID id = player.m_20148_();
+        StatsData data = stats(player);
+        if (data == null) {
+            // DMZ capability not ready — never poison BASE_FORM_LEVEL with placeholder 1.
+            Integer cached = BASE_FORM_LEVEL.get(id);
+            if (cached != null) {
+                return clampDmzLevel(cached);
+            }
+            if (fallbackWhenTransformed > 0L) {
+                long capped = Math.min(fallbackWhenTransformed, configuredMaxDmzLevel(null));
+                return (int) Math.max(1L, Math.min(Integer.MAX_VALUE, capped));
+            }
+            return 1;
+        }
+        int live;
+        try {
+            live = clampDmzLevel(data.getLevel(), data);
+        } catch (Throwable ignored) {
+            live = 1;
+        }
         if (!isTransformed(player)) {
             BASE_FORM_LEVEL.put(id, live);
             return live;
@@ -214,7 +240,7 @@ public final class DmzProgression {
             return clampDmzLevel(cached);
         }
         if (fallbackWhenTransformed > 0L) {
-            long capped = Math.min(fallbackWhenTransformed, configuredMaxDmzLevel(stats(player)));
+            long capped = Math.min(fallbackWhenTransformed, configuredMaxDmzLevel(data));
             return (int) Math.max(1L, Math.min(Integer.MAX_VALUE, capped));
         }
         // Last resort: live level (may be form-sensitive on some race setups).
@@ -237,12 +263,23 @@ public final class DmzProgression {
         if (player == null) {
             return 1;
         }
+        UUID id = player.m_20148_();
+        StatsData data = stats(player);
+        if (data == null) {
+            Integer cached = BASE_FORM_LEVEL.get(id);
+            return cached != null ? Math.max(1, cached) : 1;
+        }
         if (!isTransformed(player)) {
-            int live = dmzLevel(player);
-            BASE_FORM_LEVEL.put(player.m_20148_(), live);
+            int live;
+            try {
+                live = clampDmzLevel(data.getLevel(), data);
+            } catch (Throwable ignored) {
+                return 1;
+            }
+            BASE_FORM_LEVEL.put(id, live);
             return live;
         }
-        Integer cached = BASE_FORM_LEVEL.get(player.m_20148_());
+        Integer cached = BASE_FORM_LEVEL.get(id);
         if (cached != null) {
             return Math.max(1, cached);
         }
@@ -251,17 +288,42 @@ public final class DmzProgression {
 
     /**
      * True when unlock-gate level is safe to use for revoke / prestige-up resets.
-     * False when the player is transformed with no base-form sample this session
-     * (login-already-transformed, or caches cleared by admin reload).
+     * False when:
+     * <ul>
+     *   <li>DMZ stats are not attached yet (login race — placeholder level 1)</li>
+     *   <li>transformed with no base-form sample this session</li>
+     *   <li>session cache is a polluted level-1 while live DMZ level is clearly higher</li>
+     * </ul>
      */
     public static boolean hasReliableUnlockGateSample(Player player) {
         if (player == null) {
             return false;
         }
+        StatsData data = stats(player);
+        if (data == null) {
+            return false;
+        }
         if (!isTransformed(player)) {
             return true;
         }
-        return BASE_FORM_LEVEL.containsKey(player.m_20148_());
+        Integer cached = BASE_FORM_LEVEL.get(player.m_20148_());
+        if (cached == null) {
+            return false;
+        }
+        // Reject early-login pollution: BASE_FORM_LEVEL=1 written before StatsData
+        // attached, while the live (possibly form-inflated) level is far above 1.
+        if (cached <= 1) {
+            try {
+                int live = clampDmzLevel(data.getLevel(), data);
+                if (live >= 25) {
+                    BASE_FORM_LEVEL.remove(player.m_20148_());
+                    return false;
+                }
+            } catch (Throwable ignored) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static void clearBaseFormLevel(UUID playerId) {

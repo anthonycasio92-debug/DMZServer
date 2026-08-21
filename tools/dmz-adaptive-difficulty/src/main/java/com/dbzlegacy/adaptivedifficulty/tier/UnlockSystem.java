@@ -79,7 +79,7 @@ public final class UnlockSystem {
         }
 
         // Never revoke while the level sample is unknown — that wiped paid tiers on
-        // transformed login / admin reload (base-form cache empty → fake level 1).
+        // early login (StatsData null → fake level 1), transformed login, or admin reload.
         if (reliable) {
             for (Integer id : new ArrayList<>(data.getUnlockedTiers())) {
                 UnlockTier tier = UnlockTier.byId(id);
