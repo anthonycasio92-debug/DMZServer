@@ -1,12 +1,14 @@
 Farming: 
   name: 'Farming'
-  type: 'Jobs'
+  type: 'Dynamic'
   'max-level': 100
   'skill-req-lvl': 0
   'needs-permission': 'false'
   'cooldown-message': 'true'
   incompatible: []
   attributes: 
+    # Was swapped (level-base 10000) which blocked every purchase.
+    # Match Building/Fishing: buy with TP, then harvest levels the skill.
     'level-base': '1'
     'level-scale': '0'
     'cost-base': '10000'
