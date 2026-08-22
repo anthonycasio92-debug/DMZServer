@@ -1,7 +1,7 @@
 /*
 ============================================================
  DBZ Legacy Reborn - Sparring TP System
- Version: 3.2.9
+ Version: 3.2.11
 
  Combat-Based Training (Sparring v3)
 
@@ -62,6 +62,9 @@
   - v3.2.9: register /spar Bukkit hook + boot log ONCE per server process
     (plugin metadata). CNPC Global Player init runs per player and was
     re-registering listeners + spamming console every join/tick reload.
+  - v3.2.10: lazy Java.type resolution (faster CNPC reload eval).
+  - v3.2.11: once-gate via java.lang.System properties (plugin metadata
+    did not stick across CNPC per-player script engines — still spammed).
 
  PLACE AS:
   CustomNPCs Global Player Script
@@ -92,30 +95,47 @@
 ============================================================
 */
 
-/* ========================= JAVA TYPES ========================= */
-
-var StatsProvider = Java.type("com.dragonminez.common.stats.StatsProvider");
-var StatsCapability = Java.type("com.dragonminez.common.stats.StatsCapability");
-var StatsSyncS2C = Java.type("com.dragonminez.common.network.S2C.StatsSyncS2C");
-var NetworkHandler = Java.type("com.dragonminez.common.network.NetworkHandler");
-var GravityLogic = Java.type("com.dragonminez.server.util.GravityLogic");
-var MCPlayerClass = Java.type("net.minecraft.world.entity.player.Player");
-var Bukkit = Java.type("org.bukkit.Bukkit");
-var System = Java.type("java.lang.System");
-var LocalDate = Java.type("java.time.LocalDate");
-
+/* ========================= JAVA TYPES (lazy) ========================= */
+/*
+ * Top-level Java.type runs on every CNPC engine.eval (per player on reload).
+ * Resolve once on first gameplay event instead.
+ */
+var StatsProvider = null;
+var StatsCapability = null;
+var StatsSyncS2C = null;
+var NetworkHandler = null;
+var GravityLogic = null;
+var MCPlayerClass = null;
+var Bukkit = null;
+var System = null;
+var LocalDate = null;
 var AbstractKiProjectile = null;
 var KiLaserEntity = null;
 var KiBlastEntity = null;
 var BeamClashManager = null;
 var MainDamageTypes = null;
 var JavaUUID = null;
-try { AbstractKiProjectile = Java.type("com.dragonminez.common.init.entities.ki.AbstractKiProjectile"); } catch (eA) {}
-try { KiLaserEntity = Java.type("com.dragonminez.common.init.entities.ki.KiLaserEntity"); } catch (eL) {}
-try { KiBlastEntity = Java.type("com.dragonminez.common.init.entities.ki.KiBlastEntity"); } catch (eB) {}
-try { BeamClashManager = Java.type("com.dragonminez.common.combat.clash.BeamClashManager"); } catch (eC) {}
-try { MainDamageTypes = Java.type("com.dragonminez.common.init.MainDamageTypes"); } catch (eD) {}
-try { JavaUUID = Java.type("java.util.UUID"); } catch (eU) {}
+var SPAR_TYPES_READY = false;
+
+function ensureSparTypes() {
+    if (SPAR_TYPES_READY === true) return;
+    SPAR_TYPES_READY = true;
+    try { StatsProvider = Java.type("com.dragonminez.common.stats.StatsProvider"); } catch (e1) {}
+    try { StatsCapability = Java.type("com.dragonminez.common.stats.StatsCapability"); } catch (e2) {}
+    try { StatsSyncS2C = Java.type("com.dragonminez.common.network.S2C.StatsSyncS2C"); } catch (e3) {}
+    try { NetworkHandler = Java.type("com.dragonminez.common.network.NetworkHandler"); } catch (e4) {}
+    try { GravityLogic = Java.type("com.dragonminez.server.util.GravityLogic"); } catch (e5) {}
+    try { MCPlayerClass = Java.type("net.minecraft.world.entity.player.Player"); } catch (e6) {}
+    try { Bukkit = Java.type("org.bukkit.Bukkit"); } catch (e7) {}
+    try { System = Java.type("java.lang.System"); } catch (e8) {}
+    try { LocalDate = Java.type("java.time.LocalDate"); } catch (e9) {}
+    try { AbstractKiProjectile = Java.type("com.dragonminez.common.init.entities.ki.AbstractKiProjectile"); } catch (eA) {}
+    try { KiLaserEntity = Java.type("com.dragonminez.common.init.entities.ki.KiLaserEntity"); } catch (eL) {}
+    try { KiBlastEntity = Java.type("com.dragonminez.common.init.entities.ki.KiBlastEntity"); } catch (eB) {}
+    try { BeamClashManager = Java.type("com.dragonminez.common.combat.clash.BeamClashManager"); } catch (eC) {}
+    try { MainDamageTypes = Java.type("com.dragonminez.common.init.MainDamageTypes"); } catch (eD) {}
+    try { JavaUUID = Java.type("java.util.UUID"); } catch (eU) {}
+}
 
 /* ========================= CONFIGURATION ========================= */
 
@@ -3462,6 +3482,7 @@ function tick(event) {
     var player = event.player;
     if (player == null) return;
     try {
+        ensureSparTypes();
         if (suppressSparringForChallenge(player)) return;
 
         /*
@@ -3489,6 +3510,7 @@ function tick(event) {
 
 function damagedEntity(event) {
     try {
+        ensureSparTypes();
         var attacker = event.player;
         var target = event.target;
         if (attacker == null || target == null) return;
@@ -4083,41 +4105,37 @@ function findHookPlugin() {
 
 /*
  * CNPC Global Player scripts get a fresh JS scope per player, so an in-memory
- * boolean cannot gate server-wide registration. Use Bukkit plugin metadata
- * (lives for the process; cleared on plugin disable / server restart).
+ * boolean and even Bukkit plugin metadata often fail to share state.
+ * java.lang.System properties are JVM-global for the process (cleared on restart).
  */
-var SPAR_SLASH_HOOK_READY = false;
-var SPAR_SLASH_HOOK_META = "spar.v3.slashHookRegistered";
-var SPAR_BOOT_LOG_META = "spar.v3.bootLogged";
+var SPAR_SLASH_HOOK_PROP = "dmz.spar.v3.slashHookRegistered";
+var SPAR_BOOT_LOG_PROP = "dmz.spar.v3.bootLogged";
 
-function getSparHookPluginMeta(plugin, key) {
-    if (plugin == null) return false;
+function sparJvmFlagGet(key) {
     try {
-        if (plugin.hasMetadata(key) !== true) return false;
-        var list = plugin.getMetadata(key);
-        if (list == null || list.isEmpty()) return false;
-        try { return list.get(0).asBoolean() === true; } catch (e1) {
-            try { return String(list.get(0).value()) === "true"; } catch (e2) { return true; }
-        }
-    } catch (e3) { return false; }
-}
-
-function setSparHookPluginMeta(plugin, key, value) {
-    if (plugin == null) return false;
-    try {
-        var FixedMetadataValue = Java.type("org.bukkit.metadata.FixedMetadataValue");
-        plugin.setMetadata(key, new FixedMetadataValue(plugin, value === true));
-        return true;
+        var Sys = Java.type("java.lang.System");
+        return String(Sys.getProperty(key, "")) === "1";
     } catch (e) { return false; }
 }
 
-function isSparSlashHookAlreadyRegistered(plugin) {
-    if (SPAR_SLASH_HOOK_READY === true) return true;
-    if (getSparHookPluginMeta(plugin, SPAR_SLASH_HOOK_META)) {
-        SPAR_SLASH_HOOK_READY = true;
+/** Returns true if THIS call claimed the flag (first wins). */
+function sparJvmFlagClaim(key) {
+    try {
+        var Sys = Java.type("java.lang.System");
+        if (String(Sys.getProperty(key, "")) === "1") return false;
+        var prev = Sys.setProperty(key, "1");
+        if (prev != null && String(prev) === "1") return false;
+        return true;
+    } catch (e) {
+        /* Fallback: allow once in this JS scope only. */
         return true;
     }
-    return false;
+}
+
+function sparJvmFlagClear(key) {
+    try {
+        Java.type("java.lang.System").clearProperty(key);
+    } catch (e) {}
 }
 
 function isSparSlashMessage(msg) {
@@ -4156,18 +4174,24 @@ function isSparSlashMessage(msg) {
 
 /*
  * Intercept /spar before Bukkit prints "Unknown command".
+ * Claim JVM flag FIRST so concurrent per-player inits cannot stack listeners.
  */
 function registerSparSlashCommandHook() {
     try {
-        var plugin = findHookPlugin();
-        if (isSparSlashHookAlreadyRegistered(plugin)) return;
+        if (!sparJvmFlagClaim(SPAR_SLASH_HOOK_PROP)) return;
 
+        ensureSparTypes();
+        var plugin = findHookPlugin();
         if (plugin == null) {
-            /* Do not spam: only log once per process via in-memory if no plugin. */
-            if (SPAR_SLASH_HOOK_READY !== true) {
-                SPAR_SLASH_HOOK_READY = true;
-                try { print("[Sparring v3] slash hook: no host plugin found"); } catch (e0) {}
-            }
+            try { print("[Sparring v3] slash hook: no host plugin found"); } catch (e0) {}
+            return;
+        }
+
+        if (Bukkit == null) {
+            try { Bukkit = Java.type("org.bukkit.Bukkit"); } catch (eB) {}
+        }
+        if (Bukkit == null) {
+            sparJvmFlagClear(SPAR_SLASH_HOOK_PROP);
             return;
         }
 
@@ -4233,20 +4257,18 @@ function registerSparSlashCommandHook() {
             false
         );
 
-        SPAR_SLASH_HOOK_READY = true;
-        setSparHookPluginMeta(plugin, SPAR_SLASH_HOOK_META, true);
         try { print("[Sparring v3] /spar slash command hook registered via " + plugin.getName()); } catch (eLog) {}
     } catch (err) {
+        sparJvmFlagClear(SPAR_SLASH_HOOK_PROP);
         try { print("[Sparring v3] slash hook register failed: " + err); } catch (e2) {}
     }
 }
 
 function logSparBootOnce() {
     try {
-        var plugin = findHookPlugin();
-        if (getSparHookPluginMeta(plugin, SPAR_BOOT_LOG_META)) return;
-        setSparHookPluginMeta(plugin, SPAR_BOOT_LOG_META, true);
-        print("[Sparring v3.2.9] mentor resetcd admin | BeamClashManager=" +
+        if (!sparJvmFlagClaim(SPAR_BOOT_LOG_PROP)) return;
+        ensureSparTypes();
+        print("[Sparring v3.2.11] mentor resetcd admin | BeamClashManager=" +
             (BeamClashManager != null ? "hooked" : "MISSING") +
             " MainDamageTypes=" + (MainDamageTypes != null ? "hooked" : "MISSING") +
             " AbstractKiProjectile=" + (AbstractKiProjectile != null ? "ok" : "MISSING"));
@@ -4255,7 +4277,11 @@ function logSparBootOnce() {
 
 function init(event) {
     try {
-        registerSparSlashCommandHook();
+        /* Do NOT call ensureSparTypes / register here for every player.
+         * Claim-gated helpers are cheap; still avoid extra work when already done. */
+        if (!sparJvmFlagGet(SPAR_SLASH_HOOK_PROP)) {
+            registerSparSlashCommandHook();
+        }
         logSparBootOnce();
     } catch (e) {
         try { print("[Sparring v3] init " + e); } catch (x) {}
