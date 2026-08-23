@@ -6,10 +6,11 @@ URL: https://spark.lucko.me/0QA559wEa7
 
 | Metric | Value |
 |--------|-------|
-| TPS (1m / 5m) | ~19.3 / ~7.4 |
-| MSPT (1m median / max) | ~21 ms / ~173 ms |
-| MSPT (5m max) | **~20.5 s** (one catastrophic spike) |
-| Sampler | 30s @ 4kHz, Overworld |
+| Players | 8 |
+| TPS (1m / 5m / 15m) | ~19.3 / ~7.4 / ~10.4 |
+| MSPT 1m mean / median / p95 / max | ~46 / ~42 / ~79 / ~158 ms |
+| MSPT 5m mean / max | ~124 ms / **~20.2 s** (one catastrophic spike) |
+| Sampler | Overworld @ 4 kHz |
 
 Compared to ysPPVsbgrM (TPS ~8, MSPT p95 ~700ms): **much better** after Rival 4.7.9 raw-string cache — `NBTJsonUtil.FillCompound` is gone.
 
