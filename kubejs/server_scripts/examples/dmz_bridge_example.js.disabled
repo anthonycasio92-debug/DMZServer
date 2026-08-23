@@ -48,3 +48,4 @@ NativeEvents.onEvent(DMZEvent.DamageModifyEvent, event => {
   // Example cancelable damage adjust:
   // event.setAmount(event.getAmount() * 1.0)
 })
+// Disabled: KubeJS loads examples/*.js and this redeclared NetworkHandler.

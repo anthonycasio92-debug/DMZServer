@@ -7,28 +7,29 @@
 // Disable the CNPC player-tab copy of dmzweaponbonusscale.js after installing this.
 // Reload: /kubejs reload server_scripts
 
-// JAVA CLASSES
+// JAVA CLASSES (unique names — KubeJS shares one Rhino scope across all
+// server_scripts; bare `var NetworkHandler` collides with other files.)
 // ============================================================================
 
-var StatsProvider =
+var WpnStatsProvider =
     Java.loadClass("com.dragonminez.common.stats.StatsProvider");
 
-var StatsCapability =
+var WpnStatsCapability =
     Java.loadClass("com.dragonminez.common.stats.StatsCapability");
 
-var StatsSyncS2C =
+var WpnStatsSyncS2C =
     Java.loadClass("com.dragonminez.common.network.S2C.StatsSyncS2C");
 
-var NetworkHandler =
+var WpnNetworkHandler =
     Java.loadClass("com.dragonminez.common.network.NetworkHandler");
 
-var EquipmentSlot =
+var WpnEquipmentSlot =
     Java.loadClass("net.minecraft.world.entity.EquipmentSlot");
 
-var Attributes =
+var WpnAttributes =
     Java.loadClass("net.minecraft.world.entity.ai.attributes.Attributes");
 
-var ShieldItem =
+var WpnShieldItem =
     Java.loadClass("net.minecraft.world.item.ShieldItem");
 
 
@@ -1387,7 +1388,7 @@ function isShieldItem(stack, id) {
 
             if (
                 mcStack.getItem()
-                instanceof ShieldItem
+                instanceof WpnShieldItem
             ) {
 
                 return true;
@@ -1901,10 +1902,10 @@ function getWeaponAttackDamage(stack) {
         var modifiers =
             mcStack
                 .getAttributeModifiers(
-                    EquipmentSlot.MAINHAND
+                    WpnEquipmentSlot.MAINHAND
                 )
                 .get(
-                    Attributes.ATTACK_DAMAGE
+                    WpnAttributes.ATTACK_DAMAGE
                 );
 
 
@@ -3465,9 +3466,9 @@ function getDmzData(mcPlayer) {
     try {
 
         var optional =
-            StatsProvider.get(
+            WpnStatsProvider.get(
 
-                StatsCapability.INSTANCE,
+                WpnStatsCapability.INSTANCE,
 
                 mcPlayer
             );
@@ -3500,9 +3501,9 @@ function syncDmz(mcPlayer) {
 
     try {
 
-        NetworkHandler.sendToPlayer(
+        WpnNetworkHandler.sendToPlayer(
 
-            new StatsSyncS2C(
+            new WpnStatsSyncS2C(
                 mcPlayer
             ),
 

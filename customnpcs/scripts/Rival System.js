@@ -1,7 +1,7 @@
 /*
 ============================================================
  DBZ Legacy Reborn - Rival System V4
- Version: 4.7.9
+ Version: 4.7.10
 
  Combined Global Player gameplay modules (like Sparring TP System).
 
@@ -12,9 +12,11 @@
  - v4.7.8: init no longer load/saves the full rivalry DB (was O(players)
    on every noppes script reload / join and froze the server for minutes).
    Player ensure stays on login.
- - v4.7.9: cache rivalry DB raw JSON in world tempdata (TTL) so proximity /
+ - v4.7.10: cache rivalry DB raw JSON in world tempdata (TTL) so proximity /
    instinct ticks stop hammering CNPC NBTJsonUtil.FillCompound every second
    (Spark ysPPVsbgrM — Overworld lag). Slightly slower prox/instinct intervals.
+ - v4.7.10: memoize JSON.parse result per script engine (Spark 0QA559wEa7 —
+   NBT gone but Nashorn JSONParser still dominated). Longer TTL + slower ticks.
 
  REQUIRED EVENTS:
  - init
@@ -235,9 +237,17 @@ function rcTierLabel(points) {
 /* Shared raw-JSON cache: storeddata.get() → NBTJsonUtil.FillCompound is huge. */
 var RIVAL_DB_CACHE_RAW = "rival.v4.db.cacheRaw";
 var RIVAL_DB_CACHE_AT = "rival.v4.db.cacheAt";
-var RIVAL_DB_CACHE_TTL_MS = 3000;
+var RIVAL_DB_CACHE_TTL_MS = 15000;
+
+/* Per-engine parsed memo (CNPC scopes are per-player; avoid re-parse every tick). */
+var RIVAL_PARSED_DB = null;
+var RIVAL_PARSED_RAW = null;
+var RIVAL_PARSED_AT = 0;
 
 function rivalDbCacheInvalidate(world) {
+    RIVAL_PARSED_DB = null;
+    RIVAL_PARSED_RAW = null;
+    RIVAL_PARSED_AT = 0;
     if (world == null) return;
     try {
         var temp = world.getTempdata();
@@ -280,6 +290,20 @@ function rivalDbReadRaw(world, storageKey) {
     } catch (e5) {
         return null;
     }
+}
+
+/** Parse rivalry DB at most once per engine until raw changes / TTL / invalidate. */
+function rivalDbParseCached(raw, now) {
+    if (raw == null || raw === "") return null;
+    if (RIVAL_PARSED_DB != null && RIVAL_PARSED_RAW === raw &&
+        now > 0 && RIVAL_PARSED_AT > 0 && now - RIVAL_PARSED_AT < RIVAL_DB_CACHE_TTL_MS) {
+        return RIVAL_PARSED_DB;
+    }
+    var database = JSON.parse(raw);
+    RIVAL_PARSED_DB = database;
+    RIVAL_PARSED_RAW = raw;
+    RIVAL_PARSED_AT = now > 0 ? now : 1;
+    return database;
 }
 
 function rcDataWorld(fallbackPlayer) {
@@ -332,7 +356,10 @@ function rcLoadDatabase(player) {
     var database;
     try {
         var raw = rivalDbReadRaw(world, RC_DATABASE_KEY);
-        database = raw != null && raw !== "" ? JSON.parse(raw) : rcFreshDatabase();
+        var now = rcNow();
+        database = raw != null && raw !== ""
+            ? rivalDbParseCached(raw, now)
+            : rcFreshDatabase();
     } catch (mainError) {
         rcLog("Main database parse failed: " + mainError);
         try {
@@ -1347,7 +1374,7 @@ var RP_COLOR = "\u00A7";
 var RP_DATABASE_KEY = "dlr.rivalry.v4.database";
 var RP_BACKUP_KEY = "dlr.rivalry.v4.database.backup";
 
-var RP_TICK_MS = 2500;
+var RP_TICK_MS = 5000;
 var RP_BONUS_NAME = "Rival Proximity";
 
 /* Presence / sensing */
@@ -1615,7 +1642,7 @@ function rpLoadDatabase(player) {
     try {
         var raw = rivalDbReadRaw(world, RP_DATABASE_KEY);
         if (raw == null || raw === "") return null;
-        var database = JSON.parse(raw);
+        var database = rivalDbParseCached(raw, rpNow());
         if (database === null || typeof database !== "object") return null;
         if (database.players === null || typeof database.players !== "object") return null;
         return database;
@@ -4730,7 +4757,7 @@ function riStatsCap() {
 var RI_COLOR = "\u00A7";
 var RI_DB = "dlr.rivalry.v4.database";
 var RI_CH_KEY = "dlr.rivalry.v4.challenges";
-var RI_TICK_MS = 6000;
+var RI_TICK_MS = 10000;
 /* Quiet by default: arrive once, rare status pulses, event spikes only */
 var RI_ALERT_COOLDOWN_MS = 45000;
 var RI_ARRIVE_COOLDOWN_MS = 90000;
@@ -4796,7 +4823,7 @@ function riLoad(player) {
         if (w == null) return null;
         var raw = rivalDbReadRaw(w, RI_DB);
         if (raw == null || raw === "") return null;
-        return JSON.parse(riStr(raw));
+        return rivalDbParseCached(raw, riNow());
     } catch (e) { return null; }
 }
 
