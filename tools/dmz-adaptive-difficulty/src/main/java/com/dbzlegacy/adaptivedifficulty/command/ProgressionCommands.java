@@ -31,7 +31,86 @@ public final class ProgressionCommands {
         LiteralArgumentBuilder<CommandSourceStack> root = build("progression");
         event.getDispatcher().register(root);
         event.getDispatcher().register(build("prog"));
-        AdaptiveDifficultyMod.LOGGER.info("[{}] registered /progression /prog", AdaptiveDifficultyMod.MOD_ID);
+
+        // Prestige NPC purchase GUI (DMZ level cost)
+        event.getDispatcher().register(Commands.m_82127_("prestige")
+                .executes(ctx -> {
+                    ServerPlayer p = playerOrNull(ctx.getSource());
+                    if (p == null) {
+                        return 0;
+                    }
+                    com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem.open(p);
+                    return 1;
+                })
+                .then(Commands.m_82127_("gui").executes(ctx -> {
+                    ServerPlayer p = playerOrNull(ctx.getSource());
+                    if (p == null) {
+                        return 0;
+                    }
+                    com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem.open(p);
+                    return 1;
+                }))
+                .then(Commands.m_82127_("do")
+                        .then(Commands.m_82127_("confirm").executes(ctx -> {
+                            ServerPlayer p = playerOrNull(ctx.getSource());
+                            if (p == null) {
+                                return 0;
+                            }
+                            com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem.confirmOrPrompt(p);
+                            return 1;
+                        }))));
+
+        // SkillUnlockNPC + SkillCheck trigger 21
+        event.getDispatcher().register(Commands.m_82127_("skills")
+                .executes(ctx -> skillsPage(ctx.getSource(), "core"))
+                .then(Commands.m_82127_("gui").executes(ctx -> skillsPage(ctx.getSource(), "core")))
+                .then(Commands.m_82127_("check").executes(ctx -> skillsPage(ctx.getSource(), "core")))
+                .then(Commands.m_82127_("do")
+                        .then(Commands.m_82127_("page")
+                                .then(Commands.m_82129_("page", StringArgumentType.word())
+                                        .executes(ctx -> skillsPage(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "page")))))));
+        event.getDispatcher().register(Commands.m_82127_("skillcheck")
+                .executes(ctx -> skillsPage(ctx.getSource(), "core")));
+
+        // End Dimension Strength triggers 50/51
+        event.getDispatcher().register(Commands.m_82127_("enddragon")
+                .requires(src -> src.m_6761_(2))
+                .executes(ctx -> endSpawn(ctx.getSource()))
+                .then(Commands.m_82127_("spawn").executes(ctx -> endSpawn(ctx.getSource())))
+                .then(Commands.m_82127_("clear").executes(ctx -> endClear(ctx.getSource())))
+                .then(Commands.m_82127_("cleanup").executes(ctx -> endClear(ctx.getSource()))));
+        event.getDispatcher().register(Commands.m_82127_("cleardragons")
+                .requires(src -> src.m_6761_(2))
+                .executes(ctx -> endClear(ctx.getSource())));
+
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] registered /progression /prog /prestige /skills /enddragon",
+                AdaptiveDifficultyMod.MOD_ID
+        );
+    }
+
+    private static int skillsPage(CommandSourceStack source, String page) {
+        ServerPlayer p = playerOrNull(source);
+        if (p == null) {
+            return 0;
+        }
+        com.dbzlegacy.adaptivedifficulty.progression.shop.SkillUnlockService.open(p, page);
+        return 1;
+    }
+
+    private static int endSpawn(CommandSourceStack source) {
+        ServerPlayer p = playerOrNull(source);
+        if (p == null) {
+            return 0;
+        }
+        return com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdSpawnDragon(p);
+    }
+
+    private static int endClear(CommandSourceStack source) {
+        return com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdCleanupDragons(
+                playerOrNull(source));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> build(String name) {

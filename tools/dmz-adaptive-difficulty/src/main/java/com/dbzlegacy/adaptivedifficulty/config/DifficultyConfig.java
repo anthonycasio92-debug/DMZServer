@@ -197,19 +197,16 @@ public final class DifficultyConfig {
     public boolean rivalInstinct = true;
     public boolean rivalChallenges = true;
 
-    /** Master switch for natural progression CNPC ports (flight / TP / race / etc.). */
-    public boolean enableProgression = true;
-    public boolean enableFlightProgression = true;
-    public boolean enableSprintJump = true;
-    public boolean enableMeditation = true;
-    public boolean enablePotential = true;
-    public boolean enableFarmingTp = true;
-    public boolean enableGlobalTpBoost = true;
-    public boolean enableBioAndroid = true;
-    public boolean enableRaceLock = true;
-    public boolean enableYardrat = true;
-    public boolean enableSpiritualistKi = true;
-    public boolean enableAndroidConversion = true;
+    /** Combat / End / dummy / shop progression ports. */
+    public boolean enableKiWeapons = true;
+    public boolean enablePiercingBonus = true;
+    public boolean enableDotExtraDamage = true;
+    public boolean enableApothicElemental = true;
+    public boolean enableEndDimensionStrength = true;
+    public boolean enableEndNaturalDragonSpawn = true;
+    public boolean enableShadowDummyLimiter = true;
+    public boolean enableSkillUnlockService = true;
+    public boolean enablePrestigeSystem = true;
 
     /**
      * Soft-dependency Fabled bridges (mana/SP/attrs/prestige/race/class perms).

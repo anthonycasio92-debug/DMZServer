@@ -124,22 +124,12 @@ public final class PrestigeSystem {
         if (server != null) {
             try {
                 server.m_129892_().m_230957_(
-                        server.m_129893_().m_81375_() == null
-                                ? server.m_129892_().m_230957_(null, "/class level " + name + " add 1 Prestige")
-                                : null);
-            } catch (Throwable ignored) {
-            }
-            // Prefer dispatching via command source stack
-            try {
-                server.m_129892_().m_230957_(
                         server.m_129893_(),
                         "class level " + name + " add 1 Prestige"
                 );
             } catch (Throwable t) {
-                try {
-                    server.m_129892_().m_230957_(server.m_129893_(), "dmzstats reset " + name);
-                } catch (Throwable ignored) {
-                }
+                AdaptiveDifficultyMod.LOGGER.debug(
+                        "[{}] prestige class level soft-fail: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
             }
             try {
                 server.m_129892_().m_230957_(server.m_129893_(), "dmzstats reset " + name);

@@ -138,8 +138,8 @@ public final class FarmingTp {
         } catch (Throwable ignored) {
         }
         try {
-            if (state.m_61138_(SweetBerryBushBlock.f_57246_)) {
-                return state.m_61143_(SweetBerryBushBlock.f_57246_);
+            if (state.m_61138_(SweetBerryBushBlock.f_57244_)) {
+                return state.m_61143_(SweetBerryBushBlock.f_57244_);
             }
         } catch (Throwable ignored) {
         }

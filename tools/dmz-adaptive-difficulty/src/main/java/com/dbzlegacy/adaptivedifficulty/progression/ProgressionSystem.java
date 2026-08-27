@@ -9,7 +9,6 @@ import com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion;
 import com.dbzlegacy.adaptivedifficulty.progression.race.RaceLock;
 import com.dbzlegacy.adaptivedifficulty.progression.race.SpiritualistKiControl;
 import com.dbzlegacy.adaptivedifficulty.progression.race.YardratProgression;
-import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.ShopProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.FlightProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;

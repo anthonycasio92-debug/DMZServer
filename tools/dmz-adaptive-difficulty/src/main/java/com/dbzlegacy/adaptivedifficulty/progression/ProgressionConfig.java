@@ -56,6 +56,38 @@ public final class ProgressionConfig {
         return masterEnabled() && DifficultyConfig.get().enableAndroidConversion;
     }
 
+    public static boolean kiWeapons() {
+        return masterEnabled() && DifficultyConfig.get().enableKiWeapons;
+    }
+
+    public static boolean piercingBonus() {
+        return masterEnabled() && DifficultyConfig.get().enablePiercingBonus;
+    }
+
+    public static boolean dotExtraDamage() {
+        return masterEnabled() && DifficultyConfig.get().enableDotExtraDamage;
+    }
+
+    public static boolean apothicElemental() {
+        return masterEnabled() && DifficultyConfig.get().enableApothicElemental;
+    }
+
+    public static boolean endDimensionStrength() {
+        return masterEnabled() && DifficultyConfig.get().enableEndDimensionStrength;
+    }
+
+    public static boolean shadowDummyLimiter() {
+        return masterEnabled() && DifficultyConfig.get().enableShadowDummyLimiter;
+    }
+
+    public static boolean skillUnlockService() {
+        return masterEnabled() && DifficultyConfig.get().enableSkillUnlockService;
+    }
+
+    public static boolean prestigeSystem() {
+        return masterEnabled() && DifficultyConfig.get().enablePrestigeSystem;
+    }
+
     public static boolean fabledBridge() {
         return DifficultyConfig.get().enableFabledBridge;
     }
@@ -110,6 +142,12 @@ public final class ProgressionConfig {
                 + " yard=" + onOff(c.enableYardrat)
                 + " spirit=" + onOff(c.enableSpiritualistKi)
                 + " android=" + onOff(c.enableAndroidConversion)
+                + " ki=" + onOff(c.enableKiWeapons)
+                + " pierce=" + onOff(c.enablePiercingBonus)
+                + " end=" + onOff(c.enableEndDimensionStrength)
+                + " shadow=" + onOff(c.enableShadowDummyLimiter)
+                + " skills=" + onOff(c.enableSkillUnlockService)
+                + " prestige=" + onOff(c.enablePrestigeSystem)
                 + " fabled=" + onOff(c.enableFabledBridge);
     }
 

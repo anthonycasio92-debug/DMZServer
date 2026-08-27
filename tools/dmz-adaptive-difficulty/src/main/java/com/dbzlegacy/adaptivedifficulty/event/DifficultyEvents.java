@@ -61,6 +61,7 @@ import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
@@ -176,7 +177,6 @@ public final class DifficultyEvents {
             RivalSystem.onLogout(player);
             SparringSystem.onLogout(player);
             ProgressionSystem.onLogout(player);
-            com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem.onLogout(player);
         }
     }
 
@@ -333,7 +333,7 @@ public final class DifficultyEvents {
         BehaviorScheduler.pulse(server, server.m_129921_()); // getTickCount
         RivalSystem.pulse(server, server.m_129921_());
         SparringSystem.pulse(server, server.m_129921_());
-        com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem.pulse(server, server.m_129921_());
+        ProgressionSystem.pulse(server, server.m_129921_());
     }
 
     @SubscribeEvent
@@ -519,13 +519,21 @@ public final class DifficultyEvents {
             MobScaling.terminateIfZeroHealth(victim);
         }
 
-        // Rival / Sparring / Progression PvP HP scoring (players only).
+        // Rival / Sparring PvP scoring + natural-progression combat/End/dummy.
         if (victim instanceof ServerPlayer pvpVictim
                 && causing instanceof ServerPlayer pvpAttacker) {
             RivalSystem.onPlayerHurt(pvpVictim, pvpAttacker, source);
             SparringSystem.onPlayerHurt(pvpVictim, pvpAttacker, source);
-            ProgressionSystem.onPlayerHurt(pvpVictim, pvpAttacker, source);
         }
+        ProgressionSystem.onHurt(event);
+    }
+
+    @SubscribeEvent
+    public void onBlockBreak(BlockEvent.BreakEvent event) {
+        if (!(event.getPlayer() instanceof ServerPlayer player) || player.m_9236_().f_46443_) {
+            return;
+        }
+        ProgressionSystem.onBlockBreak(player, event.getPos(), event.getState());
     }
 
     /**
@@ -548,6 +556,7 @@ public final class DifficultyEvents {
                 && dead instanceof LivingEntity
                 && !(dead instanceof Player)) {
             RivalSystem.onMobKillNear(killer, (LivingEntity) dead);
+            ProgressionSystem.onDeath(event);
         }
     }
 
@@ -670,6 +679,7 @@ public final class DifficultyEvents {
      */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public void onProjectileJoin(EntityJoinLevelEvent event) {
+        ProgressionSystem.onJoin(event);
         if (SystemGate.isDisabled() || event.getLevel().m_5776_()) { // isClientSide
             return;
         }

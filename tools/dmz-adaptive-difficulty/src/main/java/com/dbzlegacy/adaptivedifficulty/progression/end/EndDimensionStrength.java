@@ -13,7 +13,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -240,7 +240,7 @@ public final class EndDimensionStrength {
             msg(player, "§c[The End] End dimension unavailable.");
             return 0;
         }
-        for (Entity e : end.m_104735_()) {
+        for (Entity e : end.m_8583_()) {
             if (e instanceof EnderDragon) {
                 msg(player, "§e[The End] An Ender Dragon is already alive.");
                 PlayerPower power = strongestInEnd(end, player);
@@ -249,15 +249,15 @@ public final class EndDimensionStrength {
             }
         }
         try {
-            EndDragonFight fight = end.m_8903_(); // dragonFight
+            EndDragonFight fight = end.m_8586_(); // dragonFight
             if (fight != null) {
                 try {
                     // Prefer fight reset when available
-                    fight.m_64086_(); // resetSpikeCrystals — best-effort
+                    fight.m_64095_(); // best-effort reset
                 } catch (Throwable ignored) {
                 }
             }
-            EnderDragon dragon = net.minecraft.world.entity.EntityType.f_20566_.m_20615_(end); // ENDER_DRAGON
+            EnderDragon dragon = net.minecraft.world.entity.EntityType.f_20565_.m_20615_(end); // ENDER_DRAGON
             if (dragon == null) {
                 msg(player, "§c[The End] Failed to create dragon entity.");
                 return 0;
@@ -287,7 +287,13 @@ public final class EndDimensionStrength {
             return 0;
         }
         int removed = 0;
-        for (Entity e : List.copyOf(end.m_104735_().stream().filter(ent -> ent instanceof EnderDragon).toList())) {
+        java.util.ArrayList<Entity> dragons = new java.util.ArrayList<>();
+        for (Entity e : end.m_8583_()) {
+            if (e instanceof EnderDragon) {
+                dragons.add(e);
+            }
+        }
+        for (Entity e : dragons) {
             e.m_146870_();
             removed++;
         }
@@ -310,7 +316,7 @@ public final class EndDimensionStrength {
         if (end == null || !isTheEnd(end)) {
             return;
         }
-        for (Entity e : end.m_104735_()) {
+        for (Entity e : end.m_8583_()) {
             if (e instanceof EnderDragon) {
                 return;
             }
@@ -491,7 +497,7 @@ public final class EndDimensionStrength {
             return base;
         }
         try {
-            return Math.max(0.0, Math.floor(data.calculateTPGain((float) base)));
+            return Math.max(0.0, Math.floor(data.calculateTPGain((int) Math.round(base))));
         } catch (Throwable ignored) {
             return base;
         }
@@ -538,16 +544,20 @@ public final class EndDimensionStrength {
                 return;
             }
             if (delta > 0) {
-                resources.addTrainingPoints((float) Math.floor(delta));
-            } else {
-                try {
-                    resources.removeTrainingPoints((float) Math.floor(-delta));
-                } catch (Throwable t) {
-                    float cur = resources.getTrainingPoints();
-                    resources.setTrainingPoints(Math.max(0.0f, cur + (float) delta));
-                }
+                DmzRewards.awardTp(player, (float) Math.floor(delta), "end-adjust", false, "");
+                return;
             }
-            DmzRewards.awardTp(player, 0.01f, "sync", false, ""); // nudge sync path
+            try {
+                resources.removeTrainingPoints((float) Math.floor(-delta));
+            } catch (Throwable t) {
+                float cur = resources.getTrainingPoints();
+                resources.setTrainingPoints(Math.max(0.0f, cur + (float) delta));
+            }
+            try {
+                com.dragonminez.common.network.NetworkHandler.sendToTrackingEntityAndSelf(
+                        new com.dragonminez.common.network.S2C.StatsSyncS2C(player), player);
+            } catch (Throwable ignored) {
+            }
         } catch (Throwable ignored) {
         }
     }
@@ -650,7 +660,7 @@ public final class EndDimensionStrength {
             return "phantom";
         }
         try {
-            ResourceLocation id = BuiltInRegistries.f_256780_.m_7981_(entity.m_6095_());
+            ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(entity.m_6095_());
             if (id != null) {
                 String path = id.m_135815_();
                 if ("enderman".equals(path)) {
@@ -707,10 +717,15 @@ public final class EndDimensionStrength {
     }
 
     private static double readDef(LivingEntity entity) {
-        return PersistentDataAccess.getLong(entity, NBT_DEF, 0L) > 0
-                ? PersistentDataAccess.get(entity).m_128459_(NBT_DEF)
-                : (PersistentDataAccess.has(entity, NBT_DEF)
-                ? PersistentDataAccess.get(entity).m_128459_(NBT_DEF) : 0.0);
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (!PersistentDataAccess.isWritable(tag) || !tag.m_128441_(NBT_DEF)) {
+            return 0.0;
+        }
+        try {
+            return Math.max(0.0, tag.m_128459_(NBT_DEF));
+        } catch (Throwable ignored) {
+            return 0.0;
+        }
     }
 
     private static void storeHits(LivingEntity entity, int hits) {

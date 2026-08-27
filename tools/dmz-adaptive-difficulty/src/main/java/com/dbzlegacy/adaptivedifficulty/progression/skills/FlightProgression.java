@@ -204,12 +204,12 @@ public final class FlightProgression {
 
     private static void setAbilityTracked(ServerPlayer player, float speed) {
         Abilities ab = player.m_150110_();
-        float current = ab.f_35939_; // flyingSpeed
+        float current = ab.m_35947_(); // flyingSpeed
         if (Math.abs(current - speed) <= 0.0001f) {
             return;
         }
         SAVED_ABILITY.putIfAbsent(player.m_20148_(), current);
-        ab.f_35939_ = speed;
+        ab.m_35948_(speed);
         player.m_6885_(); // onUpdateAbilities
     }
 
@@ -219,11 +219,11 @@ public final class FlightProgression {
             return;
         }
         try {
-            player.m_150110_().f_35939_ = saved;
+            player.m_150110_().m_35948_(saved);
             player.m_6885_();
         } catch (Throwable ignored) {
             try {
-                player.m_150110_().f_35939_ = DEFAULT_ABILITY;
+                player.m_150110_().m_35948_(DEFAULT_ABILITY);
                 player.m_6885_();
             } catch (Throwable ignored2) {
             }

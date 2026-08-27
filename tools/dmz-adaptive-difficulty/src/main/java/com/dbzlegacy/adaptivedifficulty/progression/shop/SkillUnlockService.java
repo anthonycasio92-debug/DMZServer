@@ -222,7 +222,7 @@ public final class SkillUnlockService {
 
     private static int safeStrength(StatsData data) {
         try {
-            return Math.max(0, (int) Math.floor(data.getStats().getStrength()));
+            return Math.max(0, data.getStats().getStrength());
         } catch (Throwable t) {
             return 0;
         }

@@ -1,7 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
-import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost;

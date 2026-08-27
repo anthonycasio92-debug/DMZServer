@@ -94,11 +94,10 @@ public final class RaceLock {
         }
         try {
             Commands commands = server.m_129892_();
-            CommandSourceStack source = server.m_129893_(); // createCommandSourceStack
-            commands.m_230957_().m_230957_(source, cmd);
+            CommandSourceStack source = server.m_129893_();
+            commands.m_230957_(source, cmd);
         } catch (Throwable t1) {
             try {
-                // Mohist / Bukkit console fallback
                 Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
                 Object console = bukkit.getMethod("getConsoleSender").invoke(null);
                 Object serverB = bukkit.getMethod("getServer").invoke(null);

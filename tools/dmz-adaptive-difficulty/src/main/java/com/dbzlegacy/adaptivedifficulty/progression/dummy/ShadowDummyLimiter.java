@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -232,10 +233,10 @@ public final class ShadowDummyLimiter {
     }
 
     private static Entity findDummy(ServerPlayer player, UUID dummyId) {
-        if (player.m_9236_() == null) {
+        if (!(player.m_9236_() instanceof ServerLevel level)) {
             return null;
         }
-        for (Entity e : player.m_9236_().m_104735_()) {
+        for (Entity e : level.m_8583_()) {
             if (e != null && dummyId.equals(e.m_20148_())) {
                 return e;
             }

@@ -49,7 +49,7 @@ public final class MechanicsChatMenu {
                 .m_7220_(btn("§b[Sparring]", "/spar gui", "Open sparring menu"));
         send(player, row);
         MutableComponent row2 = Component.m_237113_("§7")
-                .m_7220_(btn("§d[Progression]", "/lm do page progression", "Natural progression + Fabled"))
+                .m_7220_(btn("§d[Progression]", "/progression", "Natural progression"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§f[Help]", "/lm do page help", "Command overview"));
         if (StaffAccess.isStaff(player)) {
@@ -66,6 +66,7 @@ public final class MechanicsChatMenu {
         send(player, Component.m_237113_("§e/difficulty §7— Unlock tiers & scaling"));
         send(player, Component.m_237113_("§e/rival §7— Rivalry, challenges, progression"));
         send(player, Component.m_237113_("§e/spar §7— Sparring TP & mentor"));
+        send(player, Component.m_237113_("§e/progression §7— Natural skills / TP / race"));
         send(player, Component.m_237113_("§e/lm §7— This hub"));
         send(player, Component.m_237113_("§e/lm do page progression §7— Natural progression / Fabled"));
         if (StaffAccess.isStaff(player)) {
