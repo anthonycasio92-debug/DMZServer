@@ -27,8 +27,6 @@ import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler;
 import com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry;
 import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
-import com.dbzlegacy.adaptivedifficulty.title.TitleEffects;
-import com.dbzlegacy.adaptivedifficulty.title.TitleSense;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
@@ -352,17 +350,6 @@ public final class DifficultyEvents {
         if (player.f_19797_ % 20 != 0) {
             return;
         }
-        // Survivor challenge: accumulate playtime while a tier is active.
-        if (DifficultyCache.data(player).getActiveTier() > 0) {
-            DifficultyCache.data(player).titleProgress().addPlaySeconds(1L);
-            if (player.f_19797_ % 1200 == 0) {
-                TitleSystem.syncChallengeTitles(player, true);
-                DifficultyCache.save(player);
-            }
-        }
-        if (player.f_19797_ % 40 == 0) {
-            TitleSense.pulse(player);
-        }
         DifficultySnapshot before = DifficultyCache.get(player);
         int level = DmzProgression.dmzLevelForProgression(player);
         int prestige = DmzProgression.prestige(player);
@@ -519,14 +506,6 @@ public final class DifficultyEvents {
             float scaled = MobScaling.scaleOutgoingHurt(amount, event.getSource());
             if (scaled != amount) {
                 event.setAmount(scaled);
-            }
-        }
-        // Equipped title / Title Score damage perks (small, capped).
-        if (amount > 0.0f && causerPlayer && victimHostile
-                && causing instanceof ServerPlayer attacker) {
-            float boosted = TitleEffects.applyOutgoingDamageBonus(attacker, victim, event.getAmount());
-            if (boosted != event.getAmount()) {
-                event.setAmount(boosted);
             }
         }
         if (victimHostile) {
@@ -706,21 +685,18 @@ public final class DifficultyEvents {
         }
         // V3 death penalty: clear temporary active tier/level; unlocks & coins stay.
         // Uses allows() (not participates) so toggling personal OFF cannot skip the penalty.
-        if (dead instanceof ServerPlayer victim) {
-            // Title no-death streaks always break on death (even if personal OFF).
-            TitleSystem.noteDeath(victim);
-            if (SystemGate.allows(victim)
-                    && DifficultyConfig.get().deathResetsActiveDifficulty) {
-                var data = DifficultyCache.data(victim);
-                if (data.getActiveTier() > 0 || data.getActiveDifficultyLevel() > 0L) {
-                    data.resetTemporary();
-                    DifficultyCache.save(victim);
-                    DifficultyCache.refresh(victim);
-                    ScaledMobTracker.releaseAndRevertPlayer(victim);
-                    NearbyMobScaler.processEvictions();
-                    victim.m_213846_(net.minecraft.network.chat.Component.m_237113_(
-                            "§cDifficulty deactivated on death. §7Unlocks & Ancient Coins kept."));
-                }
+        if (dead instanceof ServerPlayer victim
+                && SystemGate.allows(victim)
+                && DifficultyConfig.get().deathResetsActiveDifficulty) {
+            var data = DifficultyCache.data(victim);
+            if (data.getActiveTier() > 0 || data.getActiveDifficultyLevel() > 0L) {
+                data.resetTemporary();
+                DifficultyCache.save(victim);
+                DifficultyCache.refresh(victim);
+                ScaledMobTracker.releaseAndRevertPlayer(victim);
+                NearbyMobScaler.processEvictions();
+                victim.m_213846_(net.minecraft.network.chat.Component.m_237113_(
+                        "§cDifficulty deactivated on death. §7Unlocks & Ancient Coins kept."));
             }
         }
         if (!(event.getSource().m_7639_() instanceof ServerPlayer killer) || !SystemGate.participates(killer)) {
