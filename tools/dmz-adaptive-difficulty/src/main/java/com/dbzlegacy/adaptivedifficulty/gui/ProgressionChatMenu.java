@@ -76,12 +76,14 @@ public final class ProgressionChatMenu {
         send(player, toggleRow("meditation", c.enableMeditation));
         send(player, toggleRow("potential", c.enablePotential));
         send(player, toggleRow("farming", c.enableFarmingTp));
+        send(player, toggleRow("building", c.enableBuildingTp));
         send(player, toggleRow("boost", c.enableGlobalTpBoost));
         send(player, toggleRow("bio", c.enableBioAndroid));
         send(player, toggleRow("racelock", c.enableRaceLock));
         send(player, toggleRow("yardrat", c.enableYardrat));
         send(player, toggleRow("spiritualist", c.enableSpiritualistKi));
         send(player, toggleRow("android", c.enableAndroidConversion));
+        send(player, toggleRow("endportal", c.enableEndPortalGuard));
         send(player, btn("§7« Back", "/prog do page main", "Main"));
         send(player, Component.m_237113_("§8────────────────"));
     }

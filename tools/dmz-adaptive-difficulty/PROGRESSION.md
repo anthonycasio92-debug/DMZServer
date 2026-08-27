@@ -20,6 +20,7 @@ LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus so
 | `enableMeditation` | true | Meditation |
 | `enablePotential` | true | Potential Unlock |
 | `enableFarmingTp` | true | Farming TP Skill |
+| `enableBuildingTp` | true | Building TP on block place |
 | `enableGlobalTpBoost` | true | Global TP Boost / End TP boost |
 | `enableBioAndroid` | true | Bio-Android absorb |
 | `enableRaceLock` | true | DMZ Race Lock |
@@ -37,6 +38,7 @@ LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus so
 | `enableRaceClassSync` | true | Race → Fabled class |
 | `enableClassPermissionSync` | true | Class → LuckPerms `fabled.skill.*` |
 | `enablePlayerStatChecker` | true | Sneak+RMB player → DMZ stat dump |
+| `enableEndPortalGuard` | true | Disable vanilla End portals / gateways / Eye frames |
 
 ## Java packages
 
@@ -44,10 +46,10 @@ LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus so
 |---------|------|
 | `progression/` | `ProgressionSystem`, `ProgressionConfig`, `ProgressionData`, `PlayerStatChecker`, helpers |
 | `progression/skills/` | Flight, SprintJump, Meditation, Potential |
-| `progression/tp/` | FarmingTp, GlobalTpBoost, BioAndroidAbsorb |
+| `progression/tp/` | FarmingTp, BuildingTp, GlobalTpBoost, BioAndroidAbsorb |
 | `progression/race/` | RaceLock, Yardrat, SpiritualistKi, AndroidConversion |
 | `progression/combat/` | KiWeapons, Piercing, DOT, Apothic elemental |
-| `progression/end/` | End Dimension Strength |
+| `progression/end/` | End Dimension Strength, EndPortalGuard |
 | `progression/shop/` | Prestige / Skill unlock |
 | `progression/dummy/` | Shadow dummy limiter |
 | `progression/bridge/` | **Fabled soft-dependency bridges** |
@@ -87,6 +89,7 @@ LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus so
 - `Meditation new`
 - `Potential`
 - `Farming TP Skill`
+- KubeJS `building_tp_place` / `building_tp` (Building TP on place)
 - `Global TP Boost` / `TP boost end`
 - `BioAndroid`
 - `DMZ RACE LOCK`
@@ -95,6 +98,7 @@ LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus so
 - `AndrioidConversion`
 - `KiWeapons` / `Piercing` / `damageovertime` / `Apothicfireandcolddamage`
 - `End Dimension Strength`
+- `Disable End Portals`
 - `ShadowDummyLimiter` / related forge protect scripts
 - Prestige NPC / SkillUnlockNPC (when shop ports are active)
 - `PlayerStatChecker` (sneak + right-click inspect)

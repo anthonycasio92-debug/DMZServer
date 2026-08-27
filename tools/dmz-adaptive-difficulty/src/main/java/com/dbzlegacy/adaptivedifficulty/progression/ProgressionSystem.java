@@ -15,6 +15,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression
 import com.dbzlegacy.adaptivedifficulty.progression.skills.PotentialProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.SprintJumpProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.BioAndroidAbsorb;
+import com.dbzlegacy.adaptivedifficulty.progression.tp.BuildingTp;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.FarmingTp;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost;
 import net.minecraft.core.BlockPos;
@@ -242,6 +243,16 @@ public final class ProgressionSystem {
         }
     }
 
+    public static void onBlockPlace(ServerPlayer player, BlockPos pos, BlockState state) {
+        if (!ProgressionConfig.masterEnabled()) {
+            return;
+        }
+        try {
+            BuildingTp.onBlockPlace(player, pos, state);
+        } catch (Throwable ignored) {
+        }
+    }
+
     /* ========================= Command API ========================= */
 
     public static String boostStartEncoded(ServerPlayer actor, int encoded, String purchaser) {
@@ -283,6 +294,7 @@ public final class ProgressionSystem {
             case "meditation", "med", "enablemeditation" -> cfg.enableMeditation = on;
             case "potential", "enablepotential" -> cfg.enablePotential = on;
             case "farming", "farmingtp", "enablefarmingtp" -> cfg.enableFarmingTp = on;
+            case "building", "buildingtp", "enablebuildingtp" -> cfg.enableBuildingTp = on;
             case "boost", "globaltpboost", "enableglobaltpboost" -> cfg.enableGlobalTpBoost = on;
             case "bio", "bioandroid", "enablebioandroid" -> cfg.enableBioAndroid = on;
             case "racelock", "lock", "enableracelock" -> cfg.enableRaceLock = on;
@@ -294,6 +306,7 @@ public final class ProgressionSystem {
             case "dot", "enabledotextradamage" -> cfg.enableDotExtraDamage = on;
             case "apothic", "enableapothicelemental" -> cfg.enableApothicElemental = on;
             case "end", "endstrength", "enableenddimensionstrength" -> cfg.enableEndDimensionStrength = on;
+            case "endportal", "endportalguard", "enableendportalguard" -> cfg.enableEndPortalGuard = on;
             case "endnatural", "enableendnaturaldragonspawn" -> cfg.enableEndNaturalDragonSpawn = on;
             case "shadow", "shadowdummy", "enableshadowdummylimiter" -> cfg.enableShadowDummyLimiter = on;
             case "skills", "skillunlock", "enableskillunlockservice" -> cfg.enableSkillUnlockService = on;

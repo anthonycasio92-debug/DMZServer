@@ -32,6 +32,10 @@ public final class ProgressionConfig {
         return masterEnabled() && DifficultyConfig.get().enableFarmingTp;
     }
 
+    public static boolean buildingTp() {
+        return masterEnabled() && DifficultyConfig.get().enableBuildingTp;
+    }
+
     public static boolean globalTpBoost() {
         return masterEnabled() && DifficultyConfig.get().enableGlobalTpBoost;
     }
@@ -74,6 +78,10 @@ public final class ProgressionConfig {
 
     public static boolean endDimensionStrength() {
         return masterEnabled() && DifficultyConfig.get().enableEndDimensionStrength;
+    }
+
+    public static boolean endPortalGuard() {
+        return masterEnabled() && DifficultyConfig.get().enableEndPortalGuard;
     }
 
     public static boolean shadowDummyLimiter() {
@@ -140,6 +148,7 @@ public final class ProgressionConfig {
                 + " med=" + onOff(c.enableMeditation)
                 + " pot=" + onOff(c.enablePotential)
                 + " farm=" + onOff(c.enableFarmingTp)
+                + " build=" + onOff(c.enableBuildingTp)
                 + " boost=" + onOff(c.enableGlobalTpBoost)
                 + " bio=" + onOff(c.enableBioAndroid)
                 + " lock=" + onOff(c.enableRaceLock)
@@ -149,6 +158,7 @@ public final class ProgressionConfig {
                 + " ki=" + onOff(c.enableKiWeapons)
                 + " pierce=" + onOff(c.enablePiercingBonus)
                 + " end=" + onOff(c.enableEndDimensionStrength)
+                + " endportal=" + onOff(c.enableEndPortalGuard)
                 + " shadow=" + onOff(c.enableShadowDummyLimiter)
                 + " skills=" + onOff(c.enableSkillUnlockService)
                 + " prestige=" + onOff(c.enablePrestigeSystem)

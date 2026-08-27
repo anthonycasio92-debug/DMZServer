@@ -4,7 +4,7 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.12.19"
+version = "2.12.20"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
@@ -20,6 +20,8 @@ priceless (-1) skill costs, /dmzskill set refreshes maxLevel, Old Kai skips Prec
 Blocks saga completion cheese: party sync cannot grant already-finished quests to
 players who did not earn them, and unearned reward claims are cancelled.
 Does not wipe saga progress on party leave, login, or death.
+Clears ghost party UI state when PartyManager SavedData is solo but quest NBT
+still has an activePartyId (leave/login heal + LeavePartyC2S mixin).
 No ki_damage writes / damage redirects.
 '''
 

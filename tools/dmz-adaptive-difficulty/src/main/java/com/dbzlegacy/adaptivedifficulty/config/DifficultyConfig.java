@@ -187,6 +187,7 @@ public final class DifficultyConfig {
     public boolean enableMeditation = true;
     public boolean enablePotential = true;
     public boolean enableFarmingTp = true;
+    public boolean enableBuildingTp = true;
     public boolean enableGlobalTpBoost = true;
     public boolean enableBioAndroid = true;
     public boolean enableRaceLock = true;
@@ -203,6 +204,8 @@ public final class DifficultyConfig {
     public boolean enableDotExtraDamage = true;
     public boolean enableApothicElemental = true;
     public boolean enableEndDimensionStrength = true;
+    /** Block vanilla End portal / gateway travel and Eye-of-Ender frame lighting. */
+    public boolean enableEndPortalGuard = true;
     public boolean enableEndNaturalDragonSpawn = true;
     public boolean enableShadowDummyLimiter = true;
     public boolean enableSkillUnlockService = true;
