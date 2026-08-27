@@ -589,7 +589,6 @@ public final class DifficultyEvents {
             return;
         }
         if (event.getHand() != net.minecraft.world.InteractionHand.MAIN_HAND) {
-            PlayerStatChecker.onEntityInteract(event);
             return;
         }
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
