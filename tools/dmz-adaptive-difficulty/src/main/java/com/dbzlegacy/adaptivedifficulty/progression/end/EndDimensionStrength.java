@@ -13,7 +13,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -27,15 +27,15 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Endermite;
-import net.minecraft.world.entity.monster.Shulker;
 import net.minecraft.world.entity.monster.Phantom;
+import net.minecraft.world.entity.monster.Shulker;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.dimension.end.EndDragonFight;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Core port of {@code End Dimension Strength.js} 2.10.4:
@@ -216,11 +216,14 @@ public final class EndDimensionStrength {
         }
         lastNaturalSpawnAt = System.currentTimeMillis();
         try {
-            ItemStack egg = new ItemStack(Items.f_42683_); // DRAGON_EGG
-            if (!killer.m_150109_().m_36054_(egg)) {
-                killer.m_36176_(egg, false);
+            var item = BuiltInRegistries.f_257033_.m_7745_(new ResourceLocation("minecraft", "dragon_egg"));
+            ItemStack egg = item == null ? ItemStack.f_41583_ : new ItemStack(item);
+            if (!egg.m_41619_()) {
+                if (!killer.m_150109_().m_36054_(egg)) {
+                    killer.m_36176_(egg, false);
+                }
+                killer.m_213846_(Component.m_237113_("§d[The End] §fDragon Egg claimed."));
             }
-            killer.m_213846_(Component.m_237113_("§d[The End] §fDragon Egg claimed."));
         } catch (Throwable ignored) {
         }
         SystemTelemetry.log("end_strength", "dragon_kill", killer, null, Map.of("kind", kind));
