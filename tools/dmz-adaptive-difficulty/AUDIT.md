@@ -9,8 +9,34 @@ Jars: `LegacyMechanics-2.0.0` / `LegacyMechanicsGUI-2.0.0` / `dmz_mohist_melee_f
 
 ## Live server pull
 
-**Blocked.** SFTP to `use-dc-p98-a6-cg.kineticpanel.net:2022` as `skbxbrhg.9471e9b6` returns `Permission denied`.
-Need updated `SFTP_USER` / `SFTP_PASSWORD` (optional host/port) or a zip of live `AdventureWorld/customnpcs/scripts` (+ ecmascript) to finish a live-vs-port content diff.
+**Done 2026-08-27** (read-only SFTP). Snapshot: `uploads/live-scripts-2026-08-27/`.
+
+| Path on live | Contents |
+|--------------|----------|
+| `AdventureWorld/customnpcs/scripts/ecmascript/` | 32 active CNPC scripts |
+| `…/player_scripts.json` | 30 Global Player tabs enabled |
+| `…/forge_scripts.json` | **disabled** (`ScriptEnabled: 0`) |
+| `kubejs/` | balance pack + Building TP + weapon scale + Pothala protect |
+
+### Live vs LegacyMechanics
+
+All 30 enabled CNPC tabs have Java ports. Live versions refreshed into `customnpcs/scripts/`.
+
+Notable live bumps synced + ported:
+
+| Script | Live | Action |
+|--------|------|--------|
+| End Dimension Strength | **2.12.0** (was 2.10.4 in repo) | Java: single-dragon + End ki purge |
+| Rival System | **4.7.10** | Already in LM; script dump updated |
+| Sparring TP | **3.2.11** | Already in LM |
+| SprintJump | **1.1.0** invested STR | Already `InvestedStrength` |
+
+### Live-only KubeJS added to repo
+
+- `kubejs/server_scripts/dmz_pothala_protection.js` (live `pathalafix1.js`)
+- `kubejs/startup_scripts/dmzweaponscale.js` (actual base weapon damage)
+
+Building TP / shadow-dummy remain active on **live** KubeJS; LM has Java ports — disable those KubeJS files when LM ships to avoid doubles.
 
 ## CNPC scripts → LegacyMechanics
 
