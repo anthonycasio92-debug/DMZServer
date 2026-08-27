@@ -106,10 +106,6 @@ public final class SkillUnlockService {
         return out;
     }
 
-    private static void showPage(ServerPlayer player, String page) {
-        showPage(player, page, false);
-    }
-
     private static void showPage(ServerPlayer player, String page, boolean skillCheck) {
         List<String> lines = buildPageLines(player, page);
         if (lines.size() == 1 && lines.get(0).startsWith("§c")) {
