@@ -49,7 +49,10 @@ perfect training banner, ki type classification, charging holds activity, `/spar
 ### Progression / Fabled
 
 See **[PROGRESSION.md](PROGRESSION.md)** for module map, config toggles, and CNPC scripts
-to disable on test servers.
+to disable on test servers. Full script/branch coverage: **[AUDIT.md](AUDIT.md)**.
+
+Also includes Building TP (place), End portal guard, and Title progression / Admin
+inspect (from the server-fixes line).
 
 ## Telemetry
 
