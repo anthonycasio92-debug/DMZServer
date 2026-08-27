@@ -67,7 +67,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 getLogger().info("Version handshake OK: " + pluginVer);
             }
         }
-        getLogger().info("Registered Bukkit /difficulty /rival /spar /lm /progression /prestige /skills.");
+        getLogger().info("Registered Bukkit /difficulty /rival /spar /lm /progression /prestige /skills /skillcheck.");
     }
 
     /**
@@ -631,8 +631,11 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if ("prestige".equals(name)) {
             return handlePrestige(sender, args);
         }
-        if ("skills".equals(name) || "skillcheck".equals(name)) {
+        if ("skills".equals(name)) {
             return handleSkills(sender, args);
+        }
+        if ("skillcheck".equals(name)) {
+            return handleSkillCheck(sender, args);
         }
         if (!"difficulty".equals(name)) {
             return false;
@@ -691,6 +694,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             sender.sendMessage("Players only.");
             return true;
         }
+        if (!ForgeBridge.isStaff(player)) {
+            player.sendMessage("§cStaff only.");
+            return true;
+        }
         if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
             player.sendMessage("§cNo permission: dmzdiff.gui");
             return true;
@@ -738,6 +745,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             sender.sendMessage("Players only.");
             return true;
         }
+        if (!ForgeBridge.isStaff(player)) {
+            player.sendMessage("§cStaff only.");
+            return true;
+        }
         if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
             player.sendMessage("§cNo permission: dmzdiff.gui");
             return true;
@@ -776,6 +787,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             sender.sendMessage("Players only.");
             return true;
         }
+        if (!ForgeBridge.isStaff(player)) {
+            player.sendMessage("§cStaff only.");
+            return true;
+        }
         if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
             player.sendMessage("§cNo permission: dmzdiff.gui");
             return true;
@@ -810,6 +825,45 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return true;
         }
         forwardToForge(player, "skills", args);
+        return true;
+    }
+
+    private boolean handleSkillCheck(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Players only.");
+            return true;
+        }
+        if (!ForgeBridge.hasSkillCheck(player)) {
+            player.sendMessage("§cNo permission: legacymechanics.skillcheck");
+            return true;
+        }
+        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+            player.sendMessage("§cNo permission: dmzdiff.gui");
+            return true;
+        }
+        ForgeBridge.markSkillCheckSession(player);
+        if (args.length == 0 || "gui".equalsIgnoreCase(args[0])) {
+            openSkillsRespectingConfig(player, "core");
+            return true;
+        }
+        String sub = args[0].toLowerCase();
+        if ("do".equals(sub)) {
+            String action = args.length > 1 ? args[1] : "";
+            String arg = args.length > 2 ? args[2] : "";
+            String reopen;
+            if ("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action)) {
+                reopen = arg == null || arg.isBlank() ? "core" : arg;
+            } else {
+                reopen = "core";
+            }
+            openSkillsInventory(player, reopen);
+            return true;
+        }
+        if ("core".equals(sub) || "advanced".equals(sub) || "saga".equals(sub) || "help".equals(sub)) {
+            openSkillsRespectingConfig(player, sub);
+            return true;
+        }
+        forwardToForge(player, "skillcheck", args);
         return true;
     }
 

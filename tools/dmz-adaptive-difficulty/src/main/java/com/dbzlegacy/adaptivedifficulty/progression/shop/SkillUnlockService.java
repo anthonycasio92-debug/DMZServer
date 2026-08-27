@@ -27,24 +27,36 @@ public final class SkillUnlockService {
     private SkillUnlockService() {}
 
     public static void open(ServerPlayer player, String page) {
+        open(player, page, false);
+    }
+
+    /**
+     * @param skillCheck when true, titles/nav use Skill Check branding ({@code /skillcheck}).
+     */
+    public static void open(ServerPlayer player, String page, boolean skillCheck) {
         if (!DifficultyConfig.get().enableSkillUnlockService || player == null) {
             return;
         }
         if (page == null || page.isBlank() || "main".equalsIgnoreCase(page) || "core".equalsIgnoreCase(page)) {
-            showPage(player, "core");
+            showPage(player, "core", skillCheck);
         } else if ("advanced".equalsIgnoreCase(page) || "dmz".equalsIgnoreCase(page)) {
-            showPage(player, "advanced");
+            showPage(player, "advanced", skillCheck);
         } else if ("saga".equalsIgnoreCase(page)) {
-            showPage(player, "saga");
+            showPage(player, "saga", skillCheck);
         } else {
-            showPage(player, "core");
+            showPage(player, "core", skillCheck);
         }
-        SystemTelemetry.log("skills", "open", player, null, Map.of("page", page == null ? "core" : page));
+        SystemTelemetry.log(
+                skillCheck ? "skillcheck" : "skills",
+                "open",
+                player,
+                null,
+                Map.of("page", page == null ? "core" : page));
     }
 
-    /** Trigger-21 equivalent. */
+    /** Trigger-21 equivalent — donator Skill Check only. */
     public static void trigger21(ServerPlayer player) {
-        open(player, "core");
+        com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService.trigger21(player);
     }
 
     /** Header + core skill lines for inventory GUI lore. */
@@ -95,26 +107,34 @@ public final class SkillUnlockService {
     }
 
     private static void showPage(ServerPlayer player, String page) {
+        showPage(player, page, false);
+    }
+
+    private static void showPage(ServerPlayer player, String page, boolean skillCheck) {
         List<String> lines = buildPageLines(player, page);
         if (lines.size() == 1 && lines.get(0).startsWith("§c")) {
-            DmzRewards.msg(player, lines.get(0));
+            DmzRewards.msg(player, lines.get(0).replace("Skill Progress", skillCheck ? "Skill Check" : "Skill Progress"));
             return;
         }
 
+        String cmdRoot = skillCheck ? "/skillcheck" : "/skills";
         send(player, "");
-        send(player, "§6§l------ Skill Progress ------§r");
+        send(player, skillCheck
+                ? "§6§l------ Skill Check ------§r"
+                : "§6§l------ Skill Progress ------§r");
         for (String line : lines) {
             send(player, line);
         }
 
         MutableComponent nav = Component.m_237113_("§7")
-                .m_7220_(btn(pageEquals(page, "core") ? "§e[Core]" : "§7[Core]", "/skills do page core", "Core skills"))
+                .m_7220_(btn(pageEquals(page, "core") ? "§e[Core]" : "§7[Core]",
+                        cmdRoot + " do page core", "Core skills"))
                 .m_7220_(Component.m_237113_(" "))
                 .m_7220_(btn(pageEquals(page, "advanced") ? "§e[Advanced]" : "§7[Advanced]",
-                        "/skills do page advanced", "DMZ 2.1 skills"))
+                        cmdRoot + " do page advanced", "DMZ 2.1 skills"))
                 .m_7220_(Component.m_237113_(" "))
                 .m_7220_(btn(pageEquals(page, "saga") ? "§e[Saga]" : "§7[Saga]",
-                        "/skills do page saga", "Saga unlocks"));
+                        cmdRoot + " do page saga", "Saga unlocks"));
         send(player, nav);
         send(player, "§8────────────────");
     }

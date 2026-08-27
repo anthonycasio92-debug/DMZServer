@@ -3,7 +3,11 @@
 LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus soft-dependency
 **Fabled** bridges (Bukkit / LuckPerms via reflection — never hard-crash if missing).
 
-Player UI (`/progression` / `/prog`) is a **category hub** matching the script families below.
+**Access:** `/progression` / `/prestige` / `/skills` are **staff only** (op level 2 or
+`difficulty.admin`). Normal players use Difficulty / Rival / Spar from `/lm`. Donators with
+`legacymechanics.skillcheck` get **Skill Check** (`/skillcheck` or CNPC).
+
+Staff UI (`/progression` / `/prog`) is a **category hub** matching the script families below.
 
 ## Install (test)
 
@@ -12,7 +16,34 @@ Player UI (`/progression` / `/prog`) is a **category hub** matching the script f
 3. **Disable** the CNPC Global Player scripts listed below to avoid double-sync / double TP.
 4. Do **not** deploy to live until tested.
 
-## Player UI pages
+## Player vs staff commands
+
+| Audience | Commands |
+|----------|----------|
+| All players | `/lm`, `/difficulty`, `/rival`, `/spar` |
+| Donators | `/skillcheck` — requires LuckPerms `legacymechanics.skillcheck` (or staff) |
+| Staff | `/progression` · `/prog` · `/prestige` · `/skills` · Flags / Logs |
+
+## Skill Check (donators)
+
+- Permission: `legacymechanics.skillcheck` (plugin.yml default **false**; grant via LuckPerms).
+- Config (`legacymechanics.json`): `enableSkillCheck`, `skillCheckPermission`,
+  `skillCheckNpcNameContains` (default needles: `Skill Check`, `SkillCheck`, `Skill Progress`).
+- Reuses the same skill progress lines as staff `/skills` (core / advanced / saga) with
+  **Skill Check** branding.
+- Hub shows a **Skill Check** button for permitted non-staff players.
+
+### CNPC setup
+
+Any of:
+
+1. Scoreboard / entity tag containing `lm_skillcheck` (case-insensitive)
+2. Custom name / display name containing a configured needle (defaults above)
+3. Dialog / quest: `noppes script trigger 21 <player>` (opens Skill Check only if permitted)
+
+Right-click a marked CustomNPC → Skill Check UI (if the player has access).
+
+## Staff UI pages (`/progression`)
 
 | Page id | Title | Contents |
 |---------|-------|----------|
@@ -53,7 +84,7 @@ Player UI (`/progression` / `/prog`) is a **category hub** matching the script f
 
 | Flag | Default | Module |
 |------|---------|--------|
-| `enableRaceLock` | true | DMZ Race Lock |
+| `enableRaceLock` | true | Race lock |
 | `enableYardrat` | true | Yardrat race / skills |
 | `enableSpiritualistKi` | true | Spiritualist Ki Control |
 | `enableAndroidConversion` | true | Android conversion |
@@ -75,12 +106,15 @@ Player UI (`/progression` / `/prog`) is a **category hub** matching the script f
 | `enableEndPortalGuard` | true | Disable vanilla End portals / gateways / Eye frames |
 | `enableEndMobScaling` | false | End mob HP/DEF scaling (off by default) |
 
-### Shop
+### Shop / Skill Check
 
 | Flag | Default | Module |
 |------|---------|--------|
-| `enablePrestigeSystem` | true | Prestige levels |
-| `enableSkillUnlockService` | true | Skill unlock progress |
+| `enablePrestigeSystem` | true | Prestige levels (staff UI) |
+| `enableSkillUnlockService` | true | Skill unlock progress data |
+| `enableSkillCheck` | true | Donator Skill Check UI / CNPC |
+| `skillCheckPermission` | `legacymechanics.skillcheck` | LuckPerms node |
+| `skillCheckNpcNameContains` | Skill Check / SkillCheck / Skill Progress | CNPC name needles |
 
 ### Fabled Bridges
 
@@ -114,7 +148,7 @@ Player UI (`/progression` / `/prog`) is a **category hub** matching the script f
 | `progression/race/` | RaceLock, Yardrat, SpiritualistKi, AndroidConversion |
 | `progression/combat/` | KiWeapons, Piercing, DOT, Apothic elemental |
 | `progression/end/` | End Dimension Strength, EndPortalGuard |
-| `progression/shop/` | Prestige / Skill unlock |
+| `progression/shop/` | Prestige / SkillUnlock / **SkillCheckService** |
 | `progression/dummy/` | Shadow dummy limiter |
 | `progression/bridge/` | **Fabled soft-dependency bridges** |
 
@@ -168,6 +202,7 @@ Player UI (`/progression` / `/prog`) is a **category hub** matching the script f
 ### Shop
 
 - Prestige NPC / SkillUnlockNPC (when shop ports are active)
+- SkillCheckCommand.js (replaced by `/skillcheck` + trigger 21 + CNPC interact)
 
 ### Fabled bridges (when `enableFabledBridge` is on)
 
@@ -192,8 +227,8 @@ Player UI (`/progression` / `/prog`) is a **category hub** matching the script f
 
 ## Chat / telemetry
 
-- `/lm` hub → **[Progression]** → `/lm do page progression`
-- `/prog do page skills|tp|race|combat|end|shop|fabled|utility`
+- `/lm` hub → Difficulty · Rival · Spar · Help (+ Skill Check for donators; staff Progression/Prestige/Skills/Logs)
+- Staff: `/prog do page skills|tp|race|combat|end|shop|fabled|utility`
 - Staff: `/prog do page admin` · `/prog admin <flag> on|off`
 - System telemetry (`enableSystemTelemetry`): rate-limited `system=fabled` events
   (`login_sync`, `energy_spend`, `tp_sp_spend`, `prestige_skill`, `prestige_faction`,

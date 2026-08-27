@@ -23,16 +23,18 @@ commands:
     usage: /lm
     aliases: [legacymechanics]
   progression:
-    description: Open LegacyMechanics Progression GUI
+    description: Open LegacyMechanics Progression GUI (staff)
     usage: /progression
     aliases: [prog]
   prestige:
-    description: Open LegacyMechanics Prestige GUI
+    description: Open LegacyMechanics Prestige GUI (staff)
     usage: /prestige
   skills:
-    description: Open LegacyMechanics Skills GUI
+    description: Open LegacyMechanics Skills admin GUI (staff)
     usage: /skills
-    aliases: [skillcheck]
+  skillcheck:
+    description: Open Skill Check GUI (donator)
+    usage: /skillcheck
   dmzdiffgui:
     description: Force-open LegacyMechanics chest/CMI GUI
     usage: /dmzdiffgui [page]
@@ -44,3 +46,6 @@ permissions:
   difficulty.admin:
     description: Use LegacyMechanics admin commands (op or this node)
     default: op
+  legacymechanics.skillcheck:
+    description: Open Skill Check UI (donator)
+    default: false

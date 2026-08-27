@@ -64,17 +64,22 @@ public final class HubChestGui implements Listener {
                 List.of("&7Rivalry & challenges")), SlotAction.cmd("rival"));
         put(holder, inv, 21, tipBtn(Material.GOLDEN_SWORD, "&bSpar",
                 List.of("&7Sparring TP & mentor")), SlotAction.cmd("spar"));
-        put(holder, inv, 22, tipBtn(Material.EXPERIENCE_BOTTLE, "&dProgression",
-                List.of("&7Natural skills / TP / race")), SlotAction.cmd("progression"));
-        put(holder, inv, 23, tipBtn(Material.NETHER_STAR, "&ePrestige",
-                List.of("&7Prestige levels")), SlotAction.cmd("prestige"));
-        put(holder, inv, 24, tipBtn(Material.ENCHANTED_BOOK, "&fSkills",
-                List.of("&7Skill unlock progress")), SlotAction.cmd("skills"));
-        put(holder, inv, 25, pageBtn(Material.PAPER, "&7Help", "&7Command overview"),
+        put(holder, inv, 22, pageBtn(Material.PAPER, "&7Help", "&7Command overview"),
                 SlotAction.page("help"));
-        if (ForgeBridge.isStaff(player)) {
+        boolean staff = ForgeBridge.isStaff(player);
+        boolean skillCheck = ForgeBridge.hasSkillCheck(player);
+        if (staff) {
+            put(holder, inv, 28, tipBtn(Material.EXPERIENCE_BOTTLE, "&dProgression",
+                    List.of("&7Natural skills / TP / race")), SlotAction.cmd("progression"));
+            put(holder, inv, 29, tipBtn(Material.NETHER_STAR, "&ePrestige",
+                    List.of("&7Prestige levels")), SlotAction.cmd("prestige"));
+            put(holder, inv, 30, tipBtn(Material.ENCHANTED_BOOK, "&fSkills",
+                    List.of("&7Skill unlock admin")), SlotAction.cmd("skills"));
             put(holder, inv, 31, pageBtn(Material.WRITABLE_BOOK, "&8Logs",
                     "&7System telemetry status"), SlotAction.page("logs"));
+        } else if (skillCheck) {
+            put(holder, inv, 23, tipBtn(Material.ENCHANTED_BOOK, "&eSkill Check",
+                    List.of("&7View skill progress")), SlotAction.cmd("skillcheck"));
         }
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;

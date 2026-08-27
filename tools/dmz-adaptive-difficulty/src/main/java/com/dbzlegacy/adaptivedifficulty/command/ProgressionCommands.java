@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.gui.PrestigeMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.SkillsMenu;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
+import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
@@ -20,7 +21,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-/** {@code /progression} / {@code /prog} — natural progression controls. */
+/** {@code /progression} / {@code /prog} — staff natural progression controls. */
 public final class ProgressionCommands {
     private ProgressionCommands() {}
 
@@ -34,8 +35,9 @@ public final class ProgressionCommands {
         event.getDispatcher().register(root);
         event.getDispatcher().register(build("prog"));
 
-        // Prestige NPC purchase GUI (DMZ level cost)
+        // Prestige NPC purchase GUI — staff only
         event.getDispatcher().register(Commands.m_82127_("prestige")
+                .requires(ProgressionCommands::staff)
                 .executes(ctx -> prestigeGui(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> prestigeGui(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("do")
@@ -51,8 +53,9 @@ public final class ProgressionCommands {
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "page")))))));
 
-        // SkillUnlockNPC + SkillCheck trigger 21
+        // SkillUnlock admin browser — staff only (not aliased to skillcheck)
         event.getDispatcher().register(Commands.m_82127_("skills")
+                .requires(ProgressionCommands::staff)
                 .executes(ctx -> skillsPage(ctx.getSource(), "core"))
                 .then(Commands.m_82127_("gui").executes(ctx -> skillsPage(ctx.getSource(), "core")))
                 .then(Commands.m_82127_("check").executes(ctx -> skillsPage(ctx.getSource(), "core")))
@@ -62,8 +65,22 @@ public final class ProgressionCommands {
                                         .executes(ctx -> skillsPage(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "page")))))));
+
+        // Donator Skill Check
         event.getDispatcher().register(Commands.m_82127_("skillcheck")
-                .executes(ctx -> skillsPage(ctx.getSource(), "core")));
+                .requires(ProgressionCommands::skillCheck)
+                .executes(ctx -> skillCheckPage(ctx.getSource(), "core"))
+                .then(Commands.m_82127_("gui").executes(ctx -> skillCheckPage(ctx.getSource(), "core")))
+                .then(Commands.m_82127_("do")
+                        .then(Commands.m_82127_("page")
+                                .then(Commands.m_82129_("page", StringArgumentType.word())
+                                        .executes(ctx -> skillCheckPage(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "page"))))))
+                .then(Commands.m_82129_("page", StringArgumentType.word())
+                        .executes(ctx -> skillCheckPage(
+                                ctx.getSource(),
+                                StringArgumentType.getString(ctx, "page")))));
 
         // End Dimension Strength triggers 50/51
         event.getDispatcher().register(Commands.m_82127_("enddragon")
@@ -77,7 +94,7 @@ public final class ProgressionCommands {
                 .executes(ctx -> endClear(ctx.getSource())));
 
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] registered /progression /prog /prestige /skills /enddragon",
+                "[{}] registered /progression /prog /prestige /skills /skillcheck /enddragon",
                 AdaptiveDifficultyMod.MOD_ID
         );
     }
@@ -87,13 +104,34 @@ public final class ProgressionCommands {
         if (p == null) {
             return 0;
         }
+        if (!StaffAccess.isStaff(p)) {
+            reply(source, p, "§cStaff only.");
+            return 0;
+        }
         SkillsMenu.open(p, page);
+        return 1;
+    }
+
+    private static int skillCheckPage(CommandSourceStack source, String page) {
+        ServerPlayer p = playerOrNull(source);
+        if (p == null) {
+            return 0;
+        }
+        if (!SkillCheckService.canUse(p)) {
+            reply(source, p, "§cNo permission: legacymechanics.skillcheck");
+            return 0;
+        }
+        SkillCheckService.open(p, page);
         return 1;
     }
 
     private static int prestigeGui(CommandSourceStack source, String page) {
         ServerPlayer p = playerOrNull(source);
         if (p == null) {
+            return 0;
+        }
+        if (!StaffAccess.isStaff(p)) {
+            reply(source, p, "§cStaff only.");
             return 0;
         }
         PrestigeMenu.open(p, page);
@@ -103,6 +141,10 @@ public final class ProgressionCommands {
     private static int prestigeConfirm(CommandSourceStack source, String page) {
         ServerPlayer p = playerOrNull(source);
         if (p == null) {
+            return 0;
+        }
+        if (!StaffAccess.isStaff(p)) {
+            reply(source, p, "§cStaff only.");
             return 0;
         }
         com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem.confirmOrPrompt(p);
@@ -125,6 +167,7 @@ public final class ProgressionCommands {
 
     private static LiteralArgumentBuilder<CommandSourceStack> build(String name) {
         return Commands.m_82127_(name)
+                .requires(ProgressionCommands::staff)
                 .executes(ctx -> gui(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> gui(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("help").executes(ctx -> gui(ctx.getSource(), "help")))
@@ -144,7 +187,7 @@ public final class ProgressionCommands {
                                                         StringArgumentType.getString(ctx, "page")))))))
                 .then(Commands.m_82127_("boost")
                         .then(Commands.m_82127_("start")
-                                .requires(src -> staff(src))
+                                .requires(ProgressionCommands::staff)
                                 .then(Commands.m_82129_("encoded", IntegerArgumentType.integer(1))
                                         .executes(ctx -> boostEncoded(
                                                 ctx.getSource(),
@@ -163,21 +206,21 @@ public final class ProgressionCommands {
                                                         IntegerArgumentType.getInteger(ctx, "minutes"),
                                                         null)))))
                         .then(Commands.m_82127_("end")
-                                .requires(src -> staff(src))
+                                .requires(ProgressionCommands::staff)
                                 .executes(ctx -> boostEnd(ctx.getSource()))))
                 .then(Commands.m_82127_("meditation")
                         .then(Commands.m_82127_("next")
-                                .requires(src -> staff(src))
+                                .requires(ProgressionCommands::staff)
                                 .executes(ctx -> meditationNext(ctx.getSource()))))
                 .then(Commands.m_82127_("android")
-                        .requires(src -> staff(src))
+                        .requires(ProgressionCommands::staff)
                         .executes(ctx -> androidSelf(ctx.getSource()))
                         .then(Commands.m_82129_("player", StringArgumentType.word())
                                 .executes(ctx -> androidPlayer(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("admin")
-                        .requires(src -> staff(src))
+                        .requires(ProgressionCommands::staff)
                         .executes(ctx -> gui(ctx.getSource(), "admin"))
                         .then(Commands.m_82129_("flag", StringArgumentType.word())
                                 .then(Commands.m_82129_("value", StringArgumentType.word())
@@ -199,9 +242,25 @@ public final class ProgressionCommands {
         }
     }
 
+    private static boolean skillCheck(CommandSourceStack src) {
+        try {
+            if (src.m_6761_(2)) {
+                return true;
+            }
+            ServerPlayer p = src.m_81375_();
+            return SkillCheckService.canUse(p);
+        } catch (Exception e) {
+            return src.m_6761_(2);
+        }
+    }
+
     private static int gui(CommandSourceStack source, String page) {
         ServerPlayer player = playerOrNull(source);
         if (player == null || !DifficultyConfig.get().enableProgression) {
+            return 0;
+        }
+        if (!StaffAccess.isStaff(player)) {
+            reply(source, player, "§cStaff only.");
             return 0;
         }
         ProgressionMenu.open(player, page);

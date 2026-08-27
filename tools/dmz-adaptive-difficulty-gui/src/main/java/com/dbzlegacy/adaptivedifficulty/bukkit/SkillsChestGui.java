@@ -41,8 +41,11 @@ public final class SkillsChestGui implements Listener {
 
     private Inventory pageInv(Player player, String page, String title, Material mat) {
         Map<String, String> ph = ForgeBridge.skillsPlaceholders(player);
+        boolean skillCheckUi = ForgeBridge.inSkillCheckSession(player);
         Holder holder = new Holder(page);
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Skills"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color(skillCheckUi
+                ? "&8Legacy Mechanics · Skill Check"
+                : "&8Legacy Mechanics · Skills"));
         holder.bind(inv);
         frame(inv, 45);
 
@@ -58,8 +61,9 @@ public final class SkillsChestGui implements Listener {
         }
 
         List<String> lore = toAmp(ForgeBridge.skillsLines(player, page));
-        put(holder, inv, 4, item(mat, title + " Skills", prependBlank(
-                lore.isEmpty() ? List.of("&7Nothing here yet.") : lore)));
+        put(holder, inv, 4, item(mat,
+                skillCheckUi ? title + " Skill Check" : title + " Skills",
+                prependBlank(lore.isEmpty() ? List.of("&7Nothing here yet.") : lore)));
         put(holder, inv, 19, pageBtn(Material.ENCHANTED_BOOK, "&eCore", "&7Core skill unlocks"),
                 SlotAction.page("core"));
         put(holder, inv, 21, pageBtn(Material.DIAMOND, "&bAdvanced", "&7DMZ 2.1 skills"),
@@ -67,8 +71,10 @@ public final class SkillsChestGui implements Listener {
         put(holder, inv, 23, pageBtn(Material.AMETHYST_SHARD, "&dSaga", "&7Saga unlocks"),
                 SlotAction.page("saga"));
         put(holder, inv, 36, hubBtn(), SlotAction.cmd("lm"));
-        put(holder, inv, 40, tipBtn(Material.EXPERIENCE_BOTTLE, "&dProgression",
-                List.of("&7Back to progression")), SlotAction.cmd("progression"));
+        if (ForgeBridge.isStaff(player) && !ForgeBridge.inSkillCheckSession(player)) {
+            put(holder, inv, 40, tipBtn(Material.EXPERIENCE_BOTTLE, "&dProgression",
+                    List.of("&7Back to progression")), SlotAction.cmd("progression"));
+        }
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }

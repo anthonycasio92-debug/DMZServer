@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.ArrayList;
@@ -25,6 +26,8 @@ public final class MechanicsGuiApi {
         DifficultyConfig c = DifficultyConfig.get();
         out.put("bridge_ok", "true");
         out.put("staff", StaffAccess.isStaff(player) ? "true" : "false");
+        out.put("skillcheck", SkillCheckService.canUse(player) ? "true" : "false");
+        out.put("skillcheck_session", SkillCheckService.inSession(player) ? "true" : "false");
         out.put("progression", c.enableProgression ? "true" : "false");
         out.put("rival", c.enableRivalSystem ? "true" : "false");
         out.put("spar", c.enableSparringSystem ? "true" : "false");
@@ -37,17 +40,24 @@ public final class MechanicsGuiApi {
 
     public static List<String> linesForPage(ServerPlayer player, String page) {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
+        boolean staff = player != null && StaffAccess.isStaff(player);
+        boolean skillCheck = player != null && SkillCheckService.canUse(player);
         return switch (p) {
-            case "help" -> List.of(
-                    "§6§lLegacy Mechanics",
-                    "§e/difficulty §7— Unlock tiers & scaling",
-                    "§e/rival §7— Rivalry, challenges, progression",
-                    "§e/spar §7— Sparring TP & mentor",
-                    "§e/progression §7— Natural skills / TP / race",
-                    "§e/prestige §7— Prestige levels",
-                    "§e/skills §7— Skill unlock progress",
-                    "§e/lm §7— This hub"
-            );
+            case "help" -> {
+                List<String> help = new ArrayList<>();
+                help.add("§6§lLegacy Mechanics");
+                help.add("§e/difficulty §7— Unlock tiers & scaling");
+                help.add("§e/rival §7— Rivalry, challenges, progression");
+                help.add("§e/spar §7— Sparring TP & mentor");
+                help.add("§e/lm §7— This hub");
+                if (skillCheck) {
+                    help.add("§e/skillcheck §7— Skill Check (donator)");
+                }
+                if (staff) {
+                    help.add("§8Staff: /progression · /prestige · /skills");
+                }
+                yield help;
+            }
             case "logs", "syslog" -> {
                 if (player == null || !StaffAccess.isStaff(player)) {
                     yield List.of("§cStaff only.");
@@ -61,12 +71,16 @@ public final class MechanicsGuiApi {
             default -> {
                 Map<String, String> ph = placeholders(player);
                 List<String> lore = new ArrayList<>();
-                lore.add("§7Difficulty · Rival · Spar · Progression");
-                lore.add("§7Prog §f" + onOff(ph.get("progression"))
-                        + " §8| §7Rival §f" + onOff(ph.get("rival"))
+                lore.add("§7Difficulty · Rival · Spar");
+                lore.add("§7Rival §f" + onOff(ph.get("rival"))
                         + " §8| §7Spar §f" + onOff(ph.get("spar")));
-                lore.add("§7Prestige §f" + onOff(ph.get("prestige"))
-                        + " §8| §7Skills §f" + onOff(ph.get("skills")));
+                if (staff) {
+                    lore.add("§7Prog §f" + onOff(ph.get("progression"))
+                            + " §8| §7Prestige §f" + onOff(ph.get("prestige"))
+                            + " §8| §7Skills §f" + onOff(ph.get("skills")));
+                } else if (skillCheck) {
+                    lore.add("§7Skill Check §aavailable");
+                }
                 yield lore;
             }
         };

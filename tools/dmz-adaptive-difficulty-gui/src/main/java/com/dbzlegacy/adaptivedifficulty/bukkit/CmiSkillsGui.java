@@ -11,7 +11,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
 /**
- * CMILib inventory GUI — Legacy Mechanics Skills.
+ * CMILib inventory GUI — Legacy Mechanics Skills / Skill Check.
  * Pages: core · advanced · saga.
  */
 public final class CmiSkillsGui {
@@ -45,14 +45,18 @@ public final class CmiSkillsGui {
 
     private static void openPage(Player player, String page, String title, Material mat) {
         Map<String, String> ph = ForgeBridge.skillsPlaceholders(player);
-        CMIGui gui = base(player, "&8Legacy Mechanics · Skills", 5);
+        boolean skillCheckUi = ForgeBridge.inSkillCheckSession(player);
+        String windowTitle = skillCheckUi
+                ? "&8Legacy Mechanics · Skill Check"
+                : "&8Legacy Mechanics · Skills";
+        CMIGui gui = base(player, windowTitle, 5);
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
-        CMIGuiButton status = new CMIGuiButton(4, mat,
-                !bridgeOk ? "&c&lUNAVAILABLE"
-                        : !systemOn ? "&c&lSKILLS DISABLED"
-                        : title + " Skills");
+        String statusName = !bridgeOk ? "&c&lUNAVAILABLE"
+                : !systemOn ? "&c&lSKILLS DISABLED"
+                : skillCheckUi ? title + " Skill Check" : title + " Skills";
+        CMIGuiButton status = new CMIGuiButton(4, mat, statusName);
         status.lockField();
         if (!bridgeOk || !systemOn) {
             status.addLore(unavailableLore(bridgeOk));
@@ -75,15 +79,18 @@ public final class CmiSkillsGui {
         status.addLore(lore);
         gui.addButton(status);
 
-        gui.addButton(pageBtn(19, Material.ENCHANTED_BOOK, "&eCore", "core",
+        String pageCmd = skillCheckUi ? "skillcheck" : "skills";
+        gui.addButton(pageBtn(19, Material.ENCHANTED_BOOK, "&eCore", pageCmd, "core",
                 "&7Core skill unlocks"));
-        gui.addButton(pageBtn(21, Material.DIAMOND, "&bAdvanced", "advanced",
+        gui.addButton(pageBtn(21, Material.DIAMOND, "&bAdvanced", pageCmd, "advanced",
                 "&7DMZ 2.1 skills"));
-        gui.addButton(pageBtn(23, Material.AMETHYST_SHARD, "&dSaga", "saga",
+        gui.addButton(pageBtn(23, Material.AMETHYST_SHARD, "&dSaga", pageCmd, "saga",
                 "&7Saga unlocks"));
 
         gui.addButton(hubBtn(36));
-        gui.addButton(progBtn(40));
+        if (ForgeBridge.isStaff(player) && !ForgeBridge.inSkillCheckSession(player)) {
+            gui.addButton(progBtn(40));
+        }
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -129,7 +136,8 @@ public final class CmiSkillsGui {
         return gui;
     }
 
-    private static CMIGuiButton pageBtn(int slot, Material mat, String name, String page, String... tips) {
+    private static CMIGuiButton pageBtn(
+            int slot, Material mat, String name, String cmdRoot, String page, String... tips) {
         CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
         btn.lockField();
         List<String> lore = new ArrayList<>();
@@ -138,7 +146,7 @@ public final class CmiSkillsGui {
             lore.add(tip);
         }
         btn.addLore(lore);
-        btn.addCommand("skills do page " + page);
+        btn.addCommand(cmdRoot + " do page " + page);
         return btn;
     }
 

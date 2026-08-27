@@ -2,10 +2,12 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Player UI entrypoint for {@code /progression} / {@code /prog}.
+ * Staff UI entrypoint for {@code /progression} / {@code /prog}.
  * Prefers CMI/CMILib inventory GUI, then Bukkit chest companion, then chat.
  */
 public final class ProgressionMenu {
@@ -13,6 +15,10 @@ public final class ProgressionMenu {
 
     public static void open(ServerPlayer player, String page) {
         if (player == null) {
+            return;
+        }
+        if (!StaffAccess.isStaff(player)) {
+            DmzRewards.msg(player, "§cStaff only.");
             return;
         }
         if (!DifficultyConfig.get().enableProgression) {

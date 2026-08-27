@@ -22,18 +22,16 @@ public final class ProgressionChatMenu {
             send(player, Component.m_237113_("§cProgression system is disabled."));
             return;
         }
+        if (!StaffAccess.isStaff(player)) {
+            send(player, Component.m_237113_("§cStaff only."));
+            return;
+        }
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         switch (p) {
             case "main" -> main(player);
             case "skills", "tp", "race", "combat", "end", "shop", "fabled", "utility", "status", "help" ->
                     category(player, p);
-            case "admin", "flags", "disable", "flags_fabled", "fabled_flags" -> {
-                if (StaffAccess.isStaff(player)) {
-                    admin(player);
-                } else {
-                    main(player);
-                }
-            }
+            case "admin", "flags", "disable", "flags_fabled", "fabled_flags" -> admin(player);
             default -> main(player);
         }
     }

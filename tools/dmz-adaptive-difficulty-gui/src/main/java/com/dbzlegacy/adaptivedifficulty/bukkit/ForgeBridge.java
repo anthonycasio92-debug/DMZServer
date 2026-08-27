@@ -1578,6 +1578,72 @@ public final class ForgeBridge {
         return player.isOp() || player.hasPermission(adminPermission());
     }
 
+    /** Donator Skill Check: staff always, or {@code legacymechanics.skillcheck} (config). */
+    public static boolean hasSkillCheck(Player player) {
+        if (player == null) {
+            return false;
+        }
+        if (isStaff(player)) {
+            return true;
+        }
+        try {
+            Object cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+                    .getMethod("get").invoke(null);
+            Object enabled = cfg.getClass().getField("enableSkillCheck").get(cfg);
+            if (enabled instanceof Boolean b && !b) {
+                return false;
+            }
+            Object skillsOn = cfg.getClass().getField("enableSkillUnlockService").get(cfg);
+            if (skillsOn instanceof Boolean b && !b) {
+                return false;
+            }
+            Object raw = cfg.getClass().getField("skillCheckPermission").get(cfg);
+            String node = raw == null ? "legacymechanics.skillcheck" : String.valueOf(raw).trim();
+            if (node.isEmpty()) {
+                node = "legacymechanics.skillcheck";
+            }
+            return player.hasPermission(node);
+        } catch (Throwable t) {
+            return player.hasPermission("legacymechanics.skillcheck");
+        }
+    }
+
+    /** True while Forge marked a Skill Check UI session for this player. */
+    public static boolean inSkillCheckSession(Player player) {
+        if (player == null) {
+            return false;
+        }
+        try {
+            Class<?> cls = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService",
+                    preferredLoader());
+            Object ok = cls.getMethod("inSession", java.util.UUID.class)
+                    .invoke(null, player.getUniqueId());
+            return ok instanceof Boolean b && b;
+        } catch (Throwable t) {
+            Map<String, String> ph = hubPlaceholders(player);
+            return "true".equalsIgnoreCase(ph.getOrDefault("skillcheck_session", "false"));
+        }
+    }
+
+    public static void markSkillCheckSession(Player player) {
+        if (player == null) {
+            return;
+        }
+        try {
+            Object nms = nmsPlayer(player);
+            if (nms == null) {
+                return;
+            }
+            Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferredLoader());
+            Class<?> cls = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService",
+                    preferredLoader());
+            cls.getMethod("markSession", sp).invoke(null, nms);
+        } catch (Throwable ignored) {
+        }
+    }
+
     public static String adminSet(String key, String value) {
         try {
             String k = key == null ? "" : key.toLowerCase(Locale.ROOT);

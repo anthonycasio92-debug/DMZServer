@@ -31,15 +31,16 @@ Flags: `enableRivalSystem`, `enableSparringSystem`, `rivalPresenceTp`, `rivalIns
 Bare player commands open **inventory GUIs** (same as Difficulty). Prefer clicking;
 typed commands are for admin / edge cases.
 
-| Command | GUI |
-|---------|-----|
-| `/lm` | Hub — Difficulty · Rival · Spar · Progression · Prestige · Skills |
-| `/difficulty` | Unlock tiers · Titles · personal toggle |
-| `/rival` | List / Challenge / pickers (declare · accept · remove · challenge · spectate) |
-| `/spar` | Stats · Top · Mentor pickers (invite apprentice / ask mentor) |
-| `/progression` | Status · Prestige · Skills · (staff Flags) |
-| `/prestige` | Prestige confirm |
-| `/skills` | Core / Advanced / Saga |
+| Command | Who | GUI |
+|---------|-----|-----|
+| `/lm` | All | Hub — Difficulty · Rival · Spar · Help (+ Skill Check for donators; staff also Progression · Prestige · Skills · Logs) |
+| `/difficulty` | All | Unlock tiers · Titles · personal toggle |
+| `/rival` | All | List / Challenge / pickers |
+| `/spar` | All | Stats · Top · Mentor pickers |
+| `/skillcheck` | Donators | Skill Check (core / advanced / saga) — LuckPerms `legacymechanics.skillcheck` |
+| `/progression` | Staff | Category hub · Flags |
+| `/prestige` | Staff | Prestige confirm |
+| `/skills` | Staff | Skill unlock admin browser |
 
 ## Admin commands (keep typed)
 
@@ -59,13 +60,18 @@ seasons / quests / achievements / HOF / journal / titles, spectator, fusion kill
 Auto sessions, mentor, block TP, clash drip, Friendly Fist, release-control drip,
 perfect training banner, ki type classification, charging holds activity, `/spar top`.
 
-### Progression / Fabled
+### Progression / Fabled / Skill Check
 
-See **[PROGRESSION.md](PROGRESSION.md)** for module map, config toggles, and CNPC scripts
-to disable on test servers. Full script/branch coverage: **[AUDIT.md](AUDIT.md)**.
+See **[PROGRESSION.md](PROGRESSION.md)** for module map (grouped by script family),
+config toggles, CNPC Skill Check setup, and scripts to disable on test. Full audit:
+**[AUDIT.md](AUDIT.md)**.
 
-Also includes Building TP (place), End portal guard, and Title progression / Admin
-inspect (from the server-fixes line).
+`/progression` is a **staff category hub**: Skills · TP Gains · Race · Combat · End · Shop ·
+Fabled · Utility (plus Prestige/Skills shortcuts). Also includes Building TP, End portal
+guard, and Title progression / Admin inspect (from the server-fixes line).
+
+Donators: grant `legacymechanics.skillcheck` (LuckPerms). CNPC: name “Skill Check” or tag
+`lm_skillcheck`, or `noppes script trigger 21 <player>`.
 
 ## Telemetry
 

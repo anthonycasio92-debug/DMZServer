@@ -223,6 +223,20 @@ public final class DifficultyConfig {
     public boolean enableShadowDummyLimiter = true;
     public boolean enableSkillUnlockService = true;
     public boolean enablePrestigeSystem = true;
+    /**
+     * Donator Skill Check UI ({@code /skillcheck}, CNPC interact / trigger 21).
+     * Staff always have access; others need {@link #skillCheckPermission}.
+     */
+    public boolean enableSkillCheck = true;
+    /** LuckPerms node for donator Skill Check (default false in plugin.yml). */
+    public String skillCheckPermission = "legacymechanics.skillcheck";
+    /**
+     * CNPC display-name needles (case-insensitive substring) that open Skill Check on interact.
+     * Also matches scoreboard tag {@code lm_skillcheck}.
+     */
+    public List<String> skillCheckNpcNameContains = new ArrayList<>(Arrays.asList(
+            "Skill Check", "SkillCheck", "Skill Progress"
+    ));
     /** Sneak + right-click another player to dump DMZ stats (PlayerStatChecker.js). */
     public boolean enablePlayerStatChecker = true;
 
@@ -1451,6 +1465,17 @@ public final class DifficultyConfig {
         if (cfg.adminPermission == null || cfg.adminPermission.isBlank()
                 || "*".equals(cfg.adminPermission.trim())) {
             cfg.adminPermission = "difficulty.admin";
+        }
+        if (cfg.skillCheckPermission == null || cfg.skillCheckPermission.isBlank()
+                || "*".equals(cfg.skillCheckPermission.trim())) {
+            cfg.skillCheckPermission = "legacymechanics.skillcheck";
+        }
+        if (cfg.skillCheckNpcNameContains == null) {
+            cfg.skillCheckNpcNameContains = new ArrayList<>();
+        }
+        if (cfg.skillCheckNpcNameContains.isEmpty()) {
+            cfg.skillCheckNpcNameContains.addAll(Arrays.asList(
+                    "Skill Check", "SkillCheck", "Skill Progress"));
         }
         // Hard product rule: at most 5 difficulty-adjusted mobs near a player.
         if (cfg.maxScaledMobsPerPlayer < 1 || cfg.maxScaledMobsPerPlayer > 5) {

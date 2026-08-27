@@ -74,18 +74,23 @@ public final class CmiHubGui {
                 "&7Rivalry & challenges"));
         gui.addButton(cmdBtn(21, Material.GOLDEN_SWORD, "&bSpar", "spar",
                 "&7Sparring TP & mentor"));
-        gui.addButton(cmdBtn(22, Material.EXPERIENCE_BOTTLE, "&dProgression", "progression",
-                "&7Natural skills / TP / race"));
-        gui.addButton(cmdBtn(23, Material.NETHER_STAR, "&ePrestige", "prestige",
-                "&7Prestige levels"));
-        gui.addButton(cmdBtn(24, Material.ENCHANTED_BOOK, "&fSkills", "skills",
-                "&7Skill unlock progress"));
-        gui.addButton(pageBtn(25, Material.PAPER, "&7Help", "help",
+        gui.addButton(pageBtn(22, Material.PAPER, "&7Help", "help",
                 "&7Command overview"));
 
-        if (ForgeBridge.isStaff(player)) {
+        boolean staff = ForgeBridge.isStaff(player);
+        boolean skillCheck = ForgeBridge.hasSkillCheck(player);
+        if (staff) {
+            gui.addButton(cmdBtn(28, Material.EXPERIENCE_BOTTLE, "&dProgression", "progression",
+                    "&7Natural skills / TP / race"));
+            gui.addButton(cmdBtn(29, Material.NETHER_STAR, "&ePrestige", "prestige",
+                    "&7Prestige levels"));
+            gui.addButton(cmdBtn(30, Material.ENCHANTED_BOOK, "&fSkills", "skills",
+                    "&7Skill unlock admin"));
             gui.addButton(pageBtn(31, Material.WRITABLE_BOOK, "&8Logs", "logs",
                     "&7System telemetry status"));
+        } else if (skillCheck) {
+            gui.addButton(cmdBtn(23, Material.ENCHANTED_BOOK, "&eSkill Check", "skillcheck",
+                    "&7View skill progress"));
         }
 
         gui.addButton(closeBtn(44));

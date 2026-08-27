@@ -581,11 +581,24 @@ public final class DifficultyEvents {
         EndProgression.onRightClickBlock(event);
     }
 
-    /** Sneak + right-click another player → DMZ stat dump (PlayerStatChecker.js). */
+    /** Sneak + right-click another player → DMZ stat dump (PlayerStatChecker.js).
+     * Also Skill Check CNPC interact. */
     @SubscribeEvent
     public void onPlayerEntityInteract(PlayerInteractEvent.EntityInteract event) {
         if (event.getLevel() == null || event.getLevel().m_5776_()) {
             return;
+        }
+        if (event.getHand() != net.minecraft.world.InteractionHand.MAIN_HAND) {
+            PlayerStatChecker.onEntityInteract(event);
+            return;
+        }
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
+                && event.getTarget() != null) {
+            if (com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService.tryOpenFromNpc(
+                    player, event.getTarget())) {
+                event.setCanceled(true);
+                return;
+            }
         }
         PlayerStatChecker.onEntityInteract(event);
     }
