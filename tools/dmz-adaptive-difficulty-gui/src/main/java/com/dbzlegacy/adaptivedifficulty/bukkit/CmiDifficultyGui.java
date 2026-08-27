@@ -83,6 +83,7 @@ public final class CmiDifficultyGui {
         if (!bridgeOk || !systemOn || !allowed) {
             status.addLore(unavailableLore(player, systemOn, bridgeOk));
             gui.addButton(status);
+            gui.addButton(hubBtn(27));
             gui.addButton(closeBtn(31));
             fillEmpty(gui, 4);
             gui.open();
@@ -133,6 +134,7 @@ public final class CmiDifficultyGui {
                     "&7Staff breakdown",
                     "&8CR · prestige · kit gates"));
         }
+        gui.addButton(hubBtn(27));
         gui.addButton(closeBtn(35));
         fillEmpty(gui, 4);
         gui.open();
@@ -622,6 +624,15 @@ public final class CmiDifficultyGui {
         }
         btn.addLore(lore);
         btn.addCommand("difficulty do page " + page);
+        return btn;
+    }
+
+    private static CMIGuiButton hubBtn(int slot) {
+        CMIGuiButton btn = new CMIGuiButton(slot, Material.COMPASS, "&7« Hub");
+        btn.lockField();
+        btn.addLore(List.of("", "&7Legacy Mechanics hub"));
+        btn.addCommand("lm");
+        btn.setCloseInv(true);
         return btn;
     }
 

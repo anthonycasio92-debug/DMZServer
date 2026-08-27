@@ -67,7 +67,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 getLogger().info("Version handshake OK: " + pluginVer);
             }
         }
-        getLogger().info("Registered Bukkit /difficulty /rival /spar (CMI GUI preferred).");
+        getLogger().info("Registered Bukkit /difficulty /rival /spar /lm /progression /prestige /skills.");
     }
 
     /**
@@ -404,6 +404,24 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         hubChestGui.open(player, page);
     }
 
+    private void openHubRespectingConfig(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        String backend = ForgeBridge.guiBackend();
+        if ("chat".equals(backend)) {
+            if (!ForgeBridge.openHubChatMenu(player, page)) {
+                player.sendMessage("§cHub chat menu unavailable (is the Forge mod loaded?).");
+            }
+            return;
+        }
+        if ("chest".equals(backend)) {
+            hubChestGui.open(player, page);
+            return;
+        }
+        openHubInventory(player, page);
+    }
+
     // ── Progression ────────────────────────────────────────────────────
 
     public void openProgressionMenu(Player player, String page) {
@@ -433,6 +451,24 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return;
         }
         progressionChestGui.open(player, page);
+    }
+
+    private void openProgressionRespectingConfig(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        String backend = ForgeBridge.guiBackend();
+        if ("chat".equals(backend)) {
+            if (!ForgeBridge.openProgressionChatMenu(player, page)) {
+                player.sendMessage("§cProgression chat menu unavailable (is the Forge mod loaded?).");
+            }
+            return;
+        }
+        if ("chest".equals(backend)) {
+            progressionChestGui.open(player, page);
+            return;
+        }
+        openProgressionInventory(player, page);
     }
 
     // ── Prestige ───────────────────────────────────────────────────────
@@ -466,6 +502,24 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         prestigeChestGui.open(player, page);
     }
 
+    private void openPrestigeRespectingConfig(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        String backend = ForgeBridge.guiBackend();
+        if ("chat".equals(backend)) {
+            if (!ForgeBridge.forwardCommand(player, "prestige")) {
+                openPrestigeInventory(player, page);
+            }
+            return;
+        }
+        if ("chest".equals(backend)) {
+            prestigeChestGui.open(player, page);
+            return;
+        }
+        openPrestigeInventory(player, page);
+    }
+
     // ── Skills ─────────────────────────────────────────────────────────
 
     public void openSkillsMenu(Player player, String page) {
@@ -495,6 +549,25 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return;
         }
         skillsChestGui.open(player, page);
+    }
+
+    private void openSkillsRespectingConfig(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        String backend = ForgeBridge.guiBackend();
+        if ("chat".equals(backend)) {
+            String p = page == null || page.isBlank() ? "core" : page;
+            if (!ForgeBridge.forwardCommand(player, "skills do page " + p)) {
+                openSkillsInventory(player, page);
+            }
+            return;
+        }
+        if ("chest".equals(backend)) {
+            skillsChestGui.open(player, page);
+            return;
+        }
+        openSkillsInventory(player, page);
     }
 
     private void runForUuid(
@@ -549,10 +622,195 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if ("spar".equals(name)) {
             return handleSpar(sender, args);
         }
+        if ("lm".equals(name) || "legacymechanics".equals(name)) {
+            return handleHub(sender, args);
+        }
+        if ("progression".equals(name) || "prog".equals(name)) {
+            return handleProgression(sender, args);
+        }
+        if ("prestige".equals(name)) {
+            return handlePrestige(sender, args);
+        }
+        if ("skills".equals(name) || "skillcheck".equals(name)) {
+            return handleSkills(sender, args);
+        }
         if (!"difficulty".equals(name)) {
             return false;
         }
         return handleDifficulty(sender, args);
+    }
+
+    private boolean handleHub(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Players only.");
+            return true;
+        }
+        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+            player.sendMessage("§cNo permission: dmzdiff.gui");
+            return true;
+        }
+        if (args.length == 0 || "gui".equalsIgnoreCase(args[0])) {
+            openHubRespectingConfig(player, "main");
+            return true;
+        }
+        String sub = args[0].toLowerCase();
+        if ("do".equals(sub)) {
+            String action = args.length > 1 ? args[1] : "";
+            String arg = args.length > 2 ? args[2] : "";
+            String returnPage = args.length > 3 ? args[3] : null;
+            String reopen;
+            if ("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action)) {
+                reopen = arg == null || arg.isBlank() ? "main" : arg;
+            } else {
+                reopen = returnPage == null || returnPage.isBlank() ? "main" : returnPage;
+                String msg = ForgeBridge.hubHandleDo(player, action, arg, reopen);
+                if (msg != null && !msg.isBlank()) {
+                    if (!msg.startsWith("§")) {
+                        msg = "§a" + msg;
+                    }
+                    player.sendMessage(msg);
+                }
+            }
+            if ("chat".equals(ForgeBridge.guiBackend())) {
+                ForgeBridge.openHubChatMenu(player, reopen);
+            } else {
+                openHubInventory(player, reopen);
+            }
+            return true;
+        }
+        if ("help".equals(sub) || "logs".equals(sub) || "syslog".equals(sub)) {
+            openHubRespectingConfig(player, sub);
+            return true;
+        }
+        forwardToForge(player, "lm", args);
+        return true;
+    }
+
+    private boolean handleProgression(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Players only.");
+            return true;
+        }
+        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+            player.sendMessage("§cNo permission: dmzdiff.gui");
+            return true;
+        }
+        if (args.length == 0 || "gui".equalsIgnoreCase(args[0])) {
+            openProgressionRespectingConfig(player, "main");
+            return true;
+        }
+        String sub = args[0].toLowerCase();
+        if ("do".equals(sub)) {
+            String action = args.length > 1 ? args[1] : "";
+            String arg = args.length > 2 ? args[2] : "";
+            String returnPage = args.length > 3 ? args[3] : null;
+            String reopen;
+            if ("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action)) {
+                reopen = arg == null || arg.isBlank() ? "main" : arg;
+            } else {
+                reopen = returnPage == null || returnPage.isBlank() ? "main" : returnPage;
+                String msg = ForgeBridge.progressionHandleDo(player, action, arg, reopen);
+                if (msg != null && !msg.isBlank()) {
+                    if (!msg.startsWith("§")) {
+                        msg = "§a" + msg;
+                    }
+                    player.sendMessage(msg);
+                }
+            }
+            if ("chat".equals(ForgeBridge.guiBackend())) {
+                ForgeBridge.openProgressionChatMenu(player, reopen);
+            } else {
+                openProgressionInventory(player, reopen);
+            }
+            return true;
+        }
+        if ("status".equals(sub) || "help".equals(sub) || "admin".equals(sub)
+                || "flags".equals(sub) || "fabled".equals(sub)) {
+            openProgressionRespectingConfig(player, sub);
+            return true;
+        }
+        forwardToForge(player, "progression", args);
+        return true;
+    }
+
+    private boolean handlePrestige(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Players only.");
+            return true;
+        }
+        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+            player.sendMessage("§cNo permission: dmzdiff.gui");
+            return true;
+        }
+        if (args.length == 0 || "gui".equalsIgnoreCase(args[0])) {
+            openPrestigeRespectingConfig(player, "main");
+            return true;
+        }
+        String sub = args[0].toLowerCase();
+        if ("do".equals(sub)) {
+            String action = args.length > 1 ? args[1] : "";
+            String arg = args.length > 2 ? args[2] : "";
+            String returnPage = args.length > 3 ? args[3] : null;
+            String reopen;
+            if ("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action)) {
+                reopen = arg == null || arg.isBlank() ? "main" : arg;
+            } else {
+                reopen = returnPage == null || returnPage.isBlank() ? "main" : returnPage;
+                String msg = ForgeBridge.prestigeHandleDo(player, action, arg, reopen);
+                if (msg != null && !msg.isBlank()) {
+                    if (!msg.startsWith("§")) {
+                        msg = "§a" + msg;
+                    }
+                    player.sendMessage(msg);
+                }
+            }
+            openPrestigeInventory(player, reopen);
+            return true;
+        }
+        forwardToForge(player, "prestige", args);
+        return true;
+    }
+
+    private boolean handleSkills(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Players only.");
+            return true;
+        }
+        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+            player.sendMessage("§cNo permission: dmzdiff.gui");
+            return true;
+        }
+        if (args.length == 0 || "gui".equalsIgnoreCase(args[0]) || "check".equalsIgnoreCase(args[0])) {
+            openSkillsRespectingConfig(player, "core");
+            return true;
+        }
+        String sub = args[0].toLowerCase();
+        if ("do".equals(sub)) {
+            String action = args.length > 1 ? args[1] : "";
+            String arg = args.length > 2 ? args[2] : "";
+            String returnPage = args.length > 3 ? args[3] : null;
+            String reopen;
+            if ("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action)) {
+                reopen = arg == null || arg.isBlank() ? "core" : arg;
+            } else {
+                reopen = returnPage == null || returnPage.isBlank() ? "core" : returnPage;
+                String msg = ForgeBridge.skillsHandleDo(player, action, arg, reopen);
+                if (msg != null && !msg.isBlank()) {
+                    if (!msg.startsWith("§")) {
+                        msg = "§a" + msg;
+                    }
+                    player.sendMessage(msg);
+                }
+            }
+            openSkillsInventory(player, reopen);
+            return true;
+        }
+        if ("core".equals(sub) || "advanced".equals(sub) || "saga".equals(sub) || "help".equals(sub)) {
+            openSkillsRespectingConfig(player, sub);
+            return true;
+        }
+        forwardToForge(player, "skills", args);
+        return true;
     }
 
     private boolean handleRival(CommandSender sender, String[] args) {

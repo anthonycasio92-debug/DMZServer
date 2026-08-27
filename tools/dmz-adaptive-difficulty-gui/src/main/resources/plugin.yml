@@ -3,7 +3,7 @@ version: '2.0.0'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
-description: CMI/CMILib inventory GUIs (Difficulty · Rival · Sparring) + PlaceholderAPI for LegacyMechanics
+description: CMI/CMILib inventory GUIs (Difficulty · Rival · Spar · Hub · Progression · Prestige · Skills) + PlaceholderAPI for LegacyMechanics
 softdepend: [CMILib, CMI, PlaceholderAPI]
 commands:
   difficulty:
@@ -18,6 +18,21 @@ commands:
     description: Open LegacyMechanics Sparring CMI/chest GUI
     usage: /spar
     aliases: [sparring, sparr]
+  lm:
+    description: Open LegacyMechanics Hub GUI
+    usage: /lm
+    aliases: [legacymechanics]
+  progression:
+    description: Open LegacyMechanics Progression GUI
+    usage: /progression
+    aliases: [prog]
+  prestige:
+    description: Open LegacyMechanics Prestige GUI
+    usage: /prestige
+  skills:
+    description: Open LegacyMechanics Skills GUI
+    usage: /skills
+    aliases: [skillcheck]
   dmzdiffgui:
     description: Force-open LegacyMechanics chest/CMI GUI
     usage: /dmzdiffgui [page]

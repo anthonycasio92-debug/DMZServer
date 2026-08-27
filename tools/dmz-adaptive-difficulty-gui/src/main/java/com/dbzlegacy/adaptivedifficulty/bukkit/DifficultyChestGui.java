@@ -107,6 +107,7 @@ public final class DifficultyChestGui implements Listener {
             String title = !bridgeOk ? "&c&lUNAVAILABLE"
                     : !systemOn ? "&c&lSYSTEM DISABLED" : "&e&lWHITELIST ONLY";
             put(holder, inv, 13, item(Material.NETHER_STAR, title, unavailableLore(viewer, subject, systemOn, bridgeOk)));
+            put(holder, inv, 27, hubBtn(), SlotAction.cmd("lm"));
             put(holder, inv, 31, closeBtn(), SlotAction.dismiss());
             return inv;
         }
@@ -162,6 +163,7 @@ public final class DifficultyChestGui implements Listener {
                     "&7Staff breakdown", "&8CR · prestige · kit gates"),
                     SlotAction.page("stats"));
         }
+        put(holder, inv, 27, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -620,6 +622,15 @@ public final class DifficultyChestGui implements Listener {
             Bukkit.getScheduler().runTask(plugin, () -> openAs(viewer, subjectFinal, targetPage));
             return;
         }
+        if (slotAction.rawCommand != null && !slotAction.rawCommand.isBlank()) {
+            // Hub / cross-menu commands always apply to the viewer (not inspect subject).
+            final String cmd = slotAction.rawCommand;
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                viewer.closeInventory();
+                viewer.performCommand(cmd);
+            });
+            return;
+        }
         if (slotAction.action == null || slotAction.action.isBlank()) {
             return;
         }
@@ -702,6 +713,10 @@ public final class DifficultyChestGui implements Listener {
         return item(mat, name, lore);
     }
 
+    private static ItemStack hubBtn() {
+        return item(Material.COMPASS, "&7« Hub", List.of("", "&7Legacy Mechanics hub"));
+    }
+
     private static ItemStack closeBtn() {
         return item(Material.BARRIER, "&cClose", List.of("&7Close menu"));
     }
@@ -736,26 +751,33 @@ public final class DifficultyChestGui implements Listener {
         final String arg;
         final String returnPage;
         final String page;
+        final String rawCommand;
         final boolean shouldClose;
 
-        private SlotAction(String action, String arg, String returnPage, String page, boolean shouldClose) {
+        private SlotAction(
+                String action, String arg, String returnPage, String page, String rawCommand, boolean shouldClose) {
             this.action = action;
             this.arg = arg;
             this.returnPage = returnPage;
             this.page = page;
+            this.rawCommand = rawCommand;
             this.shouldClose = shouldClose;
         }
 
         static SlotAction act(String action, String arg, String returnPage) {
-            return new SlotAction(action, arg, returnPage, null, false);
+            return new SlotAction(action, arg, returnPage, null, null, false);
         }
 
         static SlotAction page(String page) {
-            return new SlotAction(null, null, null, page, false);
+            return new SlotAction(null, null, null, page, null, false);
+        }
+
+        static SlotAction cmd(String command) {
+            return new SlotAction(null, null, null, null, command, false);
         }
 
         static SlotAction dismiss() {
-            return new SlotAction(null, null, null, null, true);
+            return new SlotAction(null, null, null, null, null, true);
         }
     }
 

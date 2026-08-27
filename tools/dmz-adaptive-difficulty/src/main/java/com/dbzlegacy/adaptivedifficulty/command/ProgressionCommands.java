@@ -3,7 +3,6 @@ package com.dbzlegacy.adaptivedifficulty.command;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.PrestigeMenu;
-import com.dbzlegacy.adaptivedifficulty.gui.ProgressionChatMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.SkillsMenu;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
@@ -295,7 +294,7 @@ public final class ProgressionCommands {
         reply(source, playerOrNull(source), msg);
         ServerPlayer p = playerOrNull(source);
         if (p != null) {
-            ProgressionChatMenu.open(p, "admin");
+            ProgressionMenu.open(p, "admin");
         }
         return 1;
     }
