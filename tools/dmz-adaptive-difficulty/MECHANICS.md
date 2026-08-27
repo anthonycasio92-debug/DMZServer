@@ -26,14 +26,27 @@ Flags: `enableRivalSystem`, `enableSparringSystem`, `rivalPresenceTp`, `rivalIns
 `rivalChallenges`, `enableProgression`, `enableFabledBridge`, `enableSystemTelemetry`,
 `balanceTelemetryEnabled` (+ per-module progression/Fabled toggles).
 
-## Commands
+## Player GUIs (CMI → chest → chat)
 
-- `/lm` / `/legacymechanics` — hub (Difficulty / Rival / Sparring / Progression / Logs / Help)
-- `/lm do page progression` — progression + Fabled bridge status; `fabled` / `disable` pages
-- `/difficulty` — Unlock tiers (chat title: Legacy Mechanics · Difficulty)
-- `/rival` / `/rival gui` — Rival chat GUI; `/rival do …`
-- `/spar` / `/spar gui` — Spar chat GUI; `/spar do …`
-- `/difficulty admin syslog on|off|status|flush` — unified system log
+Bare player commands open **inventory GUIs** (same as Difficulty). Prefer clicking;
+typed commands are for admin / edge cases.
+
+| Command | GUI |
+|---------|-----|
+| `/lm` | Hub — Difficulty · Rival · Spar · Progression · Prestige · Skills |
+| `/difficulty` | Unlock tiers · Titles · personal toggle |
+| `/rival` | List / Challenge / pickers (declare · accept · remove · challenge · spectate) |
+| `/spar` | Stats · Top · Mentor pickers (invite apprentice / ask mentor) |
+| `/progression` | Status · Prestige · Skills · (staff Flags) |
+| `/prestige` | Prestige confirm |
+| `/skills` | Core / Advanced / Saga |
+
+## Admin commands (keep typed)
+
+- `/difficulty admin …` — whitelist, syslog, inspect GUI, reload, settings
+- `/progression boost start|end`, `meditation next`, `android` (staff)
+- `/rival refresh|save`, `/spar admin …|save` (staff)
+- `/enddragon`, `/cleardragons`
 
 ### Rival features
 
