@@ -793,6 +793,14 @@ public final class DifficultyCommands {
                 case "enableadaptiveai" -> cfg.enableAdaptiveAi = Boolean.parseBoolean(value);
                 case "enableenemyevolution" -> cfg.enableEnemyEvolution = Boolean.parseBoolean(value);
                 case "enablebossscaling" -> cfg.enableBossScaling = Boolean.parseBoolean(value);
+                case "enablerivalsystem", "rival", "rivals" ->
+                        cfg.enableRivalSystem = Boolean.parseBoolean(value);
+                case "enablesparringsystem", "sparring", "spar" ->
+                        cfg.enableSparringSystem = Boolean.parseBoolean(value);
+                case "rivalpresencetp", "rivalpresence" ->
+                        cfg.rivalPresenceTp = Boolean.parseBoolean(value);
+                case "rivalinstinct" -> cfg.rivalInstinct = Boolean.parseBoolean(value);
+                case "rivalchallenges" -> cfg.rivalChallenges = Boolean.parseBoolean(value);
                 case "bossstatmultiplier" ->
                         cfg.bossStatMultiplier = Math.max(1.0, Math.min(5.0, Double.parseDouble(value)));
                 case "bosshealththreshold" ->

@@ -10,10 +10,14 @@ import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.evolution.CombatGravity;
 import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
 import com.dbzlegacy.adaptivedifficulty.reward.RewardSystem;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalStore;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.scaling.SlimeSplitGuard;
+import com.dbzlegacy.adaptivedifficulty.sparring.SparStore;
+import com.dbzlegacy.adaptivedifficulty.sparring.SparringSystem;
 import com.dbzlegacy.adaptivedifficulty.tick.BehaviorScheduler;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler;
@@ -89,6 +93,8 @@ public final class DifficultyEvents {
         LAST_LIVE_OFFENSE.clear();
         LAST_RACE.clear();
         LAST_FORM_KEY.clear();
+        RivalStore.get().load();
+        SparStore.get().load();
     }
 
     @SubscribeEvent
@@ -99,6 +105,8 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
         BalanceTelemetry.flushAndClose();
+        RivalStore.get().save();
+        SparStore.get().save();
     }
 
     @SubscribeEvent
@@ -118,6 +126,8 @@ public final class DifficultyEvents {
             // Persist any unlock-list repairs from refresh so the next disconnect keeps the tier.
             DifficultyCache.save(player);
             TitleSystem.syncTierTitles(player, false);
+            RivalSystem.onLogin(player);
+            SparringSystem.onLogin(player);
         }
     }
 
@@ -152,6 +162,8 @@ public final class DifficultyEvents {
             LAST_FORM_KEY.remove(player.m_20148_());
             AncientCoinEconomy.clearMigrateFlag(player.m_20148_());
             AreaDifficulty.clearCache();
+            RivalSystem.onLogout(player);
+            SparringSystem.onLogout(player);
         }
     }
 
@@ -306,6 +318,8 @@ public final class DifficultyEvents {
         }
         // Even when master is OFF, drain claims + revert scaled hostiles.
         BehaviorScheduler.pulse(server, server.m_129921_()); // getTickCount
+        RivalSystem.pulse(server, server.m_129921_());
+        SparringSystem.pulse(server, server.m_129921_());
     }
 
     @SubscribeEvent
@@ -489,6 +503,36 @@ public final class DifficultyEvents {
         }
         if (victimHostile && victim.m_21223_() <= 0.0f) {
             MobScaling.terminateIfZeroHealth(victim);
+        }
+
+        // Rival / Sparring PvP HP scoring (players only).
+        if (victim instanceof ServerPlayer pvpVictim
+                && causing instanceof ServerPlayer pvpAttacker) {
+            RivalSystem.onPlayerHurt(pvpVictim, pvpAttacker, source);
+            SparringSystem.onPlayerHurt(pvpVictim, pvpAttacker, source);
+        }
+    }
+
+    /**
+     * Rival + Sparring death / KO / mob-kill hooks.
+     * Independent of AD master gate — these systems have their own config flags.
+     */
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public void onRivalSparDeath(LivingDeathEvent event) {
+        LivingEntity dead = event.getEntity();
+        if (dead == null || dead.m_9236_().f_46443_) {
+            return;
+        }
+        Entity killerEnt = event.getSource() == null ? null : event.getSource().m_7639_();
+        if (dead instanceof ServerPlayer victim) {
+            LivingEntity killerLiving = killerEnt instanceof LivingEntity le ? le : null;
+            RivalSystem.onDeath(victim, killerLiving);
+            SparringSystem.onDeath(victim);
+        }
+        if (killerEnt instanceof ServerPlayer killer
+                && dead instanceof LivingEntity
+                && !(dead instanceof Player)) {
+            RivalSystem.markMobKill(killer);
         }
     }
 

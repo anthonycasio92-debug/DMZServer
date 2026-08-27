@@ -1,0 +1,203 @@
+package com.dbzlegacy.adaptivedifficulty.command;
+
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalSystem;
+import com.dbzlegacy.adaptivedifficulty.sparring.SparStore;
+import com.dbzlegacy.adaptivedifficulty.sparring.SparringSystem;
+import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+
+/** {@code /spar} — Sparring Tp System 3.2.11 command surface. */
+public final class SparCommands {
+    private SparCommands() {}
+
+    public static void register() {
+        MinecraftForge.EVENT_BUS.register(new SparCommands());
+    }
+
+    @SubscribeEvent
+    public void onRegister(RegisterCommandsEvent event) {
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.m_82127_("spar")
+                .executes(ctx -> help(ctx.getSource()))
+                .then(Commands.m_82127_("help").executes(ctx -> help(ctx.getSource())))
+                .then(Commands.m_82127_("stats").executes(ctx -> stats(ctx.getSource())))
+                .then(Commands.m_82127_("end").executes(ctx -> end(ctx.getSource())))
+                .then(Commands.m_82127_("mentor")
+                        .executes(ctx -> mentorStatus(ctx.getSource()))
+                        .then(Commands.m_82127_("accept").executes(ctx -> mentorAccept(ctx.getSource())))
+                        .then(Commands.m_82127_("decline").executes(ctx -> mentorDecline(ctx.getSource())))
+                        .then(Commands.m_82127_("deny").executes(ctx -> mentorDecline(ctx.getSource())))
+                        .then(Commands.m_82127_("remove").executes(ctx -> mentorRemove(ctx.getSource())))
+                        .then(Commands.m_82127_("clear").executes(ctx -> mentorRemove(ctx.getSource())))
+                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .executes(ctx -> mentorInvite(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "player")))))
+                .then(Commands.m_82127_("apprentice")
+                        .executes(ctx -> mentorStatus(ctx.getSource()))
+                        .then(Commands.m_82127_("remove").executes(ctx -> apprenticeRemove(ctx.getSource())))
+                        .then(Commands.m_82127_("clear").executes(ctx -> apprenticeRemove(ctx.getSource())))
+                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .executes(ctx -> apprenticeInvite(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "player")))))
+                .then(Commands.m_82127_("admin")
+                        .requires(src -> src.m_6761_(2))
+                        .then(Commands.m_82127_("mentor")
+                                .then(Commands.m_82127_("resetcd")
+                                        .executes(ctx -> resetCd(ctx.getSource(), null))
+                                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                                                .executes(ctx -> resetCd(
+                                                        ctx.getSource(),
+                                                        StringArgumentType.getString(ctx, "player")))))))
+                .then(Commands.m_82127_("save")
+                        .requires(src -> src.m_6761_(2))
+                        .executes(ctx -> save(ctx.getSource())));
+
+        event.getDispatcher().register(root);
+        AdaptiveDifficultyMod.LOGGER.info("[{}] registered /spar", AdaptiveDifficultyMod.MOD_ID);
+    }
+
+    private static int help(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null) {
+            return 0;
+        }
+        DmzRewards.msg(player, "§6§l/spar §8— Sparring TP");
+        DmzRewards.msg(player, "§e/spar stats|end|help");
+        DmzRewards.msg(player, "§e/spar mentor <player>|accept|decline|remove");
+        DmzRewards.msg(player, "§e/spar apprentice <player>|remove");
+        DmzRewards.msg(player, "§8Spar starts automatically when both players trade hits.");
+        return 1;
+    }
+
+    private static int stats(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        for (String line : SparringSystem.statsLines(player)) {
+            DmzRewards.msg(player, line);
+        }
+        return 1;
+    }
+
+    private static int end(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        DmzRewards.msg(player, SparringSystem.endCommand(player));
+        return 1;
+    }
+
+    private static int mentorStatus(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        DmzRewards.msg(player, SparringSystem.bondStatus(player));
+        return 1;
+    }
+
+    private static int mentorInvite(CommandSourceStack source, String name) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        ServerPlayer target = RivalSystem.findOnline(source.m_81377_(), name);
+        DmzRewards.msg(player, SparringSystem.mentorInvite(player, target));
+        return 1;
+    }
+
+    private static int apprenticeInvite(CommandSourceStack source, String name) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        ServerPlayer target = RivalSystem.findOnline(source.m_81377_(), name);
+        DmzRewards.msg(player, SparringSystem.apprenticeInvite(player, target));
+        return 1;
+    }
+
+    private static int mentorAccept(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        DmzRewards.msg(player, SparringSystem.mentorAccept(player));
+        return 1;
+    }
+
+    private static int mentorDecline(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        DmzRewards.msg(player, SparringSystem.mentorDecline(player));
+        return 1;
+    }
+
+    private static int mentorRemove(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        DmzRewards.msg(player, SparringSystem.removeMentor(player));
+        return 1;
+    }
+
+    private static int apprenticeRemove(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        DmzRewards.msg(player, SparringSystem.removeApprentice(player));
+        return 1;
+    }
+
+    private static int resetCd(CommandSourceStack source, String name) {
+        ServerPlayer admin = playerOrNull(source);
+        ServerPlayer target = name == null ? admin : RivalSystem.findOnline(source.m_81377_(), name);
+        if (target == null) {
+            source.m_81352_(Component.m_237113_("§cPlayer not online: " + name));
+            return 0;
+        }
+        String msg = SparringSystem.resetMentorCd(admin == null ? target : admin, target);
+        source.m_288197_(() -> Component.m_237113_(msg), true);
+        return 1;
+    }
+
+    private static int save(CommandSourceStack source) {
+        SparStore.get().markDirty();
+        SparStore.get().save();
+        source.m_288197_(() -> Component.m_237113_("§aSpar store saved."), true);
+        return 1;
+    }
+
+    private static boolean enabled(ServerPlayer player) {
+        if (!DifficultyConfig.get().enableSparringSystem) {
+            DmzRewards.msg(player, "§cSparring system is disabled.");
+            return false;
+        }
+        return true;
+    }
+
+    private static ServerPlayer playerOrNull(CommandSourceStack source) {
+        try {
+            return source.m_81375_();
+        } catch (Exception e) {
+            source.m_81352_(Component.m_237113_("Players only."));
+            return null;
+        }
+    }
+}

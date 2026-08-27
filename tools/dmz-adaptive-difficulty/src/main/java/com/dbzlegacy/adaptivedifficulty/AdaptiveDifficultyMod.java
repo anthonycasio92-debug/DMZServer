@@ -1,6 +1,8 @@
 package com.dbzlegacy.adaptivedifficulty;
 
 import com.dbzlegacy.adaptivedifficulty.command.DifficultyCommands;
+import com.dbzlegacy.adaptivedifficulty.command.RivalCommands;
+import com.dbzlegacy.adaptivedifficulty.command.SparCommands;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.event.DifficultyEvents;
@@ -26,7 +28,7 @@ public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
     public static final String MOD_ID = "adaptivedifficulty";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "1.0.36";
+    public static final String VERSION = "1.0.44";
     public static final String DISPLAY_NAME = "AdaptiveDifficulty";
     public static final Logger LOGGER = LogManager.getLogger(DISPLAY_NAME);
 
@@ -45,6 +47,8 @@ public final class AdaptiveDifficultyMod {
         AttributeLimits.uncapOffenseAttributes();
         MinecraftForge.EVENT_BUS.register(new DifficultyEvents());
         DifficultyCommands.register();
+        RivalCommands.register();
+        SparCommands.register();
         LOGGER.info(
                 "[{}] v{} server-only: Lightman's={}, FTB Teams={}, CMI={}, ChestGUI={}",
                 MOD_ID,

@@ -166,6 +166,14 @@ public final class DifficultyConfig {
     public boolean enableAdaptiveAi = true;
     public boolean enableEnemyEvolution = true;
     public boolean enableBossScaling = true;
+
+    /** Rival System 4.7.10 port (declare / proximity / challenges / instinct). */
+    public boolean enableRivalSystem = true;
+    /** Sparring Tp System 3.2.11 port (auto sessions / mentor / TP formula). */
+    public boolean enableSparringSystem = true;
+    public boolean rivalPresenceTp = true;
+    public boolean rivalInstinct = true;
+    public boolean rivalChallenges = true;
     public double bossStatMultiplier = 1.5;
     /** Natural (pre-scale) max-health at/above this marks a boss. Default keeps wardens/etc. */
     public double bossHealthThreshold = 300.0;

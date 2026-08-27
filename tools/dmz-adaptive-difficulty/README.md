@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.36)
+# AdaptiveDifficulty (v1.0.44)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -38,8 +38,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.36.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.36.jar`
+1. `mods/AdaptiveDifficulty-1.0.44.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.44.jar` (or matching GUI if available)
 3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
