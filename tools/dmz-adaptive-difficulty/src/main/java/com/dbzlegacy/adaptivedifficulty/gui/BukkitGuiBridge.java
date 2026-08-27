@@ -54,6 +54,58 @@ public final class BukkitGuiBridge {
         );
     }
 
+    /** Chest-only Hub open for {@code guiBackend=chest}. */
+    public static boolean openHub(ServerPlayer player, String page) {
+        return openNamed(
+                player,
+                page,
+                "openHubChestMenuForUuid",
+                "openHubMenuForUuid",
+                "openHubChestMenu",
+                "openHubMenu",
+                "Hub"
+        );
+    }
+
+    /** Chest-only Progression open for {@code guiBackend=chest}. */
+    public static boolean openProgression(ServerPlayer player, String page) {
+        return openNamed(
+                player,
+                page,
+                "openProgressionChestMenuForUuid",
+                "openProgressionMenuForUuid",
+                "openProgressionChestMenu",
+                "openProgressionMenu",
+                "Progression"
+        );
+    }
+
+    /** Chest-only Prestige open for {@code guiBackend=chest}. */
+    public static boolean openPrestige(ServerPlayer player, String page) {
+        return openNamed(
+                player,
+                page,
+                "openPrestigeChestMenuForUuid",
+                "openPrestigeMenuForUuid",
+                "openPrestigeChestMenu",
+                "openPrestigeMenu",
+                "Prestige"
+        );
+    }
+
+    /** Chest-only Skills open for {@code guiBackend=chest}. */
+    public static boolean openSkills(ServerPlayer player, String page) {
+        return openNamed(
+                player,
+                page,
+                "openSkillsChestMenuForUuid",
+                "openSkillsMenuForUuid",
+                "openSkillsChestMenu",
+                "openSkillsMenu",
+                "Skills"
+        );
+    }
+
     private static boolean openNamed(
             ServerPlayer player,
             String page,

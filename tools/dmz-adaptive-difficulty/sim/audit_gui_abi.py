@@ -140,11 +140,14 @@ OPTIONAL_METHODS = {
         ("placeholders", "ServerPlayer"),
         ("linesForPage", "ServerPlayer, java.lang.String"),
         ("handleDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
+        ("onlinePlayerNames", "ServerPlayer"),
+        ("resolveOnline", "ServerPlayer, java.lang.String"),
     ],
     "com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi": [
         ("placeholders", "ServerPlayer"),
         ("linesForPage", "ServerPlayer, java.lang.String"),
         ("handleDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
+        ("resolveOnline", "ServerPlayer, java.lang.String"),
     ],
     "com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData": [
         ("isPersonalEnabled", ""),

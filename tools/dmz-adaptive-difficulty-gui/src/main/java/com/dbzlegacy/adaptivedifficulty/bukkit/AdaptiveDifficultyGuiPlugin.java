@@ -435,19 +435,40 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             return true;
         }
-        // Page shortcuts that map to GUI pages
-        if (switch (sub) {
+        // GUI pages (only when no extra forge args — e.g. /rival challenge send X forwards)
+        if (args.length == 1 && switch (sub) {
             case "list", "stats", "top", "season", "quests", "achievements", "hof",
-                 "journal", "title", "titles", "challenge", "help" -> true;
+                 "journal", "title", "titles", "challenge", "help",
+                 "pick_declare", "pick_accept", "pick_remove", "pick_challenge",
+                 "pick_spectate", "pick_silent" -> true;
             default -> false;
         }) {
             String page = "titles".equals(sub) ? "title" : sub;
             openRivalRespectingConfig(player, page);
             return true;
         }
-        // Other rival subcommands (declare/accept/challenge send/…) → Forge brigadier
-        forwardToForge(player, "rival", args);
+        // Known forge actions that need typed names / admin — keep forwarding
+        if (isRivalForgeAction(sub)) {
+            forwardToForge(player, "rival", args);
+            return true;
+        }
+        // Bare /rival <onlinePlayer> → silent rival via Forge
+        if (args.length == 1 && Bukkit.getPlayerExact(args[0]) != null) {
+            forwardToForge(player, "rival", args);
+            return true;
+        }
+        // Unknown non-admin chatter → open GUI instead of failing typed command
+        openRivalRespectingConfig(player, "main");
         return true;
+    }
+
+    private static boolean isRivalForgeAction(String sub) {
+        return switch (sub.toLowerCase()) {
+            case "declare", "accept", "decline", "deny", "remove", "silent",
+                 "challenge", "spectate", "tpmsg", "instinct",
+                 "refresh", "save" -> true;
+            default -> false;
+        };
     }
 
     private boolean handleSpar(CommandSender sender, String[] args) {
@@ -488,7 +509,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             return true;
         }
-        if ("stats".equals(sub) || "top".equals(sub) || "mentor".equals(sub) || "help".equals(sub)) {
+        if ("stats".equals(sub) || "help".equals(sub)
+                || ("mentor".equals(sub) && args.length == 1)
+                || ("top".equals(sub))) {
             String page = sub;
             if ("top".equals(sub) && args.length > 1) {
                 page = "top_" + args[1].toLowerCase();
@@ -507,8 +530,20 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             openSparRespectingConfig(player, "main");
             return true;
         }
-        forwardToForge(player, "spar", args);
+        // mentor <name> / apprentice <name> / admin … → Forge
+        if (isSparForgeAction(sub)) {
+            forwardToForge(player, "spar", args);
+            return true;
+        }
+        openSparRespectingConfig(player, "main");
         return true;
+    }
+
+    private static boolean isSparForgeAction(String sub) {
+        return switch (sub.toLowerCase()) {
+            case "mentor", "apprentice", "admin", "save" -> true;
+            default -> false;
+        };
     }
 
     /** Forward unknown subcommands to Forge brigadier via reflection (avoids Bukkit recursion). */

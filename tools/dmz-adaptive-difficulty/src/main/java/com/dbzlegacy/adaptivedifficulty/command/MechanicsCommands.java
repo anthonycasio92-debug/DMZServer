@@ -1,7 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.command;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
-import com.dbzlegacy.adaptivedifficulty.gui.MechanicsChatMenu;
+import com.dbzlegacy.adaptivedifficulty.gui.MechanicsMenu;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
@@ -52,7 +52,7 @@ public final class MechanicsCommands {
         } catch (Exception e) {
             return 0;
         }
-        MechanicsChatMenu.open(player, page);
+        MechanicsMenu.open(player, page);
         return 1;
     }
 }

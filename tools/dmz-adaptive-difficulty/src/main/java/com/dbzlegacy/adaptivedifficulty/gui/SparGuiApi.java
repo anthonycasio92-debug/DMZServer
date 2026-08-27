@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -100,10 +101,10 @@ public final class SparGuiApi {
             lines.add("§7Bonded §f" + bond.mentorName + " §8↔ §f" + bond.apprenticeName);
             lines.add("§7Streak §f" + bond.streakCurrent + " §8best §f" + bond.streakBest);
         } else {
-            lines.add("§7Invite: §e/spar mentor <player>");
+            lines.add("§7Click Invite / Ask below to pick a player");
             lines.add(SparringSystem.bondStatus(player));
         }
-        lines.add("§8Use Accept / Decline / Remove below");
+        lines.add("§8Accept · Decline · Remove below");
         return lines;
     }
 
@@ -126,8 +127,10 @@ public final class SparGuiApi {
             case "mentor" -> mentorLines(player);
             case "help" -> List.of(
                     "§6§l/spar §8— Sparring TP",
+                    "§7Open GUI for mentor invites",
                     "§e/spar stats|end|top [category]",
-                    "§e/spar mentor <player>|accept|decline|remove"
+                    "§e/spar mentor <player>|accept|decline|remove",
+                    "§e/spar apprentice <player>"
             );
             default -> {
                 Map<String, String> ph = placeholders(player);
@@ -146,7 +149,7 @@ public final class SparGuiApi {
                             + " §8with §f" + blank(ph.get("mentor"), "?")
                             + "  §7streak §f" + ph.getOrDefault("streak", "0"));
                 } else {
-                    lore.add("§7No mentor bond. §8/spar mentor <player>");
+                    lore.add("§7No mentor bond. §8Use Mentor page to invite");
                 }
                 yield lore;
             }
@@ -184,7 +187,49 @@ public final class SparGuiApi {
                 default -> "§cUsage: spar do mentor accept|decline|remove";
             };
         }
+        if ("mentor_invite".equals(act) || "mentorinvite".equals(act)) {
+            if (a.isBlank()) {
+                return "§cPick a player to invite as apprentice.";
+            }
+            ServerPlayer target = resolveOnline(player, a);
+            if (target == null) {
+                return "§cPlayer not online: " + a;
+            }
+            return SparringSystem.mentorInvite(player, target);
+        }
+        if ("apprentice_invite".equals(act) || "apprenticeinvite".equals(act)) {
+            if (a.isBlank()) {
+                return "§cPick a player to ask as mentor.";
+            }
+            ServerPlayer target = resolveOnline(player, a);
+            if (target == null) {
+                return "§cPlayer not online: " + a;
+            }
+            return SparringSystem.apprenticeInvite(player, target);
+        }
         return "§cUnknown spar action: " + act;
+    }
+
+    /** Resolve an online player by name from the caller's server. */
+    public static ServerPlayer resolveOnline(ServerPlayer from, String name) {
+        if (from == null || name == null || name.isBlank()) {
+            return null;
+        }
+        MinecraftServer server = from.m_20194_();
+        if (server == null) {
+            return null;
+        }
+        ServerPlayer exact = server.m_6846_().m_11255_(name);
+        if (exact != null) {
+            return exact;
+        }
+        String want = name.trim().toLowerCase(Locale.ROOT);
+        for (ServerPlayer p : server.m_6846_().m_11314_()) {
+            if (p.m_7755_().getString().toLowerCase(Locale.ROOT).equals(want)) {
+                return p;
+            }
+        }
+        return null;
     }
 
     private static String blank(String value, String fallback) {

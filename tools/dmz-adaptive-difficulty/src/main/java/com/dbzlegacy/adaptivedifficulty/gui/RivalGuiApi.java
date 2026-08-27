@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.rival.RivalConstants;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalInstinct;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalPlayerRecord;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalProgression;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalSpectator;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalStore;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalSystem;
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -81,14 +83,49 @@ public final class RivalGuiApi {
     public static List<String> challengeLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
         lines.add("§8── §cChallenge §8──");
-        lines.add("§7Send: §e/rival challenge send <player> [min]");
+        lines.add("§7Click §eSend Challenge §7to pick a player");
         if (player != null && RivalChallengeManager.get().isInChallenge(player.m_20148_())) {
             lines.add("§eChallenge active");
         } else {
             lines.add("§7No active challenge.");
         }
-        lines.add("§8Use Accept / Decline / Cancel below");
+        lines.add("§8Accept · Decline · Cancel below");
         return lines;
+    }
+
+    /** Online player names for GUI head pickers (excludes {@code exclude} when non-null). */
+    public static List<String> onlinePlayerNames(ServerPlayer exclude) {
+        List<String> names = new ArrayList<>();
+        MinecraftServer server = exclude == null ? null : exclude.m_20194_();
+        if (server == null) {
+            return names;
+        }
+        for (ServerPlayer p : server.m_6846_().m_11314_()) {
+            if (p == null) {
+                continue;
+            }
+            if (exclude != null && p.m_20148_().equals(exclude.m_20148_())) {
+                continue;
+            }
+            String name = p.m_7755_().getString();
+            if (name != null && !name.isBlank()) {
+                names.add(name);
+            }
+        }
+        names.sort(String.CASE_INSENSITIVE_ORDER);
+        return names;
+    }
+
+    /** Resolve an online {@link ServerPlayer} by exact or case-insensitive name. */
+    public static ServerPlayer resolveOnline(MinecraftServer server, String name) {
+        return RivalSystem.findOnline(server, name);
+    }
+
+    public static ServerPlayer resolveOnline(ServerPlayer from, String name) {
+        if (from == null) {
+            return null;
+        }
+        return resolveOnline(from.m_20194_(), name);
     }
 
     public static List<String> seasonLines(ServerPlayer player) {
@@ -149,6 +186,7 @@ public final class RivalGuiApi {
             case "title", "titles" -> titleLines(player);
             case "help" -> List.of(
                     "§6§l/rival §8— Rival System",
+                    "§7Open GUI to declare · challenge · spectate",
                     "§e/rival <player> §7silent rival",
                     "§e/rival declare|accept|decline|remove <player>",
                     "§e/rival challenge send <player> [minutes]",
@@ -225,6 +263,68 @@ public final class RivalGuiApi {
                 case "cancel" -> RivalChallengeManager.get().cancelChallenge(player);
                 default -> "§cUsage: rival do challenge accept|decline|cancel";
             };
+        }
+        if ("declare".equals(act)) {
+            if (a.isBlank()) {
+                return "§cPick a player to declare.";
+            }
+            ServerPlayer target = resolveOnline(player, a);
+            if (target == null) {
+                return "§cPlayer not online: " + a;
+            }
+            return RivalSystem.declare(player, target);
+        }
+        if ("accept".equals(act)) {
+            if (a.isBlank()) {
+                return "§cPick a player to accept.";
+            }
+            return RivalSystem.accept(player, a);
+        }
+        if ("decline".equals(act) || "deny".equals(act)) {
+            if (a.isBlank()) {
+                return "§cPick a player to decline.";
+            }
+            return RivalSystem.decline(player, a);
+        }
+        if ("remove".equals(act)) {
+            if (a.isBlank()) {
+                return "§cPick a player to remove.";
+            }
+            return RivalSystem.remove(player, a);
+        }
+        if ("silent".equals(act)) {
+            if (a.isBlank()) {
+                return "§cPick a player for silent rival.";
+            }
+            ServerPlayer target = resolveOnline(player, a);
+            if (target == null) {
+                return "§cPlayer not online: " + a;
+            }
+            return RivalSystem.silentRival(player, target);
+        }
+        if ("challenge_send".equals(act) || "challengesend".equals(act)) {
+            if (a.isBlank()) {
+                return "§cPick a player to challenge.";
+            }
+            ServerPlayer target = resolveOnline(player, a);
+            if (target == null) {
+                return "§cPlayer not online: " + a;
+            }
+            return RivalChallengeManager.get().sendChallenge(
+                    player, target, RivalConstants.CH_MIN_MINUTES);
+        }
+        if ("spectate".equals(act)) {
+            if (a.isBlank() || "any".equalsIgnoreCase(a) || "0".equals(a)) {
+                return RivalSpectator.start(player, null);
+            }
+            ServerPlayer target = resolveOnline(player, a);
+            if (target == null) {
+                return "§cPlayer not online: " + a;
+            }
+            return RivalSpectator.start(player, target);
+        }
+        if ("spectate_stop".equals(act) || "spectatestop".equals(act)) {
+            return RivalSpectator.stop(player);
         }
         return "§cUnknown rival action: " + act;
     }

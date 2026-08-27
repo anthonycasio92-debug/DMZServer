@@ -31,7 +31,19 @@ public final class RivalChestGui implements Listener {
     public void open(Player player, String page) {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         Inventory inv = switch (p) {
-            case "list" -> lines(player, "list", "&6Rivals", Material.PLAYER_HEAD);
+            case "list" -> list(player);
+            case "pick_declare" -> picker(player, "declare", "list",
+                    "&6Declare Rival", "&7Click to declare this player");
+            case "pick_accept" -> picker(player, "accept", "list",
+                    "&aAccept Declare", "&7Click to accept their declare");
+            case "pick_remove" -> picker(player, "remove", "list",
+                    "&cRemove Rival", "&7Click to remove this rivalry");
+            case "pick_challenge" -> picker(player, "challenge_send", "challenge",
+                    "&cSend Challenge", "&7Click to challenge (1 min)");
+            case "pick_spectate" -> picker(player, "spectate", "challenge",
+                    "&bSpectate", "&7Watch their active challenge");
+            case "pick_silent" -> picker(player, "silent", "list",
+                    "&8Silent Rival", "&7Click for silent rivalry");
             case "stats", "statistics" -> lines(player, "stats", "&eRival Stats", Material.BOOK);
             case "challenge", "challenges" -> challenge(player);
             case "top", "leaderboard" -> lines(player, "top", "&fRP Top", Material.GOLDEN_HELMET);
@@ -72,7 +84,7 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 20, pageBtn(Material.BOOK, "&eStats",
                 "&7Career stats", "&8Wins · losses · RP"), SlotAction.page("stats"));
         put(holder, inv, 21, pageBtn(Material.IRON_SWORD, "&cChallenge",
-                "&7Challenge controls", "&8Accept · decline · cancel"), SlotAction.page("challenge"));
+                "&7Challenge controls", "&8Send · accept · decline"), SlotAction.page("challenge"));
         put(holder, inv, 22, pageBtn(Material.GOLDEN_HELMET, "&fTop",
                 "&7RP leaderboard"), SlotAction.page("top"));
         put(holder, inv, 23, pageBtn(Material.CLOCK, "&aSeason",
@@ -114,24 +126,80 @@ public final class RivalChestGui implements Listener {
         return inv;
     }
 
+    private Inventory list(Player player) {
+        Holder holder = new Holder("list");
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
+        holder.bind(inv);
+        frame(inv, 45);
+        List<String> lore = toAmp(ForgeBridge.rivalLines(player, "list"));
+        put(holder, inv, 4, item(Material.PLAYER_HEAD, "&6&lRivals", prependBlank(
+                lore.isEmpty() ? List.of("&7No rivals yet.") : lore)));
+        put(holder, inv, 19, pageBtn(Material.LIME_CONCRETE, "&aDeclare…",
+                "&7Pick an online player to declare"), SlotAction.page("pick_declare"));
+        put(holder, inv, 21, pageBtn(Material.YELLOW_CONCRETE, "&eAccept…",
+                "&7Pick whose declare to accept"), SlotAction.page("pick_accept"));
+        put(holder, inv, 23, pageBtn(Material.RED_CONCRETE, "&cRemove…",
+                "&7Pick a rival to remove"), SlotAction.page("pick_remove"));
+        put(holder, inv, 25, pageBtn(Material.GRAY_CONCRETE, "&8Silent…",
+                "&7Pick a player for silent rival"), SlotAction.page("pick_silent"));
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
     private Inventory challenge(Player player) {
         Holder holder = new Holder("challenge");
-        Inventory inv = Bukkit.createInventory(holder, 36, color("&8Legacy Mechanics · Rival"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
         holder.bind(inv);
-        frame(inv, 36);
+        frame(inv, 45);
         put(holder, inv, 4, item(Material.IRON_SWORD, "&c&lChallenge",
                 prependBlank(toAmp(ForgeBridge.rivalLines(player, "challenge")))));
-        put(holder, inv, 20, tipBtn(Material.LIME_CONCRETE, "&aAccept",
+        put(holder, inv, 19, pageBtn(Material.GOLDEN_SWORD, "&eSend Challenge…",
+                "&7Pick an online rival to challenge"), SlotAction.page("pick_challenge"));
+        put(holder, inv, 21, tipBtn(Material.LIME_CONCRETE, "&aAccept",
                 List.of("&7Accept pending challenge")),
                 SlotAction.act("challenge", "accept", "challenge"));
-        put(holder, inv, 22, tipBtn(Material.RED_CONCRETE, "&cDecline",
+        put(holder, inv, 23, tipBtn(Material.RED_CONCRETE, "&cDecline",
                 List.of("&7Decline pending challenge")),
                 SlotAction.act("challenge", "decline", "challenge"));
-        put(holder, inv, 24, tipBtn(Material.GRAY_CONCRETE, "&8Cancel",
+        put(holder, inv, 25, tipBtn(Material.GRAY_CONCRETE, "&8Cancel",
                 List.of("&7Cancel your outgoing challenge")),
                 SlotAction.act("challenge", "cancel", "challenge"));
-        put(holder, inv, 27, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
+        put(holder, inv, 29, pageBtn(Material.ENDER_EYE, "&bSpectate…",
+                "&7Watch an online player's challenge"), SlotAction.page("pick_spectate"));
+        put(holder, inv, 31, tipBtn(Material.GRAY_DYE, "&8Stop Spectate",
+                List.of("&7End spectating early")),
+                SlotAction.act("spectate_stop", "0", "challenge"));
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory picker(
+            Player player, String action, String backPage, String title, String tip) {
+        Holder holder = new Holder("pick_" + action);
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
+        holder.bind(inv);
+        frame(inv, 45);
+        put(holder, inv, 4, item(Material.PLAYER_HEAD, title,
+                List.of("", "&7Online players", "&8Click a head to confirm")));
+        List<Player> online = GuiPlayerPicker.onlineExcept(player);
+        int placed = 0;
+        for (Player other : online) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+            put(holder, inv, slot,
+                    GuiPlayerPicker.head(other, "&f" + other.getName(), List.of(tip)),
+                    SlotAction.act(action, other.getName(), backPage));
+        }
+        if (placed == 0) {
+            put(holder, inv, 22, tipBtn(Material.BARRIER, "&cNo one online",
+                    List.of("&7Other players must be online")));
+        }
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page(backPage));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
 
@@ -165,7 +233,7 @@ public final class RivalChestGui implements Listener {
             lore.add("&eChallenge active");
         }
         lore.add("");
-        lore.add("&8Browse pages below · declare via chat");
+        lore.add("&8Browse pages below · click to declare");
         return lore;
     }
 

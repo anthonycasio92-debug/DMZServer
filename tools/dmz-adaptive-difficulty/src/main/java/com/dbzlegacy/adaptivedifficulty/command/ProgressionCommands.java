@@ -2,7 +2,10 @@ package com.dbzlegacy.adaptivedifficulty.command;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.gui.PrestigeMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionChatMenu;
+import com.dbzlegacy.adaptivedifficulty.gui.ProgressionMenu;
+import com.dbzlegacy.adaptivedifficulty.gui.SkillsMenu;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
@@ -34,31 +37,20 @@ public final class ProgressionCommands {
 
         // Prestige NPC purchase GUI (DMZ level cost)
         event.getDispatcher().register(Commands.m_82127_("prestige")
-                .executes(ctx -> {
-                    ServerPlayer p = playerOrNull(ctx.getSource());
-                    if (p == null) {
-                        return 0;
-                    }
-                    com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem.open(p);
-                    return 1;
-                })
-                .then(Commands.m_82127_("gui").executes(ctx -> {
-                    ServerPlayer p = playerOrNull(ctx.getSource());
-                    if (p == null) {
-                        return 0;
-                    }
-                    com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem.open(p);
-                    return 1;
-                }))
+                .executes(ctx -> prestigeGui(ctx.getSource(), "main"))
+                .then(Commands.m_82127_("gui").executes(ctx -> prestigeGui(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("do")
-                        .then(Commands.m_82127_("confirm").executes(ctx -> {
-                            ServerPlayer p = playerOrNull(ctx.getSource());
-                            if (p == null) {
-                                return 0;
-                            }
-                            com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem.confirmOrPrompt(p);
-                            return 1;
-                        }))));
+                        .then(Commands.m_82127_("confirm")
+                                .executes(ctx -> prestigeConfirm(ctx.getSource(), "main"))
+                                .then(Commands.m_82129_("page", StringArgumentType.word())
+                                        .executes(ctx -> prestigeConfirm(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "page")))))
+                        .then(Commands.m_82127_("page")
+                                .then(Commands.m_82129_("page", StringArgumentType.word())
+                                        .executes(ctx -> prestigeGui(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "page")))))));
 
         // SkillUnlockNPC + SkillCheck trigger 21
         event.getDispatcher().register(Commands.m_82127_("skills")
@@ -96,7 +88,26 @@ public final class ProgressionCommands {
         if (p == null) {
             return 0;
         }
-        com.dbzlegacy.adaptivedifficulty.progression.shop.SkillUnlockService.open(p, page);
+        SkillsMenu.open(p, page);
+        return 1;
+    }
+
+    private static int prestigeGui(CommandSourceStack source, String page) {
+        ServerPlayer p = playerOrNull(source);
+        if (p == null) {
+            return 0;
+        }
+        PrestigeMenu.open(p, page);
+        return 1;
+    }
+
+    private static int prestigeConfirm(CommandSourceStack source, String page) {
+        ServerPlayer p = playerOrNull(source);
+        if (p == null) {
+            return 0;
+        }
+        com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem.confirmOrPrompt(p);
+        PrestigeMenu.open(p, page == null || page.isBlank() ? "main" : page);
         return 1;
     }
 
@@ -124,7 +135,14 @@ public final class ProgressionCommands {
                                 .then(Commands.m_82129_("page", StringArgumentType.word())
                                         .executes(ctx -> gui(
                                                 ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "page"))))))
+                                                StringArgumentType.getString(ctx, "page")))))
+                        .then(Commands.m_82127_("flag")
+                                .then(Commands.m_82129_("flag", StringArgumentType.word())
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> flagDo(
+                                                        ctx.getSource(),
+                                                        StringArgumentType.getString(ctx, "flag"),
+                                                        StringArgumentType.getString(ctx, "page")))))))
                 .then(Commands.m_82127_("boost")
                         .then(Commands.m_82127_("start")
                                 .requires(src -> staff(src))
@@ -187,7 +205,25 @@ public final class ProgressionCommands {
         if (player == null || !DifficultyConfig.get().enableProgression) {
             return 0;
         }
-        ProgressionChatMenu.open(player, page);
+        ProgressionMenu.open(player, page);
+        return 1;
+    }
+
+    private static int flagDo(CommandSourceStack source, String flag, String page) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null) {
+            return 0;
+        }
+        if (!staff(source)) {
+            reply(source, player, "§cStaff only.");
+            return 0;
+        }
+        String msg = com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.handleDo(
+                player, "flag", flag, page);
+        if (msg != null && !msg.isBlank()) {
+            reply(source, player, msg);
+        }
+        ProgressionMenu.open(player, page == null || page.isBlank() ? "admin" : page);
         return 1;
     }
 

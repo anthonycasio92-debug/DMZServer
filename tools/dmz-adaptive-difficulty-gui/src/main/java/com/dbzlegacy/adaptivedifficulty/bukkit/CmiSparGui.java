@@ -9,10 +9,11 @@ import net.Zrips.CMILib.GUI.CMIGuiButton;
 import net.Zrips.CMILib.GUI.GUIManager.InvType;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 /**
  * CMILib inventory GUI — Legacy Mechanics Sparring.
- * Pages: main · stats · top · mentor.
+ * Pages: main · stats · top · mentor · pick_apprentice · pick_mentor.
  */
 public final class CmiSparGui {
     private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
@@ -37,6 +38,12 @@ public final class CmiSparGui {
                 openLines(player, "stats", "&eSpar Stats", Material.BOOK);
             } else if ("mentor".equals(p)) {
                 openMentor(player);
+            } else if ("pick_apprentice".equals(p)) {
+                openPicker(player, "mentor_invite", "mentor",
+                        "&aInvite Apprentice", "&7Ask them to be your apprentice");
+            } else if ("pick_mentor".equals(p)) {
+                openPicker(player, "apprentice_invite", "mentor",
+                        "&bAsk Mentor", "&7Ask them to be your mentor");
             } else if ("help".equals(p)) {
                 openLines(player, "help", "&7Help", Material.PAPER);
             } else {
@@ -125,25 +132,63 @@ public final class CmiSparGui {
     }
 
     private static void openMentor(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Sparring", 4);
+        CMIGui gui = base(player, "&8Legacy Mechanics · Sparring", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.EMERALD, "&b&lMentor");
         info.lockField();
         info.addLore(toAmp(ForgeBridge.sparLines(player, "mentor")));
         gui.addButton(info);
 
-        gui.addButton(actionBtn(20, Material.LIME_CONCRETE, "&aAccept",
+        gui.addButton(pageBtn(19, Material.LIME_CONCRETE, "&aInvite apprentice…", "pick_apprentice",
+                "&7Pick a player to mentor"));
+        gui.addButton(pageBtn(21, Material.LIGHT_BLUE_CONCRETE, "&bAsk mentor…", "pick_mentor",
+                "&7Pick a player to ask as mentor"));
+        gui.addButton(actionBtn(23, Material.LIME_DYE, "&aAccept",
                 "mentor", "accept", "mentor",
                 List.of("&7Accept mentor invite")));
-        gui.addButton(actionBtn(22, Material.RED_CONCRETE, "&cDecline",
+        gui.addButton(actionBtn(25, Material.RED_CONCRETE, "&cDecline",
                 "mentor", "decline", "mentor",
                 List.of("&7Decline mentor invite")));
-        gui.addButton(actionBtn(24, Material.GRAY_CONCRETE, "&8Remove",
+        gui.addButton(actionBtn(31, Material.GRAY_CONCRETE, "&8Remove",
                 "mentor", "remove", "mentor",
                 List.of("&7Clear mentor bond")));
 
-        gui.addButton(pageBtn(27, Material.ARROW, "&7Back", "main", "&7Return"));
-        gui.addButton(closeBtn(35));
-        fillEmpty(gui, 4);
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openPicker(
+            Player player, String action, String backPage, String title, String tip) {
+        CMIGui gui = base(player, "&8Legacy Mechanics · Sparring", 5);
+        CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD, title);
+        info.lockField();
+        info.addLore(List.of("", "&7Online players", "&8Click a head to confirm"));
+        gui.addButton(info);
+
+        List<Player> online = GuiPlayerPicker.onlineExcept(player);
+        int placed = 0;
+        for (Player other : online) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+            ItemStack head = GuiPlayerPicker.head(other, "&f" + other.getName(), List.of(tip));
+            CMIGuiButton btn = new CMIGuiButton(slot, head);
+            btn.lockField();
+            btn.addCommand("spar do " + action + " " + other.getName() + " " + backPage);
+            gui.addButton(btn);
+        }
+        if (placed == 0) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&cNo one online");
+            empty.lockField();
+            empty.addLore(List.of("", "&7Other players must be online"));
+            gui.addButton(empty);
+        }
+
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", backPage, "&7Return"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
         gui.open();
     }
 
@@ -180,7 +225,7 @@ public final class CmiSparGui {
                     + " &8with &f" + blank(ph.get("mentor"), "?")
                     + "  &7streak &f" + ph.getOrDefault("streak", "0"));
         } else {
-            lore.add("&7No mentor bond. &8/spar mentor <player>");
+            lore.add("&7No mentor bond. &8Use Mentor page to invite");
         }
         lore.add("");
         lore.add("&8Stats · Top · Mentor");

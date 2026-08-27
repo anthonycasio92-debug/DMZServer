@@ -46,6 +46,26 @@ public final class CmiGuiBridge {
         return openNamed(player, page, "openSparMenuForUuid", "openSparMenu", "CMI Spar");
     }
 
+    /** Opens Legacy Mechanics hub CMI/inventory GUI via companion plugin. */
+    public static boolean openHub(ServerPlayer player, String page) {
+        return openNamed(player, page, "openHubMenuForUuid", "openHubMenu", "CMI Hub");
+    }
+
+    /** Opens Progression CMI/inventory GUI via companion plugin. */
+    public static boolean openProgression(ServerPlayer player, String page) {
+        return openNamed(player, page, "openProgressionMenuForUuid", "openProgressionMenu", "CMI Progression");
+    }
+
+    /** Opens Prestige CMI/inventory GUI via companion plugin. */
+    public static boolean openPrestige(ServerPlayer player, String page) {
+        return openNamed(player, page, "openPrestigeMenuForUuid", "openPrestigeMenu", "CMI Prestige");
+    }
+
+    /** Opens Skills CMI/inventory GUI via companion plugin. */
+    public static boolean openSkills(ServerPlayer player, String page) {
+        return openNamed(player, page, "openSkillsMenuForUuid", "openSkillsMenu", "CMI Skills");
+    }
+
     /** Staff inspect: open companion chest GUI as admin while editing subject. */
     public static boolean openInspect(ServerPlayer admin, ServerPlayer subject, String page) {
         if (admin == null || subject == null || !available()) {
