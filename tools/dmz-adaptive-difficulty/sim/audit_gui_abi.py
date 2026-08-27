@@ -149,6 +149,22 @@ OPTIONAL_METHODS = {
         ("handleDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
         ("resolveOnline", "ServerPlayer, java.lang.String"),
     ],
+    "com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi": [
+        ("placeholders", "ServerPlayer"),
+        ("linesForPage", "ServerPlayer, java.lang.String"),
+        ("handleDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
+    ],
+    "com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi": [
+        ("placeholders", "ServerPlayer"),
+        ("linesForPage", "ServerPlayer, java.lang.String"),
+        ("handleDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
+        ("prestigePlaceholders", "ServerPlayer"),
+        ("prestigeLines", "ServerPlayer, java.lang.String"),
+        ("handlePrestigeDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
+        ("skillsPlaceholders", "ServerPlayer"),
+        ("skillsLines", "ServerPlayer, java.lang.String"),
+        ("handleSkillsDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
+    ],
     "com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData": [
         ("isPersonalEnabled", ""),
         ("isCoinDropChat", ""),
@@ -249,6 +265,18 @@ GUI_REQUIRED_METHODS = [
     ("openSparMenu", "Player"),
     ("openSparMenuForUuid", "UUID"),
     ("openSparChestMenuForUuid", "UUID"),
+    ("openHubMenu", "Player"),
+    ("openHubMenuForUuid", "UUID"),
+    ("openHubChestMenuForUuid", "UUID"),
+    ("openProgressionMenu", "Player"),
+    ("openProgressionMenuForUuid", "UUID"),
+    ("openProgressionChestMenuForUuid", "UUID"),
+    ("openPrestigeMenu", "Player"),
+    ("openPrestigeMenuForUuid", "UUID"),
+    ("openPrestigeChestMenuForUuid", "UUID"),
+    ("openSkillsMenu", "Player"),
+    ("openSkillsMenuForUuid", "UUID"),
+    ("openSkillsChestMenuForUuid", "UUID"),
 ]
 
 

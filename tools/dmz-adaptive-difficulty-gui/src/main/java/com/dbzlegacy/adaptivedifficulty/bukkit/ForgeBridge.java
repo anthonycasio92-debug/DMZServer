@@ -65,6 +65,20 @@ public final class ForgeBridge {
     private static Method sparPlaceholdersMethod;
     private static Method sparLinesMethod;
     private static Method sparHandleDoMethod;
+    private static Method hubChatMenuOpen;
+    private static Method hubPlaceholdersMethod;
+    private static Method hubLinesMethod;
+    private static Method hubHandleDoMethod;
+    private static Method progressionChatMenuOpen;
+    private static Method progressionPlaceholdersMethod;
+    private static Method progressionLinesMethod;
+    private static Method progressionHandleDoMethod;
+    private static Method prestigePlaceholdersMethod;
+    private static Method prestigeLinesMethod;
+    private static Method prestigeHandleDoMethod;
+    private static Method skillsPlaceholdersMethod;
+    private static Method skillsLinesMethod;
+    private static Method skillsHandleDoMethod;
     private static volatile Field RESULT_MESSAGE_FIELD;
 
     private ForgeBridge() {}
@@ -1004,6 +1018,302 @@ public final class ForgeBridge {
         }
     }
 
+    public static boolean openHubChatMenu(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return false;
+        }
+        try {
+            ensureHubResolved(nms.getClass().getClassLoader());
+            if (hubChatMenuOpen == null) {
+                return false;
+            }
+            hubChatMenuOpen.invoke(null, nms, page == null || page.isBlank() ? "main" : page);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    public static boolean openProgressionChatMenu(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return false;
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (progressionChatMenuOpen == null) {
+                return false;
+            }
+            progressionChatMenuOpen.invoke(null, nms, page == null || page.isBlank() ? "main" : page);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> hubPlaceholders(Player player) {
+        Map<String, String> fail = new HashMap<>();
+        fail.put("bridge_ok", "false");
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return fail;
+        }
+        try {
+            ensureHubResolved(nms.getClass().getClassLoader());
+            if (hubPlaceholdersMethod == null) {
+                return fail;
+            }
+            Object raw = hubPlaceholdersMethod.invoke(null, nms);
+            return mapStringValues(raw, fail);
+        } catch (Throwable ignored) {
+        }
+        return fail;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<String> hubLines(Player player, String page) {
+        return invokeLines(player, page, true, () -> {
+            ensureHubResolved(nmsPlayer(player).getClass().getClassLoader());
+            return hubLinesMethod;
+        }, "Hub");
+    }
+
+    public static String hubHandleDo(Player player, String action, String arg, String page) {
+        return invokeHandleDo(player, action, arg, page, true, () -> {
+            ensureHubResolved(nmsPlayer(player).getClass().getClassLoader());
+            return hubHandleDoMethod;
+        }, "Hub");
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> progressionPlaceholders(Player player) {
+        Map<String, String> fail = new HashMap<>();
+        fail.put("bridge_ok", "false");
+        fail.put("system_enabled", "false");
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return fail;
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (progressionPlaceholdersMethod == null) {
+                return fail;
+            }
+            Object raw = progressionPlaceholdersMethod.invoke(null, nms);
+            return mapStringValues(raw, fail);
+        } catch (Throwable ignored) {
+        }
+        return fail;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<String> progressionLines(Player player, String page) {
+        return invokeLines(player, page, false, () -> {
+            ensureProgressionResolved(nmsPlayer(player).getClass().getClassLoader());
+            return progressionLinesMethod;
+        }, "Progression");
+    }
+
+    public static String progressionHandleDo(Player player, String action, String arg, String page) {
+        return invokeHandleDo(player, action, arg, page, false, () -> {
+            ensureProgressionResolved(nmsPlayer(player).getClass().getClassLoader());
+            return progressionHandleDoMethod;
+        }, "Progression");
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> prestigePlaceholders(Player player) {
+        Map<String, String> fail = new HashMap<>();
+        fail.put("bridge_ok", "false");
+        fail.put("system_enabled", "false");
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return fail;
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (prestigePlaceholdersMethod == null) {
+                return fail;
+            }
+            Object raw = prestigePlaceholdersMethod.invoke(null, nms);
+            return mapStringValues(raw, fail);
+        } catch (Throwable ignored) {
+        }
+        return fail;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<String> prestigeLines(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (prestigeLinesMethod == null) {
+                return List.of("§cPrestige GUI API missing — update LegacyMechanics jar.");
+            }
+            Object raw = prestigeLinesMethod.invoke(null, nms, page == null ? "main" : page);
+            return listStringValues(raw);
+        } catch (Throwable t) {
+            return List.of("§cPrestige lines failed: " + t.getMessage());
+        }
+    }
+
+    public static String prestigeHandleDo(Player player, String action, String arg, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (prestigeHandleDoMethod == null) {
+                return "§cPrestige GUI API missing — update LegacyMechanics jar.";
+            }
+            Object msg = prestigeHandleDoMethod.invoke(
+                    null, nms, action == null ? "" : action, arg == null ? "" : arg,
+                    page == null ? "main" : page);
+            return msg == null ? "" : String.valueOf(msg);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cPrestige action failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> skillsPlaceholders(Player player) {
+        Map<String, String> fail = new HashMap<>();
+        fail.put("bridge_ok", "false");
+        fail.put("system_enabled", "false");
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return fail;
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (skillsPlaceholdersMethod == null) {
+                return fail;
+            }
+            Object raw = skillsPlaceholdersMethod.invoke(null, nms);
+            return mapStringValues(raw, fail);
+        } catch (Throwable ignored) {
+        }
+        return fail;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<String> skillsLines(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (skillsLinesMethod == null) {
+                return List.of("§cSkills GUI API missing — update LegacyMechanics jar.");
+            }
+            Object raw = skillsLinesMethod.invoke(null, nms, page == null ? "core" : page);
+            return listStringValues(raw);
+        } catch (Throwable t) {
+            return List.of("§cSkills lines failed: " + t.getMessage());
+        }
+    }
+
+    public static String skillsHandleDo(Player player, String action, String arg, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (skillsHandleDoMethod == null) {
+                return "§cSkills GUI API missing — update LegacyMechanics jar.";
+            }
+            Object msg = skillsHandleDoMethod.invoke(
+                    null, nms, action == null ? "" : action, arg == null ? "" : arg,
+                    page == null ? "core" : page);
+            return msg == null ? "" : String.valueOf(msg);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cSkills action failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    @FunctionalInterface
+    private interface MethodSupplier {
+        Method get() throws Exception;
+    }
+
+    private static Map<String, String> mapStringValues(Object raw, Map<String, String> fail) {
+        if (raw instanceof Map<?, ?> map) {
+            Map<String, String> out = new HashMap<>();
+            for (Map.Entry<?, ?> e : map.entrySet()) {
+                if (e.getKey() != null) {
+                    out.put(String.valueOf(e.getKey()),
+                            e.getValue() == null ? "" : String.valueOf(e.getValue()));
+                }
+            }
+            return out;
+        }
+        return fail;
+    }
+
+    private static List<String> listStringValues(Object raw) {
+        if (raw instanceof List<?> list) {
+            List<String> out = new ArrayList<>();
+            for (Object o : list) {
+                out.add(o == null ? "" : String.valueOf(o));
+            }
+            return out;
+        }
+        return List.of();
+    }
+
+    private static List<String> invokeLines(
+            Player player, String page, boolean hubDefault, MethodSupplier methodGet, String label) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        try {
+            Method m = methodGet.get();
+            if (m == null) {
+                return List.of("§c" + label + " GUI API missing — update LegacyMechanics jar.");
+            }
+            Object raw = m.invoke(null, nms, page == null ? (hubDefault ? "main" : "main") : page);
+            return listStringValues(raw);
+        } catch (Throwable t) {
+            return List.of("§c" + label + " lines failed: " + t.getMessage());
+        }
+    }
+
+    private static String invokeHandleDo(
+            Player player, String action, String arg, String page,
+            boolean hubDefault, MethodSupplier methodGet, String label) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            Method m = methodGet.get();
+            if (m == null) {
+                return "§c" + label + " GUI API missing — update LegacyMechanics jar.";
+            }
+            Object msg = m.invoke(
+                    null, nms, action == null ? "" : action, arg == null ? "" : arg,
+                    page == null ? "main" : page);
+            return msg == null ? "" : String.valueOf(msg);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§c" + label + " action failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
     /**
      * Execute a command line through Forge brigadier (bypasses Bukkit command ownership).
      * Used when this plugin owns {@code /rival}/{@code /spar} but needs declare/challenge/etc.
@@ -1117,6 +1427,53 @@ public final class ForgeBridge {
                     .getMethod("open", sp, String.class);
         } catch (Throwable missing) {
             sparChatMenuOpen = null;
+        }
+    }
+
+    private static synchronized void ensureHubResolved(ClassLoader preferred) throws Exception {
+        if (hubPlaceholdersMethod != null && hubLinesMethod != null && hubHandleDoMethod != null) {
+            return;
+        }
+        Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi", preferred);
+        Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+        hubPlaceholdersMethod = api.getMethod("placeholders", sp);
+        hubLinesMethod = api.getMethod("linesForPage", sp, String.class);
+        hubHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
+        try {
+            hubChatMenuOpen = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.gui.MechanicsChatMenu", preferred)
+                    .getMethod("open", sp, String.class);
+        } catch (Throwable missing) {
+            hubChatMenuOpen = null;
+        }
+    }
+
+    private static synchronized void ensureProgressionResolved(ClassLoader preferred) throws Exception {
+        if (progressionPlaceholdersMethod != null && progressionLinesMethod != null
+                && progressionHandleDoMethod != null
+                && prestigePlaceholdersMethod != null && prestigeLinesMethod != null
+                && prestigeHandleDoMethod != null
+                && skillsPlaceholdersMethod != null && skillsLinesMethod != null
+                && skillsHandleDoMethod != null) {
+            return;
+        }
+        Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi", preferred);
+        Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+        progressionPlaceholdersMethod = api.getMethod("placeholders", sp);
+        progressionLinesMethod = api.getMethod("linesForPage", sp, String.class);
+        progressionHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
+        prestigePlaceholdersMethod = api.getMethod("prestigePlaceholders", sp);
+        prestigeLinesMethod = api.getMethod("prestigeLines", sp, String.class);
+        prestigeHandleDoMethod = api.getMethod("handlePrestigeDo", sp, String.class, String.class, String.class);
+        skillsPlaceholdersMethod = api.getMethod("skillsPlaceholders", sp);
+        skillsLinesMethod = api.getMethod("skillsLines", sp, String.class);
+        skillsHandleDoMethod = api.getMethod("handleSkillsDo", sp, String.class, String.class, String.class);
+        try {
+            progressionChatMenuOpen = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.gui.ProgressionChatMenu", preferred)
+                    .getMethod("open", sp, String.class);
+        } catch (Throwable missing) {
+            progressionChatMenuOpen = null;
         }
     }
 

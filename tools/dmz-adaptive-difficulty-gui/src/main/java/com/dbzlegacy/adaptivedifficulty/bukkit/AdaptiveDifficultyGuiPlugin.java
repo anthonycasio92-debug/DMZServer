@@ -19,15 +19,27 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     private DifficultyChestGui chestGui;
     private RivalChestGui rivalChestGui;
     private SparChestGui sparChestGui;
+    private HubChestGui hubChestGui;
+    private ProgressionChestGui progressionChestGui;
+    private PrestigeChestGui prestigeChestGui;
+    private SkillsChestGui skillsChestGui;
 
     @Override
     public void onEnable() {
         chestGui = new DifficultyChestGui(this);
         rivalChestGui = new RivalChestGui(this);
         sparChestGui = new SparChestGui(this);
+        hubChestGui = new HubChestGui(this);
+        progressionChestGui = new ProgressionChestGui(this);
+        prestigeChestGui = new PrestigeChestGui(this);
+        skillsChestGui = new SkillsChestGui(this);
         getServer().getPluginManager().registerEvents(chestGui, this);
         getServer().getPluginManager().registerEvents(rivalChestGui, this);
         getServer().getPluginManager().registerEvents(sparChestGui, this);
+        getServer().getPluginManager().registerEvents(hubChestGui, this);
+        getServer().getPluginManager().registerEvents(progressionChestGui, this);
+        getServer().getPluginManager().registerEvents(prestigeChestGui, this);
+        getServer().getPluginManager().registerEvents(skillsChestGui, this);
 
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new DmzDiffExpansion(this).register();
@@ -359,6 +371,152 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return;
         }
         openSparInventory(player, page);
+    }
+
+    // ── Hub (/lm) ──────────────────────────────────────────────────────
+
+    public void openHubMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        openHubInventory(player, page);
+    }
+
+    public void openHubMenuForUuid(UUID playerId, String page) {
+        runForUuid(playerId, page, "main", this::openHubInventory, "openHubMenuForUuid");
+    }
+
+    public void openHubChestMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        hubChestGui.open(player, page);
+    }
+
+    public void openHubChestMenuForUuid(UUID playerId, String page) {
+        runForUuid(playerId, page, "main", hubChestGui::open, null);
+    }
+
+    private void openHubInventory(Player player, String page) {
+        if (CmiHubGui.available() && CmiHubGui.open(player, page)) {
+            return;
+        }
+        hubChestGui.open(player, page);
+    }
+
+    // ── Progression ────────────────────────────────────────────────────
+
+    public void openProgressionMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        openProgressionInventory(player, page);
+    }
+
+    public void openProgressionMenuForUuid(UUID playerId, String page) {
+        runForUuid(playerId, page, "main", this::openProgressionInventory, "openProgressionMenuForUuid");
+    }
+
+    public void openProgressionChestMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        progressionChestGui.open(player, page);
+    }
+
+    public void openProgressionChestMenuForUuid(UUID playerId, String page) {
+        runForUuid(playerId, page, "main", progressionChestGui::open, null);
+    }
+
+    private void openProgressionInventory(Player player, String page) {
+        if (CmiProgressionGui.available() && CmiProgressionGui.open(player, page)) {
+            return;
+        }
+        progressionChestGui.open(player, page);
+    }
+
+    // ── Prestige ───────────────────────────────────────────────────────
+
+    public void openPrestigeMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        openPrestigeInventory(player, page);
+    }
+
+    public void openPrestigeMenuForUuid(UUID playerId, String page) {
+        runForUuid(playerId, page, "main", this::openPrestigeInventory, "openPrestigeMenuForUuid");
+    }
+
+    public void openPrestigeChestMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        prestigeChestGui.open(player, page);
+    }
+
+    public void openPrestigeChestMenuForUuid(UUID playerId, String page) {
+        runForUuid(playerId, page, "main", prestigeChestGui::open, null);
+    }
+
+    private void openPrestigeInventory(Player player, String page) {
+        if (CmiPrestigeGui.available() && CmiPrestigeGui.open(player, page)) {
+            return;
+        }
+        prestigeChestGui.open(player, page);
+    }
+
+    // ── Skills ─────────────────────────────────────────────────────────
+
+    public void openSkillsMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        openSkillsInventory(player, page);
+    }
+
+    public void openSkillsMenuForUuid(UUID playerId, String page) {
+        runForUuid(playerId, page, "core", this::openSkillsInventory, "openSkillsMenuForUuid");
+    }
+
+    public void openSkillsChestMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        skillsChestGui.open(player, page);
+    }
+
+    public void openSkillsChestMenuForUuid(UUID playerId, String page) {
+        runForUuid(playerId, page, "core", skillsChestGui::open, null);
+    }
+
+    private void openSkillsInventory(Player player, String page) {
+        if (CmiSkillsGui.available() && CmiSkillsGui.open(player, page)) {
+            return;
+        }
+        skillsChestGui.open(player, page);
+    }
+
+    private void runForUuid(
+            UUID playerId, String page, String defaultPage,
+            java.util.function.BiConsumer<Player, String> opener, String warnLabel) {
+        if (playerId == null) {
+            return;
+        }
+        String target = page == null || page.isBlank() ? defaultPage : page;
+        Runnable task = () -> {
+            Player p = Bukkit.getPlayer(playerId);
+            if (p != null && p.isOnline()) {
+                opener.accept(p, target);
+            } else if (warnLabel != null) {
+                getLogger().warning(warnLabel + ": player offline/unresolved " + playerId);
+            }
+        };
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+        } else {
+            Bukkit.getScheduler().runTask(this, task);
+        }
     }
 
     @Override
