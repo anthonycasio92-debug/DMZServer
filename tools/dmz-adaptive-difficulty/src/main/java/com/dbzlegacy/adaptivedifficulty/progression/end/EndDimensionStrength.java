@@ -13,7 +13,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -216,7 +215,7 @@ public final class EndDimensionStrength {
         }
         lastNaturalSpawnAt = System.currentTimeMillis();
         try {
-            var item = BuiltInRegistries.f_257033_.m_7745_(new ResourceLocation("minecraft", "dragon_egg"));
+            var item = ForgeRegistries.ITEMS.getValue(new ResourceLocation("minecraft", "dragon_egg"));
             ItemStack egg = item == null ? ItemStack.f_41583_ : new ItemStack(item);
             if (!egg.m_41619_()) {
                 if (!killer.m_150109_().m_36054_(egg)) {
