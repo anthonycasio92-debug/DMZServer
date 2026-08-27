@@ -8,6 +8,7 @@ import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -20,6 +21,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -31,15 +33,18 @@ import net.minecraft.world.entity.monster.Shulker;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.dimension.end.EndDragonFight;
+import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * Core port of {@code End Dimension Strength.js} 2.10.4:
- * scale End hostiles from the strongest End player, settle kill TP,
- * dragon spawn/cleanup commands (trigger 50/51), damage mitigation.
+ * Core port of {@code End Dimension Strength.js} 2.12.0:
+ * scale End dragon from the strongest End player, settle dragon kill TP,
+ * dragon spawn/cleanup commands (trigger 50/51), damage mitigation,
+ * single-dragon enforcement, and End ki_laser/ki_blast world hygiene.
+ * End mob HP/DEF scaling is off by default (v2.11.0).
  */
 public final class EndDimensionStrength {
     private static final String TAG_BUFFED = "end_strength_v15";
@@ -54,6 +59,12 @@ public final class EndDimensionStrength {
     private static final long NATURAL_SPAWN_MS = 5L * 60L * 1000L;
     private static final long DRAGON_RESCALE_MS = 3000L;
     private static final int TP_SETTLE_DELAY_TICKS = 6;
+
+    /** Script v2.12.0: min(KI_CLEANUP_INTERVAL_MS, SINGLE_DRAGON_CHECK_MS). */
+    private static final long HYGIENE_INTERVAL_MS = 1500L;
+    private static final String KI_LASER_ID = "dragonminez:ki_laser";
+    private static final String KI_BLAST_ID = "dragonminez:ki_blast";
+    private static final AABB END_KI_SCAN_BOX = new AABB(-800.0, 0.0, -800.0, 800.0, 320.0, 800.0);
 
     private static final double DRAGON_BASE_HP = 12_000;
     private static final double DRAGON_HP_CAP = 28_000;
@@ -84,6 +95,7 @@ public final class EndDimensionStrength {
     private static volatile long lastNaturalCheckAt;
     private static volatile long lastNaturalSpawnAt;
     private static volatile long lastDragonRescaleAt;
+    private static volatile long lastHygieneAt;
 
     private static final Map<UUID, PendingTp> PENDING_TP = new ConcurrentHashMap<>();
 
@@ -124,11 +136,17 @@ public final class EndDimensionStrength {
             maybeNaturalDragon(player, now);
         }
 
+        ServerLevel end = server.m_129880_(Level.f_46430_); // END
+        if (end != null) {
+            runDragonWorldHygiene(end, now);
+        }
+
         if (now - lastWorldScanAt < SCAN_MS) {
             return;
         }
         lastWorldScanAt = now;
 
+        boolean mobScaling = DifficultyConfig.get().enableEndMobScaling;
         for (ServerPlayer player : server.m_6846_().m_11314_()) {
             if (player == null || !isTheEnd(player.m_9236_())) {
                 continue;
@@ -137,6 +155,8 @@ public final class EndDimensionStrength {
             if (level == null) {
                 continue;
             }
+            // Scan path also enforces single-dragon (hygiene may have throttled).
+            enforceSingleDragon(level);
             PlayerPower strongest = strongestInEnd(level, player);
             AABB box = player.m_20191_().m_82400_(SCAN_RADIUS); // getBoundingBox().inflate
             List<LivingEntity> nearby = level.m_45976_(LivingEntity.class, box);
@@ -147,7 +167,7 @@ public final class EndDimensionStrength {
                 }
                 if ("dragon".equals(kind)) {
                     maybeRescaleDragon((EnderDragon) ent, level, strongest, now);
-                } else {
+                } else if (mobScaling) {
                     buffMob(ent, kind, nearbyPower(ent, level, strongest));
                 }
             }
@@ -168,6 +188,18 @@ public final class EndDimensionStrength {
         if (kind == null) {
             return;
         }
+        boolean dragon = "dragon".equals(kind);
+        boolean mobScaling = DifficultyConfig.get().enableEndMobScaling;
+        if (!dragon && !mobScaling) {
+            return;
+        }
+        // Attack-tick path: keep a single dragon before DEF mitigation.
+        if (dragon && target.m_9236_() instanceof ServerLevel endLevel) {
+            EnderDragon kept = enforceSingleDragon(endLevel);
+            if (kept != null && kept != target) {
+                return;
+            }
+        }
         float raw = event.getAmount();
         if (!(raw > 0.0f)) {
             return;
@@ -177,9 +209,9 @@ public final class EndDimensionStrength {
                 && event.getSource().m_7639_() instanceof ServerPlayer attacker) {
             ServerLevel level = attacker.m_284548_();
             PlayerPower power = strongestInEnd(level, attacker);
-            if ("dragon".equals(kind) && target instanceof EnderDragon dragon) {
-                applyDragonStats(dragon, power, "onhit");
-            } else {
+            if (dragon && target instanceof EnderDragon enderDragon) {
+                applyDragonStats(enderDragon, power, "onhit");
+            } else if (mobScaling) {
                 buffMob(target, kind, power);
             }
             def = readDef(target);
@@ -187,7 +219,6 @@ public final class EndDimensionStrength {
         if (!(def > 0.0)) {
             return;
         }
-        boolean dragon = "dragon".equals(kind);
         double minFrac = dragon ? DRAGON_MIN_DMG_FRAC : END_MOB_MIN_DMG_FRAC;
         double absorb = dragon ? END_FLAT_ABSORB : END_MOB_FLAT_ABSORB;
         double redCap = dragon ? END_REDUCTION_CAP : END_MOB_REDUCTION_CAP;
@@ -209,11 +240,29 @@ public final class EndDimensionStrength {
         if (kind == null) {
             return;
         }
-        scheduleKillTp(killer, kind, dead.m_21233_());
-        if (!"dragon".equals(kind)) {
+        boolean isDragon = "dragon".equals(kind);
+        // Dragon always; other End mobs only when enableEndMobScaling (v2.11.0).
+        if (isDragon || DifficultyConfig.get().enableEndMobScaling) {
+            scheduleKillTp(killer, kind, dead.m_21233_());
+        }
+        if (!isDragon) {
             return;
         }
         lastNaturalSpawnAt = System.currentTimeMillis();
+        MinecraftServer server = killer.m_20194_();
+        if (server != null) {
+            ServerLevel end = server.m_129880_(Level.f_46430_);
+            if (end != null) {
+                try {
+                    purgeEndKiCommands(end);
+                } catch (Throwable ignored) {
+                }
+                try {
+                    cleanupEndKiProjectiles(end, false);
+                } catch (Throwable ignored) {
+                }
+            }
+        }
         try {
             var item = ForgeRegistries.ITEMS.getValue(new ResourceLocation("minecraft", "dragon_egg"));
             ItemStack egg = item == null ? ItemStack.f_41583_ : new ItemStack(item);
@@ -242,13 +291,13 @@ public final class EndDimensionStrength {
             msg(player, "§c[The End] End dimension unavailable.");
             return 0;
         }
-        for (Entity e : end.m_8583_()) {
-            if (e instanceof EnderDragon) {
-                msg(player, "§e[The End] An Ender Dragon is already alive.");
-                PlayerPower power = strongestInEnd(end, player);
-                applyDragonStats((EnderDragon) e, power, "cmd");
-                return 1;
-            }
+        // Never allow a second living dragon.
+        EnderDragon existing = enforceSingleDragon(end);
+        if (existing != null) {
+            msg(player, "§e[The End] An Ender Dragon is already alive.");
+            PlayerPower power = strongestInEnd(end, player);
+            applyDragonStats(existing, power, "cmd");
+            return 1;
         }
         try {
             EndDragonFight fight = end.m_8586_(); // dragonFight
@@ -318,15 +367,283 @@ public final class EndDimensionStrength {
         if (end == null || !isTheEnd(end)) {
             return;
         }
-        for (Entity e : end.m_8583_()) {
-            if (e instanceof EnderDragon) {
-                return;
-            }
+        EnderDragon kept = enforceSingleDragon(end);
+        if (kept != null) {
+            return;
         }
         if (lastNaturalSpawnAt > 0 && now - lastNaturalSpawnAt < NATURAL_SPAWN_MS) {
             return;
         }
         cmdSpawnDragon(player);
+    }
+
+    /**
+     * Keep at most one living Ender Dragon. Prefer the healthiest.
+     * Returns the kept dragon, or null if none.
+     */
+    static EnderDragon enforceSingleDragon(ServerLevel end) {
+        if (end == null) {
+            return null;
+        }
+        List<EnderDragon> dragons = findDragons(end);
+        if (dragons.isEmpty()) {
+            return null;
+        }
+        if (!DifficultyConfig.get().endEnforceSingleDragon) {
+            return dragons.get(0);
+        }
+        if (dragons.size() == 1) {
+            return dragons.get(0);
+        }
+        EnderDragon keep = dragons.get(0);
+        double keepHp = dragonHealthScore(keep);
+        for (int i = 1; i < dragons.size(); i++) {
+            EnderDragon d = dragons.get(i);
+            if (d == null) {
+                continue;
+            }
+            double hp = dragonHealthScore(d);
+            if (hp > keepHp) {
+                keep = d;
+                keepHp = hp;
+            }
+        }
+        UUID keepId = keep.m_20148_();
+        int removed = 0;
+        for (EnderDragon extra : dragons) {
+            if (extra == null || extra == keep) {
+                continue;
+            }
+            if (keepId != null && keepId.equals(extra.m_20148_())) {
+                continue;
+            }
+            try {
+                extra.m_146870_(); // discard
+                removed++;
+            } catch (Throwable ignored) {
+            }
+        }
+        if (removed > 0) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] Enforced single dragon: removed {} duplicate(s), kept {}",
+                    AdaptiveDifficultyMod.MOD_ID, removed, keepId);
+        }
+        return keep;
+    }
+
+    /**
+     * Purge / cap End ki_laser + ki_blast.
+     * No dragon: kill all. Dragon alive: hard-cap count.
+     */
+    static void cleanupEndKiProjectiles(ServerLevel end, boolean hasDragon) {
+        if (end == null || !DifficultyConfig.get().endKiCleanupEnabled) {
+            return;
+        }
+        if (!hasDragon && DifficultyConfig.get().endKiPurgeWhenNoDragon) {
+            purgeEndKiCommands(end);
+            return;
+        }
+        if (!hasDragon) {
+            return;
+        }
+        List<Entity> ents = collectEndKiEntities(end);
+        int n = ents.size();
+        int cap = Math.max(1, DifficultyConfig.get().endKiMaxAliveWhileDragon);
+        if (n <= cap) {
+            return;
+        }
+        // Flooded End: command purge is far cheaper than discarding thousands 1-by-1.
+        if (n > cap * 2) {
+            purgeEndKiCommands(end);
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] Ki flood ({} > {}); purged all End ki projectiles",
+                    AdaptiveDifficultyMod.MOD_ID, n, cap * 2);
+            return;
+        }
+        int over = n - cap;
+        int killed = 0;
+        for (int j = 0; j < ents.size() && killed < over; j++) {
+            if (discardEntitySafe(ents.get(j))) {
+                killed++;
+            }
+        }
+        if (killed < over) {
+            purgeEndKiCommands(end);
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] Ki cap exceeded ({}); purged all End ki projectiles",
+                    AdaptiveDifficultyMod.MOD_ID, n);
+        } else if (killed > 0) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] Ki cap: discarded {} (had {})",
+                    AdaptiveDifficultyMod.MOD_ID, killed, n);
+        }
+    }
+
+    /** Throttled single-dragon enforce + ki cleanup (shared across End). */
+    static void runDragonWorldHygiene(ServerLevel end, long now) {
+        if (end == null) {
+            return;
+        }
+        try {
+            if (now - lastHygieneAt < HYGIENE_INTERVAL_MS) {
+                return;
+            }
+            lastHygieneAt = now;
+            EnderDragon kept = enforceSingleDragon(end);
+            cleanupEndKiProjectiles(end, kept != null);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] runDragonWorldHygiene: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
+    }
+
+    private static List<EnderDragon> findDragons(ServerLevel end) {
+        List<EnderDragon> out = new ArrayList<>();
+        if (end == null) {
+            return out;
+        }
+        try {
+            for (Entity e : end.m_8583_()) {
+                if (e instanceof EnderDragon dragon && dragon.m_6084_()) {
+                    out.add(dragon);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return out;
+    }
+
+    private static double dragonHealthScore(EnderDragon dragon) {
+        if (dragon == null) {
+            return -1.0;
+        }
+        try {
+            return Math.max(0.0, dragon.m_21223_());
+        } catch (Throwable ignored) {
+            return -1.0;
+        }
+    }
+
+    private static void purgeEndKiCommands(ServerLevel end) {
+        MinecraftServer server = end == null ? null : end.m_7654_();
+        if (server == null) {
+            return;
+        }
+        try {
+            server.m_129892_().m_230957_(
+                    server.m_129893_(),
+                    "execute in minecraft:the_end run kill @e[type=dragonminez:ki_laser]");
+        } catch (Throwable ignored) {
+        }
+        try {
+            server.m_129892_().m_230957_(
+                    server.m_129893_(),
+                    "execute in minecraft:the_end run kill @e[type=dragonminez:ki_blast]");
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static EntityType<?> resolveKiType(String path) {
+        try {
+            return ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation("dragonminez", path));
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static List<Entity> collectEndKiEntities(ServerLevel end) {
+        List<Entity> out = new ArrayList<>();
+        if (end == null) {
+            return out;
+        }
+        EntityType<?> laser = resolveKiType("ki_laser");
+        EntityType<?> blast = resolveKiType("ki_blast");
+        try {
+            if (laser != null) {
+                collectTyped(end, laser, out);
+            }
+            if (blast != null) {
+                collectTyped(end, blast, out);
+            }
+            if (!out.isEmpty() || (laser != null && blast != null)) {
+                return out;
+            }
+        } catch (Throwable ignored) {
+        }
+        // Fallback: scan all End entities by registry id / name.
+        try {
+            for (Entity e : end.m_8583_()) {
+                if (isKiProjectileEntity(e)) {
+                    out.add(e);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return out;
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void collectTyped(ServerLevel end, EntityType<?> type, List<Entity> out) {
+        if (end == null || type == null || out == null) {
+            return;
+        }
+        try {
+            List list = end.m_142425_((EntityTypeTest) type, END_KI_SCAN_BOX, e -> e != null);
+            if (list != null) {
+                for (Object o : list) {
+                    if (o instanceof Entity entity) {
+                        out.add(entity);
+                    }
+                }
+                return;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            for (Entity e : end.m_8583_()) {
+                if (e != null && e.m_6095_() == type) {
+                    out.add(e);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static boolean isKiProjectileEntity(Entity ent) {
+        if (ent == null) {
+            return false;
+        }
+        try {
+            ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(ent.m_6095_());
+            if (id != null) {
+                String key = id.toString().toLowerCase(Locale.ROOT);
+                if (KI_LASER_ID.equals(key) || KI_BLAST_ID.equals(key)
+                        || key.contains("ki_laser") || key.contains("ki_blast")
+                        || key.contains("kilaser") || key.contains("kiblast")) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            String name = ent.m_6095_().toString().toLowerCase(Locale.ROOT);
+            return name.contains("ki_laser") || name.contains("ki_blast")
+                    || name.contains("kilaser") || name.contains("kiblast");
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static boolean discardEntitySafe(Entity ent) {
+        if (ent == null) {
+            return false;
+        }
+        try {
+            ent.m_146870_(); // discard
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private static void maybeRescaleDragon(EnderDragon dragon, ServerLevel level, PlayerPower power, long now) {

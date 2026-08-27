@@ -84,6 +84,11 @@ public final class ProgressionConfig {
         return masterEnabled() && DifficultyConfig.get().enableEndPortalGuard;
     }
 
+    /** End mob HP/DEF scaling — off by default (script v2.11.0). */
+    public static boolean endMobScaling() {
+        return endDimensionStrength() && DifficultyConfig.get().enableEndMobScaling;
+    }
+
     public static boolean shadowDummyLimiter() {
         return masterEnabled() && DifficultyConfig.get().enableShadowDummyLimiter;
     }
@@ -158,6 +163,7 @@ public final class ProgressionConfig {
                 + " ki=" + onOff(c.enableKiWeapons)
                 + " pierce=" + onOff(c.enablePiercingBonus)
                 + " end=" + onOff(c.enableEndDimensionStrength)
+                + " endmobs=" + onOff(c.enableEndMobScaling)
                 + " endportal=" + onOff(c.enableEndPortalGuard)
                 + " shadow=" + onOff(c.enableShadowDummyLimiter)
                 + " skills=" + onOff(c.enableSkillUnlockService)

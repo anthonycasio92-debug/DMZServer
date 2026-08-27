@@ -207,6 +207,19 @@ public final class DifficultyConfig {
     /** Block vanilla End portal / gateway travel and Eye-of-Ender frame lighting. */
     public boolean enableEndPortalGuard = true;
     public boolean enableEndNaturalDragonSpawn = true;
+    /**
+     * Scale Enderman / Shulker / Phantom / Endermite HP/DEF (End Dimension Strength).
+     * Default {@code false} matches script v2.11.0 — dragon-only scaling.
+     */
+    public boolean enableEndMobScaling = false;
+    /** Keep at most one living Ender Dragon in The End (script v2.12.0). */
+    public boolean endEnforceSingleDragon = true;
+    /** Purge / cap leftover DMZ {@code ki_laser} / {@code ki_blast} in The End (v2.12.0). */
+    public boolean endKiCleanupEnabled = true;
+    /** When no dragon is alive, purge all End ki projectiles. */
+    public boolean endKiPurgeWhenNoDragon = true;
+    /** Hard cap on End ki projectiles while a dragon is alive (script default 32). */
+    public int endKiMaxAliveWhileDragon = 32;
     public boolean enableShadowDummyLimiter = true;
     public boolean enableSkillUnlockService = true;
     public boolean enablePrestigeSystem = true;
@@ -1448,6 +1461,7 @@ public final class DifficultyConfig {
             }
         }
         cfg.maxScaledMobsPerPlayer = Math.max(1, Math.min(5, cfg.maxScaledMobsPerPlayer));
+        cfg.endKiMaxAliveWhileDragon = Math.max(1, Math.min(512, cfg.endKiMaxAliveWhileDragon));
         cfg.nearbyScaleBudgetPerPlayer = cfg.maxScaledMobsPerPlayer;
         // Never allow free tiers via live admin set / bad JSON.
         cfg.unlockTier1Cost = Math.max(1L, cfg.unlockTier1Cost);
