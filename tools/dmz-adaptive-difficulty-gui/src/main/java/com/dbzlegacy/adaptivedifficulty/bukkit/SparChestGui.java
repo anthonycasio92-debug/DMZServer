@@ -55,9 +55,9 @@ public final class SparChestGui implements Listener {
     private Inventory main(Player player) {
         Map<String, String> ph = ForgeBridge.sparPlaceholders(player);
         Holder holder = new Holder("main");
-        Inventory inv = Bukkit.createInventory(holder, 36, color("&8Legacy Mechanics · Sparring"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Sparring"));
         holder.bind(inv);
-        frame(inv, 36);
+        frame(inv, 45);
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
@@ -65,12 +65,16 @@ public final class SparChestGui implements Listener {
             put(holder, inv, 4, item(Material.NETHER_STAR,
                     !bridgeOk ? "&c&lUNAVAILABLE" : "&c&lSPARRING DISABLED",
                     unavailableLore(bridgeOk)));
-            put(holder, inv, 31, hubBtn(), SlotAction.cmd("lm"));
-            put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
+            put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+            put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
             return inv;
         }
 
         put(holder, inv, 4, item(Material.NETHER_STAR, "&f&lSparring", statusLore(ph)));
+        put(holder, inv, 10, pageBtn(Material.LIME_CONCRETE, "&aInvite apprentice…",
+                "&7Pick a player to mentor"), SlotAction.page("pick_apprentice"));
+        put(holder, inv, 12, pageBtn(Material.LIGHT_BLUE_CONCRETE, "&bAsk mentor…",
+                "&7Pick a player to ask as mentor"), SlotAction.page("pick_mentor"));
         put(holder, inv, 20, pageBtn(Material.BOOK, "&eStats", "&7Your spar stats"),
                 SlotAction.page("stats"));
         put(holder, inv, 22, pageBtn(Material.GOLDEN_HELMET, "&fTop", "&7Leaderboard"),
@@ -85,8 +89,8 @@ public final class SparChestGui implements Listener {
                     SlotAction.act("end", "0", "main"));
         }
 
-        put(holder, inv, 31, hubBtn(), SlotAction.cmd("lm"));
-        put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
 
@@ -160,7 +164,7 @@ public final class SparChestGui implements Listener {
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
             put(holder, inv, slot,
                     GuiPlayerPicker.head(other, "&f" + other.getName(), List.of(tip)),
-                    SlotAction.act(action, other.getName(), backPage));
+                    SlotAction.act(action, "uuid:" + other.getUniqueId(), backPage));
         }
         if (placed == 0) {
             put(holder, inv, 22, tipBtn(Material.BARRIER, "&cNo one online",
@@ -284,12 +288,17 @@ public final class SparChestGui implements Listener {
         }
         final String ret = slotAction.returnPage == null || slotAction.returnPage.isBlank()
                 ? "main" : slotAction.returnPage;
-        final String cmd = "spar do " + slotAction.action
-                + (slotAction.arg == null || slotAction.arg.isBlank() ? " 0" : " " + slotAction.arg)
-                + " " + ret;
+        final String action = slotAction.action;
+        final String arg = slotAction.arg == null || slotAction.arg.isBlank() ? "0" : slotAction.arg;
         Bukkit.getScheduler().runTask(plugin, () -> {
-            player.closeInventory();
-            player.performCommand(cmd);
+            String msg = ForgeBridge.sparHandleDo(player, action, arg, ret);
+            if (msg != null && !msg.isBlank()) {
+                if (!msg.startsWith("§")) {
+                    msg = "§a" + msg;
+                }
+                player.sendMessage(msg);
+            }
+            open(player, ret);
         });
     }
 

@@ -62,6 +62,7 @@ public final class ForgeBridge {
     private static Method rivalPlaceholdersMethod;
     private static Method rivalLinesMethod;
     private static Method rivalHandleDoMethod;
+    private static Method rivalPendingDeclareArgsMethod;
     private static Method sparPlaceholdersMethod;
     private static Method sparLinesMethod;
     private static Method sparHandleDoMethod;
@@ -997,6 +998,39 @@ public final class ForgeBridge {
         }
     }
 
+    /**
+     * Pending incoming declare picker args ({@code uuid:&lt;uuid&gt;} when online, else name).
+     * Online declarers first. Empty when none / API missing.
+     */
+    public static List<String> rivalPendingIncomingDeclareArgs(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of();
+        }
+        try {
+            ensureRivalResolved(nms.getClass().getClassLoader());
+            if (rivalPendingDeclareArgsMethod == null) {
+                return List.of();
+            }
+            Object raw = rivalPendingDeclareArgsMethod.invoke(null, nms);
+            if (raw instanceof List<?> list) {
+                List<String> out = new ArrayList<>();
+                for (Object o : list) {
+                    if (o != null) {
+                        String s = String.valueOf(o);
+                        if (!s.isBlank()) {
+                            out.add(s);
+                        }
+                    }
+                }
+                return out;
+            }
+        } catch (Throwable ignored) {
+            // Optional API — fall back to empty (picker shows tip).
+        }
+        return List.of();
+    }
+
     public static String sparHandleDo(Player player, String action, String arg, String page) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
@@ -1396,6 +1430,16 @@ public final class ForgeBridge {
 
     private static synchronized void ensureRivalResolved(ClassLoader preferred) throws Exception {
         if (rivalPlaceholdersMethod != null && rivalLinesMethod != null && rivalHandleDoMethod != null) {
+            // Still try optional pending-args method if a newer jar was hot-swapped.
+            if (rivalPendingDeclareArgsMethod == null) {
+                try {
+                    Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi", preferred);
+                    Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+                    rivalPendingDeclareArgsMethod = api.getMethod("pendingIncomingDeclareArgs", sp);
+                } catch (Throwable ignored) {
+                    rivalPendingDeclareArgsMethod = null;
+                }
+            }
             return;
         }
         Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi", preferred);
@@ -1403,6 +1447,11 @@ public final class ForgeBridge {
         rivalPlaceholdersMethod = api.getMethod("placeholders", sp);
         rivalLinesMethod = api.getMethod("linesForPage", sp, String.class);
         rivalHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
+        try {
+            rivalPendingDeclareArgsMethod = api.getMethod("pendingIncomingDeclareArgs", sp);
+        } catch (Throwable missing) {
+            rivalPendingDeclareArgsMethod = null;
+        }
         try {
             rivalChatMenuOpen = loadClass(
                     "com.dbzlegacy.adaptivedifficulty.gui.RivalChatMenu", preferred)

@@ -855,7 +855,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if (args.length == 1 && switch (sub) {
             case "list", "stats", "top", "season", "quests", "achievements", "hof",
                  "journal", "title", "titles", "challenge", "help",
-                 "pick_declare", "pick_accept", "pick_remove", "pick_challenge",
+                 "pick_declare", "pick_accept", "pick_decline", "pick_remove", "pick_challenge",
                  "pick_spectate", "pick_silent" -> true;
             default -> false;
         }) {
@@ -927,7 +927,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         }
         if ("stats".equals(sub) || "help".equals(sub)
                 || ("mentor".equals(sub) && args.length == 1)
-                || ("top".equals(sub))) {
+                || ("top".equals(sub))
+                || "pick_apprentice".equals(sub)
+                || "pick_mentor".equals(sub)) {
             String page = sub;
             if ("top".equals(sub) && args.length > 1) {
                 page = "top_" + args[1].toLowerCase();

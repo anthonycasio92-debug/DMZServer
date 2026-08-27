@@ -670,7 +670,7 @@ public final class SparringSystem {
         SparStore.get().markDirty();
         DmzRewards.msg(target, "§6[Mentor Bond] §f" + invite.fromName
                 + " §ewants you as their Apprentice.");
-        DmzRewards.msg(target, "§8/spar mentor accept  §7or  §8/spar mentor decline");
+        DmzRewards.msg(target, "§8Open §e/spar §8→ Mentor → Accept  §7or  §8Decline");
         return "§aInvite sent to §f" + target.m_7755_().getString() + "§a.";
     }
 
@@ -698,7 +698,7 @@ public final class SparringSystem {
         SparStore.get().markDirty();
         DmzRewards.msg(target, "§6[Mentor Bond] §f" + invite.fromName
                 + " §ewants you as their Mentor.");
-        DmzRewards.msg(target, "§8/spar mentor accept  §7or  §8/spar mentor decline");
+        DmzRewards.msg(target, "§8Open §e/spar §8→ Mentor → Accept  §7or  §8Decline");
         return "§aInvite sent to §f" + target.m_7755_().getString() + "§a.";
     }
 

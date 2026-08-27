@@ -4,6 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalConstants;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalInstinct;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalLink;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalPlayerRecord;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalProgression;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalSpectator;
@@ -116,9 +117,125 @@ public final class RivalGuiApi {
         return names;
     }
 
-    /** Resolve an online {@link ServerPlayer} by exact or case-insensitive name. */
-    public static ServerPlayer resolveOnline(MinecraftServer server, String name) {
-        return RivalSystem.findOnline(server, name);
+    /**
+     * Names of players with a pending incoming declare ({@code inviteReceived}) on this player.
+     * Online declarers are listed first; offline still included (accept/decline use name lookup).
+     */
+    public static List<String> pendingIncomingDeclareNames(ServerPlayer player) {
+        List<String> online = new ArrayList<>();
+        List<String> offline = new ArrayList<>();
+        if (player == null || !DifficultyConfig.get().enableRivalSystem) {
+            return online;
+        }
+        RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
+        if (me == null || me.rivals.isEmpty()) {
+            return online;
+        }
+        MinecraftServer server = player.m_20194_();
+        long now = System.currentTimeMillis();
+        for (RivalLink link : me.rivals.values()) {
+            if (link == null || !link.inviteReceived) {
+                continue;
+            }
+            if (link.pendingExpireAt > 0L && now > link.pendingExpireAt) {
+                continue;
+            }
+            String name = link.name == null || link.name.isBlank() ? link.uuid : link.name;
+            if (name == null || name.isBlank()) {
+                continue;
+            }
+            boolean isOnline = false;
+            if (server != null && link.uuid != null && !link.uuid.isBlank()) {
+                try {
+                    isOnline = server.m_6846_().m_11259_(java.util.UUID.fromString(link.uuid)) != null;
+                } catch (IllegalArgumentException ignored) {
+                    isOnline = false;
+                }
+            }
+            if (isOnline) {
+                online.add(name);
+            } else {
+                offline.add(name);
+            }
+        }
+        online.sort(String.CASE_INSENSITIVE_ORDER);
+        offline.sort(String.CASE_INSENSITIVE_ORDER);
+        List<String> out = new ArrayList<>(online.size() + offline.size());
+        out.addAll(online);
+        out.addAll(offline);
+        return out;
+    }
+
+    /**
+     * Pending incoming declare picker args: {@code uuid:&lt;uuid&gt;} when online, else stored name
+     * (accept/decline resolve both). Online first.
+     */
+    public static List<String> pendingIncomingDeclareArgs(ServerPlayer player) {
+        List<String> online = new ArrayList<>();
+        List<String> offline = new ArrayList<>();
+        if (player == null || !DifficultyConfig.get().enableRivalSystem) {
+            return online;
+        }
+        RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
+        if (me == null || me.rivals.isEmpty()) {
+            return online;
+        }
+        MinecraftServer server = player.m_20194_();
+        long now = System.currentTimeMillis();
+        for (RivalLink link : me.rivals.values()) {
+            if (link == null || !link.inviteReceived) {
+                continue;
+            }
+            if (link.pendingExpireAt > 0L && now > link.pendingExpireAt) {
+                continue;
+            }
+            String name = link.name == null || link.name.isBlank() ? "" : link.name;
+            String uuid = link.uuid == null ? "" : link.uuid.trim();
+            boolean isOnline = false;
+            if (server != null && !uuid.isBlank()) {
+                try {
+                    isOnline = server.m_6846_().m_11259_(java.util.UUID.fromString(uuid)) != null;
+                } catch (IllegalArgumentException ignored) {
+                    isOnline = false;
+                }
+            }
+            if (isOnline) {
+                online.add("uuid:" + uuid);
+            } else if (!name.isBlank()) {
+                offline.add(name);
+            } else if (!uuid.isBlank()) {
+                offline.add(uuid);
+            }
+        }
+        online.sort(String.CASE_INSENSITIVE_ORDER);
+        offline.sort(String.CASE_INSENSITIVE_ORDER);
+        List<String> out = new ArrayList<>(online.size() + offline.size());
+        out.addAll(online);
+        out.addAll(offline);
+        return out;
+    }
+
+    /**
+     * Resolve an online {@link ServerPlayer} by {@code uuid:&lt;uuid&gt;} or by exact /
+     * case-insensitive name.
+     */
+    public static ServerPlayer resolveOnline(MinecraftServer server, String arg) {
+        if (server == null || arg == null || arg.isBlank()) {
+            return null;
+        }
+        String raw = arg.trim();
+        if (raw.regionMatches(true, 0, "uuid:", 0, 5)) {
+            String id = raw.substring(5).trim();
+            if (id.isBlank()) {
+                return null;
+            }
+            try {
+                return server.m_6846_().m_11259_(java.util.UUID.fromString(id));
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+        return RivalSystem.findOnline(server, raw);
     }
 
     public static ServerPlayer resolveOnline(ServerPlayer from, String name) {
@@ -126,6 +243,27 @@ public final class RivalGuiApi {
             return null;
         }
         return resolveOnline(from.m_20194_(), name);
+    }
+
+    /** Resolve GUI arg to a stored/display name (supports {@code uuid:} for accept/decline/remove). */
+    public static String resolveNameArg(ServerPlayer from, String arg) {
+        if (arg == null || arg.isBlank()) {
+            return "";
+        }
+        String raw = arg.trim();
+        if (raw.regionMatches(true, 0, "uuid:", 0, 5)) {
+            ServerPlayer online = resolveOnline(from, raw);
+            if (online != null) {
+                return online.m_7755_().getString();
+            }
+            String id = raw.substring(5).trim();
+            RivalPlayerRecord rec = RivalStore.get().get(id);
+            if (rec != null && rec.name != null && !rec.name.isBlank()) {
+                return rec.name;
+            }
+            return "";
+        }
+        return raw;
     }
 
     public static List<String> seasonLines(ServerPlayer player) {
@@ -278,19 +416,31 @@ public final class RivalGuiApi {
             if (a.isBlank()) {
                 return "§cPick a player to accept.";
             }
-            return RivalSystem.accept(player, a);
+            String name = resolveNameArg(player, a);
+            if (name.isBlank()) {
+                return "§cPick a player to accept.";
+            }
+            return RivalSystem.accept(player, name);
         }
         if ("decline".equals(act) || "deny".equals(act)) {
             if (a.isBlank()) {
                 return "§cPick a player to decline.";
             }
-            return RivalSystem.decline(player, a);
+            String name = resolveNameArg(player, a);
+            if (name.isBlank()) {
+                return "§cPick a player to decline.";
+            }
+            return RivalSystem.decline(player, name);
         }
         if ("remove".equals(act)) {
             if (a.isBlank()) {
                 return "§cPick a player to remove.";
             }
-            return RivalSystem.remove(player, a);
+            String name = resolveNameArg(player, a);
+            if (name.isBlank()) {
+                return "§cPick a player to remove.";
+            }
+            return RivalSystem.remove(player, name);
         }
         if ("silent".equals(act)) {
             if (a.isBlank()) {

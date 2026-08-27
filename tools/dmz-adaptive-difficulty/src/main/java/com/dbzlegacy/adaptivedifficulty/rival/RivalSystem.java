@@ -200,7 +200,7 @@ public final class RivalSystem {
         store.markDirty();
 
         DmzRewards.msg(target, "§6[Rival] §e" + me.name + " §7visibly declared you as a rival!");
-        DmzRewards.msg(target, "§8  /rival accept " + me.name + "  §7or  §8/rival decline " + me.name);
+        DmzRewards.msg(target, "§8Open §e/rival §8→ Accept…  §7or  §8Decline…");
         return "§aDeclared §f" + them.name + " §a(Pending). They were notified.";
     }
 
@@ -290,7 +290,7 @@ public final class RivalSystem {
         List<String> lines = new ArrayList<>();
         RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
         if (me == null || me.rivals.isEmpty()) {
-            lines.add("§7No rivals yet. §8/rival <player> §7or §8/rival declare <player>");
+            lines.add("§7No rivals yet. §8Open /rival → Declare…");
             return lines;
         }
         lines.add("§6§lYour Rivals");

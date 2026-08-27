@@ -34,8 +34,10 @@ public final class RivalChestGui implements Listener {
             case "list" -> list(player);
             case "pick_declare" -> picker(player, "declare", "list",
                     "&6Declare Rival", "&7Click to declare this player");
-            case "pick_accept" -> picker(player, "accept", "list",
+            case "pick_accept" -> pendingPicker(player, "accept", "list",
                     "&aAccept Declare", "&7Click to accept their declare");
+            case "pick_decline" -> pendingPicker(player, "decline", "list",
+                    "&cDecline Declare", "&7Click to decline their declare");
             case "pick_remove" -> picker(player, "remove", "list",
                     "&cRemove Rival", "&7Click to remove this rivalry");
             case "pick_challenge" -> picker(player, "challenge_send", "challenge",
@@ -79,6 +81,10 @@ public final class RivalChestGui implements Listener {
         }
 
         put(holder, inv, 4, item(Material.NETHER_STAR, "&f&lRival", statusLore(ph)));
+        put(holder, inv, 10, pageBtn(Material.LIME_CONCRETE, "&aDeclare…",
+                "&7Pick an online player to declare"), SlotAction.page("pick_declare"));
+        put(holder, inv, 12, pageBtn(Material.GOLDEN_SWORD, "&eSend Challenge…",
+                "&7Pick an online rival to challenge"), SlotAction.page("pick_challenge"));
         put(holder, inv, 19, pageBtn(Material.PLAYER_HEAD, "&6List",
                 "&7Your rivals", "&8Declare · accept · remove"), SlotAction.page("list"));
         put(holder, inv, 20, pageBtn(Material.BOOK, "&eStats",
@@ -137,7 +143,9 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 19, pageBtn(Material.LIME_CONCRETE, "&aDeclare…",
                 "&7Pick an online player to declare"), SlotAction.page("pick_declare"));
         put(holder, inv, 21, pageBtn(Material.YELLOW_CONCRETE, "&eAccept…",
-                "&7Pick whose declare to accept"), SlotAction.page("pick_accept"));
+                "&7Pending declares (no name guessing)"), SlotAction.page("pick_accept"));
+        put(holder, inv, 22, pageBtn(Material.ORANGE_CONCRETE, "&6Decline…",
+                "&7Decline a pending declare"), SlotAction.page("pick_decline"));
         put(holder, inv, 23, pageBtn(Material.RED_CONCRETE, "&cRemove…",
                 "&7Pick a rival to remove"), SlotAction.page("pick_remove"));
         put(holder, inv, 25, pageBtn(Material.GRAY_CONCRETE, "&8Silent…",
@@ -192,11 +200,60 @@ public final class RivalChestGui implements Listener {
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
             put(holder, inv, slot,
                     GuiPlayerPicker.head(other, "&f" + other.getName(), List.of(tip)),
-                    SlotAction.act(action, other.getName(), backPage));
+                    SlotAction.act(action, "uuid:" + other.getUniqueId(), backPage));
         }
         if (placed == 0) {
             put(holder, inv, 22, tipBtn(Material.BARRIER, "&cNo one online",
                     List.of("&7Other players must be online")));
+        }
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page(backPage));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    /** Accept/decline picker — pending incoming declares (online first; offline by name). */
+    private Inventory pendingPicker(
+            Player player, String action, String backPage, String title, String tip) {
+        Holder holder = new Holder("pick_" + action);
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
+        holder.bind(inv);
+        frame(inv, 45);
+        put(holder, inv, 4, item(Material.PLAYER_HEAD, title,
+                List.of("", "&7Pending declares", "&8Online first · offline by name")));
+        List<String> pending = ForgeBridge.rivalPendingIncomingDeclareArgs(player);
+        int placed = 0;
+        for (String arg : pending) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+            String display;
+            ItemStack head;
+            if (arg.regionMatches(true, 0, "uuid:", 0, 5)) {
+                try {
+                    java.util.UUID id = java.util.UUID.fromString(arg.substring(5).trim());
+                    Player online = Bukkit.getPlayer(id);
+                    display = online != null ? online.getName() : arg.substring(5).trim();
+                    head = online != null
+                            ? GuiPlayerPicker.head(online, "&f" + display, List.of(tip, "&aOnline"))
+                            : GuiPlayerPicker.headByName(display, "&f" + display, List.of(tip));
+                } catch (IllegalArgumentException e) {
+                    display = arg;
+                    head = GuiPlayerPicker.headByName(display, "&f" + display, List.of(tip));
+                }
+            } else {
+                display = arg;
+                Player online = Bukkit.getPlayerExact(arg);
+                head = online != null
+                        ? GuiPlayerPicker.head(online, "&f" + display, List.of(tip, "&7Offline pending · name"))
+                        : GuiPlayerPicker.headByName(display, "&f" + display,
+                                List.of(tip, "&8Offline — accept by name"));
+            }
+            put(holder, inv, slot, head, SlotAction.act(action, arg, backPage));
+        }
+        if (placed == 0) {
+            put(holder, inv, 22, tipBtn(Material.BARRIER, "&eNo pending declares",
+                    List.of("&7When someone declares you,", "&7they appear here to accept or decline.")));
         }
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page(backPage));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -309,12 +366,17 @@ public final class RivalChestGui implements Listener {
         }
         final String ret = slotAction.returnPage == null || slotAction.returnPage.isBlank()
                 ? "main" : slotAction.returnPage;
-        final String cmd = "rival do " + slotAction.action
-                + (slotAction.arg == null || slotAction.arg.isBlank() ? " 0" : " " + slotAction.arg)
-                + " " + ret;
+        final String action = slotAction.action;
+        final String arg = slotAction.arg == null || slotAction.arg.isBlank() ? "0" : slotAction.arg;
         Bukkit.getScheduler().runTask(plugin, () -> {
-            player.closeInventory();
-            player.performCommand(cmd);
+            String msg = ForgeBridge.rivalHandleDo(player, action, arg, ret);
+            if (msg != null && !msg.isBlank()) {
+                if (!msg.startsWith("§")) {
+                    msg = "§a" + msg;
+                }
+                player.sendMessage(msg);
+            }
+            open(player, ret);
         });
     }
 

@@ -35,8 +35,10 @@ public final class CmiRivalGui {
                 case "list" -> openList(player);
                 case "pick_declare" -> openPicker(player, "declare", "list",
                         "&6Declare Rival", "&7Click to declare this player");
-                case "pick_accept" -> openPicker(player, "accept", "list",
+                case "pick_accept" -> openPendingPicker(player, "accept", "list",
                         "&aAccept Declare", "&7Click to accept their declare");
+                case "pick_decline" -> openPendingPicker(player, "decline", "list",
+                        "&cDecline Declare", "&7Click to decline their declare");
                 case "pick_remove" -> openPicker(player, "remove", "list",
                         "&cRemove Rival", "&7Click to remove this rivalry");
                 case "pick_challenge" -> openPicker(player, "challenge_send", "challenge",
@@ -88,6 +90,10 @@ public final class CmiRivalGui {
         status.addLore(statusLore(ph));
         gui.addButton(status);
 
+        gui.addButton(pageBtn(10, Material.LIME_CONCRETE, "&aDeclare…", "pick_declare",
+                "&7Pick an online player to declare"));
+        gui.addButton(pageBtn(12, Material.GOLDEN_SWORD, "&eSend Challenge…", "pick_challenge",
+                "&7Pick an online rival to challenge"));
         gui.addButton(pageBtn(19, Material.PLAYER_HEAD, "&6List", "list",
                 "&7Your rivals", "&8Declare · accept · remove"));
         gui.addButton(pageBtn(20, Material.BOOK, "&eStats", "stats",
@@ -152,7 +158,9 @@ public final class CmiRivalGui {
         gui.addButton(pageBtn(19, Material.LIME_CONCRETE, "&aDeclare…", "pick_declare",
                 "&7Pick an online player to declare"));
         gui.addButton(pageBtn(21, Material.YELLOW_CONCRETE, "&eAccept…", "pick_accept",
-                "&7Pick whose declare to accept"));
+                "&7Pending declares (no name guessing)"));
+        gui.addButton(pageBtn(22, Material.ORANGE_CONCRETE, "&6Decline…", "pick_decline",
+                "&7Decline a pending declare"));
         gui.addButton(pageBtn(23, Material.RED_CONCRETE, "&cRemove…", "pick_remove",
                 "&7Pick a rival to remove"));
         gui.addButton(pageBtn(25, Material.GRAY_CONCRETE, "&8Silent…", "pick_silent",
@@ -212,13 +220,69 @@ public final class CmiRivalGui {
             ItemStack head = GuiPlayerPicker.head(other, "&f" + other.getName(), List.of(tip));
             CMIGuiButton btn = new CMIGuiButton(slot, head);
             btn.lockField();
-            btn.addCommand("rival do " + action + " " + other.getName() + " " + backPage);
+            btn.addCommand("rival do " + action + " uuid:" + other.getUniqueId() + " " + backPage);
             gui.addButton(btn);
         }
         if (placed == 0) {
             CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&cNo one online");
             empty.lockField();
             empty.addLore(List.of("", "&7Other players must be online"));
+            gui.addButton(empty);
+        }
+
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", backPage, "&7Return"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openPendingPicker(
+            Player player, String action, String backPage, String title, String tip) {
+        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+        CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD, title);
+        info.lockField();
+        info.addLore(List.of("", "&7Pending declares", "&8Online first · offline by name"));
+        gui.addButton(info);
+
+        List<String> pending = ForgeBridge.rivalPendingIncomingDeclareArgs(player);
+        int placed = 0;
+        for (String arg : pending) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+            String display;
+            ItemStack head;
+            if (arg.regionMatches(true, 0, "uuid:", 0, 5)) {
+                try {
+                    java.util.UUID id = java.util.UUID.fromString(arg.substring(5).trim());
+                    Player online = org.bukkit.Bukkit.getPlayer(id);
+                    display = online != null ? online.getName() : arg.substring(5).trim();
+                    head = online != null
+                            ? GuiPlayerPicker.head(online, "&f" + display, List.of(tip, "&aOnline"))
+                            : GuiPlayerPicker.headByName(display, "&f" + display, List.of(tip));
+                } catch (IllegalArgumentException e) {
+                    display = arg;
+                    head = GuiPlayerPicker.headByName(display, "&f" + display, List.of(tip));
+                }
+            } else {
+                display = arg;
+                Player online = org.bukkit.Bukkit.getPlayerExact(arg);
+                head = online != null
+                        ? GuiPlayerPicker.head(online, "&f" + display, List.of(tip))
+                        : GuiPlayerPicker.headByName(display, "&f" + display,
+                                List.of(tip, "&8Offline — accept by name"));
+            }
+            CMIGuiButton btn = new CMIGuiButton(slot, head);
+            btn.lockField();
+            btn.addCommand("rival do " + action + " " + arg + " " + backPage);
+            gui.addButton(btn);
+        }
+        if (placed == 0) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&eNo pending declares");
+            empty.lockField();
+            empty.addLore(List.of("", "&7When someone declares you,",
+                    "&7they appear here to accept or decline."));
             gui.addButton(empty);
         }
 

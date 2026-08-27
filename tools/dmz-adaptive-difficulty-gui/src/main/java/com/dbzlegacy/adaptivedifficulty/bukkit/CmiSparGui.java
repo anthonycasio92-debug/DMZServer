@@ -58,7 +58,7 @@ public final class CmiSparGui {
 
     private static void openMain(Player player) {
         Map<String, String> ph = ForgeBridge.sparPlaceholders(player);
-        CMIGui gui = base(player, "&8Legacy Mechanics · Sparring", 4);
+        CMIGui gui = base(player, "&8Legacy Mechanics · Sparring", 5);
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
@@ -70,15 +70,19 @@ public final class CmiSparGui {
         if (!bridgeOk || !systemOn) {
             status.addLore(unavailableLore(bridgeOk));
             gui.addButton(status);
-            gui.addButton(hubBtn(31));
-            gui.addButton(closeBtn(35));
-            fillEmpty(gui, 4);
+            gui.addButton(hubBtn(40));
+            gui.addButton(closeBtn(44));
+            fillEmpty(gui, 5);
             gui.open();
             return;
         }
         status.addLore(statusLore(ph));
         gui.addButton(status);
 
+        gui.addButton(pageBtn(10, Material.LIME_CONCRETE, "&aInvite apprentice…", "pick_apprentice",
+                "&7Pick a player to mentor"));
+        gui.addButton(pageBtn(12, Material.LIGHT_BLUE_CONCRETE, "&bAsk mentor…", "pick_mentor",
+                "&7Pick a player to ask as mentor"));
         gui.addButton(pageBtn(20, Material.BOOK, "&eStats", "stats",
                 "&7Your spar stats"));
         gui.addButton(pageBtn(22, Material.GOLDEN_HELMET, "&fTop", "top",
@@ -93,9 +97,9 @@ public final class CmiSparGui {
                     List.of("&7End your active spar session")));
         }
 
-        gui.addButton(hubBtn(31));
-        gui.addButton(closeBtn(35));
-        fillEmpty(gui, 4);
+        gui.addButton(hubBtn(40));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
         gui.open();
     }
 
@@ -176,7 +180,7 @@ public final class CmiSparGui {
             ItemStack head = GuiPlayerPicker.head(other, "&f" + other.getName(), List.of(tip));
             CMIGuiButton btn = new CMIGuiButton(slot, head);
             btn.lockField();
-            btn.addCommand("spar do " + action + " " + other.getName() + " " + backPage);
+            btn.addCommand("spar do " + action + " uuid:" + other.getUniqueId() + " " + backPage);
             gui.addButton(btn);
         }
         if (placed == 0) {

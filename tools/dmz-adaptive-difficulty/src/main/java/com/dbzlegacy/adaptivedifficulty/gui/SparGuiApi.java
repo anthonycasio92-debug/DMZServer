@@ -210,7 +210,10 @@ public final class SparGuiApi {
         return "§cUnknown spar action: " + act;
     }
 
-    /** Resolve an online player by name from the caller's server. */
+    /**
+     * Resolve an online player by {@code uuid:&lt;uuid&gt;} or by exact / case-insensitive name
+     * from the caller's server.
+     */
     public static ServerPlayer resolveOnline(ServerPlayer from, String name) {
         if (from == null || name == null || name.isBlank()) {
             return null;
@@ -219,11 +222,23 @@ public final class SparGuiApi {
         if (server == null) {
             return null;
         }
-        ServerPlayer exact = server.m_6846_().m_11255_(name);
+        String raw = name.trim();
+        if (raw.regionMatches(true, 0, "uuid:", 0, 5)) {
+            String id = raw.substring(5).trim();
+            if (id.isBlank()) {
+                return null;
+            }
+            try {
+                return server.m_6846_().m_11259_(java.util.UUID.fromString(id));
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+        ServerPlayer exact = server.m_6846_().m_11255_(raw);
         if (exact != null) {
             return exact;
         }
-        String want = name.trim().toLowerCase(Locale.ROOT);
+        String want = raw.toLowerCase(Locale.ROOT);
         for (ServerPlayer p : server.m_6846_().m_11314_()) {
             if (p.m_7755_().getString().toLowerCase(Locale.ROOT).equals(want)) {
                 return p;

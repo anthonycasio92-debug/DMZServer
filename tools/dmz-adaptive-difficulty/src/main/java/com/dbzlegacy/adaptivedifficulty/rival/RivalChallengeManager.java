@@ -124,7 +124,7 @@ public final class RivalChallengeManager {
         requests.put(req.id, req);
         DmzRewards.msg(to, "§6[Rival Challenge] §e" + req.fromName
                 + " §7challenged you for §f" + mins + "§7 min!");
-        DmzRewards.msg(to, "§8  /rival challenge accept  §7or  §8/rival challenge decline");
+        DmzRewards.msg(to, "§8Open §e/rival §8→ Challenge → Accept  §7or  §8Decline");
         return "§aChallenge sent to §f" + req.toName + "§a (" + mins + " min).";
     }
 
