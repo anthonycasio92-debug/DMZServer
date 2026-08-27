@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Opens the companion Bukkit plugin chest GUI ({@code AdaptiveDifficultyGUI}).
+ * Opens the companion Bukkit plugin chest GUI ({@code LegacyMechanicsGUI}).
  */
 public final class BukkitGuiBridge {
     public static final String PLUGIN_NAME = CmiGuiBridge.PLUGIN_NAME;

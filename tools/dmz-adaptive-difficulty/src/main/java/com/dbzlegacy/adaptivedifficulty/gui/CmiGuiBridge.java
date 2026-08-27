@@ -7,8 +7,10 @@ import net.minecraft.server.level.ServerPlayer;
 
 /** Opens the companion plugin's CMILib/CMI inventory GUI. */
 public final class CmiGuiBridge {
-    /** Bukkit plugin.yml {@code name} for AdaptiveDifficultyGUI 1.0+. */
-    public static final String PLUGIN_NAME = "AdaptiveDifficultyGUI";
+    /** Bukkit plugin.yml {@code name} for LegacyMechanicsGUI 2.0+. */
+    public static final String PLUGIN_NAME = "LegacyMechanicsGUI";
+    /** Pre-2.0 companion plugin name — kept as a lookup fallback. */
+    public static final String PREVIOUS_PLUGIN_NAME = "AdaptiveDifficultyGUI";
     /** Pre-1.0 companion plugin name — kept as a lookup fallback. */
     public static final String LEGACY_PLUGIN_NAME = "DMZAdaptiveDifficultyGUI";
 
@@ -126,9 +128,13 @@ public final class CmiGuiBridge {
         return pm.getClass().getMethod("getPlugin", String.class).invoke(pm, name);
     }
 
-    /** Resolve AdaptiveDifficultyGUI, falling back to the pre-1.0 plugin name. */
+    /** Resolve LegacyMechanicsGUI, then older companion plugin names. */
     static Object getCompanionPlugin() throws Exception {
         Object plugin = getPlugin(PLUGIN_NAME);
+        if (plugin != null) {
+            return plugin;
+        }
+        plugin = getPlugin(PREVIOUS_PLUGIN_NAME);
         if (plugin != null) {
             return plugin;
         }

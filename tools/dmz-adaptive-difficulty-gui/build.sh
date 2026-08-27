@@ -10,8 +10,8 @@ ADV_KEY="$ROOT/libraries/adventure-key-4.14.0.jar"
 EXAM_API="$ROOT/libraries/examination-api-1.3.0.jar"
 EXAM_STR="$ROOT/libraries/examination-string-1.3.0.jar"
 BUNGEE="$ROOT/libraries/bungeecord-chat-1.20-R0.2.jar"
-VERSION="1.0.48"
-NAME="AdaptiveDifficultyGUI"
+VERSION="2.0.0"
+NAME="LegacyMechanicsGUI"
 SRC="$HERE/src/main/java"
 RES="$HERE/src/main/resources"
 OUT="$HERE/build/classes"
@@ -24,9 +24,11 @@ for f in "$PAPER" "$PAPI" "$CMILIB" "$ADV_API" "$ADV_KEY" "$EXAM_API" "$EXAM_STR
   fi
 done
 
-# Remove new + legacy jar names so only one AD GUI jar ships.
-rm -f "$ROOT"/plugins/AdaptiveDifficultyGUI-*.jar \
-      "$ROOT"/plugins/dmz_adaptive_difficulty_gui-*.jar
+# Only one GUI companion jar — drop old AdaptiveDifficultyGUI / LegacyMechanicsGUI builds.
+rm -f "$ROOT"/plugins/LegacyMechanicsGUI-*.jar \
+      "$ROOT"/plugins/AdaptiveDifficultyGUI-*.jar \
+      "$ROOT"/plugins/dmz_adaptive_difficulty_gui-*.jar \
+      "$ROOT"/plugins/DMZAdaptiveDifficultyGUI-*.jar
 rm -rf "$OUT"
 mkdir -p "$OUT"
 
@@ -43,8 +45,8 @@ echo "Built $JAR"
 jar tf "$JAR"
 
 # Cross-check Forge reflection surface after GUI rebuild.
-if [[ -f "$ROOT/mods/LegacyMechanics-${VERSION}.jar" ]] || [[ -f "$ROOT/mods/AdaptiveDifficulty-${VERSION}.jar" ]]; then
+if [[ -f "$ROOT/mods/LegacyMechanics-${VERSION}.jar" ]]; then
   python3 "$ROOT/tools/dmz-adaptive-difficulty/sim/audit_gui_abi.py"
 else
-  echo "WARN: AdaptiveDifficulty-${VERSION}.jar missing — skip GUI ABI audit" >&2
+  echo "WARN: LegacyMechanics-${VERSION}.jar missing — skip GUI ABI audit" >&2
 fi

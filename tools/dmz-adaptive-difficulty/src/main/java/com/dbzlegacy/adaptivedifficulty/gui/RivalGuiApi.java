@@ -16,7 +16,7 @@ import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Public static API for Bukkit companion reflection ({@code AdaptiveDifficultyGUI}).
+ * Public static API for Bukkit companion reflection ({@code LegacyMechanicsGUI}).
  * Status maps, lore lines, and {@code /rival do} action dispatch without reopening menus —
  * the companion plugin owns inventory reopen.
  */

@@ -16,7 +16,7 @@ if [[ ! -f "$FTB" ]]; then
   curl -fsSL -o "$FTB" \
     "https://maven.ftb.dev/releases/dev/ftb/mods/ftb-teams-forge/2001.3.1/ftb-teams-forge-2001.3.1.jar"
 fi
-VERSION="1.0.48"
+VERSION="2.0.0"
 NAME="LegacyMechanics"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
@@ -67,8 +67,8 @@ python3 "$HERE_SIM/validate_tier_costs.py"
 python3 "$HERE_SIM/validate_scaling.py"
 python3 "$HERE_SIM/simulate_build_matrix.py" --check
 python3 "$HERE_SIM/audit_concept.py"
-if [[ -f "$ROOT/plugins/AdaptiveDifficultyGUI-${VERSION}.jar" ]] || [[ -f "$ROOT/mods/LegacyMechanics-${VERSION}.jar" ]]; then
+if [[ -f "$ROOT/plugins/LegacyMechanicsGUI-${VERSION}.jar" ]] || [[ -f "$ROOT/mods/LegacyMechanics-${VERSION}.jar" ]]; then
   python3 "$HERE_SIM/audit_gui_abi.py"
 else
-  echo "WARN: AdaptiveDifficultyGUI-${VERSION}.jar missing — skip GUI ABI audit" >&2
+  echo "WARN: LegacyMechanicsGUI-${VERSION}.jar missing — skip GUI ABI audit" >&2
 fi

@@ -1,4 +1,4 @@
-# LegacyMechanics concept audit (1.0.48)
+# LegacyMechanics concept audit (2.0.0)
 
 Fail-closed checks against the player's stated balance concept.
 
@@ -57,7 +57,7 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 1.0.48
+- ✅ VERSION 2.0.0
 - ✅ formula revision 37
 - ✅ hpFloorStrength present
 - ✅ T1–T3 god-form floors raised

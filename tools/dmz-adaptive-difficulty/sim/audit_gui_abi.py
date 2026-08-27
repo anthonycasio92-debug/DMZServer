@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit AdaptiveDifficulty Forge jar ABI required by AdaptiveDifficultyGUI reflection.
+"""Audit LegacyMechanics Forge jar ABI required by LegacyMechanicsGUI reflection.
 
 Fail-closed: any missing required class/method/field exits non-zero.
 Optional symbols (gracefully null'd by ForgeBridge) are reported as WARN.
@@ -24,7 +24,9 @@ def latest_jar(directory: Path, prefix: str) -> Path | None:
 FORGE_JAR = latest_jar(ROOT / "mods", "LegacyMechanics")
 if FORGE_JAR is None:
     FORGE_JAR = latest_jar(ROOT / "mods", "AdaptiveDifficulty")
-GUI_JAR = latest_jar(ROOT / "plugins", "AdaptiveDifficultyGUI")
+GUI_JAR = latest_jar(ROOT / "plugins", "LegacyMechanicsGUI")
+if GUI_JAR is None:
+    GUI_JAR = latest_jar(ROOT / "plugins", "AdaptiveDifficultyGUI")
 
 # Required: ensureResolved() hard-fails without these.
 REQUIRED_CLASSES = [
@@ -361,7 +363,7 @@ def main() -> int:
         print(f"FAIL: missing mods/LegacyMechanics-*.jar", file=sys.stderr)
         return 2
     if GUI_JAR is None or not GUI_JAR.is_file():
-        print(f"FAIL: missing plugins/AdaptiveDifficultyGUI-*.jar", file=sys.stderr)
+        print(f"FAIL: missing plugins/LegacyMechanicsGUI-*.jar", file=sys.stderr)
         return 2
     print(f"Forge jar: {FORGE_JAR.name}")
     print(f"GUI jar:   {GUI_JAR.name}")

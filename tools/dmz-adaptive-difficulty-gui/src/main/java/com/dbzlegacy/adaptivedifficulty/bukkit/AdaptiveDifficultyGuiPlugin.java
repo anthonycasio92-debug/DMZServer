@@ -50,7 +50,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                         + " — GUI may call missing Forge APIs.");
             } else if (pluginVer != null && !modVer.equals(pluginVer)) {
                 getLogger().severe("VERSION SKEW: Forge mod=" + modVer + " GUI plugin=" + pluginVer
-                        + " — install matching LegacyMechanics + AdaptiveDifficultyGUI jars (same version).");
+                        + " — install matching LegacyMechanics + LegacyMechanicsGUI jars (same version).");
             } else {
                 getLogger().info("Version handshake OK: " + pluginVer);
             }
