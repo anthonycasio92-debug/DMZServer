@@ -143,19 +143,36 @@ public final class CmiProgressionGui {
 
     private static void openCategory(Player player, String page, String title, Material mat) {
         CMIGui gui = base(player, "&8Legacy Mechanics · Progression", 5);
-        CMIGuiButton info = new CMIGuiButton(4, mat, title);
-        info.lockField();
+        CMIGuiButton header = new CMIGuiButton(4, mat, title);
+        header.lockField();
+        header.addLore(List.of("", "&7Module flags & tips below",
+                "&8Each paper holds part of this page"));
+        gui.addButton(header);
+
         List<String> lore = toAmp(ForgeBridge.progressionLines(player, page));
         if (lore.isEmpty()) {
-            lore = List.of("", "&7Nothing here yet.");
-        } else {
+            lore = List.of("&7Nothing here yet.", "&8Check Flags if modules look empty.");
+        }
+        List<List<String>> parts = GuiLoreChunks.chunk(lore);
+        int placed = 0;
+        for (List<String> part : parts) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed];
+            String partTitle = parts.size() == 1
+                    ? "&fDetails"
+                    : "&fPart &e" + (placed + 1) + "&8/&e" + parts.size();
+            CMIGuiButton chunk = new CMIGuiButton(slot, Material.PAPER, partTitle);
+            chunk.lockField();
             List<String> withBlank = new ArrayList<>();
             withBlank.add("");
-            withBlank.addAll(lore);
-            lore = withBlank;
+            withBlank.addAll(part);
+            chunk.addLore(withBlank);
+            gui.addButton(chunk);
+            placed++;
         }
-        info.addLore(lore);
-        gui.addButton(info);
+
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));

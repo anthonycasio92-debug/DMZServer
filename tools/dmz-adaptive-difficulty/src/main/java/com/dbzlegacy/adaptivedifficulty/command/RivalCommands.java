@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalInstinct;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalPlayerRecord;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalSpectator;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalProgression;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalStore;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalSystem;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
@@ -139,6 +140,20 @@ public final class RivalCommands {
                 .then(Commands.m_82127_("save")
                         .requires(src -> src.m_6761_(2))
                         .executes(ctx -> save(ctx.getSource())))
+                .then(Commands.m_82127_("admin")
+                        .requires(src -> src.m_6761_(2))
+                        .executes(ctx -> adminHelp(ctx.getSource()))
+                        .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
+                        .then(Commands.m_82127_("save").executes(ctx -> save(ctx.getSource())))
+                        .then(Commands.m_82127_("refresh").executes(ctx -> refresh(ctx.getSource())))
+                        .then(Commands.m_82127_("reload").executes(ctx -> refresh(ctx.getSource())))
+                        .then(Commands.m_82127_("status").executes(ctx -> adminStatus(ctx.getSource())))
+                        .then(Commands.m_82127_("open")
+                                .executes(ctx -> gui(ctx.getSource(), "main"))
+                                .then(Commands.m_82129_("page", StringArgumentType.word())
+                                        .executes(ctx -> gui(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "page"))))))
                 .then(Commands.m_82129_("player", StringArgumentType.word())
                         .executes(ctx -> silent(
                                 ctx.getSource(),
@@ -345,14 +360,40 @@ public final class RivalCommands {
 
     private static int refresh(CommandSourceStack source) {
         RivalStore.get().load();
-        source.m_288197_(() -> Component.m_237113_("§aRival store reloaded."), true);
+        RivalProgression.get().load();
+        source.m_288197_(() -> Component.m_237113_("§aRival store + progression reloaded."), true);
         return 1;
     }
 
     private static int save(CommandSourceStack source) {
         RivalStore.get().markDirty();
         RivalStore.get().save();
-        source.m_288197_(() -> Component.m_237113_("§aRival store saved."), true);
+        RivalProgression.get().save();
+        source.m_288197_(() -> Component.m_237113_("§aRival store + progression saved."), true);
+        return 1;
+    }
+
+    private static int adminHelp(CommandSourceStack source) {
+        source.m_288197_(() -> Component.m_237113_(
+                "§6§l/rival admin\n"
+                        + "§e/rival admin save §7— write rivalry-v4 + progression-v4\n"
+                        + "§e/rival admin refresh|reload §7— reload stores from disk\n"
+                        + "§e/rival admin status §7— enabled + path summary\n"
+                        + "§e/rival admin open [page] §7— open rival GUI"
+        ), false);
+        return 1;
+    }
+
+    private static int adminStatus(CommandSourceStack source) {
+        boolean on = DifficultyConfig.get().enableRivalSystem;
+        int players = RivalStore.get().players.size();
+        source.m_288197_(() -> Component.m_237113_(
+                "§6Rival admin status\n"
+                        + "§7enabled §f" + (on ? "ON" : "OFF") + "\n"
+                        + "§7players §f" + players + "\n"
+                        + "§8" + RivalStore.path() + "\n"
+                        + "§8" + RivalProgression.path()
+        ), false);
         return 1;
     }
 

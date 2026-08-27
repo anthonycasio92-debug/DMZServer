@@ -79,20 +79,17 @@ public final class CmiSparGui {
         status.addLore(statusLore(ph));
         gui.addButton(status);
 
-        gui.addButton(pageBtn(10, Material.LIME_CONCRETE, "&aInvite apprentice…", "pick_apprentice",
-                "&7Pick a player to mentor"));
-        gui.addButton(pageBtn(12, Material.LIGHT_BLUE_CONCRETE, "&bAsk mentor…", "pick_mentor",
-                "&7Pick a player to ask as mentor"));
-        gui.addButton(pageBtn(20, Material.BOOK, "&eStats", "stats",
+        // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
+        gui.addButton(pageBtn(19, Material.BOOK, "&eStats", "stats",
                 "&7Your spar stats"));
-        gui.addButton(pageBtn(22, Material.GOLDEN_HELMET, "&fTop", "top",
+        gui.addButton(pageBtn(21, Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7Leaderboard"));
-        gui.addButton(pageBtn(24, Material.EMERALD, "&bMentor", "mentor",
-                "&7Mentor controls"));
+        gui.addButton(pageBtn(23, Material.EMERALD, "&bMentor", "mentor",
+                "&7Invite · ask · accept · remove"));
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
         if (session) {
-            gui.addButton(actionBtn(29, Material.RED_CONCRETE, "&cEnd Session",
+            gui.addButton(actionBtn(31, Material.RED_CONCRETE, "&cEnd Session",
                     "end", "0", "main",
                     List.of("&7End your active spar session")));
         }

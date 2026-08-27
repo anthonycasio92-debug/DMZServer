@@ -13,7 +13,7 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * CMILib inventory GUI — Legacy Mechanics Rival.
- * Pages: main · list · pick_* · stats · challenge · top · season · quests · achievements · hof · journal · title.
+ * Pages: main · list · challenge · progress · pick_* · stats · top · season · quests · achs · hof · journal · title.
  */
 public final class CmiRivalGui {
     private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
@@ -47,17 +47,18 @@ public final class CmiRivalGui {
                         "&bSpectate", "&7Watch their active challenge");
                 case "pick_silent" -> openPicker(player, "silent", "list",
                         "&8Silent Rival", "&7Click for silent rivalry");
-                case "stats", "statistics" -> openLines(player, "stats", "&eRival Stats", Material.BOOK);
+                case "stats", "statistics" -> openLines(player, "stats", "&eRival Stats", Material.BOOK, "main");
                 case "challenge", "challenges" -> openChallenge(player);
-                case "top", "leaderboard" -> openLines(player, "top", "&fRP Top", Material.GOLDEN_HELMET);
-                case "season" -> openLines(player, "season", "&aSeason", Material.CLOCK);
-                case "quests", "quest" -> openLines(player, "quests", "&bQuests", Material.WRITABLE_BOOK);
+                case "top", "leaderboard" -> openLines(player, "top", "&fRP Top", Material.GOLDEN_HELMET, "main");
+                case "progress" -> openProgress(player);
+                case "season" -> openLines(player, "season", "&aSeason", Material.CLOCK, "progress");
+                case "quests", "quest" -> openLines(player, "quests", "&bQuests", Material.WRITABLE_BOOK, "progress");
                 case "achievements", "achs", "ach" ->
-                        openLines(player, "achievements", "&dAchievements", Material.DIAMOND);
-                case "hof", "hall" -> openLines(player, "hof", "&6Hall of Fame", Material.GOLD_BLOCK);
-                case "journal" -> openLines(player, "journal", "&fJournal", Material.MAP);
-                case "title", "titles" -> openLines(player, "title", "&eTitle", Material.NAME_TAG);
-                case "help" -> openLines(player, "help", "&7Help", Material.PAPER);
+                        openLines(player, "achievements", "&dAchievements", Material.DIAMOND, "progress");
+                case "hof", "hall" -> openLines(player, "hof", "&6Hall of Fame", Material.GOLD_BLOCK, "progress");
+                case "journal" -> openLines(player, "journal", "&fJournal", Material.MAP, "progress");
+                case "title", "titles" -> openLines(player, "title", "&eTitle", Material.NAME_TAG, "progress");
+                case "help" -> openLines(player, "help", "&7Help", Material.PAPER, "main");
                 default -> openMain(player);
             }
             return true;
@@ -90,33 +91,18 @@ public final class CmiRivalGui {
         status.addLore(statusLore(ph));
         gui.addButton(status);
 
-        gui.addButton(pageBtn(10, Material.LIME_CONCRETE, "&aDeclare…", "pick_declare",
-                "&7Pick an online player to declare"));
-        gui.addButton(pageBtn(12, Material.GOLDEN_SWORD, "&eSend Challenge…", "pick_challenge",
-                "&7Pick an online rival to challenge"));
+        // Main: Status · List · Challenge · Top · Progress · toggles · Hub
         gui.addButton(pageBtn(19, Material.PLAYER_HEAD, "&6List", "list",
                 "&7Your rivals", "&8Declare · accept · remove"));
-        gui.addButton(pageBtn(20, Material.BOOK, "&eStats", "stats",
-                "&7Career stats", "&8Wins · losses · RP"));
         gui.addButton(pageBtn(21, Material.IRON_SWORD, "&cChallenge", "challenge",
-                "&7Challenge controls", "&8Send · accept · decline"));
-        gui.addButton(pageBtn(22, Material.GOLDEN_HELMET, "&fTop", "top",
+                "&7Send · accept · decline · spectate"));
+        gui.addButton(pageBtn(23, Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7RP leaderboard"));
-        gui.addButton(pageBtn(23, Material.CLOCK, "&aSeason", "season",
-                "&7Season RP"));
-        gui.addButton(pageBtn(24, Material.WRITABLE_BOOK, "&bQuests", "quests",
-                "&7Weekly quests"));
-        gui.addButton(pageBtn(25, Material.DIAMOND, "&dAchs", "achievements",
-                "&7Achievements"));
-        gui.addButton(pageBtn(28, Material.GOLD_BLOCK, "&6HOF", "hof",
-                "&7Hall of Fame"));
-        gui.addButton(pageBtn(29, Material.MAP, "&fJournal", "journal",
-                "&7Battle journal"));
-        gui.addButton(pageBtn(30, Material.NAME_TAG, "&eTitle", "title",
-                "&7Rival title"));
+        gui.addButton(pageBtn(25, Material.WRITABLE_BOOK, "&bProgress", "progress",
+                "&7Season · quests · achs · HOF · journal · title"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "false"));
-        gui.addButton(actionBtn(32,
+        gui.addButton(actionBtn(29,
                 tpOn ? Material.BELL : Material.PAPER,
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 "tpmsg", "toggle", "main",
@@ -128,7 +114,7 @@ public final class CmiRivalGui {
         boolean instinctFeature = "true".equalsIgnoreCase(ph.getOrDefault("instinct_feature", "false"));
         if (instinctFeature) {
             boolean instinctOn = "true".equalsIgnoreCase(ph.getOrDefault("instinct", "false"));
-            gui.addButton(actionBtn(33,
+            gui.addButton(actionBtn(31,
                     instinctOn ? Material.LIME_DYE : Material.GRAY_DYE,
                     instinctOn ? "&aInstinct ON" : "&8Instinct OFF",
                     "instinct", "toggle", "main",
@@ -139,6 +125,29 @@ public final class CmiRivalGui {
         }
 
         gui.addButton(hubBtn(40));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openProgress(Player player) {
+        CMIGui gui = base(player, "&8Legacy Mechanics · Rival Progress", 5);
+        CMIGuiButton info = new CMIGuiButton(4, Material.WRITABLE_BOOK, "&b&lProgress");
+        info.lockField();
+        info.addLore(List.of("", "&7Season · Quests · Achievements",
+                "&7Hall of Fame · Journal · Title",
+                "&8Pick a page below"));
+        gui.addButton(info);
+
+        gui.addButton(pageBtn(19, Material.BOOK, "&eStats", "stats", "&7Career stats"));
+        gui.addButton(pageBtn(20, Material.CLOCK, "&aSeason", "season", "&7Season RP"));
+        gui.addButton(pageBtn(21, Material.WRITABLE_BOOK, "&bQuests", "quests", "&7Weekly quests"));
+        gui.addButton(pageBtn(22, Material.DIAMOND, "&dAchs", "achievements", "&7Achievements"));
+        gui.addButton(pageBtn(23, Material.GOLD_BLOCK, "&6HOF", "hof", "&7Hall of Fame"));
+        gui.addButton(pageBtn(24, Material.MAP, "&fJournal", "journal", "&7Battle journal"));
+        gui.addButton(pageBtn(25, Material.NAME_TAG, "&eTitle", "title", "&7Rival title"));
+
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -292,22 +301,41 @@ public final class CmiRivalGui {
         gui.open();
     }
 
-    private static void openLines(Player player, String page, String title, Material mat) {
+    private static void openLines(Player player, String page, String title, Material mat, String backPage) {
         CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
-        CMIGuiButton info = new CMIGuiButton(4, mat, title);
-        info.lockField();
+        String back = backPage == null || backPage.isBlank() ? "main" : backPage;
         List<String> lore = toAmp(ForgeBridge.rivalLines(player, page));
         if (lore.isEmpty()) {
-            lore = List.of("", "&7Nothing here yet.");
-        } else {
+            lore = List.of("&7Nothing here yet.", "&8Data: config/legacymechanics/");
+        }
+
+        CMIGuiButton header = new CMIGuiButton(4, mat, title);
+        header.lockField();
+        header.addLore(List.of("", "&7Scroll content slots below",
+                "&8Each paper holds part of this page"));
+        gui.addButton(header);
+
+        List<List<String>> parts = GuiLoreChunks.chunk(lore);
+        int placed = 0;
+        for (List<String> part : parts) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed];
+            String partTitle = parts.size() == 1
+                    ? "&fDetails"
+                    : "&fPart &e" + (placed + 1) + "&8/&e" + parts.size();
+            CMIGuiButton chunk = new CMIGuiButton(slot, Material.PAPER, partTitle);
+            chunk.lockField();
             List<String> withBlank = new ArrayList<>();
             withBlank.add("");
-            withBlank.addAll(lore);
-            lore = withBlank;
+            withBlank.addAll(part);
+            chunk.addLore(withBlank);
+            gui.addButton(chunk);
+            placed++;
         }
-        info.addLore(lore);
-        gui.addButton(info);
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", back, "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -330,7 +358,7 @@ public final class CmiRivalGui {
             lore.add("&eChallenge active");
         }
         lore.add("");
-        lore.add("&8Browse pages below · click to declare");
+        lore.add("&8List · Challenge · Top · Progress");
         return lore;
     }
 

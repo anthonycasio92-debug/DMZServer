@@ -18,7 +18,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.server.level.ServerPlayer;
 
-/** In-memory rivalry database persisted to {@code config/legacymechanics/rivalry-v4.json}. */
+/**
+ * In-memory rivalry database persisted to {@code config/legacymechanics/rivalry-v4.json}.
+ * <p>Mod JSON only — no CustomNPCs (CNPC) script writes. Rival progression (seasons/quests)
+ * lives in {@code config/legacymechanics/progression-v4.json} via {@link RivalProgression}.
+ */
 public final class RivalStore {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final RivalStore INSTANCE = new RivalStore();

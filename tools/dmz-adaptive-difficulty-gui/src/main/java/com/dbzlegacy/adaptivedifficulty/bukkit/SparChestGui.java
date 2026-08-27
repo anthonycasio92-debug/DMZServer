@@ -71,20 +71,17 @@ public final class SparChestGui implements Listener {
         }
 
         put(holder, inv, 4, item(Material.NETHER_STAR, "&f&lSparring", statusLore(ph)));
-        put(holder, inv, 10, pageBtn(Material.LIME_CONCRETE, "&aInvite apprentice…",
-                "&7Pick a player to mentor"), SlotAction.page("pick_apprentice"));
-        put(holder, inv, 12, pageBtn(Material.LIGHT_BLUE_CONCRETE, "&bAsk mentor…",
-                "&7Pick a player to ask as mentor"), SlotAction.page("pick_mentor"));
-        put(holder, inv, 20, pageBtn(Material.BOOK, "&eStats", "&7Your spar stats"),
+        // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
+        put(holder, inv, 19, pageBtn(Material.BOOK, "&eStats", "&7Your spar stats"),
                 SlotAction.page("stats"));
-        put(holder, inv, 22, pageBtn(Material.GOLDEN_HELMET, "&fTop", "&7Leaderboard"),
+        put(holder, inv, 21, pageBtn(Material.GOLDEN_HELMET, "&fTop", "&7Leaderboard"),
                 SlotAction.page("top"));
-        put(holder, inv, 24, pageBtn(Material.EMERALD, "&bMentor", "&7Mentor controls"),
-                SlotAction.page("mentor"));
+        put(holder, inv, 23, pageBtn(Material.EMERALD, "&bMentor",
+                "&7Invite · ask · accept · remove"), SlotAction.page("mentor"));
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
         if (session) {
-            put(holder, inv, 29, tipBtn(Material.RED_CONCRETE, "&cEnd Session",
+            put(holder, inv, 31, tipBtn(Material.RED_CONCRETE, "&cEnd Session",
                     List.of("&7End your active spar session")),
                     SlotAction.act("end", "0", "main"));
         }

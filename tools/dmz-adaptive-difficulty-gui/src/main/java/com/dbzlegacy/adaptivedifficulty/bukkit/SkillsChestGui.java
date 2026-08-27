@@ -19,7 +19,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 /** Bukkit chest GUI fallback — Legacy Mechanics Skills. */
 public final class SkillsChestGui implements Listener {
-    private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
     private static final Material ACCENT = Material.GRAY_STAINED_GLASS_PANE;
 
     private final AdaptiveDifficultyGuiPlugin plugin;
@@ -42,12 +41,13 @@ public final class SkillsChestGui implements Listener {
     private Inventory pageInv(Player player, String page, String title, Material mat) {
         Map<String, String> ph = ForgeBridge.skillsPlaceholders(player);
         boolean skillCheckUi = ForgeBridge.inSkillCheckSession(player);
+        boolean staffAdmin = ForgeBridge.isStaff(player) && !skillCheckUi;
         Holder holder = new Holder(page);
-        Inventory inv = Bukkit.createInventory(holder, 45, color(skillCheckUi
+        Inventory inv = Bukkit.createInventory(holder, 54, color(skillCheckUi
                 ? "&8Legacy Mechanics · Skill Check"
-                : "&8Legacy Mechanics · Skills"));
+                : staffAdmin ? "&8Legacy Mechanics · Skills (Admin)" : "&8Legacy Mechanics · Skills"));
         holder.bind(inv);
-        frame(inv, 45);
+        frameOnly(inv, 54);
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
@@ -55,28 +55,85 @@ public final class SkillsChestGui implements Listener {
             put(holder, inv, 4, item(mat,
                     !bridgeOk ? "&c&lUNAVAILABLE" : "&c&lSKILLS DISABLED",
                     unavailableLore(bridgeOk)));
-            put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
-            put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+            put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
+            put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
             return inv;
         }
 
-        List<String> lore = toAmp(ForgeBridge.skillsLines(player, page));
-        put(holder, inv, 4, item(mat,
-                skillCheckUi ? title + " Skill Check" : title + " Skills",
-                prependBlank(lore.isEmpty() ? List.of("&7Nothing here yet.") : lore)));
-        put(holder, inv, 19, pageBtn(Material.ENCHANTED_BOOK, "&eCore", "&7Core skill unlocks"),
-                SlotAction.page("core"));
-        put(holder, inv, 21, pageBtn(Material.DIAMOND, "&bAdvanced", "&7DMZ 2.1 skills"),
-                SlotAction.page("advanced"));
-        put(holder, inv, 23, pageBtn(Material.AMETHYST_SHARD, "&dSaga", "&7Saga unlocks"),
-                SlotAction.page("saga"));
-        put(holder, inv, 36, hubBtn(), SlotAction.cmd("lm"));
-        if (ForgeBridge.isStaff(player) && !ForgeBridge.inSkillCheckSession(player)) {
-            put(holder, inv, 40, tipBtn(Material.EXPERIENCE_BOTTLE, "&dProgression",
-                    List.of("&7Back to progression")), SlotAction.cmd("progression"));
+        List<String> raw = toAmp(ForgeBridge.skillsLines(player, page));
+        if ("help".equals(page)) {
+            put(holder, inv, 4, item(mat, title, prependBlank(raw.isEmpty()
+                    ? List.of("&7Use Core · Advanced · Saga tabs.") : raw)));
+        } else {
+            GuiLoreChunks.SkillPage split = GuiLoreChunks.splitSkillsPage(raw);
+            List<String> headerLore = new ArrayList<>();
+            headerLore.add("");
+            headerLore.addAll(split.header.isEmpty()
+                    ? List.of("&7DMZ stats unavailable") : split.header);
+            headerLore.add("");
+            headerLore.add(skillCheckUi ? "&eSkill Check · one item per skill"
+                    : "&8One item per skill below");
+            put(holder, inv, 4, item(mat,
+                    skillCheckUi ? title + " Skill Check"
+                            : staffAdmin ? title + " (Admin)" : title + " Skills",
+                    headerLore));
+
+            int placed = 0;
+            for (List<String> skill : split.skills) {
+                if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                    break;
+                }
+                int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+                String name = GuiLoreChunks.skillDisplayName(skill);
+                Material icon = GuiLoreChunks.skillIcon(name);
+                List<String> lore = new ArrayList<>();
+                lore.add("");
+                lore.addAll(skill);
+                lore.add("");
+                lore.add(skillUnlocked(skill) ? "&aUnlocked" : "&cLocked / in progress");
+                put(holder, inv, slot, item(icon, name, lore));
+            }
+            if (placed == 0) {
+                put(holder, inv, 22, tipBtn(Material.BARRIER, "&cNo skills listed",
+                        List.of("&7Bridge returned no skill rows")));
+            }
         }
-        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+
+        put(holder, inv, 45, pageBtn(Material.ENCHANTED_BOOK, "&eCore", "&7Core skill unlocks"),
+                SlotAction.page("core"));
+        put(holder, inv, 46, pageBtn(Material.DIAMOND, "&bAdvanced", "&7DMZ advanced skills"),
+                SlotAction.page("advanced"));
+        put(holder, inv, 47, pageBtn(Material.AMETHYST_SHARD, "&dSaga", "&7Saga unlocks"),
+                SlotAction.page("saga"));
+        put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
+        if (staffAdmin) {
+            put(holder, inv, 51, tipBtn(Material.EXPERIENCE_BOTTLE, "&dProgression",
+                    List.of("&7Back to progression")), SlotAction.cmd("lm do open progression"));
+        }
+        put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
         return inv;
+    }
+
+    private static boolean skillUnlocked(List<String> skillLore) {
+        if (skillLore == null || skillLore.isEmpty()) {
+            return false;
+        }
+        String first = skillLore.get(0);
+        if (first.contains("MAX")) {
+            return true;
+        }
+        String plain = first.replace('§', '&');
+        int slash = plain.lastIndexOf('/');
+        if (slash > 0) {
+            try {
+                String before = plain.substring(Math.max(0, slash - 4), slash).replaceAll("[^0-9]", "");
+                if (!before.isEmpty() && Integer.parseInt(before) > 0) {
+                    return true;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return false;
     }
 
     private static List<String> unavailableLore(boolean bridgeOk) {
@@ -104,10 +161,12 @@ public final class SkillsChestGui implements Listener {
         return out;
     }
 
-    private static void frame(Inventory inv, int size) {
+    private static void frameOnly(Inventory inv, int size) {
         for (int i = 0; i < size; i++) {
             boolean edge = i < 9 || i >= size - 9 || i % 9 == 0 || i % 9 == 8;
-            inv.setItem(i, item(edge ? ACCENT : FILL, " ", List.of()));
+            if (edge) {
+                inv.setItem(i, item(ACCENT, " ", List.of()));
+            }
         }
     }
 
@@ -143,20 +202,7 @@ public final class SkillsChestGui implements Listener {
                 player.closeInventory();
                 player.performCommand(cmd);
             });
-            return;
         }
-        if (slotAction.action == null || slotAction.action.isBlank()) {
-            return;
-        }
-        final String ret = slotAction.returnPage == null || slotAction.returnPage.isBlank()
-                ? "core" : slotAction.returnPage;
-        final String cmd = "skills do " + slotAction.action
-                + (slotAction.arg == null || slotAction.arg.isBlank() ? " 0" : " " + slotAction.arg)
-                + " " + ret;
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            player.closeInventory();
-            player.performCommand(cmd);
-        });
     }
 
     @EventHandler
@@ -219,37 +265,26 @@ public final class SkillsChestGui implements Listener {
     }
 
     private static final class SlotAction {
-        final String action;
-        final String arg;
-        final String returnPage;
         final String page;
         final String rawCommand;
         final boolean shouldClose;
 
-        private SlotAction(
-                String action, String arg, String returnPage, String page, String rawCommand, boolean shouldClose) {
-            this.action = action;
-            this.arg = arg;
-            this.returnPage = returnPage;
+        private SlotAction(String page, String rawCommand, boolean shouldClose) {
             this.page = page;
             this.rawCommand = rawCommand;
             this.shouldClose = shouldClose;
         }
 
-        static SlotAction act(String action, String arg, String returnPage) {
-            return new SlotAction(action, arg, returnPage, null, null, false);
-        }
-
         static SlotAction page(String page) {
-            return new SlotAction(null, null, null, page, null, false);
+            return new SlotAction(page, null, false);
         }
 
         static SlotAction cmd(String command) {
-            return new SlotAction(null, null, null, null, command, false);
+            return new SlotAction(null, command, false);
         }
 
         static SlotAction dismiss() {
-            return new SlotAction(null, null, null, null, null, true);
+            return new SlotAction(null, null, true);
         }
     }
 

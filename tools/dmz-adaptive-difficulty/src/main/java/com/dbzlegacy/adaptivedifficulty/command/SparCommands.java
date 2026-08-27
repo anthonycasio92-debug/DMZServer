@@ -98,6 +98,10 @@ public final class SparCommands {
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("admin")
                         .requires(src -> src.m_6761_(2))
+                        .executes(ctx -> sparAdminHelp(ctx.getSource()))
+                        .then(Commands.m_82127_("help").executes(ctx -> sparAdminHelp(ctx.getSource())))
+                        .then(Commands.m_82127_("save").executes(ctx -> save(ctx.getSource())))
+                        .then(Commands.m_82127_("status").executes(ctx -> sparAdminStatus(ctx.getSource())))
                         .then(Commands.m_82127_("mentor")
                                 .then(Commands.m_82127_("resetcd")
                                         .executes(ctx -> resetCd(ctx.getSource(), null))
@@ -238,6 +242,27 @@ public final class SparCommands {
         SparStore.get().markDirty();
         SparStore.get().save();
         source.m_288197_(() -> Component.m_237113_("§aSpar store saved."), true);
+        return 1;
+    }
+
+    private static int sparAdminHelp(CommandSourceStack source) {
+        source.m_288197_(() -> Component.m_237113_(
+                "§6§l/spar admin\n"
+                        + "§e/spar admin save §7— write sparring.json\n"
+                        + "§e/spar admin status §7— enabled + path\n"
+                        + "§e/spar admin mentor resetcd [player] §7— clear mentor cooldown"
+        ), false);
+        return 1;
+    }
+
+    private static int sparAdminStatus(CommandSourceStack source) {
+        boolean on = DifficultyConfig.get().enableSparringSystem;
+        source.m_288197_(() -> Component.m_237113_(
+                "§6Spar admin status\n"
+                        + "§7enabled §f" + (on ? "ON" : "OFF") + "\n"
+                        + "§7bonds §f" + SparStore.get().bondsByPlayer.size() + "\n"
+                        + "§8" + SparStore.path()
+        ), false);
         return 1;
     }
 

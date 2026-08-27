@@ -21,6 +21,7 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * Seasons, weekly quests, achievements, Hall of Fame, journal, titles.
  * Persisted to {@code config/legacymechanics/progression-v4.json}.
+ * <p>Mod JSON only — no CustomNPCs (CNPC) script writes. Rival links stay in rivalry-v4.json.
  */
 public final class RivalProgression {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -91,6 +92,9 @@ public final class RivalProgression {
 
     public List<String> seasonLines(ServerPlayer player) {
         ensureSeason();
+        if (player == null) {
+            return List.of("§cPlayers only.");
+        }
         List<String> lines = new ArrayList<>();
         Season s = data.season;
         lines.add("§6§lRival Season §8— §f" + s.name + " §8(#" + s.id + ")");
@@ -115,7 +119,14 @@ public final class RivalProgression {
     }
 
     public List<String> questLines(ServerPlayer player) {
+        if (player == null) {
+            return List.of("§cPlayers only.");
+        }
         PlayerQuests q = ensureQuests(player.m_20148_().toString());
+        if (q.list == null || q.list.isEmpty()) {
+            q.list = defaultQuests();
+            markDirty();
+        }
         List<String> lines = new ArrayList<>();
         lines.add("§6§lWeekly Rival Quests");
         for (QuestItem item : q.list) {

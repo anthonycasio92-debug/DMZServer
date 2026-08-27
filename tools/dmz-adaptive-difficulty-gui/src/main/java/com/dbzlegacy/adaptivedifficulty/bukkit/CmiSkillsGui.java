@@ -12,10 +12,9 @@ import org.bukkit.entity.Player;
 
 /**
  * CMILib inventory GUI — Legacy Mechanics Skills / Skill Check.
- * Pages: core · advanced · saga.
+ * Pages: core · advanced · saga. One item per skill in content slots.
  */
 public final class CmiSkillsGui {
-    private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
     private static final Material ACCENT = Material.GRAY_STAINED_GLASS_PANE;
 
     private CmiSkillsGui() {}
@@ -46,54 +45,129 @@ public final class CmiSkillsGui {
     private static void openPage(Player player, String page, String title, Material mat) {
         Map<String, String> ph = ForgeBridge.skillsPlaceholders(player);
         boolean skillCheckUi = ForgeBridge.inSkillCheckSession(player);
+        boolean staffAdmin = ForgeBridge.isStaff(player) && !skillCheckUi;
         String windowTitle = skillCheckUi
                 ? "&8Legacy Mechanics · Skill Check"
-                : "&8Legacy Mechanics · Skills";
-        CMIGui gui = base(player, windowTitle, 5);
+                : staffAdmin ? "&8Legacy Mechanics · Skills (Admin)" : "&8Legacy Mechanics · Skills";
+        CMIGui gui = base(player, windowTitle, 6);
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
         String statusName = !bridgeOk ? "&c&lUNAVAILABLE"
                 : !systemOn ? "&c&lSKILLS DISABLED"
-                : skillCheckUi ? title + " Skill Check" : title + " Skills";
+                : skillCheckUi ? title + " Skill Check"
+                : staffAdmin ? title + " (Admin)" : title + " Skills";
         CMIGuiButton status = new CMIGuiButton(4, mat, statusName);
         status.lockField();
         if (!bridgeOk || !systemOn) {
             status.addLore(unavailableLore(bridgeOk));
             gui.addButton(status);
-            gui.addButton(hubBtn(40));
-            gui.addButton(closeBtn(44));
-            fillEmpty(gui, 5);
+            gui.addButton(hubBtn(49));
+            gui.addButton(closeBtn(53));
+            fillFrameOnly(gui, 6);
             gui.open();
             return;
         }
-        List<String> lore = toAmp(ForgeBridge.skillsLines(player, page));
-        if (lore.isEmpty()) {
-            lore = List.of("", "&7Nothing here yet.");
+
+        List<String> raw = toAmp(ForgeBridge.skillsLines(player, page));
+        if ("help".equals(page)) {
+            status.addLore(prependBlank(raw.isEmpty()
+                    ? List.of("&7Use Core · Advanced · Saga tabs.")
+                    : raw));
+            gui.addButton(status);
         } else {
-            List<String> withBlank = new ArrayList<>();
-            withBlank.add("");
-            withBlank.addAll(lore);
-            lore = withBlank;
+            GuiLoreChunks.SkillPage split = GuiLoreChunks.splitSkillsPage(raw);
+            List<String> headerLore = new ArrayList<>();
+            headerLore.add("");
+            headerLore.addAll(split.header.isEmpty()
+                    ? List.of("&7DMZ stats unavailable")
+                    : split.header);
+            headerLore.add("");
+            headerLore.add(skillCheckUi ? "&eSkill Check · one item per skill"
+                    : "&8One item per skill below");
+            status.addLore(headerLore);
+            gui.addButton(status);
+
+            int placed = 0;
+            for (List<String> skill : split.skills) {
+                if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                    break;
+                }
+                int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+                String name = GuiLoreChunks.skillDisplayName(skill);
+                Material icon = GuiLoreChunks.skillIcon(name);
+                CMIGuiButton btn = new CMIGuiButton(slot, icon, name);
+                btn.lockField();
+                List<String> lore = new ArrayList<>();
+                lore.add("");
+                for (String line : skill) {
+                    lore.add(line);
+                }
+                boolean unlocked = skillUnlocked(skill);
+                lore.add("");
+                lore.add(unlocked ? "&aUnlocked" : "&cLocked / in progress");
+                btn.addLore(lore);
+                gui.addButton(btn);
+            }
+            if (placed == 0) {
+                CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&cNo skills listed");
+                empty.lockField();
+                empty.addLore(List.of("", "&7Bridge returned no skill rows"));
+                gui.addButton(empty);
+            }
         }
-        status.addLore(lore);
-        gui.addButton(status);
 
         String pageCmd = skillCheckUi ? "skillcheck" : "skills";
-        gui.addButton(pageBtn(19, Material.ENCHANTED_BOOK, "&eCore", pageCmd, "core",
+        gui.addButton(pageBtn(45, Material.ENCHANTED_BOOK, "&eCore", pageCmd, "core",
                 "&7Core skill unlocks"));
-        gui.addButton(pageBtn(21, Material.DIAMOND, "&bAdvanced", pageCmd, "advanced",
-                "&7DMZ 2.1 skills"));
-        gui.addButton(pageBtn(23, Material.AMETHYST_SHARD, "&dSaga", pageCmd, "saga",
+        gui.addButton(pageBtn(46, Material.DIAMOND, "&bAdvanced", pageCmd, "advanced",
+                "&7DMZ advanced skills"));
+        gui.addButton(pageBtn(47, Material.AMETHYST_SHARD, "&dSaga", pageCmd, "saga",
                 "&7Saga unlocks"));
 
-        gui.addButton(hubBtn(36));
-        if (ForgeBridge.isStaff(player) && !ForgeBridge.inSkillCheckSession(player)) {
-            gui.addButton(progBtn(40));
+        gui.addButton(hubBtn(49));
+        if (staffAdmin) {
+            gui.addButton(progBtn(51));
         }
-        gui.addButton(closeBtn(44));
-        fillEmpty(gui, 5);
+        gui.addButton(closeBtn(53));
+        fillFrameOnly(gui, 6);
         gui.open();
+    }
+
+    private static boolean skillUnlocked(List<String> skillLore) {
+        if (skillLore == null || skillLore.isEmpty()) {
+            return false;
+        }
+        String first = skillLore.get(0);
+        if (first.contains("MAX")) {
+            return true;
+        }
+        // level X/Y with X>0
+        String plain = first.replace('§', '&');
+        int idx = plain.lastIndexOf('/');
+        if (idx > 0) {
+            try {
+                int slash = plain.lastIndexOf('/');
+                int start = slash;
+                while (start > 0 && Character.isDigit(plain.charAt(start - 1))) {
+                    start--;
+                }
+                // find digits before /
+                String before = plain.substring(Math.max(0, slash - 4), slash).replaceAll("[^0-9]", "");
+                if (!before.isEmpty() && Integer.parseInt(before) > 0) {
+                    return true;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return false;
+    }
+
+    private static List<String> prependBlank(List<String> tip) {
+        List<String> out = new ArrayList<>();
+        out.add("");
+        out.addAll(tip);
+        return out;
     }
 
     private static List<String> unavailableLore(boolean bridgeOk) {
@@ -114,7 +188,7 @@ public final class CmiSkillsGui {
         return out;
     }
 
-    private static void fillEmpty(CMIGui gui, int rows) {
+    private static void fillFrameOnly(CMIGui gui, int rows) {
         int size = rows * 9;
         Map<Integer, CMIGuiButton> existing = gui.getButtons();
         for (int i = 0; i < size; i++) {
@@ -122,7 +196,10 @@ public final class CmiSkillsGui {
                 continue;
             }
             boolean edge = i < 9 || i >= size - 9 || i % 9 == 0 || i % 9 == 8;
-            CMIGuiButton pane = new CMIGuiButton(i, edge ? ACCENT : FILL, " ");
+            if (!edge) {
+                continue;
+            }
+            CMIGuiButton pane = new CMIGuiButton(i, ACCENT, " ");
             pane.lockField();
             gui.addButton(pane);
         }
@@ -163,7 +240,7 @@ public final class CmiSkillsGui {
         CMIGuiButton btn = new CMIGuiButton(slot, Material.EXPERIENCE_BOTTLE, "&dProgression");
         btn.lockField();
         btn.addLore(List.of("", "&7Back to progression"));
-        btn.addCommand("progression");
+        btn.addCommand("lm do open progression");
         btn.setCloseInv(true);
         return btn;
     }

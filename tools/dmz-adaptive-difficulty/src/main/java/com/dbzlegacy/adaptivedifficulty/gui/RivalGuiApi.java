@@ -324,12 +324,13 @@ public final class RivalGuiApi {
             case "title", "titles" -> titleLines(player);
             case "help" -> List.of(
                     "§6§l/rival §8— Rival System",
-                    "§7Open GUI to declare · challenge · spectate",
+                    "§7Prefer §e/lm §7→ Rival from the hub",
+                    "§7GUI: List · Challenge · Top · Progress",
                     "§e/rival <player> §7silent rival",
                     "§e/rival declare|accept|decline|remove <player>",
                     "§e/rival challenge send <player> [minutes]",
                     "§e/rival spectate [player]|stop",
-                    "§e/rival season|quests|achievements|hof|journal|title"
+                    "§e/rival admin save|refresh|status (staff)"
             );
             default -> {
                 Map<String, String> ph = placeholders(player);

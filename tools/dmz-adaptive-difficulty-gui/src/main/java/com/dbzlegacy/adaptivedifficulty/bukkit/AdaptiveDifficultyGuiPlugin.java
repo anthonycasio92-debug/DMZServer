@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.bukkit;
 
+import java.util.Locale;
 import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -645,6 +646,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
 
     private boolean handleHub(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
+            if (args.length > 0 && "admin".equalsIgnoreCase(args[0])) {
+                return handleLmAdmin(sender, args);
+            }
             sender.sendMessage("Players only.");
             return true;
         }
@@ -657,10 +661,17 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return true;
         }
         String sub = args[0].toLowerCase();
+        if ("admin".equals(sub)) {
+            return handleLmAdmin(sender, args);
+        }
         if ("do".equals(sub)) {
             String action = args.length > 1 ? args[1] : "";
             String arg = args.length > 2 ? args[2] : "";
             String returnPage = args.length > 3 ? args[3] : null;
+            if ("open".equalsIgnoreCase(action)) {
+                openSystemFromHub(player, arg);
+                return true;
+            }
             String reopen;
             if ("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action)) {
                 reopen = arg == null || arg.isBlank() ? "main" : arg;
@@ -687,6 +698,137 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         }
         forwardToForge(player, "lm", args);
         return true;
+    }
+
+    /**
+     * Open a system inventory from the hub without {@code performCommand} to bare
+     * {@code /difficulty}/{@code /rival}/… (keeps guide path on {@code /lm}).
+     */
+    public void openSystemFromHub(Player player, String system) {
+        if (player == null) {
+            return;
+        }
+        String s = system == null ? "" : system.toLowerCase(Locale.ROOT).trim();
+        switch (s) {
+            case "difficulty", "diff", "ad" -> openMenuRespectingConfig(player, "main");
+            case "rival", "rivals", "rivalry" -> openRivalRespectingConfig(player, "main");
+            case "spar", "sparring" -> openSparRespectingConfig(player, "main");
+            case "skillcheck", "skill_check" -> {
+                if (!ForgeBridge.hasSkillCheck(player) && !ForgeBridge.isStaff(player)) {
+                    player.sendMessage("§cSkill Check requires donator access.");
+                    openHubInventory(player, "main");
+                    return;
+                }
+                ForgeBridge.markSkillCheckSession(player);
+                openSkillsRespectingConfig(player, "core");
+            }
+            case "skills", "skill" -> {
+                if (!ForgeBridge.isStaff(player)) {
+                    player.sendMessage("§cStaff only. Use Skill Check if you have access.");
+                    openHubInventory(player, "main");
+                    return;
+                }
+                openSkillsRespectingConfig(player, "core");
+            }
+            case "prestige" -> {
+                if (!ForgeBridge.isStaff(player)) {
+                    player.sendMessage("§cStaff only.");
+                    openHubInventory(player, "main");
+                    return;
+                }
+                openPrestigeRespectingConfig(player, "main");
+            }
+            case "progression", "prog" -> {
+                if (!ForgeBridge.isStaff(player)) {
+                    player.sendMessage("§cStaff only.");
+                    openHubInventory(player, "main");
+                    return;
+                }
+                openProgressionRespectingConfig(player, "main");
+            }
+            case "admin" -> {
+                if (!ForgeBridge.isStaff(player)) {
+                    player.sendMessage("§cStaff only.");
+                    return;
+                }
+                sendLmAdminHelp(player);
+            }
+            case "logs", "syslog" -> {
+                if (!ForgeBridge.isStaff(player)) {
+                    player.sendMessage("§cStaff only.");
+                    return;
+                }
+                openHubInventory(player, "logs");
+            }
+            case "help" -> openHubInventory(player, "help");
+            default -> {
+                player.sendMessage("§cUnknown system: " + s
+                        + " §8(difficulty|rival|spar|skillcheck|prestige|progression)");
+                openHubInventory(player, "main");
+            }
+        }
+    }
+
+    private boolean handleLmAdmin(CommandSender sender, String[] args) {
+        boolean staff = sender instanceof Player p
+                ? ForgeBridge.isStaff(p)
+                : sender.isOp() || sender.hasPermission(ForgeBridge.adminPermission());
+        if (!staff) {
+            sender.sendMessage("§cStaff only.");
+            return true;
+        }
+        if (args.length < 2 || "help".equalsIgnoreCase(args[1])) {
+            sendLmAdminHelp(sender);
+            return true;
+        }
+        String sub = args[1].toLowerCase(Locale.ROOT);
+        switch (sub) {
+            case "reload" -> {
+                if (ForgeBridge.reloadConfig()) {
+                    sender.sendMessage("§aLegacyMechanics config reloaded.");
+                } else {
+                    String err = ForgeBridge.lastError();
+                    sender.sendMessage("§cReload failed" + (err == null ? "." : ": " + err));
+                }
+            }
+            case "syslog" -> {
+                String mode = args.length > 2 ? args[2].toLowerCase(Locale.ROOT) : "status";
+                if (sender instanceof Player player) {
+                    String msg = ForgeBridge.hubHandleDo(player, "syslog", mode, "logs");
+                    sender.sendMessage(msg == null || msg.isBlank() ? "§7Done." : msg);
+                } else {
+                    forwardAdminSyslogConsole(sender, mode);
+                }
+            }
+            case "open" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage("Players only for open.");
+                    return true;
+                }
+                String system = args.length > 2 ? args[2] : "difficulty";
+                openSystemFromHub(player, system);
+            }
+            default -> {
+                sender.sendMessage("§cUnknown: /lm admin " + sub);
+                sendLmAdminHelp(sender);
+            }
+        }
+        return true;
+    }
+
+    private void forwardAdminSyslogConsole(CommandSender sender, String mode) {
+        // Console: reuse difficulty admin syslog via forge forward if possible
+        sender.sendMessage("§7Use in-game §f/lm admin syslog " + mode
+                + " §7or §f/difficulty admin syslog " + mode);
+    }
+
+    private static void sendLmAdminHelp(CommandSender sender) {
+        sender.sendMessage("§6§l/lm admin §8— Legacy Mechanics");
+        sender.sendMessage("§e/lm admin help §7— this list");
+        sender.sendMessage("§e/lm admin reload §7— reload config");
+        sender.sendMessage("§e/lm admin syslog on|off|status|flush");
+        sender.sendMessage("§e/lm admin open <difficulty|rival|spar|progression|prestige|skills>");
+        sender.sendMessage("§8Also: /difficulty admin · /rival admin · /spar admin · /progression admin");
     }
 
     private boolean handleProgression(CommandSender sender, String[] args) {
@@ -908,7 +1050,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         // GUI pages (only when no extra forge args — e.g. /rival challenge send X forwards)
         if (args.length == 1 && switch (sub) {
             case "list", "stats", "top", "season", "quests", "achievements", "hof",
-                 "journal", "title", "titles", "challenge", "help",
+                 "journal", "title", "titles", "challenge", "help", "progress",
                  "pick_declare", "pick_accept", "pick_decline", "pick_remove", "pick_challenge",
                  "pick_spectate", "pick_silent" -> true;
             default -> false;
@@ -936,7 +1078,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         return switch (sub.toLowerCase()) {
             case "declare", "accept", "decline", "deny", "remove", "silent",
                  "challenge", "spectate", "tpmsg", "instinct",
-                 "refresh", "save" -> true;
+                 "refresh", "save", "admin" -> true;
             default -> false;
         };
     }

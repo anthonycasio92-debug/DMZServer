@@ -13,7 +13,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** Mentor bonds + sparring leaderboard persistence. */
+/**
+ * Mentor bonds + sparring leaderboard persistence at {@code config/legacymechanics/sparring.json}.
+ * <p>Mod JSON only — no CustomNPCs (CNPC) script writes.
+ */
 public final class SparStore {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final SparStore INSTANCE = new SparStore();

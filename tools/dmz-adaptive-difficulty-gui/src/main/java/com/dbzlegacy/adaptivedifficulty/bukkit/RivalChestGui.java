@@ -46,17 +46,18 @@ public final class RivalChestGui implements Listener {
                     "&bSpectate", "&7Watch their active challenge");
             case "pick_silent" -> picker(player, "silent", "list",
                     "&8Silent Rival", "&7Click for silent rivalry");
-            case "stats", "statistics" -> lines(player, "stats", "&eRival Stats", Material.BOOK);
+            case "stats", "statistics" -> lines(player, "stats", "&eRival Stats", Material.BOOK, "main");
             case "challenge", "challenges" -> challenge(player);
-            case "top", "leaderboard" -> lines(player, "top", "&fRP Top", Material.GOLDEN_HELMET);
-            case "season" -> lines(player, "season", "&aSeason", Material.CLOCK);
-            case "quests", "quest" -> lines(player, "quests", "&bQuests", Material.WRITABLE_BOOK);
+            case "top", "leaderboard" -> lines(player, "top", "&fRP Top", Material.GOLDEN_HELMET, "main");
+            case "progress" -> progress(player);
+            case "season" -> lines(player, "season", "&aSeason", Material.CLOCK, "progress");
+            case "quests", "quest" -> lines(player, "quests", "&bQuests", Material.WRITABLE_BOOK, "progress");
             case "achievements", "achs", "ach" ->
-                    lines(player, "achievements", "&dAchievements", Material.DIAMOND);
-            case "hof", "hall" -> lines(player, "hof", "&6Hall of Fame", Material.GOLD_BLOCK);
-            case "journal" -> lines(player, "journal", "&fJournal", Material.MAP);
-            case "title", "titles" -> lines(player, "title", "&eTitle", Material.NAME_TAG);
-            case "help" -> lines(player, "help", "&7Help", Material.PAPER);
+                    lines(player, "achievements", "&dAchievements", Material.DIAMOND, "progress");
+            case "hof", "hall" -> lines(player, "hof", "&6Hall of Fame", Material.GOLD_BLOCK, "progress");
+            case "journal" -> lines(player, "journal", "&fJournal", Material.MAP, "progress");
+            case "title", "titles" -> lines(player, "title", "&eTitle", Material.NAME_TAG, "progress");
+            case "help" -> lines(player, "help", "&7Help", Material.PAPER, "main");
             default -> main(player);
         };
         player.openInventory(inv);
@@ -81,33 +82,17 @@ public final class RivalChestGui implements Listener {
         }
 
         put(holder, inv, 4, item(Material.NETHER_STAR, "&f&lRival", statusLore(ph)));
-        put(holder, inv, 10, pageBtn(Material.LIME_CONCRETE, "&aDeclare…",
-                "&7Pick an online player to declare"), SlotAction.page("pick_declare"));
-        put(holder, inv, 12, pageBtn(Material.GOLDEN_SWORD, "&eSend Challenge…",
-                "&7Pick an online rival to challenge"), SlotAction.page("pick_challenge"));
         put(holder, inv, 19, pageBtn(Material.PLAYER_HEAD, "&6List",
                 "&7Your rivals", "&8Declare · accept · remove"), SlotAction.page("list"));
-        put(holder, inv, 20, pageBtn(Material.BOOK, "&eStats",
-                "&7Career stats", "&8Wins · losses · RP"), SlotAction.page("stats"));
         put(holder, inv, 21, pageBtn(Material.IRON_SWORD, "&cChallenge",
-                "&7Challenge controls", "&8Send · accept · decline"), SlotAction.page("challenge"));
-        put(holder, inv, 22, pageBtn(Material.GOLDEN_HELMET, "&fTop",
+                "&7Send · accept · decline · spectate"), SlotAction.page("challenge"));
+        put(holder, inv, 23, pageBtn(Material.GOLDEN_HELMET, "&fTop",
                 "&7RP leaderboard"), SlotAction.page("top"));
-        put(holder, inv, 23, pageBtn(Material.CLOCK, "&aSeason",
-                "&7Season RP"), SlotAction.page("season"));
-        put(holder, inv, 24, pageBtn(Material.WRITABLE_BOOK, "&bQuests",
-                "&7Weekly quests"), SlotAction.page("quests"));
-        put(holder, inv, 25, pageBtn(Material.DIAMOND, "&dAchs",
-                "&7Achievements"), SlotAction.page("achievements"));
-        put(holder, inv, 28, pageBtn(Material.GOLD_BLOCK, "&6HOF",
-                "&7Hall of Fame"), SlotAction.page("hof"));
-        put(holder, inv, 29, pageBtn(Material.MAP, "&fJournal",
-                "&7Battle journal"), SlotAction.page("journal"));
-        put(holder, inv, 30, pageBtn(Material.NAME_TAG, "&eTitle",
-                "&7Rival title"), SlotAction.page("title"));
+        put(holder, inv, 25, pageBtn(Material.WRITABLE_BOOK, "&bProgress",
+                "&7Season · quests · achs · HOF · journal · title"), SlotAction.page("progress"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "false"));
-        put(holder, inv, 32, tipBtn(
+        put(holder, inv, 29, tipBtn(
                 tpOn ? Material.BELL : Material.PAPER,
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 List.of(
@@ -118,7 +103,7 @@ public final class RivalChestGui implements Listener {
         boolean instinctFeature = "true".equalsIgnoreCase(ph.getOrDefault("instinct_feature", "false"));
         if (instinctFeature) {
             boolean instinctOn = "true".equalsIgnoreCase(ph.getOrDefault("instinct", "false"));
-            put(holder, inv, 33, tipBtn(
+            put(holder, inv, 31, tipBtn(
                     instinctOn ? Material.LIME_DYE : Material.GRAY_DYE,
                     instinctOn ? "&aInstinct ON" : "&8Instinct OFF",
                     List.of(
@@ -128,6 +113,30 @@ public final class RivalChestGui implements Listener {
         }
 
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory progress(Player player) {
+        Holder holder = new Holder("progress");
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival Progress"));
+        holder.bind(inv);
+        frame(inv, 45);
+        put(holder, inv, 4, item(Material.WRITABLE_BOOK, "&b&lProgress",
+                List.of("", "&7Season · Quests · Achievements",
+                        "&7Hall of Fame · Journal · Title",
+                        "&8Pick a page below")));
+        put(holder, inv, 19, pageBtn(Material.BOOK, "&eStats", "&7Career stats"), SlotAction.page("stats"));
+        put(holder, inv, 20, pageBtn(Material.CLOCK, "&aSeason", "&7Season RP"), SlotAction.page("season"));
+        put(holder, inv, 21, pageBtn(Material.WRITABLE_BOOK, "&bQuests", "&7Weekly quests"),
+                SlotAction.page("quests"));
+        put(holder, inv, 22, pageBtn(Material.DIAMOND, "&dAchs", "&7Achievements"),
+                SlotAction.page("achievements"));
+        put(holder, inv, 23, pageBtn(Material.GOLD_BLOCK, "&6HOF", "&7Hall of Fame"), SlotAction.page("hof"));
+        put(holder, inv, 24, pageBtn(Material.MAP, "&fJournal", "&7Battle journal"),
+                SlotAction.page("journal"));
+        put(holder, inv, 25, pageBtn(Material.NAME_TAG, "&eTitle", "&7Rival title"), SlotAction.page("title"));
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -260,15 +269,32 @@ public final class RivalChestGui implements Listener {
         return inv;
     }
 
-    private Inventory lines(Player player, String page, String title, Material mat) {
+    private Inventory lines(Player player, String page, String title, Material mat, String backPage) {
         Holder holder = new Holder(page);
         Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
         holder.bind(inv);
         frame(inv, 45);
+        String back = backPage == null || backPage.isBlank() ? "main" : backPage;
         List<String> lore = toAmp(ForgeBridge.rivalLines(player, page));
-        put(holder, inv, 4, item(mat, title, prependBlank(
-                lore.isEmpty() ? List.of("&7Nothing here yet.") : lore)));
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        if (lore.isEmpty()) {
+            lore = List.of("&7Nothing here yet.", "&8Data: config/legacymechanics/");
+        }
+        put(holder, inv, 4, item(mat, title, List.of("", "&7Scroll content slots below",
+                "&8Each paper holds part of this page")));
+        List<List<String>> parts = GuiLoreChunks.chunk(lore);
+        int placed = 0;
+        for (List<String> part : parts) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed];
+            String partTitle = parts.size() == 1
+                    ? "&fDetails"
+                    : "&fPart &e" + (placed + 1) + "&8/&e" + parts.size();
+            put(holder, inv, slot, item(Material.PAPER, partTitle, prependBlank(part)));
+            placed++;
+        }
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page(back));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -290,7 +316,7 @@ public final class RivalChestGui implements Listener {
             lore.add("&eChallenge active");
         }
         lore.add("");
-        lore.add("&8Browse pages below · click to declare");
+        lore.add("&8List · Challenge · Top · Progress");
         return lore;
     }
 

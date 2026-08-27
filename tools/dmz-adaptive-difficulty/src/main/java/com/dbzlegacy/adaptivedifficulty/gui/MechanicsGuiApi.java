@@ -13,6 +13,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Public static API for Bukkit companion reflection — Legacy Mechanics hub ({@code /lm}).
+ * Players are guided to {@code /lm} only; hub buttons use {@code lm do open &lt;system&gt;}.
  */
 public final class MechanicsGuiApi {
     private MechanicsGuiApi() {}
@@ -46,15 +47,21 @@ public final class MechanicsGuiApi {
             case "help" -> {
                 List<String> help = new ArrayList<>();
                 help.add("§6§lLegacy Mechanics");
-                help.add("§e/difficulty §7— Unlock tiers & scaling");
-                help.add("§e/rival §7— Rivalry, challenges, progression");
-                help.add("§e/spar §7— Sparring TP & mentor");
-                help.add("§e/lm §7— This hub");
+                help.add("§e/lm §7— Open this hub (use this)");
+                help.add("§7From the hub, click a system:");
+                help.add("§aDifficulty §7— Unlock tiers & scaling");
+                help.add("§6Rival §7— Rivalry, challenges, RP");
+                help.add("§bSpar §7— Sparring TP & mentor");
                 if (skillCheck) {
-                    help.add("§e/skillcheck §7— Skill Check (donator)");
+                    help.add("§eSkill Check §7— Donator skill progress");
                 }
+                help.add("");
+                help.add("§8Direct /difficulty · /rival · /spar still open GUIs");
+                help.add("§8for compatibility, but prefer §f/lm§8.");
                 if (staff) {
-                    help.add("§8Staff: /progression · /prestige · /skills");
+                    help.add("");
+                    help.add("§8Staff: /lm admin · /progression · /prestige · /skills");
+                    help.add("§8Staff: /difficulty admin · /rival admin · /spar admin");
                 }
                 yield help;
             }
@@ -63,15 +70,18 @@ public final class MechanicsGuiApi {
                     yield List.of("§cStaff only.");
                 }
                 boolean on = DifficultyConfig.get().enableSystemTelemetry;
-                yield List.of(
-                        "§7System telemetry §f" + (on ? "ON" : "OFF"),
-                        "§8" + SystemTelemetry.statusLine()
-                );
+                List<String> lines = new ArrayList<>();
+                lines.add("§7System telemetry §f" + (on ? "ON" : "OFF"));
+                lines.add("§8" + SystemTelemetry.statusLine());
+                lines.add("§7Dir §f" + SystemTelemetry.telemetryDir());
+                lines.add("§8Buttons: on · off · flush");
+                lines.add("§8Or: /lm admin syslog on|off|status|flush");
+                yield lines;
             }
             default -> {
                 Map<String, String> ph = placeholders(player);
                 List<String> lore = new ArrayList<>();
-                lore.add("§7Difficulty · Rival · Spar");
+                lore.add("§7Pick a system below");
                 lore.add("§7Rival §f" + onOff(ph.get("rival"))
                         + " §8| §7Spar §f" + onOff(ph.get("spar")));
                 if (staff) {
@@ -88,14 +98,42 @@ public final class MechanicsGuiApi {
 
     /**
      * Dispatch {@code /lm do} actions. Does not reopen GUI — caller reopens.
+     * {@code open} is handled by the Bukkit companion (inventory open); Forge returns a hint.
      */
     public static String handleDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
             return "§cPlayers only.";
         }
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
+        String a = arg == null ? "" : arg.trim();
         if ("page".equals(act) || "refresh".equals(act)) {
             return "";
+        }
+        if ("open".equals(act)) {
+            // Bukkit plugin opens inventories; Forge chat fallback hints the click path.
+            return "";
+        }
+        if ("syslog".equals(act)) {
+            if (!StaffAccess.isStaff(player)) {
+                return "§cStaff only.";
+            }
+            String sub = a.toLowerCase(Locale.ROOT);
+            return switch (sub) {
+                case "on", "true", "enable" -> {
+                    SystemTelemetry.setEnabled(true);
+                    yield "§aSystem telemetry ON";
+                }
+                case "off", "false", "disable" -> {
+                    SystemTelemetry.setEnabled(false);
+                    yield "§eSystem telemetry OFF";
+                }
+                case "flush" -> {
+                    SystemTelemetry.flushAndClose();
+                    yield "§aSyslog flushed.";
+                }
+                case "status", "0", "" -> "§7" + SystemTelemetry.statusLine();
+                default -> "§cUsage: lm do syslog on|off|status|flush";
+            };
         }
         return "§cUnknown hub action: " + act;
     }

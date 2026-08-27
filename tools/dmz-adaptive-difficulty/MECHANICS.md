@@ -1,4 +1,4 @@
-# Legacy Mechanics 2.1.0
+# Legacy Mechanics 2.2.0
 
 Forge mod packaging **Difficulty**, **Rival System 4.7.10**, **Sparring TP 3.2.11**,
 and **natural progression / Fabled bridges** (from CNPC scripts) under one product.
@@ -7,7 +7,7 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` and NBT root
 
 ## Install (test)
 
-1. Build / install `LegacyMechanics-2.1.0.jar` (+ matching `LegacyMechanicsGUI-2.1.0.jar`).
+1. Build / install `LegacyMechanics-2.2.0.jar` (+ matching `LegacyMechanicsGUI-2.2.0.jar`).
 2. Disable CNPC Global Player scripts to avoid double systems — see **[PROGRESSION.md](PROGRESSION.md)**
    for the full disable list (Fabled bridges + natural ports + rival/spar).
 3. Do **not** deploy to live until tested.
@@ -28,26 +28,33 @@ Flags: `enableRivalSystem`, `enableSparringSystem`, `rivalPresenceTp`, `rivalIns
 
 ## Player GUIs (CMI → chest → chat)
 
-Bare player commands open **inventory GUIs** (same as Difficulty). Prefer clicking;
-typed commands are for admin / edge cases.
+**Players should use `/lm` only.** Hub buttons call `lm do open <system>` (plugin opens
+inventories directly). Bare `/difficulty`, `/rival`, `/spar`, `/skillcheck` still open GUIs
+for compatibility, but help text advertises `/lm`.
 
 | Command | Who | GUI |
 |---------|-----|-----|
-| `/lm` | All | Hub — Difficulty · Rival · Spar · Help (+ Skill Check for donators; staff also Progression · Prestige · Skills · Logs) |
-| `/difficulty` | All | Unlock tiers · Titles · personal toggle |
-| `/rival` | All | List / Challenge / pickers |
-| `/spar` | All | Stats · Top · Mentor pickers |
+| `/lm` | All | Hub — Difficulty · Rival · Spar · Help (+ Skill Check / Prestige on main for donators/staff; staff also Progression · Admin · Logs) |
+| `/difficulty` | All | Unlock tiers · Titles · personal toggle (compat; prefer `/lm`) |
+| `/rival` | All | List · Challenge · Top · Progress submenu |
+| `/spar` | All | Stats · Top · Mentor (pickers on Mentor page only) |
 | `/skillcheck` | Donators | Skill Check (core / advanced / saga) — LuckPerms `legacymechanics.skillcheck` |
 | `/progression` | Staff | Category hub · Flags |
 | `/prestige` | Staff | Prestige confirm |
-| `/skills` | Staff | Skill unlock admin browser |
+| `/skills` | Staff | Skill unlock admin browser (per-skill items) |
 
 ## Admin commands (keep typed)
 
+- `/lm admin help|reload|syslog on|off|status|flush|open <system>` — hub staff tree
 - `/difficulty admin …` — whitelist, syslog, inspect GUI, reload, settings
+- `/rival admin save|refresh|reload|status|open [page]` — rivalry-v4 + progression-v4
+- `/spar admin save|status|mentor resetcd [player]` — sparring.json
+- `/progression admin …` / `/prog admin <flag> on|off` — module flags
 - `/progression boost start|end`, `meditation next`, `android` (staff)
-- `/rival refresh|save`, `/spar admin …|save` (staff)
 - `/enddragon`, `/cleardragons`
+
+Data is **mod JSON only** (`config/legacymechanics/rivalry-v4.json`, `progression-v4.json`,
+`sparring.json`) — no CNPC writes.
 
 ### Rival features
 

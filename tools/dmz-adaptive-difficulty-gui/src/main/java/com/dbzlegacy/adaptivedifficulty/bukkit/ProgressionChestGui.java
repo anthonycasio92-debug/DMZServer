@@ -127,9 +127,25 @@ public final class ProgressionChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Progression"));
         holder.bind(inv);
         frame(inv, 45);
+        put(holder, inv, 4, item(mat, title, List.of("", "&7Module flags & tips below",
+                "&8Each paper holds part of this page")));
         List<String> lore = toAmp(ForgeBridge.progressionLines(player, page));
-        put(holder, inv, 4, item(mat, title, prependBlank(
-                lore.isEmpty() ? List.of("&7Nothing here yet.") : lore)));
+        if (lore.isEmpty()) {
+            lore = List.of("&7Nothing here yet.", "&8Check Flags if modules look empty.");
+        }
+        List<List<String>> parts = GuiLoreChunks.chunk(lore);
+        int placed = 0;
+        for (List<String> part : parts) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed];
+            String partTitle = parts.size() == 1
+                    ? "&fDetails"
+                    : "&fPart &e" + (placed + 1) + "&8/&e" + parts.size();
+            put(holder, inv, slot, item(Material.PAPER, partTitle, prependBlank(part)));
+            placed++;
+        }
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
