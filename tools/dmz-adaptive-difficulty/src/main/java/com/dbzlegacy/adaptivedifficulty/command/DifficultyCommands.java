@@ -94,6 +94,8 @@ public final class DifficultyCommands {
                         .then(whitelistRoot("wl"))
                         .then(telemetryRoot("telemetry"))
                         .then(telemetryRoot("tel"))
+                        .then(syslogRoot("syslog"))
+                        .then(syslogRoot("systemlog"))
                         .then(Commands.m_82127_("gamedifficulty")
                                 .then(Commands.m_82129_("level", StringArgumentType.word())
                                         .executes(ctx -> setVanillaDifficultyOrDeny(
@@ -171,6 +173,23 @@ public final class DifficultyCommands {
                         .executes(ctx -> telemetryFlush(ctx.getSource())))
                 .then(Commands.m_82127_("test")
                         .executes(ctx -> telemetryTest(ctx.getSource())));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> syslogRoot(String name) {
+        return Commands.m_82127_(name)
+                .executes(ctx -> syslogStatus(ctx.getSource()))
+                .then(Commands.m_82127_("on")
+                        .executes(ctx -> setSyslogEnabled(ctx.getSource(), true)))
+                .then(Commands.m_82127_("off")
+                        .executes(ctx -> setSyslogEnabled(ctx.getSource(), false)))
+                .then(Commands.m_82127_("toggle")
+                        .executes(ctx -> setSyslogEnabled(
+                                ctx.getSource(),
+                                !com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.isEnabled())))
+                .then(Commands.m_82127_("status")
+                        .executes(ctx -> syslogStatus(ctx.getSource())))
+                .then(Commands.m_82127_("flush")
+                        .executes(ctx -> syslogFlush(ctx.getSource())));
     }
 
     private static int guiDo(CommandSourceStack source, String action, String arg, String page) {
@@ -487,6 +506,40 @@ public final class DifficultyCommands {
         return 1;
     }
 
+    private static int setSyslogEnabled(CommandSourceStack source, boolean on) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.setEnabled(on);
+        source.m_288197_(() -> Component.m_237113_(
+                (on ? "§aSystem telemetry ON" : "§eSystem telemetry OFF")
+                        + "\n§7Logs difficulty/rival/sparring events for all players (rate-limited)."
+                        + "\n§8" + com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.telemetryDir()
+        ), true);
+        return 1;
+    }
+
+    private static int syslogStatus(CommandSourceStack source) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        source.m_288197_(() -> Component.m_237113_(
+                "§6System telemetry\n§7"
+                        + com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.statusLine()
+        ), false);
+        return 1;
+    }
+
+    private static int syslogFlush(CommandSourceStack source) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.flushAndClose();
+        com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.flushAndClose();
+        source.m_288197_(() -> Component.m_237113_("§aFlushed system + balance telemetry writers."), true);
+        return 1;
+    }
+
     private static int whitelistClear(CommandSourceStack source) {
         if (!isStaff(source)) {
             source.m_288197_(() -> Component.m_237113_(
@@ -634,7 +687,7 @@ public final class DifficultyCommands {
 
     private static int adminHelp(CommandSourceStack source) {
         source.m_288197_(() -> Component.m_237113_(
-                "§6Adaptive Difficulty — admin\n"
+                "§6Legacy Mechanics — admin\n"
                         + "§e/difficulty §7— open player GUI (CMI / chest / chat)\n"
                         + "§e/difficulty reset §7— clear active tier (free)\n"
                         + "§e/difficulty do character_reset §7— character-wipe hook (scriptable)\n"
@@ -642,9 +695,11 @@ public final class DifficultyCommands {
                         + "§e/difficulty admin off|on|toggle|status §7— master system switch\n"
                         + "§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist\n"
                         + "§e/difficulty admin telemetry on|off|status|flush|test §7— log whitelist combat hits\n"
+                        + "§e/difficulty admin syslog on|off|status|flush §7— unified system event log\n"
+                        + "§e/lm §7— Legacy Mechanics hub (Difficulty / Rival / Sparring)\n"
                         + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased|characterreset\n"
                         + "§e/difficulty admin set <key> <value>\n"
-                        + "§8Master keys: enabled · whitelistEnabled · balanceTelemetryEnabled\n"
+                        + "§8Master keys: enabled · whitelistEnabled · balanceTelemetryEnabled · enableSystemTelemetry\n"
                         + "§8Tier keys: unlockTier1Level…7 / Cost…7 / tier1statpercent…7 (0.15–2.0)\n"
                         + "§8Counters: enableClassCounters · enableStrongStatCounters\n"
                         + "§8classCounter*Mult · strongStatCounterMult · maxCounterOverlayMult\n"

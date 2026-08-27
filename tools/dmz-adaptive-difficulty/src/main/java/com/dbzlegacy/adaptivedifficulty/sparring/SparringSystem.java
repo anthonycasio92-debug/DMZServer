@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.sparring;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
+import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Status;
@@ -105,6 +106,8 @@ public final class SparringSystem {
             }
             tickMovement(player, rt, now);
             tickClash(player, partner, rt, now);
+            tickReleaseControl(player, partner, rt, now);
+            tickPerfectBanner(player, partner, rt, now);
             tickActivity(player, partner, rt, now);
         }
         SparStore.get().saveIfNeeded(now);
@@ -122,7 +125,7 @@ public final class SparringSystem {
             return;
         }
         boolean ki = DmzRewards.isKiDamage(source);
-        String kiKind = ki ? "basic" : "";
+        String kiKind = ki ? SparCombat.classifyKiType(source) : "";
         recordCombatExchange(attacker, victim, ki, kiKind);
         SparPlayerRuntime vRt = runtime(victim.m_20148_());
         if (vRt.active && vRt.partner != null && vRt.partner.equals(attacker.m_20148_())) {
@@ -260,6 +263,7 @@ public final class SparringSystem {
         bRt.startAt = now;
         DmzRewards.msg(a, "§6[Sparring] §aSession started with §f" + b.m_7755_().getString());
         DmzRewards.msg(b, "§6[Sparring] §aSession started with §f" + a.m_7755_().getString());
+        SystemTelemetry.log("sparring", "spar_start", a, b, null);
     }
 
     public static void endSession(ServerPlayer player, ServerPlayer partner, String reason) {
@@ -287,6 +291,9 @@ public final class SparringSystem {
         }
         updateLeaderboard(player, aRt, duration);
         updateStreak(player, aRt, duration);
+        SystemTelemetry.log("sparring", "spar_end", player, partner,
+                SystemTelemetry.fields("reason", reason == null ? "" : reason,
+                        "tp", (int) aRt.sessionTp, "ms", duration));
         aRt.resetSession();
         aRt.restartCooldownUntil = now + PAIR_RESTART_COOLDOWN_MS;
         SparStore.get().markDirty();
@@ -320,6 +327,9 @@ public final class SparringSystem {
         e.bestPayout = Math.max(e.bestPayout, rt.sessionTp);
         e.totalTimeMs += durationMs;
         e.sessions++;
+        if (rt.sessionPerfect) {
+            e.perfectSessions++;
+        }
         e.highestCombo = Math.max(e.highestCombo, rt.sessionMaxCombo);
     }
 
@@ -388,6 +398,53 @@ public final class SparringSystem {
             }
         } catch (Throwable ignored) {
         }
+    }
+
+    private static void tickReleaseControl(
+            ServerPlayer player,
+            ServerPlayer partner,
+            SparPlayerRuntime rt,
+            long now
+    ) {
+        if (rt == null || !rt.active || partner == null) {
+            return;
+        }
+        SparCombat.TrainingValues values = SparCombat.liveValues(player);
+        if (values == null || values.release < SparCombat.HIGH_RELEASE_THRESHOLD) {
+            return;
+        }
+        boolean recentHit = hasRecentOutgoingHit(rt, partner.m_7755_().getString(), now);
+        boolean clashing = now <= rt.clashUntil;
+        if (!recentHit && !clashing) {
+            return;
+        }
+        if (now < rt.releaseCtrlNext) {
+            return;
+        }
+        rt.releaseCtrlNext = now + 1000L;
+        SparCombat.awardCombatTp(player, partner, rt, SparCombat.RELEASE_CONTROL_TP_PER_SEC, "release");
+    }
+
+    private static void tickPerfectBanner(
+            ServerPlayer player,
+            ServerPlayer partner,
+            SparPlayerRuntime rt,
+            long now
+    ) {
+        if (rt == null || !rt.active || partner == null) {
+            return;
+        }
+        SparCombat.TrainingValues a = SparCombat.liveValues(player);
+        SparCombat.TrainingValues b = SparCombat.liveValues(partner);
+        if (!SparCombat.isPerfect(a, b)) {
+            return;
+        }
+        rt.sessionPerfect = true;
+        if (now < rt.messageNext) {
+            return;
+        }
+        rt.messageNext = now + SparCombat.PERFECT_ACTIONBAR_MS;
+        DmzRewards.msg(player, "§6§lPERFECT TRAINING ACTIVE");
     }
 
     private static void tickActivity(ServerPlayer player, ServerPlayer partner, SparPlayerRuntime rt, long now) {
@@ -522,6 +579,57 @@ public final class SparringSystem {
             lines.add("§7Lifetime TP §a" + DmzRewards.formatWhole(lb.totalTp)
                     + " §8| sessions §f" + lb.sessions
                     + " §8| best combo §f" + lb.highestCombo);
+        }
+        return lines;
+    }
+
+    public static List<String> topLines(String category, int limit) {
+        List<String> lines = new ArrayList<>();
+        String cat = category == null || category.isBlank() ? "tp" : category.trim().toLowerCase();
+        lines.add("§6§lSparring Top §8— §f" + cat);
+        List<Map.Entry<String, SparStore.LeaderboardEntry>> entries =
+                new ArrayList<>(SparStore.get().leaderboard.entrySet());
+        entries.sort((a, b) -> {
+            SparStore.LeaderboardEntry ea = a.getValue();
+            SparStore.LeaderboardEntry eb = b.getValue();
+            double va = switch (cat) {
+                case "sessions", "session" -> ea == null ? 0 : ea.sessions;
+                case "perfect", "perfects" -> ea == null ? 0 : ea.perfectSessions;
+                case "combo" -> ea == null ? 0 : ea.highestCombo;
+                case "time" -> ea == null ? 0 : ea.totalTimeMs;
+                default -> ea == null ? 0 : ea.totalTp;
+            };
+            double vb = switch (cat) {
+                case "sessions", "session" -> eb == null ? 0 : eb.sessions;
+                case "perfect", "perfects" -> eb == null ? 0 : eb.perfectSessions;
+                case "combo" -> eb == null ? 0 : eb.highestCombo;
+                case "time" -> eb == null ? 0 : eb.totalTimeMs;
+                default -> eb == null ? 0 : eb.totalTp;
+            };
+            return Double.compare(vb, va);
+        });
+        int i = 1;
+        for (Map.Entry<String, SparStore.LeaderboardEntry> e : entries) {
+            if (i > Math.max(1, limit)) {
+                break;
+            }
+            SparStore.LeaderboardEntry lb = e.getValue();
+            if (lb == null) {
+                continue;
+            }
+            String value = switch (cat) {
+                case "sessions", "session" -> String.valueOf(lb.sessions);
+                case "perfect", "perfects" -> String.valueOf(lb.perfectSessions);
+                case "combo" -> String.valueOf(lb.highestCombo);
+                case "time" -> (lb.totalTimeMs / 60000L) + "m";
+                default -> DmzRewards.formatWhole(lb.totalTp) + " TP";
+            };
+            lines.add("§e#" + i + " §f" + (lb.name == null || lb.name.isBlank() ? "?" : lb.name)
+                    + " §7" + value);
+            i++;
+        }
+        if (i == 1) {
+            lines.add("§7No sparring data yet.");
         }
         return lines;
     }

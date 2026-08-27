@@ -17,7 +17,7 @@ import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fml.loading.FMLPaths;
 
-/** Mirrors the concept doc admin settings. Saved at {@code config/adaptivedifficulty.json}. */
+/** Mirrors the concept doc admin settings. Saved at {@code config/legacymechanics.json}. */
 public final class DifficultyConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static DifficultyConfig INSTANCE = new DifficultyConfig();
@@ -40,12 +40,20 @@ public final class DifficultyConfig {
     public List<String> whitelist = new ArrayList<>();
     /**
      * When {@code true}, AD mob hits on <b>whitelisted</b> players are appended to
-     * {@code config/adaptivedifficulty/telemetry/hits-YYYY-MM-DD.jsonl} for balance tuning.
+     * {@code config/legacymechanics/telemetry/hits-YYYY-MM-DD.jsonl} for balance tuning.
      * Toggle: {@code /difficulty admin telemetry on|off}.
      */
     public boolean balanceTelemetryEnabled = false;
     /** Max telemetry hit lines per player per second (spam guard). */
     public int balanceTelemetryMaxPerSecond = 8;
+    /**
+     * Unified system event log (difficulty/rival/sparring) under
+     * {@code config/legacymechanics/telemetry/systems-YYYY-MM-DD.jsonl}.
+     * Toggle: {@code /difficulty admin syslog on|off}.
+     */
+    public boolean enableSystemTelemetry = true;
+    /** Max system telemetry lines per player per second. */
+    public int systemTelemetryMaxPerSecond = 20;
 
     public double prestigeMultiplier = 10.0;
     public double levelMultiplier = 1.0;
@@ -431,7 +439,7 @@ public final class DifficultyConfig {
      */
     public Boolean tierCostDivisorMigratedV1 = Boolean.FALSE;
     /**
-     * One-time (1.0.36): stock coin drop 100%→5%, upgrade duo 2%→0.5%.
+     * One-time (1.0.45): stock coin drop 100%→5%, upgrade duo 2%→0.5%.
      * Custom admin chances are kept.
      */
     public Boolean coinDropChanceMigratedV1 = Boolean.FALSE;
@@ -772,8 +780,13 @@ public final class DifficultyConfig {
         }
     }
 
-    /** Current config filename (AdaptiveDifficulty 1.0+). */
+    /** Current config filename (LegacyMechanics 1.0.45+). */
     public static Path path() {
+        return FMLPaths.CONFIGDIR.get().resolve("legacymechanics.json");
+    }
+
+    /** AdaptiveDifficulty 1.0–1.0.44 filename — auto-migrated on first load. */
+    public static Path adaptivePath() {
         return FMLPaths.CONFIGDIR.get().resolve("adaptivedifficulty.json");
     }
 
@@ -785,8 +798,27 @@ public final class DifficultyConfig {
     /** @return false when the JSON exists but could not be parsed. */
     public static boolean load() {
         Path file = path();
+        Path adaptive = adaptivePath();
         Path legacy = legacyPath();
         try {
+            if (!Files.exists(file) && Files.exists(adaptive)) {
+                try {
+                    Files.move(adaptive, file);
+                    AdaptiveDifficultyMod.LOGGER.info(
+                            "[{}] migrated config {} → {}",
+                            AdaptiveDifficultyMod.MOD_ID,
+                            adaptive.getFileName(),
+                            file.getFileName());
+                } catch (Exception moveFail) {
+                    AdaptiveDifficultyMod.LOGGER.warn(
+                            "[{}] could not rename adaptive config; loading {} then re-saving as {}",
+                            AdaptiveDifficultyMod.MOD_ID,
+                            adaptive.getFileName(),
+                            file.getFileName(),
+                            moveFail);
+                    file = adaptive;
+                }
+            }
             if (!Files.exists(file) && Files.exists(legacy)) {
                 try {
                     Files.move(legacy, file);
@@ -1162,7 +1194,7 @@ public final class DifficultyConfig {
         if (cfg.tierCostLevelDivisor < 1.0) {
             cfg.tierCostLevelDivisor = 50_000.0;
         }
-        // 1.0.36: stock kill coins are chance-gated (was always-on + 2% upgrade).
+        // 1.0.45: stock kill coins are chance-gated (was always-on + 2% upgrade).
         if (!Boolean.TRUE.equals(cfg.coinDropChanceMigratedV1)) {
             if (cfg.ancientCoinDropChance <= 0.0 || nearly(cfg.ancientCoinDropChance, 1.0)) {
                 cfg.ancientCoinDropChance = 0.05;

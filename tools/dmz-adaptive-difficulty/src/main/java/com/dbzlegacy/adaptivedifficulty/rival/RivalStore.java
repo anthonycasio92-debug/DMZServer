@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.rival;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.config.ConfigPaths;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.Reader;
@@ -16,9 +17,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.fml.loading.FMLPaths;
 
-/** In-memory rivalry database persisted to {@code config/adaptivedifficulty/rivalry-v4.json}. */
+/** In-memory rivalry database persisted to {@code config/legacymechanics/rivalry-v4.json}. */
 public final class RivalStore {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final RivalStore INSTANCE = new RivalStore();
@@ -36,7 +36,7 @@ public final class RivalStore {
     private RivalStore() {}
 
     public static Path path() {
-        return FMLPaths.CONFIGDIR.get().resolve("adaptivedifficulty").resolve("rivalry-v4.json");
+        return ConfigPaths.rivalryPath();
     }
 
     public void markDirty() {

@@ -69,7 +69,7 @@ public final class DifficultyChatMenu {
     private static void main(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8── §fAdaptive Difficulty §8──"));
+        send(player, Component.m_237113_("§8── §fLegacy Mechanics · Difficulty §8──"));
         if (!DifficultyConfig.isEnabled()) {
             send(player, Component.m_237113_("§c§lSYSTEM DISABLED"));
             if (isStaff(player)) {

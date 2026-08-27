@@ -29,6 +29,8 @@ public final class RivalLink {
     public long lastSurpassAt;
     public long pendingExpireAt;
     public boolean surpassWasBelow;
+    /** Proving Grounds claim shared across the mutual pair. */
+    public ProvingGrounds.Grounds provingGrounds;
 
     public RivalStatus status() {
         if (mutual) {

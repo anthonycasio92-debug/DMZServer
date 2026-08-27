@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.rival;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import java.util.Iterator;
 import java.util.Map;
@@ -40,6 +41,20 @@ public final class RivalChallengeManager {
         }
         String id = activeByPlayer.get(uuid);
         return id == null ? null : activeById.get(id);
+    }
+
+    public RivalChallenge byId(String id) {
+        return id == null ? null : activeById.get(id);
+    }
+
+    public RivalChallenge anyActive() {
+        for (RivalChallenge ch : activeById.values()) {
+            if (ch != null && ch.status != RivalChallenge.Phase.ENDED
+                    && (ch.status == RivalChallenge.Phase.ACTIVE || ch.status == RivalChallenge.Phase.COUNTDOWN)) {
+                return ch;
+            }
+        }
+        return null;
     }
 
     public ChallengeRequest getRequestInvolving(UUID uuid) {
@@ -345,25 +360,36 @@ public final class RivalChallengeManager {
         ServerPlayer pB = server == null || ch.b == null ? null : server.m_6846_().m_11259_(ch.b);
 
         boolean related = areRelated(recA, recB, ch);
+        RivalChallenge.Combat cA = ch.combatOf(ch.a);
+        RivalChallenge.Combat cB = ch.combatOf(ch.b);
+        long duration = Math.max(0L, now - ch.startAt);
 
         if ("draw".equals(reason) || "distance".equals(reason) || winner == null) {
-            float drawTp = RivalConstants.scaleTp(RivalConstants.CH_DRAW_TP);
             if (pA != null) {
-                DmzRewards.awardTp(pA, drawTp, "Rival Draw", true, "§6[Rival Challenge] ");
+                float tp = RivalTpCurve.scale(pA, RivalConstants.CH_DRAW_TP, "burst");
+                DmzRewards.awardTp(pA, tp, "Rival Draw", true, "§6[Rival Challenge] ");
             }
             if (pB != null) {
-                DmzRewards.awardTp(pB, drawTp, "Rival Draw", true, "§6[Rival Challenge] ");
+                float tp = RivalTpCurve.scale(pB, RivalConstants.CH_DRAW_TP, "burst");
+                DmzRewards.awardTp(pB, tp, "Rival Draw", true, "§6[Rival Challenge] ");
             }
             if (related && recA != null && recB != null) {
                 awardDrawRp(recA, recB, ch);
+                ProvingGrounds.touchDraw(pA, pB, recA, recB,
+                        cA.damage, cB.damage, cA.biggestHit, cB.biggestHit, duration);
             }
+            deliverReport(server, ch, null, null, true);
+            RivalProgression.get().onChallengeEnd(pA, pB, ch, true, false);
+            SystemTelemetry.log("rival", "challenge_end", pA, pB,
+                    SystemTelemetry.fields("result", "draw", "reason", reason));
             broadcast(server, "§eDRAW §7— §f" + ch.nameA + " §7vs §f" + ch.nameB
                     + " §8(" + reason + ")");
         } else if ("forfeit".equals(reason) || "logout".equals(reason) || "disconnect".equals(reason)) {
             ServerPlayer winP = winner.equals(ch.a) ? pA : pB;
             ServerPlayer loseP = loser != null && loser.equals(ch.a) ? pA : pB;
-            float winTp = RivalConstants.scaleTp(related ? RivalConstants.CH_WIN_TP : RivalConstants.CH_NON_RIVAL_WIN_TP);
-            float loseTp = RivalConstants.scaleTp(RivalConstants.CH_LOSE_TP);
+            float baseWin = related ? RivalConstants.CH_WIN_TP : RivalConstants.CH_NON_RIVAL_WIN_TP;
+            float winTp = RivalTpCurve.scale(winP, baseWin, "burst");
+            float loseTp = RivalTpCurve.scale(loseP, RivalConstants.CH_LOSE_TP, "burst");
             if (winP != null) {
                 DmzRewards.awardTp(winP, winTp, "Rival Forfeit Win", true, "§6[Rival Challenge] ");
             }
@@ -373,14 +399,25 @@ public final class RivalChallengeManager {
             if (related) {
                 applyWinLoss(recA, recB, ch, winner, loser, false, true);
             }
+            deliverReport(server, ch, winner, loser, false);
+            RivalProgression.get().onChallengeEnd(winP, loseP, ch, false, false);
+            SystemTelemetry.log("rival", "challenge_end", winP, loseP,
+                    SystemTelemetry.fields("result", "forfeit", "reason", reason));
             broadcast(server, "§a" + nameOf(ch, winner) + " §7wins by forfeit vs §c" + nameOf(ch, loser));
         } else {
-            float winTp = RivalConstants.scaleTp(
-                    (related ? RivalConstants.CH_WIN_TP : RivalConstants.CH_NON_RIVAL_WIN_TP)
-                            + (knockout ? RivalConstants.CH_KO_WIN_TP_BONUS : 0));
-            float loseTp = RivalConstants.scaleTp(RivalConstants.CH_LOSE_TP);
+            float baseWin = (related ? RivalConstants.CH_WIN_TP : RivalConstants.CH_NON_RIVAL_WIN_TP)
+                    + (knockout ? RivalConstants.CH_KO_WIN_TP_BONUS : 0);
             ServerPlayer winP = winner.equals(ch.a) ? pA : pB;
             ServerPlayer loseP = loser != null && loser.equals(ch.a) ? pA : pB;
+            RivalLink winLink = null;
+            if (related && recA != null && recB != null) {
+                RivalPlayerRecord winRec = winner.toString().equals(recA.uuid) ? recA : recB;
+                RivalPlayerRecord loseRec = loser.toString().equals(recA.uuid) ? recA : recB;
+                winLink = winRec.rivals.get(loseRec.uuid);
+            }
+            float pgMult = ProvingGrounds.challengeTpMultiplier(winP, winLink);
+            float winTp = RivalTpCurve.scale(winP, baseWin * pgMult, "burst");
+            float loseTp = RivalTpCurve.scale(loseP, RivalConstants.CH_LOSE_TP, "burst");
             if (winP != null) {
                 DmzRewards.awardTp(winP, winTp, knockout ? "Rival KO Win" : "Rival Win", true,
                         "§6[Rival Challenge] ");
@@ -388,14 +425,89 @@ public final class RivalChallengeManager {
             if (loseP != null) {
                 DmzRewards.awardTp(loseP, loseTp, "Rival Loss", true, "§6[Rival Challenge] ");
             }
-            if (related) {
+            if (related && recA != null && recB != null) {
                 applyWinLoss(recA, recB, ch, winner, loser, knockout, false);
+                RivalPlayerRecord winRec = winner.toString().equals(recA.uuid) ? recA : recB;
+                RivalPlayerRecord loseRec = loser.toString().equals(recA.uuid) ? recA : recB;
+                RivalChallenge.Combat wC = ch.combatOf(winner);
+                RivalChallenge.Combat lC = ch.combatOf(loser);
+                ProvingGrounds.processBattle(winP, loseP, winRec, loseRec,
+                        wC.damage, lC.damage, wC.biggestHit, lC.biggestHit, duration);
             }
+            deliverReport(server, ch, winner, loser, false);
+            RivalProgression.get().onChallengeEnd(winP, loseP, ch, false, knockout);
+            SystemTelemetry.log("rival", "challenge_end", winP, loseP,
+                    SystemTelemetry.fields("result", knockout ? "ko" : "win", "reason", reason,
+                            "dmgA", (int) ch.damageA, "dmgB", (int) ch.damageB));
             String tag = knockout ? "KO" : "WIN";
             broadcast(server, "§a" + nameOf(ch, winner) + " §7" + tag + " vs §c" + nameOf(ch, loser)
                     + " §8(" + (int) ch.damageOf(winner) + " / " + (int) ch.damageOf(loser) + ")");
         }
         store.markDirty();
+    }
+
+    private void deliverReport(
+            MinecraftServer server,
+            RivalChallenge ch,
+            UUID winner,
+            UUID loser,
+            boolean draw
+    ) {
+        java.util.List<String> report = buildReport(ch, winner, loser, draw);
+        ServerPlayer pA = server == null || ch.a == null ? null : server.m_6846_().m_11259_(ch.a);
+        ServerPlayer pB = server == null || ch.b == null ? null : server.m_6846_().m_11259_(ch.b);
+        for (String line : report) {
+            if (pA != null) {
+                DmzRewards.msg(pA, line);
+            }
+            if (pB != null) {
+                DmzRewards.msg(pB, line);
+            }
+        }
+        if (!draw) {
+            if (pA != null) {
+                DmzRewards.msg(pA, pA.m_20148_().equals(winner) ? "§a[Rival] Victory!" : "§c[Rival] Defeat!");
+            }
+            if (pB != null) {
+                DmzRewards.msg(pB, pB.m_20148_().equals(winner) ? "§a[Rival] Victory!" : "§c[Rival] Defeat!");
+            }
+        }
+    }
+
+    private static java.util.List<String> buildReport(
+            RivalChallenge ch,
+            UUID winner,
+            UUID loser,
+            boolean draw
+    ) {
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        lines.add("§8--------------------------------");
+        lines.add("§6§l RIVAL BATTLE REPORT");
+        lines.add("§8--------------------------------");
+        if (draw) {
+            lines.add("§8Result  §eDraw");
+        } else {
+            lines.add("§8Winner  §a" + nameOf(ch, winner));
+            lines.add("§8Runner  §c" + nameOf(ch, loser));
+        }
+        long elapsed = Math.max(0L, System.currentTimeMillis() - ch.startAt);
+        lines.add("§8Time    §f" + formatMs(elapsed) + " §8  via  §7" + ch.endReason);
+        for (UUID id : new UUID[]{ch.a, ch.b}) {
+            if (id == null) {
+                continue;
+            }
+            RivalChallenge.Combat combat = ch.combatOf(id);
+            String name = nameOf(ch, id);
+            lines.add(" ");
+            lines.add("§e" + name);
+            lines.add("§8  Damage  §f" + (int) combat.damage
+                    + " §8(Phy " + (int) combat.physical + " / Ki " + (int) combat.ki + ")");
+            lines.add("§8  Hits  §f" + combat.hits
+                    + " §8  Best  §f" + (int) combat.biggestHit
+                    + " §8  Combo  §f" + combat.longestCombo);
+        }
+        lines.add("§8--------------------------------");
+        return lines;
     }
 
     private void applyWinLoss(

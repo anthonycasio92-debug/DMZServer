@@ -12,6 +12,21 @@ public final class RivalConstants {
     public static final double GLOBAL_TP_SCALE = 0.60;
     public static final boolean OFFENSE_ENABLED = false;
 
+    public static final int KILL_TP_BASE = 400;
+    public static final int KILL_TP_PER_TIER = 120;
+    public static final double KILL_TP_MUTUAL_MULT = 1.45;
+    public static final int NEAR_RIVAL_KILL_CAP = 2;
+
+    public static final int UNDERDOG_ENGAGE_TP = 250;
+    public static final long UNDERDOG_ENGAGE_COOLDOWN_MS = 12_000L;
+    public static final int UNDERDOG_WIN_TP = 6500;
+    public static final int UNDERDOG_DEATH_RP = 30;
+
+    public static final double ANTIGANK_RATIO = 0.40;
+    public static final int ANTIGANK_WITNESS_KILL_TP = 350;
+    public static final int ANTIGANK_HIT_TP = 140;
+    public static final long ANTIGANK_HIT_COOLDOWN_MS = 15_000L;
+
     public static final int PRESENCE_TP_ONE_SIDED = 180;
     public static final int PRESENCE_TP_MUTUAL = 280;
     public static final int PRESENCE_TP_NEMESIS = 360;

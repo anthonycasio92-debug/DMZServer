@@ -37,7 +37,12 @@ public final class RivalChallenge {
 
     public static final class Combat {
         public double damage;
+        public double physical;
+        public double ki;
         public int hits;
+        public double biggestHit;
+        public int combo;
+        public int longestCombo;
         public boolean usedKi;
     }
 
@@ -83,8 +88,14 @@ public final class RivalChallenge {
         Combat c = combatOf(attacker);
         c.damage += amount;
         c.hits++;
+        c.biggestHit = Math.max(c.biggestHit, amount);
+        c.combo++;
+        c.longestCombo = Math.max(c.longestCombo, c.combo);
         if (ki) {
             c.usedKi = true;
+            c.ki += amount;
+        } else {
+            c.physical += amount;
         }
         if (attacker.equals(a)) {
             damageA += amount;

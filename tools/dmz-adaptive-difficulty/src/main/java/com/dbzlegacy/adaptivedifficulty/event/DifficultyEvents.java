@@ -10,6 +10,7 @@ import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.evolution.CombatGravity;
 import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
 import com.dbzlegacy.adaptivedifficulty.reward.RewardSystem;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalProgression;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalStore;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
@@ -95,6 +96,7 @@ public final class DifficultyEvents {
         LAST_FORM_KEY.clear();
         RivalStore.get().load();
         SparStore.get().load();
+        RivalProgression.get().load();
     }
 
     @SubscribeEvent
@@ -105,6 +107,13 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
         BalanceTelemetry.flushAndClose();
+        com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.flushAndClose();
+        try {
+            RivalStore.get().save();
+            SparStore.get().save();
+            RivalProgression.get().save();
+        } catch (Throwable ignored) {
+        }
         RivalStore.get().save();
         SparStore.get().save();
     }
@@ -532,7 +541,7 @@ public final class DifficultyEvents {
         if (killerEnt instanceof ServerPlayer killer
                 && dead instanceof LivingEntity
                 && !(dead instanceof Player)) {
-            RivalSystem.markMobKill(killer);
+            RivalSystem.onMobKillNear(killer, (LivingEntity) dead);
         }
     }
 

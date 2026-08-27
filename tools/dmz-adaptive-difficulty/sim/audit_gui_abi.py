@@ -21,7 +21,9 @@ def latest_jar(directory: Path, prefix: str) -> Path | None:
     return matches[-1] if matches else None
 
 
-FORGE_JAR = latest_jar(ROOT / "mods", "AdaptiveDifficulty")
+FORGE_JAR = latest_jar(ROOT / "mods", "LegacyMechanics")
+if FORGE_JAR is None:
+    FORGE_JAR = latest_jar(ROOT / "mods", "AdaptiveDifficulty")
 GUI_JAR = latest_jar(ROOT / "plugins", "AdaptiveDifficultyGUI")
 
 # Required: ensureResolved() hard-fails without these.
@@ -336,7 +338,7 @@ def main() -> int:
     warns: list[str] = []
 
     if FORGE_JAR is None or not FORGE_JAR.is_file():
-        print(f"FAIL: missing mods/AdaptiveDifficulty-*.jar", file=sys.stderr)
+        print(f"FAIL: missing mods/LegacyMechanics-*.jar", file=sys.stderr)
         return 2
     if GUI_JAR is None or not GUI_JAR.is_file():
         print(f"FAIL: missing plugins/AdaptiveDifficultyGUI-*.jar", file=sys.stderr)

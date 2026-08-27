@@ -13,10 +13,27 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 
 /**
- * Facade for Rival System 4.7.10 ported into Adaptive Difficulty.
+ * Facade for Rival System 4.7.10 ported into LegacyMechanics.
  */
 public final class RivalSystem {
     private RivalSystem() {}
+
+    public static void markMobKill(ServerPlayer killer) {
+        if (!DifficultyConfig.get().enableRivalSystem || killer == null) {
+            return;
+        }
+        RivalProximity.markMobKill(killer.m_20148_());
+        RivalFusion.onMobKill(killer);
+    }
+
+    public static void onMobKillNear(ServerPlayer killer, LivingEntity victim) {
+        if (!DifficultyConfig.get().enableRivalSystem || killer == null) {
+            return;
+        }
+        RivalProximity.markMobKill(killer.m_20148_());
+        RivalProximity.handleKillNearRivals(killer, victim);
+        RivalFusion.onMobKill(killer);
+    }
 
     public static void onLogin(ServerPlayer player) {
         if (!DifficultyConfig.get().enableRivalSystem || player == null) {
@@ -33,6 +50,8 @@ public final class RivalSystem {
         RivalChallengeManager.get().cleanupPlayer(id);
         RivalProximity.clearPlayer(id);
         RivalInstinct.clearPlayer(id);
+        RivalSpectator.clear(id);
+        RivalFusion.clear(id);
     }
 
     public static void pulse(MinecraftServer server, int tick) {
@@ -44,17 +63,23 @@ public final class RivalSystem {
         RivalChallengeManager.get().pulse(server, now);
         RivalProximity.pulse(server, now);
         RivalInstinct.pulse(server, now);
+        RivalSpectator.pulse(server, now);
+        RivalFusion.pulse(server, now);
         RivalStore.get().saveIfNeeded(now);
+        RivalProgression.get().saveIfNeeded(now);
     }
 
     public static void onPlayerHurt(ServerPlayer victim, ServerPlayer attacker, DamageSource source) {
-        if (!DifficultyConfig.get().enableRivalSystem || !DifficultyConfig.get().rivalChallenges) {
+        if (!DifficultyConfig.get().enableRivalSystem) {
             return;
         }
         if (victim == null || attacker == null) {
             return;
         }
-        RivalChallengeManager.get().queueHurt(victim, attacker, DmzRewards.isKiDamage(source));
+        if (DifficultyConfig.get().rivalChallenges) {
+            RivalChallengeManager.get().queueHurt(victim, attacker, DmzRewards.isKiDamage(source));
+        }
+        RivalProximity.handleDamagedByRival(victim, attacker);
     }
 
     public static void onDeath(ServerPlayer victim, LivingEntity killerEntity) {
@@ -65,14 +90,8 @@ public final class RivalSystem {
         RivalChallengeManager.get().onDeath(victim, killer);
         if (killer != null) {
             registerNemesisDeath(victim, killer);
+            RivalProximity.handleKillNearRivals(killer, victim);
         }
-    }
-
-    public static void markMobKill(ServerPlayer killer) {
-        if (!DifficultyConfig.get().enableRivalSystem || killer == null) {
-            return;
-        }
-        RivalProximity.markMobKill(killer.m_20148_());
     }
 
     private static void registerNemesisDeath(ServerPlayer victim, ServerPlayer killer) {
@@ -288,6 +307,7 @@ public final class RivalSystem {
             lines.add("§f" + link.name + " §8[" + st.label() + "] §"
                     + tier.color() + tier.name() + " §7RP §f" + (int) link.points
                     + (link.deathLosses > 0 ? " §cDL " + link.deathLosses : ""));
+            lines.addAll(ProvingGrounds.listLines(link));
         }
         return lines;
     }

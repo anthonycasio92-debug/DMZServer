@@ -10,7 +10,7 @@ ADV_KEY="$ROOT/libraries/adventure-key-4.14.0.jar"
 EXAM_API="$ROOT/libraries/examination-api-1.3.0.jar"
 EXAM_STR="$ROOT/libraries/examination-string-1.3.0.jar"
 BUNGEE="$ROOT/libraries/bungeecord-chat-1.20-R0.2.jar"
-VERSION="1.0.36"
+VERSION="1.0.45"
 NAME="AdaptiveDifficultyGUI"
 SRC="$HERE/src/main/java"
 RES="$HERE/src/main/resources"
@@ -43,7 +43,7 @@ echo "Built $JAR"
 jar tf "$JAR"
 
 # Cross-check Forge reflection surface after GUI rebuild.
-if [[ -f "$ROOT/mods/AdaptiveDifficulty-${VERSION}.jar" ]]; then
+if [[ -f "$ROOT/mods/LegacyMechanics-${VERSION}.jar" ]] || [[ -f "$ROOT/mods/AdaptiveDifficulty-${VERSION}.jar" ]]; then
   python3 "$ROOT/tools/dmz-adaptive-difficulty/sim/audit_gui_abi.py"
 else
   echo "WARN: AdaptiveDifficulty-${VERSION}.jar missing — skip GUI ABI audit" >&2

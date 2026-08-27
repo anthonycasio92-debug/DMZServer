@@ -27,10 +27,56 @@ public final class SparCommands {
     @SubscribeEvent
     public void onRegister(RegisterCommandsEvent event) {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.m_82127_("spar")
-                .executes(ctx -> help(ctx.getSource()))
-                .then(Commands.m_82127_("help").executes(ctx -> help(ctx.getSource())))
+                .executes(ctx -> gui(ctx.getSource(), "main"))
+                .then(Commands.m_82127_("gui").executes(ctx -> gui(ctx.getSource(), "main")))
+                .then(Commands.m_82127_("help").executes(ctx -> gui(ctx.getSource(), "help")))
                 .then(Commands.m_82127_("stats").executes(ctx -> stats(ctx.getSource())))
                 .then(Commands.m_82127_("end").executes(ctx -> end(ctx.getSource())))
+                .then(Commands.m_82127_("top")
+                        .executes(ctx -> top(ctx.getSource(), "tp"))
+                        .then(Commands.m_82129_("category", StringArgumentType.word())
+                                .executes(ctx -> top(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "category")))))
+                .then(Commands.m_82127_("do")
+                        .then(Commands.m_82127_("page")
+                                .then(Commands.m_82129_("page", StringArgumentType.word())
+                                        .executes(ctx -> {
+                                            String page = StringArgumentType.getString(ctx, "page");
+                                            if (page.startsWith("top_")) {
+                                                return gui(ctx.getSource(), "top " + page.substring(4));
+                                            }
+                                            return gui(ctx.getSource(), page);
+                                        })))
+                        .then(Commands.m_82127_("end")
+                                .then(Commands.m_82129_("page", StringArgumentType.word())
+                                        .executes(ctx -> {
+                                            end(ctx.getSource());
+                                            return gui(ctx.getSource(),
+                                                    StringArgumentType.getString(ctx, "page"));
+                                        })))
+                        .then(Commands.m_82127_("mentor")
+                                .then(Commands.m_82127_("accept")
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> {
+                                                    mentorAccept(ctx.getSource());
+                                                    return gui(ctx.getSource(),
+                                                            StringArgumentType.getString(ctx, "page"));
+                                                })))
+                                .then(Commands.m_82127_("decline")
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> {
+                                                    mentorDecline(ctx.getSource());
+                                                    return gui(ctx.getSource(),
+                                                            StringArgumentType.getString(ctx, "page"));
+                                                })))
+                                .then(Commands.m_82127_("remove")
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> {
+                                                    mentorRemove(ctx.getSource());
+                                                    return gui(ctx.getSource(),
+                                                            StringArgumentType.getString(ctx, "page"));
+                                                })))))
                 .then(Commands.m_82127_("mentor")
                         .executes(ctx -> mentorStatus(ctx.getSource()))
                         .then(Commands.m_82127_("accept").executes(ctx -> mentorAccept(ctx.getSource())))
@@ -67,17 +113,28 @@ public final class SparCommands {
         AdaptiveDifficultyMod.LOGGER.info("[{}] registered /spar", AdaptiveDifficultyMod.MOD_ID);
     }
 
-    private static int help(CommandSourceStack source) {
+    private static int gui(CommandSourceStack source, String page) {
         ServerPlayer player = playerOrNull(source);
-        if (player == null) {
+        if (player == null || !enabled(player)) {
             return 0;
         }
-        DmzRewards.msg(player, "§6§l/spar §8— Sparring TP");
-        DmzRewards.msg(player, "§e/spar stats|end|help");
-        DmzRewards.msg(player, "§e/spar mentor <player>|accept|decline|remove");
-        DmzRewards.msg(player, "§e/spar apprentice <player>|remove");
-        DmzRewards.msg(player, "§8Spar starts automatically when both players trade hits.");
+        com.dbzlegacy.adaptivedifficulty.gui.SparChatMenu.open(player, page);
         return 1;
+    }
+
+    private static int top(CommandSourceStack source, String category) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        for (String line : SparringSystem.topLines(category, 10)) {
+            DmzRewards.msg(player, line);
+        }
+        return 1;
+    }
+
+    private static int help(CommandSourceStack source) {
+        return gui(source, "help");
     }
 
     private static int stats(CommandSourceStack source) {

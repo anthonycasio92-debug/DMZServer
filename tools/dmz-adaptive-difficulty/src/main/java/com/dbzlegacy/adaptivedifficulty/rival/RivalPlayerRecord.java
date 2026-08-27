@@ -31,6 +31,8 @@ public final class RivalPlayerRecord {
     public int declarationsDeclined;
     public int rivalsRemoved;
     public boolean tpMessages = true;
+    /** Rival Instinct alerts (per-player). */
+    public boolean instinctEnabled = true;
 
     public static RivalPlayerRecord create(String uuid, String name, long now) {
         RivalPlayerRecord r = new RivalPlayerRecord();

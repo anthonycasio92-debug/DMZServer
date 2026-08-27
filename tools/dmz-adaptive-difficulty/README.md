@@ -1,4 +1,4 @@
-# AdaptiveDifficulty (v1.0.44)
+# LegacyMechanics (v1.0.45)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -38,9 +38,9 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.44.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.44.jar` (or matching GUI if available)
-3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
+1. `mods/LegacyMechanics-1.0.45.jar` (remove older AD jars)
+2. `plugins/AdaptiveDifficultyGUI-1.0.45.jar` (or matching GUI if available)
+3. Restart — config at `config/legacymechanics.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
 ## Commands
@@ -87,7 +87,7 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Stock `tierCostLevelDivisor` is **50000** (was 1000) so a DMZ 100k player pays ~15× Gold for T7 instead of a ladder-inflated Emerald pile. Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
-### Economy (1.0.36)
+### Economy (1.0.45)
 Kill coin drops are chance-gated (was always-on):
 - `ancientCoinDropChance` **0.05** (5% any coin)
 - `ancientCoinUpgradeChance` **0.005** (0.5% original + next-higher dual)
@@ -175,7 +175,7 @@ Tuned from whitelist combat telemetry (`hits-2026-08-04.jsonl`):
 - Stretch T4–T6 for tanks (`tankDamageHealthRatio` 0.22→0.28, nudges, live-share)
 - Soft-cap crushing T5–T7 landings at 62/58/48% live bag (event clamp)
 
-- **Balance telemetry (Bukkit owns `/difficulty` on Mohist):** `/difficulty admin telemetry on|off|status|flush|test` — logs AD hits on **whitelisted** players to `config/adaptivedifficulty/telemetry/hits-YYYY-MM-DD.jsonl`. `on` auto-lists the staffer running the command. Use `test` to write a probe line and confirm the folder. Summarize with `sim/summarize_telemetry.py --dir <that folder>`.
+- **Balance telemetry (Bukkit owns `/difficulty` on Mohist):** `/difficulty admin telemetry on|off|status|flush|test` — logs AD hits on **whitelisted** players to `config/legacymechanics/telemetry/hits-YYYY-MM-DD.jsonl`. `on` auto-lists the staffer running the command. Use `test` to write a probe line and confirm the folder. Summarize with `sim/summarize_telemetry.py --dir <that folder>`.
 - **Skills:** Ki Protection leaves mid/high-tier hits load-bearing (DMZ 1%/lvl mitigation); Ki Infusion / Potential Unlock raise pack HP sponge. Melee kits chase earlier and deal painted shock/slam damage so zombies are not toothless vs skeleton ki.
 - Mob damage uses soft-blended STR/SKP/PWR (+ mild ENE) × tier%, then **VIT/RES floors** (`tankDamageHealthRatio` **0.28** / `tankDamageDefenseRatio` 0.45) so VIT dumps and tank class track the same ladder as even builds, then a raised VIT-relative hit cap (ki-protection friendly). Counters (class + top-2 of STR/SKP/RES/VIT/PWR/ENE) ramp with tier%.
 - Tier scale vs player fight stats: T1 21% · T2 42% · T3 65% · T4 90% · T5 135% · T6 160% · T7 200%. Form soft curve stock: `transformScaleWeight` 0.65 · `transformScaleExponent` 0.75.
@@ -185,3 +185,6 @@ Tuned from whitelist combat telemetry (`hits-2026-08-04.jsonl`):
 - Scaled mob HP sponge stock **75%** (`mobHealthScale`, was 115%) with a stronger offense durability floor so glass STR/PWR dumps trade hits. Elite rarity mult stock 1.50×.
 - Old NBT wallet balances migrate into Copper Ancient coins once per login.
 - AI + Enemy Evolution kits deepen with Buy Tier but stay **silent** (no kit nameplate/glow). Only true rarity rolls get cosmetics: Elite (`✦ Elite …`), Mutation (`§d…`), Boss (`☠ Boss …`). Kit bands: T1 Awakened · T2 Awakened→Enhanced · T3 Enhanced→Elite · T4 Advanced→Master · T5 Master→Divine · T6 Legendary→Mythic · T7 God→Zenith. Stock rarity chances: elite **2.25%**, mutation **3.75%** (bosses are natural T6+ hostiles — no % roll).
+
+
+See also [MECHANICS.md](MECHANICS.md) for Rival / Sparring / Difficulty hub docs.

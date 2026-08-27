@@ -22,6 +22,24 @@ public final class RivalInstinct {
 
     private RivalInstinct() {}
 
+    public static boolean isEnabled(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        RivalPlayerRecord rec = RivalStore.get().ensurePlayer(player);
+        return rec == null || rec.instinctEnabled;
+    }
+
+    public static boolean toggle(ServerPlayer player) {
+        RivalPlayerRecord rec = RivalStore.get().ensurePlayer(player);
+        if (rec == null) {
+            return false;
+        }
+        rec.instinctEnabled = !rec.instinctEnabled;
+        RivalStore.get().markDirty();
+        return rec.instinctEnabled;
+    }
+
     public static void clearPlayer(UUID uuid) {
         if (uuid == null) {
             return;
@@ -43,11 +61,15 @@ public final class RivalInstinct {
             if (player == null || !player.m_6084_()) {
                 continue;
             }
-            UUID id = player.m_20148_();
-            if (RivalChallengeManager.get().isInChallenge(id)) {
-                continue;
-            }
-            Long last = LAST_PULSE.get(id);
+        UUID id = player.m_20148_();
+        if (RivalChallengeManager.get().isInChallenge(id)) {
+            continue;
+        }
+        RivalPlayerRecord instinctRec = store.ensurePlayer(player);
+        if (instinctRec != null && !instinctRec.instinctEnabled) {
+            continue;
+        }
+        Long last = LAST_PULSE.get(id);
             if (last != null && now - last < RivalConstants.INSTINCT_PULSE_MS) {
                 continue;
             }

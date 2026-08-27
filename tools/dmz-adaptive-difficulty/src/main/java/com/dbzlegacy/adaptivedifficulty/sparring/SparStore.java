@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.sparring;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.config.ConfigPaths;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.Reader;
@@ -11,7 +12,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import net.minecraftforge.fml.loading.FMLPaths;
 
 /** Mentor bonds + sparring leaderboard persistence. */
 public final class SparStore {
@@ -31,7 +31,7 @@ public final class SparStore {
     private SparStore() {}
 
     public static Path path() {
-        return FMLPaths.CONFIGDIR.get().resolve("adaptivedifficulty").resolve("sparring.json");
+        return ConfigPaths.sparringPath();
     }
 
     public void markDirty() {
@@ -133,6 +133,7 @@ public final class SparStore {
         public double bestPayout;
         public long totalTimeMs;
         public int sessions;
+        public int perfectSessions;
         public int highestCombo;
         public int currentStreak;
         public int bestStreak;

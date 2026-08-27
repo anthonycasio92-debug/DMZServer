@@ -41,6 +41,9 @@ public final class SparCombat {
     public static final float PERFECT_RELEASE_MIN = 180.0f;
     public static final float PERFECT_RELEASE_MAX = 200.0f;
     public static final float MELEE_EFF = 1.00f;
+    public static final float RELEASE_CONTROL_TP_PER_SEC = 4.0f;
+    public static final float HIGH_RELEASE_THRESHOLD = 180.0f;
+    public static final long PERFECT_ACTIONBAR_MS = 2500L;
 
     private static final int[] MOMENTUM_THRESHOLDS = {5, 10, 15, 20, 30, 40};
     private static final float[] MOMENTUM_MULTIPLIERS = {1.05f, 1.10f, 1.20f, 1.35f, 1.50f, 2.00f};
@@ -219,8 +222,82 @@ public final class SparCombat {
             case "charge" -> 1.10f;
             case "basic" -> 1.00f;
             case "blast" -> 1.05f;
+            case "scatter" -> 1.08f;
+            case "explosive" -> 1.12f;
+            case "barrage" -> 1.06f;
             default -> 1.00f;
         };
+    }
+
+    /** Classify ki projectile / damage type from a damage source. */
+    public static String classifyKiType(net.minecraft.world.damagesource.DamageSource source) {
+        if (source == null) {
+            return "other";
+        }
+        try {
+            var direct = source.m_7640_();
+            if (direct != null) {
+                String cn = direct.getClass().getName().toLowerCase();
+                if (cn.contains("laser") || cn.contains("beam") || cn.contains("kiwave")) {
+                    return "beam";
+                }
+                if (cn.contains("blast")) {
+                    return "basic";
+                }
+                if (cn.contains("disk")) {
+                    return "scatter";
+                }
+                try {
+                    var m = direct.getClass().getMethod("getKiType");
+                    Object kt = m.invoke(direct);
+                    if (kt != null) {
+                        String k = String.valueOf(kt).toLowerCase();
+                        if (k.contains("beam") || k.contains("wave")) {
+                            return "beam";
+                        }
+                        if (k.contains("blast") || k.contains("ball")) {
+                            return "basic";
+                        }
+                        if (k.contains("disk")) {
+                            return "scatter";
+                        }
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            String type = "";
+            try {
+                type = String.valueOf(source.m_269150_().m_203543_()
+                        .map(k -> k.m_135782_().toString())
+                        .orElse("")).toLowerCase();
+            } catch (Throwable ignored) {
+                try {
+                    type = String.valueOf(source.m_19385_()).toLowerCase();
+                } catch (Throwable ignored2) {
+                    type = "";
+                }
+            }
+            if (type.contains("scatter") || type.contains("disk")) {
+                return "scatter";
+            }
+            if (type.contains("charge")) {
+                return "charge";
+            }
+            if (type.contains("laser") || type.contains("beam") || type.contains("wave")) {
+                return "beam";
+            }
+            if (type.contains("explosive")) {
+                return "explosive";
+            }
+            if (type.contains("barrage") || type.contains("rapid")) {
+                return "barrage";
+            }
+            if (type.contains("kiblast") || type.contains("blast")) {
+                return "basic";
+            }
+        } catch (Throwable ignored) {
+        }
+        return "other";
     }
 
     public static TrainingValues liveValues(ServerPlayer player) {

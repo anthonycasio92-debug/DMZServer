@@ -3,6 +3,9 @@ package com.dbzlegacy.adaptivedifficulty.command;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalInstinct;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalPlayerRecord;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalSpectator;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalStore;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalSystem;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
@@ -28,11 +31,69 @@ public final class RivalCommands {
     @SubscribeEvent
     public void onRegister(RegisterCommandsEvent event) {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.m_82127_("rival")
-                .executes(ctx -> help(ctx.getSource()))
-                .then(Commands.m_82127_("help").executes(ctx -> help(ctx.getSource())))
+                .executes(ctx -> gui(ctx.getSource(), "main"))
+                .then(Commands.m_82127_("gui").executes(ctx -> gui(ctx.getSource(), "main")))
+                .then(Commands.m_82127_("help").executes(ctx -> gui(ctx.getSource(), "help")))
                 .then(Commands.m_82127_("list").executes(ctx -> list(ctx.getSource())))
                 .then(Commands.m_82127_("stats").executes(ctx -> stats(ctx.getSource())))
                 .then(Commands.m_82127_("top").executes(ctx -> top(ctx.getSource())))
+                .then(Commands.m_82127_("season").executes(ctx -> gui(ctx.getSource(), "season")))
+                .then(Commands.m_82127_("quests").executes(ctx -> gui(ctx.getSource(), "quests")))
+                .then(Commands.m_82127_("achievements").executes(ctx -> gui(ctx.getSource(), "achievements")))
+                .then(Commands.m_82127_("hof").executes(ctx -> gui(ctx.getSource(), "hof")))
+                .then(Commands.m_82127_("journal").executes(ctx -> gui(ctx.getSource(), "journal")))
+                .then(Commands.m_82127_("title").executes(ctx -> gui(ctx.getSource(), "title")))
+                .then(Commands.m_82127_("spectate")
+                        .executes(ctx -> spectate(ctx.getSource(), null))
+                        .then(Commands.m_82127_("stop").executes(ctx -> spectateStop(ctx.getSource())))
+                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .executes(ctx -> spectate(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "player")))))
+                .then(Commands.m_82127_("do")
+                        .then(Commands.m_82127_("page")
+                                .then(Commands.m_82129_("page", StringArgumentType.word())
+                                        .executes(ctx -> gui(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "page")))))
+                        .then(Commands.m_82127_("tpmsg")
+                                .then(Commands.m_82127_("toggle")
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> {
+                                                    tpmsgToggle(ctx.getSource());
+                                                    return gui(ctx.getSource(),
+                                                            StringArgumentType.getString(ctx, "page"));
+                                                }))))
+                        .then(Commands.m_82127_("instinct")
+                                .then(Commands.m_82127_("toggle")
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> {
+                                                    instinctToggle(ctx.getSource());
+                                                    return gui(ctx.getSource(),
+                                                            StringArgumentType.getString(ctx, "page"));
+                                                }))))
+                        .then(Commands.m_82127_("challenge")
+                                .then(Commands.m_82127_("accept")
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> {
+                                                    challengeAccept(ctx.getSource());
+                                                    return gui(ctx.getSource(),
+                                                            StringArgumentType.getString(ctx, "page"));
+                                                })))
+                                .then(Commands.m_82127_("decline")
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> {
+                                                    challengeDecline(ctx.getSource());
+                                                    return gui(ctx.getSource(),
+                                                            StringArgumentType.getString(ctx, "page"));
+                                                })))
+                                .then(Commands.m_82127_("cancel")
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> {
+                                                    challengeCancel(ctx.getSource());
+                                                    return gui(ctx.getSource(),
+                                                            StringArgumentType.getString(ctx, "page"));
+                                                })))))
                 .then(Commands.m_82127_("declare")
                         .then(Commands.m_82129_("player", StringArgumentType.word())
                                 .executes(ctx -> declare(
@@ -87,18 +148,57 @@ public final class RivalCommands {
         AdaptiveDifficultyMod.LOGGER.info("[{}] registered /rival", AdaptiveDifficultyMod.MOD_ID);
     }
 
-    private static int help(CommandSourceStack source) {
+    private static int gui(CommandSourceStack source, String page) {
         ServerPlayer player = playerOrNull(source);
-        if (player == null) {
+        if (player == null || !enabled(player)) {
             return 0;
         }
-        DmzRewards.msg(player, "§6§l/rival §8— Rival System");
-        DmzRewards.msg(player, "§e/rival <player> §7silent rival");
-        DmzRewards.msg(player, "§e/rival declare|accept|decline|remove <player>");
-        DmzRewards.msg(player, "§e/rival list|stats|top|tpmsg [on|off]");
-        DmzRewards.msg(player, "§e/rival challenge send <player> [minutes]");
-        DmzRewards.msg(player, "§e/rival challenge accept|decline|cancel");
+        com.dbzlegacy.adaptivedifficulty.gui.RivalChatMenu.open(player, page);
         return 1;
+    }
+
+    private static int tpmsgToggle(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
+        boolean next = me == null || !me.tpMessages;
+        DmzRewards.msg(player, RivalSystem.setTpMsg(player, next));
+        return 1;
+    }
+
+    private static int instinctToggle(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        boolean on = RivalInstinct.toggle(player);
+        DmzRewards.msg(player, "§aRival Instinct §f" + (on ? "ON" : "OFF"));
+        return 1;
+    }
+
+    private static int spectate(CommandSourceStack source, String name) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        ServerPlayer target = name == null ? null : RivalSystem.findOnline(source.m_81377_(), name);
+        DmzRewards.msg(player, RivalSpectator.start(player, target));
+        return 1;
+    }
+
+    private static int spectateStop(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        DmzRewards.msg(player, RivalSpectator.stop(player));
+        return 1;
+    }
+
+    private static int help(CommandSourceStack source) {
+        return gui(source, "help");
     }
 
     private static int silent(CommandSourceStack source, String name) {
