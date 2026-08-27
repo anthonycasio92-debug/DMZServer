@@ -9,6 +9,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.evolution.CombatGravity;
 import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
+import com.dbzlegacy.adaptivedifficulty.progression.PlayerStatChecker;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
 import com.dbzlegacy.adaptivedifficulty.reward.RewardSystem;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalProgression;
@@ -61,6 +62,7 @@ import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
@@ -534,6 +536,15 @@ public final class DifficultyEvents {
             return;
         }
         ProgressionSystem.onBlockBreak(player, event.getPos(), event.getState());
+    }
+
+    /** Sneak + right-click another player → DMZ stat dump (PlayerStatChecker.js). */
+    @SubscribeEvent
+    public void onPlayerEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        if (event.getLevel() == null || event.getLevel().m_5776_()) {
+            return;
+        }
+        PlayerStatChecker.onEntityInteract(event);
     }
 
     /**

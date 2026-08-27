@@ -88,6 +88,10 @@ public final class ProgressionConfig {
         return masterEnabled() && DifficultyConfig.get().enablePrestigeSystem;
     }
 
+    public static boolean playerStatChecker() {
+        return masterEnabled() && DifficultyConfig.get().enablePlayerStatChecker;
+    }
+
     public static boolean fabledBridge() {
         return DifficultyConfig.get().enableFabledBridge;
     }
@@ -148,6 +152,7 @@ public final class ProgressionConfig {
                 + " shadow=" + onOff(c.enableShadowDummyLimiter)
                 + " skills=" + onOff(c.enableSkillUnlockService)
                 + " prestige=" + onOff(c.enablePrestigeSystem)
+                + " statcheck=" + onOff(c.enablePlayerStatChecker)
                 + " fabled=" + onOff(c.enableFabledBridge);
     }
 

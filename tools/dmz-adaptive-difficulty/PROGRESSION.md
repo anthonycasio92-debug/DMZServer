@@ -1,11 +1,11 @@
-# Natural Progression & Fabled Bridges (1.0.47)
+# Natural Progression & Fabled Bridges (1.0.48)
 
 LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus soft-dependency
 **Fabled** bridges (Bukkit / LuckPerms via reflection — never hard-crash if missing).
 
 ## Install (test)
 
-1. Build / install `LegacyMechanics-1.0.47.jar` (+ matching `AdaptiveDifficultyGUI-1.0.47.jar`).
+1. Build / install `LegacyMechanics-1.0.48.jar` (+ matching `AdaptiveDifficultyGUI-1.0.48.jar`).
 2. Keep `enableProgression` / `enableFabledBridge` true (defaults).
 3. **Disable** the CNPC Global Player scripts listed below to avoid double-sync / double TP.
 4. Do **not** deploy to live until tested.
@@ -36,12 +36,13 @@ LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus so
 | `enableValueCleaner` | true | Persistent value cleaner |
 | `enableRaceClassSync` | true | Race → Fabled class |
 | `enableClassPermissionSync` | true | Class → LuckPerms `fabled.skill.*` |
+| `enablePlayerStatChecker` | true | Sneak+RMB player → DMZ stat dump |
 
 ## Java packages
 
 | Package | Role |
 |---------|------|
-| `progression/` | `ProgressionSystem`, `ProgressionConfig`, `ProgressionData`, helpers |
+| `progression/` | `ProgressionSystem`, `ProgressionConfig`, `ProgressionData`, `PlayerStatChecker`, helpers |
 | `progression/skills/` | Flight, SprintJump, Meditation, Potential |
 | `progression/tp/` | FarmingTp, GlobalTpBoost, BioAndroidAbsorb |
 | `progression/race/` | RaceLock, Yardrat, SpiritualistKi, AndroidConversion |
@@ -96,6 +97,7 @@ LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus so
 - `End Dimension Strength`
 - `ShadowDummyLimiter` / related forge protect scripts
 - Prestige NPC / SkillUnlockNPC (when shop ports are active)
+- `PlayerStatChecker` (sneak + right-click inspect)
 
 ### Already in Java (rival / spar)
 

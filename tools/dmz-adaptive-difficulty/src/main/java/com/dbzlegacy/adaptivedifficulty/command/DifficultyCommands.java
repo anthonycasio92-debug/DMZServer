@@ -852,6 +852,8 @@ public final class DifficultyCommands {
                         cfg.enableRivalSystem = Boolean.parseBoolean(value);
                 case "enablesparringsystem", "sparring", "spar" ->
                         cfg.enableSparringSystem = Boolean.parseBoolean(value);
+                case "enableplayerstatchecker", "statchecker", "playerstatchecker" ->
+                        cfg.enablePlayerStatChecker = Boolean.parseBoolean(value);
                 case "rivalpresencetp", "rivalpresence" ->
                         cfg.rivalPresenceTp = Boolean.parseBoolean(value);
                 case "rivalinstinct" -> cfg.rivalInstinct = Boolean.parseBoolean(value);

@@ -207,6 +207,8 @@ public final class DifficultyConfig {
     public boolean enableShadowDummyLimiter = true;
     public boolean enableSkillUnlockService = true;
     public boolean enablePrestigeSystem = true;
+    /** Sneak + right-click another player to dump DMZ stats (PlayerStatChecker.js). */
+    public boolean enablePlayerStatChecker = true;
 
     /**
      * Soft-dependency Fabled bridges (mana/SP/attrs/prestige/race/class perms).
