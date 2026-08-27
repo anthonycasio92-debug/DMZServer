@@ -5,7 +5,7 @@ Scope: CNPC scripts in-repo, remote feature branches, and a live-server script p
 Rival/Spar, progression, Title/Admin inspect, Building TP / End portal guard,
 GhostPartyHeal (melee 2.12.20), inventory GUIs, plus KubeJS packs from
 `server-fixes-consolidated` and `dmz-dino-food-balance`.
-Jars: `LegacyMechanics-2.0.0` / `LegacyMechanicsGUI-2.0.0` / `dmz_mohist_melee_fix-2.12.20`.
+Jars: `LegacyMechanics-2.1.0` / `LegacyMechanicsGUI-2.1.0` / `dmz_mohist_melee_fix-2.12.20`.
 
 ## Live server pull
 
