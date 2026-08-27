@@ -147,29 +147,34 @@ public final class ProgressionConfig {
 
     public static String statusSummary() {
         DifficultyConfig c = DifficultyConfig.get();
-        return "master=" + onOff(c.enableProgression)
+        return "§eSkills§7: master=" + onOff(c.enableProgression)
                 + " fly=" + onOff(c.enableFlightProgression)
                 + " sprint=" + onOff(c.enableSprintJump)
                 + " med=" + onOff(c.enableMeditation)
                 + " pot=" + onOff(c.enablePotential)
-                + " farm=" + onOff(c.enableFarmingTp)
+                + "\n§6TP§7: farm=" + onOff(c.enableFarmingTp)
                 + " build=" + onOff(c.enableBuildingTp)
                 + " boost=" + onOff(c.enableGlobalTpBoost)
                 + " bio=" + onOff(c.enableBioAndroid)
-                + " lock=" + onOff(c.enableRaceLock)
+                + "\n§bRace§7: lock=" + onOff(c.enableRaceLock)
                 + " yard=" + onOff(c.enableYardrat)
                 + " spirit=" + onOff(c.enableSpiritualistKi)
                 + " android=" + onOff(c.enableAndroidConversion)
-                + " ki=" + onOff(c.enableKiWeapons)
+                + "\n§cCombat§7: ki=" + onOff(c.enableKiWeapons)
                 + " pierce=" + onOff(c.enablePiercingBonus)
-                + " end=" + onOff(c.enableEndDimensionStrength)
+                + " dot=" + onOff(c.enableDotExtraDamage)
+                + " apothic=" + onOff(c.enableApothicElemental)
+                + "\n§5End§7: end=" + onOff(c.enableEndDimensionStrength)
                 + " endmobs=" + onOff(c.enableEndMobScaling)
                 + " endportal=" + onOff(c.enableEndPortalGuard)
-                + " shadow=" + onOff(c.enableShadowDummyLimiter)
+                + "\n§aShop§7: prestige=" + onOff(c.enablePrestigeSystem)
                 + " skills=" + onOff(c.enableSkillUnlockService)
-                + " prestige=" + onOff(c.enablePrestigeSystem)
-                + " statcheck=" + onOff(c.enablePlayerStatChecker)
-                + " fabled=" + onOff(c.enableFabledBridge);
+                + "\n§dFabled§7: master=" + onOff(c.enableFabledBridge)
+                + " energy=" + onOff(c.enableEnergyManaSync)
+                + " stats=" + onOff(c.enableStatScreenSync)
+                + " tpsp=" + onOff(c.enableTpSpMirror)
+                + "\n§7Utility: shadow=" + onOff(c.enableShadowDummyLimiter)
+                + " statcheck=" + onOff(c.enablePlayerStatChecker);
     }
 
     private static String onOff(boolean v) {

@@ -1,10 +1,11 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
-import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import java.util.List;
+import java.util.Locale;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -21,20 +22,19 @@ public final class ProgressionChatMenu {
             send(player, Component.m_237113_("§cProgression system is disabled."));
             return;
         }
-        if (page == null || page.isBlank() || "main".equalsIgnoreCase(page)) {
-            main(player);
-        } else if ("status".equalsIgnoreCase(page)) {
-            status(player);
-        } else if ("admin".equalsIgnoreCase(page)) {
-            if (StaffAccess.isStaff(player)) {
-                admin(player);
-            } else {
-                main(player);
+        String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
+        switch (p) {
+            case "main" -> main(player);
+            case "skills", "tp", "race", "combat", "end", "shop", "fabled", "utility", "status", "help" ->
+                    category(player, p);
+            case "admin", "flags", "disable", "flags_fabled", "fabled_flags" -> {
+                if (StaffAccess.isStaff(player)) {
+                    admin(player);
+                } else {
+                    main(player);
+                }
             }
-        } else if ("help".equalsIgnoreCase(page)) {
-            help(player);
-        } else {
-            main(player);
+            default -> main(player);
         }
     }
 
@@ -44,23 +44,56 @@ public final class ProgressionChatMenu {
         send(player, Component.m_237113_(GlobalTpBoost.statusLine()));
         send(player, Component.m_237113_(MeditationProgression.statusLine()));
         send(player, Component.m_237113_(""));
-        MutableComponent row = Component.m_237113_("§7")
-                .m_7220_(btn("§e[Status]", "/prog do page status", "Feature flags"))
-                .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§f[Help]", "/prog do page help", "Commands"));
+        send(player, Component.m_237113_("§7")
+                .m_7220_(btn("§e[Skills]", "/prog do page skills", "Passive skill unlocks"))
+                .m_7220_(Component.m_237113_(" "))
+                .m_7220_(btn("§6[TP]", "/prog do page tp", "TP gains"))
+                .m_7220_(Component.m_237113_(" "))
+                .m_7220_(btn("§b[Race]", "/prog do page race", "Race & form"))
+                .m_7220_(Component.m_237113_(" "))
+                .m_7220_(btn("§c[Combat]", "/prog do page combat", "Combat ports")));
+        send(player, Component.m_237113_("§7")
+                .m_7220_(btn("§5[End]", "/prog do page end", "End dimension"))
+                .m_7220_(Component.m_237113_(" "))
+                .m_7220_(btn("§a[Shop]", "/prog do page shop", "Prestige & skills"))
+                .m_7220_(Component.m_237113_(" "))
+                .m_7220_(btn("§d[Fabled]", "/prog do page fabled", "Fabled bridges"))
+                .m_7220_(Component.m_237113_(" "))
+                .m_7220_(btn("§7[Utility]", "/prog do page utility", "Utility"))
+                .m_7220_(Component.m_237113_(" "))
+                .m_7220_(btn("§f[Help]", "/prog do page help", "Commands")));
         if (StaffAccess.isStaff(player)) {
-            row.m_7220_(Component.m_237113_("  "))
-                    .m_7220_(btn("§c[Admin]", "/prog do page admin", "Toggle features"));
+            send(player, Component.m_237113_("§7")
+                    .m_7220_(btn("§c[Flags]", "/prog do page admin", "Toggle features")));
         }
-        send(player, row);
         send(player, Component.m_237113_("§8────────────────"));
     }
 
-    private static void status(ServerPlayer player) {
+    private static void category(ServerPlayer player, String page) {
+        String title = switch (page) {
+            case "skills" -> "Skills";
+            case "tp" -> "TP Gains";
+            case "race" -> "Race & Form";
+            case "combat" -> "Combat";
+            case "end" -> "End";
+            case "shop" -> "Shop";
+            case "fabled" -> "Fabled Bridges";
+            case "utility" -> "Utility";
+            case "status" -> "Status";
+            case "help" -> "Help";
+            default -> page;
+        };
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8── §fProgression · Status §8──"));
-        for (String line : ProgressionSystem.statusSummary().split("\n")) {
-            send(player, Component.m_237113_("§7" + line));
+        send(player, Component.m_237113_("§8── §fProgression · " + title + " §8──"));
+        List<String> lines = ProgressionGuiApi.linesForPage(player, page);
+        for (String line : lines) {
+            send(player, Component.m_237113_(line));
+        }
+        if ("shop".equals(page)) {
+            send(player, Component.m_237113_("§7")
+                    .m_7220_(btn("§6[Open Prestige]", "/prestige", "Prestige GUI"))
+                    .m_7220_(Component.m_237113_("  "))
+                    .m_7220_(btn("§f[Open Skills]", "/skills", "Skills GUI")));
         }
         send(player, btn("§7« Back", "/prog do page main", "Main"));
         send(player, Component.m_237113_("§8────────────────"));
@@ -68,22 +101,31 @@ public final class ProgressionChatMenu {
 
     private static void admin(ServerPlayer player) {
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8── §fProgression · Admin §8──"));
-        DifficultyConfig c = DifficultyConfig.get();
-        send(player, toggleRow("master", c.enableProgression));
-        send(player, toggleRow("flight", c.enableFlightProgression));
-        send(player, toggleRow("sprint", c.enableSprintJump));
-        send(player, toggleRow("meditation", c.enableMeditation));
-        send(player, toggleRow("potential", c.enablePotential));
-        send(player, toggleRow("farming", c.enableFarmingTp));
-        send(player, toggleRow("building", c.enableBuildingTp));
-        send(player, toggleRow("boost", c.enableGlobalTpBoost));
-        send(player, toggleRow("bio", c.enableBioAndroid));
-        send(player, toggleRow("racelock", c.enableRaceLock));
-        send(player, toggleRow("yardrat", c.enableYardrat));
-        send(player, toggleRow("spiritualist", c.enableSpiritualistKi));
-        send(player, toggleRow("android", c.enableAndroidConversion));
-        send(player, toggleRow("endportal", c.enableEndPortalGuard));
+        send(player, Component.m_237113_("§8── §fProgression · Staff Flags §8──"));
+        List<String> lines = ProgressionGuiApi.linesForPage(player, "admin");
+        for (String line : lines) {
+            if (line == null || line.isBlank()) {
+                continue;
+            }
+            // Section headers stay plain; flag lines get toggle buttons
+            if (line.contains("§l") && !line.contains("ON") && !line.contains("OFF")) {
+                send(player, Component.m_237113_(line));
+                continue;
+            }
+            // Parse "§7key §aON" / "§7key §cOFF"
+            String stripped = line.replace("§7", "").replace("§a", "").replace("§c", "")
+                    .replace("§f", "").trim();
+            int space = stripped.lastIndexOf(' ');
+            if (space > 0) {
+                String key = stripped.substring(0, space).trim();
+                boolean on = stripped.endsWith("ON");
+                if (!key.isBlank() && (stripped.endsWith("ON") || stripped.endsWith("OFF"))) {
+                    send(player, toggleRow(key, on));
+                    continue;
+                }
+            }
+            send(player, Component.m_237113_(line));
+        }
         send(player, btn("§7« Back", "/prog do page main", "Main"));
         send(player, Component.m_237113_("§8────────────────"));
     }
@@ -93,20 +135,6 @@ public final class ProgressionChatMenu {
         String next = on ? "off" : "on";
         return Component.m_237113_("§7" + key + " §f" + label + " ")
                 .m_7220_(btn("§8[toggle]", "/prog admin " + key + " " + next, "Toggle " + key));
-    }
-
-    private static void help(ServerPlayer player) {
-        send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8── §fProgression · Help §8──"));
-        send(player, Component.m_237113_("§e/progression §7— This menu"));
-        send(player, Component.m_237113_("§e/progression boost start|end §7— Global TP boost (30/31)"));
-        send(player, Component.m_237113_("§e/progression meditation next §7— Cycle trial (41)"));
-        send(player, Component.m_237113_("§e/progression android §7— Android convert (45)"));
-        if (StaffAccess.isStaff(player)) {
-            send(player, Component.m_237113_("§8Staff: /prog admin <flag> on|off"));
-        }
-        send(player, btn("§7« Back", "/prog do page main", "Main"));
-        send(player, Component.m_237113_("§8────────────────"));
     }
 
     private static MutableComponent btn(String label, String command, String hover) {

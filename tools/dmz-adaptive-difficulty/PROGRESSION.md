@@ -3,6 +3,8 @@
 LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus soft-dependency
 **Fabled** bridges (Bukkit / LuckPerms via reflection — never hard-crash if missing).
 
+Player UI (`/progression` / `/prog`) is a **category hub** matching the script families below.
+
 ## Install (test)
 
 1. Build / install `LegacyMechanics-2.0.0.jar` (+ matching `LegacyMechanicsGUI-2.0.0.jar`).
@@ -10,7 +12,25 @@ LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus so
 3. **Disable** the CNPC Global Player scripts listed below to avoid double-sync / double TP.
 4. Do **not** deploy to live until tested.
 
+## Player UI pages
+
+| Page id | Title | Contents |
+|---------|-------|----------|
+| `main` | Hub | Status header (boost + meditation) · category buttons · Prestige/Skills shortcuts · staff Flags |
+| `skills` | Skills | flight, sprint, meditation, potential |
+| `tp` | TP Gains | farming, building, boost, bio |
+| `race` | Race & Form | racelock, yardrat, spiritualist, android |
+| `combat` | Combat | kiweapons, piercing, dot, apothic |
+| `end` | End | end (End Dimension Strength), endportal |
+| `shop` | Shop | prestige + skills status · buttons open `/prestige` and `/skills` |
+| `fabled` | Fabled Bridges | master + energy/stat/tpsp/attr/prestige skill/faction/cleaner/raceclass/classperm |
+| `utility` | Utility | shadow, playerstatchecker |
+| `admin` / `flags` | Staff Flags | toggles grouped by the same categories (+ `flags_fabled` for bridge subs) |
+| `help` | Help | command list |
+
 ## Config flags (`config/legacymechanics.json`)
+
+### Skills
 
 | Flag | Default | Module |
 |------|---------|--------|
@@ -19,14 +39,53 @@ LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus so
 | `enableSprintJump` | true | Sprint + Jump invested STR |
 | `enableMeditation` | true | Meditation |
 | `enablePotential` | true | Potential Unlock |
+
+### TP Gains
+
+| Flag | Default | Module |
+|------|---------|--------|
 | `enableFarmingTp` | true | Farming TP Skill |
 | `enableBuildingTp` | true | Building TP on block place |
 | `enableGlobalTpBoost` | true | Global TP Boost / End TP boost |
 | `enableBioAndroid` | true | Bio-Android absorb |
+
+### Race & Form
+
+| Flag | Default | Module |
+|------|---------|--------|
 | `enableRaceLock` | true | DMZ Race Lock |
 | `enableYardrat` | true | Yardrat race / skills |
 | `enableSpiritualistKi` | true | Spiritualist Ki Control |
 | `enableAndroidConversion` | true | Android conversion |
+
+### Combat
+
+| Flag | Default | Module |
+|------|---------|--------|
+| `enableKiWeapons` | true | KiWeapons |
+| `enablePiercingBonus` | true | Piercing |
+| `enableDotExtraDamage` | true | Damage-over-time extra |
+| `enableApothicElemental` | true | Apothic fire/cold damage |
+
+### End
+
+| Flag | Default | Module |
+|------|---------|--------|
+| `enableEndDimensionStrength` | true | End Dimension Strength |
+| `enableEndPortalGuard` | true | Disable vanilla End portals / gateways / Eye frames |
+| `enableEndMobScaling` | false | End mob HP/DEF scaling (off by default) |
+
+### Shop
+
+| Flag | Default | Module |
+|------|---------|--------|
+| `enablePrestigeSystem` | true | Prestige levels |
+| `enableSkillUnlockService` | true | Skill unlock progress |
+
+### Fabled Bridges
+
+| Flag | Default | Module |
+|------|---------|--------|
 | `enableFabledBridge` | true | Master for Fabled soft bridges |
 | `enableEnergyManaSync` | true | Energy ↔ Mana |
 | `enableStatScreenSync` | true | Stat Screen → persistent values |
@@ -37,8 +96,13 @@ LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus so
 | `enableValueCleaner` | true | Persistent value cleaner |
 | `enableRaceClassSync` | true | Race → Fabled class |
 | `enableClassPermissionSync` | true | Class → LuckPerms `fabled.skill.*` |
+
+### Utility
+
+| Flag | Default | Module |
+|------|---------|--------|
+| `enableShadowDummyLimiter` | true | Shadow dummy limiter |
 | `enablePlayerStatChecker` | true | Sneak+RMB player → DMZ stat dump |
-| `enableEndPortalGuard` | true | Disable vanilla End portals / gateways / Eye frames |
 
 ## Java packages
 
@@ -71,6 +135,40 @@ LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus so
 
 ## CNPC scripts to DISABLE on test
 
+### Skills (when `enableProgression` is on)
+
+- `Fly` / `ViltrumiteFly` / `flight suppression` / `Flight`
+- `JumpSprint` / `Jump` / `Sprint`
+- `Meditation new`
+- `Potential`
+
+### TP Gains
+
+- `Farming TP Skill`
+- KubeJS `building_tp_place` / `building_tp` (Building TP on place)
+- `Global TP Boost` / `TP boost end`
+- `BioAndroid`
+
+### Race & Form
+
+- `DMZ RACE LOCK`
+- `YardratRace` / `YardratSkills`
+- `Spirtualist Ki Control`
+- `AndrioidConversion`
+
+### Combat
+
+- `KiWeapons` / `Piercing` / `damageovertime` / `Apothicfireandcolddamage`
+
+### End
+
+- `End Dimension Strength`
+- `Disable End Portals`
+
+### Shop
+
+- Prestige NPC / SkillUnlockNPC (when shop ports are active)
+
 ### Fabled bridges (when `enableFabledBridge` is on)
 
 - `DMZ Energy`
@@ -83,24 +181,9 @@ LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus so
 - `Races`
 - `DMZ Class Permission`
 
-### Natural progression (when `enableProgression` is on)
+### Utility
 
-- `Fly` / `ViltrumiteFly` / `flight suppression` / `Flight` / `JumpSprint` / `Jump` / `Sprint`
-- `Meditation new`
-- `Potential`
-- `Farming TP Skill`
-- KubeJS `building_tp_place` / `building_tp` (Building TP on place)
-- `Global TP Boost` / `TP boost end`
-- `BioAndroid`
-- `DMZ RACE LOCK`
-- `YardratRace` / `YardratSkills`
-- `Spirtualist Ki Control`
-- `AndrioidConversion`
-- `KiWeapons` / `Piercing` / `damageovertime` / `Apothicfireandcolddamage`
-- `End Dimension Strength`
-- `Disable End Portals`
 - `ShadowDummyLimiter` / related forge protect scripts
-- Prestige NPC / SkillUnlockNPC (when shop ports are active)
 - `PlayerStatChecker` (sneak + right-click inspect)
 
 ### Already in Java (rival / spar)
@@ -109,7 +192,9 @@ LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus so
 
 ## Chat / telemetry
 
-- `/lm` hub → **[Progression]** → `/lm do page progression` · `fabled` · `disable`
+- `/lm` hub → **[Progression]** → `/lm do page progression`
+- `/prog do page skills|tp|race|combat|end|shop|fabled|utility`
+- Staff: `/prog do page admin` · `/prog admin <flag> on|off`
 - System telemetry (`enableSystemTelemetry`): rate-limited `system=fabled` events
   (`login_sync`, `energy_spend`, `tp_sp_spend`, `prestige_skill`, `prestige_faction`,
   `race_class`, `class_perm_grant`, `value_clean`)

@@ -4,7 +4,6 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.FabledBridge;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillUnlockService;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;
@@ -50,24 +49,48 @@ public final class ProgressionGuiApi {
         if (!enabled) {
             return out;
         }
-        // Individual flags for staff Flags page toggles
+        // Skills
         out.put("flag_master", c.enableProgression ? "true" : "false");
         out.put("flag_flight", c.enableFlightProgression ? "true" : "false");
         out.put("flag_sprint", c.enableSprintJump ? "true" : "false");
         out.put("flag_meditation", c.enableMeditation ? "true" : "false");
         out.put("flag_potential", c.enablePotential ? "true" : "false");
+        // TP Gains
         out.put("flag_farming", c.enableFarmingTp ? "true" : "false");
         out.put("flag_building", c.enableBuildingTp ? "true" : "false");
         out.put("flag_boost", c.enableGlobalTpBoost ? "true" : "false");
         out.put("flag_bio", c.enableBioAndroid ? "true" : "false");
+        // Race & Form
         out.put("flag_racelock", c.enableRaceLock ? "true" : "false");
         out.put("flag_yardrat", c.enableYardrat ? "true" : "false");
         out.put("flag_spiritualist", c.enableSpiritualistKi ? "true" : "false");
         out.put("flag_android", c.enableAndroidConversion ? "true" : "false");
+        // Combat
+        out.put("flag_kiweapons", c.enableKiWeapons ? "true" : "false");
+        out.put("flag_piercing", c.enablePiercingBonus ? "true" : "false");
+        out.put("flag_dot", c.enableDotExtraDamage ? "true" : "false");
+        out.put("flag_apothic", c.enableApothicElemental ? "true" : "false");
+        // End
+        out.put("flag_end", c.enableEndDimensionStrength ? "true" : "false");
         out.put("flag_endportal", c.enableEndPortalGuard ? "true" : "false");
+        // Shop
         out.put("flag_skills", c.enableSkillUnlockService ? "true" : "false");
         out.put("flag_prestige", c.enablePrestigeSystem ? "true" : "false");
+        // Utility
+        out.put("flag_shadow", c.enableShadowDummyLimiter ? "true" : "false");
+        out.put("flag_statchecker", c.enablePlayerStatChecker ? "true" : "false");
+        out.put("flag_playerstatchecker", c.enablePlayerStatChecker ? "true" : "false");
+        // Fabled bridges
         out.put("flag_fabled", c.enableFabledBridge ? "true" : "false");
+        out.put("flag_energy", c.enableEnergyManaSync ? "true" : "false");
+        out.put("flag_statscreen", c.enableStatScreenSync ? "true" : "false");
+        out.put("flag_tpsp", c.enableTpSpMirror ? "true" : "false");
+        out.put("flag_attr", c.enableAttrMultiBonus ? "true" : "false");
+        out.put("flag_prestigeskill", c.enablePrestigeSkillSync ? "true" : "false");
+        out.put("flag_faction", c.enablePrestigeFactionSync ? "true" : "false");
+        out.put("flag_cleaner", c.enableValueCleaner ? "true" : "false");
+        out.put("flag_raceclass", c.enableRaceClassSync ? "true" : "false");
+        out.put("flag_classperm", c.enableClassPermissionSync ? "true" : "false");
         return out;
     }
 
@@ -76,18 +99,92 @@ public final class ProgressionGuiApi {
         if (!DifficultyConfig.get().enableProgression && !"help".equals(p)) {
             return List.of("§cProgression system is disabled.");
         }
+        Map<String, String> ph = placeholders(player);
         return switch (p) {
             case "status" -> statusLines(player);
-            case "fabled" -> fabledLines(player);
+            case "skills" -> categoryLines(
+                    "§e§lSkills",
+                    "§7Passive skill unlocks from Fly, SprintJump,",
+                    "§7Meditation, and Potential scripts.",
+                    ph,
+                    flagLine("Flight", "flag_flight"),
+                    flagLine("Sprint Jump", "flag_sprint"),
+                    flagLine("Meditation", "flag_meditation"),
+                    flagLine("Potential", "flag_potential"));
+            case "tp" -> categoryLines(
+                    "§6§lTP Gains",
+                    "§7Training-point sources: farming, building,",
+                    "§7global boost, and Bio-Android absorb.",
+                    ph,
+                    flagLine("Farming TP", "flag_farming"),
+                    flagLine("Building TP", "flag_building"),
+                    flagLine("Global TP Boost", "flag_boost"),
+                    flagLine("Bio-Android Absorb", "flag_bio"));
+            case "race" -> categoryLines(
+                    "§b§lRace & Form",
+                    "§7Race lock, Yardrat, Spiritualist Ki,",
+                    "§7and Android conversion ports.",
+                    ph,
+                    flagLine("DMZ Race Lock", "flag_racelock"),
+                    flagLine("Yardrat", "flag_yardrat"),
+                    flagLine("Spiritualist Ki", "flag_spiritualist"),
+                    flagLine("Android Conversion", "flag_android"));
+            case "combat" -> categoryLines(
+                    "§c§lCombat",
+                    "§7Ki weapons, piercing, DoT extra damage,",
+                    "§7and Apothic elemental bridges.",
+                    ph,
+                    flagLine("Ki Weapons", "flag_kiweapons"),
+                    flagLine("Piercing", "flag_piercing"),
+                    flagLine("DoT Extra Damage", "flag_dot"),
+                    flagLine("Apothic Elemental", "flag_apothic"));
+            case "end" -> categoryLines(
+                    "§5§lEnd",
+                    "§7End Dimension Strength and portal guard.",
+                    "",
+                    ph,
+                    flagLine("End Dimension Strength", "flag_end"),
+                    flagLine("End Portal Guard", "flag_endportal"));
+            case "shop" -> categoryLines(
+                    "§a§lShop",
+                    "§7Prestige levels and skill unlock service.",
+                    "§7Use buttons below to open those GUIs.",
+                    ph,
+                    flagLine("Prestige System", "flag_prestige"),
+                    flagLine("Skill Unlock Service", "flag_skills"));
+            case "fabled" -> categoryLines(
+                    "§d§lFabled Bridges",
+                    "§7Soft Fabled / LuckPerms bridges — idle if",
+                    "§7the plugin is missing (never hard-crash).",
+                    ph,
+                    flagLine("Fabled Master", "flag_fabled"),
+                    flagLine("Energy ↔ Mana", "flag_energy"),
+                    flagLine("Stat Screen Sync", "flag_statscreen"),
+                    flagLine("TP ↔ SP Mirror", "flag_tpsp"),
+                    flagLine("Attr Multi Bonus", "flag_attr"),
+                    flagLine("Prestige Skill Sync", "flag_prestigeskill"),
+                    flagLine("Prestige Faction Sync", "flag_faction"),
+                    flagLine("Value Cleaner", "flag_cleaner"),
+                    flagLine("Race → Class Sync", "flag_raceclass"),
+                    flagLine("Class Permission Sync", "flag_classperm"));
+            case "utility" -> categoryLines(
+                    "§7§lUtility",
+                    "§7Shadow dummy limiter and sneak-inspect",
+                    "§7player stat checker.",
+                    ph,
+                    flagLine("Shadow Dummy Limiter", "flag_shadow"),
+                    flagLine("Player Stat Checker", "flag_statchecker"));
             case "admin", "flags", "disable" -> {
                 if (player == null || !StaffAccess.isStaff(player)) {
                     yield List.of("§cStaff only.");
                 }
-                yield flagLines(player);
+                yield flagLines(ph);
             }
             case "help" -> List.of(
                     "§6§l/progression §8— Natural Progression",
-                    "§e/progression §7— This menu",
+                    "§e/progression §7— Category hub",
+                    "§e/prog do page skills|tp|race|combat|end",
+                    "§e/prog do page shop|fabled|utility",
                     "§e/progression boost start|end §7— Global TP boost",
                     "§e/progression meditation next §7— Cycle trial",
                     "§e/progression android §7— Android convert",
@@ -96,59 +193,107 @@ public final class ProgressionGuiApi {
                     "§8Staff: /prog admin <flag> on|off"
             );
             default -> {
-                Map<String, String> ph = placeholders(player);
                 List<String> lore = new ArrayList<>();
-                lore.add(stripSection(ph.getOrDefault("boost", "§7Global TP boost: §cOFF")));
-                lore.add(stripSection(ph.getOrDefault("meditation", "§7No active meditation trial.")));
-                lore.add("§8" + ph.getOrDefault("flags", ""));
+                lore.add(ph.getOrDefault("boost", "§7Global TP boost: §cOFF"));
+                lore.add(ph.getOrDefault("meditation", "§7No active meditation trial."));
+                lore.add("§8Browse categories to see script ports.");
                 yield lore;
             }
         };
     }
 
+    private static List<String> categoryLines(
+            String title, String desc1, String desc2, Map<String, String> ph, String... featureLines) {
+        List<String> lore = new ArrayList<>();
+        lore.add(title);
+        if (desc1 != null && !desc1.isEmpty()) {
+            lore.add(desc1);
+        }
+        if (desc2 != null && !desc2.isEmpty()) {
+            lore.add(desc2);
+        }
+        lore.add("");
+        for (String line : featureLines) {
+            // line format: "Label|flag_key"
+            int bar = line.indexOf('|');
+            if (bar < 0) {
+                lore.add(line);
+                continue;
+            }
+            String label = line.substring(0, bar);
+            String key = line.substring(bar + 1);
+            boolean on = "true".equalsIgnoreCase(ph.getOrDefault(key, "false"));
+            lore.add("§7" + label + " " + (on ? "§aON" : "§cOFF"));
+        }
+        return lore;
+    }
+
+    private static String flagLine(String label, String placeholderKey) {
+        return label + "|" + placeholderKey;
+    }
+
     private static List<String> statusLines(ServerPlayer player) {
         List<String> lore = new ArrayList<>();
         for (String line : ProgressionSystem.statusSummary().split("\n")) {
-            lore.add("§7" + line.replace('§', '§'));
+            if (line == null || line.isBlank()) {
+                continue;
+            }
+            lore.add(line.startsWith("§") ? line : "§7" + line);
         }
         return lore;
     }
 
-    private static List<String> fabledLines(ServerPlayer player) {
-        List<String> lore = new ArrayList<>();
-        lore.add("§6§lFabled Bridge");
-        for (String part : FabledBridge.statusSummary().split(" ")) {
-            lore.add("§7" + part);
-        }
-        return lore;
-    }
-
-    private static List<String> flagLines(ServerPlayer player) {
-        DifficultyConfig c = DifficultyConfig.get();
+    private static List<String> flagLines(Map<String, String> ph) {
         List<String> lore = new ArrayList<>();
         lore.add("§c§lStaff Flags");
-        lore.add(flag("master", c.enableProgression));
-        lore.add(flag("flight", c.enableFlightProgression));
-        lore.add(flag("sprint", c.enableSprintJump));
-        lore.add(flag("meditation", c.enableMeditation));
-        lore.add(flag("potential", c.enablePotential));
-        lore.add(flag("farming", c.enableFarmingTp));
-        lore.add(flag("building", c.enableBuildingTp));
-        lore.add(flag("boost", c.enableGlobalTpBoost));
-        lore.add(flag("bio", c.enableBioAndroid));
-        lore.add(flag("racelock", c.enableRaceLock));
-        lore.add(flag("yardrat", c.enableYardrat));
-        lore.add(flag("spiritualist", c.enableSpiritualistKi));
-        lore.add(flag("android", c.enableAndroidConversion));
-        lore.add(flag("endportal", c.enableEndPortalGuard));
-        lore.add(flag("skills", c.enableSkillUnlockService));
-        lore.add(flag("prestige", c.enablePrestigeSystem));
-        lore.add(flag("fabled", c.enableFabledBridge));
+        lore.add("§8Grouped by script category");
+        lore.add("");
+        lore.add("§e§lSkills");
+        lore.add(flag("flight", ph));
+        lore.add(flag("sprint", ph));
+        lore.add(flag("meditation", ph));
+        lore.add(flag("potential", ph));
+        lore.add("§6§lTP Gains");
+        lore.add(flag("farming", ph));
+        lore.add(flag("building", ph));
+        lore.add(flag("boost", ph));
+        lore.add(flag("bio", ph));
+        lore.add("§b§lRace & Form");
+        lore.add(flag("racelock", ph));
+        lore.add(flag("yardrat", ph));
+        lore.add(flag("spiritualist", ph));
+        lore.add(flag("android", ph));
+        lore.add("§c§lCombat");
+        lore.add(flag("kiweapons", ph));
+        lore.add(flag("piercing", ph));
+        lore.add(flag("dot", ph));
+        lore.add(flag("apothic", ph));
+        lore.add("§5§lEnd");
+        lore.add(flag("end", ph));
+        lore.add(flag("endportal", ph));
+        lore.add("§a§lShop");
+        lore.add(flag("prestige", ph));
+        lore.add(flag("skills", ph));
+        lore.add("§d§lFabled");
+        lore.add(flag("fabled", ph));
+        lore.add(flag("energy", ph));
+        lore.add(flag("statscreen", ph));
+        lore.add(flag("tpsp", ph));
+        lore.add(flag("attr", ph));
+        lore.add(flag("prestigeskill", ph));
+        lore.add(flag("faction", ph));
+        lore.add(flag("cleaner", ph));
+        lore.add(flag("raceclass", ph));
+        lore.add(flag("classperm", ph));
+        lore.add("§7§lUtility");
+        lore.add(flag("shadow", ph));
+        lore.add(flag("statchecker", ph));
         return lore;
     }
 
-    private static String flag(String key, boolean on) {
-        return "§7" + key + " §f" + (on ? "§aON" : "§cOFF");
+    private static String flag(String key, Map<String, String> ph) {
+        boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
+        return "§7" + key + " " + (on ? "§aON" : "§cOFF");
     }
 
     /**
@@ -192,7 +337,6 @@ public final class ProgressionGuiApi {
             if (force != null) {
                 next = force;
             } else {
-                // Toggle: read current from placeholders
                 Map<String, String> ph = placeholders(player);
                 String cur = ph.getOrDefault("flag_" + key.toLowerCase(Locale.ROOT), "false");
                 next = !"true".equalsIgnoreCase(cur);
@@ -362,9 +506,5 @@ public final class ProgressionGuiApi {
             return "";
         }
         return "§cUnknown skills action: " + act;
-    }
-
-    private static String stripSection(String s) {
-        return s == null ? "" : s;
     }
 }

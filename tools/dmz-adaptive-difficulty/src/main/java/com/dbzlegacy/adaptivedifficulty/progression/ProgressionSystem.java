@@ -278,8 +278,7 @@ public final class ProgressionSystem {
     public static String statusSummary() {
         return ProgressionConfig.statusSummary()
                 + "\n" + GlobalTpBoost.statusLine()
-                + "\n" + MeditationProgression.statusLine()
-                + "\n combat/end/dummy/shop flags via /lm";
+                + "\n" + MeditationProgression.statusLine();
     }
 
     public static boolean setFlag(String key, boolean on) {
@@ -309,9 +308,19 @@ public final class ProgressionSystem {
             case "endportal", "endportalguard", "enableendportalguard" -> cfg.enableEndPortalGuard = on;
             case "endnatural", "enableendnaturaldragonspawn" -> cfg.enableEndNaturalDragonSpawn = on;
             case "shadow", "shadowdummy", "enableshadowdummylimiter" -> cfg.enableShadowDummyLimiter = on;
+            case "statchecker", "playerstatchecker", "enableplayerstatchecker" -> cfg.enablePlayerStatChecker = on;
             case "skills", "skillunlock", "enableskillunlockservice" -> cfg.enableSkillUnlockService = on;
             case "prestige", "enableprestigesystem" -> cfg.enablePrestigeSystem = on;
             case "fabled", "enablefabledbridge" -> cfg.enableFabledBridge = on;
+            case "energy", "energymana", "enableenergymanasync" -> cfg.enableEnergyManaSync = on;
+            case "statscreen", "stats", "enablestatscreensync" -> cfg.enableStatScreenSync = on;
+            case "tpsp", "enabletpspmirror" -> cfg.enableTpSpMirror = on;
+            case "attr", "attrmulti", "enableattrmultibonus" -> cfg.enableAttrMultiBonus = on;
+            case "prestigeskill", "enableprestigeskillsync" -> cfg.enablePrestigeSkillSync = on;
+            case "faction", "prestigefaction", "enableprestigefactionsync" -> cfg.enablePrestigeFactionSync = on;
+            case "cleaner", "valuecleaner", "enablevaluecleaner" -> cfg.enableValueCleaner = on;
+            case "raceclass", "enableraceclasssync" -> cfg.enableRaceClassSync = on;
+            case "classperm", "classpermission", "enableclasspermissionsync" -> cfg.enableClassPermissionSync = on;
             default -> {
                 return false;
             }
