@@ -15,8 +15,12 @@ public final class DifficultyCalculator {
     public static DifficultySnapshot snapshot(ServerPlayer player, PlayerDifficultyData data) {
         UnlockSystem.syncUnlocks(player, data);
 
-        // Form-stable level for costs / unlocks / CR level term (transform is separate).
-        int level = DmzProgression.dmzLevelForProgression(player, data.getHighestDmzLevel());
+        // Same level the Buy GUI / unlock gates use — never show a form-inflated
+        // live reading that disagrees with prestige-or-level eligibility.
+        long gate = UnlockSystem.gateLevelForEligibility(player);
+        int level = gate > 0L
+                ? (int) Math.min(Integer.MAX_VALUE, gate)
+                : DmzProgression.dmzLevelForProgression(player, data.getHighestDmzLevel());
         int prestige = DmzProgression.prestige(player);
         double transform = DmzProgression.transformationPower(player);
         // Never ratchet highest DMZ level from a form-inflated reading.

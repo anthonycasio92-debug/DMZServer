@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.service;
 
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
@@ -37,6 +38,7 @@ public final class DifficultyActions {
     public static final String ACT_CLEAR_TITLE = "clear_title";
     public static final String ACT_TOGGLE_PERSONAL = "toggle_personal";
     public static final String ACT_TOGGLE_COIN_CHAT = "toggle_coin_chat";
+    public static final String ACT_TOGGLE_TITLE_SENSE = "toggle_title_sense";
 
     /**
      * When true, {@link #openGui} syncs unlocks/titles but does not reopen a menu.
@@ -49,6 +51,11 @@ public final class DifficultyActions {
 
     public static void openGui(ServerPlayer player, String page) {
         String target = page == null || page.isBlank() ? "main" : page;
+        // Re-read DMZ level when the menu opens (not only on death with personal ON).
+        int sampled = DmzProgression.sampleLevelOnGuiOpen(player);
+        if (!DmzProgression.isTransformed(player)) {
+            DifficultyCache.data(player).noteDmzLevel(sampled);
+        }
         if ("titles".equalsIgnoreCase(target) || "title".equalsIgnoreCase(target)) {
             TitleSystem.syncTierTitles(player, true);
         }
@@ -124,6 +131,10 @@ public final class DifficultyActions {
                 || "toggle_chat".equals(act) || "chat_drops".equals(act)) {
             return toggleCoinChat(player, page);
         }
+        if (ACT_TOGGLE_TITLE_SENSE.equals(act) || "title_sense".equals(act)
+                || "toggle_sense".equals(act) || "sense_chat".equals(act)) {
+            return toggleTitleSense(player, page);
+        }
 
         // Personal OFF freezes buy / lower / reset until the player turns it back on.
         if (!SystemGate.participates(player)
@@ -180,6 +191,18 @@ public final class DifficultyActions {
                 : "Coin drop chat OFF — drop messages muted.");
     }
 
+    private static Result toggleTitleSense(ServerPlayer player, String page) {
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        boolean on = !data.titleProgress().titleSenseChat();
+        data.titleProgress().setTitleSenseChat(on);
+        DifficultyCache.save(player);
+        String returnPage = page == null || page.isBlank() ? "titles" : page;
+        openGui(player, returnPage);
+        return Result.ok(on
+                ? "Title Sense ON — Elite/Boss recognition chat enabled."
+                : "Title Sense OFF — recognition chat muted.");
+    }
+
     private static Result equipTitle(ServerPlayer player, String titleId, String page) {
         TitleSystem.syncTierTitles(player, false);
         DifficultyTitle title = DifficultyTitle.byId(titleId);
@@ -216,10 +239,22 @@ public final class DifficultyActions {
             openGui(player, returnPage);
             return Result.fail("Unknown tier. Use 1–7.");
         }
-        // Live gate — unlock bits alone are not enough after prestige/level reset.
-        if (!UnlockSystem.isEligible(player, tier) || !data.hasUnlockedTier(tier.id)) {
+        // Live gate — unlock bits alone are not enough after a reliable prestige/level reset.
+        // While the base-form sample is unavailable, keep already-unlocked tiers usable.
+        boolean reliable = DmzProgression.hasReliableUnlockGateSample(player);
+        boolean eligible = UnlockSystem.isEligible(player, tier);
+        boolean owned = data.hasUnlockedTier(tier.id);
+        if (!(eligible && owned) && !(owned && !reliable)) {
             openGui(player, returnPage);
-            return Result.fail("Tier " + tier.id + " locked. Need " + tier.requirementTip() + ".");
+            long gate = UnlockSystem.gateLevelForEligibility(player);
+            int prestige = DmzProgression.prestige(player);
+            String tip = !reliable && !owned
+                    ? " Return to base form once so your DMZ level can sync (CR/BP does not unlock tiers)."
+                    : " You: DMZ " + gate + " · Prestige " + prestige + " (CR/BP does not unlock tiers).";
+            return Result.fail("Tier " + tier.id + " locked. Need " + tier.requirementTip() + "." + tip);
+        }
+        if (!owned && eligible) {
+            data.unlockTier(tier.id);
         }
         int current = data.getActiveTier();
         if (current == tier.id) {
@@ -271,10 +306,16 @@ public final class DifficultyActions {
             openGui(player, "buy");
             return Result.fail("Buy a higher tier to raise difficulty.");
         }
-        if (!UnlockSystem.isEligible(player, tier) || !data.hasUnlockedTier(tier.id)) {
+        boolean reliable = DmzProgression.hasReliableUnlockGateSample(player);
+        boolean eligible = UnlockSystem.isEligible(player, tier);
+        boolean owned = data.hasUnlockedTier(tier.id);
+        if (!(eligible && owned) && !(owned && !reliable)) {
             openGui(player, returnPage);
+            long gate = UnlockSystem.gateLevelForEligibility(player);
+            int prestige = DmzProgression.prestige(player);
             return Result.fail("Tier " + tier.id + " is not unlocked. Need "
-                    + tier.requirementTip() + ".");
+                    + tier.requirementTip() + ". You: DMZ " + gate + " · Prestige " + prestige
+                    + " (CR/BP does not unlock tiers).");
         }
         if (data.getActiveTier() == tier.id) {
             openGui(player, returnPage);

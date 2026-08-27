@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.data;
 
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle;
+import com.dbzlegacy.adaptivedifficulty.title.TitleProgress;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -28,6 +29,8 @@ public final class PlayerDifficultyData {
     private long ancientCopper;
     private final Set<String> titles = new LinkedHashSet<>();
     private String activeTitle = "";
+    /** Secondary title progression (mastery, counters, score milestones). */
+    private final TitleProgress titleProgress = new TitleProgress();
     /**
      * Player opt-in: when false, no scaling / kill coins / AI / tier buy for them.
      * Death reset still applies. Default OFF; also forced OFF on each server boot
@@ -228,6 +231,10 @@ public final class PlayerDifficultyData {
         return activeTitle == null ? "" : activeTitle;
     }
 
+    public TitleProgress titleProgress() {
+        return titleProgress;
+    }
+
     public void setActiveTitle(String titleId) {
         if (titleId == null || titleId.isBlank()) {
             this.activeTitle = "";
@@ -296,6 +303,7 @@ public final class PlayerDifficultyData {
         }
         tag.m_128365_("titles", list);
         tag.m_128359_("activeTitle", getActiveTitle());
+        tag.m_128365_("titleProgress", titleProgress.save());
         tag.m_128379_("personalEnabled", personalEnabled);
         tag.m_128379_("coinDropChat", coinDropChat);
         if (lastSeenPrestige >= 0) {
@@ -360,6 +368,9 @@ public final class PlayerDifficultyData {
         activeTitle = tag.m_128461_("activeTitle");
         if (activeTitle == null) {
             activeTitle = "";
+        }
+        if (tag.m_128441_("titleProgress")) {
+            titleProgress.load(tag.m_128469_("titleProgress"));
         }
 
         // Pre-V3 purchased/active were difficulty POINTS, not unlock tiers.

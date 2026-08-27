@@ -466,6 +466,14 @@ public final class ForgeBridge {
     private static void putTitlePlaceholders(Map<String, String> out, Object nms) {
         out.put("active_title", "None");
         out.put("active_title_id", "");
+        out.put("title_score", "0");
+        out.put("titles_unlocked", "0");
+        out.put("titles_total", "0");
+        out.put("nearby_elites", "0");
+        out.put("bosses_killed", "0");
+        out.put("elites_killed", "0");
+        out.put("title_sense", "true");
+        out.put("title_perk", "");
         if (nms == null) {
             return;
         }
@@ -479,14 +487,81 @@ public final class ForgeBridge {
                 Object id = titleActiveId.invoke(null, nms);
                 out.put("active_title_id", id == null ? "" : String.valueOf(id));
             }
+            ClassLoader cl = nms.getClass().getClassLoader();
+            Class<?> titleSystem = loadClass("com.dbzlegacy.adaptivedifficulty.title.TitleSystem", cl);
+            Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", cl);
+            try {
+                Object score = titleSystem.getMethod("computeTitleScore", sp).invoke(null, nms);
+                if (score instanceof Number n) {
+                    out.put("title_score", String.valueOf(n.intValue()));
+                }
+            } catch (Throwable ignored) {
+            }
+            Object data = cacheData == null ? null : cacheData.invoke(null, nms);
+            Object progress = data == null ? null
+                    : data.getClass().getMethod("titleProgress").invoke(data);
+            int masteryActive = 0;
+            if (progress != null) {
+                Object elites = progress.getClass().getMethod("elitesKilled").invoke(progress);
+                Object bosses = progress.getClass().getMethod("bossesKilled").invoke(progress);
+                Object sense = progress.getClass().getMethod("titleSenseChat").invoke(progress);
+                out.put("elites_killed", elites == null ? "0" : String.valueOf(elites));
+                out.put("bosses_killed", bosses == null ? "0" : String.valueOf(bosses));
+                out.put("title_sense", Boolean.TRUE.equals(sense) ? "true" : "false");
+                String activeId = out.getOrDefault("active_title_id", "");
+                if (!activeId.isBlank()) {
+                    Object m = progress.getClass().getMethod("masteryLevel", String.class)
+                            .invoke(progress, activeId);
+                    if (m instanceof Number n) {
+                        masteryActive = n.intValue();
+                    }
+                }
+            }
+            try {
+                Class<?> senseCls = loadClass("com.dbzlegacy.adaptivedifficulty.title.TitleSense", cl);
+                Object near = senseCls.getMethod("countNearbyElites", sp).invoke(null, nms);
+                if (near instanceof Number n) {
+                    out.put("nearby_elites", String.valueOf(n.intValue()));
+                }
+            } catch (Throwable ignored) {
+            }
+            int unlocked = 0;
+            int total = 0;
             if (titleValues != null) {
                 for (Object title : (Object[]) titleValues.invoke(null)) {
+                    total++;
                     String id = String.valueOf(field(title, "id"));
                     String display = String.valueOf(field(title, "display"));
+                    Object rarity = field(title, "rarity");
+                    String rarityName = rarity == null ? "" : String.valueOf(field(rarity, "display"));
+                    String rarityColor = rarity == null ? "7" : String.valueOf(field(rarity, "color"));
+                    int mastery = 0;
+                    if (progress != null) {
+                        Object m = progress.getClass().getMethod("masteryLevel", String.class)
+                                .invoke(progress, id);
+                        if (m instanceof Number n) {
+                            mastery = n.intValue();
+                        }
+                    }
+                    try {
+                        Object masteredName = title.getClass()
+                                .getMethod("masteryDisplay", int.class)
+                                .invoke(title, mastery);
+                        if (masteredName != null) {
+                            display = String.valueOf(masteredName);
+                        }
+                    } catch (Throwable ignored) {
+                    }
                     out.put("title_" + id + "_name", display);
+                    out.put("title_" + id + "_rarity", rarityName);
+                    out.put("title_" + id + "_rarity_color", rarityColor);
+                    out.put("title_" + id + "_mastery", String.valueOf(mastery));
                     boolean earned = false;
                     if (titleHas != null) {
                         earned = Boolean.TRUE.equals(titleHas.invoke(null, nms, title));
+                    }
+                    if (earned) {
+                        unlocked++;
                     }
                     out.put("title_" + id + "_earned", earned ? "true" : "false");
                     String req = "";
@@ -495,7 +570,21 @@ public final class ForgeBridge {
                         req = tip == null ? "" : String.valueOf(tip);
                     }
                     out.put("title_" + id + "_req", req);
+                    try {
+                        Object perk = title.getClass().getMethod("perkTip", int.class)
+                                .invoke(title, mastery);
+                        out.put("title_" + id + "_perk", perk == null ? "" : String.valueOf(perk));
+                        if (id.equalsIgnoreCase(out.getOrDefault("active_title_id", ""))) {
+                            out.put("title_perk", perk == null ? "" : String.valueOf(perk));
+                        }
+                    } catch (Throwable ignored) {
+                    }
                 }
+            }
+            out.put("titles_unlocked", String.valueOf(unlocked));
+            out.put("titles_total", String.valueOf(total));
+            if (out.getOrDefault("title_perk", "").isBlank() && masteryActive >= 0) {
+                // leave empty when none equipped
             }
         } catch (Throwable ignored) {
         }
@@ -581,6 +670,7 @@ public final class ForgeBridge {
                  "equip_title", "clear_title", "equip", "unequip_title",
                  "toggle_personal", "personal", "toggle_difficulty", "difficulty_toggle",
                  "toggle_coin_chat", "coin_chat", "toggle_chat", "chat_drops",
+                 "toggle_title_sense", "title_sense", "toggle_sense", "sense_chat",
                  "page", "refresh", "set" -> true;
             default -> false;
         };

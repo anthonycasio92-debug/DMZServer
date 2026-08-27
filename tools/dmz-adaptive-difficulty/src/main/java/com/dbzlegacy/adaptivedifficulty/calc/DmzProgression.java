@@ -275,6 +275,30 @@ public final class DmzProgression {
     }
 
     /**
+     * Refresh the base-form DMZ sample when in base form; otherwise return the cached sample.
+     */
+    public static int refreshBaseFormSample(Player player) {
+        if (player == null) {
+            return 1;
+        }
+        if (!isTransformed(player)) {
+            int live = dmzLevel(player);
+            BASE_FORM_LEVEL.put(player.m_20148_(), live);
+            return live;
+        }
+        Integer cached = BASE_FORM_LEVEL.get(player.m_20148_());
+        return cached != null ? Math.max(1, cached) : 1;
+    }
+
+    /**
+     * GUI-open hook: refresh the base-form DMZ sample, then return the unlock-gate level.
+     * Does not require personal difficulty ON — opening the menu alone is enough.
+     */
+    public static int sampleLevelOnGuiOpen(Player player) {
+        return refreshBaseFormSample(player);
+    }
+
+    /**
      * True when an active form / stack form is set, or form multipliers clearly exceed base.
      */
     public static boolean isTransformed(Player player) {

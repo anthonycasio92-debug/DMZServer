@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -12,6 +13,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -32,25 +34,69 @@ public final class DifficultyChestGui implements Listener {
         this.plugin = plugin;
     }
 
-    public void open(Player player, String page) {
-        // Match chat menu: refresh unlock / title grants before painting slots.
-        ForgeBridge.syncPlayerProgress(player);
-        String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
-        Inventory inv = switch (p) {
-            case "adjust", "change", "set", "lower" -> lower(player);
-            case "buy", "purchase", "unlock" -> buy(player);
-            case "titles", "title" -> titles(player);
-            case "team", "teams" -> teamsWip(player);
-            case "stats", "statistics", "details" -> ForgeBridge.isStaff(player) ? stats(player) : main(player);
-            default -> main(player);
-        };
-        player.openInventory(inv);
+    public void open(Player viewer, String page) {
+        openAs(viewer, AdminInspectSessions.resolveSubject(viewer), page);
     }
 
-    private Inventory main(Player player) {
-        Map<String, String> ph = ForgeBridge.placeholders(player);
-        Holder holder = new Holder("main");
-        Inventory inv = Bukkit.createInventory(holder, 36, color("&8Adaptive Difficulty"));
+    /**
+     * Open the chest GUI for {@code viewer}, painting and applying actions as {@code subject}.
+     * Staff inspect uses this so they see the target's gates/bugs and can edit settings.
+     */
+    public void openAs(Player viewer, Player subject, String page) {
+        if (viewer == null) {
+            return;
+        }
+        if (subject == null || !subject.isOnline()) {
+            AdminInspectSessions.clear(viewer.getUniqueId());
+            subject = viewer;
+        }
+        // Match chat menu: refresh unlock / title grants before painting slots.
+        ForgeBridge.syncPlayerProgress(subject);
+        String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
+        Inventory inv = switch (p) {
+            case "adjust", "change", "set", "lower" -> lower(viewer, subject);
+            case "buy", "purchase", "unlock" -> buy(viewer, subject);
+            case "titles", "title" -> titles(viewer, subject);
+            case "team", "teams" -> teamsWip(viewer, subject);
+            case "stats", "statistics", "details" ->
+                    ForgeBridge.isStaff(viewer) ? stats(viewer, subject) : main(viewer, subject);
+            default -> main(viewer, subject);
+        };
+        viewer.openInventory(inv);
+    }
+
+    private static boolean inspecting(Player viewer, Player subject) {
+        return viewer != null && subject != null
+                && !viewer.getUniqueId().equals(subject.getUniqueId());
+    }
+
+    private static String titleFor(Player viewer, Player subject, String base) {
+        if (inspecting(viewer, subject)) {
+            return color("&8" + base + " · &c" + subject.getName());
+        }
+        return color("&8" + base);
+    }
+
+    private static Holder holderFor(Player viewer, Player subject, String page) {
+        if (inspecting(viewer, subject)) {
+            return new Holder(page, subject.getUniqueId(), subject.getName());
+        }
+        return new Holder(page, null, null);
+    }
+
+    private static List<String> inspectBanner(Player subject) {
+        return List.of(
+                "",
+                "&cInspecting &f" + subject.getName(),
+                "&7You see their live Adaptive Difficulty state.",
+                "&8Clicks edit &ftheir &8settings / tiers / titles."
+        );
+    }
+
+    private Inventory main(Player viewer, Player subject) {
+        Map<String, String> ph = ForgeBridge.placeholders(subject);
+        Holder holder = holderFor(viewer, subject, "main");
+        Inventory inv = Bukkit.createInventory(holder, 36, titleFor(viewer, subject, "Adaptive Difficulty"));
         holder.bind(inv);
         frame(inv, 36);
 
@@ -60,16 +106,22 @@ public final class DifficultyChestGui implements Listener {
         if (!bridgeOk || !systemOn || !allowed) {
             String title = !bridgeOk ? "&c&lUNAVAILABLE"
                     : !systemOn ? "&c&lSYSTEM DISABLED" : "&e&lWHITELIST ONLY";
-            put(holder, inv, 13, item(Material.NETHER_STAR, title, unavailableLore(player, systemOn, bridgeOk)));
+            put(holder, inv, 13, item(Material.NETHER_STAR, title, unavailableLore(viewer, subject, systemOn, bridgeOk)));
             put(holder, inv, 31, closeBtn(), SlotAction.dismiss());
             return inv;
         }
 
         boolean personalOn = "true".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "false"));
         String stateColor = personalOn ? ph.getOrDefault("state_color", "f") : "c";
+        List<String> status = statusLore(ph, stateColor, ForgeBridge.isStaff(viewer), personalOn, subject.getName(), inspecting(viewer, subject));
+        if (inspecting(viewer, subject)) {
+            List<String> withBanner = new ArrayList<>(inspectBanner(subject));
+            withBanner.addAll(status);
+            status = withBanner;
+        }
         put(holder, inv, 13, item(Material.NETHER_STAR,
                 personalOn ? "&f&lAdaptive Difficulty" : "&c&lDIFFICULTY OFF",
-                statusLore(ph, stateColor, ForgeBridge.isStaff(player), personalOn)));
+                status));
         // Primary actions — centered trio
         put(holder, inv, 20, pageBtn(Material.GOLD_INGOT, "&eBuy Tier",
                 "&7Purchase a higher Unlock Tier", "&8Ancient Coins · pay-up OK · change returned"),
@@ -105,7 +157,7 @@ public final class DifficultyChestGui implements Listener {
                                 : "&7Click to show drop messages",
                         "&8Only affects Ancient Coin kill chat"
                 )), SlotAction.act("toggle_coin_chat", "0", "main"));
-        if (ForgeBridge.isStaff(player)) {
+        if (ForgeBridge.isStaff(viewer)) {
             put(holder, inv, 33, pageBtn(Material.BOOK, "&8Details",
                     "&7Staff breakdown", "&8CR · prestige · kit gates"),
                     SlotAction.page("stats"));
@@ -114,10 +166,10 @@ public final class DifficultyChestGui implements Listener {
         return inv;
     }
 
-    private Inventory buy(Player player) {
-        Map<String, String> ph = ForgeBridge.placeholders(player);
-        Holder holder = new Holder("buy");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Buy Higher Tier"));
+    private Inventory buy(Player viewer, Player subject) {
+        Map<String, String> ph = ForgeBridge.placeholders(subject);
+        Holder holder = holderFor(viewer, subject, "buy");
+        Inventory inv = Bukkit.createInventory(holder, 45, titleFor(viewer, subject, "Buy Higher Tier"));
         holder.bind(inv);
         frame(inv, 45);
 
@@ -125,7 +177,7 @@ public final class DifficultyChestGui implements Listener {
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
         boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
         if (!bridgeOk || !systemOn || !allowed) {
-            put(holder, inv, 4, item(Material.BARRIER, "&c&lBuy Locked", unavailableLore(player, systemOn, bridgeOk)));
+            put(holder, inv, 4, item(Material.BARRIER, "&c&lBuy Locked", unavailableLore(viewer, subject, systemOn, bridgeOk)));
             put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
             put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
             return inv;
@@ -149,6 +201,8 @@ public final class DifficultyChestGui implements Listener {
         info.add("");
         info.add("&eUnlock with DMZ level &7OR &ePrestige");
         info.add("&8Either one qualifies — prestige is not required");
+        info.add("&cCR / Battle Power does NOT unlock tiers");
+        info.add("&8If stuck transformed: drop to base form once to sync");
         info.add("");
         info.addAll(coinLore(ph));
         info.add("");
@@ -164,10 +218,10 @@ public final class DifficultyChestGui implements Listener {
         return inv;
     }
 
-    private Inventory lower(Player player) {
-        Map<String, String> ph = ForgeBridge.placeholders(player);
-        Holder holder = new Holder("lower");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Lower Difficulty Tier"));
+    private Inventory lower(Player viewer, Player subject) {
+        Map<String, String> ph = ForgeBridge.placeholders(subject);
+        Holder holder = holderFor(viewer, subject, "lower");
+        Inventory inv = Bukkit.createInventory(holder, 45, titleFor(viewer, subject, "Lower Difficulty Tier"));
         holder.bind(inv);
         frame(inv, 45);
 
@@ -175,7 +229,7 @@ public final class DifficultyChestGui implements Listener {
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
         boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
         if (!bridgeOk || !systemOn || !allowed) {
-            put(holder, inv, 4, item(Material.BARRIER, "&c&lLower Locked", unavailableLore(player, systemOn, bridgeOk)));
+            put(holder, inv, 4, item(Material.BARRIER, "&c&lLower Locked", unavailableLore(viewer, subject, systemOn, bridgeOk)));
             put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
             put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
             return inv;
@@ -213,46 +267,85 @@ public final class DifficultyChestGui implements Listener {
         return inv;
     }
 
-    private Inventory titles(Player player) {
-        Map<String, String> ph = ForgeBridge.placeholders(player);
-        Holder holder = new Holder("titles");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Difficulty Titles"));
+    private Inventory titles(Player viewer, Player subject) {
+        Map<String, String> ph = ForgeBridge.placeholders(subject);
+        Holder holder = holderFor(viewer, subject, "titles");
+        Inventory inv = Bukkit.createInventory(holder, 54, titleFor(viewer, subject, "Titles"));
         holder.bind(inv);
-        frame(inv, 45);
+        frame(inv, 54);
 
+        String equippedName = blankAsNone(ph.getOrDefault("active_title", ""));
+        String perk = ph.getOrDefault("title_perk", "");
         put(holder, inv, 4, item(Material.NAME_TAG, "&d&lTitles", List.of(
                 "",
-                "&7Equipped &e" + blankAsNone(ph.getOrDefault("active_title", "")),
-                "&7Current Tier &f" + ph.getOrDefault("active_tier_name", "None"),
-                "&7CR &f" + ph.getOrDefault("combat_rating", "?"),
+                "&7Equipped &e" + equippedName,
+                perk.isBlank() ? "&8No equipped perk" : "&7Perk &f" + perk,
                 "",
-                "&8Tier titles need active tier + higher DMZ/Prestige",
-                "&8Combat titles need harder kill feats"
+                "&7Title Score &6" + ph.getOrDefault("title_score", "0"),
+                "&7Unlocked &f" + ph.getOrDefault("titles_unlocked", "0")
+                        + " &8/ &f" + ph.getOrDefault("titles_total", "0"),
+                "&7Elites &f" + ph.getOrDefault("elites_killed", "0")
+                        + "  &7Bosses &f" + ph.getOrDefault("bosses_killed", "0"),
+                "&7Nearby Elites &f" + ph.getOrDefault("nearby_elites", "0"),
+                "",
+                "&8Small perks only — tiers stay primary power"
         )));
+        boolean senseOn = "true".equalsIgnoreCase(ph.getOrDefault("title_sense", "true"));
+        put(holder, inv, 7, tipBtn(senseOn ? Material.BELL : Material.NOTE_BLOCK,
+                senseOn ? "&aTitle Sense ON" : "&8Title Sense OFF",
+                List.of("&7Elite / Boss recognition chat", "&8Click to toggle")),
+                SlotAction.act("toggle_title_sense", "0", "titles"));
         put(holder, inv, 8, tipBtn(Material.BARRIER, "&cClear Title",
                 List.of("&7Unequip your title")), SlotAction.act("clear_title", "0", "titles"));
 
-        String[] ids = {
+        // Tier titles row
+        putTitleRow(holder, inv, ph, new String[]{
                 "t1_awakened", "t2_enhanced", "t3_elite", "t4_advanced",
-                "t5_master", "t6_legendary", "t7_god",
-                "boss_slayer", "elite_hunter", "ascendant"
-        };
-        Material[] mats = {
+                "t5_master", "t6_legendary", "t7_god"
+        }, new Material[]{
                 Material.COPPER_INGOT, Material.IRON_INGOT, Material.GOLD_INGOT, Material.DIAMOND,
-                Material.EMERALD, Material.NETHERITE_INGOT, Material.NETHER_STAR,
-                Material.WITHER_SKELETON_SKULL, Material.DRAGON_HEAD, Material.ENCHANTED_GOLDEN_APPLE
-        };
-        int[] slots = {19, 20, 21, 22, 23, 24, 25, 29, 31, 33};
+                Material.EMERALD, Material.NETHERITE_INGOT, Material.NETHER_STAR
+        }, new int[]{19, 20, 21, 22, 23, 24, 25});
+
+        // Combat + challenge titles
+        putTitleRow(holder, inv, ph, new String[]{
+                "elite_hunter", "boss_slayer", "ascendant",
+                "mutation_hunter", "untouchable", "immortal",
+                "coin_lord", "survivor", "worldbreaker"
+        }, new Material[]{
+                Material.DRAGON_HEAD, Material.WITHER_SKELETON_SKULL, Material.ENCHANTED_GOLDEN_APPLE,
+                Material.AMETHYST_SHARD, Material.SHIELD, Material.TOTEM_OF_UNDYING,
+                Material.GOLD_BLOCK, Material.CLOCK, Material.END_CRYSTAL
+        }, new int[]{28, 29, 30, 31, 32, 33, 37, 39, 41});
+
+        put(holder, inv, 45, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private void putTitleRow(
+            Holder holder, Inventory inv, Map<String, String> ph,
+            String[] ids, Material[] mats, int[] slots
+    ) {
         String equipped = ph.getOrDefault("active_title_id", "");
         for (int i = 0; i < ids.length; i++) {
             String id = ids[i];
             boolean earned = "true".equalsIgnoreCase(ph.getOrDefault("title_" + id + "_earned", "false"));
             String name = ph.getOrDefault("title_" + id + "_name", id);
             String tip = ph.getOrDefault("title_" + id + "_req", "");
+            String perk = ph.getOrDefault("title_" + id + "_perk", "");
+            String rarity = ph.getOrDefault("title_" + id + "_rarity", "");
+            String rarityColor = ph.getOrDefault("title_" + id + "_rarity_color", "7");
             boolean isEquipped = id.equalsIgnoreCase(equipped);
             String title = isEquipped ? "&a● " + name : earned ? "&e" + name : "&8" + name;
             List<String> tipLore = new ArrayList<>();
+            if (!rarity.isBlank()) {
+                tipLore.add("&" + rarityColor + rarity);
+            }
             tipLore.add("&7" + tip);
+            if (!perk.isBlank()) {
+                tipLore.add("&f" + perk);
+            }
             if (isEquipped) {
                 tipLore.add("&aCurrently equipped &8· click to unequip");
             } else if (earned) {
@@ -267,15 +360,11 @@ public final class DifficultyChestGui implements Listener {
                 put(holder, inv, slots[i], item(mats[i], title, prependBlank(tipLore)));
             }
         }
-
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
-        return inv;
     }
 
-    private Inventory teamsWip(Player player) {
-        Holder holder = new Holder("team");
-        Inventory inv = Bukkit.createInventory(holder, 27, color("&8Teams (WIP)"));
+    private Inventory teamsWip(Player viewer, Player subject) {
+        Holder holder = holderFor(viewer, subject, "team");
+        Inventory inv = Bukkit.createInventory(holder, 27, titleFor(viewer, subject, "Teams (WIP)"));
         holder.bind(inv);
         frame(inv, 27);
         put(holder, inv, 13, item(Material.COMPASS, "&8&lTeams — Work in Progress", List.of(
@@ -290,13 +379,13 @@ public final class DifficultyChestGui implements Listener {
         return inv;
     }
 
-    private Inventory stats(Player player) {
-        if (!ForgeBridge.isStaff(player)) {
-            return main(player);
+    private Inventory stats(Player viewer, Player subject) {
+        if (!ForgeBridge.isStaff(viewer)) {
+            return main(viewer, subject);
         }
-        Map<String, String> ph = ForgeBridge.placeholders(player);
-        Holder holder = new Holder("stats");
-        Inventory inv = Bukkit.createInventory(holder, 36, color("&8Details (staff)"));
+        Map<String, String> ph = ForgeBridge.placeholders(subject);
+        Holder holder = holderFor(viewer, subject, "stats");
+        Inventory inv = Bukkit.createInventory(holder, 36, titleFor(viewer, subject, "Details (staff)"));
         holder.bind(inv);
         frame(inv, 36);
         String stateColor = ph.getOrDefault("state_color", "f");
@@ -369,6 +458,7 @@ public final class DifficultyChestGui implements Listener {
                 tip.add("&8" + reqTip);
                 tip.add("&8You: DMZ " + ph.getOrDefault("level", "?")
                         + " · Prestige " + ph.getOrDefault("prestige", "?"));
+                tip.add("&8CR/BP ignored — use DMZ level or Prestige");
             } else if (!buyMode) {
                 tip.add("&8Higher than current — use Buy");
             }
@@ -404,11 +494,13 @@ public final class DifficultyChestGui implements Listener {
         return out;
     }
 
-    /** Clean copy for players; command tips only for staff. */
-    private static List<String> unavailableLore(Player player, boolean systemOn, boolean bridgeOk) {
-        boolean staff = ForgeBridge.isStaff(player);
+    /** Clean copy for players; command tips for staff / inspect. */
+    private static List<String> unavailableLore(
+            Player viewer, Player subject, boolean systemOn, boolean bridgeOk) {
+        boolean staff = ForgeBridge.isStaff(viewer);
+        boolean inspect = inspecting(viewer, subject);
         if (!bridgeOk) {
-            if (staff) {
+            if (staff || inspect) {
                 return List.of("", "&cForge Adaptive Difficulty mod unreachable",
                         "&7Check mods/ for AdaptiveDifficulty-*.jar",
                         "&8GUI actions are disabled until the mod loads");
@@ -416,26 +508,31 @@ public final class DifficultyChestGui implements Listener {
             return List.of("", "&cAdaptive Difficulty is unavailable", "&7Please try again later");
         }
         if (!systemOn) {
-            if (staff) {
+            if (staff || inspect) {
                 return List.of("", "&cAdaptive Difficulty is off",
                         "&7No scaling, coins, or purchases",
                         "&8Re-enable: &f/difficulty admin on");
             }
             return List.of("", "&cAdaptive Difficulty is off", "&7Please try again later");
         }
-        if (staff) {
-            return List.of("", "&eTesting whitelist is on", "&7You are not on the whitelist",
-                    "&8Add: &f/difficulty admin whitelist add <you>");
+        if (staff || inspect) {
+            return List.of("", "&eTesting whitelist is on",
+                    "&7" + (inspect ? subject.getName() + " is" : "You are") + " not on the whitelist",
+                    "&8Add: &f/difficulty admin whitelist add "
+                            + (inspect ? subject.getName() : "<you>"));
         }
         return List.of("", "&eNot available right now", "&7Ask an admin if you need access");
     }
 
     private static List<String> statusLore(
-            Map<String, String> ph, String stateColor, boolean staff, boolean personalOn) {
+            Map<String, String> ph, String stateColor, boolean staff, boolean personalOn,
+            String subjectName, boolean inspect) {
         List<String> lore = new ArrayList<>();
         lore.add("");
         if (!personalOn) {
-            lore.add("&cDifficulty is OFF for you");
+            lore.add(inspect
+                    ? "&cDifficulty is OFF for &f" + subjectName
+                    : "&cDifficulty is OFF for you");
             lore.add("&7No scaling, kill coins, AI, or tier buys");
             lore.add("&8Saved tier &f" + ph.getOrDefault("active_tier_name", "None")
                     + "  &8·  &7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"));
@@ -494,7 +591,7 @@ public final class DifficultyChestGui implements Listener {
             return;
         }
         event.setCancelled(true);
-        if (!(event.getWhoClicked() instanceof Player player)) {
+        if (!(event.getWhoClicked() instanceof Player viewer)) {
             return;
         }
         // Only top inventory slots we registered — ignore player inv / lore spoofing.
@@ -506,13 +603,21 @@ public final class DifficultyChestGui implements Listener {
         if (slotAction == null) {
             return;
         }
+        Player subject = resolveHolderSubject(viewer, holder);
+        if (subject == null) {
+            viewer.sendMessage("§cInspect target is offline — closed.");
+            AdminInspectSessions.clear(viewer.getUniqueId());
+            viewer.closeInventory();
+            return;
+        }
         if (slotAction.shouldClose) {
-            player.closeInventory();
+            viewer.closeInventory();
             return;
         }
         if (slotAction.page != null) {
             final String targetPage = slotAction.page;
-            Bukkit.getScheduler().runTask(plugin, () -> open(player, targetPage));
+            final Player subjectFinal = subject;
+            Bukkit.getScheduler().runTask(plugin, () -> openAs(viewer, subjectFinal, targetPage));
             return;
         }
         if (slotAction.action == null || slotAction.action.isBlank()) {
@@ -520,13 +625,42 @@ public final class DifficultyChestGui implements Listener {
         }
         final String ret = slotAction.returnPage == null || slotAction.returnPage.isBlank()
                 ? "main" : slotAction.returnPage;
-        final String cmd = "difficulty do " + slotAction.action
-                + (slotAction.arg == null || slotAction.arg.isBlank() ? " 0" : " " + slotAction.arg)
-                + " " + ret;
+        final String action = slotAction.action;
+        final String arg = slotAction.arg == null || slotAction.arg.isBlank() ? "0" : slotAction.arg;
+        final Player subjectFinal = subject;
+        final boolean inspect = inspecting(viewer, subject);
         Bukkit.getScheduler().runTask(plugin, () -> {
-            player.closeInventory();
-            player.performCommand(cmd);
+            if (inspect) {
+                // Never performCommand here — that would edit the admin, not the subject.
+                String reopen = ForgeBridge.resolveReturnPage(action, arg, ret);
+                ForgeBridge.ActionResult result =
+                        ForgeBridge.handleActionResult(subjectFinal, action, arg, reopen);
+                if (result.message() != null && !result.message().isBlank()) {
+                    String msg = result.message();
+                    if (!msg.startsWith("§")) {
+                        msg = (result.ok() ? "§a" : "§c") + msg;
+                    }
+                    viewer.sendMessage("§8[" + subjectFinal.getName() + "] " + msg);
+                }
+                if (reopen != null && !reopen.isBlank()) {
+                    openAs(viewer, subjectFinal, reopen);
+                }
+                return;
+            }
+            viewer.closeInventory();
+            viewer.performCommand("difficulty do " + action + " " + arg + " " + ret);
         });
+    }
+
+    private static Player resolveHolderSubject(Player viewer, Holder holder) {
+        if (holder.subjectId == null) {
+            return viewer;
+        }
+        Player subject = Bukkit.getPlayer(holder.subjectId);
+        if (subject == null || !subject.isOnline()) {
+            return null;
+        }
+        return subject;
     }
 
     @EventHandler
@@ -534,6 +668,11 @@ public final class DifficultyChestGui implements Listener {
         if (event.getInventory().getHolder() instanceof Holder) {
             event.setCancelled(true);
         }
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        AdminInspectSessions.clearAllInvolving(event.getPlayer().getUniqueId());
     }
 
     private static void put(Holder holder, Inventory inv, int slot, ItemStack stack) {
@@ -622,11 +761,20 @@ public final class DifficultyChestGui implements Listener {
 
     static final class Holder implements InventoryHolder {
         final String page;
+        /** Null when the viewer is editing themselves. */
+        final UUID subjectId;
+        final String subjectName;
         final Map<Integer, SlotAction> actions = new HashMap<>();
         Inventory inventory;
 
         Holder(String page) {
+            this(page, null, null);
+        }
+
+        Holder(String page, UUID subjectId, String subjectName) {
             this.page = page;
+            this.subjectId = subjectId;
+            this.subjectName = subjectName;
         }
 
         void bind(Inventory inventory) {
