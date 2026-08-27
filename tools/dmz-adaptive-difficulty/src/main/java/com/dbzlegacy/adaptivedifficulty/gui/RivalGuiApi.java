@@ -316,6 +316,12 @@ public final class RivalGuiApi {
             case "stats", "statistics" -> statsLines(player);
             case "challenge", "challenges" -> challengeLines(player);
             case "top", "leaderboard" -> topLines(player);
+            case "progress" -> List.of(
+                    "§b§lRival Progress",
+                    "§7Season · Quests · Achievements",
+                    "§7Hall of Fame · Journal · Title",
+                    "§8Open a page from the Progress menu"
+            );
             case "season" -> seasonLines(player);
             case "quests", "quest" -> questLines(player);
             case "achievements", "achs", "ach" -> achievementLines(player);

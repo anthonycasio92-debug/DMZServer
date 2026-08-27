@@ -195,14 +195,34 @@ public final class CmiSparGui {
 
     private static void openLines(Player player, String page, String title, Material mat) {
         CMIGui gui = base(player, "&8Legacy Mechanics · Sparring", 5);
-        CMIGuiButton info = new CMIGuiButton(4, mat, title);
-        info.lockField();
+        CMIGuiButton header = new CMIGuiButton(4, mat, title);
+        header.lockField();
+        header.addLore(List.of("", "&7Content slots below",
+                "&8Each paper holds part of this page"));
+        gui.addButton(header);
         List<String> lore = toAmp(ForgeBridge.sparLines(player, page));
-        List<String> withBlank = new ArrayList<>();
-        withBlank.add("");
-        withBlank.addAll(lore.isEmpty() ? List.of("&7Nothing here yet.") : lore);
-        info.addLore(withBlank);
-        gui.addButton(info);
+        if (lore.isEmpty()) {
+            lore = List.of("&7Nothing here yet.");
+        }
+        List<List<String>> parts = GuiLoreChunks.chunk(lore);
+        int placed = 0;
+        for (List<String> part : parts) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed];
+            String partTitle = parts.size() == 1
+                    ? "&fDetails"
+                    : "&fPart &e" + (placed + 1) + "&8/&e" + parts.size();
+            CMIGuiButton chunk = new CMIGuiButton(slot, Material.PAPER, partTitle);
+            chunk.lockField();
+            List<String> withBlank = new ArrayList<>();
+            withBlank.add("");
+            withBlank.addAll(part);
+            chunk.addLore(withBlank);
+            gui.addButton(chunk);
+            placed++;
+        }
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
