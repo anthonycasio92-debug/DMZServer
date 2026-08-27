@@ -31,6 +31,26 @@ public final class CmiGuiBridge {
     }
 
     public static boolean open(ServerPlayer player, String page) {
+        return openNamed(player, page, "openMenuForUuid", "openMenu", "CMI Difficulty");
+    }
+
+    /** Opens Rival CMI/inventory GUI via companion plugin. */
+    public static boolean openRival(ServerPlayer player, String page) {
+        return openNamed(player, page, "openRivalMenuForUuid", "openRivalMenu", "CMI Rival");
+    }
+
+    /** Opens Sparring CMI/inventory GUI via companion plugin. */
+    public static boolean openSpar(ServerPlayer player, String page) {
+        return openNamed(player, page, "openSparMenuForUuid", "openSparMenu", "CMI Spar");
+    }
+
+    private static boolean openNamed(
+            ServerPlayer player,
+            String page,
+            String uuidMethod,
+            String playerMethod,
+            String label
+    ) {
         if (player == null || !available()) {
             return false;
         }
@@ -42,27 +62,27 @@ public final class CmiGuiBridge {
             }
             // Prefer UUID entry — avoids Mohist Player classloader mismatch and
             // schedules onto the Bukkit primary thread inside the plugin.
-            if (invokeUuidOpen(plugin, "openMenuForUuid", player.m_20148_(), target)) {
+            if (invokeUuidOpen(plugin, uuidMethod, player.m_20148_(), target)) {
                 return true;
             }
             Object bukkitPlayer = bukkitPlayer(player);
             if (bukkitPlayer == null) {
                 AdaptiveDifficultyMod.LOGGER.warn(
-                        "[{}] CMI GUI open skipped — bukkit player unresolved for {}",
-                        AdaptiveDifficultyMod.MOD_ID, player.m_6302_()
+                        "[{}] {} GUI open skipped — bukkit player unresolved for {}",
+                        AdaptiveDifficultyMod.MOD_ID, label, player.m_6302_()
                 );
                 return false;
             }
-            Method open = findOpenMethod(plugin.getClass(), "openMenu");
+            Method open = findOpenMethod(plugin.getClass(), playerMethod);
             if (open == null) {
-                throw new NoSuchMethodException("openMenu(Player,String) / openMenuForUuid");
+                throw new NoSuchMethodException(playerMethod + "(Player,String) / " + uuidMethod);
             }
             open.invoke(plugin, bukkitPlayer, target);
             return true;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] CMI GUI open failed: {}",
-                    AdaptiveDifficultyMod.MOD_ID, t.toString()
+                    "[{}] {} GUI open failed: {}",
+                    AdaptiveDifficultyMod.MOD_ID, label, t.toString()
             );
             return false;
         }

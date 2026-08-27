@@ -17,6 +17,52 @@ public final class BukkitGuiBridge {
     }
 
     public static boolean open(ServerPlayer player, String page) {
+        return openNamed(
+                player,
+                page,
+                "openChestMenuForUuid",
+                "openMenuForUuid",
+                "openChestMenu",
+                "openMenu",
+                "Difficulty"
+        );
+    }
+
+    /** Chest-only Rival open for {@code guiBackend=chest}. */
+    public static boolean openRival(ServerPlayer player, String page) {
+        return openNamed(
+                player,
+                page,
+                "openRivalChestMenuForUuid",
+                "openRivalMenuForUuid",
+                "openRivalChestMenu",
+                "openRivalMenu",
+                "Rival"
+        );
+    }
+
+    /** Chest-only Spar open for {@code guiBackend=chest}. */
+    public static boolean openSpar(ServerPlayer player, String page) {
+        return openNamed(
+                player,
+                page,
+                "openSparChestMenuForUuid",
+                "openSparMenuForUuid",
+                "openSparChestMenu",
+                "openSparMenu",
+                "Spar"
+        );
+    }
+
+    private static boolean openNamed(
+            ServerPlayer player,
+            String page,
+            String chestUuidMethod,
+            String fallbackUuidMethod,
+            String chestPlayerMethod,
+            String fallbackPlayerMethod,
+            String label
+    ) {
         if (player == null || !available()) {
             return false;
         }
@@ -26,34 +72,34 @@ public final class BukkitGuiBridge {
             if (plugin == null) {
                 return false;
             }
-            if (CmiGuiBridge.invokeUuidOpen(plugin, "openChestMenuForUuid", player.m_20148_(), target)) {
+            if (CmiGuiBridge.invokeUuidOpen(plugin, chestUuidMethod, player.m_20148_(), target)) {
                 return true;
             }
-            // Older companion jars — fall back to Player open.
-            if (CmiGuiBridge.invokeUuidOpen(plugin, "openMenuForUuid", player.m_20148_(), target)) {
+            // Older companion jars — fall back to inventory UUID open.
+            if (CmiGuiBridge.invokeUuidOpen(plugin, fallbackUuidMethod, player.m_20148_(), target)) {
                 return true;
             }
             Object bukkitPlayer = CmiGuiBridge.bukkitPlayer(player);
             if (bukkitPlayer == null) {
                 AdaptiveDifficultyMod.LOGGER.warn(
-                        "[{}] Chest GUI open skipped — bukkit player unresolved for {}",
-                        AdaptiveDifficultyMod.MOD_ID, player.m_6302_()
+                        "[{}] {} chest GUI open skipped — bukkit player unresolved for {}",
+                        AdaptiveDifficultyMod.MOD_ID, label, player.m_6302_()
                 );
                 return false;
             }
-            Method open = CmiGuiBridge.findOpenMethod(plugin.getClass(), "openChestMenu");
+            Method open = CmiGuiBridge.findOpenMethod(plugin.getClass(), chestPlayerMethod);
             if (open == null) {
-                open = CmiGuiBridge.findOpenMethod(plugin.getClass(), "openMenu");
+                open = CmiGuiBridge.findOpenMethod(plugin.getClass(), fallbackPlayerMethod);
             }
             if (open == null) {
-                throw new NoSuchMethodException("openChestMenu/openMenu");
+                throw new NoSuchMethodException(chestPlayerMethod + "/" + fallbackPlayerMethod);
             }
             open.invoke(plugin, bukkitPlayer, target);
             return true;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] Bukkit chest GUI open failed: {}",
-                    AdaptiveDifficultyMod.MOD_ID, t.toString()
+                    "[{}] Bukkit {} chest GUI open failed: {}",
+                    AdaptiveDifficultyMod.MOD_ID, label, t.toString()
             );
             return false;
         }

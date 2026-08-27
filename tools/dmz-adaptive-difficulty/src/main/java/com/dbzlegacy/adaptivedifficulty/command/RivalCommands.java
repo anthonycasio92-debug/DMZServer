@@ -153,7 +153,7 @@ public final class RivalCommands {
         if (player == null || !enabled(player)) {
             return 0;
         }
-        com.dbzlegacy.adaptivedifficulty.gui.RivalChatMenu.open(player, page);
+        com.dbzlegacy.adaptivedifficulty.gui.RivalMenu.open(player, page);
         return 1;
     }
 

@@ -46,6 +46,10 @@ OPTIONAL_CLASSES = [
     "com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle",
     "com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile",
     "com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu",
+    "com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi",
+    "com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi",
+    "com.dbzlegacy.adaptivedifficulty.gui.RivalChatMenu",
+    "com.dbzlegacy.adaptivedifficulty.gui.SparChatMenu",
     "com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData",
     "com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem",
     "com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty",
@@ -129,6 +133,16 @@ OPTIONAL_METHODS = {
     ],
     "com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu": [
         ("open", "ServerPlayer, java.lang.String"),
+    ],
+    "com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi": [
+        ("placeholders", "ServerPlayer"),
+        ("linesForPage", "ServerPlayer, java.lang.String"),
+        ("handleDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
+    ],
+    "com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi": [
+        ("placeholders", "ServerPlayer"),
+        ("linesForPage", "ServerPlayer, java.lang.String"),
+        ("handleDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
     ],
     "com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData": [
         ("isPersonalEnabled", ""),
@@ -224,6 +238,12 @@ GUI_REQUIRED_METHODS = [
     ("openMenuForUuid", "UUID"),
     ("openChestMenu", "Player"),
     ("openChestMenuForUuid", "UUID"),
+    ("openRivalMenu", "Player"),
+    ("openRivalMenuForUuid", "UUID"),
+    ("openRivalChestMenuForUuid", "UUID"),
+    ("openSparMenu", "Player"),
+    ("openSparMenuForUuid", "UUID"),
+    ("openSparChestMenuForUuid", "UUID"),
 ]
 
 

@@ -1,15 +1,23 @@
 name: AdaptiveDifficultyGUI
-version: '1.0.46'
+version: '1.0.47'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
-description: CMI/CMILib inventory GUI + PlaceholderAPI bridge for LegacyMechanics
+description: CMI/CMILib inventory GUIs (Difficulty · Rival · Sparring) + PlaceholderAPI for LegacyMechanics
 softdepend: [CMILib, CMI, PlaceholderAPI]
 commands:
   difficulty:
     description: Open LegacyMechanics Difficulty GUI
     usage: /difficulty
     aliases: [adifficulty, dmzdifficulty, adaptivedifficulty]
+  rival:
+    description: Open LegacyMechanics Rival CMI/chest GUI
+    usage: /rival
+    aliases: [rivals, rivalry]
+  spar:
+    description: Open LegacyMechanics Sparring CMI/chest GUI
+    usage: /spar
+    aliases: [sparring, sparr]
   dmzdiffgui:
     description: Force-open LegacyMechanics chest/CMI GUI
     usage: /dmzdiffgui [page]

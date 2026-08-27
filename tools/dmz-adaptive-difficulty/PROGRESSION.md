@@ -1,11 +1,11 @@
-# Natural Progression & Fabled Bridges (1.0.46)
+# Natural Progression & Fabled Bridges (1.0.47)
 
 LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus soft-dependency
 **Fabled** bridges (Bukkit / LuckPerms via reflection — never hard-crash if missing).
 
 ## Install (test)
 
-1. Build / install `LegacyMechanics-1.0.46.jar` (+ matching `AdaptiveDifficultyGUI-1.0.46.jar`).
+1. Build / install `LegacyMechanics-1.0.47.jar` (+ matching `AdaptiveDifficultyGUI-1.0.47.jar`).
 2. Keep `enableProgression` / `enableFabledBridge` true (defaults).
 3. **Disable** the CNPC Global Player scripts listed below to avoid double-sync / double TP.
 4. Do **not** deploy to live until tested.

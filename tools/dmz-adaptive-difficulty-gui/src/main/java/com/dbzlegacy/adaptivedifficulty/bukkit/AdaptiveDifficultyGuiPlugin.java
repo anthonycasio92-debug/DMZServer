@@ -8,19 +8,26 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * Bukkit-side entrypoint so {@code /difficulty} works for all players on Mohist.
+ * Bukkit-side entrypoint so {@code /difficulty}, {@code /rival}, and {@code /spar}
+ * work for all players on Mohist.
  * Prefers CMILib (CMI) inventory GUIs, then a plain chest GUI.
  * <p>
- * On Mohist, this plugin owns {@code /difficulty} — admin switches (on/off/whitelist)
- * must be handled here and forwarded into the Forge mod config.
+ * On Mohist, this plugin owns {@code /difficulty}, {@code /rival}, and {@code /spar} —
+ * admin switches (on/off/whitelist) must be handled here and forwarded into the Forge mod config.
  */
 public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     private DifficultyChestGui chestGui;
+    private RivalChestGui rivalChestGui;
+    private SparChestGui sparChestGui;
 
     @Override
     public void onEnable() {
         chestGui = new DifficultyChestGui(this);
+        rivalChestGui = new RivalChestGui(this);
+        sparChestGui = new SparChestGui(this);
         getServer().getPluginManager().registerEvents(chestGui, this);
+        getServer().getPluginManager().registerEvents(rivalChestGui, this);
+        getServer().getPluginManager().registerEvents(sparChestGui, this);
 
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new DmzDiffExpansion(this).register();
@@ -32,9 +39,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 + " forgeMod=" + forge);
         if (!forge) {
             String err = ForgeBridge.lastError();
-            getLogger().severe("AdaptiveDifficulty Forge mod NOT reachable — GUI actions will fail."
+            getLogger().severe("LegacyMechanics Forge mod NOT reachable — GUI actions will fail."
                     + (err == null || err.isBlank() ? "" : " (" + err + ")"));
-            getLogger().severe("Install mods/AdaptiveDifficulty-*.jar and restart.");
+            getLogger().severe("Install mods/LegacyMechanics-*.jar and restart.");
         } else {
             String modVer = ForgeBridge.modVersion();
             String pluginVer = getDescription().getVersion();
@@ -43,12 +50,12 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                         + " — GUI may call missing Forge APIs.");
             } else if (pluginVer != null && !modVer.equals(pluginVer)) {
                 getLogger().severe("VERSION SKEW: Forge mod=" + modVer + " GUI plugin=" + pluginVer
-                        + " — install matching AdaptiveDifficulty + AdaptiveDifficultyGUI jars (same version).");
+                        + " — install matching LegacyMechanics + AdaptiveDifficultyGUI jars (same version).");
             } else {
                 getLogger().info("Version handshake OK: " + pluginVer);
             }
         }
-        getLogger().info("Registered Bukkit /difficulty (CMI GUI preferred).");
+        getLogger().info("Registered Bukkit /difficulty /rival /spar (CMI GUI preferred).");
     }
 
     /**
@@ -147,6 +154,164 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         chestGui.open(player, page);
     }
 
+    // ── Rival ──────────────────────────────────────────────────────────
+
+    public void openRivalMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        openRivalInventory(player, page);
+    }
+
+    public void openRivalMenuForUuid(UUID playerId, String page) {
+        if (playerId == null) {
+            return;
+        }
+        String target = page == null || page.isBlank() ? "main" : page;
+        Runnable task = () -> {
+            Player p = Bukkit.getPlayer(playerId);
+            if (p != null && p.isOnline()) {
+                openRivalInventory(p, target);
+            } else {
+                getLogger().warning("openRivalMenuForUuid: player offline/unresolved " + playerId);
+            }
+        };
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+        } else {
+            Bukkit.getScheduler().runTask(this, task);
+        }
+    }
+
+    public void openRivalChestMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        rivalChestGui.open(player, page);
+    }
+
+    public void openRivalChestMenuForUuid(UUID playerId, String page) {
+        if (playerId == null) {
+            return;
+        }
+        String target = page == null || page.isBlank() ? "main" : page;
+        Runnable task = () -> {
+            Player p = Bukkit.getPlayer(playerId);
+            if (p != null && p.isOnline()) {
+                rivalChestGui.open(p, target);
+            }
+        };
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+        } else {
+            Bukkit.getScheduler().runTask(this, task);
+        }
+    }
+
+    private void openRivalInventory(Player player, String page) {
+        if (CmiRivalGui.available() && CmiRivalGui.open(player, page)) {
+            return;
+        }
+        rivalChestGui.open(player, page);
+    }
+
+    private void openRivalRespectingConfig(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        String backend = ForgeBridge.guiBackend();
+        if ("chat".equals(backend)) {
+            if (!ForgeBridge.openRivalChatMenu(player, page)) {
+                player.sendMessage("§cRival chat menu unavailable (is the Forge mod loaded?).");
+            }
+            return;
+        }
+        if ("chest".equals(backend)) {
+            rivalChestGui.open(player, page);
+            return;
+        }
+        openRivalInventory(player, page);
+    }
+
+    // ── Spar ───────────────────────────────────────────────────────────
+
+    public void openSparMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        openSparInventory(player, page);
+    }
+
+    public void openSparMenuForUuid(UUID playerId, String page) {
+        if (playerId == null) {
+            return;
+        }
+        String target = page == null || page.isBlank() ? "main" : page;
+        Runnable task = () -> {
+            Player p = Bukkit.getPlayer(playerId);
+            if (p != null && p.isOnline()) {
+                openSparInventory(p, target);
+            } else {
+                getLogger().warning("openSparMenuForUuid: player offline/unresolved " + playerId);
+            }
+        };
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+        } else {
+            Bukkit.getScheduler().runTask(this, task);
+        }
+    }
+
+    public void openSparChestMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        sparChestGui.open(player, page);
+    }
+
+    public void openSparChestMenuForUuid(UUID playerId, String page) {
+        if (playerId == null) {
+            return;
+        }
+        String target = page == null || page.isBlank() ? "main" : page;
+        Runnable task = () -> {
+            Player p = Bukkit.getPlayer(playerId);
+            if (p != null && p.isOnline()) {
+                sparChestGui.open(p, target);
+            }
+        };
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+        } else {
+            Bukkit.getScheduler().runTask(this, task);
+        }
+    }
+
+    private void openSparInventory(Player player, String page) {
+        if (CmiSparGui.available() && CmiSparGui.open(player, page)) {
+            return;
+        }
+        sparChestGui.open(player, page);
+    }
+
+    private void openSparRespectingConfig(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        String backend = ForgeBridge.guiBackend();
+        if ("chat".equals(backend)) {
+            if (!ForgeBridge.openSparChatMenu(player, page)) {
+                player.sendMessage("§cSpar chat menu unavailable (is the Forge mod loaded?).");
+            }
+            return;
+        }
+        if ("chest".equals(backend)) {
+            sparChestGui.open(player, page);
+            return;
+        }
+        openSparInventory(player, page);
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         String name = command.getName().toLowerCase();
@@ -170,10 +335,141 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             openInventory(player, page);
             return true;
         }
+        if ("rival".equals(name)) {
+            return handleRival(sender, args);
+        }
+        if ("spar".equals(name)) {
+            return handleSpar(sender, args);
+        }
         if (!"difficulty".equals(name)) {
             return false;
         }
         return handleDifficulty(sender, args);
+    }
+
+    private boolean handleRival(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Players only.");
+            return true;
+        }
+        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+            player.sendMessage("§cNo permission: dmzdiff.gui");
+            return true;
+        }
+        if (args.length == 0 || "gui".equalsIgnoreCase(args[0])) {
+            openRivalRespectingConfig(player, "main");
+            return true;
+        }
+        String sub = args[0].toLowerCase();
+        if ("do".equals(sub)) {
+            String action = args.length > 1 ? args[1] : "";
+            String arg = args.length > 2 ? args[2] : "";
+            String returnPage = args.length > 3 ? args[3] : null;
+            String reopen;
+            if ("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action)) {
+                reopen = arg == null || arg.isBlank() ? "main" : arg;
+            } else {
+                reopen = returnPage == null || returnPage.isBlank() ? "main" : returnPage;
+                String msg = ForgeBridge.rivalHandleDo(player, action, arg, reopen);
+                if (msg != null && !msg.isBlank()) {
+                    if (!msg.startsWith("§")) {
+                        msg = "§a" + msg;
+                    }
+                    player.sendMessage(msg);
+                }
+            }
+            if ("chat".equals(ForgeBridge.guiBackend())) {
+                ForgeBridge.openRivalChatMenu(player, reopen);
+            } else {
+                openRivalInventory(player, reopen);
+            }
+            return true;
+        }
+        // Page shortcuts that map to GUI pages
+        if (switch (sub) {
+            case "list", "stats", "top", "season", "quests", "achievements", "hof",
+                 "journal", "title", "titles", "challenge", "help" -> true;
+            default -> false;
+        }) {
+            String page = "titles".equals(sub) ? "title" : sub;
+            openRivalRespectingConfig(player, page);
+            return true;
+        }
+        // Other rival subcommands (declare/accept/challenge send/…) → Forge brigadier
+        forwardToForge(player, "rival", args);
+        return true;
+    }
+
+    private boolean handleSpar(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Players only.");
+            return true;
+        }
+        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+            player.sendMessage("§cNo permission: dmzdiff.gui");
+            return true;
+        }
+        if (args.length == 0 || "gui".equalsIgnoreCase(args[0])) {
+            openSparRespectingConfig(player, "main");
+            return true;
+        }
+        String sub = args[0].toLowerCase();
+        if ("do".equals(sub)) {
+            String action = args.length > 1 ? args[1] : "";
+            String arg = args.length > 2 ? args[2] : "";
+            String returnPage = args.length > 3 ? args[3] : null;
+            String reopen;
+            if ("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action)) {
+                reopen = arg == null || arg.isBlank() ? "main" : arg;
+            } else {
+                reopen = returnPage == null || returnPage.isBlank() ? "main" : returnPage;
+                String msg = ForgeBridge.sparHandleDo(player, action, arg, reopen);
+                if (msg != null && !msg.isBlank()) {
+                    if (!msg.startsWith("§")) {
+                        msg = "§a" + msg;
+                    }
+                    player.sendMessage(msg);
+                }
+            }
+            if ("chat".equals(ForgeBridge.guiBackend())) {
+                ForgeBridge.openSparChatMenu(player, reopen);
+            } else {
+                openSparInventory(player, reopen);
+            }
+            return true;
+        }
+        if ("stats".equals(sub) || "top".equals(sub) || "mentor".equals(sub) || "help".equals(sub)) {
+            String page = sub;
+            if ("top".equals(sub) && args.length > 1) {
+                page = "top_" + args[1].toLowerCase();
+            }
+            openSparRespectingConfig(player, page);
+            return true;
+        }
+        if ("end".equals(sub)) {
+            String msg = ForgeBridge.sparHandleDo(player, "end", "0", "main");
+            if (msg != null && !msg.isBlank()) {
+                if (!msg.startsWith("§")) {
+                    msg = "§a" + msg;
+                }
+                player.sendMessage(msg);
+            }
+            openSparRespectingConfig(player, "main");
+            return true;
+        }
+        forwardToForge(player, "spar", args);
+        return true;
+    }
+
+    /** Forward unknown subcommands to Forge brigadier via reflection (avoids Bukkit recursion). */
+    private static void forwardToForge(Player player, String root, String[] args) {
+        StringBuilder sb = new StringBuilder(root);
+        for (String a : args) {
+            sb.append(' ').append(a);
+        }
+        if (!ForgeBridge.forwardCommand(player, sb.toString())) {
+            player.sendMessage("§cCould not run §f/" + sb + "§c (Forge command bridge failed).");
+        }
     }
 
     private boolean handleDifficulty(CommandSender sender, String[] args) {

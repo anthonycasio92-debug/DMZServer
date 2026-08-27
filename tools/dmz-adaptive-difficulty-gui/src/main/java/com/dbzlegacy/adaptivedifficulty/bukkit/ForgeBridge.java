@@ -57,6 +57,14 @@ public final class ForgeBridge {
     private static Method resultMessage;
     private static Method resultOk;
     private static Method chatMenuOpen;
+    private static Method rivalChatMenuOpen;
+    private static Method sparChatMenuOpen;
+    private static Method rivalPlaceholdersMethod;
+    private static Method rivalLinesMethod;
+    private static Method rivalHandleDoMethod;
+    private static Method sparPlaceholdersMethod;
+    private static Method sparLinesMethod;
+    private static Method sparHandleDoMethod;
     private static volatile Field RESULT_MESSAGE_FIELD;
 
     private ForgeBridge() {}
@@ -513,9 +521,9 @@ public final class ForgeBridge {
         Object nms = nmsPlayer(player);
         if (nms == null) {
             String detail = resolveError == null || resolveError.isBlank()
-                    ? "is AdaptiveDifficulty-*.jar loaded in mods/?"
+                    ? "is LegacyMechanics-*.jar loaded in mods/?"
                     : resolveError;
-            return ActionResult.fail("Could not reach AdaptiveDifficulty mod (" + detail + ").");
+            return ActionResult.fail("Could not reach LegacyMechanics mod (" + detail + ").");
         }
         try {
             ensureResolved(nms.getClass().getClassLoader());
@@ -717,6 +725,308 @@ public final class ForgeBridge {
             return true;
         } catch (Throwable t) {
             return false;
+        }
+    }
+
+    public static boolean openRivalChatMenu(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return false;
+        }
+        try {
+            ensureRivalResolved(nms.getClass().getClassLoader());
+            if (rivalChatMenuOpen == null) {
+                return false;
+            }
+            rivalChatMenuOpen.invoke(null, nms, page == null || page.isBlank() ? "main" : page);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    public static boolean openSparChatMenu(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return false;
+        }
+        try {
+            ensureSparResolved(nms.getClass().getClassLoader());
+            if (sparChatMenuOpen == null) {
+                return false;
+            }
+            sparChatMenuOpen.invoke(null, nms, page == null || page.isBlank() ? "main" : page);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> rivalPlaceholders(Player player) {
+        Map<String, String> fail = new HashMap<>();
+        fail.put("bridge_ok", "false");
+        fail.put("system_enabled", "false");
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return fail;
+        }
+        try {
+            ensureRivalResolved(nms.getClass().getClassLoader());
+            if (rivalPlaceholdersMethod == null) {
+                return fail;
+            }
+            Object raw = rivalPlaceholdersMethod.invoke(null, nms);
+            if (raw instanceof Map<?, ?> map) {
+                Map<String, String> out = new HashMap<>();
+                for (Map.Entry<?, ?> e : map.entrySet()) {
+                    if (e.getKey() != null) {
+                        out.put(String.valueOf(e.getKey()),
+                                e.getValue() == null ? "" : String.valueOf(e.getValue()));
+                    }
+                }
+                return out;
+            }
+        } catch (Throwable ignored) {
+        }
+        return fail;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> sparPlaceholders(Player player) {
+        Map<String, String> fail = new HashMap<>();
+        fail.put("bridge_ok", "false");
+        fail.put("system_enabled", "false");
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return fail;
+        }
+        try {
+            ensureSparResolved(nms.getClass().getClassLoader());
+            if (sparPlaceholdersMethod == null) {
+                return fail;
+            }
+            Object raw = sparPlaceholdersMethod.invoke(null, nms);
+            if (raw instanceof Map<?, ?> map) {
+                Map<String, String> out = new HashMap<>();
+                for (Map.Entry<?, ?> e : map.entrySet()) {
+                    if (e.getKey() != null) {
+                        out.put(String.valueOf(e.getKey()),
+                                e.getValue() == null ? "" : String.valueOf(e.getValue()));
+                    }
+                }
+                return out;
+            }
+        } catch (Throwable ignored) {
+        }
+        return fail;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<String> rivalLines(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        try {
+            ensureRivalResolved(nms.getClass().getClassLoader());
+            if (rivalLinesMethod == null) {
+                return List.of("§cRival GUI API missing — update LegacyMechanics jar.");
+            }
+            Object raw = rivalLinesMethod.invoke(null, nms, page == null ? "main" : page);
+            if (raw instanceof List<?> list) {
+                List<String> out = new ArrayList<>();
+                for (Object o : list) {
+                    out.add(o == null ? "" : String.valueOf(o));
+                }
+                return out;
+            }
+        } catch (Throwable t) {
+            return List.of("§cRival lines failed: " + t.getMessage());
+        }
+        return List.of();
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<String> sparLines(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        try {
+            ensureSparResolved(nms.getClass().getClassLoader());
+            if (sparLinesMethod == null) {
+                return List.of("§cSpar GUI API missing — update LegacyMechanics jar.");
+            }
+            Object raw = sparLinesMethod.invoke(null, nms, page == null ? "main" : page);
+            if (raw instanceof List<?> list) {
+                List<String> out = new ArrayList<>();
+                for (Object o : list) {
+                    out.add(o == null ? "" : String.valueOf(o));
+                }
+                return out;
+            }
+        } catch (Throwable t) {
+            return List.of("§cSpar lines failed: " + t.getMessage());
+        }
+        return List.of();
+    }
+
+    public static String rivalHandleDo(Player player, String action, String arg, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureRivalResolved(nms.getClass().getClassLoader());
+            if (rivalHandleDoMethod == null) {
+                return "§cRival GUI API missing — update LegacyMechanics jar.";
+            }
+            Object msg = rivalHandleDoMethod.invoke(
+                    null, nms, action == null ? "" : action, arg == null ? "" : arg,
+                    page == null ? "main" : page);
+            return msg == null ? "" : String.valueOf(msg);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cRival action failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    public static String sparHandleDo(Player player, String action, String arg, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureSparResolved(nms.getClass().getClassLoader());
+            if (sparHandleDoMethod == null) {
+                return "§cSpar GUI API missing — update LegacyMechanics jar.";
+            }
+            Object msg = sparHandleDoMethod.invoke(
+                    null, nms, action == null ? "" : action, arg == null ? "" : arg,
+                    page == null ? "main" : page);
+            return msg == null ? "" : String.valueOf(msg);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cSpar action failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /**
+     * Execute a command line through Forge brigadier (bypasses Bukkit command ownership).
+     * Used when this plugin owns {@code /rival}/{@code /spar} but needs declare/challenge/etc.
+     */
+    public static boolean forwardCommand(Player player, String commandLine) {
+        if (player == null || commandLine == null || commandLine.isBlank()) {
+            return false;
+        }
+        String line = commandLine.startsWith("/") ? commandLine.substring(1) : commandLine;
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return false;
+        }
+        try {
+            Object source = null;
+            for (Method m : nms.getClass().getMethods()) {
+                if (m.getParameterCount() == 0
+                        && m.getReturnType().getName().endsWith("CommandSourceStack")) {
+                    source = m.invoke(nms);
+                    break;
+                }
+            }
+            if (source == null) {
+                return false;
+            }
+            Object server = null;
+            for (Method m : nms.getClass().getMethods()) {
+                if (m.getParameterCount() == 0
+                        && m.getReturnType().getName().endsWith("MinecraftServer")) {
+                    server = m.invoke(nms);
+                    break;
+                }
+            }
+            if (server == null) {
+                return false;
+            }
+            Object commands = null;
+            for (Method m : server.getClass().getMethods()) {
+                if (m.getParameterCount() == 0
+                        && m.getReturnType().getName().endsWith("Commands")) {
+                    commands = m.invoke(server);
+                    break;
+                }
+            }
+            if (commands == null) {
+                return false;
+            }
+            Object dispatcher = null;
+            for (Method m : commands.getClass().getMethods()) {
+                if (m.getParameterCount() == 0
+                        && m.getReturnType().getName().contains("CommandDispatcher")) {
+                    dispatcher = m.invoke(commands);
+                    break;
+                }
+            }
+            if (dispatcher == null) {
+                return false;
+            }
+            Method execute = null;
+            for (Method m : dispatcher.getClass().getMethods()) {
+                if (!"execute".equals(m.getName()) || m.getParameterCount() != 2) {
+                    continue;
+                }
+                Class<?>[] p = m.getParameterTypes();
+                if (p[0] == String.class) {
+                    execute = m;
+                    break;
+                }
+            }
+            if (execute == null) {
+                return false;
+            }
+            execute.invoke(dispatcher, line, source);
+            return true;
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return false;
+        }
+    }
+
+    private static synchronized void ensureRivalResolved(ClassLoader preferred) throws Exception {
+        if (rivalPlaceholdersMethod != null && rivalLinesMethod != null && rivalHandleDoMethod != null) {
+            return;
+        }
+        Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi", preferred);
+        Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+        rivalPlaceholdersMethod = api.getMethod("placeholders", sp);
+        rivalLinesMethod = api.getMethod("linesForPage", sp, String.class);
+        rivalHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
+        try {
+            rivalChatMenuOpen = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.gui.RivalChatMenu", preferred)
+                    .getMethod("open", sp, String.class);
+        } catch (Throwable missing) {
+            rivalChatMenuOpen = null;
+        }
+    }
+
+    private static synchronized void ensureSparResolved(ClassLoader preferred) throws Exception {
+        if (sparPlaceholdersMethod != null && sparLinesMethod != null && sparHandleDoMethod != null) {
+            return;
+        }
+        Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi", preferred);
+        Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+        sparPlaceholdersMethod = api.getMethod("placeholders", sp);
+        sparLinesMethod = api.getMethod("linesForPage", sp, String.class);
+        sparHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
+        try {
+            sparChatMenuOpen = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.gui.SparChatMenu", preferred)
+                    .getMethod("open", sp, String.class);
+        } catch (Throwable missing) {
+            sparChatMenuOpen = null;
         }
     }
 

@@ -1,4 +1,4 @@
-# Legacy Mechanics 1.0.46
+# Legacy Mechanics 1.0.47
 
 Forge mod packaging **Difficulty**, **Rival System 4.7.10**, **Sparring TP 3.2.11**,
 and **natural progression / Fabled bridges** (from CNPC scripts) under one product.
@@ -7,7 +7,7 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` and NBT root
 
 ## Install (test)
 
-1. Build / install `LegacyMechanics-1.0.46.jar` (+ matching `AdaptiveDifficultyGUI-1.0.46.jar`).
+1. Build / install `LegacyMechanics-1.0.47.jar` (+ matching `AdaptiveDifficultyGUI-1.0.47.jar`).
 2. Disable CNPC Global Player scripts to avoid double systems — see **[PROGRESSION.md](PROGRESSION.md)**
    for the full disable list (Fabled bridges + natural ports + rival/spar).
 3. Do **not** deploy to live until tested.

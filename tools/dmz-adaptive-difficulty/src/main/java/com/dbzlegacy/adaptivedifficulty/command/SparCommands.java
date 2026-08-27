@@ -118,7 +118,7 @@ public final class SparCommands {
         if (player == null || !enabled(player)) {
             return 0;
         }
-        com.dbzlegacy.adaptivedifficulty.gui.SparChatMenu.open(player, page);
+        com.dbzlegacy.adaptivedifficulty.gui.SparMenu.open(player, page);
         return 1;
     }
 
