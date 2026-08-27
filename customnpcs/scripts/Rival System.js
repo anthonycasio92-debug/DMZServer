@@ -1,12 +1,22 @@
 /*
 ============================================================
  DBZ Legacy Reborn - Rival System V4
- Version: 4.7.7
+ Version: 4.7.10
 
  Combined Global Player gameplay modules (like Sparring TP System).
 
  PLACE AS:
  CustomNPCs Global Player Script
+
+ CHANGELOG:
+ - v4.7.8: init no longer load/saves the full rivalry DB (was O(players)
+   on every noppes script reload / join and froze the server for minutes).
+   Player ensure stays on login.
+ - v4.7.10: cache rivalry DB raw JSON in world tempdata (TTL) so proximity /
+   instinct ticks stop hammering CNPC NBTJsonUtil.FillCompound every second
+   (Spark ysPPVsbgrM — Overworld lag). Slightly slower prox/instinct intervals.
+ - v4.7.10: memoize JSON.parse result per script engine (Spark 0QA559wEa7 —
+   NBT gone but Nashorn JSONParser still dominated). Longer TTL + slower ticks.
 
  REQUIRED EVENTS:
  - init
@@ -224,6 +234,78 @@ function rcTierLabel(points) {
 
 /* ========================= WORLD STORAGE ========================= */
 
+/* Shared raw-JSON cache: storeddata.get() ? NBTJsonUtil.FillCompound is huge. */
+var RIVAL_DB_CACHE_RAW = "rival.v4.db.cacheRaw";
+var RIVAL_DB_CACHE_AT = "rival.v4.db.cacheAt";
+var RIVAL_DB_CACHE_TTL_MS = 15000;
+
+/* Per-engine parsed memo (CNPC scopes are per-player; avoid re-parse every tick). */
+var RIVAL_PARSED_DB = null;
+var RIVAL_PARSED_RAW = null;
+var RIVAL_PARSED_AT = 0;
+
+function rivalDbCacheInvalidate(world) {
+    RIVAL_PARSED_DB = null;
+    RIVAL_PARSED_RAW = null;
+    RIVAL_PARSED_AT = 0;
+    if (world == null) return;
+    try {
+        var temp = world.getTempdata();
+        if (temp == null) return;
+        if (temp.has(RIVAL_DB_CACHE_RAW)) temp.remove(RIVAL_DB_CACHE_RAW);
+        if (temp.has(RIVAL_DB_CACHE_AT)) temp.remove(RIVAL_DB_CACHE_AT);
+    } catch (e) {}
+}
+
+function rivalDbReadRaw(world, storageKey) {
+    if (world == null) return null;
+    var now = 0;
+    try { now = Number(new Date().getTime()); } catch (e0) {
+        try { now = Number(Java.type("java.lang.System").currentTimeMillis()); } catch (e1) { now = 0; }
+    }
+    try {
+        var temp = world.getTempdata();
+        if (temp != null && temp.has(RIVAL_DB_CACHE_RAW) && temp.has(RIVAL_DB_CACHE_AT)) {
+            var at = Number(temp.get(RIVAL_DB_CACHE_AT));
+            if (!isNaN(at) && now - at < RIVAL_DB_CACHE_TTL_MS) {
+                return String(temp.get(RIVAL_DB_CACHE_RAW));
+            }
+        }
+    } catch (e2) {}
+
+    var storage = null;
+    try { storage = world.getStoreddata(); } catch (e3) { return null; }
+    if (storage == null) return null;
+    try {
+        if (!storage.has(storageKey)) return null;
+        var raw = String(storage.get(storageKey));
+        try {
+            var t2 = world.getTempdata();
+            if (t2 != null) {
+                t2.put(RIVAL_DB_CACHE_RAW, raw);
+                t2.put(RIVAL_DB_CACHE_AT, String(now));
+            }
+        } catch (e4) {}
+        return raw;
+    } catch (e5) {
+        return null;
+    }
+}
+
+/** Parse rivalry DB at most once per engine until raw changes / TTL / invalidate. */
+function rivalDbParseCached(raw, now) {
+    if (raw == null || raw === "") return null;
+    if (RIVAL_PARSED_DB != null && RIVAL_PARSED_RAW === raw &&
+        now > 0 && RIVAL_PARSED_AT > 0 && now - RIVAL_PARSED_AT < RIVAL_DB_CACHE_TTL_MS) {
+        return RIVAL_PARSED_DB;
+    }
+    var database = JSON.parse(raw);
+    RIVAL_PARSED_DB = database;
+    RIVAL_PARSED_RAW = raw;
+    RIVAL_PARSED_AT = now > 0 ? now : 1;
+    return database;
+}
+
 function rcDataWorld(fallbackPlayer) {
     var names = ["minecraft:overworld", "overworld"];
     for (var i = 0; i < names.length; i++) {
@@ -271,16 +353,17 @@ function rcLoadDatabase(player) {
     var world = rcDataWorld(player);
     if (world === null) throw new Error("RivalCore could not access persistent storage.");
 
-    var storage = world.getStoreddata();
     var database;
-
     try {
-        database = storage.has(RC_DATABASE_KEY)
-            ? JSON.parse(rcString(storage.get(RC_DATABASE_KEY)))
+        var raw = rivalDbReadRaw(world, RC_DATABASE_KEY);
+        var now = rcNow();
+        database = raw != null && raw !== ""
+            ? rivalDbParseCached(raw, now)
             : rcFreshDatabase();
     } catch (mainError) {
         rcLog("Main database parse failed: " + mainError);
         try {
+            var storage = world.getStoreddata();
             database = storage.has(RC_BACKUP_KEY)
                 ? JSON.parse(rcString(storage.get(RC_BACKUP_KEY)))
                 : rcFreshDatabase();
@@ -308,6 +391,7 @@ function rcSaveDatabase(player, database) {
         storage.put(RC_BACKUP_KEY, rcString(storage.get(RC_DATABASE_KEY)));
     }
     storage.put(RC_DATABASE_KEY, json);
+    rivalDbCacheInvalidate(world);
 }
 
 /* ========================= PLAYER / RIVAL RECORDS ========================= */
@@ -1206,17 +1290,13 @@ function rcCleanupExpiredRequests(database) {
 
 /* ========================= EVENTS (core DB touch) ========================= */
 
+/*
+ * init used to load+save the full rivalry DB for EVERY player on CNPC reload.
+ * That is O(players × DB size) under cnpcslock and caused multi-minute freezes.
+ * Login already ensures the player record — keep init empty.
+ */
 function rivalCoreInit(event) {
-    try {
-        var player = event.player;
-        if (!rcIsPlayer(player)) return;
-        var database = rcLoadDatabase(player);
-        rcEnsurePlayer(database, player);
-        rcCleanupExpiredRequests(database);
-        rcSaveDatabase(player, database);
-    } catch (error) {
-        rcLog("init failed: " + error);
-    }
+    /* intentionally empty — see rivalCoreLogin */
 }
 
 function rivalCoreLogin(event) {
@@ -1294,7 +1374,7 @@ var RP_COLOR = "\u00A7";
 var RP_DATABASE_KEY = "dlr.rivalry.v4.database";
 var RP_BACKUP_KEY = "dlr.rivalry.v4.database.backup";
 
-var RP_TICK_MS = 1000;
+var RP_TICK_MS = 5000;
 var RP_BONUS_NAME = "Rival Proximity";
 
 /* Presence / sensing */
@@ -1362,7 +1442,7 @@ var RIVAL_TP_GAIN_SCALE = 0.60;
 
 /*
  * Per-player kill TP chat preference (storeddata).
- * /rival tpmsg [on|off] â€” default ON.
+ * /rival tpmsg [on|off] — default ON.
  * Shared with End Dimension Strength kill-settle messages.
  */
 var KILL_TP_CHAT_KEY = "dmz_kill_tp_chat";
@@ -1560,9 +1640,9 @@ function rpLoadDatabase(player) {
     var world = rpDataWorld(player);
     if (world === null) return null;
     try {
-        var stored = world.getStoreddata();
-        if (!stored.has(RP_DATABASE_KEY)) return null;
-        var database = JSON.parse(rpString(stored.get(RP_DATABASE_KEY)));
+        var raw = rivalDbReadRaw(world, RP_DATABASE_KEY);
+        if (raw == null || raw === "") return null;
+        var database = rivalDbParseCached(raw, rpNow());
         if (database === null || typeof database !== "object") return null;
         if (database.players === null || typeof database.players !== "object") return null;
         return database;
@@ -1583,6 +1663,7 @@ function rpSaveDatabase(player, database) {
             stored.put(RP_BACKUP_KEY, rpString(stored.get(RP_DATABASE_KEY)));
         }
         stored.put(RP_DATABASE_KEY, json);
+        rivalDbCacheInvalidate(world);
     } catch (error) {
         rpLog("Database save failed: " + error);
     }
@@ -4348,12 +4429,7 @@ function chResolvePendingReceived(player, db) {
 /* ========================= EVENTS ========================= */
 
 function rivalChInit(event) {
-    try {
-        if (!chIsPlayer(event.player)) return;
-        chLoadChallengeDb(event.player);
-    } catch (error) {
-        chLog("init failed: " + error);
-    }
+    /* intentionally empty — challenge DB loads on first tick/login need */
 }
 
 function rivalChTick(event) {
@@ -4681,7 +4757,7 @@ function riStatsCap() {
 var RI_COLOR = "\u00A7";
 var RI_DB = "dlr.rivalry.v4.database";
 var RI_CH_KEY = "dlr.rivalry.v4.challenges";
-var RI_TICK_MS = 4000;
+var RI_TICK_MS = 10000;
 /* Quiet by default: arrive once, rare status pulses, event spikes only */
 var RI_ALERT_COOLDOWN_MS = 45000;
 var RI_ARRIVE_COOLDOWN_MS = 90000;
@@ -4745,9 +4821,9 @@ function riLoad(player) {
     try {
         var w = riWorld(player);
         if (w == null) return null;
-        var sd = w.getStoreddata();
-        if (!sd.has(RI_DB)) return null;
-        return JSON.parse(riStr(sd.get(RI_DB)));
+        var raw = rivalDbReadRaw(w, RI_DB);
+        if (raw == null || raw === "") return null;
+        return rivalDbParseCached(raw, riNow());
     } catch (e) { return null; }
 }
 

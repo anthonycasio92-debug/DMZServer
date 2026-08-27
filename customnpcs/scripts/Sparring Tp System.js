@@ -1,7 +1,7 @@
 /*
 ============================================================
  DBZ Legacy Reborn - Sparring TP System
- Version: 3.2.8
+ Version: 3.2.11
 
  Combat-Based Training (Sparring v3)
 
@@ -14,7 +14,7 @@
 
  Changelog:
   - Restored v2-style BP curve as the main TP scaler. Hits use a
-    fixed action base Ã— damage quality Ã— BP mult (not raw damage),
+    fixed action base × damage quality × BP mult (not raw damage),
     so low BP is not overpaid and high BP is not flatlined.
   - Prefer getBattlePowerExact; raise/scale post-BP action caps.
   - Ki detection via MainDamageTypes.isKiblastDamage.
@@ -32,7 +32,7 @@
     (no session start, TP, or chat spam while fighting).
   - v3.1.3: /spar help no longer advertises .spar / !spar / ./spar
     (those chat prefixes are unreliable and confuse players).
-  - v3.1.4: ki hits score again â€” queue HP received from damagedEntity
+  - v3.1.4: ki hits score again — queue HP received from damagedEntity
     (owner-attributed kiblast LivingHurt) as well as victim damaged;
     never demote a pending ki hit to melee; credit a small floor when
     a landed ki hit is fully mitigated (HP drop ~0).
@@ -40,13 +40,13 @@
     Friendly Fist knockdown during a spar fully heals the partner.
   - v3.2.1: charging / preparing a ki attack holds the spar activity
     timer (hit + movement gates), so sessions no longer end mid-charge.
-  - v3.2.2: audit fixes â€” mentor reconcile; Friendly Fist heal flag only
+  - v3.2.2: audit fixes — mentor reconcile; Friendly Fist heal flag only
     after success; no partner fallback for non-PvP damage; third-party
     hits no longer poison spar timers; block TP only from spar partner;
     Command Handler ignores non-spar trigger ids.
   - v3.2.3: /spar mentor works via Command Handler (CMI path); /spar help
     and /spar stats show current Mentor Bond status.
-  - v3.2.4: Friendly Fist spar heal rewritten â€” detect KD or ~1 HP, heal
+  - v3.2.4: Friendly Fist spar heal rewritten — detect KD or ~1 HP, heal
     from either fighter's tick, mark pending on FF hits, and do not require
     Java boolean === true (Rhino-safe).
   - v3.2.5: /spar always shows Mentor Bond at top of help; CMI empty
@@ -55,10 +55,16 @@
   - v3.2.6: Friendly Fist heal chat uses ASCII only (no em-dash "?");
     melee hit-activity window is shorter than ki so punch spars end
     sooner when idle, while charged ki still has time to land.
-  - v3.2.7: Friendly Fist spar heal only on knockdown / lethal ~1 HP â€”
+  - v3.2.7: Friendly Fist spar heal only on knockdown / lethal ~1 HP —
     no longer full-heals on every FF hit.
   - v3.2.8: admin /spar mentor resetcd [player] clears mentor + apprentice
     change cooldowns (op / permission level 2).
+  - v3.2.9: register /spar Bukkit hook + boot log ONCE per server process
+    (plugin metadata). CNPC Global Player init runs per player and was
+    re-registering listeners + spamming console every join/tick reload.
+  - v3.2.10: lazy Java.type resolution (faster CNPC reload eval).
+  - v3.2.11: once-gate via java.lang.System properties (plugin metadata
+    did not stick across CNPC per-player script engines — still spammed).
 
  PLACE AS:
   CustomNPCs Global Player Script
@@ -89,30 +95,47 @@
 ============================================================
 */
 
-/* ========================= JAVA TYPES ========================= */
-
-var StatsProvider = Java.type("com.dragonminez.common.stats.StatsProvider");
-var StatsCapability = Java.type("com.dragonminez.common.stats.StatsCapability");
-var StatsSyncS2C = Java.type("com.dragonminez.common.network.S2C.StatsSyncS2C");
-var NetworkHandler = Java.type("com.dragonminez.common.network.NetworkHandler");
-var GravityLogic = Java.type("com.dragonminez.server.util.GravityLogic");
-var MCPlayerClass = Java.type("net.minecraft.world.entity.player.Player");
-var Bukkit = Java.type("org.bukkit.Bukkit");
-var System = Java.type("java.lang.System");
-var LocalDate = Java.type("java.time.LocalDate");
-
+/* ========================= JAVA TYPES (lazy) ========================= */
+/*
+ * Top-level Java.type runs on every CNPC engine.eval (per player on reload).
+ * Resolve once on first gameplay event instead.
+ */
+var StatsProvider = null;
+var StatsCapability = null;
+var StatsSyncS2C = null;
+var NetworkHandler = null;
+var GravityLogic = null;
+var MCPlayerClass = null;
+var Bukkit = null;
+var System = null;
+var LocalDate = null;
 var AbstractKiProjectile = null;
 var KiLaserEntity = null;
 var KiBlastEntity = null;
 var BeamClashManager = null;
 var MainDamageTypes = null;
 var JavaUUID = null;
-try { AbstractKiProjectile = Java.type("com.dragonminez.common.init.entities.ki.AbstractKiProjectile"); } catch (eA) {}
-try { KiLaserEntity = Java.type("com.dragonminez.common.init.entities.ki.KiLaserEntity"); } catch (eL) {}
-try { KiBlastEntity = Java.type("com.dragonminez.common.init.entities.ki.KiBlastEntity"); } catch (eB) {}
-try { BeamClashManager = Java.type("com.dragonminez.common.combat.clash.BeamClashManager"); } catch (eC) {}
-try { MainDamageTypes = Java.type("com.dragonminez.common.init.MainDamageTypes"); } catch (eD) {}
-try { JavaUUID = Java.type("java.util.UUID"); } catch (eU) {}
+var SPAR_TYPES_READY = false;
+
+function ensureSparTypes() {
+    if (SPAR_TYPES_READY === true) return;
+    SPAR_TYPES_READY = true;
+    try { StatsProvider = Java.type("com.dragonminez.common.stats.StatsProvider"); } catch (e1) {}
+    try { StatsCapability = Java.type("com.dragonminez.common.stats.StatsCapability"); } catch (e2) {}
+    try { StatsSyncS2C = Java.type("com.dragonminez.common.network.S2C.StatsSyncS2C"); } catch (e3) {}
+    try { NetworkHandler = Java.type("com.dragonminez.common.network.NetworkHandler"); } catch (e4) {}
+    try { GravityLogic = Java.type("com.dragonminez.server.util.GravityLogic"); } catch (e5) {}
+    try { MCPlayerClass = Java.type("net.minecraft.world.entity.player.Player"); } catch (e6) {}
+    try { Bukkit = Java.type("org.bukkit.Bukkit"); } catch (e7) {}
+    try { System = Java.type("java.lang.System"); } catch (e8) {}
+    try { LocalDate = Java.type("java.time.LocalDate"); } catch (e9) {}
+    try { AbstractKiProjectile = Java.type("com.dragonminez.common.init.entities.ki.AbstractKiProjectile"); } catch (eA) {}
+    try { KiLaserEntity = Java.type("com.dragonminez.common.init.entities.ki.KiLaserEntity"); } catch (eL) {}
+    try { KiBlastEntity = Java.type("com.dragonminez.common.init.entities.ki.KiBlastEntity"); } catch (eB) {}
+    try { BeamClashManager = Java.type("com.dragonminez.common.combat.clash.BeamClashManager"); } catch (eC) {}
+    try { MainDamageTypes = Java.type("com.dragonminez.common.init.MainDamageTypes"); } catch (eD) {}
+    try { JavaUUID = Java.type("java.util.UUID"); } catch (eU) {}
+}
 
 /* ========================= CONFIGURATION ========================= */
 
@@ -122,21 +145,21 @@ var COLOR_CODE = "\u00A7";
 /*
  * ---- Combat TP rates (BP-first, like Sparring v2) ----
  *
- * v2 paid: BASE_TP_PER_INTERVAL (1500) Ã— BP curve every 5s.
+ * v2 paid: BASE_TP_PER_INTERVAL (1500) × BP curve every 5s.
  * v3 pays on combat actions, but BP must still dominate.
  * Raw damage already rises with BP, so using damage as the base
  * flattens rewards (too much early, too little late).
  *
  * Formula per scored hit:
- *   base = BASE_TP_PER_HIT Ã— damageQuality Ã— ki/melee efficiency
- *   final = base Ã— BP(curve) Ã— rival Ã— release Ã— gravity Ã— ...
+ *   base = BASE_TP_PER_HIT × damageQuality × ki/melee efficiency
+ *   final = base × BP(curve) × rival × release × gravity × ...
  */
 var BASE_TP_PER_HIT = 280;             // fixed action value before BP curve
 var DAMAGE_QUALITY_REF = 800;          // damage that yields ~1.0x quality
 var MIN_DAMAGE_QUALITY = 0.35;         // weak taps still count a little
 var MAX_DAMAGE_QUALITY = 1.80;         // big hits help, but don't replace BP
 var MAX_BASE_TP_PER_HIT = 700;         // softcap BEFORE BP (keep modest)
-var MAX_TP_PER_ACTION = 250000;        // safety ceiling after BP (was 35k â€” crushed high BP)
+var MAX_TP_PER_ACTION = 250000;        // safety ceiling after BP (was 35k — crushed high BP)
 var MAX_TP_PER_ACTION_BP_SCALE = 4.0;  // also allow up to BASE*BP*this
 /* Global sparring TP buff applied to every combat award. */
 var GLOBAL_TP_GAIN_MULT = 1.50;
@@ -152,7 +175,7 @@ var BEAM_CLASH_TP_PER_TICK = 35;       // clash drip before BP curve
 /*
  * Clash sustain:
  * Damage events often pause once beams lock. Do not require a fresh
- * hit every few seconds â€” hold the clash while both stay engaged.
+ * hit every few seconds — hold the clash while both stay engaged.
  */
 var BEAM_CLASH_START_WINDOW_MS = 8000; // mutual recent beam/ki to enter clash
 var BEAM_CLASH_HOLD_MS = 4000;         // keep clash alive without new hits
@@ -231,7 +254,7 @@ var STREAK_BONUS_PER_DAY = 0.02;
 var MAX_STREAK_DAYS_FOR_BONUS = 14;
 var MAX_STREAK_MULTIPLIER = 1.25;
 
-/* Combat style bonuses (small) â€” values may match; never reverse-map from them */
+/* Combat style bonuses (small) — values may match; never reverse-map from them */
 var STYLE_BONUS = {
     melee: 1.08,
     ki: 1.08,
@@ -923,7 +946,7 @@ function getBattlePowerMultiplier(bp) {
     return Math.min(MAX_BP_MULTIPLIER, finalMultiplier + extraDecades * 200.0);
 }
 
-/* Soft damage quality â€” influences hit value without replacing BP. */
+/* Soft damage quality — influences hit value without replacing BP. */
 function getDamageQuality(damage) {
     damage = Math.max(0, Number(damage));
     if (!(damage > 0) || !(DAMAGE_QUALITY_REF > 0)) return MIN_DAMAGE_QUALITY;
@@ -1160,7 +1183,7 @@ function reconcileMentorBond(player) {
 
     /*
      * Only clear on a real conflict (other side names a different partner).
-     * If the other side is blank, repair â€” do NOT wipe. Old reconcile wiped
+     * If the other side is blank, repair — do NOT wipe. Old reconcile wiped
      * one-sided bonds whenever the partner was online, so /spar looked like
      * it "lost" Mentor Bond.
      */
@@ -1659,7 +1682,7 @@ function isPlayerKnockedDown(player) {
 
 /*
  * Friendly Fist lethal hits leave the victim knocked down (often ~1 HP).
- * Heal ONLY on real knockdown / lethal leave â€” never on a normal FF hit.
+ * Heal ONLY on real knockdown / lethal leave — never on a normal FF hit.
  */
 function getPlayerHealthSafe(player) {
     if (player == null) return 0;
@@ -1680,7 +1703,7 @@ function isFriendlyFistLethalHp(player) {
 function needsFriendlyFistHeal(player) {
     if (player == null) return false;
     if (isPlayerKnockedDown(player)) return true;
-    /* ~1 HP alone is not enough â€” DMZ fighters can sit low without a KD.
+    /* ~1 HP alone is not enough — DMZ fighters can sit low without a KD.
      * Only treat it as FF-lethal when a knockdown/death path armed pending. */
     if (hasFriendlyFistHealPending(player) && isFriendlyFistLethalHp(player)) return true;
     return false;
@@ -1727,7 +1750,7 @@ function healSparPlayerFull(player) {
         var healthy = nowH >= Math.max(2, maxH * 0.5);
         var clearedKd = beforeKd && !isPlayerKnockedDown(player);
         var raisedFromLethal = beforeHp > 0 && beforeHp <= 1.5 && healthy;
-        /* Must have actually recovered from KD / lethal HP â€” never "succeed" on a full-HP fighter. */
+        /* Must have actually recovered from KD / lethal HP — never "succeed" on a full-HP fighter. */
         return healthy && (clearedKd || raisedFromLethal || beforeKd);
     } catch (e) {
         return false;
@@ -1737,7 +1760,7 @@ function healSparPlayerFull(player) {
 function markFriendlyFistHealPending(victim) {
     if (victim == null) return;
     try {
-        /* Short retry window after a real KD/lethal â€” not a per-hit arm. */
+        /* Short retry window after a real KD/lethal — not a per-hit arm. */
         putNumber(victim.getTempdata(), "spar.ff.healPendingUntil", nowMs() + 1500);
     } catch (e) {}
 }
@@ -2132,7 +2155,7 @@ function classifyKiType(event) {
             var type = types[t];
             if (type.indexOf("scatter") >= 0 || type.indexOf("disk") >= 0) return "scatter";
             if (type.indexOf("charge") >= 0) return "charge";
-            /* Wave/beam before explosive â€” "kiwave" must not underpay as explosive. */
+            /* Wave/beam before explosive — "kiwave" must not underpay as explosive. */
             if (type.indexOf("laser") >= 0 || type.indexOf("beam") >= 0 || type.indexOf("wave") >= 0) return "beam";
             if (type.indexOf("explosive") >= 0) return "explosive";
             if (type.indexOf("barrage") >= 0 || type.indexOf("rapid") >= 0) return "barrage";
@@ -2153,7 +2176,7 @@ function isSessionActive(player) {
     return readString(player.getTempdata(), K_SESSION_ACTIVE, "") == "1";
 }
 
-/* Rival challenge DB key â€” keep in sync with Rival System.js */
+/* Rival challenge DB key — keep in sync with Rival System.js */
 var RIVAL_CHALLENGE_DB_KEY = "dlr.rivalry.v4.challenges";
 
 function getOverworldStoreddata() {
@@ -2296,7 +2319,7 @@ function startSession(a, b) {
         putNumber(bTemp, zeroKeys[i], 0);
     }
 
-    /* Seed movement window only â€” hits/blocks must not refresh AFK gate. */
+    /* Seed movement window only — hits/blocks must not refresh AFK gate. */
     refreshMovementActivity(a);
     refreshMovementActivity(b);
     sampleHealthPool(a);
@@ -2744,7 +2767,7 @@ function awardDamageTp(attacker, victim, damage, isKi, kiKind) {
 
     /*
      * BP-first payout (v2 curve):
-     * fixed hit base Ã— mild damage quality Ã— efficiency Ã— BP mult...
+     * fixed hit base × mild damage quality × efficiency × BP mult...
      * Damage no longer drives the bulk of the reward.
      */
     var eff = isKi ? kiEfficiency(kiKind) : MELEE_EFF;
@@ -3236,7 +3259,7 @@ function processSession(player) {
                 endSession(player, partner, "a fighter was defeated");
                 return;
             }
-            /* FF on â€” keep session for another tick while heal retries. */
+            /* FF on — keep session for another tick while heal retries. */
             if (isAlive(player)) markFriendlyFistHealPending(partner);
             if (isAlive(partner)) markFriendlyFistHealPending(player);
             return;
@@ -3253,7 +3276,7 @@ function processSession(player) {
     /*
      * Clash first: beam locks often stop damage ticks, which used to trip
      * the hit-activity timer and end the spar before the clash finished.
-     * Ki charge holds the same way â€” fighters stand still while winding up.
+     * Ki charge holds the same way — fighters stand still while winding up.
      */
     var inClash = processBeamClash(player, partner);
     var inKiCharge = false;
@@ -3339,7 +3362,7 @@ function sampleHealthPool(player) {
  *
  * Queue from BOTH:
  *  - victim damaged (melee-friendly)
- *  - attacker damagedEntity (kiblast owner attribution â€” required for ki)
+ *  - attacker damagedEntity (kiblast owner attribution — required for ki)
  * Never demote an already-pending ki hit to melee if a later event
  * fails isKiAttack.
  */
@@ -3459,6 +3482,7 @@ function tick(event) {
     var player = event.player;
     if (player == null) return;
     try {
+        ensureSparTypes();
         if (suppressSparringForChallenge(player)) return;
 
         /*
@@ -3486,6 +3510,7 @@ function tick(event) {
 
 function damagedEntity(event) {
     try {
+        ensureSparTypes();
         var attacker = event.player;
         var target = event.target;
         if (attacker == null || target == null) return;
@@ -3497,7 +3522,7 @@ function damagedEntity(event) {
          * Do NOT award from event.damage (LivingHurt pre-mitigation).
          * Still queue an HP-received sample here: kiblast LivingHurt is
          * owner-attributed on damagedEntity, while victim damaged often
-         * misses projectile sources â€” that is why ki stopped scoring.
+         * misses projectile sources — that is why ki stopped scoring.
          */
         var ki = isKiAttack(event);
         var kiKind = ki ? classifyKiType(event) : "melee";
@@ -3507,7 +3532,7 @@ function damagedEntity(event) {
         if (isSessionActive(attacker) && isSessionActive(target)) {
             if (getPartnerName(attacker).toLowerCase() == getPlayerName(target).toLowerCase()) {
                 queueReceivedHit(target, attacker, ki, kiKind);
-                /* Do NOT arm FF heal on every hit â€” only on real knockdown (tick/died). */
+                /* Do NOT arm FF heal on every hit — only on real knockdown (tick/died). */
             }
             if (ki) {
                 try { updateBeamClashState(attacker, target); } catch (eClash) {}
@@ -3565,7 +3590,7 @@ function damaged(event) {
 
         /*
          * Perfect block: no DMZ API available yet.
-         * Reserved hook â€” enable when status exposes a perfect-block flag.
+         * Reserved hook — enable when status exposes a perfect-block flag.
          */
     } catch (error) {
         try { print("[Sparring v3] damaged " + error); } catch (x) {}
@@ -3638,7 +3663,7 @@ function sparCmdArgsFrom(event, start) {
 
 /*
  * ScriptTriggerEvent often has event.entity / arguments[0], not event.player.
- * CMI asFakeOp can also make event.player a fake player â€” prefer name lookup.
+ * CMI asFakeOp can also make event.player a fake player — prefer name lookup.
  */
 function resolveSparCommandPlayer(event) {
     var arg0 = sparCmdArgAt(event, 0);
@@ -3928,7 +3953,7 @@ function claimSparCommand(player) {
 function sparCmdRouteParts(player, parts) {
     if (parts == null) parts = [];
 
-    /* CMI bare /spar often leaves a literal "$1-" â€” treat as help. */
+    /* CMI bare /spar often leaves a literal "$1-" — treat as help. */
     if (parts.length == 1 && sparIsEmptyArgToken(parts[0])) {
         parts = [];
     }
@@ -4078,8 +4103,40 @@ function findHookPlugin() {
     return null;
 }
 
-/* In-memory only so script reload re-registers cleanly. */
-var SPAR_SLASH_HOOK_READY = false;
+/*
+ * CNPC Global Player scripts get a fresh JS scope per player, so an in-memory
+ * boolean and even Bukkit plugin metadata often fail to share state.
+ * java.lang.System properties are JVM-global for the process (cleared on restart).
+ */
+var SPAR_SLASH_HOOK_PROP = "dmz.spar.v3.slashHookRegistered";
+var SPAR_BOOT_LOG_PROP = "dmz.spar.v3.bootLogged";
+
+function sparJvmFlagGet(key) {
+    try {
+        var Sys = Java.type("java.lang.System");
+        return String(Sys.getProperty(key, "")) === "1";
+    } catch (e) { return false; }
+}
+
+/** Returns true if THIS call claimed the flag (first wins). */
+function sparJvmFlagClaim(key) {
+    try {
+        var Sys = Java.type("java.lang.System");
+        if (String(Sys.getProperty(key, "")) === "1") return false;
+        var prev = Sys.setProperty(key, "1");
+        if (prev != null && String(prev) === "1") return false;
+        return true;
+    } catch (e) {
+        /* Fallback: allow once in this JS scope only. */
+        return true;
+    }
+}
+
+function sparJvmFlagClear(key) {
+    try {
+        Java.type("java.lang.System").clearProperty(key);
+    } catch (e) {}
+}
 
 function isSparSlashMessage(msg) {
     var lower = String(msg || "").toLowerCase();
@@ -4117,14 +4174,24 @@ function isSparSlashMessage(msg) {
 
 /*
  * Intercept /spar before Bukkit prints "Unknown command".
+ * Claim JVM flag FIRST so concurrent per-player inits cannot stack listeners.
  */
 function registerSparSlashCommandHook() {
-    if (SPAR_SLASH_HOOK_READY === true) return;
-
     try {
+        if (!sparJvmFlagClaim(SPAR_SLASH_HOOK_PROP)) return;
+
+        ensureSparTypes();
         var plugin = findHookPlugin();
         if (plugin == null) {
             try { print("[Sparring v3] slash hook: no host plugin found"); } catch (e0) {}
+            return;
+        }
+
+        if (Bukkit == null) {
+            try { Bukkit = Java.type("org.bukkit.Bukkit"); } catch (eB) {}
+        }
+        if (Bukkit == null) {
+            sparJvmFlagClear(SPAR_SLASH_HOOK_PROP);
             return;
         }
 
@@ -4190,22 +4257,32 @@ function registerSparSlashCommandHook() {
             false
         );
 
-        SPAR_SLASH_HOOK_READY = true;
         try { print("[Sparring v3] /spar slash command hook registered via " + plugin.getName()); } catch (eLog) {}
     } catch (err) {
+        sparJvmFlagClear(SPAR_SLASH_HOOK_PROP);
         try { print("[Sparring v3] slash hook register failed: " + err); } catch (e2) {}
     }
 }
 
+function logSparBootOnce() {
+    try {
+        if (!sparJvmFlagClaim(SPAR_BOOT_LOG_PROP)) return;
+        ensureSparTypes();
+        print("[Sparring v3.2.11] mentor resetcd admin | BeamClashManager=" +
+            (BeamClashManager != null ? "hooked" : "MISSING") +
+            " MainDamageTypes=" + (MainDamageTypes != null ? "hooked" : "MISSING") +
+            " AbstractKiProjectile=" + (AbstractKiProjectile != null ? "ok" : "MISSING"));
+    } catch (eLog) {}
+}
+
 function init(event) {
     try {
-        registerSparSlashCommandHook();
-        try {
-            print("[Sparring v3.2.8] mentor resetcd admin | BeamClashManager=" +
-                (BeamClashManager != null ? "hooked" : "MISSING") +
-                " MainDamageTypes=" + (MainDamageTypes != null ? "hooked" : "MISSING") +
-                " AbstractKiProjectile=" + (AbstractKiProjectile != null ? "ok" : "MISSING"));
-        } catch (eLog) {}
+        /* Do NOT call ensureSparTypes / register here for every player.
+         * Claim-gated helpers are cheap; still avoid extra work when already done. */
+        if (!sparJvmFlagGet(SPAR_SLASH_HOOK_PROP)) {
+            registerSparSlashCommandHook();
+        }
+        logSparBootOnce();
     } catch (e) {
         try { print("[Sparring v3] init " + e); } catch (x) {}
     }

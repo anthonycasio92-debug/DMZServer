@@ -1,7 +1,7 @@
 /*
 ============================================================
  End Dimension Strength
- Version: 2.10.4
+ Version: 2.12.0
 
  DESIGN (why this exists):
  - DMZ StatsData / DMZ HP attaches to PLAYERS ONLY. Mobs/dragon cannot hold
@@ -12,8 +12,7 @@
  - DMZ kill TP = entity.getMaxHealth() * tpHealthRatio (default 0.25) then
    TP boosts. Absurd vanilla HP ? billions of TP. So HP stays modest and
    DEF carries the fight (flat absorb + % reduction like DMZ).
- - End kill TP is SETTLED with dampened BP scaling + per-mob level softcaps
-   (e.g. ~200k enderman at level ~4000).
+ - Dragon kill TP is SETTLED with dampened BP scaling + softcaps.
  - Per-hit damage caps remain as a safety net vs one-shot skills.
  - Dragon max_health is applied ONCE (spawn / real HP change only).
 
@@ -23,11 +22,23 @@
  - Extra dragon attacks: real DragonMineZ ki beams + ki blasts (not vanilla fireballs)
  - Clear "dragon already alive" notice on /enddragon when one exists
  - Dragon ~200-300 matched hits via DEF + hit caps (not multi-million HP)
- - End mobs ~10-22 matched hits
+ - End mob scaling DISABLED (v2.11.0) - vanilla End mobs only
  - /enddragon spawn (trigger 50) + /cleardragons cleanup (trigger 51)
  - Natural dragon respawn every 5 minutes if none exists
  - Dragon Egg item reward (clears podium egg block)
  - End crystals destroyed after each dragon kill
+ - HARD RULE: at most ONE living Ender Dragon in The End
+ - HARD RULE: purge leftover DMZ ki_laser / ki_blast (cap while fighting)
+
+ Changelog (2.12.0):
+ - Enforce single dragon (despawn extras every scan / before spawn / attacks).
+ - Cleanup End ki_laser + ki_blast: full purge when no dragon; hard cap while
+   fighting so BeamClash cannot stall the server (Spark: 14k+ ki entities).
+ - Shorter ki projectile life; only the kept dragon fires extra attacks.
+
+ Changelog (2.11.0):
+ - Removed End mob HP/DEF/damage scaling and End-mob kill TP settle.
+   Only Ender Dragon spawn + scaling remain.
 
  INSTALL (TWO scripts - this is what made trigger 50 work before):
    1) THIS file ? Global Player, OWN tab
@@ -61,17 +72,9 @@ var TRIGGER_CLEANUP_ID = 51;
 /* Back-compat alias */
 var TRIGGER_ID = TRIGGER_SPAWN_ID;
 
-/*
- * TPS (2.10.4): End entity fan-out was crushing MSPT.
- * - Never call world.getAllEntities(-1) on the tick path
- * - World-wide scan lock so N End players don't each AABB-scan
- * - Typed ENDER_DRAGON lookup only (small island box)
- */
-var SCAN_INTERVAL_MS = 8000;
-var SCAN_RADIUS = 40;
-var NATURAL_CHECK_MS = 30000;
-var WORLD_SCAN_LOCK = "end.strength.worldScan";
-var WORLD_PENDING_BUFF_LOCK = "end.strength.pendingBuffTick";
+var SCAN_INTERVAL_MS = 1500;
+var SCAN_RADIUS = 96;
+var NATURAL_CHECK_MS = 10000;
 
 /* Natural dragon spawn if none alive. */
 var NATURAL_SPAWN_ENABLED = true;
@@ -137,11 +140,12 @@ var END_DAMAGE_HIT_CAP_MULT = 1.0; /* 1.0 => ~exact hit-target length */
 var ENDERMAN_ATTACK_DAMAGE = 12;
 
 /*
- * End mob tiers - short fights.
- * hp/hpCap = TP-safe vanilla pools (mirrored from player DMZ HP).
- * defense  = base DEF; real DEF scales from player DMZ defense/melee.
+ * End mob tiers - DISABLED (v2.11.0).
+ * Kept for reference / easy re-enable. Set END_MOB_SCALING_ENABLED = true
+ * to restore HP/DEF buffs + End-mob kill TP settle.
  */
-var END_MOB_DEF_ENABLED = true;
+var END_MOB_SCALING_ENABLED = false;
+var END_MOB_DEF_ENABLED = false;
 var END_MOB_TIERS = {
     endermite: { tier: 1, hp: 1200, damage: 40, defense: 5000,  hits: 10, label: "Endermite", hpCap: 2200 },
     phantom:   { tier: 2, hp: 1800, damage: 70, defense: 9000,  hits: 14, label: "Phantom",   hpCap: 3200 },
@@ -282,8 +286,8 @@ var END_TP_ADJUST_MIN_DELTA = 50;
 
 /* Extra scripted dragon attacks - real DragonMineZ ki projectiles. */
 var DRAGON_EXTRA_ATTACKS_ENABLED = true;
-var DRAGON_ATTACK_INTERVAL_MS = 5000;
-var DRAGON_ATTACK_RANGE = 72;
+var DRAGON_ATTACK_INTERVAL_MS = 3200;
+var DRAGON_ATTACK_RANGE = 96;
 var DRAGON_ATTACK_WORLD_LOCK = "end.strength.dragonAtkLock";
 var DRAGON_KI_BEAM_CHANCE = 0.60; /* else DMZ ki blast */
 var DRAGON_DMZ_KI_DAMAGE = 450;   /* kiblast DamageSource amount (non-player owner) */
@@ -292,11 +296,25 @@ var DRAGON_DMZ_KI_DAMAGE_CAP = 8000;
 var DRAGON_DMZ_KI_SPEED_BEAM = 1.75;
 var DRAGON_DMZ_KI_SPEED_BLAST = 2.35;
 var DRAGON_DMZ_KI_SIZE_BLAST = 1.35;
-var DRAGON_DMZ_KI_LIFE_BEAM = 50;  /* ticks after fireHability */
-var DRAGON_DMZ_KI_LIFE_BLAST = 70;
+/* Keep short: long life + BeamClash piles thousands of entities when TPS dips. */
+var DRAGON_DMZ_KI_LIFE_BEAM = 28;  /* ticks after fireHability */
+var DRAGON_DMZ_KI_LIFE_BLAST = 36;
 var DRAGON_DMZ_KI_COLOR_MAIN = 0xC44CFF;
 var DRAGON_DMZ_KI_COLOR_BORDER = 0x7A1FA2;
 var DRAGON_DMZ_KI_COLOR_OUTLINE = 0xFFFFFF;
+
+/* Single-dragon + ki cleanup (2.12.0). */
+var ENFORCE_SINGLE_DRAGON = true;
+var SINGLE_DRAGON_CHECK_MS = 1500;
+var TEMP_SINGLE_DRAGON = "end.strength.singleDragonCheck";
+var KI_CLEANUP_ENABLED = true;
+var KI_CLEANUP_INTERVAL_MS = 2000;
+var TEMP_KI_CLEANUP = "end.strength.kiCleanup";
+var WORLD_KI_CLEANUP_LOCK = "end.strength.kiCleanupLock";
+/* While a dragon is alive, hard-cap scripted DMZ ki leftovers in The End. */
+var KI_MAX_ALIVE_WHILE_DRAGON = 32;
+/* When no dragon is alive, purge ALL End ki_laser / ki_blast. */
+var KI_PURGE_WHEN_NO_DRAGON = true;
 
 /* ========================= HELPERS ========================= */
 
@@ -776,7 +794,18 @@ function getOrCreateEndDragonFight() {
         return { fight: null, level: null, world: null };
     }
 
-    /* Do NOT force-load chunks here â€” tick/natural paths call this often and keep The End hot. */
+    try {
+        var dimName = "?";
+        try { dimName = str(endLevel.dimension().location()); } catch (eDim) {
+            try { dimName = str(endLevel.m_46472_().m_135782_()); } catch (eDim2) {}
+        }
+        print("[EndStrength] End ServerLevel=" + endLevel.getClass().getName() + " dim=" + dimName);
+    } catch (eLog) {}
+
+    try { forceLoadEndChunks(endLevel); } catch (eChunk) {
+        try { print("[EndStrength] forceLoadEndChunks error: " + eChunk); } catch (eChunk2) {}
+    }
+
     var fight = readDragonFightFromLevel(endLevel);
     if (fight == null) {
         try { print("[EndStrength] EndDragonFight missing - creating and attaching one"); } catch (e1) {}
@@ -1846,6 +1875,7 @@ function calcMobHp(tier, power) {
 }
 
 function buffMob(entity, world) {
+    if (END_MOB_SCALING_ENABLED !== true) return false;
     var kind = classifyEndEntity(entity);
     if (kind == null || kind === "dragon") return false;
     var tier = END_MOB_TIERS[kind];
@@ -2064,27 +2094,34 @@ function findDragons(world) {
         found.push(ent);
     }
 
-    /*
-     * TPS: NEVER world.getAllEntities(-1) here.
-     * Typed ENDER_DRAGON query around the main island only.
-     */
     try {
-        var level = getMcServerLevel(world);
-        if (level == null) level = getEndServerLevel();
-        var fromLevel = findDragonsOnLevel(level);
-        for (var i = 0; i < fromLevel.length; i++) pushDragon(fromLevel[i]);
+        var list = world.getAllEntities(-1);
+        for (var i = 0; i < list.length; i++) {
+            if (classifyEndEntity(list[i]) === "dragon") pushDragon(list[i]);
+        }
     } catch (e) {}
 
-    /* Fight API backup when the typed query misses a mid-spawn dragon. */
+    /* MC-level backup - CNPC scans sometimes miss the fight dragon. */
     try {
-        var fight = null;
-        try { fight = readDragonFightFromLevel(getMcServerLevel(world) || getEndServerLevel()); } catch (eF) {}
-        if (fight != null) {
-            var mc = null;
-            try { mc = fight.getDragon(); } catch (e2) {
-                try { mc = fight.m_64067_(); } catch (e3) {}
+        var level = getMcServerLevel(world);
+        if (level != null) {
+            var EntityType = Java.type("net.minecraft.world.entity.EntityType");
+            var AABB = Java.type("net.minecraft.world.phys.AABB");
+            var box = new AABB(-600.0, 0.0, -600.0, 600.0, 320.0, 600.0);
+            var mcList = null;
+            try {
+                mcList = level.getEntities(EntityType.ENDER_DRAGON, box, function (e) { return e != null && e.isAlive(); });
+            } catch (e2) {
+                try {
+                    mcList = level.m_45976_(EntityType.f_20530_, box, function (e) { return e != null && e.m_6084_(); });
+                } catch (e3) {}
             }
-            if (mc != null) pushDragon(wrapMcEntity(mc));
+            if (mcList != null) {
+                var it = mcList.iterator();
+                while (it.hasNext()) {
+                    pushDragon(wrapMcEntity(it.next()));
+                }
+            }
         }
     } catch (e4) {}
 
@@ -2207,8 +2244,7 @@ function findDragonsOnLevel(endLevel) {
     try {
         var EntityType = Java.type("net.minecraft.world.entity.EntityType");
         var AABB = Java.type("net.minecraft.world.phys.AABB");
-        /* Main island only â€” 1600Â² boxes were wiping MSPT when players visited The End. */
-        var box = new AABB(-256.0, 0.0, -256.0, 256.0, 320.0, 256.0);
+        var box = new AABB(-800.0, 0.0, -800.0, 800.0, 320.0, 800.0);
         var dragonType = null;
         try { dragonType = EntityType.ENDER_DRAGON; } catch (e1) {
             try { dragonType = EntityType.f_20530_; } catch (e2) {}
@@ -2275,6 +2311,266 @@ function clearAllDragons(world) {
     var list = findDragons(world);
     for (var i = 0; i < list.length; i++) despawnDragonEntity(list[i]);
     return list.length;
+}
+
+function dragonEntityId(ent) {
+    if (ent == null) return "";
+    try { return str(ent.getUUID()); } catch (e0) {
+        try { return str(ent.getMCEntity().m_20148_()); } catch (e1) {
+            try {
+                return str(ent.getX()) + "," + str(ent.getY()) + "," + str(ent.getZ());
+            } catch (e2) { return ""; }
+        }
+    }
+}
+
+function dragonHealthScore(ent) {
+    try { return num(ent.getHealth(), -1); } catch (e0) {
+        try {
+            var mc = ent.getMCEntity();
+            try { return num(mc.getHealth(), -1); } catch (e1) {
+                try { return num(mc.m_21223_(), -1); } catch (e2) { return -1; }
+            }
+        } catch (e3) { return -1; }
+    }
+}
+
+/**
+ * Keep at most one living Ender Dragon. Prefer the healthiest.
+ * Returns the kept dragon, or null if none.
+ */
+function enforceSingleDragon(world) {
+    if (ENFORCE_SINGLE_DRAGON !== true) {
+        var all0 = [];
+        try { if (world != null) all0 = findDragons(world); } catch (e0) {}
+        if (all0.length <= 0) {
+            try { all0 = findDragonsOnLevel(getEndServerLevel()); } catch (e1) {}
+        }
+        return all0.length > 0 ? all0[0] : null;
+    }
+
+    var dragons = [];
+    try { if (world != null) dragons = findDragons(world); } catch (e2) {}
+    if (dragons.length <= 0) {
+        try { dragons = findDragonsOnLevel(getEndServerLevel()); } catch (e3) {}
+    }
+    if (dragons.length <= 0) return null;
+    if (dragons.length === 1) return dragons[0];
+
+    var keep = dragons[0];
+    var keepHp = dragonHealthScore(keep);
+    for (var i = 1; i < dragons.length; i++) {
+        var d = dragons[i];
+        if (d == null) continue;
+        var hp = dragonHealthScore(d);
+        if (hp > keepHp) {
+            keep = d;
+            keepHp = hp;
+        }
+    }
+
+    var keepId = dragonEntityId(keep);
+    var removed = 0;
+    for (var j = 0; j < dragons.length; j++) {
+        var extra = dragons[j];
+        if (extra == null) continue;
+        var id = dragonEntityId(extra);
+        if (keepId !== "" && id === keepId) continue;
+        despawnDragonEntity(extra);
+        removed++;
+    }
+    if (removed > 0) {
+        try {
+            print("[EndStrength] Enforced single dragon: removed " + removed +
+                " duplicate(s), kept " + keepId);
+        } catch (e4) {}
+    }
+    return keep;
+}
+
+function isKiProjectileEntity(ent) {
+    if (ent == null) return false;
+    var key = "";
+    try { key = entityKey(ent); } catch (e0) {
+        try { key = str(ent.getTypeName()).toLowerCase(); } catch (e1) {
+            try { key = str(ent).toLowerCase(); } catch (e2) { return false; }
+        }
+    }
+    key = str(key).toLowerCase();
+    return key.indexOf("ki_laser") >= 0 || key.indexOf("ki_blast") >= 0
+        || key.indexOf("kilaser") >= 0 || key.indexOf("kiblast") >= 0;
+}
+
+function discardEntitySafe(ent) {
+    if (ent == null) return false;
+    /* CNPC IEntity path */
+    try { if (typeof ent.despawn === "function") { ent.despawn(); return true; } } catch (e0) {}
+    try { if (typeof ent.kill === "function") { ent.kill(); return true; } } catch (e1) {}
+    try {
+        if (typeof ent.getMCEntity === "function") {
+            var mc = ent.getMCEntity();
+            if (mc != null) {
+                try { mc.discard(); return true; } catch (e2) {
+                    try { mc.m_146870_(); return true; } catch (e3) {}
+                }
+            }
+        }
+    } catch (e4) {}
+    /* Raw MC Entity path (from typed ServerLevel collect) */
+    try { if (typeof ent.discard === "function") { ent.discard(); return true; } } catch (e5) {}
+    try { if (typeof ent.m_146870_ === "function") { ent.m_146870_(); return true; } } catch (e6) {}
+    try { if (typeof ent.kill === "function") { ent.kill(); return true; } } catch (e7) {}
+    return false;
+}
+
+function purgeEndKiCommands(world) {
+    if (world == null) return;
+    try {
+        NpcAPI.Instance().executeCommand(world,
+            "execute in minecraft:the_end run kill @e[type=dragonminez:ki_laser]");
+    } catch (e1) {}
+    try {
+        NpcAPI.Instance().executeCommand(world,
+            "execute in minecraft:the_end run kill @e[type=dragonminez:ki_blast]");
+    } catch (e2) {}
+}
+
+function resolveDmzKiEntityTypes() {
+    var out = [];
+    try {
+        var ResourceLocation = Java.type("net.minecraft.resources.ResourceLocation");
+        var BuiltInRegistries = null;
+        try { BuiltInRegistries = Java.type("net.minecraft.core.registries.BuiltInRegistries"); } catch (e1) {}
+        var registry = null;
+        if (BuiltInRegistries != null) {
+            try { registry = BuiltInRegistries.ENTITY_TYPE; } catch (e2) {
+                try { registry = BuiltInRegistries.f_257034_; } catch (e3) {}
+            }
+        }
+        if (registry == null) return out;
+        var ids = ["dragonminez:ki_laser", "dragonminez:ki_blast"];
+        for (var i = 0; i < ids.length; i++) {
+            try {
+                var loc = null;
+                try { loc = ResourceLocation.parse(ids[i]); } catch (e4) {
+                    loc = new ResourceLocation("dragonminez", ids[i].split(":")[1]);
+                }
+                var type = null;
+                try { type = registry.get(loc); } catch (e5) {
+                    try { type = registry.m_7745_(loc); } catch (e6) {}
+                }
+                if (type != null) out.push(type);
+            } catch (e7) {}
+        }
+    } catch (e8) {}
+    return out;
+}
+
+/**
+ * Collect End ki projectiles. Prefer typed ServerLevel queries (cheap even
+ * when flooded). Falls back to CNPC getAllEntities only if types unresolved.
+ * Returns a mix of CNPC IEntity and raw MC Entity — discardEntitySafe handles both.
+ */
+function collectEndKiEntities(world) {
+    var out = [];
+    try {
+        var endLevel = getEndServerLevel();
+        var types = resolveDmzKiEntityTypes();
+        if (endLevel != null && types.length > 0) {
+            var AABB = Java.type("net.minecraft.world.phys.AABB");
+            var box = new AABB(-800.0, 0.0, -800.0, 800.0, 320.0, 800.0);
+            for (var t = 0; t < types.length; t++) {
+                var mcList = null;
+                try {
+                    mcList = endLevel.getEntities(types[t], box, function (e) { return e != null; });
+                } catch (e1) {
+                    try {
+                        mcList = endLevel.m_45976_(types[t], box, function (e) { return e != null; });
+                    } catch (e2) {}
+                }
+                if (mcList == null) continue;
+                var it = mcList.iterator();
+                while (it.hasNext()) out.push(it.next());
+            }
+            return out;
+        }
+    } catch (eTyped) {}
+
+    if (world == null) return out;
+    try {
+        var list = world.getAllEntities(-1);
+        if (list == null) return out;
+        for (var i = 0; i < list.length; i++) {
+            if (isKiProjectileEntity(list[i])) out.push(list[i]);
+        }
+    } catch (e) {}
+    return out;
+}
+
+/**
+ * Purge / cap End ki_laser + ki_blast.
+ * No dragon: kill all. Dragon alive: hard-cap count.
+ */
+function cleanupEndKiProjectiles(world, hasDragon) {
+    if (KI_CLEANUP_ENABLED !== true || world == null) return;
+
+    if (!hasDragon && KI_PURGE_WHEN_NO_DRAGON === true) {
+        purgeEndKiCommands(world);
+        return;
+    }
+
+    if (!hasDragon) return;
+
+    var ents = collectEndKiEntities(world);
+    var n = ents.length;
+    var cap = Math.max(1, num(KI_MAX_ALIVE_WHILE_DRAGON, 32));
+    if (n <= cap) return;
+
+    /* Flooded End: command purge is far cheaper than discarding thousands 1-by-1. */
+    if (n > cap * 2) {
+        purgeEndKiCommands(world);
+        try {
+            print("[EndStrength] Ki flood (" + n + " > " + (cap * 2) + "); purged all End ki projectiles");
+        } catch (e1) {}
+        return;
+    }
+
+    var over = n - cap;
+    var killed = 0;
+    for (var j = 0; j < ents.length && killed < over; j++) {
+        if (discardEntitySafe(ents[j])) killed++;
+    }
+    if (killed < over) {
+        purgeEndKiCommands(world);
+        try {
+            print("[EndStrength] Ki cap exceeded (" + n + "); purged all End ki projectiles");
+        } catch (e2) {}
+    } else if (killed > 0) {
+        try {
+            print("[EndStrength] Ki cap: discarded " + killed + " (had " + n + ")");
+        } catch (e3) {}
+    }
+}
+
+/** Throttled single-dragon enforce + ki cleanup (shared across End players). */
+function runDragonWorldHygiene(world) {
+    if (world == null) return;
+    try {
+        var stored = world.getStoreddata();
+        var t = nowMs();
+        var last = 0;
+        try {
+            if (stored.has(WORLD_KI_CLEANUP_LOCK)) last = num(stored.get(WORLD_KI_CLEANUP_LOCK), 0);
+        } catch (e1) {}
+        var interval = Math.min(num(KI_CLEANUP_INTERVAL_MS, 2000), num(SINGLE_DRAGON_CHECK_MS, 1500));
+        if (t - last < interval) return;
+        stored.put(WORLD_KI_CLEANUP_LOCK, "" + t);
+
+        var kept = enforceSingleDragon(world);
+        cleanupEndKiProjectiles(world, kept != null);
+    } catch (e2) {
+        try { print("[EndStrength] runDragonWorldHygiene: " + e2); } catch (e3) {}
+    }
 }
 
 function restoreTowerCrystals(world) {
@@ -2615,6 +2911,9 @@ function spawnScaledDragon(world, powerPlayer, sourceLabel, x, y, z) {
     if (world == null) world = wrapEndWorld(endLevel);
     if (world == null && endLevel == null) return null;
 
+    /* Never allow a second living dragon. */
+    try { enforceSingleDragon(world); } catch (eEnf) {}
+
     var existing = [];
     try { if (world != null) existing = findDragons(world); } catch (e1) {}
     if (existing.length <= 0) existing = findDragonsOnLevel(endLevel);
@@ -2658,11 +2957,6 @@ function applyPendingDragonBuff(world, player) {
     try {
         var stored = world.getStoreddata();
         if (!stored.has(WORLD_PENDING_DRAGON_BUFF)) return;
-        /* Throttle pending-buff polls â€” findDragons is still non-trivial. */
-        var tPend = nowMs();
-        var lastPend = stored.has(WORLD_PENDING_BUFF_LOCK) ? num(stored.get(WORLD_PENDING_BUFF_LOCK), 0) : 0;
-        if (tPend - lastPend < 2000) return;
-        stored.put(WORLD_PENDING_BUFF_LOCK, "" + tPend);
         raw = str(stored.get(WORLD_PENDING_DRAGON_BUFF));
         var dragons = findDragons(world);
         if (dragons.length <= 0) {
@@ -2862,12 +3156,16 @@ function tryNaturalDragonSpawn(player) {
     if (world == null) return;
     if (!isInTheEnd(player.getWorld())) return;
 
+    var kept = null;
+    try { kept = enforceSingleDragon(world); } catch (eEnf) {}
+    if (kept != null) {
+        maybeRescaleDragon(kept, world, player);
+        return;
+    }
+
     var dragons = findDragons(world);
     if (dragons.length > 0) {
-        /* Keep existing dragons scaled / virtual-HP ready. */
-        for (var d = 0; d < dragons.length; d++) {
-            maybeRescaleDragon(dragons[d], world, player);
-        }
+        maybeRescaleDragon(dragons[0], world, player);
         return;
     }
 
@@ -3013,6 +3311,8 @@ function cmdSpawnDragon(player, opts) {
         return;
     }
 
+    try { enforceSingleDragon(world); } catch (eEnf) {}
+
     var existing = [];
     try { if (world != null) existing = findDragons(world); } catch (eEx1) {}
     if (existing.length <= 0) existing = findDragonsOnLevel(endLevel);
@@ -3137,6 +3437,9 @@ function cmdCleanupDragons(player) {
             stored.put(WORLD_LAST_NATURAL, "" + nowMs());
         }
     } catch (e7) {}
+
+    /* Also clear leftover DMZ ki projectiles so BeamClash cannot stall TPS. */
+    try { if (world != null) purgeEndKiCommands(world); } catch (eKi) {}
 
     msg(player,
         chatColor("6") + "[The End] " +
@@ -3384,11 +3687,7 @@ function tickDragonExtraAttacks(world, player) {
     if (DRAGON_EXTRA_ATTACKS_ENABLED !== true) return;
     if (world == null || !isInTheEnd(world)) return;
 
-    /*
-     * TPS: throttle BEFORE findDragons().
-     * findDragons uses a typed ENDER_DRAGON query (still non-trivial) â€”
-     * never run it every player tick.
-     */
+    /* World-throttle FIRST so we do not scan dragons every End player tick. */
     var t = nowMs();
     try {
         var stored = world.getStoreddata();
@@ -3405,35 +3704,22 @@ function tickDragonExtraAttacks(world, player) {
         } catch (eLock2) { return; }
     }
 
-    var dragons = [];
-    try { dragons = findDragons(world); } catch (e1) {}
-    if (dragons.length <= 0) {
-        try { dragons = findDragonsOnLevel(getEndServerLevel()); } catch (e2) {}
-    }
+    /* Only the single kept dragon may fire — prevents N dragons × ki spam. */
+    var dragon = null;
+    try { dragon = enforceSingleDragon(world); } catch (eEnf) {}
+    if (dragon == null || !isLivingDragon(dragon)) return;
 
-    /* Drop dead / dying dragons so attacks stop the moment the fight ends. */
-    var living = [];
-    for (var fi = 0; fi < dragons.length; fi++) {
-        if (isLivingDragon(dragons[fi])) living.push(dragons[fi]);
-    }
-    if (living.length <= 0) return;
+    var target = nearestPlayerToEntity(dragon, world, DRAGON_ATTACK_RANGE);
+    if (target == null) target = player;
+    if (!isRealOnlinePlayer(target)) return;
 
-    for (var d = 0; d < living.length; d++) {
-        var dragon = living[d];
-        if (!isLivingDragon(dragon)) continue;
-
-        var target = nearestPlayerToEntity(dragon, world, DRAGON_ATTACK_RANGE);
-        if (target == null) target = player;
-        if (!isRealOnlinePlayer(target)) continue;
-
-        var roll = Math.random();
-        if (roll < num(DRAGON_KI_BEAM_CHANCE, 0.60)) {
-            if (!fireDmzKiBeam(world, dragon, target)) {
-                fireDmzKiBlast(world, dragon, target);
-            }
-        } else {
+    var roll = Math.random();
+    if (roll < num(DRAGON_KI_BEAM_CHANCE, 0.60)) {
+        if (!fireDmzKiBeam(world, dragon, target)) {
             fireDmzKiBlast(world, dragon, target);
         }
+    } else {
+        fireDmzKiBlast(world, dragon, target);
     }
 }
 
@@ -3484,6 +3770,9 @@ function tick(event) {
         var temp = player.getTempdata();
         var t = nowMs();
 
+        /* Single dragon + purge/cap leftover DMZ ki_laser / ki_blast. */
+        try { runDragonWorldHygiene(getEndWorld() || world); } catch (eHyg) {}
+
         /* Scripted ki beam / breath attacks while a dragon is alive. */
         try { tickDragonExtraAttacks(world, player); } catch (eAtk) {}
 
@@ -3513,47 +3802,38 @@ function tick(event) {
             }
         } catch (eCrystal) {}
 
-        /* Natural spawn check (throttled world-wide). */
+        /* Natural spawn check (throttled per player, locked world-wide). */
         try {
             var lastNat = 0;
-            var wNat = world.getStoreddata();
-            if (wNat.has(TEMP_NATURAL)) lastNat = num(wNat.get(TEMP_NATURAL), 0);
-            else if (temp.has(TEMP_NATURAL)) lastNat = num(temp.get(TEMP_NATURAL), 0);
+            if (temp.has(TEMP_NATURAL)) lastNat = num(temp.get(TEMP_NATURAL), 0);
             if (t - lastNat >= NATURAL_CHECK_MS) {
-                wNat.put(TEMP_NATURAL, "" + t);
-                try { temp.put(TEMP_NATURAL, "" + t); } catch (eNatT) {}
+                temp.put(TEMP_NATURAL, "" + t);
                 tryNaturalDragonSpawn(player);
             }
         } catch (eNat) {}
 
         /* Buff a dragon that appeared after a delayed fight spawn. */
-        try { applyPendingDragonBuff(world, player); } catch (ePend) {}
+        try { applyPendingDragonBuff(getEndWorld() || world, player); } catch (ePend) {}
 
-        /* World-wide scan lock â€” one AABB fan-out for all End players. */
         var last = 0;
-        try {
-            var wScan = world.getStoreddata();
-            if (wScan.has(WORLD_SCAN_LOCK)) last = num(wScan.get(WORLD_SCAN_LOCK), 0);
-            if (t - last < SCAN_INTERVAL_MS) return;
-            wScan.put(WORLD_SCAN_LOCK, "" + t);
-        } catch (eScanLock) {
-            try { if (temp.has(TEMP_SCAN)) last = num(temp.get(TEMP_SCAN), 0); } catch (e1) {}
-            if (t - last < SCAN_INTERVAL_MS) return;
-            try { temp.put(TEMP_SCAN, "" + t); } catch (e2) {}
-        }
+        try { if (temp.has(TEMP_SCAN)) last = num(temp.get(TEMP_SCAN), 0); } catch (e1) {}
+        if (t - last < SCAN_INTERVAL_MS) return;
+        try { temp.put(TEMP_SCAN, "" + t); } catch (e2) {}
 
         var list = null;
         try {
-            /* Radius scan only â€” never getAllEntities(-1) on the tick path. */
-            list = world.getNearbyEntities(
-                Math.floor(player.getX()),
-                Math.floor(player.getY()),
-                Math.floor(player.getZ()),
-                SCAN_RADIUS,
-                -1
-            );
+            if (SCAN_RADIUS < 0) list = world.getAllEntities(-1);
+            else {
+                list = world.getNearbyEntities(
+                    Math.floor(player.getX()),
+                    Math.floor(player.getY()),
+                    Math.floor(player.getZ()),
+                    SCAN_RADIUS,
+                    -1
+                );
+            }
         } catch (e3) {
-            return;
+            try { list = world.getAllEntities(-1); } catch (e4) { return; }
         }
         if (list == null) return;
 
@@ -3571,7 +3851,7 @@ function tick(event) {
                         }
                     } catch (eRep) {}
                     maybeRescaleDragon(ent, world, player);
-                } else if (kind != null) {
+                } else if (kind != null && END_MOB_SCALING_ENABLED === true) {
                     repairEndHealthIfStripped(ent, kind);
                     buffMob(ent, world);
                 }
@@ -3590,10 +3870,15 @@ function kill(event) {
         var kind = classifyEndEntity(victim);
         if (kind == null) return;
 
-        /* Settle HP-scaled DMZ kill TP up/down to Sparring-scale End payout. */
-        try {
-            scheduleEndKillTpClawback(player, kind, getEntityMaxHealthSafe(victim));
-        } catch (eTp) {}
+        /*
+         * End kill TP settle: dragon always; other End mobs only when
+         * END_MOB_SCALING_ENABLED is on.
+         */
+        if (kind === "dragon" || END_MOB_SCALING_ENABLED === true) {
+            try {
+                scheduleEndKillTpClawback(player, kind, getEntityMaxHealthSafe(victim));
+            } catch (eTp) {}
+        }
 
         if (kind !== "dragon") return;
 
@@ -3602,6 +3887,9 @@ function kill(event) {
             var endWorld = getEndWorld() || player.getWorld();
             if (endWorld != null) {
                 endWorld.getStoreddata().put(WORLD_LAST_NATURAL, "" + nowMs());
+                /* Fight over — clear ki leftovers so they cannot linger. */
+                try { purgeEndKiCommands(endWorld); } catch (eKi) {}
+                try { cleanupEndKiProjectiles(endWorld, false); } catch (eKi2) {}
             }
         } catch (e1) {}
 

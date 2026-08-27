@@ -1504,7 +1504,7 @@ function cmdChallengeCancel(player) {
         msg(player, C + "cChallenge already ended."); return;
     }
     /*
-     * Do not tear the session down here â€” Rival System owns rewards +
+     * Do not tear the session down here — Rival System owns rewards +
      * the battle report. Mark a pendingEnd for the next challenge tick.
      */
     var winnerUuid = (u == session.challengerUuid) ? session.opponentUuid : session.challengerUuid;
@@ -1549,7 +1549,7 @@ function showStats(player, targetName) {
 
 /*
  * Same storeddata key as Rival System.js / End Dimension Strength.js.
- * Hides kill TP chat spam only â€” TP is still awarded.
+ * Hides kill TP chat spam only — TP is still awarded.
  */
 var KILL_TP_CHAT_KEY = "dmz_kill_tp_chat";
 
