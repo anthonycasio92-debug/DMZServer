@@ -179,9 +179,52 @@ public final class DifficultyConfig {
     public boolean enableRivalSystem = true;
     /** Sparring Tp System 3.2.11 port (auto sessions / mentor / TP formula). */
     public boolean enableSparringSystem = true;
+
+    /** Master switch for natural-progression CNPC ports (Flight, SprintJump, Meditation, …). */
+    public boolean enableProgression = true;
+    public boolean enableFlightProgression = true;
+    public boolean enableSprintJump = true;
+    public boolean enableMeditation = true;
+    public boolean enablePotential = true;
+    public boolean enableFarmingTp = true;
+    public boolean enableGlobalTpBoost = true;
+    public boolean enableBioAndroid = true;
+    public boolean enableRaceLock = true;
+    public boolean enableYardrat = true;
+    public boolean enableSpiritualistKi = true;
+    public boolean enableAndroidConversion = true;
     public boolean rivalPresenceTp = true;
     public boolean rivalInstinct = true;
     public boolean rivalChallenges = true;
+
+    /** Master switch for natural progression CNPC ports (flight / TP / race / etc.). */
+    public boolean enableProgression = true;
+    public boolean enableFlightProgression = true;
+    public boolean enableSprintJump = true;
+    public boolean enableMeditation = true;
+    public boolean enablePotential = true;
+    public boolean enableFarmingTp = true;
+    public boolean enableGlobalTpBoost = true;
+    public boolean enableBioAndroid = true;
+    public boolean enableRaceLock = true;
+    public boolean enableYardrat = true;
+    public boolean enableSpiritualistKi = true;
+    public boolean enableAndroidConversion = true;
+
+    /**
+     * Soft-dependency Fabled bridges (mana/SP/attrs/prestige/race/class perms).
+     * Safe when Fabled / LuckPerms / Bukkit are missing — reflection never hard-crashes.
+     */
+    public boolean enableFabledBridge = true;
+    public boolean enableEnergyManaSync = true;
+    public boolean enableStatScreenSync = true;
+    public boolean enableTpSpMirror = true;
+    public boolean enableAttrMultiBonus = true;
+    public boolean enablePrestigeSkillSync = true;
+    public boolean enablePrestigeFactionSync = true;
+    public boolean enableValueCleaner = true;
+    public boolean enableRaceClassSync = true;
+    public boolean enableClassPermissionSync = true;
     public double bossStatMultiplier = 1.5;
     /** Natural (pre-scale) max-health at/above this marks a boss. Default keeps wardens/etc. */
     public double bossHealthThreshold = 300.0;

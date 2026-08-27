@@ -1,0 +1,804 @@
+package com.dbzlegacy.adaptivedifficulty.progression.end;
+
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
+import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
+import com.dragonminez.common.stats.StatsData;
+import com.dragonminez.common.stats.character.Resources;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
+import net.minecraft.world.entity.monster.EnderMan;
+import net.minecraft.world.entity.monster.Endermite;
+import net.minecraft.world.entity.monster.Shulker;
+import net.minecraft.world.entity.monster.Phantom;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.dimension.end.EndDragonFight;
+import net.minecraft.world.phys.AABB;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
+
+/**
+ * Core port of {@code End Dimension Strength.js} 2.10.4:
+ * scale End hostiles from the strongest End player, settle kill TP,
+ * dragon spawn/cleanup commands (trigger 50/51), damage mitigation.
+ */
+public final class EndDimensionStrength {
+    private static final String TAG_BUFFED = "end_strength_v15";
+    private static final String NBT_DEF = "end_strength_entity_def";
+    private static final String NBT_MAX = "end_strength_real_max";
+    private static final String NBT_HITS = "end_strength_hit_target";
+    private static final String NBT_DMZ_HP = "end_strength_dmz_hp_src";
+
+    private static final double SCAN_RADIUS = 40.0;
+    private static final long SCAN_MS = 8000L;
+    private static final long NATURAL_CHECK_MS = 30_000L;
+    private static final long NATURAL_SPAWN_MS = 5L * 60L * 1000L;
+    private static final long DRAGON_RESCALE_MS = 3000L;
+    private static final int TP_SETTLE_DELAY_TICKS = 6;
+
+    private static final double DRAGON_BASE_HP = 12_000;
+    private static final double DRAGON_HP_CAP = 28_000;
+    private static final double DRAGON_HP_LOG_REF = 10_000_000;
+    private static final double DRAGON_DEF_BASE = 50_000;
+    private static final double DRAGON_DEF_FROM_PLAYER = 2.25;
+    private static final double DRAGON_DEF_FROM_MELEE = 1.75;
+    private static final double DRAGON_DEF_PER_LEVEL = 750;
+    private static final double DRAGON_DEF_PER_BP = 0.15;
+    private static final double DRAGON_DEF_CAP = 25_000_000;
+    private static final int DRAGON_TARGET_HITS = 250;
+    private static final double DRAGON_MIN_DMG_FRAC = 0.008;
+    private static final double END_FLAT_ABSORB = 0.55;
+    private static final double END_REDUCTION_CAP = 0.92;
+    private static final double END_DEF_SCALE = 12.0;
+
+    private static final double END_MOB_DEF_FROM_PLAYER = 1.10;
+    private static final double END_MOB_DEF_FROM_MELEE = 0.85;
+    private static final double END_MOB_DEF_PER_LEVEL = 120;
+    private static final double END_MOB_DEF_SCALE_CAP = 8.0;
+    private static final double END_MOB_MIN_DMG_FRAC = 0.03;
+    private static final double END_MOB_FLAT_ABSORB = 0.35;
+    private static final double END_MOB_REDUCTION_CAP = 0.80;
+    private static final double END_MOB_DEF_SCALE = 20.0;
+    private static final double ENDERMAN_ATTACK = 12.0;
+
+    private static volatile long lastWorldScanAt;
+    private static volatile long lastNaturalCheckAt;
+    private static volatile long lastNaturalSpawnAt;
+    private static volatile long lastDragonRescaleAt;
+
+    private static final Map<UUID, PendingTp> PENDING_TP = new ConcurrentHashMap<>();
+
+    private EndDimensionStrength() {}
+
+    public static boolean isTheEnd(Level level) {
+        if (level == null) {
+            return false;
+        }
+        try {
+            ResourceLocation dim = level.m_46472_().m_135782_(); // dimension().location()
+            if (dim == null) {
+                return false;
+            }
+            String id = dim.toString().toLowerCase(Locale.ROOT);
+            if ("minecraft:the_end".equals(id) || id.contains("the_end")) {
+                return true;
+            }
+            return id.endsWith(":end") && !id.contains("endermi");
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static void pulse(MinecraftServer server) {
+        if (!DifficultyConfig.get().enableEndDimensionStrength || server == null) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        for (ServerPlayer player : server.m_6846_().m_11314_()) {
+            if (player == null) {
+                continue;
+            }
+            processKillTpSettle(player);
+            if (!isTheEnd(player.m_9236_())) {
+                continue;
+            }
+            maybeNaturalDragon(player, now);
+        }
+
+        if (now - lastWorldScanAt < SCAN_MS) {
+            return;
+        }
+        lastWorldScanAt = now;
+
+        for (ServerPlayer player : server.m_6846_().m_11314_()) {
+            if (player == null || !isTheEnd(player.m_9236_())) {
+                continue;
+            }
+            ServerLevel level = player.m_284548_(); // serverLevel()
+            if (level == null) {
+                continue;
+            }
+            PlayerPower strongest = strongestInEnd(level, player);
+            AABB box = player.m_20191_().m_82400_(SCAN_RADIUS); // getBoundingBox().inflate
+            List<LivingEntity> nearby = level.m_45976_(LivingEntity.class, box);
+            for (LivingEntity ent : nearby) {
+                String kind = classify(ent);
+                if (kind == null) {
+                    continue;
+                }
+                if ("dragon".equals(kind)) {
+                    maybeRescaleDragon((EnderDragon) ent, level, strongest, now);
+                } else {
+                    buffMob(ent, kind, nearbyPower(ent, level, strongest));
+                }
+            }
+            // One End player owns the world scan this pulse.
+            break;
+        }
+    }
+
+    public static void onHurt(LivingHurtEvent event) {
+        if (!DifficultyConfig.get().enableEndDimensionStrength) {
+            return;
+        }
+        LivingEntity target = event.getEntity();
+        if (target == null || !isTheEnd(target.m_9236_())) {
+            return;
+        }
+        String kind = classify(target);
+        if (kind == null) {
+            return;
+        }
+        float raw = event.getAmount();
+        if (!(raw > 0.0f)) {
+            return;
+        }
+        double def = readDef(target);
+        if (!(def > 0.0) && event.getSource() != null
+                && event.getSource().m_7639_() instanceof ServerPlayer attacker) {
+            ServerLevel level = attacker.m_284548_();
+            PlayerPower power = strongestInEnd(level, attacker);
+            if ("dragon".equals(kind) && target instanceof EnderDragon dragon) {
+                applyDragonStats(dragon, power, "onhit");
+            } else {
+                buffMob(target, kind, power);
+            }
+            def = readDef(target);
+        }
+        if (!(def > 0.0)) {
+            return;
+        }
+        boolean dragon = "dragon".equals(kind);
+        double minFrac = dragon ? DRAGON_MIN_DMG_FRAC : END_MOB_MIN_DMG_FRAC;
+        double absorb = dragon ? END_FLAT_ABSORB : END_MOB_FLAT_ABSORB;
+        double redCap = dragon ? END_REDUCTION_CAP : END_MOB_REDUCTION_CAP;
+        double defScale = dragon ? END_DEF_SCALE : END_MOB_DEF_SCALE;
+        float mitigated = (float) mitigate(raw, def, minFrac, absorb, redCap, defScale);
+        mitigated = capForHits(target, kind, mitigated);
+        event.setAmount(Math.max(mitigated, raw * (float) minFrac));
+    }
+
+    public static void onKill(LivingDeathEvent event, ServerPlayer killer) {
+        if (!DifficultyConfig.get().enableEndDimensionStrength || killer == null) {
+            return;
+        }
+        LivingEntity dead = event.getEntity();
+        if (dead == null) {
+            return;
+        }
+        String kind = classify(dead);
+        if (kind == null) {
+            return;
+        }
+        scheduleKillTp(killer, kind, dead.m_21233_());
+        if (!"dragon".equals(kind)) {
+            return;
+        }
+        lastNaturalSpawnAt = System.currentTimeMillis();
+        try {
+            ItemStack egg = new ItemStack(Items.f_42683_); // DRAGON_EGG
+            if (!killer.m_150109_().m_36054_(egg)) {
+                killer.m_36176_(egg, false);
+            }
+            killer.m_213846_(Component.m_237113_("§d[The End] §fDragon Egg claimed."));
+        } catch (Throwable ignored) {
+        }
+        SystemTelemetry.log("end_strength", "dragon_kill", killer, null, Map.of("kind", kind));
+    }
+
+    /** Trigger 50 — spawn / refresh End dragon. */
+    public static int cmdSpawnDragon(ServerPlayer player) {
+        if (player == null) {
+            return 0;
+        }
+        MinecraftServer server = player.m_20194_();
+        if (server == null) {
+            return 0;
+        }
+        ServerLevel end = server.m_129880_(Level.f_46430_); // END
+        if (end == null) {
+            msg(player, "§c[The End] End dimension unavailable.");
+            return 0;
+        }
+        for (Entity e : end.m_104735_()) {
+            if (e instanceof EnderDragon) {
+                msg(player, "§e[The End] An Ender Dragon is already alive.");
+                PlayerPower power = strongestInEnd(end, player);
+                applyDragonStats((EnderDragon) e, power, "cmd");
+                return 1;
+            }
+        }
+        try {
+            EndDragonFight fight = end.m_8903_(); // dragonFight
+            if (fight != null) {
+                try {
+                    // Prefer fight reset when available
+                    fight.m_64086_(); // resetSpikeCrystals — best-effort
+                } catch (Throwable ignored) {
+                }
+            }
+            EnderDragon dragon = net.minecraft.world.entity.EntityType.f_20566_.m_20615_(end); // ENDER_DRAGON
+            if (dragon == null) {
+                msg(player, "§c[The End] Failed to create dragon entity.");
+                return 0;
+            }
+            dragon.m_7678_(0.5, 128.0, 0.5, 0.0f, 0.0f);
+            end.m_7967_(dragon);
+            applyDragonStats(dragon, strongestInEnd(end, player), "spawn");
+            lastNaturalSpawnAt = System.currentTimeMillis();
+            msg(player, "§d[The End] Ender Dragon spawned.");
+            SystemTelemetry.log("end_strength", "dragon_spawn", player, null, Map.of("via", "command"));
+            return 1;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn("[{}] enddragon spawn failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            msg(player, "§c[The End] Spawn failed — see server log.");
+            return 0;
+        }
+    }
+
+    /** Trigger 51 — clear End dragons. */
+    public static int cmdCleanupDragons(ServerPlayer player) {
+        MinecraftServer server = player == null ? null : player.m_20194_();
+        if (server == null) {
+            return 0;
+        }
+        ServerLevel end = server.m_129880_(Level.f_46430_);
+        if (end == null) {
+            return 0;
+        }
+        int removed = 0;
+        for (Entity e : List.copyOf(end.m_104735_().stream().filter(ent -> ent instanceof EnderDragon).toList())) {
+            e.m_146870_();
+            removed++;
+        }
+        if (player != null) {
+            msg(player, "§7[The End] Cleared §f" + removed + "§7 dragon(s).");
+        }
+        SystemTelemetry.log("end_strength", "dragon_cleanup", player, null, Map.of("removed", removed));
+        return removed;
+    }
+
+    private static void maybeNaturalDragon(ServerPlayer player, long now) {
+        if (!DifficultyConfig.get().enableEndNaturalDragonSpawn) {
+            return;
+        }
+        if (now - lastNaturalCheckAt < NATURAL_CHECK_MS) {
+            return;
+        }
+        lastNaturalCheckAt = now;
+        ServerLevel end = player.m_284548_();
+        if (end == null || !isTheEnd(end)) {
+            return;
+        }
+        for (Entity e : end.m_104735_()) {
+            if (e instanceof EnderDragon) {
+                return;
+            }
+        }
+        if (lastNaturalSpawnAt > 0 && now - lastNaturalSpawnAt < NATURAL_SPAWN_MS) {
+            return;
+        }
+        cmdSpawnDragon(player);
+    }
+
+    private static void maybeRescaleDragon(EnderDragon dragon, ServerLevel level, PlayerPower power, long now) {
+        if (now - lastDragonRescaleAt < DRAGON_RESCALE_MS) {
+            return;
+        }
+        lastDragonRescaleAt = now;
+        applyDragonStats(dragon, power, "rescale");
+    }
+
+    private static void applyDragonStats(EnderDragon dragon, PlayerPower power, String source) {
+        if (dragon == null || power == null) {
+            return;
+        }
+        double hp = mapDmzHp(power.maxHp, DRAGON_BASE_HP, DRAGON_HP_CAP);
+        double def = calcDragonDef(power);
+        boolean midFight = alreadyBuffed(dragon) && ("rescale".equals(source) || "onhit".equals(source) || "strongest".equals(source));
+        double prevMax = dragon.m_21233_();
+        double prevHp = dragon.m_21223_();
+        if (midFight && prevMax > 20 && prevHp > 0 && hp <= prevMax + 500) {
+            // DEF / name only — leave attributes alone mid-fight.
+            storeDef(dragon, def);
+            storeHits(dragon, DRAGON_TARGET_HITS);
+            markBuffed(dragon);
+            return;
+        }
+        setMaxHealth(dragon, hp, midFight ? Math.max(1.0, hp * (prevHp / Math.max(1.0, prevMax))) : hp);
+        storeDef(dragon, def);
+        storeHits(dragon, DRAGON_TARGET_HITS);
+        storeDmzHp(dragon, power.maxHp);
+        markBuffed(dragon);
+        try {
+            dragon.m_6593_(Component.m_237113_(
+                    "§5Ender Dragon §8[" + DmzRewards.formatWhole(hp) + " HP / DEF "
+                            + DmzRewards.formatWhole(def) + "]"));
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void buffMob(LivingEntity entity, String kind, PlayerPower power) {
+        MobTier tier = MobTier.of(kind);
+        if (tier == null || power == null) {
+            return;
+        }
+        if (alreadyBuffed(entity) && readDef(entity) > 0.0) {
+            return;
+        }
+        double hp = mapDmzHp(power.maxHp, tier.hp, tier.hpCap);
+        double def = calcMobDef(tier, power);
+        double dmg = "enderman".equals(kind)
+                ? ENDERMAN_ATTACK
+                : Math.floor(tier.damage * Math.min(4.0, 1.0 + power.level / 100.0));
+        setMaxHealth(entity, hp, hp);
+        storeDef(entity, def);
+        storeHits(entity, tier.hits);
+        storeDmzHp(entity, power.maxHp);
+        setAttack(entity, dmg);
+        markBuffed(entity);
+        try {
+            entity.m_6593_(Component.m_237113_(
+                    "§d" + tier.label + " §8[" + DmzRewards.formatWhole(hp) + " HP / DEF "
+                            + DmzRewards.formatWhole(def) + "]"));
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static double calcDragonDef(PlayerPower p) {
+        double def = Math.max(
+                DRAGON_DEF_BASE,
+                Math.max(p.defense * DRAGON_DEF_FROM_PLAYER, p.melee * DRAGON_DEF_FROM_MELEE)
+        );
+        def += p.level * DRAGON_DEF_PER_LEVEL;
+        def += p.bp * DRAGON_DEF_PER_BP;
+        return Math.min(DRAGON_DEF_CAP, Math.floor(def));
+    }
+
+    private static double calcMobDef(MobTier tier, PlayerPower p) {
+        double base = tier.defense;
+        double tierFactor = Math.max(1, tier.tier);
+        double def = Math.max(
+                base,
+                Math.max(
+                        p.defense * END_MOB_DEF_FROM_PLAYER * (0.55 + tierFactor * 0.2),
+                        p.melee * END_MOB_DEF_FROM_MELEE * (0.45 + tierFactor * 0.15)
+                )
+        );
+        def += p.level * END_MOB_DEF_PER_LEVEL * tierFactor;
+        double maxDef = base * END_MOB_DEF_SCALE_CAP
+                + p.defense * END_MOB_DEF_FROM_PLAYER * tierFactor
+                + p.melee * END_MOB_DEF_FROM_MELEE * tierFactor;
+        if (def > maxDef) {
+            def = maxDef;
+        }
+        return Math.floor(def);
+    }
+
+    private static double mapDmzHp(double playerDmzHp, double baseHp, double capHp) {
+        baseHp = Math.max(1.0, baseHp);
+        capHp = Math.max(baseHp, capHp);
+        double src = Math.max(20.0, playerDmzHp);
+        double t = Math.log(src / 20.0) / Math.log(DRAGON_HP_LOG_REF / 20.0);
+        if (!(t >= 0)) {
+            t = 0;
+        }
+        if (t > 1) {
+            t = 1;
+        }
+        return Math.floor(baseHp + (capHp - baseHp) * t);
+    }
+
+    private static double mitigate(
+            double raw, double defense, double minFrac, double absorb, double redCap, double defScale
+    ) {
+        double afterAbsorb = raw * (1.0 - DmzRewards.clamp(absorb, 0.0, 0.95));
+        double reduction = defense / (defense + Math.max(1.0, raw * defScale));
+        reduction = Math.min(redCap, Math.max(0.0, reduction));
+        double out = afterAbsorb * (1.0 - reduction);
+        double floor = raw * minFrac;
+        return Math.max(out, floor);
+    }
+
+    private static float capForHits(LivingEntity entity, String kind, float dmg) {
+        int hits = (int) PersistentDataAccess.getLong(entity, NBT_HITS,
+                "dragon".equals(kind) ? DRAGON_TARGET_HITS : 14);
+        hits = Math.max(4, hits);
+        double max = entity.m_21233_();
+        double cap = max / hits;
+        if (dmg > cap) {
+            return (float) cap;
+        }
+        return dmg;
+    }
+
+    private static void scheduleKillTp(ServerPlayer player, String kind, double maxHp) {
+        PENDING_TP.put(player.m_20148_(), new PendingTp(kind, maxHp, TP_SETTLE_DELAY_TICKS));
+    }
+
+    private static void processKillTpSettle(ServerPlayer player) {
+        PendingTp pending = PENDING_TP.get(player.m_20148_());
+        if (pending == null) {
+            return;
+        }
+        if (pending.delayTicks > 0) {
+            pending.delayTicks--;
+            return;
+        }
+        PENDING_TP.remove(player.m_20148_());
+        double awarded = estimateDmzKillTp(player, pending.maxHp);
+        double bonus = endKillBonus(pending.kind) * endBpMult(readPower(player).bp);
+        double target = Math.min(softCap(readPower(player).level, pending.kind), awarded + bonus);
+        double delta = target - awarded;
+        if (Math.abs(delta) < 50.0) {
+            return;
+        }
+        if (delta > 0) {
+            DmzRewards.awardTp(player, (float) Math.floor(delta), "end-" + pending.kind, true, "§6[End] ");
+        } else {
+            adjustTp(player, delta);
+            DmzRewards.msg(player, "§7[End] Kill TP capped (" + DmzRewards.formatWhole(target)
+                    + " TP max for " + pending.kind + ").");
+        }
+    }
+
+    private static double estimateDmzKillTp(ServerPlayer player, double maxHp) {
+        double ratio = 0.25;
+        double tpPerHit = 2.0;
+        double base = tpPerHit + Math.round(Math.max(0.0, maxHp) * ratio);
+        StatsData data = DmzProgression.stats(player);
+        if (data == null) {
+            return base;
+        }
+        try {
+            return Math.max(0.0, Math.floor(data.calculateTPGain((float) base)));
+        } catch (Throwable ignored) {
+            return base;
+        }
+    }
+
+    private static double endKillBonus(String kind) {
+        return switch (kind == null ? "" : kind) {
+            case "dragon" -> 18_000;
+            case "shulker" -> 6_000;
+            case "enderman" -> 4_500;
+            case "phantom" -> 3_000;
+            case "endermite" -> 2_000;
+            default -> 2_500;
+        };
+    }
+
+    private static double endBpMult(double bp) {
+        double raw = 1.0 + Math.log1p(Math.max(0.0, bp) / 100_000.0);
+        double mult = Math.max(1.0, 1.0 + (raw - 1.0) * 0.06);
+        return Math.min(2.5, mult);
+    }
+
+    private static double softCap(int level, String kind) {
+        // Simplified softcap curve (full table lives in the CNPC script).
+        double base = switch (kind == null ? "" : kind) {
+            case "dragon" -> 280_000;
+            case "shulker" -> 120_000;
+            case "enderman" -> 80_000;
+            case "phantom" -> 50_000;
+            default -> 30_000;
+        };
+        double t = Math.min(1.0, Math.max(0.0, (level - 1000) / 19000.0));
+        return base + (1_400_000 - base) * t;
+    }
+
+    private static void adjustTp(ServerPlayer player, double delta) {
+        StatsData data = DmzProgression.stats(player);
+        if (data == null) {
+            return;
+        }
+        try {
+            Resources resources = data.getResources();
+            if (resources == null) {
+                return;
+            }
+            if (delta > 0) {
+                resources.addTrainingPoints((float) Math.floor(delta));
+            } else {
+                try {
+                    resources.removeTrainingPoints((float) Math.floor(-delta));
+                } catch (Throwable t) {
+                    float cur = resources.getTrainingPoints();
+                    resources.setTrainingPoints(Math.max(0.0f, cur + (float) delta));
+                }
+            }
+            DmzRewards.awardTp(player, 0.01f, "sync", false, ""); // nudge sync path
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static PlayerPower strongestInEnd(ServerLevel level, ServerPlayer fallback) {
+        PlayerPower best = readPower(fallback);
+        double bestScore = score(best);
+        if (level == null) {
+            return best;
+        }
+        for (ServerPlayer p : level.m_6907_()) {
+            if (p == null || !isTheEnd(p.m_9236_())) {
+                continue;
+            }
+            PlayerPower power = readPower(p);
+            double s = score(power);
+            if (s > bestScore) {
+                bestScore = s;
+                best = power;
+            }
+        }
+        return best;
+    }
+
+    private static PlayerPower nearbyPower(LivingEntity entity, ServerLevel level, PlayerPower fallback) {
+        PlayerPower best = fallback;
+        double bestScore = score(best);
+        AABB box = entity.m_20191_().m_82400_(96.0);
+        for (ServerPlayer p : level.m_45976_(ServerPlayer.class, box)) {
+            PlayerPower power = readPower(p);
+            double s = power.level * 1000.0 + power.defense + power.bp * 0.01 + power.melee * 10.0 + power.maxHp;
+            if (s > bestScore) {
+                bestScore = s;
+                best = power;
+            }
+        }
+        return best;
+    }
+
+    private static PlayerPower readPower(ServerPlayer player) {
+        PlayerPower out = new PlayerPower();
+        if (player == null) {
+            return out;
+        }
+        out.name = player.m_6302_();
+        StatsData data = DmzProgression.stats(player);
+        if (data == null) {
+            return out;
+        }
+        try {
+            out.level = Math.max(1, data.getLevel());
+        } catch (Throwable ignored) {
+        }
+        try {
+            out.bp = Math.max(0.0, data.getBattlePowerExact());
+            if (!(out.bp > 0)) {
+                out.bp = Math.max(0.0, data.getBattlePower());
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            out.melee = Math.max(0.0, data.getMeleeDamage());
+        } catch (Throwable ignored) {
+        }
+        try {
+            out.maxHp = Math.max(20.0, data.getMaxHealth());
+        } catch (Throwable ignored) {
+        }
+        try {
+            out.defense = Math.max(0.0, data.getDefense());
+        } catch (Throwable ignored) {
+        }
+        return out;
+    }
+
+    private static double score(PlayerPower p) {
+        if (p == null) {
+            return -1;
+        }
+        return p.melee * 100.0 + p.bp + p.level * 1000.0 + p.maxHp + p.defense;
+    }
+
+    private static String classify(LivingEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        if (entity instanceof EnderDragon) {
+            return "dragon";
+        }
+        if (entity instanceof EnderMan) {
+            return "enderman";
+        }
+        if (entity instanceof Endermite) {
+            return "endermite";
+        }
+        if (entity instanceof Shulker) {
+            return "shulker";
+        }
+        if (entity instanceof Phantom) {
+            return "phantom";
+        }
+        try {
+            ResourceLocation id = BuiltInRegistries.f_256780_.m_7981_(entity.m_6095_());
+            if (id != null) {
+                String path = id.m_135815_();
+                if ("enderman".equals(path)) {
+                    return "enderman";
+                }
+                if ("endermite".equals(path)) {
+                    return "endermite";
+                }
+                if ("shulker".equals(path)) {
+                    return "shulker";
+                }
+                if ("phantom".equals(path)) {
+                    return "phantom";
+                }
+                if ("ender_dragon".equals(path)) {
+                    return "dragon";
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    private static void setMaxHealth(LivingEntity entity, double max, double current) {
+        try {
+            AttributeInstance attr = entity.m_21051_(Attributes.f_22276_); // MAX_HEALTH
+            if (attr != null) {
+                attr.m_22100_(max); // setBaseValue
+            }
+            entity.m_21153_((float) Math.min(max, Math.max(1.0, current)));
+            CompoundTag tag = PersistentDataAccess.get(entity);
+            if (PersistentDataAccess.isWritable(tag)) {
+                tag.m_128347_(NBT_MAX, max);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void setAttack(LivingEntity entity, double dmg) {
+        try {
+            AttributeInstance attr = entity.m_21051_(Attributes.f_22281_);
+            if (attr != null) {
+                attr.m_22100_(Math.max(1.0, dmg));
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void storeDef(LivingEntity entity, double def) {
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128347_(NBT_DEF, def);
+        }
+    }
+
+    private static double readDef(LivingEntity entity) {
+        return PersistentDataAccess.getLong(entity, NBT_DEF, 0L) > 0
+                ? PersistentDataAccess.get(entity).m_128459_(NBT_DEF)
+                : (PersistentDataAccess.has(entity, NBT_DEF)
+                ? PersistentDataAccess.get(entity).m_128459_(NBT_DEF) : 0.0);
+    }
+
+    private static void storeHits(LivingEntity entity, int hits) {
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128356_(NBT_HITS, hits);
+        }
+    }
+
+    private static void storeDmzHp(LivingEntity entity, double hp) {
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128347_(NBT_DMZ_HP, hp);
+        }
+    }
+
+    private static void markBuffed(LivingEntity entity) {
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128379_(TAG_BUFFED, true);
+        }
+    }
+
+    private static boolean alreadyBuffed(LivingEntity entity) {
+        return PersistentDataAccess.flag(entity, TAG_BUFFED);
+    }
+
+    private static void msg(ServerPlayer player, String text) {
+        DmzRewards.msg(player, text);
+    }
+
+    private static final class PlayerPower {
+        int level = 1;
+        double bp;
+        double melee;
+        double maxHp = 20;
+        double defense;
+        String name = "?";
+    }
+
+    private static final class PendingTp {
+        final String kind;
+        final double maxHp;
+        int delayTicks;
+
+        PendingTp(String kind, double maxHp, int delayTicks) {
+            this.kind = kind;
+            this.maxHp = maxHp;
+            this.delayTicks = delayTicks;
+        }
+    }
+
+    private enum MobTier {
+        ENDERMITE("endermite", 1, 1200, 40, 5000, 10, "Endermite", 2200),
+        PHANTOM("phantom", 2, 1800, 70, 9000, 14, "Phantom", 3200),
+        ENDERMAN("enderman", 3, 2400, 12, 14000, 18, "Enderman", 4200),
+        SHULKER("shulker", 4, 3200, 80, 18000, 22, "Shulker", 5500);
+
+        final String id;
+        final int tier;
+        final double hp;
+        final double damage;
+        final double defense;
+        final int hits;
+        final String label;
+        final double hpCap;
+
+        MobTier(String id, int tier, double hp, double damage, double defense, int hits, String label, double hpCap) {
+            this.id = id;
+            this.tier = tier;
+            this.hp = hp;
+            this.damage = damage;
+            this.defense = defense;
+            this.hits = hits;
+            this.label = label;
+            this.hpCap = hpCap;
+        }
+
+        static MobTier of(String kind) {
+            if (kind == null) {
+                return null;
+            }
+            for (MobTier t : values()) {
+                if (t.id.equals(kind)) {
+                    return t;
+                }
+            }
+            return null;
+        }
+    }
+}

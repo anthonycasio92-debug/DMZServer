@@ -24,6 +24,13 @@ public final class MechanicsChatMenu {
             } else {
                 main(player);
             }
+        } else if ("progression".equalsIgnoreCase(page)
+                || "prog".equalsIgnoreCase(page)
+                || "fabled".equalsIgnoreCase(page)
+                || "bridge".equalsIgnoreCase(page)
+                || "disable".equalsIgnoreCase(page)
+                || "cnpc".equalsIgnoreCase(page)) {
+            ProgressionChatMenu.open(player, page);
         } else {
             main(player);
         }
@@ -32,7 +39,7 @@ public final class MechanicsChatMenu {
     private static void main(ServerPlayer player) {
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§8── §fLegacy Mechanics §8──"));
-        send(player, Component.m_237113_("§7Difficulty · Rival · Sparring"));
+        send(player, Component.m_237113_("§7Difficulty · Rival · Sparring · Progression"));
         send(player, Component.m_237113_(""));
         MutableComponent row = Component.m_237113_("§7")
                 .m_7220_(btn("§a[Difficulty]", "/difficulty", "Open difficulty menu"))
@@ -42,6 +49,8 @@ public final class MechanicsChatMenu {
                 .m_7220_(btn("§b[Sparring]", "/spar gui", "Open sparring menu"));
         send(player, row);
         MutableComponent row2 = Component.m_237113_("§7")
+                .m_7220_(btn("§d[Progression]", "/lm do page progression", "Natural progression + Fabled"))
+                .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§f[Help]", "/lm do page help", "Command overview"));
         if (StaffAccess.isStaff(player)) {
             row2.m_7220_(Component.m_237113_("  "))
@@ -58,6 +67,7 @@ public final class MechanicsChatMenu {
         send(player, Component.m_237113_("§e/rival §7— Rivalry, challenges, progression"));
         send(player, Component.m_237113_("§e/spar §7— Sparring TP & mentor"));
         send(player, Component.m_237113_("§e/lm §7— This hub"));
+        send(player, Component.m_237113_("§e/lm do page progression §7— Natural progression / Fabled"));
         if (StaffAccess.isStaff(player)) {
             send(player, Component.m_237113_("§8Staff: /difficulty admin · /lm do page logs"));
         }

@@ -9,6 +9,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.evolution.CombatGravity;
 import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
+import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
 import com.dbzlegacy.adaptivedifficulty.reward.RewardSystem;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalProgression;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalStore;
@@ -137,6 +138,7 @@ public final class DifficultyEvents {
             TitleSystem.syncTierTitles(player, false);
             RivalSystem.onLogin(player);
             SparringSystem.onLogin(player);
+            ProgressionSystem.onLogin(player);
         }
     }
 
@@ -173,6 +175,8 @@ public final class DifficultyEvents {
             AreaDifficulty.clearCache();
             RivalSystem.onLogout(player);
             SparringSystem.onLogout(player);
+            ProgressionSystem.onLogout(player);
+            com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem.onLogout(player);
         }
     }
 
@@ -329,6 +333,7 @@ public final class DifficultyEvents {
         BehaviorScheduler.pulse(server, server.m_129921_()); // getTickCount
         RivalSystem.pulse(server, server.m_129921_());
         SparringSystem.pulse(server, server.m_129921_());
+        com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem.pulse(server, server.m_129921_());
     }
 
     @SubscribeEvent
@@ -514,11 +519,12 @@ public final class DifficultyEvents {
             MobScaling.terminateIfZeroHealth(victim);
         }
 
-        // Rival / Sparring PvP HP scoring (players only).
+        // Rival / Sparring / Progression PvP HP scoring (players only).
         if (victim instanceof ServerPlayer pvpVictim
                 && causing instanceof ServerPlayer pvpAttacker) {
             RivalSystem.onPlayerHurt(pvpVictim, pvpAttacker, source);
             SparringSystem.onPlayerHurt(pvpVictim, pvpAttacker, source);
+            ProgressionSystem.onPlayerHurt(pvpVictim, pvpAttacker, source);
         }
     }
 
