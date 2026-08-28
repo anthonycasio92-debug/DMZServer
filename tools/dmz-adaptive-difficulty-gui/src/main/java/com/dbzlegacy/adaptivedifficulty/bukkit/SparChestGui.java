@@ -38,12 +38,20 @@ public final class SparChestGui implements Listener {
             inv = detailBoard(player, "stats", "&eSpar Stats", Material.BOOK);
         } else if ("mentor".equals(p)) {
             inv = mentor(player);
+        } else if ("pending".equals(p) || "invites".equals(p) || "pendinginvites".equals(p)) {
+            inv = pending(player);
         } else if ("pick_apprentice".equals(p)) {
             inv = picker(player, "mentor_invite", "mentor",
                     "&aInvite Apprentice", "&7Ask them to be your apprentice");
         } else if ("pick_mentor".equals(p)) {
             inv = picker(player, "apprentice_invite", "mentor",
                     "&bAsk Mentor", "&7Ask them to be your mentor");
+        } else if ("pick_accept".equals(p)) {
+            inv = pendingPicker(player, "mentor_accept", "pending",
+                    "&aAccept Invite", "&7Accept this mentor invite", true);
+        } else if ("pick_decline".equals(p)) {
+            inv = pendingPicker(player, "mentor_decline", "pending",
+                    "&cDecline Invite", "&7Decline this mentor invite", false);
         } else if ("help".equals(p)) {
             inv = main(player);
         } else if ("admin".equals(p)) {
@@ -79,7 +87,7 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 21, pageBtn(player, Material.GOLDEN_HELMET, "&fTop", "&7Leaderboard"),
                 SlotAction.page("top"));
         put(holder, inv, 23, pageBtn(player, Material.EMERALD, "&bMentor",
-                "&7Invite · ask · accept · remove"), SlotAction.page("mentor"));
+                "&7Invite · pending · accept · remove"), SlotAction.page("mentor"));
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
         if (session) {
@@ -193,25 +201,139 @@ public final class SparChestGui implements Listener {
 
     private Inventory mentor(Player player) {
         Holder holder = new Holder("mentor");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Sparring"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Spar Mentor"));
         holder.bind(inv);
         frame(inv, 45);
         put(holder, inv, 4, item(Material.EMERALD, "&b&lMentor",
                 prependBlank(toAmp(ForgeBridge.sparLines(player, "mentor")))));
-        put(holder, inv, 19, pageBtn(player, Material.LIME_CONCRETE, "&aInvite apprentice…",
+        put(holder, inv, 19, pageBtn(player, Material.LIME_DYE, "&aInvite apprentice…",
                 "&7Pick a player to mentor"), SlotAction.page("pick_apprentice"));
-        put(holder, inv, 21, pageBtn(player, Material.LIGHT_BLUE_CONCRETE, "&bAsk mentor…",
+        put(holder, inv, 20, pageBtn(player, Material.LIGHT_BLUE_DYE, "&bAsk mentor…",
                 "&7Pick a player to ask as mentor"), SlotAction.page("pick_mentor"));
-        put(holder, inv, 23, tipBtn(player, Material.LIME_DYE, "&aAccept",
-                List.of("&7Accept mentor invite")),
-                SlotAction.act("mentor", "accept", "mentor"));
-        put(holder, inv, 25, tipBtn(player, Material.RED_CONCRETE, "&cDecline",
-                List.of("&7Decline mentor invite")),
-                SlotAction.act("mentor", "decline", "mentor"));
-        put(holder, inv, 31, tipBtn(player, Material.GRAY_CONCRETE, "&8Remove",
-                List.of("&7Clear mentor bond")),
+        Map<String, String> ph = ForgeBridge.sparPlaceholders(player);
+        int pendingCount = 0;
+        try {
+            pendingCount = Integer.parseInt(ph.getOrDefault("pending_invites", "0"));
+        } catch (NumberFormatException ignored) {
+            pendingCount = 0;
+        }
+        put(holder, inv, 21, pageBtn(player, Material.CLOCK,
+                pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
+                "&7View incoming + outgoing invites",
+                pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"),
+                SlotAction.page("pending"));
+        put(holder, inv, 22, pageBtn(player, Material.YELLOW_DYE, "&eAccept…",
+                "&7Accept an incoming mentor invite"), SlotAction.page("pick_accept"));
+        put(holder, inv, 23, pageBtn(player, Material.ORANGE_DYE, "&6Decline…",
+                "&7Decline an incoming mentor invite"), SlotAction.page("pick_decline"));
+        put(holder, inv, 25, tipBtn(player, Material.RED_DYE, "&cRemove bond",
+                List.of("&7Leave mentor or release apprentice")),
                 SlotAction.act("mentor", "remove", "mentor"));
         put(holder, inv, 36, pageBtn(player, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory pending(Player player) {
+        Holder holder = new Holder("pending");
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Pending Mentor Invites"));
+        holder.bind(inv);
+        frame(inv, 45);
+        List<GuiBoardHelper.PendingInvite> invites = GuiBoardHelper.parsePendingInvites(
+                ForgeBridge.sparPendingMentorInviteCards(player));
+        List<String> pendingHeader = new ArrayList<>();
+        pendingHeader.add("");
+        pendingHeader.add(invites.isEmpty() ? "&7No pending invites." : "&7" + invites.size() + " pending");
+        pendingHeader.addAll(GuiBoardHelper.tips(player,
+                "&a◀ Incoming &7= they invited you",
+                "&6▶ Outgoing &7= waiting on them"));
+        put(holder, inv, 4, item(Material.YELLOW_DYE, "&e&lPending Invites", pendingHeader));
+        if (invites.isEmpty()) {
+            put(holder, inv, 22, tipBtn(player, Material.BARRIER, "&7No pending invites",
+                    List.of("&7Invite apprentice or ask a mentor",
+                            "&7Incoming shows when they invite you")));
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(invites.size(), 21));
+            for (int i = 0; i < slots.length && i < invites.size(); i++) {
+                GuiBoardHelper.PendingInvite invite = invites.get(i);
+                ItemStack head = GuiBoardHelper.pendingInviteHead(player, invite);
+                if (invite.incoming) {
+                    put(holder, inv, slots[i], head,
+                            SlotAction.act("mentor_accept", invite.pickerArg(), "pending"));
+                } else {
+                    put(holder, inv, slots[i], head,
+                            SlotAction.act("mentor_cancel", invite.pickerArg(), "pending"));
+                }
+            }
+        }
+        put(holder, inv, 37, pageBtn(player, Material.YELLOW_DYE, "&eAccept…",
+                "&7Accept an incoming invite"), SlotAction.page("pick_accept"));
+        put(holder, inv, 38, pageBtn(player, Material.ORANGE_DYE, "&6Decline…",
+                "&7Decline an incoming invite"), SlotAction.page("pick_decline"));
+        put(holder, inv, 39, pageBtn(player, Material.EMERALD, "&bMentor",
+                "&7Full mentor menu"), SlotAction.page("mentor"));
+        put(holder, inv, 36, pageBtn(player, Material.ARROW, "&7Back", "&7Mentor"), SlotAction.page("mentor"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    /** Accept/decline picker — only incoming mentor invites. */
+    private Inventory pendingPicker(
+            Player player, String action, String backPage, String title, String tip, boolean acceptMode) {
+        Holder holder = new Holder("pick_" + (acceptMode ? "accept" : "decline"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Spar Mentor"));
+        holder.bind(inv);
+        frame(inv, 45);
+        List<String> pendingPickHeader = new ArrayList<>();
+        pendingPickHeader.add("");
+        pendingPickHeader.add("&7Incoming mentor invites");
+        pendingPickHeader.addAll(GuiBoardHelper.tips(player, "&8Click a head to " + (acceptMode ? "accept" : "decline")));
+        put(holder, inv, 4, item(Material.PLAYER_HEAD, title, pendingPickHeader));
+        List<String> pending = ForgeBridge.sparPendingIncomingMentorArgs(player);
+        int placed = 0;
+        for (String arg : pending) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+            String display;
+            ItemStack head;
+            List<String> tipLore = new ArrayList<>(GuiBoardHelper.tips(player, tip));
+            if (arg.regionMatches(true, 0, "uuid:", 0, 5)) {
+                try {
+                    java.util.UUID id = java.util.UUID.fromString(arg.substring(5).trim());
+                    Player online = Bukkit.getPlayer(id);
+                    display = online != null ? online.getName() : arg.substring(5).trim();
+                    List<String> headLore = new ArrayList<>(tipLore);
+                    if (online != null) {
+                        headLore.add("&aOnline");
+                        head = GuiPlayerPicker.head(online, "&f" + display, headLore);
+                    } else {
+                        head = GuiPlayerPicker.headByName(display, "&f" + display, tipLore);
+                    }
+                } catch (IllegalArgumentException e) {
+                    display = arg;
+                    head = GuiPlayerPicker.headByName(display, "&f" + display, tipLore);
+                }
+            } else {
+                display = arg;
+                Player online = Bukkit.getPlayerExact(arg);
+                if (online != null) {
+                    tipLore.add("&aOnline");
+                    head = GuiPlayerPicker.head(online, "&f" + display, tipLore);
+                } else {
+                    head = GuiPlayerPicker.headByName(display, "&f" + display, tipLore);
+                }
+            }
+            put(holder, inv, slot, head, SlotAction.act(action, arg, backPage));
+        }
+        if (placed == 0) {
+            put(holder, inv, 22, tipBtn(player, Material.BARRIER,
+                    acceptMode ? "&eNothing to accept" : "&eNo pending invites",
+                    List.of("&7When someone invites you,",
+                            "&7they appear here.")));
+        }
+        put(holder, inv, 36, pageBtn(player, Material.ARROW, "&7Back", "&7Return"), SlotAction.page(backPage));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }

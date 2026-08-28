@@ -1,3 +1,10 @@
+## Spar mentor pending invites (2.3.18)
+
+- Mentor page mirrors Rival Actions: Invite / Ask / Pending(N) / Accept… / Decline… / Remove.
+- Pending board shows IN+OUT heads; incoming click Accept, outgoing click Cancel.
+- Invite TTL extended to 24h; `pending_invites` placeholder + SparGuiApi cards/args.
+- Jars: `LegacyMechanics-2.3.18` / `LegacyMechanicsGUI-2.3.18`.
+
 ## Simplified GUI lore / Rival titles (2.3.17)
 
 - Non-staff instructional tip lore gated via `GuiBoardHelper.tips` / `tipsList`.

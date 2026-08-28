@@ -1120,8 +1120,12 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if ("stats".equals(sub) || "help".equals(sub)
                 || ("mentor".equals(sub) && args.length == 1)
                 || ("top".equals(sub))
+                || "pending".equals(sub)
+                || "invites".equals(sub)
                 || "pick_apprentice".equals(sub)
-                || "pick_mentor".equals(sub)) {
+                || "pick_mentor".equals(sub)
+                || "pick_accept".equals(sub)
+                || "pick_decline".equals(sub)) {
             String page = sub;
             if ("top".equals(sub) && args.length > 1) {
                 page = "top_" + args[1].toLowerCase();
