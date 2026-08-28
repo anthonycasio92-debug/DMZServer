@@ -28,7 +28,7 @@ public final class SparMenu {
             if (backend != GuiBackend.CHAT) {
                 AdaptiveDifficultyMod.LOGGER.warn(
                         "[{}] spar guiBackend={} inventory open failed for {} — "
-                                + "falling back to chat. Try /dmzdiffgui if this persists.",
+                                + "falling back to chat. Try /lm if this persists.",
                         AdaptiveDifficultyMod.MOD_ID,
                         backend.name().toLowerCase(),
                         player.m_6302_()

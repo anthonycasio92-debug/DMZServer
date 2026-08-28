@@ -1,4 +1,4 @@
-# Legacy Mechanics 2.3.19
+# Legacy Mechanics 2.3.20
 
 Forge mod packaging **Difficulty**, **Rival System 4.7.10**, **Sparring TP 3.2.11**,
 and **natural progression / Fabled bridges** (from CNPC scripts) under one product.
@@ -7,7 +7,7 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` and NBT root
 
 ## Install (test)
 
-1. Build / install `LegacyMechanics-2.3.19.jar` (+ matching `LegacyMechanicsGUI-2.3.19.jar`).
+1. Build / install `LegacyMechanics-2.3.20.jar` (+ matching `LegacyMechanicsGUI-2.3.20.jar`).
 2. Disable CNPC Global Player scripts to avoid double systems — see **[PROGRESSION.md](PROGRESSION.md)**
    for the full disable list (Fabled bridges + natural ports + rival/spar).
 3. Do **not** deploy to live until tested.
@@ -32,14 +32,18 @@ Flags: `enableRivalSystem`, `enableSparringSystem`, `rivalPresenceTp`, `rivalIns
 inventories directly). Bare `/difficulty`, `/rival`, `/spar`, `/skillcheck` still open GUIs
 for compatibility, but help text advertises `/lm`.
 
+Removed duplicate aliases (2.3.20): `/lmgui`, `/dmzdiffgui`, `/adiffgui`,
+`/legacymechanicsgui`, `/adifficulty`, `/dmzdifficulty`, `/adaptivedifficulty`,
+`/legacymechanicsdiff`, `/sparr`, `/rivalry`.
+
 | Command | Who | GUI |
 |---------|-----|-----|
-| `/lm` | All | Hub — Difficulty · Rival · Spar (+ Skill Check / Prestige for donators/staff; staff also Progression · Admin · Logs) |
+| `/lm` (`/legacymechanics`) | All | Hub — Difficulty · Rival · Spar (+ Skill Check / Prestige for donators/staff; staff also Progression · Admin · Logs) |
 | `/difficulty` | All | Unlock tiers · Titles · personal toggle (compat; prefer `/lm`) |
-| `/rival` | All | List · Challenge · Top · Progress submenu |
-| `/spar` | All | Stats · Top · Mentor (pickers on Mentor page only) |
+| `/rival` (`/rivals`) | All | List · Challenge · Top · Progress submenu |
+| `/spar` (`/sparring`) | All | Stats · Top · Mentor (pickers on Mentor page only) |
 | `/skillcheck` | Donators | Skill Check (core / saga) — LuckPerms `legacymechanics.skillcheck` |
-| `/progression` | Staff | Category hub · Flags |
+| `/progression` (`/prog`) | Staff | Category hub · Flags |
 | `/prestige` | Staff | Prestige confirm |
 | `/skills` | Staff | Skill unlock admin browser (per-skill items) |
 

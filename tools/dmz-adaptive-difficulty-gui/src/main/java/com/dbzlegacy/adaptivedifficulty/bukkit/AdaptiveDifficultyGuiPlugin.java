@@ -659,37 +659,16 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         String name = command.getName().toLowerCase();
-        if ("dmzdiffgui".equals(name)) {
-            if (!(sender instanceof Player player)) {
-                sender.sendMessage("Players only.");
-                return true;
-            }
-            if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
-                player.sendMessage("§cNo permission: dmzdiff.gui");
-                return true;
-            }
-            String page = args.length > 0 ? args[0] : "main";
-            if (("settings".equalsIgnoreCase(page) || "stats".equalsIgnoreCase(page)
-                    || "details".equalsIgnoreCase(page) || "statistics".equalsIgnoreCase(page))
-                    && !ForgeBridge.isStaff(player)) {
-                player.sendMessage("§cStaff only.");
-                page = "main";
-            }
-            // Force inventory — ignore guiBackend=chat (debug / recovery).
-            AdminInspectSessions.clear(player.getUniqueId());
-            openInventory(player, page);
-            return true;
-        }
         if ("rival".equals(name)) {
             return handleRival(sender, args);
         }
         if ("spar".equals(name)) {
             return handleSpar(sender, args);
         }
-        if ("lm".equals(name) || "legacymechanics".equals(name)) {
+        if ("lm".equals(name)) {
             return handleHub(sender, args);
         }
-        if ("progression".equals(name) || "prog".equals(name)) {
+        if ("progression".equals(name)) {
             return handleProgression(sender, args);
         }
         if ("prestige".equals(name)) {

@@ -1,3 +1,9 @@
+## Trim duplicate commands (2.3.20)
+
+- Removed `/lmgui`, `/dmzdiffgui`, `/adiffgui`, `/legacymechanicsgui` and legacy difficulty aliases.
+- Kept primaries: `/lm`, `/difficulty`, `/rival` (+`/rivals`), `/spar` (+`/sparring`), `/progression` (+`/prog`).
+- Fallback tips now say `/lm` instead of `/dmzdiffgui`.
+
 ## Admin LM inspect-all (2.3.19)
 
 - Staff: `/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|…]` opens chest GUIs as that player.

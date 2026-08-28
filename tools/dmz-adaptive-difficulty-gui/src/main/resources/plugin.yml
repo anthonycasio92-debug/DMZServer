@@ -1,5 +1,5 @@
 name: LegacyMechanicsGUI
-version: '2.3.19'
+version: '2.3.20'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
@@ -9,15 +9,14 @@ commands:
   difficulty:
     description: Open LegacyMechanics Difficulty GUI
     usage: /difficulty
-    aliases: [adifficulty, dmzdifficulty, adaptivedifficulty, legacymechanicsdiff]
   rival:
     description: Open LegacyMechanics Rival CMI/chest GUI
     usage: /rival
-    aliases: [rivals, rivalry]
+    aliases: [rivals]
   spar:
     description: Open LegacyMechanics Sparring CMI/chest GUI
     usage: /spar
-    aliases: [sparring, sparr]
+    aliases: [sparring]
   lm:
     description: Open LegacyMechanics Hub GUI
     usage: /lm
@@ -35,10 +34,6 @@ commands:
   skillcheck:
     description: Open Skill Check GUI (donator)
     usage: /skillcheck
-  dmzdiffgui:
-    description: Force-open LegacyMechanics chest/CMI GUI
-    usage: /dmzdiffgui [page]
-    aliases: [adiffgui, lmgui, legacymechanicsgui]
 permissions:
   dmzdiff.gui:
     description: Open the LegacyMechanics GUI
