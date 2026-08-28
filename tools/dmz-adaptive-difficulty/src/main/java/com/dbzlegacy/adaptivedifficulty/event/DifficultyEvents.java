@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.event;
 
 import com.dbzlegacy.adaptivedifficulty.ai.AdaptiveAiSystem;
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
@@ -109,6 +110,12 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
         VanillaDifficultyGuard.restoreIfPeaceful(event.getServer());
+        try {
+            com.dbzlegacy.adaptivedifficulty.data.CnpcDataMigrator.migrateWorldIfNeeded(event.getServer());
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] CNPC world migration hook failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
     }
 
     @SubscribeEvent
@@ -138,6 +145,10 @@ public final class DifficultyEvents {
             }
             // Convert any leftover NBT Ancient Coin wallet into real Lightman's items (once/session).
             AncientCoinEconomy.migrateWalletToItems(player);
+            try {
+                com.dbzlegacy.adaptivedifficulty.data.CnpcDataMigrator.migratePlayerIfNeeded(player);
+            } catch (Throwable ignored) {
+            }
             DifficultyCache.refresh(player);
             // Persist any unlock-list repairs from refresh so the next disconnect keeps the tier.
             DifficultyCache.save(player);

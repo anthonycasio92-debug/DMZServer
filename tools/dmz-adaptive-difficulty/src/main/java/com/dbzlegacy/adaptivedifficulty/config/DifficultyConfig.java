@@ -179,6 +179,11 @@ public final class DifficultyConfig {
     public boolean enableRivalSystem = true;
     /** Sparring Tp System 3.2.11 port (auto sessions / mentor / TP formula). */
     public boolean enableSparringSystem = true;
+    /**
+     * One-time CustomNPCs storeddata → LM JSON/NBT import on first boot / first login,
+     * then clears those CNPC keys so scripts no longer own the data.
+     */
+    public boolean enableCnpcDataMigration = true;
 
     /** Master switch for natural-progression CNPC ports (Flight, SprintJump, Meditation, …). */
     public boolean enableProgression = true;

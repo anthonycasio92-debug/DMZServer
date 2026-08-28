@@ -74,6 +74,10 @@ public final class MechanicsCommands {
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("reload").executes(ctx -> adminReload(ctx.getSource())))
+                        .then(Commands.m_82127_("migrate-cnpc")
+                                .executes(ctx -> adminMigrateCnpc(ctx.getSource(), false))
+                                .then(Commands.m_82127_("force")
+                                        .executes(ctx -> adminMigrateCnpc(ctx.getSource(), true))))
                         .then(Commands.m_82127_("syslog")
                                 .executes(ctx -> adminSyslog(ctx.getSource(), "status"))
                                 .then(Commands.m_82129_("mode", StringArgumentType.word())
@@ -157,10 +161,19 @@ public final class MechanicsCommands {
                 "§6§l/lm admin\n"
                         + "§e/lm admin help §7— this list\n"
                         + "§e/lm admin reload §7— reload config\n"
+                        + "§e/lm admin migrate-cnpc §7— import CNPC Rival/Spar into LM (once)\n"
+                        + "§e/lm admin migrate-cnpc force §7— wipe LM stores + re-import\n"
                         + "§e/lm admin syslog on|off|status|flush\n"
                         + "§e/lm admin open <difficulty|rival|spar|progression|prestige|skills>\n"
                         + "§8Also: /difficulty admin · /rival admin · /spar admin · /progression admin"
         ), false);
+        return 1;
+    }
+
+    private static int adminMigrateCnpc(CommandSourceStack source, boolean force) {
+        String msg = com.dbzlegacy.adaptivedifficulty.data.CnpcDataMigrator.forceMigrateWorld(
+                source.m_81377_(), force);
+        source.m_288197_(() -> Component.m_237113_(msg), true);
         return 1;
     }
 

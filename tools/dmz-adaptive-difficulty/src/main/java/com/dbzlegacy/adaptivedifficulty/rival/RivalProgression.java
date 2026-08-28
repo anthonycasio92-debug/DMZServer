@@ -90,6 +90,26 @@ public final class RivalProgression {
         dirty.set(true);
     }
 
+    /** True when progression file is effectively empty (safe to import CNPC blob). */
+    public boolean isImportEmpty() {
+        if (data == null) {
+            return true;
+        }
+        boolean noAch = data.achievements == null || data.achievements.isEmpty();
+        boolean noJournal = data.journal == null || data.journal.isEmpty();
+        boolean noHof = data.hallOfFame == null || data.hallOfFame.isEmpty();
+        boolean noLb = data.season == null
+                || data.season.leaderboard == null
+                || data.season.leaderboard.isEmpty();
+        return noAch && noJournal && noHof && noLb;
+    }
+
+    /** Used by staff force-migrate overwrite. */
+    public synchronized void resetForImport() {
+        data = fresh();
+        dirty.set(true);
+    }
+
     public List<String> seasonLines(ServerPlayer player) {
         ensureSeason();
         if (player == null) {

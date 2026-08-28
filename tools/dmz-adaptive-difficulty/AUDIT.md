@@ -5,12 +5,30 @@ Scope: CNPC scripts in-repo, remote feature branches, and a live-server script p
 Rival/Spar, progression, Title/Admin inspect, Building TP / End portal guard,
 GhostPartyHeal (melee 2.12.20), inventory GUIs, plus KubeJS packs from
 `server-fixes-consolidated` and `dmz-dino-food-balance`.
-Jars: `LegacyMechanics-2.2.1` / `LegacyMechanicsGUI-2.2.1` / `dmz_mohist_melee_fix-2.12.20`.
+Jars: `LegacyMechanics-2.2.2` / `LegacyMechanicsGUI-2.2.2` / `dmz_mohist_melee_fix-2.12.20`.
 
-## Script ↔ mod parity pass (2.2.1)
+## CNPC → mod data migration (2.2.2)
+
+On first boot with CustomNPCs present, LegacyMechanics imports Rival/Spar/progression
+from overworld CNPC `storeddata`, writes `config/legacymechanics/*.json`, backups raw
+blobs to `cnpc-import-backup/`, then **clears** those CNPC world keys.
+
+On each player's first login after install, spar bonds/streaks + flight/meditation/potential
+progress keys copy into LM NBT / `sparring.json`, then those CNPC player keys are cleared.
+
+| Guard | Path / key |
+|-------|------------|
+| World done | `config/legacymechanics/cnpc-world-migration.done` |
+| Player done | NBT `lm_cnpc_player_migrated` |
+| Config | `enableCnpcDataMigration` (default true) |
+| Staff | `/lm admin migrate-cnpc` · `/lm admin migrate-cnpc force` |
+
+Disable matching Rival/Spar CNPC tabs before or right after cutover to avoid dual writes.
+
+## Script ↔ mod parity pass (2.2.2)
 
 Full audit of live dump `uploads/live-scripts-2026-08-27/ecmascript/` (32 files)
-against Java. All 30 enabled CNPC tabs remain mapped; gaps closed in 2.2.1:
+against Java. All 30 enabled CNPC tabs remain mapped; gaps closed in 2.2.2:
 
 | Gap | Fix |
 |-----|-----|
