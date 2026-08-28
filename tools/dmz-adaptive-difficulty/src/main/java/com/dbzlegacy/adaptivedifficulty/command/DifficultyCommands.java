@@ -810,7 +810,31 @@ public final class DifficultyCommands {
 
     /**
      * Clear stuck session DMZ level sample and refresh Buy GUI reading.
+     * Public for Bukkit {@code ForgeBridge.resyncLevel} (Mohist owns {@code /difficulty}).
      */
+    public static String resyncLevel(ServerPlayer target) {
+        if (target == null) {
+            return "§cNo player.";
+        }
+        DmzProgression.clearBaseFormLevel(target.m_20148_());
+        int sampled = DmzProgression.refreshBaseFormSample(target);
+        var data = DifficultyCache.data(target);
+        if (!DmzProgression.isTransformed(target)) {
+            data.noteDmzLevel(sampled);
+        }
+        DifficultyCache.refresh(target);
+        DifficultyCache.save(target);
+
+        int live = DmzProgression.dmzLevel(target);
+        long shown = UnlockSystem.gateLevelForEligibility(target);
+        boolean transformed = DmzProgression.isTransformed(target);
+        return "§aResynced §f" + target.m_6302_()
+                + "§a — sample §f" + sampled
+                + "§a · live DMZ §f" + live
+                + "§a · GUI gate §f" + shown
+                + (transformed ? "§7 (currently transformed — drop to base to raise sample)" : "");
+    }
+
     private static int adminResyncLevelOrDeny(CommandSourceStack source, String playerName) {
         if (denyAdmin(source) == 0) {
             return 0;
@@ -835,23 +859,7 @@ public final class DifficultyCommands {
             }
         }
 
-        DmzProgression.clearBaseFormLevel(target.m_20148_());
-        int sampled = DmzProgression.refreshBaseFormSample(target);
-        var data = DifficultyCache.data(target);
-        if (!DmzProgression.isTransformed(target)) {
-            data.noteDmzLevel(sampled);
-        }
-        DifficultyCache.refresh(target);
-        DifficultyCache.save(target);
-
-        int live = DmzProgression.dmzLevel(target);
-        long shown = UnlockSystem.gateLevelForEligibility(target);
-        boolean transformed = DmzProgression.isTransformed(target);
-        String msg = "§aResynced §f" + target.m_6302_()
-                + "§a — sample §f" + sampled
-                + "§a · live DMZ §f" + live
-                + "§a · GUI gate §f" + shown
-                + (transformed ? "§7 (currently transformed — drop to base to raise sample)" : "");
+        String msg = resyncLevel(target);
         source.m_288197_(() -> Component.m_237113_(msg), true);
         return 1;
     }

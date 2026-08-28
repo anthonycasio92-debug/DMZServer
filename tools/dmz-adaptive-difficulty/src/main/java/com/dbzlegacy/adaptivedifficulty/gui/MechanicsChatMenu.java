@@ -46,11 +46,11 @@ public final class MechanicsChatMenu {
         send(player, Component.m_237113_("§7Choose a system"));
         send(player, Component.m_237113_(""));
         MutableComponent row = Component.m_237113_("§7")
-                .m_7220_(btn("§a[Difficulty]", "/lm do open difficulty", "Unlock tiers & scaling"))
+                .m_7220_(btn("§a[Difficulty]", "/lmdo lm open difficulty", "Unlock tiers & scaling"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§6[Rival]", "/lm do open rival", "Rivalry & challenges"))
+                .m_7220_(btn("§6[Rival]", "/lmdo lm open rival", "Rivalry & challenges"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§b[Spar]", "/lm do open spar", "Sparring TP & mentor"));
+                .m_7220_(btn("§b[Spar]", "/lmdo lm open spar", "Sparring TP & mentor"));
         send(player, row);
         boolean staff = StaffAccess.isStaff(player);
         boolean skillCheck = SkillCheckService.canUse(player);
@@ -58,22 +58,22 @@ public final class MechanicsChatMenu {
             MutableComponent row2 = Component.m_237113_("§7");
             if (skillCheck || staff) {
                 row2.m_7220_(btn(staff && !skillCheck ? "§e[Skills]" : "§e[Skill Check]",
-                        staff && !skillCheck ? "/lm do open skills" : "/lm do open skillcheck",
+                        staff && !skillCheck ? "/lmdo lm open skills" : "/lmdo lm open skillcheck",
                         staff && !skillCheck ? "Skill unlock admin" : "Donator skill progress"));
             }
             if (staff) {
                 row2.m_7220_(Component.m_237113_("  "))
-                        .m_7220_(btn("§6[Prestige]", "/lm do open prestige", "Prestige shop"));
+                        .m_7220_(btn("§6[Prestige]", "/lmdo lm open prestige", "Prestige shop"));
             }
             send(player, row2);
         }
         if (staff) {
             MutableComponent row3 = Component.m_237113_("§7")
-                    .m_7220_(btn("§d[Progression]", "/lm do open progression", "Natural progression"))
+                    .m_7220_(btn("§d[Progression]", "/lmdo lm open progression", "Natural progression"))
                     .m_7220_(Component.m_237113_("  "))
                     .m_7220_(btn("§c[Admin]", "/lm admin help", "Admin commands"))
                     .m_7220_(Component.m_237113_("  "))
-                    .m_7220_(btn("§8[Logs]", "/lm do page logs", "System telemetry"));
+                    .m_7220_(btn("§8[Logs]", "/lmdo lm page logs", "System telemetry"));
             send(player, row3);
         }
         send(player, Component.m_237113_("§8────────────────"));
@@ -87,12 +87,12 @@ public final class MechanicsChatMenu {
         send(player, Component.m_237113_("§8" + com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.statusLine()));
         MutableComponent toggles = Component.m_237113_("§7")
                 .m_7220_(btn(on ? "§c[Syslog OFF]" : "§a[Syslog ON]",
-                        "/lm do syslog " + (on ? "off" : "on") + " logs",
+                        "/lmdo lm syslog " + (on ? "off" : "on") + " logs",
                         "Toggle system telemetry"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§e[Flush]", "/lm do syslog flush logs", "Flush log writers"));
+                .m_7220_(btn("§e[Flush]", "/lmdo lm syslog flush logs", "Flush log writers"));
         send(player, toggles);
-        send(player, btn("§7« Back", "/lm do page main", "Hub"));
+        send(player, btn("§7« Back", "/lmdo lm page main", "Hub"));
         send(player, Component.m_237113_("§8────────────────"));
     }
 

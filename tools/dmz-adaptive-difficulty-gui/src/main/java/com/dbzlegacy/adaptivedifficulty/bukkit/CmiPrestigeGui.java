@@ -67,7 +67,7 @@ public final class CmiPrestigeGui {
         confirmLore.addAll(GuiBoardHelper.tips(player, "&7Click to prestige (confirm within 10s)"));
         confirmLore.add("&8Resets DMZ stats · awards held Prestige");
         confirm.addLore(confirmLore);
-        confirm.addCommand("prestige do confirm 0 main");
+        confirm.addCommand("lmdo prestige confirm 0 main");
         gui.addButton(confirm);
 
         gui.addButton(hubBtn(27));

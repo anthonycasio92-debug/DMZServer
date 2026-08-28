@@ -339,7 +339,7 @@ public final class CmiProgressionGui {
                     GuiPlayerPicker.head(other, "&f" + other.getName(),
                             List.of("&7Convert to Android", "", "&eClick to convert")));
             btn.lockField();
-            btn.addCommand("progression do android " + other.getName() + " android_convert");
+            btn.addCommand("lmdo progression android " + other.getName() + " android_convert");
             gui.addButton(btn);
         }
         if (online.isEmpty()) {
@@ -485,7 +485,7 @@ public final class CmiProgressionGui {
         lore.add("");
         lore.addAll(tip);
         btn.addLore(lore);
-        btn.addCommand("progression do " + action + " " + arg + " " + returnPage);
+        btn.addCommand("lmdo progression " + action + " " + arg + " " + returnPage);
         return btn;
     }
 
@@ -498,7 +498,7 @@ public final class CmiProgressionGui {
             lore.add(tip);
         }
         btn.addLore(lore);
-        btn.addCommand("progression do page " + page);
+        btn.addCommand("lmdo progression page " + page);
         return btn;
     }
 

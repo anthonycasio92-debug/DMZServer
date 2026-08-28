@@ -119,10 +119,9 @@ public final class CmiSkillsGui {
             }
         }
 
-        String pageCmd = skillCheckUi ? "skillcheck" : "skills";
-        gui.addButton(pageBtn(player, 45, Material.FEATHER, "&aNatural", pageCmd, "core",
+        gui.addButton(pageBtn(player, 45, Material.FEATHER, "&aNatural", "core",
                 "&7Potential · Flight · Meditation · Jump · Sprint"));
-        gui.addButton(pageBtn(player, 46, Material.AMETHYST_SHARD, "&dSaga", pageCmd, "saga",
+        gui.addButton(pageBtn(player, 46, Material.AMETHYST_SHARD, "&dSaga", "saga",
                 "&7Saga unlocks · Defense Pen · Healing Red · Ki skills"));
 
         gui.addButton(hubBtn(49));
@@ -214,14 +213,15 @@ public final class CmiSkillsGui {
     }
 
     private static CMIGuiButton pageBtn(
-            Player player, int slot, Material mat, String name, String cmdRoot, String page, String... tips) {
+            Player player, int slot, Material mat, String name, String page, String... tips) {
         CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
         btn.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");
         lore.addAll(GuiBoardHelper.tips(player, tips));
         btn.addLore(lore);
-        btn.addCommand(cmdRoot + " do page " + page);
+        // Always lmdo skills — skillcheck shares the same ForgeBridge skillsHandleDo path.
+        btn.addCommand("lmdo skills page " + page);
         return btn;
     }
 
@@ -240,7 +240,7 @@ public final class CmiSkillsGui {
         lore.add("");
         lore.addAll(GuiBoardHelper.tipsList(player, List.of("&7Back to progression")));
         btn.addLore(lore);
-        btn.addCommand("lm do open progression");
+        btn.addCommand("lmdo lm open progression");
         btn.setCloseInv(true);
         return btn;
     }

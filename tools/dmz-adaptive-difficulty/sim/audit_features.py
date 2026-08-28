@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.27", 'VERSION = "2.3.27"' in mod)
+    check("VERSION 2.3.28", 'VERSION = "2.3.28"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -299,7 +299,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 2.3.27", "2.3.27" in readme)
+    check("README version 2.3.28", "2.3.28" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -341,13 +341,65 @@ def main() -> int:
     check("README level clamp", "level clamp" in readme.lower() or "maxValue" in readme)
     check("README skeleton mount", "mount" in readme.lower() and "jockey" in readme.lower())
 
-    print("\n=== Coin drop chances (2.3.27) ===")
+    print("\n=== Coin drop chances (2.3.28) ===")
     coins = read(SRC / "com/dbzlegacy/adaptivedifficulty/currency/AncientCoinEconomy.java")
     check("drop chance gate in rollKillLoot", "ancientCoinDropChance" in coins and "roll >= dropChance" in coins)
     check("dual upgrade band uses same roll", "roll < upgradeChance" in coins)
     check("coinDropChanceMigratedV1", "coinDropChanceMigratedV1" in cfg)
     check("admin set drop chance", "ancientcoindropchance" in cmds or "coindropchance" in cmds)
-    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.27" in readme)
+    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.28" in readme)
+
+    print("\n=== Mohist CMI /lmdo routing (2.3.28) ===")
+    gui_root = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit"
+    cmi_files = [
+        "CmiDifficultyGui.java",
+        "CmiHubGui.java",
+        "CmiProgressionGui.java",
+        "CmiPrestigeGui.java",
+        "CmiSkillsGui.java",
+        "CmiRivalGui.java",
+        "CmiSparGui.java",
+    ]
+    bad_do = (
+        'addCommand("difficulty do ',
+        'addCommand("lm do ',
+        'addCommand("progression do ',
+        'addCommand("prestige do ',
+        'addCommand("skills do ',
+        'addCommand("skillcheck do ',
+        'addCommand("rival do ',
+        'addCommand("spar do ',
+    )
+    for name in cmi_files:
+        path = gui_root / name
+        text = read(path) if path.is_file() else ""
+        check(f"{name} exists", path.is_file())
+        for pat in bad_do:
+            check(f"{name} no {pat.strip()}", pat not in text)
+        if path.is_file():
+            check(f"{name} uses lmdo", "lmdo " in text)
+
+    chest = read(gui_root / "DifficultyChestGui.java")
+    check(
+        "DifficultyChestGui no performCommand difficulty do",
+        'performCommand("difficulty do' not in chest,
+    )
+    check(
+        "DifficultyChestGui uses handleActionResult",
+        "handleActionResult" in chest,
+    )
+    plugin = read(gui_root / "AdaptiveDifficultyGuiPlugin.java")
+    check("Bukkit difficulty admin syslog", 'case "syslog", "systemlog"' in plugin or 'case "syslog"' in plugin)
+    check("Bukkit difficulty admin resynclevel", "resynclevel" in plugin)
+    check("ForgeBridge.syslogCommand", "syslogCommand" in read(gui_root / "ForgeBridge.java"))
+    check("ForgeBridge.resyncLevel", "resyncLevel" in read(gui_root / "ForgeBridge.java"))
+    check(
+        "DifficultyCommands.resyncLevel public",
+        "public static String resyncLevel" in cmds,
+    )
+    skills_chest = read(gui_root / "SkillsChestGui.java")
+    check("SkillsChestGui progression via lmdo", "lmdo lm open progression" in skills_chest)
+    check("SkillsChestGui no lm do open", 'cmd("lm do open' not in skills_chest)
 
     print("\n=== Summary ===")
     for w in warns:

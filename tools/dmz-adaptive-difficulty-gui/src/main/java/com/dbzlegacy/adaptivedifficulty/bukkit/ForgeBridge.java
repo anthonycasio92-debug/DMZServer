@@ -2315,6 +2315,61 @@ public final class ForgeBridge {
         }
     }
 
+    /**
+     * Staff: unified system telemetry ({@code /difficulty admin syslog} / {@code /lm admin syslog}).
+     * Works from console — no player NMS required.
+     */
+    public static String syslogCommand(String mode) {
+        String m = mode == null || mode.isBlank() ? "status" : mode.toLowerCase(Locale.ROOT);
+        try {
+            Class<?> tel = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry", preferredLoader());
+            return switch (m) {
+                case "on", "true", "enable" -> {
+                    tel.getMethod("setEnabled", boolean.class).invoke(null, true);
+                    yield "§aSystem telemetry ON\n§8" + tel.getMethod("telemetryDir").invoke(null);
+                }
+                case "off", "false", "disable" -> {
+                    tel.getMethod("setEnabled", boolean.class).invoke(null, false);
+                    yield "§eSystem telemetry OFF";
+                }
+                case "flush" -> {
+                    tel.getMethod("flushAndClose").invoke(null);
+                    yield "§aSyslog flushed.\n§8" + tel.getMethod("telemetryDir").invoke(null);
+                }
+                case "status", "0", "" -> "§7" + tel.getMethod("statusLine").invoke(null);
+                default -> "§cUsage: syslog on|off|status|flush";
+            };
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cSyslog unavailable: " + t.getMessage()
+                    + "\n§8Need LegacyMechanics with SystemTelemetry.";
+        }
+    }
+
+    /**
+     * Staff: clear stuck DMZ base-form level sample and refresh Buy GUI gate level.
+     */
+    public static String resyncLevel(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cPlayer NMS unavailable.";
+        }
+        try {
+            ClassLoader cl = preferredLoader();
+            ensureResolved(cl);
+            Class<?> sp = Class.forName("net.minecraft.server.level.ServerPlayer", true, cl);
+            Object msg = Class.forName(
+                            "com.dbzlegacy.adaptivedifficulty.command.DifficultyCommands", true, cl)
+                    .getMethod("resyncLevel", sp)
+                    .invoke(null, nms);
+            return msg == null ? "§eResync returned empty." : String.valueOf(msg);
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cResync failed: " + resolveError;
+        }
+    }
+
     public static String telemetryTest(String playerName) {
         try {
             if (!telemetryEnabled()) {

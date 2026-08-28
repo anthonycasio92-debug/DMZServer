@@ -572,9 +572,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         }
         String backend = ForgeBridge.guiBackend();
         if ("chat".equals(backend)) {
-            if (!ForgeBridge.forwardCommand(player, "prestige")) {
-                openPrestigeInventory(player, page);
-            }
+            // No dedicated prestige chat menu — inventory GUI (avoid Forge /prestige forward).
+            openPrestigeInventory(player, page);
             return;
         }
         if ("chest".equals(backend)) {
@@ -621,10 +620,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         }
         String backend = ForgeBridge.guiBackend();
         if ("chat".equals(backend)) {
-            String p = page == null || page.isBlank() ? "core" : page;
-            if (!ForgeBridge.forwardCommand(player, "skills do page " + p)) {
-                openSkillsInventory(player, page);
-            }
+            // No dedicated skills chat menu — inventory GUI (avoid Forge /skills do forward).
+            openSkillsInventory(player, page);
             return;
         }
         if ("chest".equals(backend)) {
@@ -731,6 +728,13 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             returnPage = args[args.length - 1];
         }
 
+        // Hub "open <system>" must switch menus — do not reopen the hub afterward.
+        if (("lm".equals(system) || "hub".equals(system) || "legacymechanics".equals(system))
+                && "open".equalsIgnoreCase(action)) {
+            openSystemFromHub(player, arg);
+            return true;
+        }
+
         Player subject = AdminInspectSessions.resolveSubject(player);
         String reopen;
         if ("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action)) {
@@ -747,7 +751,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 case "lm", "hub", "legacymechanics" -> ForgeBridge.hubHandleDo(subject, action, arg, reopen);
                 case "progression", "prog" -> ForgeBridge.progressionHandleDo(subject, action, arg, reopen);
                 case "prestige" -> ForgeBridge.prestigeHandleDo(subject, action, arg, reopen);
-                case "skills" -> ForgeBridge.skillsHandleDo(subject, action, arg, reopen);
+                case "skills", "skillcheck" -> ForgeBridge.skillsHandleDo(subject, action, arg, reopen);
                 default -> {
                     player.sendMessage("§cUnknown lmdo system: " + system);
                     yield null;
@@ -760,7 +764,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 case "rival", "rivals", "spar", "sparring",
                      "difficulty", "diff", "ad",
                      "lm", "hub", "legacymechanics",
-                     "progression", "prog", "prestige", "skills" -> true;
+                     "progression", "prog", "prestige", "skills", "skillcheck" -> true;
                 default -> false;
             }) {
                 return true;
@@ -786,7 +790,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             case "lm", "hub", "legacymechanics" -> openHubRespectingConfig(player, reopen);
             case "progression", "prog" -> openProgressionRespectingConfig(player, reopen);
             case "prestige" -> openPrestigeRespectingConfig(player, reopen);
-            case "skills" -> openSkillsRespectingConfig(player, reopen);
+            case "skills", "skillcheck" -> openSkillsRespectingConfig(player, reopen);
             default -> player.sendMessage("§cUnknown lmdo system: " + system);
         }
         return true;
@@ -969,12 +973,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             case "syslog" -> {
                 String mode = args.length > 2 ? args[2].toLowerCase(Locale.ROOT) : "status";
-                if (sender instanceof Player player) {
-                    String msg = ForgeBridge.hubHandleDo(player, "syslog", mode, "logs");
-                    sender.sendMessage(msg == null || msg.isBlank() ? "§7Done." : msg);
-                } else {
-                    forwardAdminSyslogConsole(sender, mode);
-                }
+                sender.sendMessage(ForgeBridge.syslogCommand(mode));
             }
             case "open" -> {
                 if (!(sender instanceof Player player)) {
@@ -1040,12 +1039,6 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
         }
         return true;
-    }
-
-    private void forwardAdminSyslogConsole(CommandSender sender, String mode) {
-        // Console: reuse difficulty admin syslog via forge forward if possible
-        sender.sendMessage("§7Use in-game §f/lm admin syslog " + mode
-                + " §7or §f/difficulty admin syslog " + mode);
     }
 
     private static boolean isKnownSystem(String raw) {
@@ -1773,6 +1766,31 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             case "gui", "inspect", "view", "playergui" -> {
                 return handleAdminGui(sender, args);
             }
+            case "syslog", "systemlog" -> {
+                String mode = args.length > 2 ? args[2].toLowerCase(Locale.ROOT) : "status";
+                sender.sendMessage(ForgeBridge.syslogCommand(mode));
+                return true;
+            }
+            case "resynclevel", "resync", "levelresync" -> {
+                Player target;
+                if (args.length >= 3) {
+                    target = Bukkit.getPlayerExact(args[2]);
+                    if (target == null) {
+                        target = Bukkit.getPlayer(args[2]);
+                    }
+                    if (target == null || !target.isOnline()) {
+                        sender.sendMessage("§cPlayer not online: §f" + args[2]);
+                        return true;
+                    }
+                } else if (sender instanceof Player self) {
+                    target = self;
+                } else {
+                    sender.sendMessage("§cUsage: /difficulty admin resynclevel <player>");
+                    return true;
+                }
+                sender.sendMessage(ForgeBridge.resyncLevel(target));
+                return true;
+            }
             case "set" -> {
                 if (args.length < 4) {
                     sender.sendMessage("§cUsage: /difficulty admin set <key> <value>");
@@ -1998,6 +2016,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§e/difficulty admin off|on|toggle|status §7— master system switch");
         sender.sendMessage("§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist");
         sender.sendMessage("§e/difficulty admin telemetry on|off|status|flush|test §7— AD hit logs (all players)");
+        sender.sendMessage("§e/difficulty admin syslog on|off|status|flush §7— unified system event log");
+        sender.sendMessage("§e/difficulty admin resynclevel [player] §7— clear stuck DMZ level sample");
         sender.sendMessage("§e/difficulty admin gui|inspect <player> [page] §7— open their GUI (edit/see their state)");
         sender.sendMessage("§e/difficulty admin gui clear §7— stop inspecting");
         sender.sendMessage("§e/difficulty admin reload|settings|area|set §7— config tools");

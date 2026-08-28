@@ -625,7 +625,8 @@ public final class CmiDifficultyGui {
         lore.add("");
         lore.addAll(GuiBoardHelper.tipsList(player, tip));
         btn.addLore(lore);
-        btn.addCommand("difficulty do " + action + " " + arg + " " + returnPage);
+        // Bukkit-only /lmdo — Mohist may route /difficulty do to Forge's word()-limited tree.
+        btn.addCommand("lmdo difficulty " + action + " " + arg + " " + returnPage);
         return btn;
     }
 
@@ -636,7 +637,7 @@ public final class CmiDifficultyGui {
         lore.add("");
         lore.addAll(GuiBoardHelper.tips(player, tips));
         btn.addLore(lore);
-        btn.addCommand("difficulty do page " + page);
+        btn.addCommand("lmdo difficulty page " + page);
         return btn;
     }
 

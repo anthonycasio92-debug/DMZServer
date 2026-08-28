@@ -203,7 +203,7 @@ public final class CmiHubGui {
         lore.add("");
         lore.addAll(GuiBoardHelper.tips(player, tips));
         btn.addLore(lore);
-        btn.addCommand("lm do page " + page);
+        btn.addCommand("lmdo lm page " + page);
         return btn;
     }
 
@@ -214,7 +214,7 @@ public final class CmiHubGui {
         lore.add("");
         lore.addAll(GuiBoardHelper.tips(player, tips));
         btn.addLore(lore);
-        btn.addCommand("lm do open " + system);
+        btn.addCommand("lmdo lm open " + system);
         btn.setCloseInv(true);
         return btn;
     }
@@ -228,7 +228,7 @@ public final class CmiHubGui {
         lore.add("");
         lore.addAll(GuiBoardHelper.tipsList(player, tip));
         btn.addLore(lore);
-        btn.addCommand("lm do " + action + " " + arg + " " + returnPage);
+        btn.addCommand("lmdo lm " + action + " " + arg + " " + returnPage);
         return btn;
     }
 

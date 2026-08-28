@@ -128,7 +128,7 @@ public final class SkillsChestGui implements Listener {
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
         if (staffAdmin) {
             put(holder, inv, 51, tipBtn(viewer, Material.EXPERIENCE_BOTTLE, "&dProgression",
-                    List.of("&7Back to progression")), SlotAction.cmd("lm do open progression"));
+                    List.of("&7Back to progression")), SlotAction.cmd("lmdo lm open progression"));
         }
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
         return inv;

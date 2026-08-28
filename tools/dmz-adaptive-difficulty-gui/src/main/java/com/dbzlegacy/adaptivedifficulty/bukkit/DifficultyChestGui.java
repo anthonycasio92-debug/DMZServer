@@ -656,25 +656,24 @@ public final class DifficultyChestGui implements Listener {
         final Player subjectFinal = subject;
         final boolean inspect = inspecting(viewer, subject);
         Bukkit.getScheduler().runTask(plugin, () -> {
-            if (inspect) {
-                // Never performCommand here — that would edit the admin, not the subject.
-                String reopen = ForgeBridge.resolveReturnPage(action, arg, ret);
-                ForgeBridge.ActionResult result =
-                        ForgeBridge.handleActionResult(subjectFinal, action, arg, reopen);
-                if (result.message() != null && !result.message().isBlank()) {
-                    String msg = result.message();
-                    if (!msg.startsWith("§")) {
-                        msg = (result.ok() ? "§a" : "§c") + msg;
-                    }
+            // Always ForgeBridge — never route GUI clicks through Mohist /difficulty do.
+            String reopen = ForgeBridge.resolveReturnPage(action, arg, ret);
+            ForgeBridge.ActionResult result =
+                    ForgeBridge.handleActionResult(subjectFinal, action, arg, reopen);
+            if (result.message() != null && !result.message().isBlank()) {
+                String msg = result.message();
+                if (!msg.startsWith("§")) {
+                    msg = (result.ok() ? "§a" : "§c") + msg;
+                }
+                if (inspect) {
                     GuiChat.send(viewer, GuiChat.tagged(subjectFinal.getName(), msg));
+                } else {
+                    GuiChat.sendResult(viewer, msg);
                 }
-                if (reopen != null && !reopen.isBlank()) {
-                    openAs(viewer, subjectFinal, reopen);
-                }
-                return;
             }
-            viewer.closeInventory();
-            viewer.performCommand("difficulty do " + action + " " + arg + " " + ret);
+            if (reopen != null && !reopen.isBlank()) {
+                openAs(viewer, subjectFinal, reopen);
+            }
         });
     }
 

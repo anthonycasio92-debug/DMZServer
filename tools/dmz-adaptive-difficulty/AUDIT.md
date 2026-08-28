@@ -1,3 +1,12 @@
+## Mohist CMI / admin audit (2.3.28)
+
+- Remaining CMI GUIs (Difficulty/Hub/Progression/Prestige/Skills) now use Bukkit-only `/lmdo …`
+  (same pattern as Rival/Spar in 2.3.26) — Mohist was routing `* do` to incomplete Forge trees.
+- `DifficultyChestGui` always uses `ForgeBridge.handleActionResult` (no `performCommand difficulty do`).
+- Hub chat menu clickables use `/lmdo lm …`; `lmdo lm open <system>` switches menus without reopening hub.
+- Bukkit `/difficulty admin syslog` + `/difficulty admin resynclevel` wired (were Forge-only).
+- Prestige/Skills chat-backend no longer `forwardCommand` to Forge.
+
 ## /lm admin migrate-cnpc on Bukkit (2.3.27)
 
 - Mohist owns `/lm` via LegacyMechanicsGUI — `migrate-cnpc` was Forge-only and unreachable.
