@@ -68,7 +68,7 @@ public final class SkillCheckService {
     }
 
     /**
-     * Open Skill Check UI for {@code page} (core / advanced / saga).
+     * Open Skill Check UI for {@code page} (core / saga; advanced aliases to saga).
      * Requires {@link #canUse}.
      */
     public static void open(ServerPlayer player, String page) {

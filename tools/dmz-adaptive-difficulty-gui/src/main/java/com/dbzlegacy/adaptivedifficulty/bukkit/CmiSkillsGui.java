@@ -12,7 +12,7 @@ import org.bukkit.entity.Player;
 
 /**
  * CMILib inventory GUI — Legacy Mechanics Skills / Skill Check.
- * Pages: core · advanced · saga. One item per skill in content slots.
+ * Pages: Natural (core) · Saga. One item per skill in content slots.
  */
 public final class CmiSkillsGui {
     private static final Material ACCENT = Material.GRAY_STAINED_GLASS_PANE;
@@ -30,11 +30,11 @@ public final class CmiSkillsGui {
         String p = page == null || page.isBlank() ? "core" : page.toLowerCase(Locale.ROOT);
         try {
             switch (p) {
-                case "advanced", "dmz" -> openPage(player, "advanced", "&bAdvanced", Material.DIAMOND);
-                case "saga" -> openPage(player, "saga", "&dSaga", Material.AMETHYST_SHARD);
+                case "advanced", "dmz", "saga" ->
+                        openPage(player, "saga", "&dSaga", Material.AMETHYST_SHARD);
                 case "help" -> openPage(player, "help", "&7Help", Material.PAPER);
-                case "natural" -> openPage(player, "core", "&aNatural", Material.ENCHANTED_BOOK);
-                default -> openPage(player, "core", "&aNatural", Material.ENCHANTED_BOOK);
+                case "natural" -> openPage(player, "core", "&aNatural", Material.FEATHER);
+                default -> openPage(player, "core", "&aNatural", Material.FEATHER);
             }
             return true;
         } catch (Throwable t) {
@@ -58,7 +58,8 @@ public final class CmiSkillsGui {
                 : !systemOn ? "&c&lSKILLS DISABLED"
                 : skillCheckUi ? title + " Skill Check"
                 : staffAdmin ? title + " (Admin)" : title + " Skills";
-        CMIGuiButton status = new CMIGuiButton(4, mat, statusName);
+        // Header is always paper (stats) — tabs use Feather / Amethyst (no duplicate books).
+        CMIGuiButton status = new CMIGuiButton(4, Material.PAPER, statusName);
         status.lockField();
         if (!bridgeOk || !systemOn) {
             status.addLore(unavailableLore(bridgeOk));
@@ -73,7 +74,7 @@ public final class CmiSkillsGui {
         List<String> raw = toAmp(ForgeBridge.skillsLines(player, page));
         if ("help".equals(page)) {
             status.addLore(prependBlank(raw.isEmpty()
-                    ? List.of("&7Use Natural · Saga · Advanced tabs.")
+                    ? List.of("&7Use Natural · Saga tabs.")
                     : raw));
             gui.addButton(status);
         } else {
@@ -119,12 +120,10 @@ public final class CmiSkillsGui {
         }
 
         String pageCmd = skillCheckUi ? "skillcheck" : "skills";
-        gui.addButton(pageBtn(45, Material.ENCHANTED_BOOK, "&aNatural", pageCmd, "core",
-                "&7Potential Unlock · Flight · Meditation · Jump · Sprint"));
+        gui.addButton(pageBtn(45, Material.FEATHER, "&aNatural", pageCmd, "core",
+                "&7Potential · Flight · Meditation · Jump · Sprint"));
         gui.addButton(pageBtn(46, Material.AMETHYST_SHARD, "&dSaga", pageCmd, "saga",
-                "&7Saga skill unlocks"));
-        gui.addButton(pageBtn(47, Material.DIAMOND, "&bAdvanced", pageCmd, "advanced",
-                "&7DMZ 2.1 skills"));
+                "&7Saga unlocks · Defense Pen · Healing Red · Ki skills"));
 
         gui.addButton(hubBtn(49));
         if (staffAdmin) {

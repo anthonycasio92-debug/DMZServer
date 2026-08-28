@@ -1,4 +1,4 @@
-# Natural Progression & Fabled Bridges (2.3.13)
+# Natural Progression & Fabled Bridges (2.3.14)
 
 LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus soft-dependency
 **Fabled** bridges (Bukkit / LuckPerms via reflection — never hard-crash if missing).
@@ -11,7 +11,7 @@ Staff UI (`/progression` / `/prog`) is a **category hub** matching the script fa
 
 ## Install (test)
 
-1. Build / install `LegacyMechanics-2.3.13.jar` (+ matching `LegacyMechanicsGUI-2.3.13.jar`).
+1. Build / install `LegacyMechanics-2.3.14.jar` (+ matching `LegacyMechanicsGUI-2.3.14.jar`).
 2. Keep `enableProgression` / `enableFabledBridge` true (defaults).
 3. **Disable** the CNPC Global Player scripts listed below to avoid double-sync / double TP.
 4. Do **not** deploy to live until tested.
@@ -29,7 +29,7 @@ Staff UI (`/progression` / `/prog`) is a **category hub** matching the script fa
 - Permission: `legacymechanics.skillcheck` (plugin.yml default **false**; grant via LuckPerms).
 - Config (`legacymechanics.json`): `enableSkillCheck`, `skillCheckPermission`,
   `skillCheckNpcNameContains` (default needles: `Skill Check`, `SkillCheck`, `Skill Progress`).
-- Reuses the same skill progress lines as staff `/skills` (core / advanced / saga) with
+- Reuses the same skill progress lines as staff `/skills` (core / saga) with
   **Skill Check** branding.
 - Hub shows a **Skill Check** button for permitted non-staff players.
 

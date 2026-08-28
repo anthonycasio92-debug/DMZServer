@@ -117,26 +117,20 @@ final class GuiLoreChunks {
 
     static Material skillIcon(String displayName) {
         String n = stripColor(displayName == null ? "" : displayName).toLowerCase(Locale.ROOT);
-        if (n.contains("flight") || n.contains("fly")) {
+        if (n.contains("potential")) {
+            return Material.NETHER_STAR;
+        }
+        if (n.contains("flight") || n.equals("fly")) {
             return Material.FEATHER;
         }
         if (n.contains("meditation")) {
             return Material.ENDER_EYE;
-        }
-        if (n.contains("potential")) {
-            return Material.NETHER_STAR;
         }
         if (n.contains("jump")) {
             return Material.RABBIT_FOOT;
         }
         if (n.contains("sprint")) {
             return Material.SUGAR;
-        }
-        if (n.contains("sense")) {
-            return Material.COMPASS;
-        }
-        if (n.contains("control") || n.contains("manipulation") || n.contains("ki ")) {
-            return Material.LAPIS_LAZULI;
         }
         if (n.contains("defense") || n.contains("penetration")) {
             return Material.IRON_SWORD;
@@ -147,16 +141,32 @@ final class GuiLoreChunks {
         if (n.contains("transmission") || n.contains("instant")) {
             return Material.ENDER_PEARL;
         }
-        if (n.contains("infusion") || n.contains("boost") || n.contains("protection")) {
-            return Material.DIAMOND;
+        if (n.contains("infusion")) {
+            return Material.GLOWSTONE_DUST;
+        }
+        if (n.contains("boost")) {
+            return Material.BLAZE_POWDER;
+        }
+        if (n.contains("protection")) {
+            return Material.SHIELD;
+        }
+        if (n.contains("sense")) {
+            return Material.COMPASS;
+        }
+        if (n.contains("manipulation")) {
+            return Material.PRISMARINE_CRYSTALS;
+        }
+        if (n.contains("control")) {
+            return Material.LAPIS_LAZULI;
         }
         if (n.contains("kaioken")) {
             return Material.REDSTONE;
         }
         if (n.contains("fusion")) {
-            return Material.AMETHYST_SHARD;
+            return Material.GOLDEN_APPLE;
         }
-        return Material.ENCHANTED_BOOK;
+        // Never default to a book — Natural/Saga tabs already use distinct icons.
+        return Material.PAPER;
     }
 
     private static int indexOfLevelSep(String line) {

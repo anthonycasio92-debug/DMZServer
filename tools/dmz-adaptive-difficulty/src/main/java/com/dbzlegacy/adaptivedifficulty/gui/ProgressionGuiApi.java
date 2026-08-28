@@ -761,13 +761,11 @@ public final class ProgressionGuiApi {
         }
         String p = page == null || page.isBlank() ? "core" : page.toLowerCase(Locale.ROOT);
         return switch (p) {
-            case "advanced", "dmz" -> SkillUnlockService.advancedLines(player);
-            case "saga" -> SkillUnlockService.sagaLines(player);
+            case "advanced", "dmz", "saga" -> SkillUnlockService.sagaLines(player);
             case "help" -> List.of(
                     "§6§l/skills §8— Skill Progress (staff)",
                     "§e/skills §7— Natural progression",
                     "§e/skills do page saga §7— Saga unlocks",
-                    "§e/skills do page advanced §7— DMZ 2.1",
                     "§e/skillcheck §7— Donator Skill Check"
             );
             default -> SkillUnlockService.coreLines(player);
@@ -775,7 +773,7 @@ public final class ProgressionGuiApi {
     }
 
     /**
-     * Dispatch {@code /skills do} — {@code page} with core/advanced/saga (reopen only).
+     * Dispatch {@code /skills do} — {@code page} with core/saga (reopen only).
      */
     public static String handleSkillsDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {

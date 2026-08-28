@@ -1,9 +1,9 @@
-## End Dimension Strength script parity (2.3.13)
+## End Dimension Strength script parity (2.3.14)
 
 - Stubbed CNPC `End Dimension Strength.js` + Forge trigger bridge (Java owns dragon).
 - Spawn via EndDragonFight (`createNewDragon` + spike crystals) so perch/charge AI works.
 - World-wide dragon rescale; script softcap tables; natural spawn first-boot delay.
-- Jars: `LegacyMechanics-2.3.13` / `LegacyMechanicsGUI-2.3.13`.
+- Jars: `LegacyMechanics-2.3.14` / `LegacyMechanicsGUI-2.3.14`.
 
 ## Skill tooltips + Rival pending invites (2.3.5)
 
@@ -32,7 +32,7 @@ Admin GUI shows only Save / Refresh / Status / Help (no Top/Stats/Challenge play
 ## Potential soft-cap + SkillCheck layout (2.3.3)
 
 - Potential Unlock soft-stops at **10** (Guru gate); after unlocking to **11+**, training continues to **30**. Registers max 30 so DMZ allows post-Guru levels.
-- SkillCheck / Skills reorganized: **Natural** first (Potential Unlock, Flight, Meditation, Jump, Sprint), then **Saga**, then **Advanced**.
+- SkillCheck / Skills reorganized: **Natural** first (Potential Unlock, Flight, Meditation, Jump, Sprint), then **Saga** (Defense Pen / Healing Red / Ki skills).
 - Jump/Sprint show **invested STR** (total − race/class base) — matches SprintJump progression.
 - Potential Unlock labeled clearly (not as a train skill); always shows `/30`.
 

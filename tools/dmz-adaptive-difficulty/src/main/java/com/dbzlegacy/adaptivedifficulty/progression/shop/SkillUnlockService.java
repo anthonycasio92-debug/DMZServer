@@ -42,11 +42,13 @@ public final class SkillUnlockService {
         if (!DifficultyConfig.get().enableSkillUnlockService || player == null) {
             return;
         }
-        if (page == null || page.isBlank() || "main".equalsIgnoreCase(page) || "core".equalsIgnoreCase(page)) {
+        if (page == null || page.isBlank() || "main".equalsIgnoreCase(page) || "core".equalsIgnoreCase(page)
+                || "natural".equalsIgnoreCase(page)) {
             showPage(player, "core", skillCheck);
-        } else if ("advanced".equalsIgnoreCase(page) || "dmz".equalsIgnoreCase(page)) {
-            showPage(player, "advanced", skillCheck);
-        } else if ("saga".equalsIgnoreCase(page)) {
+        } else if ("saga".equalsIgnoreCase(page)
+                || "advanced".equalsIgnoreCase(page)
+                || "dmz".equalsIgnoreCase(page)) {
+            // Advanced was folded into Saga — keep aliases so old links still work.
             showPage(player, "saga", skillCheck);
         } else {
             showPage(player, "core", skillCheck);
@@ -69,9 +71,9 @@ public final class SkillUnlockService {
         return buildPageLines(player, "core");
     }
 
-    /** Header + advanced skill lines for inventory GUI lore. */
+    /** @deprecated Advanced folded into Saga — returns saga lines. */
     public static List<String> advancedLines(ServerPlayer player) {
-        return buildPageLines(player, "advanced");
+        return buildPageLines(player, "saga");
     }
 
     /** Header + saga skill lines for inventory GUI lore. */
@@ -106,8 +108,7 @@ public final class SkillUnlockService {
                 + " §8| §7STR §f" + totalStr + " §8(invested §f" + investedStr + "§8)");
         out.add("§8----------------------------");
         switch (page.toLowerCase(Locale.ROOT)) {
-            case "advanced", "dmz" -> appendAdvanced(out, skills, investedStr);
-            case "saga" -> appendSaga(out, skills);
+            case "saga", "advanced", "dmz" -> appendSaga(out, skills);
             default -> appendNatural(out, player, skills, investedStr);
         }
         return out;
@@ -134,17 +135,14 @@ public final class SkillUnlockService {
                         cmdRoot + " do page core", "Natural progression"))
                 .m_7220_(Component.m_237113_(" "))
                 .m_7220_(btn(pageEquals(page, "saga") ? "§e[Saga]" : "§7[Saga]",
-                        cmdRoot + " do page saga", "Saga unlocks"))
-                .m_7220_(Component.m_237113_(" "))
-                .m_7220_(btn(pageEquals(page, "advanced") ? "§e[Advanced]" : "§7[Advanced]",
-                        cmdRoot + " do page advanced", "DMZ 2.1 skills"));
+                        cmdRoot + " do page saga", "Saga unlocks"));
         send(player, nav);
         send(player, "§8────────────────");
     }
 
     /**
-     * Natural progression first: Potential Unlock (not a train skill), Flight,
-     * Meditation, Jump, Sprint. Saga / Advanced pages hold the rest.
+     * Natural: Potential Unlock, Flight, Meditation, Jump, Sprint.
+     * Strength-gated Jump/Sprint stay here; saga unlocks live on Saga.
      */
     private static void appendNatural(
             List<String> out, ServerPlayer player, Skills skills, int investedStr
@@ -248,11 +246,20 @@ public final class SkillUnlockService {
         }
     }
 
-    private static void appendAdvanced(List<String> out, Skills skills, int investedStr) {
-        out.add("§6§lDragonMineZ 2.1 Skills§r");
-        out.add("§8Unlocked / trained via saga skill progress.");
-        appendStrengthLine(out, skills, "defense_penetration", "Defense Penetration", "§c", investedStr);
-        appendStrengthLine(out, skills, "healing_reduction", "Healing Reduction", "§4", investedStr);
+    private static void appendSaga(List<String> out, Skills skills) {
+        out.add("§6§lSaga Skills§r");
+        out.add("§8Unlocked by completing skill sagas / story progress.");
+        appendSagaSkill(out, skills, "kicontrol", "Ki Control", "§3", 10,
+                "Complete the Saga Story to unlock Ki Control.");
+        appendSagaSkill(out, skills, "kimanipulation", "Ki Manipulation", "§9", 10,
+                "Complete the Saga Story to unlock Ki Manipulation.");
+        appendSagaSkill(out, skills, "kisense", "Ki Sense", "§5", 10,
+                "Complete the Saga Story to unlock Ki Sense.");
+        // Same locked-saga format as Instant Transmission / Ki skills (script parity).
+        appendSagaSkill(out, skills, "defense_penetration", "Defense Penetration", "§c", 10,
+                "Complete the Saga Story to unlock Defense Penetration.");
+        appendSagaSkill(out, skills, "healing_reduction", "Healing Reduction", "§4", 10,
+                "Complete the Saga Story to unlock Healing Reduction.");
         appendSagaSkill(out, skills, "instant_transmission", "Instant Transmission", "§d", 10,
                 "Complete the Saga Story to unlock Instant Transmission.");
         appendSagaSkill(out, skills, "ki_infusion", "Ki Infusion", "§b", 10,
@@ -261,19 +268,10 @@ public final class SkillUnlockService {
                 "Complete the Saga Story to unlock Ki Boost.");
         appendSagaSkill(out, skills, "kiprotection", "Ki Protection", "§9", 10,
                 "Complete the Saga Story to unlock Ki Protection.");
-    }
-
-    private static void appendSaga(List<String> out, Skills skills) {
-        out.add("§6§lSaga Skills§r");
-        out.add("§8Unlocked by completing skill sagas / story progress.");
-        appendSagaSkill(out, skills, "kicontrol", "Ki Control", "§3", 10,
-                "Gained by skill saga.");
-        appendSagaSkill(out, skills, "kimanipulation", "Ki Manipulation", "§9", 10,
-                "Gained by skill saga.");
-        appendSagaSkill(out, skills, "kisense", "Ki Sense", "§5", 10,
-                "Obtained through skill saga.");
-        appendSagaLine(out, skills, "kaioken", "Kaioken", "§c", 10, "Unlock via Saiyan saga progress.");
-        appendSagaLine(out, skills, "fusion", "Fusion", "§d", 5, "Unlock via fusion saga progress.");
+        appendSagaSkill(out, skills, "kaioken", "Kaioken", "§c", 10,
+                "Unlock via Saiyan saga progress.");
+        appendSagaSkill(out, skills, "fusion", "Fusion", "§d", 5,
+                "Unlock via fusion saga progress.");
     }
 
     private static void appendLine(
@@ -332,22 +330,6 @@ public final class SkillUnlockService {
                 + (investedStr >= required ? " §a✓" : " §c✗"));
     }
 
-    private static void appendSagaLine(
-            List<String> out, Skills skills, String id, String name, String color, int max, String hint
-    ) {
-        int level = skillLevel(skills, id);
-        if (level < 1) {
-            out.add(color + name + "§7: §f0/" + max);
-            out.add("§8  - §7" + hint);
-        } else if (level >= max) {
-            out.add(color + name + "§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-            how(out, "Unlocked via saga progress; raise with saga milestones.");
-        } else {
-            out.add(color + name + "§7: §f" + level + "/" + max);
-            how(out, "Continue saga milestones to raise this skill.");
-        }
-    }
-
     private static void how(List<String> out, String tip) {
         if (tip == null || tip.isBlank()) {
             return;
@@ -359,20 +341,18 @@ public final class SkillUnlockService {
         if ("jump".equals(id) || "sprint".equals(id)) {
             return "Strength unlocked (invested STR = total − race/class base).";
         }
-        if ("defense_penetration".equals(id) || "healing_reduction".equals(id)) {
-            return "Strength unlocked at invested Strength thresholds.";
-        }
         return "Unlocked by invested Strength at the next threshold.";
     }
 
     private static String howToLevel(String id) {
         return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
-            case "kicontrol", "kimanipulation" -> "Gained by skill saga.";
-            case "kisense" -> "Obtained through skill saga.";
-            case "instant_transmission" -> "Train after unlocking via the Saga Story.";
-            case "ki_infusion" -> "Train after unlocking via the Saga Story.";
-            case "kiboost" -> "Train after unlocking via the Saga Story.";
-            case "kiprotection" -> "Train after unlocking via the Saga Story.";
+            case "kicontrol", "kimanipulation", "kisense" -> "Gained by skill saga.";
+            case "defense_penetration", "healing_reduction" ->
+                    "Train after unlocking via the Saga Story.";
+            case "instant_transmission", "ki_infusion", "kiboost", "kiprotection" ->
+                    "Train after unlocking via the Saga Story.";
+            case "kaioken" -> "Continue Saiyan saga milestones to raise this skill.";
+            case "fusion" -> "Continue fusion saga milestones to raise this skill.";
             default -> "Unlock via saga / story progress, then train in play.";
         };
     }
