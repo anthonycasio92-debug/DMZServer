@@ -15,7 +15,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -24,13 +23,13 @@ import net.minecraftforge.registries.ForgeRegistries;
 /**
  * Port of Disable End Portals.js — block vanilla End portal / gateway travel and
  * Eye-of-Ender frame lighting so The End is reached only via intentional TPs.
- * Deny feedback is a screen title (not chat). Disable the matching CNPC script
- * so it does not double-fire chat messages.
+ * Deny feedback is a screen title (not chat), and only when the player is
+ * clearly standing in a portal on the ground — not while flying / lag-rubberbanding.
  */
 public final class EndPortalGuard {
     private static final String TEMP_BYPASS = "end.travel.allow";
     private static final String TEMP_MSG = "end.portal.msg";
-    private static final long MSG_COOLDOWN_MS = 12_000L;
+    private static final long MSG_COOLDOWN_MS = 20_000L;
     private static final String TITLE_PORTAL = "End portals disabled";
     private static final String SUB_PORTAL = "Use a teleport to reach The End";
     private static final String TITLE_EYE = "Cannot activate portal";
@@ -53,13 +52,16 @@ public final class EndPortalGuard {
             if (hasBypass(player)) {
                 return;
             }
-            // Only block if the player is actually inside portal/gateway blocks.
+            // Only block if the player's feet are actually inside portal/gateway.
             if (!standingInPortalBlock(player)) {
                 return;
             }
             event.setCanceled(true);
-            ScreenNotify.blocked(player, TITLE_PORTAL, SUB_PORTAL, TEMP_MSG, MSG_COOLDOWN_MS);
             ejectFromPortal(player);
+            // Flying / mid-air / lag clips: cancel silently — no title spam.
+            if (shouldAnnounce(player)) {
+                ScreenNotify.blocked(player, TITLE_PORTAL, SUB_PORTAL, TEMP_MSG, MSG_COOLDOWN_MS);
+            }
         } catch (Throwable ignored) {
         }
     }
@@ -116,8 +118,7 @@ public final class EndPortalGuard {
                 if (!standingInPortalBlock(player)) {
                     continue;
                 }
-                // Silent eject only — title is reserved for real travel / eye attempts
-                // so lag/fly near portals does not spam screen titles.
+                // Always silent on pulse — titles only from travel/eye when grounded.
                 ejectFromPortal(player);
             }
         } catch (Throwable ignored) {
@@ -165,8 +166,31 @@ public final class EndPortalGuard {
     }
 
     /**
-     * Feet / lower body must intersect an end_portal or end_gateway block.
-     * Ignores frames and wide neighborhood probes (those false-fired while flying/lagging).
+     * Title only when planted on the ground in a portal.
+     * DMZ flight, creative fly, elytra, and mid-air lag rubberbands stay silent.
+     */
+    private static boolean shouldAnnounce(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        try {
+            if (player.m_150110_().f_35935_) { // abilities.flying
+                return false;
+            }
+            if (player.m_21255_()) { // isFallFlying
+                return false;
+            }
+            // onGround — air / flight clips never show the title
+            return player.m_20096_();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * Exact feet position must be inside an end_portal / end_gateway block.
+     * Uses point samples (not full AABB) so flying past / lag desync grazing
+     * a portal plane does not count.
      */
     private static boolean standingInPortalBlock(ServerPlayer player) {
         if (player == null) {
@@ -177,34 +201,15 @@ public final class EndPortalGuard {
             if (level == null) {
                 return false;
             }
-            AABB bb = player.m_20191_();
-            // Feet / ankles only — ignore upper body so flying past frames
-            // or lag-desynced hitboxes don't count as "in portal".
-            double pad = 0.12;
-            int minX = (int) Math.floor(bb.f_82288_ + pad);
-            int minY = (int) Math.floor(bb.f_82289_);
-            int minZ = (int) Math.floor(bb.f_82290_ + pad);
-            int maxX = (int) Math.floor(bb.f_82291_ - pad);
-            int maxY = (int) Math.floor(Math.min(bb.f_82292_, bb.f_82289_ + 0.35) - 0.01);
-            int maxZ = (int) Math.floor(bb.f_82293_ - pad);
-            if (maxX < minX) {
-                maxX = minX;
+            double x = player.m_20185_();
+            double y = player.m_20186_();
+            double z = player.m_20189_();
+            // Point samples at feet only (not full AABB) — flying past a portal plane
+            // or lag-desynced grazing must not count.
+            if (isPortalTravelBlock(level.m_8055_(BlockPos.m_274561_(x, y + 0.05, z)))) {
+                return true;
             }
-            if (maxY < minY) {
-                maxY = minY;
-            }
-            if (maxZ < minZ) {
-                maxZ = minZ;
-            }
-            for (int px = minX; px <= maxX; px++) {
-                for (int py = minY; py <= maxY; py++) {
-                    for (int pz = minZ; pz <= maxZ; pz++) {
-                        if (isPortalTravelBlock(level.m_8055_(new BlockPos(px, py, pz)))) {
-                            return true;
-                        }
-                    }
-                }
-            }
+            return isPortalTravelBlock(level.m_8055_(BlockPos.m_274561_(x, y + 0.25, z)));
         } catch (Throwable ignored) {
         }
         return false;
@@ -227,11 +232,11 @@ public final class EndPortalGuard {
                 return false;
             }
             String name = key.toString().toLowerCase();
-            if (name.contains("end_portal_frame")) {
-                return false;
-            }
-            return name.endsWith("end_portal") || name.endsWith("end_gateway")
-                    || name.contains(":end_portal") || name.contains(":end_gateway");
+            // Exact portal travel blocks only — never frames or "end_portal_*" variants.
+            return "minecraft:end_portal".equals(name)
+                    || "minecraft:end_gateway".equals(name)
+                    || name.endsWith(":end_portal")
+                    || name.endsWith(":end_gateway");
         } catch (Throwable ignored) {
             return false;
         }
