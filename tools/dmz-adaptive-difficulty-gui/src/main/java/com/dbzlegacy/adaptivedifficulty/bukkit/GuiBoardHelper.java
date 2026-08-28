@@ -20,6 +20,27 @@ final class GuiBoardHelper {
 
     private GuiBoardHelper() {}
 
+    /** Staff see full tip lines; players get no instructional lore. */
+    static List<String> tips(Player player, String... staffLines) {
+        if (player != null && ForgeBridge.isStaff(player)) {
+            List<String> out = new ArrayList<>();
+            for (String line : staffLines) {
+                if (line != null) {
+                    out.add(line);
+                }
+            }
+            return out;
+        }
+        return List.of();
+    }
+
+    static List<String> tipsList(Player player, List<String> staffLines) {
+        if (player != null && ForgeBridge.isStaff(player) && staffLines != null) {
+            return new ArrayList<>(staffLines);
+        }
+        return List.of();
+    }
+
     /**
      * Place up to {@code count} items centered across interior rows (10–16, 19–25, 28–34).
      * ≤7 items → single centered middle row. More → fill top→bottom, each row centered.

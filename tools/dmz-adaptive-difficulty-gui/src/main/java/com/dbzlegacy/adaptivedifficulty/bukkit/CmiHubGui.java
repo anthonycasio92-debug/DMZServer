@@ -63,15 +63,18 @@ public final class CmiHubGui {
             gui.open();
             return;
         }
-        status.addLore(List.of("", "&7Choose a system", "&8/lm"));
+        List<String> hubHeaderLore = new ArrayList<>();
+        hubHeaderLore.add("");
+        hubHeaderLore.addAll(GuiBoardHelper.tips(player, "&7Choose a system", "&8/lm"));
+        status.addLore(hubHeaderLore);
         gui.addButton(status);
 
         // Row 2 — core
-        gui.addButton(openBtn(20, Material.BEACON, "&aDifficulty", "difficulty",
+        gui.addButton(openBtn(player, 20, Material.BEACON, "&aDifficulty", "difficulty",
                 "&7Unlock tiers & world scaling", "&eClick to open"));
-        gui.addButton(openBtn(22, Material.NAME_TAG, "&6Rival", "rival",
+        gui.addButton(openBtn(player, 22, Material.NAME_TAG, "&6Rival", "rival",
                 "&7Rivalry, challenges & RP", "&eClick to open"));
-        gui.addButton(openBtn(24, Material.GOLDEN_SWORD, "&bSpar", "spar",
+        gui.addButton(openBtn(player, 24, Material.GOLDEN_SWORD, "&bSpar", "spar",
                 "&7Sparring TP & mentor bonds", "&eClick to open"));
 
         boolean staff = ForgeBridge.isStaff(player);
@@ -79,27 +82,27 @@ public final class CmiHubGui {
 
         // Row 3 — progress
         if (skillCheck && staff) {
-            gui.addButton(openBtn(21, Material.FEATHER, "&eSkill Check", "skillcheck",
+            gui.addButton(openBtn(player, 21, Material.FEATHER, "&eSkill Check", "skillcheck",
                     "&7Natural · Saga progress", "&eClick to open"));
-            gui.addButton(openBtn(23, Material.GOLDEN_APPLE, "&6Prestige", "prestige",
+            gui.addButton(openBtn(player, 23, Material.GOLDEN_APPLE, "&6Prestige", "prestige",
                     "&7Prestige shop / levels", "&eClick to open"));
         } else if (skillCheck) {
-            gui.addButton(openBtn(22, Material.FEATHER, "&eSkill Check", "skillcheck",
+            gui.addButton(openBtn(player, 22, Material.FEATHER, "&eSkill Check", "skillcheck",
                     "&7Natural · Saga progress", "&eClick to open"));
         } else if (staff) {
-            gui.addButton(openBtn(21, Material.FEATHER, "&eSkills", "skills",
+            gui.addButton(openBtn(player, 21, Material.FEATHER, "&eSkills", "skills",
                     "&7Skill unlock admin browser", "&eClick to open"));
-            gui.addButton(openBtn(23, Material.GOLDEN_APPLE, "&6Prestige", "prestige",
+            gui.addButton(openBtn(player, 23, Material.GOLDEN_APPLE, "&6Prestige", "prestige",
                     "&7Prestige shop / levels", "&eClick to open"));
         }
 
         // Row 4 — staff tools
         if (staff) {
-            gui.addButton(openBtn(38, Material.BREWING_STAND, "&dProgression", "progression",
+            gui.addButton(openBtn(player, 38, Material.BREWING_STAND, "&dProgression", "progression",
                     "&7Skills · TP · Race · Combat flags", "&eClick to open"));
-            gui.addButton(openBtn(40, Material.COMMAND_BLOCK, "&cAdmin", "admin",
+            gui.addButton(openBtn(player, 40, Material.COMMAND_BLOCK, "&cAdmin", "admin",
                     "&7Reload · syslog · open systems", "&8/lm admin"));
-            gui.addButton(pageBtn(42, Material.CLOCK, "&8Logs", "logs",
+            gui.addButton(pageBtn(player, 42, Material.CLOCK, "&8Logs", "logs",
                     "&7System telemetry", "&eClick to open"));
         }
 
@@ -116,11 +119,13 @@ public final class CmiHubGui {
 
         CMIGuiButton header = new CMIGuiButton(4, Material.CLOCK, "&8&lLogs");
         header.lockField();
-        header.addLore(List.of("",
-                "&7System telemetry &f" + (on ? "ON" : "OFF"),
-                "&8" + statusLine.replace('§', '&'),
-                "",
-                "&7Use buttons below to toggle / flush"));
+        List<String> logsHeader = new ArrayList<>();
+        logsHeader.add("");
+        logsHeader.add("&7System telemetry &f" + (on ? "ON" : "OFF"));
+        logsHeader.add("&8" + statusLine.replace('§', '&'));
+        logsHeader.add("");
+        logsHeader.addAll(GuiBoardHelper.tips(player, "&7Use buttons below to toggle / flush"));
+        header.addLore(logsHeader);
         gui.addButton(header);
 
         List<String> lore = toAmp(ForgeBridge.hubLines(player, "logs"));
@@ -142,14 +147,14 @@ public final class CmiHubGui {
             placed++;
         }
 
-        gui.addButton(actionBtn(29, Material.LIME_DYE, "&aSyslog ON",
+        gui.addButton(actionBtn(player, 29, Material.LIME_DYE, "&aSyslog ON",
                 "syslog", "on", "logs", List.of("&7Enable system telemetry")));
-        gui.addButton(actionBtn(31, Material.GRAY_DYE, "&cSyslog OFF",
+        gui.addButton(actionBtn(player, 31, Material.GRAY_DYE, "&cSyslog OFF",
                 "syslog", "off", "logs", List.of("&7Disable system telemetry")));
-        gui.addButton(actionBtn(33, Material.HOPPER, "&eFlush",
+        gui.addButton(actionBtn(player, 33, Material.HOPPER, "&eFlush",
                 "syslog", "flush", "logs", List.of("&7Flush log writers")));
 
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(44));
         fillFrameOnly(gui, 5);
         gui.open();
@@ -191,27 +196,23 @@ public final class CmiHubGui {
         return gui;
     }
 
-    private static CMIGuiButton pageBtn(int slot, Material mat, String name, String page, String... tips) {
+    private static CMIGuiButton pageBtn(Player player, int slot, Material mat, String name, String page, String... tips) {
         CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
         btn.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");
-        for (String tip : tips) {
-            lore.add(tip);
-        }
+        lore.addAll(GuiBoardHelper.tips(player, tips));
         btn.addLore(lore);
         btn.addCommand("lm do page " + page);
         return btn;
     }
 
-    private static CMIGuiButton openBtn(int slot, Material mat, String name, String system, String... tips) {
+    private static CMIGuiButton openBtn(Player player, int slot, Material mat, String name, String system, String... tips) {
         CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
         btn.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");
-        for (String tip : tips) {
-            lore.add(tip);
-        }
+        lore.addAll(GuiBoardHelper.tips(player, tips));
         btn.addLore(lore);
         btn.addCommand("lm do open " + system);
         btn.setCloseInv(true);
@@ -219,12 +220,13 @@ public final class CmiHubGui {
     }
 
     private static CMIGuiButton actionBtn(
-            int slot, Material mat, String name, String action, String arg, String returnPage, List<String> tip) {
+            Player player, int slot, Material mat, String name, String action, String arg, String returnPage,
+            List<String> tip) {
         CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
         btn.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.addAll(tip);
+        lore.addAll(GuiBoardHelper.tipsList(player, tip));
         btn.addLore(lore);
         btn.addCommand("lm do " + action + " " + arg + " " + returnPage);
         return btn;
