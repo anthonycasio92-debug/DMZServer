@@ -1,5 +1,5 @@
 name: LegacyMechanicsGUI
-version: '2.3.24'
+version: '2.3.25'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
@@ -9,6 +9,7 @@ commands:
   difficulty:
     description: Open LegacyMechanics Difficulty GUI
     usage: /difficulty
+    aliases: [diff]
   rival:
     description: Open LegacyMechanics Rival CMI/chest GUI
     usage: /rival
@@ -35,7 +36,7 @@ commands:
     usage: /skillcheck
 permissions:
   dmzdiff.gui:
-    description: Open the LegacyMechanics GUI
+    description: Legacy node (unused for open). Player GUIs are open to all; admin still needs difficulty.admin / op.
     default: true
   difficulty.admin:
     description: Use LegacyMechanics admin commands (op or this node)

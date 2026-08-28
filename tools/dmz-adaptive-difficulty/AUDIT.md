@@ -1,3 +1,8 @@
+## Player GUIs open to all (2.3.25)
+
+- `/difficulty` (and `/lm` `/rival` `/spar` / meditation) no longer gate on `dmzdiff.gui` — Mohist was denying non-ops.
+- Alias `/diff` for difficulty. Admin remains staff-only.
+
 ## Access + rival bridge + Fabled ki/AP + meditation XP (2.3.24)
 
 - Non-op `/lm` / player GUIs: allow unless `dmzdiff.gui` is explicitly denied (LuckPerms/Mohist-safe).

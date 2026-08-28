@@ -1261,23 +1261,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     }
 
     /**
-     * LuckPerms/Mohist-safe player GUI gate: allow unless {@code dmzdiff.gui} is explicitly denied.
-     * {@code plugin.yml} defaults the node to true; some permission bridges still return false when unset.
+     * Player-facing GUI gate for {@code /difficulty}, {@code /lm}, {@code /rival}, {@code /spar}, etc.
+     * <p>
+     * Always allows online players. Mohist/LuckPerms often reports {@code dmzdiff.gui} as missing/false
+     * even when {@code plugin.yml} defaults it to true, which wrongly blocked non-ops. Staff-only
+     * commands still use {@link ForgeBridge#isStaff}.
      */
     public static boolean canUsePlayerGui(Player player) {
-        if (player == null) {
-            return false;
-        }
-        if (player.isOp()) {
-            return true;
-        }
-        try {
-            if (!player.isPermissionSet("dmzdiff.gui")) {
-                return true;
-            }
-        } catch (Throwable ignored) {
-        }
-        return player.hasPermission("dmzdiff.gui");
+        return player != null;
     }
 
     private boolean handleSpar(CommandSender sender, String[] args) {
