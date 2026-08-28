@@ -163,7 +163,7 @@ public final class SkillUnlockService {
         // Always show hard ladder /30 — DMZ max may still read 10 before Guru unlock.
         if (level >= HARD_MAX_POTENTIAL) {
             out.add("§dPotential Unlock§7: §6§lMAX§r §7(" + level + "/" + HARD_MAX_POTENTIAL + ")");
-            how(out, "PvP hits & blocks. Soft-cap 10 → Guru → 11–30.");
+            how(out, "PvP hits & taking damage. Soft-cap 10 → Guru → 11–30.");
             return;
         }
         if (level == 10) {
@@ -175,9 +175,9 @@ public final class SkillUnlockService {
         }
         out.add("§dPotential Unlock§7: §f" + level + "/" + HARD_MAX_POTENTIAL);
         if (level < 10) {
-            how(out, "PvP hits & blocks. Soft-caps at 10 (then Guru for 11–30).");
+            how(out, "PvP hits & taking damage. Soft-caps at 10 (then Guru for 11–30).");
         } else {
-            how(out, "PvP hits & blocks toward the next Potential Unlock level.");
+            how(out, "PvP hits & taking damage toward the next Potential Unlock level.");
         }
         int next = level + 1;
         int required = next * 100;
@@ -190,7 +190,7 @@ public final class SkillUnlockService {
         String method = ProgressionData.storedGet(player, "potentialunlock_last_method", "");
         long streak = ProgressionData.storedGetLong(player, "potentialunlock_same_method_streak", 0L);
         if (method != null && !method.isBlank()) {
-            out.add("§8  - §7Last method §f" + method.replace('_', ' ')
+            out.add("§8  - §7Last method §f" + formatPotentialMethod(method)
                     + (streak > 0 ? " §8(streak " + streak + "/5)" : ""));
         }
     }
@@ -267,11 +267,11 @@ public final class SkillUnlockService {
         out.add("§6§lSaga Skills§r");
         out.add("§8Unlocked by completing skill sagas / story progress.");
         appendSagaSkill(out, skills, "kicontrol", "Ki Control", "§3", 10,
-                "Complete the Saga Story to unlock Ki Control.");
+                "Gained by skill saga.");
         appendSagaSkill(out, skills, "kimanipulation", "Ki Manipulation", "§9", 10,
-                "Complete the Saga Story to unlock Ki Manipulation.");
+                "Gained by skill saga.");
         appendSagaSkill(out, skills, "kisense", "Ki Sense", "§5", 10,
-                "Complete the Saga Story to unlock Ki Sense.");
+                "Obtained through skill saga.");
         appendSagaLine(out, skills, "kaioken", "Kaioken", "§c", 10, "Unlock via Saiyan saga progress.");
         appendSagaLine(out, skills, "fusion", "Fusion", "§d", 5, "Unlock via fusion saga progress.");
     }
@@ -327,7 +327,7 @@ public final class SkillUnlockService {
         out.add(color + name + "§7: §f" + level + "/" + max
                 + " §8· §7next §f" + next);
         how(out, strengthHow(id));
-        out.add("§8  - §7Needs invested STR §f" + required
+        out.add("§8  - §7Strength unlock §f" + required
                 + " §8· §7have §f" + investedStr
                 + (investedStr >= required ? " §a✓" : " §c✗"));
     }
@@ -357,25 +357,34 @@ public final class SkillUnlockService {
 
     private static String strengthHow(String id) {
         if ("jump".equals(id) || "sprint".equals(id)) {
-            return "Auto-levels from invested Strength (total − race/class base).";
+            return "Strength unlocked (invested STR = total − race/class base).";
         }
         if ("defense_penetration".equals(id) || "healing_reduction".equals(id)) {
-            return "Auto-levels from invested Strength thresholds.";
+            return "Strength unlocked at invested Strength thresholds.";
         }
-        return "Invest Strength to meet the next level requirement.";
+        return "Unlocked by invested Strength at the next threshold.";
     }
 
     private static String howToLevel(String id) {
         return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
-            case "kicontrol" -> "Train after unlocking via the Saga Story.";
-            case "kimanipulation" -> "Train after unlocking via the Saga Story.";
-            case "kisense" -> "Train after unlocking via the Saga Story.";
+            case "kicontrol", "kimanipulation" -> "Gained by skill saga.";
+            case "kisense" -> "Obtained through skill saga.";
             case "instant_transmission" -> "Train after unlocking via the Saga Story.";
             case "ki_infusion" -> "Train after unlocking via the Saga Story.";
             case "kiboost" -> "Train after unlocking via the Saga Story.";
             case "kiprotection" -> "Train after unlocking via the Saga Story.";
             default -> "Unlock via saga / story progress, then train in play.";
         };
+    }
+
+    private static String formatPotentialMethod(String method) {
+        if (method == null || method.isBlank()) {
+            return "";
+        }
+        if ("blocking".equalsIgnoreCase(method) || "taking_damage".equalsIgnoreCase(method)) {
+            return "taking damage";
+        }
+        return method.replace('_', ' ');
     }
 
     private static int strengthRequirement(int next) {

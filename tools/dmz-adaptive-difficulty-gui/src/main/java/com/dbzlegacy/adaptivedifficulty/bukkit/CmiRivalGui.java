@@ -39,6 +39,7 @@ public final class CmiRivalGui {
             switch (p) {
                 case "list" -> openList(player);
                 case "actions" -> openActions(player);
+                case "pending", "invites", "pendinginvites" -> openPending(player);
                 case "history", "past", "previous" -> openHistory(player);
                 case "pick_declare" -> openPicker(player, "declare", "actions",
                         "&6Declare Rival", "&7Click to declare this player");
@@ -104,11 +105,22 @@ public final class CmiRivalGui {
         status.addLore(statusLore(ph));
         gui.addButton(status);
 
-        // Main: List · Actions · Challenge · Top · History · Progress · toggles
+        // Main: List · Actions · Pending · Challenge · Top · History · Progress · toggles
         gui.addButton(pageBtn(19, Material.PLAYER_HEAD, "&6List", "list",
                 "&7Current rivals", "&8Heads · hover for stats"));
         gui.addButton(pageBtn(21, Material.LIME_CONCRETE, "&aActions", "actions",
                 "&7Declare · accept · decline · remove"));
+        int pendingCount = 0;
+        try {
+            pendingCount = Integer.parseInt(ph.getOrDefault("pending_invites", "0"));
+        } catch (NumberFormatException ignored) {
+            pendingCount = 0;
+        }
+        gui.addButton(pageBtn(22, Material.YELLOW_DYE,
+                pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
+                "pending",
+                "&7Incoming + outgoing declares",
+                pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"));
         gui.addButton(pageBtn(23, Material.IRON_SWORD, "&cChallenge", "challenge",
                 "&7Send · accept · decline · spectate"));
         gui.addButton(pageBtn(25, Material.GOLDEN_HELMET, "&fTop", "top",
@@ -332,8 +344,54 @@ public final class CmiRivalGui {
 
         gui.addButton(pageBtn(37, Material.LIME_CONCRETE, "&aActions", "actions",
                 "&7Declare · accept · remove"));
+        gui.addButton(pageBtn(38, Material.YELLOW_DYE, "&ePending", "pending",
+                "&7Incoming + outgoing declares"));
         gui.addButton(pageBtn(39, Material.SKELETON_SKULL, "&8History", "history",
                 "&7Previous rivals"));
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openPending(Player player) {
+        CMIGui gui = base(player, "&8Legacy Mechanics · Pending Invites", 5);
+        List<GuiBoardHelper.PendingInvite> invites = GuiBoardHelper.parsePendingInvites(
+                ForgeBridge.rivalPendingInviteCards(player));
+        CMIGuiButton info = new CMIGuiButton(4, Material.YELLOW_DYE, "&e&lPending Invites");
+        info.lockField();
+        info.addLore(List.of("",
+                invites.isEmpty() ? "&7No pending declares." : "&7" + invites.size() + " pending",
+                "&a◀ Incoming &7= they Declared you",
+                "&6▶ Outgoing &7= waiting on them"));
+        gui.addButton(info);
+
+        if (invites.isEmpty()) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&7No pending invites");
+            empty.lockField();
+            empty.addLore(List.of("", "&7Declare someone to send an invite",
+                    "&7Incoming shows when they Declare you"));
+            gui.addButton(empty);
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(invites.size(), 21));
+            for (int i = 0; i < slots.length && i < invites.size(); i++) {
+                GuiBoardHelper.PendingInvite invite = invites.get(i);
+                ItemStack head = GuiBoardHelper.pendingInviteHead(invite);
+                CMIGuiButton btn = new CMIGuiButton(slots[i], head);
+                btn.lockField();
+                if (invite.incoming) {
+                    btn.addCommand("rival do accept " + invite.pickerArg() + " pending");
+                }
+                gui.addButton(btn);
+            }
+        }
+
+        gui.addButton(pageBtn(37, Material.YELLOW_DYE, "&eAccept…", "pick_accept",
+                "&7Accept incoming / Declared"));
+        gui.addButton(pageBtn(38, Material.ORANGE_DYE, "&6Decline…", "pick_decline",
+                "&7Decline an incoming declare"));
+        gui.addButton(pageBtn(39, Material.LIME_CONCRETE, "&aActions", "actions",
+                "&7Full actions menu"));
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
@@ -349,6 +407,8 @@ public final class CmiRivalGui {
 
         gui.addButton(pageBtn(19, Material.LIME_DYE, "&aDeclare…", "pick_declare",
                 "&7Visible declare → they Accept → Mutual"));
+        gui.addButton(pageBtn(20, Material.CLOCK, "&ePending", "pending",
+                "&7View incoming + outgoing invites"));
         gui.addButton(pageBtn(21, Material.YELLOW_DYE, "&eAccept…", "pick_accept",
                 "&7Pending declares, or Declared → Mutual",
                 "&8Both Silent → Declared shows here"));
@@ -676,6 +736,10 @@ public final class CmiRivalGui {
                 + ph.getOrDefault("tier", "?") + "&8)");
         lore.add("&7Mutual &f" + ph.getOrDefault("mutual", "0")
                 + "&8/&f" + ph.getOrDefault("mutual_max", "3"));
+        String pending = ph.getOrDefault("pending_invites", "0");
+        if (!"0".equals(pending)) {
+            lore.add("&ePending invites &f" + pending);
+        }
         lore.add("&7Record &a" + ph.getOrDefault("wins", "0")
                 + "&7/&c" + ph.getOrDefault("losses", "0")
                 + "&7/&e" + ph.getOrDefault("draws", "0"));

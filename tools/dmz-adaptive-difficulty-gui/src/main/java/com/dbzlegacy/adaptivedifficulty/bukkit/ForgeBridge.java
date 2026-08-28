@@ -66,6 +66,7 @@ public final class ForgeBridge {
     private static Method rivalAcceptCandidateArgsMethod;
     private static Method rivalCurrentCardsMethod;
     private static Method rivalPastCardsMethod;
+    private static Method rivalPendingInviteCardsMethod;
     private static Method rivalCurrentArgsMethod;
     private static Method sparPlaceholdersMethod;
     private static Method sparLinesMethod;
@@ -1030,6 +1031,11 @@ public final class ForgeBridge {
         return invokeRivalStringList(player, "pastRivalCards");
     }
 
+    /** Encoded pending declare invites (incoming + outgoing). */
+    public static List<String> rivalPendingInviteCards(Player player) {
+        return invokeRivalStringList(player, "pendingInviteCards");
+    }
+
     /** Current-rival picker args for remove (uuid: preferred). */
     public static List<String> rivalCurrentArgs(Player player) {
         return invokeRivalStringList(player, "currentRivalArgs");
@@ -1047,6 +1053,7 @@ public final class ForgeBridge {
                 case "acceptCandidateArgs" -> rivalAcceptCandidateArgsMethod;
                 case "currentRivalCards" -> rivalCurrentCardsMethod;
                 case "pastRivalCards" -> rivalPastCardsMethod;
+                case "pendingInviteCards" -> rivalPendingInviteCardsMethod;
                 case "currentRivalArgs" -> rivalCurrentArgsMethod;
                 default -> null;
             };
@@ -1566,6 +1573,13 @@ public final class ForgeBridge {
                     rivalPastCardsMethod = api.getMethod("pastRivalCards", sp);
                 } catch (Throwable ignored) {
                     rivalPastCardsMethod = null;
+                }
+            }
+            if (rivalPendingInviteCardsMethod == null) {
+                try {
+                    rivalPendingInviteCardsMethod = api.getMethod("pendingInviteCards", sp);
+                } catch (Throwable ignored) {
+                    rivalPendingInviteCardsMethod = null;
                 }
             }
             if (rivalCurrentArgsMethod == null) {

@@ -1,3 +1,9 @@
+## Skill tooltips + Rival pending invites (2.3.5)
+
+- Potential Unlock tips: taking damage (not blocking); Jump/Sprint marked Strength unlocked; Ki Control/Manipulation/Sense marked skill-saga gained.
+- Rival GUI: **Pending** board shows incoming + outgoing declare invites (count on main).
+- Jars: `LegacyMechanics-2.3.5` / `LegacyMechanicsGUI-2.3.5`.
+
 ## Silent Declared notify + Accept Mutual + Spar admin (2.3.4)
 
 - Both Silent → Declared: both players get `[Rival] DECLARED` chat.

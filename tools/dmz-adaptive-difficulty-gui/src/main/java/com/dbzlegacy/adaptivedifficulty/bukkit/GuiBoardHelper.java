@@ -253,6 +253,95 @@ final class GuiBoardHelper {
         return GuiPlayerPicker.headByName(card.name, title, lore);
     }
 
+    /**
+     * Encoded pending invite: uuid, name, direction(IN|OUT), expiresAtMs, online(0/1).
+     */
+    static final class PendingInvite {
+        final String uuid;
+        final String name;
+        final boolean incoming;
+        final long expiresAt;
+        final boolean online;
+
+        PendingInvite(String uuid, String name, boolean incoming, long expiresAt, boolean online) {
+            this.uuid = uuid == null ? "" : uuid;
+            this.name = name == null || name.isBlank() ? "?" : name;
+            this.incoming = incoming;
+            this.expiresAt = Math.max(0L, expiresAt);
+            this.online = online;
+        }
+
+        String pickerArg() {
+            if (!uuid.isBlank()) {
+                return "uuid:" + uuid;
+            }
+            return name;
+        }
+    }
+
+    static List<PendingInvite> parsePendingInvites(List<String> encoded) {
+        List<PendingInvite> out = new ArrayList<>();
+        if (encoded == null) {
+            return out;
+        }
+        for (String raw : encoded) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            String[] p = raw.split("\t", -1);
+            if (p.length < 3) {
+                continue;
+            }
+            out.add(new PendingInvite(
+                    p[0],
+                    p[1],
+                    "IN".equalsIgnoreCase(p[2]),
+                    parseLongSafe(p.length > 3 ? p[3] : "0"),
+                    "1".equals(p.length > 4 ? p[4] : "0")
+            ));
+        }
+        return out;
+    }
+
+    static ItemStack pendingInviteHead(PendingInvite inv) {
+        List<String> lore = new ArrayList<>();
+        if (inv.incoming) {
+            lore.add("&aIncoming declare");
+            lore.add("&7They Declared you");
+            lore.add("&eClick to Accept · use Decline… to refuse");
+        } else {
+            lore.add("&6Outgoing declare");
+            lore.add("&7Waiting for them to Accept");
+            lore.add("&8Pending until they respond or it expires");
+        }
+        if (inv.expiresAt > 0L) {
+            long left = inv.expiresAt - System.currentTimeMillis();
+            if (left > 0L) {
+                lore.add("&7Expires in &f" + formatDuration(left));
+            }
+        }
+        lore.add("");
+        lore.add(inv.online ? "&aOnline" : "&8Offline");
+        String title = (inv.incoming ? "&a◀ " : "&6▶ ") + "&f" + inv.name;
+        if (!inv.uuid.isBlank()) {
+            try {
+                java.util.UUID id = java.util.UUID.fromString(inv.uuid);
+                Player online = org.bukkit.Bukkit.getPlayer(id);
+                if (online != null) {
+                    return GuiPlayerPicker.head(online, title, lore);
+                }
+                return GuiPlayerPicker.headByUuid(id, inv.name, title, lore);
+            } catch (IllegalArgumentException ignored) {
+                // fall through
+            }
+        }
+        Player online = org.bukkit.Bukkit.getPlayerExact(inv.name);
+        if (online != null) {
+            return GuiPlayerPicker.head(online, title, lore);
+        }
+        return GuiPlayerPicker.headByName(inv.name, title, lore);
+    }
+
     private static int parseIntSafe(String s) {
         try {
             return Integer.parseInt(s == null ? "0" : s.trim());

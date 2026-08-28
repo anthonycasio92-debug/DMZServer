@@ -396,6 +396,95 @@ public final class RivalSystem {
         return rivalCards(player, true);
     }
 
+    /**
+     * Pending declare invites (incoming + outgoing).
+     * Fields tab-separated: uuid, name, direction(IN|OUT), expiresAtMs, online(0/1).
+     */
+    public static List<String> pendingInviteCards(ServerPlayer player) {
+        List<String> out = new ArrayList<>();
+        if (player == null) {
+            return out;
+        }
+        RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
+        if (me == null || me.rivals == null || me.rivals.isEmpty()) {
+            return out;
+        }
+        MinecraftServer server = player.m_20194_();
+        long now = System.currentTimeMillis();
+        List<Map.Entry<String, RivalLink>> entries = new ArrayList<>(me.rivals.entrySet());
+        entries.sort(Comparator.comparing((Map.Entry<String, RivalLink> e) -> {
+            RivalLink link = e.getValue();
+            if (link == null) {
+                return Long.MAX_VALUE;
+            }
+            return link.pendingExpireAt > 0L ? link.pendingExpireAt : Long.MAX_VALUE;
+        }));
+        for (Map.Entry<String, RivalLink> e : entries) {
+            RivalLink link = e.getValue();
+            if (link == null || link.mutual) {
+                continue;
+            }
+            boolean incoming = link.inviteReceived;
+            boolean outgoing = link.inviteSent;
+            if (!incoming && !outgoing) {
+                continue;
+            }
+            if (link.pendingExpireAt > 0L && now > link.pendingExpireAt) {
+                continue;
+            }
+            String uuid = link.uuid == null || link.uuid.isBlank() ? e.getKey() : link.uuid;
+            String name = link.name == null || link.name.isBlank() ? uuid : link.name;
+            name = name.replace('\t', ' ').replace('\n', ' ');
+            boolean online = false;
+            if (server != null && uuid != null && !uuid.isBlank()) {
+                try {
+                    online = server.m_6846_().m_11259_(java.util.UUID.fromString(uuid)) != null;
+                } catch (IllegalArgumentException ignored) {
+                    online = false;
+                }
+            }
+            // Prefer showing IN when both flags somehow set (should not happen).
+            String dir = incoming ? "IN" : "OUT";
+            out.add(String.join("\t",
+                    nullToEmpty(uuid),
+                    nullToEmpty(name),
+                    dir,
+                    String.valueOf(Math.max(0L, link.pendingExpireAt)),
+                    online ? "1" : "0"));
+        }
+        return out;
+    }
+
+    /** Chat lines for pending declare invites. */
+    public static List<String> pendingInviteLines(ServerPlayer player) {
+        List<String> cards = pendingInviteCards(player);
+        List<String> lines = new ArrayList<>();
+        if (cards.isEmpty()) {
+            lines.add("§7No pending declare invites.");
+            lines.add("§8Outgoing: you Declared someone.");
+            lines.add("§8Incoming: they Declared you — Accept or Decline.");
+            return lines;
+        }
+        lines.add("§e§lPending Invites");
+        for (String card : cards) {
+            String[] p = card.split("\t", -1);
+            if (p.length < 3) {
+                continue;
+            }
+            String name = p[1];
+            String dir = p[2];
+            boolean online = p.length > 4 && "1".equals(p[4]);
+            if ("IN".equals(dir)) {
+                lines.add("§a◀ Incoming §f" + name + (online ? " §a●" : " §8○")
+                        + " §8— Accept or Decline");
+            } else {
+                lines.add("§6▶ Outgoing §f" + name + (online ? " §a●" : " §8○")
+                        + " §8— waiting on them");
+            }
+        }
+        return lines;
+    }
+
     /** Chat/history page lines for previous rivals. */
     public static List<String> historyLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();

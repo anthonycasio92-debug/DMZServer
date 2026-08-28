@@ -31,9 +31,9 @@ public final class CmiProgressionGui {
 
     private static final Map<String, String[]> FLAG_INFO = Map.ofEntries(
             Map.entry("flight", new String[]{"Flight", "Train fly by flying; Viltrumite max grant.", "/progression"}),
-            Map.entry("sprint", new String[]{"Sprint Jump", "Jump/Sprint levels from invested Strength.", "/progression"}),
+            Map.entry("sprint", new String[]{"Sprint Jump", "Jump/Sprint — Strength unlocked (invested STR).", "/progression"}),
             Map.entry("meditation", new String[]{"Meditation", "Restore energy in the global trial biome. Players: /progression meditation", "/progression meditation · next"}),
-            Map.entry("potential", new String[]{"Potential", "Earn points from PvP hits/blocks (cap 10 natural).", "/skillcheck"}),
+            Map.entry("potential", new String[]{"Potential", "Earn points from PvP hits & taking damage (cap 10 natural).", "/skillcheck"}),
             Map.entry("farming", new String[]{"Farming TP", "Break mature crops / Pam's harvest for TP.", "Passive while farming"}),
             Map.entry("building", new String[]{"Building TP", "Place blocks for silent building TP.", "Passive while placing"}),
             Map.entry("boost", new String[]{"Global TP Boost", "Timed world TP multiplier.", "/progression boost …"}),

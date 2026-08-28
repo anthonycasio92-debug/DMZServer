@@ -1083,6 +1083,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if (args.length == 1 && switch (sub) {
             case "list", "stats", "top", "season", "quests", "achievements", "hof",
                  "journal", "title", "titles", "challenge", "help", "progress",
+                 "actions", "history", "pending", "invites",
                  "pick_declare", "pick_accept", "pick_decline", "pick_remove", "pick_challenge",
                  "pick_spectate", "pick_silent" -> true;
             default -> false;

@@ -58,6 +58,24 @@ public final class RivalGuiApi {
                 RivalChallengeManager.get().isInChallenge(player.m_20148_()) ? "true" : "false");
         out.put("challenge_active", out.get("challengeActive"));
         out.put("name", me.name == null ? "" : me.name);
+        int pendingCount = 0;
+        long now = System.currentTimeMillis();
+        if (me.rivals != null) {
+            for (RivalLink link : me.rivals.values()) {
+                if (link == null || link.mutual) {
+                    continue;
+                }
+                if (!link.inviteSent && !link.inviteReceived) {
+                    continue;
+                }
+                if (link.pendingExpireAt > 0L && now > link.pendingExpireAt) {
+                    continue;
+                }
+                pendingCount++;
+            }
+        }
+        out.put("pending_invites", String.valueOf(pendingCount));
+        out.put("pendingInvites", String.valueOf(pendingCount));
         return out;
     }
 
@@ -82,6 +100,14 @@ public final class RivalGuiApi {
             return List.of();
         }
         return RivalSystem.pastRivalCards(player);
+    }
+
+    /** Encoded pending declare invites (incoming + outgoing). */
+    public static List<String> pendingInviteCards(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableRivalSystem) {
+            return List.of();
+        }
+        return RivalSystem.pendingInviteCards(player);
     }
 
     /**
@@ -389,6 +415,7 @@ public final class RivalGuiApi {
         return switch (p) {
             case "list" -> listLines(player);
             case "history", "past", "previous" -> RivalSystem.historyLines(player);
+            case "pending", "invites", "pendinginvites" -> RivalSystem.pendingInviteLines(player);
             case "actions" -> List.of(
                     "§6§lRival Actions",
                     "§7Silent → Unknown (they are not told)",
