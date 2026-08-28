@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Status;
 import java.util.ArrayList;
@@ -312,10 +313,18 @@ public final class SparringSystem {
         // Seed movement window only — hits/blocks must not refresh the AFK gate.
         refreshMovementActivity(a, aRt, now);
         refreshMovementActivity(b, bRt, now);
-        DmzRewards.msg(a, "§6[Sparring] §aSession started with §f" + b.m_7755_().getString());
-        DmzRewards.msg(b, "§6[Sparring] §aSession started with §f" + a.m_7755_().getString());
-        DmzRewards.msg(a, "§8Stay active: trade damage, move, and keep the fight going.");
-        DmzRewards.msg(b, "§8Stay active: trade damage, move, and keep the fight going.");
+        DmzRewards.msg(a, LmChat.card(
+                "Sparring",
+                "/spar",
+                null,
+                "§aSession started with §f" + b.m_7755_().getString(),
+                "§8Stay active: trade damage, move, and keep the fight going."));
+        DmzRewards.msg(b, LmChat.card(
+                "Sparring",
+                "/spar",
+                null,
+                "§aSession started with §f" + a.m_7755_().getString(),
+                "§8Stay active: trade damage, move, and keep the fight going."));
         SystemTelemetry.log("sparring", "spar_start", a, b, null);
     }
 

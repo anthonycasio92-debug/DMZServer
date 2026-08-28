@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
@@ -216,8 +217,8 @@ public final class MeditationProgression {
         Trial t = currentTrial(System.currentTimeMillis());
         long rem = Math.max(0L, GLOBAL_END.get() - System.currentTimeMillis());
         StringBuilder sb = new StringBuilder();
-        sb.append("§d§lMeditation Trial\n");
-        sb.append("§8────────────\n");
+        sb.append(LmChat.title("Meditation Trial")).append('\n');
+        sb.append(LmChat.DIVIDER).append('\n');
         if (t == null) {
             sb.append("§7No trial is active right now.\n");
             sb.append("§8A new biome will be chosen shortly.\n");
@@ -232,7 +233,7 @@ public final class MeditationProgression {
         sb.append("§7• Charge Ki and complete the goal\n");
         sb.append("§7• Stay focused — wrong biome warns after §f10s\n");
         sb.append('\n');
-        sb.append("§8Tip · §e/progression meditation §7refreshes this card");
+        sb.append(LmChat.tip("/progression meditation", "refreshes this card"));
         if (includeStaffHints) {
             sb.append('\n');
             sb.append("§8Staff · §f/progression meditation next §7— rotate + broadcast");
@@ -291,8 +292,8 @@ public final class MeditationProgression {
         long remaining = end - now;
         if (remaining > 0L && remaining <= TRIAL_WARNING_MS && !GLOBAL_WARNED.get()) {
             GLOBAL_WARNED.set(true);
-            broadcastChat("§5[Meditation Trial] §f" + TRIALS[index].name
-                    + "§7 remains active for §e5 more minutes§7.");
+            broadcastChat(LmChat.tagged("Meditation Trial", "§f" + TRIALS[index].name
+                    + "§7 remains active for §e5 more minutes§7."));
             saveIfNeeded(true);
         }
         return TRIALS[index];
@@ -319,12 +320,12 @@ public final class MeditationProgression {
             return;
         }
         // Public broadcast — never mention staff/ops or staff commands.
-        broadcastChat("§d§lMeditation Trial");
-        broadcastChat("§8────────────");
+        broadcastChat(LmChat.title("Meditation Trial"));
+        broadcastChat(LmChat.DIVIDER);
         broadcastChat("§7Biome   §f" + trial.name);
         broadcastChat("§7Goal    §f" + trial.condition);
         broadcastChat("§7Ends in §e" + formatDuration(remaining));
-        broadcastChat("§8Tip · §e/progression meditation §7for how to train");
+        broadcastChat(LmChat.tip("/progression meditation", "for how to train"));
         if (manual) {
             broadcastStaffChat("§8Staff · trial was rotated manually"
                     + " · §f/progression meditation next");
@@ -396,7 +397,7 @@ public final class MeditationProgression {
             ProgressionData.storedPut(player, key, need);
             ProgressionData.storedPut(player, "med2_last_level", next);
             DmzSkillUtil.sync(player);
-            DmzRewards.msg(player, "§5§l[Meditation] §r§dIncreased to level " + next + ".");
+            DmzRewards.msg(player, LmChat.tagged("Meditation", "§dIncreased to level " + next + "."));
             SystemTelemetry.log("progression", "meditation_level", player, null,
                     Map.of("level", next));
         } else {
@@ -488,8 +489,8 @@ public final class MeditationProgression {
             if (!warned
                     && now - started >= WRONG_BIOME_DELAY_MS
                     && now - lastMessage >= WRONG_BIOME_HARD_COOLDOWN_MS) {
-                DmzRewards.msg(player, "§5§l[Meditation] §r§7Current Trial: §e" + trial.name
-                        + "§7. You are charging in the wrong biome.");
+                DmzRewards.msg(player, LmChat.tagged("Meditation", "§7Current Trial: §e" + trial.name
+                        + "§7. You are charging in the wrong biome."));
                 ProgressionData.tempPut(player, "med2_wrong_warned", "1");
                 ProgressionData.tempPut(player, "med2_wrong_last_message", now);
             }
@@ -510,7 +511,7 @@ public final class MeditationProgression {
             return;
         }
         ProgressionData.tempPut(player, "med2_message_next", now + CONDITION_MESSAGE_COOLDOWN_MS);
-        DmzRewards.msg(player, "§5§l[Meditation] §r" + text);
+        DmzRewards.msg(player, LmChat.tagged("Meditation", text));
     }
 
     private static boolean passesCondition(

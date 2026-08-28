@@ -494,12 +494,7 @@ public final class SparChestGui implements Listener {
         Bukkit.getScheduler().runTask(plugin, () -> {
             String msg = ForgeBridge.sparHandleDo(subject, action, arg, ret);
             if (msg != null && !msg.isBlank()) {
-                for (String line : msg.split("\n")) {
-                    if (line == null || line.isBlank()) {
-                        continue;
-                    }
-                    player.sendMessage(line.startsWith("§") ? line : "§a" + line);
-                }
+                GuiChat.sendResult(player, msg);
             }
             open(player, ret);
         });

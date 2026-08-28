@@ -1,3 +1,9 @@
+## Meditation-style chat (2.3.21)
+
+- Shared `LmChat` / Bukkit `GuiChat`: tags normalize to `§5§l[System] §r…` like Meditation.
+- Card helpers (title + divider + tip) for major Rival/Spar/Meditation announcements.
+- All `DmzRewards.msg` and GUI action results route through the normalizer.
+
 ## Trim duplicate commands (2.3.20)
 
 - Removed `/lmgui`, `/dmzdiffgui`, `/adiffgui`, `/legacymechanicsgui` and legacy difficulty aliases.

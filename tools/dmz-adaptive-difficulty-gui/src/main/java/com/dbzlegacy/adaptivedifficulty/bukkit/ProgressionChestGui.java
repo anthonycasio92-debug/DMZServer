@@ -486,10 +486,7 @@ public final class ProgressionChestGui implements Listener {
         Bukkit.getScheduler().runTask(plugin, () -> {
             String msg = ForgeBridge.progressionHandleDo(subject, action, arg, ret);
             if (msg != null && !msg.isBlank()) {
-                if (!msg.startsWith("§")) {
-                    msg = "§a" + msg;
-                }
-                player.sendMessage(msg);
+                GuiChat.sendResult(player, msg);
             }
             open(player, ret);
         });

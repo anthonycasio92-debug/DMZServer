@@ -815,12 +815,7 @@ public final class RivalChestGui implements Listener {
         Bukkit.getScheduler().runTask(plugin, () -> {
             String msg = ForgeBridge.rivalHandleDo(subject, action, arg, ret);
             if (msg != null && !msg.isBlank()) {
-                for (String line : msg.split("\n")) {
-                    if (line == null || line.isBlank()) {
-                        continue;
-                    }
-                    player.sendMessage(line.startsWith("§") ? line : "§a" + line);
-                }
+                GuiChat.sendResult(player, msg);
             }
             open(player, ret);
         });

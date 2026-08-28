@@ -666,7 +666,7 @@ public final class DifficultyChestGui implements Listener {
                     if (!msg.startsWith("§")) {
                         msg = (result.ok() ? "§a" : "§c") + msg;
                     }
-                    viewer.sendMessage("§8[" + subjectFinal.getName() + "] " + msg);
+                    GuiChat.send(viewer, GuiChat.tagged(subjectFinal.getName(), msg));
                 }
                 if (reopen != null && !reopen.isBlank()) {
                     openAs(viewer, subjectFinal, reopen);

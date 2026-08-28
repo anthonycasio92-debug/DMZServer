@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.rival;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -242,8 +243,8 @@ public final class RivalSystem {
         store.declareRequests.put(me.uuid + ">" + them.uuid, req);
         store.markDirty();
 
-        DmzRewards.msg(target, "§6[Rival] §e" + me.name + " §7visibly declared you as a rival!");
-        DmzRewards.msg(target, "§8Open §e/rival §8→ Actions → §aAccept…  §7or  §cDecline…");
+        DmzRewards.msg(target, LmChat.tagged("Rival", "§e" + me.name + " §7visibly declared you as a rival!"));
+        DmzRewards.msg(target, LmChat.tip("/rival", "→ Actions → Accept… or Decline…"));
         return "§aDeclared §f" + them.name + " §a(Pending). They were notified." + declaredNote;
     }
 
@@ -270,11 +271,19 @@ public final class RivalSystem {
             store.markDirty();
             ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
             if (online != null) {
-                DmzRewards.msg(online, "§a§l[Rival] MUTUAL");
-                DmzRewards.msg(online, "§a" + me.name + " accepted — Declared → Mutual!");
-                DmzRewards.msg(online, "§8Both ways. Full rivalry benefits.");
+                DmzRewards.msg(online, LmChat.card(
+                        "Rival Mutual",
+                        "/rival",
+                        null,
+                        "§a" + me.name + " accepted — Declared → Mutual!",
+                        "§8Both ways. Full rivalry benefits."));
             }
-            DmzRewards.msg(player, "§a§l[Rival] MUTUAL");
+            DmzRewards.msg(player, LmChat.card(
+                    "Rival Mutual",
+                    "/rival",
+                    null,
+                    "§aAccepted §f" + them.name + " §a— Declared → Mutual!",
+                    "§8Both ways. Full rivalry benefits."));
             return "§aAccepted §f" + them.name + " §a— Declared → Mutual!";
         }
 
@@ -294,11 +303,19 @@ public final class RivalSystem {
 
         ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
         if (online != null) {
-            DmzRewards.msg(online, "§a§l[Rival] MUTUAL");
-            DmzRewards.msg(online, "§a" + me.name + " accepted your rivalry — Mutual!");
-            DmzRewards.msg(online, "§8Both declared. Benefits work both ways.");
+            DmzRewards.msg(online, LmChat.card(
+                    "Rival Mutual",
+                    "/rival",
+                    null,
+                    "§a" + me.name + " accepted your rivalry — Mutual!",
+                    "§8Both declared. Benefits work both ways."));
         }
-        DmzRewards.msg(player, "§a§l[Rival] MUTUAL");
+        DmzRewards.msg(player, LmChat.card(
+                "Rival Mutual",
+                "/rival",
+                null,
+                "§aAccepted rivalry with §f" + them.name + " §a— Mutual!",
+                "§8Both declared. Benefits work both ways."));
         return "§aAccepted rivalry with §f" + them.name + " §a— Mutual!";
     }
 
@@ -756,15 +773,18 @@ public final class RivalSystem {
 
         me.declarationsSent++;
 
-        DmzRewards.msg(actor, "§6§l[Rival] DECLARED");
-        DmzRewards.msg(actor, "§e" + them.name);
-        DmzRewards.msg(actor, "§8You both silently rivaled each other.");
-        DmzRewards.msg(actor, "§8For Mutual: /rival → Actions → Accept… §7" + them.name);
-
-        DmzRewards.msg(target, "§6§l[Rival] DECLARED");
-        DmzRewards.msg(target, "§e" + me.name);
-        DmzRewards.msg(target, "§8You both silently rivaled each other.");
-        DmzRewards.msg(target, "§8For Mutual: /rival → Actions → Accept… §7" + me.name);
+        DmzRewards.msg(actor, LmChat.card(
+                "Rival Declared",
+                "/rival",
+                "→ Actions → Accept… for Mutual",
+                "§7Rival   §e" + them.name,
+                "§8You both silently rivaled each other."));
+        DmzRewards.msg(target, LmChat.card(
+                "Rival Declared",
+                "/rival",
+                "→ Actions → Accept… for Mutual",
+                "§7Rival   §e" + me.name,
+                "§8You both silently rivaled each other."));
     }
 
     private static void promoteMutual(

@@ -243,10 +243,7 @@ public final class HubChestGui implements Listener {
         Bukkit.getScheduler().runTask(plugin, () -> {
             String msg = ForgeBridge.hubHandleDo(player, action, arg, ret);
             if (msg != null && !msg.isBlank()) {
-                if (!msg.startsWith("§")) {
-                    msg = "§a" + msg;
-                }
-                player.sendMessage(msg);
+                GuiChat.sendResult(player, msg);
             }
             open(player, ret);
         });

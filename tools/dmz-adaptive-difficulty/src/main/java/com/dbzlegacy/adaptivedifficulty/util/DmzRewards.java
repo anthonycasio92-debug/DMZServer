@@ -9,7 +9,6 @@ import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
 import java.util.UUID;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 
@@ -135,13 +134,7 @@ public final class DmzRewards {
     }
 
     public static void msg(ServerPlayer player, String text) {
-        if (player == null || text == null) {
-            return;
-        }
-        try {
-            player.m_213846_(Component.m_237113_(text));
-        } catch (Throwable ignored) {
-        }
+        LmChat.send(player, text);
     }
 
     public static String formatWhole(double value) {

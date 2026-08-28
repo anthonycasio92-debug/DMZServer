@@ -298,14 +298,6 @@ public final class ProgressionCommandTree implements TabCompleter {
     }
 
     private static void sendMultiline(Player player, String msg) {
-        if (player == null || msg == null || msg.isBlank()) {
-            return;
-        }
-        for (String line : msg.split("\n")) {
-            if (line == null || line.isBlank()) {
-                continue;
-            }
-            player.sendMessage(line.startsWith("§") ? line : "§a" + line);
-        }
+        GuiChat.sendResult(player, msg);
     }
 }
