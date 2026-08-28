@@ -44,7 +44,7 @@ public final class ProgressionChestGui implements Listener {
             Map.entry("potential", new String[]{"Potential", "Earn points from PvP hits & taking damage (cap 10 natural).", "/skillcheck"}),
             Map.entry("farming", new String[]{"Farming TP", "Break mature crops / Pam's harvest for TP.", "Passive while farming"}),
             Map.entry("building", new String[]{"Building TP", "Place blocks for silent building TP.", "Passive while placing"}),
-            Map.entry("boost", new String[]{"Global TP Boost", "Timed world TP multiplier.", "/progression boost …"}),
+            Map.entry("boost", new String[]{"Global TP Boost", "Timed world TP multiplier.", "/progression boost start|end"}),
             Map.entry("bio", new String[]{"Bio-Android", "Absorb TP / steal skills from drains.", "Passive as Bio-Android"}),
             Map.entry("racelock", new String[]{"Race Lock", "Ancient/Sento need Fabled unlock skills.", "Passive on race select"}),
             Map.entry("yardrat", new String[]{"Yardrat", "Form mastery double-gain + starter ki.", "Passive for Yardrat"}),
@@ -79,6 +79,8 @@ public final class ProgressionChestGui implements Listener {
                     new String[]{"flight", "sprint", "meditation", "potential"});
             case "tp" -> sectionFlags(player, "tp", "&6TP Gains", Material.GOLD_INGOT,
                     new String[]{"farming", "building", "boost", "bio"});
+            case "boost_panel", "tpboost" ->
+                    ForgeBridge.isStaff(player) ? boostPanel(player) : main(player);
             case "race" -> sectionFlags(player, "race", "&bRace & Form", Material.PLAYER_HEAD,
                     new String[]{"racelock", "yardrat", "spiritualist", "android"});
             case "android_convert", "androidconvert", "convert_android" ->
@@ -188,6 +190,23 @@ public final class ProgressionChestGui implements Listener {
                 ItemStack stack = tipBtn(Material.IRON_INGOT, "&bAndroid Convert", lore);
                 if (staff) {
                     put(holder, inv, slots[i], stack, SlotAction.page("android_convert"));
+                } else {
+                    put(holder, inv, slots[i], stack);
+                }
+                continue;
+            }
+            // TP page: Boost opens start/end panel (flag stays on Flags board).
+            if ("boost".equals(key) && "tp".equals(page)) {
+                List<String> lore = new ArrayList<>();
+                lore.add("");
+                lore.add(on ? "&aModule enabled" : "&cModule disabled &8(toggle in Flags)");
+                lore.add("&7" + info[1]);
+                lore.add("&8Cmd: &f/progression boost start|end");
+                lore.add("");
+                lore.add(staff ? "&eClick · start / end boost" : "&8Staff only");
+                ItemStack stack = tipBtn(Material.GOLDEN_APPLE, "&6Global TP Boost", lore);
+                if (staff) {
+                    put(holder, inv, slots[i], stack, SlotAction.page("boost_panel"));
                 } else {
                     put(holder, inv, slots[i], stack);
                 }
@@ -309,6 +328,47 @@ public final class ProgressionChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return to Flags"),
                 SlotAction.page("admin"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory boostPanel(Player player) {
+        Map<String, String> ph = ForgeBridge.progressionPlaceholders(player);
+        Holder holder = new Holder("boost_panel");
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · TP Boost"));
+        holder.bind(inv);
+        frame(inv, 45);
+        String status = ph.getOrDefault("boost", "§7Global TP boost: §cOFF").replace('§', '&');
+        put(holder, inv, 4, item(Material.GOLDEN_APPLE, "&6&lGlobal TP Boost",
+                List.of("", status,
+                        "&8/progression boost",
+                        "&8/progression boost start <mult> <min>",
+                        "&8/progression boost end")));
+        // Presets: mult:minutes
+        put(holder, inv, 19, tipBtn(Material.GOLD_NUGGET, "&e1.25x · 30m",
+                List.of("&7Start 1.25x for 30 minutes", "", "&eClick to start")),
+                SlotAction.act("boost", "1.25:30", "boost_panel"));
+        put(holder, inv, 20, tipBtn(Material.GOLD_INGOT, "&e1.5x · 30m",
+                List.of("&7Start 1.5x for 30 minutes", "", "&eClick to start")),
+                SlotAction.act("boost", "1.5:30", "boost_panel"));
+        put(holder, inv, 21, tipBtn(Material.GOLD_BLOCK, "&62x · 30m",
+                List.of("&7Start 2x for 30 minutes", "", "&eClick to start")),
+                SlotAction.act("boost", "2:30", "boost_panel"));
+        put(holder, inv, 22, tipBtn(Material.GOLD_BLOCK, "&62x · 60m",
+                List.of("&7Start 2x for 60 minutes", "", "&eClick to start")),
+                SlotAction.act("boost", "2:60", "boost_panel"));
+        put(holder, inv, 23, tipBtn(Material.CLOCK, "&e3x · 30m",
+                List.of("&7Start 3x for 30 minutes", "", "&eClick to start")),
+                SlotAction.act("boost", "3:30", "boost_panel"));
+        put(holder, inv, 25, tipBtn(Material.BARRIER, "&cEnd Boost",
+                List.of("&7Stop the active global TP boost", "", "&eClick to end")),
+                SlotAction.act("boost", "end", "boost_panel"));
+        put(holder, inv, 31, tipBtn(Material.PAPER, "&7Refresh Status",
+                List.of("&7Reload this panel", "", "&eClick")),
+                SlotAction.page("boost_panel"));
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7TP Gains"),
+                SlotAction.page("tp"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;

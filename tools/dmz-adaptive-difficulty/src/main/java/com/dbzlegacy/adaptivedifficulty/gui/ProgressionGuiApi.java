@@ -61,6 +61,148 @@ public final class ProgressionGuiApi {
         return ProgressionSystem.androidConvert(target);
     }
 
+    /**
+     * Staff: global TP boost controls.
+     * Args (space-separated after {@code /progression boost}):
+     * <ul>
+     *   <li>empty / status / help — status + usage</li>
+     *   <li>end / stop — end active boost</li>
+     *   <li>start &lt;encoded&gt; [purchaser…] — Fabled-style encoded start</li>
+     *   <li>start &lt;mult&gt; &lt;minutes&gt; [purchaser…] — direct start</li>
+     *   <li>&lt;encoded&gt; [purchaser…] — shorthand</li>
+     *   <li>&lt;mult&gt; &lt;minutes&gt; [purchaser…] — shorthand</li>
+     * </ul>
+     * Also accepts GUI args: {@code end}, {@code 2.0:30}, {@code encoded:1250030}.
+     */
+    public static String boost(ServerPlayer actor, String argsJoined) {
+        if (actor == null) {
+            return "§cPlayers only.";
+        }
+        if (!StaffAccess.isStaff(actor)) {
+            return "§cStaff only.";
+        }
+        if (!DifficultyConfig.get().enableProgression) {
+            return "§cProgression system is disabled.";
+        }
+        String raw = argsJoined == null ? "" : argsJoined.trim();
+        if (raw.isBlank() || "status".equalsIgnoreCase(raw) || "help".equalsIgnoreCase(raw)
+                || "?".equals(raw)) {
+            return GlobalTpBoost.statusLine() + "\n" + boostUsage();
+        }
+        // GUI compact forms: end | 2.0:30 | encoded:1250030
+        if ("end".equalsIgnoreCase(raw) || "stop".equalsIgnoreCase(raw)) {
+            return ProgressionSystem.boostEnd();
+        }
+        if (raw.toLowerCase(Locale.ROOT).startsWith("encoded:")) {
+            String num = raw.substring("encoded:".length()).trim();
+            try {
+                int encoded = Integer.parseInt(num);
+                return ProgressionSystem.boostStartEncoded(actor, encoded, actor.m_7755_().getString());
+            } catch (NumberFormatException e) {
+                return "§cInvalid encoded value: §f" + num + "\n" + boostUsage();
+            }
+        }
+        if (raw.contains(":")) {
+            String[] parts = raw.split(":", 2);
+            try {
+                double mult = Double.parseDouble(parts[0].trim());
+                int minutes = Integer.parseInt(parts[1].trim());
+                return ProgressionSystem.boostStart(actor, mult, minutes, actor.m_7755_().getString());
+            } catch (NumberFormatException e) {
+                return "§cInvalid boost preset: §f" + raw + "\n" + boostUsage();
+            }
+        }
+
+        String[] parts = raw.split("\\s+");
+        String head = parts[0].toLowerCase(Locale.ROOT);
+        if ("end".equals(head) || "stop".equals(head)) {
+            return ProgressionSystem.boostEnd();
+        }
+        int i = 0;
+        if ("start".equals(head)) {
+            i = 1;
+            if (parts.length <= 1) {
+                return "§cMissing boost args.\n" + boostUsage();
+            }
+        }
+        if (i >= parts.length) {
+            return "§cMissing boost args.\n" + boostUsage();
+        }
+        // Prefer: <mult> <minutes> when two numeric tokens (mult small, minutes < 10000)
+        if (i + 1 < parts.length && looksLikeDouble(parts[i]) && looksLikeInt(parts[i + 1])) {
+            double mult = Double.parseDouble(parts[i]);
+            int minutes = Integer.parseInt(parts[i + 1]);
+            // Heuristic: encoded values are huge (e.g. 1250030); mult+minutes are small.
+            if (mult < 100.0 && minutes < 10_000) {
+                String purchaser = joinFrom(parts, i + 2);
+                if (purchaser.isBlank()) {
+                    purchaser = actor.m_7755_().getString();
+                }
+                return ProgressionSystem.boostStart(actor, mult, minutes, purchaser);
+            }
+        }
+        // encoded [purchaser...]
+        if (looksLikeInt(parts[i])) {
+            try {
+                int encoded = Integer.parseInt(parts[i]);
+                String purchaser = joinFrom(parts, i + 1);
+                if (purchaser.isBlank()) {
+                    purchaser = actor.m_7755_().getString();
+                }
+                return ProgressionSystem.boostStartEncoded(actor, encoded, purchaser);
+            } catch (NumberFormatException e) {
+                return "§cInvalid encoded boost: §f" + parts[i] + "\n" + boostUsage();
+            }
+        }
+        return "§cUnknown boost args: §f" + raw + "\n" + boostUsage();
+    }
+
+    private static String boostUsage() {
+        return "§e/progression boost §7— status\n"
+                + "§e/progression boost end §7— stop active boost\n"
+                + "§e/progression boost start <mult> <minutes> [name] §7— e.g. §f2 30\n"
+                + "§e/progression boost start <encoded> [name] §7— Fabled encoded\n"
+                + "§8GUI: Progression → TP Gains → Global TP Boost";
+    }
+
+    private static boolean looksLikeInt(String s) {
+        if (s == null || s.isBlank()) {
+            return false;
+        }
+        try {
+            Integer.parseInt(s.trim());
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static boolean looksLikeDouble(String s) {
+        if (s == null || s.isBlank()) {
+            return false;
+        }
+        try {
+            Double.parseDouble(s.trim());
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static String joinFrom(String[] parts, int start) {
+        if (parts == null || start >= parts.length) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = start; i < parts.length; i++) {
+            if (i > start) {
+                sb.append(' ');
+            }
+            sb.append(parts[i]);
+        }
+        return sb.toString().trim();
+    }
+
     private static ServerPlayer resolveOnline(ServerPlayer actor, String name) {
         try {
             var server = actor.m_20194_(); // getServer
@@ -241,7 +383,7 @@ public final class ProgressionGuiApi {
                     "§e/prog do page skills|tp|race|combat|end|fabled|utility",
                     "§e/progression meditation §7— Current trial + how-to",
                     "§e/progression meditation next §7— Staff: cycle + broadcast",
-                    "§e/progression boost start|end §7— Global TP boost",
+                    "§e/progression boost §7— status · start &lt;mult&gt; &lt;min&gt; · end",
                     "§e/progression android [player] §7— Staff: Android convert (Gero)",
                     "§e/prestige §7— Prestige (Hub)",
                     "§e/skills §7— Skill unlocks (Hub)",
@@ -403,6 +545,9 @@ public final class ProgressionGuiApi {
         }
         if ("android".equals(act) || "androidconvert".equals(act) || "convertandroid".equals(act)) {
             return androidConvert(player, a);
+        }
+        if ("boost".equals(act) || "tpboost".equals(act) || "globaltpboost".equals(act)) {
+            return boost(player, a);
         }
         return "§cUnknown progression action: " + act;
     }

@@ -186,6 +186,10 @@ public final class ProgressionCommands {
                                                         StringArgumentType.getString(ctx, "flag"),
                                                         StringArgumentType.getString(ctx, "page")))))))
                 .then(Commands.m_82127_("boost")
+                        .requires(ProgressionCommands::staff)
+                        .executes(ctx -> boostStatus(ctx.getSource()))
+                        .then(Commands.m_82127_("status").executes(ctx -> boostStatus(ctx.getSource())))
+                        .then(Commands.m_82127_("help").executes(ctx -> boostStatus(ctx.getSource())))
                         .then(Commands.m_82127_("start")
                                 .requires(ProgressionCommands::staff)
                                 .then(Commands.m_82129_("encoded", IntegerArgumentType.integer(1))
@@ -311,6 +315,15 @@ public final class ProgressionCommands {
     private static int boostEnd(CommandSourceStack source) {
         String msg = ProgressionSystem.boostEnd();
         reply(source, playerOrNull(source), msg);
+        return 1;
+    }
+
+    private static int boostStatus(CommandSourceStack source) {
+        ServerPlayer actor = playerOrNull(source);
+        String msg = com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.boost(actor, "status");
+        for (String line : msg.split("\n")) {
+            reply(source, actor, line);
+        }
         return 1;
     }
 

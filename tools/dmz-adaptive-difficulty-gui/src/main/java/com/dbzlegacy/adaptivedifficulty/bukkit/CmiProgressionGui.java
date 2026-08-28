@@ -36,7 +36,7 @@ public final class CmiProgressionGui {
             Map.entry("potential", new String[]{"Potential", "Earn points from PvP hits & taking damage (cap 10 natural).", "/skillcheck"}),
             Map.entry("farming", new String[]{"Farming TP", "Break mature crops / Pam's harvest for TP.", "Passive while farming"}),
             Map.entry("building", new String[]{"Building TP", "Place blocks for silent building TP.", "Passive while placing"}),
-            Map.entry("boost", new String[]{"Global TP Boost", "Timed world TP multiplier.", "/progression boost …"}),
+            Map.entry("boost", new String[]{"Global TP Boost", "Timed world TP multiplier.", "/progression boost start|end"}),
             Map.entry("bio", new String[]{"Bio-Android", "Absorb TP / steal skills from drains.", "Passive as Bio-Android"}),
             Map.entry("racelock", new String[]{"Race Lock", "Ancient/Sento need Fabled unlock skills.", "Passive on race select"}),
             Map.entry("yardrat", new String[]{"Yardrat", "Form mastery double-gain + starter ki.", "Passive for Yardrat"}),
@@ -75,6 +75,13 @@ public final class CmiProgressionGui {
                         new String[]{"flight", "sprint", "meditation", "potential"});
                 case "tp" -> openSection(player, "tp", "&6TP Gains", Material.GOLD_INGOT,
                         new String[]{"farming", "building", "boost", "bio"});
+                case "boost_panel", "tpboost" -> {
+                    if (ForgeBridge.isStaff(player)) {
+                        openBoostPanel(player);
+                    } else {
+                        openMain(player);
+                    }
+                }
                 case "race" -> openSection(player, "race", "&bRace & Form", Material.PLAYER_HEAD,
                         new String[]{"racelock", "yardrat", "spiritualist", "android"});
                 case "android_convert", "androidconvert", "convert_android" -> {
@@ -215,6 +222,25 @@ public final class CmiProgressionGui {
                 }
                 continue;
             }
+            if ("boost".equals(key) && "tp".equals(page)) {
+                List<String> lore = new ArrayList<>();
+                lore.add("");
+                lore.add(on ? "&aModule enabled" : "&cModule disabled &8(toggle in Flags)");
+                lore.add("&7" + info[1]);
+                lore.add("&8Cmd: &f/progression boost start|end");
+                lore.add("");
+                lore.add(staff ? "&eClick · start / end boost" : "&8Staff only");
+                if (staff) {
+                    gui.addButton(pageBtn(slots[i], Material.GOLDEN_APPLE, "&6Global TP Boost",
+                            "boost_panel", lore.toArray(new String[0])));
+                } else {
+                    CMIGuiButton btn = new CMIGuiButton(slots[i], Material.GOLDEN_APPLE, "&6Global TP Boost");
+                    btn.lockField();
+                    btn.addLore(lore);
+                    gui.addButton(btn);
+                }
+                continue;
+            }
             List<String> lore = new ArrayList<>();
             lore.add("");
             lore.add(on ? "&aEnabled" : "&cDisabled");
@@ -245,6 +271,43 @@ public final class CmiProgressionGui {
         }
 
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openBoostPanel(Player player) {
+        Map<String, String> ph = ForgeBridge.progressionPlaceholders(player);
+        CMIGui gui = base(player, "&8Legacy Mechanics · TP Boost", 5);
+        String status = ph.getOrDefault("boost", "§7Global TP boost: §cOFF").replace('§', '&');
+        CMIGuiButton header = new CMIGuiButton(4, Material.GOLDEN_APPLE, "&6&lGlobal TP Boost");
+        header.lockField();
+        header.addLore(List.of("", status,
+                "&8/progression boost",
+                "&8/progression boost start <mult> <min>",
+                "&8/progression boost end"));
+        gui.addButton(header);
+        gui.addButton(actionBtn(19, Material.GOLD_NUGGET, "&e1.25x · 30m",
+                "boost", "1.25:30", "boost_panel",
+                List.of("&7Start 1.25x for 30 minutes", "", "&eClick to start")));
+        gui.addButton(actionBtn(20, Material.GOLD_INGOT, "&e1.5x · 30m",
+                "boost", "1.5:30", "boost_panel",
+                List.of("&7Start 1.5x for 30 minutes", "", "&eClick to start")));
+        gui.addButton(actionBtn(21, Material.GOLD_BLOCK, "&62x · 30m",
+                "boost", "2:30", "boost_panel",
+                List.of("&7Start 2x for 30 minutes", "", "&eClick to start")));
+        gui.addButton(actionBtn(22, Material.GOLD_BLOCK, "&62x · 60m",
+                "boost", "2:60", "boost_panel",
+                List.of("&7Start 2x for 60 minutes", "", "&eClick to start")));
+        gui.addButton(actionBtn(23, Material.CLOCK, "&e3x · 30m",
+                "boost", "3:30", "boost_panel",
+                List.of("&7Start 3x for 30 minutes", "", "&eClick to start")));
+        gui.addButton(actionBtn(25, Material.BARRIER, "&cEnd Boost",
+                "boost", "end", "boost_panel",
+                List.of("&7Stop the active global TP boost", "", "&eClick to end")));
+        gui.addButton(pageBtn(31, Material.PAPER, "&7Refresh Status", "boost_panel", "&7Reload this panel"));
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "tp", "&7TP Gains"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);

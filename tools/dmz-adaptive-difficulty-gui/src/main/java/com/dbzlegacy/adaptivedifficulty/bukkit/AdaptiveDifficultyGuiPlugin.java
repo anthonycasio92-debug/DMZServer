@@ -869,6 +869,26 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             sendMultiline(player, ForgeBridge.androidConvert(player, target));
             return true;
         }
+        // Global TP boost — dedicated Forge bridge (same Mohist issue).
+        if (args.length > 0 && "boost".equalsIgnoreCase(args[0])) {
+            if (!ForgeBridge.isStaff(player)) {
+                player.sendMessage("§cStaff only.");
+                return true;
+            }
+            if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+                player.sendMessage("§cNo permission: dmzdiff.gui");
+                return true;
+            }
+            StringBuilder rest = new StringBuilder();
+            for (int i = 1; i < args.length; i++) {
+                if (i > 1) {
+                    rest.append(' ');
+                }
+                rest.append(args[i]);
+            }
+            sendMultiline(player, ForgeBridge.boost(player, rest.toString()));
+            return true;
+        }
         if (!ForgeBridge.isStaff(player)) {
             player.sendMessage("§cStaff only.");
             return true;
