@@ -2401,6 +2401,48 @@ public final class ForgeBridge {
     }
 
     /**
+     * Staff: import CNPC Rival/Spar world storeddata into LegacyMechanics JSON stores.
+     * Works from console or player — Mohist Bukkit owns {@code /lm}, so this must live here.
+     */
+    public static String migrateCnpc(boolean forceOverwrite) {
+        try {
+            Class<?> migrator = Class.forName(
+                    "com.dbzlegacy.adaptivedifficulty.data.CnpcDataMigrator");
+            Object server = null;
+            try {
+                Class<?> serverLifecycle = Class.forName(
+                        "net.minecraftforge.server.ServerLifecycleHooks");
+                server = serverLifecycle.getMethod("getCurrentServer").invoke(null);
+            } catch (Throwable ignored) {
+            }
+            if (server == null) {
+                try {
+                    Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
+                    Object bServer = bukkit.getMethod("getServer").invoke(null);
+                    if (bServer != null) {
+                        try {
+                            server = bServer.getClass().getMethod("getServer").invoke(bServer);
+                        } catch (Throwable ignored) {
+                        }
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            if (server == null) {
+                return "§cNo MinecraftServer — is the world loaded?";
+            }
+            Object msg = migrator.getMethod("forceMigrateWorld",
+                            Class.forName("net.minecraft.server.MinecraftServer"),
+                            boolean.class)
+                    .invoke(null, server, forceOverwrite);
+            return msg == null ? "§eMigration returned empty." : String.valueOf(msg);
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cCNPC migrate failed: " + resolveError;
+        }
+    }
+
+    /**
      * Refresh unlock-tier grants and difficulty titles from current DMZ / prestige
      * (same sync chat menu runs when opening Buy / Titles).
      */

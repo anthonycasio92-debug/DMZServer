@@ -952,6 +952,21 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     sender.sendMessage("§cReload failed" + (err == null ? "." : ": " + err));
                 }
             }
+            case "migrate-cnpc", "migratecnpc", "cnpcmigrate", "cnpc-migrate" -> {
+                boolean force = args.length > 2 && (
+                        "force".equalsIgnoreCase(args[2])
+                                || "overwrite".equalsIgnoreCase(args[2]));
+                String msg = ForgeBridge.migrateCnpc(force);
+                if (msg == null || msg.isBlank()) {
+                    sender.sendMessage("§cCNPC migrate failed (is LegacyMechanics Forge mod loaded?).");
+                } else {
+                    for (String line : msg.split("\n")) {
+                        if (line != null && !line.isBlank()) {
+                            sender.sendMessage(line);
+                        }
+                    }
+                }
+            }
             case "syslog" -> {
                 String mode = args.length > 2 ? args[2].toLowerCase(Locale.ROOT) : "status";
                 if (sender instanceof Player player) {
@@ -1055,6 +1070,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§6§l/lm admin §8— Legacy Mechanics");
         sender.sendMessage("§e/lm admin help §7— this list");
         sender.sendMessage("§e/lm admin reload §7— reload config");
+        sender.sendMessage("§e/lm admin migrate-cnpc §7— import CNPC Rival/Spar into LM");
+        sender.sendMessage("§e/lm admin migrate-cnpc force §7— wipe LM Rival/Spar + re-import");
         sender.sendMessage("§e/lm admin syslog on|off|status|flush");
         sender.sendMessage("§e/lm admin open <difficulty|rival|spar|progression|prestige|skills|hub>");
         sender.sendMessage("§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|prestige|progression|skills]");

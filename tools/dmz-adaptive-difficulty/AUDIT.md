@@ -1,3 +1,8 @@
+## /lm admin migrate-cnpc on Bukkit (2.3.27)
+
+- Mohist owns `/lm` via LegacyMechanicsGUI — `migrate-cnpc` was Forge-only and unreachable.
+- Wired through Bukkit `handleLmAdmin` + `ForgeBridge.migrateCnpc` (+ MechanicsGuiApi handleDo).
+
 ## Rival/Spar CMI clicks (2.3.26)
 
 - CMI Rival/Spar buttons use Bukkit-only `/lmdo` (Mohist was routing `/rival do`/`/spar do` to Forge's incomplete tree → silent no-op).

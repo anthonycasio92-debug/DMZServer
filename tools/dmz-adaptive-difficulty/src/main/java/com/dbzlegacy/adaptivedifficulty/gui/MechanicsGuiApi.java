@@ -117,6 +117,16 @@ public final class MechanicsGuiApi {
                 default -> "§cUsage: lm do syslog on|off|status|flush";
             };
         }
+        if ("migrate-cnpc".equals(act) || "migratecnpc".equals(act) || "cnpcmigrate".equals(act)) {
+            if (!StaffAccess.isStaff(player)) {
+                return "§cStaff only.";
+            }
+            boolean force = "force".equalsIgnoreCase(a)
+                    || "overwrite".equalsIgnoreCase(a)
+                    || "true".equalsIgnoreCase(a);
+            return com.dbzlegacy.adaptivedifficulty.data.CnpcDataMigrator.forceMigrateWorld(
+                    player.m_20194_(), force);
+        }
         return "§cUnknown hub action: " + act;
     }
 
