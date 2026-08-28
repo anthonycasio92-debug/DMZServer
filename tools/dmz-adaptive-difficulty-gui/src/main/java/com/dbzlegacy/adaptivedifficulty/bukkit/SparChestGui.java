@@ -222,8 +222,11 @@ public final class SparChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Sparring"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.PLAYER_HEAD, title,
-                List.of("", "&7Online players", "&8Click a head to confirm")));
+        List<String> pickerHeader = new ArrayList<>();
+        pickerHeader.add("");
+        pickerHeader.add("&7Online players");
+        pickerHeader.addAll(GuiBoardHelper.tips(player, "&8Click a head to confirm"));
+        put(holder, inv, 4, item(Material.PLAYER_HEAD, title, pickerHeader));
         List<Player> online = GuiPlayerPicker.onlineExcept(player);
         int placed = 0;
         for (Player other : online) {
@@ -232,7 +235,7 @@ public final class SparChestGui implements Listener {
             }
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
             put(holder, inv, slot,
-                    GuiPlayerPicker.head(other, "&f" + other.getName(), List.of(tip)),
+                    GuiPlayerPicker.head(other, "&f" + other.getName(), GuiBoardHelper.tips(player, tip)),
                     SlotAction.act(action, "uuid:" + other.getUniqueId(), backPage));
         }
         if (placed == 0) {

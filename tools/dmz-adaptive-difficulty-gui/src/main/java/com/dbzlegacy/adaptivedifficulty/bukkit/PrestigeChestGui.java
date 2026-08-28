@@ -46,7 +46,7 @@ public final class PrestigeChestGui implements Listener {
                     !bridgeOk ? "&c&lUNAVAILABLE" : "&c&lPRESTIGE DISABLED",
                     unavailableLore(bridgeOk)));
             put(holder, inv, 27, hubBtn(), SlotAction.cmd("lm"));
-            put(holder, inv, 31, tipBtn(Material.EXPERIENCE_BOTTLE, "&dProgression",
+            put(holder, inv, 31, tipBtn(player, Material.EXPERIENCE_BOTTLE, "&dProgression",
                     List.of("&7Back to progression")), SlotAction.cmd("progression"));
             put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
             return inv;
@@ -55,15 +55,16 @@ public final class PrestigeChestGui implements Listener {
         put(holder, inv, 4, item(Material.NETHER_STAR, "&6&lPrestige",
                 prependBlank(toAmp(ForgeBridge.prestigeLines(player, "main")))));
         boolean ready = "true".equalsIgnoreCase(ph.getOrDefault("ready", "false"));
-        put(holder, inv, 22, tipBtn(
+        List<String> confirmLore = new ArrayList<>();
+        confirmLore.add("");
+        confirmLore.addAll(GuiBoardHelper.tips(player, "&7Click to prestige (confirm within 10s)"));
+        confirmLore.add("&8Resets DMZ stats · awards held Prestige");
+        put(holder, inv, 22, item(
                 ready ? Material.LIME_CONCRETE : Material.ORANGE_CONCRETE,
                 ready ? "&aConfirm Prestige" : "&eAttempt Prestige",
-                List.of(
-                        "&7Click to prestige (confirm within 10s)",
-                        "&8Resets DMZ stats · awards held Prestige"
-                )), SlotAction.act("confirm", "0", "main"));
+                confirmLore), SlotAction.act("confirm", "0", "main"));
         put(holder, inv, 27, hubBtn(), SlotAction.cmd("lm"));
-        put(holder, inv, 31, tipBtn(Material.EXPERIENCE_BOTTLE, "&dProgression",
+        put(holder, inv, 31, tipBtn(player, Material.EXPERIENCE_BOTTLE, "&dProgression",
                 List.of("&7Back to progression")), SlotAction.cmd("progression"));
         put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
         return inv;
@@ -167,19 +168,19 @@ public final class PrestigeChestGui implements Listener {
         }
     }
 
-    private static ItemStack tipBtn(Material mat, String name, List<String> tip) {
+    private static ItemStack tipBtn(Player player, Material mat, String name, List<String> tip) {
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.addAll(tip);
+        lore.addAll(GuiBoardHelper.tipsList(player, tip));
         return item(mat, name, lore);
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.COMPASS, "&7« Hub", List.of("", "&7Legacy Mechanics hub"));
+        return item(Material.COMPASS, "&7« Hub", List.of());
     }
 
     private static ItemStack closeBtn() {
-        return item(Material.BARRIER, "&cClose", List.of("&7Close menu"));
+        return item(Material.BARRIER, "&cClose", List.of());
     }
 
     private static ItemStack item(Material mat, String name, List<String> lore) {

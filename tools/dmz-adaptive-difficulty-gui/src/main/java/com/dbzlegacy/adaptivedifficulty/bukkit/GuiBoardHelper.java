@@ -324,16 +324,16 @@ final class GuiBoardHelper {
         return out;
     }
 
-    static ItemStack pendingInviteHead(PendingInvite inv) {
+    static ItemStack pendingInviteHead(Player player, PendingInvite inv) {
         List<String> lore = new ArrayList<>();
         if (inv.incoming) {
             lore.add("&aIncoming declare");
             lore.add("&7They Declared you");
-            lore.add("&eClick to Accept · use Decline… to refuse");
+            lore.addAll(tips(player, "&eClick to Accept · use Decline… to refuse"));
         } else {
             lore.add("&6Outgoing declare");
             lore.add("&7Waiting for them to Accept");
-            lore.add("&8Pending until they respond or it expires");
+            lore.addAll(tips(player, "&8Pending until they respond or it expires"));
         }
         if (inv.expiresAt > 0L) {
             long left = inv.expiresAt - System.currentTimeMillis();

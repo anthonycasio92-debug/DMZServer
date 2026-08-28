@@ -58,14 +58,17 @@ public final class CmiPrestigeGui {
         gui.addButton(status);
 
         boolean ready = "true".equalsIgnoreCase(ph.getOrDefault("ready", "false"));
-        gui.addButton(actionBtn(22,
+        CMIGuiButton confirm = new CMIGuiButton(22,
                 ready ? Material.LIME_CONCRETE : Material.ORANGE_CONCRETE,
-                ready ? "&aConfirm Prestige" : "&eAttempt Prestige",
-                "confirm", "0", "main",
-                List.of(
-                        "&7Click to prestige (confirm within 10s)",
-                        "&8Resets DMZ stats · awards held Prestige"
-                )));
+                ready ? "&aConfirm Prestige" : "&eAttempt Prestige");
+        confirm.lockField();
+        List<String> confirmLore = new ArrayList<>();
+        confirmLore.add("");
+        confirmLore.addAll(GuiBoardHelper.tips(player, "&7Click to prestige (confirm within 10s)"));
+        confirmLore.add("&8Resets DMZ stats · awards held Prestige");
+        confirm.addLore(confirmLore);
+        confirm.addCommand("prestige do confirm 0 main");
+        gui.addButton(confirm);
 
         gui.addButton(hubBtn(27));
         gui.addButton(progBtn(31));
@@ -114,22 +117,9 @@ public final class CmiPrestigeGui {
         return gui;
     }
 
-    private static CMIGuiButton actionBtn(
-            int slot, Material mat, String name, String action, String arg, String returnPage, List<String> tip) {
-        CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
-        btn.lockField();
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(tip);
-        btn.addLore(lore);
-        btn.addCommand("prestige do " + action + " " + arg + " " + returnPage);
-        return btn;
-    }
-
     private static CMIGuiButton hubBtn(int slot) {
         CMIGuiButton btn = new CMIGuiButton(slot, Material.COMPASS, "&7« Hub");
         btn.lockField();
-        btn.addLore(List.of("", "&7Legacy Mechanics hub"));
         btn.addCommand("lm");
         btn.setCloseInv(true);
         return btn;
@@ -138,7 +128,6 @@ public final class CmiPrestigeGui {
     private static CMIGuiButton progBtn(int slot) {
         CMIGuiButton btn = new CMIGuiButton(slot, Material.EXPERIENCE_BOTTLE, "&dProgression");
         btn.lockField();
-        btn.addLore(List.of("", "&7Back to progression"));
         btn.addCommand("progression");
         btn.setCloseInv(true);
         return btn;

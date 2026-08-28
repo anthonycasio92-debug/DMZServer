@@ -212,7 +212,11 @@ public final class CmiSparGui {
         CMIGui gui = base(player, "&8Legacy Mechanics · Sparring", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD, title);
         info.lockField();
-        info.addLore(List.of("", "&7Online players", "&8Click a head to confirm"));
+        List<String> pickerHeader = new ArrayList<>();
+        pickerHeader.add("");
+        pickerHeader.add("&7Online players");
+        pickerHeader.addAll(GuiBoardHelper.tips(player, "&8Click a head to confirm"));
+        info.addLore(pickerHeader);
         gui.addButton(info);
 
         List<Player> online = GuiPlayerPicker.onlineExcept(player);
@@ -222,7 +226,8 @@ public final class CmiSparGui {
                 break;
             }
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
-            ItemStack head = GuiPlayerPicker.head(other, "&f" + other.getName(), List.of(tip));
+            ItemStack head = GuiPlayerPicker.head(other, "&f" + other.getName(),
+                    GuiBoardHelper.tips(player, tip));
             CMIGuiButton btn = new CMIGuiButton(slot, head);
             btn.lockField();
             btn.addCommand("spar do " + action + " uuid:" + other.getUniqueId() + " " + backPage);
@@ -231,7 +236,10 @@ public final class CmiSparGui {
         if (placed == 0) {
             CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&cNo one online");
             empty.lockField();
-            empty.addLore(List.of("", "&7Other players must be online"));
+            List<String> emptyLore = new ArrayList<>();
+            emptyLore.add("");
+            emptyLore.addAll(GuiBoardHelper.tips(player, "&7Other players must be online"));
+            empty.addLore(emptyLore);
             gui.addButton(empty);
         }
 

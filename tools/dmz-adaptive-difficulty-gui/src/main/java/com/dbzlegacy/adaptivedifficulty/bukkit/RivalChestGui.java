@@ -75,7 +75,7 @@ public final class RivalChestGui implements Listener {
     private Inventory main(Player player) {
         Map<String, String> ph = ForgeBridge.rivalPlaceholders(player);
         Holder holder = new Holder("main");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Rival"));
         holder.bind(inv);
         frame(inv, 45);
 
@@ -146,7 +146,7 @@ public final class RivalChestGui implements Listener {
 
     private Inventory progress(Player player) {
         Holder holder = new Holder("progress");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival Progress"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Rival Progress"));
         holder.bind(inv);
         frame(inv, 45);
         List<String> progHeader = new ArrayList<>();
@@ -179,7 +179,7 @@ public final class RivalChestGui implements Listener {
 
     private Inventory topBoard(Player player, String page, String title, String backPage) {
         Holder holder = new Holder(page);
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Rival"));
         holder.bind(inv);
         frame(inv, 45);
         String back = backPage == null || backPage.isBlank() ? "main" : backPage;
@@ -205,7 +205,7 @@ public final class RivalChestGui implements Listener {
 
     private Inventory detailBoard(Player player, String page, String title, Material mat, String backPage) {
         Holder holder = new Holder(page);
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Rival"));
         holder.bind(inv);
         frame(inv, 45);
         String back = backPage == null || backPage.isBlank() ? "main" : backPage;
@@ -233,7 +233,7 @@ public final class RivalChestGui implements Listener {
 
     private Inventory admin(Player player) {
         Holder holder = new Holder("admin");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival Admin"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Rival Admin"));
         holder.bind(inv);
         frame(inv, 45);
         put(holder, inv, 4, item(Material.COMMAND_BLOCK, "&c&lRival Admin",
@@ -294,7 +294,7 @@ public final class RivalChestGui implements Listener {
 
     private Inventory list(Player player) {
         Holder holder = new Holder("list");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival List"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Rival List"));
         holder.bind(inv);
         frame(inv, 45);
         List<GuiBoardHelper.RivalCard> cards = GuiBoardHelper.parseRivalCards(
@@ -326,16 +326,18 @@ public final class RivalChestGui implements Listener {
 
     private Inventory pending(Player player) {
         Holder holder = new Holder("pending");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Pending Invites"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Pending Invites"));
         holder.bind(inv);
         frame(inv, 45);
         List<GuiBoardHelper.PendingInvite> invites = GuiBoardHelper.parsePendingInvites(
                 ForgeBridge.rivalPendingInviteCards(player));
-        put(holder, inv, 4, item(Material.YELLOW_DYE, "&e&lPending Invites",
-                List.of("",
-                        invites.isEmpty() ? "&7No pending declares." : "&7" + invites.size() + " pending",
-                        "&a◀ Incoming &7= they Declared you",
-                        "&6▶ Outgoing &7= waiting on them")));
+        List<String> pendingHeader = new ArrayList<>();
+        pendingHeader.add("");
+        pendingHeader.add(invites.isEmpty() ? "&7No pending declares." : "&7" + invites.size() + " pending");
+        pendingHeader.addAll(GuiBoardHelper.tips(player,
+                "&a◀ Incoming &7= they Declared you",
+                "&6▶ Outgoing &7= waiting on them"));
+        put(holder, inv, 4, item(Material.YELLOW_DYE, "&e&lPending Invites", pendingHeader));
         if (invites.isEmpty()) {
             put(holder, inv, 22, tipBtn(player, Material.BARRIER, "&7No pending invites",
                     List.of("&7Declare someone to send an invite",
@@ -344,7 +346,7 @@ public final class RivalChestGui implements Listener {
             int[] slots = GuiBoardHelper.centeredSlots(Math.min(invites.size(), 21));
             for (int i = 0; i < slots.length && i < invites.size(); i++) {
                 GuiBoardHelper.PendingInvite invite = invites.get(i);
-                ItemStack head = GuiBoardHelper.pendingInviteHead(invite);
+                ItemStack head = GuiBoardHelper.pendingInviteHead(player, invite);
                 if (invite.incoming) {
                     put(holder, inv, slots[i], head, SlotAction.act("accept", invite.pickerArg(), "pending"));
                 } else {
@@ -365,7 +367,7 @@ public final class RivalChestGui implements Listener {
 
     private Inventory actions(Player player) {
         Holder holder = new Holder("actions");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival Actions"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Rival Actions"));
         holder.bind(inv);
         frame(inv, 45);
         put(holder, inv, 4, item(Material.LIME_CONCRETE, "&a&lRival Actions",
@@ -403,16 +405,18 @@ public final class RivalChestGui implements Listener {
 
     private Inventory history(Player player) {
         Holder holder = new Holder("history");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival History"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Rival History"));
         holder.bind(inv);
         frame(inv, 45);
         List<GuiBoardHelper.RivalCard> cards = GuiBoardHelper.parseRivalCards(
                 ForgeBridge.rivalPastCards(player));
-        put(holder, inv, 4, item(Material.SKELETON_SKULL, "&8&lPrevious Rivals",
-                List.of("",
-                        cards.isEmpty() ? "&7No previous rivals yet." : "&7" + cards.size() + " archived",
-                        "&8Removed rivalries appear here",
-                        "&8Hover a head for final stats")));
+        List<String> historyHeader = new ArrayList<>();
+        historyHeader.add("");
+        historyHeader.add(cards.isEmpty() ? "&7No previous rivals yet." : "&7" + cards.size() + " archived");
+        historyHeader.addAll(GuiBoardHelper.tips(player,
+                "&8Removed rivalries appear here",
+                "&8Hover a head for final stats"));
+        put(holder, inv, 4, item(Material.SKELETON_SKULL, "&8&lPrevious Rivals", historyHeader));
         if (cards.isEmpty()) {
             put(holder, inv, 22, tipBtn(player, Material.BARRIER, "&7No history yet",
                     List.of("&7Removed rivals show here")));
@@ -431,7 +435,7 @@ public final class RivalChestGui implements Listener {
 
     private Inventory challenge(Player player) {
         Holder holder = new Holder("challenge");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Rival"));
         holder.bind(inv);
         frame(inv, 45);
         put(holder, inv, 4, item(Material.IRON_SWORD, "&c&lChallenge",
@@ -460,11 +464,14 @@ public final class RivalChestGui implements Listener {
     /** Step 1: pick who to challenge — opens duration picker next. */
     private Inventory challengeTargetPicker(Player player) {
         Holder holder = new Holder("pick_challenge");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Rival"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.GOLDEN_SWORD, "&cSend Challenge",
-                List.of("", "&7Online rivals", "&8Click a head, then pick duration")));
+        List<String> challengePickHeader = new ArrayList<>();
+        challengePickHeader.add("");
+        challengePickHeader.add("&7Online rivals");
+        challengePickHeader.addAll(GuiBoardHelper.tips(player, "&8Click a head, then pick duration"));
+        put(holder, inv, 4, item(Material.GOLDEN_SWORD, "&cSend Challenge", challengePickHeader));
         List<Player> online = GuiPlayerPicker.onlineExcept(player);
         int placed = 0;
         for (Player other : online) {
@@ -474,7 +481,7 @@ public final class RivalChestGui implements Listener {
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
             put(holder, inv, slot,
                     GuiPlayerPicker.head(other, "&f" + other.getName(),
-                            List.of("&7Next: choose fight length", "&8(1–10 minutes)")),
+                            GuiBoardHelper.tips(player, "&7Next: choose fight length", "&8(1–10 minutes)")),
                     SlotAction.page("challenge_time:uuid:" + other.getUniqueId()));
         }
         if (placed == 0) {
@@ -489,7 +496,7 @@ public final class RivalChestGui implements Listener {
     /** Step 2: pick challenge duration (1–10 min) for a chosen target. */
     private Inventory challengeTime(Player player, String targetArg) {
         Holder holder = new Holder("challenge_time");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Rival"));
         holder.bind(inv);
         frame(inv, 45);
 
@@ -502,18 +509,21 @@ public final class RivalChestGui implements Listener {
                 display = online != null ? online.getName() : targetArg.substring(5).trim();
                 head = online != null
                         ? GuiPlayerPicker.head(online, "&f" + display,
-                                List.of("&7Choose fight length", "&81–10 minutes"))
+                                GuiBoardHelper.tips(player, "&7Choose fight length", "&81–10 minutes"))
                         : GuiPlayerPicker.headByName(display, "&f" + display,
-                                List.of("&cPlayer offline", "&7Pick someone else"));
+                                GuiBoardHelper.tips(player, "&cPlayer offline", "&7Pick someone else"));
             } catch (IllegalArgumentException e) {
-                head = GuiPlayerPicker.headByName(display, "&f" + display, List.of("&7Choose minutes"));
+                head = GuiPlayerPicker.headByName(display, "&f" + display,
+                        GuiBoardHelper.tips(player, "&7Choose minutes"));
             }
         } else {
             Player online = Bukkit.getPlayerExact(targetArg);
             display = online != null ? online.getName() : targetArg;
             head = online != null
-                    ? GuiPlayerPicker.head(online, "&f" + display, List.of("&7Choose fight length"))
-                    : GuiPlayerPicker.headByName(display, "&f" + display, List.of("&7Choose minutes"));
+                    ? GuiPlayerPicker.head(online, "&f" + display,
+                            GuiBoardHelper.tips(player, "&7Choose fight length"))
+                    : GuiPlayerPicker.headByName(display, "&f" + display,
+                            GuiBoardHelper.tips(player, "&7Choose minutes"));
         }
         put(holder, inv, 4, head);
 
@@ -524,11 +534,13 @@ public final class RivalChestGui implements Listener {
             ItemMeta meta = clock.getItemMeta();
             if (meta != null) {
                 meta.setDisplayName(color("&e" + minutes + " minute" + (minutes == 1 ? "" : "s")));
-                meta.setLore(List.of(
-                        color(""),
-                        color("&7Challenge &f" + display),
-                        color("&8Click to send")
-                ));
+                List<String> clockLore = new ArrayList<>();
+                clockLore.add(color(""));
+                clockLore.add(color("&7Challenge &f" + display));
+                for (String tip : GuiBoardHelper.tips(player, "&8Click to send")) {
+                    clockLore.add(color(tip));
+                }
+                meta.setLore(clockLore);
                 clock.setItemMeta(meta);
             }
             put(holder, inv, slots[i], clock,
@@ -544,11 +556,14 @@ public final class RivalChestGui implements Listener {
     private Inventory picker(
             Player player, String action, String backPage, String title, String tip) {
         Holder holder = new Holder("pick_" + action);
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Rival"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.PLAYER_HEAD, title,
-                List.of("", "&7Online players", "&8Click a head to confirm")));
+        List<String> pickerHeader = new ArrayList<>();
+        pickerHeader.add("");
+        pickerHeader.add("&7Online players");
+        pickerHeader.addAll(GuiBoardHelper.tips(player, "&8Click a head to confirm"));
+        put(holder, inv, 4, item(Material.PLAYER_HEAD, title, pickerHeader));
         List<Player> online = GuiPlayerPicker.onlineExcept(player);
         int placed = 0;
         for (Player other : online) {
@@ -557,7 +572,7 @@ public final class RivalChestGui implements Listener {
             }
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
             put(holder, inv, slot,
-                    GuiPlayerPicker.head(other, "&f" + other.getName(), List.of(tip)),
+                    GuiPlayerPicker.head(other, "&f" + other.getName(), GuiBoardHelper.tips(player, tip)),
                     SlotAction.act(action, "uuid:" + other.getUniqueId(), backPage));
         }
         if (placed == 0) {
@@ -573,13 +588,16 @@ public final class RivalChestGui implements Listener {
     private Inventory currentRivalPicker(
             Player player, String action, String backPage, String title, String tip) {
         Holder holder = new Holder("pick_" + action);
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Rival"));
         holder.bind(inv);
         frame(inv, 45);
         List<GuiBoardHelper.RivalCard> cards = GuiBoardHelper.parseRivalCards(
                 ForgeBridge.rivalCurrentCards(player));
-        put(holder, inv, 4, item(Material.PLAYER_HEAD, title,
-                List.of("", "&7Your current rivals", "&8Click a head to " + action)));
+        List<String> rivalPickHeader = new ArrayList<>();
+        rivalPickHeader.add("");
+        rivalPickHeader.add("&7Your current rivals");
+        rivalPickHeader.addAll(GuiBoardHelper.tips(player, "&8Click a head to " + action));
+        put(holder, inv, 4, item(Material.PLAYER_HEAD, title, rivalPickHeader));
         if (cards.isEmpty()) {
             put(holder, inv, 22, tipBtn(player, Material.BARRIER, "&cNo rivals",
                     List.of("&7You have no rivals to " + action)));
@@ -592,8 +610,13 @@ public final class RivalChestGui implements Listener {
                 if (meta != null) {
                     List<String> lore = meta.hasLore() && meta.getLore() != null
                             ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-                    lore.add(color(""));
-                    lore.add(color(tip));
+                    List<String> tipLines = GuiBoardHelper.tips(player, tip);
+                    if (!tipLines.isEmpty()) {
+                        lore.add(color(""));
+                        for (String tipLine : tipLines) {
+                            lore.add(color(tipLine));
+                        }
+                    }
                     meta.setLore(lore);
                     head.setItemMeta(meta);
                 }
@@ -610,14 +633,16 @@ public final class RivalChestGui implements Listener {
             Player player, String action, String backPage, String title, String tip,
             boolean acceptMode) {
         Holder holder = new Holder("pick_" + action);
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Rival"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.PLAYER_HEAD, title,
-                List.of("", acceptMode
-                                ? "&7Pending declares + Declared"
-                                : "&7Pending declares",
-                        "&8Online first · offline by name")));
+        List<String> pendingPickHeader = new ArrayList<>();
+        pendingPickHeader.add("");
+        pendingPickHeader.add(acceptMode
+                ? "&7Pending declares + Declared"
+                : "&7Pending declares");
+        pendingPickHeader.addAll(GuiBoardHelper.tips(player, "&8Online first · offline by name"));
+        put(holder, inv, 4, item(Material.PLAYER_HEAD, title, pendingPickHeader));
         List<String> pending = acceptMode
                 ? ForgeBridge.rivalAcceptCandidateArgs(player)
                 : ForgeBridge.rivalPendingIncomingDeclareArgs(player);
@@ -629,25 +654,34 @@ public final class RivalChestGui implements Listener {
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
             String display;
             ItemStack head;
+            List<String> tipLore = new ArrayList<>(GuiBoardHelper.tips(player, tip));
             if (arg.regionMatches(true, 0, "uuid:", 0, 5)) {
                 try {
                     java.util.UUID id = java.util.UUID.fromString(arg.substring(5).trim());
                     Player online = Bukkit.getPlayer(id);
                     display = online != null ? online.getName() : arg.substring(5).trim();
+                    List<String> headLore = new ArrayList<>(tipLore);
+                    if (online != null) {
+                        headLore.add("&aOnline");
+                    }
                     head = online != null
-                            ? GuiPlayerPicker.head(online, "&f" + display, List.of(tip, "&aOnline"))
-                            : GuiPlayerPicker.headByName(display, "&f" + display, List.of(tip));
+                            ? GuiPlayerPicker.head(online, "&f" + display, headLore)
+                            : GuiPlayerPicker.headByName(display, "&f" + display, tipLore);
                 } catch (IllegalArgumentException e) {
                     display = arg;
-                    head = GuiPlayerPicker.headByName(display, "&f" + display, List.of(tip));
+                    head = GuiPlayerPicker.headByName(display, "&f" + display, tipLore);
                 }
             } else {
                 display = arg;
                 Player online = Bukkit.getPlayerExact(arg);
-                head = online != null
-                        ? GuiPlayerPicker.head(online, "&f" + display, List.of(tip, "&7Offline pending · name"))
-                        : GuiPlayerPicker.headByName(display, "&f" + display,
-                                List.of(tip, "&8Offline — accept by name"));
+                List<String> headLore = new ArrayList<>(tipLore);
+                if (online != null) {
+                    headLore.addAll(GuiBoardHelper.tips(player, "&7Offline pending · name"));
+                    head = GuiPlayerPicker.head(online, "&f" + display, headLore);
+                } else {
+                    headLore.addAll(GuiBoardHelper.tips(player, "&8Offline — accept by name"));
+                    head = GuiPlayerPicker.headByName(display, "&f" + display, headLore);
+                }
             }
             put(holder, inv, slot, head, SlotAction.act(action, arg, backPage));
         }
