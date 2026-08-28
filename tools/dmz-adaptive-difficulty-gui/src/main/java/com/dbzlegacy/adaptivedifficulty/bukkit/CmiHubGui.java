@@ -95,7 +95,7 @@ public final class CmiHubGui {
                         staff && !skillCheck
                                 ? "&7Skill unlock admin browser"
                                 : "&7View skill progress (donator)",
-                        "&8Core · Advanced · Saga"));
+                        "&8Natural · Saga · Advanced"));
             }
             if (staff) {
                 gui.addButton(openBtn(31, Material.NETHER_STAR, "&6Prestige", "prestige",

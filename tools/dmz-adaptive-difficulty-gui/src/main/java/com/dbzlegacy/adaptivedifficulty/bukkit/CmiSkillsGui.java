@@ -33,7 +33,8 @@ public final class CmiSkillsGui {
                 case "advanced", "dmz" -> openPage(player, "advanced", "&bAdvanced", Material.DIAMOND);
                 case "saga" -> openPage(player, "saga", "&dSaga", Material.AMETHYST_SHARD);
                 case "help" -> openPage(player, "help", "&7Help", Material.PAPER);
-                default -> openPage(player, "core", "&eCore", Material.ENCHANTED_BOOK);
+                case "natural" -> openPage(player, "core", "&aNatural", Material.ENCHANTED_BOOK);
+                default -> openPage(player, "core", "&aNatural", Material.ENCHANTED_BOOK);
             }
             return true;
         } catch (Throwable t) {
@@ -72,7 +73,7 @@ public final class CmiSkillsGui {
         List<String> raw = toAmp(ForgeBridge.skillsLines(player, page));
         if ("help".equals(page)) {
             status.addLore(prependBlank(raw.isEmpty()
-                    ? List.of("&7Use Core · Advanced · Saga tabs.")
+                    ? List.of("&7Use Natural · Saga · Advanced tabs.")
                     : raw));
             gui.addButton(status);
         } else {
@@ -118,12 +119,12 @@ public final class CmiSkillsGui {
         }
 
         String pageCmd = skillCheckUi ? "skillcheck" : "skills";
-        gui.addButton(pageBtn(45, Material.ENCHANTED_BOOK, "&eCore", pageCmd, "core",
-                "&7Core skill unlocks"));
-        gui.addButton(pageBtn(46, Material.DIAMOND, "&bAdvanced", pageCmd, "advanced",
-                "&7DMZ advanced skills"));
-        gui.addButton(pageBtn(47, Material.AMETHYST_SHARD, "&dSaga", pageCmd, "saga",
-                "&7Saga unlocks"));
+        gui.addButton(pageBtn(45, Material.ENCHANTED_BOOK, "&aNatural", pageCmd, "core",
+                "&7Potential Unlock · Flight · Meditation · Jump · Sprint"));
+        gui.addButton(pageBtn(46, Material.AMETHYST_SHARD, "&dSaga", pageCmd, "saga",
+                "&7Saga skill unlocks"));
+        gui.addButton(pageBtn(47, Material.DIAMOND, "&bAdvanced", pageCmd, "advanced",
+                "&7DMZ 2.1 skills"));
 
         gui.addButton(hubBtn(49));
         if (staffAdmin) {

@@ -71,8 +71,12 @@ final class GuiLoreChunks {
             String plain = stripColor(line).trim();
             if (!pastHeader) {
                 if (plain.startsWith("---") || plain.equalsIgnoreCase("Core Skills")
+                        || plain.equalsIgnoreCase("Natural Progression")
                         || plain.equalsIgnoreCase("DragonMineZ 2.1 Skills")
-                        || plain.equalsIgnoreCase("Saga Skills")) {
+                        || plain.equalsIgnoreCase("Saga Skills")
+                        || plain.toLowerCase(Locale.ROOT).startsWith("levels from play")
+                        || plain.toLowerCase(Locale.ROOT).startsWith("unlocked / trained")
+                        || plain.toLowerCase(Locale.ROOT).startsWith("unlocked by completing")) {
                     pastHeader = true;
                     // Skip section title — tabs already label the category.
                     continue;

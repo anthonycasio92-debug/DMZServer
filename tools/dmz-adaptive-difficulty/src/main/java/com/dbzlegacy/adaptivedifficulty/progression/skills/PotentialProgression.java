@@ -99,11 +99,14 @@ public final class PotentialProgression {
         if (skills == null) {
             return;
         }
+        // Soft-cap at 10 until Guru raises them past it; hard max 30 afterward.
+        DmzSkillUtil.ensureRegistered(skills, SKILL, HARD_MAX);
         int current = DmzSkillUtil.level(skills, SKILL);
         resetIfNeeded(player, current);
         if (current >= HARD_MAX) {
             return;
         }
+        // Natural soft-stop: at exactly 10, no more points until unlocked to 11+.
         if (current == NATURAL_CAP) {
             tellGuru(player);
             return;

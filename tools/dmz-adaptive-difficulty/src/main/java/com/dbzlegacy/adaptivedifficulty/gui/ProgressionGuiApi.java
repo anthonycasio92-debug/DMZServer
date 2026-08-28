@@ -493,9 +493,9 @@ public final class ProgressionGuiApi {
             case "saga" -> SkillUnlockService.sagaLines(player);
             case "help" -> List.of(
                     "§6§l/skills §8— Skill Progress (staff)",
-                    "§e/skills §7— Core skills",
-                    "§e/skills do page advanced §7— DMZ 2.1",
+                    "§e/skills §7— Natural progression",
                     "§e/skills do page saga §7— Saga unlocks",
+                    "§e/skills do page advanced §7— DMZ 2.1",
                     "§e/skillcheck §7— Donator Skill Check"
             );
             default -> SkillUnlockService.coreLines(player);

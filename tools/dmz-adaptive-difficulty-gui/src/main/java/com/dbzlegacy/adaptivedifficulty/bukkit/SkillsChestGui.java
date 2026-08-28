@@ -33,7 +33,8 @@ public final class SkillsChestGui implements Listener {
             case "advanced", "dmz" -> pageInv(player, "advanced", "&bAdvanced", Material.DIAMOND);
             case "saga" -> pageInv(player, "saga", "&dSaga", Material.AMETHYST_SHARD);
             case "help" -> pageInv(player, "help", "&7Help", Material.PAPER);
-            default -> pageInv(player, "core", "&eCore", Material.ENCHANTED_BOOK);
+            case "natural" -> pageInv(player, "core", "&aNatural", Material.ENCHANTED_BOOK);
+            default -> pageInv(player, "core", "&aNatural", Material.ENCHANTED_BOOK);
         };
         player.openInventory(inv);
     }
@@ -63,7 +64,7 @@ public final class SkillsChestGui implements Listener {
         List<String> raw = toAmp(ForgeBridge.skillsLines(player, page));
         if ("help".equals(page)) {
             put(holder, inv, 4, item(mat, title, prependBlank(raw.isEmpty()
-                    ? List.of("&7Use Core · Advanced · Saga tabs.") : raw)));
+                    ? List.of("&7Use Natural · Saga · Advanced tabs.") : raw)));
         } else {
             GuiLoreChunks.SkillPage split = GuiLoreChunks.splitSkillsPage(raw);
             List<String> headerLore = new ArrayList<>();
@@ -99,12 +100,13 @@ public final class SkillsChestGui implements Listener {
             }
         }
 
-        put(holder, inv, 45, pageBtn(Material.ENCHANTED_BOOK, "&eCore", "&7Core skill unlocks"),
+        put(holder, inv, 45, pageBtn(Material.ENCHANTED_BOOK, "&aNatural",
+                        "&7Potential Unlock · Flight · Meditation · Jump · Sprint"),
                 SlotAction.page("core"));
-        put(holder, inv, 46, pageBtn(Material.DIAMOND, "&bAdvanced", "&7DMZ advanced skills"),
-                SlotAction.page("advanced"));
-        put(holder, inv, 47, pageBtn(Material.AMETHYST_SHARD, "&dSaga", "&7Saga unlocks"),
+        put(holder, inv, 46, pageBtn(Material.AMETHYST_SHARD, "&dSaga", "&7Saga skill unlocks"),
                 SlotAction.page("saga"));
+        put(holder, inv, 47, pageBtn(Material.DIAMOND, "&bAdvanced", "&7DMZ 2.1 skills"),
+                SlotAction.page("advanced"));
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
         if (staffAdmin) {
             put(holder, inv, 51, tipBtn(Material.EXPERIENCE_BOTTLE, "&dProgression",

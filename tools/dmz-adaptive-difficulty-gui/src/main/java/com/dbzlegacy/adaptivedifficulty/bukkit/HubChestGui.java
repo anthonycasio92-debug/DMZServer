@@ -78,7 +78,7 @@ public final class HubChestGui implements Listener {
                         List.of(staff && !skillCheck
                                         ? "&7Skill unlock admin browser"
                                         : "&7View skill progress (donator)",
-                                "&8Core · Advanced · Saga")),
+                                "&8Natural · Saga · Advanced")),
                         SlotAction.open(staff && !skillCheck ? "skills" : "skillcheck"));
             }
             if (staff) {
