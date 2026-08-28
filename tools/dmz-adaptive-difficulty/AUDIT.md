@@ -5,9 +5,14 @@ Scope: CNPC scripts in-repo, remote feature branches, and a live-server script p
 Rival/Spar, progression, Title/Admin inspect, Building TP / End portal guard,
 GhostPartyHeal (melee 2.12.20), inventory GUIs, plus KubeJS packs from
 `server-fixes-consolidated` and `dmz-dino-food-balance`.
-Jars: `LegacyMechanics-2.2.5` / `LegacyMechanicsGUI-2.2.5` / `dmz_mohist_melee_fix-2.12.20`.
+Jars: `LegacyMechanics-2.2.6` / `LegacyMechanicsGUI-2.2.6` / `dmz_mohist_melee_fix-2.12.20`.
 
-## CNPC → mod data migration (2.2.5)
+## Screen title deny feedback (2.2.6)
+
+Blocked in-world actions (End portals, race lock) show a **screen title/subtitle**, not chat.
+CNPC `Disable End Portals.js` is a no-op stub so it cannot double-fire chat or false positives.
+
+## CNPC → mod data migration (2.2.6)
 
 On first boot with CustomNPCs present, LegacyMechanics imports Rival/Spar/progression
 from overworld CNPC `storeddata`, writes `config/legacymechanics/*.json`, backups raw
@@ -25,10 +30,10 @@ progress keys copy into LM NBT / `sparring.json`, then those CNPC player keys ar
 
 Disable matching Rival/Spar CNPC tabs before or right after cutover to avoid dual writes.
 
-## Script ↔ mod parity pass (2.2.5)
+## Script ↔ mod parity pass (2.2.6)
 
 Full audit of live dump `uploads/live-scripts-2026-08-27/ecmascript/` (32 files)
-against Java. All 30 enabled CNPC tabs remain mapped; gaps closed in 2.2.5:
+against Java. All 30 enabled CNPC tabs remain mapped; gaps closed in 2.2.6:
 
 | Gap | Fix |
 |-----|-----|

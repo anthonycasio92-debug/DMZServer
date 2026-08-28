@@ -5,7 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.FabledSkills;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
-import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.ScreenNotify;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Character;
 import java.util.Locale;
@@ -76,9 +76,12 @@ public final class RaceLock {
             String old = ProgressionData.tempGet(player, "restricted_race_command_last_state", "");
             if (!state.equals(old)) {
                 ProgressionData.tempPut(player, "restricted_race_command_last_state", state);
-                DmzRewards.msg(player, "§c§lRACE LOCKED");
-                DmzRewards.msg(player, "§7You have not unlocked the race §f" + display + "§7.");
-                DmzRewards.msg(player, "§7Required Fabled skill: §f" + required);
+                ScreenNotify.blocked(
+                        player,
+                        "Race locked",
+                        "Need Fabled skill: " + required,
+                        "race.lock.notify",
+                        8_000L);
             }
 
             String cmd = "dmzstats reset " + player.m_7755_().getString() + " 0 false";

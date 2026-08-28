@@ -2,11 +2,8 @@ package com.dbzlegacy.adaptivedifficulty.progression.end;
 
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
+import com.dbzlegacy.adaptivedifficulty.util.ScreenNotify;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
-import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
-import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -27,16 +24,17 @@ import net.minecraftforge.registries.ForgeRegistries;
 /**
  * Port of Disable End Portals.js — block vanilla End portal / gateway travel and
  * Eye-of-Ender frame lighting so The End is reached only via intentional TPs.
+ * Deny feedback is a screen title (not chat). Disable the matching CNPC script
+ * so it does not double-fire chat messages.
  */
 public final class EndPortalGuard {
     private static final String TEMP_BYPASS = "end.travel.allow";
     private static final String TEMP_MSG = "end.portal.msg";
-    /** Longer cooldown — pulse ejects silently; titles only when cooldown allows. */
     private static final long MSG_COOLDOWN_MS = 12_000L;
-    private static final String TITLE_PORTAL = "§cEnd portals disabled";
-    private static final String SUB_PORTAL = "§7Use a teleport to reach The End";
-    private static final String TITLE_EYE = "§cCannot activate portal";
-    private static final String SUB_EYE = "§7Use a teleport to reach The End";
+    private static final String TITLE_PORTAL = "End portals disabled";
+    private static final String SUB_PORTAL = "Use a teleport to reach The End";
+    private static final String TITLE_EYE = "Cannot activate portal";
+    private static final String SUB_EYE = "Use a teleport to reach The End";
 
     private EndPortalGuard() {}
 
@@ -55,11 +53,12 @@ public final class EndPortalGuard {
             if (hasBypass(player)) {
                 return;
             }
-            if (!touchesEndPortal(player)) {
+            // Only block if the player is actually inside portal/gateway blocks.
+            if (!standingInPortalBlock(player)) {
                 return;
             }
             event.setCanceled(true);
-            notifyBlocked(player, TITLE_PORTAL, SUB_PORTAL);
+            ScreenNotify.blocked(player, TITLE_PORTAL, SUB_PORTAL, TEMP_MSG, MSG_COOLDOWN_MS);
             ejectFromPortal(player);
         } catch (Throwable ignored) {
         }
@@ -92,18 +91,18 @@ public final class EndPortalGuard {
                 return;
             }
             event.setCanceled(true);
-            notifyBlocked(player, TITLE_EYE, SUB_EYE);
+            ScreenNotify.blocked(player, TITLE_EYE, SUB_EYE, TEMP_MSG, MSG_COOLDOWN_MS);
         } catch (Throwable ignored) {
         }
     }
 
-    /** Backup eject while standing in portal blocks (not already in The End). */
+    /** Backup eject while standing in portal blocks (not already in The End). Silent. */
     public static void pulse(MinecraftServer server, int tick) {
         if (!ProgressionConfig.endPortalGuard() || server == null) {
             return;
         }
-        // Every other tick is enough for eject backup.
-        if ((tick & 1) != 0) {
+        // Every 10 ticks — less aggressive than every-other-tick (reduces lag/fly jitter).
+        if ((tick % 10) != 0) {
             return;
         }
         try {
@@ -114,10 +113,11 @@ public final class EndPortalGuard {
                 if (isTheEndDimensionKey(player.m_9236_().m_46472_())) {
                     continue;
                 }
-                if (!touchesEndPortal(player)) {
+                if (!standingInPortalBlock(player)) {
                     continue;
                 }
-                // Backup eject only — no title spam (travel event handles feedback).
+                // Silent eject only — title is reserved for real travel / eye attempts
+                // so lag/fly near portals does not spam screen titles.
                 ejectFromPortal(player);
             }
         } catch (Throwable ignored) {
@@ -146,7 +146,7 @@ public final class EndPortalGuard {
         String lower = id.toLowerCase();
         return "minecraft:the_end".equals(lower)
                 || "the_end".equals(lower)
-                || lower.contains("the_end");
+                || lower.endsWith(":the_end");
     }
 
     private static boolean hasBypass(ServerPlayer player) {
@@ -164,34 +164,11 @@ public final class EndPortalGuard {
         return false;
     }
 
-    private static void notifyBlocked(ServerPlayer player, String title, String subtitle) {
-        if (player == null || title == null || title.isBlank()) {
-            return;
-        }
-        try {
-            long now = System.currentTimeMillis();
-            long last = ProgressionData.tempGetLong(player, TEMP_MSG, 0L);
-            if (last > 0L && now - last < MSG_COOLDOWN_MS) {
-                return;
-            }
-            ProgressionData.tempPut(player, TEMP_MSG, now);
-            if (player.f_8906_ != null) {
-                player.f_8906_.m_9829_(new ClientboundSetTitlesAnimationPacket(5, 40, 10));
-                player.f_8906_.m_9829_(new ClientboundSetTitleTextPacket(Component.m_237113_(title)));
-                if (subtitle != null && !subtitle.isBlank()) {
-                    player.f_8906_.m_9829_(
-                            new ClientboundSetSubtitleTextPacket(Component.m_237113_(subtitle)));
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
     /**
-     * Only the player's actual hitbox — not a wide neighborhood scan.
-     * The old ±1 block probe false-fired when flying/lagging near portal rooms.
+     * Feet / lower body must intersect an end_portal or end_gateway block.
+     * Ignores frames and wide neighborhood probes (those false-fired while flying/lagging).
      */
-    private static boolean touchesEndPortal(ServerPlayer player) {
+    private static boolean standingInPortalBlock(ServerPlayer player) {
         if (player == null) {
             return false;
         }
@@ -201,12 +178,24 @@ public final class EndPortalGuard {
                 return false;
             }
             AABB bb = player.m_20191_();
-            int minX = (int) Math.floor(bb.f_82288_);
+            // Feet / ankles only — ignore upper body so flying past frames
+            // or lag-desynced hitboxes don't count as "in portal".
+            double pad = 0.12;
+            int minX = (int) Math.floor(bb.f_82288_ + pad);
             int minY = (int) Math.floor(bb.f_82289_);
-            int minZ = (int) Math.floor(bb.f_82290_);
-            int maxX = (int) Math.floor(bb.f_82291_);
-            int maxY = (int) Math.floor(bb.f_82292_);
-            int maxZ = (int) Math.floor(bb.f_82293_);
+            int minZ = (int) Math.floor(bb.f_82290_ + pad);
+            int maxX = (int) Math.floor(bb.f_82291_ - pad);
+            int maxY = (int) Math.floor(Math.min(bb.f_82292_, bb.f_82289_ + 0.35) - 0.01);
+            int maxZ = (int) Math.floor(bb.f_82293_ - pad);
+            if (maxX < minX) {
+                maxX = minX;
+            }
+            if (maxY < minY) {
+                maxY = minY;
+            }
+            if (maxZ < minZ) {
+                maxZ = minZ;
+            }
             for (int px = minX; px <= maxX; px++) {
                 for (int py = minY; py <= maxY; py++) {
                     for (int pz = minZ; pz <= maxZ; pz++) {
@@ -241,7 +230,8 @@ public final class EndPortalGuard {
             if (name.contains("end_portal_frame")) {
                 return false;
             }
-            return name.contains("end_portal") || name.contains("end_gateway");
+            return name.endsWith("end_portal") || name.endsWith("end_gateway")
+                    || name.contains(":end_portal") || name.contains(":end_gateway");
         } catch (Throwable ignored) {
             return false;
         }
