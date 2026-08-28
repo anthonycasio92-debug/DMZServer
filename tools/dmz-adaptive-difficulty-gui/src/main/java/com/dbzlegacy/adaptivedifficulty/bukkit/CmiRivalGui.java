@@ -84,7 +84,7 @@ public final class CmiRivalGui {
 
     private static void openMain(Player player) {
         Map<String, String> ph = ForgeBridge.rivalPlaceholders(player);
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+        CMIGui gui = base(player, "&8Rival", 5);
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
@@ -162,7 +162,7 @@ public final class CmiRivalGui {
     }
 
     private static void openProgress(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival Progress", 5);
+        CMIGui gui = base(player, "&8Rival Progress", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.EXPERIENCE_BOTTLE, "&b&lProgress");
         info.lockField();
         List<String> progHeader = new ArrayList<>();
@@ -201,7 +201,7 @@ public final class CmiRivalGui {
     }
 
     private static void openTop(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+        CMIGui gui = base(player, "&8Rival", 5);
         List<String> raw = toAmp(ForgeBridge.rivalLines(player, "top"));
         List<GuiBoardHelper.TopEntry> entries = GuiBoardHelper.parseTopEntries(raw);
         CMIGuiButton header = new CMIGuiButton(4, Material.GOLDEN_HELMET, "&fRP Top");
@@ -214,7 +214,10 @@ public final class CmiRivalGui {
         if (entries.isEmpty()) {
             CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&7No rivalry data yet");
             empty.lockField();
-            empty.addLore(List.of("", "&7Challenge rivals to earn RP"));
+            List<String> emptyLore = new ArrayList<>();
+            emptyLore.add("");
+            emptyLore.addAll(GuiBoardHelper.tipsList(player, List.of("&7Challenge rivals to earn RP")));
+            empty.addLore(emptyLore);
             gui.addButton(empty);
         } else {
             int[] slots = GuiBoardHelper.centeredSlots(Math.min(entries.size(), 21));
@@ -232,7 +235,7 @@ public final class CmiRivalGui {
     }
 
     private static void openDetail(Player player, String page, String title, Material mat, String backPage) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+        CMIGui gui = base(player, "&8Rival", 5);
         String back = backPage == null || backPage.isBlank() ? "main" : backPage;
         List<String> lore = toAmp(ForgeBridge.rivalLines(player, page));
         if (lore.isEmpty()) {
@@ -264,7 +267,7 @@ public final class CmiRivalGui {
     }
 
     private static void openAdmin(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival Admin", 5);
+        CMIGui gui = base(player, "&8Rival Admin", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.COMMAND_BLOCK, "&c&lRival Admin");
         info.lockField();
         info.addLore(List.of("", "&7Staff-only tools",
@@ -324,7 +327,7 @@ public final class CmiRivalGui {
     }
 
     private static void openList(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival List", 5);
+        CMIGui gui = base(player, "&8Rival List", 5);
         List<GuiBoardHelper.RivalCard> cards = GuiBoardHelper.parseRivalCards(
                 ForgeBridge.rivalCurrentCards(player));
         CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD, "&6&lCurrent Rivals");
@@ -341,7 +344,10 @@ public final class CmiRivalGui {
         if (cards.isEmpty()) {
             CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&7No rivals yet");
             empty.lockField();
-            empty.addLore(List.of("", "&7Use Actions → Declare to start"));
+            List<String> emptyLore = new ArrayList<>();
+            emptyLore.add("");
+            emptyLore.addAll(GuiBoardHelper.tipsList(player, List.of("&7Use Actions → Declare to start")));
+            empty.addLore(emptyLore);
             gui.addButton(empty);
         } else {
             int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
@@ -364,28 +370,35 @@ public final class CmiRivalGui {
     }
 
     private static void openPending(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Pending Invites", 5);
+        CMIGui gui = base(player, "&8Pending Invites", 5);
         List<GuiBoardHelper.PendingInvite> invites = GuiBoardHelper.parsePendingInvites(
                 ForgeBridge.rivalPendingInviteCards(player));
         CMIGuiButton info = new CMIGuiButton(4, Material.YELLOW_DYE, "&e&lPending Invites");
         info.lockField();
-        info.addLore(List.of("",
-                invites.isEmpty() ? "&7No pending declares." : "&7" + invites.size() + " pending",
+        List<String> pendingHeader = new ArrayList<>();
+        pendingHeader.add("");
+        pendingHeader.add(invites.isEmpty() ? "&7No pending declares." : "&7" + invites.size() + " pending");
+        pendingHeader.addAll(GuiBoardHelper.tips(player,
                 "&a◀ Incoming &7= they Declared you",
                 "&6▶ Outgoing &7= waiting on them"));
+        info.addLore(pendingHeader);
         gui.addButton(info);
 
         if (invites.isEmpty()) {
             CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&7No pending invites");
             empty.lockField();
-            empty.addLore(List.of("", "&7Declare someone to send an invite",
-                    "&7Incoming shows when they Declare you"));
+            List<String> emptyLore = new ArrayList<>();
+            emptyLore.add("");
+            emptyLore.addAll(GuiBoardHelper.tipsList(player, List.of(
+                    "&7Declare someone to send an invite",
+                    "&7Incoming shows when they Declare you")));
+            empty.addLore(emptyLore);
             gui.addButton(empty);
         } else {
             int[] slots = GuiBoardHelper.centeredSlots(Math.min(invites.size(), 21));
             for (int i = 0; i < slots.length && i < invites.size(); i++) {
                 GuiBoardHelper.PendingInvite invite = invites.get(i);
-                ItemStack head = GuiBoardHelper.pendingInviteHead(invite);
+                ItemStack head = GuiBoardHelper.pendingInviteHead(player, invite);
                 CMIGuiButton btn = new CMIGuiButton(slots[i], head);
                 btn.lockField();
                 if (invite.incoming) {
@@ -408,7 +421,7 @@ public final class CmiRivalGui {
     }
 
     private static void openActions(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival Actions", 5);
+        CMIGui gui = base(player, "&8Rival Actions", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.LIME_CONCRETE, "&a&lRival Actions");
         info.lockField();
         info.addLore(toAmp(ForgeBridge.rivalLines(player, "actions")));
@@ -448,21 +461,27 @@ public final class CmiRivalGui {
     }
 
     private static void openHistory(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival History", 5);
+        CMIGui gui = base(player, "&8Rival History", 5);
         List<GuiBoardHelper.RivalCard> cards = GuiBoardHelper.parseRivalCards(
                 ForgeBridge.rivalPastCards(player));
         CMIGuiButton info = new CMIGuiButton(4, Material.SKELETON_SKULL, "&8&lPrevious Rivals");
         info.lockField();
-        info.addLore(List.of("",
-                cards.isEmpty() ? "&7No previous rivals yet." : "&7" + cards.size() + " archived",
+        List<String> historyHeader = new ArrayList<>();
+        historyHeader.add("");
+        historyHeader.add(cards.isEmpty() ? "&7No previous rivals yet." : "&7" + cards.size() + " archived");
+        historyHeader.addAll(GuiBoardHelper.tips(player,
                 "&8Removed rivalries appear here",
                 "&8Hover a head for final stats"));
+        info.addLore(historyHeader);
         gui.addButton(info);
 
         if (cards.isEmpty()) {
             CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&7No history yet");
             empty.lockField();
-            empty.addLore(List.of("", "&7Removed rivals show here"));
+            List<String> emptyLore = new ArrayList<>();
+            emptyLore.add("");
+            emptyLore.addAll(GuiBoardHelper.tipsList(player, List.of("&7Removed rivals show here")));
+            empty.addLore(emptyLore);
             gui.addButton(empty);
         } else {
             int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
@@ -483,7 +502,7 @@ public final class CmiRivalGui {
     }
 
     private static void openChallenge(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+        CMIGui gui = base(player, "&8Rival", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.IRON_SWORD, "&c&lChallenge");
         info.lockField();
         info.addLore(toAmp(ForgeBridge.rivalLines(player, "challenge")));
@@ -513,10 +532,14 @@ public final class CmiRivalGui {
     }
 
     private static void openChallengeTargetPicker(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+        CMIGui gui = base(player, "&8Rival", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.GOLDEN_SWORD, "&cSend Challenge");
         info.lockField();
-        info.addLore(List.of("", "&7Online rivals", "&8Click a head, then pick duration"));
+        List<String> challengePickHeader = new ArrayList<>();
+        challengePickHeader.add("");
+        challengePickHeader.add("&7Online rivals");
+        challengePickHeader.addAll(GuiBoardHelper.tips(player, "&8Click a head, then pick duration"));
+        info.addLore(challengePickHeader);
         gui.addButton(info);
 
         List<Player> online = GuiPlayerPicker.onlineExcept(player);
@@ -527,7 +550,7 @@ public final class CmiRivalGui {
             }
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
             ItemStack head = GuiPlayerPicker.head(other, "&f" + other.getName(),
-                    List.of("&7Next: choose fight length", "&8(1–10 minutes)"));
+                    GuiBoardHelper.tips(player, "&7Next: choose fight length", "&8(1–10 minutes)"));
             CMIGuiButton btn = new CMIGuiButton(slot, head);
             btn.lockField();
             btn.addCommand("rival do page challenge_time:uuid:" + other.getUniqueId());
@@ -536,7 +559,10 @@ public final class CmiRivalGui {
         if (placed == 0) {
             CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&cNo one online");
             empty.lockField();
-            empty.addLore(List.of("", "&7Other players must be online"));
+            List<String> emptyLore = new ArrayList<>();
+            emptyLore.add("");
+            emptyLore.addAll(GuiBoardHelper.tipsList(player, List.of("&7Other players must be online")));
+            empty.addLore(emptyLore);
             gui.addButton(empty);
         }
 
@@ -547,7 +573,7 @@ public final class CmiRivalGui {
     }
 
     private static void openChallengeTime(Player player, String targetArg) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+        CMIGui gui = base(player, "&8Rival", 5);
 
         String display = targetArg;
         ItemStack head;
@@ -558,18 +584,21 @@ public final class CmiRivalGui {
                 display = online != null ? online.getName() : targetArg.substring(5).trim();
                 head = online != null
                         ? GuiPlayerPicker.head(online, "&f" + display,
-                                List.of("&7Choose fight length", "&81–10 minutes"))
+                                GuiBoardHelper.tips(player, "&7Choose fight length", "&81–10 minutes"))
                         : GuiPlayerPicker.headByName(display, "&f" + display,
-                                List.of("&cPlayer offline", "&7Pick someone else"));
+                                GuiBoardHelper.tips(player, "&cPlayer offline", "&7Pick someone else"));
             } catch (IllegalArgumentException e) {
-                head = GuiPlayerPicker.headByName(display, "&f" + display, List.of("&7Choose minutes"));
+                head = GuiPlayerPicker.headByName(display, "&f" + display,
+                        GuiBoardHelper.tips(player, "&7Choose minutes"));
             }
         } else {
             Player online = org.bukkit.Bukkit.getPlayerExact(targetArg);
             display = online != null ? online.getName() : targetArg;
             head = online != null
-                    ? GuiPlayerPicker.head(online, "&f" + display, List.of("&7Choose fight length"))
-                    : GuiPlayerPicker.headByName(display, "&f" + display, List.of("&7Choose minutes"));
+                    ? GuiPlayerPicker.head(online, "&f" + display,
+                            GuiBoardHelper.tips(player, "&7Choose fight length"))
+                    : GuiPlayerPicker.headByName(display, "&f" + display,
+                            GuiBoardHelper.tips(player, "&7Choose minutes"));
         }
         CMIGuiButton info = new CMIGuiButton(4, head);
         info.lockField();
@@ -582,11 +611,13 @@ public final class CmiRivalGui {
             org.bukkit.inventory.meta.ItemMeta meta = clock.getItemMeta();
             if (meta != null) {
                 meta.setDisplayName(color("&e" + minutes + " minute" + (minutes == 1 ? "" : "s")));
-                meta.setLore(List.of(
-                        color(""),
-                        color("&7Challenge &f" + display),
-                        color("&8Click to send")
-                ));
+                List<String> clockLore = new ArrayList<>();
+                clockLore.add(color(""));
+                clockLore.add(color("&7Challenge &f" + display));
+                for (String tip : GuiBoardHelper.tips(player, "&8Click to send")) {
+                    clockLore.add(color(tip));
+                }
+                meta.setLore(clockLore);
                 clock.setItemMeta(meta);
             }
             CMIGuiButton btn = new CMIGuiButton(slots[i], clock);
@@ -603,10 +634,14 @@ public final class CmiRivalGui {
 
     private static void openPicker(
             Player player, String action, String backPage, String title, String tip) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+        CMIGui gui = base(player, "&8Rival", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD, title);
         info.lockField();
-        info.addLore(List.of("", "&7Online players", "&8Click a head to confirm"));
+        List<String> pickerHeader = new ArrayList<>();
+        pickerHeader.add("");
+        pickerHeader.add("&7Online players");
+        pickerHeader.addAll(GuiBoardHelper.tips(player, "&8Click a head to confirm"));
+        info.addLore(pickerHeader);
         gui.addButton(info);
 
         List<Player> online = GuiPlayerPicker.onlineExcept(player);
@@ -616,7 +651,8 @@ public final class CmiRivalGui {
                 break;
             }
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
-            ItemStack head = GuiPlayerPicker.head(other, "&f" + other.getName(), List.of(tip));
+            ItemStack head = GuiPlayerPicker.head(other, "&f" + other.getName(),
+                    GuiBoardHelper.tips(player, tip));
             CMIGuiButton btn = new CMIGuiButton(slot, head);
             btn.lockField();
             btn.addCommand("rival do " + action + " uuid:" + other.getUniqueId() + " " + backPage);
@@ -625,7 +661,10 @@ public final class CmiRivalGui {
         if (placed == 0) {
             CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&cNo one online");
             empty.lockField();
-            empty.addLore(List.of("", "&7Other players must be online"));
+            List<String> emptyLore = new ArrayList<>();
+            emptyLore.add("");
+            emptyLore.addAll(GuiBoardHelper.tipsList(player, List.of("&7Other players must be online")));
+            empty.addLore(emptyLore);
             gui.addButton(empty);
         }
 
@@ -637,18 +676,26 @@ public final class CmiRivalGui {
 
     private static void openCurrentRivalPicker(
             Player player, String action, String backPage, String title, String tip) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+        CMIGui gui = base(player, "&8Rival", 5);
         List<GuiBoardHelper.RivalCard> cards = GuiBoardHelper.parseRivalCards(
                 ForgeBridge.rivalCurrentCards(player));
         CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD, title);
         info.lockField();
-        info.addLore(List.of("", "&7Your current rivals", "&8Click a head to " + action));
+        List<String> rivalPickHeader = new ArrayList<>();
+        rivalPickHeader.add("");
+        rivalPickHeader.add("&7Your current rivals");
+        rivalPickHeader.addAll(GuiBoardHelper.tips(player, "&8Click a head to " + action));
+        info.addLore(rivalPickHeader);
         gui.addButton(info);
 
         if (cards.isEmpty()) {
             CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&cNo rivals");
             empty.lockField();
-            empty.addLore(List.of("", "&7You have no rivals to " + action));
+            List<String> emptyLore = new ArrayList<>();
+            emptyLore.add("");
+            emptyLore.addAll(GuiBoardHelper.tipsList(player,
+                    List.of("&7You have no rivals to " + action)));
+            empty.addLore(emptyLore);
             gui.addButton(empty);
         } else {
             int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
@@ -659,8 +706,13 @@ public final class CmiRivalGui {
                 if (meta != null) {
                     List<String> lore = meta.hasLore() && meta.getLore() != null
                             ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-                    lore.add("");
-                    lore.add(org.bukkit.ChatColor.translateAlternateColorCodes('&', tip));
+                    List<String> tipLines = GuiBoardHelper.tips(player, tip);
+                    if (!tipLines.isEmpty()) {
+                        lore.add(color(""));
+                        for (String tipLine : tipLines) {
+                            lore.add(color(tipLine));
+                        }
+                    }
                     meta.setLore(lore);
                     head.setItemMeta(meta);
                 }
@@ -680,13 +732,16 @@ public final class CmiRivalGui {
     private static void openPendingPicker(
             Player player, String action, String backPage, String title, String tip,
             boolean acceptMode) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+        CMIGui gui = base(player, "&8Rival", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD, title);
         info.lockField();
-        info.addLore(List.of("", acceptMode
-                        ? "&7Pending declares + Declared"
-                        : "&7Pending declares",
-                "&8Online first · offline by name"));
+        List<String> pendingPickHeader = new ArrayList<>();
+        pendingPickHeader.add("");
+        pendingPickHeader.add(acceptMode
+                ? "&7Pending declares + Declared"
+                : "&7Pending declares");
+        pendingPickHeader.addAll(GuiBoardHelper.tips(player, "&8Online first · offline by name"));
+        info.addLore(pendingPickHeader);
         gui.addButton(info);
 
         List<String> pending = acceptMode
@@ -700,25 +755,34 @@ public final class CmiRivalGui {
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
             String display;
             ItemStack head;
+            List<String> tipLore = new ArrayList<>(GuiBoardHelper.tips(player, tip));
             if (arg.regionMatches(true, 0, "uuid:", 0, 5)) {
                 try {
                     java.util.UUID id = java.util.UUID.fromString(arg.substring(5).trim());
                     Player online = org.bukkit.Bukkit.getPlayer(id);
                     display = online != null ? online.getName() : arg.substring(5).trim();
+                    List<String> headLore = new ArrayList<>(tipLore);
+                    if (online != null) {
+                        headLore.add("&aOnline");
+                    }
                     head = online != null
-                            ? GuiPlayerPicker.head(online, "&f" + display, List.of(tip, "&aOnline"))
-                            : GuiPlayerPicker.headByName(display, "&f" + display, List.of(tip));
+                            ? GuiPlayerPicker.head(online, "&f" + display, headLore)
+                            : GuiPlayerPicker.headByName(display, "&f" + display, tipLore);
                 } catch (IllegalArgumentException e) {
                     display = arg;
-                    head = GuiPlayerPicker.headByName(display, "&f" + display, List.of(tip));
+                    head = GuiPlayerPicker.headByName(display, "&f" + display, tipLore);
                 }
             } else {
                 display = arg;
                 Player online = org.bukkit.Bukkit.getPlayerExact(arg);
-                head = online != null
-                        ? GuiPlayerPicker.head(online, "&f" + display, List.of(tip))
-                        : GuiPlayerPicker.headByName(display, "&f" + display,
-                                List.of(tip, "&8Offline — accept by name"));
+                List<String> headLore = new ArrayList<>(tipLore);
+                if (online != null) {
+                    headLore.addAll(GuiBoardHelper.tips(player, "&7Offline pending · name"));
+                    head = GuiPlayerPicker.head(online, "&f" + display, headLore);
+                } else {
+                    headLore.addAll(GuiBoardHelper.tips(player, "&8Offline — accept by name"));
+                    head = GuiPlayerPicker.headByName(display, "&f" + display, headLore);
+                }
             }
             CMIGuiButton btn = new CMIGuiButton(slot, head);
             btn.lockField();
@@ -729,11 +793,14 @@ public final class CmiRivalGui {
             CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER,
                     acceptMode ? "&eNothing to accept" : "&eNo pending declares");
             empty.lockField();
-            empty.addLore(acceptMode
-                    ? List.of("", "&7Pending Declares and Declared rivals",
+            List<String> emptyLore = new ArrayList<>();
+            emptyLore.add("");
+            emptyLore.addAll(GuiBoardHelper.tipsList(player, acceptMode
+                    ? List.of("&7Pending Declares and Declared rivals",
                             "&7(both Silent) appear here.")
-                    : List.of("", "&7When someone declares you,",
-                            "&7they appear here to decline."));
+                    : List.of("&7When someone declares you,",
+                            "&7they appear here to decline.")));
+            empty.addLore(emptyLore);
             gui.addButton(empty);
         }
 
