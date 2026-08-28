@@ -26,12 +26,14 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
 /**
- * Whitelist-gated combat telemetry for balance tuning.
+ * Combat telemetry for difficulty balance tuning.
  * <p>
- * When enabled, every AD-painted mob hit on a <b>whitelisted</b> player is appended
- * as one JSON line under {@code config/legacymechanics/telemetry/hits-YYYY-MM-DD.jsonl}.
+ * When enabled, every AD-painted mob hit on a player actively using the difficulty
+ * system is appended as one JSON line under
+ * {@code config/legacymechanics/telemetry/hits-YYYY-MM-DD.jsonl}.
  * Capture happens before the DEF-cancel safety net mutates the event so cancelled
- * zeros are still visible in the log.
+ * zeros are still visible in the log. Rate-limited per player
+ * ({@code balanceTelemetryMaxPerSecond}).
  */
 public final class BalanceTelemetry {
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -61,13 +63,9 @@ public final class BalanceTelemetry {
         }
     }
 
-    /** True when this player should be sampled (on the whitelist list). */
+    /** True when this player should be sampled (telemetry on + valid player). */
     public static boolean shouldLog(ServerPlayer player) {
-        if (!isEnabled() || player == null) {
-            return false;
-        }
-        // Log listed testers even when whitelist gate is OFF (open server + named samples).
-        return DifficultyConfig.isWhitelisted(player);
+        return isEnabled() && player != null;
     }
 
     /**

@@ -39,8 +39,9 @@ public final class DifficultyConfig {
      */
     public List<String> whitelist = new ArrayList<>();
     /**
-     * When {@code true}, AD mob hits on <b>whitelisted</b> players are appended to
-     * {@code config/legacymechanics/telemetry/hits-YYYY-MM-DD.jsonl} for balance tuning.
+     * When {@code true}, AD mob hits on players using the difficulty system are appended to
+     * {@code config/legacymechanics/telemetry/hits-YYYY-MM-DD.jsonl} for balance tuning
+     * (all AD players, rate-limited — not whitelist-gated).
      * Toggle: {@code /difficulty admin telemetry on|off}.
      */
     public boolean balanceTelemetryEnabled = false;

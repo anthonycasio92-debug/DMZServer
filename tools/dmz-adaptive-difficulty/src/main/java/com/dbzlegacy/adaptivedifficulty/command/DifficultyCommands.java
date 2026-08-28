@@ -468,22 +468,11 @@ public final class DifficultyCommands {
         if (denyAdmin(source) == 0) {
             return 0;
         }
-        // Auto-list the running staffer so the first fight actually logs.
-        if (on) {
-            ServerPlayer player = source.m_230896_();
-            if (player != null && !DifficultyConfig.isWhitelisted(player)) {
-                DifficultyConfig.addWhitelistEntry(player.m_6302_());
-                DifficultyConfig.addWhitelistEntry(player.m_20148_().toString());
-            }
-        }
         com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.setEnabled(on);
-        int n = DifficultyConfig.whitelistEntries().size();
         source.m_288197_(() -> Component.m_237113_(
                 (on ? "§aBalance telemetry ON" : "§eBalance telemetry OFF")
-                        + "\n§7Logs AD hits on §fwhitelisted§7 players only (§f" + n + "§7 listed)."
-                        + (on && n == 0
-                        ? "\n§eWhitelist is empty — §f/difficulty admin whitelist add <player>"
-                        : "")
+                        + "\n§7Logs AD hits for §fall players§7 using the difficulty system"
+                        + " §8(rate-limited)."
                         + "\n§8" + com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.telemetryDir()
         ), true);
         return 1;
@@ -493,12 +482,10 @@ public final class DifficultyCommands {
         if (denyAdmin(source) == 0) {
             return 0;
         }
-        int n = DifficultyConfig.whitelistEntries().size();
         source.m_288197_(() -> Component.m_237113_(
                 "§6Balance telemetry\n§7"
                         + com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.statusLine()
-                        + "\n§7Whitelist entries: §f" + n
-                        + "\n§8Only listed players are sampled (gate on/off does not matter)."
+                        + "\n§8Samples all AD players when ON (not whitelist-gated)."
                         + "\n§8/difficulty admin telemetry on|off|flush|test"
         ), false);
         return 1;
@@ -726,7 +713,7 @@ public final class DifficultyCommands {
                         + "§e/difficulty hard|normal|easy|peaceful §7— vanilla world difficulty (ops)\n"
                         + "§e/difficulty admin off|on|toggle|status §7— master system switch\n"
                         + "§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist\n"
-                        + "§e/difficulty admin telemetry on|off|status|flush|test §7— log whitelist combat hits\n"
+                        + "§e/difficulty admin telemetry on|off|status|flush|test §7— log AD combat hits (all players)\n"
                         + "§e/difficulty admin syslog on|off|status|flush §7— unified system event log\n"
                         + "§e/difficulty admin gui|inspect <player> [page] §7— open their GUI (edit/see their state)\n"
                         + "§e/difficulty admin resynclevel [player] §7— clear stuck DMZ level sample + refresh GUI level\n"

@@ -1,4 +1,4 @@
-# LegacyMechanics concept audit (2.3.9)
+# LegacyMechanics concept audit (2.3.10)
 
 Fail-closed checks against the player's stated balance concept.
 
@@ -57,7 +57,7 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 2.3.9
+- ✅ VERSION 2.3.10
 - ✅ formula revision 37
 - ✅ hpFloorStrength present
 - ✅ T1–T3 god-form floors raised
@@ -67,7 +67,7 @@ Fail-closed checks against the player's stated balance concept.
 - ✅ T3 soft-cap ≤ T4
 - ✅ T4 soft-cap ≤ T5
 - ✅ god soft-cap ladder T3≤T4 — T3=0.460 T4=0.500
-- ✅ whitelist combat telemetry present
+- ✅ combat telemetry present
 - ✅ god-form landing T1≥10% — landingFrac=0.155
 - ✅ god-form landing T5≥28% — landingFrac=0.520
 - ✅ god-form landing T7≥40% — landingFrac=0.620

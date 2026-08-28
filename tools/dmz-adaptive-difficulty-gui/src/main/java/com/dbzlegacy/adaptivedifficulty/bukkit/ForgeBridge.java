@@ -2175,18 +2175,15 @@ public final class ForgeBridge {
         try {
             loadClass("com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
                     .getMethod("setEnabled", boolean.class).invoke(null, on);
-            int n = whitelistEntries().size();
             Path dir = telemetryDir();
             return (on ? "§aBalance telemetry ON" : "§eBalance telemetry OFF")
-                    + "\n§7Logs AD hits on §fwhitelisted§7 players only (§f" + n + "§7 listed)."
-                    + (on && n == 0
-                    ? "\n§eWhitelist is empty — §f/difficulty admin whitelist add <player>"
-                    : "")
+                    + "\n§7Logs AD hits for §fall players§7 using the difficulty system"
+                    + " §8(rate-limited)."
                     + "\n§8" + dir;
         } catch (Throwable t) {
             resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
             return "§cFailed to toggle telemetry: " + t.getMessage()
-                    + "\n§8Install matching AdaptiveDifficulty 1.0.18+ jar.";
+                    + "\n§8Install matching LegacyMechanics jar.";
         }
     }
 
@@ -2195,15 +2192,13 @@ public final class ForgeBridge {
             Object line = loadClass(
                     "com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
                     .getMethod("statusLine").invoke(null);
-            int n = whitelistEntries().size();
             return "§6Balance telemetry\n§7" + line
-                    + "\n§7Whitelist entries: §f" + n
-                    + "\n§8Only listed players are sampled (gate on/off does not matter)."
+                    + "\n§8Samples all AD players when ON (not whitelist-gated)."
                     + "\n§8/difficulty admin telemetry on|off|flush|test";
         } catch (Throwable t) {
             resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
             return "§cTelemetry unavailable: " + t.getMessage()
-                    + "\n§8Need AdaptiveDifficulty 1.0.18+ with BalanceTelemetry.";
+                    + "\n§8Need LegacyMechanics with BalanceTelemetry.";
         }
     }
 

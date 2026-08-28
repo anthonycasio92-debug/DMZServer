@@ -1539,10 +1539,6 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         String op = args[2].toLowerCase();
         switch (op) {
             case "on", "enable" -> {
-                // Auto-list the running staffer so the first fight actually logs.
-                if (sender instanceof Player p && !ForgeBridge.isPlayerWhitelisted(p.getName())) {
-                    ForgeBridge.whitelistAdd(p.getName());
-                }
                 sender.sendMessage(ForgeBridge.setTelemetryEnabled(true));
                 return true;
             }
@@ -1640,7 +1636,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§e/difficulty reset §7— clear active tier");
         sender.sendMessage("§e/difficulty admin off|on|toggle|status §7— master system switch");
         sender.sendMessage("§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist");
-        sender.sendMessage("§e/difficulty admin telemetry on|off|status|flush|test §7— balance hit logs");
+        sender.sendMessage("§e/difficulty admin telemetry on|off|status|flush|test §7— AD hit logs (all players)");
         sender.sendMessage("§e/difficulty admin gui|inspect <player> [page] §7— open their GUI (edit/see their state)");
         sender.sendMessage("§e/difficulty admin gui clear §7— stop inspecting");
         sender.sendMessage("§e/difficulty admin reload|settings|area|set §7— config tools");

@@ -23,7 +23,7 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * Unified system event log for difficulty / rival / sparring (and related).
  * Writes {@code config/legacymechanics/telemetry/systems-YYYY-MM-DD.jsonl}.
- * When enabled, logs all players (rate-limited). Balance hit telemetry stays whitelist-gated.
+ * When enabled, logs all players (rate-limited). Balance hit telemetry also logs all AD players.
  */
 public final class SystemTelemetry {
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("yyyy-MM-dd");
