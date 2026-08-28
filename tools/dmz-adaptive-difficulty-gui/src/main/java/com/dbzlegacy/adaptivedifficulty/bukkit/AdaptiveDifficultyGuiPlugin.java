@@ -1063,8 +1063,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§6§l/lm admin §8— Legacy Mechanics");
         sender.sendMessage("§e/lm admin help §7— this list");
         sender.sendMessage("§e/lm admin reload §7— reload config");
-        sender.sendMessage("§e/lm admin migrate-cnpc §7— import CNPC Rival/Spar into LM");
-        sender.sendMessage("§e/lm admin migrate-cnpc force §7— wipe LM Rival/Spar + re-import");
+        sender.sendMessage("§e/lm admin migrate-cnpc §7— import CNPC Rival/Spar (live → backup → world_data.json)");
+        sender.sendMessage("§e/lm admin migrate-cnpc force §7— wipe LM Rival/Spar + re-import from those sources");
+        sender.sendMessage("§8If CNPC was wiped: put world_data.json in config/legacymechanics/cnpc-import-backup/ then force");
         sender.sendMessage("§e/lm admin syslog on|off|status|flush");
         sender.sendMessage("§e/lm admin open <difficulty|rival|spar|progression|prestige|skills|hub>");
         sender.sendMessage("§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|prestige|progression|skills]");

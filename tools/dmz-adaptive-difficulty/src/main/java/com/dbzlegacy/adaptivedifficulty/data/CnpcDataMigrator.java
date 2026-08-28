@@ -15,24 +15,32 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.fml.loading.FMLPaths;
 
 /**
  * One-time CustomNPCs storeddata → LegacyMechanics JSON/NBT migration.
  * <p>
- * World (server start): Rival DB, Rival progression, Spar leaderboard →
- * {@code rivalry-v4.json} / {@code progression-v4.json} / {@code sparring.json},
- * then clears the CNPC world keys.
+ * World (server start / {@code /lm admin migrate-cnpc}): Rival DB, Rival progression,
+ * Spar leaderboard → {@code rivalry-v4.json} / {@code progression-v4.json} /
+ * {@code sparring.json}. CNPC world keys are cleared <b>only after a successful import</b>.
+ * <p>
+ * Sources (first hit wins): live CNPC storeddata → {@code cnpc-import-backup/} →
+ * CNPC {@code world_data.json} on disk (ScriptController path or scan).
  * <p>
  * Player (login): Spar bonds/streaks + flight/meditation/potential progress keys →
  * Forge {@code lm_progression} NBT / SparStore, then clears those CNPC player keys.
@@ -73,85 +81,20 @@ public final class CnpcDataMigrator {
                     AdaptiveDifficultyMod.MOD_ID, marker.getFileName());
             return;
         }
-        try {
-            Object stored = overworldStoreddata();
-            if (stored == null) {
-                AdaptiveDifficultyMod.LOGGER.info(
-                        "[{}] CNPC world migration skipped — CustomNPCs storeddata unavailable",
-                        AdaptiveDifficultyMod.MOD_ID);
-                // Do not write marker — retry next boot when CNPC is present.
-                WORLD_RAN.set(false);
-                return;
-            }
-
-            String rivalRaw = storedGet(stored, RIVAL_DB);
-            String progRaw = storedGet(stored, RIVAL_PROG);
-            String chRaw = storedGet(stored, RIVAL_CH);
-            String sparNames = storedGet(stored, SPAR_LB_NAMES);
-
-            boolean hasAnything = notBlank(rivalRaw) || notBlank(progRaw) || notBlank(sparNames)
-                    || hasSparLeaderboardKeys(stored);
-            if (!hasAnything) {
-                writeMarker(marker, "empty-no-cnpc-data");
-                AdaptiveDifficultyMod.LOGGER.info(
-                        "[{}] CNPC world migration: no Rival/Spar blobs found — marked done",
-                        AdaptiveDifficultyMod.MOD_ID);
-                return;
-            }
-
-            Path backupDir = ConfigPaths.dataDir().resolve("cnpc-import-backup");
-            Files.createDirectories(backupDir);
-            backupRaw(backupDir, "rivalry-database.json", rivalRaw);
-            backupRaw(backupDir, "rivalry-database.backup.json", storedGet(stored, RIVAL_DB_BAK));
-            backupRaw(backupDir, "rivalry-progression.json", progRaw);
-            backupRaw(backupDir, "rivalry-progression.backup.json", storedGet(stored, RIVAL_PROG_BAK));
-            backupRaw(backupDir, "rivalry-challenges.json", chRaw);
-            backupRaw(backupDir, "spar-leaderboard-names.txt", sparNames);
-
-            int rivalPlayers = 0;
-            if (notBlank(rivalRaw) && RivalStore.get().players.isEmpty()) {
-                rivalPlayers = importRivalDatabase(rivalRaw);
-            } else if (notBlank(rivalRaw) && !RivalStore.get().players.isEmpty()) {
-                AdaptiveDifficultyMod.LOGGER.info(
-                        "[{}] CNPC Rival DB present but rivalry-v4.json already has {} players — keeping mod data",
-                        AdaptiveDifficultyMod.MOD_ID, RivalStore.get().players.size());
-            }
-
-            boolean progImported = false;
-            if (notBlank(progRaw) && RivalProgression.get().isImportEmpty()) {
-                progImported = importRivalProgression(progRaw);
-            }
-
-            int sparLb = importSparLeaderboard(stored, sparNames);
-
-            RivalStore.get().markDirty();
-            RivalStore.get().save();
-            SparStore.get().markDirty();
-            SparStore.get().save();
-            if (progImported) {
-                RivalProgression.get().save();
-            }
-
-            clearWorldCnpcKeys(stored);
-            writeMarker(marker, "rivalPlayers=" + rivalPlayers
-                    + " prog=" + progImported
-                    + " sparLb=" + sparLb
-                    + " at=" + System.currentTimeMillis());
-
-            AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] CNPC→LM world migration complete: rivalPlayers={} prog={} sparLb={} (CNPC keys cleared; backup in {})",
-                    AdaptiveDifficultyMod.MOD_ID, rivalPlayers, progImported, sparLb, backupDir);
-        } catch (Throwable t) {
+        String msg = runWorldMigrate(server, false);
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] CNPC world migrate: {}",
+                AdaptiveDifficultyMod.MOD_ID,
+                msg == null ? "" : msg.replace('§', ' '));
+        // Allow another auto attempt next boot if nothing was marked done yet.
+        if (!Files.isRegularFile(marker)) {
             WORLD_RAN.set(false);
-            AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] CNPC world migration failed (will retry next boot): {}",
-                    AdaptiveDifficultyMod.MOD_ID, t.toString());
         }
     }
 
     /**
-     * Staff force re-import: ignores marker, still prefers empty mod stores
-     * (won't overwrite non-empty rivalry unless {@code forceOverwrite}).
+     * Staff re-import. {@code forceOverwrite} clears LM Rival/Spar LB/progression first.
+     * Always searches live CNPC → import-backup → world_data.json.
      */
     public static String forceMigrateWorld(MinecraftServer server, boolean forceOverwrite) {
         if (server == null) {
@@ -169,14 +112,425 @@ public final class CnpcDataMigrator {
                 SparStore.get().leaderboard.clear();
                 SparStore.get().markDirty();
             }
-            migrateWorldIfNeeded(server);
-            if (Files.isRegularFile(marker)) {
-                return "§aCNPC world migration finished. See server log + §fconfig/legacymechanics/cnpc-import-backup/";
-            }
-            return "§eMigration did not complete — check log (CNPC may be unavailable).";
+            return runWorldMigrate(server, forceOverwrite);
         } catch (Throwable t) {
             return "§cMigration error: " + t;
         }
+    }
+
+    /**
+     * Core world import. Never clears CNPC keys unless at least one blob was imported.
+     * Never reports success when zero players/LB rows were taken.
+     */
+    private static String runWorldMigrate(MinecraftServer server, boolean forceOverwrite) {
+        Path marker = ConfigPaths.dataDir().resolve(MARKER_FILE);
+        try {
+            WorldBlob blob = resolveWorldBlob(server);
+            if (blob == null || !blob.hasAnything()) {
+                return "§cNo CNPC Rival/Spar data found.\n"
+                        + "§7Checked: live storeddata, §fcnpc-import-backup/§7, and §fworld_data.json§7.\n"
+                        + "§8Restore a pre-wipe backup into "
+                        + "config/legacymechanics/cnpc-import-backup/world_data.json then "
+                        + "/lm admin migrate-cnpc force";
+            }
+
+            Path backupDir = ConfigPaths.dataDir().resolve("cnpc-import-backup");
+            Files.createDirectories(backupDir);
+            backupRaw(backupDir, "rivalry-database.json", blob.rivalRaw);
+            backupRaw(backupDir, "rivalry-progression.json", blob.progRaw);
+            backupRaw(backupDir, "rivalry-challenges.json", blob.chRaw);
+            backupRaw(backupDir, "spar-leaderboard-names.txt", blob.sparNames);
+            if (blob.fileMap != null && !blob.fileMap.isEmpty()
+                    && !Files.isRegularFile(backupDir.resolve("world_data.json"))) {
+                // Keep a full dump for future force-migrate if we loaded from live/API only.
+                try {
+                    Files.writeString(backupDir.resolve("world_data-from-" + blob.source + ".json"),
+                            GSON.toJson(blob.fileMap), StandardCharsets.UTF_8);
+                } catch (Throwable ignored) {
+                }
+            }
+
+            int lmPlayers = RivalStore.get().players.size();
+            int cnpcPlayers = countRivalPlayers(blob.rivalRaw);
+            int lmRich = countRichLmPlayers();
+            int cnpcRich = countRichCnpcPlayers(blob.rivalRaw);
+
+            boolean takeRival = notBlank(blob.rivalRaw) && (
+                    forceOverwrite
+                            || lmPlayers == 0
+                            || cnpcPlayers > lmPlayers
+                            || (cnpcRich > lmRich && cnpcRich > 0));
+
+            int rivalPlayers = 0;
+            if (takeRival) {
+                if (!forceOverwrite && lmPlayers > 0) {
+                    AdaptiveDifficultyMod.LOGGER.warn(
+                            "[{}] Replacing rivalry-v4 ({} LM / {} rich) with CNPC ({} / {} rich) from {}",
+                            AdaptiveDifficultyMod.MOD_ID, lmPlayers, lmRich, cnpcPlayers, cnpcRich, blob.source);
+                    RivalStore.get().players.clear();
+                    RivalStore.get().declareRequests.clear();
+                }
+                rivalPlayers = importRivalDatabase(blob.rivalRaw);
+            } else if (notBlank(blob.rivalRaw)) {
+                AdaptiveDifficultyMod.LOGGER.info(
+                        "[{}] Skipping Rival import — LM already has {} players (CNPC {} from {}). "
+                                + "Use /lm admin migrate-cnpc force to overwrite.",
+                        AdaptiveDifficultyMod.MOD_ID, lmPlayers, cnpcPlayers, blob.source);
+            }
+
+            boolean progImported = false;
+            if (notBlank(blob.progRaw) && (forceOverwrite || RivalProgression.get().isImportEmpty())) {
+                progImported = importRivalProgression(blob.progRaw);
+            }
+
+            int sparLb = importSparLeaderboard(blob);
+
+            RivalStore.get().markDirty();
+            RivalStore.get().save();
+            SparStore.get().markDirty();
+            SparStore.get().save();
+            if (progImported) {
+                RivalProgression.get().save();
+            }
+
+            boolean imported = rivalPlayers > 0 || progImported || sparLb > 0;
+            if (imported && blob.liveStored != null) {
+                clearWorldCnpcKeys(blob.liveStored);
+            } else if (!imported && blob.liveStored != null) {
+                AdaptiveDifficultyMod.LOGGER.info(
+                        "[{}] Leaving CNPC storeddata keys intact (nothing imported)",
+                        AdaptiveDifficultyMod.MOD_ID);
+            }
+
+            if (imported) {
+                writeMarker(marker, "rivalPlayers=" + rivalPlayers
+                        + " prog=" + progImported
+                        + " sparLb=" + sparLb
+                        + " source=" + blob.source
+                        + " at=" + System.currentTimeMillis());
+                WORLD_RAN.set(true);
+                return "§aCNPC→LM import OK from §f" + blob.source
+                        + "\n§7Rival players §f" + rivalPlayers
+                        + " §7· progression §f" + progImported
+                        + " §7· spar LB rows §f" + sparLb
+                        + "\n§8Backup: config/legacymechanics/cnpc-import-backup/";
+            }
+
+            return "§eNo rows imported from §f" + blob.source
+                    + "\n§7LM rivals §f" + lmPlayers
+                    + " §7· CNPC rivals §f" + cnpcPlayers
+                    + "\n§8CNPC keys were NOT cleared. Try §f/lm admin migrate-cnpc force";
+        } catch (Throwable t) {
+            WORLD_RAN.set(false);
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] CNPC world migration failed: {}",
+                    AdaptiveDifficultyMod.MOD_ID, t.toString());
+            return "§cMigration failed: " + t;
+        }
+    }
+
+    /* ========================= Source resolution ========================= */
+
+    private static final class WorldBlob {
+        String source = "unknown";
+        String rivalRaw;
+        String progRaw;
+        String chRaw;
+        String sparNames;
+        /** Optional flat key→value map (file sources) for spar LB fields. */
+        Map<String, String> fileMap;
+        /** Live CNPC IDataObject — only set when source is live API (safe to clear). */
+        Object liveStored;
+
+        boolean hasAnything() {
+            return notBlank(rivalRaw) || notBlank(progRaw) || notBlank(sparNames)
+                    || (fileMap != null && fileMap.keySet().stream()
+                    .anyMatch(k -> k != null && k.startsWith("spar.leaderboard.")));
+        }
+    }
+
+    private static WorldBlob resolveWorldBlob(MinecraftServer server) {
+        WorldBlob live = fromLiveStoreddata();
+        if (live != null && live.hasAnything()) {
+            return live;
+        }
+
+        WorldBlob backup = fromBackupDir();
+        if (backup != null && backup.hasAnything()) {
+            return backup;
+        }
+
+        WorldBlob disk = fromWorldDataFile(server);
+        if (disk != null && disk.hasAnything()) {
+            return disk;
+        }
+
+        // Prefer a live empty handle only so callers know CNPC is up but empty.
+        return live;
+    }
+
+    private static WorldBlob fromLiveStoreddata() {
+        Object stored = overworldStoreddata();
+        if (stored == null) {
+            return null;
+        }
+        WorldBlob b = new WorldBlob();
+        b.source = "live-cnpc";
+        b.liveStored = stored;
+        b.rivalRaw = firstNonBlank(storedGet(stored, RIVAL_DB), storedGet(stored, RIVAL_DB_BAK));
+        b.progRaw = firstNonBlank(storedGet(stored, RIVAL_PROG), storedGet(stored, RIVAL_PROG_BAK));
+        b.chRaw = firstNonBlank(storedGet(stored, RIVAL_CH), storedGet(stored, RIVAL_CH_BAK));
+        b.sparNames = storedGet(stored, SPAR_LB_NAMES);
+        // Mirror spar keys into a map so import path is unified.
+        Map<String, String> map = new HashMap<>();
+        for (String key : storedKeys(stored)) {
+            if (key != null && key.startsWith("spar.leaderboard.")) {
+                String v = storedGet(stored, key);
+                if (v != null) {
+                    map.put(key, v);
+                }
+            }
+        }
+        if (!map.isEmpty()) {
+            b.fileMap = map;
+        }
+        return b;
+    }
+
+    private static WorldBlob fromBackupDir() {
+        Path dir = ConfigPaths.dataDir().resolve("cnpc-import-backup");
+        if (!Files.isDirectory(dir)) {
+            return null;
+        }
+        // Prefer a full world_data dump if present.
+        Path[] dumps = {
+                dir.resolve("world_data.json"),
+                dir.resolve("world_data-from-live-cnpc.json"),
+        };
+        for (Path dump : dumps) {
+            WorldBlob fromDump = readWorldDataJson(dump, "backup:" + dump.getFileName());
+            if (fromDump != null && fromDump.hasAnything()) {
+                return fromDump;
+            }
+        }
+        try {
+            try (Stream<Path> walk = Files.list(dir)) {
+                for (Path p : walk.toList()) {
+                    String name = p.getFileName().toString();
+                    if (name.startsWith("world_data") && name.endsWith(".json")) {
+                        WorldBlob fromDump = readWorldDataJson(p, "backup:" + name);
+                        if (fromDump != null && fromDump.hasAnything()) {
+                            return fromDump;
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+
+        WorldBlob b = new WorldBlob();
+        b.source = "cnpc-import-backup";
+        b.rivalRaw = readFileString(dir.resolve("rivalry-database.json"));
+        if (!notBlank(b.rivalRaw)) {
+            b.rivalRaw = readFileString(dir.resolve("rivalry-database.backup.json"));
+        }
+        b.progRaw = readFileString(dir.resolve("rivalry-progression.json"));
+        if (!notBlank(b.progRaw)) {
+            b.progRaw = readFileString(dir.resolve("rivalry-progression.backup.json"));
+        }
+        b.chRaw = readFileString(dir.resolve("rivalry-challenges.json"));
+        b.sparNames = readFileString(dir.resolve("spar-leaderboard-names.txt"));
+        return b.hasAnything() ? b : null;
+    }
+
+    private static WorldBlob fromWorldDataFile(MinecraftServer server) {
+        List<Path> candidates = new ArrayList<>();
+        Path scriptControllerFile = cnpcWorldDataFile();
+        if (scriptControllerFile != null) {
+            candidates.add(scriptControllerFile);
+        }
+        Path gameDir = FMLPaths.GAMEDIR.get();
+        if (server != null) {
+            try {
+                // MinecraftServer#getServerDirectory
+                Object dir = server.getClass().getMethod("m_129843_").invoke(server);
+                if (dir instanceof File f) {
+                    gameDir = f.toPath();
+                } else if (dir instanceof Path p) {
+                    gameDir = p;
+                }
+            } catch (Throwable ignored) {
+                try {
+                    Object dir = server.getClass().getMethod("getServerDirectory").invoke(server);
+                    if (dir instanceof File f) {
+                        gameDir = f.toPath();
+                    } else if (dir instanceof Path p) {
+                        gameDir = p;
+                    }
+                } catch (Throwable ignored2) {
+                }
+            }
+        }
+        if (gameDir == null) {
+            gameDir = FMLPaths.GAMEDIR.get();
+        }
+        if (gameDir != null) {
+            candidates.add(gameDir.resolve("customnpcs/scripts/world_data.json"));
+            candidates.add(gameDir.resolve("uploads/scripts/world_data.json"));
+            // Common Mohist single-world layouts
+            for (String world : List.of("world", "AdventureWorld", "world_1", "Main")) {
+                candidates.add(gameDir.resolve(world).resolve("customnpcs/scripts/world_data.json"));
+            }
+            try (Stream<Path> walk = Files.walk(gameDir, 5)) {
+                walk.filter(p -> {
+                            String s = p.toString().replace('\\', '/');
+                            return s.endsWith("/customnpcs/scripts/world_data.json");
+                        })
+                        .limit(8)
+                        .forEach(candidates::add);
+            } catch (Throwable ignored) {
+            }
+        }
+        for (Path p : candidates) {
+            if (p == null || !Files.isRegularFile(p)) {
+                continue;
+            }
+            WorldBlob b = readWorldDataJson(p, "file:" + p.getFileName());
+            if (b != null && b.hasAnything()) {
+                b.source = "file:" + p.toAbsolutePath();
+                return b;
+            }
+        }
+        return null;
+    }
+
+    private static Path cnpcWorldDataFile() {
+        try {
+            Class<?> sc = Class.forName("noppes.npcs.controllers.ScriptController");
+            Object instance = sc.getField("Instance").get(null);
+            if (instance == null) {
+                return null;
+            }
+            var m = sc.getDeclaredMethod("worldDataFile");
+            m.setAccessible(true);
+            Object file = m.invoke(instance);
+            if (file instanceof File f) {
+                return f.toPath();
+            }
+            if (file instanceof Path p) {
+                return p;
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    private static WorldBlob readWorldDataJson(Path path, String sourceLabel) {
+        if (path == null || !Files.isRegularFile(path)) {
+            return null;
+        }
+        try {
+            String text = Files.readString(path, StandardCharsets.UTF_8);
+            JsonObject root = parseObject(text);
+            if (root == null) {
+                return null;
+            }
+            Map<String, String> map = new HashMap<>();
+            for (Map.Entry<String, JsonElement> e : root.entrySet()) {
+                if (e.getKey() == null || e.getValue() == null || e.getValue().isJsonNull()) {
+                    continue;
+                }
+                try {
+                    if (e.getValue().isJsonPrimitive()) {
+                        map.put(e.getKey(), e.getValue().getAsString());
+                    } else {
+                        map.put(e.getKey(), e.getValue().toString());
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            WorldBlob b = new WorldBlob();
+            b.source = sourceLabel;
+            b.fileMap = map;
+            b.rivalRaw = firstNonBlank(map.get(RIVAL_DB), map.get(RIVAL_DB_BAK));
+            b.progRaw = firstNonBlank(map.get(RIVAL_PROG), map.get(RIVAL_PROG_BAK));
+            b.chRaw = firstNonBlank(map.get(RIVAL_CH), map.get(RIVAL_CH_BAK));
+            b.sparNames = map.get(SPAR_LB_NAMES);
+            return b;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] world_data read fail {}: {}",
+                    AdaptiveDifficultyMod.MOD_ID, path, t.toString());
+            return null;
+        }
+    }
+
+    private static String readFileString(Path path) {
+        try {
+            if (path != null && Files.isRegularFile(path)) {
+                return Files.readString(path, StandardCharsets.UTF_8);
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    private static String firstNonBlank(String a, String b) {
+        if (notBlank(a)) {
+            return a;
+        }
+        return notBlank(b) ? b : null;
+    }
+
+    private static int countRivalPlayers(String raw) {
+        JsonObject root = parseObject(raw);
+        if (root == null || !root.has("players") || !root.get("players").isJsonObject()) {
+            return 0;
+        }
+        return root.getAsJsonObject("players").size();
+    }
+
+    private static int countRichLmPlayers() {
+        int n = 0;
+        for (RivalPlayerRecord rec : RivalStore.get().players.values()) {
+            if (rec == null) {
+                continue;
+            }
+            boolean rich = rec.totalRp > 0
+                    || rec.challengesPlayed > 0
+                    || rec.officialWins + rec.officialLosses > 0
+                    || (rec.rivals != null && !rec.rivals.isEmpty());
+            if (rich) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    private static int countRichCnpcPlayers(String raw) {
+        JsonObject root = parseObject(raw);
+        if (root == null || !root.has("players") || !root.get("players").isJsonObject()) {
+            return 0;
+        }
+        int n = 0;
+        for (Map.Entry<String, JsonElement> e : root.getAsJsonObject("players").entrySet()) {
+            if (e.getValue() == null || !e.getValue().isJsonObject()) {
+                continue;
+            }
+            JsonObject o = e.getValue().getAsJsonObject();
+            JsonObject career = o.has("career") && o.get("career").isJsonObject()
+                    ? o.getAsJsonObject("career") : o;
+            double rp = dbl(career, "rivalPointsTotal", dbl(o, "totalRp", 0.0));
+            long played = lng(career, "challengesPlayed", lng(o, "challengesPlayed", 0L));
+            long wins = lng(career, "officialWins", lng(o, "officialWins", 0L));
+            long losses = lng(career, "officialLosses", lng(o, "officialLosses", 0L));
+            boolean hasRivals = o.has("rivals") && o.get("rivals").isJsonObject()
+                    && o.getAsJsonObject("rivals").size() > 0;
+            if (rp > 0 || played > 0 || wins + losses > 0 || hasRivals) {
+                n++;
+            }
+        }
+        return n;
     }
 
     /** Login — copy player CNPC storeddata into LM, then clear those keys. */
@@ -372,8 +726,21 @@ public final class CnpcDataMigrator {
 
     /* ========================= Spar import ========================= */
 
-    private static int importSparLeaderboard(Object stored, String namesCsv) {
+    private static int importSparLeaderboard(WorldBlob blob) {
+        if (blob == null) {
+            return 0;
+        }
+        Function<String, String> get = key -> {
+            if (blob.fileMap != null && blob.fileMap.containsKey(key)) {
+                return blob.fileMap.get(key);
+            }
+            if (blob.liveStored != null) {
+                return storedGet(blob.liveStored, key);
+            }
+            return null;
+        };
         List<String> names = new ArrayList<>();
+        String namesCsv = blob.sparNames;
         if (notBlank(namesCsv)) {
             for (String part : namesCsv.split(",")) {
                 String n = part == null ? "" : part.trim();
@@ -382,9 +749,11 @@ public final class CnpcDataMigrator {
                 }
             }
         }
-        // Also scan keys if names index missing
         if (names.isEmpty()) {
-            for (String key : storedKeys(stored)) {
+            Iterable<String> keys = blob.fileMap != null
+                    ? blob.fileMap.keySet()
+                    : storedKeys(blob.liveStored);
+            for (String key : keys) {
                 if (key != null && key.startsWith("spar.leaderboard.tp.")) {
                     names.add(key.substring("spar.leaderboard.tp.".length()));
                 }
@@ -394,31 +763,30 @@ public final class CnpcDataMigrator {
         int imported = 0;
         for (String nameOrSafe : names) {
             String safe = safeName(nameOrSafe);
-            double tp = num(storedGet(stored, "spar.leaderboard.tp." + safe), 0.0);
-            if (!(tp > 0) && storedGet(stored, "spar.leaderboard.sessions." + safe) == null) {
+            double tp = num(get.apply("spar.leaderboard.tp." + safe), 0.0);
+            if (!(tp > 0) && get.apply("spar.leaderboard.sessions." + safe) == null) {
                 continue;
             }
             String uuid = resolveUuidByName(rivals, nameOrSafe);
             if (uuid == null) {
-                // Keep a stable synthetic key so board isn't lost — staff can merge later.
                 uuid = "name:" + safe;
             }
             SparStore.LeaderboardEntry lb = SparStore.get().leaderboard.computeIfAbsent(
                     uuid, k -> new SparStore.LeaderboardEntry());
             lb.name = displayName(nameOrSafe, safe);
             lb.totalTp = Math.max(lb.totalTp, tp);
-            lb.longestMs = Math.max(lb.longestMs, (long) num(storedGet(stored, "spar.leaderboard.longest." + safe), 0));
-            lb.bestPayout = Math.max(lb.bestPayout, num(storedGet(stored, "spar.leaderboard.bestPayout." + safe), 0));
-            lb.totalTimeMs = Math.max(lb.totalTimeMs, (long) num(storedGet(stored, "spar.leaderboard.totalTime." + safe), 0));
-            lb.sessions = Math.max(lb.sessions, (int) num(storedGet(stored, "spar.leaderboard.sessions." + safe), 0));
+            lb.longestMs = Math.max(lb.longestMs, (long) num(get.apply("spar.leaderboard.longest." + safe), 0));
+            lb.bestPayout = Math.max(lb.bestPayout, num(get.apply("spar.leaderboard.bestPayout." + safe), 0));
+            lb.totalTimeMs = Math.max(lb.totalTimeMs, (long) num(get.apply("spar.leaderboard.totalTime." + safe), 0));
+            lb.sessions = Math.max(lb.sessions, (int) num(get.apply("spar.leaderboard.sessions." + safe), 0));
             lb.perfectSessions = Math.max(lb.perfectSessions,
-                    (int) num(storedGet(stored, "spar.leaderboard.perfectPayouts." + safe), 0));
+                    (int) num(get.apply("spar.leaderboard.perfectPayouts." + safe), 0));
             lb.highestCombo = Math.max(lb.highestCombo,
-                    (int) num(storedGet(stored, "spar.leaderboard.highestCombo." + safe), 0));
+                    (int) num(get.apply("spar.leaderboard.highestCombo." + safe), 0));
             lb.currentStreak = Math.max(lb.currentStreak,
-                    (int) num(storedGet(stored, "spar.leaderboard.currentStreak." + safe), 0));
+                    (int) num(get.apply("spar.leaderboard.currentStreak." + safe), 0));
             lb.bestStreak = Math.max(lb.bestStreak,
-                    (int) num(storedGet(stored, "spar.leaderboard.bestStreak." + safe), 0));
+                    (int) num(get.apply("spar.leaderboard.bestStreak." + safe), 0));
             imported++;
         }
         if (imported > 0) {
@@ -553,15 +921,6 @@ public final class CnpcDataMigrator {
         for (String key : toRemove) {
             storedRemove(stored, key);
         }
-    }
-
-    private static boolean hasSparLeaderboardKeys(Object stored) {
-        for (String key : storedKeys(stored)) {
-            if (key != null && key.startsWith("spar.leaderboard.")) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /* ========================= CNPC reflection ========================= */

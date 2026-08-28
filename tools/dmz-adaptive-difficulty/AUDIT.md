@@ -1,3 +1,22 @@
+## CNPC migrate recovery (2.3.29)
+
+**Bug:** Migrator skipped Rival import when `rivalry-v4.json` already had stub players, then
+**still cleared CNPC keys** and wrote a done marker (`rivalPlayers=0`). Later
+`/lm admin migrate-cnpc` reported success with nothing left to grab.
+
+**Fix:**
+- Clear CNPC keys only after a real import (`rivalPlayers > 0` / prog / spar LB).
+- Prefer CNPC when it has more (or richer) players than LM; `force` still wipes LM first.
+- Source chain: live storeddata → `cnpc-import-backup/` → CNPC `world_data.json` on disk.
+- Honest chat: reports counts + source; never §a on zero imports.
+
+**Recover a wiped server:**
+1. Put a pre-wipe `world_data.json` (or `rivalry-database.json`) in
+   `config/legacymechanics/cnpc-import-backup/`
+2. Delete `config/legacymechanics/cnpc-world-migration.done` if present
+3. Run `/lm admin migrate-cnpc force`
+4. Confirm chat shows Rival players &gt; 0
+
 ## Mohist CMI / admin audit (2.3.28)
 
 - Remaining CMI GUIs (Difficulty/Hub/Progression/Prestige/Skills) now use Bukkit-only `/lmdo …`
