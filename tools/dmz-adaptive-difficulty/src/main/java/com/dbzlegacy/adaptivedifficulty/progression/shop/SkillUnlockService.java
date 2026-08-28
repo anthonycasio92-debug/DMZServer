@@ -2,6 +2,9 @@ package com.dbzlegacy.adaptivedifficulty.progression.shop;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
+import com.dbzlegacy.adaptivedifficulty.progression.skills.FlightProgression;
+import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dragonminez.common.stats.StatsData;
@@ -23,6 +26,7 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class SkillUnlockService {
     public static final int TRIGGER_ID = 21;
+    private static final int HARD_MAX_POTENTIAL = 30;
 
     private SkillUnlockService() {}
 
@@ -101,7 +105,7 @@ public final class SkillUnlockService {
         switch (page.toLowerCase(Locale.ROOT)) {
             case "advanced" -> appendAdvanced(out, skills, strength);
             case "saga" -> appendSaga(out, skills);
-            default -> appendCore(out, skills);
+            default -> appendCore(out, player, skills, strength);
         }
         return out;
     }
@@ -135,16 +139,93 @@ public final class SkillUnlockService {
         send(player, "§8────────────────");
     }
 
-    private static void appendCore(List<String> out, Skills skills) {
+    private static void appendCore(List<String> out, ServerPlayer player, Skills skills, int strength) {
         out.add("§6§lCore Skills§r");
-        appendLine(out, skills, "potentialunlock", "Potential Unlock", "§d", 30);
-        appendLine(out, skills, "fly", "Flight", "§b", 10);
-        appendLine(out, skills, "meditation", "Meditation", "§a", 10);
+        appendPotential(out, player, skills);
+        appendFlight(out, player, skills);
+        appendMeditation(out, player, skills);
         appendLine(out, skills, "kicontrol", "Ki Control", "§3", 10);
         appendLine(out, skills, "kimanipulation", "Ki Manipulation", "§9", 10);
         appendLine(out, skills, "kisense", "Ki Sense", "§5", 10);
-        appendLine(out, skills, "jump", "Jump", "§e", 10);
-        appendLine(out, skills, "sprint", "Sprint", "§6", 10);
+        appendStrengthLine(out, skills, "jump", "Jump", "§e", strength);
+        appendStrengthLine(out, skills, "sprint", "Sprint", "§6", strength);
+    }
+
+    private static void appendPotential(List<String> out, ServerPlayer player, Skills skills) {
+        int level = skillLevel(skills, "potentialunlock");
+        int max = Math.min(HARD_MAX_POTENTIAL, skillMax(skills, "potentialunlock", HARD_MAX_POTENTIAL));
+        if (level >= HARD_MAX_POTENTIAL) {
+            out.add("§dPotential Unlock§7: §6§lMAX§r §7(" + level + "/" + HARD_MAX_POTENTIAL + ")");
+            return;
+        }
+        if (level == 10) {
+            out.add("§dPotential Unlock§7: §f" + level + "/" + HARD_MAX_POTENTIAL);
+            out.add("§8  - §7Speak to Guru to unlock level 11.");
+            return;
+        }
+        out.add("§dPotential Unlock§7: §f" + level + "/" + max);
+        int next = level + 1;
+        int required = next * 100;
+        long progress = ProgressionData.storedGetLong(player, "potentialunlock_points_to_level_" + next, 0L);
+        if (progress > required) {
+            progress = required;
+        }
+        out.add("§8  - §7Progress §f" + progress + "§7/§f" + required + " §7points");
+        String method = ProgressionData.storedGet(player, "potentialunlock_last_method", "");
+        long streak = ProgressionData.storedGetLong(player, "potentialunlock_same_method_streak", 0L);
+        if (method != null && !method.isBlank()) {
+            out.add("§8  - §7Last method §f" + method.replace('_', ' ')
+                    + (streak > 0 ? " §8(streak " + streak + ")" : ""));
+        }
+    }
+
+    private static void appendFlight(List<String> out, ServerPlayer player, Skills skills) {
+        int level = skillLevel(skills, "fly");
+        int max = skillMax(skills, "fly", 10);
+        if (level >= max && max > 0) {
+            out.add("§bFlight§7: §6§lMAX§r §7(" + level + "/" + max + ")");
+            return;
+        }
+        out.add("§bFlight§7: §f" + level + "/" + max);
+        int next = level + 1;
+        int needSec = FlightProgression.requiredSecondsForLevel(next);
+        if (needSec <= 0) {
+            return;
+        }
+        long progress = ProgressionData.storedGetLong(player, "fly_training_progress_to_level_" + next, 0L);
+        // Live script stored ms historically; normalize to seconds when oversized.
+        if (progress > needSec * 20L) {
+            progress = progress / 1000L;
+        }
+        if (progress > needSec) {
+            progress = needSec;
+        }
+        out.add("§8  - §7Training §f" + formatTime(progress) + "§7/§f" + formatTime(needSec));
+    }
+
+    private static void appendMeditation(List<String> out, ServerPlayer player, Skills skills) {
+        int level = skillLevel(skills, "meditation");
+        int max = skillMax(skills, "meditation", 10);
+        if (level >= max && max > 0) {
+            out.add("§aMeditation§7: §6§lMAX§r §7(" + level + "/" + max + ")");
+        } else {
+            out.add("§aMeditation§7: §f" + level + "/" + max);
+            int next = level + 1;
+            int needSec = MeditationProgression.requiredSecondsForLevel(next);
+            if (needSec > 0) {
+                long progress = ProgressionData.storedGetLong(
+                        player, "meditation_restore_progress_to_level_" + next, 0L);
+                if (progress > needSec) {
+                    progress = needSec;
+                }
+                out.add("§8  - §7Restore §f" + formatTime(progress) + "§7/§f" + formatTime(needSec));
+            }
+        }
+        String trial = MeditationProgression.currentTrialName();
+        if (trial != null && !trial.isBlank()) {
+            long rem = MeditationProgression.trialRemainingMs();
+            out.add("§8  - §7Global trial §f" + trial + " §8(" + formatTime(rem / 1000L) + " left)");
+        }
     }
 
     private static void appendAdvanced(List<String> out, Skills skills, int strength) {
@@ -220,6 +301,20 @@ public final class SkillUnlockService {
             case 10 -> 3500;
             default -> 3500;
         };
+    }
+
+    private static String formatTime(long seconds) {
+        long s = Math.max(0L, seconds);
+        long h = s / 3600L;
+        long m = (s % 3600L) / 60L;
+        long r = s % 60L;
+        if (h > 0) {
+            return h + "h " + m + "m";
+        }
+        if (m > 0) {
+            return m + "m " + r + "s";
+        }
+        return r + "s";
     }
 
     private static int skillLevel(Skills skills, String id) {

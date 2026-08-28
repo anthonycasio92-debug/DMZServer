@@ -28,6 +28,8 @@ public final class PrestigeSystem {
     private static final int MAX_REQUIRED_LEVEL = 100_000;
     private static final int MAX_HELD = 10;
     private static final long CONFIRM_MS = 10_000L;
+    /** Live Prestige NPC.js — held tokens live on CNPC faction 4. */
+    private static final int FACTION_HELD_ID = 4;
 
     private static final String KEY_TOTAL = "prestige_total_completed";
     private static final String KEY_HELD = "lm_prestige_held";
@@ -122,6 +124,7 @@ public final class PrestigeSystem {
         int newCompleted = completed + 1;
         setHeld(player, newHeld);
         setCompleted(player, newCompleted);
+        resetPrestigeProgress(player);
 
         String name = player.m_6302_();
         MinecraftServer server = player.m_20194_();
@@ -243,11 +246,17 @@ public final class PrestigeSystem {
     }
 
     public static int getHeld(ServerPlayer player) {
+        int nbt = 0;
         CompoundTag tag = PersistentDataAccess.get(player);
         if (PersistentDataAccess.isWritable(tag) && tag.m_128441_(KEY_HELD)) {
-            return Math.max(0, tag.m_128451_(KEY_HELD));
+            nbt = Math.max(0, tag.m_128451_(KEY_HELD));
         }
-        return 0;
+        // Live Prestige NPC used CNPC faction 4 as held tokens — prefer the higher value.
+        Integer faction = readFactionPoints(player, FACTION_HELD_ID);
+        if (faction != null) {
+            return Math.max(0, Math.min(MAX_HELD, Math.max(nbt, faction)));
+        }
+        return Math.max(0, Math.min(MAX_HELD, nbt));
     }
 
     private static void setCompleted(ServerPlayer player, int value) {
@@ -258,10 +267,99 @@ public final class PrestigeSystem {
     }
 
     private static void setHeld(ServerPlayer player, int value) {
+        int clamped = Math.max(0, Math.min(MAX_HELD, value));
         CompoundTag tag = PersistentDataAccess.get(player);
         if (PersistentDataAccess.isWritable(tag)) {
-            tag.m_128405_(KEY_HELD, Math.max(0, Math.min(MAX_HELD, value)));
+            tag.m_128405_(KEY_HELD, clamped);
         }
+        // Dual-write to faction 4 so race-unlock shops that spend faction tokens stay in sync.
+        Integer current = readFactionPoints(player, FACTION_HELD_ID);
+        if (current != null) {
+            int delta = clamped - current;
+            if (delta != 0) {
+                addFactionPoints(player, FACTION_HELD_ID, delta);
+            }
+        }
+    }
+
+    /** Live Prestige NPC.js — clear saga quests/dialogs after purchase. */
+    private static void resetPrestigeProgress(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        int[] quests = {26, 2, 27};
+        int[] dialogs = {21, 20, 18, 19};
+        try {
+            Class<?> npcApi = Class.forName("noppes.npcs.api.NpcAPI");
+            Object available = npcApi.getMethod("IsAvailable").invoke(null);
+            if (!(available instanceof Boolean ok) || !ok) {
+                return;
+            }
+            Object api = npcApi.getMethod("Instance").invoke(null);
+            Object entity = api.getClass()
+                    .getMethod("getIEntity", net.minecraft.world.entity.Entity.class)
+                    .invoke(api, player);
+            if (entity == null) {
+                return;
+            }
+            for (int q : quests) {
+                try {
+                    entity.getClass().getMethod("removeQuest", int.class).invoke(entity, q);
+                } catch (Throwable ignored) {
+                }
+            }
+            for (int d : dialogs) {
+                try {
+                    entity.getClass().getMethod("removeDialog", int.class).invoke(entity, d);
+                } catch (Throwable ignored) {
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static Integer readFactionPoints(ServerPlayer player, int factionId) {
+        try {
+            Class<?> npcApi = Class.forName("noppes.npcs.api.NpcAPI");
+            Object available = npcApi.getMethod("IsAvailable").invoke(null);
+            if (available instanceof Boolean ok && ok) {
+                Object api = npcApi.getMethod("Instance").invoke(null);
+                Object entity = api.getClass()
+                        .getMethod("getIEntity", net.minecraft.world.entity.Entity.class)
+                        .invoke(api, player);
+                if (entity != null) {
+                    Object pts = entity.getClass()
+                            .getMethod("getFactionPoints", int.class)
+                            .invoke(entity, factionId);
+                    if (pts instanceof Number n) {
+                        return n.intValue();
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    private static boolean addFactionPoints(ServerPlayer player, int factionId, int delta) {
+        try {
+            Class<?> npcApi = Class.forName("noppes.npcs.api.NpcAPI");
+            Object available = npcApi.getMethod("IsAvailable").invoke(null);
+            if (available instanceof Boolean ok && ok) {
+                Object api = npcApi.getMethod("Instance").invoke(null);
+                Object entity = api.getClass()
+                        .getMethod("getIEntity", net.minecraft.world.entity.Entity.class)
+                        .invoke(api, player);
+                if (entity != null) {
+                    entity.getClass()
+                            .getMethod("addFactionPoints", int.class, int.class)
+                            .invoke(entity, factionId, delta);
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
     }
 
     private static MutableComponent btn(String label, String command, String hover) {

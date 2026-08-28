@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -141,6 +142,8 @@ public final class RivalSystem {
         long now = System.currentTimeMillis();
         RivalLink myLink = me.getOrCreateLink(them.uuid, them.name, now);
         RivalLink theirLink = them.getOrCreateLink(me.uuid, me.name, now);
+        restorePastIfAny(me, them, myLink);
+        restorePastIfAny(them, me, theirLink);
 
         // Silent path: mark declaredByMe. If both silent → Declared.
         if (myLink.inviteSent || myLink.inviteReceived || theirLink.inviteSent || theirLink.inviteReceived) {
@@ -173,6 +176,8 @@ public final class RivalSystem {
         }
         RivalLink myLink = me.getOrCreateLink(them.uuid, them.name, now);
         RivalLink theirLink = them.getOrCreateLink(me.uuid, me.name, now);
+        restorePastIfAny(me, them, myLink);
+        restorePastIfAny(them, me, theirLink);
         if (myLink.mutual) {
             return "§eAlready mutual rivals with " + them.name + ".";
         }
@@ -269,18 +274,20 @@ public final class RivalSystem {
         if (myLink == null) {
             return "§cYou have no rivalry with " + them.name + ".";
         }
+        archiveRivalLink(me, them.uuid, myLink);
         RivalLink theirLink = them.rivals.get(me.uuid);
         if (theirLink != null) {
-            theirLink.mutual = false;
-            theirLink.isNemesis = false;
-            theirLink.declaredByThem = false;
-            theirLink.inviteReceived = false;
-            theirLink.inviteSent = false;
+            archiveRivalLink(them, me.uuid, theirLink);
+            them.rivals.remove(me.uuid);
+            them.recalcTotalRp();
         }
         me.rivalsRemoved++;
         me.recalcTotalRp();
         if (them.uuid.equals(me.nemesisUuid)) {
             me.nemesisUuid = "";
+        }
+        if (me.uuid.equals(them.nemesisUuid)) {
+            them.nemesisUuid = "";
         }
         store.markDirty();
         return "§eRemoved rivalry with §f" + them.name + ".";
@@ -313,14 +320,39 @@ public final class RivalSystem {
     }
 
     public static List<String> statsLines(ServerPlayer player) {
-        RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
+        return statsLines(player, null);
+    }
+
+    public static List<String> statsLines(ServerPlayer viewer, String targetName) {
+        RivalStore store = RivalStore.get();
+        RivalPlayerRecord me;
+        if (targetName == null || targetName.isBlank()) {
+            me = store.ensurePlayer(viewer);
+        } else {
+            me = findByName(store, targetName);
+            if (me == null) {
+                ServerPlayer online = findOnline(viewer == null ? null : viewer.m_20194_(), targetName);
+                if (online != null) {
+                    me = store.ensurePlayer(online);
+                }
+            }
+            if (me == null) {
+                List<String> miss = new ArrayList<>();
+                miss.add("§cNo rivalry record for §f" + targetName);
+                return miss;
+            }
+        }
         List<String> lines = new ArrayList<>();
         lines.add("§6§lRival Stats §8— §f" + me.name);
         RivalConstants.RpTier tier = RivalConstants.tierFor(me.totalRp);
         lines.add("§7Total RP §f" + (int) me.totalRp + " §8(§" + tier.color() + tier.name() + "§8)");
         lines.add("§7Record §a" + me.officialWins + "§7/§c" + me.officialLosses + "§7/§e" + me.officialDraws
                 + " §8(KO " + me.knockouts + ")");
+        lines.add("§7Streak §f" + me.currentWinStreak + " §8(best " + me.bestWinStreak + ")");
         lines.add("§7Challenges §f" + me.challengesPlayed + " §7Surpass §f" + me.surpassAwards);
+        lines.add("§7Career dmg §f" + (int) me.careerDamageDealt
+                + " §8| combo §f" + me.careerHighestCombo
+                + " §8| hits §f" + me.careerHits);
         lines.add("§7Mutual slots §f" + me.countMutual() + "§8/§f" + RivalConstants.MAX_MUTUAL_RIVALS);
         lines.add("§7TP messages §f" + (me.tpMessages ? "ON" : "OFF") + " §8(/rival tpmsg)");
         return lines;
@@ -337,19 +369,100 @@ public final class RivalSystem {
     }
 
     public static List<String> topLines(int limit) {
+        return topLines("rp", limit);
+    }
+
+    public static List<String> topLines(String category, int limit) {
+        String cat = category == null || category.isBlank() ? "rp" : category.trim().toLowerCase();
         List<String> lines = new ArrayList<>();
-        lines.add("§6§lRival RP Top");
+        String label = switch (cat) {
+            case "wins", "win" -> "Wins";
+            case "streak", "beststreak" -> "Streak";
+            case "damage", "dmg" -> "Damage";
+            case "combo" -> "Combo";
+            case "hit", "hits" -> "Hits";
+            case "battles", "battle", "challenges" -> "Battles";
+            default -> "RP";
+        };
+        lines.add("§6§lRival " + label + " Top");
         int i = 1;
-        for (RivalPlayerRecord rec : RivalStore.get().topByRp(limit)) {
-            RivalConstants.RpTier tier = RivalConstants.tierFor(rec.totalRp);
-            lines.add("§e#" + i + " §f" + rec.name + " §7RP §f" + (int) rec.totalRp
-                    + " §8(§" + tier.color() + tier.name() + "§8)");
+        for (RivalPlayerRecord rec : RivalStore.get().topBy(limit, cat)) {
+            String value = switch (cat) {
+                case "wins", "win" -> String.valueOf(rec.officialWins);
+                case "streak", "beststreak" -> String.valueOf(rec.bestWinStreak);
+                case "damage", "dmg" -> String.valueOf((int) rec.careerDamageDealt);
+                case "combo" -> String.valueOf(rec.careerHighestCombo);
+                case "hit", "hits" -> String.valueOf(rec.careerHits);
+                case "battles", "battle", "challenges" -> String.valueOf(rec.challengesPlayed);
+                default -> {
+                    RivalConstants.RpTier tier = RivalConstants.tierFor(rec.totalRp);
+                    yield (int) rec.totalRp + " §8(§" + tier.color() + tier.name() + "§8)";
+                }
+            };
+            lines.add("§e#" + i + " §f" + rec.name + " §7" + value);
             i++;
         }
         if (i == 1) {
             lines.add("§7No rivalry data yet.");
         }
         return lines;
+    }
+
+    private static void archiveRivalLink(RivalPlayerRecord owner, String rivalUuid, RivalLink link) {
+        if (owner == null || rivalUuid == null || link == null) {
+            return;
+        }
+        if (owner.pastRivals == null) {
+            owner.pastRivals = new ConcurrentHashMap<>();
+        }
+        RivalLink snap = new RivalLink();
+        snap.uuid = link.uuid;
+        snap.name = link.name;
+        snap.points = link.points;
+        snap.wins = link.wins;
+        snap.losses = link.losses;
+        snap.draws = link.draws;
+        snap.deathLosses = link.deathLosses;
+        snap.deathWins = link.deathWins;
+        snap.presenceMs = link.presenceMs;
+        snap.createdAt = link.createdAt;
+        snap.firstMetAt = link.firstMetAt;
+        snap.mutualSince = link.mutualSince;
+        snap.lastBattleAt = link.lastBattleAt;
+        snap.provingGrounds = link.provingGrounds;
+        owner.pastRivals.put(rivalUuid, snap);
+    }
+
+    private static void restorePastIfAny(RivalPlayerRecord owner, RivalPlayerRecord target, RivalLink link) {
+        if (owner == null || target == null || link == null || owner.pastRivals == null) {
+            return;
+        }
+        RivalLink past = owner.pastRivals.remove(target.uuid);
+        if (past == null) {
+            return;
+        }
+        link.points = Math.max(link.points, past.points);
+        link.wins = Math.max(link.wins, past.wins);
+        link.losses = Math.max(link.losses, past.losses);
+        link.draws = Math.max(link.draws, past.draws);
+        link.deathLosses = Math.max(link.deathLosses, past.deathLosses);
+        link.deathWins = Math.max(link.deathWins, past.deathWins);
+        link.presenceMs = Math.max(link.presenceMs, past.presenceMs);
+        if (past.createdAt > 0 && (link.createdAt <= 0 || past.createdAt < link.createdAt)) {
+            link.createdAt = past.createdAt;
+        }
+        if (past.firstMetAt > 0 && (link.firstMetAt <= 0 || past.firstMetAt < link.firstMetAt)) {
+            link.firstMetAt = past.firstMetAt;
+        }
+        if (past.mutualSince > 0) {
+            link.mutualSince = past.mutualSince;
+        }
+        if (past.lastBattleAt > link.lastBattleAt) {
+            link.lastBattleAt = past.lastBattleAt;
+        }
+        if (link.provingGrounds == null && past.provingGrounds != null) {
+            link.provingGrounds = past.provingGrounds;
+        }
     }
 
     private static void promoteIfReady(

@@ -36,8 +36,18 @@ public final class RivalCommands {
                 .then(Commands.m_82127_("gui").executes(ctx -> gui(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("help").executes(ctx -> gui(ctx.getSource(), "help")))
                 .then(Commands.m_82127_("list").executes(ctx -> list(ctx.getSource())))
-                .then(Commands.m_82127_("stats").executes(ctx -> stats(ctx.getSource())))
-                .then(Commands.m_82127_("top").executes(ctx -> top(ctx.getSource())))
+                .then(Commands.m_82127_("stats")
+                        .executes(ctx -> stats(ctx.getSource(), null))
+                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .executes(ctx -> stats(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "player")))))
+                .then(Commands.m_82127_("top")
+                        .executes(ctx -> top(ctx.getSource(), "rp"))
+                        .then(Commands.m_82129_("category", StringArgumentType.word())
+                                .executes(ctx -> top(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "category")))))
                 .then(Commands.m_82127_("season").executes(ctx -> gui(ctx.getSource(), "season")))
                 .then(Commands.m_82127_("quests").executes(ctx -> gui(ctx.getSource(), "quests")))
                 .then(Commands.m_82127_("achievements").executes(ctx -> gui(ctx.getSource(), "achievements")))
@@ -282,23 +292,23 @@ public final class RivalCommands {
         return 1;
     }
 
-    private static int stats(CommandSourceStack source) {
+    private static int stats(CommandSourceStack source, String target) {
         ServerPlayer player = playerOrNull(source);
         if (player == null || !enabled(player)) {
             return 0;
         }
-        for (String line : RivalSystem.statsLines(player)) {
+        for (String line : RivalSystem.statsLines(player, target)) {
             DmzRewards.msg(player, line);
         }
         return 1;
     }
 
-    private static int top(CommandSourceStack source) {
+    private static int top(CommandSourceStack source, String category) {
         ServerPlayer player = playerOrNull(source);
         if (player == null || !enabled(player)) {
             return 0;
         }
-        for (String line : RivalSystem.topLines(10)) {
+        for (String line : RivalSystem.topLines(category, 10)) {
             DmzRewards.msg(player, line);
         }
         return 1;

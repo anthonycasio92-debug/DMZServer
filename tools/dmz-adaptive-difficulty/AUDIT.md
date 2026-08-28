@@ -5,7 +5,32 @@ Scope: CNPC scripts in-repo, remote feature branches, and a live-server script p
 Rival/Spar, progression, Title/Admin inspect, Building TP / End portal guard,
 GhostPartyHeal (melee 2.12.20), inventory GUIs, plus KubeJS packs from
 `server-fixes-consolidated` and `dmz-dino-food-balance`.
-Jars: `LegacyMechanics-2.2.0` / `LegacyMechanicsGUI-2.2.0` / `dmz_mohist_melee_fix-2.12.20`.
+Jars: `LegacyMechanics-2.2.1` / `LegacyMechanicsGUI-2.2.1` / `dmz_mohist_melee_fix-2.12.20`.
+
+## Script ↔ mod parity pass (2.2.1)
+
+Full audit of live dump `uploads/live-scripts-2026-08-27/ecmascript/` (32 files)
+against Java. All 30 enabled CNPC tabs remain mapped; gaps closed in 2.2.1:
+
+| Gap | Fix |
+|-----|-----|
+| RaceLock missing `sento_saiyan` | `RaceLock` locks Ancient + Sento Saiyan |
+| End dragon extra ki attacks | `EndDimensionStrength` DMZ beam/blast tick |
+| End crystals / egg podium on kill | clear crystals + egg blocks (+ retry window) |
+| Skill Check progress thin | flight/meditation/potential detail + Jump/Sprint STR gates |
+| Spar STYLE_BONUS drift | aligned to live 1.08/1.08/1.12/1.10/1.06/1.05 |
+| Prestige held/tokens | dual-write CNPC faction 4 + quest/dialog reset |
+| Rival tops / stats / archive | `/rival top <cat>`, `/rival stats [player]`, `pastRivals` |
+| Rival achievements / HoF | first_blood, perfect_victory, legend_killer, etc. + streak/rivalry/season HoF |
+| Spar stats other player | `/spar stats [player]` |
+
+### Still intentional / out of scope
+
+- Prestige `/prestige` remains **staff-only** (live used Prestige NPC interact for players).
+- End TP softcap tables remain simplified linear curve (documented).
+- CMI `rival_title` usermeta sync not ported (GUI titles cover display).
+- KubeJS balance pack stays KubeJS (weapons, Apotheosis, food, etc.).
+- Disable live Building TP + shadow-dummy KubeJS when LM ships.
 
 ## Live server pull
 
@@ -82,6 +107,6 @@ Ship those via `server-fixes-consolidated` / `dmz-dino-food-balance` PRs, not Le
 
 ## Remaining risks
 
-1. **Live script versions unknown** until SFTP or dump works — in-repo CNPC may lag production.
-2. On test: disable matching CNPC + KubeJS Building TP when LM flags are on (avoid double TP).
-3. Do not deploy LM to live until test pass.
+1. On test: disable matching CNPC + KubeJS Building TP / shadow-dummy when LM flags are on.
+2. Do not deploy LM to live until test pass.
+3. PrestigeFactionSync (class level → faction 4) can overwrite spent held tokens — same tension as live CNPC; monitor race-unlock shops.

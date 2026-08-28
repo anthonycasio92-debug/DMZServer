@@ -225,8 +225,58 @@ public final class RivalProgression {
             bumpSeasonRp(winner, 25);
             bumpQuest(winner, "defeat_rival", 1);
             unlock(winner, "first_win");
+            unlock(winner, "first_blood");
             if (knockout) {
                 unlock(winner, "knockout");
+            }
+            RivalPlayerRecord winRec = RivalStore.get().ensurePlayer(winner);
+            RivalPlayerRecord loseRec = loser == null ? null : RivalStore.get().ensurePlayer(loser);
+            if (winRec != null) {
+                if (winRec.bestWinStreak >= 5) {
+                    unlock(winner, "unbreakable");
+                }
+                if (winRec.challengesPlayed >= 25) {
+                    unlock(winner, "battle_hardened");
+                }
+                if (winRec.careerHighestCombo >= 20) {
+                    unlock(winner, "combo_master");
+                }
+                if (winRec.totalRp >= 15_000) {
+                    unlock(winner, "god_rival");
+                }
+                if (loseRec != null && winRec.totalRp < loseRec.totalRp) {
+                    unlock(winner, "legend_killer");
+                }
+            }
+            if (ch != null && winner != null) {
+                RivalChallenge.Combat wc = ch.combatOf(winner.m_20148_());
+                RivalChallenge.Combat lc = loser == null ? null : ch.combatOf(loser.m_20148_());
+                if (wc != null) {
+                    if (wc.longestCombo >= 20) {
+                        unlock(winner, "combo_master");
+                    }
+                    if (wc.ki >= 5000) {
+                        unlock(winner, "ki_dominator");
+                    }
+                    double dealt = Math.max(0.0, wc.damage);
+                    double taken = lc == null ? 0.0 : Math.max(0.0, lc.damage);
+                    double maxHp = 20.0;
+                    try {
+                        maxHp = Math.max(1.0, winner.m_21233_());
+                    } catch (Throwable ignored) {
+                    }
+                    double remainingPct = Math.max(0.0, Math.min(100.0,
+                            (winner.m_21223_() / maxHp) * 100.0));
+                    if (remainingPct >= 90.0) {
+                        unlock(winner, "perfect_victory");
+                    }
+                    if (taken <= 0.5) {
+                        unlock(winner, "untouchable");
+                    }
+                    if (taken > dealt * 1.5 && dealt > 0) {
+                        unlock(winner, "comeback_king");
+                    }
+                }
             }
         }
         if (ch != null) {
@@ -354,6 +404,12 @@ public final class RivalProgression {
         int bestBattlesV = -1;
         String greatest = null;
         double greatestV = -1;
+        String bestStreak = null;
+        int bestStreakV = -1;
+        String longestRivalry = null;
+        long longestRivalryV = -1;
+        String seasonChamp = null;
+        double seasonChampV = -1;
         for (RivalPlayerRecord rec : store.players.values()) {
             if (rec == null) {
                 continue;
@@ -366,6 +422,10 @@ public final class RivalProgression {
                 bestBattlesV = rec.challengesPlayed;
                 bestBattles = rec.name + " (" + rec.challengesPlayed + ")";
             }
+            if (rec.bestWinStreak > bestStreakV) {
+                bestStreakV = rec.bestWinStreak;
+                bestStreak = rec.name + " (" + rec.bestWinStreak + ")";
+            }
             for (RivalLink link : rec.rivals.values()) {
                 if (link == null || !link.mutual) {
                     continue;
@@ -376,6 +436,24 @@ public final class RivalProgression {
                     greatestV = score;
                     greatest = rec.name + " vs " + link.name + " (" + fights + " battles)";
                 }
+                long age = Math.max(0L, System.currentTimeMillis() - Math.max(1L, link.mutualSince > 0
+                        ? link.mutualSince : link.createdAt));
+                if (age > longestRivalryV) {
+                    longestRivalryV = age;
+                    longestRivalry = rec.name + " vs " + link.name
+                            + " (" + (age / 86400000L) + "d)";
+                }
+            }
+        }
+        if (data.season != null && data.season.leaderboard != null) {
+            for (Map.Entry<String, Double> e : data.season.leaderboard.entrySet()) {
+                if (e.getValue() == null || e.getValue() <= seasonChampV) {
+                    continue;
+                }
+                seasonChampV = e.getValue();
+                RivalPlayerRecord rec = store.get(e.getKey());
+                seasonChamp = (rec == null ? e.getKey() : rec.name)
+                        + " (" + (int) seasonChampV + " season RP)";
             }
         }
         Map<String, String> hof = new LinkedHashMap<>();
@@ -387,6 +465,15 @@ public final class RivalProgression {
         }
         if (greatest != null) {
             hof.put("greatest_rivals", greatest);
+        }
+        if (bestStreak != null) {
+            hof.put("longest_streak", bestStreak);
+        }
+        if (longestRivalry != null) {
+            hof.put("longest_rivalry", longestRivalry);
+        }
+        if (seasonChamp != null) {
+            hof.put("season_champion", seasonChamp);
         }
         data.hallOfFame = hof;
     }

@@ -6,6 +6,8 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
+import com.dragonminez.common.init.entities.ki.KiBlastEntity;
+import com.dragonminez.common.init.entities.ki.KiLaserEntity;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
 import java.util.ArrayList;
@@ -14,6 +16,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -25,6 +28,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Endermite;
@@ -32,9 +36,11 @@ import net.minecraft.world.entity.monster.Phantom;
 import net.minecraft.world.entity.monster.Shulker;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.dimension.end.EndDragonFight;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -66,6 +72,29 @@ public final class EndDimensionStrength {
     private static final String KI_BLAST_ID = "dragonminez:ki_blast";
     private static final AABB END_KI_SCAN_BOX = new AABB(-800.0, 0.0, -800.0, 800.0, 320.0, 800.0);
 
+    /** Live End Dimension Strength.js 2.12.0 — dragon extra DMZ ki attacks. */
+    private static final boolean DRAGON_EXTRA_ATTACKS = true;
+    private static final long DRAGON_ATTACK_INTERVAL_MS = 3200L;
+    private static final double DRAGON_ATTACK_RANGE = 96.0;
+    private static final double DRAGON_KI_BEAM_CHANCE = 0.60;
+    private static final double DRAGON_DMZ_KI_DAMAGE = 450.0;
+    private static final double DRAGON_DMZ_KI_MELEE_FRAC = 0.10;
+    private static final double DRAGON_DMZ_KI_DAMAGE_CAP = 8000.0;
+    private static final float DRAGON_DMZ_KI_SPEED_BEAM = 1.75f;
+    private static final float DRAGON_DMZ_KI_SPEED_BLAST = 2.35f;
+    private static final float DRAGON_DMZ_KI_SIZE_BLAST = 1.35f;
+    private static final int DRAGON_DMZ_KI_LIFE_BEAM = 28;
+    private static final int DRAGON_DMZ_KI_LIFE_BLAST = 36;
+    private static final int DRAGON_DMZ_KI_COLOR_MAIN = 0xC44CFF;
+    private static final int DRAGON_DMZ_KI_COLOR_BORDER = 0x7A1FA2;
+    private static final int DRAGON_DMZ_KI_COLOR_OUTLINE = 0xFFFFFF;
+
+    private static final boolean DESTROY_CRYSTALS_ON_KILL = true;
+    private static final boolean REMOVE_EGG_BLOCK = true;
+    private static final int EGG_CLEAR_RADIUS = 8;
+    private static final int EGG_CLEAR_Y_MIN = 50;
+    private static final int EGG_CLEAR_Y_MAX = 120;
+
     private static final double DRAGON_BASE_HP = 12_000;
     private static final double DRAGON_HP_CAP = 28_000;
     private static final double DRAGON_HP_LOG_REF = 10_000_000;
@@ -96,6 +125,9 @@ public final class EndDimensionStrength {
     private static volatile long lastNaturalSpawnAt;
     private static volatile long lastDragonRescaleAt;
     private static volatile long lastHygieneAt;
+    private static volatile long lastDragonAttackAt;
+    /** Retry crystal/egg podium clear for a few seconds after dragon kill. */
+    private static volatile long crystalClearUntil;
 
     private static final Map<UUID, PendingTp> PENDING_TP = new ConcurrentHashMap<>();
 
@@ -139,6 +171,7 @@ public final class EndDimensionStrength {
         ServerLevel end = server.m_129880_(Level.f_46430_); // END
         if (end != null) {
             runDragonWorldHygiene(end, now);
+            tickDragonExtraAttacks(end, now);
         }
 
         if (now - lastWorldScanAt < SCAN_MS) {
@@ -249,6 +282,7 @@ public final class EndDimensionStrength {
             return;
         }
         lastNaturalSpawnAt = System.currentTimeMillis();
+        crystalClearUntil = lastNaturalSpawnAt + 12_000L;
         MinecraftServer server = killer.m_20194_();
         if (server != null) {
             ServerLevel end = server.m_129880_(Level.f_46430_);
@@ -259,6 +293,14 @@ public final class EndDimensionStrength {
                 }
                 try {
                     cleanupEndKiProjectiles(end, false);
+                } catch (Throwable ignored) {
+                }
+                try {
+                    clearEndCrystals(end);
+                } catch (Throwable ignored) {
+                }
+                try {
+                    clearDragonEggBlocks(end);
                 } catch (Throwable ignored) {
                 }
             }
@@ -485,6 +527,12 @@ public final class EndDimensionStrength {
             return;
         }
         try {
+            if (crystalClearUntil > 0L && now <= crystalClearUntil) {
+                clearEndCrystals(end);
+                clearDragonEggBlocks(end);
+            } else if (crystalClearUntil > 0L && now > crystalClearUntil) {
+                crystalClearUntil = 0L;
+            }
             if (now - lastHygieneAt < HYGIENE_INTERVAL_MS) {
                 return;
             }
@@ -495,6 +543,260 @@ public final class EndDimensionStrength {
             AdaptiveDifficultyMod.LOGGER.debug(
                     "[{}] runDragonWorldHygiene: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
         }
+    }
+
+    /** Live 2.12.0 — periodic DMZ ki beam/blast from the single kept dragon. */
+    static void tickDragonExtraAttacks(ServerLevel end, long now) {
+        if (!DRAGON_EXTRA_ATTACKS || end == null || !DifficultyConfig.get().enableEndDimensionStrength) {
+            return;
+        }
+        if (now - lastDragonAttackAt < DRAGON_ATTACK_INTERVAL_MS) {
+            return;
+        }
+        lastDragonAttackAt = now;
+        try {
+            EnderDragon dragon = enforceSingleDragon(end);
+            if (dragon == null || !dragon.m_6084_()) {
+                return;
+            }
+            ServerPlayer target = nearestEndPlayer(end, dragon, DRAGON_ATTACK_RANGE);
+            if (target == null) {
+                return;
+            }
+            aimLivingAt(dragon, target);
+            double roll = Math.random();
+            if (roll < DRAGON_KI_BEAM_CHANCE) {
+                if (!fireDragonKiBeam(end, dragon, target)) {
+                    fireDragonKiBlast(end, dragon, target);
+                }
+            } else {
+                fireDragonKiBlast(end, dragon, target);
+            }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] dragon extra attack: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
+    }
+
+    private static ServerPlayer nearestEndPlayer(ServerLevel end, Entity from, double range) {
+        if (end == null || from == null) {
+            return null;
+        }
+        ServerPlayer best = null;
+        double bestD = range * range;
+        try {
+            for (ServerPlayer p : end.m_6907_()) {
+                if (p == null || !p.m_6084_()) {
+                    continue;
+                }
+                double d = p.m_20275_(from.m_20185_(), from.m_20186_(), from.m_20189_());
+                if (d < bestD) {
+                    bestD = d;
+                    best = p;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return best;
+    }
+
+    private static double calcDragonKiDamage(ServerPlayer target) {
+        double base = DRAGON_DMZ_KI_DAMAGE;
+        double melee = 0.0;
+        try {
+            melee = Math.max(0.0, readPower(target).melee);
+        } catch (Throwable ignored) {
+        }
+        double scaled = Math.max(base, melee * DRAGON_DMZ_KI_MELEE_FRAC);
+        return Math.min(DRAGON_DMZ_KI_DAMAGE_CAP, scaled);
+    }
+
+    private static void aimLivingAt(LivingEntity living, LivingEntity target) {
+        if (living == null || target == null) {
+            return;
+        }
+        try {
+            Vec3 from = living.m_146892_();
+            double tx = target.m_20185_();
+            double ty = target.m_20186_() + target.m_20206_() * 0.45;
+            double tz = target.m_20189_();
+            double dx = tx - from.f_82479_;
+            double dy = ty - from.f_82480_;
+            double dz = tz - from.f_82481_;
+            double horiz = Math.sqrt(dx * dx + dz * dz);
+            float yaw = (float) (Math.toDegrees(Math.atan2(-dx, dz)));
+            float pitch = (float) (-Math.toDegrees(Math.atan2(dy, Math.max(1.0E-4, horiz))));
+            if (pitch > 89f) {
+                pitch = 89f;
+            }
+            if (pitch < -89f) {
+                pitch = -89f;
+            }
+            living.m_146922_(yaw);
+            living.m_146926_(pitch);
+            living.f_20885_ = yaw; // yHeadRot
+            living.f_20883_ = yaw; // yBodyRot
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static boolean fireDragonKiBeam(ServerLevel end, EnderDragon dragon, ServerPlayer target) {
+        try {
+            float dmg = (float) calcDragonKiDamage(target);
+            KiLaserEntity beam = new KiLaserEntity(end, dragon);
+            try {
+                beam.setupKiBeamPlayer(dragon, dmg, DRAGON_DMZ_KI_SPEED_BEAM,
+                        DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER, DRAGON_DMZ_KI_COLOR_OUTLINE);
+            } catch (Throwable t1) {
+                try {
+                    beam.setupKiBeamPlayer(dragon, dmg, DRAGON_DMZ_KI_SPEED_BEAM,
+                            DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER);
+                } catch (Throwable t2) {
+                    beam.setupKiLaser(dragon, dmg, DRAGON_DMZ_KI_SPEED_BEAM,
+                            DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER,
+                            DRAGON_DMZ_KI_COLOR_OUTLINE, 0);
+                }
+            }
+            try {
+                beam.setHomingTarget(target.m_19879_());
+            } catch (Throwable ignored) {
+            }
+            return spawnAndFireKi(beam, end, DRAGON_DMZ_KI_LIFE_BEAM);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] dragon ki beam failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            return false;
+        }
+    }
+
+    private static boolean fireDragonKiBlast(ServerLevel end, EnderDragon dragon, ServerPlayer target) {
+        try {
+            float dmg = (float) calcDragonKiDamage(target);
+            KiBlastEntity blast = new KiBlastEntity(end, dragon);
+            try {
+                blast.setupKiBlastPlayer(dragon, dmg, DRAGON_DMZ_KI_SPEED_BLAST,
+                        DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER,
+                        DRAGON_DMZ_KI_COLOR_OUTLINE, DRAGON_DMZ_KI_SIZE_BLAST);
+            } catch (Throwable t1) {
+                try {
+                    blast.setupKiBlastPlayer(dragon, dmg, DRAGON_DMZ_KI_SPEED_BLAST,
+                            DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER, DRAGON_DMZ_KI_SIZE_BLAST);
+                } catch (Throwable t2) {
+                    blast.setupKiLargeBlast(dragon, dmg, DRAGON_DMZ_KI_SPEED_BLAST,
+                            DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER,
+                            DRAGON_DMZ_KI_COLOR_OUTLINE, DRAGON_DMZ_KI_SIZE_BLAST, 0);
+                }
+            }
+            try {
+                blast.setHomingTarget(target.m_19879_());
+            } catch (Throwable ignored) {
+            }
+            return spawnAndFireKi(blast, end, DRAGON_DMZ_KI_LIFE_BLAST);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] dragon ki blast failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            return false;
+        }
+    }
+
+    private static boolean spawnAndFireKi(Entity proj, ServerLevel end, int lifeTicks) {
+        if (proj == null || end == null) {
+            return false;
+        }
+        try {
+            proj.getClass().getMethod("setCastTime", int.class).invoke(proj, 0);
+        } catch (Throwable ignored) {
+        }
+        try {
+            proj.getClass().getMethod("setBlockDestructionEnabled", boolean.class).invoke(proj, false);
+        } catch (Throwable ignored) {
+        }
+        try {
+            if (!end.m_7967_(proj)) {
+                return false;
+            }
+        } catch (Throwable t) {
+            return false;
+        }
+        int life = Math.max(10, lifeTicks);
+        try {
+            proj.getClass().getMethod("fireHability", int.class).invoke(proj, life);
+        } catch (Throwable t1) {
+            try {
+                proj.getClass().getMethod("setFiring", boolean.class).invoke(proj, true);
+                proj.getClass().getMethod("setMaxLife", int.class).invoke(proj, life);
+            } catch (Throwable ignored) {
+            }
+        }
+        return true;
+    }
+
+    /** Live DESTROY_CRYSTALS_ON_KILL — despawn all End crystals in The End. */
+    static int clearEndCrystals(ServerLevel end) {
+        if (!DESTROY_CRYSTALS_ON_KILL || end == null) {
+            return 0;
+        }
+        int removed = 0;
+        List<Entity> toRemove = new ArrayList<>();
+        try {
+            for (Entity e : end.m_8583_()) {
+                if (e instanceof EndCrystal) {
+                    toRemove.add(e);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        for (Entity e : toRemove) {
+            try {
+                e.m_146870_();
+                removed++;
+            } catch (Throwable ignored) {
+            }
+        }
+        if (removed <= 0) {
+            MinecraftServer server = end.m_7654_();
+            if (server != null) {
+                try {
+                    server.m_129892_().m_230957_(
+                            server.m_129893_(),
+                            "execute in minecraft:the_end run kill @e[type=minecraft:end_crystal]");
+                    removed = 1;
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+        return removed;
+    }
+
+    /** Live REMOVE_EGG_BLOCK — clear podium dragon_egg blocks near 0,0. */
+    static int clearDragonEggBlocks(ServerLevel end) {
+        if (!REMOVE_EGG_BLOCK || end == null) {
+            return 0;
+        }
+        int removed = 0;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int x = -EGG_CLEAR_RADIUS; x <= EGG_CLEAR_RADIUS; x++) {
+            for (int z = -EGG_CLEAR_RADIUS; z <= EGG_CLEAR_RADIUS; z++) {
+                for (int y = EGG_CLEAR_Y_MIN; y <= EGG_CLEAR_Y_MAX; y++) {
+                    pos.m_122178_(x, y, z); // set
+                    try {
+                        var state = end.m_8055_(pos);
+                        String name = "";
+                        try {
+                            name = ForgeRegistries.BLOCKS.getKey(state.m_60734_()).toString();
+                        } catch (Throwable ignored) {
+                        }
+                        if (state.m_60713_(Blocks.f_50259_)
+                                || (name != null && name.toLowerCase(Locale.ROOT).contains("dragon_egg"))) {
+                            end.m_46597_(pos, Blocks.f_50016_.m_49966_()); // AIR
+                            removed++;
+                        }
+                    } catch (Throwable ignored) {
+                    }
+                }
+            }
+        }
+        return removed;
     }
 
     private static List<EnderDragon> findDragons(ServerLevel end) {

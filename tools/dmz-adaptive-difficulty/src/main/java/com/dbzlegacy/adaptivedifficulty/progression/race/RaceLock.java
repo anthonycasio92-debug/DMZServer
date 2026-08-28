@@ -19,9 +19,10 @@ import net.minecraft.server.level.ServerPlayer;
  * Port of DMZ RACE LOCK.js — restricted races require a Fabled unlock skill.
  */
 public final class RaceLock {
-    private static final String[] RESTRICTED_RACE_IDS = {"ancient_saiyan"};
-    private static final String[] REQUIRED_FABLED_SKILLS = {"Ancient Saiyan"};
-    private static final String[] DISPLAY_NAMES = {"Ancient Saiyan"};
+    /** Must match live {@code DMZ RACE LOCK.js} RESTRICTED_RACE_IDS. */
+    private static final String[] RESTRICTED_RACE_IDS = {"ancient_saiyan", "sento_saiyan"};
+    private static final String[] REQUIRED_FABLED_SKILLS = {"Ancient Saiyan", "Sento Saiyan"};
+    private static final String[] DISPLAY_NAMES = {"Ancient Saiyan", "Sento Saiyan"};
 
     private RaceLock() {}
 

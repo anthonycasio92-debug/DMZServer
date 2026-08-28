@@ -30,7 +30,12 @@ public final class SparCommands {
                 .executes(ctx -> gui(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> gui(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("help").executes(ctx -> gui(ctx.getSource(), "help")))
-                .then(Commands.m_82127_("stats").executes(ctx -> stats(ctx.getSource())))
+                .then(Commands.m_82127_("stats")
+                        .executes(ctx -> stats(ctx.getSource(), null))
+                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .executes(ctx -> stats(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("end").executes(ctx -> end(ctx.getSource())))
                 .then(Commands.m_82127_("top")
                         .executes(ctx -> top(ctx.getSource(), "tp"))
@@ -141,12 +146,20 @@ public final class SparCommands {
         return gui(source, "help");
     }
 
-    private static int stats(CommandSourceStack source) {
+    private static int stats(CommandSourceStack source, String targetName) {
         ServerPlayer player = playerOrNull(source);
         if (player == null || !enabled(player)) {
             return 0;
         }
-        for (String line : SparringSystem.statsLines(player)) {
+        ServerPlayer target = player;
+        if (targetName != null && !targetName.isBlank()) {
+            target = RivalSystem.findOnline(source.m_81377_(), targetName);
+            if (target == null) {
+                DmzRewards.msg(player, "§cPlayer not online: " + targetName);
+                return 0;
+            }
+        }
+        for (String line : SparringSystem.statsLines(target)) {
             DmzRewards.msg(player, line);
         }
         return 1;

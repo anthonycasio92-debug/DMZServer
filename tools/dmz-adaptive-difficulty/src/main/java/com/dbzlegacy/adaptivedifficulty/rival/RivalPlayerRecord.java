@@ -16,6 +16,8 @@ public final class RivalPlayerRecord {
     public String nemesisUuid = "";
 
     public Map<String, RivalLink> rivals = new ConcurrentHashMap<>();
+    /** Archived links after {@code /rival remove} — restored on re-declare (Command Handler). */
+    public Map<String, RivalLink> pastRivals = new ConcurrentHashMap<>();
     /** Per-rival surpass cooldown timestamps (ms). */
     public Map<String, Long> surpassCooldown = new ConcurrentHashMap<>();
 
@@ -33,6 +35,12 @@ public final class RivalPlayerRecord {
     public boolean tpMessages = true;
     /** Rival Instinct alerts (per-player). */
     public boolean instinctEnabled = true;
+
+    public int currentWinStreak;
+    public int bestWinStreak;
+    public int careerHighestCombo;
+    public double careerDamageDealt;
+    public int careerHits;
 
     public static RivalPlayerRecord create(String uuid, String name, long now) {
         RivalPlayerRecord r = new RivalPlayerRecord();

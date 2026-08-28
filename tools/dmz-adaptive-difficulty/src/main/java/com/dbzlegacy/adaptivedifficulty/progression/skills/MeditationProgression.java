@@ -156,6 +156,24 @@ public final class MeditationProgression {
         return "§7Trial §f" + t.name + " §8(" + t.id + ") §7" + (rem / 60000L) + "m left";
     }
 
+    /** Seconds of restore meditation required to reach {@code nextLevel} (2–10). */
+    public static int requiredSecondsForLevel(int nextLevel) {
+        if (nextLevel < 0 || nextLevel >= REQUIRED_SECONDS.length) {
+            return 0;
+        }
+        return REQUIRED_SECONDS[nextLevel];
+    }
+
+    public static String currentTrialName() {
+        Trial t = currentTrial(System.currentTimeMillis());
+        return t == null ? "" : t.name;
+    }
+
+    public static long trialRemainingMs() {
+        currentTrial(System.currentTimeMillis());
+        return Math.max(0L, GLOBAL_END.get() - System.currentTimeMillis());
+    }
+
     private static Trial currentTrial(long now) {
         if (GLOBAL_END.get() <= now) {
             int next = (GLOBAL_INDEX.get() + 1) % TRIALS.length;

@@ -162,14 +162,15 @@ public final class SparCombat {
         return Math.min(1.25f, 1.0f + days * 0.02f);
     }
 
+    /** Matches live Sparring Tp System.js {@code STYLE_BONUS}. */
     public static float styleMultiplier(SparPlayerRuntime rt) {
         String id = styleId(rt);
         return switch (id) {
-            case "melee" -> 1.10f;
-            case "ki" -> 1.10f;
-            case "beam" -> 1.15f;
-            case "balanced" -> 1.20f;
-            case "guardian" -> 1.08f;
+            case "melee" -> 1.08f;
+            case "ki" -> 1.08f;
+            case "beam" -> 1.10f;
+            case "balanced" -> 1.12f;
+            case "guardian" -> 1.06f;
             case "speed" -> 1.05f;
             default -> 1.0f;
         };

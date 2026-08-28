@@ -347,21 +347,23 @@ public final class RivalChallengeManager {
         RivalStore store = RivalStore.get();
         RivalPlayerRecord recA = store.get(ch.a == null ? null : ch.a.toString());
         RivalPlayerRecord recB = store.get(ch.b == null ? null : ch.b.toString());
+        RivalChallenge.Combat cA = ch.combatOf(ch.a);
+        RivalChallenge.Combat cB = ch.combatOf(ch.b);
         if (recA != null) {
             recA.lastChallengeEndAt = now;
             recA.challengesPlayed++;
+            accumulateCareer(recA, cA);
         }
         if (recB != null) {
             recB.lastChallengeEndAt = now;
             recB.challengesPlayed++;
+            accumulateCareer(recB, cB);
         }
 
         ServerPlayer pA = server == null || ch.a == null ? null : server.m_6846_().m_11259_(ch.a);
         ServerPlayer pB = server == null || ch.b == null ? null : server.m_6846_().m_11259_(ch.b);
 
         boolean related = areRelated(recA, recB, ch);
-        RivalChallenge.Combat cA = ch.combatOf(ch.a);
-        RivalChallenge.Combat cB = ch.combatOf(ch.b);
         long duration = Math.max(0L, now - ch.startAt);
 
         if ("draw".equals(reason) || "distance".equals(reason) || winner == null) {
@@ -526,6 +528,11 @@ public final class RivalChallengeManager {
         RivalPlayerRecord loseRec = loser.toString().equals(recA.uuid) ? recA : recB;
         winRec.officialWins++;
         loseRec.officialLosses++;
+        winRec.currentWinStreak++;
+        if (winRec.currentWinStreak > winRec.bestWinStreak) {
+            winRec.bestWinStreak = winRec.currentWinStreak;
+        }
+        loseRec.currentWinStreak = 0;
         if (knockout) {
             winRec.knockouts++;
         }
@@ -552,6 +559,17 @@ public final class RivalChallengeManager {
         }
         RivalStore.get().addRp(winRec, loseRec.uuid, winRp, "challenge_win");
         RivalStore.get().addRp(loseRec, winRec.uuid, loseRp, "challenge_lose");
+    }
+
+    private static void accumulateCareer(RivalPlayerRecord rec, RivalChallenge.Combat combat) {
+        if (rec == null || combat == null) {
+            return;
+        }
+        rec.careerDamageDealt += Math.max(0.0, combat.damage);
+        rec.careerHits += Math.max(0, combat.hits);
+        if (combat.longestCombo > rec.careerHighestCombo) {
+            rec.careerHighestCombo = combat.longestCombo;
+        }
     }
 
     private void awardDrawRp(RivalPlayerRecord a, RivalPlayerRecord b, RivalChallenge ch) {

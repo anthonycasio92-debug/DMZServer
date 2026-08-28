@@ -25,6 +25,14 @@ public final class FlightProgression {
     private static final int[] LEVEL_SECONDS = {
             0, 0, 60, 300, 600, 1800, 3600, 5400, 7200, 9000, 10800
     };
+
+    /** Seconds of flight training required to reach {@code nextLevel} (2–10). */
+    public static int requiredSecondsForLevel(int nextLevel) {
+        if (nextLevel < 0 || nextLevel >= LEVEL_SECONDS.length) {
+            return 0;
+        }
+        return LEVEL_SECONDS[nextLevel];
+    }
     private static final double SEARCH_H = 0.08;
     private static final double SEARCH_UP = 0.07;
     private static final double SEARCH_DOWN = 0.08;

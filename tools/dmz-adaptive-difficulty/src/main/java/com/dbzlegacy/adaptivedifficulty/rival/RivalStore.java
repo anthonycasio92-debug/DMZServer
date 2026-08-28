@@ -9,7 +9,6 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -224,12 +223,31 @@ public final class RivalStore {
     }
 
     public List<RivalPlayerRecord> topByRp(int limit) {
+        return topBy(limit, "rp");
+    }
+
+    public List<RivalPlayerRecord> topBy(int limit, String category) {
+        String cat = category == null || category.isBlank() ? "rp" : category.trim().toLowerCase();
         List<RivalPlayerRecord> list = new ArrayList<>(players.values());
-        list.sort(Comparator.comparingDouble((RivalPlayerRecord r) -> r.totalRp).reversed());
+        list.sort((a, b) -> Double.compare(metric(b, cat), metric(a, cat)));
         if (list.size() > limit) {
             return list.subList(0, limit);
         }
         return list;
+    }
+
+    private static double metric(RivalPlayerRecord r, String cat) {
+        if (r == null) {
+            return 0.0;
+        }
+        return switch (cat) {
+            case "wins", "win" -> r.officialWins;
+            case "streak", "beststreak" -> r.bestWinStreak;
+            case "damage", "dmg" -> r.careerDamageDealt;
+            case "combo", "hit", "hits" -> cat.startsWith("hit") ? r.careerHits : r.careerHighestCombo;
+            case "battles", "battle", "challenges" -> r.challengesPlayed;
+            default -> r.totalRp;
+        };
     }
 
     private static RivalPlayerRecord normalize(RivalPlayerRecord rec) {
@@ -252,6 +270,15 @@ public final class RivalStore {
             }
         }
         rec.rivals = links;
+        Map<String, RivalLink> past = new ConcurrentHashMap<>();
+        if (rec.pastRivals != null) {
+            for (Map.Entry<String, RivalLink> e : rec.pastRivals.entrySet()) {
+                if (e.getKey() != null && e.getValue() != null) {
+                    past.put(e.getKey(), e.getValue());
+                }
+            }
+        }
+        rec.pastRivals = past;
         Map<String, Long> cds = new ConcurrentHashMap<>();
         if (rec.surpassCooldown != null) {
             cds.putAll(rec.surpassCooldown);
