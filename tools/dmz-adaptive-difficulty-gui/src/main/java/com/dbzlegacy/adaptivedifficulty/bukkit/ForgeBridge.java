@@ -89,6 +89,9 @@ public final class ForgeBridge {
     private static Method meditationAdvanceMethod;
     private static Method androidConvertMethod;
     private static Method boostMethod;
+    private static Method progressionHelpMethod;
+    private static Method progressionStatusMethod;
+    private static Method progressionAdminFlagMethod;
     private static volatile Field RESULT_MESSAGE_FIELD;
 
     private ForgeBridge() {}
@@ -1300,6 +1303,71 @@ public final class ForgeBridge {
         }
     }
 
+    /** Chat help for the Bukkit {@code /progression} command tree. */
+    public static String progressionHelp() {
+        try {
+            ClassLoader cl = preferredProgressionClassLoader();
+            ensureProgressionResolved(cl);
+            if (progressionHelpMethod == null) {
+                return "§cProgression help API missing — update LegacyMechanics jar.";
+            }
+            Object raw = progressionHelpMethod.invoke(null);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cProgression help failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /** Text flag/boost/meditation status summary. */
+    public static String progressionStatus() {
+        try {
+            ClassLoader cl = preferredProgressionClassLoader();
+            ensureProgressionResolved(cl);
+            if (progressionStatusMethod == null) {
+                return "§cProgression status API missing — update LegacyMechanics jar.";
+            }
+            Object raw = progressionStatusMethod.invoke(null);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cProgression status failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /** Staff: toggle a progression module flag. */
+    public static String progressionAdminFlag(Player actor, String flag, String value) {
+        Object nms = nmsPlayer(actor);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (progressionAdminFlagMethod == null) {
+                return "§cProgression admin API missing — update LegacyMechanics jar.";
+            }
+            Object raw = progressionAdminFlagMethod.invoke(null, nms,
+                    flag == null ? "" : flag, value == null ? "" : value);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cProgression admin failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    private static ClassLoader preferredProgressionClassLoader() {
+        for (Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+            Object nms = nmsPlayer(p);
+            if (nms != null) {
+                return nms.getClass().getClassLoader();
+            }
+        }
+        return AdaptiveDifficultyGuiPlugin.class.getClassLoader();
+    }
+
     @SuppressWarnings("unchecked")
     public static Map<String, String> prestigePlaceholders(Player player) {
         Map<String, String> fail = new HashMap<>();
@@ -1730,6 +1798,27 @@ public final class ForgeBridge {
                 boostMethod = api.getMethod("boost", sp, String.class);
             } catch (Throwable missing) {
                 boostMethod = null;
+            }
+        }
+        if (progressionHelpMethod == null) {
+            try {
+                progressionHelpMethod = api.getMethod("commandHelp");
+            } catch (Throwable missing) {
+                progressionHelpMethod = null;
+            }
+        }
+        if (progressionStatusMethod == null) {
+            try {
+                progressionStatusMethod = api.getMethod("statusText");
+            } catch (Throwable missing) {
+                progressionStatusMethod = null;
+            }
+        }
+        if (progressionAdminFlagMethod == null) {
+            try {
+                progressionAdminFlagMethod = api.getMethod("adminFlag", sp, String.class, String.class);
+            } catch (Throwable missing) {
+                progressionAdminFlagMethod = null;
             }
         }
     }

@@ -36,6 +36,58 @@ public final class ProgressionGuiApi {
         return MeditationProgression.advanceTrial(player);
     }
 
+    /** Full chat help for {@code /progression} (Bukkit command tree). */
+    public static String commandHelp() {
+        return String.join("\n",
+                "§6§l/progression §8(alias §7/prog§8) §7— command tree",
+                "§e/progression §7· §e/progression gui [page] §8— open GUI",
+                "§e/progression help §8— this list",
+                "§e/progression status §8— flag + boost + meditation summary",
+                "§e/progression flags §7· §eadmin §8— flags GUI",
+                "§e/progression admin <flag> <on|off> §8— toggle a module flag",
+                "§e/progression meditation [status|next] §8— trial help · staff rotate",
+                "§e/progression android [player] §8— Gero android convert",
+                "§e/progression boost §8— TP boost status",
+                "§e/progression boost start <mult> <minutes> [name]",
+                "§e/progression boost start <encoded> [name]",
+                "§e/progression boost end",
+                "§e/progression do <action> [arg] [page] §8— GUI actions",
+                "§8Pages: main · skills · tp · race · combat · end · fabled · utility · admin · help",
+                "§8Flags: flight sprint meditation potential farming building boost bio",
+                "§8       racelock yardrat spiritualist android kiweapons piercing dot apothic",
+                "§8       end endportal shadow statchecker fabled …");
+    }
+
+    /** Text status (flags + active boost + meditation trial). */
+    public static String statusText() {
+        return ProgressionSystem.statusSummary();
+    }
+
+    /** Staff: {@code /progression admin <flag> <on|off>}. */
+    public static String adminFlag(ServerPlayer actor, String flag, String value) {
+        if (actor == null) {
+            return "§cPlayers only.";
+        }
+        if (!StaffAccess.isStaff(actor)) {
+            return "§cStaff only.";
+        }
+        if (!DifficultyConfig.get().enableProgression) {
+            return "§cProgression system is disabled.";
+        }
+        if (flag == null || flag.isBlank()) {
+            return "§cUsage: /progression admin <flag> <on|off>";
+        }
+        boolean on = "on".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value) || "1".equals(value);
+        boolean off = "off".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value) || "0".equals(value);
+        if (!on && !off) {
+            return "§cUse on|off (got: §f" + value + "§c).";
+        }
+        if (!ProgressionSystem.setFlag(flag, on)) {
+            return "§cUnknown flag: §f" + flag;
+        }
+        return "§aProgression §f" + flag + " §7→ §f" + (on ? "ON" : "OFF");
+    }
+
     /**
      * Staff: Dr. Gero android upgrade for {@code actor} (blank target) or an online player name.
      * Used by Bukkit {@code /progression android} — avoids Mohist brigadier forwardCommand.

@@ -24,6 +24,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     private ProgressionChestGui progressionChestGui;
     private PrestigeChestGui prestigeChestGui;
     private SkillsChestGui skillsChestGui;
+    private ProgressionCommandTree progressionCommandTree;
 
     @Override
     public void onEnable() {
@@ -34,6 +35,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         progressionChestGui = new ProgressionChestGui(this);
         prestigeChestGui = new PrestigeChestGui(this);
         skillsChestGui = new SkillsChestGui(this);
+        progressionCommandTree = new ProgressionCommandTree(this);
         getServer().getPluginManager().registerEvents(chestGui, this);
         getServer().getPluginManager().registerEvents(rivalChestGui, this);
         getServer().getPluginManager().registerEvents(sparChestGui, this);
@@ -41,6 +43,11 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(progressionChestGui, this);
         getServer().getPluginManager().registerEvents(prestigeChestGui, this);
         getServer().getPluginManager().registerEvents(skillsChestGui, this);
+
+        var progCmd = getCommand("progression");
+        if (progCmd != null) {
+            progCmd.setTabCompleter(progressionCommandTree);
+        }
 
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new DmzDiffExpansion(this).register();
@@ -447,14 +454,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         runForUuid(playerId, page, "main", progressionChestGui::open, null);
     }
 
-    private void openProgressionInventory(Player player, String page) {
+    void openProgressionInventory(Player player, String page) {
         if (CmiProgressionGui.available() && CmiProgressionGui.open(player, page)) {
             return;
         }
         progressionChestGui.open(player, page);
     }
 
-    private void openProgressionRespectingConfig(Player player, String page) {
+    void openProgressionRespectingConfig(Player player, String page) {
         if (player == null) {
             return;
         }
@@ -832,102 +839,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     }
 
     private boolean handleProgression(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
-            return true;
-        }
-        // Meditation status is player-facing (not staff-gated). Staff-only: meditation next.
-        if (args.length > 0 && "meditation".equalsIgnoreCase(args[0])) {
-            if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
-                player.sendMessage("§cNo permission: dmzdiff.gui");
-                return true;
-            }
-            String medSub = args.length > 1 ? args[1].toLowerCase() : "status";
-            if ("next".equals(medSub) || "advance".equals(medSub) || "cycle".equals(medSub)) {
-                if (!ForgeBridge.isStaff(player)) {
-                    player.sendMessage("§cStaff only.");
-                    return true;
-                }
-                sendMultiline(player, ForgeBridge.meditationAdvance(player));
-                sendMultiline(player, ForgeBridge.meditationExplain());
-                return true;
-            }
-            sendMultiline(player, ForgeBridge.meditationExplain());
-            return true;
-        }
-        // Android convert — dedicated Forge bridge (Mohist shadows /progression brigadier).
-        if (args.length > 0 && "android".equalsIgnoreCase(args[0])) {
-            if (!ForgeBridge.isStaff(player)) {
-                player.sendMessage("§cStaff only.");
-                return true;
-            }
-            if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
-                player.sendMessage("§cNo permission: dmzdiff.gui");
-                return true;
-            }
-            String target = args.length > 1 ? args[1] : "";
-            sendMultiline(player, ForgeBridge.androidConvert(player, target));
-            return true;
-        }
-        // Global TP boost — dedicated Forge bridge (same Mohist issue).
-        if (args.length > 0 && "boost".equalsIgnoreCase(args[0])) {
-            if (!ForgeBridge.isStaff(player)) {
-                player.sendMessage("§cStaff only.");
-                return true;
-            }
-            if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
-                player.sendMessage("§cNo permission: dmzdiff.gui");
-                return true;
-            }
-            StringBuilder rest = new StringBuilder();
-            for (int i = 1; i < args.length; i++) {
-                if (i > 1) {
-                    rest.append(' ');
-                }
-                rest.append(args[i]);
-            }
-            sendMultiline(player, ForgeBridge.boost(player, rest.toString()));
-            return true;
-        }
-        if (!ForgeBridge.isStaff(player)) {
-            player.sendMessage("§cStaff only.");
-            return true;
-        }
-        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
-            player.sendMessage("§cNo permission: dmzdiff.gui");
-            return true;
-        }
-        if (args.length == 0 || "gui".equalsIgnoreCase(args[0])) {
-            openProgressionRespectingConfig(player, "main");
-            return true;
-        }
-        String sub = args[0].toLowerCase();
-        if ("do".equals(sub)) {
-            String action = args.length > 1 ? args[1] : "";
-            String arg = args.length > 2 ? args[2] : "";
-            String returnPage = args.length > 3 ? args[3] : null;
-            String reopen;
-            if ("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action)) {
-                reopen = arg == null || arg.isBlank() ? "main" : arg;
-            } else {
-                reopen = returnPage == null || returnPage.isBlank() ? "main" : returnPage;
-                String msg = ForgeBridge.progressionHandleDo(player, action, arg, reopen);
-                sendMultiline(player, msg);
-            }
-            if ("chat".equals(ForgeBridge.guiBackend())) {
-                ForgeBridge.openProgressionChatMenu(player, reopen);
-            } else {
-                openProgressionInventory(player, reopen);
-            }
-            return true;
-        }
-        if ("status".equals(sub) || "help".equals(sub) || "admin".equals(sub)
-                || "flags".equals(sub) || "fabled".equals(sub)) {
-            openProgressionRespectingConfig(player, sub);
-            return true;
-        }
-        forwardToForge(player, "progression", args);
-        return true;
+        return progressionCommandTree.execute(sender, args);
     }
 
     private boolean handlePrestige(CommandSender sender, String[] args) {

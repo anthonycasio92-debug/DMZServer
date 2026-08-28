@@ -23,8 +23,8 @@ commands:
     usage: /lm
     aliases: [legacymechanics]
   progression:
-    description: Progression GUI (staff) · meditation · android convert
-    usage: /progression [meditation|android|boost|gui]
+    description: Progression command tree (GUI · boost · android · meditation · flags)
+    usage: /progression [help|status|gui|boost|android|meditation|admin|…]
     aliases: [prog]
   prestige:
     description: Open LegacyMechanics Prestige GUI (staff)
