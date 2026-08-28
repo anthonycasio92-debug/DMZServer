@@ -29,8 +29,13 @@ public final class CmiRivalGui {
         if (player == null || !available()) {
             return false;
         }
-        String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
+        String raw = page == null || page.isBlank() ? "main" : page.trim();
+        String p = raw.toLowerCase(Locale.ROOT);
         try {
+            if (p.startsWith("challenge_time:")) {
+                openChallengeTime(player, raw.substring("challenge_time:".length()).trim());
+                return true;
+            }
             switch (p) {
                 case "list" -> openList(player);
                 case "pick_declare" -> openPicker(player, "declare", "list",
@@ -41,8 +46,7 @@ public final class CmiRivalGui {
                         "&cDecline Declare", "&7Click to decline their declare");
                 case "pick_remove" -> openPicker(player, "remove", "list",
                         "&cRemove Rival", "&7Click to remove this rivalry");
-                case "pick_challenge" -> openPicker(player, "challenge_send", "challenge",
-                        "&cSend Challenge", "&7Click to challenge (1 min)");
+                case "pick_challenge" -> openChallengeTargetPicker(player);
                 case "pick_spectate" -> openPicker(player, "spectate", "challenge",
                         "&bSpectate", "&7Watch their active challenge");
                 case "pick_silent" -> openPicker(player, "silent", "list",
@@ -333,7 +337,7 @@ public final class CmiRivalGui {
         gui.addButton(info);
 
         gui.addButton(pageBtn(19, Material.GOLDEN_SWORD, "&eSend Challenge…", "pick_challenge",
-                "&7Pick an online rival to challenge"));
+                "&7Pick rival, then choose 1–10 minutes"));
         gui.addButton(actionBtn(21, Material.LIME_CONCRETE, "&aAccept",
                 "challenge", "accept", "challenge",
                 List.of("&7Accept pending challenge")));
@@ -350,6 +354,95 @@ public final class CmiRivalGui {
                 List.of("&7End spectating early")));
 
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openChallengeTargetPicker(Player player) {
+        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+        CMIGuiButton info = new CMIGuiButton(4, Material.GOLDEN_SWORD, "&cSend Challenge");
+        info.lockField();
+        info.addLore(List.of("", "&7Online rivals", "&8Click a head, then pick duration"));
+        gui.addButton(info);
+
+        List<Player> online = GuiPlayerPicker.onlineExcept(player);
+        int placed = 0;
+        for (Player other : online) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+            ItemStack head = GuiPlayerPicker.head(other, "&f" + other.getName(),
+                    List.of("&7Next: choose fight length", "&8(1–10 minutes)"));
+            CMIGuiButton btn = new CMIGuiButton(slot, head);
+            btn.lockField();
+            btn.addCommand("rival do page challenge_time:uuid:" + other.getUniqueId());
+            gui.addButton(btn);
+        }
+        if (placed == 0) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&cNo one online");
+            empty.lockField();
+            empty.addLore(List.of("", "&7Other players must be online"));
+            gui.addButton(empty);
+        }
+
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "challenge", "&7Return"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openChallengeTime(Player player, String targetArg) {
+        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+
+        String display = targetArg;
+        ItemStack head;
+        if (targetArg.regionMatches(true, 0, "uuid:", 0, 5)) {
+            try {
+                java.util.UUID id = java.util.UUID.fromString(targetArg.substring(5).trim());
+                Player online = org.bukkit.Bukkit.getPlayer(id);
+                display = online != null ? online.getName() : targetArg.substring(5).trim();
+                head = online != null
+                        ? GuiPlayerPicker.head(online, "&f" + display,
+                                List.of("&7Choose fight length", "&81–10 minutes"))
+                        : GuiPlayerPicker.headByName(display, "&f" + display,
+                                List.of("&cPlayer offline", "&7Pick someone else"));
+            } catch (IllegalArgumentException e) {
+                head = GuiPlayerPicker.headByName(display, "&f" + display, List.of("&7Choose minutes"));
+            }
+        } else {
+            Player online = org.bukkit.Bukkit.getPlayerExact(targetArg);
+            display = online != null ? online.getName() : targetArg;
+            head = online != null
+                    ? GuiPlayerPicker.head(online, "&f" + display, List.of("&7Choose fight length"))
+                    : GuiPlayerPicker.headByName(display, "&f" + display, List.of("&7Choose minutes"));
+        }
+        CMIGuiButton info = new CMIGuiButton(4, head);
+        info.lockField();
+        gui.addButton(info);
+
+        int[] slots = {11, 12, 13, 14, 15, 20, 21, 22, 23, 24};
+        for (int i = 0; i < slots.length; i++) {
+            int minutes = i + 1;
+            ItemStack clock = new ItemStack(Material.CLOCK, minutes);
+            org.bukkit.inventory.meta.ItemMeta meta = clock.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName(color("&e" + minutes + " minute" + (minutes == 1 ? "" : "s")));
+                meta.setLore(List.of(
+                        color(""),
+                        color("&7Challenge &f" + display),
+                        color("&8Click to send")
+                ));
+                clock.setItemMeta(meta);
+            }
+            CMIGuiButton btn = new CMIGuiButton(slots[i], clock);
+            btn.lockField();
+            btn.addCommand("rival do challenge_send " + targetArg + "@" + minutes + " challenge");
+            gui.addButton(btn);
+        }
+
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "pick_challenge", "&7Pick another player"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -564,5 +657,9 @@ public final class CmiRivalGui {
         btn.lockField();
         btn.setCloseInv(true);
         return btn;
+    }
+
+    private static String color(String input) {
+        return input == null ? "" : input.replace('&', '§');
     }
 }

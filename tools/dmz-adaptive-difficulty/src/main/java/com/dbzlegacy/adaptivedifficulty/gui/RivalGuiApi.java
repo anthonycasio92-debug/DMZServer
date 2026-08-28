@@ -336,6 +336,7 @@ public final class RivalGuiApi {
                     "§e/rival <player> §7silent rival",
                     "§e/rival declare|accept|decline|remove <player>",
                     "§e/rival challenge send <player> [minutes]",
+                    "§7GUI: pick rival → choose 1–10 minutes",
                     "§e/rival spectate [player]|stop",
                     "§e/rival admin save|refresh|status (staff)"
             );
@@ -468,12 +469,15 @@ public final class RivalGuiApi {
             if (a.isBlank()) {
                 return "§cPick a player to challenge.";
             }
-            ServerPlayer target = resolveOnline(player, a);
-            if (target == null) {
-                return "§cPlayer not online: " + a;
+            ChallengeSendArg parsed = parseChallengeSendArg(a);
+            if (parsed.targetRaw().isBlank()) {
+                return "§cPick a player to challenge.";
             }
-            return RivalChallengeManager.get().sendChallenge(
-                    player, target, RivalConstants.CH_MIN_MINUTES);
+            ServerPlayer target = resolveOnline(player, parsed.targetRaw());
+            if (target == null) {
+                return "§cPlayer not online: " + parsed.targetRaw();
+            }
+            return RivalChallengeManager.get().sendChallenge(player, target, parsed.minutes());
         }
         if ("spectate".equals(act)) {
             if (a.isBlank() || "any".equalsIgnoreCase(a) || "0".equals(a)) {
@@ -525,4 +529,32 @@ public final class RivalGuiApi {
                 + "§e/rival admin open [page] §7— open rival GUI\n"
                 + "§8GUI buttons call these directly (no Forge perm-level gate).";
     }
+
+    /**
+     * GUI arg formats: {@code uuid:&lt;id&gt;@&lt;minutes&gt;} or plain target (defaults to
+     * {@link RivalConstants#CH_MIN_MINUTES}).
+     */
+    private static ChallengeSendArg parseChallengeSendArg(String raw) {
+        String s = raw == null ? "" : raw.trim();
+        if (s.isEmpty()) {
+            return new ChallengeSendArg("", RivalConstants.CH_MIN_MINUTES);
+        }
+        int at = s.lastIndexOf('@');
+        if (at <= 0 || at >= s.length() - 1) {
+            return new ChallengeSendArg(s, RivalConstants.CH_MIN_MINUTES);
+        }
+        String target = s.substring(0, at).trim();
+        String minsRaw = s.substring(at + 1).trim();
+        int minutes = RivalConstants.CH_MIN_MINUTES;
+        try {
+            minutes = Integer.parseInt(minsRaw);
+        } catch (NumberFormatException ignored) {
+            minutes = RivalConstants.CH_MIN_MINUTES;
+        }
+        minutes = Math.max(RivalConstants.CH_MIN_MINUTES,
+                Math.min(RivalConstants.CH_MAX_MINUTES, minutes));
+        return new ChallengeSendArg(target, minutes);
+    }
+
+    private record ChallengeSendArg(String targetRaw, int minutes) {}
 }

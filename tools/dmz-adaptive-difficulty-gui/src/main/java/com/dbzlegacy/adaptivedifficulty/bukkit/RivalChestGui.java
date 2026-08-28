@@ -29,8 +29,13 @@ public final class RivalChestGui implements Listener {
     }
 
     public void open(Player player, String page) {
-        String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
-        Inventory inv = switch (p) {
+        String raw = page == null || page.isBlank() ? "main" : page.trim();
+        String lower = raw.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("challenge_time:")) {
+            player.openInventory(challengeTime(player, raw.substring("challenge_time:".length()).trim()));
+            return;
+        }
+        Inventory inv = switch (lower) {
             case "list" -> list(player);
             case "pick_declare" -> picker(player, "declare", "list",
                     "&6Declare Rival", "&7Click to declare this player");
@@ -40,8 +45,7 @@ public final class RivalChestGui implements Listener {
                     "&cDecline Declare", "&7Click to decline their declare");
             case "pick_remove" -> picker(player, "remove", "list",
                     "&cRemove Rival", "&7Click to remove this rivalry");
-            case "pick_challenge" -> picker(player, "challenge_send", "challenge",
-                    "&cSend Challenge", "&7Click to challenge (1 min)");
+            case "pick_challenge" -> challengeTargetPicker(player);
             case "pick_spectate" -> picker(player, "spectate", "challenge",
                     "&bSpectate", "&7Watch their active challenge");
             case "pick_silent" -> picker(player, "silent", "list",
@@ -303,7 +307,7 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 4, item(Material.IRON_SWORD, "&c&lChallenge",
                 prependBlank(toAmp(ForgeBridge.rivalLines(player, "challenge")))));
         put(holder, inv, 19, pageBtn(Material.GOLDEN_SWORD, "&eSend Challenge…",
-                "&7Pick an online rival to challenge"), SlotAction.page("pick_challenge"));
+                "&7Pick rival, then choose 1–10 minutes"), SlotAction.page("pick_challenge"));
         put(holder, inv, 21, tipBtn(Material.LIME_CONCRETE, "&aAccept",
                 List.of("&7Accept pending challenge")),
                 SlotAction.act("challenge", "accept", "challenge"));
@@ -319,6 +323,90 @@ public final class RivalChestGui implements Listener {
                 List.of("&7End spectating early")),
                 SlotAction.act("spectate_stop", "0", "challenge"));
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    /** Step 1: pick who to challenge — opens duration picker next. */
+    private Inventory challengeTargetPicker(Player player) {
+        Holder holder = new Holder("pick_challenge");
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
+        holder.bind(inv);
+        frame(inv, 45);
+        put(holder, inv, 4, item(Material.GOLDEN_SWORD, "&cSend Challenge",
+                List.of("", "&7Online rivals", "&8Click a head, then pick duration")));
+        List<Player> online = GuiPlayerPicker.onlineExcept(player);
+        int placed = 0;
+        for (Player other : online) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+            put(holder, inv, slot,
+                    GuiPlayerPicker.head(other, "&f" + other.getName(),
+                            List.of("&7Next: choose fight length", "&8(1–10 minutes)")),
+                    SlotAction.page("challenge_time:uuid:" + other.getUniqueId()));
+        }
+        if (placed == 0) {
+            put(holder, inv, 22, tipBtn(Material.BARRIER, "&cNo one online",
+                    List.of("&7Other players must be online")));
+        }
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("challenge"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    /** Step 2: pick challenge duration (1–10 min) for a chosen target. */
+    private Inventory challengeTime(Player player, String targetArg) {
+        Holder holder = new Holder("challenge_time");
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
+        holder.bind(inv);
+        frame(inv, 45);
+
+        String display = targetArg;
+        ItemStack head;
+        if (targetArg.regionMatches(true, 0, "uuid:", 0, 5)) {
+            try {
+                java.util.UUID id = java.util.UUID.fromString(targetArg.substring(5).trim());
+                Player online = Bukkit.getPlayer(id);
+                display = online != null ? online.getName() : targetArg.substring(5).trim();
+                head = online != null
+                        ? GuiPlayerPicker.head(online, "&f" + display,
+                                List.of("&7Choose fight length", "&81–10 minutes"))
+                        : GuiPlayerPicker.headByName(display, "&f" + display,
+                                List.of("&cPlayer offline", "&7Pick someone else"));
+            } catch (IllegalArgumentException e) {
+                head = GuiPlayerPicker.headByName(display, "&f" + display, List.of("&7Choose minutes"));
+            }
+        } else {
+            Player online = Bukkit.getPlayerExact(targetArg);
+            display = online != null ? online.getName() : targetArg;
+            head = online != null
+                    ? GuiPlayerPicker.head(online, "&f" + display, List.of("&7Choose fight length"))
+                    : GuiPlayerPicker.headByName(display, "&f" + display, List.of("&7Choose minutes"));
+        }
+        put(holder, inv, 4, head);
+
+        int[] slots = {11, 12, 13, 14, 15, 20, 21, 22, 23, 24};
+        for (int i = 0; i < slots.length; i++) {
+            int minutes = i + 1;
+            ItemStack clock = new ItemStack(Material.CLOCK, minutes);
+            ItemMeta meta = clock.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName(color("&e" + minutes + " minute" + (minutes == 1 ? "" : "s")));
+                meta.setLore(List.of(
+                        color(""),
+                        color("&7Challenge &f" + display),
+                        color("&8Click to send")
+                ));
+                clock.setItemMeta(meta);
+            }
+            put(holder, inv, slots[i], clock,
+                    SlotAction.act("challenge_send", targetArg + "@" + minutes, "challenge"));
+        }
+
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Pick another player"),
+                SlotAction.page("pick_challenge"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
