@@ -36,7 +36,7 @@ public final class MechanicsCommands {
         return Commands.m_82127_(name)
                 .executes(ctx -> open(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> open(ctx.getSource(), "main")))
-                .then(Commands.m_82127_("help").executes(ctx -> open(ctx.getSource(), "help")))
+                .then(Commands.m_82127_("help").executes(ctx -> open(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("do")
                         .then(Commands.m_82127_("page")
                                 .then(Commands.m_82129_("page", StringArgumentType.word())

@@ -73,7 +73,7 @@ public final class CmiProgressionGui {
             switch (p) {
                 case "skills" -> openSection(player, "skills", "&eSkills", Material.FEATHER,
                         new String[]{"flight", "sprint", "meditation", "potential"});
-                case "tp" -> openSection(player, "tp", "&6TP Gains", Material.GOLD_INGOT,
+                case "tp" -> openSection(player, "tp", "&6TP Gains", Material.GOLDEN_CARROT,
                         new String[]{"farming", "building", "boost", "bio"});
                 case "boost_panel", "tpboost" -> {
                     if (ForgeBridge.isStaff(player)) {
@@ -82,7 +82,7 @@ public final class CmiProgressionGui {
                         openMain(player);
                     }
                 }
-                case "race" -> openSection(player, "race", "&bRace & Form", Material.PLAYER_HEAD,
+                case "race" -> openSection(player, "race", "&bRace & Form", Material.TOTEM_OF_UNDYING,
                         new String[]{"racelock", "yardrat", "spiritualist", "android"});
                 case "android_convert", "androidconvert", "convert_android" -> {
                     if (ForgeBridge.isStaff(player)) {
@@ -91,17 +91,16 @@ public final class CmiProgressionGui {
                         openMain(player);
                     }
                 }
-                case "combat" -> openSection(player, "combat", "&cCombat", Material.IRON_SWORD,
+                case "combat" -> openSection(player, "combat", "&cCombat", Material.NETHERITE_SWORD,
                         new String[]{"kiweapons", "piercing", "dot", "apothic"});
-                case "end" -> openSection(player, "end", "&5End", Material.END_STONE,
+                case "end" -> openSection(player, "end", "&5End", Material.END_CRYSTAL,
                         new String[]{"end", "endportal"});
-                case "fabled" -> openSection(player, "fabled", "&dFabled Bridges", Material.ENCHANTED_BOOK,
+                case "fabled" -> openSection(player, "fabled", "&dFabled Bridges", Material.AMETHYST_SHARD,
                         new String[]{"fabled"});
-                case "utility" -> openSection(player, "utility", "&7Utility", Material.COMPARATOR,
+                case "utility" -> openSection(player, "utility", "&7Utility", Material.SPYGLASS,
                         new String[]{"shadow", "statchecker"});
-                case "status" -> openSection(player, "status", "&eStatus", Material.BOOK,
+                case "status" -> openSection(player, "status", "&eStatus", Material.PAPER,
                         new String[]{"flight", "sprint", "meditation", "potential", "farming", "building"});
-                case "help" -> openHelp(player);
                 case "admin", "flags", "disable" -> {
                     if (ForgeBridge.isStaff(player)) {
                         openFlags(player);
@@ -131,7 +130,7 @@ public final class CmiProgressionGui {
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
-        CMIGuiButton status = new CMIGuiButton(4, Material.EXPERIENCE_BOTTLE,
+        CMIGuiButton status = new CMIGuiButton(4, Material.BREWING_STAND,
                 !bridgeOk ? "&c&lUNAVAILABLE"
                         : !systemOn ? "&c&lPROGRESSION DISABLED"
                         : "&d&lProgression");
@@ -145,16 +144,14 @@ public final class CmiProgressionGui {
             gui.open();
             return;
         }
-        status.addLore(List.of("", "&7Natural systems · click a section",
-                "&7Flags toggle on each section page",
-                "&8Prestige / Skills live on Hub"));
+        status.addLore(List.of("", "&7Pick a section", "&7Toggle flags inside each page"));
         gui.addButton(status);
 
         int[] slots = GuiBoardHelper.centeredSlots(7);
         String[] pages = {"skills", "tp", "race", "combat", "end", "fabled", "utility"};
         Material[] mats = {
-                Material.FEATHER, Material.GOLD_INGOT, Material.PLAYER_HEAD, Material.IRON_SWORD,
-                Material.END_STONE, Material.ENCHANTED_BOOK, Material.COMPARATOR
+                Material.FEATHER, Material.GOLDEN_CARROT, Material.TOTEM_OF_UNDYING,
+                Material.NETHERITE_SWORD, Material.END_CRYSTAL, Material.AMETHYST_SHARD, Material.SPYGLASS
         };
         String[] titles = {
                 "&eSkills", "&6TP Gains", "&bRace & Form", "&cCombat",
@@ -171,13 +168,11 @@ public final class CmiProgressionGui {
         };
         for (int i = 0; i < pages.length && i < slots.length; i++) {
             gui.addButton(pageBtn(slots[i], mats[i], titles[i], pages[i],
-                    tips[i], "", "&eClick · toggle flags inside"));
+                    tips[i], "", "&eClick to open"));
         }
 
-        gui.addButton(pageBtn(40, Material.PAPER, "&7Help", "help", "&7Commands"));
-
         if (ForgeBridge.isStaff(player)) {
-            gui.addButton(pageBtn(31, Material.REDSTONE, "&cAll Flags", "admin",
+            gui.addButton(pageBtn(40, Material.REPEATER, "&cAll Flags", "admin",
                     "&7Full flag board"));
         }
 
@@ -274,7 +269,7 @@ public final class CmiProgressionGui {
         }
 
         if ("fabled".equals(page) && staff) {
-            gui.addButton(pageBtn(31, Material.ENCHANTED_BOOK, "&dFabled Subflags", "flags_fabled",
+            gui.addButton(pageBtn(31, Material.AMETHYST_SHARD, "&dFabled Subflags", "flags_fabled",
                     "&7Energy, TP/SP, race class, etc."));
         }
 
@@ -361,41 +356,10 @@ public final class CmiProgressionGui {
         gui.open();
     }
 
-    private static void openHelp(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Progression", 5);
-        CMIGuiButton header = new CMIGuiButton(4, Material.PAPER, "&7Help");
-        header.lockField();
-        header.addLore(List.of("", "&7Module flags & tips below"));
-        gui.addButton(header);
-        List<String> lore = toAmp(ForgeBridge.progressionLines(player, "help"));
-        if (lore.isEmpty()) {
-            lore = List.of("&7/progression §8— open this menu",
-                    "&7Sections hold toggleable flags",
-                    "&8Prestige: /prestige · Skills: /skills · Hub: /lm");
-        }
-        List<GuiBoardHelper.DetailTile> tiles = GuiBoardHelper.detailTiles(lore);
-        int[] slots = GuiBoardHelper.centeredSlots(Math.min(tiles.size(), 21));
-        for (int i = 0; i < slots.length && i < tiles.size(); i++) {
-            GuiBoardHelper.DetailTile tile = tiles.get(i);
-            CMIGuiButton btn = new CMIGuiButton(slots[i], tile.icon, tile.title);
-            btn.lockField();
-            List<String> tip = new ArrayList<>();
-            tip.add("");
-            tip.addAll(tile.lore);
-            btn.addLore(tip);
-            gui.addButton(btn);
-        }
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
-        gui.addButton(hubBtn(40));
-        gui.addButton(closeBtn(44));
-        fillEmpty(gui, 5);
-        gui.open();
-    }
-
     private static void openFlags(Player player) {
         Map<String, String> ph = ForgeBridge.progressionPlaceholders(player);
         CMIGui gui = base(player, "&8Legacy Mechanics · Flags", 6);
-        CMIGuiButton info = new CMIGuiButton(4, Material.REDSTONE, "&c&lStaff Flags");
+        CMIGuiButton info = new CMIGuiButton(4, Material.REPEATER, "&c&lStaff Flags");
         info.lockField();
         info.addLore(List.of("", "&7Grouped by script category", "&7Click a flag to toggle"));
         gui.addButton(info);

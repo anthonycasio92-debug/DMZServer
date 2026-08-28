@@ -15,10 +15,9 @@ public final class MechanicsChatMenu {
     private MechanicsChatMenu() {}
 
     public static void open(ServerPlayer player, String page) {
-        if (page == null || page.isBlank() || "main".equalsIgnoreCase(page) || "hub".equalsIgnoreCase(page)) {
+        if (page == null || page.isBlank() || "main".equalsIgnoreCase(page) || "hub".equalsIgnoreCase(page)
+                || "help".equalsIgnoreCase(page)) {
             main(player);
-        } else if ("help".equalsIgnoreCase(page)) {
-            help(player);
         } else if ("logs".equalsIgnoreCase(page) || "syslog".equalsIgnoreCase(page)) {
             if (StaffAccess.isStaff(player)) {
                 logs(player);
@@ -44,7 +43,7 @@ public final class MechanicsChatMenu {
     private static void main(ServerPlayer player) {
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§8── §fLegacy Mechanics §8──"));
-        send(player, Component.m_237113_("§7Pick a system below"));
+        send(player, Component.m_237113_("§7Choose a system"));
         send(player, Component.m_237113_(""));
         MutableComponent row = Component.m_237113_("§7")
                 .m_7220_(btn("§a[Difficulty]", "/lm do open difficulty", "Unlock tiers & scaling"))
@@ -53,21 +52,21 @@ public final class MechanicsChatMenu {
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§b[Spar]", "/lm do open spar", "Sparring TP & mentor"));
         send(player, row);
-        MutableComponent row2 = Component.m_237113_("§7")
-                .m_7220_(btn("§f[Help]", "/lm do page help", "How to use /lm"));
         boolean staff = StaffAccess.isStaff(player);
         boolean skillCheck = SkillCheckService.canUse(player);
         if (skillCheck || staff) {
-            row2.m_7220_(Component.m_237113_("  "))
-                    .m_7220_(btn(staff && !skillCheck ? "§e[Skills]" : "§e[Skill Check]",
-                            staff && !skillCheck ? "/lm do open skills" : "/lm do open skillcheck",
-                            staff && !skillCheck ? "Skill unlock admin" : "Donator skill progress"));
+            MutableComponent row2 = Component.m_237113_("§7");
+            if (skillCheck || staff) {
+                row2.m_7220_(btn(staff && !skillCheck ? "§e[Skills]" : "§e[Skill Check]",
+                        staff && !skillCheck ? "/lm do open skills" : "/lm do open skillcheck",
+                        staff && !skillCheck ? "Skill unlock admin" : "Donator skill progress"));
+            }
+            if (staff) {
+                row2.m_7220_(Component.m_237113_("  "))
+                        .m_7220_(btn("§6[Prestige]", "/lm do open prestige", "Prestige shop"));
+            }
+            send(player, row2);
         }
-        if (staff) {
-            row2.m_7220_(Component.m_237113_("  "))
-                    .m_7220_(btn("§6[Prestige]", "/lm do open prestige", "Prestige shop"));
-        }
-        send(player, row2);
         if (staff) {
             MutableComponent row3 = Component.m_237113_("§7")
                     .m_7220_(btn("§d[Progression]", "/lm do open progression", "Natural progression"))
@@ -77,23 +76,6 @@ public final class MechanicsChatMenu {
                     .m_7220_(btn("§8[Logs]", "/lm do page logs", "System telemetry"));
             send(player, row3);
         }
-        send(player, Component.m_237113_("§8────────────────"));
-    }
-
-    private static void help(ServerPlayer player) {
-        send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8── §fLegacy Mechanics · Help §8──"));
-        send(player, Component.m_237113_("§e/lm §7— Open this hub (preferred)"));
-        send(player, Component.m_237113_("§7Click Difficulty · Rival · Spar from the hub."));
-        if (SkillCheckService.canUse(player)) {
-            send(player, Component.m_237113_("§eSkill Check §7— Donator skill progress (hub button)"));
-        }
-        send(player, Component.m_237113_("§8Direct /difficulty · /rival · /spar still work (compat)."));
-        if (StaffAccess.isStaff(player)) {
-            send(player, Component.m_237113_("§8Staff: /lm admin · /progression · /prestige · /skills"));
-            send(player, Component.m_237113_("§8Staff: /difficulty admin · /rival admin · /spar admin"));
-        }
-        send(player, btn("§7« Back", "/lm do page main", "Hub"));
         send(player, Component.m_237113_("§8────────────────"));
     }
 

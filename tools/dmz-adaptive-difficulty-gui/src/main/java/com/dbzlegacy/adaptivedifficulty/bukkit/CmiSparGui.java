@@ -45,7 +45,7 @@ public final class CmiSparGui {
                 openPicker(player, "apprentice_invite", "mentor",
                         "&bAsk Mentor", "&7Ask them to be your mentor");
             } else if ("help".equals(p)) {
-                openDetail(player, "help", "&7Help", Material.PAPER);
+                openMain(player);
             } else if ("admin".equals(p)) {
                 if (ForgeBridge.isStaff(player)) {
                     openAdmin(player);
@@ -68,10 +68,10 @@ public final class CmiSparGui {
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
-        CMIGuiButton status = new CMIGuiButton(4, Material.NETHER_STAR,
+        CMIGuiButton status = new CMIGuiButton(4, Material.GOLDEN_SWORD,
                 !bridgeOk ? "&c&lUNAVAILABLE"
                         : !systemOn ? "&c&lSPARRING DISABLED"
-                        : "&f&lSparring");
+                        : "&b&lSparring");
         status.lockField();
         if (!bridgeOk || !systemOn) {
             status.addLore(unavailableLore(bridgeOk));
@@ -86,7 +86,7 @@ public final class CmiSparGui {
         gui.addButton(status);
 
         // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
-        gui.addButton(pageBtn(19, Material.BOOK, "&eStats", "stats",
+        gui.addButton(pageBtn(19, Material.PAPER, "&eStats", "stats",
                 "&7Your spar stats"));
         gui.addButton(pageBtn(21, Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7Leaderboard"));
@@ -95,7 +95,7 @@ public final class CmiSparGui {
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
         if (session) {
-            gui.addButton(actionBtn(31, Material.RED_CONCRETE, "&cEnd Session",
+            gui.addButton(actionBtn(31, Material.RED_DYE, "&cEnd Session",
                     "end", "0", "main",
                     List.of("&7End your active spar session")));
         }
@@ -103,7 +103,7 @@ public final class CmiSparGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         if (ForgeBridge.isStaff(player)) {
-            gui.addButton(pageBtn(37, Material.REDSTONE, "&cAdmin", "admin",
+            gui.addButton(pageBtn(37, Material.COMMAND_BLOCK, "&cAdmin", "admin",
                     "&7Save · status · mentor resetcd"));
         }
         fillEmpty(gui, 5);
@@ -154,10 +154,10 @@ public final class CmiSparGui {
 
     private static void openAdmin(Player player) {
         CMIGui gui = base(player, "&8Legacy Mechanics · Spar Admin", 5);
-        CMIGuiButton info = new CMIGuiButton(4, Material.REDSTONE, "&c&lSpar Admin");
+        CMIGuiButton info = new CMIGuiButton(4, Material.COMMAND_BLOCK, "&c&lSpar Admin");
         info.lockField();
         info.addLore(List.of("", "&7Staff-only tools",
-                "&8Save · status · mentor resetcd · help",
+                "&8Save · status · mentor resetcd",
                 "&8Player menus stay on the main Spar GUI"));
         gui.addButton(info);
         gui.addButton(actionBtn(20, Material.WRITABLE_BOOK, "&aSave",
@@ -169,9 +169,6 @@ public final class CmiSparGui {
         gui.addButton(actionBtn(24, Material.EMERALD, "&eReset Mentor CD",
                 "admin", "resetcd", "admin",
                 List.of("&7Clear your mentor cooldown", "&8/spar admin mentor resetcd")));
-        gui.addButton(actionBtn(30, Material.PAPER, "&7Admin Help",
-                "admin", "help", "admin",
-                List.of("&7Print admin command list", "&8/spar admin help")));
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Player Spar menu"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));

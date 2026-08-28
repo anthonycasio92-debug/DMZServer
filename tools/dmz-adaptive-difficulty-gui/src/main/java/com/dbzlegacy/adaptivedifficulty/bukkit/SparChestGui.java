@@ -45,7 +45,7 @@ public final class SparChestGui implements Listener {
             inv = picker(player, "apprentice_invite", "mentor",
                     "&bAsk Mentor", "&7Ask them to be your mentor");
         } else if ("help".equals(p)) {
-            inv = detailBoard(player, "help", "&7Help", Material.PAPER);
+            inv = main(player);
         } else if ("admin".equals(p)) {
             inv = ForgeBridge.isStaff(player) ? admin(player) : main(player);
         } else {
@@ -72,9 +72,9 @@ public final class SparChestGui implements Listener {
             return inv;
         }
 
-        put(holder, inv, 4, item(Material.NETHER_STAR, "&f&lSparring", statusLore(ph)));
+        put(holder, inv, 4, item(Material.GOLDEN_SWORD, "&b&lSparring", statusLore(ph)));
         // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
-        put(holder, inv, 19, pageBtn(Material.BOOK, "&eStats", "&7Your spar stats"),
+        put(holder, inv, 19, pageBtn(Material.PAPER, "&eStats", "&7Your spar stats"),
                 SlotAction.page("stats"));
         put(holder, inv, 21, pageBtn(Material.GOLDEN_HELMET, "&fTop", "&7Leaderboard"),
                 SlotAction.page("top"));
@@ -83,7 +83,7 @@ public final class SparChestGui implements Listener {
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
         if (session) {
-            put(holder, inv, 31, tipBtn(Material.RED_CONCRETE, "&cEnd Session",
+            put(holder, inv, 31, tipBtn(Material.RED_DYE, "&cEnd Session",
                     List.of("&7End your active spar session")),
                     SlotAction.act("end", "0", "main"));
         }
@@ -91,7 +91,7 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         if (ForgeBridge.isStaff(player)) {
-            put(holder, inv, 37, pageBtn(Material.REDSTONE, "&cAdmin",
+            put(holder, inv, 37, pageBtn(Material.COMMAND_BLOCK, "&cAdmin",
                     "&7Save · status · mentor resetcd"), SlotAction.page("admin"));
         }
         return inv;
@@ -166,9 +166,9 @@ public final class SparChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Spar Admin"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.REDSTONE, "&c&lSpar Admin",
+        put(holder, inv, 4, item(Material.COMMAND_BLOCK, "&c&lSpar Admin",
                 List.of("", "&7Staff-only tools",
-                        "&8Save · status · mentor resetcd · help",
+                        "&8Save · status · mentor resetcd",
                         "&8Player menus stay on the main Spar GUI")));
         put(holder, inv, 20, tipBtn(Material.WRITABLE_BOOK, "&aSave",
                 List.of("&7Write sparring.json", "&8/spar admin save")),
@@ -179,9 +179,6 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 24, tipBtn(Material.EMERALD, "&eReset Mentor CD",
                 List.of("&7Clear your mentor cooldown", "&8/spar admin mentor resetcd")),
                 SlotAction.act("admin", "resetcd", "admin"));
-        put(holder, inv, 30, tipBtn(Material.PAPER, "&7Admin Help",
-                List.of("&7Print admin command list", "&8/spar admin help")),
-                SlotAction.act("admin", "help", "admin"));
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Player Spar menu"), SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());

@@ -65,7 +65,7 @@ public final class CmiRivalGui {
                 case "hof", "hall" -> openDetail(player, "hof", "&6Hall of Fame", Material.GOLD_BLOCK, "progress");
                 case "journal" -> openDetail(player, "journal", "&fJournal", Material.MAP, "progress");
                 case "title", "titles" -> openDetail(player, "title", "&eTitle", Material.NAME_TAG, "progress");
-                case "help" -> openDetail(player, "help", "&7Help", Material.PAPER, "main");
+                case "help" -> openMain(player);
                 case "admin" -> {
                     if (ForgeBridge.isStaff(player)) {
                         openAdmin(player);
@@ -88,10 +88,10 @@ public final class CmiRivalGui {
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
-        CMIGuiButton status = new CMIGuiButton(4, Material.NETHER_STAR,
+        CMIGuiButton status = new CMIGuiButton(4, Material.NAME_TAG,
                 !bridgeOk ? "&c&lUNAVAILABLE"
                         : !systemOn ? "&c&lRIVAL DISABLED"
-                        : "&f&lRival");
+                        : "&6&lRival");
         status.lockField();
         if (!bridgeOk || !systemOn) {
             status.addLore(unavailableLore(bridgeOk));
@@ -114,23 +114,23 @@ public final class CmiRivalGui {
         } catch (NumberFormatException ignored) {
             pendingCount = 0;
         }
-        gui.addButton(pageBtn(21, Material.LIME_CONCRETE, "&aActions", "actions",
+        gui.addButton(pageBtn(21, Material.EMERALD, "&aActions", "actions",
                 "&7Declare · accept · decline · remove",
                 pendingCount > 0
                         ? "&e" + pendingCount + " pending invite" + (pendingCount == 1 ? "" : "s")
                         : "&8Pending invites live here"));
-        gui.addButton(pageBtn(23, Material.IRON_SWORD, "&cChallenge", "challenge",
+        gui.addButton(pageBtn(23, Material.DIAMOND_SWORD, "&cChallenge", "challenge",
                 "&7Send · accept · decline · spectate"));
         gui.addButton(pageBtn(25, Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7RP leaderboard"));
         gui.addButton(pageBtn(29, Material.SKELETON_SKULL, "&8History", "history",
                 "&7Previous rivals", "&8Archived when removed"));
-        gui.addButton(pageBtn(31, Material.WRITABLE_BOOK, "&bProgress", "progress",
+        gui.addButton(pageBtn(31, Material.EXPERIENCE_BOTTLE, "&bProgress", "progress",
                 "&7Season · quests · achs · HOF · journal · title"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "false"));
         gui.addButton(actionBtn(33,
-                tpOn ? Material.BELL : Material.PAPER,
+                tpOn ? Material.BELL : Material.GRAY_DYE,
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 "tpmsg", "toggle", "main",
                 List.of(
@@ -154,8 +154,8 @@ public final class CmiRivalGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         if (ForgeBridge.isStaff(player)) {
-            gui.addButton(pageBtn(37, Material.REDSTONE, "&cAdmin", "admin",
-                    "&7Save · refresh · status · commands"));
+            gui.addButton(pageBtn(37, Material.COMMAND_BLOCK, "&cAdmin", "admin",
+                    "&7Save · refresh · status"));
         }
         fillEmpty(gui, 5);
         gui.open();
@@ -163,7 +163,7 @@ public final class CmiRivalGui {
 
     private static void openProgress(Player player) {
         CMIGui gui = base(player, "&8Legacy Mechanics · Rival Progress", 5);
-        CMIGuiButton info = new CMIGuiButton(4, Material.WRITABLE_BOOK, "&b&lProgress");
+        CMIGuiButton info = new CMIGuiButton(4, Material.EXPERIENCE_BOTTLE, "&b&lProgress");
         info.lockField();
         info.addLore(List.of("", "&7Each section is its own board",
                 "&7Stats · Season · Quests · Achs · HOF · Journal · Title"));
@@ -171,8 +171,8 @@ public final class CmiRivalGui {
 
         String[] pages = {"stats", "season", "quests", "achievements", "hof", "journal", "title"};
         Material[] mats = {
-                Material.BOOK, Material.CLOCK, Material.WRITABLE_BOOK, Material.DIAMOND,
-                Material.GOLD_BLOCK, Material.MAP, Material.NAME_TAG
+                Material.PAPER, Material.CLOCK, Material.MAP, Material.DIAMOND,
+                Material.GOLD_BLOCK, Material.BOOK, Material.NAME_TAG
         };
         String[] titles = {"&eStats", "&aSeason", "&bQuests", "&dAchs", "&6HOF", "&fJournal", "&eTitle"};
         int[] slots = GuiBoardHelper.centeredRow(7);
@@ -252,10 +252,10 @@ public final class CmiRivalGui {
 
     private static void openAdmin(Player player) {
         CMIGui gui = base(player, "&8Legacy Mechanics · Rival Admin", 5);
-        CMIGuiButton info = new CMIGuiButton(4, Material.REDSTONE, "&c&lRival Admin");
+        CMIGuiButton info = new CMIGuiButton(4, Material.COMMAND_BLOCK, "&c&lRival Admin");
         info.lockField();
         info.addLore(List.of("", "&7Staff-only tools",
-                "&8Save · refresh · status · help",
+                "&8Save · refresh · status",
                 "&8Player menus stay on the main Rival GUI"));
         gui.addButton(info);
         gui.addButton(actionBtn(20, Material.WRITABLE_BOOK, "&aSave",
@@ -267,9 +267,6 @@ public final class CmiRivalGui {
         gui.addButton(actionBtn(24, Material.COMPASS, "&bStatus",
                 "admin", "status", "admin",
                 List.of("&7Enabled + path summary", "&8/rival admin status")));
-        gui.addButton(actionBtn(30, Material.PAPER, "&7Admin Help",
-                "admin", "help", "admin",
-                List.of("&7Print admin command list", "&8/rival admin help")));
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Player Rival menu"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));

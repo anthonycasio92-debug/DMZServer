@@ -44,27 +44,9 @@ public final class MechanicsGuiApi {
         boolean staff = player != null && StaffAccess.isStaff(player);
         boolean skillCheck = player != null && SkillCheckService.canUse(player);
         return switch (p) {
-            case "help" -> {
-                List<String> help = new ArrayList<>();
-                help.add("§6§lLegacy Mechanics");
-                help.add("§e/lm §7— Open this hub (use this)");
-                help.add("§7From the hub, click a system:");
-                help.add("§aDifficulty §7— Unlock tiers & scaling");
-                help.add("§6Rival §7— Rivalry, challenges, RP");
-                help.add("§bSpar §7— Sparring TP & mentor");
-                if (skillCheck) {
-                    help.add("§eSkill Check §7— Donator skill progress");
-                }
-                help.add("");
-                help.add("§8Direct /difficulty · /rival · /spar still open GUIs");
-                help.add("§8for compatibility, but prefer §f/lm§8.");
-                if (staff) {
-                    help.add("");
-                    help.add("§8Staff: /lm admin · /progression · /prestige · /skills");
-                    help.add("§8Staff: /difficulty admin · /rival admin · /spar admin");
-                }
-                yield help;
-            }
+            case "help" -> List.of(
+                    "§e/lm §7— open Legacy Mechanics hub"
+            );
             case "logs", "syslog" -> {
                 if (player == null || !StaffAccess.isStaff(player)) {
                     yield List.of("§cStaff only.");

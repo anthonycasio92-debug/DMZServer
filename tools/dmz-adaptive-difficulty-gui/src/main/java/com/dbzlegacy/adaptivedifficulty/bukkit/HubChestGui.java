@@ -30,10 +30,10 @@ public final class HubChestGui implements Listener {
     public void open(Player player, String page) {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         Inventory inv = switch (p) {
-            case "help" -> chunked(player, "help", "&7Help", Material.PAPER);
             case "logs", "syslog" -> ForgeBridge.isStaff(player)
                     ? logs(player)
                     : main(player);
+            // Help removed — any leftover /lm do page help opens the hub.
             default -> main(player);
         };
         player.openInventory(inv);
@@ -56,47 +56,56 @@ public final class HubChestGui implements Listener {
         }
 
         put(holder, inv, 4, item(Material.NETHER_STAR, "&f&lLegacy Mechanics",
-                List.of("", "&7Pick a system below", "&8Use &f/lm &8for this hub")));
-        put(holder, inv, 19, tipBtn(Material.DIAMOND_SWORD, "&aDifficulty",
-                List.of("&7Unlock tiers & world scaling", "&8Tip: buy unlocks when ready")),
+                List.of("", "&7Choose a system", "&8/lm")));
+
+        // Row 2 — core (everyone): Difficulty · Rival · Spar
+        put(holder, inv, 20, tipBtn(Material.BEACON, "&aDifficulty",
+                List.of("&7Unlock tiers & world scaling", "&eClick to open")),
                 SlotAction.open("difficulty"));
-        put(holder, inv, 21, tipBtn(Material.IRON_SWORD, "&6Rival",
-                List.of("&7Rivalry, challenges & RP", "&8Tip: declare rivals from List")),
+        put(holder, inv, 22, tipBtn(Material.NAME_TAG, "&6Rival",
+                List.of("&7Rivalry, challenges & RP", "&eClick to open")),
                 SlotAction.open("rival"));
-        put(holder, inv, 23, tipBtn(Material.GOLDEN_SWORD, "&bSpar",
-                List.of("&7Sparring TP & mentor bonds", "&8Tip: trade hits nearby to start")),
+        put(holder, inv, 24, tipBtn(Material.GOLDEN_SWORD, "&bSpar",
+                List.of("&7Sparring TP & mentor bonds", "&eClick to open")),
                 SlotAction.open("spar"));
-        put(holder, inv, 25, pageBtn(Material.PAPER, "&7Help",
-                "&7How to use /lm", "&8Guide-friendly overview"), SlotAction.page("help"));
 
         boolean staff = ForgeBridge.isStaff(player);
         boolean skillCheck = ForgeBridge.hasSkillCheck(player);
-        if (staff || skillCheck) {
-            if (skillCheck || staff) {
-                put(holder, inv, 29, tipBtn(Material.ENCHANTED_BOOK,
-                        staff && !skillCheck ? "&eSkills" : "&eSkill Check",
-                        List.of(staff && !skillCheck
-                                        ? "&7Skill unlock admin browser"
-                                        : "&7View skill progress (donator)",
-                                "&8Natural · Saga")),
-                        SlotAction.open(staff && !skillCheck ? "skills" : "skillcheck"));
-            }
-            if (staff) {
-                put(holder, inv, 31, tipBtn(Material.NETHER_STAR, "&6Prestige",
-                        List.of("&7Prestige shop / levels", "&8Staff prestige menu")),
-                        SlotAction.open("prestige"));
-            }
+
+        // Row 3 — progress (donator / staff), centered
+        if (skillCheck && staff) {
+            put(holder, inv, 21, tipBtn(Material.FEATHER, "&eSkill Check",
+                    List.of("&7Natural · Saga progress", "&eClick to open")),
+                    SlotAction.open("skillcheck"));
+            put(holder, inv, 23, tipBtn(Material.GOLDEN_APPLE, "&6Prestige",
+                    List.of("&7Prestige shop / levels", "&eClick to open")),
+                    SlotAction.open("prestige"));
+        } else if (skillCheck) {
+            put(holder, inv, 22, tipBtn(Material.FEATHER, "&eSkill Check",
+                    List.of("&7Natural · Saga progress", "&eClick to open")),
+                    SlotAction.open("skillcheck"));
+        } else if (staff) {
+            put(holder, inv, 21, tipBtn(Material.FEATHER, "&eSkills",
+                    List.of("&7Skill unlock admin browser", "&eClick to open")),
+                    SlotAction.open("skills"));
+            put(holder, inv, 23, tipBtn(Material.GOLDEN_APPLE, "&6Prestige",
+                    List.of("&7Prestige shop / levels", "&eClick to open")),
+                    SlotAction.open("prestige"));
         }
+
+        // Row 4 — staff tools
         if (staff) {
-            put(holder, inv, 37, tipBtn(Material.EXPERIENCE_BOTTLE, "&dProgression",
-                    List.of("&7Natural skills / TP / race", "&8Staff category hub")),
+            put(holder, inv, 38, tipBtn(Material.BREWING_STAND, "&dProgression",
+                    List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")),
                     SlotAction.open("progression"));
-            put(holder, inv, 39, tipBtn(Material.REDSTONE, "&cAdmin",
-                    List.of("&7/lm admin · system toggles", "&8Reload · syslog · open")),
+            put(holder, inv, 40, tipBtn(Material.COMMAND_BLOCK, "&cAdmin",
+                    List.of("&7Reload · syslog · open systems", "&8/lm admin")),
                     SlotAction.open("admin"));
-            put(holder, inv, 41, pageBtn(Material.WRITABLE_BOOK, "&8Logs",
-                    "&7System telemetry", "&8On · off · flush"), SlotAction.page("logs"));
+            put(holder, inv, 42, tipBtn(Material.CLOCK, "&8Logs",
+                    List.of("&7System telemetry", "&eClick to open")),
+                    SlotAction.page("logs"));
         }
+
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -109,7 +118,7 @@ public final class HubChestGui implements Listener {
         Map<String, String> ph = ForgeBridge.hubPlaceholders(player);
         boolean on = "true".equalsIgnoreCase(ph.getOrDefault("syslog", "false"));
         String statusLine = ph.getOrDefault("syslog_status", "unknown");
-        put(holder, inv, 4, item(Material.WRITABLE_BOOK, "&8&lLogs", List.of("",
+        put(holder, inv, 4, item(Material.CLOCK, "&8&lLogs", List.of("",
                 "&7System telemetry &f" + (on ? "ON" : "OFF"),
                 "&8" + statusLine.replace('§', '&'),
                 "",
@@ -127,44 +136,15 @@ public final class HubChestGui implements Listener {
                     prependBlank(part)));
             placed++;
         }
-        put(holder, inv, 29, tipBtn(Material.LIME_CONCRETE, "&aSyslog ON",
+        put(holder, inv, 29, tipBtn(Material.LIME_DYE, "&aSyslog ON",
                 List.of("&7Enable system telemetry")),
                 SlotAction.act("syslog", "on", "logs"));
-        put(holder, inv, 31, tipBtn(Material.RED_CONCRETE, "&cSyslog OFF",
+        put(holder, inv, 31, tipBtn(Material.GRAY_DYE, "&cSyslog OFF",
                 List.of("&7Disable system telemetry")),
                 SlotAction.act("syslog", "off", "logs"));
-        put(holder, inv, 33, tipBtn(Material.GOLD_INGOT, "&eFlush",
+        put(holder, inv, 33, tipBtn(Material.HOPPER, "&eFlush",
                 List.of("&7Flush log writers")),
                 SlotAction.act("syslog", "flush", "logs"));
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
-        return inv;
-    }
-
-    private Inventory chunked(Player player, String page, String title, Material mat) {
-        Holder holder = new Holder(page);
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics"));
-        holder.bind(inv);
-        frameOnly(inv, 45);
-        List<String> lore = toAmp(ForgeBridge.hubLines(player, page));
-        if (lore.isEmpty()) {
-            lore = List.of("&7Nothing here yet.", "&8Use &f/lm &8to open systems.");
-        }
-        put(holder, inv, 4, item(mat, title, List.of("", "&7Guide tips below",
-                "&8Players: use &f/lm &8only")));
-        List<List<String>> parts = GuiLoreChunks.chunk(lore);
-        int placed = 0;
-        for (List<String> part : parts) {
-            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
-                break;
-            }
-            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed];
-            String partTitle = parts.size() == 1
-                    ? "&fDetails"
-                    : "&fPart &e" + (placed + 1) + "&8/&e" + parts.size();
-            put(holder, inv, slot, item(Material.PAPER, partTitle, prependBlank(part)));
-            placed++;
-        }
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;

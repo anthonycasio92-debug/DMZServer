@@ -12,12 +12,9 @@ import org.bukkit.entity.Player;
 
 /**
  * CMILib inventory GUI — Legacy Mechanics Hub ({@code /lm}).
- * Pages: main · help · logs (staff).
- * Hub buttons use {@code lm do open &lt;system&gt;} so inventories open without
- * relying on bare {@code /difficulty}/{@code /rival}/{@code /spar} commands.
+ * Pages: main · logs (staff). Help page removed.
  */
 public final class CmiHubGui {
-    private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
     private static final Material ACCENT = Material.GRAY_STAINED_GLASS_PANE;
 
     private CmiHubGui() {}
@@ -33,7 +30,6 @@ public final class CmiHubGui {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         try {
             switch (p) {
-                case "help" -> openChunked(player, "help", "&7Help", Material.PAPER);
                 case "logs", "syslog" -> {
                     if (ForgeBridge.isStaff(player)) {
                         openLogs(player);
@@ -67,50 +63,44 @@ public final class CmiHubGui {
             gui.open();
             return;
         }
-        status.addLore(List.of("", "&7Pick a system below", "&8Use &f/lm &8for this hub"));
+        status.addLore(List.of("", "&7Choose a system", "&8/lm"));
         gui.addButton(status);
 
-        // Everyone — spaced core systems
-        gui.addButton(openBtn(19, Material.DIAMOND_SWORD, "&aDifficulty", "difficulty",
-                "&7Unlock tiers & world scaling",
-                "&8Tip: buy unlocks when ready"));
-        gui.addButton(openBtn(21, Material.IRON_SWORD, "&6Rival", "rival",
-                "&7Rivalry, challenges & RP",
-                "&8Tip: declare rivals from List"));
-        gui.addButton(openBtn(23, Material.GOLDEN_SWORD, "&bSpar", "spar",
-                "&7Sparring TP & mentor bonds",
-                "&8Tip: trade hits nearby to start"));
-        gui.addButton(pageBtn(25, Material.PAPER, "&7Help", "help",
-                "&7How to use /lm", "&8Guide-friendly overview"));
+        // Row 2 — core
+        gui.addButton(openBtn(20, Material.BEACON, "&aDifficulty", "difficulty",
+                "&7Unlock tiers & world scaling", "&eClick to open"));
+        gui.addButton(openBtn(22, Material.NAME_TAG, "&6Rival", "rival",
+                "&7Rivalry, challenges & RP", "&eClick to open"));
+        gui.addButton(openBtn(24, Material.GOLDEN_SWORD, "&bSpar", "spar",
+                "&7Sparring TP & mentor bonds", "&eClick to open"));
 
         boolean staff = ForgeBridge.isStaff(player);
         boolean skillCheck = ForgeBridge.hasSkillCheck(player);
 
-        // Prestige shop + Skill Check on main for staff/donators
-        if (staff || skillCheck) {
-            if (skillCheck || staff) {
-                gui.addButton(openBtn(29, Material.ENCHANTED_BOOK,
-                        staff && !skillCheck ? "&eSkills" : "&eSkill Check",
-                        staff && !skillCheck ? "skills" : "skillcheck",
-                        staff && !skillCheck
-                                ? "&7Skill unlock admin browser"
-                                : "&7View skill progress (donator)",
-                        "&8Natural · Saga"));
-            }
-            if (staff) {
-                gui.addButton(openBtn(31, Material.NETHER_STAR, "&6Prestige", "prestige",
-                        "&7Prestige shop / levels",
-                        "&8Staff prestige menu"));
-            }
+        // Row 3 — progress
+        if (skillCheck && staff) {
+            gui.addButton(openBtn(21, Material.FEATHER, "&eSkill Check", "skillcheck",
+                    "&7Natural · Saga progress", "&eClick to open"));
+            gui.addButton(openBtn(23, Material.GOLDEN_APPLE, "&6Prestige", "prestige",
+                    "&7Prestige shop / levels", "&eClick to open"));
+        } else if (skillCheck) {
+            gui.addButton(openBtn(22, Material.FEATHER, "&eSkill Check", "skillcheck",
+                    "&7Natural · Saga progress", "&eClick to open"));
+        } else if (staff) {
+            gui.addButton(openBtn(21, Material.FEATHER, "&eSkills", "skills",
+                    "&7Skill unlock admin browser", "&eClick to open"));
+            gui.addButton(openBtn(23, Material.GOLDEN_APPLE, "&6Prestige", "prestige",
+                    "&7Prestige shop / levels", "&eClick to open"));
         }
 
+        // Row 4 — staff tools
         if (staff) {
-            gui.addButton(openBtn(37, Material.EXPERIENCE_BOTTLE, "&dProgression", "progression",
-                    "&7Natural skills / TP / race", "&8Staff category hub"));
-            gui.addButton(openBtn(39, Material.REDSTONE, "&cAdmin", "admin",
-                    "&7/lm admin · system toggles", "&8Reload · syslog · open"));
-            gui.addButton(pageBtn(41, Material.WRITABLE_BOOK, "&8Logs", "logs",
-                    "&7System telemetry", "&8On · off · flush"));
+            gui.addButton(openBtn(38, Material.BREWING_STAND, "&dProgression", "progression",
+                    "&7Skills · TP · Race · Combat flags", "&eClick to open"));
+            gui.addButton(openBtn(40, Material.COMMAND_BLOCK, "&cAdmin", "admin",
+                    "&7Reload · syslog · open systems", "&8/lm admin"));
+            gui.addButton(pageBtn(42, Material.CLOCK, "&8Logs", "logs",
+                    "&7System telemetry", "&eClick to open"));
         }
 
         gui.addButton(closeBtn(53));
@@ -124,7 +114,7 @@ public final class CmiHubGui {
         boolean on = "true".equalsIgnoreCase(ph.getOrDefault("syslog", "false"));
         String statusLine = ph.getOrDefault("syslog_status", "unknown");
 
-        CMIGuiButton header = new CMIGuiButton(4, Material.WRITABLE_BOOK, "&8&lLogs");
+        CMIGuiButton header = new CMIGuiButton(4, Material.CLOCK, "&8&lLogs");
         header.lockField();
         header.addLore(List.of("",
                 "&7System telemetry &f" + (on ? "ON" : "OFF"),
@@ -152,49 +142,12 @@ public final class CmiHubGui {
             placed++;
         }
 
-        gui.addButton(actionBtn(29, Material.LIME_CONCRETE, "&aSyslog ON",
+        gui.addButton(actionBtn(29, Material.LIME_DYE, "&aSyslog ON",
                 "syslog", "on", "logs", List.of("&7Enable system telemetry")));
-        gui.addButton(actionBtn(31, Material.RED_CONCRETE, "&cSyslog OFF",
+        gui.addButton(actionBtn(31, Material.GRAY_DYE, "&cSyslog OFF",
                 "syslog", "off", "logs", List.of("&7Disable system telemetry")));
-        gui.addButton(actionBtn(33, Material.GOLD_INGOT, "&eFlush",
+        gui.addButton(actionBtn(33, Material.HOPPER, "&eFlush",
                 "syslog", "flush", "logs", List.of("&7Flush log writers")));
-
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
-        gui.addButton(closeBtn(44));
-        fillFrameOnly(gui, 5);
-        gui.open();
-    }
-
-    private static void openChunked(Player player, String page, String title, Material mat) {
-        CMIGui gui = base(player, "&8Legacy Mechanics", 5);
-        List<String> lore = toAmp(ForgeBridge.hubLines(player, page));
-        if (lore.isEmpty()) {
-            lore = List.of("&7Nothing here yet.", "&8Use &f/lm &8to open systems.");
-        }
-        CMIGuiButton header = new CMIGuiButton(4, mat, title);
-        header.lockField();
-        header.addLore(List.of("", "&7Guide tips below", "&8Players: use &f/lm &8only"));
-        gui.addButton(header);
-
-        List<List<String>> parts = GuiLoreChunks.chunk(lore);
-        int placed = 0;
-        for (List<String> part : parts) {
-            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
-                break;
-            }
-            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed];
-            String partTitle = parts.size() == 1
-                    ? "&fDetails"
-                    : "&fPart &e" + (placed + 1) + "&8/&e" + parts.size();
-            CMIGuiButton chunk = new CMIGuiButton(slot, Material.PAPER, partTitle);
-            chunk.lockField();
-            List<String> withBlank = new ArrayList<>();
-            withBlank.add("");
-            withBlank.addAll(part);
-            chunk.addLore(withBlank);
-            gui.addButton(chunk);
-            placed++;
-        }
 
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(44));
@@ -213,7 +166,6 @@ public final class CmiHubGui {
         return out;
     }
 
-    /** Edge frame only — leave interior empty for breathing room. */
     private static void fillFrameOnly(CMIGui gui, int rows) {
         int size = rows * 9;
         Map<Integer, CMIGuiButton> existing = gui.getButtons();

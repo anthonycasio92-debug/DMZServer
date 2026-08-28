@@ -120,14 +120,14 @@ public final class DifficultyChestGui implements Listener {
             withBanner.addAll(status);
             status = withBanner;
         }
-        put(holder, inv, 13, item(Material.NETHER_STAR,
-                personalOn ? "&f&lAdaptive Difficulty" : "&c&lDIFFICULTY OFF",
+        put(holder, inv, 13, item(Material.BEACON,
+                personalOn ? "&a&lAdaptive Difficulty" : "&c&lDIFFICULTY OFF",
                 status));
         // Primary actions — centered trio
         put(holder, inv, 20, pageBtn(Material.GOLD_INGOT, "&eBuy Tier",
                 "&7Purchase a higher Unlock Tier", "&8Ancient Coins · pay-up OK · change returned"),
                 SlotAction.page("buy"));
-        put(holder, inv, 22, pageBtn(Material.WHITE_CONCRETE, "&fLower Tier",
+        put(holder, inv, 22, pageBtn(Material.IRON_INGOT, "&fLower Tier",
                 "&7Select a lower unlocked tier", "&8Or reset to None · always free"),
                 SlotAction.page("lower"));
         put(holder, inv, 24, pageBtn(Material.NAME_TAG, "&dTitles",
@@ -150,7 +150,7 @@ public final class DifficultyChestGui implements Listener {
                                 : "&8AI pressure, and tier buys"
                 )), SlotAction.act("toggle_personal", "0", "main"));
         put(holder, inv, 31, tipBtn(
-                coinChatOn ? Material.BELL : Material.PAPER,
+                coinChatOn ? Material.BELL : Material.GRAY_DYE,
                 coinChatOn ? "&aCoin Chat ON" : "&8Coin Chat OFF",
                 List.of(
                         coinChatOn
@@ -159,7 +159,7 @@ public final class DifficultyChestGui implements Listener {
                         "&8Only affects Ancient Coin kill chat"
                 )), SlotAction.act("toggle_coin_chat", "0", "main"));
         if (ForgeBridge.isStaff(viewer)) {
-            put(holder, inv, 33, pageBtn(Material.BOOK, "&8Details",
+            put(holder, inv, 33, pageBtn(Material.SPYGLASS, "&8Details",
                     "&7Staff breakdown", "&8CR · prestige · kit gates"),
                     SlotAction.page("stats"));
         }

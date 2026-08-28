@@ -32,7 +32,7 @@ public final class CmiSkillsGui {
             switch (p) {
                 case "advanced", "dmz", "saga" ->
                         openPage(player, "saga", "&dSaga", Material.AMETHYST_SHARD);
-                case "help" -> openPage(player, "help", "&7Help", Material.PAPER);
+                case "help" -> openPage(player, "core", "&aNatural", Material.FEATHER);
                 case "natural" -> openPage(player, "core", "&aNatural", Material.FEATHER);
                 default -> openPage(player, "core", "&aNatural", Material.FEATHER);
             }

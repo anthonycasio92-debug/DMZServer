@@ -700,7 +700,11 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return true;
         }
         if ("help".equals(sub) || "logs".equals(sub) || "syslog".equals(sub)) {
-            openHubRespectingConfig(player, sub);
+            if ("help".equals(sub)) {
+                openHubRespectingConfig(player, "main");
+            } else {
+                openHubRespectingConfig(player, sub);
+            }
             return true;
         }
         forwardToForge(player, "lm", args);
@@ -767,7 +771,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 }
                 openHubInventory(player, "logs");
             }
-            case "help" -> openHubInventory(player, "help");
+            case "help" -> openHubInventory(player, "main");
             default -> {
                 player.sendMessage("§cUnknown system: " + s
                         + " §8(difficulty|rival|spar|skillcheck|prestige|progression)");

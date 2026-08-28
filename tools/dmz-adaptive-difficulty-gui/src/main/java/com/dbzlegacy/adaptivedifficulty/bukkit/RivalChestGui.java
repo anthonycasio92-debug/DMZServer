@@ -64,7 +64,8 @@ public final class RivalChestGui implements Listener {
             case "hof", "hall" -> detailBoard(player, "hof", "&6Hall of Fame", Material.GOLD_BLOCK, "progress");
             case "journal" -> detailBoard(player, "journal", "&fJournal", Material.MAP, "progress");
             case "title", "titles" -> detailBoard(player, "title", "&eTitle", Material.NAME_TAG, "progress");
-            case "help" -> detailBoard(player, "help", "&7Help", Material.PAPER, "main");
+            // Help page removed — open hub main.
+            case "help" -> main(player);
             case "admin" -> ForgeBridge.isStaff(player) ? admin(player) : main(player);
             default -> main(player);
         };
@@ -89,7 +90,7 @@ public final class RivalChestGui implements Listener {
             return inv;
         }
 
-        put(holder, inv, 4, item(Material.NETHER_STAR, "&f&lRival", statusLore(ph)));
+        put(holder, inv, 4, item(Material.NAME_TAG, "&6&lRival", statusLore(ph)));
         put(holder, inv, 19, pageBtn(Material.PLAYER_HEAD, "&6List",
                 "&7Current rivals", "&8Heads · hover for stats"), SlotAction.page("list"));
         int pendingCount = 0;
@@ -98,24 +99,24 @@ public final class RivalChestGui implements Listener {
         } catch (NumberFormatException ignored) {
             pendingCount = 0;
         }
-        put(holder, inv, 21, pageBtn(Material.LIME_CONCRETE, "&aActions",
+        put(holder, inv, 21, pageBtn(Material.EMERALD, "&aActions",
                 "&7Declare · accept · decline · remove",
                 pendingCount > 0
                         ? "&e" + pendingCount + " pending invite" + (pendingCount == 1 ? "" : "s")
                         : "&8Pending invites live here"),
                 SlotAction.page("actions"));
-        put(holder, inv, 23, pageBtn(Material.IRON_SWORD, "&cChallenge",
+        put(holder, inv, 23, pageBtn(Material.DIAMOND_SWORD, "&cChallenge",
                 "&7Send · accept · decline · spectate"), SlotAction.page("challenge"));
         put(holder, inv, 25, pageBtn(Material.GOLDEN_HELMET, "&fTop",
                 "&7RP leaderboard"), SlotAction.page("top"));
         put(holder, inv, 29, pageBtn(Material.SKELETON_SKULL, "&8History",
                 "&7Previous rivals", "&8Archived when removed"), SlotAction.page("history"));
-        put(holder, inv, 31, pageBtn(Material.WRITABLE_BOOK, "&bProgress",
+        put(holder, inv, 31, pageBtn(Material.EXPERIENCE_BOTTLE, "&bProgress",
                 "&7Season · quests · achs · HOF · journal · title"), SlotAction.page("progress"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "false"));
         put(holder, inv, 33, tipBtn(
-                tpOn ? Material.BELL : Material.PAPER,
+                tpOn ? Material.BELL : Material.GRAY_DYE,
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 List.of(
                         tpOn ? "&7Click to mute rival TP messages" : "&7Click to show rival TP messages",
@@ -137,8 +138,8 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         if (ForgeBridge.isStaff(player)) {
-            put(holder, inv, 37, pageBtn(Material.REDSTONE, "&cAdmin",
-                    "&7Save · refresh · status · commands"), SlotAction.page("admin"));
+            put(holder, inv, 37, pageBtn(Material.COMMAND_BLOCK, "&cAdmin",
+                    "&7Save · refresh · status"), SlotAction.page("admin"));
         }
         return inv;
     }
@@ -148,14 +149,14 @@ public final class RivalChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival Progress"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.WRITABLE_BOOK, "&b&lProgress",
+        put(holder, inv, 4, item(Material.EXPERIENCE_BOTTLE, "&b&lProgress",
                 List.of("", "&7Each section is its own board",
                         "&7Stats · Season · Quests · Achs · HOF · Journal · Title")));
 
         String[] pages = {"stats", "season", "quests", "achievements", "hof", "journal", "title"};
         Material[] mats = {
-                Material.BOOK, Material.CLOCK, Material.WRITABLE_BOOK, Material.DIAMOND,
-                Material.GOLD_BLOCK, Material.MAP, Material.NAME_TAG
+                Material.PAPER, Material.CLOCK, Material.MAP, Material.DIAMOND,
+                Material.GOLD_BLOCK, Material.BOOK, Material.NAME_TAG
         };
         String[] titles = {"&eStats", "&aSeason", "&bQuests", "&dAchs", "&6HOF", "&fJournal", "&eTitle"};
         int[] slots = GuiBoardHelper.centeredRow(7);
@@ -227,9 +228,9 @@ public final class RivalChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival Admin"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.REDSTONE, "&c&lRival Admin",
+        put(holder, inv, 4, item(Material.COMMAND_BLOCK, "&c&lRival Admin",
                 List.of("", "&7Staff-only tools",
-                        "&8Save · refresh · status · help",
+                        "&8Save · refresh · status",
                         "&8Player menus stay on the main Rival GUI")));
         put(holder, inv, 20, tipBtn(Material.WRITABLE_BOOK, "&aSave",
                 List.of("&7Write rivalry-v4 + progression-v4", "&8/rival admin save")),
@@ -240,9 +241,6 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 24, tipBtn(Material.COMPASS, "&bStatus",
                 List.of("&7Enabled + path summary", "&8/rival admin status")),
                 SlotAction.act("admin", "status", "admin"));
-        put(holder, inv, 30, tipBtn(Material.PAPER, "&7Admin Help",
-                List.of("&7Print admin command list", "&8/rival admin help")),
-                SlotAction.act("admin", "help", "admin"));
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Player Rival menu"), SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());

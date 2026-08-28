@@ -73,12 +73,12 @@ public final class CmiDifficultyGui {
         boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
         boolean personalOn = "true".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "false"));
         String stateColor = personalOn ? ph.getOrDefault("state_color", "f") : "c";
-        CMIGuiButton status = new CMIGuiButton(13, Material.NETHER_STAR,
+        CMIGuiButton status = new CMIGuiButton(13, Material.BEACON,
                 !bridgeOk ? "&c&lUNAVAILABLE"
                         : !systemOn ? "&c&lSYSTEM DISABLED"
                         : !allowed ? "&e&lWHITELIST ONLY"
                         : !personalOn ? "&c&lDIFFICULTY OFF"
-                        : "&f&lAdaptive Difficulty");
+                        : "&a&lAdaptive Difficulty");
         status.lockField();
         if (!bridgeOk || !systemOn || !allowed) {
             status.addLore(unavailableLore(player, systemOn, bridgeOk));
@@ -96,7 +96,7 @@ public final class CmiDifficultyGui {
         gui.addButton(pageBtn(20, Material.GOLD_INGOT, "&eBuy Tier", "buy",
                 "&7Purchase a higher Unlock Tier",
                 "&8Ancient Coins · pay-up OK · change returned"));
-        gui.addButton(pageBtn(22, Material.WHITE_CONCRETE, "&fLower Tier", "lower",
+        gui.addButton(pageBtn(22, Material.IRON_INGOT, "&fLower Tier", "lower",
                 "&7Select a lower unlocked tier",
                 "&8Or reset to None · always free"));
         gui.addButton(pageBtn(24, Material.NAME_TAG, "&dTitles", "titles",
@@ -120,7 +120,7 @@ public final class CmiDifficultyGui {
                                 : "&8AI pressure, and tier buys"
                 )));
         gui.addButton(actionBtn(31,
-                coinChatOn ? Material.BELL : Material.PAPER,
+                coinChatOn ? Material.BELL : Material.GRAY_DYE,
                 coinChatOn ? "&aCoin Chat ON" : "&8Coin Chat OFF",
                 "toggle_coin_chat", "0", "main",
                 List.of(
@@ -130,7 +130,7 @@ public final class CmiDifficultyGui {
                         "&8Only affects Ancient Coin kill chat"
                 )));
         if (ForgeBridge.isStaff(player)) {
-            gui.addButton(pageBtn(33, Material.BOOK, "&8Details", "stats",
+            gui.addButton(pageBtn(33, Material.SPYGLASS, "&8Details", "stats",
                     "&7Staff breakdown",
                     "&8CR · prestige · kit gates"));
         }

@@ -1,9 +1,9 @@
-## End Dimension Strength script parity (2.3.14)
+## End Dimension Strength script parity (2.3.15)
 
 - Stubbed CNPC `End Dimension Strength.js` + Forge trigger bridge (Java owns dragon).
 - Spawn via EndDragonFight (`createNewDragon` + spike crystals) so perch/charge AI works.
 - World-wide dragon rescale; script softcap tables; natural spawn first-boot delay.
-- Jars: `LegacyMechanics-2.3.14` / `LegacyMechanicsGUI-2.3.14`.
+- Jars: `LegacyMechanics-2.3.15` / `LegacyMechanicsGUI-2.3.15`.
 
 ## Skill tooltips + Rival pending invites (2.3.5)
 
@@ -15,12 +15,12 @@
 
 - Both Silent → Declared: both players get `[Rival] DECLARED` chat.
 - Accept… lists Declared rivals and upgrades Declared → Mutual (also pending Declares).
-- Spar Admin GUI is staff-only Save/Status/Reset Mentor CD/Help (same cleanup as Rival Admin).
+- Spar Admin GUI is staff-only Save/Status/Reset Mentor CD (Help button removed).
 - Jars: `LegacyMechanics-2.3.4` / `LegacyMechanicsGUI-2.3.4`.
 
 ## Rival admin staff-only board (2.3.3)
 
-Admin GUI shows only Save / Refresh / Status / Help (no Top/Stats/Challenge player pages).
+Admin GUI shows only Save / Refresh / Status (no Help tile; no Top/Stats/Challenge player pages).
 
 ## Rival list heads + actions/history (2.3.3)
 

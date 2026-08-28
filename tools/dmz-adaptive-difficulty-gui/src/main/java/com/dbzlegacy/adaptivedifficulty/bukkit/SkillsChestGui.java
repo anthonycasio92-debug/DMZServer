@@ -33,7 +33,7 @@ public final class SkillsChestGui implements Listener {
             // Advanced folded into Saga — alias keeps old links working.
             case "advanced", "dmz", "saga" ->
                     pageInv(player, "saga", "&dSaga", Material.AMETHYST_SHARD);
-            case "help" -> pageInv(player, "help", "&7Help", Material.PAPER);
+            case "help" -> pageInv(player, "core", "&aNatural", Material.FEATHER);
             case "natural" -> pageInv(player, "core", "&aNatural", Material.FEATHER);
             default -> pageInv(player, "core", "&aNatural", Material.FEATHER);
         };

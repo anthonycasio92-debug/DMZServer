@@ -77,25 +77,24 @@ public final class ProgressionChestGui implements Listener {
         Inventory inv = switch (p) {
             case "skills" -> sectionFlags(player, "skills", "&eSkills", Material.FEATHER,
                     new String[]{"flight", "sprint", "meditation", "potential"});
-            case "tp" -> sectionFlags(player, "tp", "&6TP Gains", Material.GOLD_INGOT,
+            case "tp" -> sectionFlags(player, "tp", "&6TP Gains", Material.GOLDEN_CARROT,
                     new String[]{"farming", "building", "boost", "bio"});
             case "boost_panel", "tpboost" ->
                     ForgeBridge.isStaff(player) ? boostPanel(player) : main(player);
-            case "race" -> sectionFlags(player, "race", "&bRace & Form", Material.PLAYER_HEAD,
+            case "race" -> sectionFlags(player, "race", "&bRace & Form", Material.TOTEM_OF_UNDYING,
                     new String[]{"racelock", "yardrat", "spiritualist", "android"});
             case "android_convert", "androidconvert", "convert_android" ->
                     ForgeBridge.isStaff(player) ? androidConvertPicker(player) : main(player);
-            case "combat" -> sectionFlags(player, "combat", "&cCombat", Material.IRON_SWORD,
+            case "combat" -> sectionFlags(player, "combat", "&cCombat", Material.NETHERITE_SWORD,
                     new String[]{"kiweapons", "piercing", "dot", "apothic"});
-            case "end" -> sectionFlags(player, "end", "&5End", Material.END_STONE,
+            case "end" -> sectionFlags(player, "end", "&5End", Material.END_CRYSTAL,
                     new String[]{"end", "endportal"});
-            case "fabled" -> sectionFlags(player, "fabled", "&dFabled Bridges", Material.ENCHANTED_BOOK,
+            case "fabled" -> sectionFlags(player, "fabled", "&dFabled Bridges", Material.AMETHYST_SHARD,
                     new String[]{"fabled"});
-            case "utility" -> sectionFlags(player, "utility", "&7Utility", Material.COMPARATOR,
+            case "utility" -> sectionFlags(player, "utility", "&7Utility", Material.SPYGLASS,
                     new String[]{"shadow", "statchecker"});
-            case "status" -> sectionFlags(player, "status", "&eStatus", Material.BOOK,
+            case "status" -> sectionFlags(player, "status", "&eStatus", Material.PAPER,
                     new String[]{"flight", "sprint", "meditation", "potential", "farming", "building"});
-            case "help" -> category(player, "help", "&7Help", Material.PAPER);
             case "admin", "flags", "disable" -> ForgeBridge.isStaff(player) ? flags(player) : main(player);
             case "flags_fabled", "fabled_flags" -> ForgeBridge.isStaff(player) ? fabledFlags(player) : main(player);
             default -> main(player);
@@ -121,16 +120,14 @@ public final class ProgressionChestGui implements Listener {
             return inv;
         }
 
-        put(holder, inv, 4, item(Material.EXPERIENCE_BOTTLE, "&d&lProgression",
-                List.of("", "&7Natural systems · click a section",
-                        "&7Flags toggle on each section page",
-                        "&8Prestige / Skills live on Hub")));
+        put(holder, inv, 4, item(Material.BREWING_STAND, "&d&lProgression",
+                List.of("", "&7Pick a section", "&7Toggle flags inside each page")));
 
         int[] slots = GuiBoardHelper.centeredSlots(7);
         String[] pages = {"skills", "tp", "race", "combat", "end", "fabled", "utility"};
         Material[] mats = {
-                Material.FEATHER, Material.GOLD_INGOT, Material.PLAYER_HEAD, Material.IRON_SWORD,
-                Material.END_STONE, Material.ENCHANTED_BOOK, Material.COMPARATOR
+                Material.FEATHER, Material.GOLDEN_CARROT, Material.TOTEM_OF_UNDYING,
+                Material.NETHERITE_SWORD, Material.END_CRYSTAL, Material.AMETHYST_SHARD, Material.SPYGLASS
         };
         String[] titles = {
                 "&eSkills", "&6TP Gains", "&bRace & Form", "&cCombat",
@@ -147,15 +144,12 @@ public final class ProgressionChestGui implements Listener {
         };
         for (int i = 0; i < pages.length && i < slots.length; i++) {
             put(holder, inv, slots[i], tipBtn(mats[i], titles[i],
-                    List.of(tips[i], "", "&eClick · toggle flags inside")),
+                    List.of(tips[i], "", "&eClick to open")),
                     SlotAction.page(pages[i]));
         }
 
-        put(holder, inv, 40, pageBtn(Material.PAPER, "&7Help", "&7Commands"),
-                SlotAction.page("help"));
-
         if (ForgeBridge.isStaff(player)) {
-            put(holder, inv, 31, pageBtn(Material.REDSTONE, "&cAll Flags",
+            put(holder, inv, 40, pageBtn(Material.REPEATER, "&cAll Flags",
                     "&7Full flag board"), SlotAction.page("admin"));
         }
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
@@ -247,43 +241,13 @@ public final class ProgressionChestGui implements Listener {
         return inv;
     }
 
-    private Inventory category(Player player, String page, String title, Material mat) {
-        Holder holder = new Holder(page);
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Progression"));
-        holder.bind(inv);
-        frame(inv, 45);
-        put(holder, inv, 4, item(mat, title, List.of("", "&7Module flags & tips below",
-                "&8Each paper holds part of this page")));
-        List<String> lore = toAmp(ForgeBridge.progressionLines(player, page));
-        if (lore.isEmpty()) {
-            lore = List.of("&7Nothing here yet.", "&8Check Flags if modules look empty.");
-        }
-        List<List<String>> parts = GuiLoreChunks.chunk(lore);
-        int placed = 0;
-        for (List<String> part : parts) {
-            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
-                break;
-            }
-            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed];
-            String partTitle = parts.size() == 1
-                    ? "&fDetails"
-                    : "&fPart &e" + (placed + 1) + "&8/&e" + parts.size();
-            put(holder, inv, slot, item(Material.PAPER, partTitle, prependBlank(part)));
-            placed++;
-        }
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
-        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
-        return inv;
-    }
-
     private Inventory flags(Player player) {
         Map<String, String> ph = ForgeBridge.progressionPlaceholders(player);
         Holder holder = new Holder("admin");
         Inventory inv = Bukkit.createInventory(holder, 54, color("&8Legacy Mechanics · Flags"));
         holder.bind(inv);
         frame(inv, 54);
-        put(holder, inv, 4, item(Material.REDSTONE, "&c&lStaff Flags",
+        put(holder, inv, 4, item(Material.REPEATER, "&c&lStaff Flags",
                 List.of("", "&7Grouped by script category", "&7Click a flag to toggle")));
 
         int[] slots = {
@@ -310,7 +274,7 @@ public final class ProgressionChestGui implements Listener {
                         SlotAction.act("flag", key, "admin"));
             }
         }
-        put(holder, inv, 47, pageBtn(Material.ENCHANTED_BOOK, "&dFabled Subflags",
+        put(holder, inv, 47, pageBtn(Material.AMETHYST_SHARD, "&dFabled Subflags",
                 "&7Energy, TP/SP, race class, etc."), SlotAction.page("flags_fabled"));
         put(holder, inv, 45, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
@@ -324,7 +288,7 @@ public final class ProgressionChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Fabled Flags"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.ENCHANTED_BOOK, "&d&lFabled Subflags",
+        put(holder, inv, 4, item(Material.AMETHYST_SHARD, "&d&lFabled Subflags",
                 List.of("", "&7Soft-dependency bridge toggles", "&7Click to toggle")));
         int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30};
         for (int i = 0; i < FABLED_FLAG_KEYS.length && i < slots.length; i++) {
