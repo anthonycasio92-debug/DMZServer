@@ -120,7 +120,7 @@ public final class ProgressionChestGui implements Listener {
     private Inventory main(Player viewer, Player subject) {
         Map<String, String> ph = ForgeBridge.progressionPlaceholders(subject);
         Holder holder = new Holder("main");
-        Inventory inv = Bukkit.createInventory(holder, 54, invTitle(viewer, subject, "&8Legacy Mechanics · Progression"));
+        Inventory inv = Bukkit.createInventory(holder, 54, invTitle(viewer, subject, "&8Progression"));
         holder.bind(inv);
         frame(inv, 54);
 
@@ -175,7 +175,7 @@ public final class ProgressionChestGui implements Listener {
     private Inventory sectionFlags(Player viewer, Player subject, String page, String title, Material mat, String[] keys) {
         Map<String, String> ph = ForgeBridge.progressionPlaceholders(subject);
         Holder holder = new Holder(page);
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Legacy Mechanics · Progression"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Progression"));
         holder.bind(inv);
         frame(inv, 45);
         boolean staff = ForgeBridge.isStaff(viewer);
@@ -259,7 +259,7 @@ public final class ProgressionChestGui implements Listener {
     private Inventory flags(Player viewer, Player subject) {
         Map<String, String> ph = ForgeBridge.progressionPlaceholders(subject);
         Holder holder = new Holder("admin");
-        Inventory inv = Bukkit.createInventory(holder, 54, invTitle(viewer, subject, "&8Legacy Mechanics · Flags"));
+        Inventory inv = Bukkit.createInventory(holder, 54, invTitle(viewer, subject, "&8Flags"));
         holder.bind(inv);
         frame(inv, 54);
         put(holder, inv, 4, item(Material.REPEATER, "&c&lStaff Flags",
@@ -300,7 +300,7 @@ public final class ProgressionChestGui implements Listener {
     private Inventory fabledFlags(Player viewer, Player subject) {
         Map<String, String> ph = ForgeBridge.progressionPlaceholders(subject);
         Holder holder = new Holder("flags_fabled");
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Legacy Mechanics · Fabled Flags"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Fabled Flags"));
         holder.bind(inv);
         frame(inv, 45);
         put(holder, inv, 4, item(Material.AMETHYST_SHARD, "&d&lFabled Subflags",
@@ -325,7 +325,7 @@ public final class ProgressionChestGui implements Listener {
     private Inventory boostPanel(Player viewer, Player subject) {
         Map<String, String> ph = ForgeBridge.progressionPlaceholders(subject);
         Holder holder = new Holder("boost_panel");
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Legacy Mechanics · TP Boost"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8TP Boost"));
         holder.bind(inv);
         frame(inv, 45);
         String status = ph.getOrDefault("boost", "§7Global TP boost: §cOFF").replace('§', '&');
@@ -365,7 +365,7 @@ public final class ProgressionChestGui implements Listener {
 
     private Inventory androidConvertPicker(Player viewer, Player subject) {
         Holder holder = new Holder("android_convert");
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Legacy Mechanics · Android Convert"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Android Convert"));
         holder.bind(inv);
         frame(inv, 45);
         put(holder, inv, 4, item(Material.IRON_INGOT, "&b&lAndroid Convert",

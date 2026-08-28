@@ -112,7 +112,7 @@ public final class CmiHubGui {
     }
 
     private static void openLogs(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Logs", 5);
+        CMIGui gui = base(player, "&8Logs", 5);
         Map<String, String> ph = ForgeBridge.hubPlaceholders(player);
         boolean on = "true".equalsIgnoreCase(ph.getOrDefault("syslog", "false"));
         String statusLine = ph.getOrDefault("syslog_status", "unknown");

@@ -35,7 +35,7 @@ public final class CmiPrestigeGui {
 
     private static void openMain(Player player) {
         Map<String, String> ph = ForgeBridge.prestigePlaceholders(player);
-        CMIGui gui = base(player, "&8Legacy Mechanics · Prestige", 4);
+        CMIGui gui = base(player, "&8Prestige", 4);
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));

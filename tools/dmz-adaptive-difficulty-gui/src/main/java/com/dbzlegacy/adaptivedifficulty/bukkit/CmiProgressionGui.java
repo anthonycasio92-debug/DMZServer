@@ -126,7 +126,7 @@ public final class CmiProgressionGui {
 
     private static void openMain(Player player) {
         Map<String, String> ph = ForgeBridge.progressionPlaceholders(player);
-        CMIGui gui = base(player, "&8Legacy Mechanics · Progression", 6);
+        CMIGui gui = base(player, "&8Progression", 6);
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
@@ -184,7 +184,7 @@ public final class CmiProgressionGui {
 
     private static void openSection(Player player, String page, String title, Material mat, String[] keys) {
         Map<String, String> ph = ForgeBridge.progressionPlaceholders(player);
-        CMIGui gui = base(player, "&8Legacy Mechanics · Progression", 5);
+        CMIGui gui = base(player, "&8Progression", 5);
         boolean staff = ForgeBridge.isStaff(player);
         CMIGuiButton header = new CMIGuiButton(4, mat, title);
         header.lockField();
@@ -282,7 +282,7 @@ public final class CmiProgressionGui {
 
     private static void openBoostPanel(Player player) {
         Map<String, String> ph = ForgeBridge.progressionPlaceholders(player);
-        CMIGui gui = base(player, "&8Legacy Mechanics · TP Boost", 5);
+        CMIGui gui = base(player, "&8TP Boost", 5);
         String status = ph.getOrDefault("boost", "§7Global TP boost: §cOFF").replace('§', '&');
         CMIGuiButton header = new CMIGuiButton(4, Material.GOLDEN_APPLE, "&6&lGlobal TP Boost");
         header.lockField();
@@ -318,7 +318,7 @@ public final class CmiProgressionGui {
     }
 
     private static void openAndroidConvert(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Android Convert", 5);
+        CMIGui gui = base(player, "&8Android Convert", 5);
         CMIGuiButton header = new CMIGuiButton(4, Material.IRON_INGOT, "&b&lAndroid Convert");
         header.lockField();
         header.addLore(List.of("", "&7Dr. Gero upgrade path",
@@ -358,7 +358,7 @@ public final class CmiProgressionGui {
 
     private static void openFlags(Player player) {
         Map<String, String> ph = ForgeBridge.progressionPlaceholders(player);
-        CMIGui gui = base(player, "&8Legacy Mechanics · Flags", 6);
+        CMIGui gui = base(player, "&8Flags", 6);
         CMIGuiButton info = new CMIGuiButton(4, Material.REPEATER, "&c&lStaff Flags");
         info.lockField();
         info.addLore(List.of("", "&7Grouped by script category", "&7Click a flag to toggle"));
@@ -403,7 +403,7 @@ public final class CmiProgressionGui {
 
     private static void openFabledFlags(Player player) {
         Map<String, String> ph = ForgeBridge.progressionPlaceholders(player);
-        CMIGui gui = base(player, "&8Legacy Mechanics · Fabled Flags", 5);
+        CMIGui gui = base(player, "&8Fabled Flags", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.ENCHANTED_BOOK, "&d&lFabled Subflags");
         info.lockField();
         info.addLore(List.of("", "&7Soft-dependency bridge toggles", "&7Click to toggle"));

@@ -1,3 +1,9 @@
+## Short GUI titles + drop /rivals (2.3.23)
+
+- Removed `/rivals` alias (use `/rival`).
+- Inventory titles no longer prefix `Legacy Mechanics ·` — only the main `/lm` hub keeps that brand title.
+- Sparring / Progression / Prestige / Skills / Logs use short names (`Sparring`, `Progression`, …).
+
 ## Spar mentor leave/release choice (2.3.22)
 
 - Mentor GUI: separate **Leave mentor** and **Release apprentice** (no auto-pick Remove bond).

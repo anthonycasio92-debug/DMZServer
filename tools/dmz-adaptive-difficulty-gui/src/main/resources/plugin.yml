@@ -1,5 +1,5 @@
 name: LegacyMechanicsGUI
-version: '2.3.22'
+version: '2.3.23'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
@@ -12,7 +12,6 @@ commands:
   rival:
     description: Open LegacyMechanics Rival CMI/chest GUI
     usage: /rival
-    aliases: [rivals]
   spar:
     description: Open LegacyMechanics Sparring CMI/chest GUI
     usage: /spar

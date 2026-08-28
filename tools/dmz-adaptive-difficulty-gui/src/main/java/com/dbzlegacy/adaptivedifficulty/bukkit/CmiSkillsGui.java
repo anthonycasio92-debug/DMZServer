@@ -48,8 +48,8 @@ public final class CmiSkillsGui {
         boolean skillCheckUi = ForgeBridge.inSkillCheckSession(player);
         boolean staffAdmin = ForgeBridge.isStaff(player) && !skillCheckUi;
         String windowTitle = skillCheckUi
-                ? "&8Legacy Mechanics · Skill Check"
-                : staffAdmin ? "&8Legacy Mechanics · Skills (Admin)" : "&8Legacy Mechanics · Skills";
+                ? "&8Skill Check"
+                : staffAdmin ? "&8Skills (Admin)" : "&8Skills";
         CMIGui gui = base(player, windowTitle, 6);
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));

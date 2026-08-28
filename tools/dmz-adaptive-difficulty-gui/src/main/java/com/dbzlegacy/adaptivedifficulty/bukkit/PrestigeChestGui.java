@@ -50,7 +50,7 @@ public final class PrestigeChestGui implements Listener {
     private Inventory main(Player viewer, Player subject) {
         Map<String, String> ph = ForgeBridge.prestigePlaceholders(subject);
         Holder holder = new Holder("main");
-        Inventory inv = Bukkit.createInventory(holder, 36, invTitle(viewer, subject, "&8Legacy Mechanics · Prestige"));
+        Inventory inv = Bukkit.createInventory(holder, 36, invTitle(viewer, subject, "&8Prestige"));
         holder.bind(inv);
         frame(inv, 36);
 

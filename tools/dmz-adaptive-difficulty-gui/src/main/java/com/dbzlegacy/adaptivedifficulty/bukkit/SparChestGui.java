@@ -80,7 +80,7 @@ public final class SparChestGui implements Listener {
     private Inventory main(Player viewer, Player subject) {
         Map<String, String> ph = ForgeBridge.sparPlaceholders(subject);
         Holder holder = new Holder("main");
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Legacy Mechanics · Sparring"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Sparring"));
         holder.bind(inv);
         frame(inv, 45);
 
@@ -132,7 +132,7 @@ public final class SparChestGui implements Listener {
             cat = "tp";
         }
         Holder holder = new Holder("top_" + cat);
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Legacy Mechanics · Sparring"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Sparring"));
         holder.bind(inv);
         frame(inv, 45);
         List<String> raw = toAmp(ForgeBridge.sparLines(subject, "top_" + cat));
@@ -165,7 +165,7 @@ public final class SparChestGui implements Listener {
 
     private Inventory detailBoard(Player viewer, Player subject, String page, String title, Material mat) {
         Holder holder = new Holder(page);
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Legacy Mechanics · Sparring"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Sparring"));
         holder.bind(inv);
         frame(inv, 45);
         List<String> lore = toAmp(ForgeBridge.sparLines(subject, page));
@@ -192,7 +192,7 @@ public final class SparChestGui implements Listener {
 
     private Inventory admin(Player viewer, Player subject) {
         Holder holder = new Holder("admin");
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Legacy Mechanics · Spar Admin"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Spar Admin"));
         holder.bind(inv);
         frame(inv, 45);
         put(holder, inv, 4, item(Material.COMMAND_BLOCK, "&c&lSpar Admin",
@@ -375,7 +375,7 @@ public final class SparChestGui implements Listener {
     private Inventory picker(
             Player viewer, Player subject, String action, String backPage, String title, String tip) {
         Holder holder = new Holder("pick_" + action);
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Legacy Mechanics · Sparring"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Sparring"));
         holder.bind(inv);
         frame(inv, 45);
         List<String> pickerHeader = new ArrayList<>();

@@ -62,8 +62,8 @@ public final class SkillsChestGui implements Listener {
         boolean staffAdmin = ForgeBridge.isStaff(viewer) && !skillCheckUi;
         Holder holder = new Holder(page);
         String baseTitle = skillCheckUi
-                ? "&8Legacy Mechanics · Skill Check"
-                : staffAdmin ? "&8Legacy Mechanics · Skills (Admin)" : "&8Legacy Mechanics · Skills";
+                ? "&8Skill Check"
+                : staffAdmin ? "&8Skills (Admin)" : "&8Skills";
         Inventory inv = Bukkit.createInventory(holder, 54, invTitle(viewer, subject, baseTitle));
         holder.bind(inv);
         frameOnly(inv, 54);

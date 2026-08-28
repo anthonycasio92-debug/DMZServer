@@ -124,7 +124,7 @@ public final class HubChestGui implements Listener {
 
     private Inventory logs(Player player) {
         Holder holder = new Holder("logs");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Logs"));
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Logs"));
         holder.bind(inv);
         frameOnly(inv, 45);
         Map<String, String> ph = ForgeBridge.hubPlaceholders(player);

@@ -72,7 +72,7 @@ public final class CmiSparGui {
 
     private static void openMain(Player player) {
         Map<String, String> ph = ForgeBridge.sparPlaceholders(player);
-        CMIGui gui = base(player, "&8Legacy Mechanics · Sparring", 5);
+        CMIGui gui = base(player, "&8Sparring", 5);
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
@@ -130,7 +130,7 @@ public final class CmiSparGui {
             cat = "tp";
         }
         String lorePage = "top_" + cat;
-        CMIGui gui = base(player, "&8Legacy Mechanics · Sparring", 5);
+        CMIGui gui = base(player, "&8Sparring", 5);
         List<String> raw = toAmp(ForgeBridge.sparLines(player, lorePage));
         List<GuiBoardHelper.TopEntry> entries = GuiBoardHelper.parseTopEntries(raw);
         CMIGuiButton info = new CMIGuiButton(4, Material.GOLDEN_HELMET, "&f&lTop — " + cat);
@@ -165,7 +165,7 @@ public final class CmiSparGui {
     }
 
     private static void openAdmin(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Spar Admin", 5);
+        CMIGui gui = base(player, "&8Spar Admin", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.COMMAND_BLOCK, "&c&lSpar Admin");
         info.lockField();
         info.addLore(List.of("", "&7Staff-only tools",
@@ -374,7 +374,7 @@ public final class CmiSparGui {
 
     private static void openPicker(
             Player player, String action, String backPage, String title, String tip) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Sparring", 5);
+        CMIGui gui = base(player, "&8Sparring", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD, title);
         info.lockField();
         List<String> pickerHeader = new ArrayList<>();
@@ -415,7 +415,7 @@ public final class CmiSparGui {
     }
 
     private static void openDetail(Player player, String page, String title, Material mat) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Sparring", 5);
+        CMIGui gui = base(player, "&8Sparring", 5);
         CMIGuiButton header = new CMIGuiButton(4, mat, title);
         header.lockField();
         List<String> detailHeader = new ArrayList<>();
