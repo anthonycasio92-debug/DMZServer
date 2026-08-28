@@ -215,9 +215,32 @@ public final class CmiSparGui {
                 "&7Accept an incoming mentor invite"));
         gui.addButton(pageBtn(player, 23, Material.ORANGE_DYE, "&6Decline…", "pick_decline",
                 "&7Decline an incoming mentor invite"));
-        gui.addButton(actionBtn(player, 25, Material.RED_DYE, "&cRemove bond",
-                "mentor", "remove", "mentor",
-                List.of("&7Leave mentor or release apprentice")));
+        boolean hasMentor = "true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"));
+        boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));
+        String mentorName = blank(ph.get("mentor_name"), "?");
+        String apprenticeName = blank(ph.get("apprentice_name"), "?");
+        if (hasMentor) {
+            gui.addButton(actionBtn(player, 24, Material.RED_DYE, "&cLeave mentor",
+                    "mentor_leave", "0", "mentor",
+                    List.of("&7End bond with &f" + mentorName,
+                            "&87-day cooldown after leaving")));
+        } else {
+            CMIGuiButton leaveOff = new CMIGuiButton(24, Material.GRAY_DYE, "&8Leave mentor");
+            leaveOff.lockField();
+            leaveOff.addLore("&7You have no mentor");
+            gui.addButton(leaveOff);
+        }
+        if (hasApprentice) {
+            gui.addButton(actionBtn(player, 25, Material.ORANGE_DYE, "&6Release apprentice",
+                    "mentor_release", "0", "mentor",
+                    List.of("&7End bond with &f" + apprenticeName,
+                            "&87-day cooldown after releasing")));
+        } else {
+            CMIGuiButton releaseOff = new CMIGuiButton(25, Material.GRAY_DYE, "&8Release apprentice");
+            releaseOff.lockField();
+            releaseOff.addLore("&7You have no apprentice");
+            gui.addButton(releaseOff);
+        }
 
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(44));
@@ -440,9 +463,18 @@ public final class CmiSparGui {
             lore.addAll(GuiBoardHelper.tips(player, "&7Trade hits within 30 blocks to start."));
         }
         if ("true".equalsIgnoreCase(ph.getOrDefault("mentor_bonded", "false"))) {
-            lore.add("&bMentor bond &7as &f" + ph.getOrDefault("mentor_role", "?")
-                    + " &8with &f" + blank(ph.get("mentor"), "?")
-                    + "  &7streak &f" + ph.getOrDefault("streak", "0"));
+            String role = ph.getOrDefault("mentor_role", "?");
+            if ("both".equalsIgnoreCase(role)) {
+                lore.add("&bMentor &f" + blank(ph.get("mentor_name"), "?")
+                        + " &8· &bApprentice &f" + blank(ph.get("apprentice_name"), "?")
+                        + "  &7streak &f" + ph.getOrDefault("streak", "0"));
+            } else if ("mentor".equalsIgnoreCase(role)) {
+                lore.add("&bMentoring &f" + blank(ph.get("apprentice_name"), "?")
+                        + "  &7streak &f" + ph.getOrDefault("streak", "0"));
+            } else {
+                lore.add("&bApprentice of &f" + blank(ph.get("mentor_name"), "?")
+                        + "  &7streak &f" + ph.getOrDefault("streak", "0"));
+            }
         } else {
             lore.add("&7No mentor bond");
             lore.addAll(GuiBoardHelper.tips(player, "&8Use Mentor page to invite"));

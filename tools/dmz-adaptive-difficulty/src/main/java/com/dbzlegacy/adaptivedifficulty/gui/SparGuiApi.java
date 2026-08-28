@@ -50,25 +50,34 @@ public final class SparGuiApi {
         out.put("session_tp", sessionActive ? String.valueOf((int) rt.sessionTp) : "0");
         out.put("perfect", sessionActive && rt.sessionPerfect ? "true" : "false");
 
-        boolean bonded = bond != null
-                && bond.mentorUuid != null && !bond.mentorUuid.isBlank()
+        boolean hasMentor = bond != null
+                && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
+        boolean hasApprentice = bond != null
                 && bond.apprenticeUuid != null && !bond.apprenticeUuid.isBlank();
+        boolean bonded = hasMentor || hasApprentice;
+        out.put("has_mentor", hasMentor ? "true" : "false");
+        out.put("has_apprentice", hasApprentice ? "true" : "false");
         out.put("mentor_bonded", bonded ? "true" : "false");
-        if (bonded) {
-            boolean isMentor = player.m_20148_().toString().equals(bond.mentorUuid);
-            out.put("mentor_role", isMentor ? "mentor" : "apprentice");
-            out.put("mentor", isMentor
-                    ? (bond.apprenticeName == null ? "" : bond.apprenticeName)
-                    : (bond.mentorName == null ? "" : bond.mentorName));
-            out.put("mentor_name", bond.mentorName == null ? "" : bond.mentorName);
-            out.put("apprentice_name", bond.apprenticeName == null ? "" : bond.apprenticeName);
+        out.put("mentor_name", hasMentor && bond.mentorName != null ? bond.mentorName : "");
+        out.put("apprentice_name", hasApprentice && bond.apprenticeName != null ? bond.apprenticeName : "");
+        if (hasMentor && hasApprentice) {
+            out.put("mentor_role", "both");
+            out.put("mentor", blank(bond.mentorName, "?") + " / " + blank(bond.apprenticeName, "?"));
+            out.put("streak", String.valueOf(bond.streakCurrent));
+            out.put("streak_best", String.valueOf(bond.streakBest));
+        } else if (hasApprentice) {
+            out.put("mentor_role", "mentor");
+            out.put("mentor", bond.apprenticeName == null ? "" : bond.apprenticeName);
+            out.put("streak", String.valueOf(bond.streakCurrent));
+            out.put("streak_best", String.valueOf(bond.streakBest));
+        } else if (hasMentor) {
+            out.put("mentor_role", "apprentice");
+            out.put("mentor", bond.mentorName == null ? "" : bond.mentorName);
             out.put("streak", String.valueOf(bond.streakCurrent));
             out.put("streak_best", String.valueOf(bond.streakBest));
         } else {
             out.put("mentor_role", "");
             out.put("mentor", "");
-            out.put("mentor_name", "");
-            out.put("apprentice_name", "");
             out.put("streak", "0");
             out.put("streak_best", "0");
         }
@@ -100,9 +109,17 @@ public final class SparGuiApi {
             return lines;
         }
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
-        if (bond != null && bond.mentorUuid != null && !bond.mentorUuid.isBlank()
-                && bond.apprenticeUuid != null && !bond.apprenticeUuid.isBlank()) {
-            lines.add("§7Bonded §f" + bond.mentorName + " §8↔ §f" + bond.apprenticeName);
+        boolean hasMentor = bond != null
+                && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
+        boolean hasApprentice = bond != null
+                && bond.apprenticeUuid != null && !bond.apprenticeUuid.isBlank();
+        if (hasMentor || hasApprentice) {
+            if (hasMentor) {
+                lines.add("§7Your mentor §f" + blank(bond.mentorName, "?"));
+            }
+            if (hasApprentice) {
+                lines.add("§7Your apprentice §f" + blank(bond.apprenticeName, "?"));
+            }
             lines.add("§7Streak §f" + bond.streakCurrent + " §8best §f" + bond.streakBest);
         } else {
             lines.add("§7Invite apprentice or ask a mentor below");
@@ -112,7 +129,7 @@ public final class SparGuiApi {
         if (pending > 0) {
             lines.add("§ePending invites §f" + pending + " §8— open Pending");
         } else {
-            lines.add("§8Pending · Accept · Decline · Remove");
+            lines.add("§8Pending · Accept · Decline · Leave / Release");
         }
         return lines;
     }
@@ -186,8 +203,8 @@ public final class SparGuiApi {
                     "§6§l/spar §8— Sparring TP",
                     "§7Open GUI for mentor invites",
                     "§e/spar stats|end|top [category]",
-                    "§e/spar mentor <player>|accept|decline|remove",
-                    "§e/spar apprentice <player>"
+                    "§e/spar mentor <player>|accept|decline|leave",
+                    "§e/spar apprentice <player>|release"
             );
             default -> {
                 Map<String, String> ph = placeholders(player);
@@ -202,9 +219,18 @@ public final class SparGuiApi {
                     lore.add("§7No active spar — trade hits within 30 blocks to start.");
                 }
                 if ("true".equalsIgnoreCase(ph.get("mentor_bonded"))) {
-                    lore.add("§bMentor bond §7as §f" + ph.getOrDefault("mentor_role", "?")
-                            + " §8with §f" + blank(ph.get("mentor"), "?")
-                            + "  §7streak §f" + ph.getOrDefault("streak", "0"));
+                    String role = ph.getOrDefault("mentor_role", "?");
+                    if ("both".equalsIgnoreCase(role)) {
+                        lore.add("§bMentor §f" + blank(ph.get("mentor_name"), "?")
+                                + " §8· §bApprentice §f" + blank(ph.get("apprentice_name"), "?")
+                                + "  §7streak §f" + ph.getOrDefault("streak", "0"));
+                    } else if ("mentor".equalsIgnoreCase(role)) {
+                        lore.add("§bMentoring §f" + blank(ph.get("apprentice_name"), "?")
+                                + "  §7streak §f" + ph.getOrDefault("streak", "0"));
+                    } else {
+                        lore.add("§bApprentice of §f" + blank(ph.get("mentor_name"), "?")
+                                + "  §7streak §f" + ph.getOrDefault("streak", "0"));
+                    }
                 } else {
                     lore.add("§7No mentor bond. §8Use Mentor page to invite");
                 }
@@ -268,9 +294,34 @@ public final class SparGuiApi {
                 return SparringSystem.mentorCancelInvite(player, target);
             }
             if (sub.equals("remove") || sub.equals("clear")) {
+                // Ambiguous — ask which side. Prefer explicit leave/release from GUI.
+                SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
+                boolean hasMentor = bond != null
+                        && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
+                boolean hasApprentice = bond != null
+                        && bond.apprenticeUuid != null && !bond.apprenticeUuid.isBlank();
+                if (hasMentor && hasApprentice) {
+                    return "§eChoose: §fLeave mentor §8or §fRelease apprentice"
+                            + "\n§8GUI: Mentor → Leave / Release · Commands: /spar mentor remove · /spar apprentice remove";
+                }
                 return SparringSystem.removeBond(player);
             }
-            return "§cUsage: spar do mentor accept|decline|cancel|remove [player]";
+            if (sub.equals("leave") || sub.equals("leavementor") || sub.equals("leave_mentor")
+                    || sub.equals("remove_mentor") || sub.equals("removementor")) {
+                return SparringSystem.removeMentor(player);
+            }
+            if (sub.equals("release") || sub.equals("releaseapprentice") || sub.equals("release_apprentice")
+                    || sub.equals("remove_apprentice") || sub.equals("removeapprentice")) {
+                return SparringSystem.removeApprentice(player);
+            }
+            return "§cUsage: spar do mentor accept|decline|cancel|leave|release [player]";
+        }
+        if ("mentor_leave".equals(act) || "mentorleave".equals(act) || "leave_mentor".equals(act)) {
+            return SparringSystem.removeMentor(player);
+        }
+        if ("mentor_release".equals(act) || "mentorrelease".equals(act)
+                || "release_apprentice".equals(act) || "apprentice_remove".equals(act)) {
+            return SparringSystem.removeApprentice(player);
         }
         if ("mentor_accept".equals(act) || "mentoraccept".equals(act)) {
             return SparringSystem.mentorAccept(player, a.isBlank() ? null : a);

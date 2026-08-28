@@ -1,3 +1,9 @@
+## Spar mentor leave/release choice (2.3.22)
+
+- Mentor GUI: separate **Leave mentor** and **Release apprentice** (no auto-pick Remove bond).
+- Fixed bond detection (`has_mentor` / `has_apprentice`) — was wrongly requiring both on one record.
+- Commands: `/spar mentor leave` · `/spar apprentice release|remove`.
+
 ## Meditation-style chat (2.3.21)
 
 - Shared `LmChat` / Bukkit `GuiChat`: tags normalize to `§5§l[System] §r…` like Meditation.

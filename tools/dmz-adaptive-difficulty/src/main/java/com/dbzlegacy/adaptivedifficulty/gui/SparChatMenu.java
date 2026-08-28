@@ -117,20 +117,40 @@ public final class SparChatMenu {
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§8── §bMentor §8──"));
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
-        if (bond != null && bond.mentorUuid != null && !bond.mentorUuid.isBlank()
-                && bond.apprenticeUuid != null && !bond.apprenticeUuid.isBlank()) {
-            send(player, Component.m_237113_("§7Bonded §f" + bond.mentorName + " §8↔ §f" + bond.apprenticeName));
+        boolean hasMentor = bond != null
+                && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
+        boolean hasApprentice = bond != null
+                && bond.apprenticeUuid != null && !bond.apprenticeUuid.isBlank();
+        if (hasMentor) {
+            send(player, Component.m_237113_("§7Your mentor §f" + bond.mentorName));
+        }
+        if (hasApprentice) {
+            send(player, Component.m_237113_("§7Your apprentice §f" + bond.apprenticeName));
+        }
+        if (hasMentor || hasApprentice) {
             send(player, Component.m_237113_("§7Streak §f" + bond.streakCurrent + " §8best §f" + bond.streakBest));
         } else {
-            send(player, Component.m_237113_("§7Invite: §e/spar mentor <player>"));
+            send(player, Component.m_237113_("§7Invite: §e/spar mentor <player> §8or §e/spar apprentice <player>"));
         }
         MutableComponent row = Component.m_237113_("§7")
                 .m_7220_(btn("§a[Accept]", "/spar do mentor accept mentor", "Accept invite"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§c[Decline]", "/spar do mentor decline mentor", "Decline invite"))
-                .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§8[Remove]", "/spar do mentor remove mentor", "Clear bond"));
+                .m_7220_(btn("§c[Decline]", "/spar do mentor decline mentor", "Decline invite"));
         send(player, row);
+        MutableComponent leaveRow = Component.m_237113_("§7");
+        if (hasMentor) {
+            leaveRow = leaveRow.m_7220_(btn("§c[Leave mentor]", "/spar do mentor leave mentor", "Leave your mentor"));
+        }
+        if (hasMentor && hasApprentice) {
+            leaveRow = leaveRow.m_7220_(Component.m_237113_("  "));
+        }
+        if (hasApprentice) {
+            leaveRow = leaveRow.m_7220_(
+                    btn("§6[Release apprentice]", "/spar do mentor release mentor", "Release your apprentice"));
+        }
+        if (hasMentor || hasApprentice) {
+            send(player, leaveRow);
+        }
         send(player, btn("§7« Back", "/spar do page main", "Main"));
     }
 
@@ -138,7 +158,8 @@ public final class SparChatMenu {
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§6§l/spar §8— Sparring TP"));
         send(player, Component.m_237113_("§e/spar stats|end|top [category]"));
-        send(player, Component.m_237113_("§e/spar mentor <player>|accept|decline|remove"));
+        send(player, Component.m_237113_("§e/spar mentor <player>|accept|decline|leave"));
+        send(player, Component.m_237113_("§e/spar apprentice <player>|remove"));
         send(player, btn("§7« Back", "/spar do page main", "Main"));
     }
 

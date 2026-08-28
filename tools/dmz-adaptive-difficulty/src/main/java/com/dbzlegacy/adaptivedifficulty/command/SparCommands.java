@@ -88,6 +88,7 @@ public final class SparCommands {
                         .then(Commands.m_82127_("accept").executes(ctx -> mentorAccept(ctx.getSource())))
                         .then(Commands.m_82127_("decline").executes(ctx -> mentorDecline(ctx.getSource())))
                         .then(Commands.m_82127_("deny").executes(ctx -> mentorDecline(ctx.getSource())))
+                        .then(Commands.m_82127_("leave").executes(ctx -> mentorRemove(ctx.getSource())))
                         .then(Commands.m_82127_("remove").executes(ctx -> mentorRemove(ctx.getSource())))
                         .then(Commands.m_82127_("clear").executes(ctx -> mentorRemove(ctx.getSource())))
                         .then(Commands.m_82129_("player", StringArgumentType.word())
@@ -97,6 +98,7 @@ public final class SparCommands {
                 .then(Commands.m_82127_("apprentice")
                         .executes(ctx -> mentorStatus(ctx.getSource()))
                         .then(Commands.m_82127_("remove").executes(ctx -> apprenticeRemove(ctx.getSource())))
+                        .then(Commands.m_82127_("release").executes(ctx -> apprenticeRemove(ctx.getSource())))
                         .then(Commands.m_82127_("clear").executes(ctx -> apprenticeRemove(ctx.getSource())))
                         .then(Commands.m_82129_("player", StringArgumentType.word())
                                 .executes(ctx -> apprenticeInvite(

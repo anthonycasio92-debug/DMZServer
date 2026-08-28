@@ -241,9 +241,28 @@ public final class SparChestGui implements Listener {
                 "&7Accept an incoming mentor invite"), SlotAction.page("pick_accept"));
         put(holder, inv, 23, pageBtn(viewer, Material.ORANGE_DYE, "&6Decline…",
                 "&7Decline an incoming mentor invite"), SlotAction.page("pick_decline"));
-        put(holder, inv, 25, tipBtn(viewer, Material.RED_DYE, "&cRemove bond",
-                List.of("&7Leave mentor or release apprentice")),
-                SlotAction.act("mentor", "remove", "mentor"));
+        boolean hasMentor = "true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"));
+        boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));
+        String mentorName = blank(ph.get("mentor_name"), "?");
+        String apprenticeName = blank(ph.get("apprentice_name"), "?");
+        if (hasMentor) {
+            put(holder, inv, 24, tipBtn(viewer, Material.RED_DYE, "&cLeave mentor",
+                    List.of("&7End bond with &f" + mentorName,
+                            "&87-day cooldown after leaving")),
+                    SlotAction.act("mentor_leave", "0", "mentor"));
+        } else {
+            put(holder, inv, 24, tipBtn(viewer, Material.GRAY_DYE, "&8Leave mentor",
+                    List.of("&7You have no mentor")));
+        }
+        if (hasApprentice) {
+            put(holder, inv, 25, tipBtn(viewer, Material.ORANGE_DYE, "&6Release apprentice",
+                    List.of("&7End bond with &f" + apprenticeName,
+                            "&87-day cooldown after releasing")),
+                    SlotAction.act("mentor_release", "0", "mentor"));
+        } else {
+            put(holder, inv, 25, tipBtn(viewer, Material.GRAY_DYE, "&8Release apprentice",
+                    List.of("&7You have no apprentice")));
+        }
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
@@ -398,9 +417,18 @@ public final class SparChestGui implements Listener {
             lore.addAll(GuiBoardHelper.tips(player, "&7Trade hits within 30 blocks to start."));
         }
         if ("true".equalsIgnoreCase(ph.getOrDefault("mentor_bonded", "false"))) {
-            lore.add("&bMentor bond &7as &f" + ph.getOrDefault("mentor_role", "?")
-                    + " &8with &f" + blank(ph.get("mentor"), "?")
-                    + "  &7streak &f" + ph.getOrDefault("streak", "0"));
+            String role = ph.getOrDefault("mentor_role", "?");
+            if ("both".equalsIgnoreCase(role)) {
+                lore.add("&bMentor &f" + blank(ph.get("mentor_name"), "?")
+                        + " &8· &bApprentice &f" + blank(ph.get("apprentice_name"), "?")
+                        + "  &7streak &f" + ph.getOrDefault("streak", "0"));
+            } else if ("mentor".equalsIgnoreCase(role)) {
+                lore.add("&bMentoring &f" + blank(ph.get("apprentice_name"), "?")
+                        + "  &7streak &f" + ph.getOrDefault("streak", "0"));
+            } else {
+                lore.add("&bApprentice of &f" + blank(ph.get("mentor_name"), "?")
+                        + "  &7streak &f" + ph.getOrDefault("streak", "0"));
+            }
         } else {
             lore.add("&7No mentor bond");
             lore.addAll(GuiBoardHelper.tips(player, "&8Use Mentor page to invite"));
