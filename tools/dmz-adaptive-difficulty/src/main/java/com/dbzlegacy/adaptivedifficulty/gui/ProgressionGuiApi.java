@@ -26,6 +26,16 @@ import net.minecraft.server.level.ServerPlayer;
 public final class ProgressionGuiApi {
     private ProgressionGuiApi() {}
 
+    /** Player-facing meditation trial help (current biome + how to level). */
+    public static String meditationExplain() {
+        return MeditationProgression.explainTrials();
+    }
+
+    /** Staff: rotate + broadcast the global meditation trial. */
+    public static String meditationAdvance(ServerPlayer player) {
+        return MeditationProgression.advanceTrial(player);
+    }
+
     // ── Progression ────────────────────────────────────────────────────
 
     public static Map<String, String> placeholders(ServerPlayer player) {

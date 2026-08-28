@@ -1,5 +1,5 @@
 name: LegacyMechanicsGUI
-version: '2.2.4'
+version: '2.2.5'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
@@ -23,8 +23,8 @@ commands:
     usage: /lm
     aliases: [legacymechanics]
   progression:
-    description: Open LegacyMechanics Progression GUI (staff)
-    usage: /progression
+    description: Progression GUI (staff) · /progression meditation (all players)
+    usage: /progression [meditation|gui]
     aliases: [prog]
   prestige:
     description: Open LegacyMechanics Prestige GUI (staff)

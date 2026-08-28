@@ -80,6 +80,8 @@ public final class ForgeBridge {
     private static Method skillsPlaceholdersMethod;
     private static Method skillsLinesMethod;
     private static Method skillsHandleDoMethod;
+    private static Method meditationExplainMethod;
+    private static Method meditationAdvanceMethod;
     private static volatile Field RESULT_MESSAGE_FIELD;
 
     private ForgeBridge() {}
@@ -1157,6 +1159,53 @@ public final class ForgeBridge {
         }, "Progression");
     }
 
+    /** Current meditation trial + how-to (player-facing). */
+    public static String meditationExplain() {
+        try {
+            ClassLoader cl = null;
+            for (Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+                Object nms = nmsPlayer(p);
+                if (nms != null) {
+                    cl = nms.getClass().getClassLoader();
+                    break;
+                }
+            }
+            if (cl == null) {
+                cl = AdaptiveDifficultyGuiPlugin.class.getClassLoader();
+            }
+            ensureProgressionResolved(cl);
+            if (meditationExplainMethod == null) {
+                return "§cMeditation API missing — update LegacyMechanics jar.";
+            }
+            Object raw = meditationExplainMethod.invoke(null);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cMeditation explain failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /** Staff: rotate + broadcast meditation trial. */
+    public static String meditationAdvance(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (meditationAdvanceMethod == null) {
+                return "§cMeditation API missing — update LegacyMechanics jar.";
+            }
+            Object raw = meditationAdvanceMethod.invoke(null, nms);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cMeditation advance failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public static Map<String, String> prestigePlaceholders(Player player) {
         Map<String, String> fail = new HashMap<>();
@@ -1498,31 +1547,44 @@ public final class ForgeBridge {
     }
 
     private static synchronized void ensureProgressionResolved(ClassLoader preferred) throws Exception {
-        if (progressionPlaceholdersMethod != null && progressionLinesMethod != null
-                && progressionHandleDoMethod != null
-                && prestigePlaceholdersMethod != null && prestigeLinesMethod != null
-                && prestigeHandleDoMethod != null
-                && skillsPlaceholdersMethod != null && skillsLinesMethod != null
-                && skillsHandleDoMethod != null) {
-            return;
-        }
         Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi", preferred);
         Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
-        progressionPlaceholdersMethod = api.getMethod("placeholders", sp);
-        progressionLinesMethod = api.getMethod("linesForPage", sp, String.class);
-        progressionHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
-        prestigePlaceholdersMethod = api.getMethod("prestigePlaceholders", sp);
-        prestigeLinesMethod = api.getMethod("prestigeLines", sp, String.class);
-        prestigeHandleDoMethod = api.getMethod("handlePrestigeDo", sp, String.class, String.class, String.class);
-        skillsPlaceholdersMethod = api.getMethod("skillsPlaceholders", sp);
-        skillsLinesMethod = api.getMethod("skillsLines", sp, String.class);
-        skillsHandleDoMethod = api.getMethod("handleSkillsDo", sp, String.class, String.class, String.class);
-        try {
-            progressionChatMenuOpen = loadClass(
-                    "com.dbzlegacy.adaptivedifficulty.gui.ProgressionChatMenu", preferred)
-                    .getMethod("open", sp, String.class);
-        } catch (Throwable missing) {
-            progressionChatMenuOpen = null;
+        if (progressionPlaceholdersMethod == null || progressionLinesMethod == null
+                || progressionHandleDoMethod == null
+                || prestigePlaceholdersMethod == null || prestigeLinesMethod == null
+                || prestigeHandleDoMethod == null
+                || skillsPlaceholdersMethod == null || skillsLinesMethod == null
+                || skillsHandleDoMethod == null) {
+            progressionPlaceholdersMethod = api.getMethod("placeholders", sp);
+            progressionLinesMethod = api.getMethod("linesForPage", sp, String.class);
+            progressionHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
+            prestigePlaceholdersMethod = api.getMethod("prestigePlaceholders", sp);
+            prestigeLinesMethod = api.getMethod("prestigeLines", sp, String.class);
+            prestigeHandleDoMethod = api.getMethod("handlePrestigeDo", sp, String.class, String.class, String.class);
+            skillsPlaceholdersMethod = api.getMethod("skillsPlaceholders", sp);
+            skillsLinesMethod = api.getMethod("skillsLines", sp, String.class);
+            skillsHandleDoMethod = api.getMethod("handleSkillsDo", sp, String.class, String.class, String.class);
+            try {
+                progressionChatMenuOpen = loadClass(
+                        "com.dbzlegacy.adaptivedifficulty.gui.ProgressionChatMenu", preferred)
+                        .getMethod("open", sp, String.class);
+            } catch (Throwable missing) {
+                progressionChatMenuOpen = null;
+            }
+        }
+        if (meditationExplainMethod == null) {
+            try {
+                meditationExplainMethod = api.getMethod("meditationExplain");
+            } catch (Throwable missing) {
+                meditationExplainMethod = null;
+            }
+        }
+        if (meditationAdvanceMethod == null) {
+            try {
+                meditationAdvanceMethod = api.getMethod("meditationAdvance", sp);
+            } catch (Throwable missing) {
+                meditationAdvanceMethod = null;
+            }
         }
     }
 

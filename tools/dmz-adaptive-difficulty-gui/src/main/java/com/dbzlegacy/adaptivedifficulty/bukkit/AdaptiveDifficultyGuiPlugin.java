@@ -836,6 +836,25 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             sender.sendMessage("Players only.");
             return true;
         }
+        // Meditation status is player-facing (not staff-gated). Staff-only: meditation next.
+        if (args.length > 0 && "meditation".equalsIgnoreCase(args[0])) {
+            if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+                player.sendMessage("§cNo permission: dmzdiff.gui");
+                return true;
+            }
+            String medSub = args.length > 1 ? args[1].toLowerCase() : "status";
+            if ("next".equals(medSub) || "advance".equals(medSub) || "cycle".equals(medSub)) {
+                if (!ForgeBridge.isStaff(player)) {
+                    player.sendMessage("§cStaff only.");
+                    return true;
+                }
+                sendMultiline(player, ForgeBridge.meditationAdvance(player));
+                sendMultiline(player, ForgeBridge.meditationExplain());
+                return true;
+            }
+            sendMultiline(player, ForgeBridge.meditationExplain());
+            return true;
+        }
         if (!ForgeBridge.isStaff(player)) {
             player.sendMessage("§cStaff only.");
             return true;
@@ -859,12 +878,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             } else {
                 reopen = returnPage == null || returnPage.isBlank() ? "main" : returnPage;
                 String msg = ForgeBridge.progressionHandleDo(player, action, arg, reopen);
-                if (msg != null && !msg.isBlank()) {
-                    if (!msg.startsWith("§")) {
-                        msg = "§a" + msg;
-                    }
-                    player.sendMessage(msg);
-                }
+                sendMultiline(player, msg);
             }
             if ("chat".equals(ForgeBridge.guiBackend())) {
                 ForgeBridge.openProgressionChatMenu(player, reopen);

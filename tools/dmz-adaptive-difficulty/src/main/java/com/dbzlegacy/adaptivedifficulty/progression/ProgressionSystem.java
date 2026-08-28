@@ -108,6 +108,10 @@ public final class ProgressionSystem {
                 CombatProgression.pulse(server, tick);
             } catch (Throwable ignored) {
             }
+            try {
+                MeditationProgression.worldPulse(server, tick);
+            } catch (Throwable ignored) {
+            }
             for (ServerPlayer player : server.m_6846_().m_11314_()) {
                 if (player == null) {
                     continue;

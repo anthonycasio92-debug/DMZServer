@@ -15,6 +15,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -53,6 +57,24 @@ public final class MeditationProgression {
     private static final AtomicLong CYCLE_LOCK = new AtomicLong(0L);
 
     private MeditationProgression() {}
+
+    /**
+     * Server tick — rotate the global trial on schedule even when nobody is meditating,
+     * and broadcast the new biome to everyone online.
+     */
+    public static void worldPulse(MinecraftServer server, int tick) {
+        if (!ProgressionConfig.meditation() || server == null) {
+            return;
+        }
+        // Once per second is enough for 15-minute trial windows.
+        if ((tick % 20) != 0) {
+            return;
+        }
+        try {
+            currentTrial(System.currentTimeMillis());
+        } catch (Throwable ignored) {
+        }
+    }
 
     public static void pulse(ServerPlayer player, long nowMs) {
         if (!ProgressionConfig.meditation() || player == null) {
@@ -149,8 +171,9 @@ public final class MeditationProgression {
         long rem = Math.max(0L, GLOBAL_END.get() - System.currentTimeMillis());
         StringBuilder sb = new StringBuilder();
         sb.append("§d§lMeditation Trials\n");
-        sb.append("§7Meditate (charge/restore energy) in the §fglobal trial biome§7 to level Meditation.\n");
-        sb.append("§7Wrong biome = no progress. Stay focused ~10s without taking damage.\n");
+        sb.append("§7How: charge/restore energy in the §fcurrent global trial biome§7.\n");
+        sb.append("§7Wrong biome = no progress. Stay focused ~10s · avoid damage.\n");
+        sb.append("§7Levels raise while restoring (not at full energy).\n");
         if (t == null) {
             sb.append("§7No active trial.");
         } else {
@@ -158,9 +181,11 @@ public final class MeditationProgression {
                     .append(" §8(").append(t.id).append(")\n");
             sb.append("§7Time left: §f").append(rem / 60000L).append("m ")
                     .append((rem / 1000L) % 60L).append("s\n");
-            sb.append("§8Condition: §7").append(conditionTip(t));
+            sb.append("§8Condition: §7").append(conditionTip(t)).append("\n");
+            sb.append("§8Trial biomes rotate every 15 minutes (broadcast to all).");
         }
-        sb.append("\n§8Staff: /progression meditation next §7— rotate + broadcast");
+        sb.append("\n§e/progression meditation §7— this help");
+        sb.append("\n§8Staff: /progression meditation next §7— rotate + broadcast now");
         return sb.toString();
     }
 
@@ -179,13 +204,17 @@ public final class MeditationProgression {
             return "stand in trial biome while restoring energy";
         }
         return switch (trial.type) {
-            case "desert" -> "hot biome · restore energy while charging";
-            case "snowy_plains" -> "cold biome · restore while still";
-            case "nether_wastes" -> "Nether · restore under fire risk";
-            case "warped_forest" -> "sneak inside a small radius while restoring";
-            case "soul_sand_valley" -> "Soul Sand Valley · restore carefully";
+            case "desert" -> "Desert — restore energy while charging";
+            case "snowy_plains" -> "Snowy Plains — restore while still";
+            case "nether_wastes" -> "Nether Wastes — restore under fire risk";
+            case "warped_forest" -> "Warped Forest — sneak in a small radius while restoring";
+            case "soul_sand_valley" -> "Soul Sand Valley — restore carefully";
             case "htc" -> "Hyperbolic Time Chamber biome";
-            default -> "stand in §f" + trial.name + "§7 and restore energy (charge)";
+            case "plains" -> "Plains — stand and restore/charge energy";
+            case "ajissa_plains" -> "Ajissa Plains — stand and restore/charge energy";
+            case "namekian_rivers" -> "Namekian Rivers — stand and restore/charge energy";
+            case "sacredkai_hills" -> "Sacred Kai Hills — stand and restore/charge energy";
+            default -> "stand in " + trial.name + " and restore energy (charge)";
         };
     }
 
@@ -197,13 +226,36 @@ public final class MeditationProgression {
         if (server == null) {
             return;
         }
-        String msg = "§d[Meditation] §fTrial biome: §b" + trial.name
+        String title = "§dMeditation Trial";
+        String subtitle = "§b" + trial.name;
+        String msg = "§d[Meditation] §fNew trial biome: §b" + trial.name
                 + " §7(" + trial.id + ")"
-                + (manual ? "" : " §8· rotated");
-        String tip = "§8How: meditate/restore energy in that biome · /progression meditation";
+                + (manual ? " §a· staff rotated" : " §8· auto-rotated");
+        String tip = "§7How: meditate/restore energy there · §e/progression meditation";
+        String cond = "§8" + conditionTip(trial);
         for (ServerPlayer p : server.m_6846_().m_11314_()) {
+            if (p == null) {
+                continue;
+            }
             DmzRewards.msg(p, msg);
             DmzRewards.msg(p, tip);
+            DmzRewards.msg(p, cond);
+            sendTitle(p, title, subtitle);
+        }
+    }
+
+    private static void sendTitle(ServerPlayer player, String title, String subtitle) {
+        try {
+            if (player.f_8906_ == null) {
+                return;
+            }
+            player.f_8906_.m_9829_(new ClientboundSetTitlesAnimationPacket(5, 50, 10));
+            player.f_8906_.m_9829_(new ClientboundSetTitleTextPacket(Component.m_237113_(title)));
+            if (subtitle != null && !subtitle.isBlank()) {
+                player.f_8906_.m_9829_(
+                        new ClientboundSetSubtitleTextPacket(Component.m_237113_(subtitle)));
+            }
+        } catch (Throwable ignored) {
         }
     }
 
