@@ -209,6 +209,9 @@ public final class ProgressionCommands {
                                 .requires(ProgressionCommands::staff)
                                 .executes(ctx -> boostEnd(ctx.getSource()))))
                 .then(Commands.m_82127_("meditation")
+                        .executes(ctx -> meditationStatus(ctx.getSource()))
+                        .then(Commands.m_82127_("status").executes(ctx -> meditationStatus(ctx.getSource())))
+                        .then(Commands.m_82127_("help").executes(ctx -> meditationStatus(ctx.getSource())))
                         .then(Commands.m_82127_("next")
                                 .requires(ProgressionCommands::staff)
                                 .executes(ctx -> meditationNext(ctx.getSource()))))
@@ -311,10 +314,24 @@ public final class ProgressionCommands {
         return 1;
     }
 
+    private static int meditationStatus(CommandSourceStack source) {
+        ServerPlayer actor = playerOrNull(source);
+        String msg = com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression.explainTrials();
+        for (String line : msg.split("\n")) {
+            reply(source, actor, line);
+        }
+        return 1;
+    }
+
     private static int meditationNext(CommandSourceStack source) {
         ServerPlayer actor = playerOrNull(source);
         String msg = ProgressionSystem.meditationNext(actor);
         reply(source, actor, msg);
+        // Also print explanation so staff/players see how trials work after a rotate.
+        for (String line : com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression
+                .explainTrials().split("\n")) {
+            reply(source, actor, line);
+        }
         return 1;
     }
 

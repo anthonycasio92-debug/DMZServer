@@ -1023,6 +1023,19 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return true;
         }
         String sub = args[0].toLowerCase();
+        // Staff admin: bare → GUI; with args → Forge (/rival admin save|refresh|status|open)
+        if ("admin".equals(sub)) {
+            if (!ForgeBridge.isStaff(player)) {
+                player.sendMessage("§cStaff only.");
+                return true;
+            }
+            if (args.length == 1 || "gui".equalsIgnoreCase(args[1])) {
+                openRivalRespectingConfig(player, "admin");
+                return true;
+            }
+            forwardToForge(player, "rival", args);
+            return true;
+        }
         if ("do".equals(sub)) {
             String action = args.length > 1 ? args[1] : "";
             String arg = args.length > 2 ? args[2] : "";
@@ -1059,7 +1072,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             openRivalRespectingConfig(player, page);
             return true;
         }
-        // Known forge actions that need typed names / admin — keep forwarding
+        // Known forge actions that need typed names — keep forwarding
         if (isRivalForgeAction(sub)) {
             forwardToForge(player, "rival", args);
             return true;
@@ -1078,7 +1091,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         return switch (sub.toLowerCase()) {
             case "declare", "accept", "decline", "deny", "remove", "silent",
                  "challenge", "spectate", "tpmsg", "instinct",
-                 "refresh", "save", "admin" -> true;
+                 "refresh", "save" -> true;
             default -> false;
         };
     }
@@ -1097,6 +1110,19 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return true;
         }
         String sub = args[0].toLowerCase();
+        // Staff admin: bare → GUI; with args → Forge (/spar admin save|status|mentor …)
+        if ("admin".equals(sub)) {
+            if (!ForgeBridge.isStaff(player)) {
+                player.sendMessage("§cStaff only.");
+                return true;
+            }
+            if (args.length == 1 || "gui".equalsIgnoreCase(args[1])) {
+                openSparRespectingConfig(player, "admin");
+                return true;
+            }
+            forwardToForge(player, "spar", args);
+            return true;
+        }
         if ("do".equals(sub)) {
             String action = args.length > 1 ? args[1] : "";
             String arg = args.length > 2 ? args[2] : "";
@@ -1155,7 +1181,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
 
     private static boolean isSparForgeAction(String sub) {
         return switch (sub.toLowerCase()) {
-            case "mentor", "apprentice", "admin", "save" -> true;
+            case "mentor", "apprentice", "save" -> true;
             default -> false;
         };
     }

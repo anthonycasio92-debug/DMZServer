@@ -4,6 +4,9 @@ import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -28,11 +31,12 @@ import net.minecraftforge.registries.ForgeRegistries;
 public final class EndPortalGuard {
     private static final String TEMP_BYPASS = "end.travel.allow";
     private static final String TEMP_MSG = "end.portal.msg";
-    private static final long MSG_COOLDOWN_MS = 2500L;
-    private static final String MSG_PORTAL =
-            "§cEnd portals are disabled. Use a teleport to reach The End.";
-    private static final String MSG_EYE =
-            "§cEnd portals cannot be activated. Use a teleport to reach The End.";
+    /** Longer cooldown — pulse ejects silently; titles only when cooldown allows. */
+    private static final long MSG_COOLDOWN_MS = 12_000L;
+    private static final String TITLE_PORTAL = "§cEnd portals disabled";
+    private static final String SUB_PORTAL = "§7Use a teleport to reach The End";
+    private static final String TITLE_EYE = "§cCannot activate portal";
+    private static final String SUB_EYE = "§7Use a teleport to reach The End";
 
     private EndPortalGuard() {}
 
@@ -55,7 +59,7 @@ public final class EndPortalGuard {
                 return;
             }
             event.setCanceled(true);
-            msg(player, MSG_PORTAL);
+            notifyBlocked(player, TITLE_PORTAL, SUB_PORTAL);
             ejectFromPortal(player);
         } catch (Throwable ignored) {
         }
@@ -88,7 +92,7 @@ public final class EndPortalGuard {
                 return;
             }
             event.setCanceled(true);
-            msg(player, MSG_EYE);
+            notifyBlocked(player, TITLE_EYE, SUB_EYE);
         } catch (Throwable ignored) {
         }
     }
@@ -113,8 +117,8 @@ public final class EndPortalGuard {
                 if (!touchesEndPortal(player)) {
                     continue;
                 }
+                // Backup eject only — no title spam (travel event handles feedback).
                 ejectFromPortal(player);
-                msg(player, MSG_PORTAL);
             }
         } catch (Throwable ignored) {
         }
@@ -160,8 +164,8 @@ public final class EndPortalGuard {
         return false;
     }
 
-    private static void msg(ServerPlayer player, String text) {
-        if (player == null || text == null || text.isBlank()) {
+    private static void notifyBlocked(ServerPlayer player, String title, String subtitle) {
+        if (player == null || title == null || title.isBlank()) {
             return;
         }
         try {
@@ -171,11 +175,22 @@ public final class EndPortalGuard {
                 return;
             }
             ProgressionData.tempPut(player, TEMP_MSG, now);
-            player.m_213846_(Component.m_237113_(text));
+            if (player.f_8906_ != null) {
+                player.f_8906_.m_9829_(new ClientboundSetTitlesAnimationPacket(5, 40, 10));
+                player.f_8906_.m_9829_(new ClientboundSetTitleTextPacket(Component.m_237113_(title)));
+                if (subtitle != null && !subtitle.isBlank()) {
+                    player.f_8906_.m_9829_(
+                            new ClientboundSetSubtitleTextPacket(Component.m_237113_(subtitle)));
+                }
+            }
         } catch (Throwable ignored) {
         }
     }
 
+    /**
+     * Only the player's actual hitbox — not a wide neighborhood scan.
+     * The old ±1 block probe false-fired when flying/lagging near portal rooms.
+     */
     private static boolean touchesEndPortal(ServerPlayer player) {
         if (player == null) {
             return false;
@@ -184,19 +199,6 @@ public final class EndPortalGuard {
             Level level = player.m_9236_();
             if (level == null) {
                 return false;
-            }
-            double x = player.m_20185_();
-            double y = player.m_20186_();
-            double z = player.m_20189_();
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dy = -1; dy <= 2; dy++) {
-                    for (int dz = -1; dz <= 1; dz++) {
-                        BlockPos pos = BlockPos.m_274561_(x + dx, y + dy, z + dz);
-                        if (isPortalTravelBlock(level.m_8055_(pos))) {
-                            return true;
-                        }
-                    }
-                }
             }
             AABB bb = player.m_20191_();
             int minX = (int) Math.floor(bb.f_82288_);

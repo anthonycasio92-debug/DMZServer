@@ -12,24 +12,46 @@ import org.bukkit.entity.Player;
 
 /**
  * CMILib inventory GUI — Legacy Mechanics Progression.
- * Category hub: Skills · TP · Race · Combat · End · Shop · Fabled · Utility · Help (+ staff Flags).
+ * Section hub with per-section toggleable flags (no Shop / Prestige / Skills openers).
  */
 public final class CmiProgressionGui {
     private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
     private static final Material ACCENT = Material.GRAY_STAINED_GLASS_PANE;
     private static final Material SECTION = Material.LIGHT_GRAY_STAINED_GLASS_PANE;
 
-    /** Staff flag groups on the main Flags page (fabled subs on flags_fabled). */
     private static final String[][] FLAG_GROUPS = {
-            {"§eSkills", "flight", "sprint", "meditation", "potential"},
-            {"§6TP Gains", "farming", "building", "boost", "bio"},
-            {"§bRace", "racelock", "yardrat", "spiritualist", "android"},
-            {"§cCombat", "kiweapons", "piercing", "dot", "apothic"},
-            {"§5End", "end", "endportal"},
-            {"§aShop", "prestige", "skills"},
-            {"§7Utility", "shadow", "statchecker"},
-            {"§dFabled", "fabled"}
+            {"&eSkills", "flight", "sprint", "meditation", "potential"},
+            {"&6TP Gains", "farming", "building", "boost", "bio"},
+            {"&bRace", "racelock", "yardrat", "spiritualist", "android"},
+            {"&cCombat", "kiweapons", "piercing", "dot", "apothic"},
+            {"&5End", "end", "endportal"},
+            {"&7Utility", "shadow", "statchecker"},
+            {"&dFabled", "fabled"}
     };
+
+    private static final Map<String, String[]> FLAG_INFO = Map.ofEntries(
+            Map.entry("flight", new String[]{"Flight", "Train fly by flying; Viltrumite max grant.", "/progression"}),
+            Map.entry("sprint", new String[]{"Sprint Jump", "Jump/Sprint levels from invested Strength.", "/progression"}),
+            Map.entry("meditation", new String[]{"Meditation", "Restore energy in the global trial biome. /progression meditation", "/progression meditation · next"}),
+            Map.entry("potential", new String[]{"Potential", "Earn points from PvP hits/blocks (cap 10 natural).", "/skillcheck"}),
+            Map.entry("farming", new String[]{"Farming TP", "Break mature crops / Pam's harvest for TP.", "Passive while farming"}),
+            Map.entry("building", new String[]{"Building TP", "Place blocks for silent building TP.", "Passive while placing"}),
+            Map.entry("boost", new String[]{"Global TP Boost", "Timed world TP multiplier.", "/progression boost …"}),
+            Map.entry("bio", new String[]{"Bio-Android", "Absorb TP / steal skills from drains.", "Passive as Bio-Android"}),
+            Map.entry("racelock", new String[]{"Race Lock", "Ancient/Sento need Fabled unlock skills.", "Passive on race select"}),
+            Map.entry("yardrat", new String[]{"Yardrat", "Form mastery double-gain + starter ki.", "Passive for Yardrat"}),
+            Map.entry("spiritualist", new String[]{"Spiritualist Ki", "Class confirm grants/removes kicontrol.", "Passive on class change"}),
+            Map.entry("android", new String[]{"Android Conversion", "Staff convert a player to Android.", "/progression android"}),
+            Map.entry("kiweapons", new String[]{"Ki Weapons", "Blade/scythe/clawlance Apothic attrs.", "Passive on equip"}),
+            Map.entry("piercing", new String[]{"Piercing", "PROT_PIERCE → SKP (not on ki weapons).", "Passive in combat"}),
+            Map.entry("dot", new String[]{"DoT Extra", "Extra damage from DoT sources.", "Passive in combat"}),
+            Map.entry("apothic", new String[]{"Apothic Elemental", "Fire/cold Apothic damage hooks.", "Passive in combat"}),
+            Map.entry("end", new String[]{"End Strength", "Dragon scale, ki attacks, egg/crystal clear.", "/enddragon · /cleardragons"}),
+            Map.entry("endportal", new String[]{"End Portal Guard", "Blocks End portal use when locked.", "Passive at portals"}),
+            Map.entry("shadow", new String[]{"Shadow Dummy", "50% shadow + spawn protect.", "Passive near dummies"}),
+            Map.entry("statchecker", new String[]{"Stat Checker", "Sneak + RMB a player to dump stats.", "Sneak + right-click"}),
+            Map.entry("fabled", new String[]{"Fabled Bridges", "Master switch for soft Fabled syncs.", "See Fabled Subflags"})
+    );
 
     private static final String[] FABLED_FLAG_KEYS = {
             "fabled", "energy", "statscreen", "tpsp", "attr",
@@ -49,16 +71,23 @@ public final class CmiProgressionGui {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         try {
             switch (p) {
-                case "skills" -> openCategory(player, "skills", "&eSkills", Material.FEATHER);
-                case "tp" -> openCategory(player, "tp", "&6TP Gains", Material.GOLD_INGOT);
-                case "race" -> openCategory(player, "race", "&bRace & Form", Material.PLAYER_HEAD);
-                case "combat" -> openCategory(player, "combat", "&cCombat", Material.IRON_SWORD);
-                case "end" -> openCategory(player, "end", "&5End", Material.END_STONE);
-                case "shop" -> openShop(player);
-                case "fabled" -> openCategory(player, "fabled", "&dFabled Bridges", Material.ENCHANTED_BOOK);
-                case "utility" -> openCategory(player, "utility", "&7Utility", Material.COMPARATOR);
-                case "status" -> openCategory(player, "status", "&eStatus", Material.BOOK);
-                case "help" -> openCategory(player, "help", "&7Help", Material.PAPER);
+                case "skills" -> openSection(player, "skills", "&eSkills", Material.FEATHER,
+                        new String[]{"flight", "sprint", "meditation", "potential"});
+                case "tp" -> openSection(player, "tp", "&6TP Gains", Material.GOLD_INGOT,
+                        new String[]{"farming", "building", "boost", "bio"});
+                case "race" -> openSection(player, "race", "&bRace & Form", Material.PLAYER_HEAD,
+                        new String[]{"racelock", "yardrat", "spiritualist", "android"});
+                case "combat" -> openSection(player, "combat", "&cCombat", Material.IRON_SWORD,
+                        new String[]{"kiweapons", "piercing", "dot", "apothic"});
+                case "end" -> openSection(player, "end", "&5End", Material.END_STONE,
+                        new String[]{"end", "endportal"});
+                case "fabled" -> openSection(player, "fabled", "&dFabled Bridges", Material.ENCHANTED_BOOK,
+                        new String[]{"fabled"});
+                case "utility" -> openSection(player, "utility", "&7Utility", Material.COMPARATOR,
+                        new String[]{"shadow", "statchecker"});
+                case "status" -> openSection(player, "status", "&eStatus", Material.BOOK,
+                        new String[]{"flight", "sprint", "meditation", "potential", "farming", "building"});
+                case "help" -> openHelp(player);
                 case "admin", "flags", "disable" -> {
                     if (ForgeBridge.isStaff(player)) {
                         openFlags(player);
@@ -102,37 +131,40 @@ public final class CmiProgressionGui {
             gui.open();
             return;
         }
-        status.addLore(toAmp(ForgeBridge.progressionLines(player, "main")));
+        status.addLore(List.of("", "&7Natural systems · click a section",
+                "&7Flags toggle on each section page",
+                "&8Prestige / Skills live on Hub"));
         gui.addButton(status);
 
-        // Category row
-        gui.addButton(pageBtn(10, Material.FEATHER, "&eSkills", "skills",
-                "&7Flight, sprint, meditation, potential"));
-        gui.addButton(pageBtn(11, Material.GOLD_INGOT, "&6TP Gains", "tp",
-                "&7Farming, building, boost, bio"));
-        gui.addButton(pageBtn(12, Material.PLAYER_HEAD, "&bRace & Form", "race",
-                "&7Race lock, Yardrat, Spiritualist, Android"));
-        gui.addButton(pageBtn(13, Material.IRON_SWORD, "&cCombat", "combat",
-                "&7Ki weapons, piercing, DoT, Apothic"));
-        gui.addButton(pageBtn(14, Material.END_STONE, "&5End", "end",
-                "&7End strength & portal guard"));
-        gui.addButton(pageBtn(15, Material.EMERALD, "&aShop", "shop",
-                "&7Prestige & skill unlock service"));
-        gui.addButton(pageBtn(16, Material.ENCHANTED_BOOK, "&dFabled", "fabled",
-                "&7Soft Fabled bridges"));
+        int[] slots = GuiBoardHelper.centeredSlots(7);
+        String[] pages = {"skills", "tp", "race", "combat", "end", "fabled", "utility"};
+        Material[] mats = {
+                Material.FEATHER, Material.GOLD_INGOT, Material.PLAYER_HEAD, Material.IRON_SWORD,
+                Material.END_STONE, Material.ENCHANTED_BOOK, Material.COMPARATOR
+        };
+        String[] titles = {
+                "&eSkills", "&6TP Gains", "&bRace & Form", "&cCombat",
+                "&5End", "&dFabled", "&7Utility"
+        };
+        String[] tips = {
+                "&7Flight · Sprint · Meditation · Potential",
+                "&7Farming · Building · Boost · Bio",
+                "&7Race lock · Yardrat · Spiritualist · Android",
+                "&7Ki weapons · Piercing · DoT · Apothic",
+                "&7End strength · Portal guard",
+                "&7Soft Fabled bridges",
+                "&7Shadow dummy · Stat checker"
+        };
+        for (int i = 0; i < pages.length && i < slots.length; i++) {
+            gui.addButton(pageBtn(slots[i], mats[i], titles[i], pages[i],
+                    tips[i], "", "&eClick · toggle flags inside"));
+        }
 
-        gui.addButton(pageBtn(20, Material.COMPARATOR, "&7Utility", "utility",
-                "&7Shadow dummy & stat checker"));
-        gui.addButton(pageBtn(22, Material.PAPER, "&7Help", "help",
-                "&7Commands"));
-        gui.addButton(cmdBtn(24, Material.NETHER_STAR, "&6Prestige", "prestige",
-                "&7Open prestige menu"));
-        gui.addButton(cmdBtn(25, Material.BOOK, "&fSkills GUI", "skills",
-                "&7Open skill unlock progress"));
+        gui.addButton(pageBtn(40, Material.PAPER, "&7Help", "help", "&7Commands"));
 
         if (ForgeBridge.isStaff(player)) {
-            gui.addButton(pageBtn(31, Material.REDSTONE, "&cFlags", "admin",
-                    "&7Toggle progression features"));
+            gui.addButton(pageBtn(31, Material.REDSTONE, "&cAll Flags", "admin",
+                    "&7Full flag board"));
         }
 
         gui.addButton(hubBtn(49));
@@ -141,36 +173,49 @@ public final class CmiProgressionGui {
         gui.open();
     }
 
-    private static void openCategory(Player player, String page, String title, Material mat) {
+    private static void openSection(Player player, String page, String title, Material mat, String[] keys) {
+        Map<String, String> ph = ForgeBridge.progressionPlaceholders(player);
         CMIGui gui = base(player, "&8Legacy Mechanics · Progression", 5);
+        boolean staff = ForgeBridge.isStaff(player);
         CMIGuiButton header = new CMIGuiButton(4, mat, title);
         header.lockField();
-        header.addLore(List.of("", "&7Module flags & tips below",
-                "&8Each paper holds part of this page"));
+        header.addLore(List.of("",
+                staff ? "&7Click a module to toggle ON/OFF" : "&7Module status (staff can toggle)",
+                "&8Description + commands on each item"));
         gui.addButton(header);
 
-        List<String> lore = toAmp(ForgeBridge.progressionLines(player, page));
-        if (lore.isEmpty()) {
-            lore = List.of("&7Nothing here yet.", "&8Check Flags if modules look empty.");
-        }
-        List<List<String>> parts = GuiLoreChunks.chunk(lore);
-        int placed = 0;
-        for (List<String> part : parts) {
-            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
-                break;
+        int[] slots = GuiBoardHelper.centeredSlots(keys.length);
+        for (int i = 0; i < keys.length && i < slots.length; i++) {
+            String key = keys[i];
+            boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
+            String[] info = FLAG_INFO.getOrDefault(key, new String[]{key, "Progression module.", ""});
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.add(on ? "&aEnabled" : "&cDisabled");
+            lore.add("&7" + info[1]);
+            if (info.length > 2 && info[2] != null && !info[2].isBlank()) {
+                lore.add("&8Cmd: &f" + info[2]);
             }
-            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed];
-            String partTitle = parts.size() == 1
-                    ? "&fDetails"
-                    : "&fPart &e" + (placed + 1) + "&8/&e" + parts.size();
-            CMIGuiButton chunk = new CMIGuiButton(slot, Material.PAPER, partTitle);
-            chunk.lockField();
-            List<String> withBlank = new ArrayList<>();
-            withBlank.add("");
-            withBlank.addAll(part);
-            chunk.addLore(withBlank);
-            gui.addButton(chunk);
-            placed++;
+            lore.add("");
+            lore.add(staff ? "&eClick to toggle" : "&8Ask staff to change flags");
+            if (staff) {
+                gui.addButton(actionBtn(slots[i],
+                        on ? Material.LIME_DYE : Material.GRAY_DYE,
+                        (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF"),
+                        "flag", key, page, lore));
+            } else {
+                CMIGuiButton btn = new CMIGuiButton(slots[i],
+                        on ? Material.LIME_DYE : Material.GRAY_DYE,
+                        (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF"));
+                btn.lockField();
+                btn.addLore(lore);
+                gui.addButton(btn);
+            }
+        }
+
+        if ("fabled".equals(page) && staff) {
+            gui.addButton(pageBtn(31, Material.ENCHANTED_BOOK, "&dFabled Subflags", "flags_fabled",
+                    "&7Energy, TP/SP, race class, etc."));
         }
 
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
@@ -180,22 +225,30 @@ public final class CmiProgressionGui {
         gui.open();
     }
 
-    private static void openShop(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Shop", 5);
-        CMIGuiButton info = new CMIGuiButton(4, Material.EMERALD, "&a&lShop");
-        info.lockField();
-        List<String> lore = toAmp(ForgeBridge.progressionLines(player, "shop"));
-        List<String> withBlank = new ArrayList<>();
-        withBlank.add("");
-        withBlank.addAll(lore.isEmpty() ? List.of("&7Nothing here yet.") : lore);
-        info.addLore(withBlank);
-        gui.addButton(info);
-
-        gui.addButton(cmdBtn(20, Material.NETHER_STAR, "&6Open Prestige", "prestige",
-                "&7Prestige level purchase"));
-        gui.addButton(cmdBtn(24, Material.BOOK, "&fOpen Skills", "skills",
-                "&7Skill unlock progress"));
-
+    private static void openHelp(Player player) {
+        CMIGui gui = base(player, "&8Legacy Mechanics · Progression", 5);
+        CMIGuiButton header = new CMIGuiButton(4, Material.PAPER, "&7Help");
+        header.lockField();
+        header.addLore(List.of("", "&7Module flags & tips below"));
+        gui.addButton(header);
+        List<String> lore = toAmp(ForgeBridge.progressionLines(player, "help"));
+        if (lore.isEmpty()) {
+            lore = List.of("&7/progression §8— open this menu",
+                    "&7Sections hold toggleable flags",
+                    "&8Prestige: /prestige · Skills: /skills · Hub: /lm");
+        }
+        List<GuiBoardHelper.DetailTile> tiles = GuiBoardHelper.detailTiles(lore);
+        int[] slots = GuiBoardHelper.centeredSlots(Math.min(tiles.size(), 21));
+        for (int i = 0; i < slots.length && i < tiles.size(); i++) {
+            GuiBoardHelper.DetailTile tile = tiles.get(i);
+            CMIGuiButton btn = new CMIGuiButton(slots[i], tile.icon, tile.title);
+            btn.lockField();
+            List<String> tip = new ArrayList<>();
+            tip.add("");
+            tip.addAll(tile.lore);
+            btn.addLore(tip);
+            gui.addButton(btn);
+        }
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
@@ -346,20 +399,6 @@ public final class CmiProgressionGui {
         }
         btn.addLore(lore);
         btn.addCommand("progression do page " + page);
-        return btn;
-    }
-
-    private static CMIGuiButton cmdBtn(int slot, Material mat, String name, String command, String... tips) {
-        CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
-        btn.lockField();
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        for (String tip : tips) {
-            lore.add(tip);
-        }
-        btn.addLore(lore);
-        btn.addCommand(command);
-        btn.setCloseInv(true);
         return btn;
     }
 

@@ -134,17 +134,34 @@ public final class MeditationProgression {
         GLOBAL_INDEX.set(next);
         GLOBAL_END.set(now + TRIAL_DURATION_MS);
         Trial trial = TRIALS[next];
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server != null) {
-            String msg = "§d[Meditation] §fTrial biome: §b" + trial.name
-                    + " §7(" + trial.id + ")";
-            for (ServerPlayer p : server.m_6846_().m_11314_()) {
-                DmzRewards.msg(p, msg);
-            }
-        }
+        broadcastTrial(trial, true);
         SystemTelemetry.log("progression", "meditation_trial", actor, null,
                 Map.of("biome", trial.id, "name", trial.name));
         return "§aAdvanced meditation trial to §f" + trial.name + "§a.";
+    }
+
+    /** Player-facing status + how trials work. */
+    public static String explainTrials() {
+        if (!ProgressionConfig.meditation()) {
+            return "§cMeditation progression is disabled.";
+        }
+        Trial t = currentTrial(System.currentTimeMillis());
+        long rem = Math.max(0L, GLOBAL_END.get() - System.currentTimeMillis());
+        StringBuilder sb = new StringBuilder();
+        sb.append("§d§lMeditation Trials\n");
+        sb.append("§7Meditate (charge/restore energy) in the §fglobal trial biome§7 to level Meditation.\n");
+        sb.append("§7Wrong biome = no progress. Stay focused ~10s without taking damage.\n");
+        if (t == null) {
+            sb.append("§7No active trial.");
+        } else {
+            sb.append("§7Current trial: §b").append(t.name)
+                    .append(" §8(").append(t.id).append(")\n");
+            sb.append("§7Time left: §f").append(rem / 60000L).append("m ")
+                    .append((rem / 1000L) % 60L).append("s\n");
+            sb.append("§8Condition: §7").append(conditionTip(t));
+        }
+        sb.append("\n§8Staff: /progression meditation next §7— rotate + broadcast");
+        return sb.toString();
     }
 
     public static String statusLine() {
@@ -153,7 +170,41 @@ public final class MeditationProgression {
             return "§7No active meditation trial.";
         }
         long rem = Math.max(0L, GLOBAL_END.get() - System.currentTimeMillis());
-        return "§7Trial §f" + t.name + " §8(" + t.id + ") §7" + (rem / 60000L) + "m left";
+        return "§7Trial §f" + t.name + " §8(" + t.id + ") §7" + (rem / 60000L) + "m left"
+                + " §8· §7" + conditionTip(t);
+    }
+
+    private static String conditionTip(Trial trial) {
+        if (trial == null) {
+            return "stand in trial biome while restoring energy";
+        }
+        return switch (trial.type) {
+            case "desert" -> "hot biome · restore energy while charging";
+            case "snowy_plains" -> "cold biome · restore while still";
+            case "nether_wastes" -> "Nether · restore under fire risk";
+            case "warped_forest" -> "sneak inside a small radius while restoring";
+            case "soul_sand_valley" -> "Soul Sand Valley · restore carefully";
+            case "htc" -> "Hyperbolic Time Chamber biome";
+            default -> "stand in §f" + trial.name + "§7 and restore energy (charge)";
+        };
+    }
+
+    private static void broadcastTrial(Trial trial, boolean manual) {
+        if (trial == null) {
+            return;
+        }
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            return;
+        }
+        String msg = "§d[Meditation] §fTrial biome: §b" + trial.name
+                + " §7(" + trial.id + ")"
+                + (manual ? "" : " §8· rotated");
+        String tip = "§8How: meditate/restore energy in that biome · /progression meditation";
+        for (ServerPlayer p : server.m_6846_().m_11314_()) {
+            DmzRewards.msg(p, msg);
+            DmzRewards.msg(p, tip);
+        }
     }
 
     /** Seconds of restore meditation required to reach {@code nextLevel} (2–10). */
@@ -179,6 +230,8 @@ public final class MeditationProgression {
             int next = (GLOBAL_INDEX.get() + 1) % TRIALS.length;
             GLOBAL_INDEX.set(next);
             GLOBAL_END.set(now + TRIAL_DURATION_MS);
+            // Broadcast automatic rotations so players know where to meditate.
+            broadcastTrial(TRIALS[next], false);
         }
         int idx = Math.floorMod(GLOBAL_INDEX.get(), TRIALS.length);
         return TRIALS[idx];

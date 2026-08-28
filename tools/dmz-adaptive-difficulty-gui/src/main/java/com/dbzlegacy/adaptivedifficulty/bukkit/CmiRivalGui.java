@@ -47,18 +47,25 @@ public final class CmiRivalGui {
                         "&bSpectate", "&7Watch their active challenge");
                 case "pick_silent" -> openPicker(player, "silent", "list",
                         "&8Silent Rival", "&7Click for silent rivalry");
-                case "stats", "statistics" -> openLines(player, "stats", "&eRival Stats", Material.BOOK, "main");
+                case "stats", "statistics" -> openDetail(player, "stats", "&eRival Stats", Material.BOOK, "progress");
                 case "challenge", "challenges" -> openChallenge(player);
-                case "top", "leaderboard" -> openLines(player, "top", "&fRP Top", Material.GOLDEN_HELMET, "main");
+                case "top", "leaderboard" -> openTop(player);
                 case "progress" -> openProgress(player);
-                case "season" -> openLines(player, "season", "&aSeason", Material.CLOCK, "progress");
-                case "quests", "quest" -> openLines(player, "quests", "&bQuests", Material.WRITABLE_BOOK, "progress");
+                case "season" -> openDetail(player, "season", "&aSeason", Material.CLOCK, "progress");
+                case "quests", "quest" -> openDetail(player, "quests", "&bQuests", Material.WRITABLE_BOOK, "progress");
                 case "achievements", "achs", "ach" ->
-                        openLines(player, "achievements", "&dAchievements", Material.DIAMOND, "progress");
-                case "hof", "hall" -> openLines(player, "hof", "&6Hall of Fame", Material.GOLD_BLOCK, "progress");
-                case "journal" -> openLines(player, "journal", "&fJournal", Material.MAP, "progress");
-                case "title", "titles" -> openLines(player, "title", "&eTitle", Material.NAME_TAG, "progress");
-                case "help" -> openLines(player, "help", "&7Help", Material.PAPER, "main");
+                        openDetail(player, "achievements", "&dAchievements", Material.DIAMOND, "progress");
+                case "hof", "hall" -> openDetail(player, "hof", "&6Hall of Fame", Material.GOLD_BLOCK, "progress");
+                case "journal" -> openDetail(player, "journal", "&fJournal", Material.MAP, "progress");
+                case "title", "titles" -> openDetail(player, "title", "&eTitle", Material.NAME_TAG, "progress");
+                case "help" -> openDetail(player, "help", "&7Help", Material.PAPER, "main");
+                case "admin" -> {
+                    if (ForgeBridge.isStaff(player)) {
+                        openAdmin(player);
+                    } else {
+                        openMain(player);
+                    }
+                }
                 default -> openMain(player);
             }
             return true;
@@ -126,6 +133,10 @@ public final class CmiRivalGui {
 
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
+        if (ForgeBridge.isStaff(player)) {
+            gui.addButton(pageBtn(37, Material.REDSTONE, "&cAdmin", "admin",
+                    "&7Save · refresh · status · commands"));
+        }
         fillEmpty(gui, 5);
         gui.open();
     }
@@ -134,23 +145,149 @@ public final class CmiRivalGui {
         CMIGui gui = base(player, "&8Legacy Mechanics · Rival Progress", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.WRITABLE_BOOK, "&b&lProgress");
         info.lockField();
-        info.addLore(List.of("", "&7Season · Quests · Achievements",
-                "&7Hall of Fame · Journal · Title",
-                "&8Pick a page below"));
+        info.addLore(List.of("", "&7Each section is its own board",
+                "&7Stats · Season · Quests · Achs · HOF · Journal · Title"));
         gui.addButton(info);
 
-        gui.addButton(pageBtn(19, Material.BOOK, "&eStats", "stats", "&7Career stats"));
-        gui.addButton(pageBtn(20, Material.CLOCK, "&aSeason", "season", "&7Season RP"));
-        gui.addButton(pageBtn(21, Material.WRITABLE_BOOK, "&bQuests", "quests", "&7Weekly quests"));
-        gui.addButton(pageBtn(22, Material.DIAMOND, "&dAchs", "achievements", "&7Achievements"));
-        gui.addButton(pageBtn(23, Material.GOLD_BLOCK, "&6HOF", "hof", "&7Hall of Fame"));
-        gui.addButton(pageBtn(24, Material.MAP, "&fJournal", "journal", "&7Battle journal"));
-        gui.addButton(pageBtn(25, Material.NAME_TAG, "&eTitle", "title", "&7Rival title"));
+        String[] pages = {"stats", "season", "quests", "achievements", "hof", "journal", "title"};
+        Material[] mats = {
+                Material.BOOK, Material.CLOCK, Material.WRITABLE_BOOK, Material.DIAMOND,
+                Material.GOLD_BLOCK, Material.MAP, Material.NAME_TAG
+        };
+        String[] titles = {"&eStats", "&aSeason", "&bQuests", "&dAchs", "&6HOF", "&fJournal", "&eTitle"};
+        int[] slots = GuiBoardHelper.centeredRow(7);
+        for (int i = 0; i < pages.length && i < slots.length; i++) {
+            List<String> preview = previewLines(ForgeBridge.rivalLines(player, pages[i]), 4);
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.addAll(preview);
+            lore.add("");
+            lore.add("&eClick to open");
+            gui.addButton(pageBtn(slots[i], mats[i], titles[i], pages[i],
+                    lore.toArray(new String[0])));
+        }
 
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
+    }
+
+    private static void openTop(Player player) {
+        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+        List<String> raw = toAmp(ForgeBridge.rivalLines(player, "top"));
+        List<GuiBoardHelper.TopEntry> entries = GuiBoardHelper.parseTopEntries(raw);
+        CMIGuiButton header = new CMIGuiButton(4, Material.GOLDEN_HELMET, "&fRP Top");
+        header.lockField();
+        header.addLore(List.of("", "&7Top rivals by RP", "&8Player heads below"));
+        gui.addButton(header);
+        if (entries.isEmpty()) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&7No rivalry data yet");
+            empty.lockField();
+            empty.addLore(List.of("", "&7Challenge rivals to earn RP"));
+            gui.addButton(empty);
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(entries.size(), 21));
+            for (int i = 0; i < slots.length && i < entries.size(); i++) {
+                ItemStack head = GuiBoardHelper.topHead(entries.get(i));
+                CMIGuiButton btn = new CMIGuiButton(slots[i], head);
+                btn.lockField();
+                gui.addButton(btn);
+            }
+        }
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openDetail(Player player, String page, String title, Material mat, String backPage) {
+        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+        String back = backPage == null || backPage.isBlank() ? "main" : backPage;
+        List<String> lore = toAmp(ForgeBridge.rivalLines(player, page));
+        if (lore.isEmpty()) {
+            lore = List.of("&7Nothing here yet.", "&8Data: config/legacymechanics/");
+        }
+        CMIGuiButton header = new CMIGuiButton(4, mat, title);
+        header.lockField();
+        header.addLore(List.of("", "&7One item per entry", "&8Centered below"));
+        gui.addButton(header);
+        List<GuiBoardHelper.DetailTile> tiles = GuiBoardHelper.detailTiles(lore);
+        int[] slots = GuiBoardHelper.centeredSlots(Math.min(tiles.size(), 21));
+        for (int i = 0; i < slots.length && i < tiles.size(); i++) {
+            GuiBoardHelper.DetailTile tile = tiles.get(i);
+            CMIGuiButton btn = new CMIGuiButton(slots[i], tile.icon, tile.title);
+            btn.lockField();
+            List<String> tip = new ArrayList<>();
+            tip.add("");
+            tip.addAll(tile.lore);
+            btn.addLore(tip);
+            gui.addButton(btn);
+        }
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", back, "&7Return"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openAdmin(Player player) {
+        CMIGui gui = base(player, "&8Legacy Mechanics · Rival Admin", 5);
+        CMIGuiButton info = new CMIGuiButton(4, Material.REDSTONE, "&c&lRival Admin");
+        info.lockField();
+        info.addLore(List.of("", "&7Staff tools for the Rival system",
+                "&8Click a button to run the linked command"));
+        gui.addButton(info);
+        gui.addButton(cmdBtn(19, Material.WRITABLE_BOOK, "&aSave", "rival admin save",
+                "&7Write rivalry-v4 + progression-v4", "&8/rival admin save"));
+        gui.addButton(cmdBtn(21, Material.CLOCK, "&eRefresh", "rival admin refresh",
+                "&7Reload stores from disk", "&8/rival admin refresh"));
+        gui.addButton(cmdBtn(23, Material.COMPASS, "&bStatus", "rival admin status",
+                "&7Enabled + path summary", "&8/rival admin status"));
+        gui.addButton(pageBtn(25, Material.NETHER_STAR, "&fOpen Rival GUI", "main",
+                "&7Player rival menu"));
+        gui.addButton(cmdBtn(29, Material.PAPER, "&7Help (chat)", "rival admin help",
+                "&7Print admin command list"));
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static List<String> previewLines(List<String> lines, int max) {
+        List<String> out = new ArrayList<>();
+        if (lines == null) {
+            out.add("&7…");
+            return out;
+        }
+        int n = 0;
+        for (String line : lines) {
+            if (line == null || line.isBlank()) {
+                continue;
+            }
+            String plain = GuiBoardHelper.strip(line).trim();
+            if (plain.startsWith("---") || plain.isEmpty()) {
+                continue;
+            }
+            if (n == 0 && (plain.toLowerCase(Locale.ROOT).contains("stats")
+                    || plain.toLowerCase(Locale.ROOT).contains("season")
+                    || plain.toLowerCase(Locale.ROOT).contains("quest")
+                    || plain.toLowerCase(Locale.ROOT).contains("achievement")
+                    || plain.toLowerCase(Locale.ROOT).contains("hall")
+                    || plain.toLowerCase(Locale.ROOT).contains("journal")
+                    || plain.toLowerCase(Locale.ROOT).contains("title"))) {
+                continue;
+            }
+            out.add(line.replace('§', '&'));
+            n++;
+            if (n >= max) {
+                break;
+            }
+        }
+        if (out.isEmpty()) {
+            out.add("&7Open for details");
+        }
+        return out;
     }
 
     private static void openList(Player player) {
@@ -302,43 +439,7 @@ public final class CmiRivalGui {
     }
 
     private static void openLines(Player player, String page, String title, Material mat, String backPage) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
-        String back = backPage == null || backPage.isBlank() ? "main" : backPage;
-        List<String> lore = toAmp(ForgeBridge.rivalLines(player, page));
-        if (lore.isEmpty()) {
-            lore = List.of("&7Nothing here yet.", "&8Data: config/legacymechanics/");
-        }
-
-        CMIGuiButton header = new CMIGuiButton(4, mat, title);
-        header.lockField();
-        header.addLore(List.of("", "&7Scroll content slots below",
-                "&8Each paper holds part of this page"));
-        gui.addButton(header);
-
-        List<List<String>> parts = GuiLoreChunks.chunk(lore);
-        int placed = 0;
-        for (List<String> part : parts) {
-            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
-                break;
-            }
-            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed];
-            String partTitle = parts.size() == 1
-                    ? "&fDetails"
-                    : "&fPart &e" + (placed + 1) + "&8/&e" + parts.size();
-            CMIGuiButton chunk = new CMIGuiButton(slot, Material.PAPER, partTitle);
-            chunk.lockField();
-            List<String> withBlank = new ArrayList<>();
-            withBlank.add("");
-            withBlank.addAll(part);
-            chunk.addLore(withBlank);
-            gui.addButton(chunk);
-            placed++;
-        }
-
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", back, "&7Return"));
-        gui.addButton(closeBtn(44));
-        fillEmpty(gui, 5);
-        gui.open();
+        openDetail(player, page, title, mat, backPage);
     }
 
     private static List<String> statusLore(Map<String, String> ph) {
@@ -425,6 +526,20 @@ public final class CmiRivalGui {
         }
         btn.addLore(lore);
         btn.addCommand("rival do page " + page);
+        return btn;
+    }
+
+    private static CMIGuiButton cmdBtn(int slot, Material mat, String name, String command, String... tips) {
+        CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
+        btn.lockField();
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        for (String tip : tips) {
+            lore.add(tip);
+        }
+        btn.addLore(lore);
+        btn.addCommand(command);
+        btn.setCloseInv(true);
         return btn;
     }
 

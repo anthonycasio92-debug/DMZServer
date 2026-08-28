@@ -156,14 +156,17 @@ public final class SkillUnlockService {
         int max = Math.min(HARD_MAX_POTENTIAL, skillMax(skills, "potentialunlock", HARD_MAX_POTENTIAL));
         if (level >= HARD_MAX_POTENTIAL) {
             out.add("§dPotential Unlock§7: §6§lMAX§r §7(" + level + "/" + HARD_MAX_POTENTIAL + ")");
+            how(out, "PvP hits & blocks earn potential points (cap 10 natural).");
             return;
         }
         if (level == 10) {
             out.add("§dPotential Unlock§7: §f" + level + "/" + HARD_MAX_POTENTIAL);
             out.add("§8  - §7Speak to Guru to unlock level 11.");
+            how(out, "PvP hits & blocks earn potential points.");
             return;
         }
         out.add("§dPotential Unlock§7: §f" + level + "/" + max);
+        how(out, "PvP hits & blocks earn potential points toward the next level.");
         int next = level + 1;
         int required = next * 100;
         long progress = ProgressionData.storedGetLong(player, "potentialunlock_points_to_level_" + next, 0L);
@@ -184,9 +187,11 @@ public final class SkillUnlockService {
         int max = skillMax(skills, "fly", 10);
         if (level >= max && max > 0) {
             out.add("§bFlight§7: §6§lMAX§r §7(" + level + "/" + max + ")");
+            how(out, "Stay in flight to train seconds toward each level.");
             return;
         }
         out.add("§bFlight§7: §f" + level + "/" + max);
+        how(out, "Stay in flight to train seconds toward the next level.");
         int next = level + 1;
         int needSec = FlightProgression.requiredSecondsForLevel(next);
         if (needSec <= 0) {
@@ -208,8 +213,10 @@ public final class SkillUnlockService {
         int max = skillMax(skills, "meditation", 10);
         if (level >= max && max > 0) {
             out.add("§aMeditation§7: §6§lMAX§r §7(" + level + "/" + max + ")");
+            how(out, "Meditate in the global trial biome to restore energy & level.");
         } else {
             out.add("§aMeditation§7: §f" + level + "/" + max);
+            how(out, "Meditate in the global trial biome to restore energy & level.");
             int next = level + 1;
             int needSec = MeditationProgression.requiredSecondsForLevel(next);
             if (needSec > 0) {
@@ -255,6 +262,10 @@ public final class SkillUnlockService {
         } else {
             out.add(color + name + "§7: §f" + level + "/" + max);
         }
+        String tip = howToLevel(id);
+        if (tip != null) {
+            how(out, tip);
+        }
     }
 
     private static void appendStrengthLine(
@@ -264,11 +275,13 @@ public final class SkillUnlockService {
         int max = Math.min(10, skillMax(skills, id, 10));
         if (level >= max) {
             out.add(color + name + "§7: §6§lMAX§r §7(" + level + "/" + max + ")");
+            how(out, strengthHow(id));
             return;
         }
         int next = level + 1;
         int required = strengthRequirement(next);
         out.add(color + name + "§7: §f" + level + "/" + max);
+        how(out, strengthHow(id));
         out.add("§8  - §7Next requires Strength §f" + required
                 + (strength >= required ? " §a✓" : " §c(have " + strength + ")"));
     }
@@ -280,11 +293,47 @@ public final class SkillUnlockService {
         if (level < 1) {
             out.add(color + name + "§7: §f0/" + max);
             out.add("§8  - §7" + hint);
+            how(out, "Progress the matching saga storyline to unlock.");
         } else if (level >= max) {
             out.add(color + name + "§7: §6§lMAX§r §7(" + level + "/" + max + ")");
+            how(out, "Unlocked via saga progress; raise with saga milestones.");
         } else {
             out.add(color + name + "§7: §f" + level + "/" + max);
+            how(out, "Continue saga milestones to raise this skill.");
         }
+    }
+
+    private static void how(List<String> out, String tip) {
+        if (tip == null || tip.isBlank()) {
+            return;
+        }
+        out.add("§8  - §7How: " + tip);
+    }
+
+    private static String strengthHow(String id) {
+        if ("jump".equals(id)) {
+            return "Invest Strength, then jump to train. Gates at Jump 10/20/30.";
+        }
+        if ("sprint".equals(id)) {
+            return "Invest Strength, then sprint-jump to train.";
+        }
+        if ("defense_penetration".equals(id) || "healing_reduction".equals(id)) {
+            return "Invest Strength to unlock each level threshold.";
+        }
+        return "Invest Strength to meet the next level requirement.";
+    }
+
+    private static String howToLevel(String id) {
+        return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
+            case "kicontrol" -> "Use Ki Control / forms in combat to train.";
+            case "kimanipulation" -> "Practice Ki Manipulation through DMZ skill use.";
+            case "kisense" -> "Sense nearby fighters to train Ki Sense.";
+            case "instant_transmission" -> "Unlock & train via DMZ Instant Transmission play.";
+            case "ki_infusion" -> "Use Ki Infusion in combat to train.";
+            case "kiboost" -> "Activate Ki Boost while fighting to train.";
+            case "kiprotection" -> "Use Ki Protection under pressure to train.";
+            default -> "Train through normal DMZ play & skill usage.";
+        };
     }
 
     private static int strengthRequirement(int next) {

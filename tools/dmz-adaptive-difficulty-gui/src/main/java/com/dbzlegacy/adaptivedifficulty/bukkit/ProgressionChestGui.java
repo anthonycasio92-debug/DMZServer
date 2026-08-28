@@ -32,10 +32,34 @@ public final class ProgressionChestGui implements Listener {
             {"&bRace", "racelock", "yardrat", "spiritualist", "android"},
             {"&cCombat", "kiweapons", "piercing", "dot", "apothic"},
             {"&5End", "end", "endportal"},
-            {"&aShop", "prestige", "skills"},
             {"&7Utility", "shadow", "statchecker"},
             {"&dFabled", "fabled"}
     };
+
+    /** Per-section flag cards: key → title, description, commands. */
+    private static final Map<String, String[]> FLAG_INFO = Map.ofEntries(
+            Map.entry("flight", new String[]{"Flight", "Train fly by flying; Viltrumite max grant.", "/progression"}),
+            Map.entry("sprint", new String[]{"Sprint Jump", "Jump/Sprint levels from invested Strength.", "/progression"}),
+            Map.entry("meditation", new String[]{"Meditation", "Restore energy in the global trial biome. /progression meditation", "/progression meditation · next"}),
+            Map.entry("potential", new String[]{"Potential", "Earn points from PvP hits/blocks (cap 10 natural).", "/skillcheck"}),
+            Map.entry("farming", new String[]{"Farming TP", "Break mature crops / Pam's harvest for TP.", "Passive while farming"}),
+            Map.entry("building", new String[]{"Building TP", "Place blocks for silent building TP.", "Passive while placing"}),
+            Map.entry("boost", new String[]{"Global TP Boost", "Timed world TP multiplier.", "/progression boost …"}),
+            Map.entry("bio", new String[]{"Bio-Android", "Absorb TP / steal skills from drains.", "Passive as Bio-Android"}),
+            Map.entry("racelock", new String[]{"Race Lock", "Ancient/Sento need Fabled unlock skills.", "Passive on race select"}),
+            Map.entry("yardrat", new String[]{"Yardrat", "Form mastery double-gain + starter ki.", "Passive for Yardrat"}),
+            Map.entry("spiritualist", new String[]{"Spiritualist Ki", "Class confirm grants/removes kicontrol.", "Passive on class change"}),
+            Map.entry("android", new String[]{"Android Conversion", "Staff convert a player to Android.", "/progression android"}),
+            Map.entry("kiweapons", new String[]{"Ki Weapons", "Blade/scythe/clawlance Apothic attrs.", "Passive on equip"}),
+            Map.entry("piercing", new String[]{"Piercing", "PROT_PIERCE → SKP (not on ki weapons).", "Passive in combat"}),
+            Map.entry("dot", new String[]{"DoT Extra", "Extra damage from DoT sources.", "Passive in combat"}),
+            Map.entry("apothic", new String[]{"Apothic Elemental", "Fire/cold Apothic damage hooks.", "Passive in combat"}),
+            Map.entry("end", new String[]{"End Strength", "Dragon scale, ki attacks, egg/crystal clear.", "/enddragon · /cleardragons"}),
+            Map.entry("endportal", new String[]{"End Portal Guard", "Blocks End portal use when locked.", "Passive at portals"}),
+            Map.entry("shadow", new String[]{"Shadow Dummy", "50% shadow + spawn protect.", "Passive near dummies"}),
+            Map.entry("statchecker", new String[]{"Stat Checker", "Sneak + RMB a player to dump stats.", "Sneak + right-click"}),
+            Map.entry("fabled", new String[]{"Fabled Bridges", "Master switch for soft Fabled syncs.", "See Fabled Subflags"})
+    );
 
     private static final String[] FABLED_FLAG_KEYS = {
             "fabled", "energy", "statscreen", "tpsp", "attr",
@@ -51,15 +75,22 @@ public final class ProgressionChestGui implements Listener {
     public void open(Player player, String page) {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         Inventory inv = switch (p) {
-            case "skills" -> category(player, "skills", "&eSkills", Material.FEATHER);
-            case "tp" -> category(player, "tp", "&6TP Gains", Material.GOLD_INGOT);
-            case "race" -> category(player, "race", "&bRace & Form", Material.PLAYER_HEAD);
-            case "combat" -> category(player, "combat", "&cCombat", Material.IRON_SWORD);
-            case "end" -> category(player, "end", "&5End", Material.END_STONE);
-            case "shop" -> shop(player);
-            case "fabled" -> category(player, "fabled", "&dFabled Bridges", Material.ENCHANTED_BOOK);
-            case "utility" -> category(player, "utility", "&7Utility", Material.COMPARATOR);
-            case "status" -> category(player, "status", "&eStatus", Material.BOOK);
+            case "skills" -> sectionFlags(player, "skills", "&eSkills", Material.FEATHER,
+                    new String[]{"flight", "sprint", "meditation", "potential"});
+            case "tp" -> sectionFlags(player, "tp", "&6TP Gains", Material.GOLD_INGOT,
+                    new String[]{"farming", "building", "boost", "bio"});
+            case "race" -> sectionFlags(player, "race", "&bRace & Form", Material.PLAYER_HEAD,
+                    new String[]{"racelock", "yardrat", "spiritualist", "android"});
+            case "combat" -> sectionFlags(player, "combat", "&cCombat", Material.IRON_SWORD,
+                    new String[]{"kiweapons", "piercing", "dot", "apothic"});
+            case "end" -> sectionFlags(player, "end", "&5End", Material.END_STONE,
+                    new String[]{"end", "endportal"});
+            case "fabled" -> sectionFlags(player, "fabled", "&dFabled Bridges", Material.ENCHANTED_BOOK,
+                    new String[]{"fabled"});
+            case "utility" -> sectionFlags(player, "utility", "&7Utility", Material.COMPARATOR,
+                    new String[]{"shadow", "statchecker"});
+            case "status" -> sectionFlags(player, "status", "&eStatus", Material.BOOK,
+                    new String[]{"flight", "sprint", "meditation", "potential", "farming", "building"});
             case "help" -> category(player, "help", "&7Help", Material.PAPER);
             case "admin", "flags", "disable" -> ForgeBridge.isStaff(player) ? flags(player) : main(player);
             case "flags_fabled", "fabled_flags" -> ForgeBridge.isStaff(player) ? fabledFlags(player) : main(player);
@@ -87,38 +118,84 @@ public final class ProgressionChestGui implements Listener {
         }
 
         put(holder, inv, 4, item(Material.EXPERIENCE_BOTTLE, "&d&lProgression",
-                prependBlank(toAmp(ForgeBridge.progressionLines(player, "main")))));
+                List.of("", "&7Natural systems · click a section",
+                        "&7Flags toggle on each section page",
+                        "&8Prestige / Skills live on Hub")));
 
-        put(holder, inv, 10, pageBtn(Material.FEATHER, "&eSkills",
-                "&7Flight, sprint, meditation, potential"), SlotAction.page("skills"));
-        put(holder, inv, 11, pageBtn(Material.GOLD_INGOT, "&6TP Gains",
-                "&7Farming, building, boost, bio"), SlotAction.page("tp"));
-        put(holder, inv, 12, pageBtn(Material.PLAYER_HEAD, "&bRace & Form",
-                "&7Race lock, Yardrat, Spiritualist, Android"), SlotAction.page("race"));
-        put(holder, inv, 13, pageBtn(Material.IRON_SWORD, "&cCombat",
-                "&7Ki weapons, piercing, DoT, Apothic"), SlotAction.page("combat"));
-        put(holder, inv, 14, pageBtn(Material.END_STONE, "&5End",
-                "&7End strength & portal guard"), SlotAction.page("end"));
-        put(holder, inv, 15, pageBtn(Material.EMERALD, "&aShop",
-                "&7Prestige & skill unlock service"), SlotAction.page("shop"));
-        put(holder, inv, 16, pageBtn(Material.ENCHANTED_BOOK, "&dFabled",
-                "&7Soft Fabled bridges"), SlotAction.page("fabled"));
+        int[] slots = GuiBoardHelper.centeredSlots(7);
+        String[] pages = {"skills", "tp", "race", "combat", "end", "fabled", "utility"};
+        Material[] mats = {
+                Material.FEATHER, Material.GOLD_INGOT, Material.PLAYER_HEAD, Material.IRON_SWORD,
+                Material.END_STONE, Material.ENCHANTED_BOOK, Material.COMPARATOR
+        };
+        String[] titles = {
+                "&eSkills", "&6TP Gains", "&bRace & Form", "&cCombat",
+                "&5End", "&dFabled", "&7Utility"
+        };
+        String[] tips = {
+                "&7Flight · Sprint · Meditation · Potential",
+                "&7Farming · Building · Boost · Bio",
+                "&7Race lock · Yardrat · Spiritualist · Android",
+                "&7Ki weapons · Piercing · DoT · Apothic",
+                "&7End strength · Portal guard",
+                "&7Soft Fabled bridges",
+                "&7Shadow dummy · Stat checker"
+        };
+        for (int i = 0; i < pages.length && i < slots.length; i++) {
+            put(holder, inv, slots[i], tipBtn(mats[i], titles[i],
+                    List.of(tips[i], "", "&eClick · toggle flags inside")),
+                    SlotAction.page(pages[i]));
+        }
 
-        put(holder, inv, 20, pageBtn(Material.COMPARATOR, "&7Utility",
-                "&7Shadow dummy & stat checker"), SlotAction.page("utility"));
-        put(holder, inv, 22, pageBtn(Material.PAPER, "&7Help", "&7Commands"),
+        put(holder, inv, 40, pageBtn(Material.PAPER, "&7Help", "&7Commands"),
                 SlotAction.page("help"));
-        put(holder, inv, 24, tipBtn(Material.NETHER_STAR, "&6Prestige",
-                List.of("&7Open prestige menu")), SlotAction.cmd("prestige"));
-        put(holder, inv, 25, tipBtn(Material.BOOK, "&fSkills GUI",
-                List.of("&7Open skill unlock progress")), SlotAction.cmd("skills"));
 
         if (ForgeBridge.isStaff(player)) {
-            put(holder, inv, 31, pageBtn(Material.REDSTONE, "&cFlags",
-                    "&7Toggle progression features"), SlotAction.page("admin"));
+            put(holder, inv, 31, pageBtn(Material.REDSTONE, "&cAll Flags",
+                    "&7Full flag board"), SlotAction.page("admin"));
         }
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory sectionFlags(Player player, String page, String title, Material mat, String[] keys) {
+        Map<String, String> ph = ForgeBridge.progressionPlaceholders(player);
+        Holder holder = new Holder(page);
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Progression"));
+        holder.bind(inv);
+        frame(inv, 45);
+        boolean staff = ForgeBridge.isStaff(player);
+        put(holder, inv, 4, item(mat, title, List.of("",
+                staff ? "&7Click a module to toggle ON/OFF" : "&7Module status (staff can toggle)",
+                "&8Description + commands on each item")));
+        int[] slots = GuiBoardHelper.centeredSlots(keys.length);
+        for (int i = 0; i < keys.length && i < slots.length; i++) {
+            String key = keys[i];
+            boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
+            String[] info = FLAG_INFO.getOrDefault(key, new String[]{key, "Progression module.", ""});
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.add(on ? "&aEnabled" : "&cDisabled");
+            lore.add("&7" + info[1]);
+            if (info.length > 2 && info[2] != null && !info[2].isBlank()) {
+                lore.add("&8Cmd: &f" + info[2]);
+            }
+            lore.add("");
+            lore.add(staff ? "&eClick to toggle" : "&8Ask staff to change flags");
+            ItemStack stack = tipBtn(
+                    on ? Material.LIME_DYE : Material.GRAY_DYE,
+                    (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF"),
+                    lore);
+            if (staff) {
+                put(holder, inv, slots[i], stack, SlotAction.act("flag", key, page));
+            } else {
+                put(holder, inv, slots[i], stack);
+            }
+        }
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
 
@@ -146,24 +223,6 @@ public final class ProgressionChestGui implements Listener {
             put(holder, inv, slot, item(Material.PAPER, partTitle, prependBlank(part)));
             placed++;
         }
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
-        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
-        return inv;
-    }
-
-    private Inventory shop(Player player) {
-        Holder holder = new Holder("shop");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Shop"));
-        holder.bind(inv);
-        frame(inv, 45);
-        List<String> lore = toAmp(ForgeBridge.progressionLines(player, "shop"));
-        put(holder, inv, 4, item(Material.EMERALD, "&a&lShop", prependBlank(
-                lore.isEmpty() ? List.of("&7Nothing here yet.") : lore)));
-        put(holder, inv, 20, tipBtn(Material.NETHER_STAR, "&6Open Prestige",
-                List.of("&7Prestige level purchase")), SlotAction.cmd("prestige"));
-        put(holder, inv, 24, tipBtn(Material.BOOK, "&fOpen Skills",
-                List.of("&7Skill unlock progress")), SlotAction.cmd("skills"));
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -317,12 +376,17 @@ public final class ProgressionChestGui implements Listener {
         }
         final String ret = slotAction.returnPage == null || slotAction.returnPage.isBlank()
                 ? "main" : slotAction.returnPage;
-        final String cmd = "progression do " + slotAction.action
-                + (slotAction.arg == null || slotAction.arg.isBlank() ? " 0" : " " + slotAction.arg)
-                + " " + ret;
+        final String action = slotAction.action;
+        final String arg = slotAction.arg == null || slotAction.arg.isBlank() ? "0" : slotAction.arg;
         Bukkit.getScheduler().runTask(plugin, () -> {
-            player.closeInventory();
-            player.performCommand(cmd);
+            String msg = ForgeBridge.progressionHandleDo(player, action, arg, ret);
+            if (msg != null && !msg.isBlank()) {
+                if (!msg.startsWith("§")) {
+                    msg = "§a" + msg;
+                }
+                player.sendMessage(msg);
+            }
+            open(player, ret);
         });
     }
 

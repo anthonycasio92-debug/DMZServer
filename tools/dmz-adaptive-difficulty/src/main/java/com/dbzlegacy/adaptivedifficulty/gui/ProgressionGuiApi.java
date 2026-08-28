@@ -182,15 +182,15 @@ public final class ProgressionGuiApi {
             }
             case "help" -> List.of(
                     "§6§l/progression §8— Natural Progression",
-                    "§e/progression §7— Category hub",
-                    "§e/prog do page skills|tp|race|combat|end",
-                    "§e/prog do page shop|fabled|utility",
+                    "§e/progression §7— Category hub (flags per section)",
+                    "§e/prog do page skills|tp|race|combat|end|fabled|utility",
+                    "§e/progression meditation §7— Current trial + how-to",
+                    "§e/progression meditation next §7— Staff: cycle + broadcast",
                     "§e/progression boost start|end §7— Global TP boost",
-                    "§e/progression meditation next §7— Cycle trial",
                     "§e/progression android §7— Android convert",
-                    "§e/prestige §7— Prestige levels",
-                    "§e/skills §7— Skill unlock progress",
-                    "§8Staff: /prog admin <flag> on|off"
+                    "§e/prestige §7— Prestige (Hub)",
+                    "§e/skills §7— Skill unlocks (Hub)",
+                    "§8Staff: /prog admin · toggle flags in section GUIs"
             );
             default -> {
                 List<String> lore = new ArrayList<>();
