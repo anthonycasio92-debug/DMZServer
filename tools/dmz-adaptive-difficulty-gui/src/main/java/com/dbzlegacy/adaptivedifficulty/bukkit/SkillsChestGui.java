@@ -73,8 +73,8 @@ public final class SkillsChestGui implements Listener {
             headerLore.addAll(split.header.isEmpty()
                     ? List.of("&7DMZ stats unavailable") : split.header);
             headerLore.add("");
-            headerLore.add(skillCheckUi ? "&eSkill Check · one item per skill"
-                    : "&8One item per skill below");
+            headerLore.addAll(GuiBoardHelper.tips(player,
+                    skillCheckUi ? "&eSkill Check · one item per skill" : "&8One item per skill below"));
             // Header uses stats icon (paper) — never a second book beside the tabs.
             put(holder, inv, 4, item(Material.PAPER,
                     skillCheckUi ? title + " Skill Check"
@@ -97,20 +97,20 @@ public final class SkillsChestGui implements Listener {
                 put(holder, inv, slot, item(icon, name, lore));
             }
             if (placed == 0) {
-                put(holder, inv, 22, tipBtn(Material.BARRIER, "&cNo skills listed",
+                put(holder, inv, 22, tipBtn(player, Material.BARRIER, "&cNo skills listed",
                         List.of("&7Bridge returned no skill rows")));
             }
         }
 
-        put(holder, inv, 45, pageBtn(Material.FEATHER, "&aNatural",
+        put(holder, inv, 45, pageBtn(player, Material.FEATHER, "&aNatural",
                         "&7Potential · Flight · Meditation · Jump · Sprint"),
                 SlotAction.page("core"));
-        put(holder, inv, 46, pageBtn(Material.AMETHYST_SHARD, "&dSaga",
+        put(holder, inv, 46, pageBtn(player, Material.AMETHYST_SHARD, "&dSaga",
                         "&7Saga unlocks · Defense Pen · Healing Red · Ki skills"),
                 SlotAction.page("saga"));
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
         if (staffAdmin) {
-            put(holder, inv, 51, tipBtn(Material.EXPERIENCE_BOTTLE, "&dProgression",
+            put(holder, inv, 51, tipBtn(player, Material.EXPERIENCE_BOTTLE, "&dProgression",
                     List.of("&7Back to progression")), SlotAction.cmd("lm do open progression"));
         }
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
@@ -226,28 +226,26 @@ public final class SkillsChestGui implements Listener {
         }
     }
 
-    private static ItemStack tipBtn(Material mat, String name, List<String> tip) {
+    private static ItemStack tipBtn(Player player, Material mat, String name, List<String> tip) {
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.addAll(tip);
+        lore.addAll(GuiBoardHelper.tipsList(player, tip));
         return item(mat, name, lore);
     }
 
-    private static ItemStack pageBtn(Material mat, String name, String... tips) {
+    private static ItemStack pageBtn(Player player, Material mat, String name, String... tips) {
         List<String> lore = new ArrayList<>();
         lore.add("");
-        for (String tip : tips) {
-            lore.add(tip);
-        }
+        lore.addAll(GuiBoardHelper.tips(player, tips));
         return item(mat, name, lore);
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.COMPASS, "&7« Hub", List.of("", "&7Legacy Mechanics hub"));
+        return item(Material.COMPASS, "&7« Hub", List.of());
     }
 
     private static ItemStack closeBtn() {
-        return item(Material.BARRIER, "&cClose", List.of("&7Close menu"));
+        return item(Material.BARRIER, "&cClose", List.of());
     }
 
     private static ItemStack item(Material mat, String name, List<String> lore) {

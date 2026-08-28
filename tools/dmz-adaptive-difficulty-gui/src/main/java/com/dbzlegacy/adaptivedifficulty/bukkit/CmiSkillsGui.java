@@ -85,8 +85,8 @@ public final class CmiSkillsGui {
                     ? List.of("&7DMZ stats unavailable")
                     : split.header);
             headerLore.add("");
-            headerLore.add(skillCheckUi ? "&eSkill Check · one item per skill"
-                    : "&8One item per skill below");
+            headerLore.addAll(GuiBoardHelper.tips(player,
+                    skillCheckUi ? "&eSkill Check · one item per skill" : "&8One item per skill below"));
             status.addLore(headerLore);
             gui.addButton(status);
 
@@ -120,14 +120,14 @@ public final class CmiSkillsGui {
         }
 
         String pageCmd = skillCheckUi ? "skillcheck" : "skills";
-        gui.addButton(pageBtn(45, Material.FEATHER, "&aNatural", pageCmd, "core",
+        gui.addButton(pageBtn(player, 45, Material.FEATHER, "&aNatural", pageCmd, "core",
                 "&7Potential · Flight · Meditation · Jump · Sprint"));
-        gui.addButton(pageBtn(46, Material.AMETHYST_SHARD, "&dSaga", pageCmd, "saga",
+        gui.addButton(pageBtn(player, 46, Material.AMETHYST_SHARD, "&dSaga", pageCmd, "saga",
                 "&7Saga unlocks · Defense Pen · Healing Red · Ki skills"));
 
         gui.addButton(hubBtn(49));
         if (staffAdmin) {
-            gui.addButton(progBtn(51));
+            gui.addButton(progBtn(player, 51));
         }
         gui.addButton(closeBtn(53));
         fillFrameOnly(gui, 6);
@@ -214,14 +214,12 @@ public final class CmiSkillsGui {
     }
 
     private static CMIGuiButton pageBtn(
-            int slot, Material mat, String name, String cmdRoot, String page, String... tips) {
+            Player player, int slot, Material mat, String name, String cmdRoot, String page, String... tips) {
         CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
         btn.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");
-        for (String tip : tips) {
-            lore.add(tip);
-        }
+        lore.addAll(GuiBoardHelper.tips(player, tips));
         btn.addLore(lore);
         btn.addCommand(cmdRoot + " do page " + page);
         return btn;
@@ -230,16 +228,18 @@ public final class CmiSkillsGui {
     private static CMIGuiButton hubBtn(int slot) {
         CMIGuiButton btn = new CMIGuiButton(slot, Material.COMPASS, "&7« Hub");
         btn.lockField();
-        btn.addLore(List.of("", "&7Legacy Mechanics hub"));
         btn.addCommand("lm");
         btn.setCloseInv(true);
         return btn;
     }
 
-    private static CMIGuiButton progBtn(int slot) {
+    private static CMIGuiButton progBtn(Player player, int slot) {
         CMIGuiButton btn = new CMIGuiButton(slot, Material.EXPERIENCE_BOTTLE, "&dProgression");
         btn.lockField();
-        btn.addLore(List.of("", "&7Back to progression"));
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        lore.addAll(GuiBoardHelper.tipsList(player, List.of("&7Back to progression")));
+        btn.addLore(lore);
         btn.addCommand("lm do open progression");
         btn.setCloseInv(true);
         return btn;

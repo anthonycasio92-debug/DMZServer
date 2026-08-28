@@ -82,20 +82,20 @@ public final class CmiSparGui {
             gui.open();
             return;
         }
-        status.addLore(statusLore(ph));
+        status.addLore(statusLore(player, ph));
         gui.addButton(status);
 
         // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
-        gui.addButton(pageBtn(19, Material.PAPER, "&eStats", "stats",
+        gui.addButton(pageBtn(player, 19, Material.PAPER, "&eStats", "stats",
                 "&7Your spar stats"));
-        gui.addButton(pageBtn(21, Material.GOLDEN_HELMET, "&fTop", "top",
+        gui.addButton(pageBtn(player, 21, Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7Leaderboard"));
-        gui.addButton(pageBtn(23, Material.EMERALD, "&bMentor", "mentor",
+        gui.addButton(pageBtn(player, 23, Material.EMERALD, "&bMentor", "mentor",
                 "&7Invite · ask · accept · remove"));
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
         if (session) {
-            gui.addButton(actionBtn(31, Material.RED_DYE, "&cEnd Session",
+            gui.addButton(actionBtn(player, 31, Material.RED_DYE, "&cEnd Session",
                     "end", "0", "main",
                     List.of("&7End your active spar session")));
         }
@@ -103,7 +103,7 @@ public final class CmiSparGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         if (ForgeBridge.isStaff(player)) {
-            gui.addButton(pageBtn(37, Material.COMMAND_BLOCK, "&cAdmin", "admin",
+            gui.addButton(pageBtn(player, 37, Material.COMMAND_BLOCK, "&cAdmin", "admin",
                     "&7Save · status · mentor resetcd"));
         }
         fillEmpty(gui, 5);
@@ -127,7 +127,11 @@ public final class CmiSparGui {
         List<GuiBoardHelper.TopEntry> entries = GuiBoardHelper.parseTopEntries(raw);
         CMIGuiButton info = new CMIGuiButton(4, Material.GOLDEN_HELMET, "&f&lTop — " + cat);
         info.lockField();
-        info.addLore(List.of("", "&7Sparring leaderboard", "&8Player heads below · categories on bottom"));
+        List<String> topHeader = new ArrayList<>();
+        topHeader.add("");
+        topHeader.addAll(GuiBoardHelper.tips(player,
+                "&7Sparring leaderboard", "&8Player heads below · categories on bottom"));
+        info.addLore(topHeader);
         gui.addButton(info);
         if (entries.isEmpty()) {
             CMIGuiButton empty = new CMIGuiButton(13, Material.BARRIER, "&7No sparring data yet");
@@ -143,10 +147,10 @@ public final class CmiSparGui {
                 gui.addButton(btn);
             }
         }
-        gui.addButton(pageBtn(29, Material.GOLD_INGOT, "&eTP", "top_tp", "&7Total TP"));
-        gui.addButton(pageBtn(31, Material.CLOCK, "&aSessions", "top_sessions", "&7Sessions"));
-        gui.addButton(pageBtn(33, Material.NETHER_STAR, "&bPerfect", "top_perfect", "&7Perfect spars"));
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(pageBtn(player, 29, Material.GOLD_INGOT, "&eTP", "top_tp", "&7Total TP"));
+        gui.addButton(pageBtn(player, 31, Material.CLOCK, "&aSessions", "top_sessions", "&7Sessions"));
+        gui.addButton(pageBtn(player, 33, Material.NETHER_STAR, "&bPerfect", "top_perfect", "&7Perfect spars"));
+        gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -160,16 +164,16 @@ public final class CmiSparGui {
                 "&8Save · status · mentor resetcd",
                 "&8Player menus stay on the main Spar GUI"));
         gui.addButton(info);
-        gui.addButton(actionBtn(20, Material.WRITABLE_BOOK, "&aSave",
+        gui.addButton(actionBtn(player, 20, Material.WRITABLE_BOOK, "&aSave",
                 "admin", "save", "admin",
                 List.of("&7Write sparring.json", "&8/spar admin save")));
-        gui.addButton(actionBtn(22, Material.COMPASS, "&bStatus",
+        gui.addButton(actionBtn(player, 22, Material.COMPASS, "&bStatus",
                 "admin", "status", "admin",
                 List.of("&7Enabled + path", "&8/spar admin status")));
-        gui.addButton(actionBtn(24, Material.EMERALD, "&eReset Mentor CD",
+        gui.addButton(actionBtn(player, 24, Material.EMERALD, "&eReset Mentor CD",
                 "admin", "resetcd", "admin",
                 List.of("&7Clear your mentor cooldown", "&8/spar admin mentor resetcd")));
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Player Spar menu"));
+        gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Player Spar menu"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
@@ -183,21 +187,21 @@ public final class CmiSparGui {
         info.addLore(toAmp(ForgeBridge.sparLines(player, "mentor")));
         gui.addButton(info);
 
-        gui.addButton(pageBtn(19, Material.LIME_CONCRETE, "&aInvite apprentice…", "pick_apprentice",
+        gui.addButton(pageBtn(player, 19, Material.LIME_CONCRETE, "&aInvite apprentice…", "pick_apprentice",
                 "&7Pick a player to mentor"));
-        gui.addButton(pageBtn(21, Material.LIGHT_BLUE_CONCRETE, "&bAsk mentor…", "pick_mentor",
+        gui.addButton(pageBtn(player, 21, Material.LIGHT_BLUE_CONCRETE, "&bAsk mentor…", "pick_mentor",
                 "&7Pick a player to ask as mentor"));
-        gui.addButton(actionBtn(23, Material.LIME_DYE, "&aAccept",
+        gui.addButton(actionBtn(player, 23, Material.LIME_DYE, "&aAccept",
                 "mentor", "accept", "mentor",
                 List.of("&7Accept mentor invite")));
-        gui.addButton(actionBtn(25, Material.RED_CONCRETE, "&cDecline",
+        gui.addButton(actionBtn(player, 25, Material.RED_CONCRETE, "&cDecline",
                 "mentor", "decline", "mentor",
                 List.of("&7Decline mentor invite")));
-        gui.addButton(actionBtn(31, Material.GRAY_CONCRETE, "&8Remove",
+        gui.addButton(actionBtn(player, 31, Material.GRAY_CONCRETE, "&8Remove",
                 "mentor", "remove", "mentor",
                 List.of("&7Clear mentor bond")));
 
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -208,7 +212,11 @@ public final class CmiSparGui {
         CMIGui gui = base(player, "&8Legacy Mechanics · Sparring", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD, title);
         info.lockField();
-        info.addLore(List.of("", "&7Online players", "&8Click a head to confirm"));
+        List<String> pickerHeader = new ArrayList<>();
+        pickerHeader.add("");
+        pickerHeader.add("&7Online players");
+        pickerHeader.addAll(GuiBoardHelper.tips(player, "&8Click a head to confirm"));
+        info.addLore(pickerHeader);
         gui.addButton(info);
 
         List<Player> online = GuiPlayerPicker.onlineExcept(player);
@@ -218,7 +226,8 @@ public final class CmiSparGui {
                 break;
             }
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
-            ItemStack head = GuiPlayerPicker.head(other, "&f" + other.getName(), List.of(tip));
+            ItemStack head = GuiPlayerPicker.head(other, "&f" + other.getName(),
+                    GuiBoardHelper.tips(player, tip));
             CMIGuiButton btn = new CMIGuiButton(slot, head);
             btn.lockField();
             btn.addCommand("spar do " + action + " uuid:" + other.getUniqueId() + " " + backPage);
@@ -227,11 +236,14 @@ public final class CmiSparGui {
         if (placed == 0) {
             CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&cNo one online");
             empty.lockField();
-            empty.addLore(List.of("", "&7Other players must be online"));
+            List<String> emptyLore = new ArrayList<>();
+            emptyLore.add("");
+            emptyLore.addAll(GuiBoardHelper.tips(player, "&7Other players must be online"));
+            empty.addLore(emptyLore);
             gui.addButton(empty);
         }
 
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", backPage, "&7Return"));
+        gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", backPage, "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -241,7 +253,10 @@ public final class CmiSparGui {
         CMIGui gui = base(player, "&8Legacy Mechanics · Sparring", 5);
         CMIGuiButton header = new CMIGuiButton(4, mat, title);
         header.lockField();
-        header.addLore(List.of("", "&7One item per entry", "&8Centered below"));
+        List<String> detailHeader = new ArrayList<>();
+        detailHeader.add("");
+        detailHeader.addAll(GuiBoardHelper.tips(player, "&7One item per entry", "&8Centered below"));
+        header.addLore(detailHeader);
         gui.addButton(header);
         List<String> lore = toAmp(ForgeBridge.sparLines(player, page));
         if (lore.isEmpty()) {
@@ -259,7 +274,7 @@ public final class CmiSparGui {
             btn.addLore(tip);
             gui.addButton(btn);
         }
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -269,7 +284,7 @@ public final class CmiSparGui {
         openDetail(player, page, title, mat);
     }
 
-    private static List<String> statusLore(Map<String, String> ph) {
+    private static List<String> statusLore(Player player, Map<String, String> ph) {
         List<String> lore = new ArrayList<>();
         lore.add("");
         if ("true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"))) {
@@ -279,17 +294,21 @@ public final class CmiSparGui {
                 lore.add("&6&lPERFECT TRAINING");
             }
         } else {
-            lore.add("&7No active spar — trade hits within 30 blocks to start.");
+            lore.add("&7No active spar");
+            lore.addAll(GuiBoardHelper.tips(player, "&7Trade hits within 30 blocks to start."));
         }
         if ("true".equalsIgnoreCase(ph.getOrDefault("mentor_bonded", "false"))) {
             lore.add("&bMentor bond &7as &f" + ph.getOrDefault("mentor_role", "?")
                     + " &8with &f" + blank(ph.get("mentor"), "?")
                     + "  &7streak &f" + ph.getOrDefault("streak", "0"));
         } else {
-            lore.add("&7No mentor bond. &8Use Mentor page to invite");
+            lore.add("&7No mentor bond");
+            lore.addAll(GuiBoardHelper.tips(player, "&8Use Mentor page to invite"));
         }
-        lore.add("");
-        lore.add("&8Stats · Top · Mentor");
+        if (ForgeBridge.isStaff(player)) {
+            lore.add("");
+            lore.add("&8Stats · Top · Mentor");
+        }
         return lore;
     }
 
@@ -339,25 +358,24 @@ public final class CmiSparGui {
     }
 
     private static CMIGuiButton actionBtn(
-            int slot, Material mat, String name, String action, String arg, String returnPage, List<String> tip) {
+            Player player, int slot, Material mat, String name, String action, String arg, String returnPage,
+            List<String> tip) {
         CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
         btn.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.addAll(tip);
+        lore.addAll(GuiBoardHelper.tipsList(player, tip));
         btn.addLore(lore);
         btn.addCommand("spar do " + action + " " + arg + " " + returnPage);
         return btn;
     }
 
-    private static CMIGuiButton pageBtn(int slot, Material mat, String name, String page, String... tips) {
+    private static CMIGuiButton pageBtn(Player player, int slot, Material mat, String name, String page, String... tips) {
         CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
         btn.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");
-        for (String tip : tips) {
-            lore.add(tip);
-        }
+        lore.addAll(GuiBoardHelper.tips(player, tips));
         btn.addLore(lore);
         btn.addCommand("spar do page " + page);
         return btn;
@@ -380,7 +398,6 @@ public final class CmiSparGui {
     private static CMIGuiButton hubBtn(int slot) {
         CMIGuiButton btn = new CMIGuiButton(slot, Material.COMPASS, "&7« Hub");
         btn.lockField();
-        btn.addLore(List.of("", "&7Legacy Mechanics hub"));
         btn.addCommand("lm");
         btn.setCloseInv(true);
         return btn;

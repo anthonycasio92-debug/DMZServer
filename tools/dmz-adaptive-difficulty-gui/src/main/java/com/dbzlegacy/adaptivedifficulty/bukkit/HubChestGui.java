@@ -55,17 +55,19 @@ public final class HubChestGui implements Listener {
             return inv;
         }
 
-        put(holder, inv, 4, item(Material.NETHER_STAR, "&f&lLegacy Mechanics",
-                List.of("", "&7Choose a system", "&8/lm")));
+        List<String> hubHeaderLore = new ArrayList<>();
+        hubHeaderLore.add("");
+        hubHeaderLore.addAll(GuiBoardHelper.tips(player, "&7Choose a system", "&8/lm"));
+        put(holder, inv, 4, item(Material.NETHER_STAR, "&f&lLegacy Mechanics", hubHeaderLore));
 
         // Row 2 — core (everyone): Difficulty · Rival · Spar
-        put(holder, inv, 20, tipBtn(Material.BEACON, "&aDifficulty",
+        put(holder, inv, 20, tipBtn(player, Material.BEACON, "&aDifficulty",
                 List.of("&7Unlock tiers & world scaling", "&eClick to open")),
                 SlotAction.open("difficulty"));
-        put(holder, inv, 22, tipBtn(Material.NAME_TAG, "&6Rival",
+        put(holder, inv, 22, tipBtn(player, Material.NAME_TAG, "&6Rival",
                 List.of("&7Rivalry, challenges & RP", "&eClick to open")),
                 SlotAction.open("rival"));
-        put(holder, inv, 24, tipBtn(Material.GOLDEN_SWORD, "&bSpar",
+        put(holder, inv, 24, tipBtn(player, Material.GOLDEN_SWORD, "&bSpar",
                 List.of("&7Sparring TP & mentor bonds", "&eClick to open")),
                 SlotAction.open("spar"));
 
@@ -74,34 +76,34 @@ public final class HubChestGui implements Listener {
 
         // Row 3 — progress (donator / staff), centered
         if (skillCheck && staff) {
-            put(holder, inv, 21, tipBtn(Material.FEATHER, "&eSkill Check",
+            put(holder, inv, 21, tipBtn(player, Material.FEATHER, "&eSkill Check",
                     List.of("&7Natural · Saga progress", "&eClick to open")),
                     SlotAction.open("skillcheck"));
-            put(holder, inv, 23, tipBtn(Material.GOLDEN_APPLE, "&6Prestige",
+            put(holder, inv, 23, tipBtn(player, Material.GOLDEN_APPLE, "&6Prestige",
                     List.of("&7Prestige shop / levels", "&eClick to open")),
                     SlotAction.open("prestige"));
         } else if (skillCheck) {
-            put(holder, inv, 22, tipBtn(Material.FEATHER, "&eSkill Check",
+            put(holder, inv, 22, tipBtn(player, Material.FEATHER, "&eSkill Check",
                     List.of("&7Natural · Saga progress", "&eClick to open")),
                     SlotAction.open("skillcheck"));
         } else if (staff) {
-            put(holder, inv, 21, tipBtn(Material.FEATHER, "&eSkills",
+            put(holder, inv, 21, tipBtn(player, Material.FEATHER, "&eSkills",
                     List.of("&7Skill unlock admin browser", "&eClick to open")),
                     SlotAction.open("skills"));
-            put(holder, inv, 23, tipBtn(Material.GOLDEN_APPLE, "&6Prestige",
+            put(holder, inv, 23, tipBtn(player, Material.GOLDEN_APPLE, "&6Prestige",
                     List.of("&7Prestige shop / levels", "&eClick to open")),
                     SlotAction.open("prestige"));
         }
 
         // Row 4 — staff tools
         if (staff) {
-            put(holder, inv, 38, tipBtn(Material.BREWING_STAND, "&dProgression",
+            put(holder, inv, 38, tipBtn(player, Material.BREWING_STAND, "&dProgression",
                     List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")),
                     SlotAction.open("progression"));
-            put(holder, inv, 40, tipBtn(Material.COMMAND_BLOCK, "&cAdmin",
+            put(holder, inv, 40, tipBtn(player, Material.COMMAND_BLOCK, "&cAdmin",
                     List.of("&7Reload · syslog · open systems", "&8/lm admin")),
                     SlotAction.open("admin"));
-            put(holder, inv, 42, tipBtn(Material.CLOCK, "&8Logs",
+            put(holder, inv, 42, tipBtn(player, Material.CLOCK, "&8Logs",
                     List.of("&7System telemetry", "&eClick to open")),
                     SlotAction.page("logs"));
         }
@@ -118,11 +120,13 @@ public final class HubChestGui implements Listener {
         Map<String, String> ph = ForgeBridge.hubPlaceholders(player);
         boolean on = "true".equalsIgnoreCase(ph.getOrDefault("syslog", "false"));
         String statusLine = ph.getOrDefault("syslog_status", "unknown");
-        put(holder, inv, 4, item(Material.CLOCK, "&8&lLogs", List.of("",
-                "&7System telemetry &f" + (on ? "ON" : "OFF"),
-                "&8" + statusLine.replace('§', '&'),
-                "",
-                "&7Use buttons below to toggle / flush")));
+        List<String> logsHeader = new ArrayList<>();
+        logsHeader.add("");
+        logsHeader.add("&7System telemetry &f" + (on ? "ON" : "OFF"));
+        logsHeader.add("&8" + statusLine.replace('§', '&'));
+        logsHeader.add("");
+        logsHeader.addAll(GuiBoardHelper.tips(player, "&7Use buttons below to toggle / flush"));
+        put(holder, inv, 4, item(Material.CLOCK, "&8&lLogs", logsHeader));
         List<String> lore = toAmp(ForgeBridge.hubLines(player, "logs"));
         List<List<String>> parts = GuiLoreChunks.chunk(lore);
         int placed = 0;
@@ -136,16 +140,16 @@ public final class HubChestGui implements Listener {
                     prependBlank(part)));
             placed++;
         }
-        put(holder, inv, 29, tipBtn(Material.LIME_DYE, "&aSyslog ON",
+        put(holder, inv, 29, tipBtn(player, Material.LIME_DYE, "&aSyslog ON",
                 List.of("&7Enable system telemetry")),
                 SlotAction.act("syslog", "on", "logs"));
-        put(holder, inv, 31, tipBtn(Material.GRAY_DYE, "&cSyslog OFF",
+        put(holder, inv, 31, tipBtn(player, Material.GRAY_DYE, "&cSyslog OFF",
                 List.of("&7Disable system telemetry")),
                 SlotAction.act("syslog", "off", "logs"));
-        put(holder, inv, 33, tipBtn(Material.HOPPER, "&eFlush",
+        put(holder, inv, 33, tipBtn(player, Material.HOPPER, "&eFlush",
                 List.of("&7Flush log writers")),
                 SlotAction.act("syslog", "flush", "logs"));
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 36, pageBtn(player, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -256,24 +260,22 @@ public final class HubChestGui implements Listener {
         }
     }
 
-    private static ItemStack tipBtn(Material mat, String name, List<String> tip) {
+    private static ItemStack tipBtn(Player player, Material mat, String name, List<String> tip) {
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.addAll(tip);
+        lore.addAll(GuiBoardHelper.tipsList(player, tip));
         return item(mat, name, lore);
     }
 
-    private static ItemStack pageBtn(Material mat, String name, String... tips) {
+    private static ItemStack pageBtn(Player player, Material mat, String name, String... tips) {
         List<String> lore = new ArrayList<>();
         lore.add("");
-        for (String tip : tips) {
-            lore.add(tip);
-        }
+        lore.addAll(GuiBoardHelper.tips(player, tips));
         return item(mat, name, lore);
     }
 
     private static ItemStack closeBtn() {
-        return item(Material.BARRIER, "&cClose", List.of("&7Close menu"));
+        return item(Material.BARRIER, "&cClose", List.of());
     }
 
     private static ItemStack item(Material mat, String name, List<String> lore) {

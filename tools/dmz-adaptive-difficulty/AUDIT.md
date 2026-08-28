@@ -1,11 +1,17 @@
-## End Dimension Strength script parity (2.3.16)
+## Simplified GUI lore / Rival titles (2.3.17)
+
+- Non-staff instructional tip lore gated via `GuiBoardHelper.tips` / `tipsList`.
+- Rival inventory titles drop `Legacy Mechanics ·` prefix (Difficulty-style short titles).
+- Jars: `LegacyMechanics-2.3.17` / `LegacyMechanicsGUI-2.3.17`.
+
+## End Dimension Strength script parity (2.3.17)
 
 - Stubbed CNPC `End Dimension Strength.js` + Forge trigger bridge (Java owns dragon).
 - Spawn via EndDragonFight (`createNewDragon` + spike crystals) so perch/charge AI works.
 - World-wide dragon rescale; script softcap tables; natural spawn first-boot delay.
-- Jars: `LegacyMechanics-2.3.16` / `LegacyMechanicsGUI-2.3.16`.
+- Jars: `LegacyMechanics-2.3.17` / `LegacyMechanicsGUI-2.3.17`.
 
-## Potential Unlock script parity (2.3.16)
+## Potential Unlock script parity (2.3.17)
 
 - Rewrote `PotentialProgression` to match `Potential.js`: movement tip, method-streak
   check-before-increment + switch tip, effective-weight-only mult, soft-cap/Guru messages.
