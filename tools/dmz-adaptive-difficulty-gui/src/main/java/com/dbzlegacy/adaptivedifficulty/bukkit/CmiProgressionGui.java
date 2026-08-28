@@ -41,7 +41,7 @@ public final class CmiProgressionGui {
             Map.entry("racelock", new String[]{"Race Lock", "Ancient/Sento need Fabled unlock skills.", "Passive on race select"}),
             Map.entry("yardrat", new String[]{"Yardrat", "Form mastery double-gain + starter ki.", "Passive for Yardrat"}),
             Map.entry("spiritualist", new String[]{"Spiritualist Ki", "Class confirm grants/removes kicontrol.", "Passive on class change"}),
-            Map.entry("android", new String[]{"Android Conversion", "Staff convert a player to Android.", "/progression android"}),
+            Map.entry("android", new String[]{"Android Conversion", "Staff convert a player to Android (Gero path).", "/progression android [player]"}),
             Map.entry("kiweapons", new String[]{"Ki Weapons", "Blade/scythe/clawlance Apothic attrs.", "Passive on equip"}),
             Map.entry("piercing", new String[]{"Piercing", "PROT_PIERCE → SKP (not on ki weapons).", "Passive in combat"}),
             Map.entry("dot", new String[]{"DoT Extra", "Extra damage from DoT sources.", "Passive in combat"}),
@@ -77,6 +77,13 @@ public final class CmiProgressionGui {
                         new String[]{"farming", "building", "boost", "bio"});
                 case "race" -> openSection(player, "race", "&bRace & Form", Material.PLAYER_HEAD,
                         new String[]{"racelock", "yardrat", "spiritualist", "android"});
+                case "android_convert", "androidconvert", "convert_android" -> {
+                    if (ForgeBridge.isStaff(player)) {
+                        openAndroidConvert(player);
+                    } else {
+                        openMain(player);
+                    }
+                }
                 case "combat" -> openSection(player, "combat", "&cCombat", Material.IRON_SWORD,
                         new String[]{"kiweapons", "piercing", "dot", "apothic"});
                 case "end" -> openSection(player, "end", "&5End", Material.END_STONE,
@@ -189,6 +196,25 @@ public final class CmiProgressionGui {
             String key = keys[i];
             boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
             String[] info = FLAG_INFO.getOrDefault(key, new String[]{key, "Progression module.", ""});
+            if ("android".equals(key) && "race".equals(page)) {
+                List<String> lore = new ArrayList<>();
+                lore.add("");
+                lore.add(on ? "&aModule enabled" : "&cModule disabled &8(toggle in Flags)");
+                lore.add("&7" + info[1]);
+                lore.add("&8Cmd: &f/progression android [player]");
+                lore.add("");
+                lore.add(staff ? "&eClick · pick player to convert" : "&8Staff only");
+                if (staff) {
+                    gui.addButton(pageBtn(slots[i], Material.IRON_INGOT, "&bAndroid Convert",
+                            "android_convert", lore.toArray(new String[0])));
+                } else {
+                    CMIGuiButton btn = new CMIGuiButton(slots[i], Material.IRON_INGOT, "&bAndroid Convert");
+                    btn.lockField();
+                    btn.addLore(lore);
+                    gui.addButton(btn);
+                }
+                continue;
+            }
             List<String> lore = new ArrayList<>();
             lore.add("");
             lore.add(on ? "&aEnabled" : "&cDisabled");
@@ -219,6 +245,45 @@ public final class CmiProgressionGui {
         }
 
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openAndroidConvert(Player player) {
+        CMIGui gui = base(player, "&8Legacy Mechanics · Android Convert", 5);
+        CMIGuiButton header = new CMIGuiButton(4, Material.IRON_INGOT, "&b&lAndroid Convert");
+        header.lockField();
+        header.addLore(List.of("", "&7Dr. Gero upgrade path",
+                "&7Human → androidforms.androidbase",
+                "&8/progression android [player]"));
+        gui.addButton(header);
+        gui.addButton(actionBtn(8, Material.NETHERITE_INGOT, "&aConvert Yourself",
+                "android", player.getName(), "android_convert",
+                List.of("&7Apply conversion to you", "", "&eClick to convert")));
+        List<Player> online = GuiPlayerPicker.onlineExcept(player);
+        int placed = 0;
+        for (Player other : online) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+            CMIGuiButton btn = new CMIGuiButton(slot,
+                    GuiPlayerPicker.head(other, "&f" + other.getName(),
+                            List.of("&7Convert to Android", "", "&eClick to convert")));
+            btn.lockField();
+            btn.addCommand("progression do android " + other.getName() + " android_convert");
+            gui.addButton(btn);
+        }
+        if (online.isEmpty()) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.PAPER, "&7No other players online");
+            empty.lockField();
+            empty.addLore(List.of("", "&7Use Convert Yourself above",
+                    "&8or /progression android <name>"));
+            gui.addButton(empty);
+        }
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "race", "&7Race section"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);

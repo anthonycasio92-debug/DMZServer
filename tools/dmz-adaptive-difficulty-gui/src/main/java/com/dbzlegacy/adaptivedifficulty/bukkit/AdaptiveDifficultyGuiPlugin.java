@@ -855,6 +855,20 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             sendMultiline(player, ForgeBridge.meditationExplain());
             return true;
         }
+        // Android convert — dedicated Forge bridge (Mohist shadows /progression brigadier).
+        if (args.length > 0 && "android".equalsIgnoreCase(args[0])) {
+            if (!ForgeBridge.isStaff(player)) {
+                player.sendMessage("§cStaff only.");
+                return true;
+            }
+            if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+                player.sendMessage("§cNo permission: dmzdiff.gui");
+                return true;
+            }
+            String target = args.length > 1 ? args[1] : "";
+            sendMultiline(player, ForgeBridge.androidConvert(player, target));
+            return true;
+        }
         if (!ForgeBridge.isStaff(player)) {
             player.sendMessage("§cStaff only.");
             return true;

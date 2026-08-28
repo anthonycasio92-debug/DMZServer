@@ -87,6 +87,7 @@ public final class ForgeBridge {
     private static Method skillsHandleDoMethod;
     private static Method meditationExplainMethod;
     private static Method meditationAdvanceMethod;
+    private static Method androidConvertMethod;
     private static volatile Field RESULT_MESSAGE_FIELD;
 
     private ForgeBridge() {}
@@ -1252,6 +1253,29 @@ public final class ForgeBridge {
         }
     }
 
+    /**
+     * Staff: Dr. Gero android conversion for self (blank/null target) or an online player name.
+     * Prefer this over {@link #forwardCommand} — Mohist often shadows Forge {@code /progression}.
+     */
+    public static String androidConvert(Player actor, String targetName) {
+        Object nms = nmsPlayer(actor);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (androidConvertMethod == null) {
+                return "§cAndroid API missing — update LegacyMechanics jar.";
+            }
+            Object raw = androidConvertMethod.invoke(null, nms, targetName == null ? "" : targetName);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cAndroid convert failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public static Map<String, String> prestigePlaceholders(Player player) {
         Map<String, String> fail = new HashMap<>();
@@ -1668,6 +1692,13 @@ public final class ForgeBridge {
                 meditationAdvanceMethod = api.getMethod("meditationAdvance", sp);
             } catch (Throwable missing) {
                 meditationAdvanceMethod = null;
+            }
+        }
+        if (androidConvertMethod == null) {
+            try {
+                androidConvertMethod = api.getMethod("androidConvert", sp, String.class);
+            } catch (Throwable missing) {
+                androidConvertMethod = null;
             }
         }
     }

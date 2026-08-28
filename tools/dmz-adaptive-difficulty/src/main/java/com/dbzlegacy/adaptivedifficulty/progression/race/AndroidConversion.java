@@ -17,10 +17,10 @@ import java.util.Set;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Port of AndrioidConversion.js trigger 45 — Gero android upgrade path.
+ * Port of AndrioidConversion.js / DragonMineZ {@code NPCActionC2S.handleGero} —
+ * Dr. Gero android upgrade path.
  */
 public final class AndroidConversion {
-    private static final Set<String> ALLOWED = Set.of("human");
     private static final Set<String> BLOCKED = Set.of("bioandroid");
     private static final String ANDROID_FORM_GROUP = "androidforms";
     private static final String ANDROID_BASE_FORM = "androidbase";
@@ -29,7 +29,7 @@ public final class AndroidConversion {
 
     public static String convert(ServerPlayer player) {
         if (!ProgressionConfig.androidConversion()) {
-            return "§cAndroid conversion is disabled.";
+            return "§cAndroid conversion is disabled. §7Staff: enable the android flag in /progression.";
         }
         if (player == null) {
             return "§cPlayer required.";
@@ -56,8 +56,10 @@ public final class AndroidConversion {
             if (BLOCKED.contains(lower)) {
                 return "§c[Android] §f" + raceName + " cannot be android-upgraded.";
             }
-            if (!ALLOWED.contains(lower) && !raceAllowsAndroidForms(raceName)) {
-                return "§c[Android] §fOnly humans can be converted.";
+            // Match Gero: race must have androidforms TP costs configured (humans).
+            if (!raceAllowsAndroidForms(raceName)) {
+                return "§c[Android] §fOnly races with android forms (humans) can be converted. §7Race: §f"
+                        + raceName;
             }
 
             status.setAndroidUpgraded(true);
@@ -96,6 +98,7 @@ public final class AndroidConversion {
     }
 
     private static String raceName(Character character) {
+        // Gero uses getRaceName() only.
         try {
             String n = character.getRaceName();
             if (n != null && !n.isBlank()) {

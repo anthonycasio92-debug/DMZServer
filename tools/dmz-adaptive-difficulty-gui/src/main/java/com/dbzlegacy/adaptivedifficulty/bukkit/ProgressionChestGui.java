@@ -49,7 +49,7 @@ public final class ProgressionChestGui implements Listener {
             Map.entry("racelock", new String[]{"Race Lock", "Ancient/Sento need Fabled unlock skills.", "Passive on race select"}),
             Map.entry("yardrat", new String[]{"Yardrat", "Form mastery double-gain + starter ki.", "Passive for Yardrat"}),
             Map.entry("spiritualist", new String[]{"Spiritualist Ki", "Class confirm grants/removes kicontrol.", "Passive on class change"}),
-            Map.entry("android", new String[]{"Android Conversion", "Staff convert a player to Android.", "/progression android"}),
+            Map.entry("android", new String[]{"Android Conversion", "Staff convert a player to Android (Gero path).", "/progression android [player]"}),
             Map.entry("kiweapons", new String[]{"Ki Weapons", "Blade/scythe/clawlance Apothic attrs.", "Passive on equip"}),
             Map.entry("piercing", new String[]{"Piercing", "PROT_PIERCE → SKP (not on ki weapons).", "Passive in combat"}),
             Map.entry("dot", new String[]{"DoT Extra", "Extra damage from DoT sources.", "Passive in combat"}),
@@ -81,6 +81,8 @@ public final class ProgressionChestGui implements Listener {
                     new String[]{"farming", "building", "boost", "bio"});
             case "race" -> sectionFlags(player, "race", "&bRace & Form", Material.PLAYER_HEAD,
                     new String[]{"racelock", "yardrat", "spiritualist", "android"});
+            case "android_convert", "androidconvert", "convert_android" ->
+                    ForgeBridge.isStaff(player) ? androidConvertPicker(player) : main(player);
             case "combat" -> sectionFlags(player, "combat", "&cCombat", Material.IRON_SWORD,
                     new String[]{"kiweapons", "piercing", "dot", "apothic"});
             case "end" -> sectionFlags(player, "end", "&5End", Material.END_STONE,
@@ -174,6 +176,23 @@ public final class ProgressionChestGui implements Listener {
             String key = keys[i];
             boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
             String[] info = FLAG_INFO.getOrDefault(key, new String[]{key, "Progression module.", ""});
+            // Race page: Android is a convert action (not just the enable flag).
+            if ("android".equals(key) && "race".equals(page)) {
+                List<String> lore = new ArrayList<>();
+                lore.add("");
+                lore.add(on ? "&aModule enabled" : "&cModule disabled &8(toggle in Flags)");
+                lore.add("&7" + info[1]);
+                lore.add("&8Cmd: &f/progression android [player]");
+                lore.add("");
+                lore.add(staff ? "&eClick · pick player to convert" : "&8Staff only");
+                ItemStack stack = tipBtn(Material.IRON_INGOT, "&bAndroid Convert", lore);
+                if (staff) {
+                    put(holder, inv, slots[i], stack, SlotAction.page("android_convert"));
+                } else {
+                    put(holder, inv, slots[i], stack);
+                }
+                continue;
+            }
             List<String> lore = new ArrayList<>();
             lore.add("");
             lore.add(on ? "&aEnabled" : "&cDisabled");
@@ -290,6 +309,42 @@ public final class ProgressionChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return to Flags"),
                 SlotAction.page("admin"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory androidConvertPicker(Player player) {
+        Holder holder = new Holder("android_convert");
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Android Convert"));
+        holder.bind(inv);
+        frame(inv, 45);
+        put(holder, inv, 4, item(Material.IRON_INGOT, "&b&lAndroid Convert",
+                List.of("", "&7Dr. Gero upgrade path",
+                        "&7Human → androidforms.androidbase",
+                        "&8/progression android [player]")));
+        put(holder, inv, 8, tipBtn(Material.NETHERITE_INGOT, "&aConvert Yourself",
+                List.of("&7Apply conversion to you", "", "&eClick to convert")),
+                SlotAction.act("android", player.getName(), "android_convert"));
+        List<Player> online = GuiPlayerPicker.onlineExcept(player);
+        int placed = 0;
+        for (Player other : online) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+            put(holder, inv, slot,
+                    GuiPlayerPicker.head(other, "&f" + other.getName(),
+                            List.of("&7Convert to Android", "", "&eClick to convert")),
+                    SlotAction.act("android", other.getName(), "android_convert"));
+        }
+        if (online.isEmpty()) {
+            put(holder, inv, 22, item(Material.PAPER, "&7No other players online",
+                    List.of("", "&7Use Convert Yourself above",
+                            "&8or /progression android <name>")));
+        }
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Race section"),
+                SlotAction.page("race"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;

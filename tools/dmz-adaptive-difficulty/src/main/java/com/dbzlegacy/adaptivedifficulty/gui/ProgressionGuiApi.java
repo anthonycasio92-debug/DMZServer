@@ -36,6 +36,51 @@ public final class ProgressionGuiApi {
         return MeditationProgression.advanceTrial(player);
     }
 
+    /**
+     * Staff: Dr. Gero android upgrade for {@code actor} (blank target) or an online player name.
+     * Used by Bukkit {@code /progression android} — avoids Mohist brigadier forwardCommand.
+     */
+    public static String androidConvert(ServerPlayer actor, String targetName) {
+        if (actor == null) {
+            return "§cPlayers only.";
+        }
+        if (!StaffAccess.isStaff(actor)) {
+            return "§cStaff only.";
+        }
+        if (!DifficultyConfig.get().enableProgression) {
+            return "§cProgression system is disabled.";
+        }
+        ServerPlayer target = actor;
+        String name = targetName == null ? "" : targetName.trim();
+        if (!name.isBlank()) {
+            target = resolveOnline(actor, name);
+            if (target == null) {
+                return "§cPlayer not found: §f" + name;
+            }
+        }
+        return ProgressionSystem.androidConvert(target);
+    }
+
+    private static ServerPlayer resolveOnline(ServerPlayer actor, String name) {
+        try {
+            var server = actor.m_20194_(); // getServer
+            if (server == null) {
+                return null;
+            }
+            ServerPlayer exact = server.m_6846_().m_11255_(name);
+            if (exact != null) {
+                return exact;
+            }
+            for (ServerPlayer online : server.m_6846_().m_11314_()) {
+                if (online.m_7755_().getString().equalsIgnoreCase(name)) {
+                    return online;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
     // ── Progression ────────────────────────────────────────────────────
 
     public static Map<String, String> placeholders(ServerPlayer player) {
@@ -197,7 +242,7 @@ public final class ProgressionGuiApi {
                     "§e/progression meditation §7— Current trial + how-to",
                     "§e/progression meditation next §7— Staff: cycle + broadcast",
                     "§e/progression boost start|end §7— Global TP boost",
-                    "§e/progression android §7— Android convert",
+                    "§e/progression android [player] §7— Staff: Android convert (Gero)",
                     "§e/prestige §7— Prestige (Hub)",
                     "§e/skills §7— Skill unlocks (Hub)",
                     "§8Staff: /prog admin · toggle flags in section GUIs"
@@ -355,6 +400,9 @@ public final class ProgressionGuiApi {
                 return "§cUnknown flag: " + key;
             }
             return "§aProgression §f" + key + " §7→ §f" + (next ? "ON" : "OFF");
+        }
+        if ("android".equals(act) || "androidconvert".equals(act) || "convertandroid".equals(act)) {
+            return androidConvert(player, a);
         }
         return "§cUnknown progression action: " + act;
     }

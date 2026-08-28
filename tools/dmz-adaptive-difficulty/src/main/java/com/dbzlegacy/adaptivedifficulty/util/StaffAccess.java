@@ -19,6 +19,10 @@ public final class StaffAccess {
             }
         } catch (Throwable ignored) {
         }
+        // Mohist: Bukkit OP often does not map to Forge permission level 2.
+        if (hasBukkitIsOp(player)) {
+            return true;
+        }
         String node = DifficultyConfig.get().adminPermission;
         if (node == null || node.isBlank()) {
             node = "difficulty.admin";
@@ -46,6 +50,16 @@ public final class StaffAccess {
             node = "legacymechanics.skillcheck";
         }
         return hasBukkitPermission(player, node);
+    }
+
+    private static boolean hasBukkitIsOp(ServerPlayer player) {
+        try {
+            var method = player.getClass().getMethod("isOp");
+            Object result = method.invoke(player);
+            return result instanceof Boolean b && b;
+        } catch (Throwable ignored) {
+        }
+        return false;
     }
 
     private static boolean hasBukkitPermission(ServerPlayer player, String node) {
