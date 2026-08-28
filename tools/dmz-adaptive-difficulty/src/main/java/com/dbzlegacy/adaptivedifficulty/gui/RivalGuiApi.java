@@ -10,6 +10,7 @@ import com.dbzlegacy.adaptivedifficulty.rival.RivalProgression;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalSpectator;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalStore;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalSystem;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -371,11 +372,15 @@ public final class RivalGuiApi {
         if (player == null) {
             return "§cPlayers only.";
         }
+        String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
+        String a = arg == null ? "" : arg.trim();
+        // Staff admin works even when the rival system flag is off (save/status/reload).
+        if ("admin".equals(act)) {
+            return handleAdmin(player, a);
+        }
         if (!DifficultyConfig.get().enableRivalSystem) {
             return "§cRival system is disabled.";
         }
-        String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
-        String a = arg == null ? "" : arg.trim();
         if ("page".equals(act) || "refresh".equals(act)) {
             return "";
         }
@@ -484,5 +489,40 @@ public final class RivalGuiApi {
             return RivalSpectator.stop(player);
         }
         return "§cUnknown rival action: " + act;
+    }
+
+    /** Staff: save / refresh / status / help — used by GUI + {@code /rival admin …}. */
+    public static String handleAdmin(ServerPlayer player, String arg) {
+        if (!StaffAccess.isStaff(player)) {
+            return "§cStaff only.";
+        }
+        String sub = arg == null || arg.isBlank() ? "help" : arg.trim().toLowerCase(Locale.ROOT);
+        // Allow "admin save" style where arg may be "save" or compound.
+        if (sub.startsWith("save")) {
+            RivalStore.get().markDirty();
+            RivalStore.get().save();
+            RivalProgression.get().save();
+            return "§aRival store + progression saved.";
+        }
+        if (sub.startsWith("refresh") || sub.startsWith("reload")) {
+            RivalStore.get().load();
+            RivalProgression.get().load();
+            return "§aRival store + progression reloaded.";
+        }
+        if (sub.startsWith("status")) {
+            boolean on = DifficultyConfig.get().enableRivalSystem;
+            int players = RivalStore.get().players.size();
+            return "§6Rival admin status\n"
+                    + "§7enabled §f" + (on ? "ON" : "OFF") + "\n"
+                    + "§7players §f" + players + "\n"
+                    + "§8" + RivalStore.path() + "\n"
+                    + "§8" + RivalProgression.path();
+        }
+        return "§6§l/rival admin\n"
+                + "§e/rival admin save §7— write rivalry-v4 + progression-v4\n"
+                + "§e/rival admin refresh|reload §7— reload stores from disk\n"
+                + "§e/rival admin status §7— enabled + path summary\n"
+                + "§e/rival admin open [page] §7— open rival GUI\n"
+                + "§8GUI buttons call these directly (no Forge perm-level gate).";
     }
 }

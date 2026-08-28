@@ -208,21 +208,27 @@ public final class RivalChestGui implements Listener {
         frame(inv, 45);
         put(holder, inv, 4, item(Material.REDSTONE, "&c&lRival Admin",
                 List.of("", "&7Staff tools for the Rival system",
-                        "&8Click a button to run the linked command")));
+                        "&8Click runs the action directly")));
         put(holder, inv, 19, tipBtn(Material.WRITABLE_BOOK, "&aSave",
                 List.of("&7Write rivalry-v4 + progression-v4", "&8/rival admin save")),
-                SlotAction.cmd("rival admin save"));
+                SlotAction.act("admin", "save", "admin"));
         put(holder, inv, 21, tipBtn(Material.CLOCK, "&eRefresh",
                 List.of("&7Reload stores from disk", "&8/rival admin refresh")),
-                SlotAction.cmd("rival admin refresh"));
+                SlotAction.act("admin", "refresh", "admin"));
         put(holder, inv, 23, tipBtn(Material.COMPASS, "&bStatus",
                 List.of("&7Enabled + path summary", "&8/rival admin status")),
-                SlotAction.cmd("rival admin status"));
+                SlotAction.act("admin", "status", "admin"));
         put(holder, inv, 25, pageBtn(Material.NETHER_STAR, "&fOpen Rival GUI",
                 "&7Player rival menu"), SlotAction.page("main"));
-        put(holder, inv, 29, tipBtn(Material.PAPER, "&7Help (chat)",
+        put(holder, inv, 29, tipBtn(Material.PAPER, "&7Help",
                 List.of("&7Print admin command list", "&8/rival admin help")),
-                SlotAction.cmd("rival admin help"));
+                SlotAction.act("admin", "help", "admin"));
+        put(holder, inv, 31, pageBtn(Material.GOLDEN_HELMET, "&fRP Top",
+                "&7Leaderboard"), SlotAction.page("top"));
+        put(holder, inv, 32, pageBtn(Material.BOOK, "&eStats",
+                "&7Career stats"), SlotAction.page("stats"));
+        put(holder, inv, 33, pageBtn(Material.IRON_SWORD, "&cChallenge",
+                "&7Challenge board"), SlotAction.page("challenge"));
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -492,10 +498,12 @@ public final class RivalChestGui implements Listener {
         Bukkit.getScheduler().runTask(plugin, () -> {
             String msg = ForgeBridge.rivalHandleDo(player, action, arg, ret);
             if (msg != null && !msg.isBlank()) {
-                if (!msg.startsWith("§")) {
-                    msg = "§a" + msg;
+                for (String line : msg.split("\n")) {
+                    if (line == null || line.isBlank()) {
+                        continue;
+                    }
+                    player.sendMessage(line.startsWith("§") ? line : "§a" + line);
                 }
-                player.sendMessage(msg);
             }
             open(player, ret);
         });

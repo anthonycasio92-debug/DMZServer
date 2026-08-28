@@ -237,16 +237,23 @@ public final class CmiRivalGui {
         info.addLore(List.of("", "&7Staff tools for the Rival system",
                 "&8Click a button to run the linked command"));
         gui.addButton(info);
-        gui.addButton(cmdBtn(19, Material.WRITABLE_BOOK, "&aSave", "rival admin save",
-                "&7Write rivalry-v4 + progression-v4", "&8/rival admin save"));
-        gui.addButton(cmdBtn(21, Material.CLOCK, "&eRefresh", "rival admin refresh",
-                "&7Reload stores from disk", "&8/rival admin refresh"));
-        gui.addButton(cmdBtn(23, Material.COMPASS, "&bStatus", "rival admin status",
-                "&7Enabled + path summary", "&8/rival admin status"));
+        gui.addButton(actionBtn(19, Material.WRITABLE_BOOK, "&aSave",
+                "admin", "save", "admin",
+                List.of("&7Write rivalry-v4 + progression-v4", "&8/rival admin save")));
+        gui.addButton(actionBtn(21, Material.CLOCK, "&eRefresh",
+                "admin", "refresh", "admin",
+                List.of("&7Reload stores from disk", "&8/rival admin refresh")));
+        gui.addButton(actionBtn(23, Material.COMPASS, "&bStatus",
+                "admin", "status", "admin",
+                List.of("&7Enabled + path summary", "&8/rival admin status")));
         gui.addButton(pageBtn(25, Material.NETHER_STAR, "&fOpen Rival GUI", "main",
                 "&7Player rival menu"));
-        gui.addButton(cmdBtn(29, Material.PAPER, "&7Help (chat)", "rival admin help",
-                "&7Print admin command list"));
+        gui.addButton(actionBtn(29, Material.PAPER, "&7Help",
+                "admin", "help", "admin",
+                List.of("&7Print admin command list")));
+        gui.addButton(pageBtn(31, Material.GOLDEN_HELMET, "&fRP Top", "top", "&7Leaderboard"));
+        gui.addButton(pageBtn(32, Material.BOOK, "&eStats", "stats", "&7Career stats"));
+        gui.addButton(pageBtn(33, Material.IRON_SWORD, "&cChallenge", "challenge", "&7Challenge board"));
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));

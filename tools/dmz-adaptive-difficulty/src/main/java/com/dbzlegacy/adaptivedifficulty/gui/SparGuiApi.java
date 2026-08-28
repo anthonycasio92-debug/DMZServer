@@ -4,6 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparPlayerRuntime;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparStore;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparringSystem;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -167,11 +168,14 @@ public final class SparGuiApi {
         if (player == null) {
             return "§cPlayers only.";
         }
+        String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
+        String a = arg == null ? "" : arg.trim();
+        if ("admin".equals(act)) {
+            return handleAdmin(player, a);
+        }
         if (!DifficultyConfig.get().enableSparringSystem) {
             return "§cSparring system is disabled.";
         }
-        String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
-        String a = arg == null ? "" : arg.trim();
         if ("page".equals(act) || "refresh".equals(act)) {
             return "";
         }
@@ -208,6 +212,51 @@ public final class SparGuiApi {
             return SparringSystem.apprenticeInvite(player, target);
         }
         return "§cUnknown spar action: " + act;
+    }
+
+    /** Staff: save / status / mentor resetcd — used by GUI + {@code /spar admin …}. */
+    public static String handleAdmin(ServerPlayer player, String arg) {
+        if (!StaffAccess.isStaff(player)) {
+            return "§cStaff only.";
+        }
+        String raw = arg == null ? "" : arg.trim();
+        String lower = raw.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("save")) {
+            SparStore.get().markDirty();
+            SparStore.get().save();
+            return "§aSpar store saved.";
+        }
+        if (lower.startsWith("status")) {
+            boolean on = DifficultyConfig.get().enableSparringSystem;
+            return "§6Spar admin status\n"
+                    + "§7enabled §f" + (on ? "ON" : "OFF") + "\n"
+                    + "§7bonds §f" + SparStore.get().bondsByPlayer.size() + "\n"
+                    + "§8" + SparStore.path();
+        }
+        if (lower.startsWith("resetcd") || lower.startsWith("mentor") || lower.contains("resetcd")) {
+            String targetArg = raw;
+            if (lower.startsWith("mentor")) {
+                targetArg = raw.replaceFirst("(?i)^mentor[_\\s]*resetcd\\s*", "").trim();
+            } else if (lower.startsWith("resetcd")) {
+                targetArg = raw.replaceFirst("(?i)^resetcd\\s*:?\\s*", "").trim();
+            }
+            ServerPlayer target = player;
+            if (targetArg != null && !targetArg.isBlank()
+                    && !targetArg.equalsIgnoreCase("0")
+                    && !targetArg.equalsIgnoreCase("self")) {
+                ServerPlayer found = resolveOnline(player, targetArg);
+                if (found == null) {
+                    return "§cPlayer not online: " + targetArg;
+                }
+                target = found;
+            }
+            return SparringSystem.resetMentorCd(player, target);
+        }
+        return "§6§l/spar admin\n"
+                + "§e/spar admin save §7— write sparring.json\n"
+                + "§e/spar admin status §7— enabled + path\n"
+                + "§e/spar admin mentor resetcd [player] §7— clear mentor cooldown\n"
+                + "§8GUI buttons call these directly (no Forge perm-level gate).";
     }
 
     /**

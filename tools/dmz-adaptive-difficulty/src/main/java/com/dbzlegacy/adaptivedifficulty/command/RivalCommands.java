@@ -10,6 +10,7 @@ import com.dbzlegacy.adaptivedifficulty.rival.RivalProgression;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalStore;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalSystem;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -145,13 +146,13 @@ public final class RivalCommands {
                         .then(Commands.m_82127_("decline").executes(ctx -> challengeDecline(ctx.getSource())))
                         .then(Commands.m_82127_("cancel").executes(ctx -> challengeCancel(ctx.getSource()))))
                 .then(Commands.m_82127_("refresh")
-                        .requires(src -> src.m_6761_(2))
+                        .requires(RivalCommands::staff)
                         .executes(ctx -> refresh(ctx.getSource())))
                 .then(Commands.m_82127_("save")
-                        .requires(src -> src.m_6761_(2))
+                        .requires(RivalCommands::staff)
                         .executes(ctx -> save(ctx.getSource())))
                 .then(Commands.m_82127_("admin")
-                        .requires(src -> src.m_6761_(2))
+                        .requires(RivalCommands::staff)
                         .executes(ctx -> adminHelp(ctx.getSource()))
                         .then(Commands.m_82127_("help").executes(ctx -> adminHelp(ctx.getSource())))
                         .then(Commands.m_82127_("save").executes(ctx -> save(ctx.getSource())))
@@ -171,6 +172,19 @@ public final class RivalCommands {
 
         event.getDispatcher().register(root);
         AdaptiveDifficultyMod.LOGGER.info("[{}] registered /rival", AdaptiveDifficultyMod.MOD_ID);
+    }
+
+    /** Op level 2 or configured admin permission (Mohist Bukkit node). */
+    private static boolean staff(CommandSourceStack src) {
+        try {
+            if (src.m_6761_(2)) {
+                return true;
+            }
+            ServerPlayer p = src.m_81375_();
+            return StaffAccess.isStaff(p);
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private static int gui(CommandSourceStack source, String page) {

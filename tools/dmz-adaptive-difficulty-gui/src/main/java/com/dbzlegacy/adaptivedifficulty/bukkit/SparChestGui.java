@@ -168,21 +168,27 @@ public final class SparChestGui implements Listener {
         frame(inv, 45);
         put(holder, inv, 4, item(Material.REDSTONE, "&c&lSpar Admin",
                 List.of("", "&7Staff tools for Sparring",
-                        "&8Click a button to run the linked command")));
+                        "&8Click runs the action directly")));
         put(holder, inv, 19, tipBtn(Material.WRITABLE_BOOK, "&aSave",
                 List.of("&7Write sparring.json", "&8/spar admin save")),
-                SlotAction.cmd("spar admin save"));
+                SlotAction.act("admin", "save", "admin"));
         put(holder, inv, 21, tipBtn(Material.COMPASS, "&bStatus",
                 List.of("&7Enabled + path", "&8/spar admin status")),
-                SlotAction.cmd("spar admin status"));
+                SlotAction.act("admin", "status", "admin"));
         put(holder, inv, 23, tipBtn(Material.EMERALD, "&eReset Mentor CD",
                 List.of("&7Clear your mentor cooldown", "&8/spar admin mentor resetcd")),
-                SlotAction.cmd("spar admin mentor resetcd"));
+                SlotAction.act("admin", "resetcd", "admin"));
         put(holder, inv, 25, pageBtn(Material.NETHER_STAR, "&fOpen Spar GUI",
                 "&7Player sparring menu"), SlotAction.page("main"));
-        put(holder, inv, 29, tipBtn(Material.PAPER, "&7Help (chat)",
+        put(holder, inv, 29, tipBtn(Material.PAPER, "&7Help",
                 List.of("&7Print admin command list", "&8/spar admin help")),
-                SlotAction.cmd("spar admin help"));
+                SlotAction.act("admin", "help", "admin"));
+        put(holder, inv, 31, pageBtn(Material.GOLDEN_HELMET, "&fTop",
+                "&7Leaderboard"), SlotAction.page("top"));
+        put(holder, inv, 32, pageBtn(Material.BOOK, "&eStats",
+                "&7Spar stats"), SlotAction.page("stats"));
+        put(holder, inv, 33, pageBtn(Material.EMERALD, "&bMentor",
+                "&7Mentor tools"), SlotAction.page("mentor"));
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -347,10 +353,12 @@ public final class SparChestGui implements Listener {
         Bukkit.getScheduler().runTask(plugin, () -> {
             String msg = ForgeBridge.sparHandleDo(player, action, arg, ret);
             if (msg != null && !msg.isBlank()) {
-                if (!msg.startsWith("§")) {
-                    msg = "§a" + msg;
+                for (String line : msg.split("\n")) {
+                    if (line == null || line.isBlank()) {
+                        continue;
+                    }
+                    player.sendMessage(line.startsWith("§") ? line : "§a" + line);
                 }
-                player.sendMessage(msg);
             }
             open(player, ret);
         });

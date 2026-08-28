@@ -1023,7 +1023,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return true;
         }
         String sub = args[0].toLowerCase();
-        // Staff admin: bare → GUI; with args → Forge (/rival admin save|refresh|status|open)
+        // Staff admin: bare → GUI; with args → ForgeBridge handleDo (not brigadier perm gate)
         if ("admin".equals(sub)) {
             if (!ForgeBridge.isStaff(player)) {
                 player.sendMessage("§cStaff only.");
@@ -1033,7 +1033,17 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 openRivalRespectingConfig(player, "admin");
                 return true;
             }
-            forwardToForge(player, "rival", args);
+            if ("open".equalsIgnoreCase(args[1])) {
+                String page = args.length > 2 ? args[2] : "main";
+                openRivalRespectingConfig(player, page);
+                return true;
+            }
+            StringBuilder adminArg = new StringBuilder(args[1]);
+            for (int i = 2; i < args.length; i++) {
+                adminArg.append(' ').append(args[i]);
+            }
+            String msg = ForgeBridge.rivalHandleDo(player, "admin", adminArg.toString(), "admin");
+            sendMultiline(player, msg);
             return true;
         }
         if ("do".equals(sub)) {
@@ -1046,12 +1056,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             } else {
                 reopen = returnPage == null || returnPage.isBlank() ? "main" : returnPage;
                 String msg = ForgeBridge.rivalHandleDo(player, action, arg, reopen);
-                if (msg != null && !msg.isBlank()) {
-                    if (!msg.startsWith("§")) {
-                        msg = "§a" + msg;
-                    }
-                    player.sendMessage(msg);
-                }
+                sendMultiline(player, msg);
             }
             if ("chat".equals(ForgeBridge.guiBackend())) {
                 ForgeBridge.openRivalChatMenu(player, reopen);
@@ -1110,7 +1115,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return true;
         }
         String sub = args[0].toLowerCase();
-        // Staff admin: bare → GUI; with args → Forge (/spar admin save|status|mentor …)
+        // Staff admin: bare → GUI; with args → ForgeBridge handleDo (not brigadier perm gate)
         if ("admin".equals(sub)) {
             if (!ForgeBridge.isStaff(player)) {
                 player.sendMessage("§cStaff only.");
@@ -1120,7 +1125,12 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 openSparRespectingConfig(player, "admin");
                 return true;
             }
-            forwardToForge(player, "spar", args);
+            StringBuilder adminArg = new StringBuilder(args[1]);
+            for (int i = 2; i < args.length; i++) {
+                adminArg.append(' ').append(args[i]);
+            }
+            String msg = ForgeBridge.sparHandleDo(player, "admin", adminArg.toString(), "admin");
+            sendMultiline(player, msg);
             return true;
         }
         if ("do".equals(sub)) {
@@ -1133,12 +1143,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             } else {
                 reopen = returnPage == null || returnPage.isBlank() ? "main" : returnPage;
                 String msg = ForgeBridge.sparHandleDo(player, action, arg, reopen);
-                if (msg != null && !msg.isBlank()) {
-                    if (!msg.startsWith("§")) {
-                        msg = "§a" + msg;
-                    }
-                    player.sendMessage(msg);
-                }
+                sendMultiline(player, msg);
             }
             if ("chat".equals(ForgeBridge.guiBackend())) {
                 ForgeBridge.openSparChatMenu(player, reopen);
@@ -1194,6 +1199,18 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         }
         if (!ForgeBridge.forwardCommand(player, sb.toString())) {
             player.sendMessage("§cCould not run §f/" + sb + "§c (Forge command bridge failed).");
+        }
+    }
+
+    private static void sendMultiline(Player player, String msg) {
+        if (player == null || msg == null || msg.isBlank()) {
+            return;
+        }
+        for (String line : msg.split("\n")) {
+            if (line == null || line.isBlank()) {
+                continue;
+            }
+            player.sendMessage(line.startsWith("§") ? line : "§a" + line);
         }
     }
 
