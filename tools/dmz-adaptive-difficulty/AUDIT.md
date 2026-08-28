@@ -1,3 +1,11 @@
+## CNPC richest-source pick (2.3.31)
+
+Audit follow-up: live/disk stubs no longer beat `cnpc-import-backup`.
+- `pickRichestBlob` scores all candidates (compound/live/disk/backup)
+- Prefers `.backup` CNPC keys when main is empty/stub
+- `force` aborts without clearing LM if no usable source
+- Clears only the key groups that were actually imported
+
 ## CNPC world_data capture (2.3.30)
 
 **Bug:** Migrator never reliably read `<world>/customnpcs/scripts/world_data.json`.

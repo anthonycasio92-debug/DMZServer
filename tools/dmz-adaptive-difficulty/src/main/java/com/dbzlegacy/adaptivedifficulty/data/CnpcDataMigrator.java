@@ -104,6 +104,20 @@ public final class CnpcDataMigrator {
             Path marker = ConfigPaths.dataDir().resolve(MARKER_FILE);
             Files.deleteIfExists(marker);
             WORLD_RAN.set(false);
+            // Resolve source FIRST — never wipe LM if we have nothing worth importing.
+            WorldBlob preview = resolveWorldBlob(server);
+            int previewPlayers = preview == null ? 0 : countRivalPlayers(preview.rivalRaw);
+            int previewRich = preview == null ? 0 : countRichCnpcPlayers(preview.rivalRaw);
+            boolean worthForce = preview != null && preview.hasAnything()
+                    && (previewPlayers > 0 || previewRich > 0
+                    || (preview.fileMap != null && preview.fileMap.keySet().stream()
+                    .anyMatch(k -> k != null && k.startsWith("spar.leaderboard.")))
+                    || notBlank(preview.progRaw));
+            if (forceOverwrite && !worthForce) {
+                return "§cForce aborted — no usable CNPC/backup Rival/Spar data found.\n"
+                        + "§7LM stores were NOT cleared.\n"
+                        + "§8Drop world_data.json into config/legacymechanics/cnpc-import-backup/ and retry.";
+            }
             if (forceOverwrite) {
                 RivalStore.get().players.clear();
                 RivalStore.get().declareRequests.clear();
@@ -196,7 +210,33 @@ public final class CnpcDataMigrator {
 
             boolean imported = rivalPlayers > 0 || progImported || sparLb > 0;
             if (imported && blob.liveStored != null) {
-                clearWorldCnpcKeys(blob.liveStored);
+                // Only clear keys we actually consumed — never wipe rival DB after a spar-only import.
+                if (rivalPlayers > 0) {
+                    storedRemove(blob.liveStored, RIVAL_DB);
+                    storedRemove(blob.liveStored, RIVAL_DB_BAK);
+                }
+                if (progImported) {
+                    storedRemove(blob.liveStored, RIVAL_PROG);
+                    storedRemove(blob.liveStored, RIVAL_PROG_BAK);
+                }
+                if (sparLb > 0) {
+                    storedRemove(blob.liveStored, SPAR_LB_NAMES);
+                    List<String> toRemove = new ArrayList<>();
+                    for (String key : storedKeys(blob.liveStored)) {
+                        if (key != null && (key.startsWith("spar.leaderboard.")
+                                || key.startsWith("dlr.rivalry.v4.challenge.announce.")
+                                || key.startsWith("dlr.rivalry.v4.challenge.end."))) {
+                            toRemove.add(key);
+                        }
+                    }
+                    for (String key : toRemove) {
+                        storedRemove(blob.liveStored, key);
+                    }
+                }
+                if (rivalPlayers > 0) {
+                    storedRemove(blob.liveStored, RIVAL_CH);
+                    storedRemove(blob.liveStored, RIVAL_CH_BAK);
+                }
             } else if (!imported && blob.liveStored != null) {
                 AdaptiveDifficultyMod.LOGGER.info(
                         "[{}] Leaving CNPC storeddata keys intact (nothing imported)",
@@ -251,32 +291,100 @@ public final class CnpcDataMigrator {
     }
 
     private static WorldBlob resolveWorldBlob(MinecraftServer server) {
-        // 1) Force-reload ScriptController compound from the world file, then read it.
+        // Reload disk → compound, then pick the *richest* source (stubs must not beat backup).
         ensureCnpcStoredDataLoaded();
-        WorldBlob compound = fromScriptControllerCompound();
-        if (compound != null && compound.hasAnything()) {
-            return compound;
+        List<WorldBlob> candidates = new ArrayList<>();
+        addCandidate(candidates, fromScriptControllerCompound());
+        addCandidate(candidates, fromLiveStoreddata());
+        addCandidate(candidates, fromWorldDataFile(server));
+        addCandidate(candidates, fromBackupDir());
+        WorldBlob best = pickRichestBlob(candidates);
+        if (best != null) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] CNPC source selected: {} (rivalPlayers={} rich={} sparKeys={})",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    best.source,
+                    countRivalPlayers(best.rivalRaw),
+                    countRichCnpcPlayers(best.rivalRaw),
+                    best.fileMap == null ? 0 : best.fileMap.size());
         }
+        return best;
+    }
 
-        // 2) IWorld.getStoreddata() — same compound, but needs getIWorld (Mohist-fragile).
-        WorldBlob live = fromLiveStoreddata();
-        if (live != null && live.hasAnything()) {
-            return live;
+    private static void addCandidate(List<WorldBlob> out, WorldBlob blob) {
+        if (blob == null) {
+            return;
         }
-
-        // 3) Direct world file: <level>/customnpcs/scripts/world_data.json (NBT-JSON).
-        WorldBlob disk = fromWorldDataFile(server);
-        if (disk != null && disk.hasAnything()) {
-            return disk;
+        enrichRivalRawFromBackupKeys(blob);
+        if (blob.hasAnything()) {
+            out.add(blob);
         }
+    }
 
-        // 4) Staff recovery folder.
-        WorldBlob backup = fromBackupDir();
-        if (backup != null && backup.hasAnything()) {
-            return backup;
+    /** Prefer `.backup` CNPC keys when the main key is empty/stub. */
+    private static void enrichRivalRawFromBackupKeys(WorldBlob blob) {
+        if (blob == null) {
+            return;
         }
+        int main = countRivalPlayers(blob.rivalRaw);
+        int mainRich = countRichCnpcPlayers(blob.rivalRaw);
+        String bak = null;
+        if (blob.fileMap != null) {
+            bak = blob.fileMap.get(RIVAL_DB_BAK);
+        }
+        if (!notBlank(bak) && blob.liveStored != null) {
+            bak = storedGet(blob.liveStored, RIVAL_DB_BAK);
+        }
+        int bakPlayers = countRivalPlayers(bak);
+        int bakRich = countRichCnpcPlayers(bak);
+        if (bakPlayers > main || (bakRich > mainRich && bakRich > 0)) {
+            blob.rivalRaw = bak;
+        }
+        // Same for progression
+        int progMain = notBlank(blob.progRaw) ? blob.progRaw.length() : 0;
+        String progBak = blob.fileMap != null ? blob.fileMap.get(RIVAL_PROG_BAK) : null;
+        if (!notBlank(progBak) && blob.liveStored != null) {
+            progBak = storedGet(blob.liveStored, RIVAL_PROG_BAK);
+        }
+        if (notBlank(progBak) && progBak.length() > progMain) {
+            blob.progRaw = progBak;
+        }
+    }
 
-        return compound != null ? compound : live;
+    private static WorldBlob pickRichestBlob(List<WorldBlob> candidates) {
+        WorldBlob best = null;
+        int bestScore = -1;
+        for (WorldBlob b : candidates) {
+            if (b == null) {
+                continue;
+            }
+            int score = blobScore(b);
+            if (score > bestScore) {
+                bestScore = score;
+                best = b;
+            }
+        }
+        return best;
+    }
+
+    /** Higher = better recovery candidate. Empty stubs score near 0. */
+    private static int blobScore(WorldBlob b) {
+        int players = countRivalPlayers(b.rivalRaw);
+        int rich = countRichCnpcPlayers(b.rivalRaw);
+        int spar = 0;
+        if (b.fileMap != null) {
+            for (String k : b.fileMap.keySet()) {
+                if (k != null && k.startsWith("spar.leaderboard.")) {
+                    spar++;
+                }
+            }
+        }
+        if (notBlank(b.sparNames)) {
+            spar = Math.max(spar, b.sparNames.split(",").length);
+        }
+        int prog = notBlank(b.progRaw) ? Math.min(50, b.progRaw.length() / 200) : 0;
+        // Prefer sources with real rival rows heavily over leftover spar-only stubs.
+        return rich * 1000 + players * 10 + spar + prog;
     }
 
     /** Reload CNPC world_data.json into ScriptController.compound (no-op if CNPC missing). */
