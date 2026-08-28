@@ -10,11 +10,16 @@ import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
 import com.dragonminez.common.stats.character.Status;
 import com.dragonminez.common.stats.skills.Skills;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import net.minecraft.core.Holder;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
@@ -25,36 +30,59 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
- * Port of Meditation new.js + ChangeBiomeMED trigger 41.
+ * Port of {@code Meditation new.js} — global rotating trial biomes with
+ * per-biome charge conditions, focus window, and wrong-biome warnings.
  */
 public final class MeditationProgression {
     private static final String SKILL = "meditation";
     private static final int MAX_LEVEL = 10;
     private static final long TRIAL_DURATION_MS = 15L * 60L * 1000L;
+    private static final long TRIAL_WARNING_MS = 5L * 60L * 1000L;
+    private static final long ROTATION_LOCK_MS = 3_000L;
     private static final long FOCUS_WINDOW_MS = 10_000L;
+    private static final long CONDITION_MESSAGE_COOLDOWN_MS = 5_000L;
+    private static final long WRONG_BIOME_DELAY_MS = 10_000L;
+    private static final long WRONG_BIOME_RELEASE_GRACE_MS = 2_500L;
+    private static final long WRONG_BIOME_HARD_COOLDOWN_MS = 60_000L;
     private static final int[] REQUIRED_SECONDS = {
             0, 0, 30, 60, 120, 240, 360, 480, 600, 720, 900
     };
 
+    /** Same trials + condition text as Meditation new.js. */
     private static final Trial[] TRIALS = {
-            new Trial("minecraft:plains", "Plains", "plains"),
-            new Trial("minecraft:desert", "Desert", "desert"),
-            new Trial("minecraft:snowy_plains", "Snowy Plains", "snowy_plains"),
-            new Trial("minecraft:nether_wastes", "Nether Wastes", "nether_wastes"),
-            new Trial("minecraft:warped_forest", "Warped Forest", "warped_forest"),
-            new Trial("minecraft:soul_sand_valley", "Soul Sand Valley", "soul_sand_valley"),
-            new Trial("dragonminez:ajissa_plains", "Ajissa Plains", "ajissa_plains"),
-            new Trial("dragonminez:namekian_rivers", "Namekian Rivers", "namekian_rivers"),
-            new Trial("dragonminez:sacredkai_hills", "Sacred Kai Hills", "sacredkai_hills"),
-            new Trial("dragonminez:hyperbolic_time_chamber", "Hyperbolic Time Chamber", "htc")
+            new Trial("minecraft:plains", "Plains", "plains",
+                    "Sneak while charging Ki below 50%."),
+            new Trial("minecraft:desert", "Desert", "desert",
+                    "Charge Ki during daytime while below 40%."),
+            new Trial("minecraft:snowy_plains", "Snowy Plains", "snowy_plains",
+                    "Sneak above Y 80 while charging Ki."),
+            new Trial("minecraft:nether_wastes", "Nether Wastes", "nether_wastes",
+                    "Charge Ki below Y 64 while below 40%."),
+            new Trial("minecraft:warped_forest", "Warped Forest", "warped_forest",
+                    "Sneak and remain within 1.5 blocks while charging."),
+            new Trial("minecraft:soul_sand_valley", "Soul Sand Valley", "soul_sand_valley",
+                    "Remain within 1 block and avoid damage for 12 seconds while charging."),
+            new Trial("dragonminez:ajissa_plains", "Ajissa Plains", "ajissa_plains",
+                    "Sneak while charging Ki below 50%."),
+            new Trial("dragonminez:namekian_rivers", "Namekian Rivers", "namekian_rivers",
+                    "Charge Ki below 50% while inside the Namekian Rivers biome."),
+            new Trial("dragonminez:sacredkai_hills", "Sacred Kai Hills", "sacredkai_hills",
+                    "Charge above Y 90 without taking damage for 10 seconds."),
+            new Trial("dragonminez:hyperbolic_time_chamber", "Hyperbolic Time Chamber", "htc",
+                    "Remain within 1.5 blocks for 10 seconds while charging below 30%.")
     };
 
-    private static final AtomicInteger GLOBAL_INDEX = new AtomicInteger(0);
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final AtomicInteger GLOBAL_INDEX = new AtomicInteger(-1);
     private static final AtomicLong GLOBAL_END = new AtomicLong(0L);
-    private static final AtomicLong CYCLE_LOCK = new AtomicLong(0L);
+    private static final AtomicBoolean GLOBAL_WARNED = new AtomicBoolean(false);
+    private static final AtomicLong ROTATION_LOCK = new AtomicLong(0L);
+    private static final AtomicBoolean LOADED = new AtomicBoolean(false);
+    private static final AtomicLong LAST_SAVE_AT = new AtomicLong(0L);
 
     private MeditationProgression() {}
 
@@ -66,12 +94,13 @@ public final class MeditationProgression {
         if (!ProgressionConfig.meditation() || server == null) {
             return;
         }
-        // Once per second is enough for 15-minute trial windows.
         if ((tick % 20) != 0) {
             return;
         }
         try {
+            ensureLoaded();
             currentTrial(System.currentTimeMillis());
+            saveIfNeeded(false);
         } catch (Throwable ignored) {
         }
     }
@@ -85,6 +114,7 @@ public final class MeditationProgression {
         }
         ProgressionData.tempPut(player, "med2_next_check", nowMs + 1000L);
         try {
+            ensureLoaded();
             Trial trial = currentTrial(nowMs);
             if (trial == null) {
                 return;
@@ -106,18 +136,24 @@ public final class MeditationProgression {
             String biome = biomeId(player);
             boolean charging = isCharging(data);
             boolean wrong = !biomeMatches(biome, trial.id);
+
+            // Wrong-biome observer is independent — never blocks via side effects alone.
+            updateWrongBiomeWarning(player, trial, wrong, charging, nowMs);
+
             if (wrong) {
                 resetPosition(player);
                 resetFocus(player);
                 return;
             }
+
             float energy = currentEnergy(data);
             float maxEnergy = data.getMaxEnergy();
-            if (maxEnergy <= 0) {
+            if (energy < 0f || maxEnergy <= 0f) {
                 return;
             }
             if (energy >= maxEnergy * 0.995f) {
                 resetFocus(player);
+                tellCondition(player, "§eYour Ki must be below 100% before you can meditate.", nowMs);
                 return;
             }
             if (!passesFocus(player, charging, nowMs)) {
@@ -142,105 +178,151 @@ public final class MeditationProgression {
         // temp cleared by ProgressionSystem
     }
 
-    /** Trigger 41 — advance global meditation trial. */
+    /** Staff / trigger — force a new random trial and announce it. */
     public static String advanceTrial(ServerPlayer actor) {
         if (!ProgressionConfig.meditation()) {
             return "§cMeditation progression is disabled.";
         }
+        ensureLoaded();
         long now = System.currentTimeMillis();
-        if (now < CYCLE_LOCK.get()) {
+        if (now < ROTATION_LOCK.get()) {
             return "§7Trial cycle is on cooldown.";
         }
-        CYCLE_LOCK.set(now + 5000L);
-        int next = (GLOBAL_INDEX.get() + 1) % TRIALS.length;
-        GLOBAL_INDEX.set(next);
-        GLOBAL_END.set(now + TRIAL_DURATION_MS);
-        Trial trial = TRIALS[next];
-        broadcastTrial(trial, true);
+        ROTATION_LOCK.set(now + ROTATION_LOCK_MS);
+        Trial trial = chooseNewTrial(now, true);
         SystemTelemetry.log("progression", "meditation_trial", actor, null,
                 Map.of("biome", trial.id, "name", trial.name));
         return "§aAdvanced meditation trial to §f" + trial.name + "§a.";
     }
 
-    /** Player-facing status + how trials work. */
+    /** Player-facing status + how trials work (script-style). */
     public static String explainTrials() {
         if (!ProgressionConfig.meditation()) {
             return "§cMeditation progression is disabled.";
         }
+        ensureLoaded();
         Trial t = currentTrial(System.currentTimeMillis());
         long rem = Math.max(0L, GLOBAL_END.get() - System.currentTimeMillis());
         StringBuilder sb = new StringBuilder();
-        sb.append("§d§lMeditation Trials\n");
-        sb.append("§7How: charge/restore energy in the §fcurrent global trial biome§7.\n");
-        sb.append("§7Wrong biome = no progress. Stay focused ~10s · avoid damage.\n");
-        sb.append("§7Levels raise while restoring (not at full energy).\n");
+        sb.append("§5§l☯ MEDITATION TRIAL\n");
         if (t == null) {
             sb.append("§7No active trial.");
         } else {
-            sb.append("§7Current trial: §b").append(t.name)
-                    .append(" §8(").append(t.id).append(")\n");
-            sb.append("§7Time left: §f").append(rem / 60000L).append("m ")
-                    .append((rem / 1000L) % 60L).append("s\n");
-            sb.append("§8Condition: §7").append(conditionTip(t)).append("\n");
-            sb.append("§8Trial biomes rotate every 15 minutes (broadcast to all).");
+            sb.append("§7Current Trial: §e").append(t.name).append("\n");
+            sb.append("§7Requirement: §f").append(t.condition).append("\n");
+            sb.append("§7Changes in §f").append(formatDuration(rem)).append("§7.\n");
         }
-        sb.append("\n§e/progression meditation §7— this help");
-        sb.append("\n§8Staff: /progression meditation next §7— rotate + broadcast now");
+        sb.append("§8Charge Ki in the trial biome · stay focused · wrong biome warns after 10s.\n");
+        sb.append("§e/progression meditation §7— this help\n");
+        sb.append("§8Staff: /progression meditation next §7— rotate + broadcast now");
         return sb.toString();
     }
 
     public static String statusLine() {
+        ensureLoaded();
         Trial t = currentTrial(System.currentTimeMillis());
         if (t == null) {
             return "§7No active meditation trial.";
         }
         long rem = Math.max(0L, GLOBAL_END.get() - System.currentTimeMillis());
-        return "§7Trial §f" + t.name + " §8(" + t.id + ") §7" + (rem / 60000L) + "m left"
-                + " §8· §7" + conditionTip(t);
+        return "§7Trial §e" + t.name + " §8· §f" + formatDuration(rem) + " left"
+                + "\n§8" + t.condition;
     }
 
-    private static String conditionTip(Trial trial) {
-        if (trial == null) {
-            return "stand in trial biome while restoring energy";
+    public static int requiredSecondsForLevel(int nextLevel) {
+        if (nextLevel < 0 || nextLevel >= REQUIRED_SECONDS.length) {
+            return 0;
         }
-        return switch (trial.type) {
-            case "desert" -> "Desert — restore energy while charging";
-            case "snowy_plains" -> "Snowy Plains — restore while still";
-            case "nether_wastes" -> "Nether Wastes — restore under fire risk";
-            case "warped_forest" -> "Warped Forest — sneak in a small radius while restoring";
-            case "soul_sand_valley" -> "Soul Sand Valley — restore carefully";
-            case "htc" -> "Hyperbolic Time Chamber biome";
-            case "plains" -> "Plains — stand and restore/charge energy";
-            case "ajissa_plains" -> "Ajissa Plains — stand and restore/charge energy";
-            case "namekian_rivers" -> "Namekian Rivers — stand and restore/charge energy";
-            case "sacredkai_hills" -> "Sacred Kai Hills — stand and restore/charge energy";
-            default -> "stand in " + trial.name + " and restore energy (charge)";
-        };
+        return REQUIRED_SECONDS[nextLevel];
     }
 
-    private static void broadcastTrial(Trial trial, boolean manual) {
+    public static String currentTrialName() {
+        ensureLoaded();
+        Trial t = currentTrial(System.currentTimeMillis());
+        return t == null ? "" : t.name;
+    }
+
+    public static long trialRemainingMs() {
+        ensureLoaded();
+        currentTrial(System.currentTimeMillis());
+        return Math.max(0L, GLOBAL_END.get() - System.currentTimeMillis());
+    }
+
+    private static Trial currentTrial(long now) {
+        int index = GLOBAL_INDEX.get();
+        long end = GLOBAL_END.get();
+        if (index < 0 || index >= TRIALS.length || end <= now) {
+            // Script parity: during the short rotation lock, do not rotate or
+            // keep serving an expired trial — skip until the lock clears.
+            if (now < ROTATION_LOCK.get()) {
+                return null;
+            }
+            ROTATION_LOCK.set(now + ROTATION_LOCK_MS);
+            // Re-check after lock (another thread may have rotated).
+            index = GLOBAL_INDEX.get();
+            end = GLOBAL_END.get();
+            if (index < 0 || index >= TRIALS.length || end <= now) {
+                return chooseNewTrial(now, false);
+            }
+        }
+
+        long remaining = end - now;
+        if (remaining > 0L && remaining <= TRIAL_WARNING_MS && !GLOBAL_WARNED.get()) {
+            GLOBAL_WARNED.set(true);
+            broadcastChat("§5[Meditation Trial] §f" + TRIALS[index].name
+                    + "§7 remains active for §e5 more minutes§7.");
+            saveIfNeeded(true);
+        }
+        return TRIALS[index];
+    }
+
+    /** Script chooseNewTrial — random index, avoid immediate repeat. */
+    private static Trial chooseNewTrial(long now, boolean manual) {
+        int previous = GLOBAL_INDEX.get();
+        int index = ThreadLocalRandom.current().nextInt(TRIALS.length);
+        if (TRIALS.length > 1 && index == previous) {
+            index = (index + 1) % TRIALS.length;
+        }
+        GLOBAL_INDEX.set(index);
+        GLOBAL_END.set(now + TRIAL_DURATION_MS);
+        GLOBAL_WARNED.set(false);
+        Trial trial = TRIALS[index];
+        announceTrial(trial, TRIAL_DURATION_MS, manual);
+        saveIfNeeded(true);
+        return trial;
+    }
+
+    private static void announceTrial(Trial trial, long remaining, boolean manual) {
         if (trial == null) {
             return;
         }
+        broadcastChat("§5§l☯ MEDITATION TRIAL");
+        broadcastChat("§7Current Trial: §e" + trial.name);
+        broadcastChat("§7Requirement: §f" + trial.condition);
+        broadcastChat("§7Changes in §f" + formatDuration(remaining) + "§7."
+                + (manual ? " §a· staff rotated" : ""));
+        // Screen title for visibility (script was chat-only; titles help notice mid-fight).
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) {
             return;
         }
-        String title = "§dMeditation Trial";
-        String subtitle = "§b" + trial.name;
-        String msg = "§d[Meditation] §fNew trial biome: §b" + trial.name
-                + " §7(" + trial.id + ")"
-                + (manual ? " §a· staff rotated" : " §8· auto-rotated");
-        String tip = "§7How: meditate/restore energy there · §e/progression meditation";
-        String cond = "§8" + conditionTip(trial);
         for (ServerPlayer p : server.m_6846_().m_11314_()) {
             if (p == null) {
                 continue;
             }
-            DmzRewards.msg(p, msg);
-            DmzRewards.msg(p, tip);
-            DmzRewards.msg(p, cond);
-            sendTitle(p, title, subtitle);
+            sendTitle(p, "Meditation Trial", trial.name);
+        }
+    }
+
+    private static void broadcastChat(String message) {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            return;
+        }
+        for (ServerPlayer p : server.m_6846_().m_11314_()) {
+            if (p != null) {
+                DmzRewards.msg(p, message);
+            }
         }
     }
 
@@ -250,43 +332,14 @@ public final class MeditationProgression {
                 return;
             }
             player.f_8906_.m_9829_(new ClientboundSetTitlesAnimationPacket(5, 50, 10));
-            player.f_8906_.m_9829_(new ClientboundSetTitleTextPacket(Component.m_237113_(title)));
+            player.f_8906_.m_9829_(new ClientboundSetTitleTextPacket(
+                    Component.m_237113_(title == null ? "" : title.replaceAll("§.", ""))));
             if (subtitle != null && !subtitle.isBlank()) {
-                player.f_8906_.m_9829_(
-                        new ClientboundSetSubtitleTextPacket(Component.m_237113_(subtitle)));
+                player.f_8906_.m_9829_(new ClientboundSetSubtitleTextPacket(
+                        Component.m_237113_(subtitle.replaceAll("§.", ""))));
             }
         } catch (Throwable ignored) {
         }
-    }
-
-    /** Seconds of restore meditation required to reach {@code nextLevel} (2–10). */
-    public static int requiredSecondsForLevel(int nextLevel) {
-        if (nextLevel < 0 || nextLevel >= REQUIRED_SECONDS.length) {
-            return 0;
-        }
-        return REQUIRED_SECONDS[nextLevel];
-    }
-
-    public static String currentTrialName() {
-        Trial t = currentTrial(System.currentTimeMillis());
-        return t == null ? "" : t.name;
-    }
-
-    public static long trialRemainingMs() {
-        currentTrial(System.currentTimeMillis());
-        return Math.max(0L, GLOBAL_END.get() - System.currentTimeMillis());
-    }
-
-    private static Trial currentTrial(long now) {
-        if (GLOBAL_END.get() <= now) {
-            int next = (GLOBAL_INDEX.get() + 1) % TRIALS.length;
-            GLOBAL_INDEX.set(next);
-            GLOBAL_END.set(now + TRIAL_DURATION_MS);
-            // Broadcast automatic rotations so players know where to meditate.
-            broadcastTrial(TRIALS[next], false);
-        }
-        int idx = Math.floorMod(GLOBAL_INDEX.get(), TRIALS.length);
-        return TRIALS[idx];
     }
 
     private static void addProgress(ServerPlayer player, Skills skills, int level, int max) {
@@ -302,7 +355,7 @@ public final class MeditationProgression {
             ProgressionData.storedPut(player, key, need);
             ProgressionData.storedPut(player, "med2_last_level", next);
             DmzSkillUtil.sync(player);
-            DmzRewards.msg(player, "§d[Meditation] Increased to level " + next + ".");
+            DmzRewards.msg(player, "§5§l[Meditation] §r§dIncreased to level " + next + ".");
             SystemTelemetry.log("progression", "meditation_level", player, null,
                     Map.of("level", next));
         } else {
@@ -315,29 +368,108 @@ public final class MeditationProgression {
         if (current < last) {
             for (int level = 2; level <= MAX_LEVEL; level++) {
                 ProgressionData.storedRemove(player, "meditation_restore_progress_to_level_" + level);
+                ProgressionData.storedRemove(player, "meditation_progress_to_level_" + level);
+                ProgressionData.storedRemove(player, "meditation_training_progress_to_level_" + level);
             }
         }
         ProgressionData.storedPut(player, "med2_last_level", current);
     }
 
+    /**
+     * Script focus: progress is allowed during the first {@link #FOCUS_WINDOW_MS} of a charge,
+     * then the player must release and begin charging again.
+     */
     private static boolean passesFocus(ServerPlayer player, boolean charging, long now) {
-        boolean was = "1".equals(ProgressionData.tempGet(player, "med2_focus_was_charging", "0"));
-        if (charging) {
-            if (!was) {
-                ProgressionData.tempPut(player, "med2_focus_was_charging", "1");
-                ProgressionData.tempPut(player, "med2_focus_started", now);
+        boolean wasCharging = "1".equals(ProgressionData.tempGet(player, "med2_focus_was_charging", "0"));
+        boolean waiting = "1".equals(ProgressionData.tempGet(player, "med2_focus_wait_release", "0"));
+        long started = ProgressionData.tempGetLong(player, "med2_focus_started", 0L);
+
+        if (!charging) {
+            ProgressionData.tempPut(player, "med2_focus_was_charging", "0");
+            if (waiting) {
+                ProgressionData.tempPut(player, "med2_focus_wait_release", "0");
+                ProgressionData.tempPut(player, "med2_focus_started", 0L);
             }
-            long started = ProgressionData.tempGetLong(player, "med2_focus_started", now);
-            return now - started >= FOCUS_WINDOW_MS;
+            return false;
         }
-        resetFocus(player);
-        return false;
+
+        if (!wasCharging) {
+            ProgressionData.tempPut(player, "med2_focus_was_charging", "1");
+            ProgressionData.tempPut(player, "med2_focus_wait_release", "0");
+            ProgressionData.tempPut(player, "med2_focus_started", now);
+            return true;
+        }
+
+        if (waiting) {
+            tellCondition(player, "§eRelease Ki and begin charging again to renew your focus.", now);
+            return false;
+        }
+
+        if (started <= 0L) {
+            ProgressionData.tempPut(player, "med2_focus_started", now);
+            return true;
+        }
+
+        if (now - started >= FOCUS_WINDOW_MS) {
+            ProgressionData.tempPut(player, "med2_focus_wait_release", "1");
+            tellCondition(player, "§eRelease Ki and begin charging again to renew your focus.", now);
+            return false;
+        }
+        return true;
     }
 
     private static void resetFocus(ServerPlayer player) {
-        ProgressionData.tempRemove(player, "med2_focus_was_charging");
-        ProgressionData.tempRemove(player, "med2_focus_started");
-        ProgressionData.tempRemove(player, "med2_focus_wait_release");
+        ProgressionData.tempPut(player, "med2_focus_was_charging", "0");
+        ProgressionData.tempPut(player, "med2_focus_wait_release", "0");
+        ProgressionData.tempPut(player, "med2_focus_started", 0L);
+    }
+
+    private static void updateWrongBiomeWarning(
+            ServerPlayer player, Trial trial, boolean wrongBiome, boolean charging, long now
+    ) {
+        if (!wrongBiome) {
+            ProgressionData.tempRemove(player, "med2_wrong_started");
+            ProgressionData.tempRemove(player, "med2_wrong_last_true");
+            ProgressionData.tempPut(player, "med2_wrong_warned", "0");
+            return;
+        }
+        if (charging) {
+            ProgressionData.tempPut(player, "med2_wrong_last_true", now);
+            long started = ProgressionData.tempGetLong(player, "med2_wrong_started", 0L);
+            boolean warned = "1".equals(ProgressionData.tempGet(player, "med2_wrong_warned", "0"));
+            long lastMessage = ProgressionData.tempGetLong(player, "med2_wrong_last_message", 0L);
+            if (started <= 0L) {
+                started = now;
+                ProgressionData.tempPut(player, "med2_wrong_started", started);
+                ProgressionData.tempPut(player, "med2_wrong_warned", "0");
+                warned = false;
+            }
+            if (!warned
+                    && now - started >= WRONG_BIOME_DELAY_MS
+                    && now - lastMessage >= WRONG_BIOME_HARD_COOLDOWN_MS) {
+                DmzRewards.msg(player, "§5§l[Meditation] §r§7Current Trial: §e" + trial.name
+                        + "§7. You are charging in the wrong biome.");
+                ProgressionData.tempPut(player, "med2_wrong_warned", "1");
+                ProgressionData.tempPut(player, "med2_wrong_last_message", now);
+            }
+            return;
+        }
+        long lastTrue = ProgressionData.tempGetLong(player, "med2_wrong_last_true", 0L);
+        if (lastTrue > 0L && now - lastTrue <= WRONG_BIOME_RELEASE_GRACE_MS) {
+            return;
+        }
+        ProgressionData.tempRemove(player, "med2_wrong_started");
+        ProgressionData.tempRemove(player, "med2_wrong_last_true");
+        ProgressionData.tempPut(player, "med2_wrong_warned", "0");
+    }
+
+    private static void tellCondition(ServerPlayer player, String text, long now) {
+        long next = ProgressionData.tempGetLong(player, "med2_message_next", 0L);
+        if (now < next) {
+            return;
+        }
+        ProgressionData.tempPut(player, "med2_message_next", now + CONDITION_MESSAGE_COOLDOWN_MS);
+        DmzRewards.msg(player, "§5§l[Meditation] §r" + text);
     }
 
     private static boolean passesCondition(
@@ -363,9 +495,16 @@ public final class MeditationProgression {
     private static boolean isDay(ServerPlayer player) {
         try {
             ServerLevel level = player.m_284548_();
-            return level != null && level.m_46461_();
+            if (level == null) {
+                return false;
+            }
+            if (level.m_46461_()) {
+                return true;
+            }
+            long dayTime = ((level.m_46468_() % 24000L) + 24000L) % 24000L;
+            return dayTime < 12000L;
         } catch (Throwable ignored) {
-            return true;
+            return false;
         }
     }
 
@@ -454,13 +593,88 @@ public final class MeditationProgression {
     }
 
     private static boolean biomeMatches(String found, String required) {
-        if (found == null || required == null) {
+        String a = normalizeBiomeId(found);
+        String b = normalizeBiomeId(required);
+        if (a.isEmpty() || b.isEmpty()) {
             return false;
         }
-        String a = found.toLowerCase().replace("minecraft:", "");
-        String b = required.toLowerCase().replace("minecraft:", "");
-        return a.equals(b) || found.equalsIgnoreCase(required);
+        if (a.equals(b)) {
+            return true;
+        }
+        String aPath = a.contains(":") ? a.substring(a.indexOf(':') + 1) : a;
+        String bPath = b.contains(":") ? b.substring(b.indexOf(':') + 1) : b;
+        return aPath.equals(bPath);
     }
 
-    private record Trial(String id, String name, String type) {}
+    private static String normalizeBiomeId(String value) {
+        if (value == null || value.isBlank() || "null".equalsIgnoreCase(value)) {
+            return "";
+        }
+        return value.toLowerCase().trim().replace(' ', '_');
+    }
+
+    private static String formatDuration(long milliseconds) {
+        long total = Math.max(0L, milliseconds / 1000L);
+        long minutes = total / 60L;
+        long seconds = total % 60L;
+        if (minutes > 0L) {
+            return minutes + "m " + seconds + "s";
+        }
+        return seconds + "s";
+    }
+
+    private static Path path() {
+        return FMLPaths.CONFIGDIR.get().resolve("legacymechanics").resolve("meditation-trial.json");
+    }
+
+    private static void ensureLoaded() {
+        if (LOADED.get()) {
+            return;
+        }
+        synchronized (LOADED) {
+            if (LOADED.get()) {
+                return;
+            }
+            try {
+                Path file = path();
+                if (Files.isRegularFile(file)) {
+                    String json = Files.readString(file);
+                    Persisted p = GSON.fromJson(json, Persisted.class);
+                    if (p != null) {
+                        GLOBAL_INDEX.set(p.index);
+                        GLOBAL_END.set(p.endAt);
+                        GLOBAL_WARNED.set(p.warned);
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+            LOADED.set(true);
+        }
+    }
+
+    private static void saveIfNeeded(boolean force) {
+        long now = System.currentTimeMillis();
+        if (!force && now - LAST_SAVE_AT.get() < 5_000L) {
+            return;
+        }
+        LAST_SAVE_AT.set(now);
+        try {
+            Path file = path();
+            Files.createDirectories(file.getParent());
+            Persisted p = new Persisted();
+            p.index = GLOBAL_INDEX.get();
+            p.endAt = GLOBAL_END.get();
+            p.warned = GLOBAL_WARNED.get();
+            Files.writeString(file, GSON.toJson(p));
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static final class Persisted {
+        int index = -1;
+        long endAt;
+        boolean warned;
+    }
+
+    private record Trial(String id, String name, String type, String condition) {}
 }

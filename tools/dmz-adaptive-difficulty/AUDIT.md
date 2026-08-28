@@ -1,4 +1,17 @@
-## Combat concept parity (2.3.0)
+## Meditation trial script parity (2.3.1)
+
+`MeditationProgression` aligned to `Meditation new.js`:
+- Random 15-minute trial rotation (avoid immediate repeat), persisted to
+  `config/legacymechanics/meditation-trial.json`
+- Announce block: ☯ MEDITATION TRIAL / Current Trial / Requirement / Changes in…
+- 5-minute remaining warning
+- Focus: progress during first 10s of charge, then release & re-charge
+- Wrong-biome warnings independent of progress (10s delay, 60s hard CD)
+- Same biomes + condition strings as the script
+- Screen title on announce (extra vs chat-only script)
+- CNPC `Meditation new.js` + `ChangeBiomeMED.js` stubbed (Java owns trials)
+
+## Combat concept parity (2.3.1)
 
 Sparring / Rival / Potential audited against CNPC scripts and critical gaps closed:
 
@@ -20,18 +33,18 @@ Sparring / Rival / Potential audited against CNPC scripts and critical gaps clos
 ### Potential
 - Duplicate window checked before method-streak (script order)
 
-## Rival challenge duration picker (2.3.0)
+## Rival challenge duration picker (2.3.1)
 
 GUI challenge flow: pick rival → choose **1–10 minutes** (script parity with
 `/challenge <player> [minutes]`). Forge `challenge_send` accepts `uuid@minutes`.
 
-## Spar movement AFK gate (2.3.0)
+## Spar movement AFK gate (2.3.1)
 
 Restored script parity from Sparring Tp System.js: both fighters must
 **exchange damage AND keep moving**. Hits no longer satisfy the AFK gate alone
 (fixes box-farm standing still). Ki charge / beam clash still hold both gates.
 
-## End portal lag/fly false titles (2.3.0)
+## End portal lag/fly false titles (2.3.1)
 
 Title only when **on ground** in a real portal (silent cancel while flying / mid-air).
 Feet point-samples replace AABB; pulse eject stays silent. CNPC script remains stubbed.
@@ -43,14 +56,14 @@ Scope: CNPC scripts in-repo, remote feature branches, and a live-server script p
 Rival/Spar, progression, Title/Admin inspect, Building TP / End portal guard,
 GhostPartyHeal (melee 2.12.20), inventory GUIs, plus KubeJS packs from
 `server-fixes-consolidated` and `dmz-dino-food-balance`.
-Jars: `LegacyMechanics-2.3.0` / `LegacyMechanicsGUI-2.3.0` / `dmz_mohist_melee_fix-2.12.20`.
+Jars: `LegacyMechanics-2.3.1` / `LegacyMechanicsGUI-2.3.1` / `dmz_mohist_melee_fix-2.12.20`.
 
-## Screen title deny feedback (2.3.0)
+## Screen title deny feedback (2.3.1)
 
 Blocked in-world actions (End portals, race lock) show a **screen title/subtitle**, not chat.
 CNPC `Disable End Portals.js` is a no-op stub so it cannot double-fire chat or false positives.
 
-## CNPC → mod data migration (2.3.0)
+## CNPC → mod data migration (2.3.1)
 
 On first boot with CustomNPCs present, LegacyMechanics imports Rival/Spar/progression
 from overworld CNPC `storeddata`, writes `config/legacymechanics/*.json`, backups raw
@@ -68,10 +81,10 @@ progress keys copy into LM NBT / `sparring.json`, then those CNPC player keys ar
 
 Disable matching Rival/Spar CNPC tabs before or right after cutover to avoid dual writes.
 
-## Script ↔ mod parity pass (2.3.0)
+## Script ↔ mod parity pass (2.3.1)
 
 Full audit of live dump `uploads/live-scripts-2026-08-27/ecmascript/` (32 files)
-against Java. All 30 enabled CNPC tabs remain mapped; gaps closed in 2.3.0:
+against Java. All 30 enabled CNPC tabs remain mapped; gaps closed in 2.3.1:
 
 | Gap | Fix |
 |-----|-----|
