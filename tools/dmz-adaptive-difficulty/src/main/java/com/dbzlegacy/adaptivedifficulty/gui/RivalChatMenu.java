@@ -28,6 +28,10 @@ public final class RivalChatMenu {
             main(player);
         } else if ("list".equalsIgnoreCase(page)) {
             list(player);
+        } else if ("history".equalsIgnoreCase(page) || "past".equalsIgnoreCase(page)) {
+            lines(player, RivalSystem.historyLines(player), "history");
+        } else if ("actions".equalsIgnoreCase(page)) {
+            lines(player, RivalGuiApi.linesForPage(player, "actions"), "actions");
         } else if ("stats".equalsIgnoreCase(page)) {
             stats(player);
         } else if ("challenge".equalsIgnoreCase(page)) {
@@ -69,14 +73,19 @@ public final class RivalChatMenu {
         }
         send(player, Component.m_237113_(""));
         MutableComponent row1 = Component.m_237113_("§7")
-                .m_7220_(btn("§6[List]", "/rival do page list", "Your rivals"))
+                .m_7220_(btn("§6[List]", "/rival do page list", "Current rivals"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§e[Stats]", "/rival do page stats", "Career stats"))
+                .m_7220_(btn("§a[Actions]", "/rival do page actions", "Declare · accept · remove"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§c[Challenge]", "/rival do page challenge", "Challenge controls"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§f[Top]", "/rival do page top", "RP leaderboard"));
         send(player, row1);
+        MutableComponent rowHist = Component.m_237113_("§7")
+                .m_7220_(btn("§8[History]", "/rival do page history", "Previous rivals"))
+                .m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn("§e[Stats]", "/rival do page stats", "Career stats"));
+        send(player, rowHist);
         MutableComponent row2 = Component.m_237113_("§7")
                 .m_7220_(btn("§a[Season]", "/rival do page season", "Season RP"))
                 .m_7220_(Component.m_237113_("  "))

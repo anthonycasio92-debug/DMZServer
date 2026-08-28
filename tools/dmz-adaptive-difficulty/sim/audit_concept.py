@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed concept audit for LegacyMechanics 2.3.2.
+"""Fail-closed concept audit for LegacyMechanics 2.3.3.
 
 Encodes the player's stated balance intent:
   1. Buy tiers 1–7 feel progressively harder (stock 21→200%).
@@ -50,7 +50,7 @@ def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
     lines = [
-        "# LegacyMechanics concept audit (2.3.2)",
+        "# LegacyMechanics concept audit (2.3.3)",
         "",
         "Fail-closed checks against the player's stated balance concept.",
         "",
@@ -232,7 +232,7 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 2.3.2", 'VERSION = "2.3.2"' in mod)
+    check("VERSION 2.3.3", 'VERSION = "2.3.3"' in mod)
     check("formula revision 37", "mix(h, 37L)" in profile)
     check("hpFloorStrength present", "hpFloorStrength" in profile)
     check("T1–T3 god-form floors raised", "case 1 -> 0.56" in profile and "case 3 -> 0.80" in profile)

@@ -63,6 +63,9 @@ public final class ForgeBridge {
     private static Method rivalLinesMethod;
     private static Method rivalHandleDoMethod;
     private static Method rivalPendingDeclareArgsMethod;
+    private static Method rivalCurrentCardsMethod;
+    private static Method rivalPastCardsMethod;
+    private static Method rivalCurrentArgsMethod;
     private static Method sparPlaceholdersMethod;
     private static Method sparLinesMethod;
     private static Method sparHandleDoMethod;
@@ -1005,16 +1008,42 @@ public final class ForgeBridge {
      * Online declarers first. Empty when none / API missing.
      */
     public static List<String> rivalPendingIncomingDeclareArgs(Player player) {
+        return invokeRivalStringList(player, "pendingIncomingDeclareArgs");
+    }
+
+    /** Encoded current-rival cards for head boards (tab-separated fields). */
+    public static List<String> rivalCurrentCards(Player player) {
+        return invokeRivalStringList(player, "currentRivalCards");
+    }
+
+    /** Encoded past-rival cards for history board. */
+    public static List<String> rivalPastCards(Player player) {
+        return invokeRivalStringList(player, "pastRivalCards");
+    }
+
+    /** Current-rival picker args for remove (uuid: preferred). */
+    public static List<String> rivalCurrentArgs(Player player) {
+        return invokeRivalStringList(player, "currentRivalArgs");
+    }
+
+    private static List<String> invokeRivalStringList(Player player, String methodName) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
             return List.of();
         }
         try {
             ensureRivalResolved(nms.getClass().getClassLoader());
-            if (rivalPendingDeclareArgsMethod == null) {
+            Method m = switch (methodName) {
+                case "pendingIncomingDeclareArgs" -> rivalPendingDeclareArgsMethod;
+                case "currentRivalCards" -> rivalCurrentCardsMethod;
+                case "pastRivalCards" -> rivalPastCardsMethod;
+                case "currentRivalArgs" -> rivalCurrentArgsMethod;
+                default -> null;
+            };
+            if (m == null) {
                 return List.of();
             }
-            Object raw = rivalPendingDeclareArgsMethod.invoke(null, nms);
+            Object raw = m.invoke(null, nms);
             if (raw instanceof List<?> list) {
                 List<String> out = new ArrayList<>();
                 for (Object o : list) {
@@ -1028,7 +1057,7 @@ public final class ForgeBridge {
                 return out;
             }
         } catch (Throwable ignored) {
-            // Optional API — fall back to empty (picker shows tip).
+            // Optional API — empty when missing.
         }
         return List.of();
     }
@@ -1479,16 +1508,7 @@ public final class ForgeBridge {
 
     private static synchronized void ensureRivalResolved(ClassLoader preferred) throws Exception {
         if (rivalPlaceholdersMethod != null && rivalLinesMethod != null && rivalHandleDoMethod != null) {
-            // Still try optional pending-args method if a newer jar was hot-swapped.
-            if (rivalPendingDeclareArgsMethod == null) {
-                try {
-                    Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi", preferred);
-                    Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
-                    rivalPendingDeclareArgsMethod = api.getMethod("pendingIncomingDeclareArgs", sp);
-                } catch (Throwable ignored) {
-                    rivalPendingDeclareArgsMethod = null;
-                }
-            }
+            resolveOptionalRivalMethods(preferred);
             return;
         }
         Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi", preferred);
@@ -1496,17 +1516,50 @@ public final class ForgeBridge {
         rivalPlaceholdersMethod = api.getMethod("placeholders", sp);
         rivalLinesMethod = api.getMethod("linesForPage", sp, String.class);
         rivalHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
-        try {
-            rivalPendingDeclareArgsMethod = api.getMethod("pendingIncomingDeclareArgs", sp);
-        } catch (Throwable missing) {
-            rivalPendingDeclareArgsMethod = null;
-        }
+        resolveOptionalRivalMethods(preferred);
         try {
             rivalChatMenuOpen = loadClass(
                     "com.dbzlegacy.adaptivedifficulty.gui.RivalChatMenu", preferred)
                     .getMethod("open", sp, String.class);
         } catch (Throwable missing) {
             rivalChatMenuOpen = null;
+        }
+    }
+
+    private static void resolveOptionalRivalMethods(ClassLoader preferred) {
+        try {
+            Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi", preferred);
+            Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+            if (rivalPendingDeclareArgsMethod == null) {
+                try {
+                    rivalPendingDeclareArgsMethod = api.getMethod("pendingIncomingDeclareArgs", sp);
+                } catch (Throwable ignored) {
+                    rivalPendingDeclareArgsMethod = null;
+                }
+            }
+            if (rivalCurrentCardsMethod == null) {
+                try {
+                    rivalCurrentCardsMethod = api.getMethod("currentRivalCards", sp);
+                } catch (Throwable ignored) {
+                    rivalCurrentCardsMethod = null;
+                }
+            }
+            if (rivalPastCardsMethod == null) {
+                try {
+                    rivalPastCardsMethod = api.getMethod("pastRivalCards", sp);
+                } catch (Throwable ignored) {
+                    rivalPastCardsMethod = null;
+                }
+            }
+            if (rivalCurrentArgsMethod == null) {
+                try {
+                    rivalCurrentArgsMethod = api.getMethod("currentRivalArgs", sp);
+                } catch (Throwable ignored) {
+                    rivalCurrentArgsMethod = null;
+                }
+            }
+        } catch (Throwable ignored) {
+            // Optional.
         }
     }
 

@@ -124,6 +124,169 @@ final class GuiBoardHelper {
     }
 
     /**
+     * Encoded rival card from Forge:
+     * uuid, name, status, tier, rp, wins, losses, draws, deathLosses, deathWins,
+     * online, past, presenceMs, lastBattleAt (tab-separated).
+     */
+    static final class RivalCard {
+        final String uuid;
+        final String name;
+        final String status;
+        final String tier;
+        final int rp;
+        final int wins;
+        final int losses;
+        final int draws;
+        final int deathLosses;
+        final int deathWins;
+        final boolean online;
+        final boolean past;
+        final long presenceMs;
+        final long lastBattleAt;
+
+        RivalCard(
+                String uuid, String name, String status, String tier,
+                int rp, int wins, int losses, int draws,
+                int deathLosses, int deathWins, boolean online, boolean past,
+                long presenceMs, long lastBattleAt
+        ) {
+            this.uuid = uuid == null ? "" : uuid;
+            this.name = name == null || name.isBlank() ? "?" : name;
+            this.status = status == null || status.isBlank() ? "?" : status;
+            this.tier = tier == null || tier.isBlank() ? "?" : tier;
+            this.rp = rp;
+            this.wins = wins;
+            this.losses = losses;
+            this.draws = draws;
+            this.deathLosses = deathLosses;
+            this.deathWins = deathWins;
+            this.online = online;
+            this.past = past;
+            this.presenceMs = Math.max(0L, presenceMs);
+            this.lastBattleAt = Math.max(0L, lastBattleAt);
+        }
+
+        String pickerArg() {
+            if (!uuid.isBlank()) {
+                return "uuid:" + uuid;
+            }
+            return name;
+        }
+    }
+
+    static List<RivalCard> parseRivalCards(List<String> encoded) {
+        List<RivalCard> out = new ArrayList<>();
+        if (encoded == null) {
+            return out;
+        }
+        for (String raw : encoded) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            String[] p = raw.split("\t", -1);
+            if (p.length < 6) {
+                continue;
+            }
+            out.add(new RivalCard(
+                    p[0],
+                    p[1],
+                    p.length > 2 ? p[2] : "?",
+                    p.length > 3 ? p[3] : "?",
+                    parseIntSafe(p.length > 4 ? p[4] : "0"),
+                    parseIntSafe(p.length > 5 ? p[5] : "0"),
+                    parseIntSafe(p.length > 6 ? p[6] : "0"),
+                    parseIntSafe(p.length > 7 ? p[7] : "0"),
+                    parseIntSafe(p.length > 8 ? p[8] : "0"),
+                    parseIntSafe(p.length > 9 ? p[9] : "0"),
+                    "1".equals(p.length > 10 ? p[10] : "0"),
+                    "1".equals(p.length > 11 ? p[11] : "0"),
+                    parseLongSafe(p.length > 12 ? p[12] : "0"),
+                    parseLongSafe(p.length > 13 ? p[13] : "0")
+            ));
+        }
+        return out;
+    }
+
+    static ItemStack rivalHead(RivalCard card) {
+        List<String> lore = new ArrayList<>();
+        if (card.past) {
+            lore.add("&8Previous rivalry");
+        } else {
+            lore.add("&7Status &f" + card.status);
+        }
+        lore.add("&7Tier &f" + card.tier + " &8· &7RP &f" + card.rp);
+        lore.add("&7Record &a" + card.wins + "&7/&c" + card.losses + "&7/&e" + card.draws);
+        if (card.deathWins > 0 || card.deathLosses > 0) {
+            lore.add("&7Deaths &a" + card.deathWins + "W &c" + card.deathLosses + "L");
+        }
+        if (card.presenceMs > 0L) {
+            lore.add("&7Presence &f" + formatDuration(card.presenceMs));
+        }
+        if (card.lastBattleAt > 0L) {
+            long ago = System.currentTimeMillis() - card.lastBattleAt;
+            if (ago >= 0L) {
+                lore.add("&7Last battle &f" + formatDuration(ago) + " &7ago");
+            }
+        }
+        lore.add("");
+        lore.add(card.online ? "&aOnline" : "&8Offline");
+        String title = (card.past ? "&8" : "&f") + card.name;
+        if (!card.past) {
+            title = "&f" + card.name;
+        }
+        if (!card.uuid.isBlank()) {
+            try {
+                java.util.UUID id = java.util.UUID.fromString(card.uuid);
+                Player online = org.bukkit.Bukkit.getPlayer(id);
+                if (online != null) {
+                    return GuiPlayerPicker.head(online, title, lore);
+                }
+                return GuiPlayerPicker.headByUuid(id, card.name, title, lore);
+            } catch (IllegalArgumentException ignored) {
+                // fall through to name
+            }
+        }
+        Player online = org.bukkit.Bukkit.getPlayerExact(card.name);
+        if (online != null) {
+            return GuiPlayerPicker.head(online, title, lore);
+        }
+        return GuiPlayerPicker.headByName(card.name, title, lore);
+    }
+
+    private static int parseIntSafe(String s) {
+        try {
+            return Integer.parseInt(s == null ? "0" : s.trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static long parseLongSafe(String s) {
+        try {
+            return Long.parseLong(s == null ? "0" : s.trim());
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
+    }
+
+    private static String formatDuration(long ms) {
+        long sec = Math.max(0L, ms / 1000L);
+        long days = sec / 86400L;
+        long hours = (sec % 86400L) / 3600L;
+        long mins = (sec % 3600L) / 60L;
+        if (days > 0L) {
+            return days + "d " + hours + "h";
+        }
+        if (hours > 0L) {
+            return hours + "h " + mins + "m";
+        }
+        if (mins > 0L) {
+            return mins + "m";
+        }
+        return sec + "s";
+    }
+
+    /**
      * Split detail lines into per-item lore blocks (skip blank / pure separators).
      * First line may be a section header — kept as its own tile title source.
      */

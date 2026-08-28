@@ -68,6 +68,47 @@ public final class RivalGuiApi {
         return RivalSystem.listLines(player);
     }
 
+    /** Encoded current-rival cards for inventory GUIs (see RivalSystem.currentRivalCards). */
+    public static List<String> currentRivalCards(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableRivalSystem) {
+            return List.of();
+        }
+        return RivalSystem.currentRivalCards(player);
+    }
+
+    /** Encoded past-rival cards for history board. */
+    public static List<String> pastRivalCards(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableRivalSystem) {
+            return List.of();
+        }
+        return RivalSystem.pastRivalCards(player);
+    }
+
+    /**
+     * Current-rival picker args ({@code uuid:&lt;uuid&gt;} preferred) for remove —
+     * only existing rivals, not all online players.
+     */
+    public static List<String> currentRivalArgs(ServerPlayer player) {
+        List<String> out = new ArrayList<>();
+        for (String card : currentRivalCards(player)) {
+            if (card == null || card.isBlank()) {
+                continue;
+            }
+            String[] p = card.split("\t", -1);
+            if (p.length < 2) {
+                continue;
+            }
+            String uuid = p[0] == null ? "" : p[0].trim();
+            String name = p[1] == null ? "" : p[1].trim();
+            if (!uuid.isBlank()) {
+                out.add("uuid:" + uuid);
+            } else if (!name.isBlank()) {
+                out.add(name);
+            }
+        }
+        return out;
+    }
+
     public static List<String> statsLines(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableRivalSystem) {
             return List.of("§cRival system is disabled.");
@@ -314,6 +355,12 @@ public final class RivalGuiApi {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         return switch (p) {
             case "list" -> listLines(player);
+            case "history", "past", "previous" -> RivalSystem.historyLines(player);
+            case "actions" -> List.of(
+                    "§6§lRival Actions",
+                    "§7Declare · Accept · Decline · Remove · Silent",
+                    "§8Manage rivalry relationships here."
+            );
             case "stats", "statistics" -> statsLines(player);
             case "challenge", "challenges" -> challengeLines(player);
             case "top", "leaderboard" -> topLines(player);

@@ -78,6 +78,29 @@ final class GuiPlayerPicker {
         return stack;
     }
 
+    static ItemStack headByUuid(java.util.UUID uuid, String fallbackName, String title, List<String> tip) {
+        ItemStack stack = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) stack.getItemMeta();
+        if (meta != null) {
+            try {
+                OfflinePlayer off = uuid == null
+                        ? Bukkit.getOfflinePlayer(fallbackName == null ? "?" : fallbackName)
+                        : Bukkit.getOfflinePlayer(uuid);
+                meta.setOwningPlayer(off);
+            } catch (Throwable ignored) {
+            }
+            meta.setDisplayName(color(title));
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            for (String line : tip) {
+                lore.add(color(line));
+            }
+            meta.setLore(lore);
+            stack.setItemMeta(meta);
+        }
+        return stack;
+    }
+
     private static String color(String input) {
         return input == null ? "" : input.replace('&', '§');
     }

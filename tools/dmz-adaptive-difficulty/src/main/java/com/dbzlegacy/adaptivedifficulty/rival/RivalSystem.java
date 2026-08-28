@@ -297,7 +297,7 @@ public final class RivalSystem {
         List<String> lines = new ArrayList<>();
         RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
         if (me == null || me.rivals.isEmpty()) {
-            lines.add("§7No rivals yet. §8Open /rival → Declare…");
+            lines.add("§7No rivals yet. §8Open /rival → Actions → Declare…");
             return lines;
         }
         lines.add("§6§lYour Rivals");
@@ -317,6 +317,106 @@ public final class RivalSystem {
             lines.addAll(ProvingGrounds.listLines(link));
         }
         return lines;
+    }
+
+    /**
+     * Encoded rival cards for inventory GUIs (one string per rival).
+     * Fields tab-separated: uuid, name, status, tier, rp, wins, losses, draws,
+     * deathLosses, deathWins, online(0/1), past(0/1), presenceMs, lastBattleAt.
+     */
+    public static List<String> currentRivalCards(ServerPlayer player) {
+        return rivalCards(player, false);
+    }
+
+    /** Encoded past-rival cards (archived on remove). Same format as {@link #currentRivalCards}. */
+    public static List<String> pastRivalCards(ServerPlayer player) {
+        return rivalCards(player, true);
+    }
+
+    /** Chat/history page lines for previous rivals. */
+    public static List<String> historyLines(ServerPlayer player) {
+        List<String> lines = new ArrayList<>();
+        RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
+        if (me == null || me.pastRivals == null || me.pastRivals.isEmpty()) {
+            lines.add("§7No previous rivals yet.");
+            lines.add("§8Removed rivalries appear here.");
+            return lines;
+        }
+        lines.add("§6§lPrevious Rivals");
+        List<Map.Entry<String, RivalLink>> entries = new ArrayList<>(me.pastRivals.entrySet());
+        entries.sort(Comparator.comparingDouble((Map.Entry<String, RivalLink> e) ->
+                e.getValue() == null ? 0.0 : e.getValue().points).reversed());
+        for (Map.Entry<String, RivalLink> e : entries) {
+            RivalLink link = e.getValue();
+            if (link == null) {
+                continue;
+            }
+            RivalConstants.RpTier tier = RivalConstants.tierFor(link.points);
+            String name = link.name == null || link.name.isBlank() ? e.getKey() : link.name;
+            lines.add("§f" + name + " §8[PAST] §" + tier.color() + tier.name()
+                    + " §7RP §f" + (int) link.points
+                    + " §8· §a" + link.wins + "§7/§c" + link.losses + "§7/§e" + link.draws);
+        }
+        return lines;
+    }
+
+    private static List<String> rivalCards(ServerPlayer player, boolean past) {
+        List<String> out = new ArrayList<>();
+        if (player == null) {
+            return out;
+        }
+        RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
+        if (me == null) {
+            return out;
+        }
+        Map<String, RivalLink> map = past ? me.pastRivals : me.rivals;
+        if (map == null || map.isEmpty()) {
+            return out;
+        }
+        MinecraftServer server = player.m_20194_();
+        List<Map.Entry<String, RivalLink>> entries = new ArrayList<>(map.entrySet());
+        entries.sort(Comparator.comparingDouble((Map.Entry<String, RivalLink> e) ->
+                e.getValue() == null ? 0.0 : e.getValue().points).reversed());
+        for (Map.Entry<String, RivalLink> e : entries) {
+            RivalLink link = e.getValue();
+            if (link == null) {
+                continue;
+            }
+            String uuid = link.uuid == null || link.uuid.isBlank() ? e.getKey() : link.uuid;
+            String name = link.name == null || link.name.isBlank() ? uuid : link.name;
+            name = name.replace('\t', ' ').replace('\n', ' ');
+            RivalStatus st = past ? RivalStatus.NONE : link.status();
+            String status = past ? "PAST" : (st == null ? "?" : st.label());
+            RivalConstants.RpTier tier = RivalConstants.tierFor(link.points);
+            boolean online = false;
+            if (server != null && uuid != null && !uuid.isBlank()) {
+                try {
+                    online = server.m_6846_().m_11259_(java.util.UUID.fromString(uuid)) != null;
+                } catch (IllegalArgumentException ignored) {
+                    online = false;
+                }
+            }
+            out.add(String.join("\t",
+                    nullToEmpty(uuid),
+                    nullToEmpty(name),
+                    nullToEmpty(status),
+                    tier == null ? "?" : tier.name(),
+                    String.valueOf((int) link.points),
+                    String.valueOf(link.wins),
+                    String.valueOf(link.losses),
+                    String.valueOf(link.draws),
+                    String.valueOf(link.deathLosses),
+                    String.valueOf(link.deathWins),
+                    online ? "1" : "0",
+                    past ? "1" : "0",
+                    String.valueOf(Math.max(0L, link.presenceMs)),
+                    String.valueOf(Math.max(0L, link.lastBattleAt))));
+        }
+        return out;
+    }
+
+    private static String nullToEmpty(String s) {
+        return s == null ? "" : s;
     }
 
     public static List<String> statsLines(ServerPlayer player) {

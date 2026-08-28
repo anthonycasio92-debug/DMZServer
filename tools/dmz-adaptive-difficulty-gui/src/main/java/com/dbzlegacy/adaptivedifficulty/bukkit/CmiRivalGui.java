@@ -38,18 +38,20 @@ public final class CmiRivalGui {
             }
             switch (p) {
                 case "list" -> openList(player);
-                case "pick_declare" -> openPicker(player, "declare", "list",
+                case "actions" -> openActions(player);
+                case "history", "past", "previous" -> openHistory(player);
+                case "pick_declare" -> openPicker(player, "declare", "actions",
                         "&6Declare Rival", "&7Click to declare this player");
-                case "pick_accept" -> openPendingPicker(player, "accept", "list",
+                case "pick_accept" -> openPendingPicker(player, "accept", "actions",
                         "&aAccept Declare", "&7Click to accept their declare");
-                case "pick_decline" -> openPendingPicker(player, "decline", "list",
+                case "pick_decline" -> openPendingPicker(player, "decline", "actions",
                         "&cDecline Declare", "&7Click to decline their declare");
-                case "pick_remove" -> openPicker(player, "remove", "list",
+                case "pick_remove" -> openCurrentRivalPicker(player, "remove", "actions",
                         "&cRemove Rival", "&7Click to remove this rivalry");
                 case "pick_challenge" -> openChallengeTargetPicker(player);
                 case "pick_spectate" -> openPicker(player, "spectate", "challenge",
                         "&bSpectate", "&7Watch their active challenge");
-                case "pick_silent" -> openPicker(player, "silent", "list",
+                case "pick_silent" -> openPicker(player, "silent", "actions",
                         "&8Silent Rival", "&7Click for silent rivalry");
                 case "stats", "statistics" -> openDetail(player, "stats", "&eRival Stats", Material.BOOK, "progress");
                 case "challenge", "challenges" -> openChallenge(player);
@@ -102,18 +104,22 @@ public final class CmiRivalGui {
         status.addLore(statusLore(ph));
         gui.addButton(status);
 
-        // Main: Status · List · Challenge · Top · Progress · toggles · Hub
+        // Main: List · Actions · Challenge · Top · History · Progress · toggles
         gui.addButton(pageBtn(19, Material.PLAYER_HEAD, "&6List", "list",
-                "&7Your rivals", "&8Declare · accept · remove"));
-        gui.addButton(pageBtn(21, Material.IRON_SWORD, "&cChallenge", "challenge",
+                "&7Current rivals", "&8Heads · hover for stats"));
+        gui.addButton(pageBtn(21, Material.LIME_CONCRETE, "&aActions", "actions",
+                "&7Declare · accept · decline · remove"));
+        gui.addButton(pageBtn(23, Material.IRON_SWORD, "&cChallenge", "challenge",
                 "&7Send · accept · decline · spectate"));
-        gui.addButton(pageBtn(23, Material.GOLDEN_HELMET, "&fTop", "top",
+        gui.addButton(pageBtn(25, Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7RP leaderboard"));
-        gui.addButton(pageBtn(25, Material.WRITABLE_BOOK, "&bProgress", "progress",
+        gui.addButton(pageBtn(29, Material.SKELETON_SKULL, "&8History", "history",
+                "&7Previous rivals", "&8Archived when removed"));
+        gui.addButton(pageBtn(31, Material.WRITABLE_BOOK, "&bProgress", "progress",
                 "&7Season · quests · achs · HOF · journal · title"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "false"));
-        gui.addButton(actionBtn(29,
+        gui.addButton(actionBtn(33,
                 tpOn ? Material.BELL : Material.PAPER,
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 "tpmsg", "toggle", "main",
@@ -125,7 +131,7 @@ public final class CmiRivalGui {
         boolean instinctFeature = "true".equalsIgnoreCase(ph.getOrDefault("instinct_feature", "false"));
         if (instinctFeature) {
             boolean instinctOn = "true".equalsIgnoreCase(ph.getOrDefault("instinct", "false"));
-            gui.addButton(actionBtn(31,
+            gui.addButton(actionBtn(34,
                     instinctOn ? Material.LIME_DYE : Material.GRAY_DYE,
                     instinctOn ? "&aInstinct ON" : "&8Instinct OFF",
                     "instinct", "toggle", "main",
@@ -238,27 +244,23 @@ public final class CmiRivalGui {
         CMIGui gui = base(player, "&8Legacy Mechanics · Rival Admin", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.REDSTONE, "&c&lRival Admin");
         info.lockField();
-        info.addLore(List.of("", "&7Staff tools for the Rival system",
-                "&8Click a button to run the linked command"));
+        info.addLore(List.of("", "&7Staff-only tools",
+                "&8Save · refresh · status · help",
+                "&8Player menus stay on the main Rival GUI"));
         gui.addButton(info);
-        gui.addButton(actionBtn(19, Material.WRITABLE_BOOK, "&aSave",
+        gui.addButton(actionBtn(20, Material.WRITABLE_BOOK, "&aSave",
                 "admin", "save", "admin",
                 List.of("&7Write rivalry-v4 + progression-v4", "&8/rival admin save")));
-        gui.addButton(actionBtn(21, Material.CLOCK, "&eRefresh",
+        gui.addButton(actionBtn(22, Material.CLOCK, "&eRefresh",
                 "admin", "refresh", "admin",
                 List.of("&7Reload stores from disk", "&8/rival admin refresh")));
-        gui.addButton(actionBtn(23, Material.COMPASS, "&bStatus",
+        gui.addButton(actionBtn(24, Material.COMPASS, "&bStatus",
                 "admin", "status", "admin",
                 List.of("&7Enabled + path summary", "&8/rival admin status")));
-        gui.addButton(pageBtn(25, Material.NETHER_STAR, "&fOpen Rival GUI", "main",
-                "&7Player rival menu"));
-        gui.addButton(actionBtn(29, Material.PAPER, "&7Help",
+        gui.addButton(actionBtn(30, Material.PAPER, "&7Admin Help",
                 "admin", "help", "admin",
-                List.of("&7Print admin command list")));
-        gui.addButton(pageBtn(31, Material.GOLDEN_HELMET, "&fRP Top", "top", "&7Leaderboard"));
-        gui.addButton(pageBtn(32, Material.BOOK, "&eStats", "stats", "&7Career stats"));
-        gui.addButton(pageBtn(33, Material.IRON_SWORD, "&cChallenge", "challenge", "&7Challenge board"));
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+                List.of("&7Print admin command list", "&8/rival admin help")));
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Player Rival menu"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
@@ -302,27 +304,97 @@ public final class CmiRivalGui {
     }
 
     private static void openList(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
-        CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD, "&6&lRivals");
+        CMIGui gui = base(player, "&8Legacy Mechanics · Rival List", 5);
+        List<GuiBoardHelper.RivalCard> cards = GuiBoardHelper.parseRivalCards(
+                ForgeBridge.rivalCurrentCards(player));
+        CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD, "&6&lCurrent Rivals");
         info.lockField();
-        List<String> lore = toAmp(ForgeBridge.rivalLines(player, "list"));
-        List<String> withBlank = new ArrayList<>();
-        withBlank.add("");
-        withBlank.addAll(lore.isEmpty() ? List.of("&7No rivals yet.") : lore);
-        info.addLore(withBlank);
+        info.addLore(List.of("",
+                cards.isEmpty() ? "&7No rivals yet." : "&7" + cards.size() + " rival(s)",
+                "&8Hover a head for stats",
+                "&8Manage relationships in Actions"));
         gui.addButton(info);
 
-        gui.addButton(pageBtn(19, Material.LIME_CONCRETE, "&aDeclare…", "pick_declare",
+        if (cards.isEmpty()) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&7No rivals yet");
+            empty.lockField();
+            empty.addLore(List.of("", "&7Use Actions → Declare to start"));
+            gui.addButton(empty);
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
+            for (int i = 0; i < slots.length && i < cards.size(); i++) {
+                ItemStack head = GuiBoardHelper.rivalHead(cards.get(i));
+                CMIGuiButton btn = new CMIGuiButton(slots[i], head);
+                btn.lockField();
+                gui.addButton(btn);
+            }
+        }
+
+        gui.addButton(pageBtn(37, Material.LIME_CONCRETE, "&aActions", "actions",
+                "&7Declare · accept · remove"));
+        gui.addButton(pageBtn(39, Material.SKELETON_SKULL, "&8History", "history",
+                "&7Previous rivals"));
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openActions(Player player) {
+        CMIGui gui = base(player, "&8Legacy Mechanics · Rival Actions", 5);
+        CMIGuiButton info = new CMIGuiButton(4, Material.LIME_CONCRETE, "&a&lRival Actions");
+        info.lockField();
+        info.addLore(toAmp(ForgeBridge.rivalLines(player, "actions")));
+        gui.addButton(info);
+
+        gui.addButton(pageBtn(19, Material.LIME_DYE, "&aDeclare…", "pick_declare",
                 "&7Pick an online player to declare"));
-        gui.addButton(pageBtn(21, Material.YELLOW_CONCRETE, "&eAccept…", "pick_accept",
+        gui.addButton(pageBtn(21, Material.YELLOW_DYE, "&eAccept…", "pick_accept",
                 "&7Pending declares (no name guessing)"));
-        gui.addButton(pageBtn(22, Material.ORANGE_CONCRETE, "&6Decline…", "pick_decline",
+        gui.addButton(pageBtn(22, Material.ORANGE_DYE, "&6Decline…", "pick_decline",
                 "&7Decline a pending declare"));
-        gui.addButton(pageBtn(23, Material.RED_CONCRETE, "&cRemove…", "pick_remove",
-                "&7Pick a rival to remove"));
-        gui.addButton(pageBtn(25, Material.GRAY_CONCRETE, "&8Silent…", "pick_silent",
+        gui.addButton(pageBtn(23, Material.RED_DYE, "&cRemove…", "pick_remove",
+                "&7Pick one of your rivals to remove"));
+        gui.addButton(pageBtn(25, Material.GRAY_DYE, "&8Silent…", "pick_silent",
                 "&7Pick a player for silent rival"));
 
+        gui.addButton(pageBtn(37, Material.PLAYER_HEAD, "&6List", "list",
+                "&7Back to current rivals"));
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openHistory(Player player) {
+        CMIGui gui = base(player, "&8Legacy Mechanics · Rival History", 5);
+        List<GuiBoardHelper.RivalCard> cards = GuiBoardHelper.parseRivalCards(
+                ForgeBridge.rivalPastCards(player));
+        CMIGuiButton info = new CMIGuiButton(4, Material.SKELETON_SKULL, "&8&lPrevious Rivals");
+        info.lockField();
+        info.addLore(List.of("",
+                cards.isEmpty() ? "&7No previous rivals yet." : "&7" + cards.size() + " archived",
+                "&8Removed rivalries appear here",
+                "&8Hover a head for final stats"));
+        gui.addButton(info);
+
+        if (cards.isEmpty()) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&7No history yet");
+            empty.lockField();
+            empty.addLore(List.of("", "&7Removed rivals show here"));
+            gui.addButton(empty);
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
+            for (int i = 0; i < slots.length && i < cards.size(); i++) {
+                ItemStack head = GuiBoardHelper.rivalHead(cards.get(i));
+                CMIGuiButton btn = new CMIGuiButton(slots[i], head);
+                btn.lockField();
+                gui.addButton(btn);
+            }
+        }
+
+        gui.addButton(pageBtn(37, Material.PLAYER_HEAD, "&6List", "list",
+                "&7Current rivals"));
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
@@ -474,6 +546,48 @@ public final class CmiRivalGui {
             empty.lockField();
             empty.addLore(List.of("", "&7Other players must be online"));
             gui.addButton(empty);
+        }
+
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", backPage, "&7Return"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openCurrentRivalPicker(
+            Player player, String action, String backPage, String title, String tip) {
+        CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
+        List<GuiBoardHelper.RivalCard> cards = GuiBoardHelper.parseRivalCards(
+                ForgeBridge.rivalCurrentCards(player));
+        CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD, title);
+        info.lockField();
+        info.addLore(List.of("", "&7Your current rivals", "&8Click a head to " + action));
+        gui.addButton(info);
+
+        if (cards.isEmpty()) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&cNo rivals");
+            empty.lockField();
+            empty.addLore(List.of("", "&7You have no rivals to " + action));
+            gui.addButton(empty);
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
+            for (int i = 0; i < slots.length && i < cards.size(); i++) {
+                GuiBoardHelper.RivalCard card = cards.get(i);
+                ItemStack head = GuiBoardHelper.rivalHead(card);
+                org.bukkit.inventory.meta.ItemMeta meta = head.getItemMeta();
+                if (meta != null) {
+                    List<String> lore = meta.hasLore() && meta.getLore() != null
+                            ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+                    lore.add("");
+                    lore.add(org.bukkit.ChatColor.translateAlternateColorCodes('&', tip));
+                    meta.setLore(lore);
+                    head.setItemMeta(meta);
+                }
+                CMIGuiButton btn = new CMIGuiButton(slots[i], head);
+                btn.lockField();
+                btn.addCommand("rival do " + action + " " + card.pickerArg() + " " + backPage);
+                gui.addButton(btn);
+            }
         }
 
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", backPage, "&7Return"));

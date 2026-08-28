@@ -142,6 +142,9 @@ OPTIONAL_METHODS = {
         ("handleDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
         ("onlinePlayerNames", "ServerPlayer"),
         ("resolveOnline", "ServerPlayer, java.lang.String"),
+        ("currentRivalCards", "ServerPlayer"),
+        ("pastRivalCards", "ServerPlayer"),
+        ("currentRivalArgs", "ServerPlayer"),
     ],
     "com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi": [
         ("placeholders", "ServerPlayer"),
