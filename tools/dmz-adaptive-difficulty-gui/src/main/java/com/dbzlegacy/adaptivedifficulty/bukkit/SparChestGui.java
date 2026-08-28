@@ -28,44 +28,59 @@ public final class SparChestGui implements Listener {
         this.plugin = plugin;
     }
 
+
+    private static boolean inspecting(Player viewer, Player subject) {
+        return viewer != null && subject != null
+                && !viewer.getUniqueId().equals(subject.getUniqueId());
+    }
+
+    private static String invTitle(Player viewer, Player subject, String base) {
+        if (inspecting(viewer, subject)) {
+            return color(base + " · &c" + subject.getName());
+        }
+        return color(base);
+    }
+
     public void open(Player player, String page) {
+        Player viewer = player;
+        Player subject = AdminInspectSessions.resolveSubject(viewer);
         String raw = page == null || page.isBlank() ? "main" : page.trim();
         String p = raw.toLowerCase(Locale.ROOT);
         Inventory inv;
         if (p.startsWith("top_") || p.startsWith("top ") || "top".equals(p) || "leaderboard".equals(p)) {
-            inv = top(player, p);
+            inv = top(viewer, subject, p);
         } else if ("stats".equals(p) || "statistics".equals(p)) {
-            inv = detailBoard(player, "stats", "&eSpar Stats", Material.BOOK);
+            inv = detailBoard(viewer, subject, "stats", "&eSpar Stats", Material.BOOK);
         } else if ("mentor".equals(p)) {
-            inv = mentor(player);
+            inv = mentor(viewer, subject);
         } else if ("pending".equals(p) || "invites".equals(p) || "pendinginvites".equals(p)) {
-            inv = pending(player);
+            inv = pending(viewer, subject);
         } else if ("pick_apprentice".equals(p)) {
-            inv = picker(player, "mentor_invite", "mentor",
+            inv = picker(viewer, subject, "mentor_invite", "mentor",
                     "&aInvite Apprentice", "&7Ask them to be your apprentice");
         } else if ("pick_mentor".equals(p)) {
-            inv = picker(player, "apprentice_invite", "mentor",
+            inv = picker(viewer, subject, "apprentice_invite", "mentor",
                     "&bAsk Mentor", "&7Ask them to be your mentor");
         } else if ("pick_accept".equals(p)) {
-            inv = pendingPicker(player, "mentor_accept", "pending",
+            inv = pendingPicker(viewer, subject, "mentor_accept", "pending",
                     "&aAccept Invite", "&7Accept this mentor invite", true);
         } else if ("pick_decline".equals(p)) {
-            inv = pendingPicker(player, "mentor_decline", "pending",
+            inv = pendingPicker(viewer, subject, "mentor_decline", "pending",
                     "&cDecline Invite", "&7Decline this mentor invite", false);
         } else if ("help".equals(p)) {
-            inv = main(player);
+            inv = main(viewer, subject);
         } else if ("admin".equals(p)) {
-            inv = ForgeBridge.isStaff(player) ? admin(player) : main(player);
+            inv = ForgeBridge.isStaff(viewer) ? admin(viewer, subject) : main(viewer, subject);
         } else {
-            inv = main(player);
+            inv = main(viewer, subject);
         }
-        player.openInventory(inv);
+        viewer.openInventory(inv);
     }
 
-    private Inventory main(Player player) {
-        Map<String, String> ph = ForgeBridge.sparPlaceholders(player);
+    private Inventory main(Player viewer, Player subject) {
+        Map<String, String> ph = ForgeBridge.sparPlaceholders(subject);
         Holder holder = new Holder("main");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Sparring"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Legacy Mechanics · Sparring"));
         holder.bind(inv);
         frame(inv, 45);
 
@@ -80,32 +95,32 @@ public final class SparChestGui implements Listener {
             return inv;
         }
 
-        put(holder, inv, 4, item(Material.GOLDEN_SWORD, "&b&lSparring", statusLore(player, ph)));
+        put(holder, inv, 4, item(Material.GOLDEN_SWORD, "&b&lSparring", statusLore(viewer, ph)));
         // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
-        put(holder, inv, 19, pageBtn(player, Material.PAPER, "&eStats", "&7Your spar stats"),
+        put(holder, inv, 19, pageBtn(viewer, Material.PAPER, "&eStats", "&7Your spar stats"),
                 SlotAction.page("stats"));
-        put(holder, inv, 21, pageBtn(player, Material.GOLDEN_HELMET, "&fTop", "&7Leaderboard"),
+        put(holder, inv, 21, pageBtn(viewer, Material.GOLDEN_HELMET, "&fTop", "&7Leaderboard"),
                 SlotAction.page("top"));
-        put(holder, inv, 23, pageBtn(player, Material.EMERALD, "&bMentor",
+        put(holder, inv, 23, pageBtn(viewer, Material.EMERALD, "&bMentor",
                 "&7Invite · pending · accept · remove"), SlotAction.page("mentor"));
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
         if (session) {
-            put(holder, inv, 31, tipBtn(player, Material.RED_DYE, "&cEnd Session",
+            put(holder, inv, 31, tipBtn(viewer, Material.RED_DYE, "&cEnd Session",
                     List.of("&7End your active spar session")),
                     SlotAction.act("end", "0", "main"));
         }
 
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
-        if (ForgeBridge.isStaff(player)) {
-            put(holder, inv, 37, pageBtn(player, Material.COMMAND_BLOCK, "&cAdmin",
+        if (ForgeBridge.isStaff(viewer)) {
+            put(holder, inv, 37, pageBtn(viewer, Material.COMMAND_BLOCK, "&cAdmin",
                     "&7Save · status · mentor resetcd"), SlotAction.page("admin"));
         }
         return inv;
     }
 
-    private Inventory top(Player player, String pageKey) {
+    private Inventory top(Player viewer, Player subject, String pageKey) {
         String cat = "tp";
         String lower = pageKey.toLowerCase(Locale.ROOT);
         if (lower.startsWith("top_")) {
@@ -117,18 +132,18 @@ public final class SparChestGui implements Listener {
             cat = "tp";
         }
         Holder holder = new Holder("top_" + cat);
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Sparring"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Legacy Mechanics · Sparring"));
         holder.bind(inv);
         frame(inv, 45);
-        List<String> raw = toAmp(ForgeBridge.sparLines(player, "top_" + cat));
+        List<String> raw = toAmp(ForgeBridge.sparLines(subject, "top_" + cat));
         List<GuiBoardHelper.TopEntry> entries = GuiBoardHelper.parseTopEntries(raw);
         List<String> topHeader = new ArrayList<>();
         topHeader.add("");
-        topHeader.addAll(GuiBoardHelper.tips(player,
+        topHeader.addAll(GuiBoardHelper.tips(viewer,
                 "&7Sparring leaderboard", "&8Player heads below · categories on bottom"));
         put(holder, inv, 4, item(Material.GOLDEN_HELMET, "&f&lTop — " + cat, topHeader));
         if (entries.isEmpty()) {
-            put(holder, inv, 13, tipBtn(player, Material.BARRIER, "&7No sparring data yet",
+            put(holder, inv, 13, tipBtn(viewer, Material.BARRIER, "&7No sparring data yet",
                     List.of("&7Spar nearby to earn TP", "&8Categories: TP · Sessions · Perfect")));
         } else {
             // Heads on rows 1–2 only; category buttons sit on row 3 (29/31/33).
@@ -137,29 +152,29 @@ public final class SparChestGui implements Listener {
                 put(holder, inv, slots[i], GuiBoardHelper.topHead(entries.get(i)));
             }
         }
-        put(holder, inv, 29, pageBtn(player, Material.GOLD_INGOT, "&eTP", "&7Total TP"),
+        put(holder, inv, 29, pageBtn(viewer, Material.GOLD_INGOT, "&eTP", "&7Total TP"),
                 SlotAction.page("top_tp"));
-        put(holder, inv, 31, pageBtn(player, Material.CLOCK, "&aSessions", "&7Sessions"),
+        put(holder, inv, 31, pageBtn(viewer, Material.CLOCK, "&aSessions", "&7Sessions"),
                 SlotAction.page("top_sessions"));
-        put(holder, inv, 33, pageBtn(player, Material.NETHER_STAR, "&bPerfect", "&7Perfect spars"),
+        put(holder, inv, 33, pageBtn(viewer, Material.NETHER_STAR, "&bPerfect", "&7Perfect spars"),
                 SlotAction.page("top_perfect"));
-        put(holder, inv, 36, pageBtn(player, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
 
-    private Inventory detailBoard(Player player, String page, String title, Material mat) {
+    private Inventory detailBoard(Player viewer, Player subject, String page, String title, Material mat) {
         Holder holder = new Holder(page);
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Sparring"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Legacy Mechanics · Sparring"));
         holder.bind(inv);
         frame(inv, 45);
-        List<String> lore = toAmp(ForgeBridge.sparLines(player, page));
+        List<String> lore = toAmp(ForgeBridge.sparLines(subject, page));
         if (lore.isEmpty()) {
             lore = List.of("&7Nothing here yet.");
         }
         List<String> detailHeader = new ArrayList<>();
         detailHeader.add("");
-        detailHeader.addAll(GuiBoardHelper.tips(player, "&7One item per entry", "&8Centered below"));
+        detailHeader.addAll(GuiBoardHelper.tips(viewer, "&7One item per entry", "&8Centered below"));
         put(holder, inv, 4, item(mat, title, detailHeader));
         List<GuiBoardHelper.DetailTile> tiles = GuiBoardHelper.detailTiles(lore);
         int[] slots = GuiBoardHelper.centeredSlots(Math.min(tiles.size(), 21));
@@ -170,93 +185,93 @@ public final class SparChestGui implements Listener {
             tip.addAll(tile.lore);
             put(holder, inv, slots[i], item(tile.icon, tile.title, tip));
         }
-        put(holder, inv, 36, pageBtn(player, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
 
-    private Inventory admin(Player player) {
+    private Inventory admin(Player viewer, Player subject) {
         Holder holder = new Holder("admin");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Spar Admin"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Legacy Mechanics · Spar Admin"));
         holder.bind(inv);
         frame(inv, 45);
         put(holder, inv, 4, item(Material.COMMAND_BLOCK, "&c&lSpar Admin",
                 List.of("", "&7Staff-only tools",
                         "&8Save · status · mentor resetcd",
                         "&8Player menus stay on the main Spar GUI")));
-        put(holder, inv, 20, tipBtn(player, Material.WRITABLE_BOOK, "&aSave",
+        put(holder, inv, 20, tipBtn(viewer, Material.WRITABLE_BOOK, "&aSave",
                 List.of("&7Write sparring.json", "&8/spar admin save")),
                 SlotAction.act("admin", "save", "admin"));
-        put(holder, inv, 22, tipBtn(player, Material.COMPASS, "&bStatus",
+        put(holder, inv, 22, tipBtn(viewer, Material.COMPASS, "&bStatus",
                 List.of("&7Enabled + path", "&8/spar admin status")),
                 SlotAction.act("admin", "status", "admin"));
-        put(holder, inv, 24, tipBtn(player, Material.EMERALD, "&eReset Mentor CD",
+        put(holder, inv, 24, tipBtn(viewer, Material.EMERALD, "&eReset Mentor CD",
                 List.of("&7Clear your mentor cooldown", "&8/spar admin mentor resetcd")),
                 SlotAction.act("admin", "resetcd", "admin"));
-        put(holder, inv, 36, pageBtn(player, Material.ARROW, "&7Back", "&7Player Spar menu"), SlotAction.page("main"));
+        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Player Spar menu"), SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
 
-    private Inventory mentor(Player player) {
+    private Inventory mentor(Player viewer, Player subject) {
         Holder holder = new Holder("mentor");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Spar Mentor"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Spar Mentor"));
         holder.bind(inv);
         frame(inv, 45);
         put(holder, inv, 4, item(Material.EMERALD, "&b&lMentor",
-                prependBlank(toAmp(ForgeBridge.sparLines(player, "mentor")))));
-        put(holder, inv, 19, pageBtn(player, Material.LIME_DYE, "&aInvite apprentice…",
+                prependBlank(toAmp(ForgeBridge.sparLines(subject, "mentor")))));
+        put(holder, inv, 19, pageBtn(viewer, Material.LIME_DYE, "&aInvite apprentice…",
                 "&7Pick a player to mentor"), SlotAction.page("pick_apprentice"));
-        put(holder, inv, 20, pageBtn(player, Material.LIGHT_BLUE_DYE, "&bAsk mentor…",
+        put(holder, inv, 20, pageBtn(viewer, Material.LIGHT_BLUE_DYE, "&bAsk mentor…",
                 "&7Pick a player to ask as mentor"), SlotAction.page("pick_mentor"));
-        Map<String, String> ph = ForgeBridge.sparPlaceholders(player);
+        Map<String, String> ph = ForgeBridge.sparPlaceholders(subject);
         int pendingCount = 0;
         try {
             pendingCount = Integer.parseInt(ph.getOrDefault("pending_invites", "0"));
         } catch (NumberFormatException ignored) {
             pendingCount = 0;
         }
-        put(holder, inv, 21, pageBtn(player, Material.CLOCK,
+        put(holder, inv, 21, pageBtn(viewer, Material.CLOCK,
                 pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
                 "&7View incoming + outgoing invites",
                 pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"),
                 SlotAction.page("pending"));
-        put(holder, inv, 22, pageBtn(player, Material.YELLOW_DYE, "&eAccept…",
+        put(holder, inv, 22, pageBtn(viewer, Material.YELLOW_DYE, "&eAccept…",
                 "&7Accept an incoming mentor invite"), SlotAction.page("pick_accept"));
-        put(holder, inv, 23, pageBtn(player, Material.ORANGE_DYE, "&6Decline…",
+        put(holder, inv, 23, pageBtn(viewer, Material.ORANGE_DYE, "&6Decline…",
                 "&7Decline an incoming mentor invite"), SlotAction.page("pick_decline"));
-        put(holder, inv, 25, tipBtn(player, Material.RED_DYE, "&cRemove bond",
+        put(holder, inv, 25, tipBtn(viewer, Material.RED_DYE, "&cRemove bond",
                 List.of("&7Leave mentor or release apprentice")),
                 SlotAction.act("mentor", "remove", "mentor"));
-        put(holder, inv, 36, pageBtn(player, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
 
-    private Inventory pending(Player player) {
+    private Inventory pending(Player viewer, Player subject) {
         Holder holder = new Holder("pending");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Pending Mentor Invites"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Pending Mentor Invites"));
         holder.bind(inv);
         frame(inv, 45);
         List<GuiBoardHelper.PendingInvite> invites = GuiBoardHelper.parsePendingInvites(
-                ForgeBridge.sparPendingMentorInviteCards(player));
+                ForgeBridge.sparPendingMentorInviteCards(subject));
         List<String> pendingHeader = new ArrayList<>();
         pendingHeader.add("");
         pendingHeader.add(invites.isEmpty() ? "&7No pending invites." : "&7" + invites.size() + " pending");
-        pendingHeader.addAll(GuiBoardHelper.tips(player,
+        pendingHeader.addAll(GuiBoardHelper.tips(viewer,
                 "&a◀ Incoming &7= they invited you",
                 "&6▶ Outgoing &7= waiting on them"));
         put(holder, inv, 4, item(Material.YELLOW_DYE, "&e&lPending Invites", pendingHeader));
         if (invites.isEmpty()) {
-            put(holder, inv, 22, tipBtn(player, Material.BARRIER, "&7No pending invites",
+            put(holder, inv, 22, tipBtn(viewer, Material.BARRIER, "&7No pending invites",
                     List.of("&7Invite apprentice or ask a mentor",
                             "&7Incoming shows when they invite you")));
         } else {
             int[] slots = GuiBoardHelper.centeredSlots(Math.min(invites.size(), 21));
             for (int i = 0; i < slots.length && i < invites.size(); i++) {
                 GuiBoardHelper.PendingInvite invite = invites.get(i);
-                ItemStack head = GuiBoardHelper.pendingInviteHead(player, invite);
+                ItemStack head = GuiBoardHelper.pendingInviteHead(viewer, invite);
                 if (invite.incoming) {
                     put(holder, inv, slots[i], head,
                             SlotAction.act("mentor_accept", invite.pickerArg(), "pending"));
@@ -266,30 +281,30 @@ public final class SparChestGui implements Listener {
                 }
             }
         }
-        put(holder, inv, 37, pageBtn(player, Material.YELLOW_DYE, "&eAccept…",
+        put(holder, inv, 37, pageBtn(viewer, Material.YELLOW_DYE, "&eAccept…",
                 "&7Accept an incoming invite"), SlotAction.page("pick_accept"));
-        put(holder, inv, 38, pageBtn(player, Material.ORANGE_DYE, "&6Decline…",
+        put(holder, inv, 38, pageBtn(viewer, Material.ORANGE_DYE, "&6Decline…",
                 "&7Decline an incoming invite"), SlotAction.page("pick_decline"));
-        put(holder, inv, 39, pageBtn(player, Material.EMERALD, "&bMentor",
+        put(holder, inv, 39, pageBtn(viewer, Material.EMERALD, "&bMentor",
                 "&7Full mentor menu"), SlotAction.page("mentor"));
-        put(holder, inv, 36, pageBtn(player, Material.ARROW, "&7Back", "&7Mentor"), SlotAction.page("mentor"));
+        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Mentor"), SlotAction.page("mentor"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
 
     /** Accept/decline picker — only incoming mentor invites. */
     private Inventory pendingPicker(
-            Player player, String action, String backPage, String title, String tip, boolean acceptMode) {
+            Player viewer, Player subject, String action, String backPage, String title, String tip, boolean acceptMode) {
         Holder holder = new Holder("pick_" + (acceptMode ? "accept" : "decline"));
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Spar Mentor"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Spar Mentor"));
         holder.bind(inv);
         frame(inv, 45);
         List<String> pendingPickHeader = new ArrayList<>();
         pendingPickHeader.add("");
         pendingPickHeader.add("&7Incoming mentor invites");
-        pendingPickHeader.addAll(GuiBoardHelper.tips(player, "&8Click a head to " + (acceptMode ? "accept" : "decline")));
+        pendingPickHeader.addAll(GuiBoardHelper.tips(viewer, "&8Click a head to " + (acceptMode ? "accept" : "decline")));
         put(holder, inv, 4, item(Material.PLAYER_HEAD, title, pendingPickHeader));
-        List<String> pending = ForgeBridge.sparPendingIncomingMentorArgs(player);
+        List<String> pending = ForgeBridge.sparPendingIncomingMentorArgs(subject);
         int placed = 0;
         for (String arg : pending) {
             if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
@@ -298,7 +313,7 @@ public final class SparChestGui implements Listener {
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
             String display;
             ItemStack head;
-            List<String> tipLore = new ArrayList<>(GuiBoardHelper.tips(player, tip));
+            List<String> tipLore = new ArrayList<>(GuiBoardHelper.tips(viewer, tip));
             if (arg.regionMatches(true, 0, "uuid:", 0, 5)) {
                 try {
                     java.util.UUID id = java.util.UUID.fromString(arg.substring(5).trim());
@@ -328,28 +343,28 @@ public final class SparChestGui implements Listener {
             put(holder, inv, slot, head, SlotAction.act(action, arg, backPage));
         }
         if (placed == 0) {
-            put(holder, inv, 22, tipBtn(player, Material.BARRIER,
+            put(holder, inv, 22, tipBtn(viewer, Material.BARRIER,
                     acceptMode ? "&eNothing to accept" : "&eNo pending invites",
                     List.of("&7When someone invites you,",
                             "&7they appear here.")));
         }
-        put(holder, inv, 36, pageBtn(player, Material.ARROW, "&7Back", "&7Return"), SlotAction.page(backPage));
+        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page(backPage));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
 
     private Inventory picker(
-            Player player, String action, String backPage, String title, String tip) {
+            Player viewer, Player subject, String action, String backPage, String title, String tip) {
         Holder holder = new Holder("pick_" + action);
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Sparring"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Legacy Mechanics · Sparring"));
         holder.bind(inv);
         frame(inv, 45);
         List<String> pickerHeader = new ArrayList<>();
         pickerHeader.add("");
         pickerHeader.add("&7Online players");
-        pickerHeader.addAll(GuiBoardHelper.tips(player, "&8Click a head to confirm"));
+        pickerHeader.addAll(GuiBoardHelper.tips(viewer, "&8Click a head to confirm"));
         put(holder, inv, 4, item(Material.PLAYER_HEAD, title, pickerHeader));
-        List<Player> online = GuiPlayerPicker.onlineExcept(player);
+        List<Player> online = GuiPlayerPicker.onlineExcept(subject);
         int placed = 0;
         for (Player other : online) {
             if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
@@ -357,14 +372,14 @@ public final class SparChestGui implements Listener {
             }
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
             put(holder, inv, slot,
-                    GuiPlayerPicker.head(other, "&f" + other.getName(), GuiBoardHelper.tips(player, tip)),
+                    GuiPlayerPicker.head(other, "&f" + other.getName(), GuiBoardHelper.tips(viewer, tip)),
                     SlotAction.act(action, "uuid:" + other.getUniqueId(), backPage));
         }
         if (placed == 0) {
-            put(holder, inv, 22, tipBtn(player, Material.BARRIER, "&cNo one online",
+            put(holder, inv, 22, tipBtn(viewer, Material.BARRIER, "&cNo one online",
                     List.of("&7Other players must be online")));
         }
-        put(holder, inv, 36, pageBtn(player, Material.ARROW, "&7Back", "&7Return"), SlotAction.page(backPage));
+        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page(backPage));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -475,8 +490,9 @@ public final class SparChestGui implements Listener {
                 ? "main" : slotAction.returnPage;
         final String action = slotAction.action;
         final String arg = slotAction.arg == null || slotAction.arg.isBlank() ? "0" : slotAction.arg;
+        final Player subject = AdminInspectSessions.resolveSubject(player);
         Bukkit.getScheduler().runTask(plugin, () -> {
-            String msg = ForgeBridge.sparHandleDo(player, action, arg, ret);
+            String msg = ForgeBridge.sparHandleDo(subject, action, arg, ret);
             if (msg != null && !msg.isBlank()) {
                 for (String line : msg.split("\n")) {
                     if (line == null || line.isBlank()) {

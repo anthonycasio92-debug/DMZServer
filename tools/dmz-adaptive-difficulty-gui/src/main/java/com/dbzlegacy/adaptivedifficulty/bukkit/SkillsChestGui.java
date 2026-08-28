@@ -27,27 +27,44 @@ public final class SkillsChestGui implements Listener {
         this.plugin = plugin;
     }
 
+
+    private static boolean inspecting(Player viewer, Player subject) {
+        return viewer != null && subject != null
+                && !viewer.getUniqueId().equals(subject.getUniqueId());
+    }
+
+    private static String invTitle(Player viewer, Player subject, String base) {
+        if (inspecting(viewer, subject)) {
+            return color(base + " · &c" + subject.getName());
+        }
+        return color(base);
+    }
+
     public void open(Player player, String page) {
+        Player viewer = player;
+        Player subject = AdminInspectSessions.resolveSubject(viewer);
         String p = page == null || page.isBlank() ? "core" : page.toLowerCase(Locale.ROOT);
         Inventory inv = switch (p) {
             // Advanced folded into Saga — alias keeps old links working.
             case "advanced", "dmz", "saga" ->
-                    pageInv(player, "saga", "&dSaga", Material.AMETHYST_SHARD);
-            case "help" -> pageInv(player, "core", "&aNatural", Material.FEATHER);
-            case "natural" -> pageInv(player, "core", "&aNatural", Material.FEATHER);
-            default -> pageInv(player, "core", "&aNatural", Material.FEATHER);
+                    pageInv(viewer, subject, "saga", "&dSaga", Material.AMETHYST_SHARD);
+            case "help" -> pageInv(viewer, subject, "core", "&aNatural", Material.FEATHER);
+            case "natural" -> pageInv(viewer, subject, "core", "&aNatural", Material.FEATHER);
+            default -> pageInv(viewer, subject, "core", "&aNatural", Material.FEATHER);
         };
-        player.openInventory(inv);
+        viewer.openInventory(inv);
     }
 
-    private Inventory pageInv(Player player, String page, String title, Material mat) {
-        Map<String, String> ph = ForgeBridge.skillsPlaceholders(player);
-        boolean skillCheckUi = ForgeBridge.inSkillCheckSession(player);
-        boolean staffAdmin = ForgeBridge.isStaff(player) && !skillCheckUi;
+    private Inventory pageInv(Player viewer, Player subject, String page, String title, Material mat) {
+        Map<String, String> ph = ForgeBridge.skillsPlaceholders(subject);
+        // SkillCheck session stays on viewer; staff admin browser gated on viewer staff.
+        boolean skillCheckUi = ForgeBridge.inSkillCheckSession(viewer);
+        boolean staffAdmin = ForgeBridge.isStaff(viewer) && !skillCheckUi;
         Holder holder = new Holder(page);
-        Inventory inv = Bukkit.createInventory(holder, 54, color(skillCheckUi
+        String baseTitle = skillCheckUi
                 ? "&8Legacy Mechanics · Skill Check"
-                : staffAdmin ? "&8Legacy Mechanics · Skills (Admin)" : "&8Legacy Mechanics · Skills"));
+                : staffAdmin ? "&8Legacy Mechanics · Skills (Admin)" : "&8Legacy Mechanics · Skills";
+        Inventory inv = Bukkit.createInventory(holder, 54, invTitle(viewer, subject, baseTitle));
         holder.bind(inv);
         frameOnly(inv, 54);
 
@@ -62,7 +79,7 @@ public final class SkillsChestGui implements Listener {
             return inv;
         }
 
-        List<String> raw = toAmp(ForgeBridge.skillsLines(player, page));
+        List<String> raw = toAmp(ForgeBridge.skillsLines(subject, page));
         if ("help".equals(page)) {
             put(holder, inv, 4, item(mat, title, prependBlank(raw.isEmpty()
                     ? List.of("&7Use Natural · Saga tabs.") : raw)));
@@ -73,7 +90,7 @@ public final class SkillsChestGui implements Listener {
             headerLore.addAll(split.header.isEmpty()
                     ? List.of("&7DMZ stats unavailable") : split.header);
             headerLore.add("");
-            headerLore.addAll(GuiBoardHelper.tips(player,
+            headerLore.addAll(GuiBoardHelper.tips(viewer,
                     skillCheckUi ? "&eSkill Check · one item per skill" : "&8One item per skill below"));
             // Header uses stats icon (paper) — never a second book beside the tabs.
             put(holder, inv, 4, item(Material.PAPER,
@@ -97,20 +114,20 @@ public final class SkillsChestGui implements Listener {
                 put(holder, inv, slot, item(icon, name, lore));
             }
             if (placed == 0) {
-                put(holder, inv, 22, tipBtn(player, Material.BARRIER, "&cNo skills listed",
+                put(holder, inv, 22, tipBtn(viewer, Material.BARRIER, "&cNo skills listed",
                         List.of("&7Bridge returned no skill rows")));
             }
         }
 
-        put(holder, inv, 45, pageBtn(player, Material.FEATHER, "&aNatural",
+        put(holder, inv, 45, pageBtn(viewer, Material.FEATHER, "&aNatural",
                         "&7Potential · Flight · Meditation · Jump · Sprint"),
                 SlotAction.page("core"));
-        put(holder, inv, 46, pageBtn(player, Material.AMETHYST_SHARD, "&dSaga",
+        put(holder, inv, 46, pageBtn(viewer, Material.AMETHYST_SHARD, "&dSaga",
                         "&7Saga unlocks · Defense Pen · Healing Red · Ki skills"),
                 SlotAction.page("saga"));
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
         if (staffAdmin) {
-            put(holder, inv, 51, tipBtn(player, Material.EXPERIENCE_BOTTLE, "&dProgression",
+            put(holder, inv, 51, tipBtn(viewer, Material.EXPERIENCE_BOTTLE, "&dProgression",
                     List.of("&7Back to progression")), SlotAction.cmd("lm do open progression"));
         }
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());

@@ -40,9 +40,14 @@ public final class HubChestGui implements Listener {
     }
 
     private Inventory main(Player player) {
-        Map<String, String> ph = ForgeBridge.hubPlaceholders(player);
+        Player subject = AdminInspectSessions.resolveSubject(player);
+        boolean inspecting = subject != null
+                && !subject.getUniqueId().equals(player.getUniqueId());
+        Map<String, String> ph = ForgeBridge.hubPlaceholders(subject);
         Holder holder = new Holder("main");
-        Inventory inv = Bukkit.createInventory(holder, 54, color("&8Legacy Mechanics"));
+        Inventory inv = Bukkit.createInventory(holder, 54, color(inspecting
+                ? "&8Legacy Mechanics · &c" + subject.getName()
+                : "&8Legacy Mechanics"));
         holder.bind(inv);
         frameOnly(inv, 54);
 
@@ -57,6 +62,11 @@ public final class HubChestGui implements Listener {
 
         List<String> hubHeaderLore = new ArrayList<>();
         hubHeaderLore.add("");
+        if (inspecting) {
+            hubHeaderLore.add("&cInspecting &f" + subject.getName());
+            hubHeaderLore.add("&7You see and edit their LM systems.");
+            hubHeaderLore.add("");
+        }
         hubHeaderLore.addAll(GuiBoardHelper.tips(player, "&7Choose a system", "&8/lm"));
         put(holder, inv, 4, item(Material.NETHER_STAR, "&f&lLegacy Mechanics", hubHeaderLore));
 

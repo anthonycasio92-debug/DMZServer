@@ -28,14 +28,29 @@ public final class PrestigeChestGui implements Listener {
         this.plugin = plugin;
     }
 
-    public void open(Player player, String page) {
-        player.openInventory(main(player));
+
+    private static boolean inspecting(Player viewer, Player subject) {
+        return viewer != null && subject != null
+                && !viewer.getUniqueId().equals(subject.getUniqueId());
     }
 
-    private Inventory main(Player player) {
-        Map<String, String> ph = ForgeBridge.prestigePlaceholders(player);
+    private static String invTitle(Player viewer, Player subject, String base) {
+        if (inspecting(viewer, subject)) {
+            return color(base + " · &c" + subject.getName());
+        }
+        return color(base);
+    }
+
+    public void open(Player player, String page) {
+        Player viewer = player;
+        Player subject = AdminInspectSessions.resolveSubject(viewer);
+        viewer.openInventory(main(viewer, subject));
+    }
+
+    private Inventory main(Player viewer, Player subject) {
+        Map<String, String> ph = ForgeBridge.prestigePlaceholders(subject);
         Holder holder = new Holder("main");
-        Inventory inv = Bukkit.createInventory(holder, 36, color("&8Legacy Mechanics · Prestige"));
+        Inventory inv = Bukkit.createInventory(holder, 36, invTitle(viewer, subject, "&8Legacy Mechanics · Prestige"));
         holder.bind(inv);
         frame(inv, 36);
 
@@ -46,25 +61,25 @@ public final class PrestigeChestGui implements Listener {
                     !bridgeOk ? "&c&lUNAVAILABLE" : "&c&lPRESTIGE DISABLED",
                     unavailableLore(bridgeOk)));
             put(holder, inv, 27, hubBtn(), SlotAction.cmd("lm"));
-            put(holder, inv, 31, tipBtn(player, Material.EXPERIENCE_BOTTLE, "&dProgression",
+            put(holder, inv, 31, tipBtn(viewer, Material.EXPERIENCE_BOTTLE, "&dProgression",
                     List.of("&7Back to progression")), SlotAction.cmd("progression"));
             put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
             return inv;
         }
 
         put(holder, inv, 4, item(Material.NETHER_STAR, "&6&lPrestige",
-                prependBlank(toAmp(ForgeBridge.prestigeLines(player, "main")))));
+                prependBlank(toAmp(ForgeBridge.prestigeLines(subject, "main")))));
         boolean ready = "true".equalsIgnoreCase(ph.getOrDefault("ready", "false"));
         List<String> confirmLore = new ArrayList<>();
         confirmLore.add("");
-        confirmLore.addAll(GuiBoardHelper.tips(player, "&7Click to prestige (confirm within 10s)"));
+        confirmLore.addAll(GuiBoardHelper.tips(viewer, "&7Click to prestige (confirm within 10s)"));
         confirmLore.add("&8Resets DMZ stats · awards held Prestige");
         put(holder, inv, 22, item(
                 ready ? Material.LIME_CONCRETE : Material.ORANGE_CONCRETE,
                 ready ? "&aConfirm Prestige" : "&eAttempt Prestige",
                 confirmLore), SlotAction.act("confirm", "0", "main"));
         put(holder, inv, 27, hubBtn(), SlotAction.cmd("lm"));
-        put(holder, inv, 31, tipBtn(player, Material.EXPERIENCE_BOTTLE, "&dProgression",
+        put(holder, inv, 31, tipBtn(viewer, Material.EXPERIENCE_BOTTLE, "&dProgression",
                 List.of("&7Back to progression")), SlotAction.cmd("progression"));
         put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
         return inv;
@@ -141,12 +156,18 @@ public final class PrestigeChestGui implements Listener {
         }
         final String ret = slotAction.returnPage == null || slotAction.returnPage.isBlank()
                 ? "main" : slotAction.returnPage;
-        final String cmd = "prestige do " + slotAction.action
-                + (slotAction.arg == null || slotAction.arg.isBlank() ? " 0" : " " + slotAction.arg)
-                + " " + ret;
+        final String action = slotAction.action;
+        final String arg = slotAction.arg == null || slotAction.arg.isBlank() ? "0" : slotAction.arg;
+        final Player subject = AdminInspectSessions.resolveSubject(player);
         Bukkit.getScheduler().runTask(plugin, () -> {
-            player.closeInventory();
-            player.performCommand(cmd);
+            String msg = ForgeBridge.prestigeHandleDo(subject, action, arg, ret);
+            if (msg != null && !msg.isBlank()) {
+                if (!msg.startsWith("§")) {
+                    msg = "§a" + msg;
+                }
+                player.sendMessage(msg);
+            }
+            open(player, ret);
         });
     }
 
