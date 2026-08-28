@@ -1,3 +1,8 @@
+## Rival/Spar CMI clicks (2.3.26)
+
+- CMI Rival/Spar buttons use Bukkit-only `/lmdo` (Mohist was routing `/rival do`/`/spar do` to Forge's incomplete tree → silent no-op).
+- Forge `/rival do` and `/spar do` expanded to full `handleDo` + greedy args as belt-and-suspenders.
+
 ## Player GUIs open to all (2.3.25)
 
 - `/difficulty` (and `/lm` `/rival` `/spar` / meditation) no longer gate on `dmzdiff.gui` — Mohist was denying non-ops.

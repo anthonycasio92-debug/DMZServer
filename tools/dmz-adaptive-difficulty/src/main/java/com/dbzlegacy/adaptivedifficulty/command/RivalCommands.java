@@ -9,6 +9,8 @@ import com.dbzlegacy.adaptivedifficulty.rival.RivalSpectator;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalProgression;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalStore;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalSystem;
+import com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi;
+import com.dbzlegacy.adaptivedifficulty.gui.RivalMenu;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -63,49 +65,19 @@ public final class RivalCommands {
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("do")
-                        .then(Commands.m_82127_("page")
-                                .then(Commands.m_82129_("page", StringArgumentType.word())
-                                        .executes(ctx -> gui(
+                        // Full GUI surface via RivalGuiApi.handleDo — greedy rest so uuid:/@ pages work.
+                        // (Old tree only knew page/tpmsg/instinct/challenge and silently no-oped CMI clicks.)
+                        .then(Commands.m_82129_("action", StringArgumentType.word())
+                                .executes(ctx -> guiDo(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "action"),
+                                        "",
+                                        "main"))
+                                .then(Commands.m_82129_("rest", StringArgumentType.greedyString())
+                                        .executes(ctx -> guiDoRest(
                                                 ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "page")))))
-                        .then(Commands.m_82127_("tpmsg")
-                                .then(Commands.m_82127_("toggle")
-                                        .then(Commands.m_82129_("page", StringArgumentType.word())
-                                                .executes(ctx -> {
-                                                    tpmsgToggle(ctx.getSource());
-                                                    return gui(ctx.getSource(),
-                                                            StringArgumentType.getString(ctx, "page"));
-                                                }))))
-                        .then(Commands.m_82127_("instinct")
-                                .then(Commands.m_82127_("toggle")
-                                        .then(Commands.m_82129_("page", StringArgumentType.word())
-                                                .executes(ctx -> {
-                                                    instinctToggle(ctx.getSource());
-                                                    return gui(ctx.getSource(),
-                                                            StringArgumentType.getString(ctx, "page"));
-                                                }))))
-                        .then(Commands.m_82127_("challenge")
-                                .then(Commands.m_82127_("accept")
-                                        .then(Commands.m_82129_("page", StringArgumentType.word())
-                                                .executes(ctx -> {
-                                                    challengeAccept(ctx.getSource());
-                                                    return gui(ctx.getSource(),
-                                                            StringArgumentType.getString(ctx, "page"));
-                                                })))
-                                .then(Commands.m_82127_("decline")
-                                        .then(Commands.m_82129_("page", StringArgumentType.word())
-                                                .executes(ctx -> {
-                                                    challengeDecline(ctx.getSource());
-                                                    return gui(ctx.getSource(),
-                                                            StringArgumentType.getString(ctx, "page"));
-                                                })))
-                                .then(Commands.m_82127_("cancel")
-                                        .then(Commands.m_82129_("page", StringArgumentType.word())
-                                                .executes(ctx -> {
-                                                    challengeCancel(ctx.getSource());
-                                                    return gui(ctx.getSource(),
-                                                            StringArgumentType.getString(ctx, "page"));
-                                                })))))
+                                                StringArgumentType.getString(ctx, "action"),
+                                                StringArgumentType.getString(ctx, "rest"))))))
                 .then(Commands.m_82127_("declare")
                         .then(Commands.m_82129_("player", StringArgumentType.word())
                                 .executes(ctx -> declare(
@@ -193,6 +165,42 @@ public final class RivalCommands {
             return 0;
         }
         com.dbzlegacy.adaptivedifficulty.gui.RivalMenu.open(player, page);
+        return 1;
+    }
+
+    /** Parse {@code /rival do <action> [arg…] [returnPage]} for CMI/GUI clicks. */
+    private static int guiDoRest(CommandSourceStack source, String action, String rest) {
+        String a = action == null ? "" : action.trim();
+        String r = rest == null ? "" : rest.trim();
+        if ("page".equalsIgnoreCase(a) || "refresh".equalsIgnoreCase(a)) {
+            return guiDo(source, a, r, r.isBlank() ? "main" : r);
+        }
+        int sp = r.lastIndexOf(' ');
+        if (sp <= 0) {
+            return guiDo(source, a, r, "main");
+        }
+        return guiDo(source, a, r.substring(0, sp).trim(), r.substring(sp + 1).trim());
+    }
+
+    private static int guiDo(CommandSourceStack source, String action, String arg, String page) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null) {
+            return 0;
+        }
+        // Admin actions work even when rival system flag is off (RivalGuiApi.handleDo).
+        String act = action == null ? "" : action;
+        String a = arg == null ? "" : arg;
+        String reopen = page == null || page.isBlank() ? "main" : page;
+        if ("page".equalsIgnoreCase(act) || "refresh".equalsIgnoreCase(act)) {
+            reopen = a.isBlank() ? "main" : a;
+        } else if (!"admin".equalsIgnoreCase(act) && !enabled(player)) {
+            return 0;
+        }
+        String msg = RivalGuiApi.handleDo(player, act, a, reopen);
+        if (msg != null && !msg.isBlank()) {
+            DmzRewards.msg(player, msg);
+        }
+        com.dbzlegacy.adaptivedifficulty.gui.RivalMenu.open(player, reopen);
         return 1;
     }
 

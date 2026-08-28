@@ -281,9 +281,9 @@ public final class CmiSparGui {
                 CMIGuiButton btn = new CMIGuiButton(slots[i], head);
                 btn.lockField();
                 if (invite.incoming) {
-                    btn.addCommand("spar do mentor_accept " + invite.pickerArg() + " pending");
+                    btn.addCommand("lmdo spar mentor_accept " + invite.pickerArg() + " pending");
                 } else {
-                    btn.addCommand("spar do mentor_cancel " + invite.pickerArg() + " pending");
+                    btn.addCommand("lmdo spar mentor_cancel " + invite.pickerArg() + " pending");
                 }
                 gui.addButton(btn);
             }
@@ -351,7 +351,7 @@ public final class CmiSparGui {
             }
             CMIGuiButton btn = new CMIGuiButton(slot, head);
             btn.lockField();
-            btn.addCommand("spar do " + action + " " + arg + " " + backPage);
+            btn.addCommand("lmdo spar " + action + " " + arg + " " + backPage);
             gui.addButton(btn);
         }
         if (placed == 0) {
@@ -395,7 +395,7 @@ public final class CmiSparGui {
                     GuiBoardHelper.tips(player, tip));
             CMIGuiButton btn = new CMIGuiButton(slot, head);
             btn.lockField();
-            btn.addCommand("spar do " + action + " uuid:" + other.getUniqueId() + " " + backPage);
+            btn.addCommand("lmdo spar " + action + " uuid:" + other.getUniqueId() + " " + backPage);
             gui.addButton(btn);
         }
         if (placed == 0) {
@@ -540,7 +540,7 @@ public final class CmiSparGui {
         lore.add("");
         lore.addAll(GuiBoardHelper.tipsList(player, tip));
         btn.addLore(lore);
-        btn.addCommand("spar do " + action + " " + arg + " " + returnPage);
+        btn.addCommand("lmdo spar " + action + " " + arg + " " + returnPage);
         return btn;
     }
 
@@ -551,7 +551,7 @@ public final class CmiSparGui {
         lore.add("");
         lore.addAll(GuiBoardHelper.tips(player, tips));
         btn.addLore(lore);
-        btn.addCommand("spar do page " + page);
+        btn.addCommand("lmdo spar page " + page);
         return btn;
     }
 

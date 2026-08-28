@@ -190,7 +190,7 @@ public final class CmiRivalGui {
             CMIGuiButton btn = new CMIGuiButton(slots[i], mats[i], titles[i]);
             btn.lockField();
             btn.addLore(lore);
-            btn.addCommand("rival do page " + pages[i]);
+            btn.addCommand("lmdo rival page " + pages[i]);
             gui.addButton(btn);
         }
 
@@ -402,7 +402,7 @@ public final class CmiRivalGui {
                 CMIGuiButton btn = new CMIGuiButton(slots[i], head);
                 btn.lockField();
                 if (invite.incoming) {
-                    btn.addCommand("rival do accept " + invite.pickerArg() + " pending");
+                    btn.addCommand("lmdo rival accept " + invite.pickerArg() + " pending");
                 }
                 gui.addButton(btn);
             }
@@ -553,7 +553,7 @@ public final class CmiRivalGui {
                     GuiBoardHelper.tips(player, "&7Next: choose fight length", "&8(1–10 minutes)"));
             CMIGuiButton btn = new CMIGuiButton(slot, head);
             btn.lockField();
-            btn.addCommand("rival do page challenge_time:uuid:" + other.getUniqueId());
+            btn.addCommand("lmdo rival page challenge_time:uuid:" + other.getUniqueId());
             gui.addButton(btn);
         }
         if (placed == 0) {
@@ -622,7 +622,7 @@ public final class CmiRivalGui {
             }
             CMIGuiButton btn = new CMIGuiButton(slots[i], clock);
             btn.lockField();
-            btn.addCommand("rival do challenge_send " + targetArg + "@" + minutes + " challenge");
+            btn.addCommand("lmdo rival challenge_send " + targetArg + "@" + minutes + " challenge");
             gui.addButton(btn);
         }
 
@@ -655,7 +655,7 @@ public final class CmiRivalGui {
                     GuiBoardHelper.tips(player, tip));
             CMIGuiButton btn = new CMIGuiButton(slot, head);
             btn.lockField();
-            btn.addCommand("rival do " + action + " uuid:" + other.getUniqueId() + " " + backPage);
+            btn.addCommand("lmdo rival " + action + " uuid:" + other.getUniqueId() + " " + backPage);
             gui.addButton(btn);
         }
         if (placed == 0) {
@@ -718,7 +718,7 @@ public final class CmiRivalGui {
                 }
                 CMIGuiButton btn = new CMIGuiButton(slots[i], head);
                 btn.lockField();
-                btn.addCommand("rival do " + action + " " + card.pickerArg() + " " + backPage);
+                btn.addCommand("lmdo rival " + action + " " + card.pickerArg() + " " + backPage);
                 gui.addButton(btn);
             }
         }
@@ -786,7 +786,7 @@ public final class CmiRivalGui {
             }
             CMIGuiButton btn = new CMIGuiButton(slot, head);
             btn.lockField();
-            btn.addCommand("rival do " + action + " " + arg + " " + backPage);
+            btn.addCommand("lmdo rival " + action + " " + arg + " " + backPage);
             gui.addButton(btn);
         }
         if (placed == 0) {
@@ -887,7 +887,7 @@ public final class CmiRivalGui {
         lore.add("");
         lore.addAll(GuiBoardHelper.tipsList(player, tip));
         btn.addLore(lore);
-        btn.addCommand("rival do " + action + " " + arg + " " + returnPage);
+        btn.addCommand("lmdo rival " + action + " " + arg + " " + returnPage);
         return btn;
     }
 
@@ -898,7 +898,7 @@ public final class CmiRivalGui {
         lore.add("");
         lore.addAll(GuiBoardHelper.tips(player, tips));
         btn.addLore(lore);
-        btn.addCommand("rival do page " + page);
+        btn.addCommand("lmdo rival page " + page);
         return btn;
     }
 

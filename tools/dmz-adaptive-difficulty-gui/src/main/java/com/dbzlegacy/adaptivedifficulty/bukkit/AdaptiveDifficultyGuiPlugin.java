@@ -680,10 +680,116 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if ("skillcheck".equals(name)) {
             return handleSkillCheck(sender, args);
         }
+        if ("lmdo".equals(name)) {
+            return handleLmDo(sender, args);
+        }
         if (!"difficulty".equals(name)) {
             return false;
         }
         return handleDifficulty(sender, args);
+    }
+
+    /**
+     * Bukkit-only GUI action bridge. CMI buttons use {@code /lmdo rival|spar …} so Mohist does not
+     * route clicks to Forge's incomplete {@code /rival do} / {@code /spar do} trees.
+     */
+    private boolean handleLmDo(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Players only.");
+            return true;
+        }
+        if (!canUsePlayerGui(player)) {
+            player.sendMessage("§cNo permission.");
+            return true;
+        }
+        if (args.length < 2) {
+            player.sendMessage("§cUsage: /lmdo <rival|spar|…> <action> [arg] [page]");
+            return true;
+        }
+        String system = args[0].toLowerCase(Locale.ROOT);
+        String action = args[1];
+        String arg = args.length > 2 ? args[2] : "";
+        String returnPage = args.length > 3 ? args[3] : "main";
+        // For page/refresh, the page name may contain ':' (challenge_time:uuid:…).
+        // When only 3 tokens: lmdo rival page challenge_time:uuid:x — arg is the page.
+        if (("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action))
+                && args.length >= 3) {
+            // Join remaining tokens in case of spaces (unlikely).
+            StringBuilder page = new StringBuilder(args[2]);
+            for (int i = 3; i < args.length; i++) {
+                page.append(' ').append(args[i]);
+            }
+            arg = page.toString();
+            returnPage = arg;
+        } else if (args.length > 4) {
+            // Extra tokens belong to arg (e.g. spaced names) — last is return page.
+            StringBuilder mid = new StringBuilder(args[2]);
+            for (int i = 3; i < args.length - 1; i++) {
+                mid.append(' ').append(args[i]);
+            }
+            arg = mid.toString();
+            returnPage = args[args.length - 1];
+        }
+
+        Player subject = AdminInspectSessions.resolveSubject(player);
+        String reopen;
+        if ("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action)) {
+            reopen = arg == null || arg.isBlank() ? "main" : arg;
+        } else {
+            reopen = returnPage == null || returnPage.isBlank() ? "main" : returnPage;
+            String msg = switch (system) {
+                case "rival", "rivals" -> ForgeBridge.rivalHandleDo(subject, action, arg, reopen);
+                case "spar", "sparring" -> ForgeBridge.sparHandleDo(subject, action, arg, reopen);
+                case "difficulty", "diff", "ad" -> {
+                    ForgeBridge.ActionResult r = ForgeBridge.handleActionResult(subject, action, arg, reopen);
+                    yield r.message();
+                }
+                case "lm", "hub", "legacymechanics" -> ForgeBridge.hubHandleDo(subject, action, arg, reopen);
+                case "progression", "prog" -> ForgeBridge.progressionHandleDo(subject, action, arg, reopen);
+                case "prestige" -> ForgeBridge.prestigeHandleDo(subject, action, arg, reopen);
+                case "skills" -> ForgeBridge.skillsHandleDo(subject, action, arg, reopen);
+                default -> {
+                    player.sendMessage("§cUnknown lmdo system: " + system);
+                    yield null;
+                }
+            };
+            if (msg != null && !msg.isBlank()) {
+                GuiChat.sendResult(player, msg);
+            }
+            if (!switch (system) {
+                case "rival", "rivals", "spar", "sparring",
+                     "difficulty", "diff", "ad",
+                     "lm", "hub", "legacymechanics",
+                     "progression", "prog", "prestige", "skills" -> true;
+                default -> false;
+            }) {
+                return true;
+            }
+        }
+
+        switch (system) {
+            case "rival", "rivals" -> {
+                if ("chat".equals(ForgeBridge.guiBackend())) {
+                    ForgeBridge.openRivalChatMenu(player, reopen);
+                } else {
+                    openRivalInventory(player, reopen);
+                }
+            }
+            case "spar", "sparring" -> {
+                if ("chat".equals(ForgeBridge.guiBackend())) {
+                    ForgeBridge.openSparChatMenu(player, reopen);
+                } else {
+                    openSparInventory(player, reopen);
+                }
+            }
+            case "difficulty", "diff", "ad" -> openMenuRespectingConfig(player, reopen);
+            case "lm", "hub", "legacymechanics" -> openHubRespectingConfig(player, reopen);
+            case "progression", "prog" -> openProgressionRespectingConfig(player, reopen);
+            case "prestige" -> openPrestigeRespectingConfig(player, reopen);
+            case "skills" -> openSkillsRespectingConfig(player, reopen);
+            default -> player.sendMessage("§cUnknown lmdo system: " + system);
+        }
+        return true;
     }
 
     private boolean handleHub(CommandSender sender, String[] args) {

@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalSystem;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparStore;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparringSystem;
+import com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -45,44 +46,18 @@ public final class SparCommands {
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "category")))))
                 .then(Commands.m_82127_("do")
-                        .then(Commands.m_82127_("page")
-                                .then(Commands.m_82129_("page", StringArgumentType.word())
-                                        .executes(ctx -> {
-                                            String page = StringArgumentType.getString(ctx, "page");
-                                            if (page.startsWith("top_")) {
-                                                return gui(ctx.getSource(), "top " + page.substring(4));
-                                            }
-                                            return gui(ctx.getSource(), page);
-                                        })))
-                        .then(Commands.m_82127_("end")
-                                .then(Commands.m_82129_("page", StringArgumentType.word())
-                                        .executes(ctx -> {
-                                            end(ctx.getSource());
-                                            return gui(ctx.getSource(),
-                                                    StringArgumentType.getString(ctx, "page"));
-                                        })))
-                        .then(Commands.m_82127_("mentor")
-                                .then(Commands.m_82127_("accept")
-                                        .then(Commands.m_82129_("page", StringArgumentType.word())
-                                                .executes(ctx -> {
-                                                    mentorAccept(ctx.getSource());
-                                                    return gui(ctx.getSource(),
-                                                            StringArgumentType.getString(ctx, "page"));
-                                                })))
-                                .then(Commands.m_82127_("decline")
-                                        .then(Commands.m_82129_("page", StringArgumentType.word())
-                                                .executes(ctx -> {
-                                                    mentorDecline(ctx.getSource());
-                                                    return gui(ctx.getSource(),
-                                                            StringArgumentType.getString(ctx, "page"));
-                                                })))
-                                .then(Commands.m_82127_("remove")
-                                        .then(Commands.m_82129_("page", StringArgumentType.word())
-                                                .executes(ctx -> {
-                                                    mentorRemove(ctx.getSource());
-                                                    return gui(ctx.getSource(),
-                                                            StringArgumentType.getString(ctx, "page"));
-                                                })))))
+                        // Full GUI surface via SparGuiApi.handleDo — greedy rest for uuid: args.
+                        .then(Commands.m_82129_("action", StringArgumentType.word())
+                                .executes(ctx -> guiDo(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "action"),
+                                        "",
+                                        "main"))
+                                .then(Commands.m_82129_("rest", StringArgumentType.greedyString())
+                                        .executes(ctx -> guiDoRest(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "action"),
+                                                StringArgumentType.getString(ctx, "rest"))))))
                 .then(Commands.m_82127_("mentor")
                         .executes(ctx -> mentorStatus(ctx.getSource()))
                         .then(Commands.m_82127_("accept").executes(ctx -> mentorAccept(ctx.getSource())))
@@ -143,7 +118,46 @@ public final class SparCommands {
         if (player == null || !enabled(player)) {
             return 0;
         }
-        com.dbzlegacy.adaptivedifficulty.gui.SparMenu.open(player, page);
+        String p = page == null || page.isBlank() ? "main" : page;
+        if (p.startsWith("top_")) {
+            p = "top_" + p.substring(4);
+        }
+        com.dbzlegacy.adaptivedifficulty.gui.SparMenu.open(player, p);
+        return 1;
+    }
+
+    /** Parse {@code /spar do <action> [arg…] [returnPage]} for CMI/GUI clicks. */
+    private static int guiDoRest(CommandSourceStack source, String action, String rest) {
+        String a = action == null ? "" : action.trim();
+        String r = rest == null ? "" : rest.trim();
+        if ("page".equalsIgnoreCase(a) || "refresh".equalsIgnoreCase(a)) {
+            return guiDo(source, a, r, r.isBlank() ? "main" : r);
+        }
+        int sp = r.lastIndexOf(' ');
+        if (sp <= 0) {
+            return guiDo(source, a, r, "main");
+        }
+        return guiDo(source, a, r.substring(0, sp).trim(), r.substring(sp + 1).trim());
+    }
+
+    private static int guiDo(CommandSourceStack source, String action, String arg, String page) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null) {
+            return 0;
+        }
+        String act = action == null ? "" : action;
+        String a = arg == null ? "" : arg;
+        String reopen = page == null || page.isBlank() ? "main" : page;
+        if ("page".equalsIgnoreCase(act) || "refresh".equalsIgnoreCase(act)) {
+            reopen = a.isBlank() ? "main" : a;
+        } else if (!"admin".equalsIgnoreCase(act) && !enabled(player)) {
+            return 0;
+        }
+        String msg = SparGuiApi.handleDo(player, act, a, reopen);
+        if (msg != null && !msg.isBlank()) {
+            DmzRewards.msg(player, msg);
+        }
+        com.dbzlegacy.adaptivedifficulty.gui.SparMenu.open(player, reopen);
         return 1;
     }
 
