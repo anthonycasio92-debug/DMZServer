@@ -86,10 +86,12 @@ public final class ForgeBridge {
     private static Method skillsLinesMethod;
     private static Method skillsHandleDoMethod;
     private static Method meditationExplainMethod;
+    private static Method meditationExplainForPlayerMethod;
     private static Method meditationAdvanceMethod;
     private static Method androidConvertMethod;
     private static Method boostMethod;
     private static Method progressionHelpMethod;
+    private static Method progressionHelpForStaffMethod;
     private static Method progressionStatusMethod;
     private static Method progressionAdminFlagMethod;
     private static volatile Field RESULT_MESSAGE_FIELD;
@@ -1210,21 +1212,18 @@ public final class ForgeBridge {
         }, "Progression");
     }
 
-    /** Current meditation trial + how-to (player-facing). */
-    public static String meditationExplain() {
+    /** Current meditation trial + how-to (staff hints only if {@code player} is staff/op). */
+    public static String meditationExplain(Player player) {
         try {
-            ClassLoader cl = null;
-            for (Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
-                Object nms = nmsPlayer(p);
-                if (nms != null) {
-                    cl = nms.getClass().getClassLoader();
-                    break;
-                }
-            }
-            if (cl == null) {
-                cl = AdaptiveDifficultyGuiPlugin.class.getClassLoader();
-            }
+            Object nms = player == null ? null : nmsPlayer(player);
+            ClassLoader cl = nms != null
+                    ? nms.getClass().getClassLoader()
+                    : preferredProgressionClassLoader();
             ensureProgressionResolved(cl);
+            if (meditationExplainForPlayerMethod != null && nms != null) {
+                Object raw = meditationExplainForPlayerMethod.invoke(null, nms);
+                return raw == null ? "" : String.valueOf(raw);
+            }
             if (meditationExplainMethod == null) {
                 return "§cMeditation API missing — update LegacyMechanics jar.";
             }
@@ -1235,6 +1234,11 @@ public final class ForgeBridge {
             return "§cMeditation explain failed: " + root.getClass().getSimpleName()
                     + (root.getMessage() == null ? "" : " — " + root.getMessage());
         }
+    }
+
+    /** @deprecated prefer {@link #meditationExplain(Player)} so staff hints stay hidden from players. */
+    public static String meditationExplain() {
+        return meditationExplain(null);
     }
 
     /** Staff: rotate + broadcast meditation trial. */
@@ -1305,9 +1309,22 @@ public final class ForgeBridge {
 
     /** Chat help for the Bukkit {@code /progression} command tree. */
     public static String progressionHelp() {
+        return progressionHelp(null);
+    }
+
+    /** Chat help; staff/op see full tree, others only meditation. */
+    public static String progressionHelp(Player player) {
         try {
-            ClassLoader cl = preferredProgressionClassLoader();
+            Object nms = player == null ? null : nmsPlayer(player);
+            ClassLoader cl = nms != null
+                    ? nms.getClass().getClassLoader()
+                    : preferredProgressionClassLoader();
             ensureProgressionResolved(cl);
+            if (progressionHelpForStaffMethod != null) {
+                boolean staff = player != null && isStaff(player);
+                Object raw = progressionHelpForStaffMethod.invoke(null, staff);
+                return raw == null ? "" : String.valueOf(raw);
+            }
             if (progressionHelpMethod == null) {
                 return "§cProgression help API missing — update LegacyMechanics jar.";
             }
@@ -1779,6 +1796,13 @@ public final class ForgeBridge {
                 meditationExplainMethod = null;
             }
         }
+        if (meditationExplainForPlayerMethod == null) {
+            try {
+                meditationExplainForPlayerMethod = api.getMethod("meditationExplain", sp);
+            } catch (Throwable missing) {
+                meditationExplainForPlayerMethod = null;
+            }
+        }
         if (meditationAdvanceMethod == null) {
             try {
                 meditationAdvanceMethod = api.getMethod("meditationAdvance", sp);
@@ -1805,6 +1829,13 @@ public final class ForgeBridge {
                 progressionHelpMethod = api.getMethod("commandHelp");
             } catch (Throwable missing) {
                 progressionHelpMethod = null;
+            }
+        }
+        if (progressionHelpForStaffMethod == null) {
+            try {
+                progressionHelpForStaffMethod = api.getMethod("commandHelp", boolean.class);
+            } catch (Throwable missing) {
+                progressionHelpForStaffMethod = null;
             }
         }
         if (progressionStatusMethod == null) {

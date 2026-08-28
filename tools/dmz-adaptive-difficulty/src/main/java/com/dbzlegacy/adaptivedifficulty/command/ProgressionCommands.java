@@ -329,7 +329,9 @@ public final class ProgressionCommands {
 
     private static int meditationStatus(CommandSourceStack source) {
         ServerPlayer actor = playerOrNull(source);
-        String msg = com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression.explainTrials();
+        boolean staff = staff(source);
+        String msg = com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression
+                .explainTrials(staff);
         for (String line : msg.split("\n")) {
             reply(source, actor, line);
         }
@@ -340,9 +342,10 @@ public final class ProgressionCommands {
         ServerPlayer actor = playerOrNull(source);
         String msg = ProgressionSystem.meditationNext(actor);
         reply(source, actor, msg);
-        // Also print explanation so staff/players see how trials work after a rotate.
+        // Also print explanation so staff see how trials work after a rotate.
+        boolean staff = staff(source);
         for (String line : com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression
-                .explainTrials().split("\n")) {
+                .explainTrials(staff).split("\n")) {
             reply(source, actor, line);
         }
         return 1;

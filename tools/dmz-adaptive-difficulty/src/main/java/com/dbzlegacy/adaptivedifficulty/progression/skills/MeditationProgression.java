@@ -195,8 +195,19 @@ public final class MeditationProgression {
         return "§aAdvanced meditation trial to §f" + trial.name + "§a.";
     }
 
-    /** Player-facing status + how trials work (script-style). */
+    /**
+     * Player-facing trial status + how-to.
+     * Staff rotate hint is omitted — use {@link #explainTrials(boolean)}.
+     */
     public static String explainTrials() {
+        return explainTrials(false);
+    }
+
+    /**
+     * Trial status + how-to. When {@code includeStaffHints} is false, never mentions
+     * staff-only commands (safe for non-ops).
+     */
+    public static String explainTrials(boolean includeStaffHints) {
         if (!ProgressionConfig.meditation()) {
             return "§cMeditation progression is disabled.";
         }
@@ -204,17 +215,27 @@ public final class MeditationProgression {
         Trial t = currentTrial(System.currentTimeMillis());
         long rem = Math.max(0L, GLOBAL_END.get() - System.currentTimeMillis());
         StringBuilder sb = new StringBuilder();
-        sb.append("§5§l☯ MEDITATION TRIAL\n");
+        sb.append("§d§lMeditation Trial\n");
+        sb.append("§8────────────\n");
         if (t == null) {
-            sb.append("§7No active trial.");
+            sb.append("§7No trial is active right now.\n");
+            sb.append("§8A new biome will be chosen shortly.\n");
         } else {
-            sb.append("§7Current Trial: §e").append(t.name).append("\n");
-            sb.append("§7Requirement: §f").append(t.condition).append("\n");
-            sb.append("§7Changes in §f").append(formatDuration(rem)).append("§7.\n");
+            sb.append("§7Biome   §f").append(t.name).append('\n');
+            sb.append("§7Goal    §f").append(t.condition).append('\n');
+            sb.append("§7Ends in §e").append(formatDuration(rem)).append('\n');
         }
-        sb.append("§8Charge Ki in the trial biome · stay focused · wrong biome warns after 10s.\n");
-        sb.append("§e/progression meditation §7— this help\n");
-        sb.append("§8Staff: /progression meditation next §7— rotate + broadcast now");
+        sb.append('\n');
+        sb.append("§aHow to train\n");
+        sb.append("§7• Travel to the trial biome\n");
+        sb.append("§7• Charge Ki and stay focused\n");
+        sb.append("§7• Wrong biome warns after §f10s\n");
+        sb.append('\n');
+        sb.append("§e/progression meditation §8— refresh this tip");
+        if (includeStaffHints) {
+            sb.append('\n');
+            sb.append("§8Staff · §f/progression meditation next §7— rotate + broadcast");
+        }
         return sb.toString();
     }
 

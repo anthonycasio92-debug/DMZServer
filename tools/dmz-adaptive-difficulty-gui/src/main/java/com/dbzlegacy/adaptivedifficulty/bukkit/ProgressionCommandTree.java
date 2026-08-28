@@ -55,6 +55,7 @@ public final class ProgressionCommandTree implements TabCompleter {
     );
     private static final List<String> ON_OFF = List.of("on", "off");
     private static final List<String> MEDITATION = List.of("status", "help", "next", "advance", "cycle");
+    private static final List<String> MEDITATION_PLAYER = List.of("status", "help");
     private static final List<String> BOOST = List.of(
             "status", "help", "end", "stop", "start", "1.25", "1.5", "2", "3"
     );
@@ -83,10 +84,15 @@ public final class ProgressionCommandTree implements TabCompleter {
         if (args.length > 0 && "meditation".equalsIgnoreCase(args[0])) {
             return meditation(player, args);
         }
+        // Player-facing help (no staff command list).
+        if (args.length > 0 && ("help".equalsIgnoreCase(args[0]) || "?".equals(args[0]))) {
+            sendMultiline(player, ForgeBridge.progressionHelp(player));
+            return true;
+        }
 
         if (!ForgeBridge.isStaff(player)) {
-            // Non-staff: only meditation (above) or a short tip.
-            player.sendMessage("§cStaff only. §7Players: §f/progression meditation");
+            // Non-staff: only meditation / help (above).
+            player.sendMessage("§7Use §f/progression meditation §7for the current trial.");
             return true;
         }
 
@@ -100,10 +106,6 @@ public final class ProgressionCommandTree implements TabCompleter {
             case "gui", "menu", "open" -> {
                 String page = args.length > 1 ? args[1] : "main";
                 plugin.openProgressionRespectingConfig(player, page);
-                yield true;
-            }
-            case "help", "?" -> {
-                sendMultiline(player, ForgeBridge.progressionHelp());
                 yield true;
             }
             case "status", "summary", "info" -> {
@@ -146,13 +148,13 @@ public final class ProgressionCommandTree implements TabCompleter {
                 player.sendMessage("§cStaff only.");
                 return true;
             }
-            sendMultiline(player, ForgeBridge.meditationAdvance(player));
-            sendMultiline(player, ForgeBridge.meditationExplain());
+                sendMultiline(player, ForgeBridge.meditationAdvance(player));
+                sendMultiline(player, ForgeBridge.meditationExplain(player));
+                return true;
+            }
+            sendMultiline(player, ForgeBridge.meditationExplain(player));
             return true;
         }
-        sendMultiline(player, ForgeBridge.meditationExplain());
-        return true;
-    }
 
     private boolean admin(Player player, String[] args) {
         // /progression admin                     → flags GUI
@@ -203,6 +205,7 @@ public final class ProgressionCommandTree implements TabCompleter {
         if (args.length == 1) {
             List<String> root = new ArrayList<>();
             root.add("meditation");
+            root.add("help");
             if (staff) {
                 root.addAll(ROOT);
             }
@@ -217,7 +220,8 @@ public final class ProgressionCommandTree implements TabCompleter {
                 case "gui", "menu", "open" -> filter(PAGES, args[1]);
                 case "admin" -> filter(FLAGS, args[1]);
                 case "do" -> filter(DO_ACTIONS, args[1]);
-                case "meditation" -> filter(MEDITATION, args[1]);
+                case "meditation" -> filter(
+                        ForgeBridge.isStaff(player) ? MEDITATION : MEDITATION_PLAYER, args[1]);
                 case "android" -> filter(onlineNames(player), args[1]);
                 case "boost", "tpboost" -> filter(BOOST, args[1]);
                 default -> Collections.emptyList();

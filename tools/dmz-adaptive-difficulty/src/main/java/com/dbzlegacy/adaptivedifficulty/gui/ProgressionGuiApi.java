@@ -26,9 +26,17 @@ import net.minecraft.server.level.ServerPlayer;
 public final class ProgressionGuiApi {
     private ProgressionGuiApi() {}
 
-    /** Player-facing meditation trial help (current biome + how to level). */
+    /** Player-facing meditation trial help (no staff command hints). */
     public static String meditationExplain() {
-        return MeditationProgression.explainTrials();
+        return MeditationProgression.explainTrials(false);
+    }
+
+    /**
+     * Meditation trial help for {@code viewer}. Staff/op see rotate command; others never do.
+     */
+    public static String meditationExplain(ServerPlayer viewer) {
+        boolean staff = viewer != null && StaffAccess.isStaff(viewer);
+        return MeditationProgression.explainTrials(staff);
     }
 
     /** Staff: rotate + broadcast the global meditation trial. */
@@ -36,8 +44,19 @@ public final class ProgressionGuiApi {
         return MeditationProgression.advanceTrial(player);
     }
 
-    /** Full chat help for {@code /progression} (Bukkit command tree). */
+    /** Full chat help for {@code /progression} (Bukkit command tree). Staff-only list. */
     public static String commandHelp() {
+        return commandHelp(true);
+    }
+
+    /** Chat help. Non-staff never see admin/boost/android/staff rotate lines. */
+    public static String commandHelp(boolean staff) {
+        if (!staff) {
+            return String.join("\n",
+                    "§d§lMeditation",
+                    "§e/progression meditation §7— current trial + how to train",
+                    "§8Charge Ki in the trial biome to level Meditation.");
+        }
         return String.join("\n",
                 "§6§l/progression §8(alias §7/prog§8) §7— command tree",
                 "§e/progression §7· §e/progression gui [page] §8— open GUI",
@@ -45,7 +64,8 @@ public final class ProgressionGuiApi {
                 "§e/progression status §8— flag + boost + meditation summary",
                 "§e/progression flags §7· §eadmin §8— flags GUI",
                 "§e/progression admin <flag> <on|off> §8— toggle a module flag",
-                "§e/progression meditation [status|next] §8— trial help · staff rotate",
+                "§e/progression meditation §8— trial help",
+                "§e/progression meditation next §8— rotate + broadcast trial",
                 "§e/progression android [player] §8— Gero android convert",
                 "§e/progression boost §8— TP boost status",
                 "§e/progression boost start <mult> <minutes> [name]",
@@ -429,18 +449,24 @@ public final class ProgressionGuiApi {
                 }
                 yield flagLines(ph);
             }
-            case "help" -> List.of(
-                    "§6§l/progression §8— Natural Progression",
-                    "§e/progression §7— Category hub (flags per section)",
-                    "§e/prog do page skills|tp|race|combat|end|fabled|utility",
-                    "§e/progression meditation §7— Current trial + how-to",
-                    "§e/progression meditation next §7— Staff: cycle + broadcast",
-                    "§e/progression boost §7— status · start &lt;mult&gt; &lt;min&gt; · end",
-                    "§e/progression android [player] §7— Staff: Android convert (Gero)",
-                    "§e/prestige §7— Prestige (Hub)",
-                    "§e/skills §7— Skill unlocks (Hub)",
-                    "§8Staff: /prog admin · toggle flags in section GUIs"
-            );
+            case "help" -> {
+                List<String> help = new ArrayList<>();
+                help.add("§6§l/progression §8— Natural Progression");
+                help.add("§e/progression meditation §7— Current trial + how to train");
+                if (player != null && StaffAccess.isStaff(player)) {
+                    help.add("§e/progression §7— Category hub (flags per section)");
+                    help.add("§e/prog do page skills|tp|race|combat|end|fabled|utility");
+                    help.add("§e/progression meditation next §7— cycle + broadcast trial");
+                    help.add("§e/progression boost §7— status · start &lt;mult&gt; &lt;min&gt; · end");
+                    help.add("§e/progression android [player] §7— Android convert (Gero)");
+                    help.add("§e/prestige §7— Prestige (Hub)");
+                    help.add("§e/skills §7— Skill unlocks (Hub)");
+                    help.add("§8Staff · /prog admin · toggle flags in section GUIs");
+                } else {
+                    help.add("§8Charge Ki in the trial biome to level Meditation.");
+                }
+                yield help;
+            }
             default -> {
                 List<String> lore = new ArrayList<>();
                 lore.add(ph.getOrDefault("boost", "§7Global TP boost: §cOFF"));
