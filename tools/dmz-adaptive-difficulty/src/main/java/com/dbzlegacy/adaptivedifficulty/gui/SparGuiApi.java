@@ -72,6 +72,9 @@ public final class SparGuiApi {
             out.put("streak", "0");
             out.put("streak_best", "0");
         }
+        int pending = SparringSystem.pendingMentorInviteCount(player);
+        out.put("pending_invites", String.valueOf(pending));
+        out.put("pendingInvites", out.get("pending_invites"));
         return out;
     }
 
@@ -102,10 +105,62 @@ public final class SparGuiApi {
             lines.add("§7Bonded §f" + bond.mentorName + " §8↔ §f" + bond.apprenticeName);
             lines.add("§7Streak §f" + bond.streakCurrent + " §8best §f" + bond.streakBest);
         } else {
-            lines.add("§7Click Invite / Ask below to pick a player");
+            lines.add("§7Invite apprentice or ask a mentor below");
             lines.add(SparringSystem.bondStatus(player));
         }
-        lines.add("§8Accept · Decline · Remove below");
+        int pending = SparringSystem.pendingMentorInviteCount(player);
+        if (pending > 0) {
+            lines.add("§ePending invites §f" + pending + " §8— open Pending");
+        } else {
+            lines.add("§8Pending · Accept · Decline · Remove");
+        }
+        return lines;
+    }
+
+    /** Encoded pending mentor invites (IN + OUT) for head boards. */
+    public static List<String> pendingMentorInviteCards(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of();
+        }
+        return SparringSystem.pendingMentorInviteCards(player);
+    }
+
+    /** Incoming mentor invite args for Accept/Decline pickers. */
+    public static List<String> pendingIncomingMentorArgs(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of();
+        }
+        return SparringSystem.pendingIncomingMentorArgs(player);
+    }
+
+    public static List<String> pendingMentorLines(ServerPlayer player) {
+        List<String> cards = pendingMentorInviteCards(player);
+        List<String> lines = new ArrayList<>();
+        if (cards.isEmpty()) {
+            lines.add("§7No pending mentor invites.");
+            lines.add("§8Outgoing: you invited someone.");
+            lines.add("§8Incoming: they invited you — Accept or Decline.");
+            return lines;
+        }
+        lines.add("§e§lPending Mentor Invites");
+        for (String card : cards) {
+            String[] p = card.split("\t", -1);
+            if (p.length < 3) {
+                continue;
+            }
+            String name = p[1];
+            String dir = p[2];
+            boolean online = p.length > 4 && "1".equals(p[4]);
+            String kind = p.length > 5 ? p[5] : "";
+            String role = "mentor".equalsIgnoreCase(kind) ? "Mentor" : "Apprentice";
+            if ("IN".equals(dir)) {
+                lines.add("§a◀ Incoming §f" + name + (online ? " §a●" : " §8○")
+                        + " §8→ you as " + role);
+            } else {
+                lines.add("§6▶ Outgoing §f" + name + (online ? " §a●" : " §8○")
+                        + " §8→ them as " + role);
+            }
+        }
         return lines;
     }
 
@@ -126,6 +181,7 @@ public final class SparGuiApi {
             case "stats", "statistics" -> statsLines(player);
             case "top", "leaderboard" -> topLines(player, "tp");
             case "mentor" -> mentorLines(player);
+            case "pending", "invites", "pendinginvites" -> pendingMentorLines(player);
             case "help" -> List.of(
                     "§6§l/spar §8— Sparring TP",
                     "§7Open GUI for mentor invites",
@@ -183,13 +239,47 @@ public final class SparGuiApi {
             return SparringSystem.endCommand(player);
         }
         if ("mentor".equals(act)) {
-            String sub = a.toLowerCase(Locale.ROOT);
-            return switch (sub) {
-                case "accept" -> SparringSystem.mentorAccept(player);
-                case "decline", "deny" -> SparringSystem.mentorDecline(player);
-                case "remove", "clear" -> SparringSystem.removeMentor(player);
-                default -> "§cUsage: spar do mentor accept|decline|remove";
-            };
+            String sub = a.toLowerCase(Locale.ROOT).trim();
+            if (sub.equals("accept") || sub.startsWith("accept ") || sub.startsWith("accept:")) {
+                String from = "";
+                if (sub.startsWith("accept")) {
+                    from = a.substring(6).trim();
+                    if (from.startsWith(":")) {
+                        from = from.substring(1).trim();
+                    }
+                }
+                return SparringSystem.mentorAccept(player, from.isBlank() ? null : from);
+            }
+            if (sub.equals("decline") || sub.equals("deny")
+                    || sub.startsWith("decline ") || sub.startsWith("decline:")
+                    || sub.startsWith("deny ") || sub.startsWith("deny:")) {
+                String prefix = sub.startsWith("deny") ? "deny" : "decline";
+                String from = a.length() > prefix.length() ? a.substring(prefix.length()).trim() : "";
+                if (from.startsWith(":")) {
+                    from = from.substring(1).trim();
+                }
+                return SparringSystem.mentorDecline(player, from.isBlank() ? null : from);
+            }
+            if (sub.equals("cancel") || sub.startsWith("cancel ") || sub.startsWith("cancel:")) {
+                String target = a.length() > 6 ? a.substring(6).trim() : "";
+                if (target.startsWith(":")) {
+                    target = target.substring(1).trim();
+                }
+                return SparringSystem.mentorCancelInvite(player, target);
+            }
+            if (sub.equals("remove") || sub.equals("clear")) {
+                return SparringSystem.removeBond(player);
+            }
+            return "§cUsage: spar do mentor accept|decline|cancel|remove [player]";
+        }
+        if ("mentor_accept".equals(act) || "mentoraccept".equals(act)) {
+            return SparringSystem.mentorAccept(player, a.isBlank() ? null : a);
+        }
+        if ("mentor_decline".equals(act) || "mentordecline".equals(act) || "mentor_deny".equals(act)) {
+            return SparringSystem.mentorDecline(player, a.isBlank() ? null : a);
+        }
+        if ("mentor_cancel".equals(act) || "mentorcancel".equals(act)) {
+            return SparringSystem.mentorCancelInvite(player, a);
         }
         if ("mentor_invite".equals(act) || "mentorinvite".equals(act)) {
             if (a.isBlank()) {

@@ -275,7 +275,8 @@ final class GuiBoardHelper {
     }
 
     /**
-     * Encoded pending invite: uuid, name, direction(IN|OUT), expiresAtMs, online(0/1).
+     * Encoded pending invite: uuid, name, direction(IN|OUT), expiresAtMs, online(0/1)[, kind].
+     * Kind is optional — rival declares omit it; mentor invites use {@code mentor}/{@code apprentice}.
      */
     static final class PendingInvite {
         final String uuid;
@@ -283,13 +284,23 @@ final class GuiBoardHelper {
         final boolean incoming;
         final long expiresAt;
         final boolean online;
+        final String kind;
 
         PendingInvite(String uuid, String name, boolean incoming, long expiresAt, boolean online) {
+            this(uuid, name, incoming, expiresAt, online, "");
+        }
+
+        PendingInvite(String uuid, String name, boolean incoming, long expiresAt, boolean online, String kind) {
             this.uuid = uuid == null ? "" : uuid;
             this.name = name == null || name.isBlank() ? "?" : name;
             this.incoming = incoming;
             this.expiresAt = Math.max(0L, expiresAt);
             this.online = online;
+            this.kind = kind == null ? "" : kind.trim();
+        }
+
+        boolean isMentorBond() {
+            return "mentor".equalsIgnoreCase(kind) || "apprentice".equalsIgnoreCase(kind);
         }
 
         String pickerArg() {
@@ -318,7 +329,8 @@ final class GuiBoardHelper {
                     p[1],
                     "IN".equalsIgnoreCase(p[2]),
                     parseLongSafe(p.length > 3 ? p[3] : "0"),
-                    "1".equals(p.length > 4 ? p[4] : "0")
+                    "1".equals(p.length > 4 ? p[4] : "0"),
+                    p.length > 5 ? p[5] : ""
             ));
         }
         return out;
@@ -326,7 +338,18 @@ final class GuiBoardHelper {
 
     static ItemStack pendingInviteHead(Player player, PendingInvite inv) {
         List<String> lore = new ArrayList<>();
-        if (inv.incoming) {
+        if (inv.isMentorBond()) {
+            String role = "mentor".equalsIgnoreCase(inv.kind) ? "Mentor" : "Apprentice";
+            if (inv.incoming) {
+                lore.add("&aIncoming mentor invite");
+                lore.add("&7They want you as their &f" + role);
+                lore.addAll(tips(player, "&eClick to Accept · use Decline… to refuse"));
+            } else {
+                lore.add("&6Outgoing mentor invite");
+                lore.add("&7Waiting — they would be your &f" + role);
+                lore.addAll(tips(player, "&eClick to Cancel · or wait for them"));
+            }
+        } else if (inv.incoming) {
             lore.add("&aIncoming declare");
             lore.add("&7They Declared you");
             lore.addAll(tips(player, "&eClick to Accept · use Decline… to refuse"));

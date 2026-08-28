@@ -35,7 +35,8 @@ public final class SparringSystem {
     public static final long COMBO_TIMEOUT_MS = 2500L;
     public static final long PENDING_HP_RESOLVE_MS = 75L;
     public static final long MENTOR_CHANGE_COOLDOWN_MS = 7L * 24L * 60L * 60L * 1000L;
-    public static final long MENTOR_INVITE_MS = 120_000L;
+    /** Mentor invite TTL — long enough for a Pending board (was 2 minutes). */
+    public static final long MENTOR_INVITE_MS = 24L * 60L * 60L * 1000L;
     public static final long TICK_MS = 250L;
     public static final long MIN_COUNTED_SESSION_MS = 30_000L;
     public static final long STREAK_MIN_SESSION_MS = 300_000L;
@@ -836,7 +837,7 @@ public final class SparringSystem {
         SparStore.get().markDirty();
         DmzRewards.msg(target, "§6[Mentor Bond] §f" + invite.fromName
                 + " §ewants you as their Apprentice.");
-        DmzRewards.msg(target, "§8Open §e/spar §8→ Mentor → Accept  §7or  §8Decline");
+        DmzRewards.msg(target, "§8Open §e/spar §8→ Mentor → Pending to Accept or Decline");
         return "§aInvite sent to §f" + target.m_7755_().getString() + "§a.";
     }
 
@@ -864,23 +865,97 @@ public final class SparringSystem {
         SparStore.get().markDirty();
         DmzRewards.msg(target, "§6[Mentor Bond] §f" + invite.fromName
                 + " §ewants you as their Mentor.");
-        DmzRewards.msg(target, "§8Open §e/spar §8→ Mentor → Accept  §7or  §8Decline");
+        DmzRewards.msg(target, "§8Open §e/spar §8→ Mentor → Pending to Accept or Decline");
         return "§aInvite sent to §f" + target.m_7755_().getString() + "§a.";
     }
 
+    /**
+     * Encoded pending mentor invites for GUI boards:
+     * {@code uuid\tname\tIN|OUT\texpiresAtMs\tonline(0/1)\tkind(mentor|apprentice)}.
+     * IN = someone invited you; OUT = you invited them. Kind is the role requested of the recipient.
+     */
+    public static List<String> pendingMentorInviteCards(ServerPlayer player) {
+        List<String> out = new ArrayList<>();
+        if (player == null) {
+            return out;
+        }
+        expireInvites(System.currentTimeMillis());
+        String me = player.m_20148_().toString();
+        MinecraftServer server = player.m_20194_();
+        long now = System.currentTimeMillis();
+
+        SparStore.BondInvite incoming = SparStore.get().invites.get(me);
+        if (incoming != null && now <= incoming.expiresAt) {
+            String uuid = incoming.fromUuid == null ? "" : incoming.fromUuid;
+            String name = incoming.fromName == null || incoming.fromName.isBlank() ? uuid : incoming.fromName;
+            name = name.replace('\t', ' ').replace('\n', ' ');
+            boolean online = isOnline(server, uuid);
+            String kind = incoming.kind == null || incoming.kind.isBlank() ? "apprentice" : incoming.kind;
+            out.add(uuid + "\t" + name + "\tIN\t" + incoming.expiresAt + "\t" + (online ? "1" : "0")
+                    + "\t" + kind);
+        }
+
+        for (Map.Entry<String, SparStore.BondInvite> e : SparStore.get().invites.entrySet()) {
+            SparStore.BondInvite inv = e.getValue();
+            if (inv == null || now > inv.expiresAt) {
+                continue;
+            }
+            if (inv.fromUuid == null || !me.equals(inv.fromUuid)) {
+                continue;
+            }
+            String targetUuid = e.getKey() == null ? "" : e.getKey();
+            if (targetUuid.equals(me)) {
+                continue;
+            }
+            String name = resolveName(server, targetUuid, inv);
+            name = name.replace('\t', ' ').replace('\n', ' ');
+            boolean online = isOnline(server, targetUuid);
+            String kind = inv.kind == null || inv.kind.isBlank() ? "apprentice" : inv.kind;
+            out.add(targetUuid + "\t" + name + "\tOUT\t" + inv.expiresAt + "\t" + (online ? "1" : "0")
+                    + "\t" + kind);
+        }
+        return out;
+    }
+
+    public static int pendingMentorInviteCount(ServerPlayer player) {
+        return pendingMentorInviteCards(player).size();
+    }
+
+    /** Incoming invite args ({@code uuid:} preferred) for Accept/Decline pickers. */
+    public static List<String> pendingIncomingMentorArgs(ServerPlayer player) {
+        List<String> out = new ArrayList<>();
+        if (player == null) {
+            return out;
+        }
+        expireInvites(System.currentTimeMillis());
+        SparStore.BondInvite incoming = SparStore.get().invites.get(player.m_20148_().toString());
+        if (incoming == null || System.currentTimeMillis() > incoming.expiresAt) {
+            return out;
+        }
+        if (incoming.fromUuid != null && !incoming.fromUuid.isBlank()) {
+            out.add("uuid:" + incoming.fromUuid);
+        } else if (incoming.fromName != null && !incoming.fromName.isBlank()) {
+            out.add(incoming.fromName);
+        }
+        return out;
+    }
+
     public static String mentorAccept(ServerPlayer player) {
+        return mentorAccept(player, null);
+    }
+
+    public static String mentorAccept(ServerPlayer player, String fromArg) {
         SparStore.BondInvite invite = SparStore.get().invites.get(player.m_20148_().toString());
         if (invite == null || System.currentTimeMillis() > invite.expiresAt) {
             SparStore.get().invites.remove(player.m_20148_().toString());
+            SparStore.get().markDirty();
             return "§cNo pending invite.";
         }
-        MinecraftServer server = player.m_20194_();
-        ServerPlayer other;
-        try {
-            other = server == null ? null : server.m_6846_().m_11259_(UUID.fromString(invite.fromUuid));
-        } catch (IllegalArgumentException e) {
-            return "§cInviter offline.";
+        if (fromArg != null && !fromArg.isBlank() && !matchesInviteFrom(invite, fromArg)) {
+            return "§cThat invite is not pending for you.";
         }
+        MinecraftServer server = player.m_20194_();
+        ServerPlayer other = resolveInviter(server, invite);
         if (other == null) {
             return "§cInviter is no longer online.";
         }
@@ -895,28 +970,86 @@ public final class SparringSystem {
         }
         bindMentor(mentor, apprentice);
         SparStore.get().invites.remove(player.m_20148_().toString());
+        SparStore.get().markDirty();
         DmzRewards.msg(mentor, "§6[Mentor Bond] §aYou are now mentoring §f" + apprentice.m_7755_().getString());
         DmzRewards.msg(apprentice, "§6[Mentor Bond] §aYour mentor is now §f" + mentor.m_7755_().getString());
         return "§aMentor bond created.";
     }
 
     public static String mentorDecline(ServerPlayer player) {
-        SparStore.BondInvite invite = SparStore.get().invites.remove(player.m_20148_().toString());
+        return mentorDecline(player, null);
+    }
+
+    public static String mentorDecline(ServerPlayer player, String fromArg) {
+        SparStore.BondInvite invite = SparStore.get().invites.get(player.m_20148_().toString());
         if (invite == null) {
             return "§cNo pending invite.";
         }
+        if (fromArg != null && !fromArg.isBlank() && !matchesInviteFrom(invite, fromArg)) {
+            return "§cThat invite is not pending for you.";
+        }
+        SparStore.get().invites.remove(player.m_20148_().toString());
         MinecraftServer server = player.m_20194_();
         if (server != null) {
             try {
                 ServerPlayer other = server.m_6846_().m_11259_(UUID.fromString(invite.fromUuid));
                 if (other != null) {
-                    DmzRewards.msg(other, "§6[Mentor Bond] §f" + player.m_7755_().getString() + " §cdenied your invite.");
+                    DmzRewards.msg(other, "§6[Mentor Bond] §f" + player.m_7755_().getString()
+                            + " §cdenied your invite.");
                 }
             } catch (IllegalArgumentException ignored) {
             }
         }
         SparStore.get().markDirty();
         return "§7Invite denied.";
+    }
+
+    /** Cancel an outgoing invite you sent to {@code targetArg} (uuid: or name). */
+    public static String mentorCancelInvite(ServerPlayer player, String targetArg) {
+        if (player == null) {
+            return "§cPlayers only.";
+        }
+        if (targetArg == null || targetArg.isBlank()) {
+            return "§cPick whose invite to cancel.";
+        }
+        expireInvites(System.currentTimeMillis());
+        String me = player.m_20148_().toString();
+        String targetKey = resolveInviteTargetKey(player, targetArg);
+        if (targetKey == null) {
+            return "§cNo outgoing invite to that player.";
+        }
+        SparStore.BondInvite inv = SparStore.get().invites.get(targetKey);
+        if (inv == null || inv.fromUuid == null || !me.equals(inv.fromUuid)) {
+            return "§cNo outgoing invite to that player.";
+        }
+        SparStore.get().invites.remove(targetKey);
+        SparStore.get().markDirty();
+        MinecraftServer server = player.m_20194_();
+        if (server != null) {
+            try {
+                ServerPlayer other = server.m_6846_().m_11259_(UUID.fromString(targetKey));
+                if (other != null) {
+                    DmzRewards.msg(other, "§6[Mentor Bond] §f" + player.m_7755_().getString()
+                            + " §7cancelled their invite.");
+                }
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        return "§7Outgoing invite cancelled.";
+    }
+
+    /** Leave mentor bond or release apprentice, whichever applies. */
+    public static String removeBond(ServerPlayer player) {
+        SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
+        boolean hasMentor = bond.mentorUuid != null && !bond.mentorUuid.isBlank();
+        boolean hasApprentice = bond.apprenticeUuid != null && !bond.apprenticeUuid.isBlank();
+        if (hasApprentice) {
+            return removeApprentice(player);
+        }
+        if (hasMentor) {
+            return removeMentor(player);
+        }
+        return "§cYou have no mentor bond to remove.";
     }
 
     public static String removeMentor(ServerPlayer player) {
@@ -937,6 +1070,79 @@ public final class SparringSystem {
         String name = bond.apprenticeName;
         clearBond(bond.apprenticeUuid, player.m_20148_().toString(), true);
         return "§7Released apprentice §f" + name + "§7. 7-day cooldown started.";
+    }
+
+    private static boolean isOnline(MinecraftServer server, String uuid) {
+        if (server == null || uuid == null || uuid.isBlank()) {
+            return false;
+        }
+        try {
+            return server.m_6846_().m_11259_(UUID.fromString(uuid)) != null;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private static String resolveName(MinecraftServer server, String uuid, SparStore.BondInvite inv) {
+        if (server != null && uuid != null && !uuid.isBlank()) {
+            try {
+                ServerPlayer online = server.m_6846_().m_11259_(UUID.fromString(uuid));
+                if (online != null) {
+                    return online.m_7755_().getString();
+                }
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        return uuid == null || uuid.isBlank() ? "?" : uuid;
+    }
+
+    private static ServerPlayer resolveInviter(MinecraftServer server, SparStore.BondInvite invite) {
+        if (server == null || invite == null || invite.fromUuid == null || invite.fromUuid.isBlank()) {
+            return null;
+        }
+        try {
+            return server.m_6846_().m_11259_(UUID.fromString(invite.fromUuid));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static boolean matchesInviteFrom(SparStore.BondInvite invite, String fromArg) {
+        if (invite == null || fromArg == null || fromArg.isBlank()) {
+            return false;
+        }
+        String raw = fromArg.trim();
+        if (raw.regionMatches(true, 0, "uuid:", 0, 5)) {
+            return invite.fromUuid != null
+                    && invite.fromUuid.equalsIgnoreCase(raw.substring(5).trim());
+        }
+        return invite.fromUuid != null && invite.fromUuid.equalsIgnoreCase(raw)
+                || invite.fromName != null && invite.fromName.equalsIgnoreCase(raw);
+    }
+
+    private static String resolveInviteTargetKey(ServerPlayer player, String targetArg) {
+        String raw = targetArg.trim();
+        if (raw.regionMatches(true, 0, "uuid:", 0, 5)) {
+            String id = raw.substring(5).trim();
+            if (SparStore.get().invites.containsKey(id)) {
+                return id;
+            }
+            return null;
+        }
+        if (SparStore.get().invites.containsKey(raw)) {
+            return raw;
+        }
+        MinecraftServer server = player.m_20194_();
+        if (server != null) {
+            ServerPlayer online = server.m_6846_().m_11255_(raw);
+            if (online != null) {
+                String id = online.m_20148_().toString();
+                if (SparStore.get().invites.containsKey(id)) {
+                    return id;
+                }
+            }
+        }
+        return null;
     }
 
     public static String resetMentorCd(ServerPlayer admin, ServerPlayer target) {

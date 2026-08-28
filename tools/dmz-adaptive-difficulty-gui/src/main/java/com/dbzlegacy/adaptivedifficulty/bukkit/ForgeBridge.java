@@ -71,6 +71,8 @@ public final class ForgeBridge {
     private static Method sparPlaceholdersMethod;
     private static Method sparLinesMethod;
     private static Method sparHandleDoMethod;
+    private static Method sparPendingMentorInviteCardsMethod;
+    private static Method sparPendingIncomingMentorArgsMethod;
     private static Method hubChatMenuOpen;
     private static Method hubPlaceholdersMethod;
     private static Method hubLinesMethod;
@@ -1086,6 +1088,50 @@ public final class ForgeBridge {
         return List.of();
     }
 
+    /** Encoded pending mentor invites (incoming + outgoing). */
+    public static List<String> sparPendingMentorInviteCards(Player player) {
+        return invokeSparStringList(player, "pendingMentorInviteCards");
+    }
+
+    /** Incoming mentor invite args for Accept/Decline pickers. */
+    public static List<String> sparPendingIncomingMentorArgs(Player player) {
+        return invokeSparStringList(player, "pendingIncomingMentorArgs");
+    }
+
+    private static List<String> invokeSparStringList(Player player, String methodName) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of();
+        }
+        try {
+            ensureSparResolved(nms.getClass().getClassLoader());
+            Method m = switch (methodName) {
+                case "pendingMentorInviteCards" -> sparPendingMentorInviteCardsMethod;
+                case "pendingIncomingMentorArgs" -> sparPendingIncomingMentorArgsMethod;
+                default -> null;
+            };
+            if (m == null) {
+                return List.of();
+            }
+            Object raw = m.invoke(null, nms);
+            if (raw instanceof List<?> list) {
+                List<String> out = new ArrayList<>();
+                for (Object o : list) {
+                    if (o != null) {
+                        String s = String.valueOf(o);
+                        if (!s.isBlank()) {
+                            out.add(s);
+                        }
+                    }
+                }
+                return out;
+            }
+        } catch (Throwable ignored) {
+            // Optional API — empty when missing.
+        }
+        return List.of();
+    }
+
     public static String sparHandleDo(Player player, String action, String arg, String page) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
@@ -1729,6 +1775,7 @@ public final class ForgeBridge {
 
     private static synchronized void ensureSparResolved(ClassLoader preferred) throws Exception {
         if (sparPlaceholdersMethod != null && sparLinesMethod != null && sparHandleDoMethod != null) {
+            resolveOptionalSparMethods(preferred);
             return;
         }
         Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi", preferred);
@@ -1742,6 +1789,30 @@ public final class ForgeBridge {
                     .getMethod("open", sp, String.class);
         } catch (Throwable missing) {
             sparChatMenuOpen = null;
+        }
+        resolveOptionalSparMethods(preferred);
+    }
+
+    private static void resolveOptionalSparMethods(ClassLoader preferred) {
+        try {
+            Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi", preferred);
+            Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+            if (sparPendingMentorInviteCardsMethod == null) {
+                try {
+                    sparPendingMentorInviteCardsMethod = api.getMethod("pendingMentorInviteCards", sp);
+                } catch (Throwable ignored) {
+                    sparPendingMentorInviteCardsMethod = null;
+                }
+            }
+            if (sparPendingIncomingMentorArgsMethod == null) {
+                try {
+                    sparPendingIncomingMentorArgsMethod = api.getMethod("pendingIncomingMentorArgs", sp);
+                } catch (Throwable ignored) {
+                    sparPendingIncomingMentorArgsMethod = null;
+                }
+            }
+        } catch (Throwable ignored) {
+            // Optional.
         }
     }
 

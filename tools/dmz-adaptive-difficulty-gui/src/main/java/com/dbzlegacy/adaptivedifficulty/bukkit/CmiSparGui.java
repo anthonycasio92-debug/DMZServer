@@ -13,7 +13,7 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * CMILib inventory GUI — Legacy Mechanics Sparring.
- * Pages: main · stats · top · mentor · pick_apprentice · pick_mentor.
+ * Pages: main · stats · top · mentor · pending · pick_apprentice · pick_mentor · pick_accept/decline.
  */
 public final class CmiSparGui {
     private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
@@ -38,12 +38,20 @@ public final class CmiSparGui {
                 openDetail(player, "stats", "&eSpar Stats", Material.BOOK);
             } else if ("mentor".equals(p)) {
                 openMentor(player);
+            } else if ("pending".equals(p) || "invites".equals(p) || "pendinginvites".equals(p)) {
+                openPending(player);
             } else if ("pick_apprentice".equals(p)) {
                 openPicker(player, "mentor_invite", "mentor",
                         "&aInvite Apprentice", "&7Ask them to be your apprentice");
             } else if ("pick_mentor".equals(p)) {
                 openPicker(player, "apprentice_invite", "mentor",
                         "&bAsk Mentor", "&7Ask them to be your mentor");
+            } else if ("pick_accept".equals(p)) {
+                openPendingPicker(player, "mentor_accept", "pending",
+                        "&aAccept Invite", "&7Accept this mentor invite", true);
+            } else if ("pick_decline".equals(p)) {
+                openPendingPicker(player, "mentor_decline", "pending",
+                        "&cDecline Invite", "&7Decline this mentor invite", false);
             } else if ("help".equals(p)) {
                 openMain(player);
             } else if ("admin".equals(p)) {
@@ -91,7 +99,7 @@ public final class CmiSparGui {
         gui.addButton(pageBtn(player, 21, Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7Leaderboard"));
         gui.addButton(pageBtn(player, 23, Material.EMERALD, "&bMentor", "mentor",
-                "&7Invite · ask · accept · remove"));
+                "&7Invite · pending · accept · remove"));
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
         if (session) {
@@ -181,27 +189,161 @@ public final class CmiSparGui {
     }
 
     private static void openMentor(Player player) {
-        CMIGui gui = base(player, "&8Legacy Mechanics · Sparring", 5);
+        CMIGui gui = base(player, "&8Spar Mentor", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.EMERALD, "&b&lMentor");
         info.lockField();
         info.addLore(toAmp(ForgeBridge.sparLines(player, "mentor")));
         gui.addButton(info);
 
-        gui.addButton(pageBtn(player, 19, Material.LIME_CONCRETE, "&aInvite apprentice…", "pick_apprentice",
+        gui.addButton(pageBtn(player, 19, Material.LIME_DYE, "&aInvite apprentice…", "pick_apprentice",
                 "&7Pick a player to mentor"));
-        gui.addButton(pageBtn(player, 21, Material.LIGHT_BLUE_CONCRETE, "&bAsk mentor…", "pick_mentor",
+        gui.addButton(pageBtn(player, 20, Material.LIGHT_BLUE_DYE, "&bAsk mentor…", "pick_mentor",
                 "&7Pick a player to ask as mentor"));
-        gui.addButton(actionBtn(player, 23, Material.LIME_DYE, "&aAccept",
-                "mentor", "accept", "mentor",
-                List.of("&7Accept mentor invite")));
-        gui.addButton(actionBtn(player, 25, Material.RED_CONCRETE, "&cDecline",
-                "mentor", "decline", "mentor",
-                List.of("&7Decline mentor invite")));
-        gui.addButton(actionBtn(player, 31, Material.GRAY_CONCRETE, "&8Remove",
+        Map<String, String> ph = ForgeBridge.sparPlaceholders(player);
+        int pendingCount = 0;
+        try {
+            pendingCount = Integer.parseInt(ph.getOrDefault("pending_invites", "0"));
+        } catch (NumberFormatException ignored) {
+            pendingCount = 0;
+        }
+        gui.addButton(pageBtn(player, 21, Material.CLOCK,
+                pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
+                "pending",
+                "&7View incoming + outgoing invites",
+                pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"));
+        gui.addButton(pageBtn(player, 22, Material.YELLOW_DYE, "&eAccept…", "pick_accept",
+                "&7Accept an incoming mentor invite"));
+        gui.addButton(pageBtn(player, 23, Material.ORANGE_DYE, "&6Decline…", "pick_decline",
+                "&7Decline an incoming mentor invite"));
+        gui.addButton(actionBtn(player, 25, Material.RED_DYE, "&cRemove bond",
                 "mentor", "remove", "mentor",
-                List.of("&7Clear mentor bond")));
+                List.of("&7Leave mentor or release apprentice")));
 
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openPending(Player player) {
+        CMIGui gui = base(player, "&8Pending Mentor Invites", 5);
+        List<GuiBoardHelper.PendingInvite> invites = GuiBoardHelper.parsePendingInvites(
+                ForgeBridge.sparPendingMentorInviteCards(player));
+        CMIGuiButton info = new CMIGuiButton(4, Material.YELLOW_DYE, "&e&lPending Invites");
+        info.lockField();
+        List<String> pendingHeader = new ArrayList<>();
+        pendingHeader.add("");
+        pendingHeader.add(invites.isEmpty() ? "&7No pending invites." : "&7" + invites.size() + " pending");
+        pendingHeader.addAll(GuiBoardHelper.tips(player,
+                "&a◀ Incoming &7= they invited you",
+                "&6▶ Outgoing &7= waiting on them"));
+        info.addLore(pendingHeader);
+        gui.addButton(info);
+
+        if (invites.isEmpty()) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&7No pending invites");
+            empty.lockField();
+            List<String> emptyLore = new ArrayList<>();
+            emptyLore.add("");
+            emptyLore.addAll(GuiBoardHelper.tipsList(player, List.of(
+                    "&7Invite apprentice or ask a mentor",
+                    "&7Incoming shows when they invite you")));
+            empty.addLore(emptyLore);
+            gui.addButton(empty);
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(invites.size(), 21));
+            for (int i = 0; i < slots.length && i < invites.size(); i++) {
+                GuiBoardHelper.PendingInvite invite = invites.get(i);
+                ItemStack head = GuiBoardHelper.pendingInviteHead(player, invite);
+                CMIGuiButton btn = new CMIGuiButton(slots[i], head);
+                btn.lockField();
+                if (invite.incoming) {
+                    btn.addCommand("spar do mentor_accept " + invite.pickerArg() + " pending");
+                } else {
+                    btn.addCommand("spar do mentor_cancel " + invite.pickerArg() + " pending");
+                }
+                gui.addButton(btn);
+            }
+        }
+
+        gui.addButton(pageBtn(player, 37, Material.YELLOW_DYE, "&eAccept…", "pick_accept",
+                "&7Accept an incoming invite"));
+        gui.addButton(pageBtn(player, 38, Material.ORANGE_DYE, "&6Decline…", "pick_decline",
+                "&7Decline an incoming invite"));
+        gui.addButton(pageBtn(player, 39, Material.EMERALD, "&bMentor", "mentor",
+                "&7Full mentor menu"));
+        gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "mentor", "&7Mentor"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openPendingPicker(
+            Player player, String action, String backPage, String title, String tip, boolean acceptMode) {
+        CMIGui gui = base(player, "&8Spar Mentor", 5);
+        CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD, title);
+        info.lockField();
+        List<String> pendingPickHeader = new ArrayList<>();
+        pendingPickHeader.add("");
+        pendingPickHeader.add("&7Incoming mentor invites");
+        pendingPickHeader.addAll(GuiBoardHelper.tips(player,
+                "&8Click a head to " + (acceptMode ? "accept" : "decline")));
+        info.addLore(pendingPickHeader);
+        gui.addButton(info);
+
+        List<String> pending = ForgeBridge.sparPendingIncomingMentorArgs(player);
+        int placed = 0;
+        for (String arg : pending) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+            String display;
+            ItemStack head;
+            List<String> tipLore = new ArrayList<>(GuiBoardHelper.tips(player, tip));
+            if (arg.regionMatches(true, 0, "uuid:", 0, 5)) {
+                try {
+                    java.util.UUID id = java.util.UUID.fromString(arg.substring(5).trim());
+                    Player online = org.bukkit.Bukkit.getPlayer(id);
+                    display = online != null ? online.getName() : arg.substring(5).trim();
+                    if (online != null) {
+                        tipLore.add("&aOnline");
+                        head = GuiPlayerPicker.head(online, "&f" + display, tipLore);
+                    } else {
+                        head = GuiPlayerPicker.headByName(display, "&f" + display, tipLore);
+                    }
+                } catch (IllegalArgumentException e) {
+                    display = arg;
+                    head = GuiPlayerPicker.headByName(display, "&f" + display, tipLore);
+                }
+            } else {
+                display = arg;
+                Player online = org.bukkit.Bukkit.getPlayerExact(arg);
+                if (online != null) {
+                    tipLore.add("&aOnline");
+                    head = GuiPlayerPicker.head(online, "&f" + display, tipLore);
+                } else {
+                    head = GuiPlayerPicker.headByName(display, "&f" + display, tipLore);
+                }
+            }
+            CMIGuiButton btn = new CMIGuiButton(slot, head);
+            btn.lockField();
+            btn.addCommand("spar do " + action + " " + arg + " " + backPage);
+            gui.addButton(btn);
+        }
+        if (placed == 0) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER,
+                    acceptMode ? "&eNothing to accept" : "&eNo pending invites");
+            empty.lockField();
+            List<String> emptyLore = new ArrayList<>();
+            emptyLore.add("");
+            emptyLore.addAll(GuiBoardHelper.tips(player,
+                    "&7When someone invites you,", "&7they appear here."));
+            empty.addLore(emptyLore);
+            gui.addButton(empty);
+        }
+
+        gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", backPage, "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
