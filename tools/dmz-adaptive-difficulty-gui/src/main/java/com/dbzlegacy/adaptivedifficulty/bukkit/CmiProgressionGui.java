@@ -194,8 +194,8 @@ public final class CmiProgressionGui {
         CMIGuiButton header = new CMIGuiButton(4, mat, title);
         header.lockField();
         header.addLore(List.of("",
-                staff ? "&7Click a module to toggle ON/OFF" : "&7Module status (staff can toggle)",
-                "&8Description + commands on each item"));
+                staff ? "&7Click a module to toggle ON/OFF" : "&7Module status",
+                staff ? "&8Description + commands on each item" : "&8Player-facing modules"));
         gui.addButton(header);
 
         int[] slots = GuiBoardHelper.centeredSlots(keys.length);
@@ -206,16 +206,20 @@ public final class CmiProgressionGui {
             if ("android".equals(key) && "race".equals(page)) {
                 List<String> lore = new ArrayList<>();
                 lore.add("");
-                lore.add(on ? "&aModule enabled" : "&cModule disabled &8(toggle in Flags)");
-                lore.add("&7" + info[1]);
-                lore.add("&8Cmd: &f/progression android [player]");
-                lore.add("");
-                lore.add(staff ? "&eClick · pick player to convert" : "&8Staff only");
+                lore.add(on ? "&aModule enabled" : "&cModule disabled");
+                lore.add(staff
+                        ? "&7Staff convert a player to Android (Gero path)."
+                        : "&7Android conversion path (Gero).");
+                if (staff) {
+                    lore.add("&8Cmd: &f/progression android [player]");
+                    lore.add("");
+                    lore.add("&eClick · pick player to convert");
+                }
                 if (staff) {
                     gui.addButton(pageBtn(slots[i], Material.IRON_INGOT, "&bAndroid Convert",
                             "android_convert", lore.toArray(new String[0])));
                 } else {
-                    CMIGuiButton btn = new CMIGuiButton(slots[i], Material.IRON_INGOT, "&bAndroid Convert");
+                    CMIGuiButton btn = new CMIGuiButton(slots[i], Material.IRON_INGOT, "&bAndroid");
                     btn.lockField();
                     btn.addLore(lore);
                     gui.addButton(btn);
@@ -225,11 +229,13 @@ public final class CmiProgressionGui {
             if ("boost".equals(key) && "tp".equals(page)) {
                 List<String> lore = new ArrayList<>();
                 lore.add("");
-                lore.add(on ? "&aModule enabled" : "&cModule disabled &8(toggle in Flags)");
-                lore.add("&7" + info[1]);
-                lore.add("&8Cmd: &f/progression boost start|end");
-                lore.add("");
-                lore.add(staff ? "&eClick · start / end boost" : "&8Staff only");
+                lore.add(on ? "&aModule enabled" : "&cModule disabled");
+                lore.add("&7Timed world TP multiplier.");
+                if (staff) {
+                    lore.add("&8Cmd: &f/progression boost start|end");
+                    lore.add("");
+                    lore.add("&eClick · start / end boost");
+                }
                 if (staff) {
                     gui.addButton(pageBtn(slots[i], Material.GOLDEN_APPLE, "&6Global TP Boost",
                             "boost_panel", lore.toArray(new String[0])));
@@ -245,11 +251,13 @@ public final class CmiProgressionGui {
             lore.add("");
             lore.add(on ? "&aEnabled" : "&cDisabled");
             lore.add("&7" + info[1]);
-            if (info.length > 2 && info[2] != null && !info[2].isBlank()) {
+            if (staff && info.length > 2 && info[2] != null && !info[2].isBlank()) {
                 lore.add("&8Cmd: &f" + info[2]);
             }
-            lore.add("");
-            lore.add(staff ? "&eClick to toggle" : "&8Ask staff to change flags");
+            if (staff) {
+                lore.add("");
+                lore.add("&eClick to toggle");
+            }
             if (staff) {
                 gui.addButton(actionBtn(slots[i],
                         on ? Material.LIME_DYE : Material.GRAY_DYE,

@@ -171,8 +171,8 @@ public final class ProgressionChestGui implements Listener {
         frame(inv, 45);
         boolean staff = ForgeBridge.isStaff(player);
         put(holder, inv, 4, item(mat, title, List.of("",
-                staff ? "&7Click a module to toggle ON/OFF" : "&7Module status (staff can toggle)",
-                "&8Description + commands on each item")));
+                staff ? "&7Click a module to toggle ON/OFF" : "&7Module status",
+                staff ? "&8Description + commands on each item" : "&8Player-facing modules")));
         int[] slots = GuiBoardHelper.centeredSlots(keys.length);
         for (int i = 0; i < keys.length && i < slots.length; i++) {
             String key = keys[i];
@@ -182,12 +182,17 @@ public final class ProgressionChestGui implements Listener {
             if ("android".equals(key) && "race".equals(page)) {
                 List<String> lore = new ArrayList<>();
                 lore.add("");
-                lore.add(on ? "&aModule enabled" : "&cModule disabled &8(toggle in Flags)");
-                lore.add("&7" + info[1]);
-                lore.add("&8Cmd: &f/progression android [player]");
-                lore.add("");
-                lore.add(staff ? "&eClick · pick player to convert" : "&8Staff only");
-                ItemStack stack = tipBtn(Material.IRON_INGOT, "&bAndroid Convert", lore);
+                lore.add(on ? "&aModule enabled" : "&cModule disabled");
+                lore.add(staff
+                        ? "&7Staff convert a player to Android (Gero path)."
+                        : "&7Android conversion path (Gero).");
+                if (staff) {
+                    lore.add("&8Cmd: &f/progression android [player]");
+                    lore.add("");
+                    lore.add("&eClick · pick player to convert");
+                }
+                ItemStack stack = tipBtn(Material.IRON_INGOT,
+                        staff ? "&bAndroid Convert" : "&bAndroid", lore);
                 if (staff) {
                     put(holder, inv, slots[i], stack, SlotAction.page("android_convert"));
                 } else {
@@ -199,11 +204,13 @@ public final class ProgressionChestGui implements Listener {
             if ("boost".equals(key) && "tp".equals(page)) {
                 List<String> lore = new ArrayList<>();
                 lore.add("");
-                lore.add(on ? "&aModule enabled" : "&cModule disabled &8(toggle in Flags)");
-                lore.add("&7" + info[1]);
-                lore.add("&8Cmd: &f/progression boost start|end");
-                lore.add("");
-                lore.add(staff ? "&eClick · start / end boost" : "&8Staff only");
+                lore.add(on ? "&aModule enabled" : "&cModule disabled");
+                lore.add("&7Timed world TP multiplier.");
+                if (staff) {
+                    lore.add("&8Cmd: &f/progression boost start|end");
+                    lore.add("");
+                    lore.add("&eClick · start / end boost");
+                }
                 ItemStack stack = tipBtn(Material.GOLDEN_APPLE, "&6Global TP Boost", lore);
                 if (staff) {
                     put(holder, inv, slots[i], stack, SlotAction.page("boost_panel"));
@@ -216,11 +223,14 @@ public final class ProgressionChestGui implements Listener {
             lore.add("");
             lore.add(on ? "&aEnabled" : "&cDisabled");
             lore.add("&7" + info[1]);
-            if (info.length > 2 && info[2] != null && !info[2].isBlank()) {
+            // Staff commands never appear on non-op lore.
+            if (staff && info.length > 2 && info[2] != null && !info[2].isBlank()) {
                 lore.add("&8Cmd: &f" + info[2]);
             }
-            lore.add("");
-            lore.add(staff ? "&eClick to toggle" : "&8Ask staff to change flags");
+            if (staff) {
+                lore.add("");
+                lore.add("&eClick to toggle");
+            }
             ItemStack stack = tipBtn(
                     on ? Material.LIME_DYE : Material.GRAY_DYE,
                     (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF"),

@@ -145,16 +145,17 @@ public final class ProgressionCommandTree implements TabCompleter {
         String medSub = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "status";
         if ("next".equals(medSub) || "advance".equals(medSub) || "cycle".equals(medSub)) {
             if (!ForgeBridge.isStaff(player)) {
-                player.sendMessage("§cStaff only.");
-                return true;
-            }
-                sendMultiline(player, ForgeBridge.meditationAdvance(player));
+                // Do not acknowledge staff commands to non-ops — show the trial card only.
                 sendMultiline(player, ForgeBridge.meditationExplain(player));
                 return true;
             }
+            sendMultiline(player, ForgeBridge.meditationAdvance(player));
             sendMultiline(player, ForgeBridge.meditationExplain(player));
             return true;
         }
+        sendMultiline(player, ForgeBridge.meditationExplain(player));
+        return true;
+    }
 
     private boolean admin(Player player, String[] args) {
         // /progression admin                     → flags GUI

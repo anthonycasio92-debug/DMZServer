@@ -53,8 +53,9 @@ public final class ProgressionGuiApi {
     public static String commandHelp(boolean staff) {
         if (!staff) {
             return String.join("\n",
-                    "§d§lMeditation",
-                    "§e/progression meditation §7— current trial + how to train",
+                    "§d§lMeditation Trial",
+                    "§8────────────",
+                    "§e/progression meditation §7— current biome, goal, and timer",
                     "§8Charge Ki in the trial biome to level Meditation.");
         }
         return String.join("\n",

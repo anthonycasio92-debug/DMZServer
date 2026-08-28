@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
 import com.dragonminez.common.stats.character.Status;
@@ -227,11 +228,11 @@ public final class MeditationProgression {
         }
         sb.append('\n');
         sb.append("§aHow to train\n");
-        sb.append("§7• Travel to the trial biome\n");
-        sb.append("§7• Charge Ki and stay focused\n");
-        sb.append("§7• Wrong biome warns after §f10s\n");
+        sb.append("§7• Go to the §f").append(t == null ? "trial biome" : t.name).append('\n');
+        sb.append("§7• Charge Ki and complete the goal\n");
+        sb.append("§7• Stay focused — wrong biome warns after §f10s\n");
         sb.append('\n');
-        sb.append("§e/progression meditation §8— refresh this tip");
+        sb.append("§8Tip · §e/progression meditation §7refreshes this card");
         if (includeStaffHints) {
             sb.append('\n');
             sb.append("§8Staff · §f/progression meditation next §7— rotate + broadcast");
@@ -317,11 +318,17 @@ public final class MeditationProgression {
         if (trial == null) {
             return;
         }
-        broadcastChat("§5§l☯ MEDITATION TRIAL");
-        broadcastChat("§7Current Trial: §e" + trial.name);
-        broadcastChat("§7Requirement: §f" + trial.condition);
-        broadcastChat("§7Changes in §f" + formatDuration(remaining) + "§7."
-                + (manual ? " §a· staff rotated" : ""));
+        // Public broadcast — never mention staff/ops or staff commands.
+        broadcastChat("§d§lMeditation Trial");
+        broadcastChat("§8────────────");
+        broadcastChat("§7Biome   §f" + trial.name);
+        broadcastChat("§7Goal    §f" + trial.condition);
+        broadcastChat("§7Ends in §e" + formatDuration(remaining));
+        broadcastChat("§8Tip · §e/progression meditation §7for how to train");
+        if (manual) {
+            broadcastStaffChat("§8Staff · trial was rotated manually"
+                    + " · §f/progression meditation next");
+        }
         // Screen title for visibility (script was chat-only; titles help notice mid-fight).
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) {
@@ -342,6 +349,19 @@ public final class MeditationProgression {
         }
         for (ServerPlayer p : server.m_6846_().m_11314_()) {
             if (p != null) {
+                DmzRewards.msg(p, message);
+            }
+        }
+    }
+
+    /** Staff/op only — never shown to non-ops. */
+    private static void broadcastStaffChat(String message) {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            return;
+        }
+        for (ServerPlayer p : server.m_6846_().m_11314_()) {
+            if (p != null && StaffAccess.isStaff(p)) {
                 DmzRewards.msg(p, message);
             }
         }
