@@ -92,6 +92,11 @@ public final class SparPlayerRuntime {
         styleBeam = 0;
         styleBlock = 0;
         styleMove = 0;
+        moveX = 0;
+        moveY = 0;
+        moveZ = 0;
+        moveValidUntil = 0L;
+        heavyMotionUntil = 0L;
         tpPending = 0;
         tpPendingMelee = 0;
         tpPendingKi = 0;

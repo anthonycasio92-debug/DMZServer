@@ -30,6 +30,7 @@ public final class SparringSystem {
     public static final long DISTANCE_GRACE_PERIOD_MS = 4000L;
     public static final long MOVEMENT_ACTIVITY_WINDOW_MS = 10_000L;
     public static final double MIN_MOVEMENT_DISTANCE = 0.35;
+    public static final double MIN_MOTION_SPEED = 0.08;
     public static final double HEAVY_MOTION_SPEED = 0.55;
     public static final long COMBO_TIMEOUT_MS = 2500L;
     public static final long PENDING_HP_RESOLVE_MS = 75L;
@@ -261,8 +262,13 @@ public final class SparringSystem {
         bRt.partner = a.m_20148_();
         aRt.startAt = now;
         bRt.startAt = now;
+        // Seed movement window only — hits/blocks must not refresh the AFK gate.
+        refreshMovementActivity(a, aRt, now);
+        refreshMovementActivity(b, bRt, now);
         DmzRewards.msg(a, "§6[Sparring] §aSession started with §f" + b.m_7755_().getString());
         DmzRewards.msg(b, "§6[Sparring] §aSession started with §f" + a.m_7755_().getString());
+        DmzRewards.msg(a, "§8Stay active: trade damage, move, and keep the fight going.");
+        DmzRewards.msg(b, "§8Stay active: trade damage, move, and keep the fight going.");
         SystemTelemetry.log("sparring", "spar_start", a, b, null);
     }
 
@@ -349,29 +355,59 @@ public final class SparringSystem {
         }
     }
 
+    /** Seed / hold the movement AFK window (script refreshMovementActivity). */
+    private static void refreshMovementActivity(ServerPlayer player, SparPlayerRuntime rt, long now) {
+        if (player == null || rt == null) {
+            return;
+        }
+        rt.moveX = player.m_20185_();
+        rt.moveY = player.m_20186_();
+        rt.moveZ = player.m_20189_();
+        rt.moveValidUntil = now + MOVEMENT_ACTIVITY_WINDOW_MS;
+    }
+
+    /**
+     * Script {@code updateMovement}: only real displacement / velocity refreshes the AFK gate.
+     * Hits and blocks never call this — standing still and punching (box farm) expires the window.
+     */
     private static void tickMovement(ServerPlayer player, SparPlayerRuntime rt, long now) {
         double x = player.m_20185_();
         double y = player.m_20186_();
         double z = player.m_20189_();
-        if (rt.moveValidUntil > 0L) {
-            double dx = x - rt.moveX;
-            double dy = y - rt.moveY;
-            double dz = z - rt.moveZ;
-            double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            if (dist >= MIN_MOVEMENT_DISTANCE) {
-                rt.moveValidUntil = now + MOVEMENT_ACTIVITY_WINDOW_MS;
-                rt.styleMove += dist;
-                double speed = dist; // per pulse approx
-                if (speed >= HEAVY_MOTION_SPEED) {
-                    rt.heavyMotionUntil = now + 1500L;
-                }
-            }
-        } else {
-            rt.moveValidUntil = now + MOVEMENT_ACTIVITY_WINDOW_MS;
-        }
+        double dx = x - rt.moveX;
+        double dy = y - rt.moveY;
+        double dz = z - rt.moveZ;
+        double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        double speed = readMotionSpeed(player);
         rt.moveX = x;
         rt.moveY = y;
         rt.moveZ = z;
+        if (dist >= MIN_MOVEMENT_DISTANCE || speed >= MIN_MOTION_SPEED) {
+            rt.moveValidUntil = now + MOVEMENT_ACTIVITY_WINDOW_MS;
+            rt.styleMove += 1.0;
+        }
+        if (speed >= HEAVY_MOTION_SPEED) {
+            rt.heavyMotionUntil = now + 2500L;
+        }
+    }
+
+    private static double readMotionSpeed(ServerPlayer player) {
+        try {
+            var motion = player.m_20184_();
+            if (motion == null) {
+                return 0.0;
+            }
+            double mx = motion.f_82479_;
+            double my = motion.f_82480_;
+            double mz = motion.f_82481_;
+            return Math.sqrt(mx * mx + my * my + mz * mz);
+        } catch (Throwable ignored) {
+            return 0.0;
+        }
+    }
+
+    private static boolean hasRecentMovement(SparPlayerRuntime rt, long now) {
+        return rt != null && rt.moveValidUntil > 0L && now <= rt.moveValidUntil;
     }
 
     private static void tickClash(ServerPlayer player, ServerPlayer partner, SparPlayerRuntime rt, long now) {
@@ -385,18 +421,55 @@ public final class SparringSystem {
             rt.sessionClashMs += 500L;
             SparCombat.awardCombatTp(player, partner, rt, SparCombat.BEAM_CLASH_TP_PER_TICK, "clash");
         }
-        // Charging holds activity best-effort
+        // Charging / clash holds hit + movement gates (script holdSparForKiCharge).
+        if (holdSparForKiOrClash(player, partner, rt, now)) {
+            return;
+        }
+    }
+
+    /**
+     * Standing still mid-charge / clash must not trip AFK or hit-activity gates.
+     * @return true when the pair is currently held
+     */
+    private static boolean holdSparForKiOrClash(
+            ServerPlayer player, ServerPlayer partner, SparPlayerRuntime rt, long now
+    ) {
+        if (player == null || partner == null || rt == null) {
+            return false;
+        }
+        boolean clashing = now <= rt.clashUntil
+                || DmzRewards.isClashing(player.m_20148_())
+                || DmzRewards.isClashing(partner.m_20148_());
+        boolean charging = isChargingKi(player) || isChargingKi(partner);
+        if (!clashing && !charging) {
+            return false;
+        }
+        SparPlayerRuntime pRt = runtime(partner.m_20148_());
+        stampHitActivity(rt, partner.m_7755_().getString(), now, "ki");
+        stampHitActivity(pRt, player.m_7755_().getString(), now, "ki");
+        refreshMovementActivity(player, rt, now);
+        refreshMovementActivity(partner, pRt, now);
+        return true;
+    }
+
+    private static void stampHitActivity(SparPlayerRuntime rt, String partnerName, long now, String kind) {
+        if (rt == null) {
+            return;
+        }
+        rt.lastOutAt = now;
+        rt.lastOutKind = kind == null ? "melee" : kind;
+        if (partnerName != null) {
+            rt.lastOutPartner = partnerName;
+        }
+    }
+
+    private static boolean isChargingKi(ServerPlayer player) {
         try {
             StatsData data = DmzProgression.stats(player);
             Status status = data == null ? null : data.getStatus();
-            if (status != null && (status.isChargingKi() || status.isActionCharging())) {
-                rt.lastOutAt = now;
-                rt.lastOutKind = "ki";
-                if (partner != null) {
-                    rt.lastOutPartner = partner.m_7755_().getString();
-                }
-            }
+            return status != null && (status.isChargingKi() || status.isActionCharging());
         } catch (Throwable ignored) {
+            return false;
         }
     }
 
@@ -447,36 +520,40 @@ public final class SparringSystem {
         DmzRewards.msg(player, "§6§lPERFECT TRAINING ACTIVE");
     }
 
+    /**
+     * Script processSession activity gates:
+     * both fighters must exchange damage AND keep moving (unless clash/ki-charge hold).
+     * Prevents AFK box-farming: standing still punching still expires the move window.
+     */
     private static void tickActivity(ServerPlayer player, ServerPlayer partner, SparPlayerRuntime rt, long now) {
-        boolean recentHit = hasRecentOutgoingHit(rt, partner.m_7755_().getString(), now);
-        boolean moving = now <= rt.moveValidUntil;
-        boolean ok = recentHit || moving;
-        if (!ok) {
-            if (rt.graceUntil <= 0L) {
-                rt.graceUntil = now + SESSION_GRACE_PERIOD_MS;
-                rt.graceReason = "afk";
-                rt.graceWarned = false;
-            } else if (!rt.graceWarned && now + 1500L >= rt.graceUntil) {
-                rt.graceWarned = true;
-                DmzRewards.msg(player, "§e[Sparring] Stay active or session ends.");
-            } else if (now >= rt.graceUntil) {
-                endSession(player, partner, "afk");
-                return;
-            }
-        } else {
-            rt.graceUntil = 0L;
-            rt.graceWarned = false;
-        }
+        SparPlayerRuntime pRt = runtime(partner.m_20148_());
+        boolean held = holdSparForKiOrClash(player, partner, rt, now);
+
+        String failure = "";
         if (player.m_9236_() != partner.m_9236_() || player.m_20270_(partner) > MAX_SPAR_DISTANCE) {
-            if (rt.graceUntil <= 0L || !"distance".equals(rt.graceReason)) {
-                rt.graceUntil = now + DISTANCE_GRACE_PERIOD_MS;
-                rt.graceReason = "distance";
-                rt.graceWarned = false;
-                DmzRewards.msg(player, "§e[Sparring] Too far — return within " + (int) MAX_SPAR_DISTANCE + " blocks.");
-            } else if (now >= rt.graceUntil) {
-                endSession(player, partner, "distance");
+            failure = "fighters moved too far apart";
+        } else if (!held) {
+            boolean hitA = hasRecentOutgoingHit(rt, partner.m_7755_().getString(), now);
+            boolean hitB = hasRecentOutgoingHit(pRt, player.m_7755_().getString(), now);
+            if (!hitA || !hitB) {
+                failure = "both fighters must resume exchanging damage";
+            } else if (!hasRecentMovement(rt, now) || !hasRecentMovement(pRt, now)) {
+                failure = "both fighters must resume moving";
             }
         }
+
+        if (!failure.isEmpty()) {
+            handleRecoverableFailure(player, partner, rt, pRt, failure, now);
+            return;
+        }
+
+        rt.graceUntil = 0L;
+        rt.graceWarned = false;
+        rt.graceReason = "";
+        pRt.graceUntil = 0L;
+        pRt.graceWarned = false;
+        pRt.graceReason = "";
+
         if (rt.combo > 0 && now > rt.comboUntil) {
             rt.combo = 0;
         }
@@ -485,7 +562,48 @@ public final class SparringSystem {
         }
     }
 
+    private static void handleRecoverableFailure(
+            ServerPlayer player,
+            ServerPlayer partner,
+            SparPlayerRuntime rt,
+            SparPlayerRuntime pRt,
+            String reason,
+            long now
+    ) {
+        long graceMs = reason != null && reason.contains("far")
+                ? DISTANCE_GRACE_PERIOD_MS
+                : SESSION_GRACE_PERIOD_MS;
+        if (rt.graceUntil <= 0L || !reason.equals(rt.graceReason)) {
+            rt.graceUntil = now + graceMs;
+            rt.graceReason = reason;
+            rt.graceWarned = false;
+            if (pRt != null) {
+                pRt.graceUntil = rt.graceUntil;
+                pRt.graceReason = reason;
+                pRt.graceWarned = false;
+            }
+        }
+        if (!rt.graceWarned) {
+            rt.graceWarned = true;
+            if (pRt != null) {
+                pRt.graceWarned = true;
+            }
+            long left = Math.max(1L, (rt.graceUntil - now + 999L) / 1000L);
+            String msg = "§6[Sparring] §eRecover within " + left + "s§8 - " + reason;
+            DmzRewards.msg(player, msg);
+            if (partner != null) {
+                DmzRewards.msg(partner, msg);
+            }
+        }
+        if (now >= rt.graceUntil) {
+            endSession(player, partner, reason);
+        }
+    }
+
     private static boolean hasRecentOutgoingHit(SparPlayerRuntime rt, String partnerName, long now) {
+        if (rt == null || partnerName == null || partnerName.isBlank()) {
+            return false;
+        }
         if (!rt.lastOutPartner.equalsIgnoreCase(partnerName)) {
             return false;
         }
