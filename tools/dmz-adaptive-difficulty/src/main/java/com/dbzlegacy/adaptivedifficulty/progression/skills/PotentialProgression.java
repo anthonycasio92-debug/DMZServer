@@ -111,10 +111,12 @@ public final class PotentialProgression {
         if (!hasMoved(player)) {
             return;
         }
-        if (!allowMethod(player, method)) {
+        // Script: duplicate window is checked before method-streak so rapid
+        // same-target hits do not burn the 5-streak rotation.
+        if (isDuplicate(player, method, other.m_19879_())) {
             return;
         }
-        if (isDuplicate(player, method, other.m_19879_())) {
+        if (!allowMethod(player, method)) {
             return;
         }
         int points = calculatePoints(player, basePoints);

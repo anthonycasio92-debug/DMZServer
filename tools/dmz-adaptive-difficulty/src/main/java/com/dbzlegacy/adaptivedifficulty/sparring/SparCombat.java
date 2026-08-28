@@ -49,13 +49,23 @@ public final class SparCombat {
     private static final float[] MOMENTUM_MULTIPLIERS = {1.05f, 1.10f, 1.20f, 1.35f, 1.50f, 2.00f};
 
     private static final double[] BP_ANCHORS = {
-            1, 10, 100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000,
-            100_000_000, 1_000_000_000L, 10_000_000_000L, 100_000_000_000L, 1_000_000_000_000L,
-            10_000_000_000_000L, 100_000_000_000_000L
+            1,
+            100_000,
+            1_000_000,
+            10_000_000,
+            100_000_000,
+            1_000_000_000L,
+            10_000_000_000L,
+            100_000_000_000L,
+            1_000_000_000_000L,
+            10_000_000_000_000L,
+            100_000_000_000_000L
     };
     private static final double[] BP_MULT_ANCHORS = {
-            1.0, 2.0, 5.0, 12.0, 25.0, 50.0, 100.0, 150.0, 250.0, 400.0, 600.0, 600.0, 600.0, 600.0, 600.0
+            1.0, 2.0, 5.0, 12.0, 25.0, 50.0, 100.0, 150.0, 250.0, 400.0, 600.0
     };
+    /** Token floor when a ki hit lands but DMZ fully mitigates HP loss (script KI_FULL_MIT_FLOOR). */
+    public static final float KI_FULL_MIT_FLOOR = 12.0f;
 
     private SparCombat() {}
 
@@ -216,17 +226,16 @@ public final class SparCombat {
 
     public static float kiEfficiency(String kiKind) {
         if (kiKind == null) {
-            return 1.0f;
+            return 0.95f;
         }
         return switch (kiKind.toLowerCase()) {
-            case "beam" -> 1.15f;
-            case "charge" -> 1.10f;
             case "basic" -> 1.00f;
-            case "blast" -> 1.05f;
-            case "scatter" -> 1.08f;
-            case "explosive" -> 1.12f;
-            case "barrage" -> 1.06f;
-            default -> 1.00f;
+            case "charge" -> 1.10f;
+            case "scatter" -> 1.20f;
+            case "beam" -> 1.30f;
+            case "explosive" -> 0.75f;
+            case "barrage" -> 0.90f;
+            default -> 0.95f; // other
         };
     }
 
@@ -541,17 +550,16 @@ public final class SparCombat {
         if (rt == null) {
             return;
         }
+        // Script refreshes momentum window on every scored hit, not only tier-ups.
+        rt.momentumUntil = System.currentTimeMillis() + 10_000L;
         int tier = 0;
         for (int i = 0; i < MOMENTUM_THRESHOLDS.length; i++) {
             if (rt.combo >= MOMENTUM_THRESHOLDS[i]) {
                 tier = i + 1;
             }
         }
-        if (tier > rt.momentumTier) {
-            rt.momentumTier = tier;
-            rt.momentumUntil = System.currentTimeMillis() + 10_000L;
-            rt.sessionMaxMom = Math.max(rt.sessionMaxMom, tier);
-        }
+        rt.momentumTier = tier;
+        rt.sessionMaxMom = Math.max(rt.sessionMaxMom, tier);
     }
 
     public static final class TrainingValues {

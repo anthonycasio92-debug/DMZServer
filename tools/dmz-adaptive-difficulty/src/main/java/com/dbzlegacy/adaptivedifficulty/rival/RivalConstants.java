@@ -59,6 +59,9 @@ public final class RivalConstants {
     public static final long CH_TICK_MS = 250L;
     public static final long CH_PENDING_RESOLVE_MS = 75L;
     public static final long CH_BROADCAST_SCORE_MS = 15_000L;
+    /** Planned fights longer than this use the slower live-score cadence. */
+    public static final long CH_LONG_FIGHT_MS = 2L * 60L * 1000L;
+    public static final long CH_BROADCAST_SCORE_LONG_MS = 60_000L;
 
     public static final int CH_WIN_TP = 5500;
     public static final int CH_LOSE_TP = 2000;

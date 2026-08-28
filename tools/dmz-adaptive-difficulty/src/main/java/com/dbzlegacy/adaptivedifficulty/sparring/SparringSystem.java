@@ -130,7 +130,7 @@ public final class SparringSystem {
         recordCombatExchange(attacker, victim, ki, kiKind);
         SparPlayerRuntime vRt = runtime(victim.m_20148_());
         if (vRt.active && vRt.partner != null && vRt.partner.equals(attacker.m_20148_())) {
-            vRt.pendingSampleHp = victim.m_21223_();
+            vRt.pendingSampleHp = victim.m_21223_() + victim.m_6103_();
             vRt.pendingAttacker = attacker.m_20148_();
             vRt.pendingKi = ki;
             vRt.pendingKiKind = kiKind;
@@ -156,13 +156,23 @@ public final class SparringSystem {
         if (rt.pendingUntil <= 0L || now < rt.pendingUntil || rt.pendingAttacker == null) {
             return;
         }
-        float lost = Math.max(0.0f, rt.pendingSampleHp - player.m_21223_());
+        // Health + absorption (script getHealthPool).
+        float nowPool = player.m_21223_() + player.m_6103_();
+        float lost = Math.max(0.0f, rt.pendingSampleHp - nowPool);
         UUID atkId = rt.pendingAttacker;
         boolean ki = rt.pendingKi;
         String kiKind = rt.pendingKiKind;
         rt.pendingUntil = 0L;
         rt.pendingAttacker = null;
-        if (!(lost > 0.0f) || !rt.active || rt.partner == null || !rt.partner.equals(atkId)) {
+        if (!(lost > 0.01f)) {
+            // Fully mitigated kiblast still credits a token floor so ki training registers.
+            if (ki) {
+                lost = SparCombat.KI_FULL_MIT_FLOOR;
+            } else {
+                return;
+            }
+        }
+        if (!rt.active || rt.partner == null || !rt.partner.equals(atkId)) {
             return;
         }
         MinecraftServer server = player.m_20194_();
@@ -175,33 +185,69 @@ public final class SparringSystem {
         SparCombat.awardDamageTp(attacker, player, atkRt, lost, ki, kiKind);
         if (SparCombat.isBlocking(player)) {
             rt.sessionBlocks++;
-            rt.styleBlock += lost;
+            rt.styleBlock += 1.0; // script: +1 per block, not HP lost
             SparCombat.awardCombatTp(player, attacker, rt, SparCombat.BLOCK_TP_BASE, "melee");
         }
     }
 
     private static void maybeFriendlyFist(ServerPlayer victim, ServerPlayer attacker, SparPlayerRuntime vRt) {
+        if (victim == null || attacker == null || vRt == null) {
+            return;
+        }
         try {
+            if (vRt.ffKdHealed) {
+                return;
+            }
             StatsData data = DmzProgression.stats(victim);
             Status status = data == null ? null : data.getStatus();
-            if (status == null || !status.isFriendlyFistEnabled()) {
+            if (status == null) {
                 return;
             }
+            // Either fighter having Friendly Fist can save the knockdown victim.
+            boolean ffOn = status.isFriendlyFistEnabled()
+                    || isFriendlyFistOn(attacker);
+            if (!ffOn) {
+                return;
+            }
+            boolean kd = status.isKnockedDown();
             float hp = victim.m_21223_();
-            float max = victim.m_21233_();
-            if (hp > 1.5f && hp / Math.max(1.0f, max) > 0.05f) {
+            boolean lethal = hp <= 1.5f;
+            if (!kd && !lethal) {
                 return;
             }
-            // Full heal partner once per low-HP event during spar
+            float max = victim.m_21233_();
             victim.m_21153_(max);
-            attacker.m_21153_(attacker.m_21233_());
+            try {
+                status.setKnockedDown(false);
+            } catch (Throwable ignored) {
+            }
+            vRt.ffKdHealed = true;
             long now = System.currentTimeMillis();
+            stampHitActivity(vRt, attacker.m_7755_().getString(), now, "ki");
+            SparPlayerRuntime aRt = runtime(attacker.m_20148_());
+            stampHitActivity(aRt, victim.m_7755_().getString(), now, "ki");
+            refreshMovementActivity(victim, vRt, now);
+            refreshMovementActivity(attacker, aRt, now);
+            vRt.graceUntil = 0L;
+            aRt.graceUntil = 0L;
             if (now >= vRt.messageNext) {
                 vRt.messageNext = now + 4000L;
-                DmzRewards.msg(victim, "§a[Sparring] Friendly Fist restored you.");
-                DmzRewards.msg(attacker, "§a[Sparring] Friendly Fist restored " + victim.m_7755_().getString() + ".");
+                DmzRewards.msg(attacker, "§6[Sparring] §aFriendly Fist §7knockdown — healed §f"
+                        + victim.m_7755_().getString() + "§7.");
+                DmzRewards.msg(victim, "§6[Sparring] §aFriendly Fist §7heal from §f"
+                        + attacker.m_7755_().getString() + "§7.");
             }
         } catch (Throwable ignored) {
+        }
+    }
+
+    private static boolean isFriendlyFistOn(ServerPlayer player) {
+        try {
+            StatsData data = DmzProgression.stats(player);
+            Status status = data == null ? null : data.getStatus();
+            return status != null && status.isFriendlyFistEnabled();
+        } catch (Throwable ignored) {
+            return false;
         }
     }
 
@@ -411,20 +457,22 @@ public final class SparringSystem {
     }
 
     private static void tickClash(ServerPlayer player, ServerPlayer partner, SparPlayerRuntime rt, long now) {
-        boolean clashing = DmzRewards.isClashing(player.m_20148_())
-                || DmzRewards.isClashing(partner.m_20148_());
-        if (clashing) {
+        boolean selfClash = DmzRewards.isClashing(player.m_20148_());
+        boolean partnerClash = DmzRewards.isClashing(partner.m_20148_());
+        boolean bothClashing = selfClash && partnerClash;
+        if (selfClash || partnerClash) {
+            // Soft linger keeps activity gates alive even if only one side reports clash.
             rt.clashUntil = now + 4000L;
         }
-        if (now <= rt.clashUntil && now >= rt.clashNext) {
+        // Script: TP drip only while BOTH fighters are actively clashing.
+        if (bothClashing && now >= rt.clashNext) {
             rt.clashNext = now + 500L;
             rt.sessionClashMs += 500L;
+            rt.styleBeam += 1.0;
             SparCombat.awardCombatTp(player, partner, rt, SparCombat.BEAM_CLASH_TP_PER_TICK, "clash");
         }
         // Charging / clash holds hit + movement gates (script holdSparForKiCharge).
-        if (holdSparForKiOrClash(player, partner, rt, now)) {
-            return;
-        }
+        holdSparForKiOrClash(player, partner, rt, now);
     }
 
     /**

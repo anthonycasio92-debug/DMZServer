@@ -272,15 +272,21 @@ public final class RivalChallengeManager {
             }
             if (ch.status == RivalChallenge.Phase.ACTIVE) {
                 if (distance(a, b) > RivalConstants.CH_MAX_DISTANCE * 2.0) {
-                    // whoever is farther from start loses — treat as draw-ish forfeit for distant
-                    endChallenge(server, ch, null, null, false, "distance");
-                    continue;
+                    // Script: warn only — fight continues (do not force-end as draw).
+                    if (now - ch.lastBroadcastAt >= 3_000L) {
+                        ch.lastBroadcastAt = now;
+                        DmzRewards.msg(a, "§cToo far apart! Return within range!");
+                        DmzRewards.msg(b, "§cToo far apart! Return within range!");
+                    }
                 }
                 if (now >= ch.endsAt) {
                     finishByDamage(server, ch);
                     continue;
                 }
-                if (now - ch.lastBroadcastAt >= RivalConstants.CH_BROADCAST_SCORE_MS) {
+                long scoreInterval = ch.durationMs > RivalConstants.CH_LONG_FIGHT_MS
+                        ? RivalConstants.CH_BROADCAST_SCORE_LONG_MS
+                        : RivalConstants.CH_BROADCAST_SCORE_MS;
+                if (now - ch.lastBroadcastAt >= scoreInterval) {
                     ch.lastBroadcastAt = now;
                     DmzRewards.msg(a, scoreLine(ch));
                     DmzRewards.msg(b, scoreLine(ch));
@@ -391,15 +397,12 @@ public final class RivalChallengeManager {
             ServerPlayer loseP = loser != null && loser.equals(ch.a) ? pA : pB;
             float baseWin = related ? RivalConstants.CH_WIN_TP : RivalConstants.CH_NON_RIVAL_WIN_TP;
             float winTp = RivalTpCurve.scale(winP, baseWin, "burst");
-            float loseTp = RivalTpCurve.scale(loseP, RivalConstants.CH_LOSE_TP, "burst");
             if (winP != null) {
                 DmzRewards.awardTp(winP, winTp, "Rival Forfeit Win", true, "§6[Rival Challenge] ");
             }
-            if (loseP != null) {
-                DmzRewards.awardTp(loseP, loseTp, "Rival Forfeit Loss", true, "§6[Rival Challenge] ");
-            }
+            // Script: no participation TP to the forfeit/disconnect loser.
             if (related) {
-                applyWinLoss(recA, recB, ch, winner, loser, false, true);
+                applyWinLoss(recA, recB, ch, winner, loser, false, true, null);
             }
             deliverReport(server, ch, winner, loser, false);
             RivalProgression.get().onChallengeEnd(winP, loseP, ch, false, false);
@@ -412,14 +415,22 @@ public final class RivalChallengeManager {
             ServerPlayer winP = winner.equals(ch.a) ? pA : pB;
             ServerPlayer loseP = loser != null && loser.equals(ch.a) ? pA : pB;
             RivalLink winLink = null;
+            RivalPlayerRecord winRec = null;
+            RivalPlayerRecord loseRec = null;
             if (related && recA != null && recB != null) {
-                RivalPlayerRecord winRec = winner.toString().equals(recA.uuid) ? recA : recB;
-                RivalPlayerRecord loseRec = loser.toString().equals(recA.uuid) ? recA : recB;
+                winRec = winner.toString().equals(recA.uuid) ? recA : recB;
+                loseRec = loser.toString().equals(recA.uuid) ? recA : recB;
                 winLink = winRec.rivals.get(loseRec.uuid);
             }
             float pgMult = ProvingGrounds.challengeTpMultiplier(winP, winLink);
+            // Script: lose TP also gets on-grounds mult when applicable.
+            float loseBase = RivalConstants.CH_LOSE_TP;
+            if (loseP != null && winLink != null && ProvingGrounds.onGrounds(loseP,
+                    ProvingGrounds.normalize(winLink.provingGrounds))) {
+                loseBase = (float) (loseBase * ProvingGrounds.ON_GROUNDS_TP_MULT);
+            }
             float winTp = RivalTpCurve.scale(winP, baseWin * pgMult, "burst");
-            float loseTp = RivalTpCurve.scale(loseP, RivalConstants.CH_LOSE_TP, "burst");
+            float loseTp = RivalTpCurve.scale(loseP, loseBase, "burst");
             if (winP != null) {
                 DmzRewards.awardTp(winP, winTp, knockout ? "Rival KO Win" : "Rival Win", true,
                         "§6[Rival Challenge] ");
@@ -427,14 +438,12 @@ public final class RivalChallengeManager {
             if (loseP != null) {
                 DmzRewards.awardTp(loseP, loseTp, "Rival Loss", true, "§6[Rival Challenge] ");
             }
-            if (related && recA != null && recB != null) {
-                applyWinLoss(recA, recB, ch, winner, loser, knockout, false);
-                RivalPlayerRecord winRec = winner.toString().equals(recA.uuid) ? recA : recB;
-                RivalPlayerRecord loseRec = loser.toString().equals(recA.uuid) ? recA : recB;
+            if (related && winRec != null && loseRec != null) {
                 RivalChallenge.Combat wC = ch.combatOf(winner);
                 RivalChallenge.Combat lC = ch.combatOf(loser);
-                ProvingGrounds.processBattle(winP, loseP, winRec, loseRec,
+                ProvingGrounds.BattleResult pg = ProvingGrounds.processBattle(winP, loseP, winRec, loseRec,
                         wC.damage, lC.damage, wC.biggestHit, lC.biggestHit, duration);
+                applyWinLoss(recA, recB, ch, winner, loser, knockout, false, pg);
             }
             deliverReport(server, ch, winner, loser, false);
             RivalProgression.get().onChallengeEnd(winP, loseP, ch, false, knockout);
@@ -519,7 +528,8 @@ public final class RivalChallengeManager {
             UUID winner,
             UUID loser,
             boolean knockout,
-            boolean forfeit
+            boolean forfeit,
+            ProvingGrounds.BattleResult pg
     ) {
         if (recA == null || recB == null || winner == null || loser == null) {
             return;
@@ -542,12 +552,18 @@ public final class RivalChallengeManager {
         lLink.losses++;
         wLink.lastBattleAt = System.currentTimeMillis();
         lLink.lastBattleAt = wLink.lastBattleAt;
+        boolean mutual = wLink.mutual && lLink.mutual;
+        // Script: challenge RP only when the pair is mutual.
+        if (!mutual) {
+            return;
+        }
         int winRp = RivalConstants.CH_WIN_RP;
         int loseRp = RivalConstants.CH_LOSE_RP + (knockout ? RivalConstants.CH_KO_LOSE_RP_BONUS : 0);
         if (forfeit) {
-            loseRp = Math.max(0, loseRp - RivalConstants.CH_FORFEIT_RP_PENALTY);
-        }
-        if (wLink.mutual || lLink.mutual) {
+            // Script: loser gets -CH_FORFEIT_RP_PENALTY (not reduced positive lose RP).
+            loseRp = -RivalConstants.CH_FORFEIT_RP_PENALTY;
+            winRp = RivalConstants.CH_WIN_RP;
+        } else {
             double minD = Math.min(ch.damageOf(winner), ch.damageOf(loser));
             double maxD = Math.max(1.0, Math.max(ch.damageOf(winner), ch.damageOf(loser)));
             if (minD / maxD >= RivalConstants.CH_CLOSE_BATTLE_RATIO) {
@@ -556,9 +572,17 @@ public final class RivalChallengeManager {
             }
             winRp += longRivalryBonus(wLink);
             loseRp += longRivalryBonus(lLink);
+            if (pg != null && (pg.onGrounds || pg.created)) {
+                winRp += ProvingGrounds.ON_GROUNDS_RP_BONUS;
+                loseRp += ProvingGrounds.ON_GROUNDS_RP_BONUS;
+            }
+            if (pg != null && pg.reclaimed) {
+                winRp += ProvingGrounds.RECLAIM_RP;
+            }
         }
         RivalStore.get().addRp(winRec, loseRec.uuid, winRp, "challenge_win");
-        RivalStore.get().addRp(loseRec, winRec.uuid, loseRp, "challenge_lose");
+        RivalStore.get().addRp(loseRec, winRec.uuid, loseRp,
+                forfeit ? "forfeit" : "challenge_lose");
     }
 
     private static void accumulateCareer(RivalPlayerRecord rec, RivalChallenge.Combat combat) {
@@ -585,17 +609,22 @@ public final class RivalChallengeManager {
         }
         a.officialDraws++;
         b.officialDraws++;
-        int rp = RivalConstants.CH_DRAW_RP;
-        if (aLink != null && aLink.mutual) {
-            double minD = Math.min(ch.damageA, ch.damageB);
-            double maxD = Math.max(1.0, Math.max(ch.damageA, ch.damageB));
-            if (minD / maxD >= RivalConstants.CH_CLOSE_BATTLE_RATIO) {
-                rp += RivalConstants.CH_CLOSE_BATTLE_RP;
-            }
-            rp += longRivalryBonus(aLink);
-            RivalStore.get().addRp(a, b.uuid, rp, "challenge_draw");
-            RivalStore.get().addRp(b, a.uuid, rp, "challenge_draw");
+        // Script: draw RP only for mutual pairs.
+        if (aLink == null || bLink == null || !aLink.mutual || !bLink.mutual) {
+            return;
         }
+        int rp = RivalConstants.CH_DRAW_RP;
+        double minD = Math.min(ch.damageA, ch.damageB);
+        double maxD = Math.max(1.0, Math.max(ch.damageA, ch.damageB));
+        if (minD / maxD >= RivalConstants.CH_CLOSE_BATTLE_RATIO) {
+            rp += RivalConstants.CH_CLOSE_BATTLE_RP;
+        }
+        rp += longRivalryBonus(aLink);
+        if (aLink.provingGrounds != null && aLink.provingGrounds.active) {
+            rp += ProvingGrounds.ON_GROUNDS_RP_BONUS;
+        }
+        RivalStore.get().addRp(a, b.uuid, rp, "challenge_draw");
+        RivalStore.get().addRp(b, a.uuid, rp, "challenge_draw");
     }
 
     private static int longRivalryBonus(RivalLink link) {
