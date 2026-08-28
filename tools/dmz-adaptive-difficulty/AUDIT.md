@@ -1,3 +1,15 @@
+## CNPC world_data capture (2.3.30)
+
+**Bug:** Migrator never reliably read `<world>/customnpcs/scripts/world_data.json`.
+- Relied on `getIWorld(...).getStoreddata()` (Mohist-fragile)
+- File fallback used Gson, but real CNPC files are **NBT-JSON** (`1b`, `123L`) → parse fail
+- Wrong `MinecraftServer` path reflection (no `LevelResource("customnpcs")`)
+
+**Fix:**
+1. `ScriptController.loadStoredData()` then read `ScriptController.compound` directly
+2. Resolve `<level>/customnpcs/scripts/world_data.json` via `getWorldPath(LevelResource)` / `CustomNpcs.getLevelSaveDirectory`
+3. Load with `NBTJsonUtil.LoadFile` (Gson only as fallback for plain dumps)
+
 ## CNPC migrate recovery (2.3.29)
 
 **Bug:** Migrator skipped Rival import when `rivalry-v4.json` already had stub players, then

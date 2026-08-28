@@ -128,9 +128,10 @@ public final class CnpcDataMigrator {
             WorldBlob blob = resolveWorldBlob(server);
             if (blob == null || !blob.hasAnything()) {
                 return "§cNo CNPC Rival/Spar data found.\n"
-                        + "§7Checked: live storeddata, §fcnpc-import-backup/§7, and §fworld_data.json§7.\n"
-                        + "§8Restore a pre-wipe backup into "
-                        + "config/legacymechanics/cnpc-import-backup/world_data.json then "
+                        + "§7Checked: ScriptController compound, §f<world>/customnpcs/scripts/world_data.json§7,\n"
+                        + "§7and §fcnpc-import-backup/§7.\n"
+                        + "§8Put a pre-wipe world_data.json into "
+                        + "config/legacymechanics/cnpc-import-backup/ then "
                         + "/lm admin migrate-cnpc force";
             }
 
@@ -250,23 +251,76 @@ public final class CnpcDataMigrator {
     }
 
     private static WorldBlob resolveWorldBlob(MinecraftServer server) {
+        // 1) Force-reload ScriptController compound from the world file, then read it.
+        ensureCnpcStoredDataLoaded();
+        WorldBlob compound = fromScriptControllerCompound();
+        if (compound != null && compound.hasAnything()) {
+            return compound;
+        }
+
+        // 2) IWorld.getStoreddata() — same compound, but needs getIWorld (Mohist-fragile).
         WorldBlob live = fromLiveStoreddata();
         if (live != null && live.hasAnything()) {
             return live;
         }
 
-        WorldBlob backup = fromBackupDir();
-        if (backup != null && backup.hasAnything()) {
-            return backup;
-        }
-
+        // 3) Direct world file: <level>/customnpcs/scripts/world_data.json (NBT-JSON).
         WorldBlob disk = fromWorldDataFile(server);
         if (disk != null && disk.hasAnything()) {
             return disk;
         }
 
-        // Prefer a live empty handle only so callers know CNPC is up but empty.
-        return live;
+        // 4) Staff recovery folder.
+        WorldBlob backup = fromBackupDir();
+        if (backup != null && backup.hasAnything()) {
+            return backup;
+        }
+
+        return compound != null ? compound : live;
+    }
+
+    /** Reload CNPC world_data.json into ScriptController.compound (no-op if CNPC missing). */
+    private static void ensureCnpcStoredDataLoaded() {
+        try {
+            Class<?> scClass = Class.forName("noppes.npcs.controllers.ScriptController");
+            Object instance = scClass.getField("Instance").get(null);
+            if (instance == null) {
+                return;
+            }
+            scClass.getMethod("loadStoredData").invoke(instance);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * Read Rival/Spar keys straight from {@code ScriptController.compound}
+     * (backed by {@code <world>/customnpcs/scripts/world_data.json}).
+     */
+    private static WorldBlob fromScriptControllerCompound() {
+        try {
+            Class<?> scClass = Class.forName("noppes.npcs.controllers.ScriptController");
+            Object instance = scClass.getField("Instance").get(null);
+            if (instance == null) {
+                return null;
+            }
+            Object compound = scClass.getField("compound").get(instance);
+            Map<String, String> map = compoundToStringMap(compound);
+            if (map.isEmpty()) {
+                return null;
+            }
+            WorldBlob b = blobFromMap(map, "scriptcontroller-compound");
+            // Clearing goes through the real IData wrapper when available.
+            b.liveStored = overworldStoreddata();
+            if (b.liveStored == null) {
+                b.liveStored = new CompoundClearAdapter(instance, compound);
+            }
+            return b;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] ScriptController compound read fail: {}",
+                    AdaptiveDifficultyMod.MOD_ID, t.toString());
+            return null;
+        }
     }
 
     private static WorldBlob fromLiveStoreddata() {
@@ -275,13 +329,12 @@ public final class CnpcDataMigrator {
             return null;
         }
         WorldBlob b = new WorldBlob();
-        b.source = "live-cnpc";
+        b.source = "live-cnpc-iworld";
         b.liveStored = stored;
         b.rivalRaw = firstNonBlank(storedGet(stored, RIVAL_DB), storedGet(stored, RIVAL_DB_BAK));
         b.progRaw = firstNonBlank(storedGet(stored, RIVAL_PROG), storedGet(stored, RIVAL_PROG_BAK));
         b.chRaw = firstNonBlank(storedGet(stored, RIVAL_CH), storedGet(stored, RIVAL_CH_BAK));
         b.sparNames = storedGet(stored, SPAR_LB_NAMES);
-        // Mirror spar keys into a map so import path is unified.
         Map<String, String> map = new HashMap<>();
         for (String key : storedKeys(stored)) {
             if (key != null && key.startsWith("spar.leaderboard.")) {
@@ -302,13 +355,12 @@ public final class CnpcDataMigrator {
         if (!Files.isDirectory(dir)) {
             return null;
         }
-        // Prefer a full world_data dump if present.
         Path[] dumps = {
                 dir.resolve("world_data.json"),
                 dir.resolve("world_data-from-live-cnpc.json"),
         };
         for (Path dump : dumps) {
-            WorldBlob fromDump = readWorldDataJson(dump, "backup:" + dump.getFileName());
+            WorldBlob fromDump = readWorldDataFile(dump, "backup:" + dump.getFileName());
             if (fromDump != null && fromDump.hasAnything()) {
                 return fromDump;
             }
@@ -318,7 +370,7 @@ public final class CnpcDataMigrator {
                 for (Path p : walk.toList()) {
                     String name = p.getFileName().toString();
                     if (name.startsWith("world_data") && name.endsWith(".json")) {
-                        WorldBlob fromDump = readWorldDataJson(p, "backup:" + name);
+                        WorldBlob fromDump = readWorldDataFile(p, "backup:" + name);
                         if (fromDump != null && fromDump.hasAnything()) {
                             return fromDump;
                         }
@@ -345,60 +397,97 @@ public final class CnpcDataMigrator {
 
     private static WorldBlob fromWorldDataFile(MinecraftServer server) {
         List<Path> candidates = new ArrayList<>();
+        // Canonical CNPC path: server.getWorldPath(customnpcs)/scripts/world_data.json
+        Path levelScripts = cnpcLevelScriptsDir(server);
+        if (levelScripts != null) {
+            candidates.add(levelScripts.resolve("world_data.json"));
+        }
         Path scriptControllerFile = cnpcWorldDataFile();
         if (scriptControllerFile != null) {
             candidates.add(scriptControllerFile);
         }
-        Path gameDir = FMLPaths.GAMEDIR.get();
-        if (server != null) {
-            try {
-                // MinecraftServer#getServerDirectory
-                Object dir = server.getClass().getMethod("m_129843_").invoke(server);
-                if (dir instanceof File f) {
-                    gameDir = f.toPath();
-                } else if (dir instanceof Path p) {
-                    gameDir = p;
-                }
-            } catch (Throwable ignored) {
-                try {
-                    Object dir = server.getClass().getMethod("getServerDirectory").invoke(server);
-                    if (dir instanceof File f) {
-                        gameDir = f.toPath();
-                    } else if (dir instanceof Path p) {
-                        gameDir = p;
-                    }
-                } catch (Throwable ignored2) {
-                }
+        try {
+            Class<?> custom = Class.forName("noppes.npcs.CustomNpcs");
+            Object dir = custom.getMethod("getLevelSaveDirectory", String.class, boolean.class)
+                    .invoke(null, "scripts", true);
+            if (dir instanceof File f) {
+                candidates.add(f.toPath().resolve("world_data.json"));
             }
+        } catch (Throwable ignored) {
         }
-        if (gameDir == null) {
-            gameDir = FMLPaths.GAMEDIR.get();
-        }
+
+        Path gameDir = FMLPaths.GAMEDIR.get();
         if (gameDir != null) {
             candidates.add(gameDir.resolve("customnpcs/scripts/world_data.json"));
             candidates.add(gameDir.resolve("uploads/scripts/world_data.json"));
-            // Common Mohist single-world layouts
-            for (String world : List.of("world", "AdventureWorld", "world_1", "Main")) {
+            for (String world : List.of("world", "AdventureWorld", "world_1", "Main", "Dim1")) {
                 candidates.add(gameDir.resolve(world).resolve("customnpcs/scripts/world_data.json"));
             }
-            try (Stream<Path> walk = Files.walk(gameDir, 5)) {
+            try (Stream<Path> walk = Files.walk(gameDir, 6)) {
                 walk.filter(p -> {
                             String s = p.toString().replace('\\', '/');
                             return s.endsWith("/customnpcs/scripts/world_data.json");
                         })
-                        .limit(8)
+                        .limit(12)
                         .forEach(candidates::add);
             } catch (Throwable ignored) {
             }
         }
+
+        StringBuilder tried = new StringBuilder();
         for (Path p : candidates) {
-            if (p == null || !Files.isRegularFile(p)) {
+            if (p == null) {
                 continue;
             }
-            WorldBlob b = readWorldDataJson(p, "file:" + p.getFileName());
+            tried.append("\n§8- ").append(p.toAbsolutePath());
+            if (!Files.isRegularFile(p)) {
+                continue;
+            }
+            WorldBlob b = readWorldDataFile(p, "file:" + p.toAbsolutePath());
             if (b != null && b.hasAnything()) {
-                b.source = "file:" + p.toAbsolutePath();
+                AdaptiveDifficultyMod.LOGGER.info(
+                        "[{}] CNPC world_data loaded from {}", AdaptiveDifficultyMod.MOD_ID, p.toAbsolutePath());
                 return b;
+            }
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] CNPC world_data present but no Rival/Spar keys: {}",
+                    AdaptiveDifficultyMod.MOD_ID, p.toAbsolutePath());
+        }
+        if (tried.length() > 0) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] CNPC world_data paths checked:{}", AdaptiveDifficultyMod.MOD_ID, tried);
+        }
+        return null;
+    }
+
+    /** {@code <level-save>/customnpcs/scripts} via MinecraftServer#getWorldPath(LevelResource). */
+    private static Path cnpcLevelScriptsDir(MinecraftServer server) {
+        if (server == null) {
+            return null;
+        }
+        try {
+            Class<?> levelResource = Class.forName("net.minecraft.world.level.storage.LevelResource");
+            Object customNpcs = levelResource.getConstructor(String.class).newInstance("customnpcs");
+            Object path = server.getClass()
+                    .getMethod("m_129843_", levelResource)
+                    .invoke(server, customNpcs);
+            if (path instanceof Path p) {
+                return p.resolve("scripts");
+            }
+            if (path instanceof File f) {
+                return f.toPath().resolve("scripts");
+            }
+        } catch (Throwable ignored) {
+            try {
+                Class<?> levelResource = Class.forName("net.minecraft.world.level.storage.LevelResource");
+                Object customNpcs = levelResource.getConstructor(String.class).newInstance("customnpcs");
+                Object path = server.getClass()
+                        .getMethod("getWorldPath", levelResource)
+                        .invoke(server, customNpcs);
+                if (path instanceof Path p) {
+                    return p.resolve("scripts");
+                }
+            } catch (Throwable ignored2) {
             }
         }
         return null;
@@ -422,13 +511,60 @@ public final class CnpcDataMigrator {
             }
         } catch (Throwable ignored) {
         }
+        // Fallback via public localDir field
+        try {
+            Class<?> sc = Class.forName("noppes.npcs.controllers.ScriptController");
+            Object instance = sc.getField("Instance").get(null);
+            Object localDir = sc.getField("localDir").get(instance);
+            if (localDir instanceof File f) {
+                return f.toPath().resolve("world_data.json");
+            }
+        } catch (Throwable ignored) {
+        }
         return null;
     }
 
-    private static WorldBlob readWorldDataJson(Path path, String sourceLabel) {
+    /**
+     * Load CNPC {@code world_data.json}. Prefer NBTJsonUtil (real CNPC format with {@code 1b}/{@code 123L});
+     * fall back to plain Gson flat maps (export dumps).
+     */
+    private static WorldBlob readWorldDataFile(Path path, String sourceLabel) {
         if (path == null || !Files.isRegularFile(path)) {
             return null;
         }
+        Map<String, String> map = readWorldDataMap(path);
+        if (map == null || map.isEmpty()) {
+            return null;
+        }
+        return blobFromMap(map, sourceLabel);
+    }
+
+    private static WorldBlob blobFromMap(Map<String, String> map, String sourceLabel) {
+        WorldBlob b = new WorldBlob();
+        b.source = sourceLabel;
+        b.fileMap = map;
+        b.rivalRaw = firstNonBlank(map.get(RIVAL_DB), map.get(RIVAL_DB_BAK));
+        b.progRaw = firstNonBlank(map.get(RIVAL_PROG), map.get(RIVAL_PROG_BAK));
+        b.chRaw = firstNonBlank(map.get(RIVAL_CH), map.get(RIVAL_CH_BAK));
+        b.sparNames = map.get(SPAR_LB_NAMES);
+        return b;
+    }
+
+    private static Map<String, String> readWorldDataMap(Path path) {
+        // 1) Real CNPC NBT-JSON
+        try {
+            Class<?> util = Class.forName("noppes.npcs.util.NBTJsonUtil");
+            Object compound = util.getMethod("LoadFile", File.class).invoke(null, path.toFile());
+            Map<String, String> nbtMap = compoundToStringMap(compound);
+            if (nbtMap != null && !nbtMap.isEmpty()) {
+                return nbtMap;
+            }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] NBTJsonUtil.LoadFile failed for {}: {}",
+                    AdaptiveDifficultyMod.MOD_ID, path, t.toString());
+        }
+        // 2) Plain JSON object dump
         try {
             String text = Files.readString(path, StandardCharsets.UTF_8);
             JsonObject root = parseObject(text);
@@ -449,19 +585,149 @@ public final class CnpcDataMigrator {
                 } catch (Throwable ignored) {
                 }
             }
-            WorldBlob b = new WorldBlob();
-            b.source = sourceLabel;
-            b.fileMap = map;
-            b.rivalRaw = firstNonBlank(map.get(RIVAL_DB), map.get(RIVAL_DB_BAK));
-            b.progRaw = firstNonBlank(map.get(RIVAL_PROG), map.get(RIVAL_PROG_BAK));
-            b.chRaw = firstNonBlank(map.get(RIVAL_CH), map.get(RIVAL_CH_BAK));
-            b.sparNames = map.get(SPAR_LB_NAMES);
-            return b;
+            return map;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
-                    "[{}] world_data read fail {}: {}",
+                    "[{}] Gson world_data read fail {}: {}",
                     AdaptiveDifficultyMod.MOD_ID, path, t.toString());
             return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, String> compoundToStringMap(Object compound) {
+        Map<String, String> map = new HashMap<>();
+        if (compound == null) {
+            return map;
+        }
+        try {
+            Object keysObj;
+            try {
+                keysObj = compound.getClass().getMethod("m_128431_").invoke(compound);
+            } catch (NoSuchMethodException e) {
+                keysObj = compound.getClass().getMethod("getAllKeys").invoke(compound);
+            }
+            if (!(keysObj instanceof Iterable<?> keys)) {
+                return map;
+            }
+            for (Object keyObj : keys) {
+                if (keyObj == null) {
+                    continue;
+                }
+                String key = String.valueOf(keyObj);
+                Object tag;
+                try {
+                    tag = compound.getClass().getMethod("m_128423_", String.class).invoke(compound, key);
+                } catch (NoSuchMethodException e) {
+                    tag = compound.getClass().getMethod("get", String.class).invoke(compound, key);
+                }
+                if (tag == null) {
+                    continue;
+                }
+                String value;
+                if (tag.getClass().getName().contains("NumericTag")
+                        || Number.class.isAssignableFrom(tag.getClass())) {
+                    try {
+                        Object d = tag.getClass().getMethod("m_7061_").invoke(tag);
+                        value = String.valueOf(d);
+                    } catch (Throwable t) {
+                        value = String.valueOf(tag);
+                    }
+                } else {
+                    try {
+                        // StringTag / Tag#getAsString
+                        Object s = tag.getClass().getMethod("m_7916_").invoke(tag);
+                        value = s == null ? null : String.valueOf(s);
+                    } catch (Throwable t) {
+                        try {
+                            Object s = tag.getClass().getMethod("getAsString").invoke(tag);
+                            value = s == null ? null : String.valueOf(s);
+                        } catch (Throwable t2) {
+                            value = String.valueOf(tag);
+                        }
+                    }
+                }
+                if (value != null) {
+                    map.put(key, value);
+                }
+            }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] compoundToStringMap fail: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
+        return map;
+    }
+
+    /**
+     * Minimal IData-like clearer so we can remove migrated keys from ScriptController.compound
+     * when {@code getIWorld} is unavailable.
+     */
+    private static final class CompoundClearAdapter {
+        private final Object scriptController;
+        private Object compound;
+
+        private CompoundClearAdapter(Object scriptController, Object compound) {
+            this.scriptController = scriptController;
+            this.compound = compound;
+        }
+
+        @SuppressWarnings("unused") // invoked via reflection from storedRemove/storedGet/storedKeys
+        public boolean has(String key) {
+            try {
+                refresh();
+                Object r = compound.getClass().getMethod("m_128441_", String.class).invoke(compound, key);
+                return r instanceof Boolean b && b;
+            } catch (Throwable t) {
+                return false;
+            }
+        }
+
+        @SuppressWarnings("unused")
+        public Object get(String key) {
+            try {
+                refresh();
+                if (!has(key)) {
+                    return null;
+                }
+                Object tag = compound.getClass().getMethod("m_128423_", String.class).invoke(compound, key);
+                if (tag == null) {
+                    return null;
+                }
+                try {
+                    return tag.getClass().getMethod("m_7916_").invoke(tag);
+                } catch (Throwable t) {
+                    return String.valueOf(tag);
+                }
+            } catch (Throwable t) {
+                return null;
+            }
+        }
+
+        @SuppressWarnings("unused")
+        public void remove(String key) {
+            try {
+                refresh();
+                compound.getClass().getMethod("m_128473_", String.class).invoke(compound, key);
+                scriptController.getClass().getField("shouldSave").setBoolean(scriptController, true);
+            } catch (Throwable ignored) {
+            }
+        }
+
+        @SuppressWarnings("unused")
+        public String[] getKeys() {
+            try {
+                refresh();
+                Object keys = compound.getClass().getMethod("m_128431_").invoke(compound);
+                if (keys instanceof java.util.Set<?> set) {
+                    return set.stream().map(String::valueOf).toArray(String[]::new);
+                }
+            } catch (Throwable ignored) {
+            }
+            return new String[0];
+        }
+
+        private void refresh() throws Exception {
+            compound = scriptController.getClass().getField("compound").get(scriptController);
         }
     }
 

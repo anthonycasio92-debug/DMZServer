@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.29", 'VERSION = "2.3.29"' in mod)
+    check("VERSION 2.3.30", 'VERSION = "2.3.30"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -299,7 +299,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 2.3.29", "2.3.29" in readme)
+    check("README version 2.3.30", "2.3.30" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -341,15 +341,15 @@ def main() -> int:
     check("README level clamp", "level clamp" in readme.lower() or "maxValue" in readme)
     check("README skeleton mount", "mount" in readme.lower() and "jockey" in readme.lower())
 
-    print("\n=== Coin drop chances (2.3.29) ===")
+    print("\n=== Coin drop chances (2.3.30) ===")
     coins = read(SRC / "com/dbzlegacy/adaptivedifficulty/currency/AncientCoinEconomy.java")
     check("drop chance gate in rollKillLoot", "ancientCoinDropChance" in coins and "roll >= dropChance" in coins)
     check("dual upgrade band uses same roll", "roll < upgradeChance" in coins)
     check("coinDropChanceMigratedV1", "coinDropChanceMigratedV1" in cfg)
     check("admin set drop chance", "ancientcoindropchance" in cmds or "coindropchance" in cmds)
-    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.29" in readme)
+    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.30" in readme)
 
-    print("\n=== Mohist CMI /lmdo routing (2.3.29) ===")
+    print("\n=== Mohist CMI /lmdo routing (2.3.30) ===")
     gui_root = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit"
     cmi_files = [
         "CmiDifficultyGui.java",
@@ -401,9 +401,12 @@ def main() -> int:
     check("SkillsChestGui progression via lmdo", "lmdo lm open progression" in skills_chest)
     check("SkillsChestGui no lm do open", 'cmd("lm do open' not in skills_chest)
 
-    print("\n=== CNPC migrate safety (2.3.29) ===")
+    print("\n=== CNPC migrate safety (2.3.30) ===")
     migrator = read(SRC / "com/dbzlegacy/adaptivedifficulty/data/CnpcDataMigrator.java")
     check("resolveWorldBlob present", "resolveWorldBlob" in migrator)
+    check("fromScriptControllerCompound", "fromScriptControllerCompound" in migrator)
+    check("NBTJsonUtil LoadFile", "NBTJsonUtil" in migrator and "LoadFile" in migrator)
+    check("cnpcLevelScriptsDir LevelResource", "LevelResource" in migrator and "cnpcLevelScriptsDir" in migrator)
     check("fromBackupDir present", "fromBackupDir" in migrator)
     check("fromWorldDataFile present", "fromWorldDataFile" in migrator)
     check("clear only after import", "imported && blob.liveStored" in migrator)
