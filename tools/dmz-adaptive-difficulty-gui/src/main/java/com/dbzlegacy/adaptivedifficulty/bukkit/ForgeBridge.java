@@ -63,6 +63,7 @@ public final class ForgeBridge {
     private static Method rivalLinesMethod;
     private static Method rivalHandleDoMethod;
     private static Method rivalPendingDeclareArgsMethod;
+    private static Method rivalAcceptCandidateArgsMethod;
     private static Method rivalCurrentCardsMethod;
     private static Method rivalPastCardsMethod;
     private static Method rivalCurrentArgsMethod;
@@ -1005,10 +1006,18 @@ public final class ForgeBridge {
 
     /**
      * Pending incoming declare picker args ({@code uuid:&lt;uuid&gt;} when online, else name).
-     * Online declarers first. Empty when none / API missing.
+     * Invite-only (Decline). Online declarers first. Empty when none / API missing.
      */
     public static List<String> rivalPendingIncomingDeclareArgs(Player player) {
         return invokeRivalStringList(player, "pendingIncomingDeclareArgs");
+    }
+
+    /**
+     * Accept picker args: pending invite or Declared (both Silent).
+     * {@code uuid:&lt;uuid&gt;} when online, else name. Empty when none / API missing.
+     */
+    public static List<String> rivalAcceptCandidateArgs(Player player) {
+        return invokeRivalStringList(player, "acceptCandidateArgs");
     }
 
     /** Encoded current-rival cards for head boards (tab-separated fields). */
@@ -1035,6 +1044,7 @@ public final class ForgeBridge {
             ensureRivalResolved(nms.getClass().getClassLoader());
             Method m = switch (methodName) {
                 case "pendingIncomingDeclareArgs" -> rivalPendingDeclareArgsMethod;
+                case "acceptCandidateArgs" -> rivalAcceptCandidateArgsMethod;
                 case "currentRivalCards" -> rivalCurrentCardsMethod;
                 case "pastRivalCards" -> rivalPastCardsMethod;
                 case "currentRivalArgs" -> rivalCurrentArgsMethod;
@@ -1535,6 +1545,13 @@ public final class ForgeBridge {
                     rivalPendingDeclareArgsMethod = api.getMethod("pendingIncomingDeclareArgs", sp);
                 } catch (Throwable ignored) {
                     rivalPendingDeclareArgsMethod = null;
+                }
+            }
+            if (rivalAcceptCandidateArgsMethod == null) {
+                try {
+                    rivalAcceptCandidateArgsMethod = api.getMethod("acceptCandidateArgs", sp);
+                } catch (Throwable ignored) {
+                    rivalAcceptCandidateArgsMethod = null;
                 }
             }
             if (rivalCurrentCardsMethod == null) {

@@ -141,23 +141,49 @@ public final class RivalSystem {
         RivalPlayerRecord them = store.ensurePlayer(target);
         long now = System.currentTimeMillis();
         RivalLink myLink = me.getOrCreateLink(them.uuid, them.name, now);
-        RivalLink theirLink = them.getOrCreateLink(me.uuid, me.name, now);
         restorePastIfAny(me, them, myLink);
-        restorePastIfAny(them, me, theirLink);
 
-        // Silent path: mark declaredByMe. If both silent → Declared.
-        if (myLink.inviteSent || myLink.inviteReceived || theirLink.inviteSent || theirLink.inviteReceived) {
+        if (myLink.mutual) {
+            return "§eAlready mutual rivals with " + them.name + ".";
+        }
+        if (myLink.inviteSent || myLink.inviteReceived) {
             return "§cA visible declare is already pending with that player.";
         }
+        // Already Declared (both silently rivaled) — tell them how to Mutual.
+        if (isReciprocatedSilent(myLink)) {
+            return "§eAlready Declared with §f" + them.name
+                    + "§e. §8For Mutual: Actions → Accept…";
+        }
+        // Already one-sided silent.
+        if (myLink.declaredByMe && !myLink.declaredByThem) {
+            return "§eAlready silently rivaled §f" + them.name
+                    + " §8(Unknown). §7They are not notified. For Mutual: Declare.";
+        }
+
+        RivalLink theirLink = them.rivals.get(me.uuid);
+        // They already silently rivaled you → crossed silent → Declared for both.
+        if (theirLink != null && theirLink.declaredByMe && !theirLink.mutual
+                && !theirLink.inviteSent && !theirLink.inviteReceived) {
+            restorePastIfAny(them, me, theirLink);
+            promoteDeclared(player, target, me, them, myLink, theirLink, now);
+            store.markDirty();
+            return "§aDeclared with §f" + them.name
+                    + "§a — you both silently rivaled each other."
+                    + " §8For Mutual: Actions → Accept…";
+        }
+
+        // One-sided silent: you get Unknown benefits; target is not notified / sees nothing.
         myLink.declaredByMe = true;
-        theirLink.declaredByThem = true;
+        myLink.declaredByThem = false;
+        myLink.inviteSent = false;
+        myLink.inviteReceived = false;
+        myLink.mutual = false;
         myLink.touch(now);
-        theirLink.touch(now);
         me.declarationsSent++;
-        promoteIfReady(me, them, myLink, theirLink, now, false);
         store.markDirty();
-        RivalStatus st = myLink.status();
-        return "§aSilent rival set on §f" + them.name + " §8[" + st.label() + "]";
+        return "§aSilent rival on §f" + them.name + " §8[Unknown]"
+                + "\n§8They are not notified and do not see you."
+                + "\n§8If they Silent you too, it becomes Declared. For Mutual: Declare.";
     }
 
     public static String declare(ServerPlayer player, ServerPlayer target) {
@@ -185,12 +211,24 @@ public final class RivalSystem {
         if (theirLink.inviteSent || myLink.inviteReceived) {
             return accept(player, target.m_7755_().getString());
         }
+        if (myLink.inviteSent) {
+            return "§eDeclare already pending for " + them.name + ".";
+        }
+
+        String declaredNote = "";
+        if (isReciprocatedSilent(myLink)) {
+            declaredNote = " §8(was Declared — sending visible declare for Mutual)";
+        }
+
+        // You keep benefits (declaredByMe). They get invite only — no benefits until accept.
         myLink.declaredByMe = true;
         myLink.inviteSent = true;
         myLink.pendingExpireAt = now + RivalConstants.REQUEST_EXPIRE_MS;
-        theirLink.declaredByThem = true;
+        myLink.mutual = false;
         theirLink.inviteReceived = true;
         theirLink.pendingExpireAt = myLink.pendingExpireAt;
+        theirLink.mutual = false;
+        // Do NOT set declaredByThem / declaredByMe on them — decline/ignore means no benefits.
         me.lastDeclareAt = now;
         me.declarationsSent++;
 
@@ -205,8 +243,8 @@ public final class RivalSystem {
         store.markDirty();
 
         DmzRewards.msg(target, "§6[Rival] §e" + me.name + " §7visibly declared you as a rival!");
-        DmzRewards.msg(target, "§8Open §e/rival §8→ Accept…  §7or  §8Decline…");
-        return "§aDeclared §f" + them.name + " §a(Pending). They were notified.";
+        DmzRewards.msg(target, "§8Open §e/rival §8→ Actions → §aAccept…  §7or  §cDecline…");
+        return "§aDeclared §f" + them.name + " §a(Pending). They were notified." + declaredNote;
     }
 
     public static String accept(ServerPlayer player, String otherName) {
@@ -217,10 +255,32 @@ public final class RivalSystem {
             return "§cNo pending declare from that player.";
         }
         RivalLink myLink = me.rivals.get(them.uuid);
+        long now = System.currentTimeMillis();
+
+        // Declared (both Silent) → Accept upgrades straight to Mutual (no pending invite needed).
+        if (myLink != null && isReciprocatedSilent(myLink) && !myLink.mutual
+                && !myLink.inviteReceived && !myLink.inviteSent) {
+            RivalLink theirLink = them.getOrCreateLink(me.uuid, me.name, now);
+            myLink.declaredByMe = true;
+            myLink.declaredByThem = true;
+            theirLink.declaredByMe = true;
+            theirLink.declaredByThem = true;
+            promoteMutual(me, them, myLink, theirLink, now);
+            me.declarationsAccepted++;
+            store.markDirty();
+            ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
+            if (online != null) {
+                DmzRewards.msg(online, "§a§l[Rival] MUTUAL");
+                DmzRewards.msg(online, "§a" + me.name + " accepted — Declared → Mutual!");
+                DmzRewards.msg(online, "§8Both ways. Full rivalry benefits.");
+            }
+            DmzRewards.msg(player, "§a§l[Rival] MUTUAL");
+            return "§aAccepted §f" + them.name + " §a— Declared → Mutual!";
+        }
+
         if (myLink == null || !myLink.inviteReceived) {
             return "§cNo pending declare from " + them.name + ".";
         }
-        long now = System.currentTimeMillis();
         RivalLink theirLink = them.getOrCreateLink(me.uuid, me.name, now);
         myLink.declaredByMe = true;
         myLink.declaredByThem = true;
@@ -234,8 +294,11 @@ public final class RivalSystem {
 
         ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
         if (online != null) {
-            DmzRewards.msg(online, "§a[Rival] " + me.name + " accepted your rivalry — Mutual!");
+            DmzRewards.msg(online, "§a§l[Rival] MUTUAL");
+            DmzRewards.msg(online, "§a" + me.name + " accepted your rivalry — Mutual!");
+            DmzRewards.msg(online, "§8Both declared. Benefits work both ways.");
         }
+        DmzRewards.msg(player, "§a§l[Rival] MUTUAL");
         return "§aAccepted rivalry with §f" + them.name + " §a— Mutual!";
     }
 
@@ -565,24 +628,54 @@ public final class RivalSystem {
         }
     }
 
-    private static void promoteIfReady(
+    /** Both sides silently rivaled each other (Declared, not Mutual, no invites). */
+    private static boolean isReciprocatedSilent(RivalLink link) {
+        return link != null
+                && link.declaredByMe
+                && link.declaredByThem
+                && !link.mutual
+                && !link.inviteSent
+                && !link.inviteReceived;
+    }
+
+    /**
+     * Crossed silent rivals → Declared for both, notify both online players.
+     * Mutual still requires a visible Declare → Accept.
+     */
+    private static void promoteDeclared(
+            ServerPlayer actor,
+            ServerPlayer target,
             RivalPlayerRecord me,
             RivalPlayerRecord them,
             RivalLink myLink,
             RivalLink theirLink,
-            long now,
-            boolean visible
+            long now
     ) {
-        if (myLink.declaredByMe && myLink.declaredByThem
-                && !myLink.inviteSent && !myLink.inviteReceived
-                && theirLink.declaredByMe && theirLink.declaredByThem
-                && !theirLink.inviteSent && !theirLink.inviteReceived) {
-            // Both silent → Declared (not Mutual)
-            return;
-        }
-        if (visible) {
-            promoteMutual(me, them, myLink, theirLink, now);
-        }
+        myLink.declaredByMe = true;
+        myLink.declaredByThem = true;
+        myLink.inviteSent = false;
+        myLink.inviteReceived = false;
+        myLink.mutual = false;
+        myLink.touch(now);
+
+        theirLink.declaredByMe = true;
+        theirLink.declaredByThem = true;
+        theirLink.inviteSent = false;
+        theirLink.inviteReceived = false;
+        theirLink.mutual = false;
+        theirLink.touch(now);
+
+        me.declarationsSent++;
+
+        DmzRewards.msg(actor, "§6§l[Rival] DECLARED");
+        DmzRewards.msg(actor, "§e" + them.name);
+        DmzRewards.msg(actor, "§8You both silently rivaled each other.");
+        DmzRewards.msg(actor, "§8For Mutual: /rival → Actions → Accept… §7" + them.name);
+
+        DmzRewards.msg(target, "§6§l[Rival] DECLARED");
+        DmzRewards.msg(target, "§e" + me.name);
+        DmzRewards.msg(target, "§8You both silently rivaled each other.");
+        DmzRewards.msg(target, "§8For Mutual: /rival → Actions → Accept… §7" + me.name);
     }
 
     private static void promoteMutual(

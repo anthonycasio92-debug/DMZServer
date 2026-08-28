@@ -164,6 +164,18 @@ public final class RivalGuiApi {
      * Online declarers are listed first; offline still included (accept/decline use name lookup).
      */
     public static List<String> pendingIncomingDeclareNames(ServerPlayer player) {
+        return collectIncomingNames(player, false);
+    }
+
+    /**
+     * Accept candidates: pending incoming declare or Declared (both Silent).
+     * Online first; offline still included.
+     */
+    public static List<String> acceptCandidateNames(ServerPlayer player) {
+        return collectIncomingNames(player, true);
+    }
+
+    private static List<String> collectIncomingNames(ServerPlayer player, boolean includeDeclared) {
         List<String> online = new ArrayList<>();
         List<String> offline = new ArrayList<>();
         if (player == null || !DifficultyConfig.get().enableRivalSystem) {
@@ -176,10 +188,7 @@ public final class RivalGuiApi {
         MinecraftServer server = player.m_20194_();
         long now = System.currentTimeMillis();
         for (RivalLink link : me.rivals.values()) {
-            if (link == null || !link.inviteReceived) {
-                continue;
-            }
-            if (link.pendingExpireAt > 0L && now > link.pendingExpireAt) {
+            if (link == null || !matchesIncoming(link, now, includeDeclared)) {
                 continue;
             }
             String name = link.name == null || link.name.isBlank() ? link.uuid : link.name;
@@ -208,11 +217,38 @@ public final class RivalGuiApi {
         return out;
     }
 
+    /** Invite-only pending, or also Declared when {@code includeDeclared}. */
+    private static boolean matchesIncoming(RivalLink link, long now, boolean includeDeclared) {
+        if (link.mutual) {
+            return false;
+        }
+        if (link.inviteReceived) {
+            return link.pendingExpireAt <= 0L || now <= link.pendingExpireAt;
+        }
+        if (!includeDeclared) {
+            return false;
+        }
+        return link.declaredByMe && link.declaredByThem
+                && !link.inviteSent && !link.inviteReceived;
+    }
+
     /**
      * Pending incoming declare picker args: {@code uuid:&lt;uuid&gt;} when online, else stored name
-     * (accept/decline resolve both). Online first.
+     * (decline uses this — invite only). Online first.
      */
     public static List<String> pendingIncomingDeclareArgs(ServerPlayer player) {
+        return collectIncomingArgs(player, false);
+    }
+
+    /**
+     * Accept picker args: pending invite or Declared (both Silent).
+     * {@code uuid:&lt;uuid&gt;} when online, else stored name. Online first.
+     */
+    public static List<String> acceptCandidateArgs(ServerPlayer player) {
+        return collectIncomingArgs(player, true);
+    }
+
+    private static List<String> collectIncomingArgs(ServerPlayer player, boolean includeDeclared) {
         List<String> online = new ArrayList<>();
         List<String> offline = new ArrayList<>();
         if (player == null || !DifficultyConfig.get().enableRivalSystem) {
@@ -225,10 +261,7 @@ public final class RivalGuiApi {
         MinecraftServer server = player.m_20194_();
         long now = System.currentTimeMillis();
         for (RivalLink link : me.rivals.values()) {
-            if (link == null || !link.inviteReceived) {
-                continue;
-            }
-            if (link.pendingExpireAt > 0L && now > link.pendingExpireAt) {
+            if (link == null || !matchesIncoming(link, now, includeDeclared)) {
                 continue;
             }
             String name = link.name == null || link.name.isBlank() ? "" : link.name;
@@ -358,8 +391,10 @@ public final class RivalGuiApi {
             case "history", "past", "previous" -> RivalSystem.historyLines(player);
             case "actions" -> List.of(
                     "§6§lRival Actions",
-                    "§7Declare · Accept · Decline · Remove · Silent",
-                    "§8Manage rivalry relationships here."
+                    "§7Silent → Unknown (they are not told)",
+                    "§7Both Silent → Declared (both notified)",
+                    "§7Declared → Accept → Mutual",
+                    "§7Or Declare → Pending → Accept → Mutual"
             );
             case "stats", "statistics" -> statsLines(player);
             case "challenge", "challenges" -> challengeLines(player);

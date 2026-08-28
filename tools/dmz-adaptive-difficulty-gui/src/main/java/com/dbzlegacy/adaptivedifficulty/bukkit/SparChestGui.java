@@ -167,29 +167,22 @@ public final class SparChestGui implements Listener {
         holder.bind(inv);
         frame(inv, 45);
         put(holder, inv, 4, item(Material.REDSTONE, "&c&lSpar Admin",
-                List.of("", "&7Staff tools for Sparring",
-                        "&8Click runs the action directly")));
-        put(holder, inv, 19, tipBtn(Material.WRITABLE_BOOK, "&aSave",
+                List.of("", "&7Staff-only tools",
+                        "&8Save · status · mentor resetcd · help",
+                        "&8Player menus stay on the main Spar GUI")));
+        put(holder, inv, 20, tipBtn(Material.WRITABLE_BOOK, "&aSave",
                 List.of("&7Write sparring.json", "&8/spar admin save")),
                 SlotAction.act("admin", "save", "admin"));
-        put(holder, inv, 21, tipBtn(Material.COMPASS, "&bStatus",
+        put(holder, inv, 22, tipBtn(Material.COMPASS, "&bStatus",
                 List.of("&7Enabled + path", "&8/spar admin status")),
                 SlotAction.act("admin", "status", "admin"));
-        put(holder, inv, 23, tipBtn(Material.EMERALD, "&eReset Mentor CD",
+        put(holder, inv, 24, tipBtn(Material.EMERALD, "&eReset Mentor CD",
                 List.of("&7Clear your mentor cooldown", "&8/spar admin mentor resetcd")),
                 SlotAction.act("admin", "resetcd", "admin"));
-        put(holder, inv, 25, pageBtn(Material.NETHER_STAR, "&fOpen Spar GUI",
-                "&7Player sparring menu"), SlotAction.page("main"));
-        put(holder, inv, 29, tipBtn(Material.PAPER, "&7Help",
+        put(holder, inv, 30, tipBtn(Material.PAPER, "&7Admin Help",
                 List.of("&7Print admin command list", "&8/spar admin help")),
                 SlotAction.act("admin", "help", "admin"));
-        put(holder, inv, 31, pageBtn(Material.GOLDEN_HELMET, "&fTop",
-                "&7Leaderboard"), SlotAction.page("top"));
-        put(holder, inv, 32, pageBtn(Material.BOOK, "&eStats",
-                "&7Spar stats"), SlotAction.page("stats"));
-        put(holder, inv, 33, pageBtn(Material.EMERALD, "&bMentor",
-                "&7Mentor tools"), SlotAction.page("mentor"));
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Player Spar menu"), SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;

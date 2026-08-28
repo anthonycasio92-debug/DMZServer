@@ -156,27 +156,23 @@ public final class CmiSparGui {
         CMIGui gui = base(player, "&8Legacy Mechanics · Spar Admin", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.REDSTONE, "&c&lSpar Admin");
         info.lockField();
-        info.addLore(List.of("", "&7Staff tools for Sparring",
-                "&8Click a button to run the linked command"));
+        info.addLore(List.of("", "&7Staff-only tools",
+                "&8Save · status · mentor resetcd · help",
+                "&8Player menus stay on the main Spar GUI"));
         gui.addButton(info);
-        gui.addButton(actionBtn(19, Material.WRITABLE_BOOK, "&aSave",
+        gui.addButton(actionBtn(20, Material.WRITABLE_BOOK, "&aSave",
                 "admin", "save", "admin",
                 List.of("&7Write sparring.json", "&8/spar admin save")));
-        gui.addButton(actionBtn(21, Material.COMPASS, "&bStatus",
+        gui.addButton(actionBtn(22, Material.COMPASS, "&bStatus",
                 "admin", "status", "admin",
                 List.of("&7Enabled + path", "&8/spar admin status")));
-        gui.addButton(actionBtn(23, Material.EMERALD, "&eReset Mentor CD",
+        gui.addButton(actionBtn(24, Material.EMERALD, "&eReset Mentor CD",
                 "admin", "resetcd", "admin",
                 List.of("&7Clear your mentor cooldown", "&8/spar admin mentor resetcd")));
-        gui.addButton(pageBtn(25, Material.NETHER_STAR, "&fOpen Spar GUI", "main",
-                "&7Player sparring menu"));
-        gui.addButton(actionBtn(29, Material.PAPER, "&7Help",
+        gui.addButton(actionBtn(30, Material.PAPER, "&7Admin Help",
                 "admin", "help", "admin",
-                List.of("&7Print admin command list")));
-        gui.addButton(pageBtn(31, Material.GOLDEN_HELMET, "&fTop", "top", "&7Leaderboard"));
-        gui.addButton(pageBtn(32, Material.BOOK, "&eStats", "stats", "&7Spar stats"));
-        gui.addButton(pageBtn(33, Material.EMERALD, "&bMentor", "mentor", "&7Mentor tools"));
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+                List.of("&7Print admin command list", "&8/spar admin help")));
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Player Spar menu"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);

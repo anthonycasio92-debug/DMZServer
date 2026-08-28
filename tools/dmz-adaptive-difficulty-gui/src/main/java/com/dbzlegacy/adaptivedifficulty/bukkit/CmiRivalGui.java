@@ -43,9 +43,9 @@ public final class CmiRivalGui {
                 case "pick_declare" -> openPicker(player, "declare", "actions",
                         "&6Declare Rival", "&7Click to declare this player");
                 case "pick_accept" -> openPendingPicker(player, "accept", "actions",
-                        "&aAccept Declare", "&7Click to accept their declare");
+                        "&aAccept Rivalry", "&7Pending declare or Declared → Mutual", true);
                 case "pick_decline" -> openPendingPicker(player, "decline", "actions",
-                        "&cDecline Declare", "&7Click to decline their declare");
+                        "&cDecline Declare", "&7Click to decline their declare", false);
                 case "pick_remove" -> openCurrentRivalPicker(player, "remove", "actions",
                         "&cRemove Rival", "&7Click to remove this rivalry");
                 case "pick_challenge" -> openChallengeTargetPicker(player);
@@ -348,15 +348,17 @@ public final class CmiRivalGui {
         gui.addButton(info);
 
         gui.addButton(pageBtn(19, Material.LIME_DYE, "&aDeclare…", "pick_declare",
-                "&7Pick an online player to declare"));
+                "&7Visible declare → they Accept → Mutual"));
         gui.addButton(pageBtn(21, Material.YELLOW_DYE, "&eAccept…", "pick_accept",
-                "&7Pending declares (no name guessing)"));
+                "&7Pending declares, or Declared → Mutual",
+                "&8Both Silent → Declared shows here"));
         gui.addButton(pageBtn(22, Material.ORANGE_DYE, "&6Decline…", "pick_decline",
                 "&7Decline a pending declare"));
         gui.addButton(pageBtn(23, Material.RED_DYE, "&cRemove…", "pick_remove",
                 "&7Pick one of your rivals to remove"));
         gui.addButton(pageBtn(25, Material.GRAY_DYE, "&8Silent…", "pick_silent",
-                "&7Pick a player for silent rival"));
+                "&7One-sided Unknown (they are not told)",
+                "&8Both Silent → Declared (both notified)"));
 
         gui.addButton(pageBtn(37, Material.PLAYER_HEAD, "&6List", "list",
                 "&7Back to current rivals"));
@@ -597,14 +599,20 @@ public final class CmiRivalGui {
     }
 
     private static void openPendingPicker(
-            Player player, String action, String backPage, String title, String tip) {
+            Player player, String action, String backPage, String title, String tip,
+            boolean acceptMode) {
         CMIGui gui = base(player, "&8Legacy Mechanics · Rival", 5);
         CMIGuiButton info = new CMIGuiButton(4, Material.PLAYER_HEAD, title);
         info.lockField();
-        info.addLore(List.of("", "&7Pending declares", "&8Online first · offline by name"));
+        info.addLore(List.of("", acceptMode
+                        ? "&7Pending declares + Declared"
+                        : "&7Pending declares",
+                "&8Online first · offline by name"));
         gui.addButton(info);
 
-        List<String> pending = ForgeBridge.rivalPendingIncomingDeclareArgs(player);
+        List<String> pending = acceptMode
+                ? ForgeBridge.rivalAcceptCandidateArgs(player)
+                : ForgeBridge.rivalPendingIncomingDeclareArgs(player);
         int placed = 0;
         for (String arg : pending) {
             if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
@@ -639,10 +647,14 @@ public final class CmiRivalGui {
             gui.addButton(btn);
         }
         if (placed == 0) {
-            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&eNo pending declares");
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER,
+                    acceptMode ? "&eNothing to accept" : "&eNo pending declares");
             empty.lockField();
-            empty.addLore(List.of("", "&7When someone declares you,",
-                    "&7they appear here to accept or decline."));
+            empty.addLore(acceptMode
+                    ? List.of("", "&7Pending Declares and Declared rivals",
+                            "&7(both Silent) appear here.")
+                    : List.of("", "&7When someone declares you,",
+                            "&7they appear here to decline."));
             gui.addButton(empty);
         }
 

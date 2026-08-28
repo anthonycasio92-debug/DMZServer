@@ -42,9 +42,9 @@ public final class RivalChestGui implements Listener {
             case "pick_declare" -> picker(player, "declare", "actions",
                     "&6Declare Rival", "&7Click to declare this player");
             case "pick_accept" -> pendingPicker(player, "accept", "actions",
-                    "&aAccept Declare", "&7Click to accept their declare");
+                    "&aAccept Rivalry", "&7Pending declare or Declared → Mutual", true);
             case "pick_decline" -> pendingPicker(player, "decline", "actions",
-                    "&cDecline Declare", "&7Click to decline their declare");
+                    "&cDecline Declare", "&7Click to decline their declare", false);
             case "pick_remove" -> currentRivalPicker(player, "remove", "actions",
                     "&cRemove Rival", "&7Click to remove this rivalry");
             case "pick_challenge" -> challengeTargetPicker(player);
@@ -313,15 +313,17 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 4, item(Material.LIME_CONCRETE, "&a&lRival Actions",
                 prependBlank(toAmp(ForgeBridge.rivalLines(player, "actions")))));
         put(holder, inv, 19, pageBtn(Material.LIME_DYE, "&aDeclare…",
-                "&7Pick an online player to declare"), SlotAction.page("pick_declare"));
+                "&7Visible declare → they Accept → Mutual"), SlotAction.page("pick_declare"));
         put(holder, inv, 21, pageBtn(Material.YELLOW_DYE, "&eAccept…",
-                "&7Pending declares (no name guessing)"), SlotAction.page("pick_accept"));
+                "&7Pending declares, or Declared → Mutual",
+                "&8Both Silent → Declared shows here"), SlotAction.page("pick_accept"));
         put(holder, inv, 22, pageBtn(Material.ORANGE_DYE, "&6Decline…",
                 "&7Decline a pending declare"), SlotAction.page("pick_decline"));
         put(holder, inv, 23, pageBtn(Material.RED_DYE, "&cRemove…",
                 "&7Pick one of your rivals to remove"), SlotAction.page("pick_remove"));
         put(holder, inv, 25, pageBtn(Material.GRAY_DYE, "&8Silent…",
-                "&7Pick a player for silent rival"), SlotAction.page("pick_silent"));
+                "&7One-sided Unknown (they are not told)",
+                "&8Both Silent → Declared (both notified)"), SlotAction.page("pick_silent"));
         put(holder, inv, 37, pageBtn(Material.PLAYER_HEAD, "&6List",
                 "&7Back to current rivals"), SlotAction.page("list"));
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
@@ -533,16 +535,22 @@ public final class RivalChestGui implements Listener {
         return inv;
     }
 
-    /** Accept/decline picker — pending incoming declares (online first; offline by name). */
+    /** Accept/decline picker — Accept includes Declared; Decline is invite-only. */
     private Inventory pendingPicker(
-            Player player, String action, String backPage, String title, String tip) {
+            Player player, String action, String backPage, String title, String tip,
+            boolean acceptMode) {
         Holder holder = new Holder("pick_" + action);
         Inventory inv = Bukkit.createInventory(holder, 45, color("&8Legacy Mechanics · Rival"));
         holder.bind(inv);
         frame(inv, 45);
         put(holder, inv, 4, item(Material.PLAYER_HEAD, title,
-                List.of("", "&7Pending declares", "&8Online first · offline by name")));
-        List<String> pending = ForgeBridge.rivalPendingIncomingDeclareArgs(player);
+                List.of("", acceptMode
+                                ? "&7Pending declares + Declared"
+                                : "&7Pending declares",
+                        "&8Online first · offline by name")));
+        List<String> pending = acceptMode
+                ? ForgeBridge.rivalAcceptCandidateArgs(player)
+                : ForgeBridge.rivalPendingIncomingDeclareArgs(player);
         int placed = 0;
         for (String arg : pending) {
             if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
@@ -574,8 +582,13 @@ public final class RivalChestGui implements Listener {
             put(holder, inv, slot, head, SlotAction.act(action, arg, backPage));
         }
         if (placed == 0) {
-            put(holder, inv, 22, tipBtn(Material.BARRIER, "&eNo pending declares",
-                    List.of("&7When someone declares you,", "&7they appear here to accept or decline.")));
+            put(holder, inv, 22, tipBtn(Material.BARRIER,
+                    acceptMode ? "&eNothing to accept" : "&eNo pending declares",
+                    acceptMode
+                            ? List.of("&7Pending Declares and Declared rivals",
+                                    "&7(both Silent) appear here.")
+                            : List.of("&7When someone declares you,",
+                                    "&7they appear here to decline.")));
         }
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page(backPage));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());

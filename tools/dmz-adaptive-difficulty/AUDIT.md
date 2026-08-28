@@ -1,3 +1,10 @@
+## Silent Declared notify + Accept Mutual + Spar admin (2.3.4)
+
+- Both Silent → Declared: both players get `[Rival] DECLARED` chat.
+- Accept… lists Declared rivals and upgrades Declared → Mutual (also pending Declares).
+- Spar Admin GUI is staff-only Save/Status/Reset Mentor CD/Help (same cleanup as Rival Admin).
+- Jars: `LegacyMechanics-2.3.4` / `LegacyMechanicsGUI-2.3.4`.
+
 ## Rival admin staff-only board (2.3.3)
 
 Admin GUI shows only Save / Refresh / Status / Help (no Top/Stats/Challenge player pages).

@@ -1,4 +1,4 @@
-# LegacyMechanics (v2.3.3)
+# LegacyMechanics (v2.3.4)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -38,8 +38,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/LegacyMechanics-2.3.3.jar` (remove older AD jars)
-2. `plugins/LegacyMechanicsGUI-2.3.3.jar` (or matching GUI if available)
+1. `mods/LegacyMechanics-2.3.4.jar` (remove older AD jars)
+2. `plugins/LegacyMechanicsGUI-2.3.4.jar` (or matching GUI if available)
 3. Restart — config at `config/legacymechanics.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
 4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
@@ -87,7 +87,7 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Stock `tierCostLevelDivisor` is **50000** (was 1000) so a DMZ 100k player pays ~15× Gold for T7 instead of a ladder-inflated Emerald pile. Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
-### Economy (2.3.3)
+### Economy (2.3.4)
 Kill coin drops are chance-gated (was always-on):
 - `ancientCoinDropChance` **0.05** (5% any coin)
 - `ancientCoinUpgradeChance` **0.005** (0.5% original + next-higher dual)
