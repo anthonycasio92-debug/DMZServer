@@ -1,3 +1,10 @@
+## End Dimension Strength script parity (2.3.6)
+
+- Stubbed CNPC `End Dimension Strength.js` + Forge trigger bridge (Java owns dragon).
+- Spawn via EndDragonFight (`createNewDragon` + spike crystals) so perch/charge AI works.
+- World-wide dragon rescale; script softcap tables; natural spawn first-boot delay.
+- Jars: `LegacyMechanics-2.3.6` / `LegacyMechanicsGUI-2.3.6`.
+
 ## Skill tooltips + Rival pending invites (2.3.5)
 
 - Potential Unlock tips: taking damage (not blocking); Jump/Sprint marked Strength unlocked; Ki Control/Manipulation/Sense marked skill-saga gained.

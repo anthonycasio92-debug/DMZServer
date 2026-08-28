@@ -59,11 +59,12 @@ public final class EndDimensionStrength {
     private static final String NBT_HITS = "end_strength_hit_target";
     private static final String NBT_DMZ_HP = "end_strength_dmz_hp_src";
 
-    private static final double SCAN_RADIUS = 40.0;
-    private static final long SCAN_MS = 8000L;
-    private static final long NATURAL_CHECK_MS = 30_000L;
+    private static final double SCAN_RADIUS = 96.0;
+    private static final long SCAN_MS = 1500L;
+    private static final long NATURAL_CHECK_MS = 10_000L;
     private static final long NATURAL_SPAWN_MS = 5L * 60L * 1000L;
     private static final long DRAGON_RESCALE_MS = 3000L;
+    private static final double DRAGON_SCALE_SCORE_EPSILON = 0.01;
     private static final int TP_SETTLE_DELAY_TICKS = 6;
 
     /** Script v2.12.0: min(KI_CLEANUP_INTERVAL_MS, SINGLE_DRAGON_CHECK_MS). */
@@ -123,11 +124,15 @@ public final class EndDimensionStrength {
     private static volatile long lastWorldScanAt;
     private static volatile long lastNaturalCheckAt;
     private static volatile long lastNaturalSpawnAt;
+    /** 0 = never set; first natural check arms the timer without spawning. */
+    private static volatile boolean naturalTimerArmed;
     private static volatile long lastDragonRescaleAt;
     private static volatile long lastHygieneAt;
     private static volatile long lastDragonAttackAt;
     /** Retry crystal/egg podium clear for a few seconds after dragon kill. */
     private static volatile long crystalClearUntil;
+    /** Last power score we sized the living dragon to (script TEMP_DRAGON_SCALE_SCORE). */
+    private static volatile double lastDragonScaleScore = -1.0;
 
     private static final Map<UUID, PendingTp> PENDING_TP = new ConcurrentHashMap<>();
 
@@ -179,33 +184,36 @@ public final class EndDimensionStrength {
         }
         lastWorldScanAt = now;
 
-        boolean mobScaling = DifficultyConfig.get().enableEndMobScaling;
-        for (ServerPlayer player : server.m_6846_().m_11314_()) {
-            if (player == null || !isTheEnd(player.m_9236_())) {
-                continue;
+        // World-wide End dragon scan — dragons fly far; do not require player proximity.
+        if (end != null) {
+            enforceSingleDragon(end);
+            PlayerPower strongest = strongestInEnd(end, null);
+            for (EnderDragon dragon : findDragons(end)) {
+                maybeRescaleDragon(dragon, end, strongest, now);
             }
-            ServerLevel level = player.m_284548_(); // serverLevel()
-            if (level == null) {
-                continue;
-            }
-            // Scan path also enforces single-dragon (hygiene may have throttled).
-            enforceSingleDragon(level);
-            PlayerPower strongest = strongestInEnd(level, player);
-            AABB box = player.m_20191_().m_82400_(SCAN_RADIUS); // getBoundingBox().inflate
-            List<LivingEntity> nearby = level.m_45976_(LivingEntity.class, box);
-            for (LivingEntity ent : nearby) {
-                String kind = classify(ent);
-                if (kind == null) {
-                    continue;
+            boolean mobScaling = DifficultyConfig.get().enableEndMobScaling;
+            if (mobScaling) {
+                for (ServerPlayer player : server.m_6846_().m_11314_()) {
+                    if (player == null || !isTheEnd(player.m_9236_())) {
+                        continue;
+                    }
+                    ServerLevel level = player.m_284548_();
+                    if (level == null) {
+                        continue;
+                    }
+                    AABB box = player.m_20191_().m_82400_(SCAN_RADIUS);
+                    List<LivingEntity> nearby = level.m_45976_(LivingEntity.class, box);
+                    PlayerPower localStrong = strongestInEnd(level, player);
+                    for (LivingEntity ent : nearby) {
+                        String kind = classify(ent);
+                        if (kind == null || "dragon".equals(kind)) {
+                            continue;
+                        }
+                        buffMob(ent, kind, nearbyPower(ent, level, localStrong));
+                    }
+                    break;
                 }
-                if ("dragon".equals(kind)) {
-                    maybeRescaleDragon((EnderDragon) ent, level, strongest, now);
-                } else if (mobScaling) {
-                    buffMob(ent, kind, nearbyPower(ent, level, strongest));
-                }
             }
-            // One End player owns the world scan this pulse.
-            break;
         }
     }
 
@@ -319,7 +327,7 @@ public final class EndDimensionStrength {
         SystemTelemetry.log("end_strength", "dragon_kill", killer, null, Map.of("kind", kind));
     }
 
-    /** Trigger 50 — spawn / refresh End dragon. */
+    /** Trigger 50 — spawn / refresh End dragon (EndDragonFight-linked like the script). */
     public static int cmdSpawnDragon(ServerPlayer player) {
         if (player == null) {
             return 0;
@@ -333,40 +341,176 @@ public final class EndDimensionStrength {
             msg(player, "§c[The End] End dimension unavailable.");
             return 0;
         }
-        // Never allow a second living dragon.
         EnderDragon existing = enforceSingleDragon(end);
         if (existing != null) {
-            msg(player, "§e[The End] An Ender Dragon is already alive.");
             PlayerPower power = strongestInEnd(end, player);
             applyDragonStats(existing, power, "cmd");
+            lastDragonScaleScore = score(power);
+            msg(player, "§e[The End] An Ender Dragon is already alive.");
+            msg(player, "§8Scaled to §f" + power.name + " §8· HP §c"
+                    + DmzRewards.formatWhole(existing.m_21233_())
+                    + " §8· DEF §b" + DmzRewards.formatWhole(readDef(existing)));
             return 1;
         }
+        msg(player, "§7[The End] Spawning Ender Dragon...");
+        PlayerPower power = strongestInEnd(end, player);
+        EnderDragon dragon = spawnFightLinkedDragon(end, player);
+        if (dragon == null) {
+            msg(player, "§c[The End] Failed to spawn — visit The End once, then retry /enddragon.");
+            return 0;
+        }
+        applyDragonStats(dragon, power, "spawn");
+        lastDragonScaleScore = score(power);
+        lastNaturalSpawnAt = System.currentTimeMillis();
+        naturalTimerArmed = true;
+        msg(player, "§6[The End] §eSpawned Ender Dragon with §c"
+                + DmzRewards.formatWhole(dragon.m_21233_())
+                + " §eHP / §b" + DmzRewards.formatWhole(readDef(dragon))
+                + " §eDEF §8(scaled to " + power.name + " / Lv" + power.level + ")");
+        SystemTelemetry.log("end_strength", "dragon_spawn", player, null, Map.of("via", "command"));
+        return 1;
+    }
+
+    /**
+     * Spawn through {@link EndDragonFight} so perch / charge / crystal AI stays linked.
+     * Raw {@code EntityType} summon orphans the dragon (script warning).
+     */
+    private static EnderDragon spawnFightLinkedDragon(ServerLevel end, ServerPlayer requester) {
+        if (end == null) {
+            return null;
+        }
+        // Clear any leftovers first.
+        for (EnderDragon d : findDragons(end)) {
+            try {
+                d.m_146870_();
+            } catch (Throwable ignored) {
+            }
+        }
+        EndDragonFight fight = end.m_8586_(); // dragonFight
+        if (fight == null) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] EndDragonFight is null — visit The End once so the dimension initializes",
+                    AdaptiveDifficultyMod.MOD_ID);
+            return spawnOrphanFallback(end, requester);
+        }
         try {
-            EndDragonFight fight = end.m_8586_(); // dragonFight
-            if (fight != null) {
+            fight.m_287277_(); // skipArenaLoadedCheck
+        } catch (Throwable ignored) {
+        }
+        // dragonKilled=false, previouslyKilled=true (script field names f_64068_/f_64069_).
+        setFightBoolean(fight, "f_64068_", false);
+        setFightBoolean(fight, "f_64069_", true);
+        try {
+            clearEndCrystals(end);
+        } catch (Throwable ignored) {
+        }
+        try {
+            fight.m_64101_(); // resetSpikeCrystals
+        } catch (Throwable ignored) {
+        }
+        try {
+            restoreTowerCrystals(end);
+        } catch (Throwable ignored) {
+        }
+        EnderDragon dragon = invokeCreateNewDragon(fight);
+        if (dragon == null) {
+            dragon = spawnOrphanFallback(end, requester);
+            if (dragon != null) {
                 try {
-                    // Prefer fight reset when available
-                    fight.m_64095_(); // best-effort reset
+                    dragon.m_287231_(fight); // setDragonFight
                 } catch (Throwable ignored) {
                 }
             }
-            EnderDragon dragon = net.minecraft.world.entity.EntityType.f_20565_.m_20615_(end); // ENDER_DRAGON
+        }
+        return dragon;
+    }
+
+    private static EnderDragon spawnOrphanFallback(ServerLevel end, ServerPlayer requester) {
+        try {
+            EnderDragon dragon = net.minecraft.world.entity.EntityType.f_20565_.m_20615_(end);
             if (dragon == null) {
-                msg(player, "§c[The End] Failed to create dragon entity.");
-                return 0;
+                return null;
             }
-            dragon.m_7678_(0.5, 128.0, 0.5, 0.0f, 0.0f);
+            double x = 0.5;
+            double y = 128.0;
+            double z = 0.5;
+            if (requester != null && isTheEnd(requester.m_9236_())) {
+                x = requester.m_20185_();
+                y = requester.m_20186_() + 12.0;
+                z = requester.m_20189_();
+            }
+            dragon.m_7678_(x, y, z, 0.0f, 0.0f);
             end.m_7967_(dragon);
-            applyDragonStats(dragon, strongestInEnd(end, player), "spawn");
-            lastNaturalSpawnAt = System.currentTimeMillis();
-            msg(player, "§d[The End] Ender Dragon spawned.");
-            SystemTelemetry.log("end_strength", "dragon_spawn", player, null, Map.of("via", "command"));
-            return 1;
+            return dragon;
         } catch (Throwable t) {
-            AdaptiveDifficultyMod.LOGGER.warn("[{}] enddragon spawn failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
-            msg(player, "§c[The End] Spawn failed — see server log.");
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] orphan dragon spawn failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            return null;
+        }
+    }
+
+    private static EnderDragon invokeCreateNewDragon(EndDragonFight fight) {
+        if (fight == null) {
+            return null;
+        }
+        try {
+            java.lang.reflect.Method m = EndDragonFight.class.getDeclaredMethod("m_64110_");
+            m.setAccessible(true);
+            Object raw = m.invoke(fight);
+            return raw instanceof EnderDragon d ? d : null;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] createNewDragon reflect failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            return null;
+        }
+    }
+
+    private static void setFightBoolean(EndDragonFight fight, String field, boolean value) {
+        if (fight == null || field == null) {
+            return;
+        }
+        try {
+            java.lang.reflect.Field f = EndDragonFight.class.getDeclaredField(field);
+            f.setAccessible(true);
+            f.setBoolean(fight, value);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /** Re-place tower end crystals so the dragon keeps heal/perch AI (script restoreTowerCrystals). */
+    private static int restoreTowerCrystals(ServerLevel end) {
+        if (end == null) {
             return 0;
         }
+        int placed = 0;
+        try {
+            List<net.minecraft.world.level.levelgen.feature.SpikeFeature.EndSpike> spikes =
+                    net.minecraft.world.level.levelgen.feature.SpikeFeature.m_66858_(end);
+            if (spikes == null || spikes.isEmpty()) {
+                return 0;
+            }
+            for (net.minecraft.world.level.levelgen.feature.SpikeFeature.EndSpike spike : spikes) {
+                int cx = spike.m_66886_(); // getCenterX
+                int cz = spike.m_66893_(); // getCenterZ
+                int height = spike.m_66899_(); // getHeight
+                int y = Math.max(70, height + 1);
+                try {
+                    EndCrystal crystal = EntityType.f_20564_.m_20615_(end); // END_CRYSTAL
+                    if (crystal == null) {
+                        continue;
+                    }
+                    crystal.m_7678_(cx + 0.5, y, cz + 0.5, 0.0f, 0.0f);
+                    crystal.m_31056_(true); // setShowBottom
+                    end.m_7967_(crystal);
+                    placed++;
+                } catch (Throwable ignored) {
+                }
+            }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] restoreTowerCrystals failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
+        return placed;
     }
 
     /** Trigger 51 — clear End dragons. */
@@ -411,12 +555,23 @@ public final class EndDimensionStrength {
         }
         EnderDragon kept = enforceSingleDragon(end);
         if (kept != null) {
+            maybeRescaleDragon(kept, end, strongestInEnd(end, player), now);
             return;
         }
-        if (lastNaturalSpawnAt > 0 && now - lastNaturalSpawnAt < NATURAL_SPAWN_MS) {
+        // Script: first boot arms the timer and waits a full interval before spawning.
+        if (!naturalTimerArmed || lastNaturalSpawnAt <= 0L) {
+            lastNaturalSpawnAt = now;
+            naturalTimerArmed = true;
             return;
         }
-        cmdSpawnDragon(player);
+        if (now - lastNaturalSpawnAt < NATURAL_SPAWN_MS) {
+            return;
+        }
+        int spawned = cmdSpawnDragon(player);
+        if (spawned > 0) {
+            lastNaturalSpawnAt = now;
+            DmzRewards.msg(player, "§5[The End] §cAn Ender Dragon has appeared!");
+        }
     }
 
     /**
@@ -949,11 +1104,23 @@ public final class EndDimensionStrength {
     }
 
     private static void maybeRescaleDragon(EnderDragon dragon, ServerLevel level, PlayerPower power, long now) {
+        if (dragon == null || power == null) {
+            return;
+        }
         if (now - lastDragonRescaleAt < DRAGON_RESCALE_MS) {
+            return;
+        }
+        double desired = score(power);
+        // Script: only grow when a stronger End player arrives (epsilon gate).
+        boolean stronger = desired > lastDragonScaleScore * (1.0 + DRAGON_SCALE_SCORE_EPSILON) + 1.0
+                || lastDragonScaleScore < 0.0
+                || !alreadyBuffed(dragon);
+        if (!stronger) {
             return;
         }
         lastDragonRescaleAt = now;
         applyDragonStats(dragon, power, "rescale");
+        lastDragonScaleScore = desired;
     }
 
     private static void applyDragonStats(EnderDragon dragon, PlayerPower power, String source) {
@@ -1142,17 +1309,78 @@ public final class EndDimensionStrength {
     }
 
     private static double softCap(int level, String kind) {
-        // Simplified softcap curve (full table lives in the CNPC script).
-        double base = switch (kind == null ? "" : kind) {
-            case "dragon" -> 280_000;
-            case "shulker" -> 120_000;
-            case "enderman" -> 80_000;
-            case "phantom" -> 50_000;
-            default -> 30_000;
-        };
-        double t = Math.min(1.0, Math.max(0.0, (level - 1000) / 19000.0));
-        return base + (1_400_000 - base) * t;
+        SoftCapRow[] table = softCapTable(kind);
+        return Math.max(1000.0, interpolateSoftCap(table, level, 1_000_000.0));
     }
+
+    private static SoftCapRow[] softCapTable(String kind) {
+        return switch (kind == null ? "" : kind) {
+            case "dragon" -> new SoftCapRow[]{
+                    new SoftCapRow(1000, 280_000),
+                    new SoftCapRow(2500, 450_000),
+                    new SoftCapRow(4000, 650_000),
+                    new SoftCapRow(7000, 950_000),
+                    new SoftCapRow(10_000, 1_400_000),
+                    new SoftCapRow(20_000, 2_200_000)
+            };
+            case "shulker" -> new SoftCapRow[]{
+                    new SoftCapRow(1000, 90_000),
+                    new SoftCapRow(2500, 160_000),
+                    new SoftCapRow(4000, 260_000),
+                    new SoftCapRow(7000, 400_000),
+                    new SoftCapRow(10_000, 560_000),
+                    new SoftCapRow(20_000, 850_000)
+            };
+            case "phantom" -> new SoftCapRow[]{
+                    new SoftCapRow(1000, 50_000),
+                    new SoftCapRow(2500, 95_000),
+                    new SoftCapRow(4000, 150_000),
+                    new SoftCapRow(7000, 240_000),
+                    new SoftCapRow(10_000, 340_000),
+                    new SoftCapRow(20_000, 520_000)
+            };
+            case "endermite" -> new SoftCapRow[]{
+                    new SoftCapRow(1000, 35_000),
+                    new SoftCapRow(2500, 65_000),
+                    new SoftCapRow(4000, 100_000),
+                    new SoftCapRow(7000, 160_000),
+                    new SoftCapRow(10_000, 230_000),
+                    new SoftCapRow(20_000, 360_000)
+            };
+            default -> new SoftCapRow[]{ // enderman
+                    new SoftCapRow(1000, 70_000),
+                    new SoftCapRow(2500, 130_000),
+                    new SoftCapRow(4000, 200_000),
+                    new SoftCapRow(7000, 320_000),
+                    new SoftCapRow(10_000, 450_000),
+                    new SoftCapRow(20_000, 700_000)
+            };
+        };
+    }
+
+    private static double interpolateSoftCap(SoftCapRow[] table, int level, double fallback) {
+        if (table == null || table.length == 0) {
+            return fallback;
+        }
+        if (level <= table[0].level) {
+            return table[0].cap;
+        }
+        SoftCapRow last = table[table.length - 1];
+        if (level >= last.level) {
+            return last.cap;
+        }
+        for (int i = 0; i < table.length - 1; i++) {
+            SoftCapRow a = table[i];
+            SoftCapRow b = table[i + 1];
+            if (level >= a.level && level <= b.level) {
+                double t = (level - a.level) / (double) Math.max(1, b.level - a.level);
+                return Math.floor(a.cap + (b.cap - a.cap) * t);
+            }
+        }
+        return last.cap;
+    }
+
+    private record SoftCapRow(int level, double cap) {}
 
     private static void adjustTp(ServerPlayer player, double delta) {
         StatsData data = DmzProgression.stats(player);
@@ -1184,10 +1412,10 @@ public final class EndDimensionStrength {
     }
 
     private static PlayerPower strongestInEnd(ServerLevel level, ServerPlayer fallback) {
-        PlayerPower best = readPower(fallback);
-        double bestScore = score(best);
+        PlayerPower best = fallback == null ? null : readPower(fallback);
+        double bestScore = best == null ? -1.0 : score(best);
         if (level == null) {
-            return best;
+            return best != null ? best : new PlayerPower();
         }
         for (ServerPlayer p : level.m_6907_()) {
             if (p == null || !isTheEnd(p.m_9236_())) {
@@ -1199,6 +1427,9 @@ public final class EndDimensionStrength {
                 bestScore = s;
                 best = power;
             }
+        }
+        if (best == null) {
+            return new PlayerPower();
         }
         return best;
     }
