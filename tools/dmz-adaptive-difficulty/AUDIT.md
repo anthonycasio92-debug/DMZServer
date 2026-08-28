@@ -1,3 +1,9 @@
+## Admin LM inspect-all (2.3.19)
+
+- Staff: `/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|…]` opens chest GUIs as that player.
+- Hub tiles keep the inspect session; edits apply to the subject. Clear with `/lm admin inspect clear`.
+- Forge: `CmiGuiBridge.openLmInspect` / `clearLmInspect`; jars `LegacyMechanics-2.3.19` / `LegacyMechanicsGUI-2.3.19`.
+
 ## Spar mentor pending invites (2.3.18)
 
 - Mentor page mirrors Rival Actions: Invite / Ask / Pending(N) / Accept… / Decline… / Remove.

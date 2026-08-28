@@ -66,30 +66,75 @@ public final class CmiGuiBridge {
         return openNamed(player, page, "openSkillsMenuForUuid", "openSkillsMenu", "CMI Skills");
     }
 
-    /** Staff inspect: open companion chest GUI as admin while editing subject. */
+    /** Staff inspect: open companion chest GUI as admin while editing subject (Difficulty). */
     public static boolean openInspect(ServerPlayer admin, ServerPlayer subject, String page) {
+        return openLmInspect(admin, subject, "difficulty", page);
+    }
+
+    /**
+     * Staff inspect any LM system (hub/difficulty/rival/spar/…).
+     * Reflects {@code openLmInspectForUuid} on the companion plugin.
+     */
+    public static boolean openLmInspect(
+            ServerPlayer admin, ServerPlayer subject, String system, String page) {
         if (admin == null || subject == null || !available()) {
             return false;
         }
+        String sys = system == null || system.isBlank() ? "hub" : system;
         String target = page == null || page.isBlank() ? "main" : page;
         try {
             Object plugin = getCompanionPlugin();
             if (plugin == null) {
                 return false;
             }
-            Method m = plugin.getClass().getMethod(
-                    "openInspectForUuid", UUID.class, UUID.class, String.class);
-            m.invoke(plugin, admin.m_20148_(), subject.m_20148_(), target);
-            return true;
+            try {
+                Method m = plugin.getClass().getMethod(
+                        "openLmInspectForUuid", UUID.class, UUID.class, String.class, String.class);
+                m.invoke(plugin, admin.m_20148_(), subject.m_20148_(), sys, target);
+                return true;
+            } catch (NoSuchMethodException missingNew) {
+                // Older GUI jar — Difficulty-only inspect.
+                Method m = plugin.getClass().getMethod(
+                        "openInspectForUuid", UUID.class, UUID.class, String.class);
+                m.invoke(plugin, admin.m_20148_(), subject.m_20148_(), target);
+                return true;
+            }
         } catch (NoSuchMethodException missing) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] openInspectForUuid missing — update LegacyMechanicsGUI jar",
+                    "[{}] openLmInspectForUuid missing — update LegacyMechanicsGUI jar",
                     AdaptiveDifficultyMod.MOD_ID
             );
             return false;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] openInspect failed: {}",
+                    "[{}] openLmInspect failed: {}",
+                    AdaptiveDifficultyMod.MOD_ID, t.toString()
+            );
+            return false;
+        }
+    }
+
+    /** Clears staff inspect session via companion plugin (no-op if missing). */
+    public static boolean clearLmInspect(UUID adminId) {
+        if (adminId == null || !available()) {
+            return false;
+        }
+        try {
+            Object plugin = getCompanionPlugin();
+            if (plugin == null) {
+                return false;
+            }
+            plugin.getClass().getMethod("clearInspectForUuid", UUID.class).invoke(plugin, adminId);
+            return true;
+        } catch (NoSuchMethodException missing) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] clearInspectForUuid missing — update LegacyMechanicsGUI jar",
+                    AdaptiveDifficultyMod.MOD_ID
+            );
+            return false;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] clearLmInspect failed: {}",
                     AdaptiveDifficultyMod.MOD_ID, t.toString()
             );
             return false;

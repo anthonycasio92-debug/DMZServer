@@ -88,7 +88,19 @@ public final class MechanicsCommands {
                                 .then(Commands.m_82129_("system", StringArgumentType.word())
                                         .executes(ctx -> openSystem(
                                                 ctx.getSource(),
-                                                StringArgumentType.getString(ctx, "system"))))));
+                                                StringArgumentType.getString(ctx, "system")))))
+                        .then(Commands.m_82127_("inspect")
+                                .executes(ctx -> adminInspect(ctx.getSource(), null, "hub"))
+                                .then(Commands.m_82129_("player", StringArgumentType.string())
+                                        .executes(ctx -> adminInspect(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player"),
+                                                "hub"))
+                                        .then(Commands.m_82129_("system", StringArgumentType.word())
+                                                .executes(ctx -> adminInspect(
+                                                        ctx.getSource(),
+                                                        StringArgumentType.getString(ctx, "player"),
+                                                        StringArgumentType.getString(ctx, "system")))))));
     }
 
     private static int open(CommandSourceStack source, String page) {
@@ -164,10 +176,58 @@ public final class MechanicsCommands {
                         + "§e/lm admin migrate-cnpc §7— import CNPC Rival/Spar into LM (once)\n"
                         + "§e/lm admin migrate-cnpc force §7— wipe LM stores + re-import\n"
                         + "§e/lm admin syslog on|off|status|flush\n"
-                        + "§e/lm admin open <difficulty|rival|spar|progression|prestige|skills>\n"
-                        + "§8Also: /difficulty admin · /rival admin · /spar admin · /progression admin"
+                        + "§e/lm admin open <difficulty|rival|spar|progression|prestige|skills|hub>\n"
+                        + "§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|…]\n"
+                        + "§e/lm admin inspect clear §7— stop inspecting\n"
+                        + "§8Also: /difficulty admin gui|inspect <player>"
         ), false);
         return 1;
+    }
+
+    private static int adminInspect(CommandSourceStack source, String playerName, String system) {
+        ServerPlayer admin = playerOrNull(source);
+        if (admin == null) {
+            source.m_81352_(Component.m_237113_("Players only (open inspect from in-game)."));
+            return 0;
+        }
+        if (!StaffAccess.isStaff(admin)) {
+            admin.m_213846_(Component.m_237113_("§cStaff only."));
+            return 0;
+        }
+        if (playerName == null || playerName.isBlank()
+                || "clear".equalsIgnoreCase(playerName)
+                || "self".equalsIgnoreCase(playerName)
+                || "me".equalsIgnoreCase(playerName)) {
+            if (com.dbzlegacy.adaptivedifficulty.gui.CmiGuiBridge.clearLmInspect(admin.m_20148_())) {
+                return 1;
+            }
+            com.dbzlegacy.adaptivedifficulty.gui.MechanicsMenu.open(admin, "main");
+            admin.m_213846_(Component.m_237113_("§7Inspect clear requested — reopen §f/lm §7if needed."));
+            return 1;
+        }
+        ServerPlayer subject = admin.m_20194_() == null
+                ? null
+                : admin.m_20194_().m_6846_().m_11255_(playerName.trim());
+        if (subject == null && admin.m_20194_() != null) {
+            String want = playerName.trim().toLowerCase();
+            for (ServerPlayer p : admin.m_20194_().m_6846_().m_11314_()) {
+                if (p.m_7755_().getString().toLowerCase().equals(want)) {
+                    subject = p;
+                    break;
+                }
+            }
+        }
+        if (subject == null) {
+            admin.m_213846_(Component.m_237113_("§cPlayer not online: §f" + playerName));
+            return 0;
+        }
+        String sys = system == null || system.isBlank() ? "hub" : system;
+        if (com.dbzlegacy.adaptivedifficulty.gui.CmiGuiBridge.openLmInspect(admin, subject, sys, "main")) {
+            return 1;
+        }
+        admin.m_213846_(Component.m_237113_(
+                "§cCould not open inspect GUI. Is LegacyMechanicsGUI loaded?"));
+        return 0;
     }
 
     private static int adminMigrateCnpc(CommandSourceStack source, boolean force) {

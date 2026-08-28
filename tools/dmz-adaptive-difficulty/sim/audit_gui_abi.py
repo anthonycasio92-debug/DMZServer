@@ -280,6 +280,9 @@ GUI_REQUIRED_METHODS = [
     ("openSkillsMenu", "Player"),
     ("openSkillsMenuForUuid", "UUID"),
     ("openSkillsChestMenuForUuid", "UUID"),
+    ("openInspectForUuid", "UUID"),
+    ("openLmInspectForUuid", "UUID"),
+    ("clearInspectForUuid", "UUID"),
 ]
 
 

@@ -144,20 +144,41 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         }
     }
 
+    /** Clear staff inspect session (Mohist-safe UUID entry). */
+    public void clearInspectForUuid(UUID adminId) {
+        if (adminId == null) {
+            return;
+        }
+        Runnable task = () -> {
+            AdminInspectSessions.clear(adminId);
+            Player admin = Bukkit.getPlayer(adminId);
+            if (admin != null && admin.isOnline()) {
+                openHubInventory(admin, "main");
+                admin.sendMessage("§7Inspect closed — showing your own LM hub.");
+            }
+        };
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+        } else {
+            Bukkit.getScheduler().runTask(this, task);
+        }
+    }
+
     /**
-     * Staff inspect: open chest GUI for admin while painting/editing {@code subjectId}.
-     * Chest-only so clicks are bound to the subject (CMI buttons would edit the admin).
+     * Staff inspect: open any LM system chest GUI as admin while painting/editing subject.
+     * Default system is hub so staff can jump into Difficulty / Rival / Spar / etc. as that player.
      */
-    public void openInspectForUuid(UUID adminId, UUID subjectId, String page) {
+    public void openLmInspectForUuid(UUID adminId, UUID subjectId, String system, String page) {
         if (adminId == null || subjectId == null) {
             return;
         }
+        String sys = system == null || system.isBlank() ? "hub" : system.toLowerCase(Locale.ROOT).trim();
         String target = page == null || page.isBlank() ? "main" : page;
         Runnable task = () -> {
             Player admin = Bukkit.getPlayer(adminId);
             Player subject = Bukkit.getPlayer(subjectId);
             if (admin == null || !admin.isOnline()) {
-                getLogger().warning("openInspectForUuid: admin offline " + adminId);
+                getLogger().warning("openLmInspectForUuid: admin offline " + adminId);
                 return;
             }
             if (subject == null || !subject.isOnline()) {
@@ -170,14 +191,48 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             AdminInspectSessions.set(admin.getUniqueId(), subject.getUniqueId());
             admin.sendMessage("§eInspecting §f" + subject.getName()
-                    + "§e's LegacyMechanics Difficulty GUI (chest). Edits apply to them.");
-            chestGui.openAs(admin, subject, target);
+                    + "§e's Legacy Mechanics (§8" + sys + "§e). Edits apply to them.");
+            admin.sendMessage("§8Exit: §f/lm admin inspect clear §8or §f/difficulty admin gui clear");
+            openInspectSystem(admin, subject, sys, target);
         };
         if (Bukkit.isPrimaryThread()) {
             task.run();
         } else {
             Bukkit.getScheduler().runTask(this, task);
         }
+    }
+
+    /** Open one system in inspect mode (chest-only; session already set). */
+    private void openInspectSystem(Player admin, Player subject, String system, String page) {
+        String s = system == null ? "hub" : system.toLowerCase(Locale.ROOT).trim();
+        String p = page == null || page.isBlank() ? "main" : page;
+        switch (s) {
+            case "hub", "lm", "legacymechanics", "main" -> hubChestGui.open(admin, p);
+            case "difficulty", "diff", "ad" -> chestGui.openAs(admin, subject, p);
+            case "rival", "rivals", "rivalry" -> rivalChestGui.open(admin, p);
+            case "spar", "sparring" -> sparChestGui.open(admin, p);
+            case "skillcheck", "skill_check" -> {
+                ForgeBridge.markSkillCheckSession(admin);
+                skillsChestGui.open(admin, p.equals("main") ? "core" : p);
+            }
+            case "skills", "skill" -> skillsChestGui.open(admin, p.equals("main") ? "core" : p);
+            case "prestige" -> prestigeChestGui.open(admin, p);
+            case "progression", "prog" -> progressionChestGui.open(admin, p);
+            default -> {
+                admin.sendMessage("§cUnknown system: §f" + s
+                        + " §8(hub|difficulty|rival|spar|skillcheck|prestige|progression|skills)");
+                hubChestGui.open(admin, "main");
+            }
+        }
+    }
+
+    /**
+     * Staff inspect: open chest GUI for admin while painting/editing {@code subjectId}.
+     * Chest-only so clicks are bound to the subject (CMI buttons would edit the admin).
+     * Defaults to Difficulty for ABI compatibility with older Forge jars.
+     */
+    public void openInspectForUuid(UUID adminId, UUID subjectId, String page) {
+        openLmInspectForUuid(adminId, subjectId, "difficulty", page);
     }
 
     /** Player-facing open that honors Forge {@code guiBackend}. */
@@ -218,8 +273,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     private void openInspect(Player admin, Player subject, String page) {
         AdminInspectSessions.set(admin.getUniqueId(), subject.getUniqueId());
         admin.sendMessage("§eInspecting §f" + subject.getName()
-                + "§e's LegacyMechanics Difficulty GUI. Edits apply to them.");
-        admin.sendMessage("§8Exit: §f/difficulty §8or §f/difficulty admin gui clear");
+                + "§e's Legacy Mechanics. Edits apply to them.");
+        admin.sendMessage("§8Hub: §f/lm admin inspect " + subject.getName()
+                + " hub §8· Exit: §f/lm admin inspect clear");
         chestGui.openAs(admin, subject, page == null || page.isBlank() ? "main" : page);
     }
 
@@ -714,12 +770,21 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     /**
      * Open a system inventory from the hub without {@code performCommand} to bare
      * {@code /difficulty}/{@code /rival}/… (keeps guide path on {@code /lm}).
+     * When the viewer is inspecting another player, opens chest GUIs as that subject
+     * and does not clear the inspect session.
      */
     public void openSystemFromHub(Player player, String system) {
         if (player == null) {
             return;
         }
         String s = system == null ? "" : system.toLowerCase(Locale.ROOT).trim();
+        if (AdminInspectSessions.isInspecting(player.getUniqueId())) {
+            Player subject = AdminInspectSessions.resolveSubject(player);
+            if (subject != null && !subject.getUniqueId().equals(player.getUniqueId())) {
+                openInspectSystem(player, subject, s.isBlank() ? "hub" : s, "main");
+                return;
+            }
+        }
         switch (s) {
             case "difficulty", "diff", "ad" -> openMenuRespectingConfig(player, "main");
             case "rival", "rivals", "rivalry" -> openRivalRespectingConfig(player, "main");
@@ -771,7 +836,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 }
                 openHubInventory(player, "logs");
             }
-            case "help" -> openHubInventory(player, "main");
+            case "help", "hub", "lm" -> openHubInventory(player, "main");
             default -> {
                 player.sendMessage("§cUnknown system: " + s
                         + " §8(difficulty|rival|spar|skillcheck|prestige|progression)");
@@ -816,8 +881,58 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     sender.sendMessage("Players only for open.");
                     return true;
                 }
-                String system = args.length > 2 ? args[2] : "difficulty";
-                openSystemFromHub(player, system);
+                // /lm admin open <system>  OR  /lm admin open <player> [system]
+                if (args.length < 3) {
+                    openSystemFromHub(player, "hub");
+                    return true;
+                }
+                String arg2 = args[2];
+                Player maybeSubject = Bukkit.getPlayerExact(arg2);
+                if (maybeSubject == null) {
+                    maybeSubject = Bukkit.getPlayer(arg2);
+                }
+                if (maybeSubject != null && maybeSubject.isOnline()
+                        && !isKnownSystem(arg2)) {
+                    String system = args.length > 3 ? args[3] : "hub";
+                    openLmInspectForUuid(player.getUniqueId(), maybeSubject.getUniqueId(), system, "main");
+                    return true;
+                }
+                openSystemFromHub(player, arg2);
+            }
+            case "inspect", "view", "playergui" -> {
+                if (!(sender instanceof Player admin)) {
+                    sender.sendMessage("Players only for inspect.");
+                    return true;
+                }
+                if (args.length < 3
+                        || "clear".equalsIgnoreCase(args[2])
+                        || "self".equalsIgnoreCase(args[2])
+                        || "me".equalsIgnoreCase(args[2])) {
+                    AdminInspectSessions.clear(admin.getUniqueId());
+                    openHubInventory(admin, "main");
+                    admin.sendMessage("§7Inspect closed — showing your own LM hub.");
+                    return true;
+                }
+                String name = args[2];
+                String system = args.length > 3 ? args[3] : "hub";
+                // Allow: inspect <player> <system>  OR  inspect <player> with multi-word name ending in system
+                if (args.length >= 4 && isKnownSystem(args[args.length - 1])) {
+                    system = args[args.length - 1];
+                    StringBuilder sb = new StringBuilder(args[2]);
+                    for (int i = 3; i < args.length - 1; i++) {
+                        sb.append(' ').append(args[i]);
+                    }
+                    name = sb.toString();
+                }
+                Player subject = Bukkit.getPlayerExact(name);
+                if (subject == null) {
+                    subject = Bukkit.getPlayer(name);
+                }
+                if (subject == null || !subject.isOnline()) {
+                    admin.sendMessage("§cPlayer not online: §f" + name);
+                    return true;
+                }
+                openLmInspectForUuid(admin.getUniqueId(), subject.getUniqueId(), system, "main");
             }
             default -> {
                 sender.sendMessage("§cUnknown: /lm admin " + sub);
@@ -833,13 +948,33 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 + " §7or §f/difficulty admin syslog " + mode);
     }
 
+    private static boolean isKnownSystem(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return false;
+        }
+        return switch (raw.toLowerCase(Locale.ROOT).trim()) {
+            case "hub", "lm", "legacymechanics", "main",
+                    "difficulty", "diff", "ad",
+                    "rival", "rivals", "rivalry",
+                    "spar", "sparring",
+                    "skillcheck", "skill_check",
+                    "skills", "skill",
+                    "prestige",
+                    "progression", "prog",
+                    "admin", "logs", "syslog", "help" -> true;
+            default -> false;
+        };
+    }
+
     private static void sendLmAdminHelp(CommandSender sender) {
         sender.sendMessage("§6§l/lm admin §8— Legacy Mechanics");
         sender.sendMessage("§e/lm admin help §7— this list");
         sender.sendMessage("§e/lm admin reload §7— reload config");
         sender.sendMessage("§e/lm admin syslog on|off|status|flush");
-        sender.sendMessage("§e/lm admin open <difficulty|rival|spar|progression|prestige|skills>");
-        sender.sendMessage("§8Also: /difficulty admin · /rival admin · /spar admin · /progression admin");
+        sender.sendMessage("§e/lm admin open <difficulty|rival|spar|progression|prestige|skills|hub>");
+        sender.sendMessage("§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|prestige|progression|skills]");
+        sender.sendMessage("§e/lm admin inspect clear §7— stop inspecting");
+        sender.sendMessage("§8Also: /difficulty admin gui|inspect <player>");
     }
 
     private boolean handleProgression(CommandSender sender, String[] args) {
