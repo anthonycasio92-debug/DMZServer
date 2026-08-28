@@ -92,19 +92,18 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 4, item(Material.NETHER_STAR, "&f&lRival", statusLore(ph)));
         put(holder, inv, 19, pageBtn(Material.PLAYER_HEAD, "&6List",
                 "&7Current rivals", "&8Heads · hover for stats"), SlotAction.page("list"));
-        put(holder, inv, 21, pageBtn(Material.LIME_CONCRETE, "&aActions",
-                "&7Declare · accept · decline · remove"), SlotAction.page("actions"));
         int pendingCount = 0;
         try {
             pendingCount = Integer.parseInt(ph.getOrDefault("pending_invites", "0"));
         } catch (NumberFormatException ignored) {
             pendingCount = 0;
         }
-        put(holder, inv, 22, pageBtn(Material.YELLOW_DYE,
-                pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
-                "&7Incoming + outgoing declares",
-                pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"),
-                SlotAction.page("pending"));
+        put(holder, inv, 21, pageBtn(Material.LIME_CONCRETE, "&aActions",
+                "&7Declare · accept · decline · remove",
+                pendingCount > 0
+                        ? "&e" + pendingCount + " pending invite" + (pendingCount == 1 ? "" : "s")
+                        : "&8Pending invites live here"),
+                SlotAction.page("actions"));
         put(holder, inv, 23, pageBtn(Material.IRON_SWORD, "&cChallenge",
                 "&7Send · accept · decline · spectate"), SlotAction.page("challenge"));
         put(holder, inv, 25, pageBtn(Material.GOLDEN_HELMET, "&fTop",
@@ -309,9 +308,7 @@ public final class RivalChestGui implements Listener {
             }
         }
         put(holder, inv, 37, pageBtn(Material.LIME_CONCRETE, "&aActions",
-                "&7Declare · accept · remove"), SlotAction.page("actions"));
-        put(holder, inv, 38, pageBtn(Material.YELLOW_DYE, "&ePending",
-                "&7Incoming + outgoing declares"), SlotAction.page("pending"));
+                "&7Declare · accept · remove · pending"), SlotAction.page("actions"));
         put(holder, inv, 39, pageBtn(Material.SKELETON_SKULL, "&8History",
                 "&7Previous rivals"), SlotAction.page("history"));
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
@@ -353,7 +350,7 @@ public final class RivalChestGui implements Listener {
                 "&7Decline an incoming declare"), SlotAction.page("pick_decline"));
         put(holder, inv, 39, pageBtn(Material.LIME_CONCRETE, "&aActions",
                 "&7Full actions menu"), SlotAction.page("actions"));
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Actions"), SlotAction.page("actions"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -367,8 +364,18 @@ public final class RivalChestGui implements Listener {
                 prependBlank(toAmp(ForgeBridge.rivalLines(player, "actions")))));
         put(holder, inv, 19, pageBtn(Material.LIME_DYE, "&aDeclare…",
                 "&7Visible declare → they Accept → Mutual"), SlotAction.page("pick_declare"));
-        put(holder, inv, 20, pageBtn(Material.CLOCK, "&ePending",
-                "&7View incoming + outgoing invites"), SlotAction.page("pending"));
+        Map<String, String> ph = ForgeBridge.rivalPlaceholders(player);
+        int pendingCount = 0;
+        try {
+            pendingCount = Integer.parseInt(ph.getOrDefault("pending_invites", "0"));
+        } catch (NumberFormatException ignored) {
+            pendingCount = 0;
+        }
+        put(holder, inv, 20, pageBtn(Material.CLOCK,
+                pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
+                "&7View incoming + outgoing invites",
+                pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"),
+                SlotAction.page("pending"));
         put(holder, inv, 21, pageBtn(Material.YELLOW_DYE, "&eAccept…",
                 "&7Pending declares, or Declared → Mutual",
                 "&8Both Silent → Declared shows here"), SlotAction.page("pick_accept"));
@@ -658,10 +665,6 @@ public final class RivalChestGui implements Listener {
                 + ph.getOrDefault("tier", "?") + "&8)");
         lore.add("&7Mutual &f" + ph.getOrDefault("mutual", "0")
                 + "&8/&f" + ph.getOrDefault("mutual_max", "3"));
-        String pending = ph.getOrDefault("pending_invites", "0");
-        if (!"0".equals(pending)) {
-            lore.add("&ePending invites &f" + pending);
-        }
         lore.add("&7Record &a" + ph.getOrDefault("wins", "0")
                 + "&7/&c" + ph.getOrDefault("losses", "0")
                 + "&7/&e" + ph.getOrDefault("draws", "0"));
@@ -671,7 +674,7 @@ public final class RivalChestGui implements Listener {
             lore.add("&eChallenge active");
         }
         lore.add("");
-        lore.add("&8List · Challenge · Top · Progress");
+        lore.add("&8List · Actions · Challenge · Top · Progress");
         return lore;
     }
 
