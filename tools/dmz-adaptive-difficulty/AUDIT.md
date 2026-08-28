@@ -1,3 +1,11 @@
+## Access + rival bridge + Fabled ki/AP + meditation XP (2.3.24)
+
+- Non-op `/lm` / player GUIs: allow unless `dmzdiff.gui` is explicitly denied (LuckPerms/Mohist-safe).
+- `/progression meditation` uses the same access helper.
+- Typed `/rival` actions route through `rivalHandleDo` (no Forge brigadier forward).
+- Meditation progress chat every 5s (matches live script).
+- Fabled: energy sync after `updatePlayerStat` + Bukkit follow-up; race class sync hardened; AP→DMZ bonuses require characterCreated + attribute fallbacks.
+
 ## Short GUI titles + drop /rivals (2.3.23)
 
 - Removed `/rivals` alias (use `/rival`).

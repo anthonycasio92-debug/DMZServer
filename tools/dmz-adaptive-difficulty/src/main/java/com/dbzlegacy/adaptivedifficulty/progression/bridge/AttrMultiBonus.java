@@ -6,6 +6,7 @@ import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.BonusStats;
+import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -15,6 +16,8 @@ import net.minecraft.server.level.ServerPlayer;
 public final class AttrMultiBonus {
     /** Matches live CNPC script name (color code included for remove/add identity). */
     public static final String BONUS_NAME = "\u00A76Prestige Bonus";
+    /** Old typo from duplicate script — clear so it cannot stack. */
+    private static final String LEGACY_BONUS_NAME = "\u00A76Prestrige Bonus";
 
     private AttrMultiBonus() {}
 
@@ -35,22 +38,31 @@ public final class AttrMultiBonus {
             return;
         }
 
+        /*
+         * Fabled attribute points survive DMZ wipe. Never re-apply while the character is wiped /
+         * not created, or the wipe looks like it failed (matches Attr Fabled Multi bonus.js).
+         */
+        boolean characterCreated = false;
+        try {
+            var status = dmz.getStatus();
+            characterCreated = status != null && status.isHasCreatedCharacter();
+        } catch (Throwable ignored) {
+            characterCreated = false;
+        }
+
+        clearAllNamedBonuses(bonusStats);
+
+        if (!characterCreated) {
+            pushSync(player);
+            return;
+        }
+
         double fStr = attr(data, "str");
         double fSkp = attr(data, "skp");
         double fRes = attr(data, "res");
         double fVit = attr(data, "vit");
         double fPwr = attr(data, "pwr");
         double fEne = attr(data, "ene");
-
-        clearBonus(bonusStats, "STR");
-        clearBonus(bonusStats, "SKP");
-        clearBonus(bonusStats, "VIT");
-        clearBonus(bonusStats, "PWR");
-        clearBonus(bonusStats, "ENE");
-        try {
-            bonusStats.removeBonusSplit("RES", BONUS_NAME);
-        } catch (Throwable ignored) {
-        }
 
         boolean changed = false;
         if (fStr > 0) {
@@ -79,19 +91,69 @@ public final class AttrMultiBonus {
         }
 
         if (changed) {
+            pushSync(player);
+        }
+    }
+
+    private static void clearAllNamedBonuses(BonusStats bonusStats) {
+        for (String name : new String[] {BONUS_NAME, LEGACY_BONUS_NAME}) {
+            clearBonus(bonusStats, "STR", name);
+            clearBonus(bonusStats, "SKP", name);
+            clearBonus(bonusStats, "VIT", name);
+            clearBonus(bonusStats, "PWR", name);
+            clearBonus(bonusStats, "ENE", name);
             try {
-                NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
+                bonusStats.removeBonusSplit("RES", name);
+            } catch (Throwable ignored) {
+            }
+            try {
+                bonusStats.clearBonusSplit("RES", name);
             } catch (Throwable ignored) {
             }
         }
     }
 
     private static double attr(Object fabledData, String key) {
+        double v = readAttrMethod(fabledData, "getAttribute", key);
+        if (v <= 0) {
+            v = readAttrMethod(fabledData, "getInvestedAttribute", key);
+        }
+        if (v <= 0) {
+            v = readAttrMap(fabledData, key);
+        }
+        return v;
+    }
+
+    private static double readAttrMethod(Object fabledData, String method, String key) {
         try {
-            Object v = fabledData.getClass().getMethod("getAttribute", String.class).invoke(fabledData, key);
+            Object v = fabledData.getClass().getMethod(method, String.class).invoke(fabledData, key);
             if (v instanceof Number n) {
                 double d = n.doubleValue();
                 return Double.isFinite(d) && d > 0 ? d : 0;
+            }
+        } catch (Throwable ignored) {
+        }
+        return 0;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static double readAttrMap(Object fabledData, String key) {
+        try {
+            Object raw = fabledData.getClass().getMethod("getAttributes").invoke(fabledData);
+            if (raw instanceof Map<?, ?> map) {
+                Object v = map.get(key);
+                if (v == null) {
+                    for (Map.Entry<?, ?> e : map.entrySet()) {
+                        if (e.getKey() != null && key.equalsIgnoreCase(String.valueOf(e.getKey()))) {
+                            v = e.getValue();
+                            break;
+                        }
+                    }
+                }
+                if (v instanceof Number n) {
+                    double d = n.doubleValue();
+                    return Double.isFinite(d) && d > 0 ? d : 0;
+                }
             }
         } catch (Throwable ignored) {
         }
@@ -102,13 +164,20 @@ public final class AttrMultiBonus {
         return 1.0 + (Math.max(0, points) * 0.01);
     }
 
-    private static void clearBonus(BonusStats bonusStats, String stat) {
+    private static void clearBonus(BonusStats bonusStats, String stat, String name) {
         try {
-            bonusStats.removeBonus(stat, BONUS_NAME);
+            bonusStats.removeBonus(stat, name);
         } catch (Throwable ignored) {
         }
         try {
-            bonusStats.clearBonus(stat, BONUS_NAME);
+            bonusStats.clearBonus(stat, name);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void pushSync(ServerPlayer player) {
+        try {
+            NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
         } catch (Throwable ignored) {
         }
     }

@@ -75,7 +75,7 @@ public final class ProgressionCommandTree implements TabCompleter {
             sender.sendMessage("§cPlayers only. §7Use in-game: §f/progression help");
             return true;
         }
-        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+        if (!AdaptiveDifficultyGuiPlugin.canUsePlayerGui(player)) {
             player.sendMessage("§cNo permission: dmzdiff.gui");
             return true;
         }

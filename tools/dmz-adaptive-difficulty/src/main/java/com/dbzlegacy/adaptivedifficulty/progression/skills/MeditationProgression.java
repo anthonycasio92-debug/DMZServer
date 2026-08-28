@@ -402,6 +402,12 @@ public final class MeditationProgression {
                     Map.of("level", next));
         } else {
             ProgressionData.storedPut(player, key, progress);
+            // Match Meditation new.js SHOW_PROGRESS_CONFIRMATION (1st tick + every 5s).
+            if (progress == 1L || progress % 5L == 0L) {
+                DmzRewards.msg(player, LmChat.tagged("Meditation",
+                        "§7Progress: §e" + progress + "§7/§e" + need
+                                + " §7toward level §e" + next + "§7."));
+            }
         }
     }
 

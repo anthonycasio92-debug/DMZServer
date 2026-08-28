@@ -15,7 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class RaceClassSync {
     private static final String NEXT_KEY = "dmzRaceNextCheck";
-    private static final long CHECK_INTERVAL_MS = 5000L;
+    private static final long CHECK_INTERVAL_MS = 2000L;
 
     private RaceClassSync() {}
 
@@ -30,43 +30,15 @@ public final class RaceClassSync {
         }
         ProgressionData.tempPut(player, NEXT_KEY, now + CHECK_INTERVAL_MS);
 
-        String dmzRace = DmzProgression.race(player);
-        if (dmzRace == null || dmzRace.isBlank()) {
-            // DmzProgression.race lowercases; prefer character race string for class name match.
-            try {
-                var ch = DmzProgression.character(player);
-                if (ch != null) {
-                    String r = ch.getRace();
-                    if (r == null || r.isBlank()) {
-                        r = ch.getRaceName();
-                    }
-                    dmzRace = r == null ? "" : r.trim();
-                }
-            } catch (Throwable ignored) {
-                dmzRace = "";
-            }
-        } else {
-            // Restore original casing when possible for Fabled class lookup.
-            try {
-                var ch = DmzProgression.character(player);
-                if (ch != null) {
-                    String r = ch.getRace();
-                    if (r == null || r.isBlank()) {
-                        r = ch.getRaceName();
-                    }
-                    if (r != null && !r.isBlank()) {
-                        dmzRace = r.trim();
-                    }
-                }
-            } catch (Throwable ignored) {
-            }
-        }
+        String dmzRace = resolveRaceName(player);
         if (dmzRace == null || dmzRace.isBlank()) {
             return;
         }
 
         Object fabledData = FabledBridge.fabledData(player);
         if (fabledData == null) {
+            // Not ready yet — retry sooner.
+            ProgressionData.tempPut(player, NEXT_KEY, now + 500L);
             return;
         }
         Class<?> fabledClass = FabledBridge.fabledClass();
@@ -76,6 +48,7 @@ public final class RaceClassSync {
 
         Object targetClass = resolveRegisteredClass(fabledClass, dmzRace);
         if (targetClass == null) {
+            FabledBridge.logSync(player, "race_class_miss", "race", dmzRace);
             return;
         }
 
@@ -87,12 +60,13 @@ public final class RaceClassSync {
         }
 
         String currentClassName = "";
+        Object currentClassData = null;
         try {
             Object main = fabledData.getClass().getMethod("getMainClass").invoke(fabledData);
             if (main != null) {
-                Object classData = main.getClass().getMethod("getData").invoke(main);
-                if (classData != null) {
-                    Object n = classData.getClass().getMethod("getName").invoke(classData);
+                currentClassData = main.getClass().getMethod("getData").invoke(main);
+                if (currentClassData != null) {
+                    Object n = currentClassData.getClass().getMethod("getName").invoke(currentClassData);
                     currentClassName = n == null ? "" : String.valueOf(n);
                 }
             }
@@ -104,7 +78,7 @@ public final class RaceClassSync {
         }
 
         Object bukkitPlayer = FabledBridge.bukkitPlayer(player);
-        Object changed;
+        Object changed = null;
         try {
             Method setClass = null;
             for (Method m : fabledData.getClass().getMethods()) {
@@ -116,11 +90,18 @@ public final class RaceClassSync {
             if (setClass == null) {
                 return;
             }
-            changed = setClass.invoke(fabledData, null, targetClass, true);
+            // Prefer (previous, next, force) when we know the previous FabledClass.
+            changed = setClass.invoke(fabledData, currentClassData, targetClass, true);
+            if (changed == null && currentClassData != null) {
+                changed = setClass.invoke(fabledData, null, targetClass, true);
+            }
         } catch (Throwable t) {
+            FabledBridge.logSync(player, "race_class_err", "race", dmzRace, "err", String.valueOf(t));
+            ProgressionData.tempPut(player, NEXT_KEY, now + 1000L);
             return;
         }
         if (changed == null) {
+            FabledBridge.logSync(player, "race_class_reject", "race", dmzRace, "class", targetClassName);
             return;
         }
 
@@ -139,21 +120,74 @@ public final class RaceClassSync {
         } catch (Throwable ignored) {
         }
 
+        // setClass/updatePlayerStat reset maxMana from class mana (often 0) — restore DMZ ki.
+        EnergyManaSync.sync(player, true);
+
         FabledBridge.logSync(player, "race_class", "race", dmzRace, "class", targetClassName);
+    }
+
+    private static String resolveRaceName(ServerPlayer player) {
+        String dmzRace = DmzProgression.race(player);
+        if (dmzRace == null || dmzRace.isBlank()) {
+            try {
+                var ch = DmzProgression.character(player);
+                if (ch != null) {
+                    String r = ch.getRace();
+                    if (r == null || r.isBlank()) {
+                        r = ch.getRaceName();
+                    }
+                    dmzRace = r == null ? "" : r.trim();
+                }
+            } catch (Throwable ignored) {
+                dmzRace = "";
+            }
+        } else {
+            try {
+                var ch = DmzProgression.character(player);
+                if (ch != null) {
+                    String r = ch.getRace();
+                    if (r == null || r.isBlank()) {
+                        r = ch.getRaceName();
+                    }
+                    if (r != null && !r.isBlank()) {
+                        dmzRace = r.trim();
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        return stripNamespace(dmzRace);
+    }
+
+    private static String stripNamespace(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String r = raw.trim();
+        int colon = r.lastIndexOf(':');
+        if (colon >= 0 && colon < r.length() - 1) {
+            r = r.substring(colon + 1).trim();
+        }
+        return r;
     }
 
     private static Object resolveRegisteredClass(Class<?> fabledClass, String dmzRace) {
         Method getClassMethod = FabledBridge.findUnaryStatic(fabledClass, "getClass");
+        String[] candidates = new String[] {
+                dmzRace,
+                formatRaceName(dmzRace),
+                dmzRace.toLowerCase(Locale.ROOT),
+                dmzRace.toUpperCase(Locale.ROOT)
+        };
         if (getClassMethod != null) {
-            Object found = tryInvoke(getClassMethod, dmzRace);
-            if (found == null) {
-                found = tryInvoke(getClassMethod, formatRaceName(dmzRace));
-            }
-            if (found == null) {
-                found = tryInvoke(getClassMethod, dmzRace.toLowerCase(Locale.ROOT));
-            }
-            if (found != null) {
-                return found;
+            for (String c : candidates) {
+                if (c == null || c.isBlank()) {
+                    continue;
+                }
+                Object found = tryInvoke(getClassMethod, c);
+                if (found != null) {
+                    return found;
+                }
             }
         }
         try {
@@ -175,6 +209,12 @@ public final class RaceClassSync {
                 Object name = registeredClass.getClass().getMethod("getName").invoke(registeredClass);
                 if (name != null && equalsIgnoreCase(String.valueOf(name), dmzRace)) {
                     return registeredClass;
+                }
+            }
+            // Also match map keys (sometimes keyed differently from getName).
+            for (Map.Entry<?, ?> e : map.entrySet()) {
+                if (e.getKey() != null && equalsIgnoreCase(String.valueOf(e.getKey()), dmzRace)) {
+                    return e.getValue();
                 }
             }
         } catch (Throwable ignored) {

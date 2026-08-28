@@ -694,7 +694,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             sender.sendMessage("Players only.");
             return true;
         }
-        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+        if (!canUsePlayerGui(player)) {
             player.sendMessage("§cNo permission: dmzdiff.gui");
             return true;
         }
@@ -969,7 +969,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             player.sendMessage("§cStaff only.");
             return true;
         }
-        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+        if (!canUsePlayerGui(player)) {
             player.sendMessage("§cNo permission: dmzdiff.gui");
             return true;
         }
@@ -1011,7 +1011,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             player.sendMessage("§cStaff only.");
             return true;
         }
-        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+        if (!canUsePlayerGui(player)) {
             player.sendMessage("§cNo permission: dmzdiff.gui");
             return true;
         }
@@ -1057,7 +1057,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             player.sendMessage("§cNo permission: legacymechanics.skillcheck");
             return true;
         }
-        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+        if (!canUsePlayerGui(player)) {
             player.sendMessage("§cNo permission: dmzdiff.gui");
             return true;
         }
@@ -1092,7 +1092,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             sender.sendMessage("Players only.");
             return true;
         }
-        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+        if (!canUsePlayerGui(player)) {
             player.sendMessage("§cNo permission: dmzdiff.gui");
             return true;
         }
@@ -1156,14 +1156,15 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             openRivalRespectingConfig(player, page);
             return true;
         }
-        // Known forge actions that need typed names — keep forwarding
+        // Known typed actions — route via ForgeBridge.handleDo (Mohist brigadier forward fails).
         if (isRivalForgeAction(sub)) {
-            forwardToForge(player, "rival", args);
+            routeRivalTypedAction(player, args);
             return true;
         }
-        // Bare /rival <onlinePlayer> → silent rival via Forge
+        // Bare /rival <onlinePlayer> → silent rival via handleDo
         if (args.length == 1 && Bukkit.getPlayerExact(args[0]) != null) {
-            forwardToForge(player, "rival", args);
+            String msg = ForgeBridge.rivalHandleDo(player, "silent", args[0], "main");
+            sendMultiline(player, msg);
             return true;
         }
         // Unknown non-admin chatter → open GUI instead of failing typed command
@@ -1180,12 +1181,111 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         };
     }
 
+    /**
+     * Map typed {@code /rival …} args onto {@link ForgeBridge#rivalHandleDo} so Mohist does not
+     * need the Forge brigadier command bridge.
+     */
+    private static void routeRivalTypedAction(Player player, String[] args) {
+        String sub = args[0].toLowerCase(Locale.ROOT);
+        switch (sub) {
+            case "declare", "accept", "decline", "deny", "remove", "silent" -> {
+                String action = "deny".equals(sub) ? "decline" : sub;
+                String arg = args.length > 1 ? args[1] : "";
+                sendMultiline(player, ForgeBridge.rivalHandleDo(player, action, arg, "main"));
+            }
+            case "challenge" -> {
+                if (args.length < 2) {
+                    openRivalPage(player, "challenge");
+                    return;
+                }
+                String csub = args[1].toLowerCase(Locale.ROOT);
+                if ("send".equals(csub)) {
+                    String target = args.length > 2 ? args[2] : "";
+                    String arg = target;
+                    if (args.length > 3 && !args[3].isBlank()) {
+                        arg = target + "@" + args[3];
+                    }
+                    sendMultiline(player, ForgeBridge.rivalHandleDo(player, "challenge_send", arg, "main"));
+                    return;
+                }
+                if ("accept".equals(csub) || "decline".equals(csub) || "deny".equals(csub) || "cancel".equals(csub)) {
+                    String act = "deny".equals(csub) ? "decline" : csub;
+                    sendMultiline(player, ForgeBridge.rivalHandleDo(player, "challenge", act, "main"));
+                    return;
+                }
+                // /rival challenge <player> [minutes] → send
+                String arg = args[1];
+                if (args.length > 2 && !args[2].isBlank()) {
+                    arg = args[1] + "@" + args[2];
+                }
+                sendMultiline(player, ForgeBridge.rivalHandleDo(player, "challenge_send", arg, "main"));
+            }
+            case "spectate" -> {
+                String arg = args.length > 1 ? args[1] : "";
+                if (args.length > 1 && ("stop".equalsIgnoreCase(args[1]) || "end".equalsIgnoreCase(args[1]))) {
+                    sendMultiline(player, ForgeBridge.rivalHandleDo(player, "spectate_stop", "", "main"));
+                } else {
+                    sendMultiline(player, ForgeBridge.rivalHandleDo(player, "spectate", arg, "main"));
+                }
+            }
+            case "tpmsg" -> {
+                String arg = args.length > 1 ? args[1] : "toggle";
+                sendMultiline(player, ForgeBridge.rivalHandleDo(player, "tpmsg", arg, "main"));
+            }
+            case "instinct" -> {
+                sendMultiline(player, ForgeBridge.rivalHandleDo(player, "instinct", "", "main"));
+            }
+            case "refresh", "save" -> {
+                if (!ForgeBridge.isStaff(player)) {
+                    player.sendMessage("§cStaff only.");
+                    return;
+                }
+                sendMultiline(player, ForgeBridge.rivalHandleDo(player, "admin", sub, "admin"));
+            }
+            default -> openRivalPage(player, "main");
+        }
+    }
+
+    private static void openRivalPage(Player player, String page) {
+        AdaptiveDifficultyGuiPlugin plugin = JavaPlugin.getPlugin(AdaptiveDifficultyGuiPlugin.class);
+        if (plugin != null) {
+            plugin.openRivalRespectingConfig(player, page);
+        }
+    }
+
+    private static boolean isSparForgeAction(String sub) {
+        return switch (sub.toLowerCase()) {
+            case "mentor", "apprentice", "save" -> true;
+            default -> false;
+        };
+    }
+
+    /**
+     * LuckPerms/Mohist-safe player GUI gate: allow unless {@code dmzdiff.gui} is explicitly denied.
+     * {@code plugin.yml} defaults the node to true; some permission bridges still return false when unset.
+     */
+    public static boolean canUsePlayerGui(Player player) {
+        if (player == null) {
+            return false;
+        }
+        if (player.isOp()) {
+            return true;
+        }
+        try {
+            if (!player.isPermissionSet("dmzdiff.gui")) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        return player.hasPermission("dmzdiff.gui");
+    }
+
     private boolean handleSpar(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Players only.");
             return true;
         }
-        if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+        if (!canUsePlayerGui(player)) {
             player.sendMessage("§cNo permission: dmzdiff.gui");
             return true;
         }
@@ -1258,20 +1358,53 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             openSparRespectingConfig(player, "main");
             return true;
         }
-        // mentor <name> / apprentice <name> / admin … → Forge
+        // mentor <name> / apprentice <name> / save → handleDo (not brigadier)
         if (isSparForgeAction(sub)) {
-            forwardToForge(player, "spar", args);
+            routeSparTypedAction(player, args);
             return true;
         }
         openSparRespectingConfig(player, "main");
         return true;
     }
 
-    private static boolean isSparForgeAction(String sub) {
-        return switch (sub.toLowerCase()) {
-            case "mentor", "apprentice", "save" -> true;
-            default -> false;
-        };
+    private static void routeSparTypedAction(Player player, String[] args) {
+        String sub = args[0].toLowerCase(Locale.ROOT);
+        if ("save".equals(sub)) {
+            if (!ForgeBridge.isStaff(player)) {
+                player.sendMessage("§cStaff only.");
+                return;
+            }
+            sendMultiline(player, ForgeBridge.sparHandleDo(player, "admin", "save", "admin"));
+            return;
+        }
+        if ("mentor".equals(sub)) {
+            if (args.length < 2) {
+                return;
+            }
+            String msub = args[1].toLowerCase(Locale.ROOT);
+            if ("accept".equals(msub) || "decline".equals(msub) || "deny".equals(msub)
+                    || "cancel".equals(msub) || "leave".equals(msub) || "remove".equals(msub)
+                    || "clear".equals(msub) || "release".equals(msub)) {
+                String rest = args.length > 2 ? args[2] : "";
+                String arg = msub + (rest.isBlank() ? "" : " " + rest);
+                sendMultiline(player, ForgeBridge.sparHandleDo(player, "mentor", arg, "main"));
+                return;
+            }
+            // /spar mentor <player> → invite as apprentice
+            sendMultiline(player, ForgeBridge.sparHandleDo(player, "mentor_invite", args[1], "main"));
+            return;
+        }
+        if ("apprentice".equals(sub)) {
+            if (args.length < 2) {
+                return;
+            }
+            String asub = args[1].toLowerCase(Locale.ROOT);
+            if ("remove".equals(asub) || "release".equals(asub) || "clear".equals(asub)) {
+                sendMultiline(player, ForgeBridge.sparHandleDo(player, "mentor_release", "", "main"));
+                return;
+            }
+            sendMultiline(player, ForgeBridge.sparHandleDo(player, "apprentice_invite", args[1], "main"));
+        }
     }
 
     /** Forward unknown subcommands to Forge brigadier via reflection (avoids Bukkit recursion). */
@@ -1295,7 +1428,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 sender.sendMessage("Players only. Use /difficulty admin … from console.");
                 return true;
             }
-            if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+            if (!canUsePlayerGui(player)) {
                 player.sendMessage("§cNo permission: dmzdiff.gui");
                 return true;
             }
@@ -1310,7 +1443,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     sender.sendMessage("Players only.");
                     return true;
                 }
-                if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+                if (!canUsePlayerGui(player)) {
                     player.sendMessage("§cNo permission: dmzdiff.gui");
                     return true;
                 }
@@ -1344,7 +1477,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     sender.sendMessage("Players only.");
                     return true;
                 }
-                if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+                if (!canUsePlayerGui(player)) {
                     player.sendMessage("§cNo permission: dmzdiff.gui");
                     return true;
                 }
@@ -1369,7 +1502,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     sender.sendMessage("Players only.");
                     return true;
                 }
-                if (!player.hasPermission("dmzdiff.gui") && !player.isOp()) {
+                if (!canUsePlayerGui(player)) {
                     player.sendMessage("§cNo permission: dmzdiff.gui");
                     return true;
                 }

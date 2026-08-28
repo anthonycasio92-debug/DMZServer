@@ -108,9 +108,6 @@ public final class FabledBridge {
                 continue;
             }
             try {
-                if (cfg.enableEnergyManaSync) {
-                    EnergyManaSync.sync(player);
-                }
                 if (cfg.enableStatScreenSync && tick % 5 == 0) {
                     StatScreenSync.sync(player);
                 }
@@ -129,11 +126,16 @@ public final class FabledBridge {
                 if (cfg.enableValueCleaner && tick % 20 == 0) {
                     ValueCleaner.sync(player);
                 }
-                if (cfg.enableRaceClassSync && tick % 100 == 0) {
+                // Race sync more often so first-login profession is not delayed.
+                if (cfg.enableRaceClassSync && tick % 40 == 0) {
                     RaceClassSync.sync(player);
                 }
                 if (cfg.enableClassPermissionSync && tick % 20 == 0) {
                     ClassPermissionSync.sync(player);
+                }
+                // Energy last: Fabled updatePlayerStat (from race/class ticks) resets maxMana.
+                if (cfg.enableEnergyManaSync) {
+                    EnergyManaSync.sync(player, tick % 10 == 0);
                 }
             } catch (Throwable t) {
                 AdaptiveDifficultyMod.LOGGER.debug(
@@ -238,14 +240,8 @@ public final class FabledBridge {
             if (data == null) {
                 return null;
             }
-            try {
-                Method isInit = data.getClass().getMethod("isInit");
-                Object init = isInit.invoke(data);
-                if (init instanceof Boolean ready && !ready) {
-                    return null;
-                }
-            } catch (NoSuchMethodException ignored) {
-            }
+            // Do not gate on isInit(): race/energy sync must run before Fabled marks ready,
+            // otherwise players sit at ki 0/0 with no class until a manual profess.
             return data;
         } catch (Throwable ignored) {
             return null;
@@ -364,6 +360,15 @@ public final class FabledBridge {
             fabledData.getClass().getMethod("setMana", double.class).invoke(fabledData, mana);
         } catch (Throwable ignored) {
         }
+        // Verify maxMana stuck; some loaders block Field.setDouble — retry via set(Object).
+        double readMax = invokeDouble(fabledData, "getMaxMana");
+        if (maxMana > 0 && readMax + 0.01 < maxMana) {
+            setDoubleField(fabledData, "maxMana", maxMana);
+            try {
+                fabledData.getClass().getMethod("setMana", double.class).invoke(fabledData, mana);
+            } catch (Throwable ignored) {
+            }
+        }
         try {
             fabledData.getClass().getMethod("updateScoreboard").invoke(fabledData);
         } catch (Throwable ignored) {
@@ -379,13 +384,53 @@ public final class FabledBridge {
             try {
                 Field f = search.getDeclaredField(fieldName);
                 f.setAccessible(true);
-                f.setDouble(target, value);
+                Class<?> type = f.getType();
+                if (type == double.class) {
+                    f.setDouble(target, value);
+                } else if (type == float.class) {
+                    f.setFloat(target, (float) value);
+                } else if (type == Double.class || type == Float.class || type == Number.class) {
+                    f.set(target, value);
+                } else {
+                    f.set(target, value);
+                }
                 return;
             } catch (NoSuchFieldException ignored) {
                 search = search.getSuperclass();
             } catch (Throwable ignored) {
                 return;
             }
+        }
+    }
+
+    /**
+     * Run after the current Bukkit tick so Fabled's {@code updatePlayerStat} cannot leave ki at 0/0.
+     */
+    static void runOnBukkit(ServerPlayer player, Runnable task) {
+        if (player == null || task == null) {
+            return;
+        }
+        try {
+            Object plugin = getPlugin(PLUGIN_NAME);
+            if (plugin == null) {
+                plugin = getPlugin("LegacyMechanicsGUI");
+            }
+            if (plugin == null) {
+                return;
+            }
+            ClassLoader loader = plugin.getClass().getClassLoader();
+            Class<?> bukkit = Class.forName("org.bukkit.Bukkit", true, loader);
+            Object scheduler = bukkit.getMethod("getScheduler").invoke(null);
+            Class<?> pluginCl = Class.forName("org.bukkit.plugin.Plugin", true, loader);
+            scheduler.getClass()
+                    .getMethod("runTask", pluginCl, Runnable.class)
+                    .invoke(scheduler, plugin, (Runnable) () -> {
+                        try {
+                            task.run();
+                        } catch (Throwable ignored) {
+                        }
+                    });
+        } catch (Throwable ignored) {
         }
     }
 
