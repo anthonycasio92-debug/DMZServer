@@ -1,9 +1,15 @@
-## End Dimension Strength script parity (2.3.15)
+## End Dimension Strength script parity (2.3.16)
 
 - Stubbed CNPC `End Dimension Strength.js` + Forge trigger bridge (Java owns dragon).
 - Spawn via EndDragonFight (`createNewDragon` + spike crystals) so perch/charge AI works.
 - World-wide dragon rescale; script softcap tables; natural spawn first-boot delay.
-- Jars: `LegacyMechanics-2.3.15` / `LegacyMechanicsGUI-2.3.15`.
+- Jars: `LegacyMechanics-2.3.16` / `LegacyMechanicsGUI-2.3.16`.
+
+## Potential Unlock script parity (2.3.16)
+
+- Rewrote `PotentialProgression` to match `Potential.js`: movement tip, method-streak
+  check-before-increment + switch tip, effective-weight-only mult, soft-cap/Guru messages.
+- Stubbed CNPC `Potential.js` (was still live and could double-count vs the mod).
 
 ## Skill tooltips + Rival pending invites (2.3.5)
 

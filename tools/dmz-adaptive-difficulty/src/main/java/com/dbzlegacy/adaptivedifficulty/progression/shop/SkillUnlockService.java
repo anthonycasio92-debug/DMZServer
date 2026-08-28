@@ -361,8 +361,15 @@ public final class SkillUnlockService {
         if (method == null || method.isBlank()) {
             return "";
         }
-        if ("blocking".equalsIgnoreCase(method) || "taking_damage".equalsIgnoreCase(method)) {
+        if ("blocking".equalsIgnoreCase(method) || "taking_damage".equalsIgnoreCase(method)
+                || "getting_hit".equalsIgnoreCase(method)) {
             return "taking damage";
+        }
+        if ("physical_hit".equalsIgnoreCase(method)) {
+            return "physical hit";
+        }
+        if ("ki_attack".equalsIgnoreCase(method)) {
+            return "ki attack";
         }
         return method.replace('_', ' ');
     }
