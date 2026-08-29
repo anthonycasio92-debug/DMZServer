@@ -111,7 +111,8 @@ public final class SparChestGui implements Listener {
                 List.of(
                         tpOn ? "&7Click to mute spar TP chat" : "&7Click to show spar TP chat while fighting",
                         "&8Batched +TP lines during spars",
-                        "&8/spar tpmsg"
+                        "",
+                        "&eClick to toggle"
                 )), SlotAction.act("tpmsg", "toggle", "main"));
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));

@@ -109,7 +109,8 @@ public final class CmiSparGui {
                 List.of(
                         tpOn ? "&7Click to mute spar TP chat" : "&7Click to show spar TP chat while fighting",
                         "&8Batched +TP lines during spars",
-                        "&8/spar tpmsg"
+                        "",
+                        "&eClick to toggle"
                 )));
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));

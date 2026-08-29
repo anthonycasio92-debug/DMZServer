@@ -873,8 +873,7 @@ public final class SparringSystem {
         }
         if (on == null) {
             boolean cur = SparStore.get().tpMessagesOn(player.m_20148_());
-            return "§7Spar TP messages: §f" + (cur ? "ON" : "OFF")
-                    + " §8(/spar tpmsg · /spar GUI)";
+            return "§7Spar TP messages: §f" + (cur ? "ON" : "OFF");
         }
         SparStore.get().setTpMessages(player.m_20148_(), on);
         return "§aSpar TP messages §f" + (on ? "ON" : "OFF")

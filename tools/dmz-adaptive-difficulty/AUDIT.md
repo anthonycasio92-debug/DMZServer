@@ -1,7 +1,7 @@
-## Spar TP message toggle (2.3.41)
+## Spar TP message toggle (2.3.42)
 
-Players can toggle live spar TP chat (`/spar` → **TP Msg**, or `/spar tpmsg`).
-Default ON. Pending +TP batches flush on a timer during the fight (not only on the next hit).
+Players toggle live spar TP chat from the **Spar GUI** only (`/spar` → **TP Msg**).
+No `/spar tpmsg` command. Default ON. Pending +TP batches flush on a timer during the fight.
 
 ## Skill Check real max levels (2.3.40)
 
