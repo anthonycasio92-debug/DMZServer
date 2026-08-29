@@ -222,6 +222,12 @@ public final class ProgressionCommands {
                 .then(Commands.m_82127_("android")
                         .requires(ProgressionCommands::staff)
                         .executes(ctx -> androidSelf(ctx.getSource()))
+                        .then(Commands.m_82127_("remove")
+                                .executes(ctx -> androidRemoveSelf(ctx.getSource()))
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .executes(ctx -> androidRemovePlayer(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player")))))
                         .then(Commands.m_82129_("player", StringArgumentType.word())
                                 .executes(ctx -> androidPlayer(
                                         ctx.getSource(),
@@ -368,6 +374,32 @@ public final class ProgressionCommands {
             return 0;
         }
         reply(source, playerOrNull(source), ProgressionSystem.androidConvert(target));
+        return 1;
+    }
+
+    private static int androidRemoveSelf(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null) {
+            source.m_288197_(() -> Component.m_237113_("§cPlayer required."), false);
+            return 0;
+        }
+        reply(source, player, ProgressionSystem.androidRemove(player, player));
+        return 1;
+    }
+
+    private static int androidRemovePlayer(CommandSourceStack source, String name) {
+        ServerPlayer actor = playerOrNull(source);
+        ServerPlayer target = resolve(source, name);
+        if (target == null) {
+            source.m_288197_(() -> Component.m_237113_("§cPlayer not found: " + name), false);
+            return 0;
+        }
+        if (actor == null) {
+            // Console: confirm still needs an actor UUID — run as target self-confirm path via target.
+            reply(source, null, ProgressionSystem.androidRemove(target, target));
+            return 1;
+        }
+        reply(source, actor, ProgressionSystem.androidRemove(actor, target));
         return 1;
     }
 

@@ -1,3 +1,13 @@
+## Android convert + remove (2.3.37)
+
+Race → **Android Tools** panel (chest + CMI): Convert or Remove Android upgrade.
+
+- Remove mirrors the CNPC Android Upgrade Removal script: two-click confirm (10s),
+  `setAndroidUpgraded(false)`, revert active form, restore `superforms`/`legendaryforms` at 0,
+  remove `androidforms`, recalculate transformation limits, sync.
+- Commands: `/progression android [player]` · `/progression android remove [player]`
+- Forge: `AndroidConversion.remove` · Bukkit: `ForgeBridge.androidRemove`
+
 ## GUI coherence pass (2.3.36)
 
 One icon language across Hub / Difficulty / Rival / Spar / Progression / Prestige / Skills:

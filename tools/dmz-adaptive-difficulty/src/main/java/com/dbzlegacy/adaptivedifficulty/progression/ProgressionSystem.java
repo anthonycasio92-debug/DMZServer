@@ -279,6 +279,10 @@ public final class ProgressionSystem {
         return AndroidConversion.convert(target);
     }
 
+    public static String androidRemove(ServerPlayer actor, ServerPlayer target) {
+        return AndroidConversion.remove(actor, target);
+    }
+
     public static String statusSummary() {
         return ProgressionConfig.statusSummary()
                 + "\n" + GlobalTpBoost.statusLine()

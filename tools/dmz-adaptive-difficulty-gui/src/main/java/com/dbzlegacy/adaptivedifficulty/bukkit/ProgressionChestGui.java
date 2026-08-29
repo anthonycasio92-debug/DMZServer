@@ -49,7 +49,7 @@ public final class ProgressionChestGui implements Listener {
             Map.entry("racelock", new String[]{"Race Lock", "Ancient/Sento need Fabled unlock skills.", "Passive on race select"}),
             Map.entry("yardrat", new String[]{"Yardrat", "Form mastery double-gain + starter ki.", "Passive for Yardrat"}),
             Map.entry("spiritualist", new String[]{"Spiritualist Ki", "Class confirm grants/removes kicontrol.", "Passive on class change"}),
-            Map.entry("android", new String[]{"Android Conversion", "Staff convert a player to Android (Gero path).", "/progression android [player]"}),
+            Map.entry("android", new String[]{"Android Tools", "Staff convert or remove Android upgrade (Gero path).", "/progression android · android remove"}),
             Map.entry("kiweapons", new String[]{"Ki Weapons", "Blade/scythe/clawlance Apothic attrs.", "Passive on equip"}),
             Map.entry("piercing", new String[]{"Piercing", "PROT_PIERCE → SKP (not on ki weapons).", "Passive in combat"}),
             Map.entry("dot", new String[]{"DoT Extra", "Extra damage from DoT sources.", "Passive in combat"}),
@@ -98,8 +98,12 @@ public final class ProgressionChestGui implements Listener {
                     ForgeBridge.isStaff(viewer) ? boostPanel(viewer, subject) : main(viewer, subject);
             case "race" -> sectionFlags(viewer, subject, "race", "&bRace & Form", Material.TOTEM_OF_UNDYING,
                     new String[]{"racelock", "yardrat", "spiritualist", "android"});
+            case "android_panel", "android_tools", "androidtools" ->
+                    ForgeBridge.isStaff(viewer) ? androidPanel(viewer, subject) : main(viewer, subject);
             case "android_convert", "androidconvert", "convert_android" ->
                     ForgeBridge.isStaff(viewer) ? androidConvertPicker(viewer, subject) : main(viewer, subject);
+            case "android_remove", "androidremove", "remove_android" ->
+                    ForgeBridge.isStaff(viewer) ? androidRemovePicker(viewer, subject) : main(viewer, subject);
             case "combat" -> sectionFlags(viewer, subject, "combat", "&cCombat", Material.NETHERITE_SWORD,
                     new String[]{"kiweapons", "piercing", "dot", "apothic"});
             case "end" -> sectionFlags(viewer, subject, "end", "&5End", Material.END_CRYSTAL,
@@ -187,23 +191,24 @@ public final class ProgressionChestGui implements Listener {
             String key = keys[i];
             boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
             String[] info = FLAG_INFO.getOrDefault(key, new String[]{key, "Progression module.", ""});
-            // Race page: Android is a convert action (not just the enable flag).
+            // Race page: Android opens convert/remove tools (not just the enable flag).
             if ("android".equals(key) && "race".equals(page)) {
                 List<String> lore = new ArrayList<>();
                 lore.add("");
                 lore.add(on ? "&aModule enabled" : "&cModule disabled");
                 lore.add(staff
-                        ? "&7Staff convert a player to Android (Gero path)."
-                        : "&7Android conversion path (Gero).");
+                        ? "&7Convert or remove Android upgrade (Gero path)."
+                        : "&7Android upgrade path (Gero).");
                 if (staff) {
                     lore.add("&8Cmd: &f/progression android [player]");
+                    lore.add("&8Cmd: &f/progression android remove [player]");
                     lore.add("");
-                    lore.add("&eClick · pick player to convert");
+                    lore.add("&eClick · Convert / Remove");
                 }
                 ItemStack stack = tipBtn(Material.IRON_INGOT,
-                        staff ? "&bAndroid Convert" : "&bAndroid", lore);
+                        staff ? "&bAndroid Tools" : "&bAndroid", lore);
                 if (staff) {
-                    put(holder, inv, slots[i], stack, SlotAction.page("android_convert"));
+                    put(holder, inv, slots[i], stack, SlotAction.page("android_panel"));
                 } else {
                     put(holder, inv, slots[i], stack);
                 }
@@ -363,6 +368,70 @@ public final class ProgressionChestGui implements Listener {
         return inv;
     }
 
+    private Inventory androidPanel(Player viewer, Player subject) {
+        Holder holder = new Holder("android_panel");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Android Tools"));
+        holder.bind(inv);
+        frame(inv, 45);
+        put(holder, inv, 4, item(Material.IRON_INGOT, "&b&lAndroid Tools",
+                List.of("", "&7Dr. Gero upgrade path",
+                        "&7Convert · remove Android upgrade",
+                        "&8Race / stats / progression preserved on remove")));
+        put(holder, inv, 20, tipBtn(Material.NETHERITE_INGOT, "&aConvert to Android",
+                List.of("&7Pick a player to convert",
+                        "&8Human → androidforms.androidbase",
+                        "", "&eClick to open")),
+                SlotAction.page("android_convert"));
+        put(holder, inv, 24, tipBtn(Material.REDSTONE, "&cRemove Android",
+                List.of("&7Pick a player to remove upgrade",
+                        "&8Restores superforms / legendaryforms",
+                        "&8Two-click confirm within 10s",
+                        "", "&eClick to open")),
+                SlotAction.page("android_remove"));
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Race section"),
+                SlotAction.page("race"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory androidRemovePicker(Player viewer, Player subject) {
+        Holder holder = new Holder("android_remove");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Remove Android"));
+        holder.bind(inv);
+        frame(inv, 45);
+        put(holder, inv, 4, item(Material.REDSTONE, "&c&lRemove Android",
+                List.of("", "&7Removes Android upgrade",
+                        "&7Restores normal form skills",
+                        "&8Click same target twice within 10s",
+                        "&8/progression android remove [player]")));
+        put(holder, inv, 8, tipBtn(Material.NETHERITE_SCRAP, "&cRemove Yourself",
+                List.of("&7Remove your Android upgrade", "", "&eClick · confirm within 10s")),
+                SlotAction.act("android_remove", subject.getName(), "android_remove"));
+        List<Player> online = GuiPlayerPicker.onlineExcept(subject);
+        int placed = 0;
+        for (Player other : online) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+            put(holder, inv, slot,
+                    GuiPlayerPicker.head(other, "&f" + other.getName(),
+                            List.of("&7Remove Android upgrade", "", "&eClick · confirm within 10s")),
+                    SlotAction.act("android_remove", other.getName(), "android_remove"));
+        }
+        if (online.isEmpty()) {
+            put(holder, inv, 22, item(Material.BARRIER, "&7No other players online",
+                    List.of("", "&7Use Remove Yourself above",
+                            "&8or /progression android remove <name>")));
+        }
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Android tools"),
+                SlotAction.page("android_panel"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
     private Inventory androidConvertPicker(Player viewer, Player subject) {
         Holder holder = new Holder("android_convert");
         Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Android Convert"));
@@ -392,8 +461,8 @@ public final class ProgressionChestGui implements Listener {
                     List.of("", "&7Use Convert Yourself above",
                             "&8or /progression android <name>")));
         }
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Race section"),
-                SlotAction.page("race"));
+        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Android tools"),
+                SlotAction.page("android_panel"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;

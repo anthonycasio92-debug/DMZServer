@@ -68,6 +68,7 @@ public final class ProgressionGuiApi {
                 "§e/progression meditation §8— trial help",
                 "§e/progression meditation next §8— rotate + broadcast trial",
                 "§e/progression android [player] §8— Gero android convert",
+                "§e/progression android remove [player] §8— remove Android upgrade",
                 "§e/progression boost §8— TP boost status",
                 "§e/progression boost start <mult> <minutes> [name]",
                 "§e/progression boost start <encoded> [name]",
@@ -132,6 +133,30 @@ public final class ProgressionGuiApi {
             }
         }
         return ProgressionSystem.androidConvert(target);
+    }
+
+    /**
+     * Staff: remove Android upgrade (two-click confirm) for {@code actor} or an online name.
+     */
+    public static String androidRemove(ServerPlayer actor, String targetName) {
+        if (actor == null) {
+            return "§cPlayers only.";
+        }
+        if (!StaffAccess.isStaff(actor)) {
+            return "§cStaff only.";
+        }
+        if (!DifficultyConfig.get().enableProgression) {
+            return "§cProgression system is disabled.";
+        }
+        ServerPlayer target = actor;
+        String name = targetName == null ? "" : targetName.trim();
+        if (!name.isBlank()) {
+            target = resolveOnline(actor, name);
+            if (target == null) {
+                return "§cPlayer not found: §f" + name;
+            }
+        }
+        return ProgressionSystem.androidRemove(actor, target);
     }
 
     /**
@@ -460,6 +485,7 @@ public final class ProgressionGuiApi {
                     help.add("§e/progression meditation next §7— cycle + broadcast trial");
                     help.add("§e/progression boost §7— status · start &lt;mult&gt; &lt;min&gt; · end");
                     help.add("§e/progression android [player] §7— Android convert (Gero)");
+                    help.add("§e/progression android remove [player] §7— remove Android upgrade");
                     help.add("§e/prestige §7— Prestige (Hub)");
                     help.add("§e/skills §7— Skill unlocks (Hub)");
                     help.add("§8Staff · /prog admin · toggle flags in section GUIs");
@@ -624,6 +650,10 @@ public final class ProgressionGuiApi {
         }
         if ("android".equals(act) || "androidconvert".equals(act) || "convertandroid".equals(act)) {
             return androidConvert(player, a);
+        }
+        if ("android_remove".equals(act) || "androidremove".equals(act)
+                || "removeandroid".equals(act) || "remove_android".equals(act)) {
+            return androidRemove(player, a);
         }
         if ("boost".equals(act) || "tpboost".equals(act) || "globaltpboost".equals(act)) {
             return boost(player, a);

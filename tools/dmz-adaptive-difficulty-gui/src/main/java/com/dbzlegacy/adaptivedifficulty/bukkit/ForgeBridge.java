@@ -91,6 +91,7 @@ public final class ForgeBridge {
     private static Method meditationExplainForPlayerMethod;
     private static Method meditationAdvanceMethod;
     private static Method androidConvertMethod;
+    private static Method androidRemoveMethod;
     private static Method boostMethod;
     private static Method progressionHelpMethod;
     private static Method progressionHelpForStaffMethod;
@@ -1330,6 +1331,26 @@ public final class ForgeBridge {
         }
     }
 
+    /** Staff: remove Android upgrade (two-click confirm) for self or online name. */
+    public static String androidRemove(Player actor, String targetName) {
+        Object nms = nmsPlayer(actor);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (androidRemoveMethod == null) {
+                return "§cAndroid remove API missing — update LegacyMechanics jar.";
+            }
+            Object raw = androidRemoveMethod.invoke(null, nms, targetName == null ? "" : targetName);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cAndroid remove failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
     /**
      * Staff: global TP boost — status / start / end.
      * {@code argsJoined} is everything after {@code /progression boost}.
@@ -1886,6 +1907,13 @@ public final class ForgeBridge {
                 androidConvertMethod = api.getMethod("androidConvert", sp, String.class);
             } catch (Throwable missing) {
                 androidConvertMethod = null;
+            }
+        }
+        if (androidRemoveMethod == null) {
+            try {
+                androidRemoveMethod = api.getMethod("androidRemove", sp, String.class);
+            } catch (Throwable missing) {
+                androidRemoveMethod = null;
             }
         }
         if (boostMethod == null) {

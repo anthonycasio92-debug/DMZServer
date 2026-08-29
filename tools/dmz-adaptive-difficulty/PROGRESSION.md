@@ -1,4 +1,4 @@
-# Natural Progression & Fabled Bridges (2.3.36)
+# Natural Progression & Fabled Bridges (2.3.37)
 
 LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus soft-dependency
 **Fabled** bridges (Bukkit / LuckPerms via reflection — never hard-crash if missing).
@@ -11,7 +11,7 @@ Staff UI (`/progression` / `/prog`) is a **category hub** matching the script fa
 
 ## Install (test)
 
-1. Build / install `LegacyMechanics-2.3.36.jar` (+ matching `LegacyMechanicsGUI-2.3.36.jar`).
+1. Build / install `LegacyMechanics-2.3.37.jar` (+ matching `LegacyMechanicsGUI-2.3.37.jar`).
 2. Keep `enableProgression` / `enableFabledBridge` true (defaults).
 3. **Disable** the CNPC Global Player scripts listed below to avoid double-sync / double TP.
 4. Do **not** deploy to live until tested.
@@ -59,7 +59,10 @@ Staff `/skills` has no special CNPC name hook — use an NPC interaction command
 | `main` | Hub | Status header (boost + meditation) · category buttons · Prestige/Skills shortcuts · staff Flags |
 | `skills` | Skills | flight, sprint, meditation, potential |
 | `tp` | TP Gains | farming, building, boost, bio |
-| `race` | Race & Form | racelock, yardrat, spiritualist, android |
+| `race` | Race & Form | racelock, yardrat, spiritualist, android (→ Android Tools) |
+| `android_panel` | Android Tools | Convert · Remove (staff) |
+| `android_convert` | Android Convert | player picker → Gero convert |
+| `android_remove` | Remove Android | player picker → two-click confirm remove |
 | `combat` | Combat | kiweapons, piercing, dot, apothic |
 | `end` | End | end (End Dimension Strength), endportal |
 | `shop` | Shop | prestige + skills status · buttons open `/prestige` and `/skills` |
@@ -96,7 +99,7 @@ Staff `/skills` has no special CNPC name hook — use an NPC interaction command
 | `enableRaceLock` | true | Race lock |
 | `enableYardrat` | true | Yardrat race / skills |
 | `enableSpiritualistKi` | true | Spiritualist Ki Control |
-| `enableAndroidConversion` | true | Android conversion |
+| `enableAndroidConversion` | true | Android convert + remove |
 
 ### Combat
 
@@ -198,6 +201,7 @@ Staff `/skills` has no special CNPC name hook — use an NPC interaction command
 - `YardratRace` / `YardratSkills`
 - `Spirtualist Ki Control`
 - `AndrioidConversion`
+- Android Upgrade Removal CNPC (use `/progression android remove` / GUI instead)
 
 ### Combat
 
