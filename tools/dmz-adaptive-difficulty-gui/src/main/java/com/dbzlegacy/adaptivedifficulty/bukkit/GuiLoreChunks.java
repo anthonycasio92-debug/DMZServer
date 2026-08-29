@@ -121,7 +121,7 @@ final class GuiLoreChunks {
             return Material.NETHER_STAR;
         }
         if (n.contains("flight") || n.equals("fly")) {
-            return Material.FEATHER;
+            return Material.ELYTRA;
         }
         if (n.contains("meditation")) {
             return Material.ENDER_EYE;
@@ -165,8 +165,8 @@ final class GuiLoreChunks {
         if (n.contains("fusion")) {
             return Material.GOLDEN_APPLE;
         }
-        // Never default to a book — Natural/Saga tabs already use distinct icons.
-        return Material.PAPER;
+        // Never PAPER — Skill Check already had a paper header; skills need distinct icons.
+        return Material.EMERALD;
     }
 
     private static int indexOfLevelSep(String line) {

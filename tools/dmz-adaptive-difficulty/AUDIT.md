@@ -1,3 +1,10 @@
+## Skill Check icons (2.3.35)
+
+- Skill Check header is **EXPERIENCE_BOTTLE** (not PAPER) — one status item only.
+- Skill tiles never default to PAPER (ELYTRA for Flight, EMERALD fallback).
+- Hub Skill Check button uses EXPERIENCE_BOTTLE; staff Skills uses BOOK.
+- Staff `/skills` admin still uses a single PAPER header.
+
 ## Skill Check hub perm gate (2.3.34)
 
 `legacymechanics.skillcheck` is required to **see** Skill Check on `/lm` hub (chest + CMI + chat).

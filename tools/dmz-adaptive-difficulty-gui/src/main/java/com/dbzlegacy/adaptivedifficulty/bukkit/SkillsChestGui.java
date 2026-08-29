@@ -92,8 +92,9 @@ public final class SkillsChestGui implements Listener {
             headerLore.add("");
             headerLore.addAll(GuiBoardHelper.tips(viewer,
                     skillCheckUi ? "&eSkill Check · one item per skill" : "&8One item per skill below"));
-            // Header uses stats icon (paper) — never a second book beside the tabs.
-            put(holder, inv, 4, item(Material.PAPER,
+            // Skill Check: one EXPERIENCE_BOTTLE header (never PAPER). Staff Skills: one PAPER.
+            Material headerMat = skillCheckUi ? Material.EXPERIENCE_BOTTLE : Material.PAPER;
+            put(holder, inv, 4, item(headerMat,
                     skillCheckUi ? title + " Skill Check"
                             : staffAdmin ? title + " (Admin)" : title + " Skills",
                     headerLore));

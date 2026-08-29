@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.34", 'VERSION = "2.3.34"' in mod)
+    check("VERSION 2.3.35", 'VERSION = "2.3.35"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -299,7 +299,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 2.3.34", "2.3.34" in readme)
+    check("README version 2.3.35", "2.3.35" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -341,15 +341,15 @@ def main() -> int:
     check("README level clamp", "level clamp" in readme.lower() or "maxValue" in readme)
     check("README skeleton mount", "mount" in readme.lower() and "jockey" in readme.lower())
 
-    print("\n=== Coin drop chances (2.3.34) ===")
+    print("\n=== Coin drop chances (2.3.35) ===")
     coins = read(SRC / "com/dbzlegacy/adaptivedifficulty/currency/AncientCoinEconomy.java")
     check("drop chance gate in rollKillLoot", "ancientCoinDropChance" in coins and "roll >= dropChance" in coins)
     check("dual upgrade band uses same roll", "roll < upgradeChance" in coins)
     check("coinDropChanceMigratedV1", "coinDropChanceMigratedV1" in cfg)
     check("admin set drop chance", "ancientcoindropchance" in cmds or "coindropchance" in cmds)
-    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.34" in readme)
+    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.35" in readme)
 
-    print("\n=== Mohist CMI /lmdo routing (2.3.34) ===")
+    print("\n=== Mohist CMI /lmdo routing (2.3.35) ===")
     gui_root = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit"
     cmi_files = [
         "CmiDifficultyGui.java",
@@ -401,7 +401,7 @@ def main() -> int:
     check("SkillsChestGui progression via lmdo", "lmdo lm open progression" in skills_chest)
     check("SkillsChestGui no lm do open", 'cmd("lm do open' not in skills_chest)
 
-    print("\n=== CNPC migrate safety (2.3.34) ===")
+    print("\n=== CNPC migrate safety (2.3.35) ===")
     migrator = read(SRC / "com/dbzlegacy/adaptivedifficulty/data/CnpcDataMigrator.java")
     check("resolveWorldBlob present", "resolveWorldBlob" in migrator)
     check("fromScriptControllerCompound", "fromScriptControllerCompound" in migrator)
@@ -418,7 +418,7 @@ def main() -> int:
     check("honest zero-import message", "No rows imported" in migrator)
     check("richer-CNPC replace", "cnpcRich > lmRich" in migrator)
 
-    print("\n=== Staff clear player (2.3.34) ===")
+    print("\n=== Staff clear player (2.3.35) ===")
     clearer = read(SRC / "com/dbzlegacy/adaptivedifficulty/data/PlayerDataClear.java")
     mech = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.java")
     gui_plugin = read(gui_root / "AdaptiveDifficultyGuiPlugin.java")
@@ -434,7 +434,7 @@ def main() -> int:
     check("RivalProgression.clearPlayer", "clearPlayer(String uuid)" in read(
         SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalProgression.java"))
 
-    print("\n=== Spar recent sessions (2.3.34) ===")
+    print("\n=== Spar recent sessions (2.3.35) ===")
     spar_store = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")
     spar_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
     check("RECENT_SESSION_LIMIT 3", "RECENT_SESSION_LIMIT = 3" in spar_store)
@@ -443,7 +443,7 @@ def main() -> int:
     check("statsLines Last 3", "Last 3 sessions" in spar_sys)
     check("statsLines no live TP this session", "TP this session" not in spar_sys)
 
-    print("\n=== Skill Check perm gate (2.3.34) ===")
+    print("\n=== Skill Check perm gate (2.3.35) ===")
     staff_access = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/StaffAccess.java")
     # Extract hasSkillCheck body — must not auto-grant via isStaff()
     start = staff_access.find("public static boolean hasSkillCheck")
@@ -455,6 +455,21 @@ def main() -> int:
     check("plugin.yml skillcheck permission", "permission: legacymechanics.skillcheck" in gui_yml)
     hub = read(gui_root / "HubChestGui.java")
     check("HubChestGui gates on hasSkillCheck", "ForgeBridge.hasSkillCheck(player)" in hub)
+
+    print("\n=== Skill Check icons (2.3.35) ===")
+    lore = read(gui_root / "GuiLoreChunks.java")
+    skills_chest = read(gui_root / "SkillsChestGui.java")
+    cmi_skills = read(gui_root / "CmiSkillsGui.java")
+    check("skillIcon never defaults PAPER",
+          "return Material.PAPER" not in lore.split("static Material skillIcon")[1].split("private static int")[0]
+          if "static Material skillIcon" in lore else False)
+    check("Flight uses ELYTRA", "Material.ELYTRA" in lore)
+    check("Skill Check header EXPERIENCE_BOTTLE",
+          "skillCheckUi ? Material.EXPERIENCE_BOTTLE" in skills_chest
+          and "skillCheckUi ? Material.EXPERIENCE_BOTTLE" in cmi_skills)
+    check("Hub Skill Check EXPERIENCE_BOTTLE",
+          'Material.EXPERIENCE_BOTTLE, "&eSkill Check"' in hub
+          or 'Material.EXPERIENCE_BOTTLE, "&eSkill Check"' in read(gui_root / "CmiHubGui.java"))
 
     print("\n=== Summary ===")
     for w in warns:

@@ -58,8 +58,9 @@ public final class CmiSkillsGui {
                 : !systemOn ? "&c&lSKILLS DISABLED"
                 : skillCheckUi ? title + " Skill Check"
                 : staffAdmin ? title + " (Admin)" : title + " Skills";
-        // Header is always paper (stats) — tabs use Feather / Amethyst (no duplicate books).
-        CMIGuiButton status = new CMIGuiButton(4, Material.PAPER, statusName);
+        // Skill Check: one EXPERIENCE_BOTTLE header (never PAPER). Staff Skills: one PAPER.
+        Material headerMat = skillCheckUi ? Material.EXPERIENCE_BOTTLE : Material.PAPER;
+        CMIGuiButton status = new CMIGuiButton(4, headerMat, statusName);
         status.lockField();
         if (!bridgeOk || !systemOn) {
             status.addLore(unavailableLore(bridgeOk));
