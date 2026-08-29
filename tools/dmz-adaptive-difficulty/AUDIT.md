@@ -13,11 +13,6 @@ Race → **Android Tools** panel (chest + CMI): Convert or Remove Android upgrad
 - Commands: `/progression android [player]` · `/progression android remove [player]`
 - Forge: `AndroidConversion.remove` · Bukkit: `ForgeBridge.androidRemove`
 
-## Player Prestige menu (2.3.39)
-
-`/prestige` and `/lm` → Prestige are available to all players (not staff-only).
-Confirm still uses the two-click PrestigeSystem flow.
-
 ## Player self-remove (2.3.38)
 
 Players can de-androidify without staff:
