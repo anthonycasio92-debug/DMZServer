@@ -5,11 +5,6 @@ Default ON. Pending +TP batches flush on a timer during the fight (not only on t
 
 ## Skill Check real max levels (2.3.40)
 
-Saga skill lines (Ki Boost, etc.) use {@code skills.getMaxSkillLevel(id)} instead of a
-hardcoded `/10`, matching the live SkillCheckCommand.js `getSkillMaxSafe` behavior.
-
-## Skill Check real max levels (2.3.40)
-
 Saga skill lines (Ki Boost, etc.) use `skills.getMaxSkillLevel(id)` instead of a
 hardcoded `/10`, matching live SkillCheckCommand.js `getSkillMaxSafe`.
 
