@@ -556,13 +556,20 @@ def main() -> int:
     spar_combat = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparCombat.java")
     spar_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
     spar_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.java")
+    spar_cmds = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/SparCommands.java")
     spar_chest = read(gui_root / "SparChestGui.java")
+    spar_cmi = read(gui_root / "CmiSparGui.java")
+    bukkit_plugin = read(gui_root / "AdaptiveDifficultyGuiPlugin.java")
     check("SparStore tpMessages prefs", "tpMessagesOn" in spar_store and "setTpMessages" in spar_store)
     check("SparCombat tickTpMessages", "tickTpMessages" in spar_combat)
     check("flushTpMessage respects prefs", "tpMessagesOn" in spar_combat)
     check("SparringSystem.setTpMsg", "setTpMsg" in spar_sys)
     check("SparGuiApi tpmsg action", '"tpmsg"' in spar_api)
     check("Spar GUI TP Msg toggle", 'SlotAction.act("tpmsg"' in spar_chest)
+    check("CMI Spar TP Msg toggle", '"tpmsg"' in spar_cmi and "TP Msg" in spar_cmi)
+    check("no public Forge /spar tpmsg", 'm_82127_("tpmsg")' not in spar_cmds)
+    check("no public Bukkit /spar tpmsg",
+          'ForgeBridge.sparHandleDo(player, "tpmsg"' not in bukkit_plugin)
 
     print("\n=== Summary ===")
     for w in warns:
