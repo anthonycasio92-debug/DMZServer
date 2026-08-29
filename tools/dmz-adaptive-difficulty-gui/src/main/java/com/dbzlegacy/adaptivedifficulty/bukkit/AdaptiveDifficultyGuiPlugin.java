@@ -971,6 +971,43 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     }
                 }
             }
+            case "clear", "wipe", "resetplayer" -> {
+                if (args.length < 3) {
+                    sender.sendMessage("§cUsage: /lm admin clear <player> [all|rival|spar|difficulty|progression]");
+                    return true;
+                }
+                String playerArg = args[2];
+                String scope = args.length > 3 ? args[3] : "all";
+                // Multi-word names: last token is scope if known, else all remaining is name
+                if (args.length > 4) {
+                    String maybeScope = args[args.length - 1];
+                    if (isClearScope(maybeScope)) {
+                        scope = maybeScope;
+                        StringBuilder sb = new StringBuilder(args[2]);
+                        for (int i = 3; i < args.length - 1; i++) {
+                            sb.append(' ').append(args[i]);
+                        }
+                        playerArg = sb.toString();
+                    } else {
+                        StringBuilder sb = new StringBuilder(args[2]);
+                        for (int i = 3; i < args.length; i++) {
+                            sb.append(' ').append(args[i]);
+                        }
+                        playerArg = sb.toString();
+                        scope = "all";
+                    }
+                }
+                String msg = ForgeBridge.clearPlayerData(playerArg, scope);
+                if (msg == null || msg.isBlank()) {
+                    sender.sendMessage("§cClear failed (is LegacyMechanics Forge mod loaded?).");
+                } else {
+                    for (String line : msg.split("\n")) {
+                        if (line != null && !line.isBlank()) {
+                            sender.sendMessage(line);
+                        }
+                    }
+                }
+            }
             case "syslog" -> {
                 String mode = args.length > 2 ? args[2].toLowerCase(Locale.ROOT) : "status";
                 sender.sendMessage(ForgeBridge.syslogCommand(mode));
@@ -1041,6 +1078,20 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         return true;
     }
 
+    private static boolean isClearScope(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return false;
+        }
+        return switch (raw.toLowerCase(Locale.ROOT).trim()) {
+            case "all", "lm", "*",
+                    "rival", "rivals", "rivalry",
+                    "spar", "sparring",
+                    "difficulty", "diff", "ad",
+                    "progression", "prog", "skills", "meditation" -> true;
+            default -> false;
+        };
+    }
+
     private static boolean isKnownSystem(String raw) {
         if (raw == null || raw.isBlank()) {
             return false;
@@ -1066,6 +1117,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§e/lm admin migrate-cnpc §7— import CNPC Rival/Spar (live → backup → world_data.json)");
         sender.sendMessage("§e/lm admin migrate-cnpc force §7— wipe LM Rival/Spar + re-import from those sources");
         sender.sendMessage("§8If CNPC was wiped: put world_data.json in config/legacymechanics/cnpc-import-backup/ then force");
+        sender.sendMessage("§e/lm admin clear <player> [all|rival|spar|difficulty|progression]");
+        sender.sendMessage("§8Offline OK for rival/spar; difficulty + progression NBT need the player online");
         sender.sendMessage("§e/lm admin syslog on|off|status|flush");
         sender.sendMessage("§e/lm admin open <difficulty|rival|spar|progression|prestige|skills|hub>");
         sender.sendMessage("§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|prestige|progression|skills]");

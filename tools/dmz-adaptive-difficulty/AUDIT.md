@@ -1,3 +1,22 @@
+## /lm admin clear player (2.3.32)
+
+Staff wipe of one player's LegacyMechanics data without a full CNPC force-migrate.
+
+```
+/lm admin clear <player>              # all LM systems
+/lm admin clear <player> rival
+/lm admin clear <player> spar
+/lm admin clear <player> difficulty
+/lm admin clear <player> progression
+```
+
+- Resolves online name, RivalStore offline name, or UUID.
+- Rival: drops rivalry-v4 record + reverse links + declare requests + season/achievements/journal.
+- Spar: drops bond + invites + leaderboard (+ reverse mentor/apprentice pointers).
+- Difficulty / progression NBT require the player **online** (offline clears rival/spar/prog-temp only).
+- Progression wipe also clears `lm_cnpc_player_migrated` so per-player CNPC re-migrate can run again.
+- Wired on Forge `MechanicsCommands` and Bukkit `handleLmAdmin` via `ForgeBridge.clearPlayerData` (Mohist owns `/lm`).
+
 ## CNPC richest-source pick (2.3.31)
 
 Audit follow-up: live/disk stubs no longer beat `cnpc-import-backup`.

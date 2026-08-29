@@ -2498,6 +2498,51 @@ public final class ForgeBridge {
     }
 
     /**
+     * Staff wipe of one player's LegacyMechanics data
+     * ({@code /lm admin clear <player> [all|rival|spar|difficulty|progression]}).
+     * Works from console or player — Mohist Bukkit owns {@code /lm}.
+     */
+    public static String clearPlayerData(String playerArg, String scope) {
+        try {
+            Class<?> clearer = Class.forName(
+                    "com.dbzlegacy.adaptivedifficulty.data.PlayerDataClear");
+            Object server = null;
+            try {
+                Class<?> serverLifecycle = Class.forName(
+                        "net.minecraftforge.server.ServerLifecycleHooks");
+                server = serverLifecycle.getMethod("getCurrentServer").invoke(null);
+            } catch (Throwable ignored) {
+            }
+            if (server == null) {
+                try {
+                    Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
+                    Object bServer = bukkit.getMethod("getServer").invoke(null);
+                    if (bServer != null) {
+                        try {
+                            server = bServer.getClass().getMethod("getServer").invoke(bServer);
+                        } catch (Throwable ignored) {
+                        }
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            if (server == null) {
+                return "§cNo MinecraftServer — is the world loaded?";
+            }
+            Object msg = clearer.getMethod(
+                            "clear",
+                            Class.forName("net.minecraft.server.MinecraftServer"),
+                            String.class,
+                            String.class)
+                    .invoke(null, server, playerArg, scope == null ? "all" : scope);
+            return msg == null ? "§eClear returned empty." : String.valueOf(msg);
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cClear failed: " + resolveError;
+        }
+    }
+
+    /**
      * Refresh unlock-tier grants and difficulty titles from current DMZ / prestige
      * (same sync chat menu runs when opening Buy / Titles).
      */

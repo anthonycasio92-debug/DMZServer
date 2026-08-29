@@ -110,6 +110,30 @@ public final class RivalProgression {
         dirty.set(true);
     }
 
+    /** Staff: wipe one player's season / achievements / journal / quests. */
+    public synchronized void clearPlayer(String uuid) {
+        if (uuid == null || uuid.isBlank() || data == null) {
+            return;
+        }
+        if (data.achievements != null) {
+            data.achievements.remove(uuid);
+        }
+        if (data.quests != null) {
+            data.quests.remove(uuid);
+        }
+        if (data.journal != null) {
+            data.journal.remove(uuid);
+        }
+        if (data.specialTitles != null) {
+            data.specialTitles.remove(uuid);
+        }
+        if (data.season != null && data.season.leaderboard != null) {
+            data.season.leaderboard.remove(uuid);
+        }
+        markDirty();
+        save();
+    }
+
     public List<String> seasonLines(ServerPlayer player) {
         ensureSeason();
         if (player == null) {

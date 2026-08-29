@@ -1,4 +1,4 @@
-# Legacy Mechanics 2.3.31
+# Legacy Mechanics 2.3.32
 
 Forge mod packaging **Difficulty**, **Rival System 4.7.10**, **Sparring TP 3.2.11**,
 and **natural progression / Fabled bridges** (from CNPC scripts) under one product.
@@ -7,7 +7,7 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` and NBT root
 
 ## Install (test)
 
-1. Build / install `LegacyMechanics-2.3.31.jar` (+ matching `LegacyMechanicsGUI-2.3.31.jar`).
+1. Build / install `LegacyMechanics-2.3.32.jar` (+ matching `LegacyMechanicsGUI-2.3.32.jar`).
 2. Disable CNPC Global Player scripts to avoid double systems — see **[PROGRESSION.md](PROGRESSION.md)**
    for the full disable list (Fabled bridges + natural ports + rival/spar).
 3. Do **not** deploy to live until tested.
@@ -52,7 +52,7 @@ main `/lm` hub window is titled **Legacy Mechanics**.
 
 ## Admin commands (keep typed)
 
-- `/lm admin help|reload|syslog on|off|status|flush|open <system>` — hub staff tree
+- `/lm admin help|reload|clear <player> [scope]|migrate-cnpc|syslog|open <system>` — hub staff tree
 - `/difficulty admin …` — whitelist, syslog, inspect GUI, reload, settings
 - `/rival admin save|refresh|reload|status|open [page]` — rivalry-v4 + progression-v4
 - `/spar admin save|status|mentor resetcd [player]` — sparring.json
