@@ -1,3 +1,13 @@
+## Skill Check real max levels (2.3.40)
+
+Saga skill lines (Ki Boost, etc.) use {@code skills.getMaxSkillLevel(id)} instead of a
+hardcoded `/10`, matching the live SkillCheckCommand.js `getSkillMaxSafe` behavior.
+
+## Skill Check real max levels (2.3.40)
+
+Saga skill lines (Ki Boost, etc.) use `skills.getMaxSkillLevel(id)` instead of a
+hardcoded `/10`, matching live SkillCheckCommand.js `getSkillMaxSafe`.
+
 ## Player Prestige menu (2.3.39)
 
 `/prestige` and `/lm` → Prestige are available to all players (not staff-only).

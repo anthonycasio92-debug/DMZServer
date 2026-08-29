@@ -291,9 +291,10 @@ public final class SkillUnlockService {
     }
 
     private static void appendSagaSkill(
-            List<String> out, Skills skills, String id, String name, String color, int max, String lockedHint
+            List<String> out, Skills skills, String id, String name, String color, int fallbackMax, String lockedHint
     ) {
         int level = skillLevel(skills, id);
+        int max = skillMax(skills, id, fallbackMax);
         if (level < 1) {
             out.add(color + name + "§7: §f0/" + max);
             out.add("§8  - §7" + lockedHint);
@@ -314,7 +315,7 @@ public final class SkillUnlockService {
             List<String> out, Skills skills, String id, String name, String color, int investedStr
     ) {
         int level = skillLevel(skills, id);
-        int max = Math.min(10, skillMax(skills, id, 10));
+        int max = skillMax(skills, id, 10);
         if (level >= max) {
             out.add(color + name + "§7: §6§lMAX§r §7(" + level + "/" + max + ")");
             how(out, strengthHow(id));
