@@ -132,6 +132,7 @@ public final class PlayerDataClear {
     private static String clearSpar(String uuid, String name) {
         SparStore store = SparStore.get();
         SparStore.MentorBond bond = store.bondsByPlayer.remove(uuid);
+        store.recentSessions.remove(uuid);
         // Break reverse mentor/apprentice pointers
         int reverse = 0;
         if (bond != null) {

@@ -8,6 +8,9 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,10 +23,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class SparStore {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final SparStore INSTANCE = new SparStore();
+    /** How many finished spars to keep for the Stats board. */
+    public static final int RECENT_SESSION_LIMIT = 3;
 
     public final Map<String, MentorBond> bondsByPlayer = new ConcurrentHashMap<>();
     public final Map<String, LeaderboardEntry> leaderboard = new ConcurrentHashMap<>();
     public final Map<String, BondInvite> invites = new ConcurrentHashMap<>();
+    /** uuid → newest-first finished session summaries (capped at {@link #RECENT_SESSION_LIMIT}). */
+    public final Map<String, List<RecentSession>> recentSessions = new ConcurrentHashMap<>();
     private final AtomicBoolean dirty = new AtomicBoolean(false);
     private long lastSaveAt;
 
@@ -48,6 +55,7 @@ public final class SparStore {
                 bondsByPlayer.clear();
                 leaderboard.clear();
                 invites.clear();
+                recentSessions.clear();
                 dirty.set(false);
                 return;
             }
@@ -56,6 +64,7 @@ public final class SparStore {
                 bondsByPlayer.clear();
                 leaderboard.clear();
                 invites.clear();
+                recentSessions.clear();
                 if (blob != null) {
                     if (blob.bondsByPlayer != null) {
                         bondsByPlayer.putAll(blob.bondsByPlayer);
@@ -65,6 +74,14 @@ public final class SparStore {
                     }
                     if (blob.invites != null) {
                         invites.putAll(blob.invites);
+                    }
+                    if (blob.recentSessions != null) {
+                        for (Map.Entry<String, List<RecentSession>> e : blob.recentSessions.entrySet()) {
+                            if (e.getKey() == null || e.getValue() == null) {
+                                continue;
+                            }
+                            recentSessions.put(e.getKey(), normalizeRecent(e.getValue()));
+                        }
                     }
                 }
                 dirty.set(false);
@@ -86,6 +103,10 @@ public final class SparStore {
             blob.bondsByPlayer = new ConcurrentHashMap<>(bondsByPlayer);
             blob.leaderboard = new ConcurrentHashMap<>(leaderboard);
             blob.invites = new ConcurrentHashMap<>(invites);
+            blob.recentSessions = new ConcurrentHashMap<>();
+            for (Map.Entry<String, List<RecentSession>> e : recentSessions.entrySet()) {
+                blob.recentSessions.put(e.getKey(), new ArrayList<>(e.getValue()));
+            }
             try (Writer writer = Files.newBufferedWriter(file)) {
                 GSON.toJson(blob, writer);
             }
@@ -108,6 +129,57 @@ public final class SparStore {
             return null;
         }
         return bondsByPlayer.computeIfAbsent(uuid.toString(), k -> new MentorBond());
+    }
+
+    /** Newest-first snapshot of finished spars for Stats (never null). */
+    public List<RecentSession> recentFor(String uuid) {
+        if (uuid == null || uuid.isBlank()) {
+            return List.of();
+        }
+        List<RecentSession> list = recentSessions.get(uuid);
+        if (list == null || list.isEmpty()) {
+            return List.of();
+        }
+        return Collections.unmodifiableList(new ArrayList<>(list));
+    }
+
+    /** Push a finished spar onto the front of this player's recent list (cap {@link #RECENT_SESSION_LIMIT}). */
+    public void pushRecent(String uuid, RecentSession session) {
+        if (uuid == null || uuid.isBlank() || session == null) {
+            return;
+        }
+        List<RecentSession> next = new ArrayList<>();
+        next.add(session);
+        List<RecentSession> prev = recentSessions.get(uuid);
+        if (prev != null) {
+            for (RecentSession r : prev) {
+                if (next.size() >= RECENT_SESSION_LIMIT) {
+                    break;
+                }
+                if (r != null) {
+                    next.add(r);
+                }
+            }
+        }
+        recentSessions.put(uuid, next);
+        markDirty();
+    }
+
+    private static List<RecentSession> normalizeRecent(List<RecentSession> raw) {
+        List<RecentSession> out = new ArrayList<>();
+        if (raw == null) {
+            return out;
+        }
+        for (RecentSession r : raw) {
+            if (r == null) {
+                continue;
+            }
+            out.add(r);
+            if (out.size() >= RECENT_SESSION_LIMIT) {
+                break;
+            }
+        }
+        return out;
     }
 
     public static final class MentorBond {
@@ -142,9 +214,22 @@ public final class SparStore {
         public int bestStreak;
     }
 
+    /** One finished spar shown on the Stats board (newest first). */
+    public static final class RecentSession {
+        public String partnerName = "";
+        public String partnerUuid = "";
+        public double tp;
+        public long durationMs;
+        public int maxCombo;
+        public boolean perfect;
+        public long endedAt;
+        public String reason = "";
+    }
+
     private static final class Persist {
         Map<String, MentorBond> bondsByPlayer;
         Map<String, LeaderboardEntry> leaderboard;
         Map<String, BondInvite> invites;
+        Map<String, List<RecentSession>> recentSessions;
     }
 }

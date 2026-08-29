@@ -348,11 +348,13 @@ public final class SparringSystem {
             report(partner, bRt, player, duration, reason);
             updateLeaderboard(partner, bRt, duration);
             updateStreak(partner, bRt, duration);
+            recordRecentSession(partner, bRt, player, duration, reason);
             bRt.resetSession();
             bRt.restartCooldownUntil = now + PAIR_RESTART_COOLDOWN_MS;
         }
         updateLeaderboard(player, aRt, duration);
         updateStreak(player, aRt, duration);
+        recordRecentSession(player, aRt, partner, duration, reason);
         SystemTelemetry.log("sparring", "spar_end", player, partner,
                 SystemTelemetry.fields("reason", reason == null ? "" : reason,
                         "tp", (int) aRt.sessionTp, "ms", duration));
@@ -393,6 +395,29 @@ public final class SparringSystem {
             e.perfectSessions++;
         }
         e.highestCombo = Math.max(e.highestCombo, rt.sessionMaxCombo);
+    }
+
+    /** Persist a finished spar for the Stats board (same 30s gate as lifetime counts). */
+    private static void recordRecentSession(
+            ServerPlayer player,
+            SparPlayerRuntime rt,
+            ServerPlayer partner,
+            long durationMs,
+            String reason
+    ) {
+        if (player == null || rt == null || durationMs < MIN_COUNTED_SESSION_MS) {
+            return;
+        }
+        SparStore.RecentSession rec = new SparStore.RecentSession();
+        rec.partnerName = partner == null ? "?" : partner.m_7755_().getString();
+        rec.partnerUuid = partner == null ? "" : partner.m_20148_().toString();
+        rec.tp = rt.sessionTp;
+        rec.durationMs = durationMs;
+        rec.maxCombo = rt.sessionMaxCombo;
+        rec.perfect = rt.sessionPerfect;
+        rec.endedAt = System.currentTimeMillis();
+        rec.reason = reason == null ? "" : reason;
+        SparStore.get().pushRecent(player.m_20148_().toString(), rec);
     }
 
     private static void updateStreak(ServerPlayer player, SparPlayerRuntime rt, long durationMs) {
@@ -737,16 +762,25 @@ public final class SparringSystem {
 
     public static List<String> statsLines(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
-        SparPlayerRuntime rt = runtime(player.m_20148_());
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
         SparStore.LeaderboardEntry lb = SparStore.get().leaderboard.get(player.m_20148_().toString());
         lines.add("§6§lSparring Stats §8— §f" + player.m_7755_().getString());
-        if (rt.active && rt.partner != null) {
-            lines.add("§aActive spar §7with partner UUID ending …"
-                    + rt.partner.toString().substring(24)
-                    + " §8TP this session §a" + (int) rt.sessionTp);
+        lines.add("§7Last 3 sessions");
+        List<SparStore.RecentSession> recent = SparStore.get().recentFor(player.m_20148_().toString());
+        if (recent.isEmpty()) {
+            lines.add("§8No finished spars yet — fight, then check back.");
         } else {
-            lines.add("§7No active spar session.");
+            int i = 1;
+            for (SparStore.RecentSession r : recent) {
+                String who = r.partnerName == null || r.partnerName.isBlank() ? "?" : r.partnerName;
+                String perfect = r.perfect ? " §6★" : "";
+                lines.add("§e#" + i + " §fvs " + who
+                        + " §a+" + DmzRewards.formatWhole(r.tp) + " TP"
+                        + " §8· " + formatDuration(r.durationMs)
+                        + " §8· combo §f" + r.maxCombo
+                        + perfect);
+                i++;
+            }
         }
         lines.add("§7Mentor §f" + (bond.mentorName == null || bond.mentorName.isBlank() ? "none" : bond.mentorName));
         lines.add("§7Apprentice §f" + (bond.apprenticeName == null || bond.apprenticeName.isBlank() ? "none" : bond.apprenticeName));
@@ -757,6 +791,16 @@ public final class SparringSystem {
                     + " §8| best combo §f" + lb.highestCombo);
         }
         return lines;
+    }
+
+    private static String formatDuration(long ms) {
+        long sec = Math.max(0L, ms / 1000L);
+        long min = sec / 60L;
+        long rem = sec % 60L;
+        if (min <= 0) {
+            return rem + "s";
+        }
+        return min + "m" + rem + "s";
     }
 
     public static List<String> topLines(String category, int limit) {

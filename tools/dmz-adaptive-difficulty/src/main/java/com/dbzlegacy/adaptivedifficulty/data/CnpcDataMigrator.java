@@ -124,6 +124,7 @@ public final class CnpcDataMigrator {
                 RivalStore.get().markDirty();
                 RivalProgression.get().resetForImport();
                 SparStore.get().leaderboard.clear();
+                SparStore.get().recentSessions.clear();
                 SparStore.get().markDirty();
             }
             return runWorldMigrate(server, forceOverwrite);

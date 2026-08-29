@@ -97,7 +97,7 @@ public final class SparChestGui implements Listener {
 
         put(holder, inv, 4, item(Material.GOLDEN_SWORD, "&b&lSparring", statusLore(viewer, ph)));
         // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
-        put(holder, inv, 19, pageBtn(viewer, Material.PAPER, "&eStats", "&7Your spar stats"),
+        put(holder, inv, 19, pageBtn(viewer, Material.PAPER, "&eStats", "&7Last 3 finished spars"),
                 SlotAction.page("stats"));
         put(holder, inv, 21, pageBtn(viewer, Material.GOLDEN_HELMET, "&fTop", "&7Leaderboard"),
                 SlotAction.page("top"));

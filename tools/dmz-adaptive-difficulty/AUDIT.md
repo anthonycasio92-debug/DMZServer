@@ -1,3 +1,12 @@
+## Spar Stats — last 3 sessions (2.3.33)
+
+Stats board no longer shows live in-fight TP (you can't usefully read that mid-spar).
+
+- On session end (≥30s counted), push a summary onto `sparring.json` → `recentSessions[uuid]` (newest first, cap 3).
+- `/spar` → Stats (chat + chest + CMI) lists last 3: partner, TP, duration, combo, perfect mark.
+- Main hub still shows active session + End button.
+- Cleared by `/lm admin clear <player> spar` and CNPC migrate force.
+
 ## /lm admin clear player (2.3.32)
 
 Staff wipe of one player's LegacyMechanics data without a full CNPC force-migrate.

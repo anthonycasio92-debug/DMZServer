@@ -76,7 +76,7 @@ public final class SparChatMenu {
         }
         send(player, Component.m_237113_(""));
         MutableComponent row = Component.m_237113_("§7")
-                .m_7220_(btn("§e[Stats]", "/spar do page stats", "Your spar stats"))
+                .m_7220_(btn("§e[Stats]", "/spar do page stats", "Last 3 finished spars"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§f[Top]", "/spar do page top", "Leaderboard"))
                 .m_7220_(Component.m_237113_("  "))

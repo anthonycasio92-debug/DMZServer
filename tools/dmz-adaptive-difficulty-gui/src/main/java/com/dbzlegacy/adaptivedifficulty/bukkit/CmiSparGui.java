@@ -95,7 +95,7 @@ public final class CmiSparGui {
 
         // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
         gui.addButton(pageBtn(player, 19, Material.PAPER, "&eStats", "stats",
-                "&7Your spar stats"));
+                "&7Last 3 finished spars"));
         gui.addButton(pageBtn(player, 21, Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7Leaderboard"));
         gui.addButton(pageBtn(player, 23, Material.EMERALD, "&bMentor", "mentor",
