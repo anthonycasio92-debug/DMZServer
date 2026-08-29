@@ -165,22 +165,42 @@ public final class GlobalTpBoost {
         long durationMs = durationMinutes * 60_000L;
         long currentEnd = END_TIME.get();
         boolean extending = ACTIVE.get() && currentEnd > now;
+        // Stacking: always add duration; never lower an active multiplier.
+        double prevMult = extending ? MULTIPLIER.get() : 0.0;
+        double keptMult = extending ? Math.max(prevMult, multiplier) : multiplier;
+        int keptAmp = multiplierToAmplifier(keptMult);
+        if (keptAmp < 0) {
+            return "§cMultiplier must be 1.25+ in 0.25 steps.";
+        }
         long newEnd = extending ? Math.max(now, currentEnd) + durationMs : now + durationMs;
 
         ACTIVE.set(true);
-        MULTIPLIER.set(multiplier);
-        AMPLIFIER.set(amplifier);
+        MULTIPLIER.set(keptMult);
+        AMPLIFIER.set(keptAmp);
         END_TIME.set(newEnd);
         PURCHASER.set(purchaser == null ? "" : purchaser);
 
-        applyToAll(amplifier, newEnd - now);
+        applyToAll(keptAmp, newEnd - now);
         broadcast("§6§lGLOBAL TP BOOST ACTIVATED!");
-        broadcast("§e" + purchaser + " §7activated a §a" + formatMult(multiplier)
+        if (extending) {
+            broadcast("§e" + purchaser + " §7added §f" + formatDuration(durationMs)
+                    + " §7to the global TP boost.");
+            if (keptMult > prevMult + 0.0001) {
+                broadcast("§7Boost raised to §a" + formatMult(keptMult) + "x§7.");
+            } else {
+                broadcast("§7Boost stays §a" + formatMult(keptMult)
+                        + "x §8(highest wins; lower packs only add time).");
+            }
+            broadcast("§7Total remaining: §f" + formatDuration(newEnd - now) + "§7.");
+            return "§aStacked +" + formatDuration(durationMs) + " · active §f"
+                    + formatMult(keptMult) + "x §7(" + formatDuration(newEnd - now) + " left).";
+        }
+        broadcast("§e" + purchaser + " §7activated a §a" + formatMult(keptMult)
                 + "x TP Boost§7!");
         broadcast("§7All online players receive boosted TP for §f"
                 + formatDuration(newEnd - now) + "§7.");
-        return "§a" + formatMult(multiplier) + "x TP activated for "
-                + formatDuration(durationMinutes * 60_000L) + ".";
+        return "§a" + formatMult(keptMult) + "x TP activated for "
+                + formatDuration(durationMs) + ".";
     }
 
     private static void applyToAll(int amplifier, long remainingMs) {

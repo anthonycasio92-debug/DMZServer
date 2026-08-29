@@ -1,3 +1,8 @@
+## Global TP boost stacking (2.3.43)
+
+When a boost is already active, buying another **adds its duration** and keeps the
+**highest multiplier** (a lower pack never downgrades an active boost).
+
 ## Spar TP message toggle (2.3.42)
 
 Players toggle live spar TP chat from the **Spar GUI** only (`/spar` → **TP Msg**).
