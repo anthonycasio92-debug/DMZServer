@@ -29,6 +29,7 @@ import org.bukkit.entity.Player;
  * /progression do &lt;action&gt; [arg] [page]
  * /progression meditation [status|help|next]
  * /progression android [player]
+ * /progression android remove [player]
  * /progression boost …
  * </pre>
  */
@@ -40,7 +41,8 @@ public final class ProgressionCommandTree implements TabCompleter {
     );
     private static final List<String> PAGES = List.of(
             "main", "skills", "tp", "race", "combat", "end", "fabled", "utility",
-            "admin", "flags", "help", "status", "boost_panel", "android_convert", "flags_fabled"
+            "admin", "flags", "help", "status", "boost_panel",
+            "android_panel", "android_convert", "android_remove", "flags_fabled"
     );
     private static final List<String> FLAGS = List.of(
             "master", "flight", "sprint", "meditation", "potential",
@@ -60,7 +62,7 @@ public final class ProgressionCommandTree implements TabCompleter {
             "status", "help", "end", "stop", "start", "1.25", "1.5", "2", "3"
     );
     private static final List<String> DO_ACTIONS = List.of(
-            "page", "refresh", "flag", "android", "boost"
+            "page", "refresh", "flag", "android", "android_remove", "boost"
     );
 
     private final AdaptiveDifficultyGuiPlugin plugin;
@@ -84,6 +86,28 @@ public final class ProgressionCommandTree implements TabCompleter {
         if (args.length > 0 && "meditation".equalsIgnoreCase(args[0])) {
             return meditation(player, args);
         }
+        // Player-facing: remove own Android upgrade (convert stays staff-only).
+        if (args.length > 0 && "android".equalsIgnoreCase(args[0])) {
+            if (args.length > 1 && ("remove".equalsIgnoreCase(args[1])
+                    || "unandroid".equalsIgnoreCase(args[1]))) {
+                String target = "";
+                if (args.length > 2) {
+                    if (!ForgeBridge.isStaff(player)
+                            && !args[2].equalsIgnoreCase(player.getName())) {
+                        player.sendMessage("§cYou can only remove your own Android upgrade.");
+                        return true;
+                    }
+                    target = args[2];
+                }
+                sendMultiline(player, ForgeBridge.androidRemove(player, target));
+                return true;
+            }
+            if (!ForgeBridge.isStaff(player)) {
+                player.sendMessage("§7Use §f/progression android remove §7to remove your Android upgrade.");
+                player.sendMessage("§8Or open §f/lm §8→ Remove Android.");
+                return true;
+            }
+        }
         // Player-facing help (no staff command list).
         if (args.length > 0 && ("help".equalsIgnoreCase(args[0]) || "?".equals(args[0]))) {
             sendMultiline(player, ForgeBridge.progressionHelp(player));
@@ -91,8 +115,8 @@ public final class ProgressionCommandTree implements TabCompleter {
         }
 
         if (!ForgeBridge.isStaff(player)) {
-            // Non-staff: only meditation / help (above).
-            player.sendMessage("§7Use §f/progression meditation §7for the current trial.");
+            // Non-staff: meditation / android remove / help (above).
+            player.sendMessage("§7Use §f/progression meditation §7for the trial, or §f/lm §7→ Remove Android.");
             return true;
         }
 
@@ -119,8 +143,14 @@ public final class ProgressionCommandTree implements TabCompleter {
             case "admin" -> admin(player, args);
             case "do" -> doAction(player, args);
             case "android" -> {
-                String target = args.length > 1 ? args[1] : "";
-                sendMultiline(player, ForgeBridge.androidConvert(player, target));
+                if (args.length > 1 && ("remove".equalsIgnoreCase(args[1])
+                        || "unandroid".equalsIgnoreCase(args[1]))) {
+                    String target = args.length > 2 ? args[2] : "";
+                    sendMultiline(player, ForgeBridge.androidRemove(player, target));
+                } else {
+                    String target = args.length > 1 ? args[1] : "";
+                    sendMultiline(player, ForgeBridge.androidConvert(player, target));
+                }
                 yield true;
             }
             case "boost", "tpboost" -> {
@@ -129,7 +159,7 @@ public final class ProgressionCommandTree implements TabCompleter {
             }
             // Shorthand: /progression skills|tp|race|… opens that GUI page
             case "skills", "tp", "race", "combat", "end", "fabled", "utility",
-                 "boost_panel", "android_convert", "flags_fabled" -> {
+                 "boost_panel", "android_convert", "android_remove", "android_panel", "flags_fabled" -> {
                 plugin.openProgressionRespectingConfig(player, sub);
                 yield true;
             }
@@ -206,25 +236,35 @@ public final class ProgressionCommandTree implements TabCompleter {
         if (args.length == 1) {
             List<String> root = new ArrayList<>();
             root.add("meditation");
+            root.add("android");
             root.add("help");
             if (staff) {
                 root.addAll(ROOT);
             }
             return filter(root, args[0]);
         }
-        if (!staff && !(args.length >= 1 && "meditation".equalsIgnoreCase(args[0]))) {
+        if (!staff && !(args.length >= 1
+                && ("meditation".equalsIgnoreCase(args[0]) || "android".equalsIgnoreCase(args[0])))) {
             return Collections.emptyList();
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
         if (args.length == 2) {
             return switch (sub) {
-                case "gui", "menu", "open" -> filter(PAGES, args[1]);
-                case "admin" -> filter(FLAGS, args[1]);
-                case "do" -> filter(DO_ACTIONS, args[1]);
+                case "gui", "menu", "open" -> staff ? filter(PAGES, args[1]) : Collections.emptyList();
+                case "admin" -> staff ? filter(FLAGS, args[1]) : Collections.emptyList();
+                case "do" -> staff ? filter(DO_ACTIONS, args[1]) : Collections.emptyList();
                 case "meditation" -> filter(
                         ForgeBridge.isStaff(player) ? MEDITATION : MEDITATION_PLAYER, args[1]);
-                case "android" -> filter(onlineNames(player), args[1]);
-                case "boost", "tpboost" -> filter(BOOST, args[1]);
+                case "android" -> {
+                    if (!staff) {
+                        yield filter(List.of("remove"), args[1]);
+                    }
+                    List<String> androidTab = new ArrayList<>();
+                    androidTab.add("remove");
+                    androidTab.addAll(onlineNames(player));
+                    yield filter(androidTab, args[1]);
+                }
+                case "boost", "tpboost" -> staff ? filter(BOOST, args[1]) : Collections.emptyList();
                 default -> Collections.emptyList();
             };
         }
@@ -240,12 +280,17 @@ public final class ProgressionCommandTree implements TabCompleter {
                 if ("flag".equals(action) || "toggle".equals(action)) {
                     return filter(FLAGS, args[2]);
                 }
-                if ("android".equals(action)) {
+                if ("android".equals(action) || "android_remove".equals(action)
+                        || "androidremove".equals(action) || "remove_android".equals(action)) {
                     return filter(onlineNames(player), args[2]);
                 }
                 if ("boost".equals(action)) {
                     return filter(List.of("end", "1.25:30", "1.5:30", "2:30", "2:60", "3:30"), args[2]);
                 }
+            }
+            if ("android".equals(sub)
+                    && ("remove".equalsIgnoreCase(args[1]) || "unandroid".equalsIgnoreCase(args[1]))) {
+                return filter(onlineNames(player), args[2]);
             }
             if ("boost".equals(sub) || "tpboost".equals(sub)) {
                 if ("start".equalsIgnoreCase(args[1])) {

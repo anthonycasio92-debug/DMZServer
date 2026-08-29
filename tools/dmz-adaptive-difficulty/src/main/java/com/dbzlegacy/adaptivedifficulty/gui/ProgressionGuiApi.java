@@ -49,14 +49,19 @@ public final class ProgressionGuiApi {
         return commandHelp(true);
     }
 
-    /** Chat help. Non-staff never see admin/boost/android/staff rotate lines. */
+    /** Chat help. Non-staff get meditation + self Android remove only. */
     public static String commandHelp(boolean staff) {
         if (!staff) {
             return String.join("\n",
                     "§d§lMeditation Trial",
                     "§8────────────",
                     "§e/progression meditation §7— current biome, goal, and timer",
-                    "§8Charge Ki in the trial biome to level Meditation.");
+                    "§8Charge Ki in the trial biome to level Meditation.",
+                    "",
+                    "§c§lRemove Android",
+                    "§8────────────",
+                    "§e/lm §7→ §cRemove Android §7— GUI (two-click confirm)",
+                    "§e/progression android remove §7— remove your Android upgrade");
         }
         return String.join("\n",
                 "§6§l/progression §8(alias §7/prog§8) §7— command tree",
@@ -68,6 +73,7 @@ public final class ProgressionGuiApi {
                 "§e/progression meditation §8— trial help",
                 "§e/progression meditation next §8— rotate + broadcast trial",
                 "§e/progression android [player] §8— Gero android convert",
+                "§e/progression android remove [player] §8— remove Android upgrade",
                 "§e/progression boost §8— TP boost status",
                 "§e/progression boost start <mult> <minutes> [name]",
                 "§e/progression boost start <encoded> [name]",
@@ -132,6 +138,35 @@ public final class ProgressionGuiApi {
             }
         }
         return ProgressionSystem.androidConvert(target);
+    }
+
+    /**
+     * Remove Android upgrade (two-click confirm).
+     * Players may only remove themselves; staff may target any online player.
+     */
+    public static String androidRemove(ServerPlayer actor, String targetName) {
+        if (actor == null) {
+            return "§cPlayers only.";
+        }
+        if (!DifficultyConfig.get().enableProgression) {
+            return "§cProgression system is disabled.";
+        }
+        if (!DifficultyConfig.get().enableAndroidConversion) {
+            return "§cAndroid tools are disabled.";
+        }
+        ServerPlayer target = actor;
+        String name = targetName == null ? "" : targetName.trim();
+        if (!name.isBlank()) {
+            target = resolveOnline(actor, name);
+            if (target == null) {
+                return "§cPlayer not found: §f" + name;
+            }
+        }
+        boolean self = target.m_20148_().equals(actor.m_20148_());
+        if (!self && !StaffAccess.isStaff(actor)) {
+            return "§cYou can only remove your own Android upgrade.";
+        }
+        return ProgressionSystem.androidRemove(actor, target);
     }
 
     /**
@@ -460,6 +495,7 @@ public final class ProgressionGuiApi {
                     help.add("§e/progression meditation next §7— cycle + broadcast trial");
                     help.add("§e/progression boost §7— status · start &lt;mult&gt; &lt;min&gt; · end");
                     help.add("§e/progression android [player] §7— Android convert (Gero)");
+                    help.add("§e/progression android remove [player] §7— remove Android upgrade");
                     help.add("§e/prestige §7— Prestige (Hub)");
                     help.add("§e/skills §7— Skill unlocks (Hub)");
                     help.add("§8Staff · /prog admin · toggle flags in section GUIs");
@@ -624,6 +660,10 @@ public final class ProgressionGuiApi {
         }
         if ("android".equals(act) || "androidconvert".equals(act) || "convertandroid".equals(act)) {
             return androidConvert(player, a);
+        }
+        if ("android_remove".equals(act) || "androidremove".equals(act)
+                || "removeandroid".equals(act) || "remove_android".equals(act)) {
+            return androidRemove(player, a);
         }
         if ("boost".equals(act) || "tpboost".equals(act) || "globaltpboost".equals(act)) {
             return boost(player, a);

@@ -41,7 +41,7 @@ public final class CmiProgressionGui {
             Map.entry("racelock", new String[]{"Race Lock", "Ancient/Sento need Fabled unlock skills.", "Passive on race select"}),
             Map.entry("yardrat", new String[]{"Yardrat", "Form mastery double-gain + starter ki.", "Passive for Yardrat"}),
             Map.entry("spiritualist", new String[]{"Spiritualist Ki", "Class confirm grants/removes kicontrol.", "Passive on class change"}),
-            Map.entry("android", new String[]{"Android Conversion", "Staff convert a player to Android (Gero path).", "/progression android [player]"}),
+            Map.entry("android", new String[]{"Android Tools", "Staff convert or remove Android upgrade (Gero path).", "/progression android · android remove"}),
             Map.entry("kiweapons", new String[]{"Ki Weapons", "Blade/scythe/clawlance Apothic attrs.", "Passive on equip"}),
             Map.entry("piercing", new String[]{"Piercing", "PROT_PIERCE → SKP (not on ki weapons).", "Passive in combat"}),
             Map.entry("dot", new String[]{"DoT Extra", "Extra damage from DoT sources.", "Passive in combat"}),
@@ -84,6 +84,13 @@ public final class CmiProgressionGui {
                 }
                 case "race" -> openSection(player, "race", "&bRace & Form", Material.TOTEM_OF_UNDYING,
                         new String[]{"racelock", "yardrat", "spiritualist", "android"});
+                case "android_panel", "android_tools", "androidtools" -> {
+                    if (ForgeBridge.isStaff(player)) {
+                        openAndroidPanel(player);
+                    } else {
+                        openMain(player);
+                    }
+                }
                 case "android_convert", "androidconvert", "convert_android" -> {
                     if (ForgeBridge.isStaff(player)) {
                         openAndroidConvert(player);
@@ -91,6 +98,8 @@ public final class CmiProgressionGui {
                         openMain(player);
                     }
                 }
+                case "android_remove", "androidremove", "remove_android", "deandroid" ->
+                        openAndroidRemove(player);
                 case "combat" -> openSection(player, "combat", "&cCombat", Material.NETHERITE_SWORD,
                         new String[]{"kiweapons", "piercing", "dot", "apothic"});
                 case "end" -> openSection(player, "end", "&5End", Material.END_CRYSTAL,
@@ -203,16 +212,17 @@ public final class CmiProgressionGui {
                 lore.add("");
                 lore.add(on ? "&aModule enabled" : "&cModule disabled");
                 lore.add(staff
-                        ? "&7Staff convert a player to Android (Gero path)."
-                        : "&7Android conversion path (Gero).");
+                        ? "&7Convert or remove Android upgrade (Gero path)."
+                        : "&7Android upgrade path (Gero).");
                 if (staff) {
                     lore.add("&8Cmd: &f/progression android [player]");
+                    lore.add("&8Cmd: &f/progression android remove [player]");
                     lore.add("");
-                    lore.add("&eClick · pick player to convert");
+                    lore.add("&eClick · Android tools");
                 }
                 if (staff) {
-                    gui.addButton(pageBtn(slots[i], Material.IRON_INGOT, "&bAndroid Convert",
-                            "android_convert", lore.toArray(new String[0])));
+                    gui.addButton(pageBtn(slots[i], Material.IRON_INGOT, "&bAndroid Tools",
+                            "android_panel", lore.toArray(new String[0])));
                 } else {
                     CMIGuiButton btn = new CMIGuiButton(slots[i], Material.IRON_INGOT, "&bAndroid");
                     btn.lockField();
@@ -317,6 +327,85 @@ public final class CmiProgressionGui {
         gui.open();
     }
 
+    private static void openAndroidPanel(Player player) {
+        CMIGui gui = base(player, "&8Android Tools", 5);
+        CMIGuiButton header = new CMIGuiButton(4, Material.IRON_INGOT, "&b&lAndroid Tools");
+        header.lockField();
+        header.addLore(List.of("", "&7Dr. Gero upgrade path",
+                "&7Convert · remove Android upgrade",
+                "&8/progression android · android remove"));
+        gui.addButton(header);
+        gui.addButton(pageBtn(20, Material.NETHERITE_INGOT, "&aConvert to Android",
+                "android_convert",
+                "&7Upgrade a player via Dr. Gero path",
+                "&8Human → androidforms.androidbase",
+                "", "&eClick · choose player"));
+        gui.addButton(pageBtn(24, Material.REDSTONE, "&cRemove Android",
+                "android_remove",
+                "&7Restore normal forms (CNPC script parity)",
+                "&8Confirm within 10s by clicking again",
+                "", "&eClick · choose player"));
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "race", "&7Race section"));
+        gui.addButton(hubBtn(40));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
+    private static void openAndroidRemove(Player player) {
+        boolean staff = ForgeBridge.isStaff(player);
+        CMIGui gui = base(player, "&8Remove Android", 5);
+        CMIGuiButton header = new CMIGuiButton(4, Material.REDSTONE, "&c&lRemove Android");
+        header.lockField();
+        header.addLore(List.of("", "&7Removes Android upgrade",
+                "&7Restores superforms / legendaryforms at 0",
+                "&8Confirm within 10s",
+                staff
+                        ? "&8/progression android remove [player]"
+                        : "&8/progression android remove"));
+        gui.addButton(header);
+        gui.addButton(actionBtn(staff ? 8 : 22, Material.NETHERITE_SCRAP, "&cRemove Android Upgrade",
+                "android_remove", player.getName(), "android_remove",
+                List.of("&7Remove the Android upgrade",
+                        "&7Race, stats, and progression stay",
+                        "", "&eClick · confirm within 10s")));
+        if (staff) {
+            List<Player> online = GuiPlayerPicker.onlineExcept(player);
+            int placed = 0;
+            for (Player other : online) {
+                if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                    break;
+                }
+                int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+                CMIGuiButton btn = new CMIGuiButton(slot,
+                        GuiPlayerPicker.head(other, "&f" + other.getName(),
+                                List.of("&7Remove Android upgrade", "", "&eClick · confirm within 10s")));
+                btn.lockField();
+                btn.addCommand("lmdo progression android_remove " + other.getName() + " android_remove");
+                gui.addButton(btn);
+            }
+            if (online.isEmpty()) {
+                CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&7No other players online");
+                empty.lockField();
+                empty.addLore(List.of("", "&7Use Remove Yourself above",
+                        "&8or /progression android remove <name>"));
+                gui.addButton(empty);
+            }
+            gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "android_panel", "&7Android tools"));
+        } else {
+            CMIGuiButton hub = new CMIGuiButton(36, Material.ARROW, "&7Back");
+            hub.lockField();
+            hub.addLore(List.of("", "&7Legacy Mechanics hub"));
+            hub.addCommand("lm");
+            hub.setCloseInv(true);
+            gui.addButton(hub);
+        }
+        gui.addButton(hubBtn(40));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        gui.open();
+    }
+
     private static void openAndroidConvert(Player player) {
         CMIGui gui = base(player, "&8Android Convert", 5);
         CMIGuiButton header = new CMIGuiButton(4, Material.IRON_INGOT, "&b&lAndroid Convert");
@@ -349,7 +438,7 @@ public final class CmiProgressionGui {
                     "&8or /progression android <name>"));
             gui.addButton(empty);
         }
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "race", "&7Race section"));
+        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "android_panel", "&7Android tools"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
