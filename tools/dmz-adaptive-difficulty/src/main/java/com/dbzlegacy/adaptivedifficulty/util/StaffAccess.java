@@ -31,15 +31,13 @@ public final class StaffAccess {
     }
 
     /**
-     * Skill Check (donator) access: staff always, or configured {@code skillCheckPermission}
-     * (default {@code legacymechanics.skillcheck}).
+     * Skill Check (donator) access: configured {@code skillCheckPermission}
+     * (default {@code legacymechanics.skillcheck}). Staff are <b>not</b> auto-granted —
+     * without the node they use {@code /skills} (admin) and do not see Skill Check in the hub.
      */
     public static boolean hasSkillCheck(ServerPlayer player) {
         if (player == null) {
             return false;
-        }
-        if (isStaff(player)) {
-            return true;
         }
         DifficultyConfig cfg = DifficultyConfig.get();
         if (!cfg.enableSkillCheck || !cfg.enableSkillUnlockService) {

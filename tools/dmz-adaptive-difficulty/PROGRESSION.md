@@ -21,27 +21,36 @@ Staff UI (`/progression` / `/prog`) is a **category hub** matching the script fa
 | Audience | Commands |
 |----------|----------|
 | All players | `/lm`, `/difficulty`, `/rival`, `/spar` |
-| Donators | `/skillcheck` — requires LuckPerms `legacymechanics.skillcheck` (or staff) |
+| Donators | `/skillcheck` — requires LuckPerms `legacymechanics.skillcheck` |
 | Staff | `/progression` · `/prog` · `/prestige` · `/skills` · Flags / Logs |
 
 ## Skill Check (donators)
 
 - Permission: `legacymechanics.skillcheck` (plugin.yml default **false**; grant via LuckPerms).
+- Staff are **not** auto-granted — without the node they see **Skills** (admin) on the hub, not Skill Check.
 - Config (`legacymechanics.json`): `enableSkillCheck`, `skillCheckPermission`,
   `skillCheckNpcNameContains` (default needles: `Skill Check`, `SkillCheck`, `Skill Progress`).
 - Reuses the same skill progress lines as staff `/skills` (core / saga) with
   **Skill Check** branding.
-- Hub shows a **Skill Check** button for permitted non-staff players.
+- Hub shows **Skill Check** only when the player has the permission.
 
-### CNPC setup
+### CNPC setup (Skill Check)
 
 Any of:
 
 1. Scoreboard / entity tag containing `lm_skillcheck` (case-insensitive)
 2. Custom name / display name containing a configured needle (defaults above)
 3. Dialog / quest: `noppes script trigger 21 <player>` (opens Skill Check only if permitted)
+4. NPC command (player): `skillcheck` or `lm open skillcheck`
 
 Right-click a marked CustomNPC → Skill Check UI (if the player has access).
+
+### CNPC setup (staff Skills admin)
+
+Staff `/skills` has no special CNPC name hook — use an NPC interaction command as the player:
+
+- `skills`
+- or `lm open skills`
 
 ## Staff UI pages (`/progression`)
 

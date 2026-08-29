@@ -84,8 +84,9 @@ config toggles, CNPC Skill Check setup, and scripts to disable on test. Full aud
 Fabled · Utility (plus Prestige/Skills shortcuts). Also includes Building TP, End portal
 guard, and Title progression / Admin inspect (from the server-fixes line).
 
-Donators: grant `legacymechanics.skillcheck` (LuckPerms). CNPC: name “Skill Check” or tag
-`lm_skillcheck`, or `noppes script trigger 21 <player>`.
+Donators: grant `legacymechanics.skillcheck` (LuckPerms) — hub hides Skill Check without it.
+CNPC Skill Check: name “Skill Check” / tag `lm_skillcheck` / `noppes script trigger 21 <player>` /
+NPC command `skillcheck`. Staff Skills: NPC command `skills` or `lm open skills`.
 
 ## Telemetry
 

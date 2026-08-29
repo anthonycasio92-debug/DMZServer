@@ -80,10 +80,10 @@ public final class CmiHubGui {
         boolean staff = ForgeBridge.isStaff(player);
         boolean skillCheck = ForgeBridge.hasSkillCheck(player);
 
-        // Row 3 — progress
+        // Row 3 — Skill Check only with legacymechanics.skillcheck; staff without it see Skills admin
         if (skillCheck && staff) {
             gui.addButton(openBtn(player, 21, Material.FEATHER, "&eSkill Check", "skillcheck",
-                    "&7Natural · Saga progress", "&eClick to open"));
+                    "&7Natural · Saga progress", "&8Requires donator perm", "&eClick to open"));
             gui.addButton(openBtn(player, 23, Material.GOLDEN_APPLE, "&6Prestige", "prestige",
                     "&7Prestige shop / levels", "&eClick to open"));
         } else if (skillCheck) {
@@ -91,7 +91,7 @@ public final class CmiHubGui {
                     "&7Natural · Saga progress", "&eClick to open"));
         } else if (staff) {
             gui.addButton(openBtn(player, 21, Material.FEATHER, "&eSkills", "skills",
-                    "&7Skill unlock admin browser", "&eClick to open"));
+                    "&7Skill unlock admin browser", "&8No Skill Check perm", "&eClick to open"));
             gui.addButton(openBtn(player, 23, Material.GOLDEN_APPLE, "&6Prestige", "prestige",
                     "&7Prestige shop / levels", "&eClick to open"));
         }

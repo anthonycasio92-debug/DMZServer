@@ -84,10 +84,10 @@ public final class HubChestGui implements Listener {
         boolean staff = ForgeBridge.isStaff(player);
         boolean skillCheck = ForgeBridge.hasSkillCheck(player);
 
-        // Row 3 — progress (donator / staff), centered
+        // Row 3 — Skill Check only with legacymechanics.skillcheck; staff without it see Skills admin
         if (skillCheck && staff) {
             put(holder, inv, 21, tipBtn(player, Material.FEATHER, "&eSkill Check",
-                    List.of("&7Natural · Saga progress", "&eClick to open")),
+                    List.of("&7Natural · Saga progress", "&8Requires donator perm", "&eClick to open")),
                     SlotAction.open("skillcheck"));
             put(holder, inv, 23, tipBtn(player, Material.GOLDEN_APPLE, "&6Prestige",
                     List.of("&7Prestige shop / levels", "&eClick to open")),
@@ -98,7 +98,7 @@ public final class HubChestGui implements Listener {
                     SlotAction.open("skillcheck"));
         } else if (staff) {
             put(holder, inv, 21, tipBtn(player, Material.FEATHER, "&eSkills",
-                    List.of("&7Skill unlock admin browser", "&eClick to open")),
+                    List.of("&7Skill unlock admin browser", "&8No Skill Check perm", "&eClick to open")),
                     SlotAction.open("skills"));
             put(holder, inv, 23, tipBtn(player, Material.GOLDEN_APPLE, "&6Prestige",
                     List.of("&7Prestige shop / levels", "&eClick to open")),

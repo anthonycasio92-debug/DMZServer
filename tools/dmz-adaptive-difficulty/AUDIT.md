@@ -1,3 +1,10 @@
+## Skill Check hub perm gate (2.3.34)
+
+`legacymechanics.skillcheck` is required to **see** Skill Check on `/lm` hub (chest + CMI + chat).
+Staff are no longer auto-granted that node — without it they see **Skills** (admin) instead.
+`/skillcheck` Bukkit command declares `permission: legacymechanics.skillcheck`.
+Staff can still `/lm open skillcheck` / inspect for testing.
+
 ## Spar Stats — last 3 sessions (2.3.33)
 
 Stats board no longer shows live in-fight TP (you can't usefully read that mid-spar).

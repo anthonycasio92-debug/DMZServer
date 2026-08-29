@@ -1977,13 +1977,13 @@ public final class ForgeBridge {
         return player.isOp() || player.hasPermission(adminPermission());
     }
 
-    /** Donator Skill Check: staff always, or {@code legacymechanics.skillcheck} (config). */
+    /**
+     * Donator Skill Check: {@code legacymechanics.skillcheck} (config). Staff are not
+     * auto-granted — without the node they use {@code /skills} and do not see Skill Check in hub.
+     */
     public static boolean hasSkillCheck(Player player) {
         if (player == null) {
             return false;
-        }
-        if (isStaff(player)) {
-            return true;
         }
         try {
             Object cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")

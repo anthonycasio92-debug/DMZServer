@@ -1,5 +1,5 @@
 name: LegacyMechanicsGUI
-version: '2.3.33'
+version: '2.3.34'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
@@ -34,6 +34,8 @@ commands:
   skillcheck:
     description: Open Skill Check GUI (donator)
     usage: /skillcheck
+    permission: legacymechanics.skillcheck
+    permission-message: "§cNo permission: legacymechanics.skillcheck"
   lmdo:
     description: Internal LegacyMechanics GUI action bridge (CMI clicks — not for players)
     usage: /lmdo <rival|spar|difficulty|lm|progression|prestige|skills|skillcheck> <action> [arg] [page]
