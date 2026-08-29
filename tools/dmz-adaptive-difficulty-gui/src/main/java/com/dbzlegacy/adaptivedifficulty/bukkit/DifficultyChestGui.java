@@ -62,7 +62,7 @@ public final class DifficultyChestGui implements Listener {
                     ForgeBridge.isStaff(viewer) ? stats(viewer, subject) : main(viewer, subject);
             default -> main(viewer, subject);
         };
-        viewer.openInventory(inv);
+        GuiFeedback.openChest(viewer, inv);
     }
 
     private static boolean inspecting(Player viewer, Player subject) {
@@ -698,6 +698,7 @@ public final class DifficultyChestGui implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         AdminInspectSessions.clearAllInvolving(event.getPlayer().getUniqueId());
+        GuiFeedback.clear(event.getPlayer());
     }
 
     private static void put(Holder holder, Inventory inv, int slot, ItemStack stack) {

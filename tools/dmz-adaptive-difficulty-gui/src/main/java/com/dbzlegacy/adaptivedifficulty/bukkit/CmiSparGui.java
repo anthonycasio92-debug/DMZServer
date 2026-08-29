@@ -87,7 +87,7 @@ public final class CmiSparGui {
             gui.addButton(hubBtn(40));
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
         status.addLore(statusLore(player, ph));
@@ -127,7 +127,7 @@ public final class CmiSparGui {
                     "&7Save · status · mentor resetcd"));
         }
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openTop(Player player, String pageKey) {
@@ -174,7 +174,7 @@ public final class CmiSparGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openAdmin(Player player) {
@@ -198,7 +198,7 @@ public final class CmiSparGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openMentor(Player player) {
@@ -259,7 +259,7 @@ public final class CmiSparGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openPending(Player player) {
@@ -312,7 +312,7 @@ public final class CmiSparGui {
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "mentor", "&7Mentor"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openPendingPicker(
@@ -383,7 +383,7 @@ public final class CmiSparGui {
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", backPage, "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openPicker(
@@ -425,7 +425,7 @@ public final class CmiSparGui {
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", backPage, "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openDetail(Player player, String page, String title, Material mat) {
@@ -457,7 +457,7 @@ public final class CmiSparGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openLines(Player player, String page, String title, Material mat) {

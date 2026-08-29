@@ -70,9 +70,13 @@ final class GuiChat {
         }
     }
 
-    /** Prefix uncolored Forge/plugin results with §a, then normalize tags. */
+    /** Prefix uncolored Forge/plugin results with §a, then show in GUI or chat. */
     static void sendResult(Player player, String msg) {
         if (player == null || msg == null || msg.isBlank()) {
+            return;
+        }
+        if (GuiFeedback.preferGui()) {
+            GuiFeedback.setFromResult(player, msg);
             return;
         }
         for (String line : msg.split("\n")) {

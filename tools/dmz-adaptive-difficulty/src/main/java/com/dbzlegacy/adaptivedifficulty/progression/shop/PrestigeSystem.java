@@ -46,21 +46,19 @@ public final class PrestigeSystem {
         showStatus(player);
     }
 
-    public static void confirmOrPrompt(ServerPlayer player) {
+    public static String confirmOrPrompt(ServerPlayer player) {
         if (!DifficultyConfig.get().enablePrestigeSystem || player == null) {
-            return;
+            return "§cPrestige system is disabled.";
         }
         StatsData data = DmzProgression.stats(player);
         if (data == null) {
-            DmzRewards.msg(player, "§cCould not read your Dragon Mine Z stats.");
-            return;
+            return reply(player, "§cCould not read your Dragon Mine Z stats.");
         }
         int level;
         try {
             level = Math.max(0, data.getLevel());
         } catch (Throwable t) {
-            DmzRewards.msg(player, "§cCould not determine your Dragon Mine Z level.");
-            return;
+            return reply(player, "§cCould not determine your Dragon Mine Z level.");
         }
 
         int completed = getCompleted(player);
@@ -69,12 +67,10 @@ public final class PrestigeSystem {
         int next = completed + 1;
 
         if (held >= MAX_HELD) {
-            sendCap(player, held);
-            return;
+            return replyCap(player, held);
         }
         if (level < required) {
-            sendRequirement(player, completed, next, required, level);
-            return;
+            return replyRequirement(player, completed, next, required, level);
         }
 
         long now = System.currentTimeMillis();
@@ -85,8 +81,7 @@ public final class PrestigeSystem {
         }
 
         if (until != null && until > now) {
-            purchase(player, data, completed, required, level);
-            return;
+            return purchase(player, data, completed, required, level);
         }
 
         long confirmUntil = now + CONFIRM_MS;
@@ -94,10 +89,10 @@ public final class PrestigeSystem {
         if (PersistentDataAccess.isWritable(tag)) {
             tag.m_128356_(KEY_CONFIRM_UNTIL, confirmUntil);
         }
-        sendConfirm(player, completed, next, required, level, held);
+        return replyConfirm(player, completed, next, required, level, held);
     }
 
-    private static void purchase(
+    private static String purchase(
             ServerPlayer player, StatsData data, int completed, int required, int level
     ) {
         CONFIRM_UNTIL.remove(player.m_20148_());
@@ -108,12 +103,10 @@ public final class PrestigeSystem {
 
         int held = getHeld(player);
         if (held >= MAX_HELD) {
-            sendCap(player, held);
-            return;
+            return replyCap(player, held);
         }
         if (level < required) {
-            sendRequirement(player, completed, completed + 1, required, level);
-            return;
+            return replyRequirement(player, completed, completed + 1, required, level);
         }
 
         int newHeld = held + 1;
@@ -143,18 +136,24 @@ public final class PrestigeSystem {
         }
 
         int nextRequired = requiredLevel(newCompleted);
-        send(player, "");
-        send(player, "§8--------------------------------");
-        send(player, "§aPrestige Level §f" + newCompleted + " §aComplete!");
-        send(player, "§7Required level was §f" + DmzRewards.formatWhole(required));
-        send(player, "§7Held Prestige Levels: §6" + newHeld + "§7/§f" + MAX_HELD);
-        send(player, "§7Next Prestige requires §e" + DmzRewards.formatWhole(nextRequired) + " §7DMZ levels.");
-        send(player, "§8--------------------------------");
+        String summary = "§aPrestige Level §f" + newCompleted + " §aComplete!\n"
+                + "§7Held: §6" + newHeld + "§7/§f" + MAX_HELD + "\n"
+                + "§7Next needs §e" + DmzRewards.formatWhole(nextRequired) + " §7DMZ levels.";
+        if (!preferGuiFeedback()) {
+            send(player, "");
+            send(player, "§8--------------------------------");
+            send(player, "§aPrestige Level §f" + newCompleted + " §aComplete!");
+            send(player, "§7Required level was §f" + DmzRewards.formatWhole(required));
+            send(player, "§7Held Prestige Levels: §6" + newHeld + "§7/§f" + MAX_HELD);
+            send(player, "§7Next Prestige requires §e" + DmzRewards.formatWhole(nextRequired) + " §7DMZ levels.");
+            send(player, "§8--------------------------------");
+        }
         SystemTelemetry.log("prestige", "purchase", player, null, Map.of(
                 "completed", newCompleted,
                 "held", newHeld,
                 "required", required
         ));
+        return summary;
     }
 
     private static void showStatus(ServerPlayer player) {
@@ -182,44 +181,82 @@ public final class PrestigeSystem {
         send(player, "§8────────────────");
     }
 
-    private static void sendConfirm(
+    private static String replyConfirm(
             ServerPlayer player, int completed, int next, int required, int level, int held
     ) {
-        send(player, "");
-        send(player, "§8--------------------------------");
-        send(player, "§eConfirm Prestige Level §f" + next + "§e?");
-        send(player, "§7This resets DMZ stats and awards one held Prestige Level.");
-        send(player, "§7Your level §f" + DmzRewards.formatWhole(level)
-                + " §7meets §e" + DmzRewards.formatWhole(required) + "§7.");
-        send(player, "§7Held after: §6" + (held + 1) + "§7/§f" + MAX_HELD);
-        send(player, "§8Click again within 10s to confirm.");
-        MutableComponent row = Component.m_237113_("§7")
-                .m_7220_(btn("§a[Confirm Prestige]", "/prestige do confirm", "Complete prestige"))
-                .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§c[Cancel]", "/prestige", "Cancel"));
-        send(player, row);
-        send(player, "§8--------------------------------");
+        String summary = "§eConfirm Prestige Level §f" + next + "§e?\n"
+                + "§7Click again within 10s · resets DMZ stats\n"
+                + "§7Held after: §6" + (held + 1) + "§7/§f" + MAX_HELD;
+        if (!preferGuiFeedback()) {
+            send(player, "");
+            send(player, "§8--------------------------------");
+            send(player, "§eConfirm Prestige Level §f" + next + "§e?");
+            send(player, "§7This resets DMZ stats and awards one held Prestige Level.");
+            send(player, "§7Your level §f" + DmzRewards.formatWhole(level)
+                    + " §7meets §e" + DmzRewards.formatWhole(required) + "§7.");
+            send(player, "§7Held after: §6" + (held + 1) + "§7/§f" + MAX_HELD);
+            send(player, "§8Click again within 10s to confirm.");
+            MutableComponent row = Component.m_237113_("§7")
+                    .m_7220_(btn("§a[Confirm Prestige]", "/prestige do confirm", "Complete prestige"))
+                    .m_7220_(Component.m_237113_("  "))
+                    .m_7220_(btn("§c[Cancel]", "/prestige", "Cancel"));
+            send(player, row);
+            send(player, "§8--------------------------------");
+        }
+        return summary;
     }
 
-    private static void sendCap(ServerPlayer player, int held) {
-        send(player, "");
-        send(player, "§8--------------------------------");
-        send(player, "§cMaximum Prestige Levels Reached");
-        send(player, "§7Available Prestige Levels: §6" + held + "§7/§f" + MAX_HELD);
-        send(player, "§eUse one before prestiging again.");
-        send(player, "§8--------------------------------");
+    private static String replyCap(ServerPlayer player, int held) {
+        String summary = "§cMaximum Prestige Levels Reached\n"
+                + "§7Available: §6" + held + "§7/§f" + MAX_HELD + "\n"
+                + "§eUse one before prestiging again.";
+        if (!preferGuiFeedback()) {
+            send(player, "");
+            send(player, "§8--------------------------------");
+            send(player, "§cMaximum Prestige Levels Reached");
+            send(player, "§7Available Prestige Levels: §6" + held + "§7/§f" + MAX_HELD);
+            send(player, "§eUse one before prestiging again.");
+            send(player, "§8--------------------------------");
+        }
+        return summary;
     }
 
-    private static void sendRequirement(
+    private static String replyRequirement(
             ServerPlayer player, int completed, int next, int required, int level
     ) {
-        send(player, "");
-        send(player, "§8--------------------------------");
-        send(player, "§cNot Ready for Prestige Level §f" + next);
-        send(player, "§7Need §e" + DmzRewards.formatWhole(required)
-                + " §7DMZ levels (have §f" + DmzRewards.formatWhole(level) + "§7).");
-        send(player, "§7Completed prestiges: §f" + completed);
-        send(player, "§8--------------------------------");
+        String summary = "§cNot Ready for Prestige Level §f" + next + "\n"
+                + "§7Need §e" + DmzRewards.formatWhole(required)
+                + " §7DMZ levels (have §f" + DmzRewards.formatWhole(level) + "§7).";
+        if (!preferGuiFeedback()) {
+            send(player, "");
+            send(player, "§8--------------------------------");
+            send(player, "§cNot Ready for Prestige Level §f" + next);
+            send(player, "§7Need §e" + DmzRewards.formatWhole(required)
+                    + " §7DMZ levels (have §f" + DmzRewards.formatWhole(level) + "§7).");
+            send(player, "§7Completed prestiges: §f" + completed);
+            send(player, "§8--------------------------------");
+        }
+        return summary;
+    }
+
+    private static String reply(ServerPlayer player, String summary) {
+        if (!preferGuiFeedback()) {
+            DmzRewards.msg(player, summary);
+        }
+        return summary;
+    }
+
+    /** Inventory/CMI backends show results in the GUI header; chat backend keeps chat. */
+    private static boolean preferGuiFeedback() {
+        try {
+            String backend = DifficultyConfig.get().guiBackend;
+            if (backend == null || backend.isBlank()) {
+                return true;
+            }
+            return !"chat".equalsIgnoreCase(backend.trim());
+        } catch (Throwable ignored) {
+            return true;
+        }
     }
 
     public static int requiredLevel(int currentCompleted) {

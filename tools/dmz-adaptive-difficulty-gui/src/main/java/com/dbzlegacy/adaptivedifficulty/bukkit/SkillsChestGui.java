@@ -52,7 +52,7 @@ public final class SkillsChestGui implements Listener {
             case "natural" -> pageInv(viewer, subject, "core", "&aNatural", Material.FEATHER);
             default -> pageInv(viewer, subject, "core", "&aNatural", Material.FEATHER);
         };
-        viewer.openInventory(inv);
+        GuiFeedback.openChest(viewer, inv);
     }
 
     private Inventory pageInv(Player viewer, Player subject, String page, String title, Material mat) {

@@ -1,3 +1,8 @@
+## GUI action feedback (2.3.44)
+
+When `guiBackend` is chest/CMI, action results (can't buy, prestige not ready, etc.)
+paint the **menu header** instead of chat. Chat backend unchanged.
+
 ## Global TP boost stacking (2.3.43)
 
 When a boost is already active, buying another **adds its duration** and keeps the

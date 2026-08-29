@@ -139,7 +139,19 @@ public final class ProgressionCommands {
         if (p == null) {
             return 0;
         }
-        com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem.confirmOrPrompt(p);
+        String msg = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem.confirmOrPrompt(p);
+        // GUI/lmdo path surfaces this via GuiFeedback; chat-menu backend already printed detail.
+        // Direct /prestige do on inventory backends still needs a visible reply.
+        if (msg != null && !msg.isBlank()) {
+            String backend = DifficultyConfig.get().guiBackend;
+            if (backend != null && !"chat".equalsIgnoreCase(backend.trim())) {
+                for (String line : msg.split("\n")) {
+                    if (line != null && !line.isBlank()) {
+                        DmzRewards.msg(p, line);
+                    }
+                }
+            }
+        }
         PrestigeMenu.open(p, page == null || page.isBlank() ? "main" : page);
         return 1;
     }

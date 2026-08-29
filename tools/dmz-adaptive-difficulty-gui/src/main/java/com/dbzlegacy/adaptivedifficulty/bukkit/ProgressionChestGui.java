@@ -118,7 +118,7 @@ public final class ProgressionChestGui implements Listener {
             case "flags_fabled", "fabled_flags" -> ForgeBridge.isStaff(viewer) ? fabledFlags(viewer, subject) : main(viewer, subject);
             default -> main(viewer, subject);
         };
-        viewer.openInventory(inv);
+        GuiFeedback.openChest(viewer, inv);
     }
 
     private Inventory main(Player viewer, Player subject) {

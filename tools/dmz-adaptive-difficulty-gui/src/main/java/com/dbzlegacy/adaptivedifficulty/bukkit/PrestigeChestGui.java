@@ -44,7 +44,7 @@ public final class PrestigeChestGui implements Listener {
     public void open(Player player, String page) {
         Player viewer = player;
         Player subject = AdminInspectSessions.resolveSubject(viewer);
-        viewer.openInventory(main(viewer, subject));
+        GuiFeedback.openChest(viewer, main(viewer, subject));
     }
 
     private Inventory main(Player viewer, Player subject) {

@@ -74,7 +74,7 @@ public final class SparChestGui implements Listener {
         } else {
             inv = main(viewer, subject);
         }
-        viewer.openInventory(inv);
+        GuiFeedback.openChest(viewer, inv);
     }
 
     private Inventory main(Player viewer, Player subject) {

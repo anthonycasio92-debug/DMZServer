@@ -60,7 +60,7 @@ public final class CmiHubGui {
             gui.addButton(status);
             gui.addButton(closeBtn(53));
             fillFrameOnly(gui, 6);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
         List<String> hubHeaderLore = new ArrayList<>();
@@ -107,7 +107,7 @@ public final class CmiHubGui {
 
         gui.addButton(closeBtn(53));
         fillFrameOnly(gui, 6);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openLogs(Player player) {
@@ -156,7 +156,7 @@ public final class CmiHubGui {
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(44));
         fillFrameOnly(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static List<String> toAmp(List<String> lines) {

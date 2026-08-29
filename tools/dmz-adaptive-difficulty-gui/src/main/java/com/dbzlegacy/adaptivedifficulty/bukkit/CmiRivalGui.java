@@ -99,7 +99,7 @@ public final class CmiRivalGui {
             gui.addButton(hubBtn(40));
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
         status.addLore(statusLore(player, ph));
@@ -158,7 +158,7 @@ public final class CmiRivalGui {
                     "&7Save · refresh · status"));
         }
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openProgress(Player player) {
@@ -198,7 +198,7 @@ public final class CmiRivalGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openTop(Player player) {
@@ -233,7 +233,7 @@ public final class CmiRivalGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openDetail(Player player, String page, String title, Material mat, String backPage) {
@@ -266,7 +266,7 @@ public final class CmiRivalGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openAdmin(Player player) {
@@ -290,7 +290,7 @@ public final class CmiRivalGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static List<String> previewLines(List<String> lines, int max) {
@@ -370,7 +370,7 @@ public final class CmiRivalGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openPending(Player player) {
@@ -421,7 +421,7 @@ public final class CmiRivalGui {
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "actions", "&7Actions"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openActions(Player player) {
@@ -462,7 +462,7 @@ public final class CmiRivalGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openHistory(Player player) {
@@ -504,7 +504,7 @@ public final class CmiRivalGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openChallenge(Player player) {
@@ -535,7 +535,7 @@ public final class CmiRivalGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openChallengeTargetPicker(Player player) {
@@ -576,7 +576,7 @@ public final class CmiRivalGui {
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "challenge", "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openChallengeTime(Player player, String targetArg) {
@@ -636,7 +636,7 @@ public final class CmiRivalGui {
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "pick_challenge", "&7Pick another player"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openPicker(
@@ -678,7 +678,7 @@ public final class CmiRivalGui {
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", backPage, "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openCurrentRivalPicker(
@@ -733,7 +733,7 @@ public final class CmiRivalGui {
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", backPage, "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openPendingPicker(
@@ -814,7 +814,7 @@ public final class CmiRivalGui {
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", backPage, "&7Return"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openLines(Player player, String page, String title, Material mat, String backPage) {

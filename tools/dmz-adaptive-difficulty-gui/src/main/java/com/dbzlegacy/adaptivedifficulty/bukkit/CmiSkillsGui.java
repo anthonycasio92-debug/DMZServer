@@ -68,7 +68,7 @@ public final class CmiSkillsGui {
             gui.addButton(hubBtn(49));
             gui.addButton(closeBtn(53));
             fillFrameOnly(gui, 6);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
 
@@ -131,7 +131,7 @@ public final class CmiSkillsGui {
         }
         gui.addButton(closeBtn(53));
         fillFrameOnly(gui, 6);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static boolean skillUnlocked(List<String> skillLore) {

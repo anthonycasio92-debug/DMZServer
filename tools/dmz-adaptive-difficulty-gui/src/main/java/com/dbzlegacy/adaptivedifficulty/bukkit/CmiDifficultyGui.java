@@ -86,7 +86,7 @@ public final class CmiDifficultyGui {
             gui.addButton(hubBtn(27));
             gui.addButton(closeBtn(35));
             fillEmpty(gui, 4);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
         status.addLore(statusLore(ph, stateColor, ForgeBridge.isStaff(player), personalOn));
@@ -137,7 +137,7 @@ public final class CmiDifficultyGui {
         gui.addButton(hubBtn(27));
         gui.addButton(closeBtn(35));
         fillEmpty(gui, 4);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openBuy(Player player) {
@@ -155,7 +155,7 @@ public final class CmiDifficultyGui {
             gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
 
@@ -172,7 +172,7 @@ public final class CmiDifficultyGui {
             gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
 
@@ -206,7 +206,7 @@ public final class CmiDifficultyGui {
                 "&7Select a lower unlocked tier"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openLower(Player player) {
@@ -224,7 +224,7 @@ public final class CmiDifficultyGui {
             gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
 
@@ -241,7 +241,7 @@ public final class CmiDifficultyGui {
             gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
 
@@ -267,7 +267,7 @@ public final class CmiDifficultyGui {
                 "&7Purchase a higher Unlock Tier"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openTitles(Player player) {
@@ -357,7 +357,7 @@ public final class CmiDifficultyGui {
         gui.addButton(pageBtn(player, 45, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(53));
         fillEmpty(gui, 6);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openTeamsWip(Player player) {
@@ -375,7 +375,7 @@ public final class CmiDifficultyGui {
         gui.addButton(pageBtn(player, 18, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(26));
         fillEmpty(gui, 3);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openStats(Player player) {
@@ -428,7 +428,7 @@ public final class CmiDifficultyGui {
         gui.addButton(pageBtn(player, 27, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(35));
         fillEmpty(gui, 4);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void placeTierButtons(CMIGui gui, Player player, Map<String, String> ph, boolean buyMode) {

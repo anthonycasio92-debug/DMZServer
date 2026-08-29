@@ -47,7 +47,7 @@ public final class RivalChestGui implements Listener {
         String raw = page == null || page.isBlank() ? "main" : page.trim();
         String lower = raw.toLowerCase(Locale.ROOT);
         if (lower.startsWith("challenge_time:")) {
-            viewer.openInventory(challengeTime(viewer, subject, raw.substring("challenge_time:".length()).trim()));
+            GuiFeedback.openChest(viewer, challengeTime(viewer, subject, raw.substring("challenge_time:".length()).trim()));
             return;
         }
         Inventory inv = switch (lower) {
@@ -84,7 +84,7 @@ public final class RivalChestGui implements Listener {
             case "admin" -> ForgeBridge.isStaff(viewer) ? admin(viewer, subject) : main(viewer, subject);
             default -> main(viewer, subject);
         };
-        viewer.openInventory(inv);
+        GuiFeedback.openChest(viewer, inv);
     }
 
     private Inventory main(Player viewer, Player subject) {

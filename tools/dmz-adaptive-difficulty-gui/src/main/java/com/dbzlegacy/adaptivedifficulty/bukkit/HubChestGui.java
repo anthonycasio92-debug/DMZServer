@@ -36,7 +36,7 @@ public final class HubChestGui implements Listener {
             // Help removed — any leftover /lm do page help opens the hub.
             default -> main(player);
         };
-        player.openInventory(inv);
+        GuiFeedback.openChest(player, inv);
     }
 
     private Inventory main(Player player) {

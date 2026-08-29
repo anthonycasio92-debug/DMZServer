@@ -51,7 +51,7 @@ public final class CmiPrestigeGui {
             gui.addButton(progBtn(31));
             gui.addButton(closeBtn(35));
             fillEmpty(gui, 4);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
         status.addLore(toAmp(ForgeBridge.prestigeLines(player, "main")));
@@ -74,7 +74,7 @@ public final class CmiPrestigeGui {
         gui.addButton(progBtn(31));
         gui.addButton(closeBtn(35));
         fillEmpty(gui, 4);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static List<String> unavailableLore(boolean bridgeOk) {

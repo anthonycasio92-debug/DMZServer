@@ -150,7 +150,7 @@ public final class CmiProgressionGui {
             gui.addButton(hubBtn(49));
             gui.addButton(closeBtn(53));
             fillEmpty(gui, 6);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
         status.addLore(List.of("", "&7Pick a section", "&7Toggle flags inside each page"));
@@ -188,7 +188,7 @@ public final class CmiProgressionGui {
         gui.addButton(hubBtn(49));
         gui.addButton(closeBtn(53));
         fillEmpty(gui, 6);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openSection(Player player, String page, String title, Material mat, String[] keys) {
@@ -287,7 +287,7 @@ public final class CmiProgressionGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openBoostPanel(Player player) {
@@ -324,7 +324,7 @@ public final class CmiProgressionGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openAndroidPanel(Player player) {
@@ -349,7 +349,7 @@ public final class CmiProgressionGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openAndroidRemove(Player player) {
@@ -403,7 +403,7 @@ public final class CmiProgressionGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openAndroidConvert(Player player) {
@@ -442,7 +442,7 @@ public final class CmiProgressionGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openFlags(Player player) {
@@ -487,7 +487,7 @@ public final class CmiProgressionGui {
         gui.addButton(hubBtn(49));
         gui.addButton(closeBtn(53));
         fillEmpty(gui, 6);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openFabledFlags(Player player) {
@@ -513,7 +513,7 @@ public final class CmiProgressionGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static String stripSection(String s) {

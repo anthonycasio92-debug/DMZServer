@@ -745,8 +745,7 @@ public final class ProgressionGuiApi {
             return "";
         }
         if ("confirm".equals(act) || "buy".equals(act) || "purchase".equals(act)) {
-            PrestigeSystem.confirmOrPrompt(player);
-            return "";
+            return PrestigeSystem.confirmOrPrompt(player);
         }
         return "§cUnknown prestige action: " + act;
     }
