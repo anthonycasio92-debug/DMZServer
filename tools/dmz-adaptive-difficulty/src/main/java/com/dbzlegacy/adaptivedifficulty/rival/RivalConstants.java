@@ -80,19 +80,25 @@ public final class RivalConstants {
     public static final int CH_FORFEIT_RP_PENALTY = 10;
 
     public static final RpTier[] RP_TIERS = {
-            new RpTier(0, "Acquaintance", "7"),
-            new RpTier(100, "Competitor", "a"),
-            new RpTier(300, "Adversary", "2"),
-            new RpTier(700, "Rival", "e"),
-            new RpTier(1500, "Vendetta", "6"),
-            new RpTier(3000, "Legendary", "c"),
-            new RpTier(5000, "Arch Rival", "d"),
-            new RpTier(7500, "Mortal Enemy", "5"),
-            new RpTier(10000, "Eternal Rival", "b"),
-            new RpTier(15000, "Mythic Rival", "4")
+            new RpTier(0, "Acquaintance", "7", 1.00, "None"),
+            new RpTier(100, "Competitor", "a", 1.05, "Sense farther + 5% rival TP"),
+            new RpTier(300, "Adversary", "2", 1.10, "Better reports + 10% rival TP"),
+            new RpTier(700, "Rival", "e", 1.15, "Notifications + 15% rival TP"),
+            new RpTier(1500, "Vendetta", "6", 1.25, "Tracker + 25% rival TP"),
+            new RpTier(3000, "Legendary", "c", 1.35, "Aura flag + 35% rival TP"),
+            new RpTier(5000, "Arch Rival", "d", 1.45, "Entrance flag + 45% rival TP"),
+            new RpTier(7500, "Mortal Enemy", "5", 1.55, "Priority alerts + 55% rival TP"),
+            new RpTier(10000, "Eternal Rival", "b", 1.70, "Unique title + 70% rival TP"),
+            new RpTier(15000, "Mythic Rival", "4", 2.00, "Mythic title + 100% rival TP")
     };
 
-    public record RpTier(int min, String name, String color) {}
+    /**
+     * RP rank title (not Mutual Nemesis status).
+     *
+     * @param tpMult rival TP award multiplier for this title (1.0 = 100%)
+     * @param perk   player-facing bonus text for the Title GUI
+     */
+    public record RpTier(int min, String name, String color, double tpMult, String perk) {}
 
     public static RpTier tierFor(double points) {
         RpTier best = RP_TIERS[0];

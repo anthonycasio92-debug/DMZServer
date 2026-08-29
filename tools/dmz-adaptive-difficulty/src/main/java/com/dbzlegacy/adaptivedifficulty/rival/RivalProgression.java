@@ -241,13 +241,16 @@ public final class RivalProgression {
         String special = data.specialTitles.getOrDefault(id, "");
         List<String> lines = new ArrayList<>();
         lines.add("§6§lRival Title");
-        lines.add("§7RP Rank §" + tier.color() + tier.name());
+        lines.add("§7Title: §" + tier.color() + "§l" + tier.name());
+        lines.add("§7Perk: §e" + (tier.perk() == null || tier.perk().isBlank() ? "None" : tier.perk()));
+        lines.add("§7TP Gain: §a" + Math.round(tier.tpMult() * 100.0) + "%");
+        lines.add("§7RP: §f" + (int) Math.floor(Math.max(0.0, rec.totalRp)));
         if (special != null && !special.isBlank()) {
-            lines.add("§7Special §e" + special.replace('_', ' '));
+            lines.add("§7Special: §e" + special.replace('_', ' '));
         } else {
-            lines.add("§7Special §8none");
+            lines.add("§7Special: §8none");
         }
-        lines.add("§8Titles are displayed in GUI; Fabled set is best-effort.");
+        lines.add("§8Rival TP awards use your title multiplier.");
         return lines;
     }
 

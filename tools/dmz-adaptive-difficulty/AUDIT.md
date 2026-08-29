@@ -1,3 +1,8 @@
+## Rival title bonuses (2.3.45)
+
+Rival Title GUI shows perk + TP Gain % (CNPC parity). RP-rank `tpMult` also
+applies to rival TP awards via `RivalTpCurve`.
+
 ## GUI action feedback (2.3.44)
 
 When `guiBackend` is chest/CMI, action results (can't buy, prestige not ready, etc.)

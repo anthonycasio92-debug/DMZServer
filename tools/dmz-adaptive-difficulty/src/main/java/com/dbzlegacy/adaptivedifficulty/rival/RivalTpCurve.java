@@ -42,6 +42,19 @@ public final class RivalTpCurve {
             level = 1;
         }
         double mult = effectiveMultiplier(level, kind);
+        // RP-rank title multiplier (Competitor 105% … Mythic 200%) — CNPC Title UI parity.
+        if (player != null) {
+            try {
+                RivalPlayerRecord rec = RivalStore.get().ensurePlayer(player);
+                if (rec != null) {
+                    double titleMult = RivalConstants.tierFor(rec.totalRp).tpMult();
+                    if (titleMult > 0.0 && Double.isFinite(titleMult)) {
+                        mult *= titleMult;
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+        }
         return (float) Math.max(1.0, Math.floor(base * mult));
     }
 

@@ -615,6 +615,8 @@ public final class RivalSystem {
         lines.add("§6§lRival Stats §8— §f" + me.name);
         RivalConstants.RpTier tier = RivalConstants.tierFor(me.totalRp);
         lines.add("§7Total RP §f" + (int) me.totalRp + " §8(§" + tier.color() + tier.name() + "§8)");
+        lines.add("§7Title perk §e" + (tier.perk() == null || tier.perk().isBlank() ? "None" : tier.perk()));
+        lines.add("§7Title TP §a" + Math.round(tier.tpMult() * 100.0) + "%");
         lines.add("§7Record §a" + me.officialWins + "§7/§c" + me.officialLosses + "§7/§e" + me.officialDraws
                 + " §8(KO " + me.knockouts + ")");
         lines.add("§7Streak §f" + me.currentWinStreak + " §8(best " + me.bestWinStreak + ")");
