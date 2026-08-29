@@ -41,10 +41,25 @@ Any of:
 
 1. Scoreboard / entity tag containing `lm_skillcheck` (case-insensitive)
 2. Custom name / display name containing a configured needle (defaults above)
-3. Dialog / quest: `noppes script trigger 21 <player>` (opens Skill Check only if permitted)
+3. Dialog / quest: `noppes script trigger 21 <player>`
 4. NPC command (player): `skillcheck` or `lm open skillcheck`
 
-Right-click a marked CustomNPC → Skill Check UI (if the player has access).
+Right-click a marked CustomNPC → Skill Check UI for **any** player (NPC is the gate).
+Slash `/skillcheck` still needs `legacymechanics.skillcheck`.
+
+### CNPC setup (Rival / Spar / Hub / Difficulty / Prestige)
+
+Right-click opens the GUI for **all players** (no permission). Match by tag or name:
+
+| System | Tag examples | Name contains |
+|--------|--------------|---------------|
+| Hub | `lm_hub` | Legacy Mechanics, LM Hub |
+| Rival | `lm_rival` | Rival, Rival System |
+| Spar | `lm_spar` | Spar, Sparring |
+| Difficulty | `lm_difficulty` | Difficulty |
+| Prestige | `lm_prestige` | Prestige |
+
+Or NPC interaction command **as the player** (no `/`): `lm` · `rival` · `spar` · `difficulty` · `prestige`
 
 ### CNPC setup (staff Skills admin)
 

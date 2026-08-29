@@ -89,8 +89,10 @@ public final class SkillCheckService {
     }
 
     /**
-     * CNPC right-click: if entity is a CustomNPC Skill Check marker and player may use,
-     * open Skill Check and return true (caller should cancel the interact).
+     * CNPC right-click: if entity is a CustomNPC Skill Check marker, open Skill Check.
+     * <p>
+     * The NPC is the access gate — <b>no</b> {@code legacymechanics.skillcheck} required.
+     * Slash {@code /skillcheck} remains permission-gated for donators.
      */
     public static boolean tryOpenFromNpc(ServerPlayer player, Entity npc) {
         if (player == null || npc == null) {
@@ -102,23 +104,37 @@ public final class SkillCheckService {
         if (!looksLikeCustomNpc(npc) || !isSkillCheckNpc(npc)) {
             return false;
         }
-        if (!canUse(player)) {
-            DmzRewards.msg(player, "§cSkill Check requires donator access.");
-            return false;
+        if (!DifficultyConfig.get().enableSkillCheck || !DifficultyConfig.get().enableSkillUnlockService) {
+            DmzRewards.msg(player, "§cSkill Check is disabled.");
+            return true;
         }
-        open(player, "core");
+        openFromNpc(player, "core");
         return true;
     }
 
-    /** Trigger 21 / dialog script path — open only when permitted. */
+    /** Trigger 21 / dialog script path — NPC/dialog is the gate (no permission). */
     public static void trigger21(ServerPlayer player) {
         if (player == null) {
             return;
         }
-        if (!canUse(player)) {
+        if (!DifficultyConfig.get().enableSkillCheck || !DifficultyConfig.get().enableSkillUnlockService) {
             return;
         }
-        open(player, "core");
+        openFromNpc(player, "core");
+    }
+
+    /** Open Skill Check UI without the donator permission (CNPC / trigger paths). */
+    public static void openFromNpc(ServerPlayer player, String page) {
+        if (player == null) {
+            return;
+        }
+        if (!DifficultyConfig.get().enableSkillCheck || !DifficultyConfig.get().enableSkillUnlockService) {
+            DmzRewards.msg(player, "§cSkill Check is disabled.");
+            return;
+        }
+        markSession(player);
+        String target = page == null || page.isBlank() ? "core" : page;
+        SkillsMenu.openSkillCheck(player, target);
     }
 
     public static boolean looksLikeCustomNpc(Entity entity) {

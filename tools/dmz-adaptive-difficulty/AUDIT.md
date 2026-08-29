@@ -1,3 +1,10 @@
+## CNPC GUI open without permission (2.3.46)
+
+Right-click CustomNPCs open player GUIs with **no permission**:
+Rival / Spar / Hub / Difficulty / Prestige (tags `lm_rival`… or name match).
+Skill Check CNPC / trigger 21 also skips `legacymechanics.skillcheck`
+(slash `/skillcheck` still gated).
+
 ## Rival title bonuses (2.3.45)
 
 Rival Title GUI shows perk + TP Gain % (CNPC parity). RP-rank `tpMult` also
