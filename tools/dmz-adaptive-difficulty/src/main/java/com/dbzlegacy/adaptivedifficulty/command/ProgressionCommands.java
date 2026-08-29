@@ -36,9 +36,8 @@ public final class ProgressionCommands {
         event.getDispatcher().register(root);
         event.getDispatcher().register(build("prog"));
 
-        // Prestige NPC purchase GUI — staff only
+        // Prestige NPC purchase GUI — players + staff
         event.getDispatcher().register(Commands.m_82127_("prestige")
-                .requires(ProgressionCommands::staff)
                 .executes(ctx -> prestigeGui(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> prestigeGui(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("do")
@@ -131,10 +130,6 @@ public final class ProgressionCommands {
         if (p == null) {
             return 0;
         }
-        if (!StaffAccess.isStaff(p)) {
-            reply(source, p, "§cStaff only.");
-            return 0;
-        }
         PrestigeMenu.open(p, page);
         return 1;
     }
@@ -142,10 +137,6 @@ public final class ProgressionCommands {
     private static int prestigeConfirm(CommandSourceStack source, String page) {
         ServerPlayer p = playerOrNull(source);
         if (p == null) {
-            return 0;
-        }
-        if (!StaffAccess.isStaff(p)) {
-            reply(source, p, "§cStaff only.");
             return 0;
         }
         com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem.confirmOrPrompt(p);

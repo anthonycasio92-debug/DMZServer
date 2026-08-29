@@ -2,12 +2,10 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
-import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
-import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Staff UI entrypoint for {@code /prestige}.
+ * Player UI entrypoint for {@code /prestige}.
  * Prefers CMI/CMILib inventory GUI, then Bukkit chest companion, then chat.
  */
 public final class PrestigeMenu {
@@ -15,10 +13,6 @@ public final class PrestigeMenu {
 
     public static void open(ServerPlayer player, String page) {
         if (player == null) {
-            return;
-        }
-        if (!StaffAccess.isStaff(player)) {
-            DmzRewards.msg(player, "§cStaff only.");
             return;
         }
         if (!DifficultyConfig.get().enablePrestigeSystem) {

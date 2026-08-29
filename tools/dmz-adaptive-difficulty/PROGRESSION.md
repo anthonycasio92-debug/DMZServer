@@ -3,15 +3,16 @@
 LegacyMechanics ports CNPC “natural progression” scripts into Forge, plus soft-dependency
 **Fabled** bridges (Bukkit / LuckPerms via reflection — never hard-crash if missing).
 
-**Access:** `/progression` / `/prestige` / `/skills` are **staff only** (op level 2 or
-`difficulty.admin`). Normal players use Difficulty / Rival / Spar from `/lm`. Donators with
-`legacymechanics.skillcheck` get **Skill Check** (`/skillcheck` or CNPC).
+**Access:** `/progression` / `/skills` are **staff only** (op level 2 or
+`difficulty.admin`). Normal players use Difficulty / Rival / Spar / **Prestige** /
+Remove Android from `/lm`. Donators with `legacymechanics.skillcheck` get **Skill Check**
+(`/skillcheck` or CNPC).
 
 Staff UI (`/progression` / `/prog`) is a **category hub** matching the script families below.
 
 ## Install (test)
 
-1. Build / install `LegacyMechanics-2.3.38.jar` (+ matching `LegacyMechanicsGUI-2.3.38.jar`).
+1. Build / install `LegacyMechanics-2.3.39.jar` (+ matching `LegacyMechanicsGUI-2.3.39.jar`).
 2. Keep `enableProgression` / `enableFabledBridge` true (defaults).
 3. **Disable** the CNPC Global Player scripts listed below to avoid double-sync / double TP.
 4. Do **not** deploy to live until tested.
@@ -20,9 +21,9 @@ Staff UI (`/progression` / `/prog`) is a **category hub** matching the script fa
 
 | Audience | Commands |
 |----------|----------|
-| All players | `/lm`, `/difficulty`, `/rival`, `/spar`, `/lm` → Remove Android, `/progression android remove` |
+| All players | `/lm`, `/difficulty`, `/rival`, `/spar`, `/prestige`, `/lm` → Remove Android, `/progression android remove` |
 | Donators | `/skillcheck` — requires LuckPerms `legacymechanics.skillcheck` |
-| Staff | `/progression` · `/prog` · `/prestige` · `/skills` · Flags / Logs · Android convert |
+| Staff | `/progression` · `/prog` · `/skills` · Flags / Logs · Android convert |
 
 ## Skill Check (donators)
 

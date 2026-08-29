@@ -895,14 +895,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 }
                 openSkillsRespectingConfig(player, "core");
             }
-            case "prestige" -> {
-                if (!ForgeBridge.isStaff(player)) {
-                    player.sendMessage("§cStaff only.");
-                    openHubInventory(player, "main");
-                    return;
-                }
-                openPrestigeRespectingConfig(player, "main");
-            }
+            case "prestige" -> openPrestigeRespectingConfig(player, "main");
             case "android_remove", "androidremove", "remove_android", "deandroid" ->
                     openProgressionRespectingConfig(player, "android_remove");
             case "progression", "prog" -> {
@@ -1135,10 +1128,6 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     private boolean handlePrestige(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Players only.");
-            return true;
-        }
-        if (!ForgeBridge.isStaff(player)) {
-            player.sendMessage("§cStaff only.");
             return true;
         }
         if (!canUsePlayerGui(player)) {

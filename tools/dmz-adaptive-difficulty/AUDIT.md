@@ -1,3 +1,8 @@
+## Player Prestige menu (2.3.39)
+
+`/prestige` and `/lm` → Prestige are available to all players (not staff-only).
+Confirm still uses the two-click PrestigeSystem flow.
+
 ## Android convert + remove (2.3.37)
 
 Race → **Android Tools** panel (chest + CMI): Convert or Remove Android upgrade.
@@ -7,6 +12,11 @@ Race → **Android Tools** panel (chest + CMI): Convert or Remove Android upgrad
   remove `androidforms`, recalculate transformation limits, sync.
 - Commands: `/progression android [player]` · `/progression android remove [player]`
 - Forge: `AndroidConversion.remove` · Bukkit: `ForgeBridge.androidRemove`
+
+## Player Prestige menu (2.3.39)
+
+`/prestige` and `/lm` → Prestige are available to all players (not staff-only).
+Confirm still uses the two-click PrestigeSystem flow.
 
 ## Player self-remove (2.3.38)
 

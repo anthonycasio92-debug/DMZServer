@@ -43,10 +43,6 @@ public final class PrestigeSystem {
         if (!DifficultyConfig.get().enablePrestigeSystem || player == null) {
             return;
         }
-        if (!com.dbzlegacy.adaptivedifficulty.util.StaffAccess.isStaff(player)) {
-            DmzRewards.msg(player, "§cStaff only.");
-            return;
-        }
         showStatus(player);
     }
 
