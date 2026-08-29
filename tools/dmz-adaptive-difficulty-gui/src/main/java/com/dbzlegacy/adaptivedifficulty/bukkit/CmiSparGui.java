@@ -101,6 +101,17 @@ public final class CmiSparGui {
         gui.addButton(pageBtn(player, 23, Material.EMERALD, "&bMentor", "mentor",
                 "&7Invite · pending · accept · remove"));
 
+        boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "true"));
+        gui.addButton(actionBtn(player, 25,
+                tpOn ? Material.BELL : Material.GRAY_DYE,
+                tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
+                "tpmsg", "toggle", "main",
+                List.of(
+                        tpOn ? "&7Click to mute spar TP chat" : "&7Click to show spar TP chat while fighting",
+                        "&8Batched +TP lines during spars",
+                        "&8/spar tpmsg"
+                )));
+
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
         if (session) {
             gui.addButton(actionBtn(player, 31, Material.RED_DYE, "&cEnd Session",

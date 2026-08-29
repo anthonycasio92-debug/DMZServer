@@ -31,6 +31,8 @@ public final class SparStore {
     public final Map<String, BondInvite> invites = new ConcurrentHashMap<>();
     /** uuid → newest-first finished session summaries (capped at {@link #RECENT_SESSION_LIMIT}). */
     public final Map<String, List<RecentSession>> recentSessions = new ConcurrentHashMap<>();
+    /** uuid → spar combat TP chat messages (missing = default ON). */
+    public final Map<String, Boolean> tpMessages = new ConcurrentHashMap<>();
     private final AtomicBoolean dirty = new AtomicBoolean(false);
     private long lastSaveAt;
 
@@ -56,6 +58,7 @@ public final class SparStore {
                 leaderboard.clear();
                 invites.clear();
                 recentSessions.clear();
+                tpMessages.clear();
                 dirty.set(false);
                 return;
             }
@@ -65,6 +68,7 @@ public final class SparStore {
                 leaderboard.clear();
                 invites.clear();
                 recentSessions.clear();
+                tpMessages.clear();
                 if (blob != null) {
                     if (blob.bondsByPlayer != null) {
                         bondsByPlayer.putAll(blob.bondsByPlayer);
@@ -82,6 +86,9 @@ public final class SparStore {
                             }
                             recentSessions.put(e.getKey(), normalizeRecent(e.getValue()));
                         }
+                    }
+                    if (blob.tpMessages != null) {
+                        tpMessages.putAll(blob.tpMessages);
                     }
                 }
                 dirty.set(false);
@@ -107,6 +114,7 @@ public final class SparStore {
             for (Map.Entry<String, List<RecentSession>> e : recentSessions.entrySet()) {
                 blob.recentSessions.put(e.getKey(), new ArrayList<>(e.getValue()));
             }
+            blob.tpMessages = new ConcurrentHashMap<>(tpMessages);
             try (Writer writer = Files.newBufferedWriter(file)) {
                 GSON.toJson(blob, writer);
             }
@@ -129,6 +137,23 @@ public final class SparStore {
             return null;
         }
         return bondsByPlayer.computeIfAbsent(uuid.toString(), k -> new MentorBond());
+    }
+
+    /** Default ON when unset — players see spar TP chat while fighting. */
+    public boolean tpMessagesOn(UUID uuid) {
+        if (uuid == null) {
+            return true;
+        }
+        Boolean v = tpMessages.get(uuid.toString());
+        return v == null || v;
+    }
+
+    public void setTpMessages(UUID uuid, boolean on) {
+        if (uuid == null) {
+            return;
+        }
+        tpMessages.put(uuid.toString(), on);
+        markDirty();
     }
 
     /** Newest-first snapshot of finished spars for Stats (never null). */
@@ -231,5 +256,6 @@ public final class SparStore {
         Map<String, LeaderboardEntry> leaderboard;
         Map<String, BondInvite> invites;
         Map<String, List<RecentSession>> recentSessions;
+        Map<String, Boolean> tpMessages;
     }
 }

@@ -112,6 +112,7 @@ public final class SparringSystem {
             tickReleaseControl(player, partner, rt, now);
             tickPerfectBanner(player, partner, rt, now);
             tickActivity(player, partner, rt, now);
+            SparCombat.tickTpMessages(player, rt, now);
         }
         SparStore.get().saveIfNeeded(now);
     }
@@ -864,6 +865,20 @@ public final class SparringSystem {
                 : player.m_20194_().m_6846_().m_11259_(rt.partner);
         endSession(player, partner, "command");
         return "§eSpar session ended.";
+    }
+
+    public static String setTpMsg(ServerPlayer player, Boolean on) {
+        if (player == null) {
+            return "§cPlayers only.";
+        }
+        if (on == null) {
+            boolean cur = SparStore.get().tpMessagesOn(player.m_20148_());
+            return "§7Spar TP messages: §f" + (cur ? "ON" : "OFF")
+                    + " §8(/spar tpmsg · /spar GUI)";
+        }
+        SparStore.get().setTpMessages(player.m_20148_(), on);
+        return "§aSpar TP messages §f" + (on ? "ON" : "OFF")
+                + (on ? " §7— combat TP gains show in chat" : " §7— muted");
     }
 
     public static String mentorInvite(ServerPlayer player, ServerPlayer target) {

@@ -1510,6 +1510,11 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             openSparRespectingConfig(player, "main");
             return true;
         }
+        if ("tpmsg".equals(sub) || "tp_msg".equals(sub)) {
+            String mode = args.length > 1 ? args[1] : "toggle";
+            sendMultiline(player, ForgeBridge.sparHandleDo(player, "tpmsg", mode, "main"));
+            return true;
+        }
         // mentor <name> / apprentice <name> / save → handleDo (not brigadier)
         if (isSparForgeAction(sub)) {
             routeSparTypedAction(player, args);

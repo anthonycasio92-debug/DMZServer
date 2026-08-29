@@ -39,6 +39,12 @@ public final class SparCommands {
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("end").executes(ctx -> end(ctx.getSource())))
+                .then(Commands.m_82127_("tpmsg")
+                        .executes(ctx -> tpMsg(ctx.getSource(), "toggle"))
+                        .then(Commands.m_82129_("mode", StringArgumentType.word())
+                                .executes(ctx -> tpMsg(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "mode")))))
                 .then(Commands.m_82127_("top")
                         .executes(ctx -> top(ctx.getSource(), "tp"))
                         .then(Commands.m_82129_("category", StringArgumentType.word())
@@ -201,6 +207,29 @@ public final class SparCommands {
             return 0;
         }
         DmzRewards.msg(player, SparringSystem.endCommand(player));
+        return 1;
+    }
+
+    private static int tpMsg(CommandSourceStack source, String mode) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        String m = mode == null ? "toggle" : mode.trim().toLowerCase();
+        Boolean next;
+        if ("on".equals(m) || "true".equals(m) || "1".equals(m)) {
+            next = true;
+        } else if ("off".equals(m) || "false".equals(m) || "0".equals(m)) {
+            next = false;
+        } else if ("toggle".equals(m) || m.isEmpty()) {
+            next = !SparStore.get().tpMessagesOn(player.m_20148_());
+        } else if ("status".equals(m) || "?".equals(m)) {
+            next = null;
+        } else {
+            DmzRewards.msg(player, "§cUsage: /spar tpmsg [on|off|toggle]");
+            return 0;
+        }
+        DmzRewards.msg(player, SparringSystem.setTpMsg(player, next));
         return 1;
     }
 

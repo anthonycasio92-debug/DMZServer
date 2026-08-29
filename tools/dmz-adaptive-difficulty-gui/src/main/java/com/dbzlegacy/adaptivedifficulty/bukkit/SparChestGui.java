@@ -104,6 +104,16 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 23, pageBtn(viewer, Material.EMERALD, "&bMentor",
                 "&7Invite · pending · accept · remove"), SlotAction.page("mentor"));
 
+        boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "true"));
+        put(holder, inv, 25, tipBtn(viewer,
+                tpOn ? Material.BELL : Material.GRAY_DYE,
+                tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
+                List.of(
+                        tpOn ? "&7Click to mute spar TP chat" : "&7Click to show spar TP chat while fighting",
+                        "&8Batched +TP lines during spars",
+                        "&8/spar tpmsg"
+                )), SlotAction.act("tpmsg", "toggle", "main"));
+
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
         if (session) {
             put(holder, inv, 31, tipBtn(viewer, Material.RED_DYE, "&cEnd Session",

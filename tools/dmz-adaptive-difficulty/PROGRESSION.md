@@ -12,7 +12,7 @@ Staff UI (`/progression` / `/prog`) is a **category hub** matching the script fa
 
 ## Install (test)
 
-1. Build / install `LegacyMechanics-2.3.40.jar` (+ matching `LegacyMechanicsGUI-2.3.40.jar`).
+1. Build / install `LegacyMechanics-2.3.41.jar` (+ matching `LegacyMechanicsGUI-2.3.41.jar`).
 2. Keep `enableProgression` / `enableFabledBridge` true (defaults).
 3. **Disable** the CNPC Global Player scripts listed below to avoid double-sync / double TP.
 4. Do **not** deploy to live until tested.

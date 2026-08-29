@@ -49,6 +49,8 @@ public final class SparGuiApi {
         out.put("partner", partner);
         out.put("session_tp", sessionActive ? String.valueOf((int) rt.sessionTp) : "0");
         out.put("perfect", sessionActive && rt.sessionPerfect ? "true" : "false");
+        out.put("tpMsg", SparStore.get().tpMessagesOn(player.m_20148_()) ? "true" : "false");
+        out.put("tp_msg", out.get("tpMsg"));
 
         boolean hasMentor = bond != null
                 && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
@@ -263,6 +265,19 @@ public final class SparGuiApi {
         }
         if ("end".equals(act) || "stop".equals(act)) {
             return SparringSystem.endCommand(player);
+        }
+        if ("tpmsg".equals(act) || "tp_msg".equals(act) || "tpmessage".equals(act)) {
+            if ("toggle".equalsIgnoreCase(a) || a.isBlank()) {
+                boolean next = !SparStore.get().tpMessagesOn(player.m_20148_());
+                return SparringSystem.setTpMsg(player, next);
+            }
+            if ("on".equalsIgnoreCase(a) || "true".equalsIgnoreCase(a)) {
+                return SparringSystem.setTpMsg(player, true);
+            }
+            if ("off".equalsIgnoreCase(a) || "false".equalsIgnoreCase(a)) {
+                return SparringSystem.setTpMsg(player, false);
+            }
+            return "§cUsage: spar do tpmsg toggle|on|off";
         }
         if ("mentor".equals(act)) {
             String sub = a.toLowerCase(Locale.ROOT).trim();

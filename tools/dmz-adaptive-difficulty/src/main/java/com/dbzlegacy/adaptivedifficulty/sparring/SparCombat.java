@@ -525,6 +525,18 @@ public final class SparCombat {
         }
     }
 
+    /** Flush batched TP chat when the throttle window elapses (even mid-fight with no new hit). */
+    public static void tickTpMessages(ServerPlayer player, SparPlayerRuntime rt, long now) {
+        if (rt == null || !rt.active || rt.tpPending <= 0) {
+            return;
+        }
+        if (now < rt.tpMsgNext) {
+            return;
+        }
+        rt.tpMsgNext = now + 2000L;
+        flushTpMessage(player, rt);
+    }
+
     public static void flushTpMessage(ServerPlayer player, SparPlayerRuntime rt) {
         if (rt == null || rt.tpPending <= 0) {
             return;
@@ -534,6 +546,9 @@ public final class SparCombat {
         rt.tpPendingMelee = 0;
         rt.tpPendingKi = 0;
         rt.tpPendingClash = 0;
+        if (player == null || !SparStore.get().tpMessagesOn(player.m_20148_())) {
+            return;
+        }
         String style = styleId(rt);
         String label = switch (style) {
             case "melee" -> "Melee Specialist";
@@ -543,7 +558,8 @@ public final class SparCombat {
             case "guardian" -> "Guardian";
             default -> "Combat";
         };
-        DmzRewards.msg(player, "§6[Sparring] §a+" + DmzRewards.formatWhole(pending) + " TP §8(" + label + ")");
+        DmzRewards.msg(player, "§6[Sparring] §a+" + DmzRewards.formatWhole(pending) + " TP §8(" + label + ")"
+                + " §7· session §f" + DmzRewards.formatWhole(rt.sessionTp));
     }
 
     public static void updateMomentum(SparPlayerRuntime rt) {

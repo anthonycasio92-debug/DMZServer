@@ -1,3 +1,8 @@
+## Spar TP message toggle (2.3.41)
+
+Players can toggle live spar TP chat (`/spar` → **TP Msg**, or `/spar tpmsg`).
+Default ON. Pending +TP batches flush on a timer during the fight (not only on the next hit).
+
 ## Skill Check real max levels (2.3.40)
 
 Saga skill lines (Ki Boost, etc.) use {@code skills.getMaxSkillLevel(id)} instead of a
