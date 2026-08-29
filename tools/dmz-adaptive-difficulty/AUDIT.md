@@ -8,6 +8,14 @@ Race → **Android Tools** panel (chest + CMI): Convert or Remove Android upgrad
 - Commands: `/progression android [player]` · `/progression android remove [player]`
 - Forge: `AndroidConversion.remove` · Bukkit: `ForgeBridge.androidRemove`
 
+## Player self-remove (2.3.38)
+
+Players can de-androidify without staff:
+
+- `/lm` hub → **Remove Android** (everyone)
+- `/progression android remove` (self only; staff can still target others)
+- Convert remains staff-only
+
 ## GUI coherence pass (2.3.36)
 
 One icon language across Hub / Difficulty / Rival / Spar / Progression / Prestige / Skills:

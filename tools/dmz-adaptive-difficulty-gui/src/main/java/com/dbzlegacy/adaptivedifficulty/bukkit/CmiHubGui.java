@@ -96,7 +96,11 @@ public final class CmiHubGui {
                     "&7Prestige shop / levels", "&eClick to open"));
         }
 
-        // Row 4 — staff tools
+        // Row 4 — player Android remove + staff tools
+        gui.addButton(openBtn(player, 31, Material.REDSTONE, "&cRemove Android", "android_remove",
+                "&7Remove your Android upgrade",
+                "&8Two-click confirm · forms restored",
+                "&eClick to open"));
         if (staff) {
             gui.addButton(openBtn(player, 38, Material.BREWING_STAND, "&dProgression", "progression",
                     "&7Skills · TP · Race · Combat flags", "&eClick to open"));

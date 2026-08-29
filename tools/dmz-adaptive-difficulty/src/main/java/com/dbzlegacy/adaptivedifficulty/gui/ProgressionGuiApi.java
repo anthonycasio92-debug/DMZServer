@@ -49,14 +49,19 @@ public final class ProgressionGuiApi {
         return commandHelp(true);
     }
 
-    /** Chat help. Non-staff never see admin/boost/android/staff rotate lines. */
+    /** Chat help. Non-staff get meditation + self Android remove only. */
     public static String commandHelp(boolean staff) {
         if (!staff) {
             return String.join("\n",
                     "§d§lMeditation Trial",
                     "§8────────────",
                     "§e/progression meditation §7— current biome, goal, and timer",
-                    "§8Charge Ki in the trial biome to level Meditation.");
+                    "§8Charge Ki in the trial biome to level Meditation.",
+                    "",
+                    "§c§lRemove Android",
+                    "§8────────────",
+                    "§e/lm §7→ §cRemove Android §7— GUI (two-click confirm)",
+                    "§e/progression android remove §7— remove your Android upgrade");
         }
         return String.join("\n",
                 "§6§l/progression §8(alias §7/prog§8) §7— command tree",
@@ -136,17 +141,18 @@ public final class ProgressionGuiApi {
     }
 
     /**
-     * Staff: remove Android upgrade (two-click confirm) for {@code actor} or an online name.
+     * Remove Android upgrade (two-click confirm).
+     * Players may only remove themselves; staff may target any online player.
      */
     public static String androidRemove(ServerPlayer actor, String targetName) {
         if (actor == null) {
             return "§cPlayers only.";
         }
-        if (!StaffAccess.isStaff(actor)) {
-            return "§cStaff only.";
-        }
         if (!DifficultyConfig.get().enableProgression) {
             return "§cProgression system is disabled.";
+        }
+        if (!DifficultyConfig.get().enableAndroidConversion) {
+            return "§cAndroid tools are disabled.";
         }
         ServerPlayer target = actor;
         String name = targetName == null ? "" : targetName.trim();
@@ -155,6 +161,10 @@ public final class ProgressionGuiApi {
             if (target == null) {
                 return "§cPlayer not found: §f" + name;
             }
+        }
+        boolean self = target.m_20148_().equals(actor.m_20148_());
+        if (!self && !StaffAccess.isStaff(actor)) {
+            return "§cYou can only remove your own Android upgrade.";
         }
         return ProgressionSystem.androidRemove(actor, target);
     }

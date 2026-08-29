@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.command;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.PrestigeMenu;
+import com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.SkillsMenu;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
@@ -220,15 +221,16 @@ public final class ProgressionCommands {
                                 .requires(ProgressionCommands::staff)
                                 .executes(ctx -> meditationNext(ctx.getSource()))))
                 .then(Commands.m_82127_("android")
-                        .requires(ProgressionCommands::staff)
-                        .executes(ctx -> androidSelf(ctx.getSource()))
                         .then(Commands.m_82127_("remove")
                                 .executes(ctx -> androidRemoveSelf(ctx.getSource()))
                                 .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .requires(ProgressionCommands::staff)
                                         .executes(ctx -> androidRemovePlayer(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player")))))
+                        .executes(ctx -> androidSelfOrHint(ctx.getSource()))
                         .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .requires(ProgressionCommands::staff)
                                 .executes(ctx -> androidPlayer(
                                         ctx.getSource(),
                                         StringArgumentType.getString(ctx, "player")))))
@@ -357,6 +359,16 @@ public final class ProgressionCommands {
         return 1;
     }
 
+    private static int androidSelfOrHint(CommandSourceStack source) {
+        if (!staff(source)) {
+            reply(source, playerOrNull(source),
+                    "§7Use §f/progression android remove §7to remove your Android upgrade."
+                            + "\n§8Convert is staff-only.");
+            return 0;
+        }
+        return androidSelf(source);
+    }
+
     private static int androidSelf(CommandSourceStack source) {
         ServerPlayer player = playerOrNull(source);
         if (player == null) {
@@ -383,23 +395,22 @@ public final class ProgressionCommands {
             source.m_288197_(() -> Component.m_237113_("§cPlayer required."), false);
             return 0;
         }
-        reply(source, player, ProgressionSystem.androidRemove(player, player));
+        reply(source, player, ProgressionGuiApi.androidRemove(player, ""));
         return 1;
     }
 
     private static int androidRemovePlayer(CommandSourceStack source, String name) {
         ServerPlayer actor = playerOrNull(source);
-        ServerPlayer target = resolve(source, name);
-        if (target == null) {
-            source.m_288197_(() -> Component.m_237113_("§cPlayer not found: " + name), false);
-            return 0;
-        }
         if (actor == null) {
-            // Console: confirm still needs an actor UUID — run as target self-confirm path via target.
-            reply(source, null, ProgressionSystem.androidRemove(target, target));
+            ServerPlayer target = resolve(source, name);
+            if (target == null) {
+                source.m_288197_(() -> Component.m_237113_("§cPlayer not found: " + name), false);
+                return 0;
+            }
+            reply(source, null, ProgressionGuiApi.androidRemove(target, ""));
             return 1;
         }
-        reply(source, actor, ProgressionSystem.androidRemove(actor, target));
+        reply(source, actor, ProgressionGuiApi.androidRemove(actor, name));
         return 1;
     }
 

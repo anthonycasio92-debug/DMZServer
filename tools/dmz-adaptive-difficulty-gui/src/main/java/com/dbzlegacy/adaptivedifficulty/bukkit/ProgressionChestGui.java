@@ -102,8 +102,8 @@ public final class ProgressionChestGui implements Listener {
                     ForgeBridge.isStaff(viewer) ? androidPanel(viewer, subject) : main(viewer, subject);
             case "android_convert", "androidconvert", "convert_android" ->
                     ForgeBridge.isStaff(viewer) ? androidConvertPicker(viewer, subject) : main(viewer, subject);
-            case "android_remove", "androidremove", "remove_android" ->
-                    ForgeBridge.isStaff(viewer) ? androidRemovePicker(viewer, subject) : main(viewer, subject);
+            case "android_remove", "androidremove", "remove_android", "deandroid" ->
+                    androidRemovePicker(viewer, subject);
             case "combat" -> sectionFlags(viewer, subject, "combat", "&cCombat", Material.NETHERITE_SWORD,
                     new String[]{"kiweapons", "piercing", "dot", "apothic"});
             case "end" -> sectionFlags(viewer, subject, "end", "&5End", Material.END_CRYSTAL,
@@ -400,33 +400,45 @@ public final class ProgressionChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Remove Android"));
         holder.bind(inv);
         frame(inv, 45);
+        boolean staff = ForgeBridge.isStaff(viewer);
         put(holder, inv, 4, item(Material.REDSTONE, "&c&lRemove Android",
                 List.of("", "&7Removes Android upgrade",
                         "&7Restores normal form skills",
-                        "&8Click same target twice within 10s",
-                        "&8/progression android remove [player]")));
-        put(holder, inv, 8, tipBtn(Material.NETHERITE_SCRAP, "&cRemove Yourself",
-                List.of("&7Remove your Android upgrade", "", "&eClick · confirm within 10s")),
-                SlotAction.act("android_remove", subject.getName(), "android_remove"));
-        List<Player> online = GuiPlayerPicker.onlineExcept(subject);
-        int placed = 0;
-        for (Player other : online) {
-            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
-                break;
+                        "&8Click twice within 10s to confirm",
+                        staff
+                                ? "&8/progression android remove [player]"
+                                : "&8/progression android remove")));
+        // Self remove — available to everyone (subject when inspecting, else viewer).
+        Player selfTarget = subject != null ? subject : viewer;
+        put(holder, inv, staff ? 8 : 22, tipBtn(Material.NETHERITE_SCRAP, "&cRemove Android Upgrade",
+                List.of("&7Remove the Android upgrade",
+                        "&7Race, stats, and progression stay",
+                        "", "&eClick · confirm within 10s")),
+                SlotAction.act("android_remove", selfTarget.getName(), "android_remove"));
+        if (staff) {
+            List<Player> online = GuiPlayerPicker.onlineExcept(subject);
+            int placed = 0;
+            for (Player other : online) {
+                if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                    break;
+                }
+                int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+                put(holder, inv, slot,
+                        GuiPlayerPicker.head(other, "&f" + other.getName(),
+                                List.of("&7Remove Android upgrade", "", "&eClick · confirm within 10s")),
+                        SlotAction.act("android_remove", other.getName(), "android_remove"));
             }
-            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
-            put(holder, inv, slot,
-                    GuiPlayerPicker.head(other, "&f" + other.getName(),
-                            List.of("&7Remove Android upgrade", "", "&eClick · confirm within 10s")),
-                    SlotAction.act("android_remove", other.getName(), "android_remove"));
+            if (online.isEmpty()) {
+                put(holder, inv, 22, item(Material.BARRIER, "&7No other players online",
+                        List.of("", "&7Use Remove Yourself above",
+                                "&8or /progression android remove <name>")));
+            }
+            put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Android tools"),
+                    SlotAction.page("android_panel"));
+        } else {
+            put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Legacy Mechanics hub"),
+                    SlotAction.cmd("lm"));
         }
-        if (online.isEmpty()) {
-            put(holder, inv, 22, item(Material.BARRIER, "&7No other players online",
-                    List.of("", "&7Use Remove Yourself above",
-                            "&8or /progression android remove <name>")));
-        }
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Android tools"),
-                SlotAction.page("android_panel"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;

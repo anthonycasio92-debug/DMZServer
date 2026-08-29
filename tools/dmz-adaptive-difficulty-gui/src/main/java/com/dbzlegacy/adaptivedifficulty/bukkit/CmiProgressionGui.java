@@ -98,13 +98,8 @@ public final class CmiProgressionGui {
                         openMain(player);
                     }
                 }
-                case "android_remove", "androidremove", "remove_android" -> {
-                    if (ForgeBridge.isStaff(player)) {
+                case "android_remove", "androidremove", "remove_android", "deandroid" ->
                         openAndroidRemove(player);
-                    } else {
-                        openMain(player);
-                    }
-                }
                 case "combat" -> openSection(player, "combat", "&cCombat", Material.NETHERITE_SWORD,
                         new String[]{"kiweapons", "piercing", "dot", "apothic"});
                 case "end" -> openSection(player, "end", "&5End", Material.END_CRYSTAL,
@@ -358,39 +353,53 @@ public final class CmiProgressionGui {
     }
 
     private static void openAndroidRemove(Player player) {
+        boolean staff = ForgeBridge.isStaff(player);
         CMIGui gui = base(player, "&8Remove Android", 5);
         CMIGuiButton header = new CMIGuiButton(4, Material.REDSTONE, "&c&lRemove Android");
         header.lockField();
         header.addLore(List.of("", "&7Removes Android upgrade",
                 "&7Restores superforms / legendaryforms at 0",
                 "&8Confirm within 10s",
-                "&8/progression android remove [player]"));
+                staff
+                        ? "&8/progression android remove [player]"
+                        : "&8/progression android remove"));
         gui.addButton(header);
-        gui.addButton(actionBtn(8, Material.REDSTONE_BLOCK, "&cRemove Yourself",
+        gui.addButton(actionBtn(staff ? 8 : 22, Material.NETHERITE_SCRAP, "&cRemove Android Upgrade",
                 "android_remove", player.getName(), "android_remove",
-                List.of("&7Remove your Android upgrade", "", "&eClick · confirm within 10s")));
-        List<Player> online = GuiPlayerPicker.onlineExcept(player);
-        int placed = 0;
-        for (Player other : online) {
-            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
-                break;
+                List.of("&7Remove the Android upgrade",
+                        "&7Race, stats, and progression stay",
+                        "", "&eClick · confirm within 10s")));
+        if (staff) {
+            List<Player> online = GuiPlayerPicker.onlineExcept(player);
+            int placed = 0;
+            for (Player other : online) {
+                if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                    break;
+                }
+                int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+                CMIGuiButton btn = new CMIGuiButton(slot,
+                        GuiPlayerPicker.head(other, "&f" + other.getName(),
+                                List.of("&7Remove Android upgrade", "", "&eClick · confirm within 10s")));
+                btn.lockField();
+                btn.addCommand("lmdo progression android_remove " + other.getName() + " android_remove");
+                gui.addButton(btn);
             }
-            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
-            CMIGuiButton btn = new CMIGuiButton(slot,
-                    GuiPlayerPicker.head(other, "&f" + other.getName(),
-                            List.of("&7Remove Android upgrade", "", "&eClick · confirm within 10s")));
-            btn.lockField();
-            btn.addCommand("lmdo progression android_remove " + other.getName() + " android_remove");
-            gui.addButton(btn);
+            if (online.isEmpty()) {
+                CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&7No other players online");
+                empty.lockField();
+                empty.addLore(List.of("", "&7Use Remove Yourself above",
+                        "&8or /progression android remove <name>"));
+                gui.addButton(empty);
+            }
+            gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "android_panel", "&7Android tools"));
+        } else {
+            CMIGuiButton hub = new CMIGuiButton(36, Material.ARROW, "&7Back");
+            hub.lockField();
+            hub.addLore(List.of("", "&7Legacy Mechanics hub"));
+            hub.addCommand("lm");
+            hub.setCloseInv(true);
+            gui.addButton(hub);
         }
-        if (online.isEmpty()) {
-            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&7No other players online");
-            empty.lockField();
-            empty.addLore(List.of("", "&7Use Remove Yourself above",
-                    "&8or /progression android remove <name>"));
-            gui.addButton(empty);
-        }
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "android_panel", "&7Android tools"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);

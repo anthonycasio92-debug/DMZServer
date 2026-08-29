@@ -86,6 +86,28 @@ public final class ProgressionCommandTree implements TabCompleter {
         if (args.length > 0 && "meditation".equalsIgnoreCase(args[0])) {
             return meditation(player, args);
         }
+        // Player-facing: remove own Android upgrade (convert stays staff-only).
+        if (args.length > 0 && "android".equalsIgnoreCase(args[0])) {
+            if (args.length > 1 && ("remove".equalsIgnoreCase(args[1])
+                    || "unandroid".equalsIgnoreCase(args[1]))) {
+                String target = "";
+                if (args.length > 2) {
+                    if (!ForgeBridge.isStaff(player)
+                            && !args[2].equalsIgnoreCase(player.getName())) {
+                        player.sendMessage("§cYou can only remove your own Android upgrade.");
+                        return true;
+                    }
+                    target = args[2];
+                }
+                sendMultiline(player, ForgeBridge.androidRemove(player, target));
+                return true;
+            }
+            if (!ForgeBridge.isStaff(player)) {
+                player.sendMessage("§7Use §f/progression android remove §7to remove your Android upgrade.");
+                player.sendMessage("§8Or open §f/lm §8→ Remove Android.");
+                return true;
+            }
+        }
         // Player-facing help (no staff command list).
         if (args.length > 0 && ("help".equalsIgnoreCase(args[0]) || "?".equals(args[0]))) {
             sendMultiline(player, ForgeBridge.progressionHelp(player));
@@ -93,8 +115,8 @@ public final class ProgressionCommandTree implements TabCompleter {
         }
 
         if (!ForgeBridge.isStaff(player)) {
-            // Non-staff: only meditation / help (above).
-            player.sendMessage("§7Use §f/progression meditation §7for the current trial.");
+            // Non-staff: meditation / android remove / help (above).
+            player.sendMessage("§7Use §f/progression meditation §7for the trial, or §f/lm §7→ Remove Android.");
             return true;
         }
 
@@ -214,30 +236,35 @@ public final class ProgressionCommandTree implements TabCompleter {
         if (args.length == 1) {
             List<String> root = new ArrayList<>();
             root.add("meditation");
+            root.add("android");
             root.add("help");
             if (staff) {
                 root.addAll(ROOT);
             }
             return filter(root, args[0]);
         }
-        if (!staff && !(args.length >= 1 && "meditation".equalsIgnoreCase(args[0]))) {
+        if (!staff && !(args.length >= 1
+                && ("meditation".equalsIgnoreCase(args[0]) || "android".equalsIgnoreCase(args[0])))) {
             return Collections.emptyList();
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
         if (args.length == 2) {
             return switch (sub) {
-                case "gui", "menu", "open" -> filter(PAGES, args[1]);
-                case "admin" -> filter(FLAGS, args[1]);
-                case "do" -> filter(DO_ACTIONS, args[1]);
+                case "gui", "menu", "open" -> staff ? filter(PAGES, args[1]) : Collections.emptyList();
+                case "admin" -> staff ? filter(FLAGS, args[1]) : Collections.emptyList();
+                case "do" -> staff ? filter(DO_ACTIONS, args[1]) : Collections.emptyList();
                 case "meditation" -> filter(
                         ForgeBridge.isStaff(player) ? MEDITATION : MEDITATION_PLAYER, args[1]);
                 case "android" -> {
+                    if (!staff) {
+                        yield filter(List.of("remove"), args[1]);
+                    }
                     List<String> androidTab = new ArrayList<>();
                     androidTab.add("remove");
                     androidTab.addAll(onlineNames(player));
                     yield filter(androidTab, args[1]);
                 }
-                case "boost", "tpboost" -> filter(BOOST, args[1]);
+                case "boost", "tpboost" -> staff ? filter(BOOST, args[1]) : Collections.emptyList();
                 default -> Collections.emptyList();
             };
         }

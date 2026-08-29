@@ -903,9 +903,11 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 }
                 openPrestigeRespectingConfig(player, "main");
             }
+            case "android_remove", "androidremove", "remove_android", "deandroid" ->
+                    openProgressionRespectingConfig(player, "android_remove");
             case "progression", "prog" -> {
                 if (!ForgeBridge.isStaff(player)) {
-                    player.sendMessage("§cStaff only.");
+                    player.sendMessage("§cStaff only. §7Use §f/lm §7→ Remove Android for your upgrade.");
                     openHubInventory(player, "main");
                     return;
                 }

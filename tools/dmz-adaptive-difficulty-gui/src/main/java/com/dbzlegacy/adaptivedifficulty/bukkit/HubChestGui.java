@@ -105,7 +105,12 @@ public final class HubChestGui implements Listener {
                     SlotAction.open("prestige"));
         }
 
-        // Row 4 — staff tools
+        // Row 4 — player Android remove + staff tools
+        put(holder, inv, 31, tipBtn(player, Material.REDSTONE, "&cRemove Android",
+                List.of("&7Remove your Android upgrade",
+                        "&8Two-click confirm · forms restored",
+                        "&eClick to open")),
+                SlotAction.open("android_remove"));
         if (staff) {
             put(holder, inv, 38, tipBtn(player, Material.BREWING_STAND, "&dProgression",
                     List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")),
