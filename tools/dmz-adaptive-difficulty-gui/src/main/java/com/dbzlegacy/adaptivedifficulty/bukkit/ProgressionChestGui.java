@@ -90,7 +90,7 @@ public final class ProgressionChestGui implements Listener {
         Player subject = AdminInspectSessions.resolveSubject(viewer);
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         Inventory inv = switch (p) {
-            case "skills" -> sectionFlags(viewer, subject, "skills", "&eSkills", Material.FEATHER,
+            case "skills" -> sectionFlags(viewer, subject, "skills", "&eSkills", Material.BOOK,
                     new String[]{"flight", "sprint", "meditation", "potential"});
             case "tp" -> sectionFlags(viewer, subject, "tp", "&6TP Gains", Material.GOLDEN_CARROT,
                     new String[]{"farming", "building", "boost", "bio"});
@@ -108,7 +108,7 @@ public final class ProgressionChestGui implements Listener {
                     new String[]{"fabled"});
             case "utility" -> sectionFlags(viewer, subject, "utility", "&7Utility", Material.SPYGLASS,
                     new String[]{"shadow", "statchecker"});
-            case "status" -> sectionFlags(viewer, subject, "status", "&eStatus", Material.PAPER,
+            case "status" -> sectionFlags(viewer, subject, "status", "&eStatus", Material.WRITABLE_BOOK,
                     new String[]{"flight", "sprint", "meditation", "potential", "farming", "building"});
             case "admin", "flags", "disable" -> ForgeBridge.isStaff(viewer) ? flags(viewer, subject) : main(viewer, subject);
             case "flags_fabled", "fabled_flags" -> ForgeBridge.isStaff(viewer) ? fabledFlags(viewer, subject) : main(viewer, subject);
@@ -127,7 +127,7 @@ public final class ProgressionChestGui implements Listener {
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
         if (!bridgeOk || !systemOn) {
-            put(holder, inv, 4, item(Material.EXPERIENCE_BOTTLE,
+            put(holder, inv, 4, item(Material.BREWING_STAND,
                     !bridgeOk ? "&c&lUNAVAILABLE" : "&c&lPROGRESSION DISABLED",
                     unavailableLore(bridgeOk)));
             put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
@@ -141,7 +141,7 @@ public final class ProgressionChestGui implements Listener {
         int[] slots = GuiBoardHelper.centeredSlots(7);
         String[] pages = {"skills", "tp", "race", "combat", "end", "fabled", "utility"};
         Material[] mats = {
-                Material.FEATHER, Material.GOLDEN_CARROT, Material.TOTEM_OF_UNDYING,
+                Material.BOOK, Material.GOLDEN_CARROT, Material.TOTEM_OF_UNDYING,
                 Material.NETHERITE_SWORD, Material.END_CRYSTAL, Material.AMETHYST_SHARD, Material.SPYGLASS
         };
         String[] titles = {
@@ -353,7 +353,7 @@ public final class ProgressionChestGui implements Listener {
         put(holder, inv, 25, tipBtn(Material.BARRIER, "&cEnd Boost",
                 List.of("&7Stop the active global TP boost", "", "&eClick to end")),
                 SlotAction.act("boost", "end", "boost_panel"));
-        put(holder, inv, 31, tipBtn(Material.PAPER, "&7Refresh Status",
+        put(holder, inv, 31, tipBtn(Material.CLOCK, "&7Refresh Status",
                 List.of("&7Reload this panel", "", "&eClick")),
                 SlotAction.page("boost_panel"));
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7TP Gains"),
@@ -388,7 +388,7 @@ public final class ProgressionChestGui implements Listener {
                     SlotAction.act("android", other.getName(), "android_convert"));
         }
         if (online.isEmpty()) {
-            put(holder, inv, 22, item(Material.PAPER, "&7No other players online",
+            put(holder, inv, 22, item(Material.BARRIER, "&7No other players online",
                     List.of("", "&7Use Convert Yourself above",
                             "&8or /progression android <name>")));
         }

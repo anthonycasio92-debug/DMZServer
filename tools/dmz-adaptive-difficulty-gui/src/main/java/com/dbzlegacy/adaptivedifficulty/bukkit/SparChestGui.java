@@ -97,7 +97,7 @@ public final class SparChestGui implements Listener {
 
         put(holder, inv, 4, item(Material.GOLDEN_SWORD, "&b&lSparring", statusLore(viewer, ph)));
         // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
-        put(holder, inv, 19, pageBtn(viewer, Material.PAPER, "&eStats", "&7Last 3 finished spars"),
+        put(holder, inv, 19, pageBtn(viewer, Material.BOOK, "&eStats", "&7Last 3 finished spars"),
                 SlotAction.page("stats"));
         put(holder, inv, 21, pageBtn(viewer, Material.GOLDEN_HELMET, "&fTop", "&7Leaderboard"),
                 SlotAction.page("top"));
@@ -159,6 +159,7 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 33, pageBtn(viewer, Material.NETHER_STAR, "&bPerfect", "&7Perfect spars"),
                 SlotAction.page("top_perfect"));
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -186,6 +187,7 @@ public final class SparChestGui implements Listener {
             put(holder, inv, slots[i], item(tile.icon, tile.title, tip));
         }
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -202,7 +204,7 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 20, tipBtn(viewer, Material.WRITABLE_BOOK, "&aSave",
                 List.of("&7Write sparring.json", "&8/spar admin save")),
                 SlotAction.act("admin", "save", "admin"));
-        put(holder, inv, 22, tipBtn(viewer, Material.COMPASS, "&bStatus",
+        put(holder, inv, 22, tipBtn(viewer, Material.SPYGLASS, "&bStatus",
                 List.of("&7Enabled + path", "&8/spar admin status")),
                 SlotAction.act("admin", "status", "admin"));
         put(holder, inv, 24, tipBtn(viewer, Material.EMERALD, "&eReset Mentor CD",

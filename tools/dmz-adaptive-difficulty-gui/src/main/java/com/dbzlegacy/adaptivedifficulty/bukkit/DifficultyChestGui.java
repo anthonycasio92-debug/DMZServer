@@ -106,9 +106,9 @@ public final class DifficultyChestGui implements Listener {
         if (!bridgeOk || !systemOn || !allowed) {
             String title = !bridgeOk ? "&c&lUNAVAILABLE"
                     : !systemOn ? "&c&lSYSTEM DISABLED" : "&e&lWHITELIST ONLY";
-            put(holder, inv, 13, item(Material.NETHER_STAR, title, unavailableLore(viewer, subject, systemOn, bridgeOk)));
+            put(holder, inv, 13, item(Material.BEACON, title, unavailableLore(viewer, subject, systemOn, bridgeOk)));
             put(holder, inv, 27, hubBtn(), SlotAction.cmd("lm"));
-            put(holder, inv, 31, closeBtn(), SlotAction.dismiss());
+            put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
             return inv;
         }
 
@@ -260,8 +260,8 @@ public final class DifficultyChestGui implements Listener {
         lowerHeader.addAll(GuiBoardHelper.tips(viewer,
                 "&8Select a lower unlocked tier",
                 "&8Or reset to None — always free"));
-        put(holder, inv, 4, item(Material.NETHER_STAR, "&f&lLower Tier", lowerHeader));
-        put(holder, inv, 8, tipBtn(viewer, Material.BARRIER, "&cReset to None",
+        put(holder, inv, 4, item(Material.IRON_INGOT, "&f&lLower Tier", lowerHeader));
+        put(holder, inv, 8, tipBtn(viewer, Material.RED_DYE, "&cReset to None",
                 List.of("&7Clear active tier", "&8Unlocks & coins kept", "&8Always free")),
                 SlotAction.act("lower_tier", "0", "lower"));
 
@@ -301,7 +301,7 @@ public final class DifficultyChestGui implements Listener {
                 senseOn ? "&aTitle Sense ON" : "&8Title Sense OFF",
                 List.of("&7Elite / Boss recognition chat", "&8Click to toggle")),
                 SlotAction.act("toggle_title_sense", "0", "titles"));
-        put(holder, inv, 8, tipBtn(viewer, Material.BARRIER, "&cClear Title",
+        put(holder, inv, 8, tipBtn(viewer, Material.NAME_TAG, "&cClear Title",
                 List.of("&7Unequip your title")), SlotAction.act("clear_title", "0", "titles"));
 
         // Tier titles row

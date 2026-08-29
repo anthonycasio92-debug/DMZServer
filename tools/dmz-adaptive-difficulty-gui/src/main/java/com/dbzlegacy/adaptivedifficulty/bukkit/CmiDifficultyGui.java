@@ -84,7 +84,7 @@ public final class CmiDifficultyGui {
             status.addLore(unavailableLore(player, systemOn, bridgeOk));
             gui.addButton(status);
             gui.addButton(hubBtn(27));
-            gui.addButton(closeBtn(31));
+            gui.addButton(closeBtn(35));
             fillEmpty(gui, 4);
             gui.open();
             return;
@@ -245,7 +245,7 @@ public final class CmiDifficultyGui {
             return;
         }
 
-        CMIGuiButton status = new CMIGuiButton(4, Material.NETHER_STAR, "&f&lLower Tier");
+        CMIGuiButton status = new CMIGuiButton(4, Material.IRON_INGOT, "&f&lLower Tier");
         status.lockField();
         List<String> lowerHeader = new ArrayList<>();
         lowerHeader.add("");
@@ -258,7 +258,7 @@ public final class CmiDifficultyGui {
         status.addLore(lowerHeader);
         gui.addButton(status);
 
-        gui.addButton(actionBtn(player, 8, Material.BARRIER, "&cReset to None", "lower_tier", "0", "lower",
+        gui.addButton(actionBtn(player, 8, Material.RED_DYE, "&cReset to None", "lower_tier", "0", "lower",
                 List.of("&7Clear active tier", "&8Unlocks & coins kept", "&8Always free")));
 
         placeTierButtons(gui, player, ph, false);
@@ -297,7 +297,7 @@ public final class CmiDifficultyGui {
                 senseOn ? "&aTitle Sense ON" : "&8Title Sense OFF",
                 "toggle_title_sense", "0", "titles",
                 List.of("&7Elite / Boss recognition chat", "&8Click to toggle")));
-        gui.addButton(actionBtn(player, 8, Material.BARRIER, "&cClear Title", "clear_title", "0", "titles",
+        gui.addButton(actionBtn(player, 8, Material.NAME_TAG, "&cClear Title", "clear_title", "0", "titles",
                 List.of("&7Unequip your title")));
 
         String[] ids = {

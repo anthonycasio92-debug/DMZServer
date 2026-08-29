@@ -126,7 +126,7 @@ public final class RivalChestGui implements Listener {
                 "&7RP leaderboard"), SlotAction.page("top"));
         put(holder, inv, 29, pageBtn(viewer, Material.SKELETON_SKULL, "&8History",
                 "&7Previous rivals", "&8Archived when removed"), SlotAction.page("history"));
-        put(holder, inv, 31, pageBtn(viewer, Material.EXPERIENCE_BOTTLE, "&bProgress",
+        put(holder, inv, 31, pageBtn(viewer, Material.BOOK, "&bProgress",
                 "&7Season · quests · achs · HOF · journal · title"), SlotAction.page("progress"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "false"));
@@ -169,12 +169,12 @@ public final class RivalChestGui implements Listener {
         progHeader.addAll(GuiBoardHelper.tips(viewer,
                 "&7Each section is its own board",
                 "&7Stats · Season · Quests · Achs · HOF · Journal · Title"));
-        put(holder, inv, 4, item(Material.EXPERIENCE_BOTTLE, "&b&lProgress", progHeader));
+        put(holder, inv, 4, item(Material.BOOK, "&b&lProgress", progHeader));
 
         String[] pages = {"stats", "season", "quests", "achievements", "hof", "journal", "title"};
         Material[] mats = {
-                Material.PAPER, Material.CLOCK, Material.MAP, Material.DIAMOND,
-                Material.GOLD_BLOCK, Material.BOOK, Material.NAME_TAG
+                Material.BOOK, Material.CLOCK, Material.WRITABLE_BOOK, Material.DIAMOND,
+                Material.GOLD_BLOCK, Material.MAP, Material.NAME_TAG
         };
         String[] titles = {"&eStats", "&aSeason", "&bQuests", "&dAchs", "&6HOF", "&fJournal", "&eTitle"};
         int[] slots = GuiBoardHelper.centeredRow(7);
@@ -188,6 +188,7 @@ public final class RivalChestGui implements Listener {
             put(holder, inv, slots[i], item(mats[i], titles[i], lore), SlotAction.page(pages[i]));
         }
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -214,6 +215,7 @@ public final class RivalChestGui implements Listener {
             }
         }
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page(back));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -242,6 +244,7 @@ public final class RivalChestGui implements Listener {
             put(holder, inv, slots[i], item(tile.icon, tile.title, tip));
         }
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page(back));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -261,7 +264,7 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 22, tipBtn(viewer, Material.CLOCK, "&eRefresh",
                 List.of("&7Reload stores from disk", "&8/rival admin refresh")),
                 SlotAction.act("admin", "refresh", "admin"));
-        put(holder, inv, 24, tipBtn(viewer, Material.COMPASS, "&bStatus",
+        put(holder, inv, 24, tipBtn(viewer, Material.SPYGLASS, "&bStatus",
                 List.of("&7Enabled + path summary", "&8/rival admin status")),
                 SlotAction.act("admin", "status", "admin"));
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Player Rival menu"), SlotAction.page("main"));
@@ -330,7 +333,7 @@ public final class RivalChestGui implements Listener {
                 put(holder, inv, slots[i], GuiBoardHelper.rivalHead(cards.get(i)));
             }
         }
-        put(holder, inv, 37, pageBtn(viewer, Material.LIME_CONCRETE, "&aActions",
+        put(holder, inv, 37, pageBtn(viewer, Material.EMERALD, "&aActions",
                 "&7Declare · accept · remove · pending"), SlotAction.page("actions"));
         put(holder, inv, 39, pageBtn(viewer, Material.SKELETON_SKULL, "&8History",
                 "&7Previous rivals"), SlotAction.page("history"));
@@ -373,7 +376,7 @@ public final class RivalChestGui implements Listener {
                 "&7Accept incoming / Declared"), SlotAction.page("pick_accept"));
         put(holder, inv, 38, pageBtn(viewer, Material.ORANGE_DYE, "&6Decline…",
                 "&7Decline an incoming declare"), SlotAction.page("pick_decline"));
-        put(holder, inv, 39, pageBtn(viewer, Material.LIME_CONCRETE, "&aActions",
+        put(holder, inv, 39, pageBtn(viewer, Material.EMERALD, "&aActions",
                 "&7Full actions menu"), SlotAction.page("actions"));
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Actions"), SlotAction.page("actions"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -385,7 +388,7 @@ public final class RivalChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Rival Actions"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.LIME_CONCRETE, "&a&lRival Actions",
+        put(holder, inv, 4, item(Material.EMERALD, "&a&lRival Actions",
                 prependBlank(toAmp(ForgeBridge.rivalLines(subject, "actions")))));
         put(holder, inv, 19, pageBtn(viewer, Material.LIME_DYE, "&aDeclare…",
                 "&7Visible declare → they Accept → Mutual"), SlotAction.page("pick_declare"));

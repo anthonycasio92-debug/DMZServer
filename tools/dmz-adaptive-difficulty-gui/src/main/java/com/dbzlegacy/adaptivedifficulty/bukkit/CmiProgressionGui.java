@@ -71,7 +71,7 @@ public final class CmiProgressionGui {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         try {
             switch (p) {
-                case "skills" -> openSection(player, "skills", "&eSkills", Material.FEATHER,
+                case "skills" -> openSection(player, "skills", "&eSkills", Material.BOOK,
                         new String[]{"flight", "sprint", "meditation", "potential"});
                 case "tp" -> openSection(player, "tp", "&6TP Gains", Material.GOLDEN_CARROT,
                         new String[]{"farming", "building", "boost", "bio"});
@@ -99,7 +99,7 @@ public final class CmiProgressionGui {
                         new String[]{"fabled"});
                 case "utility" -> openSection(player, "utility", "&7Utility", Material.SPYGLASS,
                         new String[]{"shadow", "statchecker"});
-                case "status" -> openSection(player, "status", "&eStatus", Material.PAPER,
+                case "status" -> openSection(player, "status", "&eStatus", Material.WRITABLE_BOOK,
                         new String[]{"flight", "sprint", "meditation", "potential", "farming", "building"});
                 case "admin", "flags", "disable" -> {
                     if (ForgeBridge.isStaff(player)) {
@@ -150,7 +150,7 @@ public final class CmiProgressionGui {
         int[] slots = GuiBoardHelper.centeredSlots(7);
         String[] pages = {"skills", "tp", "race", "combat", "end", "fabled", "utility"};
         Material[] mats = {
-                Material.FEATHER, Material.GOLDEN_CARROT, Material.TOTEM_OF_UNDYING,
+                Material.BOOK, Material.GOLDEN_CARROT, Material.TOTEM_OF_UNDYING,
                 Material.NETHERITE_SWORD, Material.END_CRYSTAL, Material.AMETHYST_SHARD, Material.SPYGLASS
         };
         String[] titles = {
@@ -309,7 +309,7 @@ public final class CmiProgressionGui {
         gui.addButton(actionBtn(25, Material.BARRIER, "&cEnd Boost",
                 "boost", "end", "boost_panel",
                 List.of("&7Stop the active global TP boost", "", "&eClick to end")));
-        gui.addButton(pageBtn(31, Material.PAPER, "&7Refresh Status", "boost_panel", "&7Reload this panel"));
+        gui.addButton(pageBtn(31, Material.CLOCK, "&7Refresh Status", "boost_panel", "&7Reload this panel"));
         gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "tp", "&7TP Gains"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
@@ -343,7 +343,7 @@ public final class CmiProgressionGui {
             gui.addButton(btn);
         }
         if (online.isEmpty()) {
-            CMIGuiButton empty = new CMIGuiButton(22, Material.PAPER, "&7No other players online");
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&7No other players online");
             empty.lockField();
             empty.addLore(List.of("", "&7Use Convert Yourself above",
                     "&8or /progression android <name>"));

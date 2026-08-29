@@ -1,3 +1,23 @@
+## GUI coherence pass (2.3.36)
+
+One icon language across Hub / Difficulty / Rival / Spar / Progression / Prestige / Skills:
+
+| System | Brand icon |
+|--------|------------|
+| Hub | NETHER_STAR |
+| Difficulty | BEACON |
+| Rival | NAME_TAG |
+| Spar | GOLDEN_SWORD |
+| Skill Check | EXPERIENCE_BOTTLE |
+| Skills admin | BOOK |
+| Prestige | GOLDEN_APPLE |
+| Progression | BREWING_STAND |
+| Nav Hub / Close / Back | COMPASS / BARRIER / ARROW |
+
+Fixes: Difficulty unavailable close slot 35; Clear Title / Reset None no longer BARRIER;
+Rival Progress tiles match detail headers; Spar Stats BOOK; Prestige GOLDEN_APPLE;
+Progression shortcuts BREWING_STAND; hub on Rival/Spar 45-slot boards.
+
 ## Skill Check icons (2.3.35)
 
 - Skill Check header is **EXPERIENCE_BOTTLE** (not PAPER) — one status item only.

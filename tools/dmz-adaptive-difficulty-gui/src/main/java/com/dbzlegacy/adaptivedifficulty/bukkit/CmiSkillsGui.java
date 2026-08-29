@@ -58,8 +58,8 @@ public final class CmiSkillsGui {
                 : !systemOn ? "&c&lSKILLS DISABLED"
                 : skillCheckUi ? title + " Skill Check"
                 : staffAdmin ? title + " (Admin)" : title + " Skills";
-        // Skill Check: one EXPERIENCE_BOTTLE header (never PAPER). Staff Skills: one PAPER.
-        Material headerMat = skillCheckUi ? Material.EXPERIENCE_BOTTLE : Material.PAPER;
+        // Skill Check: EXPERIENCE_BOTTLE header. Staff Skills: BOOK.
+        Material headerMat = skillCheckUi ? Material.EXPERIENCE_BOTTLE : Material.BOOK;
         CMIGuiButton status = new CMIGuiButton(4, headerMat, statusName);
         status.lockField();
         if (!bridgeOk || !systemOn) {
@@ -235,7 +235,7 @@ public final class CmiSkillsGui {
     }
 
     private static CMIGuiButton progBtn(Player player, int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.EXPERIENCE_BOTTLE, "&dProgression");
+        CMIGuiButton btn = new CMIGuiButton(slot, Material.BREWING_STAND, "&dProgression");
         btn.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");

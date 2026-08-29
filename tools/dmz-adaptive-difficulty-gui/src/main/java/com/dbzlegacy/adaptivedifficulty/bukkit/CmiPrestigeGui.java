@@ -39,7 +39,7 @@ public final class CmiPrestigeGui {
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
-        CMIGuiButton status = new CMIGuiButton(4, Material.NETHER_STAR,
+        CMIGuiButton status = new CMIGuiButton(4, Material.GOLDEN_APPLE,
                 !bridgeOk ? "&c&lUNAVAILABLE"
                         : !systemOn ? "&c&lPRESTIGE DISABLED"
                         : "&6&lPrestige");
@@ -126,7 +126,7 @@ public final class CmiPrestigeGui {
     }
 
     private static CMIGuiButton progBtn(int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.EXPERIENCE_BOTTLE, "&dProgression");
+        CMIGuiButton btn = new CMIGuiButton(slot, Material.BREWING_STAND, "&dProgression");
         btn.lockField();
         btn.addCommand("progression");
         btn.setCloseInv(true);

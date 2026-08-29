@@ -92,8 +92,8 @@ public final class SkillsChestGui implements Listener {
             headerLore.add("");
             headerLore.addAll(GuiBoardHelper.tips(viewer,
                     skillCheckUi ? "&eSkill Check · one item per skill" : "&8One item per skill below"));
-            // Skill Check: one EXPERIENCE_BOTTLE header (never PAPER). Staff Skills: one PAPER.
-            Material headerMat = skillCheckUi ? Material.EXPERIENCE_BOTTLE : Material.PAPER;
+            // Skill Check: EXPERIENCE_BOTTLE header. Staff Skills: BOOK.
+            Material headerMat = skillCheckUi ? Material.EXPERIENCE_BOTTLE : Material.BOOK;
             put(holder, inv, 4, item(headerMat,
                     skillCheckUi ? title + " Skill Check"
                             : staffAdmin ? title + " (Admin)" : title + " Skills",
@@ -128,7 +128,7 @@ public final class SkillsChestGui implements Listener {
                 SlotAction.page("saga"));
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
         if (staffAdmin) {
-            put(holder, inv, 51, tipBtn(viewer, Material.EXPERIENCE_BOTTLE, "&dProgression",
+            put(holder, inv, 51, tipBtn(viewer, Material.BREWING_STAND, "&dProgression",
                     List.of("&7Back to progression")), SlotAction.cmd("lmdo lm open progression"));
         }
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());

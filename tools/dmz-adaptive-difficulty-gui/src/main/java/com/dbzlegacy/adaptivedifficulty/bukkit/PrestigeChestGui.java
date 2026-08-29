@@ -57,17 +57,17 @@ public final class PrestigeChestGui implements Listener {
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
         if (!bridgeOk || !systemOn) {
-            put(holder, inv, 4, item(Material.NETHER_STAR,
+            put(holder, inv, 4, item(Material.GOLDEN_APPLE,
                     !bridgeOk ? "&c&lUNAVAILABLE" : "&c&lPRESTIGE DISABLED",
                     unavailableLore(bridgeOk)));
             put(holder, inv, 27, hubBtn(), SlotAction.cmd("lm"));
-            put(holder, inv, 31, tipBtn(viewer, Material.EXPERIENCE_BOTTLE, "&dProgression",
+            put(holder, inv, 31, tipBtn(viewer, Material.BREWING_STAND, "&dProgression",
                     List.of("&7Back to progression")), SlotAction.cmd("progression"));
             put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
             return inv;
         }
 
-        put(holder, inv, 4, item(Material.NETHER_STAR, "&6&lPrestige",
+        put(holder, inv, 4, item(Material.GOLDEN_APPLE, "&6&lPrestige",
                 prependBlank(toAmp(ForgeBridge.prestigeLines(subject, "main")))));
         boolean ready = "true".equalsIgnoreCase(ph.getOrDefault("ready", "false"));
         List<String> confirmLore = new ArrayList<>();
@@ -79,7 +79,7 @@ public final class PrestigeChestGui implements Listener {
                 ready ? "&aConfirm Prestige" : "&eAttempt Prestige",
                 confirmLore), SlotAction.act("confirm", "0", "main"));
         put(holder, inv, 27, hubBtn(), SlotAction.cmd("lm"));
-        put(holder, inv, 31, tipBtn(viewer, Material.EXPERIENCE_BOTTLE, "&dProgression",
+        put(holder, inv, 31, tipBtn(viewer, Material.BREWING_STAND, "&dProgression",
                 List.of("&7Back to progression")), SlotAction.cmd("progression"));
         put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
         return inv;

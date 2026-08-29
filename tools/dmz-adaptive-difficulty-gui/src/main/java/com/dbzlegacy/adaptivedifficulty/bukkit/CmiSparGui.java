@@ -94,7 +94,7 @@ public final class CmiSparGui {
         gui.addButton(status);
 
         // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
-        gui.addButton(pageBtn(player, 19, Material.PAPER, "&eStats", "stats",
+        gui.addButton(pageBtn(player, 19, Material.BOOK, "&eStats", "stats",
                 "&7Last 3 finished spars"));
         gui.addButton(pageBtn(player, 21, Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7Leaderboard"));
@@ -159,6 +159,7 @@ public final class CmiSparGui {
         gui.addButton(pageBtn(player, 31, Material.CLOCK, "&aSessions", "top_sessions", "&7Sessions"));
         gui.addButton(pageBtn(player, 33, Material.NETHER_STAR, "&bPerfect", "top_perfect", "&7Perfect spars"));
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -175,7 +176,7 @@ public final class CmiSparGui {
         gui.addButton(actionBtn(player, 20, Material.WRITABLE_BOOK, "&aSave",
                 "admin", "save", "admin",
                 List.of("&7Write sparring.json", "&8/spar admin save")));
-        gui.addButton(actionBtn(player, 22, Material.COMPASS, "&bStatus",
+        gui.addButton(actionBtn(player, 22, Material.SPYGLASS, "&bStatus",
                 "admin", "status", "admin",
                 List.of("&7Enabled + path", "&8/spar admin status")));
         gui.addButton(actionBtn(player, 24, Material.EMERALD, "&eReset Mentor CD",
@@ -243,6 +244,7 @@ public final class CmiSparGui {
         }
 
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -440,6 +442,7 @@ public final class CmiSparGui {
             gui.addButton(btn);
         }
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();

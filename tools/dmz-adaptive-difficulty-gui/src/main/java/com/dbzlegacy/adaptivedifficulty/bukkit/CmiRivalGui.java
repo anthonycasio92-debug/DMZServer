@@ -125,7 +125,7 @@ public final class CmiRivalGui {
                 "&7RP leaderboard"));
         gui.addButton(pageBtn(player, 29, Material.SKELETON_SKULL, "&8History", "history",
                 "&7Previous rivals", "&8Archived when removed"));
-        gui.addButton(pageBtn(player, 31, Material.EXPERIENCE_BOTTLE, "&bProgress", "progress",
+        gui.addButton(pageBtn(player, 31, Material.BOOK, "&bProgress", "progress",
                 "&7Season · quests · achs · HOF · journal · title"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "false"));
@@ -163,7 +163,7 @@ public final class CmiRivalGui {
 
     private static void openProgress(Player player) {
         CMIGui gui = base(player, "&8Rival Progress", 5);
-        CMIGuiButton info = new CMIGuiButton(4, Material.EXPERIENCE_BOTTLE, "&b&lProgress");
+        CMIGuiButton info = new CMIGuiButton(4, Material.BOOK, "&b&lProgress");
         info.lockField();
         List<String> progHeader = new ArrayList<>();
         progHeader.add("");
@@ -175,8 +175,8 @@ public final class CmiRivalGui {
 
         String[] pages = {"stats", "season", "quests", "achievements", "hof", "journal", "title"};
         Material[] mats = {
-                Material.PAPER, Material.CLOCK, Material.MAP, Material.DIAMOND,
-                Material.GOLD_BLOCK, Material.BOOK, Material.NAME_TAG
+                Material.BOOK, Material.CLOCK, Material.WRITABLE_BOOK, Material.DIAMOND,
+                Material.GOLD_BLOCK, Material.MAP, Material.NAME_TAG
         };
         String[] titles = {"&eStats", "&aSeason", "&bQuests", "&dAchs", "&6HOF", "&fJournal", "&eTitle"};
         int[] slots = GuiBoardHelper.centeredRow(7);
@@ -195,6 +195,7 @@ public final class CmiRivalGui {
         }
 
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -229,6 +230,7 @@ public final class CmiRivalGui {
             }
         }
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -261,6 +263,7 @@ public final class CmiRivalGui {
             gui.addButton(btn);
         }
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", back, "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -280,7 +283,7 @@ public final class CmiRivalGui {
         gui.addButton(actionBtn(player, 22, Material.CLOCK, "&eRefresh",
                 "admin", "refresh", "admin",
                 List.of("&7Reload stores from disk", "&8/rival admin refresh")));
-        gui.addButton(actionBtn(player, 24, Material.COMPASS, "&bStatus",
+        gui.addButton(actionBtn(player, 24, Material.SPYGLASS, "&bStatus",
                 "admin", "status", "admin",
                 List.of("&7Enabled + path summary", "&8/rival admin status")));
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Player Rival menu"));
@@ -359,11 +362,12 @@ public final class CmiRivalGui {
             }
         }
 
-        gui.addButton(pageBtn(player, 37, Material.LIME_CONCRETE, "&aActions", "actions",
+        gui.addButton(pageBtn(player, 37, Material.EMERALD, "&aActions", "actions",
                 "&7Declare · accept · remove · pending"));
         gui.addButton(pageBtn(player, 39, Material.SKELETON_SKULL, "&8History", "history",
                 "&7Previous rivals"));
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -412,7 +416,7 @@ public final class CmiRivalGui {
                 "&7Accept incoming / Declared"));
         gui.addButton(pageBtn(player, 38, Material.ORANGE_DYE, "&6Decline…", "pick_decline",
                 "&7Decline an incoming declare"));
-        gui.addButton(pageBtn(player, 39, Material.LIME_CONCRETE, "&aActions", "actions",
+        gui.addButton(pageBtn(player, 39, Material.EMERALD, "&aActions", "actions",
                 "&7Full actions menu"));
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "actions", "&7Actions"));
         gui.addButton(closeBtn(44));
@@ -422,7 +426,7 @@ public final class CmiRivalGui {
 
     private static void openActions(Player player) {
         CMIGui gui = base(player, "&8Rival Actions", 5);
-        CMIGuiButton info = new CMIGuiButton(4, Material.LIME_CONCRETE, "&a&lRival Actions");
+        CMIGuiButton info = new CMIGuiButton(4, Material.EMERALD, "&a&lRival Actions");
         info.lockField();
         info.addLore(toAmp(ForgeBridge.rivalLines(player, "actions")));
         gui.addButton(info);
@@ -455,6 +459,7 @@ public final class CmiRivalGui {
         gui.addButton(pageBtn(player, 37, Material.PLAYER_HEAD, "&6List", "list",
                 "&7Back to current rivals"));
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -496,6 +501,7 @@ public final class CmiRivalGui {
         gui.addButton(pageBtn(player, 37, Material.PLAYER_HEAD, "&6List", "list",
                 "&7Current rivals"));
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
@@ -526,6 +532,7 @@ public final class CmiRivalGui {
                 List.of("&7End spectating early")));
 
         gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         gui.open();
