@@ -120,9 +120,9 @@ public final class CmiSkillsGui {
             }
         }
 
-        gui.addButton(pageBtn(player, 45, Material.FEATHER, "&aNatural", "core",
+        gui.addButton(pageBtn(player, 45, Material.FEATHER, "&aNatural", "core", skillCheckUi,
                 "&7Potential · Flight · Meditation · Jump · Sprint"));
-        gui.addButton(pageBtn(player, 46, Material.AMETHYST_SHARD, "&dSaga", "saga",
+        gui.addButton(pageBtn(player, 46, Material.AMETHYST_SHARD, "&dSaga", "saga", skillCheckUi,
                 "&7Saga unlocks · Defense Pen · Healing Red · Ki skills"));
 
         gui.addButton(hubBtn(49));
@@ -214,15 +214,18 @@ public final class CmiSkillsGui {
     }
 
     private static CMIGuiButton pageBtn(
-            Player player, int slot, Material mat, String name, String page, String... tips) {
+            Player player, int slot, Material mat, String name, String page,
+            boolean skillCheckUi, String... tips) {
         CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
         btn.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");
         lore.addAll(GuiBoardHelper.tips(player, tips));
         btn.addLore(lore);
-        // Always lmdo skills — skillcheck shares the same ForgeBridge skillsHandleDo path.
-        btn.addCommand("lmdo skills page " + page);
+        // Skill Check pages must keep the session route — lmdo skills is staff-only
+        // and blocked normal players from Natural ↔ Saga.
+        String cmdRoot = skillCheckUi ? "skillcheck" : "skills";
+        btn.addCommand("lmdo " + cmdRoot + " page " + page);
         return btn;
     }
 

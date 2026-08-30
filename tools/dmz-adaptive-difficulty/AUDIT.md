@@ -1,3 +1,11 @@
+## Skill Check NPC edit + Natural/Saga tabs (2.3.59)
+
+- Holding CNPC editor tools (`npcscripter`, `npcwand`, cloner, NBT book, …) skips
+  LM GUI opens so staff can edit tagged NPCs with the scripter wand.
+- CMI Natural/Saga tabs used `lmdo skills page` (staff-only) — Skill Check sessions
+  now route `lmdo skillcheck page`. Session (NPC open without donator node) can
+  switch pages; slash `/skillcheck` still needs `legacymechanics.skillcheck`.
+
 ## Console TP boost (2.3.58)
 
 Bukkit `/progression` rejected console (`Players only`), so store/Tebex purchase

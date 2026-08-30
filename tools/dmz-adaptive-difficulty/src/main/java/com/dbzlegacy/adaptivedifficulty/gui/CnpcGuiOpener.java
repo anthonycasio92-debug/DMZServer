@@ -20,9 +20,71 @@ import net.minecraft.world.entity.LivingEntity;
  * Tag matches should cancel the interact. Name matches also cancel when CNPC
  * scripts are not used (LegacyMechanics replaces those scripts entirely).
  * Skill Check has its own opener ({@link SkillCheckService#tryOpenFromNpc}).
+ * <p>
+ * Holding a CNPC editor tool (scripter / wand / cloner / NBT book) skips GUI opens
+ * so staff can edit NPCs.
  */
 public final class CnpcGuiOpener {
+    private static final String[] EDITOR_ITEM_IDS = {
+            "customnpcs:npcscripter",
+            "customnpcs:npcwand",
+            "customnpcs:npcmobcloner",
+            "customnpcs:nbt_book",
+            "customnpcs:npcmovingpath",
+            "customnpcs:npcmounter",
+            "customnpcs:npcteleporter"
+    };
+
     private CnpcGuiOpener() {}
+
+    /**
+     * True when the player is holding a CustomNPCs editor tool (scripter wand, etc.).
+     * Callers should not open LM GUIs or cancel the interact so CNPC can handle edit.
+     */
+    public static boolean holdingEditorTool(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        try {
+            if (isEditorStack(player.m_21205_()) || isEditorStack(player.m_21206_())) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
+    }
+
+    private static boolean isEditorStack(net.minecraft.world.item.ItemStack stack) {
+        if (stack == null || stack.m_41619_()) {
+            return false;
+        }
+        try {
+            var item = stack.m_41720_();
+            if (item == null) {
+                return false;
+            }
+            // Class-name fast path (obfuscation-safe for CNPC package).
+            String cn = item.getClass().getName().toLowerCase(Locale.ROOT);
+            if (cn.contains("itemnpcscripter") || cn.contains("itemnpcwand")
+                    || cn.contains("itemnpccloner") || cn.contains("itemnpcmobcloner")
+                    || cn.contains("itemnbtbook") || cn.contains("itemnpcmovingpath")
+                    || cn.contains("itemmounter") || cn.contains("itemteleporter")) {
+                return true;
+            }
+            var key = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(item);
+            if (key == null) {
+                return false;
+            }
+            String id = key.toString().toLowerCase(Locale.ROOT);
+            for (String editorId : EDITOR_ITEM_IDS) {
+                if (editorId.equals(id)) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
+    }
 
     /**
      * Tag-based open — cancel the interact.

@@ -604,6 +604,10 @@ public final class DifficultyEvents {
         }
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
                 && event.getTarget() != null) {
+            // CNPC scripter / wand / cloner — let staff edit NPCs; do not force GUIs.
+            if (com.dbzlegacy.adaptivedifficulty.gui.CnpcGuiOpener.holdingEditorTool(player)) {
+                return;
+            }
             if (com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService.tryOpenFromNpc(
                     player, event.getTarget())) {
                 event.setCanceled(true);

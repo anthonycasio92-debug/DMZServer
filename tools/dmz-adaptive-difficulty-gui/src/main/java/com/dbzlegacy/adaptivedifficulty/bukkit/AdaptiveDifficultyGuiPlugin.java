@@ -881,7 +881,12 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 openSkillsRespectingConfig(player, reopen);
             }
             case "skillcheck" -> {
-                if (!ForgeBridge.hasSkillCheck(player) && !ForgeBridge.isStaff(player)) {
+                // NPC Skill Check marks a session without the donator node — allow
+                // Natural/Saga page switches while that session is live.
+                boolean allowed = ForgeBridge.hasSkillCheck(player)
+                        || ForgeBridge.isStaff(player)
+                        || ForgeBridge.inSkillCheckSession(player);
+                if (!allowed) {
                     player.sendMessage("§cSkill Check requires donator access.");
                     return true;
                 }
@@ -1321,7 +1326,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             sender.sendMessage("Players only.");
             return true;
         }
-        if (!ForgeBridge.hasSkillCheck(player)) {
+        // Slash /skillcheck needs the donator node. NPC-opened sessions may page-switch
+        // without it while inSkillCheckSession is live (Natural ↔ Saga).
+        boolean session = ForgeBridge.inSkillCheckSession(player);
+        if (!ForgeBridge.hasSkillCheck(player) && !session) {
             player.sendMessage("§cNo permission: legacymechanics.skillcheck");
             return true;
         }
@@ -1347,7 +1355,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             openSkillsInventory(player, reopen);
             return true;
         }
-        if ("core".equals(sub) || "advanced".equals(sub) || "saga".equals(sub) || "help".equals(sub)) {
+        if ("core".equals(sub) || "advanced".equals(sub) || "saga".equals(sub)
+                || "natural".equals(sub) || "help".equals(sub)) {
             openSkillsRespectingConfig(player, sub);
             return true;
         }

@@ -125,11 +125,17 @@ public final class ProgressionCommands {
         if (p == null) {
             return 0;
         }
-        if (!SkillCheckService.canUse(p)) {
+        boolean session = SkillCheckService.inSession(p);
+        if (!SkillCheckService.canUse(p) && !session) {
             reply(source, p, "§cNo permission: legacymechanics.skillcheck");
             return 0;
         }
-        SkillCheckService.open(p, page);
+        // Session (NPC) path keeps permission-free open; slash still needs canUse above.
+        if (session && !SkillCheckService.canUse(p)) {
+            SkillCheckService.openFromNpc(p, page);
+        } else {
+            SkillCheckService.open(p, page);
+        }
         return 1;
     }
 
@@ -291,7 +297,11 @@ public final class ProgressionCommands {
     private static boolean skillCheck(CommandSourceStack src) {
         try {
             ServerPlayer p = src.m_81375_();
-            return SkillCheckService.canUse(p);
+            if (p == null) {
+                return false;
+            }
+            // NPC Skill Check sessions can page Natural↔Saga without the donator node.
+            return SkillCheckService.canUse(p) || SkillCheckService.inSession(p);
         } catch (Exception e) {
             return false;
         }

@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.58", 'VERSION = "2.3.58"' in mod)
+    check("VERSION 2.3.59", 'VERSION = "2.3.59"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -299,7 +299,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 2.3.58", "2.3.58" in readme)
+    check("README version 2.3.59", "2.3.59" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -347,7 +347,7 @@ def main() -> int:
     check("dual upgrade band uses same roll", "roll < upgradeChance" in coins)
     check("coinDropChanceMigratedV1", "coinDropChanceMigratedV1" in cfg)
     check("admin set drop chance", "ancientcoindropchance" in cmds or "coindropchance" in cmds)
-    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.58" in readme)
+    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.59" in readme)
 
     print("\n=== Mohist CMI /lmdo routing (2.3.54) ===")
     gui_root = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit"
@@ -641,7 +641,7 @@ def main() -> int:
     check("stack always adds duration", "Math.max(now, currentEnd) + durationMs" in boost)
     check("highest wins messaging", "highest wins" in boost)
 
-    print("\n=== Console TP boost (2.3.58) ===")
+    print("\n=== Console TP boost (2.3.59) ===")
     prog_tree = read(gui_root / "ProgressionCommandTree.java")
     gui_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
     forge_cmds = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/ProgressionCommands.java")
@@ -750,6 +750,16 @@ def main() -> int:
           'case "skillcheck" ->' in plugin
           and "hasSkillCheck(player)" in plugin
           and "Skill Check requires donator access." in plugin)
+    check("lmdo skillcheck allows NPC session",
+          "inSkillCheckSession(player)" in plugin)
+    check("CMI skillcheck page uses lmdo skillcheck",
+          'skillCheckUi ? "skillcheck" : "skills"' in cmi_skills
+          or 'lmdo skillcheck page' in cmi_skills)
+    check("CNPC editor tool skip",
+          "holdingEditorTool" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/CnpcGuiOpener.java")
+          and "holdingEditorTool" in read(SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java"))
+    check("npcscripter id listed",
+          "customnpcs:npcscripter" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/CnpcGuiOpener.java"))
     check("android_remove inventory force", "isAndroidRemovePage" in plugin)
     check("enddragon uses StaffAccess", "ProgressionCommands::staff" in prog_cmds and "enddragon" in prog_cmds)
     check("skillcheck no level-2 grant", "src.m_6761_(2)" not in prog_cmds.split("skillCheck(")[1].split("helpOrGui")[0])
