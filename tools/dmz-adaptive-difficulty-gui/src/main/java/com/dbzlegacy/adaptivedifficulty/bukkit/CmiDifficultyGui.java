@@ -39,8 +39,8 @@ public final class CmiDifficultyGui {
         if (player == null || !available()) {
             return false;
         }
-        // Match chat menu: refresh unlock / title grants before painting slots.
-        ForgeBridge.syncPlayerProgress(player);
+        // Pull live DMZ level + unlock/title data before painting slots.
+        ForgeBridge.prepareDifficultyGui(player);
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         try {
             switch (p) {
@@ -73,37 +73,38 @@ public final class CmiDifficultyGui {
         boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
         boolean personalOn = "true".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "false"));
         String stateColor = personalOn ? ph.getOrDefault("state_color", "f") : "c";
-        CMIGuiButton status = new CMIGuiButton(13, Material.NETHER_STAR,
+        CMIGuiButton status = new CMIGuiButton(13, Material.BEACON,
                 !bridgeOk ? "&c&lUNAVAILABLE"
                         : !systemOn ? "&c&lSYSTEM DISABLED"
                         : !allowed ? "&e&lWHITELIST ONLY"
                         : !personalOn ? "&c&lDIFFICULTY OFF"
-                        : "&f&lAdaptive Difficulty");
+                        : "&a&lAdaptive Difficulty");
         status.lockField();
         if (!bridgeOk || !systemOn || !allowed) {
             status.addLore(unavailableLore(player, systemOn, bridgeOk));
             gui.addButton(status);
-            gui.addButton(closeBtn(31));
+            gui.addButton(hubBtn(27));
+            gui.addButton(closeBtn(35));
             fillEmpty(gui, 4);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
         status.addLore(statusLore(ph, stateColor, ForgeBridge.isStaff(player), personalOn));
         gui.addButton(status);
 
         // Primary actions — centered trio
-        gui.addButton(pageBtn(20, Material.GOLD_INGOT, "&eBuy Tier", "buy",
+        gui.addButton(pageBtn(player, 20, Material.GOLD_INGOT, "&eBuy Tier", "buy",
                 "&7Purchase a higher Unlock Tier",
                 "&8Ancient Coins · pay-up OK · change returned"));
-        gui.addButton(pageBtn(22, Material.WHITE_CONCRETE, "&fLower Tier", "lower",
+        gui.addButton(pageBtn(player, 22, Material.IRON_INGOT, "&fLower Tier", "lower",
                 "&7Select a lower unlocked tier",
                 "&8Or reset to None · always free"));
-        gui.addButton(pageBtn(24, Material.NAME_TAG, "&dTitles", "titles",
+        gui.addButton(pageBtn(player, 24, Material.NAME_TAG, "&dTitles", "titles",
                 "&7Equip difficulty titles",
                 "&8Earned from tiers and combat"));
 
         boolean coinChatOn = "true".equalsIgnoreCase(ph.getOrDefault("coin_drop_chat", "false"));
-        gui.addButton(actionBtn(29,
+        gui.addButton(actionBtn(player, 29,
                 personalOn ? Material.LIME_DYE : Material.GRAY_DYE,
                 personalOn ? "&aDifficulty ON" : "&cDifficulty OFF",
                 "toggle_personal", "0", "main",
@@ -118,8 +119,8 @@ public final class CmiDifficultyGui {
                                 ? "&8AI pressure, and tier buys"
                                 : "&8AI pressure, and tier buys"
                 )));
-        gui.addButton(actionBtn(31,
-                coinChatOn ? Material.BELL : Material.PAPER,
+        gui.addButton(actionBtn(player, 31,
+                coinChatOn ? Material.BELL : Material.GRAY_DYE,
                 coinChatOn ? "&aCoin Chat ON" : "&8Coin Chat OFF",
                 "toggle_coin_chat", "0", "main",
                 List.of(
@@ -129,13 +130,14 @@ public final class CmiDifficultyGui {
                         "&8Only affects Ancient Coin kill chat"
                 )));
         if (ForgeBridge.isStaff(player)) {
-            gui.addButton(pageBtn(33, Material.BOOK, "&8Details", "stats",
+            gui.addButton(pageBtn(player, 33, Material.SPYGLASS, "&8Details", "stats",
                     "&7Staff breakdown",
                     "&8CR · prestige · kit gates"));
         }
+        gui.addButton(hubBtn(27));
         gui.addButton(closeBtn(35));
         fillEmpty(gui, 4);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openBuy(Player player) {
@@ -150,10 +152,10 @@ public final class CmiDifficultyGui {
             locked.lockField();
             locked.addLore(unavailableLore(player, systemOn, bridgeOk));
             gui.addButton(locked);
-            gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+            gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
 
@@ -167,10 +169,10 @@ public final class CmiDifficultyGui {
                     "&7Turn it ON on the main menu to buy."
             ));
             gui.addButton(locked);
-            gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+            gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
 
@@ -183,23 +185,28 @@ public final class CmiDifficultyGui {
         infoLore.add("&7DMZ Level &f" + ph.getOrDefault("level", "?")
                 + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"));
         infoLore.add("");
-        infoLore.add("&eUnlock with DMZ level &7OR &ePrestige");
-        infoLore.add("&8Either one qualifies — prestige is not required");
+        infoLore.addAll(GuiBoardHelper.tips(player,
+                "&eUnlock with DMZ level &7OR &ePrestige",
+                "&8Either one qualifies — prestige is not required",
+                "&cCR / Battle Power does NOT unlock tiers",
+                "&8If stuck transformed: drop to base form once to sync"));
         infoLore.add("");
         infoLore.addAll(coinLore(ph));
-        infoLore.add("");
-        infoLore.add("&8Costs scale with your DMZ level");
-        infoLore.add("&8Pay-up OK (e.g. Copper instead of Iron) — change returned");
+        if (ForgeBridge.isStaff(player)) {
+            infoLore.add("");
+            infoLore.add("&8Costs scale with your DMZ level");
+            infoLore.add("&8Pay-up OK (e.g. Copper instead of Iron) — change returned");
+        }
         info.addLore(infoLore);
         gui.addButton(info);
 
-        placeTierButtons(gui, ph, true);
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
-        gui.addButton(pageBtn(40, Material.WHITE_CONCRETE, "&fLower Tier", "lower",
+        placeTierButtons(gui, player, ph, true);
+        gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(pageBtn(player, 40, Material.WHITE_CONCRETE, "&fLower Tier", "lower",
                 "&7Select a lower unlocked tier"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openLower(Player player) {
@@ -214,10 +221,10 @@ public final class CmiDifficultyGui {
             locked.lockField();
             locked.addLore(unavailableLore(player, systemOn, bridgeOk));
             gui.addButton(locked);
-            gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+            gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
 
@@ -231,88 +238,114 @@ public final class CmiDifficultyGui {
                     "&7Turn it ON on the main menu to change tiers."
             ));
             gui.addButton(locked);
-            gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+            gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
-            gui.open();
+            GuiFeedback.openCmi(gui);
             return;
         }
 
-        CMIGuiButton status = new CMIGuiButton(4, Material.NETHER_STAR, "&f&lLower Tier");
+        CMIGuiButton status = new CMIGuiButton(4, Material.IRON_INGOT, "&f&lLower Tier");
         status.lockField();
-        status.addLore(List.of(
-                "",
-                "&7Current Tier &f" + ph.getOrDefault("active_tier_name", "None"),
-                "&7Combat Rating &f" + ph.getOrDefault("combat_rating", "?"),
-                "",
+        List<String> lowerHeader = new ArrayList<>();
+        lowerHeader.add("");
+        lowerHeader.add("&7Current Tier &f" + ph.getOrDefault("active_tier_name", "None"));
+        lowerHeader.add("&7Combat Rating &f" + ph.getOrDefault("combat_rating", "?"));
+        lowerHeader.add("");
+        lowerHeader.addAll(GuiBoardHelper.tips(player,
                 "&8Select a lower unlocked tier",
-                "&8Or reset to None — always free"
-        ));
+                "&8Or reset to None — always free"));
+        status.addLore(lowerHeader);
         gui.addButton(status);
 
-        gui.addButton(actionBtn(8, Material.BARRIER, "&cReset to None", "lower_tier", "0", "lower",
+        gui.addButton(actionBtn(player, 8, Material.RED_DYE, "&cReset to None", "lower_tier", "0", "lower",
                 List.of("&7Clear active tier", "&8Unlocks & coins kept", "&8Always free")));
 
-        placeTierButtons(gui, ph, false);
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
-        gui.addButton(pageBtn(40, Material.GOLD_INGOT, "&eBuy Tier", "buy",
+        placeTierButtons(gui, player, ph, false);
+        gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(pageBtn(player, 40, Material.GOLD_INGOT, "&eBuy Tier", "buy",
                 "&7Purchase a higher Unlock Tier"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openTitles(Player player) {
         Map<String, String> ph = ForgeBridge.placeholders(player);
-        CMIGui gui = base(player, "&8Difficulty Titles", 5);
+        CMIGui gui = base(player, "&8Titles", 6);
 
+        String perk = ph.getOrDefault("title_perk", "");
         CMIGuiButton info = new CMIGuiButton(4, Material.NAME_TAG, "&d&lTitles");
         info.lockField();
-        info.addLore(List.of(
-                "",
-                "&7Equipped &e" + blankAsNone(ph.getOrDefault("active_title", "")),
-                "&7Current Tier &f" + ph.getOrDefault("active_tier_name", "None"),
-                "&7CR &f" + ph.getOrDefault("combat_rating", "?"),
-                "",
-                "&8Tier titles need active tier + higher DMZ/Prestige",
-                "&8Combat titles need harder kill feats"
-        ));
+        List<String> titlesHeader = new ArrayList<>();
+        titlesHeader.add("");
+        titlesHeader.add("&7Equipped &e" + blankAsNone(ph.getOrDefault("active_title", "")));
+        titlesHeader.add(perk.isBlank() ? "&8No equipped perk" : "&7Perk &f" + perk);
+        titlesHeader.add("");
+        titlesHeader.add("&7Title Score &6" + ph.getOrDefault("title_score", "0"));
+        titlesHeader.add("&7Unlocked &f" + ph.getOrDefault("titles_unlocked", "0")
+                + " &8/ &f" + ph.getOrDefault("titles_total", "0"));
+        titlesHeader.add("&7Elites &f" + ph.getOrDefault("elites_killed", "0")
+                + "  &7Bosses &f" + ph.getOrDefault("bosses_killed", "0"));
+        titlesHeader.add("&7Nearby Elites &f" + ph.getOrDefault("nearby_elites", "0"));
+        titlesHeader.add("");
+        titlesHeader.addAll(GuiBoardHelper.tips(player, "&8Small perks only — tiers stay primary power"));
+        info.addLore(titlesHeader);
         gui.addButton(info);
-        gui.addButton(actionBtn(8, Material.BARRIER, "&cClear Title", "clear_title", "0", "titles",
+        boolean senseOn = "true".equalsIgnoreCase(ph.getOrDefault("title_sense", "true"));
+        gui.addButton(actionBtn(player, 7, senseOn ? Material.BELL : Material.NOTE_BLOCK,
+                senseOn ? "&aTitle Sense ON" : "&8Title Sense OFF",
+                "toggle_title_sense", "0", "titles",
+                List.of("&7Elite / Boss recognition chat", "&8Click to toggle")));
+        gui.addButton(actionBtn(player, 8, Material.NAME_TAG, "&cClear Title", "clear_title", "0", "titles",
                 List.of("&7Unequip your title")));
 
         String[] ids = {
                 "t1_awakened", "t2_enhanced", "t3_elite", "t4_advanced",
                 "t5_master", "t6_legendary", "t7_god",
-                "boss_slayer", "elite_hunter", "ascendant"
+                "elite_hunter", "boss_slayer", "ascendant",
+                "mutation_hunter", "untouchable", "immortal",
+                "coin_lord", "survivor", "worldbreaker"
         };
         Material[] mats = {
                 Material.COPPER_INGOT, Material.IRON_INGOT, Material.GOLD_INGOT, Material.DIAMOND,
                 Material.EMERALD, Material.NETHERITE_INGOT, Material.NETHER_STAR,
-                Material.WITHER_SKELETON_SKULL, Material.DRAGON_HEAD, Material.ENCHANTED_GOLDEN_APPLE
+                Material.DRAGON_HEAD, Material.WITHER_SKELETON_SKULL, Material.ENCHANTED_GOLDEN_APPLE,
+                Material.AMETHYST_SHARD, Material.SHIELD, Material.TOTEM_OF_UNDYING,
+                Material.GOLD_BLOCK, Material.CLOCK, Material.END_CRYSTAL
         };
-        int[] slots = {19, 20, 21, 22, 23, 24, 25, 29, 31, 33};
+        int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 37, 39, 41};
         String equipped = ph.getOrDefault("active_title_id", "");
+        boolean staff = ForgeBridge.isStaff(player);
         for (int i = 0; i < ids.length; i++) {
             String id = ids[i];
             boolean earned = "true".equalsIgnoreCase(ph.getOrDefault("title_" + id + "_earned", "false"));
             String name = ph.getOrDefault("title_" + id + "_name", id);
             String tip = ph.getOrDefault("title_" + id + "_req", "");
+            String titlePerk = ph.getOrDefault("title_" + id + "_perk", "");
+            String rarity = ph.getOrDefault("title_" + id + "_rarity", "");
+            String rarityColor = ph.getOrDefault("title_" + id + "_rarity_color", "7");
             boolean isEquipped = id.equalsIgnoreCase(equipped);
             String title = isEquipped ? "&a● " + name
                     : earned ? "&e" + name
                     : "&8" + name;
             List<String> lore = new ArrayList<>();
+            if (!rarity.isBlank()) {
+                lore.add("&" + rarityColor + rarity);
+            }
             lore.add("&7" + tip);
+            if (!titlePerk.isBlank()) {
+                lore.add("&f" + titlePerk);
+            }
             if (isEquipped) {
-                lore.add("&aCurrently equipped &8· click to unequip");
+                lore.add(staff ? "&aCurrently equipped &8· click to unequip" : "&aCurrently equipped");
             } else if (earned) {
-                lore.add("&aUnlocked &8· click to equip");
+                lore.add(staff ? "&aUnlocked &8· click to equip" : "&aUnlocked");
             } else {
                 lore.add("&cLocked");
             }
             if (earned) {
-                gui.addButton(actionBtn(slots[i], mats[i], title, "equip_title", id, "titles", lore));
+                gui.addButton(actionBtn(player, slots[i], mats[i], title, "equip_title", id, "titles", lore));
             } else {
                 CMIGuiButton locked = new CMIGuiButton(slots[i], mats[i], title);
                 locked.lockField();
@@ -321,10 +354,10 @@ public final class CmiDifficultyGui {
             }
         }
 
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
-        gui.addButton(closeBtn(44));
-        fillEmpty(gui, 5);
-        gui.open();
+        gui.addButton(pageBtn(player, 45, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(closeBtn(53));
+        fillEmpty(gui, 6);
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openTeamsWip(Player player) {
@@ -339,10 +372,10 @@ public final class CmiDifficultyGui {
                 "&8No team actions can be taken from this menu."
         ));
         gui.addButton(info);
-        gui.addButton(pageBtn(18, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(pageBtn(player, 18, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(26));
         fillEmpty(gui, 3);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
     private static void openStats(Player player) {
@@ -392,17 +425,18 @@ public final class CmiDifficultyGui {
         account.addLore(coin);
         gui.addButton(account);
 
-        gui.addButton(pageBtn(27, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(pageBtn(player, 27, Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(35));
         fillEmpty(gui, 4);
-        gui.open();
+        GuiFeedback.openCmi(gui);
     }
 
-    private static void placeTierButtons(CMIGui gui, Map<String, String> ph, boolean buyMode) {
+    private static void placeTierButtons(CMIGui gui, Player player, Map<String, String> ph, boolean buyMode) {
         Material[] mats = {
                 Material.COPPER_INGOT, Material.IRON_INGOT, Material.GOLD_INGOT,
                 Material.DIAMOND, Material.EMERALD, Material.NETHERITE_INGOT, Material.NETHER_STAR
         };
+        boolean staff = ForgeBridge.isStaff(player);
         int activeTier = parseInt(ph.getOrDefault("active_tier", "0"));
         int highest = parseInt(ph.getOrDefault("highest_unlocked", "0"));
         for (int t = 1; t <= 7; t++) {
@@ -421,22 +455,29 @@ public final class CmiDifficultyGui {
             String reqPrestige = ph.getOrDefault("tier_" + t + "_req_prestige", String.valueOf(t));
             if (buyMode) {
                 lore.add("&7Cost &e" + cost);
-                lore.add("&8Scaled for your DMZ level");
+                if (staff) {
+                    lore.add("&8Scaled for your DMZ level");
+                }
             }
             if (active) {
                 lore.add("&aCurrently active");
             } else if (buyMode && unlocked) {
-                lore.add("&aUnlocked &8· click to purchase");
-                lore.add("&8Pay-up OK · change returned");
+                lore.add(staff ? "&aUnlocked &8· click to purchase" : "&aUnlocked");
+                if (staff) {
+                    lore.add("&8Pay-up OK · change returned");
+                }
             } else if (!buyMode && unlocked && t < activeTier) {
-                lore.add("&aOwned &8· click to lower here");
+                lore.add(staff ? "&aOwned &8· click to lower here" : "&aOwned");
             } else if (!unlocked) {
                 lore.add("&cLocked");
                 lore.add("&7Need &fDMZ " + reqLevel + " &7or &fPrestige " + reqPrestige);
-                lore.add("&8" + reqTip);
-                lore.add("&8You: DMZ " + ph.getOrDefault("level", "?")
-                        + " · Prestige " + ph.getOrDefault("prestige", "?"));
-            } else if (!buyMode) {
+                if (staff) {
+                    lore.add("&8" + reqTip);
+                    lore.add("&8You: DMZ " + ph.getOrDefault("level", "?")
+                            + " · Prestige " + ph.getOrDefault("prestige", "?"));
+                    lore.add("&8CR/BP ignored — use DMZ level or Prestige");
+                }
+            } else if (!buyMode && staff) {
                 lore.add("&8Higher than current — use Buy");
             }
 
@@ -456,7 +497,7 @@ public final class CmiDifficultyGui {
             if (clickable) {
                 String action = buyMode ? "activate" : "lower_tier";
                 String page = buyMode ? "buy" : "lower";
-                gui.addButton(actionBtn(slot, mats[t - 1], title, action, String.valueOf(t), page, lore));
+                gui.addButton(actionBtn(player, slot, mats[t - 1], title, action, String.valueOf(t), page, lore));
             } else {
                 CMIGuiButton locked = new CMIGuiButton(slot, mats[t - 1], title);
                 locked.lockField();
@@ -519,10 +560,12 @@ public final class CmiDifficultyGui {
                     + "  &8DMZ &f" + ph.getOrDefault("level", "?")
                     + "  &8Prestige &f" + ph.getOrDefault("prestige", "?"));
         }
-        lore.add("");
-        lore.add(personalOn
-                ? "&8Buy a higher tier · Lower to step down"
-                : "&8Turn Difficulty ON below to resume");
+        if (staff) {
+            lore.add("");
+            lore.add(personalOn
+                    ? "&8Buy a higher tier · Lower to step down"
+                    : "&8Turn Difficulty ON below to resume");
+        }
         return lore;
     }
 
@@ -574,27 +617,35 @@ public final class CmiDifficultyGui {
     }
 
     private static CMIGuiButton actionBtn(
-            int slot, Material mat, String name, String action, String arg, String returnPage, List<String> tip) {
+            Player player, int slot, Material mat, String name, String action, String arg, String returnPage,
+            List<String> tip) {
         CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
         btn.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.addAll(tip);
+        lore.addAll(GuiBoardHelper.tipsList(player, tip));
         btn.addLore(lore);
-        btn.addCommand("difficulty do " + action + " " + arg + " " + returnPage);
+        // Bukkit-only /lmdo — Mohist may route /difficulty do to Forge's word()-limited tree.
+        btn.addCommand("lmdo difficulty " + action + " " + arg + " " + returnPage);
         return btn;
     }
 
-    private static CMIGuiButton pageBtn(int slot, Material mat, String name, String page, String... tips) {
+    private static CMIGuiButton pageBtn(Player player, int slot, Material mat, String name, String page, String... tips) {
         CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
         btn.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");
-        for (String tip : tips) {
-            lore.add(tip);
-        }
+        lore.addAll(GuiBoardHelper.tips(player, tips));
         btn.addLore(lore);
-        btn.addCommand("difficulty do page " + page);
+        btn.addCommand("lmdo difficulty page " + page);
+        return btn;
+    }
+
+    private static CMIGuiButton hubBtn(int slot) {
+        CMIGuiButton btn = new CMIGuiButton(slot, Material.COMPASS, "&7« Hub");
+        btn.lockField();
+        btn.addCommand("lmdo lm open hub");
+        btn.setCloseInv(true);
         return btn;
     }
 

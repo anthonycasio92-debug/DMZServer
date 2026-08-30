@@ -1,6 +1,10 @@
 package com.dbzlegacy.adaptivedifficulty;
 
 import com.dbzlegacy.adaptivedifficulty.command.DifficultyCommands;
+import com.dbzlegacy.adaptivedifficulty.command.RivalCommands;
+import com.dbzlegacy.adaptivedifficulty.command.MechanicsCommands;
+import com.dbzlegacy.adaptivedifficulty.command.ProgressionCommands;
+import com.dbzlegacy.adaptivedifficulty.command.SparCommands;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.event.DifficultyEvents;
@@ -15,19 +19,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * AdaptiveDifficulty — Forge entrypoint.
+ * LegacyMechanics — Forge entrypoint (class AdaptiveDifficultyMod kept for GUI reflection).
  *
  * <p><b>ABI:</b> Java package {@code com.dbzlegacy.adaptivedifficulty} and class
- * {@code AdaptiveDifficultyMod} must stay stable — AdaptiveDifficultyGUI reflects on them.
+ * {@code AdaptiveDifficultyMod} must stay stable — LegacyMechanicsGUI reflects on them.
  * Player NBT root {@code dmz_adaptive_difficulty} and mob tags {@code dmz_ad_*} are unchanged.
  */
 @Mod(AdaptiveDifficultyMod.MOD_ID)
 public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
-    public static final String MOD_ID = "adaptivedifficulty";
+    public static final String MOD_ID = "legacymechanics";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "1.0.36";
-    public static final String DISPLAY_NAME = "AdaptiveDifficulty";
+    public static final String VERSION = "2.3.64";
+    public static final String DISPLAY_NAME = "LegacyMechanics";
     public static final Logger LOGGER = LogManager.getLogger(DISPLAY_NAME);
 
     public AdaptiveDifficultyMod() {
@@ -45,14 +49,19 @@ public final class AdaptiveDifficultyMod {
         AttributeLimits.uncapOffenseAttributes();
         MinecraftForge.EVENT_BUS.register(new DifficultyEvents());
         DifficultyCommands.register();
+        RivalCommands.register();
+        SparCommands.register();
+        MechanicsCommands.register();
+        ProgressionCommands.register();
         LOGGER.info(
-                "[{}] v{} server-only: Lightman's={}, FTB Teams={}, CMI={}, ChestGUI={}",
+                "[{}] v{} server-only: Lightman's={}, FTB Teams={}, CMI={}, ChestGUI={}, Progression={}",
                 MOD_ID,
                 VERSION,
                 AncientCoinEconomy.realCoinsAvailable(),
                 TeamScaling.ftbAvailable(),
                 com.dbzlegacy.adaptivedifficulty.gui.CmiGuiBridge.available(),
-                com.dbzlegacy.adaptivedifficulty.gui.BukkitGuiBridge.available()
+                com.dbzlegacy.adaptivedifficulty.gui.BukkitGuiBridge.available(),
+                DifficultyConfig.get().enableProgression
         );
     }
 }

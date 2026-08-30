@@ -57,6 +57,48 @@ public final class ForgeBridge {
     private static Method resultMessage;
     private static Method resultOk;
     private static Method chatMenuOpen;
+    private static Method rivalChatMenuOpen;
+    private static Method sparChatMenuOpen;
+    private static Method rivalPlaceholdersMethod;
+    private static Method rivalLinesMethod;
+    private static Method rivalHandleDoMethod;
+    private static Method rivalPendingDeclareArgsMethod;
+    private static Method rivalAcceptCandidateArgsMethod;
+    private static Method rivalCurrentCardsMethod;
+    private static Method rivalPastCardsMethod;
+    private static Method rivalPendingInviteCardsMethod;
+    private static Method rivalCurrentArgsMethod;
+    private static Method sparPlaceholdersMethod;
+    private static Method sparLinesMethod;
+    private static Method sparHandleDoMethod;
+    private static Method sparPendingMentorInviteCardsMethod;
+    private static Method sparPendingIncomingMentorArgsMethod;
+    private static Method hubChatMenuOpen;
+    private static Method hubPlaceholdersMethod;
+    private static Method hubLinesMethod;
+    private static Method hubHandleDoMethod;
+    private static Method progressionChatMenuOpen;
+    private static Method progressionPlaceholdersMethod;
+    private static Method progressionLinesMethod;
+    private static Method progressionHandleDoMethod;
+    private static Method prestigePlaceholdersMethod;
+    private static Method prestigeLinesMethod;
+    private static Method prestigeHandleDoMethod;
+    private static Method skillsPlaceholdersMethod;
+    private static Method skillsLinesMethod;
+    private static Method skillsHandleDoMethod;
+    private static Method meditationExplainMethod;
+    private static Method meditationExplainForPlayerMethod;
+    private static Method meditationAdvanceMethod;
+    private static Method androidConvertMethod;
+    private static Method androidConvertConsoleMethod;
+    private static Method androidRemoveMethod;
+    private static Method endDragonMethod;
+    private static Method boostMethod;
+    private static Method progressionHelpMethod;
+    private static Method progressionHelpForStaffMethod;
+    private static Method progressionStatusMethod;
+    private static Method progressionAdminFlagMethod;
     private static volatile Field RESULT_MESSAGE_FIELD;
 
     private ForgeBridge() {}
@@ -458,6 +500,14 @@ public final class ForgeBridge {
     private static void putTitlePlaceholders(Map<String, String> out, Object nms) {
         out.put("active_title", "None");
         out.put("active_title_id", "");
+        out.put("title_score", "0");
+        out.put("titles_unlocked", "0");
+        out.put("titles_total", "0");
+        out.put("nearby_elites", "0");
+        out.put("bosses_killed", "0");
+        out.put("elites_killed", "0");
+        out.put("title_sense", "true");
+        out.put("title_perk", "");
         if (nms == null) {
             return;
         }
@@ -471,14 +521,81 @@ public final class ForgeBridge {
                 Object id = titleActiveId.invoke(null, nms);
                 out.put("active_title_id", id == null ? "" : String.valueOf(id));
             }
+            ClassLoader cl = nms.getClass().getClassLoader();
+            Class<?> titleSystem = loadClass("com.dbzlegacy.adaptivedifficulty.title.TitleSystem", cl);
+            Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", cl);
+            try {
+                Object score = titleSystem.getMethod("computeTitleScore", sp).invoke(null, nms);
+                if (score instanceof Number n) {
+                    out.put("title_score", String.valueOf(n.intValue()));
+                }
+            } catch (Throwable ignored) {
+            }
+            Object data = cacheData == null ? null : cacheData.invoke(null, nms);
+            Object progress = data == null ? null
+                    : data.getClass().getMethod("titleProgress").invoke(data);
+            int masteryActive = 0;
+            if (progress != null) {
+                Object elites = progress.getClass().getMethod("elitesKilled").invoke(progress);
+                Object bosses = progress.getClass().getMethod("bossesKilled").invoke(progress);
+                Object sense = progress.getClass().getMethod("titleSenseChat").invoke(progress);
+                out.put("elites_killed", elites == null ? "0" : String.valueOf(elites));
+                out.put("bosses_killed", bosses == null ? "0" : String.valueOf(bosses));
+                out.put("title_sense", Boolean.TRUE.equals(sense) ? "true" : "false");
+                String activeId = out.getOrDefault("active_title_id", "");
+                if (!activeId.isBlank()) {
+                    Object m = progress.getClass().getMethod("masteryLevel", String.class)
+                            .invoke(progress, activeId);
+                    if (m instanceof Number n) {
+                        masteryActive = n.intValue();
+                    }
+                }
+            }
+            try {
+                Class<?> senseCls = loadClass("com.dbzlegacy.adaptivedifficulty.title.TitleSense", cl);
+                Object near = senseCls.getMethod("countNearbyElites", sp).invoke(null, nms);
+                if (near instanceof Number n) {
+                    out.put("nearby_elites", String.valueOf(n.intValue()));
+                }
+            } catch (Throwable ignored) {
+            }
+            int unlocked = 0;
+            int total = 0;
             if (titleValues != null) {
                 for (Object title : (Object[]) titleValues.invoke(null)) {
+                    total++;
                     String id = String.valueOf(field(title, "id"));
                     String display = String.valueOf(field(title, "display"));
+                    Object rarity = field(title, "rarity");
+                    String rarityName = rarity == null ? "" : String.valueOf(field(rarity, "display"));
+                    String rarityColor = rarity == null ? "7" : String.valueOf(field(rarity, "color"));
+                    int mastery = 0;
+                    if (progress != null) {
+                        Object m = progress.getClass().getMethod("masteryLevel", String.class)
+                                .invoke(progress, id);
+                        if (m instanceof Number n) {
+                            mastery = n.intValue();
+                        }
+                    }
+                    try {
+                        Object masteredName = title.getClass()
+                                .getMethod("masteryDisplay", int.class)
+                                .invoke(title, mastery);
+                        if (masteredName != null) {
+                            display = String.valueOf(masteredName);
+                        }
+                    } catch (Throwable ignored) {
+                    }
                     out.put("title_" + id + "_name", display);
+                    out.put("title_" + id + "_rarity", rarityName);
+                    out.put("title_" + id + "_rarity_color", rarityColor);
+                    out.put("title_" + id + "_mastery", String.valueOf(mastery));
                     boolean earned = false;
                     if (titleHas != null) {
                         earned = Boolean.TRUE.equals(titleHas.invoke(null, nms, title));
+                    }
+                    if (earned) {
+                        unlocked++;
                     }
                     out.put("title_" + id + "_earned", earned ? "true" : "false");
                     String req = "";
@@ -487,7 +604,21 @@ public final class ForgeBridge {
                         req = tip == null ? "" : String.valueOf(tip);
                     }
                     out.put("title_" + id + "_req", req);
+                    try {
+                        Object perk = title.getClass().getMethod("perkTip", int.class)
+                                .invoke(title, mastery);
+                        out.put("title_" + id + "_perk", perk == null ? "" : String.valueOf(perk));
+                        if (id.equalsIgnoreCase(out.getOrDefault("active_title_id", ""))) {
+                            out.put("title_perk", perk == null ? "" : String.valueOf(perk));
+                        }
+                    } catch (Throwable ignored) {
+                    }
                 }
+            }
+            out.put("titles_unlocked", String.valueOf(unlocked));
+            out.put("titles_total", String.valueOf(total));
+            if (out.getOrDefault("title_perk", "").isBlank() && masteryActive >= 0) {
+                // leave empty when none equipped
             }
         } catch (Throwable ignored) {
         }
@@ -513,9 +644,9 @@ public final class ForgeBridge {
         Object nms = nmsPlayer(player);
         if (nms == null) {
             String detail = resolveError == null || resolveError.isBlank()
-                    ? "is AdaptiveDifficulty-*.jar loaded in mods/?"
+                    ? "is LegacyMechanics-*.jar loaded in mods/?"
                     : resolveError;
-            return ActionResult.fail("Could not reach AdaptiveDifficulty mod (" + detail + ").");
+            return ActionResult.fail("Could not reach LegacyMechanics mod (" + detail + ").");
         }
         try {
             ensureResolved(nms.getClass().getClassLoader());
@@ -573,6 +704,7 @@ public final class ForgeBridge {
                  "equip_title", "clear_title", "equip", "unequip_title",
                  "toggle_personal", "personal", "toggle_difficulty", "difficulty_toggle",
                  "toggle_coin_chat", "coin_chat", "toggle_chat", "chat_drops",
+                 "toggle_title_sense", "title_sense", "toggle_sense", "sense_chat",
                  "page", "refresh", "set" -> true;
             default -> false;
         };
@@ -720,6 +852,1173 @@ public final class ForgeBridge {
         }
     }
 
+    public static boolean openRivalChatMenu(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return false;
+        }
+        try {
+            ensureRivalResolved(nms.getClass().getClassLoader());
+            if (rivalChatMenuOpen == null) {
+                return false;
+            }
+            rivalChatMenuOpen.invoke(null, nms, page == null || page.isBlank() ? "main" : page);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    public static boolean openSparChatMenu(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return false;
+        }
+        try {
+            ensureSparResolved(nms.getClass().getClassLoader());
+            if (sparChatMenuOpen == null) {
+                return false;
+            }
+            sparChatMenuOpen.invoke(null, nms, page == null || page.isBlank() ? "main" : page);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> rivalPlaceholders(Player player) {
+        Map<String, String> fail = new HashMap<>();
+        fail.put("bridge_ok", "false");
+        fail.put("system_enabled", "false");
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return fail;
+        }
+        try {
+            ensureRivalResolved(nms.getClass().getClassLoader());
+            if (rivalPlaceholdersMethod == null) {
+                return fail;
+            }
+            Object raw = rivalPlaceholdersMethod.invoke(null, nms);
+            if (raw instanceof Map<?, ?> map) {
+                Map<String, String> out = new HashMap<>();
+                for (Map.Entry<?, ?> e : map.entrySet()) {
+                    if (e.getKey() != null) {
+                        out.put(String.valueOf(e.getKey()),
+                                e.getValue() == null ? "" : String.valueOf(e.getValue()));
+                    }
+                }
+                return out;
+            }
+        } catch (Throwable ignored) {
+        }
+        return fail;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> sparPlaceholders(Player player) {
+        Map<String, String> fail = new HashMap<>();
+        fail.put("bridge_ok", "false");
+        fail.put("system_enabled", "false");
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return fail;
+        }
+        try {
+            ensureSparResolved(nms.getClass().getClassLoader());
+            if (sparPlaceholdersMethod == null) {
+                return fail;
+            }
+            Object raw = sparPlaceholdersMethod.invoke(null, nms);
+            if (raw instanceof Map<?, ?> map) {
+                Map<String, String> out = new HashMap<>();
+                for (Map.Entry<?, ?> e : map.entrySet()) {
+                    if (e.getKey() != null) {
+                        out.put(String.valueOf(e.getKey()),
+                                e.getValue() == null ? "" : String.valueOf(e.getValue()));
+                    }
+                }
+                return out;
+            }
+        } catch (Throwable ignored) {
+        }
+        return fail;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<String> rivalLines(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        try {
+            ensureRivalResolved(nms.getClass().getClassLoader());
+            if (rivalLinesMethod == null) {
+                return List.of("§cRival GUI API missing — update LegacyMechanics jar.");
+            }
+            Object raw = rivalLinesMethod.invoke(null, nms, page == null ? "main" : page);
+            if (raw instanceof List<?> list) {
+                List<String> out = new ArrayList<>();
+                for (Object o : list) {
+                    out.add(o == null ? "" : String.valueOf(o));
+                }
+                return out;
+            }
+        } catch (Throwable t) {
+            return List.of("§cRival lines failed: " + t.getMessage());
+        }
+        return List.of();
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<String> sparLines(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        try {
+            ensureSparResolved(nms.getClass().getClassLoader());
+            if (sparLinesMethod == null) {
+                return List.of("§cSpar GUI API missing — update LegacyMechanics jar.");
+            }
+            Object raw = sparLinesMethod.invoke(null, nms, page == null ? "main" : page);
+            if (raw instanceof List<?> list) {
+                List<String> out = new ArrayList<>();
+                for (Object o : list) {
+                    out.add(o == null ? "" : String.valueOf(o));
+                }
+                return out;
+            }
+        } catch (Throwable t) {
+            return List.of("§cSpar lines failed: " + t.getMessage());
+        }
+        return List.of();
+    }
+
+    public static String rivalHandleDo(Player player, String action, String arg, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureRivalResolved(nms.getClass().getClassLoader());
+            if (rivalHandleDoMethod == null) {
+                return "§cRival GUI API missing — update LegacyMechanics jar.";
+            }
+            Object msg = rivalHandleDoMethod.invoke(
+                    null, nms, action == null ? "" : action, arg == null ? "" : arg,
+                    page == null ? "main" : page);
+            return msg == null ? "" : String.valueOf(msg);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cRival action failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /**
+     * Pending incoming declare picker args ({@code uuid:&lt;uuid&gt;} when online, else name).
+     * Invite-only (Decline). Online declarers first. Empty when none / API missing.
+     */
+    public static List<String> rivalPendingIncomingDeclareArgs(Player player) {
+        return invokeRivalStringList(player, "pendingIncomingDeclareArgs");
+    }
+
+    /**
+     * Accept picker args: pending invite or Declared (both Silent).
+     * {@code uuid:&lt;uuid&gt;} when online, else name. Empty when none / API missing.
+     */
+    public static List<String> rivalAcceptCandidateArgs(Player player) {
+        return invokeRivalStringList(player, "acceptCandidateArgs");
+    }
+
+    /** Encoded current-rival cards for head boards (tab-separated fields). */
+    public static List<String> rivalCurrentCards(Player player) {
+        return invokeRivalStringList(player, "currentRivalCards");
+    }
+
+    /** Encoded past-rival cards for history board. */
+    public static List<String> rivalPastCards(Player player) {
+        return invokeRivalStringList(player, "pastRivalCards");
+    }
+
+    /** Encoded pending declare invites (incoming + outgoing). */
+    public static List<String> rivalPendingInviteCards(Player player) {
+        return invokeRivalStringList(player, "pendingInviteCards");
+    }
+
+    /** Current-rival picker args for remove (uuid: preferred). */
+    public static List<String> rivalCurrentArgs(Player player) {
+        return invokeRivalStringList(player, "currentRivalArgs");
+    }
+
+    private static List<String> invokeRivalStringList(Player player, String methodName) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of();
+        }
+        try {
+            ensureRivalResolved(nms.getClass().getClassLoader());
+            Method m = switch (methodName) {
+                case "pendingIncomingDeclareArgs" -> rivalPendingDeclareArgsMethod;
+                case "acceptCandidateArgs" -> rivalAcceptCandidateArgsMethod;
+                case "currentRivalCards" -> rivalCurrentCardsMethod;
+                case "pastRivalCards" -> rivalPastCardsMethod;
+                case "pendingInviteCards" -> rivalPendingInviteCardsMethod;
+                case "currentRivalArgs" -> rivalCurrentArgsMethod;
+                default -> null;
+            };
+            if (m == null) {
+                return List.of();
+            }
+            Object raw = m.invoke(null, nms);
+            if (raw instanceof List<?> list) {
+                List<String> out = new ArrayList<>();
+                for (Object o : list) {
+                    if (o != null) {
+                        String s = String.valueOf(o);
+                        if (!s.isBlank()) {
+                            out.add(s);
+                        }
+                    }
+                }
+                return out;
+            }
+        } catch (Throwable ignored) {
+            // Optional API — empty when missing.
+        }
+        return List.of();
+    }
+
+    /** Encoded pending mentor invites (incoming + outgoing). */
+    public static List<String> sparPendingMentorInviteCards(Player player) {
+        return invokeSparStringList(player, "pendingMentorInviteCards");
+    }
+
+    /** Incoming mentor invite args for Accept/Decline pickers. */
+    public static List<String> sparPendingIncomingMentorArgs(Player player) {
+        return invokeSparStringList(player, "pendingIncomingMentorArgs");
+    }
+
+    private static List<String> invokeSparStringList(Player player, String methodName) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of();
+        }
+        try {
+            ensureSparResolved(nms.getClass().getClassLoader());
+            Method m = switch (methodName) {
+                case "pendingMentorInviteCards" -> sparPendingMentorInviteCardsMethod;
+                case "pendingIncomingMentorArgs" -> sparPendingIncomingMentorArgsMethod;
+                default -> null;
+            };
+            if (m == null) {
+                return List.of();
+            }
+            Object raw = m.invoke(null, nms);
+            if (raw instanceof List<?> list) {
+                List<String> out = new ArrayList<>();
+                for (Object o : list) {
+                    if (o != null) {
+                        String s = String.valueOf(o);
+                        if (!s.isBlank()) {
+                            out.add(s);
+                        }
+                    }
+                }
+                return out;
+            }
+        } catch (Throwable ignored) {
+            // Optional API — empty when missing.
+        }
+        return List.of();
+    }
+
+    public static String sparHandleDo(Player player, String action, String arg, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureSparResolved(nms.getClass().getClassLoader());
+            if (sparHandleDoMethod == null) {
+                return "§cSpar GUI API missing — update LegacyMechanics jar.";
+            }
+            Object msg = sparHandleDoMethod.invoke(
+                    null, nms, action == null ? "" : action, arg == null ? "" : arg,
+                    page == null ? "main" : page);
+            return msg == null ? "" : String.valueOf(msg);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cSpar action failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    public static boolean openHubChatMenu(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return false;
+        }
+        try {
+            ensureHubResolved(nms.getClass().getClassLoader());
+            if (hubChatMenuOpen == null) {
+                return false;
+            }
+            hubChatMenuOpen.invoke(null, nms, page == null || page.isBlank() ? "main" : page);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    public static boolean openProgressionChatMenu(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return false;
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (progressionChatMenuOpen == null) {
+                return false;
+            }
+            progressionChatMenuOpen.invoke(null, nms, page == null || page.isBlank() ? "main" : page);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> hubPlaceholders(Player player) {
+        Map<String, String> fail = new HashMap<>();
+        fail.put("bridge_ok", "false");
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return fail;
+        }
+        try {
+            ensureHubResolved(nms.getClass().getClassLoader());
+            if (hubPlaceholdersMethod == null) {
+                return fail;
+            }
+            Object raw = hubPlaceholdersMethod.invoke(null, nms);
+            return mapStringValues(raw, fail);
+        } catch (Throwable ignored) {
+        }
+        return fail;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<String> hubLines(Player player, String page) {
+        return invokeLines(player, page, true, () -> {
+            ensureHubResolved(nmsPlayer(player).getClass().getClassLoader());
+            return hubLinesMethod;
+        }, "Hub");
+    }
+
+    public static String hubHandleDo(Player player, String action, String arg, String page) {
+        return invokeHandleDo(player, action, arg, page, true, () -> {
+            ensureHubResolved(nmsPlayer(player).getClass().getClassLoader());
+            return hubHandleDoMethod;
+        }, "Hub");
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> progressionPlaceholders(Player player) {
+        Map<String, String> fail = new HashMap<>();
+        fail.put("bridge_ok", "false");
+        fail.put("system_enabled", "false");
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return fail;
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (progressionPlaceholdersMethod == null) {
+                return fail;
+            }
+            Object raw = progressionPlaceholdersMethod.invoke(null, nms);
+            return mapStringValues(raw, fail);
+        } catch (Throwable ignored) {
+        }
+        return fail;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<String> progressionLines(Player player, String page) {
+        return invokeLines(player, page, false, () -> {
+            ensureProgressionResolved(nmsPlayer(player).getClass().getClassLoader());
+            return progressionLinesMethod;
+        }, "Progression");
+    }
+
+    public static String progressionHandleDo(Player player, String action, String arg, String page) {
+        return invokeHandleDo(player, action, arg, page, false, () -> {
+            ensureProgressionResolved(nmsPlayer(player).getClass().getClassLoader());
+            return progressionHandleDoMethod;
+        }, "Progression");
+    }
+
+    /** Current meditation trial + how-to (staff hints only if {@code player} is staff/op). */
+    public static String meditationExplain(Player player) {
+        try {
+            Object nms = player == null ? null : nmsPlayer(player);
+            ClassLoader cl = nms != null
+                    ? nms.getClass().getClassLoader()
+                    : preferredProgressionClassLoader();
+            ensureProgressionResolved(cl);
+            if (meditationExplainForPlayerMethod != null && nms != null) {
+                Object raw = meditationExplainForPlayerMethod.invoke(null, nms);
+                return raw == null ? "" : String.valueOf(raw);
+            }
+            if (meditationExplainMethod == null) {
+                return "§cMeditation API missing — update LegacyMechanics jar.";
+            }
+            Object raw = meditationExplainMethod.invoke(null);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cMeditation explain failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /** @deprecated prefer {@link #meditationExplain(Player)} so staff hints stay hidden from players. */
+    public static String meditationExplain() {
+        return meditationExplain(null);
+    }
+
+    /** Staff: rotate + broadcast meditation trial. */
+    public static String meditationAdvance(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (meditationAdvanceMethod == null) {
+                return "§cMeditation API missing — update LegacyMechanics jar.";
+            }
+            Object raw = meditationAdvanceMethod.invoke(null, nms);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cMeditation advance failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /**
+     * Staff: Dr. Gero android conversion for self (blank/null target) or an online player name.
+     * Prefer this over {@link #forwardCommand} — Mohist often shadows Forge {@code /progression}.
+     */
+    public static String androidConvert(Player actor, String targetName) {
+        Object nms = nmsPlayer(actor);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (androidConvertMethod == null) {
+                return "§cAndroid API missing — update LegacyMechanics jar.";
+            }
+            Object raw = androidConvertMethod.invoke(null, nms, targetName == null ? "" : targetName);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cAndroid convert failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /**
+     * Console / Saga / Fabled — no Bukkit player actor.
+     * {@code androidify <player>} or {@code progression android <player>}.
+     */
+    public static String androidConvertConsole(String targetName) {
+        try {
+            ensureProgressionResolved(preferredProgressionClassLoader());
+            if (androidConvertConsoleMethod != null) {
+                Object raw = androidConvertConsoleMethod.invoke(
+                        null, targetName == null ? "" : targetName);
+                return raw == null ? "" : String.valueOf(raw);
+            }
+            // Older jars: androidConvert(null, name) after 2.3.64 API.
+            if (androidConvertMethod != null) {
+                Object raw = androidConvertMethod.invoke(
+                        null, null, targetName == null ? "" : targetName);
+                return raw == null ? "" : String.valueOf(raw);
+            }
+            return "§cAndroid console API missing — update LegacyMechanics jar.";
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cAndroid convert failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /** Staff: remove Android upgrade (two-click confirm) for self or online name. */
+    public static String androidRemove(Player actor, String targetName) {
+        Object nms = nmsPlayer(actor);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (androidRemoveMethod == null) {
+                return "§cAndroid remove API missing — update LegacyMechanics jar.";
+            }
+            Object raw = androidRemoveMethod.invoke(null, nms, targetName == null ? "" : targetName);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cAndroid remove failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /** Staff: End dragon spawn/clear via {@code /lmdo enddragon spawn|clear}. */
+    public static String endDragon(Player actor, String action) {
+        Object nms = nmsPlayer(actor);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (endDragonMethod == null) {
+                return "§cEnd dragon API missing — update LegacyMechanics jar.";
+            }
+            Object raw = endDragonMethod.invoke(null, nms, action == null ? "spawn" : action);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cEnd dragon failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /**
+     * Global TP boost — status / start / end.
+     * {@code argsJoined} is everything after {@code /progression boost}.
+     * {@code actor} may be {@code null} for console / store (Tebex) commands.
+     */
+    public static String boost(Player actor, String argsJoined) {
+        Object nms = actor == null ? null : nmsPlayer(actor);
+        if (actor != null && nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ClassLoader cl = nms != null
+                    ? nms.getClass().getClassLoader()
+                    : preferredProgressionClassLoader();
+            ensureProgressionResolved(cl);
+            if (boostMethod == null) {
+                return "§cBoost API missing — update LegacyMechanics jar.";
+            }
+            Object raw = boostMethod.invoke(null, nms, argsJoined == null ? "" : argsJoined);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cBoost failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /** Chat help for the Bukkit {@code /progression} command tree. */
+    public static String progressionHelp() {
+        return progressionHelp(null);
+    }
+
+    /** Chat help; staff/op see full tree, others only meditation. */
+    public static String progressionHelp(Player player) {
+        try {
+            Object nms = player == null ? null : nmsPlayer(player);
+            ClassLoader cl = nms != null
+                    ? nms.getClass().getClassLoader()
+                    : preferredProgressionClassLoader();
+            ensureProgressionResolved(cl);
+            if (progressionHelpForStaffMethod != null) {
+                boolean staff = player != null && isStaff(player);
+                Object raw = progressionHelpForStaffMethod.invoke(null, staff);
+                return raw == null ? "" : String.valueOf(raw);
+            }
+            if (progressionHelpMethod == null) {
+                return "§cProgression help API missing — update LegacyMechanics jar.";
+            }
+            Object raw = progressionHelpMethod.invoke(null);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cProgression help failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /** Text flag/boost/meditation status summary. */
+    public static String progressionStatus() {
+        try {
+            ClassLoader cl = preferredProgressionClassLoader();
+            ensureProgressionResolved(cl);
+            if (progressionStatusMethod == null) {
+                return "§cProgression status API missing — update LegacyMechanics jar.";
+            }
+            Object raw = progressionStatusMethod.invoke(null);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cProgression status failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /** Staff: toggle a progression module flag. */
+    public static String progressionAdminFlag(Player actor, String flag, String value) {
+        Object nms = nmsPlayer(actor);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (progressionAdminFlagMethod == null) {
+                return "§cProgression admin API missing — update LegacyMechanics jar.";
+            }
+            Object raw = progressionAdminFlagMethod.invoke(null, nms,
+                    flag == null ? "" : flag, value == null ? "" : value);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cProgression admin failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    private static ClassLoader preferredProgressionClassLoader() {
+        for (Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+            Object nms = nmsPlayer(p);
+            if (nms != null) {
+                return nms.getClass().getClassLoader();
+            }
+        }
+        return AdaptiveDifficultyGuiPlugin.class.getClassLoader();
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> prestigePlaceholders(Player player) {
+        Map<String, String> fail = new HashMap<>();
+        fail.put("bridge_ok", "false");
+        fail.put("system_enabled", "false");
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return fail;
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (prestigePlaceholdersMethod == null) {
+                return fail;
+            }
+            Object raw = prestigePlaceholdersMethod.invoke(null, nms);
+            return mapStringValues(raw, fail);
+        } catch (Throwable ignored) {
+        }
+        return fail;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<String> prestigeLines(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (prestigeLinesMethod == null) {
+                return List.of("§cPrestige GUI API missing — update LegacyMechanics jar.");
+            }
+            Object raw = prestigeLinesMethod.invoke(null, nms, page == null ? "main" : page);
+            return listStringValues(raw);
+        } catch (Throwable t) {
+            return List.of("§cPrestige lines failed: " + t.getMessage());
+        }
+    }
+
+    public static String prestigeHandleDo(Player player, String action, String arg, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (prestigeHandleDoMethod == null) {
+                return "§cPrestige GUI API missing — update LegacyMechanics jar.";
+            }
+            Object msg = prestigeHandleDoMethod.invoke(
+                    null, nms, action == null ? "" : action, arg == null ? "" : arg,
+                    page == null ? "main" : page);
+            return msg == null ? "" : String.valueOf(msg);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cPrestige action failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> skillsPlaceholders(Player player) {
+        Map<String, String> fail = new HashMap<>();
+        fail.put("bridge_ok", "false");
+        fail.put("system_enabled", "false");
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return fail;
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (skillsPlaceholdersMethod == null) {
+                return fail;
+            }
+            Object raw = skillsPlaceholdersMethod.invoke(null, nms);
+            return mapStringValues(raw, fail);
+        } catch (Throwable ignored) {
+        }
+        return fail;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<String> skillsLines(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (skillsLinesMethod == null) {
+                return List.of("§cSkills GUI API missing — update LegacyMechanics jar.");
+            }
+            Object raw = skillsLinesMethod.invoke(null, nms, page == null ? "core" : page);
+            return listStringValues(raw);
+        } catch (Throwable t) {
+            return List.of("§cSkills lines failed: " + t.getMessage());
+        }
+    }
+
+    public static String skillsHandleDo(Player player, String action, String arg, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (skillsHandleDoMethod == null) {
+                return "§cSkills GUI API missing — update LegacyMechanics jar.";
+            }
+            Object msg = skillsHandleDoMethod.invoke(
+                    null, nms, action == null ? "" : action, arg == null ? "" : arg,
+                    page == null ? "core" : page);
+            return msg == null ? "" : String.valueOf(msg);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cSkills action failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    @FunctionalInterface
+    private interface MethodSupplier {
+        Method get() throws Exception;
+    }
+
+    private static Map<String, String> mapStringValues(Object raw, Map<String, String> fail) {
+        if (raw instanceof Map<?, ?> map) {
+            Map<String, String> out = new HashMap<>();
+            for (Map.Entry<?, ?> e : map.entrySet()) {
+                if (e.getKey() != null) {
+                    out.put(String.valueOf(e.getKey()),
+                            e.getValue() == null ? "" : String.valueOf(e.getValue()));
+                }
+            }
+            return out;
+        }
+        return fail;
+    }
+
+    private static List<String> listStringValues(Object raw) {
+        if (raw instanceof List<?> list) {
+            List<String> out = new ArrayList<>();
+            for (Object o : list) {
+                out.add(o == null ? "" : String.valueOf(o));
+            }
+            return out;
+        }
+        return List.of();
+    }
+
+    private static List<String> invokeLines(
+            Player player, String page, boolean hubDefault, MethodSupplier methodGet, String label) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        try {
+            Method m = methodGet.get();
+            if (m == null) {
+                return List.of("§c" + label + " GUI API missing — update LegacyMechanics jar.");
+            }
+            Object raw = m.invoke(null, nms, page == null ? (hubDefault ? "main" : "main") : page);
+            return listStringValues(raw);
+        } catch (Throwable t) {
+            return List.of("§c" + label + " lines failed: " + t.getMessage());
+        }
+    }
+
+    private static String invokeHandleDo(
+            Player player, String action, String arg, String page,
+            boolean hubDefault, MethodSupplier methodGet, String label) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            Method m = methodGet.get();
+            if (m == null) {
+                return "§c" + label + " GUI API missing — update LegacyMechanics jar.";
+            }
+            Object msg = m.invoke(
+                    null, nms, action == null ? "" : action, arg == null ? "" : arg,
+                    page == null ? "main" : page);
+            return msg == null ? "" : String.valueOf(msg);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§c" + label + " action failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    /**
+     * Execute a command line through Forge brigadier (bypasses Bukkit command ownership).
+     * Used when this plugin owns {@code /rival}/{@code /spar} but needs declare/challenge/etc.
+     */
+    public static boolean forwardCommand(Player player, String commandLine) {
+        if (player == null || commandLine == null || commandLine.isBlank()) {
+            return false;
+        }
+        String line = commandLine.startsWith("/") ? commandLine.substring(1) : commandLine;
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return false;
+        }
+        try {
+            Object source = null;
+            for (Method m : nms.getClass().getMethods()) {
+                if (m.getParameterCount() == 0
+                        && m.getReturnType().getName().endsWith("CommandSourceStack")) {
+                    source = m.invoke(nms);
+                    break;
+                }
+            }
+            if (source == null) {
+                return false;
+            }
+            Object server = null;
+            for (Method m : nms.getClass().getMethods()) {
+                if (m.getParameterCount() == 0
+                        && m.getReturnType().getName().endsWith("MinecraftServer")) {
+                    server = m.invoke(nms);
+                    break;
+                }
+            }
+            if (server == null) {
+                return false;
+            }
+            Object commands = null;
+            for (Method m : server.getClass().getMethods()) {
+                if (m.getParameterCount() == 0
+                        && m.getReturnType().getName().endsWith("Commands")) {
+                    commands = m.invoke(server);
+                    break;
+                }
+            }
+            if (commands == null) {
+                return false;
+            }
+            Object dispatcher = null;
+            for (Method m : commands.getClass().getMethods()) {
+                if (m.getParameterCount() == 0
+                        && m.getReturnType().getName().contains("CommandDispatcher")) {
+                    dispatcher = m.invoke(commands);
+                    break;
+                }
+            }
+            if (dispatcher == null) {
+                return false;
+            }
+            Method execute = null;
+            for (Method m : dispatcher.getClass().getMethods()) {
+                if (!"execute".equals(m.getName()) || m.getParameterCount() != 2) {
+                    continue;
+                }
+                Class<?>[] p = m.getParameterTypes();
+                if (p[0] == String.class) {
+                    execute = m;
+                    break;
+                }
+            }
+            if (execute == null) {
+                return false;
+            }
+            execute.invoke(dispatcher, line, source);
+            return true;
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return false;
+        }
+    }
+
+    private static synchronized void ensureRivalResolved(ClassLoader preferred) throws Exception {
+        if (rivalPlaceholdersMethod != null && rivalLinesMethod != null && rivalHandleDoMethod != null) {
+            resolveOptionalRivalMethods(preferred);
+            return;
+        }
+        Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi", preferred);
+        Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+        rivalPlaceholdersMethod = api.getMethod("placeholders", sp);
+        rivalLinesMethod = api.getMethod("linesForPage", sp, String.class);
+        rivalHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
+        resolveOptionalRivalMethods(preferred);
+        try {
+            rivalChatMenuOpen = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.gui.RivalChatMenu", preferred)
+                    .getMethod("open", sp, String.class);
+        } catch (Throwable missing) {
+            rivalChatMenuOpen = null;
+        }
+    }
+
+    private static void resolveOptionalRivalMethods(ClassLoader preferred) {
+        try {
+            Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi", preferred);
+            Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+            if (rivalPendingDeclareArgsMethod == null) {
+                try {
+                    rivalPendingDeclareArgsMethod = api.getMethod("pendingIncomingDeclareArgs", sp);
+                } catch (Throwable ignored) {
+                    rivalPendingDeclareArgsMethod = null;
+                }
+            }
+            if (rivalAcceptCandidateArgsMethod == null) {
+                try {
+                    rivalAcceptCandidateArgsMethod = api.getMethod("acceptCandidateArgs", sp);
+                } catch (Throwable ignored) {
+                    rivalAcceptCandidateArgsMethod = null;
+                }
+            }
+            if (rivalCurrentCardsMethod == null) {
+                try {
+                    rivalCurrentCardsMethod = api.getMethod("currentRivalCards", sp);
+                } catch (Throwable ignored) {
+                    rivalCurrentCardsMethod = null;
+                }
+            }
+            if (rivalPastCardsMethod == null) {
+                try {
+                    rivalPastCardsMethod = api.getMethod("pastRivalCards", sp);
+                } catch (Throwable ignored) {
+                    rivalPastCardsMethod = null;
+                }
+            }
+            if (rivalPendingInviteCardsMethod == null) {
+                try {
+                    rivalPendingInviteCardsMethod = api.getMethod("pendingInviteCards", sp);
+                } catch (Throwable ignored) {
+                    rivalPendingInviteCardsMethod = null;
+                }
+            }
+            if (rivalCurrentArgsMethod == null) {
+                try {
+                    rivalCurrentArgsMethod = api.getMethod("currentRivalArgs", sp);
+                } catch (Throwable ignored) {
+                    rivalCurrentArgsMethod = null;
+                }
+            }
+        } catch (Throwable ignored) {
+            // Optional.
+        }
+    }
+
+    private static synchronized void ensureSparResolved(ClassLoader preferred) throws Exception {
+        if (sparPlaceholdersMethod != null && sparLinesMethod != null && sparHandleDoMethod != null) {
+            resolveOptionalSparMethods(preferred);
+            return;
+        }
+        Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi", preferred);
+        Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+        sparPlaceholdersMethod = api.getMethod("placeholders", sp);
+        sparLinesMethod = api.getMethod("linesForPage", sp, String.class);
+        sparHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
+        try {
+            sparChatMenuOpen = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.gui.SparChatMenu", preferred)
+                    .getMethod("open", sp, String.class);
+        } catch (Throwable missing) {
+            sparChatMenuOpen = null;
+        }
+        resolveOptionalSparMethods(preferred);
+    }
+
+    private static void resolveOptionalSparMethods(ClassLoader preferred) {
+        try {
+            Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi", preferred);
+            Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+            if (sparPendingMentorInviteCardsMethod == null) {
+                try {
+                    sparPendingMentorInviteCardsMethod = api.getMethod("pendingMentorInviteCards", sp);
+                } catch (Throwable ignored) {
+                    sparPendingMentorInviteCardsMethod = null;
+                }
+            }
+            if (sparPendingIncomingMentorArgsMethod == null) {
+                try {
+                    sparPendingIncomingMentorArgsMethod = api.getMethod("pendingIncomingMentorArgs", sp);
+                } catch (Throwable ignored) {
+                    sparPendingIncomingMentorArgsMethod = null;
+                }
+            }
+        } catch (Throwable ignored) {
+            // Optional.
+        }
+    }
+
+    private static synchronized void ensureHubResolved(ClassLoader preferred) throws Exception {
+        if (hubPlaceholdersMethod != null && hubLinesMethod != null && hubHandleDoMethod != null) {
+            return;
+        }
+        Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi", preferred);
+        Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+        hubPlaceholdersMethod = api.getMethod("placeholders", sp);
+        hubLinesMethod = api.getMethod("linesForPage", sp, String.class);
+        hubHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
+        try {
+            hubChatMenuOpen = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.gui.MechanicsChatMenu", preferred)
+                    .getMethod("open", sp, String.class);
+        } catch (Throwable missing) {
+            hubChatMenuOpen = null;
+        }
+    }
+
+    private static synchronized void ensureProgressionResolved(ClassLoader preferred) throws Exception {
+        Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi", preferred);
+        Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+        if (progressionPlaceholdersMethod == null || progressionLinesMethod == null
+                || progressionHandleDoMethod == null
+                || prestigePlaceholdersMethod == null || prestigeLinesMethod == null
+                || prestigeHandleDoMethod == null
+                || skillsPlaceholdersMethod == null || skillsLinesMethod == null
+                || skillsHandleDoMethod == null) {
+            progressionPlaceholdersMethod = api.getMethod("placeholders", sp);
+            progressionLinesMethod = api.getMethod("linesForPage", sp, String.class);
+            progressionHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
+            prestigePlaceholdersMethod = api.getMethod("prestigePlaceholders", sp);
+            prestigeLinesMethod = api.getMethod("prestigeLines", sp, String.class);
+            prestigeHandleDoMethod = api.getMethod("handlePrestigeDo", sp, String.class, String.class, String.class);
+            skillsPlaceholdersMethod = api.getMethod("skillsPlaceholders", sp);
+            skillsLinesMethod = api.getMethod("skillsLines", sp, String.class);
+            skillsHandleDoMethod = api.getMethod("handleSkillsDo", sp, String.class, String.class, String.class);
+            try {
+                progressionChatMenuOpen = loadClass(
+                        "com.dbzlegacy.adaptivedifficulty.gui.ProgressionChatMenu", preferred)
+                        .getMethod("open", sp, String.class);
+            } catch (Throwable missing) {
+                progressionChatMenuOpen = null;
+            }
+        }
+        if (meditationExplainMethod == null) {
+            try {
+                meditationExplainMethod = api.getMethod("meditationExplain");
+            } catch (Throwable missing) {
+                meditationExplainMethod = null;
+            }
+        }
+        if (meditationExplainForPlayerMethod == null) {
+            try {
+                meditationExplainForPlayerMethod = api.getMethod("meditationExplain", sp);
+            } catch (Throwable missing) {
+                meditationExplainForPlayerMethod = null;
+            }
+        }
+        if (meditationAdvanceMethod == null) {
+            try {
+                meditationAdvanceMethod = api.getMethod("meditationAdvance", sp);
+            } catch (Throwable missing) {
+                meditationAdvanceMethod = null;
+            }
+        }
+        if (androidConvertMethod == null) {
+            try {
+                androidConvertMethod = api.getMethod("androidConvert", sp, String.class);
+            } catch (Throwable missing) {
+                androidConvertMethod = null;
+            }
+        }
+        if (androidConvertConsoleMethod == null) {
+            try {
+                androidConvertConsoleMethod = api.getMethod("androidConvertConsole", String.class);
+            } catch (Throwable missing) {
+                androidConvertConsoleMethod = null;
+            }
+        }
+        if (androidRemoveMethod == null) {
+            try {
+                androidRemoveMethod = api.getMethod("androidRemove", sp, String.class);
+            } catch (Throwable missing) {
+                androidRemoveMethod = null;
+            }
+        }
+        if (endDragonMethod == null) {
+            try {
+                endDragonMethod = api.getMethod("endDragon", sp, String.class);
+            } catch (Throwable missing) {
+                endDragonMethod = null;
+            }
+        }
+        if (boostMethod == null) {
+            try {
+                boostMethod = api.getMethod("boost", sp, String.class);
+            } catch (Throwable missing) {
+                boostMethod = null;
+            }
+        }
+        if (progressionHelpMethod == null) {
+            try {
+                progressionHelpMethod = api.getMethod("commandHelp");
+            } catch (Throwable missing) {
+                progressionHelpMethod = null;
+            }
+        }
+        if (progressionHelpForStaffMethod == null) {
+            try {
+                progressionHelpForStaffMethod = api.getMethod("commandHelp", boolean.class);
+            } catch (Throwable missing) {
+                progressionHelpForStaffMethod = null;
+            }
+        }
+        if (progressionStatusMethod == null) {
+            try {
+                progressionStatusMethod = api.getMethod("statusText");
+            } catch (Throwable missing) {
+                progressionStatusMethod = null;
+            }
+        }
+        if (progressionAdminFlagMethod == null) {
+            try {
+                progressionAdminFlagMethod = api.getMethod("adminFlag", sp, String.class, String.class);
+            } catch (Throwable missing) {
+                progressionAdminFlagMethod = null;
+            }
+        }
+    }
+
     public record ActionResult(boolean ok, String message) {
         public static ActionResult ok(String message) {
             return new ActionResult(true, message == null ? "" : message);
@@ -770,6 +2069,72 @@ public final class ForgeBridge {
         // Do not treat permission("*") as staff — that widens settings/admin set to anyone
         // whose permission plugin grants a wildcard node by default.
         return player.isOp() || player.hasPermission(adminPermission());
+    }
+
+    /**
+     * Donator Skill Check: {@code legacymechanics.skillcheck} (config). Staff are not
+     * auto-granted — without the node they use {@code /skills} and do not see Skill Check in hub.
+     */
+    public static boolean hasSkillCheck(Player player) {
+        if (player == null) {
+            return false;
+        }
+        try {
+            Object cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+                    .getMethod("get").invoke(null);
+            Object enabled = cfg.getClass().getField("enableSkillCheck").get(cfg);
+            if (enabled instanceof Boolean b && !b) {
+                return false;
+            }
+            Object skillsOn = cfg.getClass().getField("enableSkillUnlockService").get(cfg);
+            if (skillsOn instanceof Boolean b && !b) {
+                return false;
+            }
+            Object raw = cfg.getClass().getField("skillCheckPermission").get(cfg);
+            String node = raw == null ? "legacymechanics.skillcheck" : String.valueOf(raw).trim();
+            if (node.isEmpty()) {
+                node = "legacymechanics.skillcheck";
+            }
+            return player.hasPermission(node);
+        } catch (Throwable t) {
+            return player.hasPermission("legacymechanics.skillcheck");
+        }
+    }
+
+    /** True while Forge marked a Skill Check UI session for this player. */
+    public static boolean inSkillCheckSession(Player player) {
+        if (player == null) {
+            return false;
+        }
+        try {
+            Class<?> cls = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService",
+                    preferredLoader());
+            Object ok = cls.getMethod("inSession", java.util.UUID.class)
+                    .invoke(null, player.getUniqueId());
+            return ok instanceof Boolean b && b;
+        } catch (Throwable t) {
+            Map<String, String> ph = hubPlaceholders(player);
+            return "true".equalsIgnoreCase(ph.getOrDefault("skillcheck_session", "false"));
+        }
+    }
+
+    public static void markSkillCheckSession(Player player) {
+        if (player == null) {
+            return;
+        }
+        try {
+            Object nms = nmsPlayer(player);
+            if (nms == null) {
+                return;
+            }
+            Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferredLoader());
+            Class<?> cls = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService",
+                    preferredLoader());
+            cls.getMethod("markSession", sp).invoke(null, nms);
+        } catch (Throwable ignored) {
+        }
     }
 
     public static String adminSet(String key, String value) {
@@ -1006,18 +2371,15 @@ public final class ForgeBridge {
         try {
             loadClass("com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
                     .getMethod("setEnabled", boolean.class).invoke(null, on);
-            int n = whitelistEntries().size();
             Path dir = telemetryDir();
             return (on ? "§aBalance telemetry ON" : "§eBalance telemetry OFF")
-                    + "\n§7Logs AD hits on §fwhitelisted§7 players only (§f" + n + "§7 listed)."
-                    + (on && n == 0
-                    ? "\n§eWhitelist is empty — §f/difficulty admin whitelist add <player>"
-                    : "")
+                    + "\n§7Logs AD hits for §fall players§7 using the difficulty system"
+                    + " §8(rate-limited)."
                     + "\n§8" + dir;
         } catch (Throwable t) {
             resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
             return "§cFailed to toggle telemetry: " + t.getMessage()
-                    + "\n§8Install matching AdaptiveDifficulty 1.0.18+ jar.";
+                    + "\n§8Install matching LegacyMechanics jar.";
         }
     }
 
@@ -1026,15 +2388,13 @@ public final class ForgeBridge {
             Object line = loadClass(
                     "com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
                     .getMethod("statusLine").invoke(null);
-            int n = whitelistEntries().size();
             return "§6Balance telemetry\n§7" + line
-                    + "\n§7Whitelist entries: §f" + n
-                    + "\n§8Only listed players are sampled (gate on/off does not matter)."
+                    + "\n§8Samples all AD players when ON (not whitelist-gated)."
                     + "\n§8/difficulty admin telemetry on|off|flush|test";
         } catch (Throwable t) {
             resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
             return "§cTelemetry unavailable: " + t.getMessage()
-                    + "\n§8Need AdaptiveDifficulty 1.0.18+ with BalanceTelemetry.";
+                    + "\n§8Need LegacyMechanics with BalanceTelemetry.";
         }
     }
 
@@ -1046,6 +2406,61 @@ public final class ForgeBridge {
         } catch (Throwable t) {
             resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
             return "§cTelemetry flush failed: " + t.getMessage();
+        }
+    }
+
+    /**
+     * Staff: unified system telemetry ({@code /difficulty admin syslog} / {@code /lm admin syslog}).
+     * Works from console — no player NMS required.
+     */
+    public static String syslogCommand(String mode) {
+        String m = mode == null || mode.isBlank() ? "status" : mode.toLowerCase(Locale.ROOT);
+        try {
+            Class<?> tel = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry", preferredLoader());
+            return switch (m) {
+                case "on", "true", "enable" -> {
+                    tel.getMethod("setEnabled", boolean.class).invoke(null, true);
+                    yield "§aSystem telemetry ON\n§8" + tel.getMethod("telemetryDir").invoke(null);
+                }
+                case "off", "false", "disable" -> {
+                    tel.getMethod("setEnabled", boolean.class).invoke(null, false);
+                    yield "§eSystem telemetry OFF";
+                }
+                case "flush" -> {
+                    tel.getMethod("flushAndClose").invoke(null);
+                    yield "§aSyslog flushed.\n§8" + tel.getMethod("telemetryDir").invoke(null);
+                }
+                case "status", "0", "" -> "§7" + tel.getMethod("statusLine").invoke(null);
+                default -> "§cUsage: syslog on|off|status|flush";
+            };
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cSyslog unavailable: " + t.getMessage()
+                    + "\n§8Need LegacyMechanics with SystemTelemetry.";
+        }
+    }
+
+    /**
+     * Staff: clear stuck DMZ base-form level sample and refresh Buy GUI gate level.
+     */
+    public static String resyncLevel(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cPlayer NMS unavailable.";
+        }
+        try {
+            ClassLoader cl = preferredLoader();
+            ensureResolved(cl);
+            Class<?> sp = Class.forName("net.minecraft.server.level.ServerPlayer", true, cl);
+            Object msg = Class.forName(
+                            "com.dbzlegacy.adaptivedifficulty.command.DifficultyCommands", true, cl)
+                    .getMethod("resyncLevel", sp)
+                    .invoke(null, nms);
+            return msg == null ? "§eResync returned empty." : String.valueOf(msg);
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cResync failed: " + resolveError;
         }
     }
 
@@ -1135,6 +2550,129 @@ public final class ForgeBridge {
     }
 
     /**
+     * Staff: import CNPC Rival/Spar world storeddata into LegacyMechanics JSON stores.
+     * Works from console or player — Mohist Bukkit owns {@code /lm}, so this must live here.
+     */
+    public static String migrateCnpc(boolean forceOverwrite) {
+        try {
+            Class<?> migrator = Class.forName(
+                    "com.dbzlegacy.adaptivedifficulty.data.CnpcDataMigrator");
+            Object server = null;
+            try {
+                Class<?> serverLifecycle = Class.forName(
+                        "net.minecraftforge.server.ServerLifecycleHooks");
+                server = serverLifecycle.getMethod("getCurrentServer").invoke(null);
+            } catch (Throwable ignored) {
+            }
+            if (server == null) {
+                try {
+                    Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
+                    Object bServer = bukkit.getMethod("getServer").invoke(null);
+                    if (bServer != null) {
+                        try {
+                            server = bServer.getClass().getMethod("getServer").invoke(bServer);
+                        } catch (Throwable ignored) {
+                        }
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            if (server == null) {
+                return "§cNo MinecraftServer — is the world loaded?";
+            }
+            Object msg = migrator.getMethod("forceMigrateWorld",
+                            Class.forName("net.minecraft.server.MinecraftServer"),
+                            boolean.class)
+                    .invoke(null, server, forceOverwrite);
+            return msg == null ? "§eMigration returned empty." : String.valueOf(msg);
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cCNPC migrate failed: " + resolveError;
+        }
+    }
+
+    /**
+     * Staff wipe of one player's LegacyMechanics data
+     * ({@code /lm admin clear <player> [all|rival|spar|difficulty|progression]}).
+     * Works from console or player — Mohist Bukkit owns {@code /lm}.
+     */
+    public static String clearPlayerData(String playerArg, String scope) {
+        try {
+            Class<?> clearer = Class.forName(
+                    "com.dbzlegacy.adaptivedifficulty.data.PlayerDataClear");
+            Object server = null;
+            try {
+                Class<?> serverLifecycle = Class.forName(
+                        "net.minecraftforge.server.ServerLifecycleHooks");
+                server = serverLifecycle.getMethod("getCurrentServer").invoke(null);
+            } catch (Throwable ignored) {
+            }
+            if (server == null) {
+                try {
+                    Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
+                    Object bServer = bukkit.getMethod("getServer").invoke(null);
+                    if (bServer != null) {
+                        try {
+                            server = bServer.getClass().getMethod("getServer").invoke(bServer);
+                        } catch (Throwable ignored) {
+                        }
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            if (server == null) {
+                return "§cNo MinecraftServer — is the world loaded?";
+            }
+            Object msg = clearer.getMethod(
+                            "clear",
+                            Class.forName("net.minecraft.server.MinecraftServer"),
+                            String.class,
+                            String.class)
+                    .invoke(null, server, playerArg, scope == null ? "all" : scope);
+            return msg == null ? "§eClear returned empty." : String.valueOf(msg);
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cClear failed: " + resolveError;
+        }
+    }
+
+    /**
+     * Pull live DMZ level + unlock data before opening Buy / Difficulty GUI.
+     * Mohist {@code /difficulty} owns the inventory open and previously skipped
+     * Forge {@code DifficultyActions.openGui}, so placeholders could show a stuck
+     * session sample (level 1 / stale mid-level) until {@code resynclevel}.
+     */
+    public static boolean prepareDifficultyGui(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return false;
+        }
+        try {
+            ensureResolved(nms.getClass().getClassLoader());
+            try {
+                Method prep = actionsCls.getMethod("prepareGui", serverPlayerCls);
+                prep.invoke(null, nms);
+            } catch (NoSuchMethodException legacy) {
+                // Older Forge jars: sample + refresh only.
+                ClassLoader cl = nms.getClass().getClassLoader();
+                Class<?> dmz = loadClass(
+                        "com.dbzlegacy.adaptivedifficulty.calc.DmzProgression", cl);
+                Class<?> playerCls = loadClass("net.minecraft.world.entity.player.Player", cl);
+                dmz.getMethod("sampleLevelOnGuiOpen", playerCls).invoke(null, nms);
+                if (cacheRefresh != null) {
+                    cacheRefresh.invoke(null, nms);
+                }
+                syncPlayerProgress(player);
+            }
+            PLACEHOLDER_CACHE.remove(player.getUniqueId());
+            return true;
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return false;
+        }
+    }
+
+    /**
      * Refresh unlock-tier grants and difficulty titles from current DMZ / prestige
      * (same sync chat menu runs when opening Buy / Titles).
      */
@@ -1150,6 +2688,13 @@ public final class ForgeBridge {
             }
             Object data = cacheData.invoke(null, nms);
             ClassLoader cl = nms.getClass().getClassLoader();
+            try {
+                Class<?> dmz = loadClass(
+                        "com.dbzlegacy.adaptivedifficulty.calc.DmzProgression", cl);
+                Class<?> playerCls = loadClass("net.minecraft.world.entity.player.Player", cl);
+                dmz.getMethod("sampleLevelOnGuiOpen", playerCls).invoke(null, nms);
+            } catch (Throwable ignored) {
+            }
             Class.forName("com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem", true, cl)
                     .getMethod("syncUnlocks",
                             Class.forName("net.minecraft.server.level.ServerPlayer", true, cl),
@@ -1160,6 +2705,9 @@ public final class ForgeBridge {
                             Class.forName("net.minecraft.server.level.ServerPlayer", true, cl),
                             boolean.class)
                     .invoke(null, nms, false);
+            if (cacheRefresh != null) {
+                cacheRefresh.invoke(null, nms);
+            }
             PLACEHOLDER_CACHE.remove(player.getUniqueId());
         } catch (Throwable ignored) {
         }

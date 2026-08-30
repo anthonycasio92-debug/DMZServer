@@ -1,23 +1,55 @@
-name: AdaptiveDifficultyGUI
-version: '1.0.36'
+name: LegacyMechanicsGUI
+version: '2.3.64'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
-description: CMI/CMILib inventory GUI + PlaceholderAPI bridge for AdaptiveDifficulty
+description: CMI/CMILib inventory GUIs (Difficulty · Rival · Spar · Hub · Progression · Prestige · Skills) + PlaceholderAPI for LegacyMechanics
 softdepend: [CMILib, CMI, PlaceholderAPI]
 commands:
   difficulty:
-    description: Open AdaptiveDifficulty GUI
+    description: Open LegacyMechanics Difficulty GUI
     usage: /difficulty
-    aliases: [adifficulty, dmzdifficulty, adaptivedifficulty]
-  dmzdiffgui:
-    description: Force-open AdaptiveDifficulty chest/CMI GUI
-    usage: /dmzdiffgui [page]
-    aliases: [adiffgui]
+    aliases: [diff]
+  rival:
+    description: Open LegacyMechanics Rival CMI/chest GUI
+    usage: /rival
+  spar:
+    description: Open LegacyMechanics Sparring CMI/chest GUI
+    usage: /spar
+    aliases: [sparring]
+  lm:
+    description: Open LegacyMechanics Hub GUI
+    usage: /lm
+    aliases: [legacymechanics]
+  prestige:
+    description: Prestige GUI (staff slash; players use /lm → Prestige)
+    usage: /prestige
+  progression:
+    description: Players — /progression meditation only; staff — full tree; console — boost + android
+    usage: /progression meditation | android <player> | boost …
+    aliases: [prog]
+  androidify:
+    description: Console/Saga Dr. Gero android conversion (LegacyMechanics)
+    usage: /androidify <player>
+    aliases: [androidification]
+  skills:
+    description: Open LegacyMechanics Skills admin GUI (staff)
+    usage: /skills
+  skillcheck:
+    description: Open Skill Check GUI (donator)
+    usage: /skillcheck
+    permission: legacymechanics.skillcheck
+    permission-message: "§cNo permission: legacymechanics.skillcheck"
+  lmdo:
+    description: Internal LegacyMechanics GUI action bridge (CMI clicks — not for players)
+    usage: /lmdo <rival|spar|difficulty|lm|progression|prestige|skills|skillcheck> <action> [arg] [page]
 permissions:
   dmzdiff.gui:
-    description: Open the AdaptiveDifficulty GUI
+    description: Legacy node (unused for open). Player GUIs are open to all; admin still needs difficulty.admin / op.
     default: true
   difficulty.admin:
-    description: Use AdaptiveDifficulty admin commands (op or this node)
+    description: Use LegacyMechanics admin commands (op or this node)
     default: op
+  legacymechanics.skillcheck:
+    description: Open Skill Check UI (donator)
+    default: false

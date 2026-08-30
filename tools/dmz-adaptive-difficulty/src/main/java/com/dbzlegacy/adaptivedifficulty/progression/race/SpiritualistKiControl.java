@@ -1,0 +1,114 @@
+package com.dbzlegacy.adaptivedifficulty.progression.race;
+
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
+import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
+import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
+import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dragonminez.common.stats.StatsData;
+import com.dragonminez.common.stats.character.Character;
+import com.dragonminez.common.stats.skills.Skills;
+import java.util.Locale;
+import java.util.Map;
+import net.minecraft.server.level.ServerPlayer;
+
+/**
+ * Port of Spirtualist Ki Control.js — grant/remove {@code kicontrol} for Spiritualist class.
+ */
+public final class SpiritualistKiControl {
+    private static final String TARGET_CLASS = "spiritualist";
+    private static final String KI_CONTROL = "kicontrol";
+    private static final long CLASS_CONFIRM_MS = 10_000L;
+    private static final String KEY_GRANTED = "spiritualist_granted_kicontrol";
+
+    private SpiritualistKiControl() {}
+
+    public static void pulse(ServerPlayer player, long nowMs) {
+        if (!ProgressionConfig.spiritualistKi() || player == null) {
+            return;
+        }
+        if (nowMs < ProgressionData.tempGetLong(player, "spiritualist_kicontrol_next_check", 0L)) {
+            return;
+        }
+        ProgressionData.tempPut(player, "spiritualist_kicontrol_next_check", nowMs + 1000L);
+        try {
+            StatsData data = DmzProgression.stats(player);
+            Character ch = data == null ? null : data.getCharacter();
+            Skills skills = data == null ? null : data.getSkills();
+            if (ch == null || skills == null) {
+                return;
+            }
+            String cls = normalize(ch.getCharacterClass());
+            String last = ProgressionData.tempGet(player, "spiritualist_last_detected_class", "");
+            if (!cls.equals(last)) {
+                ProgressionData.tempPut(player, "spiritualist_last_detected_class", cls);
+                ProgressionData.tempRemove(player, "spiritualist_class_detected_at");
+            }
+            if (TARGET_CLASS.equals(cls)) {
+                if (!isConfirmed(player, nowMs)) {
+                    return;
+                }
+                if (grant(player, skills)) {
+                    SystemTelemetry.log("progression", "spiritualist_ki_grant", player, null, Map.of());
+                }
+            } else if (remove(player, skills)) {
+                SystemTelemetry.log("progression", "spiritualist_ki_remove", player, null, Map.of());
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static boolean isConfirmed(ServerPlayer player, long now) {
+        long detectedAt = ProgressionData.tempGetLong(player, "spiritualist_class_detected_at", 0L);
+        if (detectedAt <= 0L) {
+            ProgressionData.tempPut(player, "spiritualist_class_detected_at", now);
+            return false;
+        }
+        return now - detectedAt >= CLASS_CONFIRM_MS;
+    }
+
+    private static boolean grant(ServerPlayer player, Skills skills) {
+        int current = DmzSkillUtil.level(skills, KI_CONTROL);
+        if (current >= 1) {
+            return false;
+        }
+        DmzSkillUtil.setLevel(skills, KI_CONTROL, 1);
+        if (DmzSkillUtil.level(skills, KI_CONTROL) != 1) {
+            DmzRewards.msg(player, "§c[Spiritualist] DMZ rejected the Ki Control unlock.");
+            return false;
+        }
+        ProgressionData.storedPutBool(player, KEY_GRANTED, true);
+        DmzSkillUtil.sync(player);
+        DmzRewards.msg(player, "§b§lSpiritualist Ability Unlocked!");
+        DmzRewards.msg(player, "§7Your natural connection to Ki has unlocked §bKi Control§7.");
+        return true;
+    }
+
+    private static boolean remove(ServerPlayer player, Skills skills) {
+        if (!ProgressionData.storedGetBool(player, KEY_GRANTED)) {
+            return false;
+        }
+        if (DmzSkillUtil.level(skills, KI_CONTROL) > 0) {
+            DmzSkillUtil.setLevel(skills, KI_CONTROL, 0);
+        }
+        if (DmzSkillUtil.level(skills, KI_CONTROL) > 0) {
+            return false;
+        }
+        ProgressionData.storedRemove(player, KEY_GRANTED);
+        DmzSkillUtil.sync(player);
+        DmzRewards.msg(player,
+                "§7Ki Control was removed because your chosen class is not Spiritualist.");
+        return true;
+    }
+
+    private static String normalize(String value) {
+        if (value == null || "null".equalsIgnoreCase(value)) {
+            return "";
+        }
+        return value.toLowerCase(Locale.ROOT).trim()
+                .replaceAll("\\s+", "")
+                .replace("_", "")
+                .replace("-", "");
+    }
+}

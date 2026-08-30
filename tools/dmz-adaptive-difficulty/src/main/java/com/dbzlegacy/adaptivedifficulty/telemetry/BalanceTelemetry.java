@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.telemetry;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
+import com.dbzlegacy.adaptivedifficulty.config.ConfigPaths;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import java.io.BufferedWriter;
@@ -23,15 +24,16 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraftforge.fml.loading.FMLPaths;
 
 /**
- * Whitelist-gated combat telemetry for balance tuning.
+ * Combat telemetry for difficulty balance tuning.
  * <p>
- * When enabled, every AD-painted mob hit on a <b>whitelisted</b> player is appended
- * as one JSON line under {@code config/adaptivedifficulty/telemetry/hits-YYYY-MM-DD.jsonl}.
+ * When enabled, every AD-painted mob hit on a player actively using the difficulty
+ * system is appended as one JSON line under
+ * {@code config/legacymechanics/telemetry/hits-YYYY-MM-DD.jsonl}.
  * Capture happens before the DEF-cancel safety net mutates the event so cancelled
- * zeros are still visible in the log.
+ * zeros are still visible in the log. Rate-limited per player
+ * ({@code balanceTelemetryMaxPerSecond}).
  */
 public final class BalanceTelemetry {
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -61,13 +63,9 @@ public final class BalanceTelemetry {
         }
     }
 
-    /** True when this player should be sampled (on the whitelist list). */
+    /** True when this player should be sampled (telemetry on + valid player). */
     public static boolean shouldLog(ServerPlayer player) {
-        if (!isEnabled() || player == null) {
-            return false;
-        }
-        // Log listed testers even when whitelist gate is OFF (open server + named samples).
-        return DifficultyConfig.isWhitelisted(player);
+        return isEnabled() && player != null;
     }
 
     /**
@@ -151,7 +149,7 @@ public final class BalanceTelemetry {
     }
 
     public static Path telemetryDir() {
-        return FMLPaths.CONFIGDIR.get().resolve("adaptivedifficulty").resolve("telemetry");
+        return ConfigPaths.telemetryDir();
     }
 
     public static void flushAndClose() {

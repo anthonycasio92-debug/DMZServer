@@ -4,7 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Shared staff check: op level 2 or {@code difficulty.admin} (Mohist/Bukkit hasPermission).
+ * Shared access checks: staff (op level 2 / {@code difficulty.admin}) and SkillCheck donators.
  */
 public final class StaffAccess {
     private StaffAccess() {}
@@ -19,16 +19,55 @@ public final class StaffAccess {
             }
         } catch (Throwable ignored) {
         }
+        // Mohist: Bukkit OP often does not map to Forge permission level 2.
+        if (hasBukkitIsOp(player)) {
+            return true;
+        }
         String node = DifficultyConfig.get().adminPermission;
         if (node == null || node.isBlank()) {
             node = "difficulty.admin";
         }
+        return hasBukkitPermission(player, node);
+    }
+
+    /**
+     * Skill Check (donator) access: configured {@code skillCheckPermission}
+     * (default {@code legacymechanics.skillcheck}). Staff are <b>not</b> auto-granted —
+     * without the node they use {@code /skills} (admin) and do not see Skill Check in the hub.
+     */
+    public static boolean hasSkillCheck(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        DifficultyConfig cfg = DifficultyConfig.get();
+        if (!cfg.enableSkillCheck || !cfg.enableSkillUnlockService) {
+            return false;
+        }
+        String node = cfg.skillCheckPermission;
+        if (node == null || node.isBlank()) {
+            node = "legacymechanics.skillcheck";
+        }
+        return hasBukkitPermission(player, node);
+    }
+
+    private static boolean hasBukkitIsOp(ServerPlayer player) {
+        try {
+            var method = player.getClass().getMethod("isOp");
+            Object result = method.invoke(player);
+            return result instanceof Boolean b && b;
+        } catch (Throwable ignored) {
+        }
+        return false;
+    }
+
+    private static boolean hasBukkitPermission(ServerPlayer player, String node) {
+        if (player == null || node == null || node.isBlank()) {
+            return false;
+        }
         try {
             var method = player.getClass().getMethod("hasPermission", String.class);
             Object result = method.invoke(player, node);
-            if (result instanceof Boolean b && b) {
-                return true;
-            }
+            return result instanceof Boolean b && b;
         } catch (Throwable ignored) {
         }
         return false;

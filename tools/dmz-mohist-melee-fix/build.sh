@@ -35,7 +35,7 @@ fi
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
-JAR="$ROOT/mods/dmz_mohist_melee_fix-2.12.19.jar"
+JAR="$ROOT/mods/dmz_mohist_melee_fix-2.12.20.jar"
 
 rm -f "$ROOT"/mods/dmz_mohist_melee_fix-*.jar
 rm -f "$ROOT"/dmz_mohist_melee_fix-*.jar
@@ -71,6 +71,6 @@ echo '{}' > /tmp/dmz_mohist_melee_fix.refmap.json
     -C "$RES" pack.mcmeta
 )
 jar uf "$JAR" -C /tmp dmz_mohist_melee_fix.refmap.json
-cp -f "$JAR" "$ROOT/dmz_mohist_melee_fix-2.12.19.jar"
+cp -f "$JAR" "$ROOT/dmz_mohist_melee_fix-2.12.20.jar"
 echo "Built $JAR"
 jar tf "$JAR"

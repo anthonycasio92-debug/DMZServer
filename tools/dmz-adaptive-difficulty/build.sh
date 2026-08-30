@@ -16,15 +16,16 @@ if [[ ! -f "$FTB" ]]; then
   curl -fsSL -o "$FTB" \
     "https://maven.ftb.dev/releases/dev/ftb/mods/ftb-teams-forge/2001.3.1/ftb-teams-forge-2001.3.1.jar"
 fi
-VERSION="1.0.36"
-NAME="AdaptiveDifficulty"
+VERSION="2.3.64"
+NAME="LegacyMechanics"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
 JAR="$ROOT/mods/${NAME}-${VERSION}.jar"
 
 # Remove new + legacy jar names so only one AD Forge jar ships.
-rm -f "$ROOT"/mods/AdaptiveDifficulty-*.jar \
+rm -f "$ROOT"/mods/LegacyMechanics-*.jar \
+      "$ROOT"/mods/AdaptiveDifficulty-*.jar \
       "$ROOT"/mods/dmz_adaptive_difficulty-*.jar \
       "$ROOT"/AdaptiveDifficulty-*.jar \
       "$ROOT"/dmz_adaptive_difficulty-*.jar
@@ -66,8 +67,8 @@ python3 "$HERE_SIM/validate_tier_costs.py"
 python3 "$HERE_SIM/validate_scaling.py"
 python3 "$HERE_SIM/simulate_build_matrix.py" --check
 python3 "$HERE_SIM/audit_concept.py"
-if [[ -f "$ROOT/plugins/AdaptiveDifficultyGUI-${VERSION}.jar" ]]; then
+if [[ -f "$ROOT/plugins/LegacyMechanicsGUI-${VERSION}.jar" ]] || [[ -f "$ROOT/mods/LegacyMechanics-${VERSION}.jar" ]]; then
   python3 "$HERE_SIM/audit_gui_abi.py"
 else
-  echo "WARN: AdaptiveDifficultyGUI-${VERSION}.jar missing — skip GUI ABI audit" >&2
+  echo "WARN: LegacyMechanicsGUI-${VERSION}.jar missing — skip GUI ABI audit" >&2
 fi

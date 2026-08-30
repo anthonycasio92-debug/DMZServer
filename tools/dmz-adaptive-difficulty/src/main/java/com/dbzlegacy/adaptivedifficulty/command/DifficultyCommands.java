@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.command;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
@@ -10,7 +11,9 @@ import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler;
 import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
+import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
@@ -94,6 +97,8 @@ public final class DifficultyCommands {
                         .then(whitelistRoot("wl"))
                         .then(telemetryRoot("telemetry"))
                         .then(telemetryRoot("tel"))
+                        .then(syslogRoot("syslog"))
+                        .then(syslogRoot("systemlog"))
                         .then(Commands.m_82127_("gamedifficulty")
                                 .then(Commands.m_82129_("level", StringArgumentType.word())
                                         .executes(ctx -> setVanillaDifficultyOrDeny(
@@ -105,6 +110,36 @@ public final class DifficultyCommands {
                                 .executes(ctx -> adminResetPurchasedOrDeny(ctx.getSource())))
                         .then(Commands.m_82127_("characterreset")
                                 .executes(ctx -> adminCharacterResetOrDeny(ctx.getSource())))
+                        .then(Commands.m_82127_("resynclevel")
+                                .executes(ctx -> adminResyncLevelOrDeny(ctx.getSource(), null))
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .executes(ctx -> adminResyncLevelOrDeny(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player")))))
+                        .then(Commands.m_82127_("gui")
+                                .executes(ctx -> adminInspectGuiOrDeny(ctx.getSource(), null, "main"))
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .executes(ctx -> adminInspectGuiOrDeny(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player"),
+                                                "main"))
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> adminInspectGuiOrDeny(
+                                                        ctx.getSource(),
+                                                        StringArgumentType.getString(ctx, "player"),
+                                                        StringArgumentType.getString(ctx, "page"))))))
+                        .then(Commands.m_82127_("inspect")
+                                .executes(ctx -> adminInspectGuiOrDeny(ctx.getSource(), null, "main"))
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .executes(ctx -> adminInspectGuiOrDeny(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player"),
+                                                "main"))
+                                        .then(Commands.m_82129_("page", StringArgumentType.word())
+                                                .executes(ctx -> adminInspectGuiOrDeny(
+                                                        ctx.getSource(),
+                                                        StringArgumentType.getString(ctx, "player"),
+                                                        StringArgumentType.getString(ctx, "page"))))))
                         .then(Commands.m_82127_("set")
                                 .then(Commands.m_82129_("key", StringArgumentType.word())
                                         .then(Commands.m_82129_("value", StringArgumentType.greedyString())
@@ -122,7 +157,7 @@ public final class DifficultyCommands {
 
     private static LiteralArgumentBuilder<CommandSourceStack> vanillaDifficultyLiteral(String level) {
         return Commands.m_82127_(level)
-                .requires(src -> src.m_6761_(2))
+                .requires(DifficultyCommands::isStaff)
                 .executes(ctx -> setVanillaDifficulty(ctx.getSource(), level));
     }
 
@@ -173,6 +208,23 @@ public final class DifficultyCommands {
                         .executes(ctx -> telemetryTest(ctx.getSource())));
     }
 
+    private static LiteralArgumentBuilder<CommandSourceStack> syslogRoot(String name) {
+        return Commands.m_82127_(name)
+                .executes(ctx -> syslogStatus(ctx.getSource()))
+                .then(Commands.m_82127_("on")
+                        .executes(ctx -> setSyslogEnabled(ctx.getSource(), true)))
+                .then(Commands.m_82127_("off")
+                        .executes(ctx -> setSyslogEnabled(ctx.getSource(), false)))
+                .then(Commands.m_82127_("toggle")
+                        .executes(ctx -> setSyslogEnabled(
+                                ctx.getSource(),
+                                !com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.isEnabled())))
+                .then(Commands.m_82127_("status")
+                        .executes(ctx -> syslogStatus(ctx.getSource())))
+                .then(Commands.m_82127_("flush")
+                        .executes(ctx -> syslogFlush(ctx.getSource())));
+    }
+
     private static int guiDo(CommandSourceStack source, String action, String arg, String page) {
         ServerPlayer player = source.m_230896_();
         if (player == null) {
@@ -205,17 +257,7 @@ public final class DifficultyCommands {
             return true;
         }
         ServerPlayer player = src.m_230896_();
-        if (player == null) {
-            return false;
-        }
-        String node = DifficultyConfig.get().adminPermission;
-        try {
-            var method = player.getClass().getMethod("hasPermission", String.class);
-            Object result = method.invoke(player, node);
-            return result instanceof Boolean b && b;
-        } catch (Throwable ignored) {
-        }
-        return false;
+        return player != null && StaffAccess.isStaff(player);
     }
 
     private static int openGui(CommandSourceStack source) {
@@ -417,22 +459,11 @@ public final class DifficultyCommands {
         if (denyAdmin(source) == 0) {
             return 0;
         }
-        // Auto-list the running staffer so the first fight actually logs.
-        if (on) {
-            ServerPlayer player = source.m_230896_();
-            if (player != null && !DifficultyConfig.isWhitelisted(player)) {
-                DifficultyConfig.addWhitelistEntry(player.m_6302_());
-                DifficultyConfig.addWhitelistEntry(player.m_20148_().toString());
-            }
-        }
         com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.setEnabled(on);
-        int n = DifficultyConfig.whitelistEntries().size();
         source.m_288197_(() -> Component.m_237113_(
                 (on ? "§aBalance telemetry ON" : "§eBalance telemetry OFF")
-                        + "\n§7Logs AD hits on §fwhitelisted§7 players only (§f" + n + "§7 listed)."
-                        + (on && n == 0
-                        ? "\n§eWhitelist is empty — §f/difficulty admin whitelist add <player>"
-                        : "")
+                        + "\n§7Logs AD hits for §fall players§7 using the difficulty system"
+                        + " §8(rate-limited)."
                         + "\n§8" + com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.telemetryDir()
         ), true);
         return 1;
@@ -442,12 +473,10 @@ public final class DifficultyCommands {
         if (denyAdmin(source) == 0) {
             return 0;
         }
-        int n = DifficultyConfig.whitelistEntries().size();
         source.m_288197_(() -> Component.m_237113_(
                 "§6Balance telemetry\n§7"
                         + com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.statusLine()
-                        + "\n§7Whitelist entries: §f" + n
-                        + "\n§8Only listed players are sampled (gate on/off does not matter)."
+                        + "\n§8Samples all AD players when ON (not whitelist-gated)."
                         + "\n§8/difficulty admin telemetry on|off|flush|test"
         ), false);
         return 1;
@@ -484,6 +513,40 @@ public final class DifficultyCommands {
                 "§aTelemetry probe written.\n§7File: §f" + path
                         + "\n§7Remember: live hits only log for §fwhitelisted§7 players."
         ), true);
+        return 1;
+    }
+
+    private static int setSyslogEnabled(CommandSourceStack source, boolean on) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.setEnabled(on);
+        source.m_288197_(() -> Component.m_237113_(
+                (on ? "§aSystem telemetry ON" : "§eSystem telemetry OFF")
+                        + "\n§7Logs difficulty/rival/sparring events for all players (rate-limited)."
+                        + "\n§8" + com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.telemetryDir()
+        ), true);
+        return 1;
+    }
+
+    private static int syslogStatus(CommandSourceStack source) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        source.m_288197_(() -> Component.m_237113_(
+                "§6System telemetry\n§7"
+                        + com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.statusLine()
+        ), false);
+        return 1;
+    }
+
+    private static int syslogFlush(CommandSourceStack source) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.flushAndClose();
+        com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.flushAndClose();
+        source.m_288197_(() -> Component.m_237113_("§aFlushed system + balance telemetry writers."), true);
         return 1;
     }
 
@@ -634,17 +697,21 @@ public final class DifficultyCommands {
 
     private static int adminHelp(CommandSourceStack source) {
         source.m_288197_(() -> Component.m_237113_(
-                "§6Adaptive Difficulty — admin\n"
+                "§6Legacy Mechanics — admin\n"
                         + "§e/difficulty §7— open player GUI (CMI / chest / chat)\n"
                         + "§e/difficulty reset §7— clear active tier (free)\n"
                         + "§e/difficulty do character_reset §7— character-wipe hook (scriptable)\n"
                         + "§e/difficulty hard|normal|easy|peaceful §7— vanilla world difficulty (ops)\n"
                         + "§e/difficulty admin off|on|toggle|status §7— master system switch\n"
                         + "§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist\n"
-                        + "§e/difficulty admin telemetry on|off|status|flush|test §7— log whitelist combat hits\n"
+                        + "§e/difficulty admin telemetry on|off|status|flush|test §7— log AD combat hits (all players)\n"
+                        + "§e/difficulty admin syslog on|off|status|flush §7— unified system event log\n"
+                        + "§e/difficulty admin gui|inspect <player> [page] §7— open their GUI (edit/see their state)\n"
+                        + "§e/difficulty admin resynclevel [player] §7— clear stuck DMZ level sample + refresh GUI level\n"
+                        + "§e/lm §7— Legacy Mechanics hub (Difficulty / Rival / Sparring)\n"
                         + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased|characterreset\n"
                         + "§e/difficulty admin set <key> <value>\n"
-                        + "§8Master keys: enabled · whitelistEnabled · balanceTelemetryEnabled\n"
+                        + "§8Master keys: enabled · whitelistEnabled · balanceTelemetryEnabled · enableSystemTelemetry\n"
                         + "§8Tier keys: unlockTier1Level…7 / Cost…7 / tier1statpercent…7 (0.15–2.0)\n"
                         + "§8Counters: enableClassCounters · enableStrongStatCounters\n"
                         + "§8classCounter*Mult · strongStatCounterMult · maxCounterOverlayMult\n"
@@ -654,6 +721,43 @@ public final class DifficultyCommands {
                         + "§8enemyEvolutionMinUnlockTier · bossMechanicsMinUnlockTier"
         ), false);
         return 1;
+    }
+
+    private static int adminInspectGuiOrDeny(CommandSourceStack source, String playerName, String page) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        ServerPlayer admin = source.m_230896_();
+        if (admin == null) {
+            source.m_81352_(Component.m_237113_("Players only (open inspect from in-game)."));
+            return 0;
+        }
+        if (playerName == null || playerName.isBlank()
+                || "clear".equalsIgnoreCase(playerName)
+                || "self".equalsIgnoreCase(playerName)
+                || "me".equalsIgnoreCase(playerName)) {
+            DifficultyMenu.open(admin, "main");
+            source.m_288197_(() -> Component.m_237113_("§7Inspect closed — showing your own GUI."), false);
+            return 1;
+        }
+        ServerPlayer subject = source.m_81377_().m_6846_().m_11255_(playerName);
+        if (subject == null) {
+            source.m_81352_(Component.m_237113_("Player not online: " + playerName));
+            return 0;
+        }
+        String targetPage = page == null || page.isBlank() ? "main" : page;
+        if ("details".equalsIgnoreCase(targetPage)) {
+            targetPage = "stats";
+        }
+        if (com.dbzlegacy.adaptivedifficulty.gui.CmiGuiBridge.openInspect(admin, subject, targetPage)) {
+            return 1;
+        }
+        source.m_81352_(Component.m_237113_(
+                "§cCould not open inspect GUI. Is LegacyMechanicsGUI loaded? "
+                        + "Try §f/difficulty admin gui " + subject.m_6302_()
+                        + " §cfrom Bukkit."
+        ));
+        return 0;
     }
 
     private static int adminResetPurchasedOrDeny(CommandSourceStack source) {
@@ -693,6 +797,62 @@ public final class DifficultyCommands {
         AreaDifficulty.clearCache();
         source.m_288197_(() -> Component.m_237113_("§aCharacter difficulty reset applied."), true);
         return result.ok() ? 1 : 0;
+    }
+
+    /**
+     * Clear stuck session DMZ level sample and refresh Buy GUI reading.
+     * Public for Bukkit {@code ForgeBridge.resyncLevel} (Mohist owns {@code /difficulty}).
+     */
+    public static String resyncLevel(ServerPlayer target) {
+        if (target == null) {
+            return "§cNo player.";
+        }
+        DmzProgression.clearBaseFormLevel(target.m_20148_());
+        int sampled = DmzProgression.refreshBaseFormSample(target);
+        var data = DifficultyCache.data(target);
+        if (!DmzProgression.isTransformed(target)) {
+            data.noteDmzLevel(sampled);
+        }
+        DifficultyCache.refresh(target);
+        DifficultyCache.save(target);
+
+        int live = DmzProgression.dmzLevel(target);
+        long shown = UnlockSystem.gateLevelForEligibility(target);
+        boolean transformed = DmzProgression.isTransformed(target);
+        return "§aResynced §f" + target.m_6302_()
+                + "§a — sample §f" + sampled
+                + "§a · live DMZ §f" + live
+                + "§a · GUI gate §f" + shown
+                + (transformed ? "§7 (currently transformed — drop to base to raise sample)" : "");
+    }
+
+    private static int adminResyncLevelOrDeny(CommandSourceStack source, String playerName) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        ServerPlayer target;
+        if (playerName == null || playerName.isBlank()) {
+            target = source.m_230896_();
+            if (target == null) {
+                source.m_81352_(Component.m_237113_("Usage: /difficulty admin resynclevel <player>"));
+                return 0;
+            }
+        } else {
+            var server = source.m_81377_();
+            if (server == null) {
+                source.m_81352_(Component.m_237113_("§cNo server."));
+                return 0;
+            }
+            target = server.m_6846_().m_11255_(playerName);
+            if (target == null) {
+                source.m_81352_(Component.m_237113_("§cPlayer not online: " + playerName));
+                return 0;
+            }
+        }
+
+        String msg = resyncLevel(target);
+        source.m_288197_(() -> Component.m_237113_(msg), true);
+        return 1;
     }
 
     private static int adminSet(CommandSourceStack source, String key, String value) {
@@ -793,6 +953,16 @@ public final class DifficultyCommands {
                 case "enableadaptiveai" -> cfg.enableAdaptiveAi = Boolean.parseBoolean(value);
                 case "enableenemyevolution" -> cfg.enableEnemyEvolution = Boolean.parseBoolean(value);
                 case "enablebossscaling" -> cfg.enableBossScaling = Boolean.parseBoolean(value);
+                case "enablerivalsystem", "rival", "rivals" ->
+                        cfg.enableRivalSystem = Boolean.parseBoolean(value);
+                case "enablesparringsystem", "sparring", "spar" ->
+                        cfg.enableSparringSystem = Boolean.parseBoolean(value);
+                case "enableplayerstatchecker", "statchecker", "playerstatchecker" ->
+                        cfg.enablePlayerStatChecker = Boolean.parseBoolean(value);
+                case "rivalpresencetp", "rivalpresence" ->
+                        cfg.rivalPresenceTp = Boolean.parseBoolean(value);
+                case "rivalinstinct" -> cfg.rivalInstinct = Boolean.parseBoolean(value);
+                case "rivalchallenges" -> cfg.rivalChallenges = Boolean.parseBoolean(value);
                 case "bossstatmultiplier" ->
                         cfg.bossStatMultiplier = Math.max(1.0, Math.min(5.0, Double.parseDouble(value)));
                 case "bosshealththreshold" ->
@@ -948,6 +1118,10 @@ public final class DifficultyCommands {
                 }
                 case "tiercostleveldivisor", "costleveldivisor", "tiercostdivisor" ->
                         cfg.tierCostLevelDivisor = Math.max(1.0, Double.parseDouble(value));
+                case "tiercostlevelanchor", "costlevelanchor", "tiercostanchor" ->
+                        cfg.tierCostLevelAnchor = Math.max(2.0, Double.parseDouble(value));
+                case "tiercostt7targetcopper", "tiercostt7target", "t7targetcopper", "tiercosttarget" ->
+                        cfg.tierCostT7TargetCopper = Math.max(1L, Long.parseLong(value));
 
                 // ── V3 Ancient Coins + feature gates ───────────────────────
                 case "enableancientcoindrops", "ancientcoindrops" ->

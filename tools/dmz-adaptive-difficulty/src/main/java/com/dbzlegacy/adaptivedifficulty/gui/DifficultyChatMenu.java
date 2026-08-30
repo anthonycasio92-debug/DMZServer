@@ -28,6 +28,12 @@ public final class DifficultyChatMenu {
     private DifficultyChatMenu() {}
 
     public static void open(ServerPlayer player, String page) {
+        // Chat pages open without DifficultyMenu sometimes — still re-sample DMZ level.
+        int sampled = DmzProgression.sampleLevelOnGuiOpen(player);
+        if (!DmzProgression.isTransformed(player)) {
+            DifficultyCache.data(player).noteDmzLevel(sampled);
+        }
+        DifficultyCache.refresh(player);
         if ("settings".equalsIgnoreCase(page)) {
             if (StaffAccess.isStaff(player)) {
                 settings(player);
@@ -69,7 +75,7 @@ public final class DifficultyChatMenu {
     private static void main(ServerPlayer player) {
         DifficultySnapshot snap = DifficultyCache.refresh(player);
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8── §fAdaptive Difficulty §8──"));
+        send(player, Component.m_237113_("§8── §fLegacy Mechanics · Difficulty §8──"));
         if (!DifficultyConfig.isEnabled()) {
             send(player, Component.m_237113_("§c§lSYSTEM DISABLED"));
             if (isStaff(player)) {
@@ -131,6 +137,7 @@ public final class DifficultyChatMenu {
         if (isStaff(player)) {
             send(player, btn("§8[Details]", "/difficulty do page stats", "Staff breakdown"));
         }
+        send(player, btn("§7« Hub", "/lmdo lm open hub", "Legacy Mechanics hub"));
         send(player, Component.m_237113_("§8────────────────"));
     }
 
@@ -293,14 +300,15 @@ public final class DifficultyChatMenu {
                         ? "§eWhitelist ON §7(" + DifficultyConfig.whitelistEntries().size() + ")"
                         : "§7Whitelist OFF")));
         send(player, Component.m_237113_("§8/difficulty admin off|on · whitelist on|off|add|remove|list"));
-        send(player, Component.m_237113_("§7Tier cost level divisor §f" + cfg.tierCostLevelDivisor
-                + " §8(stock 50000 · cost × (1 + levelsAboveUnlock / divisor))"));
+        send(player, Component.m_237113_("§7Tier cost anchor §f" + (long) cfg.tierCostLevelAnchor
+                + " §8· T7 target §f" + cfg.tierCostT7TargetCopper
+                + " copper §8(stock 150000 → 100× Netherite)"));
+        send(player, Component.m_237113_("§8/difficulty admin set tierCostLevelAnchor|tierCostT7TargetCopper <n>"));
         send(player, Component.m_237113_("§7Coin drops §f" + cfg.enableAncientCoinDrops
                 + "  §7Death reset §f" + cfg.deathResetsActiveDifficulty));
         send(player, Component.m_237113_("§7Drop chance §f" + cfg.ancientCoinDropChance
                 + "  §7Dual upgrade §f" + cfg.ancientCoinUpgradeChance
                 + " §8(stock 0.05 / 0.005)"));
-        send(player, Component.m_237113_("§8/difficulty admin set tierCostLevelDivisor <n>"));
         send(player, Component.m_237113_("§8/difficulty admin set ancientCoinDropChance|ancientCoinUpgradeChance <0-1>"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }

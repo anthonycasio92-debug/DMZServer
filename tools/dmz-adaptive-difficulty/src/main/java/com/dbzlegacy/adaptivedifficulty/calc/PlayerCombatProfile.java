@@ -549,9 +549,10 @@ public final class PlayerCombatProfile {
         // T1–T3 + transformed: raise soft floors so god forms stop tapping at early buys.
         // 1.0.28 (hits-2026-08-05): T1 high-form packs still ~11–15% bag — bump early threat.
         if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
+            // 2.3.57 (hits-2026-08-29..30): ease T2 god painted overshoot before soft-cap.
             double threatPct = switch (activeTier) {
-                case 1 -> 0.56;
-                case 2 -> 0.70;
+                case 1 -> 0.52;
+                case 2 -> 0.60;
                 case 3 -> 0.80;
                 default -> 0.0;
             };
@@ -579,9 +580,10 @@ public final class PlayerCombatProfile {
         // Live-offense pressure: soft-curve alone under-represents god forms. Pull a
         // bounded slice of live offense×tier% so transforms actually raise threat.
         if (formBoost > 1.12 && liveOffense > offense * 1.05) {
+            // 2.3.57: trim early live-slice — T2 gods were soft-cap pinned at 43%.
             double liveShare = switch (activeTier) {
-                case 1 -> 0.32;
-                case 2 -> 0.42;
+                case 1 -> 0.28;
+                case 2 -> 0.34;
                 case 3 -> 0.52;
                 case 4 -> 0.60;
                 case 5 -> 0.74;
@@ -641,23 +643,24 @@ public final class PlayerCombatProfile {
 
     /** Same progressive ceilings as {@code DifficultyEvents.onDamageDone}. */
     public double incomingSoftCapFrac() {
-        // 1.0.33: full monotonic soft-cap ladder (T3 was above T4 for god forms).
+        // 2.3.57 (hits-2026-08-29..30): ease T1–T3 ceilings — T2 gods were soft-cap
+        // pinned at 43% bag. T4+ unchanged (buy pressure). Still monotonic.
         return switch (activeTier) {
             case 7 -> 0.62;
             case 6 -> 0.58;
             case 5 -> 0.52;
             case 4 -> 0.50;
-            case 3 -> 0.46;
-            case 2 -> 0.43;
-            default -> 0.40; // T1
+            case 3 -> 0.44;
+            case 2 -> 0.36;
+            default -> 0.34; // T1
         };
     }
 
     /**
      * Post-mitigation HP restored when DMZ hard-cancels a hit.
      * <p>
-     * 1.0.35 (hits-2026-08-06..08): lift KP-god T3 landing, ease T4 cliff, separate
-     * T6≈T7 flatline. Soft-caps stay monotonic (1.0.33).
+     * 2.3.57 (hits-2026-08-29..30): ease T1–T2 landing; lift T5 landFrac toward soft-cap.
+     * Soft-caps stay monotonic. Pierce cannot clear wouldCancel while soft-cap &lt; mit/thr.
      */
     public double targetLandingDamage(DifficultyConfig cfg) {
         double liveBag = Math.max(20.0, liveMaxHealth);
@@ -666,18 +669,19 @@ public final class PlayerCombatProfile {
         double bag = Math.max(blendBag, liveBag * 0.90);
         // Tier landing fractions — progressive ladder from live claimed hits.
         double landFrac = switch (activeTier) {
-            case 1 -> 0.14;
-            case 2 -> 0.19;
+            case 1 -> 0.13;
+            case 2 -> 0.16;
             case 3 -> 0.30;
             case 4 -> 0.37;
-            case 5 -> 0.48;
+            case 5 -> 0.50;
             case 6 -> 0.50;
             default -> 0.58;
         };
         if (formBoost > 1.12) {
             double t = Math.min(1.0, Math.log(Math.max(1.12, formBoost)) / Math.log(80.0));
-            // Milder form bump — T1 gods were overshooting via landCap before.
-            landFrac *= 1.0 + 0.12 * t;
+            // Early tiers: lighter form bump (T2 gods overshot soft-cap via kits).
+            double bump = activeTier <= 2 ? 0.06 : 0.12;
+            landFrac *= 1.0 + bump * t;
         }
         double land = bag * landFrac;
         // KP (when trained) still matters on the safety-net path.
@@ -687,10 +691,10 @@ public final class PlayerCombatProfile {
         }
         // Floor: never a free tap; cap: never a free one-shot.
         land = Math.max(liveBag * Math.max(0.05, tierPercent * 0.08), land);
-        // Early-tier caps tight (T1 god was pinning ~38%); mid/high climb with buys.
+        // Early-tier caps tight; mid/high climb with buys.
         double landCap = switch (activeTier) {
-            case 1 -> 0.21;
-            case 2 -> 0.27;
+            case 1 -> 0.18;
+            case 2 -> 0.23;
             case 3 -> 0.38;
             case 4 -> 0.48;
             case 5 -> 0.52;
@@ -1160,8 +1164,8 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableClassCounters ? 1L : 0L);
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
-        // Formula revision: Aug 6–8 ladder + level clamp (1.0.35).
-        h = mix(h, 37L);
+        // Formula revision: Aug 29–30 early soft-cap + landing ease (2.3.57).
+        h = mix(h, 38L);
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

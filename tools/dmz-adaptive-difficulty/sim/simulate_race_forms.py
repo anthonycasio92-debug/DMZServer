@@ -336,7 +336,7 @@ def simulate_ad(
     dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
     dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.56, 2: 0.70, 3: 0.80}[tier]
+        threat = {1: 0.52, 2: 0.60, 3: 0.80}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
@@ -346,7 +346,7 @@ def simulate_ad(
         nudge = {4: 1.58, 5: 1.78, 6: 1.82, 7: 1.62}[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
-        live_share = {1: 0.32, 2: 0.42, 3: 0.52, 4: 0.60, 5: 0.74, 6: 0.74, 7: 0.74}[tier]
+        live_share = {1: 0.28, 2: 0.34, 3: 0.52, 4: 0.60, 5: 0.74, 6: 0.74, 7: 0.74}[tier]
         if form_boost >= 6.0:
             mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
         else:
@@ -372,7 +372,7 @@ def simulate_ad(
     if live_flat > 1.0 and dmg * cancel_thr <= live_flat and allow_pierce:
         dmg = max(dmg, live_flat / cancel_thr * 1.08)
     # 1.0.25: clamp post-pierce to live incoming soft-cap (mirrors DifficultyEvents).
-    soft_cap_frac = {1: 0.40, 2: 0.43, 3: 0.46, 4: 0.50, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
+    soft_cap_frac = {1: 0.34, 2: 0.36, 3: 0.44, 4: 0.50, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
     bag_cap = max(20.0, live_hp) * soft_cap_frac
     dmg = min(dmg, bag_cap)
 

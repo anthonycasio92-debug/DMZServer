@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.event;
 
 import com.dbzlegacy.adaptivedifficulty.ai.AdaptiveAiSystem;
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
@@ -9,16 +10,26 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.evolution.CombatGravity;
 import com.dbzlegacy.adaptivedifficulty.evolution.EnemyEvolution;
+import com.dbzlegacy.adaptivedifficulty.progression.PlayerStatChecker;
+import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
+import com.dbzlegacy.adaptivedifficulty.progression.end.EndProgression;
 import com.dbzlegacy.adaptivedifficulty.reward.RewardSystem;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalProgression;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalStore;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalSystem;
 import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.scaling.SlimeSplitGuard;
+import com.dbzlegacy.adaptivedifficulty.sparring.SparStore;
+import com.dbzlegacy.adaptivedifficulty.sparring.SparringSystem;
 import com.dbzlegacy.adaptivedifficulty.tick.BehaviorScheduler;
 import com.dbzlegacy.adaptivedifficulty.tick.CombatIndex;
 import com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler;
 import com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry;
 import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
+import com.dbzlegacy.adaptivedifficulty.title.TitleEffects;
+import com.dbzlegacy.adaptivedifficulty.title.TitleSense;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.DimensionGates;
 import com.dbzlegacy.adaptivedifficulty.util.NearbyPlayers;
@@ -55,6 +66,8 @@ import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
@@ -89,16 +102,43 @@ public final class DifficultyEvents {
         LAST_LIVE_OFFENSE.clear();
         LAST_RACE.clear();
         LAST_FORM_KEY.clear();
+        RivalStore.get().load();
+        SparStore.get().load();
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost.load();
+        } catch (Throwable ignored) {
+        }
+        RivalProgression.get().load();
     }
 
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
         VanillaDifficultyGuard.restoreIfPeaceful(event.getServer());
+        try {
+            com.dbzlegacy.adaptivedifficulty.data.CnpcDataMigrator.migrateWorldIfNeeded(event.getServer());
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] CNPC world migration hook failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
     }
 
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
         BalanceTelemetry.flushAndClose();
+        com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.flushAndClose();
+        try {
+            RivalStore.get().save();
+            SparStore.get().save();
+            RivalProgression.get().save();
+            com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost.save();
+        } catch (Throwable ignored) {
+        }
+        RivalStore.get().save();
+        SparStore.get().save();
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost.save();
+        } catch (Throwable ignored) {
+        }
     }
 
     @SubscribeEvent
@@ -114,10 +154,17 @@ public final class DifficultyEvents {
             }
             // Convert any leftover NBT Ancient Coin wallet into real Lightman's items (once/session).
             AncientCoinEconomy.migrateWalletToItems(player);
+            try {
+                com.dbzlegacy.adaptivedifficulty.data.CnpcDataMigrator.migratePlayerIfNeeded(player);
+            } catch (Throwable ignored) {
+            }
             DifficultyCache.refresh(player);
             // Persist any unlock-list repairs from refresh so the next disconnect keeps the tier.
             DifficultyCache.save(player);
             TitleSystem.syncTierTitles(player, false);
+            RivalSystem.onLogin(player);
+            SparringSystem.onLogin(player);
+            ProgressionSystem.onLogin(player);
         }
     }
 
@@ -152,6 +199,9 @@ public final class DifficultyEvents {
             LAST_FORM_KEY.remove(player.m_20148_());
             AncientCoinEconomy.clearMigrateFlag(player.m_20148_());
             AreaDifficulty.clearCache();
+            RivalSystem.onLogout(player);
+            SparringSystem.onLogout(player);
+            ProgressionSystem.onLogout(player);
         }
     }
 
@@ -306,6 +356,9 @@ public final class DifficultyEvents {
         }
         // Even when master is OFF, drain claims + revert scaled hostiles.
         BehaviorScheduler.pulse(server, server.m_129921_()); // getTickCount
+        RivalSystem.pulse(server, server.m_129921_());
+        SparringSystem.pulse(server, server.m_129921_());
+        ProgressionSystem.pulse(server, server.m_129921_());
     }
 
     @SubscribeEvent
@@ -318,6 +371,17 @@ public final class DifficultyEvents {
         // Custom races often skip FormChangeEvent — catch form mult spikes here.
         if (player.f_19797_ % 20 != 0) {
             return;
+        }
+        // Survivor challenge: accumulate playtime while a tier is active.
+        if (DifficultyCache.data(player).getActiveTier() > 0) {
+            DifficultyCache.data(player).titleProgress().addPlaySeconds(1L);
+            if (player.f_19797_ % 1200 == 0) {
+                TitleSystem.syncChallengeTitles(player, true);
+                DifficultyCache.save(player);
+            }
+        }
+        if (player.f_19797_ % 40 == 0) {
+            TitleSense.pulse(player);
         }
         DifficultySnapshot before = DifficultyCache.get(player);
         int level = DmzProgression.dmzLevelForProgression(player);
@@ -477,6 +541,14 @@ public final class DifficultyEvents {
                 event.setAmount(scaled);
             }
         }
+        // Equipped title / Title Score damage perks (small, capped).
+        if (amount > 0.0f && causerPlayer && victimHostile
+                && causing instanceof ServerPlayer attacker) {
+            float boosted = TitleEffects.applyOutgoingDamageBonus(attacker, victim, event.getAmount());
+            if (boosted != event.getAmount()) {
+                event.setAmount(boosted);
+            }
+        }
         if (victimHostile) {
             AdaptiveAiSystem.onHurt(event);
         }
@@ -489,6 +561,98 @@ public final class DifficultyEvents {
         }
         if (victimHostile && victim.m_21223_() <= 0.0f) {
             MobScaling.terminateIfZeroHealth(victim);
+        }
+
+        // Rival / Sparring PvP scoring + natural-progression combat/End/dummy.
+        if (victim instanceof ServerPlayer pvpVictim
+                && causing instanceof ServerPlayer pvpAttacker) {
+            RivalSystem.onPlayerHurt(pvpVictim, pvpAttacker, source);
+            SparringSystem.onPlayerHurt(pvpVictim, pvpAttacker, source);
+        }
+        ProgressionSystem.onHurt(event);
+    }
+
+    @SubscribeEvent
+    public void onBlockBreak(BlockEvent.BreakEvent event) {
+        if (!(event.getPlayer() instanceof ServerPlayer player) || player.m_9236_().f_46443_) {
+            return;
+        }
+        ProgressionSystem.onBlockBreak(player, event.getPos(), event.getState());
+    }
+
+    @SubscribeEvent
+    public void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
+        if (event.getLevel() == null || event.getLevel().m_5776_()) {
+            return;
+        }
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        ProgressionSystem.onBlockPlace(player, event.getPos(), event.getPlacedBlock());
+    }
+
+    @SubscribeEvent
+    public void onTravelToDimension(net.minecraftforge.event.entity.EntityTravelToDimensionEvent event) {
+        EndProgression.onTravelToDimension(event);
+    }
+
+    @SubscribeEvent
+    public void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        EndProgression.onRightClickBlock(event);
+    }
+
+    /** Sneak + right-click another player → DMZ stat dump (PlayerStatChecker.js).
+     * Also Skill Check / Rival / Spar / Hub / Difficulty / Prestige CNPC interact. */
+    @SubscribeEvent
+    public void onPlayerEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        if (event.getLevel() == null || event.getLevel().m_5776_()) {
+            return;
+        }
+        if (event.getHand() != net.minecraft.world.InteractionHand.MAIN_HAND) {
+            return;
+        }
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
+                && event.getTarget() != null) {
+            // CNPC scripter / wand / cloner — let staff edit NPCs; do not force GUIs.
+            if (com.dbzlegacy.adaptivedifficulty.gui.CnpcGuiOpener.holdingEditorTool(player)) {
+                return;
+            }
+            if (com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService.tryOpenFromNpc(
+                    player, event.getTarget())) {
+                event.setCanceled(true);
+                return;
+            }
+            // Tags or strict names — cancel (LegacyMechanics replaces CNPC scripts).
+            if (com.dbzlegacy.adaptivedifficulty.gui.CnpcGuiOpener.tryOpenFromNpc(
+                    player, event.getTarget())) {
+                event.setCanceled(true);
+                return;
+            }
+        }
+        PlayerStatChecker.onEntityInteract(event);
+    }
+
+    /**
+     * Rival + Sparring death / KO / mob-kill hooks.
+     * Independent of AD master gate — these systems have their own config flags.
+     */
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public void onRivalSparDeath(LivingDeathEvent event) {
+        LivingEntity dead = event.getEntity();
+        if (dead == null || dead.m_9236_().f_46443_) {
+            return;
+        }
+        Entity killerEnt = event.getSource() == null ? null : event.getSource().m_7639_();
+        if (dead instanceof ServerPlayer victim) {
+            LivingEntity killerLiving = killerEnt instanceof LivingEntity le ? le : null;
+            RivalSystem.onDeath(victim, killerLiving);
+            SparringSystem.onDeath(victim);
+        }
+        if (killerEnt instanceof ServerPlayer killer
+                && dead instanceof LivingEntity
+                && !(dead instanceof Player)) {
+            RivalSystem.onMobKillNear(killer, (LivingEntity) dead);
+            ProgressionSystem.onDeath(event);
         }
     }
 
@@ -542,18 +706,18 @@ public final class DifficultyEvents {
             // Old 0.45× gate left T4 tanks below T3 (Got2takeitez 0.17 vs 0.24).
             event.setAmount((float) Math.max(preAmount, land));
         }
-        // Soft-cap crushing hits — monotonic buy ladder (hits-2026-08-05 + concept).
-        // 1.0.33: T3 was 0.55 > T4 0.48 (god forms got easier after buying T4).
-        // Ladder: T1 0.40 · T2 0.43 · T3 0.46 · T4 0.50 · T5 0.52 · T6 0.58 · T7 0.62.
+        // Soft-cap crushing hits — monotonic buy ladder.
+        // 2.3.57 (hits-2026-08-29..30): ease T1–T3 — T2 gods were pinned at 43% bag.
+        // Ladder: T1 0.34 · T2 0.36 · T3 0.44 · T4 0.50 · T5 0.52 · T6 0.58 · T7 0.62.
         double bag = Math.max(20.0, profile.liveMaxHealth);
         double maxFrac = switch (profile.activeTier) {
             case 7 -> 0.62;
             case 6 -> 0.58;
             case 5 -> 0.52;
             case 4 -> 0.50;
-            case 3 -> 0.46;
-            case 2 -> 0.43;
-            default -> 0.40; // T1
+            case 3 -> 0.44;
+            case 2 -> 0.36;
+            default -> 0.34; // T1
         };
         float softCap = (float) (bag * maxFrac);
         if (event.getAmount() > softCap) {
@@ -584,18 +748,21 @@ public final class DifficultyEvents {
         }
         // V3 death penalty: clear temporary active tier/level; unlocks & coins stay.
         // Uses allows() (not participates) so toggling personal OFF cannot skip the penalty.
-        if (dead instanceof ServerPlayer victim
-                && SystemGate.allows(victim)
-                && DifficultyConfig.get().deathResetsActiveDifficulty) {
-            var data = DifficultyCache.data(victim);
-            if (data.getActiveTier() > 0 || data.getActiveDifficultyLevel() > 0L) {
-                data.resetTemporary();
-                DifficultyCache.save(victim);
-                DifficultyCache.refresh(victim);
-                ScaledMobTracker.releaseAndRevertPlayer(victim);
-                NearbyMobScaler.processEvictions();
-                victim.m_213846_(net.minecraft.network.chat.Component.m_237113_(
-                        "§cDifficulty deactivated on death. §7Unlocks & Ancient Coins kept."));
+        if (dead instanceof ServerPlayer victim) {
+            // Title no-death streaks always break on death (even if personal OFF).
+            TitleSystem.noteDeath(victim);
+            if (SystemGate.allows(victim)
+                    && DifficultyConfig.get().deathResetsActiveDifficulty) {
+                var data = DifficultyCache.data(victim);
+                if (data.getActiveTier() > 0 || data.getActiveDifficultyLevel() > 0L) {
+                    data.resetTemporary();
+                    DifficultyCache.save(victim);
+                    DifficultyCache.refresh(victim);
+                    ScaledMobTracker.releaseAndRevertPlayer(victim);
+                    NearbyMobScaler.processEvictions();
+                    victim.m_213846_(net.minecraft.network.chat.Component.m_237113_(
+                            "§cDifficulty deactivated on death. §7Unlocks & Ancient Coins kept."));
+                }
             }
         }
         if (!(event.getSource().m_7639_() instanceof ServerPlayer killer) || !SystemGate.participates(killer)) {
@@ -611,6 +778,7 @@ public final class DifficultyEvents {
      */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public void onProjectileJoin(EntityJoinLevelEvent event) {
+        ProgressionSystem.onJoin(event);
         if (SystemGate.isDisabled() || event.getLevel().m_5776_()) { // isClientSide
             return;
         }

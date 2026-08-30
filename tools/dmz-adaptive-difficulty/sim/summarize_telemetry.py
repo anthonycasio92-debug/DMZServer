@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarize AdaptiveDifficulty whitelist combat telemetry JSONL.
+"""Summarize AdaptiveDifficulty combat telemetry JSONL.
 
 Usage:
   python3 summarize_telemetry.py [path/to/hits-YYYY-MM-DD.jsonl ...]

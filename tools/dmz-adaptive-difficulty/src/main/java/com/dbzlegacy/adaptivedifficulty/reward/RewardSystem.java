@@ -12,6 +12,7 @@ import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
+import com.dbzlegacy.adaptivedifficulty.mutation.MutationSystem;
 import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
@@ -88,16 +89,34 @@ public final class RewardSystem {
         AncientCoinEconomy.KillLoot loot = AncientCoinEconomy.rollKillLoot(
                 killer, snap.combatRating, elite, boss);
         UUID killerId = killer.m_20148_();
+        long copperValue = 0L;
         if (loot.hasPrimary()) {
             AncientCoinEconomy.dropInWorld(dead, loot.primary(), killerId);
+            copperValue += loot.primary().copperValue();
         }
         if (loot.hasBonus()) {
             AncientCoinEconomy.dropInWorld(dead, loot.bonus(), killerId);
+            copperValue += loot.bonus().copperValue();
         }
         if (data.isCoinDropChat() && (loot.hasPrimary() || loot.hasBonus())) {
             AncientCoinEconomy.notifyGrant(killer, loot);
         }
-        // XP / titles only once a tier is active.
+        boolean solo = ScaledMobTracker.findClaimOwnerId(deadId) != null
+                && ScaledMobTracker.findClaimOwnerId(deadId).equals(killerId);
+        // Title counters track Adaptive kills even before combat-title gates.
+        if (snap.activeTier > 0 || loot.hasPrimary() || loot.hasBonus()) {
+            TitleSystem.noteKill(
+                    killer,
+                    snap,
+                    elite,
+                    boss,
+                    MutationSystem.get(dead),
+                    data.isPersonalEnabled(),
+                    solo,
+                    copperValue
+            );
+        }
+        // XP / combat title grants only once a tier is active.
         if (snap.activeTier > 0) {
             grantExperience(killer, mult, elite, boss, unlock);
             TitleSystem.maybeUnlockCombatTitle(killer, snap, elite, boss);

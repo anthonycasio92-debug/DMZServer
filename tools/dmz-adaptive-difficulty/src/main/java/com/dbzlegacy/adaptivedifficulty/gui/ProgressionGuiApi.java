@@ -1,0 +1,900 @@
+package com.dbzlegacy.adaptivedifficulty.gui;
+
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
+import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
+import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillUnlockService;
+import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;
+import com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost;
+import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
+import com.dragonminez.common.stats.StatsData;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import net.minecraft.server.level.ServerPlayer;
+
+/**
+ * Public static API for Bukkit companion reflection ({@code LegacyMechanicsGUI}).
+ * Progression / Prestige / Skills status maps, lore lines, and {@code do} dispatch —
+ * the companion plugin owns inventory reopen.
+ */
+public final class ProgressionGuiApi {
+    private ProgressionGuiApi() {}
+
+    /** Player-facing meditation trial help (no staff command hints). */
+    public static String meditationExplain() {
+        return MeditationProgression.explainTrials(false);
+    }
+
+    /**
+     * Meditation trial help for {@code viewer}. Staff/op see rotate command; others never do.
+     */
+    public static String meditationExplain(ServerPlayer viewer) {
+        boolean staff = viewer != null && StaffAccess.isStaff(viewer);
+        return MeditationProgression.explainTrials(staff);
+    }
+
+    /** Staff: rotate + broadcast the global meditation trial. */
+    public static String meditationAdvance(ServerPlayer player) {
+        return MeditationProgression.advanceTrial(player);
+    }
+
+    /** Full chat help for {@code /progression} (Bukkit command tree). Staff-only list. */
+    public static String commandHelp() {
+        return commandHelp(true);
+    }
+
+    /** Chat help. Non-staff: meditation only (other actions via /lm GUI). */
+    public static String commandHelp(boolean staff) {
+        if (!staff) {
+            return String.join("\n",
+                    "§d§lMeditation Trial",
+                    "§8────────────",
+                    "§e/progression meditation §7— current biome, goal, and timer",
+                    "§8Charge Ki in the trial biome to level Meditation.",
+                    "",
+                    "§7Other actions: §f/lm §7→ Prestige · Remove Android · Skill Check");
+        }
+        return String.join("\n",
+                "§6§l/progression §8(alias §7/prog§8) §7— command tree",
+                "§e/progression §7· §e/progression gui [page] §8— open GUI",
+                "§e/progression help §8— this list",
+                "§e/progression status §8— flag + boost + meditation summary",
+                "§e/progression flags §7· §eadmin §8— flags GUI",
+                "§e/progression admin <flag> <on|off> §8— toggle a module flag",
+                "§e/progression meditation §8— trial help",
+                "§e/progression meditation next §8— rotate + broadcast trial",
+                "§e/progression android [player] §8— Gero android convert",
+                "§e/progression android remove [player] §8— remove Android upgrade",
+                "§e/progression boost §8— TP boost status",
+                "§e/progression boost start <mult> <minutes> [name]",
+                "§e/progression boost start <encoded> [name]",
+                "§e/progression boost end",
+                "§e/progression do <action> [arg] [page] §8— GUI actions",
+                "§8Pages: main · skills · tp · race · combat · end · fabled · utility · admin · help",
+                "§8Flags: flight sprint meditation potential farming building boost bio",
+                "§8       racelock yardrat spiritualist android kiweapons piercing dot apothic",
+                "§8       end endportal shadow statchecker fabled …");
+    }
+
+    /** Text status (flags + active boost + meditation trial). */
+    public static String statusText() {
+        return ProgressionSystem.statusSummary();
+    }
+
+    /** Staff: {@code /progression admin <flag> <on|off>}. */
+    public static String adminFlag(ServerPlayer actor, String flag, String value) {
+        if (actor == null) {
+            return "§cPlayers only.";
+        }
+        if (!StaffAccess.isStaff(actor)) {
+            return "§cStaff only.";
+        }
+        if (!DifficultyConfig.get().enableProgression) {
+            return "§cProgression system is disabled.";
+        }
+        if (flag == null || flag.isBlank()) {
+            return "§cUsage: /progression admin <flag> <on|off>";
+        }
+        boolean on = "on".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value) || "1".equals(value);
+        boolean off = "off".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value) || "0".equals(value);
+        if (!on && !off) {
+            return "§cUse on|off (got: §f" + value + "§c).";
+        }
+        if (!ProgressionSystem.setFlag(flag, on)) {
+            return "§cUnknown flag: §f" + flag;
+        }
+        return "§aProgression §f" + flag + " §7→ §f" + (on ? "ON" : "OFF");
+    }
+
+    /**
+     * Staff End dragon spawn/clear — optional Bukkit {@code /lmdo enddragon …}
+     * bridge. Prefer Forge {@code /enddragon} / {@code /cleardragons} (no CMI).
+     */
+    public static String endDragon(ServerPlayer actor, String action) {
+        if (actor == null) {
+            return "§cPlayers only.";
+        }
+        if (!StaffAccess.isStaff(actor)) {
+            return "§cStaff only. §7Use §f/enddragon §7(op) or staff.";
+        }
+        if (!DifficultyConfig.get().enableEndDimensionStrength) {
+            return "§cEnd Dimension Strength is disabled.";
+        }
+        String a = action == null ? "spawn" : action.trim().toLowerCase(java.util.Locale.ROOT);
+        return switch (a) {
+            case "clear", "cleanup", "kill", "cleardragons", "killdragons" -> {
+                com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdCleanupDragons(actor);
+                yield "";
+            }
+            default -> {
+                com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdSpawnDragon(actor);
+                yield "";
+            }
+        };
+    }
+
+    /**
+     * Staff: Dr. Gero android upgrade for {@code actor} (blank target) or an online player name.
+     * Used by Bukkit {@code /progression android} — avoids Mohist brigadier forwardCommand.
+     * <p>
+     * Console / Saga: pass {@code actor == null} with a non-blank online {@code targetName}
+     * (also exposed as {@link #androidConvertConsole(String)}).
+     */
+    public static String androidConvert(ServerPlayer actor, String targetName) {
+        if (!DifficultyConfig.get().enableProgression) {
+            return "§cProgression system is disabled.";
+        }
+        if (!DifficultyConfig.get().enableAndroidConversion) {
+            return "§cAndroid conversion is disabled.";
+        }
+        String name = targetName == null ? "" : targetName.trim();
+        if (actor == null) {
+            if (name.isBlank()) {
+                return "§cConsole usage: §fandroidify <player>";
+            }
+            ServerPlayer target = resolveOnlineByName(name);
+            if (target == null) {
+                return "§cPlayer not found (must be online): §f" + name;
+            }
+            return ProgressionSystem.androidConvert(target);
+        }
+        if (!StaffAccess.isStaff(actor)) {
+            return "§cStaff only.";
+        }
+        ServerPlayer target = actor;
+        if (!name.isBlank()) {
+            target = resolveOnline(actor, name);
+            if (target == null) {
+                return "§cPlayer not found: §f" + name;
+            }
+        }
+        return ProgressionSystem.androidConvert(target);
+    }
+
+    /**
+     * Console / Saga / Fabled: {@code androidify <playerName>} (player must be online).
+     */
+    public static String androidConvertConsole(String targetName) {
+        return androidConvert(null, targetName);
+    }
+
+    /**
+     * Remove Android upgrade (two-click confirm).
+     * Players may only remove themselves; staff may target any online player.
+     */
+    public static String androidRemove(ServerPlayer actor, String targetName) {
+        if (actor == null) {
+            return "§cPlayers only.";
+        }
+        if (!DifficultyConfig.get().enableProgression) {
+            return "§cProgression system is disabled.";
+        }
+        if (!DifficultyConfig.get().enableAndroidConversion) {
+            return "§cAndroid tools are disabled.";
+        }
+        ServerPlayer target = actor;
+        String name = targetName == null ? "" : targetName.trim();
+        if (!name.isBlank()) {
+            target = resolveOnline(actor, name);
+            if (target == null) {
+                return "§cPlayer not found: §f" + name;
+            }
+        }
+        boolean self = target.m_20148_().equals(actor.m_20148_());
+        if (!self && !StaffAccess.isStaff(actor)) {
+            return "§cYou can only remove your own Android upgrade.";
+        }
+        return ProgressionSystem.androidRemove(actor, target);
+    }
+
+    /**
+     * Global TP boost controls (staff in-game, or console for store purchases).
+     * Args (space-separated after {@code /progression boost}):
+     * <ul>
+     *   <li>empty / status / help — status + usage</li>
+     *   <li>end / stop — end active boost</li>
+     *   <li>start &lt;encoded&gt; [purchaser…] — Fabled-style encoded start</li>
+     *   <li>start &lt;mult&gt; &lt;minutes&gt; [purchaser…] — direct start</li>
+     *   <li>&lt;encoded&gt; [purchaser…] — shorthand</li>
+     *   <li>&lt;mult&gt; &lt;minutes&gt; [purchaser…] — shorthand</li>
+     * </ul>
+     * Also accepts GUI args: {@code end}, {@code 2.0:30}, {@code encoded:1250030}.
+     * {@code actor} may be {@code null} when run from console (Tebex / panel).
+     */
+    public static String boost(ServerPlayer actor, String argsJoined) {
+        if (actor != null && !StaffAccess.isStaff(actor)) {
+            return "§cStaff only.";
+        }
+        if (!DifficultyConfig.get().enableProgression) {
+            return "§cProgression system is disabled.";
+        }
+        String raw = argsJoined == null ? "" : argsJoined.trim();
+        if (raw.isBlank() || "status".equalsIgnoreCase(raw) || "help".equalsIgnoreCase(raw)
+                || "?".equals(raw)) {
+            return GlobalTpBoost.statusLine() + "\n" + boostUsage();
+        }
+        String defaultPurchaser = actor == null ? "Server" : actor.m_7755_().getString();
+        // GUI compact forms: end | 2.0:30 | encoded:1250030
+        if ("end".equalsIgnoreCase(raw) || "stop".equalsIgnoreCase(raw)) {
+            return ProgressionSystem.boostEnd();
+        }
+        if (raw.toLowerCase(Locale.ROOT).startsWith("encoded:")) {
+            String num = raw.substring("encoded:".length()).trim();
+            try {
+                int encoded = Integer.parseInt(num);
+                return ProgressionSystem.boostStartEncoded(actor, encoded, defaultPurchaser);
+            } catch (NumberFormatException e) {
+                return "§cInvalid encoded value: §f" + num + "\n" + boostUsage();
+            }
+        }
+        if (raw.contains(":")) {
+            String[] parts = raw.split(":", 2);
+            try {
+                double mult = Double.parseDouble(parts[0].trim());
+                int minutes = Integer.parseInt(parts[1].trim());
+                return ProgressionSystem.boostStart(actor, mult, minutes, defaultPurchaser);
+            } catch (NumberFormatException e) {
+                return "§cInvalid boost preset: §f" + raw + "\n" + boostUsage();
+            }
+        }
+
+        String[] parts = raw.split("\\s+");
+        String head = parts[0].toLowerCase(Locale.ROOT);
+        if ("end".equals(head) || "stop".equals(head)) {
+            return ProgressionSystem.boostEnd();
+        }
+        int i = 0;
+        if ("start".equals(head)) {
+            i = 1;
+            if (parts.length <= 1) {
+                return "§cMissing boost args.\n" + boostUsage();
+            }
+        }
+        if (i >= parts.length) {
+            return "§cMissing boost args.\n" + boostUsage();
+        }
+        // Prefer: <mult> <minutes> when two numeric tokens (mult small, minutes < 10000)
+        if (i + 1 < parts.length && looksLikeDouble(parts[i]) && looksLikeInt(parts[i + 1])) {
+            double mult = Double.parseDouble(parts[i]);
+            int minutes = Integer.parseInt(parts[i + 1]);
+            // Heuristic: encoded values are huge (e.g. 1250030); mult+minutes are small.
+            if (mult < 100.0 && minutes < 10_000) {
+                String purchaser = joinFrom(parts, i + 2);
+                if (purchaser.isBlank()) {
+                    purchaser = defaultPurchaser;
+                }
+                return ProgressionSystem.boostStart(actor, mult, minutes, purchaser);
+            }
+        }
+        // encoded [purchaser...]
+        if (looksLikeInt(parts[i])) {
+            try {
+                int encoded = Integer.parseInt(parts[i]);
+                String purchaser = joinFrom(parts, i + 1);
+                if (purchaser.isBlank()) {
+                    purchaser = defaultPurchaser;
+                }
+                return ProgressionSystem.boostStartEncoded(actor, encoded, purchaser);
+            } catch (NumberFormatException e) {
+                return "§cInvalid encoded boost: §f" + parts[i] + "\n" + boostUsage();
+            }
+        }
+        return "§cUnknown boost args: §f" + raw + "\n" + boostUsage();
+    }
+
+    private static String boostUsage() {
+        return "§e/progression boost §7— status\n"
+                + "§e/progression boost end §7— stop active boost\n"
+                + "§e/progression boost start <mult> <minutes> [name] §7— e.g. §f2 30 PlayerName\n"
+                + "§e/progression boost start <encoded> [name] §7— Fabled encoded\n"
+                + "§8Console OK (store): §fprogression boost start 2 30 {username}\n"
+                + "§8GUI: Progression → TP Gains → Global TP Boost";
+    }
+
+    private static boolean looksLikeInt(String s) {
+        if (s == null || s.isBlank()) {
+            return false;
+        }
+        try {
+            Integer.parseInt(s.trim());
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static boolean looksLikeDouble(String s) {
+        if (s == null || s.isBlank()) {
+            return false;
+        }
+        try {
+            Double.parseDouble(s.trim());
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static String joinFrom(String[] parts, int start) {
+        if (parts == null || start >= parts.length) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = start; i < parts.length; i++) {
+            if (i > start) {
+                sb.append(' ');
+            }
+            sb.append(parts[i]);
+        }
+        return sb.toString().trim();
+    }
+
+    private static ServerPlayer resolveOnline(ServerPlayer actor, String name) {
+        try {
+            var server = actor.m_20194_(); // getServer
+            if (server == null) {
+                return resolveOnlineByName(name);
+            }
+            ServerPlayer exact = server.m_6846_().m_11255_(name);
+            if (exact != null) {
+                return exact;
+            }
+            for (ServerPlayer online : server.m_6846_().m_11314_()) {
+                if (online.m_7755_().getString().equalsIgnoreCase(name)) {
+                    return online;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return resolveOnlineByName(name);
+    }
+
+    /** Resolve an online player without an actor (console / Saga). */
+    private static ServerPlayer resolveOnlineByName(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        try {
+            var server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+            if (server == null) {
+                return null;
+            }
+            ServerPlayer exact = server.m_6846_().m_11255_(name.trim());
+            if (exact != null) {
+                return exact;
+            }
+            for (ServerPlayer online : server.m_6846_().m_11314_()) {
+                if (online.m_7755_().getString().equalsIgnoreCase(name.trim())) {
+                    return online;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    // ── Progression ────────────────────────────────────────────────────
+
+    public static Map<String, String> placeholders(ServerPlayer player) {
+        Map<String, String> out = new HashMap<>();
+        out.put("bridge_ok", "false");
+        out.put("system_enabled", "false");
+        if (player == null) {
+            return out;
+        }
+        DifficultyConfig c = DifficultyConfig.get();
+        boolean enabled = c.enableProgression;
+        out.put("bridge_ok", "true");
+        out.put("system_enabled", enabled ? "true" : "false");
+        out.put("staff", StaffAccess.isStaff(player) ? "true" : "false");
+        out.put("boost", GlobalTpBoost.statusLine());
+        out.put("meditation", MeditationProgression.statusLine());
+        out.put("flags", ProgressionConfig.statusSummary());
+        out.put("prestige_enabled", c.enablePrestigeSystem ? "true" : "false");
+        out.put("skills_enabled", c.enableSkillUnlockService ? "true" : "false");
+        out.put("fabled_enabled", c.enableFabledBridge ? "true" : "false");
+        if (!enabled) {
+            return out;
+        }
+        // Skills
+        out.put("flag_master", c.enableProgression ? "true" : "false");
+        out.put("flag_flight", c.enableFlightProgression ? "true" : "false");
+        out.put("flag_sprint", c.enableSprintJump ? "true" : "false");
+        out.put("flag_meditation", c.enableMeditation ? "true" : "false");
+        out.put("flag_potential", c.enablePotential ? "true" : "false");
+        // TP Gains
+        out.put("flag_farming", c.enableFarmingTp ? "true" : "false");
+        out.put("flag_building", c.enableBuildingTp ? "true" : "false");
+        out.put("flag_boost", c.enableGlobalTpBoost ? "true" : "false");
+        out.put("flag_bio", c.enableBioAndroid ? "true" : "false");
+        // Race & Form
+        out.put("flag_racelock", c.enableRaceLock ? "true" : "false");
+        out.put("flag_yardrat", c.enableYardrat ? "true" : "false");
+        out.put("flag_spiritualist", c.enableSpiritualistKi ? "true" : "false");
+        out.put("flag_android", c.enableAndroidConversion ? "true" : "false");
+        // Combat
+        out.put("flag_kiweapons", c.enableKiWeapons ? "true" : "false");
+        out.put("flag_piercing", c.enablePiercingBonus ? "true" : "false");
+        out.put("flag_dot", c.enableDotExtraDamage ? "true" : "false");
+        out.put("flag_apothic", c.enableApothicElemental ? "true" : "false");
+        // End
+        out.put("flag_end", c.enableEndDimensionStrength ? "true" : "false");
+        out.put("flag_endportal", c.enableEndPortalGuard ? "true" : "false");
+        // Shop
+        out.put("flag_skills", c.enableSkillUnlockService ? "true" : "false");
+        out.put("flag_prestige", c.enablePrestigeSystem ? "true" : "false");
+        // Utility
+        out.put("flag_shadow", c.enableShadowDummyLimiter ? "true" : "false");
+        out.put("flag_statchecker", c.enablePlayerStatChecker ? "true" : "false");
+        out.put("flag_playerstatchecker", c.enablePlayerStatChecker ? "true" : "false");
+        // Fabled bridges
+        out.put("flag_fabled", c.enableFabledBridge ? "true" : "false");
+        out.put("flag_energy", c.enableEnergyManaSync ? "true" : "false");
+        out.put("flag_statscreen", c.enableStatScreenSync ? "true" : "false");
+        out.put("flag_tpsp", c.enableTpSpMirror ? "true" : "false");
+        out.put("flag_attr", c.enableAttrMultiBonus ? "true" : "false");
+        out.put("flag_prestigeskill", c.enablePrestigeSkillSync ? "true" : "false");
+        out.put("flag_faction", c.enablePrestigeFactionSync ? "true" : "false");
+        out.put("flag_cleaner", c.enableValueCleaner ? "true" : "false");
+        out.put("flag_raceclass", c.enableRaceClassSync ? "true" : "false");
+        out.put("flag_classperm", c.enableClassPermissionSync ? "true" : "false");
+        return out;
+    }
+
+    public static List<String> linesForPage(ServerPlayer player, String page) {
+        String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
+        if (!DifficultyConfig.get().enableProgression && !"help".equals(p)) {
+            return List.of("§cProgression system is disabled.");
+        }
+        Map<String, String> ph = placeholders(player);
+        return switch (p) {
+            case "status" -> statusLines(player);
+            case "skills" -> categoryLines(
+                    "§e§lSkills",
+                    "§7Passive skill unlocks from Fly, SprintJump,",
+                    "§7Meditation, and Potential scripts.",
+                    ph,
+                    flagLine("Flight", "flag_flight"),
+                    flagLine("Sprint Jump", "flag_sprint"),
+                    flagLine("Meditation", "flag_meditation"),
+                    flagLine("Potential", "flag_potential"));
+            case "tp" -> categoryLines(
+                    "§6§lTP Gains",
+                    "§7Training-point sources: farming, building,",
+                    "§7global boost, and Bio-Android absorb.",
+                    ph,
+                    flagLine("Farming TP", "flag_farming"),
+                    flagLine("Building TP", "flag_building"),
+                    flagLine("Global TP Boost", "flag_boost"),
+                    flagLine("Bio-Android Absorb", "flag_bio"));
+            case "race" -> categoryLines(
+                    "§b§lRace & Form",
+                    "§7Race lock, Yardrat, Spiritualist Ki,",
+                    "§7and Android conversion ports.",
+                    ph,
+                    flagLine("DMZ Race Lock", "flag_racelock"),
+                    flagLine("Yardrat", "flag_yardrat"),
+                    flagLine("Spiritualist Ki", "flag_spiritualist"),
+                    flagLine("Android Conversion", "flag_android"));
+            case "combat" -> categoryLines(
+                    "§c§lCombat",
+                    "§7Ki weapons, piercing, DoT extra damage,",
+                    "§7and Apothic elemental bridges.",
+                    ph,
+                    flagLine("Ki Weapons", "flag_kiweapons"),
+                    flagLine("Piercing", "flag_piercing"),
+                    flagLine("DoT Extra Damage", "flag_dot"),
+                    flagLine("Apothic Elemental", "flag_apothic"));
+            case "end" -> categoryLines(
+                    "§5§lEnd",
+                    "§7End Dimension Strength and portal guard.",
+                    "",
+                    ph,
+                    flagLine("End Dimension Strength", "flag_end"),
+                    flagLine("End Portal Guard", "flag_endportal"));
+            case "shop" -> categoryLines(
+                    "§a§lShop",
+                    "§7Prestige levels and skill unlock service.",
+                    "§7Use buttons below to open those GUIs.",
+                    ph,
+                    flagLine("Prestige System", "flag_prestige"),
+                    flagLine("Skill Unlock Service", "flag_skills"));
+            case "fabled" -> categoryLines(
+                    "§d§lFabled Bridges",
+                    "§7Soft Fabled / LuckPerms bridges — idle if",
+                    "§7the plugin is missing (never hard-crash).",
+                    ph,
+                    flagLine("Fabled Master", "flag_fabled"),
+                    flagLine("Energy ↔ Mana", "flag_energy"),
+                    flagLine("Stat Screen Sync", "flag_statscreen"),
+                    flagLine("TP ↔ SP Mirror", "flag_tpsp"),
+                    flagLine("Attr Multi Bonus", "flag_attr"),
+                    flagLine("Prestige Skill Sync", "flag_prestigeskill"),
+                    flagLine("Prestige Faction Sync", "flag_faction"),
+                    flagLine("Value Cleaner", "flag_cleaner"),
+                    flagLine("Race → Class Sync", "flag_raceclass"),
+                    flagLine("Class Permission Sync", "flag_classperm"));
+            case "utility" -> categoryLines(
+                    "§7§lUtility",
+                    "§7Shadow dummy limiter and sneak-inspect",
+                    "§7player stat checker.",
+                    ph,
+                    flagLine("Shadow Dummy Limiter", "flag_shadow"),
+                    flagLine("Player Stat Checker", "flag_statchecker"));
+            case "admin", "flags", "disable" -> {
+                if (player == null || !StaffAccess.isStaff(player)) {
+                    yield List.of("§cStaff only.");
+                }
+                yield flagLines(ph);
+            }
+            case "help" -> {
+                List<String> help = new ArrayList<>();
+                help.add("§6§l/progression §8— Natural Progression");
+                help.add("§e/progression meditation §7— Current trial + how to train");
+                if (player != null && StaffAccess.isStaff(player)) {
+                    help.add("§e/progression §7— Category hub (flags per section)");
+                    help.add("§e/prog do page skills|tp|race|combat|end|fabled|utility");
+                    help.add("§e/progression meditation next §7— cycle + broadcast trial");
+                    help.add("§e/progression boost §7— status · start &lt;mult&gt; &lt;min&gt; · end");
+                    help.add("§e/progression android [player] §7— Android convert (Gero)");
+                    help.add("§e/progression android remove [player] §7— remove Android upgrade");
+                    help.add("§e/prestige §7— Prestige GUI (staff slash; players use /lm)");
+                    help.add("§e/skills §7— Skill unlocks (staff)");
+                    help.add("§e/skillcheck §7— Skill Check (donator)");
+                    help.add("§8Staff · /prog admin · toggle flags in section GUIs");
+                } else {
+                    help.add("§7Other actions: §f/lm §7→ Prestige · Remove Android");
+                    help.add("§8Charge Ki in the trial biome to level Meditation.");
+                }
+                yield help;
+            }
+            default -> {
+                List<String> lore = new ArrayList<>();
+                lore.add(ph.getOrDefault("boost", "§7Global TP boost: §cOFF"));
+                lore.add(ph.getOrDefault("meditation", "§7No active meditation trial."));
+                lore.add("§8Browse categories to see script ports.");
+                yield lore;
+            }
+        };
+    }
+
+    private static List<String> categoryLines(
+            String title, String desc1, String desc2, Map<String, String> ph, String... featureLines) {
+        List<String> lore = new ArrayList<>();
+        lore.add(title);
+        if (desc1 != null && !desc1.isEmpty()) {
+            lore.add(desc1);
+        }
+        if (desc2 != null && !desc2.isEmpty()) {
+            lore.add(desc2);
+        }
+        lore.add("");
+        for (String line : featureLines) {
+            // line format: "Label|flag_key"
+            int bar = line.indexOf('|');
+            if (bar < 0) {
+                lore.add(line);
+                continue;
+            }
+            String label = line.substring(0, bar);
+            String key = line.substring(bar + 1);
+            boolean on = "true".equalsIgnoreCase(ph.getOrDefault(key, "false"));
+            lore.add("§7" + label + " " + (on ? "§aON" : "§cOFF"));
+        }
+        return lore;
+    }
+
+    private static String flagLine(String label, String placeholderKey) {
+        return label + "|" + placeholderKey;
+    }
+
+    private static List<String> statusLines(ServerPlayer player) {
+        List<String> lore = new ArrayList<>();
+        for (String line : ProgressionSystem.statusSummary().split("\n")) {
+            if (line == null || line.isBlank()) {
+                continue;
+            }
+            lore.add(line.startsWith("§") ? line : "§7" + line);
+        }
+        return lore;
+    }
+
+    private static List<String> flagLines(Map<String, String> ph) {
+        List<String> lore = new ArrayList<>();
+        lore.add("§c§lStaff Flags");
+        lore.add("§8Grouped by script category");
+        lore.add("");
+        lore.add("§e§lSkills");
+        lore.add(flag("flight", ph));
+        lore.add(flag("sprint", ph));
+        lore.add(flag("meditation", ph));
+        lore.add(flag("potential", ph));
+        lore.add("§6§lTP Gains");
+        lore.add(flag("farming", ph));
+        lore.add(flag("building", ph));
+        lore.add(flag("boost", ph));
+        lore.add(flag("bio", ph));
+        lore.add("§b§lRace & Form");
+        lore.add(flag("racelock", ph));
+        lore.add(flag("yardrat", ph));
+        lore.add(flag("spiritualist", ph));
+        lore.add(flag("android", ph));
+        lore.add("§c§lCombat");
+        lore.add(flag("kiweapons", ph));
+        lore.add(flag("piercing", ph));
+        lore.add(flag("dot", ph));
+        lore.add(flag("apothic", ph));
+        lore.add("§5§lEnd");
+        lore.add(flag("end", ph));
+        lore.add(flag("endportal", ph));
+        lore.add("§a§lShop");
+        lore.add(flag("prestige", ph));
+        lore.add(flag("skills", ph));
+        lore.add("§d§lFabled");
+        lore.add(flag("fabled", ph));
+        lore.add(flag("energy", ph));
+        lore.add(flag("statscreen", ph));
+        lore.add(flag("tpsp", ph));
+        lore.add(flag("attr", ph));
+        lore.add(flag("prestigeskill", ph));
+        lore.add(flag("faction", ph));
+        lore.add(flag("cleaner", ph));
+        lore.add(flag("raceclass", ph));
+        lore.add(flag("classperm", ph));
+        lore.add("§7§lUtility");
+        lore.add(flag("shadow", ph));
+        lore.add(flag("statchecker", ph));
+        return lore;
+    }
+
+    private static String flag(String key, Map<String, String> ph) {
+        boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
+        return "§7" + key + " " + (on ? "§aON" : "§cOFF");
+    }
+
+    /**
+     * Dispatch {@code /progression do} actions. Does not reopen GUI — caller reopens.
+     *
+     * @param action {@code page}, {@code flag}, {@code refresh}
+     * @param arg    page name, or flag key (toggles), or {@code key:on}/{@code key:off}
+     */
+    public static String handleDo(ServerPlayer player, String action, String arg, String page) {
+        if (player == null) {
+            return "§cPlayers only.";
+        }
+        if (!DifficultyConfig.get().enableProgression) {
+            return "§cProgression system is disabled.";
+        }
+        String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
+        String a = arg == null ? "" : arg.trim();
+        if ("page".equals(act) || "refresh".equals(act)) {
+            return "";
+        }
+        if ("flag".equals(act) || "toggle".equals(act)) {
+            if (!StaffAccess.isStaff(player)) {
+                return "§cStaff only.";
+            }
+            String key = a;
+            Boolean force = null;
+            int colon = a.indexOf(':');
+            if (colon > 0) {
+                key = a.substring(0, colon).trim();
+                String val = a.substring(colon + 1).trim();
+                if ("on".equalsIgnoreCase(val) || "true".equalsIgnoreCase(val) || "1".equals(val)) {
+                    force = true;
+                } else if ("off".equalsIgnoreCase(val) || "false".equalsIgnoreCase(val) || "0".equals(val)) {
+                    force = false;
+                }
+            }
+            if (key.isBlank()) {
+                return "§cUsage: progression do flag <key>[:on|off]";
+            }
+            boolean next;
+            if (force != null) {
+                next = force;
+            } else {
+                Map<String, String> ph = placeholders(player);
+                String cur = ph.getOrDefault("flag_" + key.toLowerCase(Locale.ROOT), "false");
+                next = !"true".equalsIgnoreCase(cur);
+            }
+            if (!ProgressionSystem.setFlag(key, next)) {
+                return "§cUnknown flag: " + key;
+            }
+            return "§aProgression §f" + key + " §7→ §f" + (next ? "ON" : "OFF");
+        }
+        if ("android".equals(act) || "androidconvert".equals(act) || "convertandroid".equals(act)) {
+            return androidConvert(player, a);
+        }
+        if ("android_remove".equals(act) || "androidremove".equals(act)
+                || "removeandroid".equals(act) || "remove_android".equals(act)) {
+            return androidRemove(player, a);
+        }
+        if ("boost".equals(act) || "tpboost".equals(act) || "globaltpboost".equals(act)) {
+            return boost(player, a);
+        }
+        return "§cUnknown progression action: " + act;
+    }
+
+    // ── Prestige ───────────────────────────────────────────────────────
+
+    public static Map<String, String> prestigePlaceholders(ServerPlayer player) {
+        Map<String, String> out = new HashMap<>();
+        out.put("bridge_ok", "false");
+        out.put("system_enabled", "false");
+        if (player == null) {
+            return out;
+        }
+        boolean enabled = DifficultyConfig.get().enablePrestigeSystem;
+        out.put("bridge_ok", "true");
+        out.put("system_enabled", enabled ? "true" : "false");
+        if (!enabled) {
+            return out;
+        }
+        StatsData data = DmzProgression.stats(player);
+        int level = 0;
+        if (data != null) {
+            try {
+                level = Math.max(0, data.getLevel());
+            } catch (Throwable ignored) {
+            }
+        }
+        int completed = PrestigeSystem.getCompleted(player);
+        int held = PrestigeSystem.getHeld(player);
+        int required = PrestigeSystem.requiredLevel(completed);
+        out.put("level", String.valueOf(level));
+        out.put("level_fmt", DmzRewards.formatWhole(level));
+        out.put("completed", String.valueOf(completed));
+        out.put("held", String.valueOf(held));
+        out.put("held_max", "10");
+        out.put("required", String.valueOf(required));
+        out.put("required_fmt", DmzRewards.formatWhole(required));
+        out.put("ready", level >= required && held < 10 ? "true" : "false");
+        return out;
+    }
+
+    public static List<String> prestigeLines(ServerPlayer player, String page) {
+        Map<String, String> ph = prestigePlaceholders(player);
+        if (!"true".equalsIgnoreCase(ph.get("bridge_ok"))) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
+            return List.of("§cPrestige system is disabled.");
+        }
+        List<String> lore = new ArrayList<>();
+        lore.add("§7Completed: §f" + ph.getOrDefault("completed", "0")
+                + " §8| §7Held: §6" + ph.getOrDefault("held", "0")
+                + "§7/§f" + ph.getOrDefault("held_max", "10"));
+        lore.add("§7DMZ Level: §f" + ph.getOrDefault("level_fmt", "0")
+                + " §8| §7Need: §e" + ph.getOrDefault("required_fmt", "0"));
+        if ("true".equalsIgnoreCase(ph.get("ready"))) {
+            lore.add("§aReady to prestige");
+        } else {
+            lore.add("§cNot ready yet");
+        }
+        return lore;
+    }
+
+    /**
+     * Dispatch {@code /prestige do} — {@code confirm} runs {@link PrestigeSystem#confirmOrPrompt}.
+     */
+    public static String handlePrestigeDo(ServerPlayer player, String action, String arg, String page) {
+        if (player == null) {
+            return "§cPlayers only.";
+        }
+        if (!DifficultyConfig.get().enablePrestigeSystem) {
+            return "§cPrestige system is disabled.";
+        }
+        String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
+        if ("page".equals(act) || "refresh".equals(act)) {
+            return "";
+        }
+        if ("confirm".equals(act) || "buy".equals(act) || "purchase".equals(act)) {
+            return PrestigeSystem.confirmOrPrompt(player);
+        }
+        return "§cUnknown prestige action: " + act;
+    }
+
+    // ── Skills ─────────────────────────────────────────────────────────
+
+    public static Map<String, String> skillsPlaceholders(ServerPlayer player) {
+        Map<String, String> out = new HashMap<>();
+        out.put("bridge_ok", "false");
+        out.put("system_enabled", "false");
+        if (player == null) {
+            return out;
+        }
+        boolean enabled = DifficultyConfig.get().enableSkillUnlockService;
+        out.put("bridge_ok", "true");
+        out.put("system_enabled", enabled ? "true" : "false");
+        if (!enabled) {
+            return out;
+        }
+        StatsData data = DmzProgression.stats(player);
+        if (data == null) {
+            out.put("has_data", "false");
+            return out;
+        }
+        out.put("has_data", "true");
+        try {
+            out.put("level", String.valueOf(Math.max(1, data.getLevel())));
+        } catch (Throwable t) {
+            out.put("level", "1");
+        }
+        try {
+            out.put("ki_damage", String.format(Locale.ROOT, "%.1f", Math.max(0.0, data.getKiDamage())));
+        } catch (Throwable t) {
+            out.put("ki_damage", "0");
+        }
+        try {
+            out.put("max_energy", String.format(Locale.ROOT, "%.1f", Math.max(0.0, data.getMaxEnergy())));
+        } catch (Throwable t) {
+            out.put("max_energy", "0");
+        }
+        try {
+            out.put("strength", String.valueOf(Math.max(0, data.getStats().getStrength())));
+        } catch (Throwable t) {
+            out.put("strength", "0");
+        }
+        return out;
+    }
+
+    public static List<String> skillsLines(ServerPlayer player, String page) {
+        if (player == null || !DifficultyConfig.get().enableSkillUnlockService) {
+            return List.of("§cSkill unlock service is disabled.");
+        }
+        String p = page == null || page.isBlank() ? "core" : page.toLowerCase(Locale.ROOT);
+        return switch (p) {
+            case "advanced", "dmz", "saga" -> SkillUnlockService.sagaLines(player);
+            case "help" -> List.of(
+                    "§6§l/skills §8— Skill Progress (staff)",
+                    "§e/skills §7— Natural progression",
+                    "§e/skills do page saga §7— Saga unlocks",
+                    "§e/skillcheck §7— Donator Skill Check"
+            );
+            default -> SkillUnlockService.coreLines(player);
+        };
+    }
+
+    /**
+     * Dispatch {@code /skills do} — {@code page} with core/saga (reopen only).
+     */
+    public static String handleSkillsDo(ServerPlayer player, String action, String arg, String page) {
+        if (player == null) {
+            return "§cPlayers only.";
+        }
+        if (!DifficultyConfig.get().enableSkillUnlockService) {
+            return "§cSkill unlock service is disabled.";
+        }
+        String act = action == null ? "" : action.toLowerCase(Locale.ROOT).trim();
+        if ("page".equals(act) || "refresh".equals(act)) {
+            return "";
+        }
+        return "§cUnknown skills action: " + act;
+    }
+}

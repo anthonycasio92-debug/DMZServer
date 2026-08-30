@@ -17,7 +17,7 @@ import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fml.loading.FMLPaths;
 
-/** Mirrors the concept doc admin settings. Saved at {@code config/adaptivedifficulty.json}. */
+/** Mirrors the concept doc admin settings. Saved at {@code config/legacymechanics.json}. */
 public final class DifficultyConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static DifficultyConfig INSTANCE = new DifficultyConfig();
@@ -39,13 +39,22 @@ public final class DifficultyConfig {
      */
     public List<String> whitelist = new ArrayList<>();
     /**
-     * When {@code true}, AD mob hits on <b>whitelisted</b> players are appended to
-     * {@code config/adaptivedifficulty/telemetry/hits-YYYY-MM-DD.jsonl} for balance tuning.
+     * When {@code true}, AD mob hits on players using the difficulty system are appended to
+     * {@code config/legacymechanics/telemetry/hits-YYYY-MM-DD.jsonl} for balance tuning
+     * (all AD players, rate-limited — not whitelist-gated).
      * Toggle: {@code /difficulty admin telemetry on|off}.
      */
     public boolean balanceTelemetryEnabled = false;
     /** Max telemetry hit lines per player per second (spam guard). */
     public int balanceTelemetryMaxPerSecond = 8;
+    /**
+     * Unified system event log (difficulty/rival/sparring) under
+     * {@code config/legacymechanics/telemetry/systems-YYYY-MM-DD.jsonl}.
+     * Toggle: {@code /difficulty admin syslog on|off}.
+     */
+    public boolean enableSystemTelemetry = true;
+    /** Max system telemetry lines per player per second. */
+    public int systemTelemetryMaxPerSecond = 20;
 
     public double prestigeMultiplier = 10.0;
     public double levelMultiplier = 1.0;
@@ -166,6 +175,91 @@ public final class DifficultyConfig {
     public boolean enableAdaptiveAi = true;
     public boolean enableEnemyEvolution = true;
     public boolean enableBossScaling = true;
+
+    /** Rival System 4.7.10 port (declare / proximity / challenges / instinct). */
+    public boolean enableRivalSystem = true;
+    /** Sparring Tp System 3.2.11 port (auto sessions / mentor / TP formula). */
+    public boolean enableSparringSystem = true;
+    /**
+     * One-time CustomNPCs storeddata → LM JSON/NBT import on first boot / first login,
+     * then clears those CNPC keys so scripts no longer own the data.
+     */
+    public boolean enableCnpcDataMigration = true;
+
+    /** Master switch for natural-progression CNPC ports (Flight, SprintJump, Meditation, …). */
+    public boolean enableProgression = true;
+    public boolean enableFlightProgression = true;
+    public boolean enableSprintJump = true;
+    public boolean enableMeditation = true;
+    public boolean enablePotential = true;
+    public boolean enableFarmingTp = true;
+    public boolean enableBuildingTp = true;
+    public boolean enableGlobalTpBoost = true;
+    public boolean enableBioAndroid = true;
+    public boolean enableRaceLock = true;
+    public boolean enableYardrat = true;
+    public boolean enableSpiritualistKi = true;
+    public boolean enableAndroidConversion = true;
+    public boolean rivalPresenceTp = true;
+    public boolean rivalInstinct = true;
+    public boolean rivalChallenges = true;
+
+    /** Combat / End / dummy / shop progression ports. */
+    public boolean enableKiWeapons = true;
+    public boolean enablePiercingBonus = true;
+    public boolean enableDotExtraDamage = true;
+    public boolean enableApothicElemental = true;
+    public boolean enableEndDimensionStrength = true;
+    /** Block vanilla End portal / gateway travel and Eye-of-Ender frame lighting. */
+    public boolean enableEndPortalGuard = true;
+    public boolean enableEndNaturalDragonSpawn = true;
+    /**
+     * Scale Enderman / Shulker / Phantom / Endermite HP/DEF (End Dimension Strength).
+     * Default {@code false} matches script v2.11.0 — dragon-only scaling.
+     */
+    public boolean enableEndMobScaling = false;
+    /** Keep at most one living Ender Dragon in The End (script v2.12.0). */
+    public boolean endEnforceSingleDragon = true;
+    /** Purge / cap leftover DMZ {@code ki_laser} / {@code ki_blast} in The End (v2.12.0). */
+    public boolean endKiCleanupEnabled = true;
+    /** When no dragon is alive, purge all End ki projectiles. */
+    public boolean endKiPurgeWhenNoDragon = true;
+    /** Hard cap on End ki projectiles while a dragon is alive (script default 32). */
+    public int endKiMaxAliveWhileDragon = 32;
+    public boolean enableShadowDummyLimiter = true;
+    public boolean enableSkillUnlockService = true;
+    public boolean enablePrestigeSystem = true;
+    /**
+     * Donator Skill Check UI ({@code /skillcheck}, CNPC interact / trigger 21).
+     * Staff always have access; others need {@link #skillCheckPermission}.
+     */
+    public boolean enableSkillCheck = true;
+    /** LuckPerms node for donator Skill Check (default false in plugin.yml). */
+    public String skillCheckPermission = "legacymechanics.skillcheck";
+    /**
+     * CNPC display-name needles (case-insensitive substring) that open Skill Check on interact.
+     * Also matches scoreboard tag {@code lm_skillcheck}.
+     */
+    public List<String> skillCheckNpcNameContains = new ArrayList<>(Arrays.asList(
+            "Skill Check", "SkillCheck", "Skill Progress"
+    ));
+    /** Sneak + right-click another player to dump DMZ stats (PlayerStatChecker.js). */
+    public boolean enablePlayerStatChecker = true;
+
+    /**
+     * Soft-dependency Fabled bridges (mana/SP/attrs/prestige/race/class perms).
+     * Safe when Fabled / LuckPerms / Bukkit are missing — reflection never hard-crashes.
+     */
+    public boolean enableFabledBridge = true;
+    public boolean enableEnergyManaSync = true;
+    public boolean enableStatScreenSync = true;
+    public boolean enableTpSpMirror = true;
+    public boolean enableAttrMultiBonus = true;
+    public boolean enablePrestigeSkillSync = true;
+    public boolean enablePrestigeFactionSync = true;
+    public boolean enableValueCleaner = true;
+    public boolean enableRaceClassSync = true;
+    public boolean enableClassPermissionSync = true;
     public double bossStatMultiplier = 1.5;
     /** Natural (pre-scale) max-health at/above this marks a boss. Default keeps wardens/etc. */
     public double bossHealthThreshold = 300.0;
@@ -250,16 +344,23 @@ public final class DifficultyConfig {
     public long unlockTier6Cost = 500L;
     public long unlockTier7Cost = 1_500L;
     /**
-     * Tier purchase cost scales with how far above the tier's unlock level the
-     * player is: {@code base × (1 + max(0, dmzLevel - requiredLevel) / divisor)}.
-     * Buying at the unlock threshold ≈ base cost.
-     * <p>
-     * Default {@code 50000} matches the T6→T7 unlock gap so a player at DMZ 100k
-     * pays ~T7 base (15× Gold), not a ladder-inflated mid-tier pile. The old
-     * {@code 1000} divisor made T6 ≈ 51× base at 100k, then the monotonic floor
-     * dragged T7 to ~33× Emerald.
+     * Legacy excess-above-unlock divisor (pre-2.3.61). Kept for config/admin
+     * compat; stock pricing now uses {@link #tierCostLevelAnchor} +
+     * {@link #tierCostT7TargetCopper}.
      */
     public double tierCostLevelDivisor = 50_000.0;
+    /**
+     * DMZ level where stock T7 hits {@link #tierCostT7TargetCopper}.
+     * Cost mult is exponential in absolute level from 1 → this anchor
+     * (progress clamped), shared across all tiers: {@code base × endMult^progress}.
+     * Stock: level 1 → T1 = 1× Copper; level 150000 → T7 = 100× Netherite.
+     */
+    public double tierCostLevelAnchor = 150_000.0;
+    /**
+     * Target copper-value for T7 at {@link #tierCostLevelAnchor}.
+     * Stock {@code 10_000_000} = 100× Netherite Ancient Coins.
+     */
+    public long tierCostT7TargetCopper = 10_000_000L;
     /**
      * Nearby-mob scale vs the player's post-transform / limit-release stats.
      * Defaults (1.0.1): T1 21% · T2 42% · T3 65% · T4 90% · T5 135% · T6 160% · T7 200%.
@@ -423,7 +524,12 @@ public final class DifficultyConfig {
      */
     public Boolean tierCostDivisorMigratedV1 = Boolean.FALSE;
     /**
-     * One-time (1.0.36): stock coin drop 100%→5%, upgrade duo 2%→0.5%.
+     * One-time (2.3.61): absolute-level curve — L1/T1 = 1× Copper,
+     * L150k/T7 = 100× Netherite. Rewrites stock anchor/target only.
+     */
+    public Boolean tierCostCurveMigratedV2 = Boolean.FALSE;
+    /**
+     * One-time (1.0.45): stock coin drop 100%→5%, upgrade duo 2%→0.5%.
      * Custom admin chances are kept.
      */
     public Boolean coinDropChanceMigratedV1 = Boolean.FALSE;
@@ -547,24 +653,26 @@ public final class DifficultyConfig {
         };
     }
 
-    /** Level-scaled tier purchase cost for a player at {@code dmzLevel}. */
+    /**
+     * Level-scaled tier purchase cost for a player at {@code dmzLevel}.
+     * <p>
+     * Stock curve (2.3.61+): exponential in absolute DMZ level from 1 →
+     * {@link #tierCostLevelAnchor}, with end multiplier
+     * {@code tierCostT7TargetCopper / T7 base} so T1@1 ≈ 1× Copper and
+     * T7@150k ≈ 100× Netherite. Progress is clamped at the anchor (no further
+     * rise past it). Higher tiers stay ≥ ~25% above the previous tier.
+     */
     public long tierActivationCostScaled(int tierId, int dmzLevel) {
         long base = tierActivationCost(tierId);
         if (base <= 0L) {
             return 0L;
         }
-        double divisor = Math.max(1.0, tierCostLevelDivisor);
-        // Scale only by levels above this tier's unlock requirement.
-        // Absolute-level scaling made T7 (req 100k) cost 152× Netherite at unlock.
-        long required = tierRequiredLevel(tierId);
-        long excess = Math.max(0L, (long) Math.max(0, dmzLevel) - required);
-        double mult = 1.0 + excess / divisor;
+        double mult = tierCostLevelMultiplier(Math.max(1, dmzLevel));
         long scaled = Math.round(base * mult);
         long raw = Math.max(base, scaled);
         // Cap at 128 of one coin type, then promote (top rung = 128× Netherite).
         long cost = com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.normalizeCost(raw);
 
-        // Excess-above-unlock scaling can invert the ladder (T7 << T6 near T7 unlock).
         // Always keep higher tiers at least ~25% above the previous tier's cost.
         if (tierId > 1) {
             long prev = tierActivationCostScaled(tierId - 1, dmzLevel);
@@ -579,6 +687,25 @@ public final class DifficultyConfig {
             }
         }
         return cost;
+    }
+
+    /**
+     * Shared level multiplier for tier buy costs: 1.0 at DMZ 1, rising
+     * exponentially to {@code target/T7base} at {@link #tierCostLevelAnchor}.
+     */
+    public double tierCostLevelMultiplier(int dmzLevel) {
+        long t7Base = Math.max(1L, tierActivationCost(7));
+        long target = Math.max(t7Base, Math.max(1L, tierCostT7TargetCopper));
+        double endMult = Math.max(1.0, (double) target / (double) t7Base);
+        double anchor = Math.max(2.0, tierCostLevelAnchor);
+        double progress = (Math.max(1, dmzLevel) - 1.0) / (anchor - 1.0);
+        if (progress <= 0.0) {
+            return 1.0;
+        }
+        if (progress >= 1.0) {
+            return endMult;
+        }
+        return Math.exp(progress * Math.log(endMult));
     }
 
     public double tierEnemyMult(int tierId) {
@@ -764,8 +891,13 @@ public final class DifficultyConfig {
         }
     }
 
-    /** Current config filename (AdaptiveDifficulty 1.0+). */
+    /** Current config filename (LegacyMechanics 1.0.45+). */
     public static Path path() {
+        return FMLPaths.CONFIGDIR.get().resolve("legacymechanics.json");
+    }
+
+    /** AdaptiveDifficulty 1.0–1.0.44 filename — auto-migrated on first load. */
+    public static Path adaptivePath() {
         return FMLPaths.CONFIGDIR.get().resolve("adaptivedifficulty.json");
     }
 
@@ -777,8 +909,27 @@ public final class DifficultyConfig {
     /** @return false when the JSON exists but could not be parsed. */
     public static boolean load() {
         Path file = path();
+        Path adaptive = adaptivePath();
         Path legacy = legacyPath();
         try {
+            if (!Files.exists(file) && Files.exists(adaptive)) {
+                try {
+                    Files.move(adaptive, file);
+                    AdaptiveDifficultyMod.LOGGER.info(
+                            "[{}] migrated config {} → {}",
+                            AdaptiveDifficultyMod.MOD_ID,
+                            adaptive.getFileName(),
+                            file.getFileName());
+                } catch (Exception moveFail) {
+                    AdaptiveDifficultyMod.LOGGER.warn(
+                            "[{}] could not rename adaptive config; loading {} then re-saving as {}",
+                            AdaptiveDifficultyMod.MOD_ID,
+                            adaptive.getFileName(),
+                            file.getFileName(),
+                            moveFail);
+                    file = adaptive;
+                }
+            }
             if (!Files.exists(file) && Files.exists(legacy)) {
                 try {
                     Files.move(legacy, file);
@@ -1154,7 +1305,26 @@ public final class DifficultyConfig {
         if (cfg.tierCostLevelDivisor < 1.0) {
             cfg.tierCostLevelDivisor = 50_000.0;
         }
-        // 1.0.36: stock kill coins are chance-gated (was always-on + 2% upgrade).
+        // 2.3.61: absolute-level anchors — L1/T1 = 1× Copper, L150k/T7 = 100× Netherite.
+        if (!Boolean.TRUE.equals(cfg.tierCostCurveMigratedV2)) {
+            boolean stockDivisor = nearly(cfg.tierCostLevelDivisor, 50_000.0)
+                    || nearly(cfg.tierCostLevelDivisor, 1_000.0);
+            boolean stockTarget = cfg.tierCostT7TargetCopper <= 0L
+                    || cfg.tierCostT7TargetCopper == 10_000_000L
+                    || cfg.tierCostT7TargetCopper == 1_500L;
+            if (stockDivisor && stockTarget) {
+                cfg.tierCostLevelAnchor = 150_000.0;
+                cfg.tierCostT7TargetCopper = 10_000_000L;
+            }
+            cfg.tierCostCurveMigratedV2 = Boolean.TRUE;
+        }
+        if (cfg.tierCostLevelAnchor < 2.0) {
+            cfg.tierCostLevelAnchor = 150_000.0;
+        }
+        if (cfg.tierCostT7TargetCopper < 1L) {
+            cfg.tierCostT7TargetCopper = 10_000_000L;
+        }
+        // 1.0.45: stock kill coins are chance-gated (was always-on + 2% upgrade).
         if (!Boolean.TRUE.equals(cfg.coinDropChanceMigratedV1)) {
             if (cfg.ancientCoinDropChance <= 0.0 || nearly(cfg.ancientCoinDropChance, 1.0)) {
                 cfg.ancientCoinDropChance = 0.05;
@@ -1354,6 +1524,17 @@ public final class DifficultyConfig {
                 || "*".equals(cfg.adminPermission.trim())) {
             cfg.adminPermission = "difficulty.admin";
         }
+        if (cfg.skillCheckPermission == null || cfg.skillCheckPermission.isBlank()
+                || "*".equals(cfg.skillCheckPermission.trim())) {
+            cfg.skillCheckPermission = "legacymechanics.skillcheck";
+        }
+        if (cfg.skillCheckNpcNameContains == null) {
+            cfg.skillCheckNpcNameContains = new ArrayList<>();
+        }
+        if (cfg.skillCheckNpcNameContains.isEmpty()) {
+            cfg.skillCheckNpcNameContains.addAll(Arrays.asList(
+                    "Skill Check", "SkillCheck", "Skill Progress"));
+        }
         // Hard product rule: at most 5 difficulty-adjusted mobs near a player.
         if (cfg.maxScaledMobsPerPlayer < 1 || cfg.maxScaledMobsPerPlayer > 5) {
             if (cfg.nearbyScaleBudgetPerPlayer >= 1 && cfg.nearbyScaleBudgetPerPlayer <= 5) {
@@ -1363,6 +1544,7 @@ public final class DifficultyConfig {
             }
         }
         cfg.maxScaledMobsPerPlayer = Math.max(1, Math.min(5, cfg.maxScaledMobsPerPlayer));
+        cfg.endKiMaxAliveWhileDragon = Math.max(1, Math.min(512, cfg.endKiMaxAliveWhileDragon));
         cfg.nearbyScaleBudgetPerPlayer = cfg.maxScaledMobsPerPlayer;
         // Never allow free tiers via live admin set / bad JSON.
         cfg.unlockTier1Cost = Math.max(1L, cfg.unlockTier1Cost);

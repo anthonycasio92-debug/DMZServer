@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit AdaptiveDifficulty Forge jar ABI required by AdaptiveDifficultyGUI reflection.
+"""Audit LegacyMechanics Forge jar ABI required by LegacyMechanicsGUI reflection.
 
 Fail-closed: any missing required class/method/field exits non-zero.
 Optional symbols (gracefully null'd by ForgeBridge) are reported as WARN.
@@ -21,8 +21,12 @@ def latest_jar(directory: Path, prefix: str) -> Path | None:
     return matches[-1] if matches else None
 
 
-FORGE_JAR = latest_jar(ROOT / "mods", "AdaptiveDifficulty")
-GUI_JAR = latest_jar(ROOT / "plugins", "AdaptiveDifficultyGUI")
+FORGE_JAR = latest_jar(ROOT / "mods", "LegacyMechanics")
+if FORGE_JAR is None:
+    FORGE_JAR = latest_jar(ROOT / "mods", "AdaptiveDifficulty")
+GUI_JAR = latest_jar(ROOT / "plugins", "LegacyMechanicsGUI")
+if GUI_JAR is None:
+    GUI_JAR = latest_jar(ROOT / "plugins", "AdaptiveDifficultyGUI")
 
 # Required: ensureResolved() hard-fails without these.
 REQUIRED_CLASSES = [
@@ -44,6 +48,10 @@ OPTIONAL_CLASSES = [
     "com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle",
     "com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile",
     "com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu",
+    "com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi",
+    "com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi",
+    "com.dbzlegacy.adaptivedifficulty.gui.RivalChatMenu",
+    "com.dbzlegacy.adaptivedifficulty.gui.SparChatMenu",
     "com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData",
     "com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem",
     "com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty",
@@ -127,6 +135,38 @@ OPTIONAL_METHODS = {
     ],
     "com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu": [
         ("open", "ServerPlayer, java.lang.String"),
+    ],
+    "com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi": [
+        ("placeholders", "ServerPlayer"),
+        ("linesForPage", "ServerPlayer, java.lang.String"),
+        ("handleDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
+        ("onlinePlayerNames", "ServerPlayer"),
+        ("resolveOnline", "ServerPlayer, java.lang.String"),
+        ("currentRivalCards", "ServerPlayer"),
+        ("pastRivalCards", "ServerPlayer"),
+        ("currentRivalArgs", "ServerPlayer"),
+    ],
+    "com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi": [
+        ("placeholders", "ServerPlayer"),
+        ("linesForPage", "ServerPlayer, java.lang.String"),
+        ("handleDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
+        ("resolveOnline", "ServerPlayer, java.lang.String"),
+    ],
+    "com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi": [
+        ("placeholders", "ServerPlayer"),
+        ("linesForPage", "ServerPlayer, java.lang.String"),
+        ("handleDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
+    ],
+    "com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi": [
+        ("placeholders", "ServerPlayer"),
+        ("linesForPage", "ServerPlayer, java.lang.String"),
+        ("handleDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
+        ("prestigePlaceholders", "ServerPlayer"),
+        ("prestigeLines", "ServerPlayer, java.lang.String"),
+        ("handlePrestigeDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
+        ("skillsPlaceholders", "ServerPlayer"),
+        ("skillsLines", "ServerPlayer, java.lang.String"),
+        ("handleSkillsDo", "ServerPlayer, java.lang.String, java.lang.String, java.lang.String"),
     ],
     "com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData": [
         ("isPersonalEnabled", ""),
@@ -222,6 +262,27 @@ GUI_REQUIRED_METHODS = [
     ("openMenuForUuid", "UUID"),
     ("openChestMenu", "Player"),
     ("openChestMenuForUuid", "UUID"),
+    ("openRivalMenu", "Player"),
+    ("openRivalMenuForUuid", "UUID"),
+    ("openRivalChestMenuForUuid", "UUID"),
+    ("openSparMenu", "Player"),
+    ("openSparMenuForUuid", "UUID"),
+    ("openSparChestMenuForUuid", "UUID"),
+    ("openHubMenu", "Player"),
+    ("openHubMenuForUuid", "UUID"),
+    ("openHubChestMenuForUuid", "UUID"),
+    ("openProgressionMenu", "Player"),
+    ("openProgressionMenuForUuid", "UUID"),
+    ("openProgressionChestMenuForUuid", "UUID"),
+    ("openPrestigeMenu", "Player"),
+    ("openPrestigeMenuForUuid", "UUID"),
+    ("openPrestigeChestMenuForUuid", "UUID"),
+    ("openSkillsMenu", "Player"),
+    ("openSkillsMenuForUuid", "UUID"),
+    ("openSkillsChestMenuForUuid", "UUID"),
+    ("openInspectForUuid", "UUID"),
+    ("openLmInspectForUuid", "UUID"),
+    ("clearInspectForUuid", "UUID"),
 ]
 
 
@@ -336,10 +397,10 @@ def main() -> int:
     warns: list[str] = []
 
     if FORGE_JAR is None or not FORGE_JAR.is_file():
-        print(f"FAIL: missing mods/AdaptiveDifficulty-*.jar", file=sys.stderr)
+        print(f"FAIL: missing mods/LegacyMechanics-*.jar", file=sys.stderr)
         return 2
     if GUI_JAR is None or not GUI_JAR.is_file():
-        print(f"FAIL: missing plugins/AdaptiveDifficultyGUI-*.jar", file=sys.stderr)
+        print(f"FAIL: missing plugins/LegacyMechanicsGUI-*.jar", file=sys.stderr)
         return 2
     print(f"Forge jar: {FORGE_JAR.name}")
     print(f"GUI jar:   {GUI_JAR.name}")

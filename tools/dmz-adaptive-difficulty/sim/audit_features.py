@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 1.0.36", 'VERSION = "1.0.36"' in mod)
+    check("VERSION 2.3.64", 'VERSION = "2.3.64"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -118,6 +118,8 @@ def main() -> int:
         "enableClassCounters": "true",
         "enableStrongStatCounters": "true",
         "tierCostLevelDivisor": "50_000.0",
+        "tierCostLevelAnchor": "150_000.0",
+        "tierCostT7TargetCopper": "10_000_000L",
     }
     for name, want in expected.items():
         got = field_default(cfg, name)
@@ -198,7 +200,7 @@ def main() -> int:
     tel = read(SRC / "com/dbzlegacy/adaptivedifficulty/telemetry/BalanceTelemetry.java")
     gui_plugin = read(GUI_PLUGIN)
     check("BalanceTelemetry class", "class BalanceTelemetry" in tel)
-    check("whitelist-gated shouldLog", "isWhitelisted" in tel and "shouldLog" in tel)
+    check("shouldLog when telemetry enabled", "shouldLog" in tel and "isEnabled()" in tel)
     check("JSONL hits path", "hits-" in tel and "telemetry" in tel)
     check("admin telemetry commands", "telemetryRoot" in cmds or '"telemetry"' in cmds)
     check("logs before/with safety net", "logIncomingHit" in events)
@@ -207,7 +209,7 @@ def main() -> int:
     # Mohist: Bukkit owns /difficulty — telemetry must be wired through GUI, not Forge-only.
     check("Bukkit telemetry subcommand", "handleTelemetry" in gui_plugin and '"telemetry"' in gui_plugin)
     check("Bukkit ForgeBridge telemetry API", "setTelemetryEnabled" in bridge and "telemetryTest" in bridge)
-    check("Bukkit auto-whitelist on telemetry on", "whitelistAdd" in gui_plugin and "telemetry" in gui_plugin)
+    check("telemetry not whitelist-gated", "isWhitelisted" not in tel)
 
     print("\n=== Live challenge knobs (1.0.17) ===")
     check("Forge admin sets tankDamageDefenseRatio", "tankdamagedefenseratio" in cmds and "tankDamageDefenseRatio =" in cmds)
@@ -251,11 +253,11 @@ def main() -> int:
     print("\n=== Post-pierce soft-cap clamp (1.0.25) ===")
     check("incomingSoftCapFrac helper", "incomingSoftCapFrac" in profile)
     check("post-pierce bagCap clamp", "bagCap" in profile and "incomingSoftCapFrac()" in profile)
-    check("formula revision 37", "mix(h, 37L)" in profile)
+    check("formula revision 38", "mix(h, 38L)" in profile)
     check("README pierce clamp", "Post-pierce" in readme or "post-pierce" in readme)
 
     print("\n=== Telemetry retune (1.0.28) ===")
-    check("T1 threat floor 0.56", "case 1 -> 0.56" in profile)
+    check("T1 threat floor 0.52", "case 1 -> 0.52" in profile)
     check("T6 form nudge 1.82", "case 6 -> 1.82" in profile)
     check("T6 liveShare 0.74", "case 6 -> 0.74" in profile)
     check("README 1.0.28 retune", "1.0.28" in readme and "hits-2026-08-05" in readme)
@@ -267,18 +269,29 @@ def main() -> int:
     check("README 1.0.30 HP trim", "1.0.30" in readme and "0.75" in readme)
 
     print("\n=== Telemetry retune (1.0.24) ===")
-    check("formula revision 37", "mix(h, 37L)" in profile)
-    check("T1 landCap 0.21", "case 1 -> 0.21" in profile)
-    check("T1 landFrac 0.14", "case 1 -> 0.14" in profile)
+    check("formula revision 38", "mix(h, 38L)" in profile)
+    check("T1 landCap 0.18", "case 1 -> 0.18" in profile)
+    check("T1 landFrac 0.13", "case 1 -> 0.13" in profile)
     check("T6 landFrac 0.50", "case 6 -> 0.50" in profile)
     check("T4 landFrac 0.37", "case 4 -> 0.37" in profile)
-    check("T5 landFrac 0.48", "case 5 -> 0.48" in profile)
+    check("T5 landFrac 0.50", "case 5 -> 0.50" in profile)
     check("KP landing 1.5%/lvl", "kiProtectionLevel * 0.015" in profile)
     check("fill-to-landing floor", "preAmount < land)" in events and "land * 0.45" not in events)
     check("progressive soft-caps", "case 5 -> 0.52" in events and "case 6 -> 0.58" in events and "case 7 -> 0.62" in events)
     check("README 1.0.25 balance", "1.0.25" in readme and "T4 tank" in readme)
-    check("README 1.0.26 tier costs", "1.0.26" in readme and "tierCostLevelDivisor" in readme)
+    check("README 2.3.61 tier costs", "2.3.61" in readme and "tierCostLevelAnchor" in readme and "100× Netherite" in readme)
+    check("README 2.3.62 gui level pull", "2.3.62" in readme and "prepareGui" in actions)
+    check("README 2.3.63 death drop guard", "DeathDropGuard" in readme and "AllowCombatItemDrop" in readme)
+    check("prepareDifficultyGui bridge", "prepareDifficultyGui" in bridge)
+    gui_plugin_src = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/AdaptiveDifficultyGuiPlugin.java")
+    death_guard = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/DeathDropGuard.java")
+    check("DeathDropGuard registered", "new DeathDropGuard()" in gui_plugin_src)
+    check("DeathDropGuard uncancels when dead", "isDead()" in death_guard and "setCancelled(false)" in death_guard)
+    cache_src = read(SRC / "com/dbzlegacy/adaptivedifficulty/cache/DifficultyCache.java")
+    check("refresh samples DMZ level", "sampleLevelOnGuiOpen" in cache_src)
     check("tierCostDivisorMigratedV1", "tierCostDivisorMigratedV1" in cfg)
+    check("tierCostCurveMigratedV2", "tierCostCurveMigratedV2" in cfg)
+    check("tierCostLevelMultiplier", "tierCostLevelMultiplier" in cfg)
     unlock_tier = read(SRC / "com/dbzlegacy/adaptivedifficulty/tier/UnlockTier.java")
     cmi_gui = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/CmiDifficultyGui.java")
     check("UnlockTier.requirementTip", "requirementTip" in unlock_tier and "requiredPrestige" in unlock_tier)
@@ -299,7 +312,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 1.0.36", "1.0.36" in readme)
+    check("README version 2.3.63", "2.3.63" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -312,11 +325,11 @@ def main() -> int:
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Soft-cap ladder (1.0.33) ===")
-    check("T3 soft-cap 0.46", "case 3 -> 0.46" in events and "case 3 -> 0.46" in profile)
+    check("T3 soft-cap 0.44", "case 3 -> 0.44" in events and "case 3 -> 0.44" in profile)
     check("T4 soft-cap 0.50", "case 4 -> 0.50" in events and "case 4 -> 0.50" in profile)
-    check("T1 soft-cap 0.40", "default -> 0.40" in events and "default -> 0.40" in profile)
-    check("T2 soft-cap 0.43", "case 2 -> 0.43" in events and "case 2 -> 0.43" in profile)
-    check("README soft-cap ladder", "0.46" in readme and "soft-cap" in readme.lower())
+    check("T1 soft-cap 0.34", "default -> 0.34" in events and "default -> 0.34" in profile)
+    check("T2 soft-cap 0.36", "case 2 -> 0.36" in events and "case 2 -> 0.36" in profile)
+    check("README soft-cap ladder", "0.36" in readme and "soft-cap" in readme.lower())
 
     print("\n=== Ladder retune (1.0.35) ===")
     check("T4 form nudge 1.58", "case 4 -> 1.58" in profile)
@@ -341,13 +354,487 @@ def main() -> int:
     check("README level clamp", "level clamp" in readme.lower() or "maxValue" in readme)
     check("README skeleton mount", "mount" in readme.lower() and "jockey" in readme.lower())
 
-    print("\n=== Coin drop chances (1.0.36) ===")
+    print("\n=== Coin drop chances (2.3.54) ===")
     coins = read(SRC / "com/dbzlegacy/adaptivedifficulty/currency/AncientCoinEconomy.java")
     check("drop chance gate in rollKillLoot", "ancientCoinDropChance" in coins and "roll >= dropChance" in coins)
     check("dual upgrade band uses same roll", "roll < upgradeChance" in coins)
     check("coinDropChanceMigratedV1", "coinDropChanceMigratedV1" in cfg)
     check("admin set drop chance", "ancientcoindropchance" in cmds or "coindropchance" in cmds)
-    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "1.0.36" in readme)
+    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.63" in readme)
+
+    print("\n=== Mohist CMI /lmdo routing (2.3.54) ===")
+    gui_root = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit"
+    cmi_files = [
+        "CmiDifficultyGui.java",
+        "CmiHubGui.java",
+        "CmiProgressionGui.java",
+        "CmiPrestigeGui.java",
+        "CmiSkillsGui.java",
+        "CmiRivalGui.java",
+        "CmiSparGui.java",
+    ]
+    bad_do = (
+        'addCommand("difficulty do ',
+        'addCommand("lm do ',
+        'addCommand("progression do ',
+        'addCommand("prestige do ',
+        'addCommand("skills do ',
+        'addCommand("skillcheck do ',
+        'addCommand("rival do ',
+        'addCommand("spar do ',
+    )
+    for name in cmi_files:
+        path = gui_root / name
+        text = read(path) if path.is_file() else ""
+        check(f"{name} exists", path.is_file())
+        for pat in bad_do:
+            check(f"{name} no {pat.strip()}", pat not in text)
+        if path.is_file():
+            check(f"{name} uses lmdo", "lmdo " in text)
+
+    chest = read(gui_root / "DifficultyChestGui.java")
+    check(
+        "DifficultyChestGui no performCommand difficulty do",
+        'performCommand("difficulty do' not in chest,
+    )
+    check(
+        "DifficultyChestGui uses handleActionResult",
+        "handleActionResult" in chest,
+    )
+    plugin = read(gui_root / "AdaptiveDifficultyGuiPlugin.java")
+    check("Bukkit difficulty admin syslog", 'case "syslog", "systemlog"' in plugin or 'case "syslog"' in plugin)
+    check("Bukkit difficulty admin resynclevel", "resynclevel" in plugin)
+    check("ForgeBridge.syslogCommand", "syslogCommand" in read(gui_root / "ForgeBridge.java"))
+    check("ForgeBridge.resyncLevel", "resyncLevel" in read(gui_root / "ForgeBridge.java"))
+    check(
+        "DifficultyCommands.resyncLevel public",
+        "public static String resyncLevel" in cmds,
+    )
+    skills_chest = read(gui_root / "SkillsChestGui.java")
+    check("SkillsChestGui progression via lmdo", "lmdo lm open progression" in skills_chest)
+    check("SkillsChestGui no lm do open", 'cmd("lm do open' not in skills_chest)
+
+    print("\n=== CNPC migrate safety (2.3.54) ===")
+    migrator = read(SRC / "com/dbzlegacy/adaptivedifficulty/data/CnpcDataMigrator.java")
+    check("resolveWorldBlob present", "resolveWorldBlob" in migrator)
+    check("fromScriptControllerCompound", "fromScriptControllerCompound" in migrator)
+    check("pickRichestBlob", "pickRichestBlob" in migrator)
+    check("enrichRivalRawFromBackupKeys", "enrichRivalRawFromBackupKeys" in migrator)
+    check("force aborts without usable data", "Force aborted" in migrator)
+    check("NBTJsonUtil LoadFile", "NBTJsonUtil" in migrator and "LoadFile" in migrator)
+    check("cnpcLevelScriptsDir LevelResource", "LevelResource" in migrator and "cnpcLevelScriptsDir" in migrator)
+    check("fromBackupDir present", "fromBackupDir" in migrator)
+    check("fromWorldDataFile present", "fromWorldDataFile" in migrator)
+    check("clear only after import", "imported && blob.liveStored" in migrator)
+    check("no fake empty marker", "empty-no-cnpc-data" not in migrator)
+    check("force uses runWorldMigrate", "runWorldMigrate(server, forceOverwrite)" in migrator)
+    check("honest zero-import message", "No rows imported" in migrator)
+    check("richer-CNPC replace", "cnpcRich > lmRich" in migrator)
+
+    print("\n=== Staff clear player (2.3.54) ===")
+    clearer = read(SRC / "com/dbzlegacy/adaptivedifficulty/data/PlayerDataClear.java")
+    mech = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.java")
+    gui_plugin = read(gui_root / "AdaptiveDifficultyGuiPlugin.java")
+    bridge = read(gui_root / "ForgeBridge.java")
+    check("PlayerDataClear.clear API", "public static String clear(" in clearer)
+    check("scopes rival/spar/difficulty/progression",
+          "clearRival" in clearer and "clearSpar" in clearer
+          and "clearDifficulty" in clearer and "clearProgression" in clearer)
+    check("Forge /lm admin clear", 'Commands.m_82127_("clear")' in mech)
+    check("Bukkit handleLmAdmin clear", '"clear", "wipe", "resetplayer"' in gui_plugin
+          or 'case "clear"' in gui_plugin)
+    check("ForgeBridge.clearPlayerData", "clearPlayerData" in bridge)
+    check("RivalProgression.clearPlayer", "clearPlayer(String uuid)" in read(
+        SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalProgression.java"))
+
+    print("\n=== Spar recent sessions (2.3.54) ===")
+    spar_store = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")
+    spar_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
+    check("RECENT_SESSION_LIMIT 3", "RECENT_SESSION_LIMIT = 3" in spar_store)
+    check("recentSessions map", "recentSessions" in spar_store and "pushRecent" in spar_store)
+    check("recordRecentSession on end", "recordRecentSession" in spar_sys)
+    check("statsLines individual reports", "Spar Report #" in spar_sys and "appendRecentReport" in spar_sys)
+    check("statsLines no live TP this session", "TP this session" not in spar_sys)
+
+    print("\n=== Skill Check perm gate (2.3.54) ===")
+    staff_access = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/StaffAccess.java")
+    # Extract hasSkillCheck body — must not auto-grant via isStaff()
+    start = staff_access.find("public static boolean hasSkillCheck")
+    end = staff_access.find("private static boolean hasBukkitIsOp", start)
+    body = staff_access[start:end] if start >= 0 and end > start else staff_access
+    check("hasSkillCheck no staff auto-grant", "isStaff(player)" not in body)
+    check("hasSkillCheck uses skillCheckPermission", "skillCheckPermission" in body)
+    gui_yml = read(ROOT / "tools/dmz-adaptive-difficulty-gui/src/main/resources/plugin.yml")
+    check("plugin.yml skillcheck permission", "permission: legacymechanics.skillcheck" in gui_yml)
+    hub = read(gui_root / "HubChestGui.java")
+    check("HubChestGui gates on hasSkillCheck", "ForgeBridge.hasSkillCheck(player)" in hub)
+
+    print("\n=== Skill Check icons (2.3.54) ===")
+    lore = read(gui_root / "GuiLoreChunks.java")
+    skills_chest = read(gui_root / "SkillsChestGui.java")
+    cmi_skills = read(gui_root / "CmiSkillsGui.java")
+    check("skillIcon never defaults PAPER",
+          "return Material.PAPER" not in lore.split("static Material skillIcon")[1].split("private static int")[0]
+          if "static Material skillIcon" in lore else False)
+    check("Flight uses ELYTRA", "Material.ELYTRA" in lore)
+    check("Skill Check header EXPERIENCE_BOTTLE",
+          "skillCheckUi ? Material.EXPERIENCE_BOTTLE" in skills_chest
+          and "skillCheckUi ? Material.EXPERIENCE_BOTTLE" in cmi_skills)
+    check("Hub Skill Check EXPERIENCE_BOTTLE",
+          'Material.EXPERIENCE_BOTTLE, "&eSkill Check"' in hub
+          or 'Material.EXPERIENCE_BOTTLE, "&eSkill Check"' in read(gui_root / "CmiHubGui.java"))
+
+    print("\n=== GUI coherence (2.3.54) ===")
+    diff_chest = read(gui_root / "DifficultyChestGui.java")
+    prestige = read(gui_root / "PrestigeChestGui.java")
+    rival = read(gui_root / "RivalChestGui.java")
+    spar = read(gui_root / "SparChestGui.java")
+    skills = read(gui_root / "SkillsChestGui.java")
+    check("Difficulty unavailable close @35",
+          'put(holder, inv, 35, closeBtn()' in diff_chest)
+    check("Difficulty Lower header IRON_INGOT",
+          'Material.IRON_INGOT, "&f&lLower Tier"' in diff_chest)
+    check("Difficulty Clear Title not BARRIER",
+          'Material.NAME_TAG, "&cClear Title"' in diff_chest)
+    check("Prestige header GOLDEN_APPLE",
+          'Material.GOLDEN_APPLE, "&6&lPrestige"' in prestige)
+    check("Prestige Progression BREWING_STAND",
+          'Material.BREWING_STAND, "&dProgression"' in prestige)
+    check("Rival Progress tiles BOOK/WRITABLE_BOOK/MAP",
+          "Material.BOOK, Material.CLOCK, Material.WRITABLE_BOOK" in rival
+          and "Material.GOLD_BLOCK, Material.MAP, Material.NAME_TAG" in rival)
+    check("Spar Stats button BOOK",
+          'Material.BOOK, "&eStats"' in spar)
+    check("Skills admin header BOOK",
+          "skillCheckUi ? Material.EXPERIENCE_BOTTLE : Material.BOOK" in skills)
+
+    print("\n=== Android convert + remove (2.3.54) ===")
+    android = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/race/AndroidConversion.java")
+    prog_chest = read(gui_root / "ProgressionChestGui.java")
+    prog_cmi = read(gui_root / "CmiProgressionGui.java")
+    prog_tree = read(gui_root / "ProgressionCommandTree.java")
+    forge_bridge = read(gui_root / "ForgeBridge.java")
+    gui_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
+    check("AndroidConversion.remove", "public static String remove(" in android)
+    check("AndroidConversion two-click confirm", "CONFIRM_MS = 10_000L" in android)
+    check("AndroidConversion restore superforms", 'ensureSkillAtZero(skills, "superforms")' in android)
+    check("Chest android_panel", "android_panel" in prog_chest and "androidPanel" in prog_chest)
+    check("Chest android_remove picker", "androidRemovePicker" in prog_chest)
+    check("CMI android_panel", "openAndroidPanel" in prog_cmi)
+    check("CMI android_remove", "openAndroidRemove" in prog_cmi)
+    check("Cmd android remove", '("remove".equalsIgnoreCase(args[1])' in prog_tree)
+    check("ForgeBridge.androidRemove", "public static String androidRemove(" in forge_bridge)
+    check("GuiApi androidRemove", "public static String androidRemove(" in gui_api)
+    check("GuiApi player self-remove only",
+          "You can only remove your own Android upgrade" in gui_api)
+    hub = read(gui_root / "HubChestGui.java")
+    cmi_hub = read(gui_root / "CmiHubGui.java")
+    check("Hub Remove Android button", 'SlotAction.open("android_remove")' in hub)
+    check("CMI Hub Remove Android", '"android_remove"' in cmi_hub and "Remove Android" in cmi_hub)
+    plugin = read(gui_root / "AdaptiveDifficultyGuiPlugin.java")
+    check("openSystem android_remove for players",
+          'case "android_remove"' in plugin or '"android_remove"' in plugin)
+
+    print("\n=== Player Prestige access (2.3.54) ===")
+    prestige_menu = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/PrestigeMenu.java")
+    prestige_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java")
+    prog_cmds = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/ProgressionCommands.java")
+    check("PrestigeMenu no staff gate", "StaffAccess.isStaff" not in prestige_menu)
+    check("PrestigeSystem.open no staff gate",
+          "Staff only" not in prestige_sys.split("public static void open")[1].split("public static void confirmOrPrompt")[0]
+          if "public static void open" in prestige_sys else False)
+    check("Forge /prestige slash staff-only",
+          '.requires(ProgressionCommands::staff)' in prog_cmds.split('m_82127_("prestige")')[1].split('m_82127_("skills")')[0]
+          if 'm_82127_("prestige")' in prog_cmds else False)
+    check("Prestige chat uses lmdo not /prestige",
+          "/lmdo prestige confirm" in prestige_sys and "/prestige do confirm" not in prestige_sys)
+    check("Hub Prestige for everyone",
+          'SlotAction.open("prestige")' in hub
+          and hub.count('SlotAction.open("prestige")') >= 1)
+    check("handlePrestige redirects players to /lm",
+          "/lm" in plugin.split("private boolean handlePrestige")[1].split("private boolean handleSkills")[0]
+          and "isStaff(player)" in plugin.split("private boolean handlePrestige")[1].split("private boolean handleSkills")[0]
+          if "private boolean handlePrestige" in plugin else False)
+
+    print("\n=== Player command whitelist (2.3.54) ===")
+    prog_tree = read(gui_root / "ProgressionCommandTree.java")
+    gui_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
+    # Non-staff commandHelp block (first join after if (!staff)).
+    ns_help = gui_api.split("if (!staff)")[1].split("return String.join")[1].split(");")[0] if "if (!staff)" in gui_api else ""
+    check("non-staff commandHelp has meditation", "/progression meditation" in ns_help)
+    check("non-staff commandHelp no android slash", "/progression android remove" not in ns_help)
+    check("non-staff commandHelp points to /lm", "/lm" in ns_help)
+    check("player bare progression lists /lm /skillcheck",
+          "Everything else: open" in prog_tree and "/skillcheck" in prog_tree)
+    check("Forge helpOrGui no android slash",
+          "/progression android remove" not in prog_cmds.split("helpOrGui")[1].split("private static int gui")[0]
+          if "helpOrGui" in prog_cmds else False)
+    check("Forge android remove hints GUI for players", "androidRemoveGuiHint" in prog_cmds)
+
+    print("\n=== End ki purge silent (2.3.54) ===")
+    end_str = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/end/EndDimensionStrength.java")
+    purge_body = end_str.split("private static void purgeEndKiCommands")[1].split("private static EntityType")[0] \
+        if "private static void purgeEndKiCommands" in end_str else ""
+    check("purgeEndKi uses collectEndKiEntities", "collectEndKiEntities(end)" in purge_body)
+    check("purgeEndKi no console kill ki_laser",
+          'kill @e[type=dragonminez:ki_laser]' not in end_str)
+    check("purgeEndKi no console kill ki_blast",
+          'kill @e[type=dragonminez:ki_blast]' not in end_str)
+    check("clearEndCrystals no empty kill spam",
+          'kill @e[type=minecraft:end_crystal]' not in end_str)
+
+    print("\n=== Dragon ki launch fix (2.3.55) ===")
+    spawn_fire = end_str.split("private static boolean spawnAndFireKi")[1].split(
+        "private static void launchDragonKiToward")[0] if "private static boolean spawnAndFireKi" in end_str else ""
+    check("spawnAndFireKi never aborts on failed add",
+          "return false" not in spawn_fire.split("end.m_7967_")[1].split("int life")[0]
+          if "end.m_7967_" in spawn_fire else False)
+    check("spawnAndFireKi always fireHability", "fireHability" in spawn_fire)
+    check("dragon ki explicit launchToward", "launchDragonKiToward" in end_str)
+    blast_fn = end_str.split("private static boolean fireDragonKiBlast")[1].split(
+        "private static boolean spawnAndFireKi")[0] if "private static boolean fireDragonKiBlast" in end_str else ""
+    beam_fn = end_str.split("private static boolean fireDragonKiBeam")[1].split(
+        "private static boolean fireDragonKiBlast")[0] if "private static boolean fireDragonKiBeam" in end_str else ""
+    check("dragon blast uses mob setupKiLargeBlast first",
+          "setupKiLargeBlast" in blast_fn.split("catch")[0] if blast_fn else False)
+    check("dragon beam prefers setupKiLaser cast 0",
+          "setupKiLaser" in beam_fn.split("catch")[0] if beam_fn else False)
+    check("dragon blast unparks controllable",
+          "setParked(false)" in blast_fn and "setControllable(false)" in blast_fn)
+
+    print("\n=== End exit podium repair (2.3.56) ===")
+    check("repairEndExitPodium present", "repairEndExitPodium" in end_str)
+    check("cmdRepairPodium present", "cmdRepairPodium" in end_str)
+    enddragon_cmds = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/ProgressionCommands.java")
+    check("enddragon repair subcommand", 'm_82127_("repair")' in enddragon_cmds)
+    check("egg clear uses dragon_egg SRG f_50260_",
+          "Blocks.f_50260_" in end_str and "isDragonEggBlock" in end_str)
+    check("end portal uses SRG f_50257_",
+          "Blocks.f_50257_" in end_str and "isEndPortalBlock" in end_str)
+    portal_guard = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/end/EndPortalGuard.java")
+    check("EndPortalGuard end_portal f_50257_", "Blocks.f_50257_" in portal_guard)
+    check("EndPortalGuard end_gateway f_50446_", "Blocks.f_50446_" in portal_guard)
+    check("EndPortalGuard no end_stone as portal fast-path",
+          "block == Blocks.f_50259_" not in portal_guard)
+
+    print("\n=== Skill Check real max levels (2.3.54) ===")
+    skill_unlock = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java")
+    saga_fn = skill_unlock.split("private static void appendSagaSkill")[1].split("private static void appendStrengthLine")[0] \
+        if "private static void appendSagaSkill" in skill_unlock else ""
+    check("appendSagaSkill uses skillMax", "skillMax(skills, id, fallbackMax)" in saga_fn)
+    check("appendSagaSkill no hardcoded max param alone",
+          "int max = skillMax" in saga_fn)
+    check("appendStrengthLine uses skillMax without Math.min(10",
+          "Math.min(10, skillMax" not in skill_unlock.split("private static void appendStrengthLine")[1].split("private static void how")[0]
+          if "private static void appendStrengthLine" in skill_unlock else False)
+
+    print("\n=== Spar TP message toggle (2.3.54) ===")
+    spar_store = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")
+    spar_combat = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparCombat.java")
+    spar_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
+    spar_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.java")
+    spar_cmds = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/SparCommands.java")
+    spar_chest = read(gui_root / "SparChestGui.java")
+    spar_cmi = read(gui_root / "CmiSparGui.java")
+    bukkit_plugin = read(gui_root / "AdaptiveDifficultyGuiPlugin.java")
+    check("SparStore tpMessages prefs", "tpMessagesOn" in spar_store and "setTpMessages" in spar_store)
+    check("SparCombat tickTpMessages", "tickTpMessages" in spar_combat)
+    check("flushTpMessage respects prefs", "tpMessagesOn" in spar_combat)
+    check("SparringSystem.setTpMsg", "setTpMsg" in spar_sys)
+    check("SparGuiApi tpmsg action", '"tpmsg"' in spar_api)
+    check("Spar GUI TP Msg toggle", 'SlotAction.act("tpmsg"' in spar_chest)
+    check("CMI Spar TP Msg toggle", '"tpmsg"' in spar_cmi and "TP Msg" in spar_cmi)
+    check("no public Forge /spar tpmsg", 'm_82127_("tpmsg")' not in spar_cmds)
+    check("no public Bukkit /spar tpmsg",
+          'ForgeBridge.sparHandleDo(player, "tpmsg"' not in bukkit_plugin)
+
+    print("\n=== Global TP boost stacking (2.3.54) ===")
+    boost = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/tp/GlobalTpBoost.java")
+    check("stack keeps max multiplier", "Math.max(prevMult, multiplier)" in boost)
+    check("stack always adds duration", "Math.max(now, currentEnd) + durationMs" in boost)
+    check("highest wins messaging", "highest wins" in boost)
+
+    print("\n=== Global TP boost persistence (2.3.60) ===")
+    cfg_paths = read(SRC / "com/dbzlegacy/adaptivedifficulty/config/ConfigPaths.java")
+    events = read(SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")
+    check("globalTpBoostPath", "global-tp-boost.json" in cfg_paths)
+    check("GlobalTpBoost.load", "public static synchronized void load()" in boost)
+    check("GlobalTpBoost.save", "public static synchronized void save()" in boost)
+    check("persist on activate", "persistNow()" in boost)
+    check("login strips leftover when inactive",
+          "removeEffect(player)" in boost.split("onLogin")[1].split("startBoost")[0])
+    check("server starting loads boost", "GlobalTpBoost.load()" in events)
+    check("server stopping saves boost", "GlobalTpBoost.save()" in events)
+    check("SCRIPT-AUDIT notes persistence",
+          "global-tp-boost.json" in read(ROOT / "tools" / "dmz-adaptive-difficulty" / "SCRIPT-AUDIT.md"))
+
+    print("\n=== Console TP boost (2.3.60) ===")
+    prog_tree = read(gui_root / "ProgressionCommandTree.java")
+    gui_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
+    forge_cmds = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/ProgressionCommands.java")
+    forge_bridge = read(gui_root / "ForgeBridge.java")
+    check("console androidify leaf", "executeAndroidify" in prog_tree and "androidConvertConsole" in forge)
+    check("console boost example", "progression boost start 2 30" in prog_tree)
+    check("GuiApi console default purchaser", 'actor == null ? "Server"' in gui_api)
+    check("GuiApi console usage hint", "Console OK (store)" in gui_api)
+    check("ForgeBridge boost null actor", "actor == null ? null : nmsPlayer(actor)" in forge_bridge)
+    check("brigadier minutes purchaser",
+          'IntegerArgumentType.getInteger(ctx, "minutes")' in forge_cmds
+          and 'StringArgumentType.getString(ctx, "purchaser")' in forge_cmds)
+
+    print("\n=== GUI action feedback (2.3.54) ===")
+    gui_chat = read(gui_root / "GuiChat.java")
+    gui_fb = read(gui_root / "GuiFeedback.java")
+    check("GuiFeedback class", "class GuiFeedback" in gui_fb)
+    check("sendResult prefers GUI", "GuiFeedback.preferGui" in gui_chat and "GuiFeedback.setFromResult" in gui_chat)
+    check("chest open paints feedback", "openChest" in gui_fb and "paintChest" in gui_fb)
+    check("CMI open paints feedback", "openCmi" in gui_fb)
+    prestige = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java")
+    check("prestige confirm returns String", "public static String confirmOrPrompt" in prestige)
+    check("prestige prefers GUI feedback", "preferGuiFeedback" in prestige)
+
+    print("\n=== Rival title bonuses (2.3.54) ===")
+    rival_const = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalConstants.java")
+    rival_prog = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalProgression.java")
+    rival_tp = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalTpCurve.java")
+    check("RpTier has tpMult + perk", "tpMult" in rival_const and "perk" in rival_const)
+    check("Mythic Rival 2.00 title mult", '2.00' in rival_const and "Mythic Rival" in rival_const)
+    check("titleLines shows Perk", "Perk:" in rival_prog)
+    check("titleLines shows TP Gain", "TP Gain:" in rival_prog)
+    check("RivalTpCurve applies title mult", "tpMult()" in rival_tp)
+
+    print("\n=== Spar individual reports (2.3.54) ===")
+    spar_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
+    check("Spar Report # title", "Spar Report #" in spar_sys)
+    check("appendRecentReport helper", "appendRecentReport" in spar_sys)
+    check("recent stores melee/ki", "rec.melee" in spar_sys and "rec.ki" in spar_sys)
+
+    print("\n=== Script parity fixes (2.3.54) ===")
+    spar = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
+    med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
+    check("mentor invite 2 minutes", "MENTOR_INVITE_MS = 120_000L" in spar)
+    check(
+        "invite not 24h",
+        "MENTOR_INVITE_MS = 24L" not in spar and "MENTOR_INVITE_MS = 24 * " not in spar,
+    )
+    check("manual meditation 30 min", "MANUAL_TRIAL_DURATION_MS = 30L" in med)
+    check("auto meditation 15 min", "TRIAL_DURATION_MS = 15L" in med)
+
+    print("\n=== CNPC GUI open no-perm (2.3.54) ===")
+    cnpc = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/CnpcGuiOpener.java")
+    skill = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillCheckService.java")
+    events = read(SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")
+    end = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/end/EndDimensionStrength.java")
+    check("CnpcGuiOpener class", "class CnpcGuiOpener" in cnpc)
+    check("CnpcGuiOpener opens rival/spar/hub", '"rival"' in cnpc and '"spar"' in cnpc and '"hub"' in cnpc)
+    check("no soft contains(rival)", 'hay.contains("rival")' not in cnpc)
+    check("events call tryOpenFromNpc", "CnpcGuiOpener.tryOpenFromNpc" in events)
+    check("CnpcGuiOpener tryOpenFromNpc uses tags or names", "tryOpenFromTags" in cnpc and "tryOpenFromName" in cnpc)
+    check("Skill Check NPC skips canUse", "openFromNpc(player, \"core\")" in skill and "canUse(player)" not in skill.split("tryOpenFromNpc")[1].split("trigger21")[0])
+    check("End hitcap not undone by raw minFrac", "setAmount(mitigated)" in end and "Math.max(mitigated, raw" not in end)
+    check("egg clear not end_portal", "isDragonEggBlock" in end and "Blocks.f_50259_" not in end.split("clearDragonEggBlocks")[1].split("findDragons")[0])
+
+    print("\n=== GUI + command audit (2.3.54) ===")
+    plugin = read(gui_root / "AdaptiveDifficultyGuiPlugin.java")
+    prestige_chest = read(gui_root / "PrestigeChestGui.java")
+    prestige_cmi = read(gui_root / "CmiPrestigeGui.java")
+    rival_chest = read(gui_root / "RivalChestGui.java")
+    spar_chest = read(gui_root / "SparChestGui.java")
+    diff_chest2 = read(gui_root / "DifficultyChestGui.java")
+    prog_chest2 = read(gui_root / "ProgressionChestGui.java")
+    skills_chest = read(gui_root / "SkillsChestGui.java")
+    cmi_rival = read(gui_root / "CmiRivalGui.java")
+    cmi_spar = read(gui_root / "CmiSparGui.java")
+    cmi_diff = read(gui_root / "CmiDifficultyGui.java")
+    cmi_skills = read(gui_root / "CmiSkillsGui.java")
+    cmi_prog = read(gui_root / "CmiProgressionGui.java")
+    mech_cmds = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/MechanicsCommands.java")
+    prog_cmds = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/ProgressionCommands.java")
+    diff_cmds = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/DifficultyCommands.java")
+    mech_chat = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/MechanicsChatMenu.java")
+    rival_chat = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalChatMenu.java")
+    spar_chat = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/SparChatMenu.java")
+    diff_chat = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/DifficultyChatMenu.java")
+    prog_menu = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionMenu.java")
+    audit_md = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "GUI-COMMAND-AUDIT.md")
+    check("GUI-COMMAND-AUDIT.md present", "GUI + command-tree audit" in audit_md or "Ship 2.3" in audit_md)
+    check("no bare SlotAction.cmd(lm)", 'SlotAction.cmd("lm")' not in rival_chest
+          and 'SlotAction.cmd("lm")' not in spar_chest
+          and 'SlotAction.cmd("lm")' not in diff_chest2
+          and 'SlotAction.cmd("lm")' not in prog_chest2
+          and 'SlotAction.cmd("lm")' not in skills_chest
+          and 'SlotAction.cmd("lm")' not in prestige_chest)
+    check("hub buttons use lmdo lm open hub", 'lmdo lm open hub' in rival_chest and 'lmdo lm open hub' in prestige_cmi)
+    check("CMI hub buttons use lmdo", 'lmdo lm open hub' in cmi_rival and 'lmdo lm open hub' in cmi_spar
+          and 'lmdo lm open hub' in cmi_diff and 'lmdo lm open hub' in cmi_skills
+          and 'lmdo lm open hub' in cmi_prog)
+    check("no Prestige SlotAction.open", "SlotAction.open(" not in prestige_chest)
+    check("inspect android_remove case", 'case "android_remove"' in plugin or '"android_remove"' in plugin.split("openInspectSystem")[1].split("openInspectForUuid")[0])
+    check("lmdo skills staff gate",
+          'case "skills" ->' in plugin
+          and 'Staff only. Use Skill Check if you have access.' in plugin)
+    check("lmdo skillcheck donator gate",
+          'case "skillcheck" ->' in plugin
+          and "hasSkillCheck(player)" in plugin
+          and "Skill Check requires donator access." in plugin)
+    check("lmdo skillcheck allows NPC session",
+          "inSkillCheckSession(player)" in plugin)
+    check("CMI skillcheck page uses lmdo skillcheck",
+          'skillCheckUi ? "skillcheck" : "skills"' in cmi_skills
+          or 'lmdo skillcheck page' in cmi_skills)
+    check("CNPC editor tool skip",
+          "holdingEditorTool" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/CnpcGuiOpener.java")
+          and "holdingEditorTool" in read(SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java"))
+    check("npcscripter id listed",
+          "customnpcs:npcscripter" in read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/CnpcGuiOpener.java"))
+    check("android_remove inventory force", "isAndroidRemovePage" in plugin)
+    check("enddragon uses StaffAccess", "ProgressionCommands::staff" in prog_cmds and "enddragon" in prog_cmds)
+    check("skillcheck no level-2 grant", "src.m_6761_(2)" not in prog_cmds.split("skillCheck(")[1].split("helpOrGui")[0])
+    check("progression helpOrGui", "helpOrGui" in prog_cmds)
+    check("DifficultyCommands StaffAccess", "StaffAccess.isStaff" in diff_cmds)
+    check("chat hub prestige + android_remove", 'lm open prestige' in mech_chat and 'android_remove' in mech_chat)
+    check("rival/spar chat hub lmdo", 'lmdo lm open hub' in rival_chat and 'lmdo lm open hub' in spar_chat)
+    check("difficulty chat hub button", 'lmdo lm open hub' in diff_chat)
+    check("ProgressionMenu allows android_remove", "isAndroidRemovePage" in prog_menu)
+    check("MechanicsCommands android_remove opens GUI", "openProgression(player, \"android_remove\")" in mech_cmds)
+
+    print("\n=== Script parity deep check (2.3.54) ===")
+    yardrat = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/race/YardratProgression.java")
+    race_lock = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/race/RaceLock.java")
+    shadow = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/dummy/ShadowDummyLimiter.java")
+    boost = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/tp/GlobalTpBoost.java")
+    script_audit = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "SCRIPT-AUDIT.md")
+    check("Yardrat uses kimanipulation", 'SKILL_ONE = "kimanipulation"' in yardrat)
+    check("Yardrat uses kicontrol", 'SKILL_TWO = "kicontrol"' in yardrat)
+    check("Yardrat no underscore ki ids", "ki_manipulation" not in yardrat and "ki_control" not in yardrat)
+    check("RaceLock clearStuckSagaDifficulty", "clearStuckSagaDifficulty" in race_lock)
+    check("RaceLock maybeAutoUnlockStuckDifficulty", "maybeAutoUnlockStuckDifficulty" in race_lock)
+    check("RaceLock requestDifficultyReselect", "requestDifficultyReselect" in race_lock)
+    check("ShadowDummy legacy CD key", "dmz_minigame_shadow_dummy_cooldown_until" in shadow)
+    check("GlobalTpBoost END_LOCK_MS 5s", "END_LOCK_MS = 5000L" in boost)
+    check("SCRIPT-AUDIT documents 2.3.54", "2.3.54" in script_audit)
+
+    print("\n=== Conversation commitments (2.3.54) ===")
+    conv = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "CONVERSATION-CHECKLIST.md")
+    check("CONVERSATION-CHECKLIST.md present", "Conversation commitments checklist" in conv)
+    check("conv: mentor 2 min locked", "Mentor invite **2 min**" in conv)
+    check("conv: spar 3 cards locked", "individual** report cards" in conv)
+    check("conv: CNPC-free locked", "CNPC-free" in conv)
+    check("conv: player prestige+android locked", "Player Prestige + Remove Android" in conv)
+    check("conv: enddragon StaffAccess locked", "StaffAccess" in conv and "/enddragon" in conv)
+    # Code still matches conversation — robust needles (avoid javadoc / call-site splits).
+    check("conv code: no soft hay.contains(rival)",
+          'hay.contains("rival")' not in cnpc and 'contains("rival")' not in cnpc.replace(
+              'Soft substrings like {@code contains("rival")}', ''))
+    check("conv code: inspect android_remove case",
+          'case "android_remove", "androidremove"' in plugin
+          and "progressionChestGui.open(admin, \"android_remove\")" in plugin)
+    check("conv code: lmdo hub everywhere chest",
+          'SlotAction.cmd("lm")' not in rival_chest
+          and 'lmdo lm open hub' in rival_chest
+          and 'lmdo lm open hub' in prestige_chest)
+    check("conv code: chat hub android+prestige",
+          "android_remove" in mech_chat and "prestige" in mech_chat)
 
     print("\n=== Summary ===")
     for w in warns:

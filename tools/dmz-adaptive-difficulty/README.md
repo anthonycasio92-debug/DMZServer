@@ -1,7 +1,10 @@
-# AdaptiveDifficulty (v1.0.36)
+# LegacyMechanics (v2.3.63)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
+
+**CNPC scripts are not required.** This mod replaces the old CustomNPC pack —
+see `CNPC-FREE.md` (tags + Forge commands). Repo script folders are backups only.
 
 Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Player NBT root `dmz_adaptive_difficulty` and PlaceholderAPI `%dmzdiff_*%` are unchanged.
 
@@ -38,14 +41,18 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/AdaptiveDifficulty-1.0.36.jar` (remove older AD jars)
-2. `plugins/AdaptiveDifficultyGUI-1.0.36.jar`
-3. Restart — config at `config/adaptivedifficulty.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
-4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
+1. `mods/LegacyMechanics-2.3.63.jar` (remove older AD jars)
+2. `plugins/LegacyMechanicsGUI-2.3.63.jar` (or matching GUI if available)
+3. **Do not load CNPC Global Player / NPC scripts** for systems this mod owns (`CNPC-FREE.md`)
+4. Tag GUI NPCs (`lm_rival`, `lm_spar`, `lm_skillcheck`, …) or use slash commands
+5. Restart — config at `config/legacymechanics.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
+6. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
 ## Commands
 
 - `/difficulty` — GUI
+- `/lm admin clear <player> [all|rival|spar|difficulty|progression]` — staff wipe of one player's LM data
+- `/lm admin migrate-cnpc` / `force` — import CNPC Rival/Spar into LM stores
 - `/difficulty admin off|on|toggle|status` — master system switch (ops / staff)
 - `/difficulty admin reload|settings|set <key> <value>`
 - Actions: `activate <1-7>`, `reset`, `character_reset`, title equip, `toggle_personal`, `toggle_coin_chat`
@@ -84,14 +91,40 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Coin ladder values: Copper 1 → Iron 10 → Gold 100 → Emerald 1k → Diamond 10k → Netherite 100k (9 letter variants equal). Lapis / Ender Pearl unused.
 - Example: a 1× Iron cost can be paid with 10+ Copper, or 1× Gold (overpay returned as change).
 - Tier costs cap at 128 of one coin type, then promote to the next denomination (rounded up; top = 128× Netherite).
-- Stock tier costs (copper-value at unlock): T1 **1× Copper** at DMZ level 1 · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling uses levels above each tier’s unlock requirement (buying at unlock ≈ base). Stock `tierCostLevelDivisor` is **50000** (was 1000) so a DMZ 100k player pays ~15× Gold for T7 instead of a ladder-inflated Emerald pile. Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
+- Stock tier costs (copper-value bases): T1 **1× Copper** · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling is exponential in **absolute** DMZ level from 1 → `tierCostLevelAnchor` (**150000**): T1 at level 1 stays **1× Copper**, T7 at level 150k is **100× Netherite** (`tierCostT7TargetCopper` = 10_000_000). Progress clamps at the anchor. Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
-### Economy (1.0.36)
+### Bugfix (2.3.63)
+PvP death + Corpse: GriefPrevention 16.18.x with `AllowCombatItemDrop: false`
+cancels Mohist/Paper `PlayerDropItemEvent`s fired on death (no `isDead` guard),
+destroying gear before Corpse can store it. `DeathDropGuard` un-cancels drops
+only when the player is already dead — combat Q-drop block stays intact.
+
+### Bugfix (2.3.62)
+`/difficulty` (Bukkit/Mohist) now pulls live DMZ level + unlock data on every open
+via `DifficultyActions.prepareGui` / `ForgeBridge.prepareDifficultyGui`. Fixes stuck
+Buy GUI samples (level 1 / stale mid-level) that previously needed `resynclevel`.
+
+### Economy (2.3.61)
+Tier buy costs retuned to absolute-level anchors:
+- **Level 1 / T1** = **1× Copper**
+- **Level 150000 / T7** = **100× Netherite**
+Shared exponential mult across the ladder; admin knobs
+`tierCostLevelAnchor` + `tierCostT7TargetCopper`.
+
+### Economy (2.3.49)
 Kill coin drops are chance-gated (was always-on):
 - `ancientCoinDropChance` **0.05** (5% any coin)
 - `ancientCoinUpgradeChance` **0.005** (0.5% original + next-higher dual)
 Existing configs auto-migrate stock 2% upgrade → 0.5%.
+
+### Live balance (2.3.60)
+From live `hits-2026-08-29..30.jsonl` (2132 hits pulled from production):
+- **T2 gods soft-cap pinned at 43%** — ease early ceilings: **T1 0.34 · T2 0.36 · T3 0.44**
+  (T4–T7 unchanged: 0.50 / 0.52 / 0.58 / 0.62).
+- Trim T1–T2 threat floors + liveShare; ease T1–T2 landFrac/landCap; lift T5 landFrac → 0.50.
+- High wouldCancel at T4/T5 stays expected: soft-cap &lt; mit/thr so pierce cannot clear cancel;
+  landing + soft-cap remain the real bag pressure. Formula fingerprint **38**.
 
 ### Live balance + fixes (1.0.35)
 From `hits-2026-08-06..08.jsonl` (14770 hits) + reported bugs:
@@ -106,9 +139,10 @@ From `hits-2026-08-06..08.jsonl` (14770 hits) + reported bugs:
 ### Live balance (1.0.34)
 T4/T5 landing pressure from Aug 6 hits (superseded landFrac by 1.0.35).
 
-### Soft-cap ladder (1.0.33)
+### Soft-cap ladder (1.0.33 → 2.3.60)
 T3 soft-cap was **0.55 > T4 0.48**, so god forms got *easier* after buying T4.
-Monotonic ceilings: **T1 0.40 · T2 0.43 · T3 0.46 · T4 0.50 · T5 0.52 · T6 0.58 · T7 0.62**.
+Was: **T1 0.40 · T2 0.43 · T3 0.46 · T4 0.50 · T5 0.52 · T6 0.58 · T7 0.62**.
+Now (2.3.60): **T1 0.34 · T2 0.36 · T3 0.44 · T4 0.50 · T5 0.52 · T6 0.58 · T7 0.62**.
 
 ### Ghast aim (1.0.31)
 Large / laser / beam kits no longer use a multi-tick cast that lets Ghast flight
@@ -137,7 +171,8 @@ Example: T7 → `Need DMZ 100000 or Prestige 7`. Prestige is an alternate path, 
 ### Bugfix (1.0.26)
 Tier buy costs at DMZ ~100k: stock `tierCostLevelDivisor` 1000 → 50000 so excess
 scaling no longer makes T6 ≫ T7 at God unlock (monotonic floor was dragging T7 to
-~33× Emerald). Buying T7 at unlock is ~15× Gold again.
+~33× Emerald). Superseded by the 2.3.61 absolute-level anchors (L1/T1 = 1× Copper,
+L150k/T7 = 100× Netherite).
 
 ### Bugfix (1.0.25)
 Post-pierce mob ATK clamped to the live incoming soft-cap so high-DEF god forms
@@ -170,12 +205,12 @@ Second telemetry pass: high-DEF god forms lived on the **safety-net landing** pa
 - Soft-caps: T5 50% · T6 55% · T7 52% live bag
 
 ### Live balance (1.0.19)
-Tuned from whitelist combat telemetry (`hits-2026-08-04.jsonl`):
+Tuned from combat telemetry (`hits-2026-08-04.jsonl`):
 - Raise T1–T3 god-form pressure (soft floors + live-share + hitFrac)
 - Stretch T4–T6 for tanks (`tankDamageHealthRatio` 0.22→0.28, nudges, live-share)
 - Soft-cap crushing T5–T7 landings at 62/58/48% live bag (event clamp)
 
-- **Balance telemetry (Bukkit owns `/difficulty` on Mohist):** `/difficulty admin telemetry on|off|status|flush|test` — logs AD hits on **whitelisted** players to `config/adaptivedifficulty/telemetry/hits-YYYY-MM-DD.jsonl`. `on` auto-lists the staffer running the command. Use `test` to write a probe line and confirm the folder. Summarize with `sim/summarize_telemetry.py --dir <that folder>`.
+- **Balance telemetry (Bukkit owns `/difficulty` on Mohist):** `/difficulty admin telemetry on|off|status|flush|test` — when ON, logs AD hits for **all players** using the difficulty system to `config/legacymechanics/telemetry/hits-YYYY-MM-DD.jsonl` (rate-limited; not whitelist-gated). Use `test` to write a probe line and confirm the folder. Summarize with `sim/summarize_telemetry.py --dir <that folder>`.
 - **Skills:** Ki Protection leaves mid/high-tier hits load-bearing (DMZ 1%/lvl mitigation); Ki Infusion / Potential Unlock raise pack HP sponge. Melee kits chase earlier and deal painted shock/slam damage so zombies are not toothless vs skeleton ki.
 - Mob damage uses soft-blended STR/SKP/PWR (+ mild ENE) × tier%, then **VIT/RES floors** (`tankDamageHealthRatio` **0.28** / `tankDamageDefenseRatio` 0.45) so VIT dumps and tank class track the same ladder as even builds, then a raised VIT-relative hit cap (ki-protection friendly). Counters (class + top-2 of STR/SKP/RES/VIT/PWR/ENE) ramp with tier%.
 - Tier scale vs player fight stats: T1 21% · T2 42% · T3 65% · T4 90% · T5 135% · T6 160% · T7 200%. Form soft curve stock: `transformScaleWeight` 0.65 · `transformScaleExponent` 0.75.
@@ -185,3 +220,6 @@ Tuned from whitelist combat telemetry (`hits-2026-08-04.jsonl`):
 - Scaled mob HP sponge stock **75%** (`mobHealthScale`, was 115%) with a stronger offense durability floor so glass STR/PWR dumps trade hits. Elite rarity mult stock 1.50×.
 - Old NBT wallet balances migrate into Copper Ancient coins once per login.
 - AI + Enemy Evolution kits deepen with Buy Tier but stay **silent** (no kit nameplate/glow). Only true rarity rolls get cosmetics: Elite (`✦ Elite …`), Mutation (`§d…`), Boss (`☠ Boss …`). Kit bands: T1 Awakened · T2 Awakened→Enhanced · T3 Enhanced→Elite · T4 Advanced→Master · T5 Master→Divine · T6 Legendary→Mythic · T7 God→Zenith. Stock rarity chances: elite **2.25%**, mutation **3.75%** (bosses are natural T6+ hostiles — no % roll).
+
+
+See also [MECHANICS.md](MECHANICS.md) for Rival / Sparring / Difficulty hub docs.

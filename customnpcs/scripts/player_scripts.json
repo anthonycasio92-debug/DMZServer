@@ -1,6 +1,62 @@
 {
-    "ScriptEnabled": 1b,
+    "ScriptEnabled": 0b,
     "ScriptConsole": [
+        {
+            "Long": 1787516396940L,
+            "String": " tab 2:
+[Sparring v3] /spar slash command hook registered via CMI
+[Sparring v3.2.11] mentor resetcd admin | BeamClashManager=hooked MainDamageTypes=hooked AbstractKiProjectile=ok"
+        },
+        {
+            "Long": 1787521269639L,
+            "String": " tab 22:
+[EndStrength] End ServerLevel=net.minecraft.server.level.ServerLevel dim=minecraft:the_end
+[EndStrength] EndDragonFight ready class=net.minecraft.world.level.dimension.end.EndDragonFight
+[EndStrength] Spawning dragon via EndDragonFight...
+[EndStrength] createNewDragon OK"
+        },
+        {
+            "Long": 1787521855569L,
+            "String": " tab 22:
+[EndStrength] End ServerLevel=net.minecraft.server.level.ServerLevel dim=minecraft:the_end
+[EndStrength] EndDragonFight ready class=net.minecraft.world.level.dimension.end.EndDragonFight
+[EndStrength] Spawning dragon via EndDragonFight...
+[EndStrength] createNewDragon OK"
+        },
+        {
+            "Long": 1787521899372L,
+            "String": " tab 22:
+[EndStrength] Enforced single dragon: removed 1 duplicate(s), kept 19c9451f-a9fd-417d-8039-73f850f4d1ed"
+        },
+        {
+            "Long": 1787522748388L,
+            "String": " tab 22:
+[EndStrength] End ServerLevel=net.minecraft.server.level.ServerLevel dim=minecraft:the_end
+[EndStrength] EndDragonFight ready class=net.minecraft.world.level.dimension.end.EndDragonFight
+[EndStrength] Spawning dragon via EndDragonFight...
+[EndStrength] createNewDragon OK"
+        },
+        {
+            "Long": 1787524273207L,
+            "String": " tab 22:
+[EndStrength] End ServerLevel=net.minecraft.server.level.ServerLevel dim=minecraft:the_end
+[EndStrength] EndDragonFight ready class=net.minecraft.world.level.dimension.end.EndDragonFight
+[EndStrength] Spawning dragon via EndDragonFight...
+[EndStrength] createNewDragon OK"
+        },
+        {
+            "Long": 1787525696579L,
+            "String": " tab 22:
+[EndStrength] Enforced single dragon: removed 1 duplicate(s), kept dfdf86b4-c557-4cab-bc5c-7ec2c3915f37"
+        },
+        {
+            "Long": 1787528767921L,
+            "String": " tab 22:
+[EndStrength] End ServerLevel=net.minecraft.server.level.ServerLevel dim=minecraft:the_end
+[EndStrength] EndDragonFight ready class=net.minecraft.world.level.dimension.end.EndDragonFight
+[EndStrength] Spawning dragon via EndDragonFight...
+[EndStrength] createNewDragon OK"
+        }
     ],
     "Scripts": [
         {
@@ -10,7 +66,34 @@
             "ScriptList": [
                 {
                     "Line": "rival system.js"
-                },
+                }
+            ]
+        },
+        {
+            "Script": "",
+            "Console": [
+            ],
+            "ScriptList": [
+                {
+                    "Line": "sparring tp system.js"
+                }
+            ]
+        },
+        {
+            "Script": "",
+            "Console": [
+            ],
+            "ScriptList": [
+                {
+                    "Line": "rival command handler.js"
+                }
+            ]
+        },
+        {
+            "Script": "",
+            "Console": [
+            ],
+            "ScriptList": [
                 {
                     "Line": "farming tp skill.js"
                 },
@@ -25,26 +108,10 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "sparring tp system.js"
+                    "Line": "changebiomemed.js"
                 },
-                {
-                    "Line": "playerstatchecker.js"
-                },
-                {
-                    "Line": "sparring command handler.js"
-                }
-            ]
-        },
-        {
-            "Script": "",
-            "Console": [
-            ],
-            "ScriptList": [
                 {
                     "Line": "meditation new.js"
-                },
-                {
-                    "Line": "changebiomemed.js"
                 }
             ]
         },
@@ -54,10 +121,10 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "potential.js"
+                    "Line": "flight.js"
                 },
                 {
-                    "Line": "fly.js"
+                    "Line": "potential.js"
                 },
                 {
                     "Line": "tp boost end.js"
@@ -70,26 +137,13 @@
             ],
             "ScriptList": [
                 {
+                    "Line": "andrioidconversion.js"
+                },
+                {
                     "Line": "kiweapons.js"
                 },
                 {
-                    "Line": "jump.js"
-                },
-                {
-                    "Line": "andrioidconversion.js"
-                }
-            ]
-        },
-        {
-            "Script": "",
-            "Console": [
-            ],
-            "ScriptList": [
-                {
-                    "Line": "end dimension strength.js"
-                },
-                {
-                    "Line": "rival command handler.js"
+                    "Line": "sprintjump.js"
                 }
             ]
         },
@@ -110,9 +164,6 @@
             "ScriptList": [
                 {
                     "Line": "apothicfireandcolddamage.js"
-                },
-                {
-                    "Line": "sprint.js"
                 }
             ]
         },
@@ -125,7 +176,7 @@
                     "Line": "damageovertime.js"
                 },
                 {
-                    "Line": "dmz energy.js"
+                    "Line": "dmz fabled bridge.js"
                 }
             ]
         },
@@ -165,36 +216,6 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "dmz stat screen.js"
-                }
-            ]
-        },
-        {
-            "Script": "",
-            "Console": [
-            ],
-            "ScriptList": [
-                {
-                    "Line": "fabled prestige faction sync.js"
-                }
-            ]
-        },
-        {
-            "Script": "",
-            "Console": [
-            ],
-            "ScriptList": [
-                {
-                    "Line": "flight suppression.js"
-                }
-            ]
-        },
-        {
-            "Script": "",
-            "Console": [
-            ],
-            "ScriptList": [
-                {
                     "Line": "global tp boost.js"
                 }
             ]
@@ -215,7 +236,7 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "prestige sync fabled.js"
+                    "Line": "fabled sync.js"
                 }
             ]
         },
@@ -245,6 +266,16 @@
             ],
             "ScriptList": [
                 {
+                    "Line": "dmz class permission.js"
+                }
+            ]
+        },
+        {
+            "Script": "",
+            "Console": [
+            ],
+            "ScriptList": [
+                {
                     "Line": "tp is sp fabled.js"
                 }
             ]
@@ -255,7 +286,7 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "universal fabled value cleaner.js"
+                    "Line": "yardrat.js"
                 }
             ]
         },
@@ -265,7 +296,7 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "viltrumitefly.js"
+                    "Line": "end dimension strength.js"
                 }
             ]
         },
@@ -275,17 +306,7 @@
             ],
             "ScriptList": [
                 {
-                    "Line": "yardratrace.js"
-                }
-            ]
-        },
-        {
-            "Script": "",
-            "Console": [
-            ],
-            "ScriptList": [
-                {
-                    "Line": "yardratskills.js"
+                    "Line": "playerstatchecker.js"
                 }
             ]
         }
