@@ -1,23 +1,26 @@
 // Sync prestige-locked races to clients for SDU's RaceSelectionScreen padlock UI.
-// SDU already has RaceLockClient + padlock overlay; nothing was feeding it.
+//
+// Source of truth: config/legacymechanics/race-lock.json (LegacyMechanics RaceLockConfig).
+// Edit that file to add races — no mod rebuild. Fallback defaults match Ancient / Sento.
 //
 // Channel: dmz_race_locks
 // Payload: { locked: string[], required: { [raceId]: number } }
 //
 // Unlock gate (permanent): Fabled race-unlock skill level >= 1.
-// Players spend prestige tokens (from prestiginging) to buy that skill once.
-// After purchase they stay unlocked forever — current/active prestige is NOT checked.
-//
 // required = tooltip only while locked ("Requires Prestige N").
-//   Ancient Saiyan → Prestige 10 · Sento Saiyan → Prestige 1
 
 var CHANNEL = "dmz_race_locks";
 var SYNC_INTERVAL_TICKS = 40;
+var CONFIG_PATH = "config/legacymechanics/race-lock.json";
+var CONFIG_RELOAD_MS = 15000;
 
-var RESTRICTED = [
+var DEFAULT_RESTRICTED = [
   { id: "ancient_saiyan", skill: "Ancient Saiyan", prestigeLevel: 10 },
   { id: "sento_saiyan", skill: "Sento Saiyan", prestigeLevel: 1 },
 ];
+
+var cachedRestricted = DEFAULT_RESTRICTED.slice();
+var cachedAt = 0;
 
 function playerUuid(player) {
   try {
@@ -58,13 +61,56 @@ function getFabledSkillLevel(bukkitPlayer, skillName) {
   }
 }
 
+function loadRestrictedFromConfig() {
+  var now = Date.now();
+  if (cachedAt > 0 && now - cachedAt < CONFIG_RELOAD_MS) {
+    return cachedRestricted;
+  }
+  cachedAt = now;
+  try {
+    var Files = Java.loadClass("java.nio.file.Files");
+    var Paths = Java.loadClass("java.nio.file.Paths");
+    var path = Paths.get(CONFIG_PATH);
+    if (!Files.exists(path)) {
+      cachedRestricted = DEFAULT_RESTRICTED.slice();
+      return cachedRestricted;
+    }
+    var raw = String(Files.readString(path));
+    var parsed = JSON.parse(raw);
+    var list = parsed && parsed.restricted ? parsed.restricted : null;
+    if (!list || !list.length) {
+      cachedRestricted = DEFAULT_RESTRICTED.slice();
+      return cachedRestricted;
+    }
+    var out = [];
+    for (var i = 0; i < list.length; i++) {
+      var e = list[i];
+      if (!e || !e.id) continue;
+      var skill = e.fabledSkill || e.skill || e.displayName || String(e.id);
+      var tip = Number(e.prestigeTooltip != null ? e.prestigeTooltip : e.prestigeLevel);
+      if (!isFinite(tip) || tip < 0) tip = 1;
+      out.push({
+        id: String(e.id).toLowerCase(),
+        skill: String(skill),
+        prestigeLevel: tip,
+      });
+    }
+    cachedRestricted = out.length ? out : DEFAULT_RESTRICTED.slice();
+  } catch (err) {
+    console.warn("[RaceLockGUI] config read failed, using defaults: " + err);
+    cachedRestricted = DEFAULT_RESTRICTED.slice();
+  }
+  return cachedRestricted;
+}
+
 function buildPayload(player) {
   var locked = [];
   var required = {};
   var bp = getBukkitPlayer(player);
+  var restricted = loadRestrictedFromConfig();
 
-  for (var i = 0; i < RESTRICTED.length; i++) {
-    var entry = RESTRICTED[i];
+  for (var i = 0; i < restricted.length; i++) {
+    var entry = restricted[i];
     var level = bp == null ? 0 : getFabledSkillLevel(bp, entry.skill);
     // Skill owned = permanent unlock. Never gate on current prestige class level.
     if (level >= 1) {
@@ -109,4 +155,4 @@ PlayerEvents.tick(function (event) {
   } catch (err) {}
 });
 
-console.info("[RaceLockGUI] server sync ready (" + CHANNEL + ")");
+console.info("[RaceLockGUI] server sync ready (" + CHANNEL + ") — config " + CONFIG_PATH);

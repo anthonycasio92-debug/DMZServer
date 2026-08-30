@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.69", 'VERSION = "2.3.69"' in mod)
+    check("VERSION 2.3.70", 'VERSION = "2.3.70"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -857,6 +857,9 @@ def main() -> int:
           read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))
     check("reject unauthorized dragon join", "rejectUnauthorizedDragonJoin" in end_str)
     check("hasAliveSummonedDragon", "hasAliveSummonedDragon" in end_str)
+    race_lock_cfg = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/race/RaceLockConfig.java")
+    check("RaceLockConfig file", "race-lock.json" in race_lock_cfg)
+    check("RaceLock uses config", "RaceLockConfig.findByRaceId" in read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/race/RaceLock.java"))
     check("dragon phase steer", "maybeSteerDragonPhase" in end_str)
     check("AD off during dragon", "hasAliveSummonedDragon" in
           read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "java" /

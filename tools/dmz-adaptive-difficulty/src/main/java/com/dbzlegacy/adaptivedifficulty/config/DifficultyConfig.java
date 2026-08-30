@@ -1628,6 +1628,10 @@ public final class DifficultyConfig {
     /** @return false when config JSON failed to parse (previous live values kept). */
     public static boolean reload() {
         boolean ok = load();
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig.reload();
+        } catch (Throwable ignored) {
+        }
         com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier.invalidateThresholdCache();
         com.dbzlegacy.adaptivedifficulty.calc.ScalingCurves.invalidateLut();
         com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty.clearCache();

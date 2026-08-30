@@ -94,6 +94,10 @@ public final class DifficultyEvents {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         DifficultyConfig.load();
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig.load();
+        } catch (Throwable ignored) {
+        }
         DifficultyCache.invalidateAll();
         AreaDifficulty.clearCache();
         CombatIndex.clear();

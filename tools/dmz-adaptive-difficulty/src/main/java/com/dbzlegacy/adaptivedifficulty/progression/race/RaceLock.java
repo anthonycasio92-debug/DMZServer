@@ -23,13 +23,11 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Port of DMZ RACE LOCK.js — restricted races require a Fabled unlock skill.
+ * Race list is editable in {@code config/legacymechanics/race-lock.json}
+ * ({@link RaceLockConfig}) — no mod rebuild needed to add races.
  * Also clears stuck saga {@code difficultyChosen} after reset (script parity).
  */
 public final class RaceLock {
-    /** Must match live {@code DMZ RACE LOCK.js} RESTRICTED_RACE_IDS. */
-    private static final String[] RESTRICTED_RACE_IDS = {"ancient_saiyan", "sento_saiyan"};
-    private static final String[] REQUIRED_FABLED_SKILLS = {"Ancient Saiyan", "Sento Saiyan"};
-    private static final String[] DISPLAY_NAMES = {"Ancient Saiyan", "Sento Saiyan"};
     private static final long SAGA_DIFF_COOLDOWN_MS = 8_000L;
 
     private RaceLock() {}
@@ -81,20 +79,16 @@ public final class RaceLock {
             if (raceId == null || raceId.isBlank()) {
                 return;
             }
-            String lower = raceId.toLowerCase(Locale.ROOT).trim();
-            int idx = -1;
-            for (int i = 0; i < RESTRICTED_RACE_IDS.length; i++) {
-                if (RESTRICTED_RACE_IDS[i].equalsIgnoreCase(lower)) {
-                    idx = i;
-                    break;
-                }
-            }
-            if (idx < 0) {
+            RaceLockConfig.RestrictedRace gate = RaceLockConfig.findByRaceId(raceId);
+            if (gate == null) {
                 ProgressionData.tempRemove(player, "restricted_race_command_last_state");
                 return;
             }
-            String required = REQUIRED_FABLED_SKILLS[idx];
-            String display = DISPLAY_NAMES[idx];
+            String required = gate.fabledSkill;
+            String display = gate.displayName == null || gate.displayName.isBlank()
+                    ? required
+                    : gate.displayName;
+            String lower = gate.id;
             int skillLevel = FabledSkills.skillLevel(player, required);
             if (skillLevel >= 1) {
                 return;
