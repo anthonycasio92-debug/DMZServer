@@ -1,3 +1,10 @@
+## Global TP boost persistence (2.3.60)
+
+Active window saved to `config/legacymechanics/global-tp-boost.json` (wall-clock
+end time). Restart mid-boost restores remaining time; joiners while active get
+the effect; when the window ends online players are stripped; login strips
+leftover `TP_GAIN` if the boost already ended offline.
+
 ## Skill Check NPC edit + Natural/Saga tabs (2.3.59)
 
 - Holding CNPC editor tools (`npcscripter`, `npcwand`, cloner, NBT book, …) skips

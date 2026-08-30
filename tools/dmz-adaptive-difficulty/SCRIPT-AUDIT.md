@@ -71,7 +71,7 @@ GUIs/hub, telemetry, CNPC data migrator, Building TP.
 
 - End portals stay blocked (title feedback) — teleport in, then `/enddragon`.
 - `/skillcheck` slash needs `legacymechanics.skillcheck`; NPC tag/name does not.
-- Global TP Boost active window is in-memory (lost on mid-boost restart).
+- Global TP Boost persists to `global-tp-boost.json` (survives restart; 2.3.60).
 - PlayerStatChecker has a 1.5s cooldown and cancels the interact.
 - Rival spectate TTL 10 min via `/rival spectate` (script was 2 min `/spectaterival`).
 - Conversation-era UX: player Prestige + Remove Android on hub; mentor invite 2 min;

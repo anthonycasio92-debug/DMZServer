@@ -41,6 +41,11 @@ public final class ConfigPaths {
         return dataDir().resolve("progression-v4.json");
     }
 
+    /** Active global TP boost window (survives restart). */
+    public static Path globalTpBoostPath() {
+        return dataDir().resolve("global-tp-boost.json");
+    }
+
     private static void ensureMigrated(Path preferred) {
         if (migrated) {
             return;

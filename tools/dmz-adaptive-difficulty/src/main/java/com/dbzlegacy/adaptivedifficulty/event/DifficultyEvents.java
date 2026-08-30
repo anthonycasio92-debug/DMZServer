@@ -104,6 +104,10 @@ public final class DifficultyEvents {
         LAST_FORM_KEY.clear();
         RivalStore.get().load();
         SparStore.get().load();
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost.load();
+        } catch (Throwable ignored) {
+        }
         RivalProgression.get().load();
     }
 
@@ -126,10 +130,15 @@ public final class DifficultyEvents {
             RivalStore.get().save();
             SparStore.get().save();
             RivalProgression.get().save();
+            com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost.save();
         } catch (Throwable ignored) {
         }
         RivalStore.get().save();
         SparStore.get().save();
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost.save();
+        } catch (Throwable ignored) {
+        }
     }
 
     @SubscribeEvent

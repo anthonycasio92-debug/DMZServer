@@ -1,9 +1,17 @@
 package com.dbzlegacy.adaptivedifficulty.progression.tp;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.config.ConfigPaths;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dragonminez.common.init.MainEffects;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,6 +25,11 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
  * Port of Global TP Boost.js + TP boost end.js (triggers 30/31).
+ * <p>
+ * Active window is persisted to {@code config/legacymechanics/global-tp-boost.json}
+ * so a restart mid-boost keeps the remaining time. Online players lose the effect
+ * when the window ends; anyone who joins while it is still active receives it;
+ * leftover effect is stripped on login if the boost already ended.
  */
 public final class GlobalTpBoost {
     private static final int ENCODED_MINUTE_DIVISOR = 10_000;
@@ -24,6 +37,7 @@ public final class GlobalTpBoost {
     private static final long TRIGGER_LOCK_MS = 3000L;
     /** Script TP boost end.js END_LOCK_MS — debounce duplicate end. */
     private static final long END_LOCK_MS = 5000L;
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private static final AtomicBoolean ACTIVE = new AtomicBoolean(false);
     private static final AtomicReference<Double> MULTIPLIER = new AtomicReference<>(0.0);
@@ -33,8 +47,58 @@ public final class GlobalTpBoost {
     private static final AtomicLong TRIGGER_LOCK = new AtomicLong(0L);
     private static final AtomicReference<String> TRIGGER_SIGNATURE = new AtomicReference<>("");
     private static final AtomicLong END_LOCK = new AtomicLong(0L);
+    private static final AtomicBoolean LOADED = new AtomicBoolean(false);
 
     private GlobalTpBoost() {}
+
+    /** Load persisted window on server start (before players join). */
+    public static synchronized void load() {
+        LOADED.set(true);
+        Path file = ConfigPaths.globalTpBoostPath();
+        try {
+            if (!Files.isRegularFile(file)) {
+                clearMemory();
+                return;
+            }
+            try (Reader reader = Files.newBufferedReader(file)) {
+                Persist blob = GSON.fromJson(reader, Persist.class);
+                if (blob == null || !blob.active || blob.endTimeMs <= System.currentTimeMillis()) {
+                    clearMemory();
+                    deletePersistFile();
+                    return;
+                }
+                int amp = multiplierToAmplifier(blob.multiplier);
+                if (amp < 0) {
+                    clearMemory();
+                    deletePersistFile();
+                    return;
+                }
+                ACTIVE.set(true);
+                MULTIPLIER.set(blob.multiplier);
+                AMPLIFIER.set(amp);
+                END_TIME.set(blob.endTimeMs);
+                PURCHASER.set(blob.purchaser == null ? "" : blob.purchaser);
+                AdaptiveDifficultyMod.LOGGER.info(
+                        "[{}] Global TP boost restored: {}x until {} (by {})",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        formatMult(blob.multiplier),
+                        blob.endTimeMs,
+                        PURCHASER.get());
+            }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Global TP boost load failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            clearMemory();
+        }
+    }
+
+    /** Flush active window (or clear file) on shutdown. */
+    public static synchronized void save() {
+        if (!LOADED.get()) {
+            return;
+        }
+        persistNow();
+    }
 
     public static void pulse(MinecraftServer server, int tick) {
         if (!ProgressionConfig.globalTpBoost() || server == null) {
@@ -70,11 +134,17 @@ public final class GlobalTpBoost {
     }
 
     public static void onLogin(ServerPlayer player) {
-        if (!ProgressionConfig.globalTpBoost() || player == null || !ACTIVE.get()) {
+        if (!ProgressionConfig.globalTpBoost() || player == null) {
+            return;
+        }
+        if (!ACTIVE.get()) {
+            // Boost ended while they were offline — strip leftover DMZ TP_GAIN.
+            removeEffect(player);
             return;
         }
         long remaining = END_TIME.get() - System.currentTimeMillis();
         if (remaining <= 0L) {
+            removeEffect(player);
             return;
         }
         int amp = AMPLIFIER.get();
@@ -138,7 +208,8 @@ public final class GlobalTpBoost {
             return "§7No global TP boost is active.";
         }
         END_LOCK.set(now + END_LOCK_MS);
-        clear();
+        clearMemory();
+        persistNow();
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
             for (ServerPlayer player : server.m_6846_().m_11314_()) {
@@ -158,7 +229,11 @@ public final class GlobalTpBoost {
         }
         long rem = Math.max(0L, END_TIME.get() - System.currentTimeMillis());
         return "§7Global TP boost: §a" + formatMult(MULTIPLIER.get())
-                + "x §7(" + (rem / 60000L) + "m left, by §f" + PURCHASER.get() + "§7)";
+                + "x §7(" + formatDuration(rem) + " left, by §f" + PURCHASER.get() + "§7)";
+    }
+
+    public static boolean isActive() {
+        return ACTIVE.get() && END_TIME.get() > System.currentTimeMillis();
     }
 
     private static String activate(double multiplier, int durationMinutes, String purchaser) {
@@ -187,6 +262,7 @@ public final class GlobalTpBoost {
         AMPLIFIER.set(keptAmp);
         END_TIME.set(newEnd);
         PURCHASER.set(purchaser == null ? "" : purchaser);
+        persistNow();
 
         applyToAll(keptAmp, newEnd - now);
         broadcast("§6§lGLOBAL TP BOOST ACTIVATED!");
@@ -231,6 +307,8 @@ public final class GlobalTpBoost {
             if (effect == null || player == null) {
                 return;
             }
+            // Replace any existing TP_GAIN so duration matches the global window.
+            player.m_21195_(effect);
             player.m_7292_(new MobEffectInstance(
                     effect,
                     Math.max(1, durationTicks),
@@ -253,12 +331,41 @@ public final class GlobalTpBoost {
         }
     }
 
-    private static void clear() {
+    private static void clearMemory() {
         ACTIVE.set(false);
         MULTIPLIER.set(0.0);
         AMPLIFIER.set(-1);
         END_TIME.set(0L);
         PURCHASER.set("");
+    }
+
+    private static synchronized void persistNow() {
+        Path file = ConfigPaths.globalTpBoostPath();
+        try {
+            Files.createDirectories(file.getParent());
+            if (!ACTIVE.get() || END_TIME.get() <= System.currentTimeMillis()) {
+                deletePersistFile();
+                return;
+            }
+            Persist blob = new Persist();
+            blob.active = true;
+            blob.multiplier = MULTIPLIER.get();
+            blob.endTimeMs = END_TIME.get();
+            blob.purchaser = PURCHASER.get();
+            try (Writer writer = Files.newBufferedWriter(file)) {
+                GSON.toJson(blob, writer);
+            }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Global TP boost save failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
+    }
+
+    private static void deletePersistFile() {
+        try {
+            Files.deleteIfExists(ConfigPaths.globalTpBoostPath());
+        } catch (Throwable ignored) {
+        }
     }
 
     private static Decoded decode(int encoded) {
@@ -304,9 +411,14 @@ public final class GlobalTpBoost {
     }
 
     private static String formatDuration(long ms) {
-        long minutes = Math.max(1L, ms / 60_000L);
+        long totalSec = Math.max(0L, ms / 1000L);
+        long minutes = totalSec / 60L;
+        long sec = totalSec % 60L;
         if (minutes < 60) {
-            return minutes + "m";
+            if (minutes <= 0) {
+                return sec + "s";
+            }
+            return minutes + "m" + (sec > 0 ? " " + sec + "s" : "");
         }
         long hours = minutes / 60;
         long rem = minutes % 60;
@@ -314,4 +426,13 @@ public final class GlobalTpBoost {
     }
 
     private record Decoded(int encoded, double multiplier, int durationMinutes) {}
+
+    /** Disk blob — wall-clock end so restarts keep remaining time. */
+    @SuppressWarnings("unused")
+    private static final class Persist {
+        boolean active;
+        double multiplier;
+        long endTimeMs;
+        String purchaser;
+    }
 }
