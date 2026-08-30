@@ -1,4 +1,4 @@
-# End Dragon — Adaptive Difficulty summon (2.3.69)
+# End Dragon — Adaptive Difficulty summon (2.3.72)
 
 ## Player path (Difficulty GUI only)
 - Button: **Summon End Dragon** on `/difficulty` main page
@@ -7,30 +7,27 @@
   - Active Unlock Tier **T4–T7** (Prestige 4 unlocks T4 eligibility — still must buy/activate)
   - Standing in **The End**
   - Cost: **3 Ancient Netherite** coins (pay-up OK, change returned)
-- Dragon scales to the summoner's **AD profile** (stats × tier %)
+- Dragon is painted with the summoner's **Adaptive Difficulty boss profile**:
+  - HP / ATK / Armor from `PlayerCombatProfile.targetMob*` × `bossStatMultiplier` × 1.25 dragon pad
+  - Live retarget on form/stat changes (same signature path as nearby AD mobs)
+  - **No** legacy End Strength HP log-curve or DEF sponge / hit-cap
 - **Only the summoner** can damage it (anti-farm)
-- Same ki beam / blast attacks as before; prefer targeting the summoner
+- Ki beam / blast use painted AD attack
 
 ## Staff
-- `/enddragon` remains a free staff override (no summoner lock)
+- `/enddragon` remains a free staff override using **legacy End Strength** HP/DEF formulas (no summoner lock)
 - `/cleardragons` unchanged
 
 ## Config
 - `enableEndPlayerDragonSummon` (default true)
 - `endDragonSummonNetheriteCost` (default 3)
 - `enableEndNaturalDragonSpawn` (default **false** — GUI is the player path)
+- `bossStatMultiplier` (default 1.5) — shared with AD bosses
 
-## Live summoner AD scale & despawn (2.3.69)
-- Dragon tracks the **summoner's** Adaptive Difficulty profile live (forms in/out), like nearby AD mobs.
-- **Other players cannot** change its scale or damage it.
-- Despawn when the summoner: turns personal difficulty **OFF**, **dies**, goes offline, or stops participating in AD.
-
-
-## No natural spawn (2.3.69)
-- Auto / vanilla End Dragon spawning is **removed**.
-- Only Difficulty GUI summons and staff `/enddragon` can create a dragon.
-- Config `enableEndNaturalDragonSpawn` is forced **false** on load.
-
-## Fight AI + AD isolation (2.3.69)
+## Fight AI + AD isolation
 - Player-summoned dragons focus the summoner: faster ki cadence, strafe/charge phase steering, optional beam+blast combo.
 - While your summoned dragon is alive, **nearby Adaptive Difficulty mob scaling is suspended** for you (reverts claimed mobs). Staff dragons do not trigger this.
+
+## Despawn
+- Despawn when the summoner: turns personal difficulty **OFF**, **dies**, goes offline, or stops participating in AD.
+- Auto / vanilla End Dragon spawning is **removed**.

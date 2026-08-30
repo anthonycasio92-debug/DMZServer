@@ -87,7 +87,13 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.71", 'VERSION = "2.3.71"' in mod)
+    check("VERSION 2.3.72", 'VERSION = "2.3.72"' in mod)
+
+    mob_scaling = read(SRC / "com/dbzlegacy/adaptivedifficulty/scaling/MobScaling.java")
+    end_str = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/end/EndDimensionStrength.java")
+    check("End Dragon AD profile paint", "applyEndDragonAdProfile" in mob_scaling)
+    check("player dragon skips End DEF sponge", "No End DEF mitigation" in end_str or "Adaptive Difficulty attributes own the fight" in end_str)
+    check("applySummonerAdStats uses MobScaling AD paint", "MobScaling.applyEndDragonAdProfile" in end_str)
 
     race_skill = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/RaceSkillSync.java")
     check("RaceSkillSync discovers DMZ races", "discoverDmzRaceIds" in race_skill)

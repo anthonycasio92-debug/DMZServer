@@ -8,6 +8,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
+import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
@@ -63,9 +64,11 @@ import net.minecraftforge.registries.ForgeRegistries;
 /**
  * Core port of {@code End Dimension Strength.js} 2.12.0:
  * Player End dragons are summoned from the Difficulty GUI (T4–T7, 3× Netherite),
- * scaled to the summoner's Adaptive Difficulty profile, and damage-locked to that
- * player. Staff {@code /enddragon} remains a free override. Same ki beam/blast
- * attacks as before. End mob HP/DEF scaling is off by default (v2.11.0).
+ * painted with the summoner's Adaptive Difficulty boss profile (same formulas as
+ * nearby AD mobs × boss mult — not the legacy End Strength HP/DEF curve), and
+ * damage-locked to that player. Staff {@code /enddragon} still uses End Strength
+ * scaling. Same ki beam/blast attacks as before. End mob HP/DEF scaling is off
+ * by default (v2.11.0).
  */
 public final class EndDimensionStrength {
     private static final String TAG_BUFFED = "end_strength_v15";
@@ -336,6 +339,7 @@ public final class EndDimensionStrength {
             }
         }
         // Player-summoned: only summoner may damage; live-retarget to their current AD/form.
+        // AD-painted dragons skip legacy End Strength DEF sponge / hit-cap — they fight like AD bosses.
         if (dragon && target instanceof EnderDragon enderDragon && isPlayerSummoned(enderDragon)) {
             ServerPlayer attacker = resolvePlayerAttacker(event);
             if (attacker != null && !isSummoner(enderDragon, attacker)) {
@@ -351,6 +355,8 @@ public final class EndDimensionStrength {
             if (attacker != null && isSummoner(enderDragon, attacker)) {
                 applySummonerAdStats(enderDragon, attacker, "onhit");
             }
+            // No End DEF mitigation — Adaptive Difficulty attributes own the fight.
+            return;
         }
         float raw = event.getAmount();
         if (!(raw > 0.0f)) {
@@ -542,7 +548,7 @@ public final class EndDimensionStrength {
             if (isSummoner(existing, player)) {
                 return "§eYour Ender Dragon is already alive."
                         + " §8HP §c" + DmzRewards.formatWhole(existing.m_21233_())
-                        + " §8· DEF §b" + DmzRewards.formatWhole(readDef(existing));
+                        + " §8· AD T" + Math.max(0, PersistentDataAccess.getLong(existing, NBT_AD_TIER, tier));
             }
             return "§cAn Ender Dragon is already alive in The End.";
         }
@@ -572,12 +578,11 @@ public final class EndDimensionStrength {
         lastDragonScaleScore = score(power);
         lastNaturalSpawnAt = System.currentTimeMillis();
         naturalTimerArmed = true;
-        msg(player, "§6[The End] §eSummoned Ender Dragon with §c"
+        msg(player, "§6[The End] §eSummoned Adaptive Ender Dragon with §c"
                 + DmzRewards.formatWhole(dragon.m_21233_())
-                + " §eHP / §b" + DmzRewards.formatWhole(readDef(dragon))
-                + " §eDEF §8(T" + tier + " AD · " + power.name + " / Lv" + power.level + ")");
+                + " §eHP §8(T" + tier + " AD · " + power.name + " / Lv" + power.level + ")");
         msg(player, "§8Cost §f" + costText
-                + " §8· only you can damage this dragon.");
+                + " §8· AD boss profile · only you can damage this dragon.");
         SystemTelemetry.log("end_strength", "dragon_spawn", player, null, Map.of(
                 "via", "gui_summon",
                 "tier", tier,
@@ -1181,6 +1186,29 @@ public final class EndDimensionStrength {
     }
 
     private static double calcDragonKiDamage(EnderDragon dragon, ServerPlayer target) {
+        // Player-summoned AD dragons: use painted Adaptive Difficulty attack directly.
+        if (dragon != null && isPlayerSummoned(dragon)) {
+            double painted = 0.0;
+            try {
+                CompoundTag tag = PersistentDataAccess.get(dragon);
+                if (PersistentDataAccess.isWritable(tag) && tag.m_128441_(NBT_KI_MELEE)) {
+                    painted = Math.max(0.0, tag.m_128459_(NBT_KI_MELEE));
+                }
+            } catch (Throwable ignored) {
+            }
+            if (!(painted > 0.0)) {
+                try {
+                    var inst = dragon.m_21051_(Attributes.f_22281_);
+                    if (inst != null) {
+                        painted = Math.max(0.0, inst.m_22135_());
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            if (painted > 0.0) {
+                return painted;
+            }
+        }
         double base = DRAGON_DMZ_KI_DAMAGE;
         double melee = 0.0;
         if (dragon != null) {
@@ -1943,8 +1971,9 @@ public final class EndDimensionStrength {
     }
 
     /**
-     * Apply the summoner's current AD combat profile to the dragon (forms up/down).
-     * Preserves HP ratio so form changes don't fully heal or wipe the fight.
+     * Apply the summoner's current Adaptive Difficulty boss profile to the dragon
+     * (forms up/down). Uses {@link MobScaling#applyEndDragonAdProfile} — not the
+     * legacy End Strength HP/DEF log curve.
      */
     private static void applySummonerAdStats(EnderDragon dragon, ServerPlayer summoner, String source) {
         if (dragon == null || summoner == null || !isPlayerSummoned(dragon)) {
@@ -1953,22 +1982,39 @@ public final class EndDimensionStrength {
         if (!isSummoner(dragon, summoner)) {
             return;
         }
-        PlayerPower power = adScaledPower(summoner);
-        double hp = mapDmzHp(power.maxHp, DRAGON_BASE_HP, DRAGON_HP_CAP);
-        double def = calcDragonDef(power);
-        double prevMax = Math.max(1.0, dragon.m_21233_());
-        double prevHp = Math.max(0.0, dragon.m_21223_());
-        double ratio = alreadyBuffed(dragon) && prevMax > 20.0
-                ? Math.min(1.0, prevHp / prevMax)
-                : 1.0;
-        setMaxHealth(dragon, hp, Math.max(1.0, hp * ratio));
-        storeDef(dragon, def);
-        storeHits(dragon, DRAGON_TARGET_HITS);
-        storeDmzHp(dragon, power.maxHp);
+        double appliedHp = MobScaling.applyEndDragonAdProfile(dragon, summoner);
+        if (!(appliedHp > 0.0)) {
+            // Fallback only if AD paint failed — still better than leaving vanilla HP.
+            PlayerPower power = adScaledPower(summoner);
+            double hp = mapDmzHp(power.maxHp, DRAGON_BASE_HP, DRAGON_HP_CAP);
+            setMaxHealth(dragon, hp, hp);
+        }
+        // Clear legacy End DEF so onHurt never re-applies the old sponge path.
+        storeDef(dragon, 0.0);
+        storeHits(dragon, 0);
         markBuffed(dragon);
         CompoundTag tag = PersistentDataAccess.get(dragon);
         if (PersistentDataAccess.isWritable(tag)) {
-            tag.m_128347_(NBT_KI_MELEE, Math.max(0.0, power.melee));
+            // Ki uses painted AD attack (boss-scaled), not End Strength melee frac.
+            double atk = 0.0;
+            try {
+                var inst = dragon.m_21051_(Attributes.f_22281_);
+                if (inst != null) {
+                    atk = Math.max(0.0, inst.m_22135_());
+                }
+            } catch (Throwable ignored) {
+            }
+            if (!(atk > 0.0)) {
+                try {
+                    PlayerCombatProfile profile = PlayerCombatProfile.of(summoner);
+                    DifficultyConfig cfg = DifficultyConfig.get();
+                    if (profile != null && profile.active() && cfg != null) {
+                        atk = profile.targetMobDamage(cfg) * Math.max(1.0, cfg.bossStatMultiplier) * 1.25;
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            tag.m_128347_(NBT_KI_MELEE, Math.max(0.0, atk));
             try {
                 PlayerCombatProfile profile = PlayerCombatProfile.of(summoner);
                 if (profile != null) {
@@ -1978,13 +2024,16 @@ public final class EndDimensionStrength {
             }
             int tier = DifficultyCache.data(summoner).getActiveTier();
             tag.m_128405_(NBT_AD_TIER, Math.max(0, tier));
+            try {
+                PlayerCombatProfile profile = PlayerCombatProfile.of(summoner);
+                if (profile != null) {
+                    storeDmzHp(dragon, profile.maxHealth);
+                }
+            } catch (Throwable ignored) {
+            }
         }
-        try {
-            dragon.m_6593_(Component.m_237113_(
-                    "§5Ender Dragon §8[T" + DifficultyCache.data(summoner).getActiveTier()
-                            + " · " + DmzRewards.formatWhole(hp) + " HP / DEF "
-                            + DmzRewards.formatWhole(def) + "]"));
-        } catch (Throwable ignored) {
+        if (source != null && !source.isBlank() && !"summoner_ad".equals(source)) {
+            // Quiet — retarget telemetry is enough via MobScaling stamps.
         }
     }
 

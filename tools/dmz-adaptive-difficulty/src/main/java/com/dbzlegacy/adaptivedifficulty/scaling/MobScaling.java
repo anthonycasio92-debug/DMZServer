@@ -1182,6 +1182,133 @@ public final class MobScaling {
         return (float) out;
     }
 
+    /**
+     * Paint a player-summoned End Dragon with the summoner's Adaptive Difficulty
+     * boss profile — same {@link PlayerCombatProfile#targetMobHealth}/{@code Damage}/{@code Armor}
+     * formulas as nearby AD mobs, times {@link DifficultyConfig#bossStatMultiplier}.
+     * <p>
+     * Dragons stay {@link #isExemptFromConversion exempt} from nearby claim scaling;
+     * this is the intentional AD path for GUI summons (not the legacy End Strength curve).
+     *
+     * @return applied max HP, or {@code 0} if paint failed
+     */
+    public static double applyEndDragonAdProfile(EnderDragon dragon, ServerPlayer summoner) {
+        if (dragon == null || summoner == null || dragon.m_9236_().f_46443_) {
+            return 0.0;
+        }
+        try {
+            if (!SystemGate.participates(summoner)) {
+                return 0.0;
+            }
+            DifficultyConfig cfg = DifficultyConfig.get();
+            if (cfg == null || !cfg.enabled) {
+                return 0.0;
+            }
+            PlayerCombatProfile profile = PlayerCombatProfile.of(summoner);
+            if (profile == null || !profile.active()) {
+                return 0.0;
+            }
+            CompoundTag tag = PersistentDataAccess.get(dragon);
+            if (!PersistentDataAccess.isWritable(tag)) {
+                return 0.0;
+            }
+
+            // Capture vanilla bases once so re-paints stay stable.
+            if (!tag.m_128441_(TAG_BASE_HEALTH)) {
+                tag.m_128347_(TAG_BASE_HEALTH, Math.max(1.0, attrBase(dragon, Attributes.f_22276_, 200.0)));
+                tag.m_128347_(TAG_BASE_ATTACK, Math.max(0.0, attrBase(dragon, Attributes.f_22281_, 0.0)));
+                tag.m_128347_(TAG_BASE_ARMOR, Math.max(0.0, attrBase(dragon, Attributes.f_22284_, 0.0)));
+                tag.m_128347_(TAG_BASE_SPEED, Math.max(0.0, attrBase(dragon, Attributes.f_22279_, 0.0)));
+                tag.m_128347_(TAG_BASE_KNOCKBACK, Math.max(0.0, attrBase(dragon, Attributes.f_22278_, 0.0)));
+            }
+
+            long prevSig = tag.m_128441_(TAG_PROFILE_SIG) ? tag.m_128454_(TAG_PROFILE_SIG) : Long.MIN_VALUE;
+            boolean sameSig = prevSig != Long.MIN_VALUE && prevSig == profile.signature && tag.m_128471_(TAG_SCALED);
+            float oldMax = dragon.m_21233_();
+            float oldHp = dragon.m_21223_();
+            double hpRatio = (sameSig && oldMax > 20.0f && oldHp > 0.0f)
+                    ? Math.max(0.0, Math.min(1.0, oldHp / oldMax))
+                    : (tag.m_128471_(TAG_SCALED) && oldMax > 20.0f && oldHp > 0.0f
+                    ? Math.max(0.0, Math.min(1.0, oldHp / oldMax))
+                    : 1.0);
+
+            double bossMul = Math.max(1.0, cfg.bossStatMultiplier);
+            // End Dragon is a deliberate boss fight — slightly above a normal AD boss stamp.
+            double dragonBossPad = 1.25;
+            double newMaxHealth = profile.targetMobHealth(cfg) * bossMul * dragonBossPad;
+            if (cfg.maxScaledHealth > 0.0) {
+                newMaxHealth = Math.min(cfg.maxScaledHealth, newMaxHealth);
+            }
+            if (!(newMaxHealth > 0.0) || Double.isNaN(newMaxHealth) || Double.isInfinite(newMaxHealth)) {
+                newMaxHealth = Math.max(200.0, tag.m_128459_(TAG_BASE_HEALTH));
+            }
+
+            setAttributeValue(dragon, Attributes.f_22276_, newMaxHealth); // MAX_HEALTH
+            float appliedMax = dragon.m_21233_();
+            if (appliedMax > 0.0f && !Float.isNaN(appliedMax) && !Float.isInfinite(appliedMax)) {
+                float nextHp = (float) (appliedMax * hpRatio);
+                if (!tag.m_128471_(TAG_SCALED) || oldHp >= oldMax - 0.5f) {
+                    nextHp = appliedMax;
+                }
+                if (nextHp > 0.0f) {
+                    dragon.m_21153_(Math.min(appliedMax, Math.max(1.0f, nextHp)));
+                }
+            }
+
+            double nextAtk = profile.targetMobDamage(cfg) * bossMul * dragonBossPad;
+            if (nextAtk > 0.0 && !Double.isNaN(nextAtk) && !Double.isInfinite(nextAtk)) {
+                if (setAttributeValue(dragon, Attributes.f_22281_, nextAtk)) { // ATTACK_DAMAGE
+                    tag.m_128379_(TAG_ATTR_DMG_SCALED, true);
+                }
+            }
+
+            double baseArmor = Math.max(0.0, tag.m_128459_(TAG_BASE_ARMOR));
+            double nextArmor = baseArmor + profile.targetMobArmor(cfg) * bossMul;
+            if (cfg.maxArmorBonus > 0.0) {
+                nextArmor = Math.min(cfg.maxArmorBonus, nextArmor);
+            }
+            if (nextArmor >= 0.0 && !Double.isNaN(nextArmor) && !Double.isInfinite(nextArmor)) {
+                setAttributeValue(dragon, Attributes.f_22284_, nextArmor); // ARMOR
+            }
+
+            tag.m_128379_(TAG_SCALED, true);
+            tag.m_128379_(TAG_DMZ_STYLE, true);
+            tag.m_128379_(BossScaling.TAG_BOSS, true);
+            tag.m_128405_("dmz_ad_unlock_tier", profile.activeTier);
+            tag.m_128350_(TAG_TIER_PERCENT, (float) profile.tierPercent);
+            stampCounterIdentity(tag, profile, cfg);
+            long proxyDifficulty = Math.max(1L, Math.round(profile.offense * profile.tierPercent));
+            tag.m_128356_(TAG_DIFFICULTY, proxyDifficulty);
+            tag.m_128350_(TAG_DMG_MULT, 1.0f);
+            tag.m_128356_(TAG_PROFILE_SIG, profile.signature);
+            APPLIED_PROFILE.put(dragon.m_20148_(), profile.signature);
+
+            try {
+                dragon.m_6593_(Component.m_237113_(
+                        "§5Ender Dragon §8[AD T" + profile.activeTier
+                                + " · " + formatWhole(appliedMax > 0 ? appliedMax : newMaxHealth)
+                                + " HP · ATK " + formatWhole(nextAtk) + "]"));
+            } catch (Throwable ignored) {
+            }
+            return appliedMax > 0.0f ? appliedMax : newMaxHealth;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] End Dragon AD paint failed for {}: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    summoner.m_6302_(),
+                    t.toString());
+            return 0.0;
+        }
+    }
+
+    private static String formatWhole(double v) {
+        if (!(v >= 0) || Double.isNaN(v) || Double.isInfinite(v)) {
+            return "0";
+        }
+        long n = Math.round(v);
+        return Long.toString(n);
+    }
+
     private static double readPaintedAttack(LivingEntity attacker) {
         if (attacker == null) {
             return 0.0;
