@@ -77,7 +77,7 @@ public final class SparChatMenu {
         send(player, Component.m_237113_(""));
         boolean tpOn = SparStore.get().tpMessagesOn(player.m_20148_());
         MutableComponent row = Component.m_237113_("§7")
-                .m_7220_(btn("§e[Stats]", "/spar do page stats", "Last 3 finished spars"))
+                .m_7220_(btn("§e[Stats]", "/spar do page stats", "Last 3 spar reports"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§f[Top]", "/spar do page top", "Leaderboard"))
                 .m_7220_(Component.m_237113_("  "))
@@ -97,7 +97,11 @@ public final class SparChatMenu {
 
     private static void stats(ServerPlayer player) {
         send(player, Component.m_237113_(""));
+        send(player, Component.m_237113_("§6§lLast 3 Spar Reports"));
         for (String line : SparringSystem.statsLines(player)) {
+            if (line != null && line.contains("Spar Report #") && !line.contains("Spar Report #1")) {
+                send(player, Component.m_237113_(""));
+            }
             send(player, Component.m_237113_(line));
         }
         send(player, btn("§7« Back", "/spar do page main", "Main"));

@@ -499,6 +499,9 @@ final class GuiBoardHelper {
         if (n.contains("hall") || n.contains("fame") || n.contains("hof")) {
             return Material.GOLD_BLOCK;
         }
+        if (n.contains("spar report") || n.contains("report #") || n.matches(".*#\\d+.*vs.*")) {
+            return Material.WRITTEN_BOOK;
+        }
         if (n.contains("journal") || n.contains("vs ")) {
             return Material.MAP;
         }

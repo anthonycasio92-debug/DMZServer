@@ -35,7 +35,7 @@ public final class CmiSparGui {
             if (p.startsWith("top_") || p.startsWith("top ") || "top".equals(p) || "leaderboard".equals(p)) {
                 openTop(player, p);
             } else if ("stats".equals(p) || "statistics".equals(p)) {
-                openDetail(player, "stats", "&eSpar Stats", Material.BOOK);
+                openDetail(player, "stats", "&eLast 3 Spar Reports", Material.WRITTEN_BOOK);
             } else if ("mentor".equals(p)) {
                 openMentor(player);
             } else if ("pending".equals(p) || "invites".equals(p) || "pendinginvites".equals(p)) {
@@ -95,7 +95,7 @@ public final class CmiSparGui {
 
         // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
         gui.addButton(pageBtn(player, 19, Material.BOOK, "&eStats", "stats",
-                "&7Last 3 finished spars"));
+                "&7Last 3 spar reports", "&8One item per spar"));
         gui.addButton(pageBtn(player, 21, Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7Leaderboard"));
         gui.addButton(pageBtn(player, 23, Material.EMERALD, "&bMentor", "mentor",
@@ -434,7 +434,11 @@ public final class CmiSparGui {
         header.lockField();
         List<String> detailHeader = new ArrayList<>();
         detailHeader.add("");
-        detailHeader.addAll(GuiBoardHelper.tips(player, "&7One item per entry", "&8Centered below"));
+        detailHeader.addAll(GuiBoardHelper.tips(player,
+                page.equals("stats") || page.equals("statistics")
+                        ? "&7One book per spar · hover for full report"
+                        : "&7One item per entry",
+                "&8Centered below"));
         header.addLore(detailHeader);
         gui.addButton(header);
         List<String> lore = toAmp(ForgeBridge.sparLines(player, page));

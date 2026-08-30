@@ -1,3 +1,8 @@
+## Spar individual reports (2.3.49)
+
+`/spar` → **Stats** shows the last **3 spars as separate report cards**
+(TP, time, melee/ki, combo, reason, when) — not one combined line.
+
 ## Script audit + parity (2.3.48)
 
 Full matrix: `SCRIPT-AUDIT.md`. Stubbed Java-owned CNPC scripts (no double-apply).

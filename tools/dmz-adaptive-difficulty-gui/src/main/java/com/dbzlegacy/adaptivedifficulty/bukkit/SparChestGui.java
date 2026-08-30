@@ -50,7 +50,7 @@ public final class SparChestGui implements Listener {
         if (p.startsWith("top_") || p.startsWith("top ") || "top".equals(p) || "leaderboard".equals(p)) {
             inv = top(viewer, subject, p);
         } else if ("stats".equals(p) || "statistics".equals(p)) {
-            inv = detailBoard(viewer, subject, "stats", "&eSpar Stats", Material.BOOK);
+            inv = detailBoard(viewer, subject, "stats", "&eLast 3 Spar Reports", Material.WRITTEN_BOOK);
         } else if ("mentor".equals(p)) {
             inv = mentor(viewer, subject);
         } else if ("pending".equals(p) || "invites".equals(p) || "pendinginvites".equals(p)) {
@@ -97,7 +97,8 @@ public final class SparChestGui implements Listener {
 
         put(holder, inv, 4, item(Material.GOLDEN_SWORD, "&b&lSparring", statusLore(viewer, ph)));
         // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
-        put(holder, inv, 19, pageBtn(viewer, Material.BOOK, "&eStats", "&7Last 3 finished spars"),
+        put(holder, inv, 19, pageBtn(viewer, Material.BOOK, "&eStats",
+                        "&7Last 3 spar reports", "&8One item per spar"),
                 SlotAction.page("stats"));
         put(holder, inv, 21, pageBtn(viewer, Material.GOLDEN_HELMET, "&fTop", "&7Leaderboard"),
                 SlotAction.page("top"));
@@ -186,7 +187,12 @@ public final class SparChestGui implements Listener {
         }
         List<String> detailHeader = new ArrayList<>();
         detailHeader.add("");
-        detailHeader.addAll(GuiBoardHelper.tips(viewer, "&7One item per entry", "&8Centered below"));
+        if ("stats".equals(page) || "statistics".equals(page)) {
+            detailHeader.addAll(GuiBoardHelper.tips(viewer,
+                    "&7One book per spar · hover for full report", "&8Centered below"));
+        } else {
+            detailHeader.addAll(GuiBoardHelper.tips(viewer, "&7One item per entry", "&8Centered below"));
+        }
         put(holder, inv, 4, item(mat, title, detailHeader));
         List<GuiBoardHelper.DetailTile> tiles = GuiBoardHelper.detailTiles(lore);
         int[] slots = GuiBoardHelper.centeredSlots(Math.min(tiles.size(), 21));

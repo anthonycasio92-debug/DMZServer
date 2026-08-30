@@ -249,6 +249,10 @@ public final class SparStore {
         public boolean perfect;
         public long endedAt;
         public String reason = "";
+        /** Session melee damage scored (optional; 0 on older saves). */
+        public double melee;
+        /** Session ki damage scored (optional; 0 on older saves). */
+        public double ki;
     }
 
     private static final class Persist {

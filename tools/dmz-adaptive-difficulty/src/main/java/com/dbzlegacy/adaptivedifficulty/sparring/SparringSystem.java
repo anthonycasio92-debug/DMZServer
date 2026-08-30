@@ -418,6 +418,8 @@ public final class SparringSystem {
         rec.perfect = rt.sessionPerfect;
         rec.endedAt = System.currentTimeMillis();
         rec.reason = reason == null ? "" : reason;
+        rec.melee = rt.sessionMelee;
+        rec.ki = rt.sessionKi;
         SparStore.get().pushRecent(player.m_20148_().toString(), rec);
     }
 
@@ -765,33 +767,71 @@ public final class SparringSystem {
         List<String> lines = new ArrayList<>();
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
         SparStore.LeaderboardEntry lb = SparStore.get().leaderboard.get(player.m_20148_().toString());
-        lines.add("§6§lSparring Stats §8— §f" + player.m_7755_().getString());
-        lines.add("§7Last 3 sessions");
         List<SparStore.RecentSession> recent = SparStore.get().recentFor(player.m_20148_().toString());
         if (recent.isEmpty()) {
-            lines.add("§8No finished spars yet — fight, then check back.");
+            lines.add("§7No finished spars yet");
+            lines.add("§8  - §7Fight someone, then open Stats again.");
         } else {
+            // One multi-line report tile per spar (GUI groups "§8  -" under the title).
             int i = 1;
             for (SparStore.RecentSession r : recent) {
-                String who = r.partnerName == null || r.partnerName.isBlank() ? "?" : r.partnerName;
-                String perfect = r.perfect ? " §6★" : "";
-                lines.add("§e#" + i + " §fvs " + who
-                        + " §a+" + DmzRewards.formatWhole(r.tp) + " TP"
-                        + " §8· " + formatDuration(r.durationMs)
-                        + " §8· combo §f" + r.maxCombo
-                        + perfect);
+                appendRecentReport(lines, i, r);
                 i++;
             }
         }
-        lines.add("§7Mentor §f" + (bond.mentorName == null || bond.mentorName.isBlank() ? "none" : bond.mentorName));
-        lines.add("§7Apprentice §f" + (bond.apprenticeName == null || bond.apprenticeName.isBlank() ? "none" : bond.apprenticeName));
-        lines.add("§7Streak §f" + bond.streakCurrent + " §8(best " + bond.streakBest + ")");
+        lines.add("§bMentor Bond");
+        lines.add("§8  - §7Mentor §f"
+                + (bond.mentorName == null || bond.mentorName.isBlank() ? "none" : bond.mentorName));
+        lines.add("§8  - §7Apprentice §f"
+                + (bond.apprenticeName == null || bond.apprenticeName.isBlank() ? "none" : bond.apprenticeName));
+        lines.add("§8  - §7Streak §f" + bond.streakCurrent + " §8(best " + bond.streakBest + ")");
         if (lb != null) {
-            lines.add("§7Lifetime TP §a" + DmzRewards.formatWhole(lb.totalTp)
-                    + " §8| sessions §f" + lb.sessions
+            lines.add("§eLifetime");
+            lines.add("§8  - §7Total TP §a" + DmzRewards.formatWhole(lb.totalTp));
+            lines.add("§8  - §7Sessions §f" + lb.sessions
                     + " §8| best combo §f" + lb.highestCombo);
+            lines.add("§8  - §7Best payout §a" + DmzRewards.formatWhole(lb.bestPayout)
+                    + " §8| perfects §f" + lb.perfectSessions);
         }
         return lines;
+    }
+
+    /** One individual spar report block (title + dashed detail lines). */
+    private static void appendRecentReport(List<String> lines, int index, SparStore.RecentSession r) {
+        if (lines == null || r == null) {
+            return;
+        }
+        String who = r.partnerName == null || r.partnerName.isBlank() ? "?" : r.partnerName;
+        String perfect = r.perfect ? " §6★ Perfect" : "";
+        lines.add("§6Spar Report #" + index + " §8vs §f" + who);
+        lines.add("§8  - §7TP §a+" + DmzRewards.formatWhole(r.tp));
+        lines.add("§8  - §7Time §f" + formatDuration(r.durationMs));
+        lines.add("§8  - §7Melee §f" + DmzRewards.formatWhole(r.melee)
+                + " §8| §7Ki §f" + DmzRewards.formatWhole(r.ki));
+        lines.add("§8  - §7Combo §f" + r.maxCombo + perfect);
+        if (r.reason != null && !r.reason.isBlank()) {
+            lines.add("§8  - §7Ended §f" + r.reason);
+        }
+        if (r.endedAt > 0L) {
+            lines.add("§8  - §7When §f" + formatEndedAgo(r.endedAt));
+        }
+    }
+
+    private static String formatEndedAgo(long endedAtMs) {
+        long ago = Math.max(0L, System.currentTimeMillis() - endedAtMs);
+        long sec = ago / 1000L;
+        if (sec < 60L) {
+            return sec + "s ago";
+        }
+        long min = sec / 60L;
+        if (min < 60L) {
+            return min + "m ago";
+        }
+        long hr = min / 60L;
+        if (hr < 48L) {
+            return hr + "h ago";
+        }
+        return (hr / 24L) + "d ago";
     }
 
     private static String formatDuration(long ms) {
