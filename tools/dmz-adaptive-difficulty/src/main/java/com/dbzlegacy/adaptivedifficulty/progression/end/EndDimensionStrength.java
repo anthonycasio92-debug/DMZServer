@@ -75,6 +75,8 @@ public final class EndDimensionStrength {
     private static final String NBT_KI_MELEE = "end_dragon_ki_melee";
     /** Last {@link PlayerCombatProfile#signature} applied for a player-summoned dragon. */
     private static final String NBT_AD_SIG = "end_dragon_ad_sig";
+    /** Staff {@code /enddragon} spawn — not despawned as vanilla natural. */
+    private static final String NBT_STAFF_SPAWN = "end_dragon_staff";
     private static final long PLAYER_DRAGON_RETARGET_MS = 750L;
 
     /** Minimum active Unlock Tier for paid GUI summons. */
@@ -165,9 +167,45 @@ public final class EndDimensionStrength {
     private static volatile double lastDragonScaleScore = -1.0;
     private static volatile long lastPodiumRepairAt;
 
+    /** When true, intentional GUI/staff dragon spawns may join The End. */
+    private static final ThreadLocal<Boolean> ALLOW_INTENTIONAL_DRAGON_SPAWN =
+            ThreadLocal.withInitial(() -> Boolean.FALSE);
+
     private static final Map<UUID, PendingTp> PENDING_TP = new ConcurrentHashMap<>();
 
     private EndDimensionStrength() {}
+
+    /** True while {@link #spawnFightLinkedDragon} / orphan fallback is intentionally spawning. */
+    public static boolean isIntentionalDragonSpawnAllowed() {
+        return Boolean.TRUE.equals(ALLOW_INTENTIONAL_DRAGON_SPAWN.get());
+    }
+
+    /**
+     * Block vanilla / natural End Dragon joins when natural spawn is disabled.
+     * Call from {@link net.minecraftforge.event.entity.EntityJoinLevelEvent}.
+     *
+     * @return true if the dragon was rejected
+     */
+    public static boolean rejectUnauthorizedDragonJoin(Entity entity) {
+        if (!(entity instanceof EnderDragon)) {
+            return false;
+        }
+        if (!DifficultyConfig.get().enableEndDimensionStrength) {
+            return false;
+        }
+        // Product rule: only Difficulty GUI / staff /enddragon may spawn dragons.
+        if (isIntentionalDragonSpawnAllowed()) {
+            return false;
+        }
+        if (DifficultyConfig.get().enableEndNaturalDragonSpawn) {
+            return false;
+        }
+        try {
+            entity.m_146870_();
+        } catch (Throwable ignored) {
+        }
+        return true;
+    }
 
     public static boolean isTheEnd(Level level) {
         if (level == null) {
@@ -201,7 +239,7 @@ public final class EndDimensionStrength {
             if (!isTheEnd(player.m_9236_())) {
                 continue;
             }
-            maybeNaturalDragon(player, now);
+            // Natural/auto End Dragon spawn removed — GUI summon only (staff /enddragon OK).
         }
 
         ServerLevel end = server.m_129880_(Level.f_46430_); // END
@@ -223,6 +261,13 @@ public final class EndDimensionStrength {
                     // Live AD retarget to the summoner only (forms in/out). Never other players.
                     if (!maybeDespawnOrphanedPlayerDragon(end, dragon)) {
                         retargetPlayerDragonToSummoner(dragon, end, now);
+                    }
+                    continue;
+                }
+                if (isUnauthorizedNaturalDragon(dragon)) {
+                    try {
+                        dragon.m_146870_();
+                    } catch (Throwable ignored) {
                     }
                     continue;
                 }
@@ -410,6 +455,7 @@ public final class EndDimensionStrength {
         if (existing != null) {
             PlayerPower power = strongestInEnd(end, player);
             applyDragonStats(existing, power, "cmd");
+            stampStaffSpawn(existing);
             lastDragonScaleScore = score(power);
             msg(player, "§e[The End] An Ender Dragon is already alive.");
             msg(player, "§8Scaled to §f" + power.name + " §8· HP §c"
@@ -429,6 +475,7 @@ public final class EndDimensionStrength {
             return 0;
         }
         applyDragonStats(dragon, power, "spawn");
+        stampStaffSpawn(dragon);
         lastDragonScaleScore = score(power);
         lastNaturalSpawnAt = System.currentTimeMillis();
         naturalTimerArmed = true;
@@ -554,53 +601,62 @@ public final class EndDimensionStrength {
         if (end == null) {
             return null;
         }
-        // Clear any leftovers first.
-        for (EnderDragon d : findDragons(end)) {
-            try {
-                d.m_146870_();
-            } catch (Throwable ignored) {
-            }
-        }
-        EndDragonFight fight = end.m_8586_(); // dragonFight
-        if (fight == null) {
-            AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] EndDragonFight is null — visit The End once so the dimension initializes",
-                    AdaptiveDifficultyMod.MOD_ID);
-            return spawnOrphanFallback(end, requester);
-        }
+        ALLOW_INTENTIONAL_DRAGON_SPAWN.set(Boolean.TRUE);
         try {
-            fight.m_287277_(); // skipArenaLoadedCheck
-        } catch (Throwable ignored) {
-        }
-        // dragonKilled=false, previouslyKilled=true (script field names f_64068_/f_64069_).
-        setFightBoolean(fight, "f_64068_", false);
-        setFightBoolean(fight, "f_64069_", true);
-        try {
-            clearEndCrystals(end);
-        } catch (Throwable ignored) {
-        }
-        try {
-            fight.m_64101_(); // resetSpikeCrystals
-        } catch (Throwable ignored) {
-        }
-        try {
-            restoreTowerCrystals(end);
-        } catch (Throwable ignored) {
-        }
-        EnderDragon dragon = invokeCreateNewDragon(fight);
-        if (dragon == null) {
-            dragon = spawnOrphanFallback(end, requester);
-            if (dragon != null) {
+            // Clear any leftovers first.
+            for (EnderDragon d : findDragons(end)) {
                 try {
-                    dragon.m_287231_(fight); // setDragonFight
+                    d.m_146870_();
                 } catch (Throwable ignored) {
                 }
             }
+            EndDragonFight fight = end.m_8586_(); // dragonFight
+            if (fight == null) {
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] EndDragonFight is null — visit The End once so the dimension initializes",
+                        AdaptiveDifficultyMod.MOD_ID);
+                return spawnOrphanFallback(end, requester);
+            }
+            try {
+                fight.m_287277_(); // skipArenaLoadedCheck
+            } catch (Throwable ignored) {
+            }
+            // dragonKilled=false, previouslyKilled=true (script field names f_64068_/f_64069_).
+            setFightBoolean(fight, "f_64068_", false);
+            setFightBoolean(fight, "f_64069_", true);
+            try {
+                clearEndCrystals(end);
+            } catch (Throwable ignored) {
+            }
+            try {
+                fight.m_64101_(); // resetSpikeCrystals
+            } catch (Throwable ignored) {
+            }
+            try {
+                restoreTowerCrystals(end);
+            } catch (Throwable ignored) {
+            }
+            EnderDragon dragon = invokeCreateNewDragon(fight);
+            if (dragon == null) {
+                dragon = spawnOrphanFallback(end, requester);
+                if (dragon != null) {
+                    try {
+                        dragon.m_287231_(fight); // setDragonFight
+                    } catch (Throwable ignored) {
+                    }
+                }
+            }
+            return dragon;
+        } finally {
+            ALLOW_INTENTIONAL_DRAGON_SPAWN.set(Boolean.FALSE);
         }
-        return dragon;
     }
 
     private static EnderDragon spawnOrphanFallback(ServerLevel end, ServerPlayer requester) {
+        boolean nested = isIntentionalDragonSpawnAllowed();
+        if (!nested) {
+            ALLOW_INTENTIONAL_DRAGON_SPAWN.set(Boolean.TRUE);
+        }
         try {
             EnderDragon dragon = net.minecraft.world.entity.EntityType.f_20565_.m_20615_(end);
             if (dragon == null) {
@@ -621,6 +677,10 @@ public final class EndDimensionStrength {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] orphan dragon spawn failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
             return null;
+        } finally {
+            if (!nested) {
+                ALLOW_INTENTIONAL_DRAGON_SPAWN.set(Boolean.FALSE);
+            }
         }
     }
 
@@ -2312,6 +2372,27 @@ public final class EndDimensionStrength {
 
     private static boolean isPlayerSummoned(EnderDragon dragon) {
         return dragon != null && PersistentDataAccess.flag(dragon, NBT_PLAYER_SUMMON);
+    }
+
+    private static void stampStaffSpawn(EnderDragon dragon) {
+        if (dragon == null) {
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(dragon);
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128379_(NBT_STAFF_SPAWN, true);
+        }
+    }
+
+    /** Vanilla/natural dragon with no GUI summoner and no staff stamp. */
+    private static boolean isUnauthorizedNaturalDragon(EnderDragon dragon) {
+        if (dragon == null || DifficultyConfig.get().enableEndNaturalDragonSpawn) {
+            return false;
+        }
+        if (isPlayerSummoned(dragon) || PersistentDataAccess.flag(dragon, NBT_STAFF_SPAWN)) {
+            return false;
+        }
+        return true;
     }
 
     private static boolean isSummoner(EnderDragon dragon, ServerPlayer player) {

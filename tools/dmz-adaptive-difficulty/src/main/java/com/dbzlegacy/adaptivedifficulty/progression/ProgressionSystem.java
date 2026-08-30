@@ -314,7 +314,10 @@ public final class ProgressionSystem {
             case "apothic", "enableapothicelemental" -> cfg.enableApothicElemental = on;
             case "end", "endstrength", "enableenddimensionstrength" -> cfg.enableEndDimensionStrength = on;
             case "endportal", "endportalguard", "enableendportalguard" -> cfg.enableEndPortalGuard = on;
-            case "endnatural", "enableendnaturaldragonspawn" -> cfg.enableEndNaturalDragonSpawn = on;
+            case "endnatural", "enableendnaturaldragonspawn" -> {
+                // Natural spawn is retired — always force off.
+                cfg.enableEndNaturalDragonSpawn = false;
+            }
             case "endsummon", "enableendplayerdragonsummon", "enddragonsummon" -> cfg.enableEndPlayerDragonSummon = on;
             case "shadow", "shadowdummy", "enableshadowdummylimiter" -> cfg.enableShadowDummyLimiter = on;
             case "statchecker", "playerstatchecker", "enableplayerstatchecker" -> cfg.enablePlayerStatChecker = on;

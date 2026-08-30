@@ -1553,6 +1553,8 @@ public final class DifficultyConfig {
         cfg.maxScaledMobsPerPlayer = Math.max(1, Math.min(5, cfg.maxScaledMobsPerPlayer));
         cfg.endKiMaxAliveWhileDragon = Math.max(1, Math.min(512, cfg.endKiMaxAliveWhileDragon));
         cfg.endDragonSummonNetheriteCost = Math.max(1, Math.min(64, cfg.endDragonSummonNetheriteCost));
+        // Product rule: no natural/vanilla auto End Dragon — Difficulty GUI / staff only.
+        cfg.enableEndNaturalDragonSpawn = false;
         cfg.nearbyScaleBudgetPerPlayer = cfg.maxScaledMobsPerPlayer;
         // Never allow free tiers via live admin set / bad JSON.
         cfg.unlockTier1Cost = Math.max(1L, cfg.unlockTier1Cost);

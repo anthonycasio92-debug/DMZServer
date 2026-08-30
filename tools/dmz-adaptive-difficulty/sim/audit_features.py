@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.67", 'VERSION = "2.3.67"' in mod)
+    check("VERSION 2.3.68", 'VERSION = "2.3.68"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -854,6 +854,10 @@ def main() -> int:
     check("Chest GUI summon button", "summon_end_dragon" in chest and "Summon End Dragon" in chest)
     check("CMI GUI summon button", "summon_end_dragon" in cmi_diff and "Summon End Dragon" in cmi_diff)
     check("natural spawn default off", "enableEndNaturalDragonSpawn = false" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))
+    check("reject unauthorized dragon join", "rejectUnauthorizedDragonJoin" in end_str)
+    check("natural spawn forced off sanitize",
+          'cfg.enableEndNaturalDragonSpawn = false' in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))
     check("3 netherite cost constant", "PLAYER_SUMMON_NETHERITE_COST = 3" in end_str)
 

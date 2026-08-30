@@ -254,6 +254,15 @@ public final class DifficultyEvents {
         if (SystemGate.isDisabled() || event.getLevel().m_5776_()) {
             return;
         }
+        // Block vanilla / natural End Dragon when LM owns End Strength (GUI/staff only).
+        try {
+            if (com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength
+                    .rejectUnauthorizedDragonJoin(event.getEntity())) {
+                event.setCanceled(true);
+                return;
+            }
+        } catch (Throwable ignored) {
+        }
         if (!(event.getEntity() instanceof LivingEntity living) || DimensionGates.isDisabled(living)) {
             return;
         }
