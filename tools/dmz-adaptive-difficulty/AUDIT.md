@@ -1,3 +1,13 @@
+## PvP corpse empty inventory (2.3.63)
+
+Root cause: GriefPrevention **16.18.3** `AllowCombatItemDrop: false` cancels
+`PlayerDropItemEvent` while `inPvpCombat()` with **no** `player.isDead()` check.
+Mohist/Paper fire that event for death loot, so GP destroys the inventory and
+Corpse spawns empty.
+
+Fix in `LegacyMechanicsGUI`: {@code DeathDropGuard} (HIGH) un-cancels cancelled
+drop events only when the player is dead. Live combat Q-drop still blocked by GP.
+
 ## Difficulty GUI live level pull (2.3.62)
 
 Mohist {@code /difficulty} opens the Bukkit CMI/chest GUI without going through

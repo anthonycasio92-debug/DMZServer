@@ -1,4 +1,4 @@
-# LegacyMechanics (v2.3.62)
+# LegacyMechanics (v2.3.63)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -41,8 +41,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/LegacyMechanics-2.3.62.jar` (remove older AD jars)
-2. `plugins/LegacyMechanicsGUI-2.3.62.jar` (or matching GUI if available)
+1. `mods/LegacyMechanics-2.3.63.jar` (remove older AD jars)
+2. `plugins/LegacyMechanicsGUI-2.3.63.jar` (or matching GUI if available)
 3. **Do not load CNPC Global Player / NPC scripts** for systems this mod owns (`CNPC-FREE.md`)
 4. Tag GUI NPCs (`lm_rival`, `lm_spar`, `lm_skillcheck`, …) or use slash commands
 5. Restart — config at `config/legacymechanics.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
@@ -94,6 +94,12 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Stock tier costs (copper-value bases): T1 **1× Copper** · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling is exponential in **absolute** DMZ level from 1 → `tierCostLevelAnchor` (**150000**): T1 at level 1 stays **1× Copper**, T7 at level 150k is **100× Netherite** (`tierCostT7TargetCopper` = 10_000_000). Progress clamps at the anchor. Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
+### Bugfix (2.3.63)
+PvP death + Corpse: GriefPrevention 16.18.x with `AllowCombatItemDrop: false`
+cancels Mohist/Paper `PlayerDropItemEvent`s fired on death (no `isDead` guard),
+destroying gear before Corpse can store it. `DeathDropGuard` un-cancels drops
+only when the player is already dead — combat Q-drop block stays intact.
+
 ### Bugfix (2.3.62)
 `/difficulty` (Bukkit/Mohist) now pulls live DMZ level + unlock data on every open
 via `DifficultyActions.prepareGui` / `ForgeBridge.prepareDifficultyGui`. Fixes stuck

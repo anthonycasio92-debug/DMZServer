@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.62", 'VERSION = "2.3.62"' in mod)
+    check("VERSION 2.3.63", 'VERSION = "2.3.63"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -281,7 +281,12 @@ def main() -> int:
     check("README 1.0.25 balance", "1.0.25" in readme and "T4 tank" in readme)
     check("README 2.3.61 tier costs", "2.3.61" in readme and "tierCostLevelAnchor" in readme and "100× Netherite" in readme)
     check("README 2.3.62 gui level pull", "2.3.62" in readme and "prepareGui" in actions)
+    check("README 2.3.63 death drop guard", "DeathDropGuard" in readme and "AllowCombatItemDrop" in readme)
     check("prepareDifficultyGui bridge", "prepareDifficultyGui" in bridge)
+    gui_plugin_src = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/AdaptiveDifficultyGuiPlugin.java")
+    death_guard = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/DeathDropGuard.java")
+    check("DeathDropGuard registered", "new DeathDropGuard()" in gui_plugin_src)
+    check("DeathDropGuard uncancels when dead", "isDead()" in death_guard and "setCancelled(false)" in death_guard)
     cache_src = read(SRC / "com/dbzlegacy/adaptivedifficulty/cache/DifficultyCache.java")
     check("refresh samples DMZ level", "sampleLevelOnGuiOpen" in cache_src)
     check("tierCostDivisorMigratedV1", "tierCostDivisorMigratedV1" in cfg)
@@ -307,7 +312,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 2.3.62", "2.3.62" in readme)
+    check("README version 2.3.63", "2.3.63" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -355,7 +360,7 @@ def main() -> int:
     check("dual upgrade band uses same roll", "roll < upgradeChance" in coins)
     check("coinDropChanceMigratedV1", "coinDropChanceMigratedV1" in cfg)
     check("admin set drop chance", "ancientcoindropchance" in cmds or "coindropchance" in cmds)
-    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.62" in readme)
+    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.63" in readme)
 
     print("\n=== Mohist CMI /lmdo routing (2.3.54) ===")
     gui_root = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit"
