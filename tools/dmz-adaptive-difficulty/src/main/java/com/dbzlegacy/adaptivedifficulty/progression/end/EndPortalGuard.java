@@ -220,10 +220,12 @@ public final class EndPortalGuard {
             return false;
         }
         Block block = state.m_60734_();
-        if (block == Blocks.f_50259_) { // END_PORTAL
+        // Correct 1.20.1 SRG: end_portal=f_50257_, end_gateway=f_50446_
+        // (f_50259_=end_stone, f_50260_=dragon_egg — older comments were wrong).
+        if (block == Blocks.f_50257_) {
             return true;
         }
-        if (block == Blocks.f_50260_) { // END_GATEWAY
+        if (block == Blocks.f_50446_) {
             return true;
         }
         try {

@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.55", 'VERSION = "2.3.55"' in mod)
+    check("VERSION 2.3.56", 'VERSION = "2.3.56"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -299,7 +299,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 2.3.55", "2.3.55" in readme)
+    check("README version 2.3.56", "2.3.56" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -347,7 +347,7 @@ def main() -> int:
     check("dual upgrade band uses same roll", "roll < upgradeChance" in coins)
     check("coinDropChanceMigratedV1", "coinDropChanceMigratedV1" in cfg)
     check("admin set drop chance", "ancientcoindropchance" in cmds or "coindropchance" in cmds)
-    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.55" in readme)
+    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.56" in readme)
 
     print("\n=== Mohist CMI /lmdo routing (2.3.54) ===")
     gui_root = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit"
@@ -572,7 +572,7 @@ def main() -> int:
 
     print("\n=== Dragon ki launch fix (2.3.55) ===")
     spawn_fire = end_str.split("private static boolean spawnAndFireKi")[1].split(
-        "/** Live DESTROY_CRYSTALS_ON_KILL")[0] if "private static boolean spawnAndFireKi" in end_str else ""
+        "private static void launchDragonKiToward")[0] if "private static boolean spawnAndFireKi" in end_str else ""
     check("spawnAndFireKi never aborts on failed add",
           "return false" not in spawn_fire.split("end.m_7967_")[1].split("int life")[0]
           if "end.m_7967_" in spawn_fire else False)
@@ -588,6 +588,21 @@ def main() -> int:
           "setupKiLaser" in beam_fn.split("catch")[0] if beam_fn else False)
     check("dragon blast unparks controllable",
           "setParked(false)" in blast_fn and "setControllable(false)" in blast_fn)
+
+    print("\n=== End exit podium repair (2.3.56) ===")
+    check("repairEndExitPodium present", "repairEndExitPodium" in end_str)
+    check("cmdRepairPodium present", "cmdRepairPodium" in end_str)
+    enddragon_cmds = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/ProgressionCommands.java")
+    check("enddragon repair subcommand", 'm_82127_("repair")' in enddragon_cmds)
+    check("egg clear uses dragon_egg SRG f_50260_",
+          "Blocks.f_50260_" in end_str and "isDragonEggBlock" in end_str)
+    check("end portal uses SRG f_50257_",
+          "Blocks.f_50257_" in end_str and "isEndPortalBlock" in end_str)
+    portal_guard = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/end/EndPortalGuard.java")
+    check("EndPortalGuard end_portal f_50257_", "Blocks.f_50257_" in portal_guard)
+    check("EndPortalGuard end_gateway f_50446_", "Blocks.f_50446_" in portal_guard)
+    check("EndPortalGuard no end_stone as portal fast-path",
+          "block == Blocks.f_50259_" not in portal_guard)
 
     print("\n=== Skill Check real max levels (2.3.54) ===")
     skill_unlock = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java")

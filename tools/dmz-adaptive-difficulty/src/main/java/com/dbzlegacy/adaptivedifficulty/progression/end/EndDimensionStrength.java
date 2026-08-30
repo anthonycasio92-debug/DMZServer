@@ -11,6 +11,7 @@ import com.dragonminez.common.init.entities.ki.KiLaserEntity;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -38,8 +39,11 @@ import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.dimension.end.EndDragonFight;
 import net.minecraft.world.level.entity.EntityTypeTest;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.feature.EndPodiumFeature;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
@@ -96,6 +100,11 @@ public final class EndDimensionStrength {
     private static final int EGG_CLEAR_RADIUS = 8;
     private static final int EGG_CLEAR_Y_MIN = 50;
     private static final int EGG_CLEAR_Y_MAX = 120;
+    /** Central island scan for duplicate exit portals / podium repair. */
+    private static final int PODIUM_SCAN_RADIUS = 10;
+    private static final int PODIUM_SCAN_Y_MIN = 40;
+    private static final int PODIUM_SCAN_Y_MAX = 128;
+    private static final long PODIUM_REPAIR_COOLDOWN_MS = 8_000L;
 
     private static final double DRAGON_BASE_HP = 12_000;
     private static final double DRAGON_HP_CAP = 28_000;
@@ -134,6 +143,7 @@ public final class EndDimensionStrength {
     private static volatile long crystalClearUntil;
     /** Last power score we sized the living dragon to (script TEMP_DRAGON_SCALE_SCORE). */
     private static volatile double lastDragonScaleScore = -1.0;
+    private static volatile long lastPodiumRepairAt;
 
     private static final Map<UUID, PendingTp> PENDING_TP = new ConcurrentHashMap<>();
 
@@ -313,6 +323,12 @@ public final class EndDimensionStrength {
                     clearDragonEggBlocks(end);
                 } catch (Throwable ignored) {
                 }
+                try {
+                    // Vanilla kill already places an exit portal; older egg-clear wiped end_stone
+                    // and left stacked portals / hollow podium — collapse to one clean fountain.
+                    repairEndExitPodium(end, true);
+                } catch (Throwable ignored) {
+                }
             }
         }
         try {
@@ -355,6 +371,10 @@ public final class EndDimensionStrength {
             return 1;
         }
         msg(player, "§7[The End] Spawning Ender Dragon...");
+        try {
+            repairEndExitPodium(end, true);
+        } catch (Throwable ignored) {
+        }
         PlayerPower power = strongestInEnd(end, player);
         EnderDragon dragon = spawnFightLinkedDragon(end, player);
         if (dragon == null) {
@@ -696,6 +716,10 @@ public final class EndDimensionStrength {
             lastHygieneAt = now;
             EnderDragon kept = enforceSingleDragon(end);
             cleanupEndKiProjectiles(end, kept != null);
+            // Opportunistic: only when duplicate portal Y-levels are present.
+            if (countExitPortalYLevels(end) > 1) {
+                repairEndExitPodium(end, true);
+            }
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
                     "[{}] runDragonWorldHygiene: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
@@ -996,10 +1020,17 @@ public final class EndDimensionStrength {
         return removed;
     }
 
-    /** Dragon egg only — never end_portal / end_gateway (older builds wrongly cleared portals). */
-    private static boolean isDragonEggBlock(net.minecraft.world.level.block.state.BlockState state) {
+    /** Dragon egg only — never end_portal / end_gateway / end_stone. */
+    private static boolean isDragonEggBlock(BlockState state) {
         if (state == null) {
             return false;
+        }
+        try {
+            // Correct SRG: f_50260_ = dragon_egg (NOT end_gateway).
+            if (state.m_60713_(Blocks.f_50260_)) {
+                return true;
+            }
+        } catch (Throwable ignored) {
         }
         try {
             var key = ForgeRegistries.BLOCKS.getKey(state.m_60734_());
@@ -1007,10 +1038,279 @@ public final class EndDimensionStrength {
                 return false;
             }
             String name = key.toString().toLowerCase(Locale.ROOT);
-            // Exact id only — never "end_portal" (previous bug used END_PORTAL constant).
+            // Exact id only — never "end_portal" / end_stone (older builds used wrong SRG ids).
             return "minecraft:dragon_egg".equals(name) || name.endsWith(":dragon_egg");
         } catch (Throwable ignored) {
             return false;
+        }
+    }
+
+    private static boolean isEndPortalBlock(BlockState state) {
+        if (state == null) {
+            return false;
+        }
+        try {
+            // Correct SRG: f_50257_ = end_portal (f_50259_ is end_stone).
+            if (state.m_60713_(Blocks.f_50257_)) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            var key = ForgeRegistries.BLOCKS.getKey(state.m_60734_());
+            if (key == null) {
+                return false;
+            }
+            String name = key.toString().toLowerCase(Locale.ROOT);
+            return "minecraft:end_portal".equals(name) || name.endsWith(":end_portal");
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static boolean isPodiumFillBlock(BlockState state) {
+        if (state == null) {
+            return false;
+        }
+        try {
+            // bedrock / end_stone / end_portal / dragon_egg / wall_torch
+            if (state.m_60713_(Blocks.f_50752_)
+                    || state.m_60713_(Blocks.f_50259_)
+                    || state.m_60713_(Blocks.f_50257_)
+                    || state.m_60713_(Blocks.f_50260_)
+                    || state.m_60713_(Blocks.f_50082_)) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        return isEndPortalBlock(state) || isDragonEggBlock(state);
+    }
+
+    /** Staff: rebuild a single clean exit fountain at 0,0 (fixes stacked portals). */
+    public static int cmdRepairPodium(ServerPlayer player) {
+        if (player == null) {
+            return 0;
+        }
+        MinecraftServer server = player.m_20194_();
+        if (server == null) {
+            return 0;
+        }
+        ServerLevel end = server.m_129880_(Level.f_46430_);
+        if (end == null) {
+            msg(player, "§c[The End] End dimension unavailable.");
+            return 0;
+        }
+        lastPodiumRepairAt = 0L; // force
+        int yLevels = countExitPortalYLevels(end);
+        boolean ok = repairEndExitPodium(end, true);
+        if (!ok) {
+            msg(player, "§c[The End] Exit podium repair failed.");
+            return 0;
+        }
+        msg(player, "§a[The End] §fExit podium repaired"
+                + (yLevels > 1 ? " §8(collapsed " + yLevels + " portal layers)" : "")
+                + "§f.");
+        return 1;
+    }
+
+    /**
+     * Collapse duplicate exit portals / hollowed podium back to one vanilla fountain.
+     * <p>
+     * Older egg-clear used {@code Blocks.f_50259_} thinking it was {@code end_portal};
+     * that field is actually {@code end_stone}, so it hollowed the podium skirt. Each
+     * later dragon kill then placed another {@code EndPodiumFeature} — stacked portals
+     * and a ruined underside. Rebuild once at a pinned origin location.
+     */
+    static boolean repairEndExitPodium(ServerLevel end, boolean withPortal) {
+        if (end == null) {
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastPodiumRepairAt < PODIUM_REPAIR_COOLDOWN_MS) {
+            return true;
+        }
+        try {
+            BlockPos portalLoc = chooseCanonicalPortalPos(end);
+            int keepY = portalLoc.m_123342_();
+            int clearedGhosts = clearNonCanonicalPodiums(end, keepY);
+            EndDragonFight fight = end.m_8586_();
+            if (fight != null) {
+                setFightPortalLocation(fight, portalLoc);
+                invokeSpawnExitPortal(fight, withPortal);
+            } else {
+                placeEndPodiumDirect(end, portalLoc, withPortal);
+            }
+            try {
+                clearDragonEggBlocks(end);
+            } catch (Throwable ignored) {
+            }
+            lastPodiumRepairAt = now;
+            if (clearedGhosts > 0) {
+                AdaptiveDifficultyMod.LOGGER.info(
+                        "[{}] End exit podium repaired at {} (removed {} ghost podium blocks)",
+                        AdaptiveDifficultyMod.MOD_ID, portalLoc, clearedGhosts);
+            }
+            return true;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] End exit podium repair failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            return false;
+        }
+    }
+
+    static int countExitPortalYLevels(ServerLevel end) {
+        if (end == null) {
+            return 0;
+        }
+        Map<Integer, Integer> byY = new HashMap<>();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int x = -PODIUM_SCAN_RADIUS; x <= PODIUM_SCAN_RADIUS; x++) {
+            for (int z = -PODIUM_SCAN_RADIUS; z <= PODIUM_SCAN_RADIUS; z++) {
+                for (int y = PODIUM_SCAN_Y_MIN; y <= PODIUM_SCAN_Y_MAX; y++) {
+                    pos.m_122178_(x, y, z);
+                    try {
+                        if (isEndPortalBlock(end.m_8055_(pos))) {
+                            byY.merge(y, 1, Integer::sum);
+                        }
+                    } catch (Throwable ignored) {
+                    }
+                }
+            }
+        }
+        return byY.size();
+    }
+
+    private static BlockPos chooseCanonicalPortalPos(ServerLevel end) {
+        Map<Integer, Integer> byY = new HashMap<>();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int x = -PODIUM_SCAN_RADIUS; x <= PODIUM_SCAN_RADIUS; x++) {
+            for (int z = -PODIUM_SCAN_RADIUS; z <= PODIUM_SCAN_RADIUS; z++) {
+                for (int y = PODIUM_SCAN_Y_MIN; y <= PODIUM_SCAN_Y_MAX; y++) {
+                    pos.m_122178_(x, y, z);
+                    try {
+                        if (isEndPortalBlock(end.m_8055_(pos))) {
+                            byY.merge(y, 1, Integer::sum);
+                        }
+                    } catch (Throwable ignored) {
+                    }
+                }
+            }
+        }
+        int keepY = Integer.MIN_VALUE;
+        int bestCount = -1;
+        for (Map.Entry<Integer, Integer> e : byY.entrySet()) {
+            if (e.getValue() > bestCount
+                    || (e.getValue() == bestCount && e.getKey() > keepY)) {
+                bestCount = e.getValue();
+                keepY = e.getKey();
+            }
+        }
+        if (keepY == Integer.MIN_VALUE) {
+            // No portal left — mirror vanilla spawnExitPortal height walk.
+            BlockPos origin = EndPodiumFeature.m_287210_(BlockPos.f_121853_); // ZERO
+            BlockPos at = end.m_5452_(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, origin).m_7495_();
+            while (at.m_123342_() > end.m_5736_()
+                    && end.m_8055_(at).m_60713_(Blocks.f_50752_)) { // bedrock
+                at = at.m_7495_();
+            }
+            return at;
+        }
+        return new BlockPos(0, keepY, 0);
+    }
+
+    /**
+     * Wipe podium-shaped debris at every exit-portal Y except {@code keepY}.
+     * Leaves the island end_stone alone; only clears fountain cylinders.
+     */
+    private static int clearNonCanonicalPodiums(ServerLevel end, int keepY) {
+        Map<Integer, Integer> byY = new HashMap<>();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int x = -PODIUM_SCAN_RADIUS; x <= PODIUM_SCAN_RADIUS; x++) {
+            for (int z = -PODIUM_SCAN_RADIUS; z <= PODIUM_SCAN_RADIUS; z++) {
+                for (int y = PODIUM_SCAN_Y_MIN; y <= PODIUM_SCAN_Y_MAX; y++) {
+                    pos.m_122178_(x, y, z);
+                    try {
+                        if (isEndPortalBlock(end.m_8055_(pos))) {
+                            byY.merge(y, 1, Integer::sum);
+                        }
+                    } catch (Throwable ignored) {
+                    }
+                }
+            }
+        }
+        int removed = 0;
+        for (int ghostY : byY.keySet()) {
+            if (ghostY == keepY) {
+                continue;
+            }
+            for (int x = -4; x <= 4; x++) {
+                for (int z = -4; z <= 4; z++) {
+                    double distSq = (double) x * x + (double) z * z;
+                    if (distSq > 3.6 * 3.6) {
+                        continue;
+                    }
+                    for (int y = ghostY - 6; y <= ghostY + 10; y++) {
+                        if (y < PODIUM_SCAN_Y_MIN || y > PODIUM_SCAN_Y_MAX || y == keepY) {
+                            continue;
+                        }
+                        pos.m_122178_(x, y, z);
+                        try {
+                            BlockState state = end.m_8055_(pos);
+                            if (!isPodiumFillBlock(state)) {
+                                continue;
+                            }
+                            end.m_46597_(pos, Blocks.f_50016_.m_49966_());
+                            removed++;
+                        } catch (Throwable ignored) {
+                        }
+                    }
+                }
+            }
+        }
+        return removed;
+    }
+
+    private static void setFightPortalLocation(EndDragonFight fight, BlockPos pos) {
+        if (fight == null || pos == null) {
+            return;
+        }
+        try {
+            java.lang.reflect.Field f = EndDragonFight.class.getDeclaredField("f_64072_");
+            f.setAccessible(true);
+            f.set(fight, pos.m_7949_()); // immutable copy
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void invokeSpawnExitPortal(EndDragonFight fight, boolean active) {
+        if (fight == null) {
+            return;
+        }
+        try {
+            java.lang.reflect.Method m = EndDragonFight.class.getDeclaredMethod("m_64093_", boolean.class);
+            m.setAccessible(true);
+            m.invoke(fight, active);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] spawnExitPortal reflect failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
+    }
+
+    private static void placeEndPodiumDirect(ServerLevel end, BlockPos pos, boolean active) {
+        if (end == null || pos == null) {
+            return;
+        }
+        try {
+            EndPodiumFeature feature = new EndPodiumFeature(active);
+            feature.m_225028_(
+                    net.minecraft.world.level.levelgen.feature.configurations.FeatureConfiguration.f_67737_,
+                    end,
+                    end.m_7726_().m_8481_(),
+                    net.minecraft.util.RandomSource.m_216327_(),
+                    pos);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] direct EndPodiumFeature place failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
         }
     }
 

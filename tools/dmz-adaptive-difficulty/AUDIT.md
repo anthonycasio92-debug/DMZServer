@@ -1,3 +1,17 @@
+## End exit podium repair (2.3.56)
+
+Older egg-clear used `Blocks.f_50259_` believing it was `end_portal` — that SRG
+id is **`end_stone`**, so it hollowed the fountain skirt. Later dragon kills
+re-placed `EndPodiumFeature` → stacked portals / ruined underside.
+
+Fix:
+- Egg clear uses real `dragon_egg` (`f_50260_`) + registry id only
+- `repairEndExitPodium` collapses ghost portal layers and rebuilds one fountain
+- Runs on dragon kill, `/enddragon` spawn, hygiene when duplicates detected
+- Staff: `/enddragon repair`
+- `EndPortalGuard` fast-path constants corrected (`end_portal=f_50257_`,
+  `end_gateway=f_50446_`)
+
 ## Dragon ki launch (2.3.55)
 
 End dragon DMZ ki blasts were hovering: `setupKiBlastPlayer` already spawns the

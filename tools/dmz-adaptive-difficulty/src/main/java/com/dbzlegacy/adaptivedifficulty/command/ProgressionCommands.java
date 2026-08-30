@@ -88,6 +88,7 @@ public final class ProgressionCommands {
                 .requires(ProgressionCommands::staff)
                 .executes(ctx -> endSpawn(ctx.getSource()))
                 .then(Commands.m_82127_("spawn").executes(ctx -> endSpawn(ctx.getSource())))
+                .then(Commands.m_82127_("repair").executes(ctx -> endRepair(ctx.getSource())))
                 .then(Commands.m_82127_("clear").executes(ctx -> endClear(ctx.getSource())))
                 .then(Commands.m_82127_("cleanup").executes(ctx -> endClear(ctx.getSource()))));
         event.getDispatcher().register(Commands.m_82127_("spawndragon")
@@ -169,6 +170,14 @@ public final class ProgressionCommands {
             return 0;
         }
         return com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdSpawnDragon(p);
+    }
+
+    private static int endRepair(CommandSourceStack source) {
+        ServerPlayer p = playerOrNull(source);
+        if (p == null) {
+            return 0;
+        }
+        return com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdRepairPodium(p);
     }
 
     private static int endClear(CommandSourceStack source) {
