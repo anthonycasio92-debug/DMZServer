@@ -1,15 +1,39 @@
 /*
 ============================================================
- End Dragon Forge Trigger Bridge — DISABLED STUB
-============================================================
- LegacyMechanics owns /enddragon and /cleardragons. This Forge
- bridge only existed to forward CNPC triggers 50/51 into the
- player script — that script is now stubbed.
+ End Dragon Forge Trigger Bridge (STUB → Java)
+ Triggers 50 / 51
 
- Do NOT re-enable unless you turn off enableEndDimensionStrength
- and restore End Dimension Strength.js.
+ Forwards to LegacyMechanics EndDimensionStrength.
+ Prefer Forge commands (no CMI alias):
+   /enddragon · /enddragon spawn
+   /cleardragons · /enddragon clear
 ============================================================
 */
 
 function init(e) { /* owned by LegacyMechanics */ }
-function trigger(e) { /* owned by LegacyMechanics */ }
+
+function trigger(e) {
+    try {
+        if (e == null) return;
+        var id = Number(e.id);
+        var End = Java.type(
+            "com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength"
+        );
+        var actor = null;
+        try {
+            if (e.player != null) actor = e.player.getMCEntity();
+        } catch (ignoredMc) {}
+        if (id === 50) {
+            End.cmdSpawnDragon(actor);
+            return;
+        }
+        if (id === 51) {
+            End.cmdCleanupDragons(actor);
+            return;
+        }
+    } catch (err) {
+        try {
+            print("[EndDragon Forge] Java forward failed: " + err);
+        } catch (ignoredPrint) {}
+    }
+}

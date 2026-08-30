@@ -37,7 +37,7 @@ public final class SparringSystem {
     public static final long PENDING_HP_RESOLVE_MS = 75L;
     public static final long MENTOR_CHANGE_COOLDOWN_MS = 7L * 24L * 60L * 60L * 1000L;
     /** Mentor invite TTL — long enough for a Pending board (was 2 minutes). */
-    public static final long MENTOR_INVITE_MS = 24L * 60L * 60L * 1000L;
+    public static final long MENTOR_INVITE_MS = 120_000L;
     public static final long TICK_MS = 250L;
     public static final long MIN_COUNTED_SESSION_MS = 30_000L;
     public static final long STREAK_MIN_SESSION_MS = 300_000L;

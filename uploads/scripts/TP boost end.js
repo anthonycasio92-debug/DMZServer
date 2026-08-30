@@ -1,12 +1,10 @@
 /*
 ============================================================
- DBZ Legacy Reborn - TP Boost End (STUB)
+ DBZ Legacy Reborn - TP Boost End (STUB → Java)
  Trigger ID: 31
 
- Java owns this path now (LegacyMechanics):
-   /progression boost end
-
- Do NOT run end logic here — GlobalTpBoost.endBoost owns it.
+ Forwards to LegacyMechanics GlobalTpBoost.endBoost.
+ Prefer: /progression boost end
 ============================================================
 */
 
@@ -21,14 +19,24 @@ function trigger(event) {
         return;
     }
     try {
-        print("[TP Boost End 31] Stub — use /progression boost end (LegacyMechanics Java).");
-    } catch (ignored2) {}
-    try {
-        if (event.player != null && typeof event.player.message == "function") {
-            event.player.message(
-                COLOR + "e[TP Boost] " + COLOR + "7Use " + COLOR + "f/progression boost end"
-                + COLOR + "7 (Java)."
-            );
+        var GlobalTpBoost = Java.type(
+            "com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost"
+        );
+        var msg = GlobalTpBoost.endBoost(true);
+        if (msg && event.player != null && typeof event.player.message === "function") {
+            event.player.message(String(msg));
         }
-    } catch (ignored3) {}
+    } catch (err) {
+        try {
+            print("[TP Boost End 31] Java forward failed: " + err);
+        } catch (ignoredPrint) {}
+        try {
+            if (event.player != null) {
+                event.player.message(
+                    COLOR + "e[TP Boost] " + COLOR + "7Use " + COLOR + "f/progression boost end"
+                    + COLOR + "7 (LegacyMechanics)."
+                );
+            }
+        } catch (ignoredMsg) {}
+    }
 }

@@ -1,27 +1,18 @@
-function damagedEntity(event) {
-    var item = event.player.getMainhandItem();
-    if (item == null || item.isEmpty()) return;
+/*
+============================================================
+ Apothicfireandcolddamage.js — DISABLED STUB
+============================================================
+ LegacyMechanics (Forge) owns this system:
+   Java: com.dbzlegacy.adaptivedifficulty.progression.combat.ApothicElemental
+   Use: (automatic)
 
-    var attack = item.getAttackDamage();
-    var fire = 0;
-    var cold = 0;
+ Full script backup: uploads/scripts/Apothicfireandcolddamage.js
+   and/or uploads/script-backups-full/ / live-scripts-2026-08-27/
 
-    if (item.hasAttribute("attributeslib:fire_damage")) {
-        fire += item.getAttribute("attributeslib:fire_damage");
-    }
-    if (item.hasAttribute("apothic_attributes:fire_damage")) {
-        fire += item.getAttribute("apothic_attributes:fire_damage");
-    }
+ Do NOT re-enable while the matching enable* flag is ON in the
+ Forge mod — double TP / double handlers / double sync will occur.
+============================================================
+*/
 
-    if (item.hasAttribute("attributeslib:cold_damage")) {
-        cold += item.getAttribute("attributeslib:cold_damage");
-    }
-    if (item.hasAttribute("apothic_attributes:cold_damage")) {
-        cold += item.getAttribute("apothic_attributes:cold_damage");
-    }
-
-    var total = attack + fire + cold;
-    if (total <= 0) return;
-
-    event.damage = event.damage * (1 + (total * 0.01));
-}
+function damagedEntity(e) { /* owned by LegacyMechanics */ }
+function init(e) { /* owned by LegacyMechanics */ }

@@ -42,7 +42,10 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 public final class MeditationProgression {
     private static final String SKILL = "meditation";
     private static final int MAX_LEVEL = 10;
+    /** Auto-rotate window — matches Meditation new.js CONFIG.TRIAL_DURATION_MS. */
     private static final long TRIAL_DURATION_MS = 15L * 60L * 1000L;
+    /** Staff/manual cycle window — matches ChangeBiomeMED.js TRIAL_DURATION_MS (30 min). */
+    private static final long MANUAL_TRIAL_DURATION_MS = 30L * 60L * 1000L;
     private static final long TRIAL_WARNING_MS = 5L * 60L * 1000L;
     private static final long ROTATION_LOCK_MS = 3_000L;
     private static final long FOCUS_WINDOW_MS = 10_000L;
@@ -306,11 +309,12 @@ public final class MeditationProgression {
         if (TRIALS.length > 1 && index == previous) {
             index = (index + 1) % TRIALS.length;
         }
+        long duration = manual ? MANUAL_TRIAL_DURATION_MS : TRIAL_DURATION_MS;
         GLOBAL_INDEX.set(index);
-        GLOBAL_END.set(now + TRIAL_DURATION_MS);
+        GLOBAL_END.set(now + duration);
         GLOBAL_WARNED.set(false);
         Trial trial = TRIALS[index];
-        announceTrial(trial, TRIAL_DURATION_MS, manual);
+        announceTrial(trial, duration, manual);
         saveIfNeeded(true);
         return trial;
     }

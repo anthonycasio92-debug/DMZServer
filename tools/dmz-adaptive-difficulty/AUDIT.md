@@ -1,3 +1,9 @@
+## Script audit + parity (2.3.48)
+
+Full matrix: `SCRIPT-AUDIT.md`. Stubbed Java-owned CNPC scripts (no double-apply).
+Trigger stubs 21/30/31/41/45/50/51 forward to Java. Mentor invite 2 min;
+manual meditation trial 30 min.
+
 ## End dragon parity + Skill Check CNPC (2.3.47)
 
 - **Skill Check CNPC**: Forge no longer soft-matches `contains("rival")` (stole
