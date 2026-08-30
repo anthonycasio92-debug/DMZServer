@@ -1236,6 +1236,11 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             player.sendMessage("§cNo permission: dmzdiff.gui");
             return true;
         }
+        // Players: Prestige is GUI-only via /lm → Prestige (or /lmdo from CMI).
+        if (!ForgeBridge.isStaff(player)) {
+            player.sendMessage("§7Open §f/lm §7→ §6Prestige §7(GUI).");
+            return true;
+        }
         if (args.length == 0 || "gui".equalsIgnoreCase(args[0])) {
             openPrestigeRespectingConfig(player, "main");
             return true;

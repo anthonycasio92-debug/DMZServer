@@ -174,9 +174,9 @@ public final class PrestigeSystem {
         send(player, "§7DMZ Level: §f" + DmzRewards.formatWhole(level)
                 + " §8| §7Need: §e" + DmzRewards.formatWhole(required));
         MutableComponent row = Component.m_237113_("§7")
-                .m_7220_(btn("§a[Prestige]", "/prestige do confirm", "Confirm prestige purchase"))
+                .m_7220_(btn("§a[Prestige]", "/lmdo prestige confirm 0 main", "Confirm prestige purchase"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§7[Refresh]", "/prestige", "Refresh status"));
+                .m_7220_(btn("§7[Refresh]", "/lmdo lm open prestige", "Refresh status"));
         send(player, row);
         send(player, "§8────────────────");
     }
@@ -197,9 +197,9 @@ public final class PrestigeSystem {
             send(player, "§7Held after: §6" + (held + 1) + "§7/§f" + MAX_HELD);
             send(player, "§8Click again within 10s to confirm.");
             MutableComponent row = Component.m_237113_("§7")
-                    .m_7220_(btn("§a[Confirm Prestige]", "/prestige do confirm", "Complete prestige"))
+                    .m_7220_(btn("§a[Confirm Prestige]", "/lmdo prestige confirm 0 main", "Complete prestige"))
                     .m_7220_(Component.m_237113_("  "))
-                    .m_7220_(btn("§c[Cancel]", "/prestige", "Cancel"));
+                    .m_7220_(btn("§c[Cancel]", "/lmdo lm open prestige", "Cancel"));
             send(player, row);
             send(player, "§8--------------------------------");
         }

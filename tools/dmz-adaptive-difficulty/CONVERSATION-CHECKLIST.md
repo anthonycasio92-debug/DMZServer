@@ -1,6 +1,6 @@
 # Conversation commitments checklist
 
-Verified against LegacyMechanics **2.3.52**. These are decisions from the
+Verified against LegacyMechanics **2.3.53**. These are decisions from the
 progression / CNPC-free / GUI-audit conversation thread — do not revert.
 
 | Commitment | Where | Status |
@@ -15,7 +15,9 @@ progression / CNPC-free / GUI-audit conversation thread — do not revert.
 | Spar TP Msg toggle GUI-only (no `/spar tpmsg`) | Spar GUI / `SparGuiApi` | locked |
 | Manual meditation **30 min** / auto **15 min** | `MeditationProgression` | locked |
 | Player Prestige + Remove Android on hub (not staff-only) | Hub chest/CMI/chat | locked |
-| `/progression` player root: meditation + android remove help | `helpOrGui`, Bukkit tree | locked |
+| Player slash whitelist: `/lm` `/spar` `/difficulty` `/rival` `/progression meditation` + `/skillcheck` | Bukkit+Forge gates | locked |
+| Prestige / android remove / skills via GUI only for players | `/prestige` staff slash; `/lm` hub | locked |
+| `/progression` player root: meditation only | `helpOrGui`, Bukkit tree | locked |
 | Hub hops via `/lmdo lm open hub` (not bare `/lm`) | All system GUIs | locked |
 | Inspect sessions preserved; `android_remove` inspectable | `AdaptiveDifficultyGuiPlugin` | locked |
 | Chat-backend Remove Android opens inventory confirm | `isAndroidRemovePage` | locked |

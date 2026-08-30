@@ -1,5 +1,5 @@
 name: LegacyMechanicsGUI
-version: '2.3.52'
+version: '2.3.53'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
@@ -21,13 +21,13 @@ commands:
     description: Open LegacyMechanics Hub GUI
     usage: /lm
     aliases: [legacymechanics]
-  progression:
-    description: Progression command tree (GUI · boost · android · meditation · flags)
-    usage: /progression [help|status|gui|boost|android|meditation|admin|…]
-    aliases: [prog]
   prestige:
-    description: Open LegacyMechanics Prestige GUI
+    description: Prestige GUI (staff slash; players use /lm → Prestige)
     usage: /prestige
+  progression:
+    description: Players — /progression meditation only; staff — full tree
+    usage: /progression meditation | (staff) help|gui|boost|android|…
+    aliases: [prog]
   skills:
     description: Open LegacyMechanics Skills admin GUI (staff)
     usage: /skills

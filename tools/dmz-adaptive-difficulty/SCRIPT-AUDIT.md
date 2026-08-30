@@ -62,10 +62,10 @@ GUIs/hub, telemetry, CNPC data migrator, Building TP.
 | Soft `contains("rival")` stole Skill Check | 2.3.47 |
 | Spar Stats packed 3 spars into one line | 2.3.49 individual report cards |
 | Name-open did not cancel (script-era) | 2.3.50 cancel tag **and** name |
-| Yardrat starter skills used nonexistent IDs | 2.3.52 → `kimanipulation` / `kicontrol` |
-| RaceLock missing saga `difficultyChosen` clear | 2.3.52 port of clearStuckSagaDifficulty |
-| ShadowDummy CD key rename dropped mid-CD | 2.3.52 dual-read legacy + lm keys |
-| Global TP Boost end spam | 2.3.52 5s end lock (script END_LOCK_MS) |
+| Yardrat starter skills used nonexistent IDs | 2.3.53 → `kimanipulation` / `kicontrol` |
+| RaceLock missing saga `difficultyChosen` clear | 2.3.53 port of clearStuckSagaDifficulty |
+| ShadowDummy CD key rename dropped mid-CD | 2.3.53 dual-read legacy + lm keys |
+| Global TP Boost end spam | 2.3.53 5s end lock (script END_LOCK_MS) |
 
 ## Intentional differences vs old scripts
 

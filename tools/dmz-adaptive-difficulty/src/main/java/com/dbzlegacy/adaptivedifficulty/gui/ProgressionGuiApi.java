@@ -49,7 +49,7 @@ public final class ProgressionGuiApi {
         return commandHelp(true);
     }
 
-    /** Chat help. Non-staff get meditation + self Android remove only. */
+    /** Chat help. Non-staff: meditation only (other actions via /lm GUI). */
     public static String commandHelp(boolean staff) {
         if (!staff) {
             return String.join("\n",
@@ -58,10 +58,7 @@ public final class ProgressionGuiApi {
                     "§e/progression meditation §7— current biome, goal, and timer",
                     "§8Charge Ki in the trial biome to level Meditation.",
                     "",
-                    "§c§lRemove Android",
-                    "§8────────────",
-                    "§e/lm §7→ §cRemove Android §7— GUI (two-click confirm)",
-                    "§e/progression android remove §7— remove your Android upgrade");
+                    "§7Other actions: §f/lm §7→ Prestige · Remove Android · Skill Check");
         }
         return String.join("\n",
                 "§6§l/progression §8(alias §7/prog§8) §7— command tree",
@@ -523,10 +520,12 @@ public final class ProgressionGuiApi {
                     help.add("§e/progression boost §7— status · start &lt;mult&gt; &lt;min&gt; · end");
                     help.add("§e/progression android [player] §7— Android convert (Gero)");
                     help.add("§e/progression android remove [player] §7— remove Android upgrade");
-                    help.add("§e/prestige §7— Prestige (Hub)");
-                    help.add("§e/skills §7— Skill unlocks (Hub)");
+                    help.add("§e/prestige §7— Prestige GUI (staff slash; players use /lm)");
+                    help.add("§e/skills §7— Skill unlocks (staff)");
+                    help.add("§e/skillcheck §7— Skill Check (donator)");
                     help.add("§8Staff · /prog admin · toggle flags in section GUIs");
                 } else {
+                    help.add("§7Other actions: §f/lm §7→ Prestige · Remove Android");
                     help.add("§8Charge Ki in the trial biome to level Meditation.");
                 }
                 yield help;

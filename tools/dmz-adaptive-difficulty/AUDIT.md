@@ -1,4 +1,12 @@
-## Script parity deep check (2.3.52)
+## Player command whitelist (2.3.53)
+
+Players may slash only:
+`/lm` · `/difficulty` · `/rival` · `/spar` · `/progression meditation` · `/skillcheck` (donator).
+
+Prestige, Remove Android, Skills, and other progression actions are **GUI-only**
+via `/lm` (CMI clicks still use internal `/lmdo`). Staff keep full slash trees.
+
+## Script parity deep check (2.3.53)
 
 Re-verified Java vs live/backup scripts (`uploads/live-scripts-2026-08-27/`,
 `script-backups-full`). Core Rival/Spar/Prestige/End/Android/SkillCheck/Meditation/

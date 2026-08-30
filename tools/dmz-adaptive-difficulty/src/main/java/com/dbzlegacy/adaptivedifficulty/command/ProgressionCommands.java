@@ -36,8 +36,9 @@ public final class ProgressionCommands {
         event.getDispatcher().register(root);
         event.getDispatcher().register(build("prog"));
 
-        // Prestige NPC purchase GUI — players + staff
+        // Prestige — staff slash only; players use /lm → Prestige (GUI).
         event.getDispatcher().register(Commands.m_82127_("prestige")
+                .requires(ProgressionCommands::staff)
                 .executes(ctx -> prestigeGui(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> prestigeGui(ctx.getSource(), "main")))
                 .then(Commands.m_82127_("do")
@@ -236,14 +237,14 @@ public final class ProgressionCommands {
                                 .requires(ProgressionCommands::staff)
                                 .executes(ctx -> meditationNext(ctx.getSource()))))
                 .then(Commands.m_82127_("android")
+                        .executes(ctx -> androidSelfOrHint(ctx.getSource()))
                         .then(Commands.m_82127_("remove")
-                                .executes(ctx -> androidRemoveSelf(ctx.getSource()))
+                                .executes(ctx -> androidRemoveGuiHint(ctx.getSource()))
                                 .then(Commands.m_82129_("player", StringArgumentType.word())
                                         .requires(ProgressionCommands::staff)
                                         .executes(ctx -> androidRemovePlayer(
                                                 ctx.getSource(),
                                                 StringArgumentType.getString(ctx, "player")))))
-                        .executes(ctx -> androidSelfOrHint(ctx.getSource()))
                         .then(Commands.m_82129_("player", StringArgumentType.word())
                                 .requires(ProgressionCommands::staff)
                                 .executes(ctx -> androidPlayer(
@@ -289,8 +290,7 @@ public final class ProgressionCommands {
         // Player-facing help (no progression GUI).
         String msg = "§6§l/progression\n"
                 + "§e/progression meditation §7— current trial status\n"
-                + "§e/progression android remove §7— remove your Android upgrade\n"
-                + "§8Staff: /progression gui · boost · meditation next · android <player>";
+                + "§8Other actions: §f/lm §7→ Prestige · Remove Android";
         reply(source, player, msg);
         return 1;
     }
@@ -385,11 +385,19 @@ public final class ProgressionCommands {
         return 1;
     }
 
+    private static int androidRemoveGuiHint(CommandSourceStack source) {
+        if (staff(source)) {
+            return androidRemoveSelf(source);
+        }
+        reply(source, playerOrNull(source),
+                "§7Open §f/lm §7→ §cRemove Android §7(GUI).");
+        return 0;
+    }
+
     private static int androidSelfOrHint(CommandSourceStack source) {
         if (!staff(source)) {
             reply(source, playerOrNull(source),
-                    "§7Use §f/progression android remove §7to remove your Android upgrade."
-                            + "\n§8Convert is staff-only.");
+                    "§7Open §f/lm §7→ §cRemove Android §7(GUI).\n§8Convert is staff-only.");
             return 0;
         }
         return androidSelf(source);
