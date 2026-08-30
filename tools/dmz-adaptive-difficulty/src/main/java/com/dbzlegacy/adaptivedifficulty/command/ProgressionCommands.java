@@ -234,7 +234,13 @@ public final class ProgressionCommands {
                                                         ctx.getSource(),
                                                         DoubleArgumentType.getDouble(ctx, "multiplier"),
                                                         IntegerArgumentType.getInteger(ctx, "minutes"),
-                                                        null)))))
+                                                        null))
+                                                .then(Commands.m_82129_("purchaser", StringArgumentType.greedyString())
+                                                        .executes(ctx -> boostMinutes(
+                                                                ctx.getSource(),
+                                                                DoubleArgumentType.getDouble(ctx, "multiplier"),
+                                                                IntegerArgumentType.getInteger(ctx, "minutes"),
+                                                                StringArgumentType.getString(ctx, "purchaser")))))))
                         .then(Commands.m_82127_("end")
                                 .requires(ProgressionCommands::staff)
                                 .executes(ctx -> boostEnd(ctx.getSource()))))

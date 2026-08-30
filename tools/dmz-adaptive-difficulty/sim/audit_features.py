@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.57", 'VERSION = "2.3.57"' in mod)
+    check("VERSION 2.3.58", 'VERSION = "2.3.58"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -299,7 +299,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 2.3.57", "2.3.57" in readme)
+    check("README version 2.3.58", "2.3.58" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -347,7 +347,7 @@ def main() -> int:
     check("dual upgrade band uses same roll", "roll < upgradeChance" in coins)
     check("coinDropChanceMigratedV1", "coinDropChanceMigratedV1" in cfg)
     check("admin set drop chance", "ancientcoindropchance" in cmds or "coindropchance" in cmds)
-    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.57" in readme)
+    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.58" in readme)
 
     print("\n=== Mohist CMI /lmdo routing (2.3.54) ===")
     gui_root = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit"
@@ -640,6 +640,20 @@ def main() -> int:
     check("stack keeps max multiplier", "Math.max(prevMult, multiplier)" in boost)
     check("stack always adds duration", "Math.max(now, currentEnd) + durationMs" in boost)
     check("highest wins messaging", "highest wins" in boost)
+
+    print("\n=== Console TP boost (2.3.58) ===")
+    prog_tree = read(gui_root / "ProgressionCommandTree.java")
+    gui_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
+    forge_cmds = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/ProgressionCommands.java")
+    forge_bridge = read(gui_root / "ForgeBridge.java")
+    check("console boost leaf", "executeConsoleBoost" in prog_tree)
+    check("console boost example", "progression boost start 2 30" in prog_tree)
+    check("GuiApi console default purchaser", 'actor == null ? "Server"' in gui_api)
+    check("GuiApi console usage hint", "Console OK (store)" in gui_api)
+    check("ForgeBridge boost null actor", "actor == null ? null : nmsPlayer(actor)" in forge_bridge)
+    check("brigadier minutes purchaser",
+          'IntegerArgumentType.getInteger(ctx, "minutes")' in forge_cmds
+          and 'StringArgumentType.getString(ctx, "purchaser")' in forge_cmds)
 
     print("\n=== GUI action feedback (2.3.54) ===")
     gui_chat = read(gui_root / "GuiChat.java")

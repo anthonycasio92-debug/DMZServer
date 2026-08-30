@@ -1,3 +1,15 @@
+## Console TP boost (2.3.58)
+
+Bukkit `/progression` rejected console (`Players only`), so store/Tebex purchase
+commands could not start a global TP boost. Console may now run:
+
+- `progression boost start <mult> <minutes> [purchaser]`
+- `progression boost start <encoded> [purchaser]`
+- `progression boost end` / `status`
+
+Forge `ProgressionGuiApi.boost` accepts null actor; brigadier minutes path also
+takes optional purchaser name.
+
 ## Live telemetry retune (2.3.57)
 
 Pulled `hits-2026-08-29.jsonl` + `hits-2026-08-30.jsonl` from production SFTP

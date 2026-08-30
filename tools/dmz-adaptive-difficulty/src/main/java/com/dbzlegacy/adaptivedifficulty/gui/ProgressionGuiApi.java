@@ -194,7 +194,7 @@ public final class ProgressionGuiApi {
     }
 
     /**
-     * Staff: global TP boost controls.
+     * Global TP boost controls (staff in-game, or console for store purchases).
      * Args (space-separated after {@code /progression boost}):
      * <ul>
      *   <li>empty / status / help — status + usage</li>
@@ -205,12 +205,10 @@ public final class ProgressionGuiApi {
      *   <li>&lt;mult&gt; &lt;minutes&gt; [purchaser…] — shorthand</li>
      * </ul>
      * Also accepts GUI args: {@code end}, {@code 2.0:30}, {@code encoded:1250030}.
+     * {@code actor} may be {@code null} when run from console (Tebex / panel).
      */
     public static String boost(ServerPlayer actor, String argsJoined) {
-        if (actor == null) {
-            return "§cPlayers only.";
-        }
-        if (!StaffAccess.isStaff(actor)) {
+        if (actor != null && !StaffAccess.isStaff(actor)) {
             return "§cStaff only.";
         }
         if (!DifficultyConfig.get().enableProgression) {
@@ -221,6 +219,7 @@ public final class ProgressionGuiApi {
                 || "?".equals(raw)) {
             return GlobalTpBoost.statusLine() + "\n" + boostUsage();
         }
+        String defaultPurchaser = actor == null ? "Server" : actor.m_7755_().getString();
         // GUI compact forms: end | 2.0:30 | encoded:1250030
         if ("end".equalsIgnoreCase(raw) || "stop".equalsIgnoreCase(raw)) {
             return ProgressionSystem.boostEnd();
@@ -229,7 +228,7 @@ public final class ProgressionGuiApi {
             String num = raw.substring("encoded:".length()).trim();
             try {
                 int encoded = Integer.parseInt(num);
-                return ProgressionSystem.boostStartEncoded(actor, encoded, actor.m_7755_().getString());
+                return ProgressionSystem.boostStartEncoded(actor, encoded, defaultPurchaser);
             } catch (NumberFormatException e) {
                 return "§cInvalid encoded value: §f" + num + "\n" + boostUsage();
             }
@@ -239,7 +238,7 @@ public final class ProgressionGuiApi {
             try {
                 double mult = Double.parseDouble(parts[0].trim());
                 int minutes = Integer.parseInt(parts[1].trim());
-                return ProgressionSystem.boostStart(actor, mult, minutes, actor.m_7755_().getString());
+                return ProgressionSystem.boostStart(actor, mult, minutes, defaultPurchaser);
             } catch (NumberFormatException e) {
                 return "§cInvalid boost preset: §f" + raw + "\n" + boostUsage();
             }
@@ -268,7 +267,7 @@ public final class ProgressionGuiApi {
             if (mult < 100.0 && minutes < 10_000) {
                 String purchaser = joinFrom(parts, i + 2);
                 if (purchaser.isBlank()) {
-                    purchaser = actor.m_7755_().getString();
+                    purchaser = defaultPurchaser;
                 }
                 return ProgressionSystem.boostStart(actor, mult, minutes, purchaser);
             }
@@ -279,7 +278,7 @@ public final class ProgressionGuiApi {
                 int encoded = Integer.parseInt(parts[i]);
                 String purchaser = joinFrom(parts, i + 1);
                 if (purchaser.isBlank()) {
-                    purchaser = actor.m_7755_().getString();
+                    purchaser = defaultPurchaser;
                 }
                 return ProgressionSystem.boostStartEncoded(actor, encoded, purchaser);
             } catch (NumberFormatException e) {
@@ -292,8 +291,9 @@ public final class ProgressionGuiApi {
     private static String boostUsage() {
         return "§e/progression boost §7— status\n"
                 + "§e/progression boost end §7— stop active boost\n"
-                + "§e/progression boost start <mult> <minutes> [name] §7— e.g. §f2 30\n"
+                + "§e/progression boost start <mult> <minutes> [name] §7— e.g. §f2 30 PlayerName\n"
                 + "§e/progression boost start <encoded> [name] §7— Fabled encoded\n"
+                + "§8Console OK (store): §fprogression boost start 2 30 {username}\n"
                 + "§8GUI: Progression → TP Gains → Global TP Boost";
     }
 

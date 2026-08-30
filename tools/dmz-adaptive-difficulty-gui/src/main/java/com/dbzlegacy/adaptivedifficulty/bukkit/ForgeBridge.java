@@ -1373,16 +1373,20 @@ public final class ForgeBridge {
     }
 
     /**
-     * Staff: global TP boost — status / start / end.
+     * Global TP boost — status / start / end.
      * {@code argsJoined} is everything after {@code /progression boost}.
+     * {@code actor} may be {@code null} for console / store (Tebex) commands.
      */
     public static String boost(Player actor, String argsJoined) {
-        Object nms = nmsPlayer(actor);
-        if (nms == null) {
+        Object nms = actor == null ? null : nmsPlayer(actor);
+        if (actor != null && nms == null) {
             return "§cCould not reach LegacyMechanics mod.";
         }
         try {
-            ensureProgressionResolved(nms.getClass().getClassLoader());
+            ClassLoader cl = nms != null
+                    ? nms.getClass().getClassLoader()
+                    : preferredProgressionClassLoader();
+            ensureProgressionResolved(cl);
             if (boostMethod == null) {
                 return "§cBoost API missing — update LegacyMechanics jar.";
             }

@@ -17,6 +17,7 @@ import org.bukkit.entity.Player;
  * <p>
  * <b>Players:</b> {@code /progression meditation} only — other actions via {@code /lm} GUI.
  * <b>Staff:</b> full tree (GUI · boost · android · flags · do).
+ * <b>Console:</b> {@code /progression boost …} only (store / Tebex TP boost purchases).
  * <p>
  * Mohist: this plugin owns the command name, so every leaf must be handled here and
  * call into LegacyMechanics via {@link ForgeBridge} — never Forge brigadier
@@ -62,9 +63,9 @@ public final class ProgressionCommandTree implements TabCompleter {
 
     /** @return true (always handled) */
     public boolean execute(CommandSender sender, String[] args) {
+        // Console / command blocks: TP boost only (store / Tebex purchases).
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cPlayers only. §7Use in-game: §f/progression help");
-            return true;
+            return executeConsoleBoost(sender, args);
         }
         if (!AdaptiveDifficultyGuiPlugin.canUsePlayerGui(player)) {
             player.sendMessage("§cNo permission: dmzdiff.gui");
@@ -153,6 +154,33 @@ public final class ProgressionCommandTree implements TabCompleter {
                 yield true;
             }
         };
+    }
+
+    /**
+     * Console-safe TP boost for store purchases (Tebex / panel).
+     * Examples:
+     * <pre>
+     *   progression boost start 2 30 PlayerName
+     *   progression boost start 1250030 PlayerName
+     *   progression boost end
+     *   progression boost
+     * </pre>
+     */
+    private boolean executeConsoleBoost(CommandSender sender, String[] args) {
+        if (args.length == 0) {
+            sender.sendMessage("§cConsole usage: §fprogression boost start <mult> <minutes> [name]");
+            sender.sendMessage("§8Also: §fprogression boost end §8· §fprogression boost status");
+            return true;
+        }
+        String sub = args[0].toLowerCase(Locale.ROOT);
+        if (!("boost".equals(sub) || "tpboost".equals(sub))) {
+            sender.sendMessage("§cConsole may only run §f/progression boost …");
+            sender.sendMessage("§8Example: §fprogression boost start 2 30 {username}");
+            return true;
+        }
+        String joined = joinFrom(args, 1);
+        sendMultiline(sender, ForgeBridge.boost(null, joined));
+        return true;
     }
 
     private boolean meditation(Player player, String[] args) {
@@ -323,6 +351,21 @@ public final class ProgressionCommandTree implements TabCompleter {
             return "";
         }
         return Arrays.stream(args, start, args.length).collect(Collectors.joining(" "));
+    }
+
+    private static void sendMultiline(CommandSender sender, String msg) {
+        if (sender instanceof Player player) {
+            GuiChat.sendResult(player, msg);
+            return;
+        }
+        if (msg == null || msg.isBlank()) {
+            return;
+        }
+        for (String line : msg.split("\n")) {
+            if (!line.isBlank()) {
+                sender.sendMessage(line);
+            }
+        }
     }
 
     private static void sendMultiline(Player player, String msg) {

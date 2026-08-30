@@ -1,4 +1,4 @@
-# LegacyMechanics (v2.3.57)
+# LegacyMechanics (v2.3.58)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -41,8 +41,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/LegacyMechanics-2.3.57.jar` (remove older AD jars)
-2. `plugins/LegacyMechanicsGUI-2.3.57.jar` (or matching GUI if available)
+1. `mods/LegacyMechanics-2.3.58.jar` (remove older AD jars)
+2. `plugins/LegacyMechanicsGUI-2.3.58.jar` (or matching GUI if available)
 3. **Do not load CNPC Global Player / NPC scripts** for systems this mod owns (`CNPC-FREE.md`)
 4. Tag GUI NPCs (`lm_rival`, `lm_spar`, `lm_skillcheck`, …) or use slash commands
 5. Restart — config at `config/legacymechanics.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
@@ -100,7 +100,7 @@ Kill coin drops are chance-gated (was always-on):
 - `ancientCoinUpgradeChance` **0.005** (0.5% original + next-higher dual)
 Existing configs auto-migrate stock 2% upgrade → 0.5%.
 
-### Live balance (2.3.57)
+### Live balance (2.3.58)
 From live `hits-2026-08-29..30.jsonl` (2132 hits pulled from production):
 - **T2 gods soft-cap pinned at 43%** — ease early ceilings: **T1 0.34 · T2 0.36 · T3 0.44**
   (T4–T7 unchanged: 0.50 / 0.52 / 0.58 / 0.62).
@@ -121,10 +121,10 @@ From `hits-2026-08-06..08.jsonl` (14770 hits) + reported bugs:
 ### Live balance (1.0.34)
 T4/T5 landing pressure from Aug 6 hits (superseded landFrac by 1.0.35).
 
-### Soft-cap ladder (1.0.33 → 2.3.57)
+### Soft-cap ladder (1.0.33 → 2.3.58)
 T3 soft-cap was **0.55 > T4 0.48**, so god forms got *easier* after buying T4.
 Was: **T1 0.40 · T2 0.43 · T3 0.46 · T4 0.50 · T5 0.52 · T6 0.58 · T7 0.62**.
-Now (2.3.57): **T1 0.34 · T2 0.36 · T3 0.44 · T4 0.50 · T5 0.52 · T6 0.58 · T7 0.62**.
+Now (2.3.58): **T1 0.34 · T2 0.36 · T3 0.44 · T4 0.50 · T5 0.52 · T6 0.58 · T7 0.62**.
 
 ### Ghast aim (1.0.31)
 Large / laser / beam kits no longer use a multi-tick cast that lets Ghast flight
