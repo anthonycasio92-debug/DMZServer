@@ -1,4 +1,4 @@
-# LegacyMechanics concept audit (2.3.56)
+# LegacyMechanics concept audit (2.3.57)
 
 Fail-closed checks against the player's stated balance concept.
 
@@ -57,8 +57,8 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 2.3.56
-- ✅ formula revision 37
+- ✅ VERSION 2.3.57
+- ✅ formula revision 38
 - ✅ hpFloorStrength present
 - ✅ T1–T3 god-form floors raised
 - ✅ T7 incoming soft-cap in events
@@ -66,12 +66,12 @@ Fail-closed checks against the player's stated balance concept.
 - ✅ T6 soft-cap 58%
 - ✅ T3 soft-cap ≤ T4
 - ✅ T4 soft-cap ≤ T5
-- ✅ god soft-cap ladder T3≤T4 — T3=0.460 T4=0.500
+- ✅ god soft-cap ladder T3≤T4 — T3=0.440 T4=0.500
 - ✅ combat telemetry present
-- ✅ god-form landing T1≥10% — landingFrac=0.155
+- ✅ god-form landing T1≥10% — landingFrac=0.137
 - ✅ god-form landing T5≥28% — landingFrac=0.520
 - ✅ god-form landing T7≥40% — landingFrac=0.620
-- ✅ god-form landing T7>T1×2.5 — T1=0.155 T7=0.620
+- ✅ god-form landing T7>T1×2.5 — T1=0.137 T7=0.620
 
 ## Sample numbers (saiyan warrior)
 

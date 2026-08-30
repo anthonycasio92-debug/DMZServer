@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.56", 'VERSION = "2.3.56"' in mod)
+    check("VERSION 2.3.57", 'VERSION = "2.3.57"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -251,11 +251,11 @@ def main() -> int:
     print("\n=== Post-pierce soft-cap clamp (1.0.25) ===")
     check("incomingSoftCapFrac helper", "incomingSoftCapFrac" in profile)
     check("post-pierce bagCap clamp", "bagCap" in profile and "incomingSoftCapFrac()" in profile)
-    check("formula revision 37", "mix(h, 37L)" in profile)
+    check("formula revision 38", "mix(h, 38L)" in profile)
     check("README pierce clamp", "Post-pierce" in readme or "post-pierce" in readme)
 
     print("\n=== Telemetry retune (1.0.28) ===")
-    check("T1 threat floor 0.56", "case 1 -> 0.56" in profile)
+    check("T1 threat floor 0.52", "case 1 -> 0.52" in profile)
     check("T6 form nudge 1.82", "case 6 -> 1.82" in profile)
     check("T6 liveShare 0.74", "case 6 -> 0.74" in profile)
     check("README 1.0.28 retune", "1.0.28" in readme and "hits-2026-08-05" in readme)
@@ -267,12 +267,12 @@ def main() -> int:
     check("README 1.0.30 HP trim", "1.0.30" in readme and "0.75" in readme)
 
     print("\n=== Telemetry retune (1.0.24) ===")
-    check("formula revision 37", "mix(h, 37L)" in profile)
-    check("T1 landCap 0.21", "case 1 -> 0.21" in profile)
-    check("T1 landFrac 0.14", "case 1 -> 0.14" in profile)
+    check("formula revision 38", "mix(h, 38L)" in profile)
+    check("T1 landCap 0.18", "case 1 -> 0.18" in profile)
+    check("T1 landFrac 0.13", "case 1 -> 0.13" in profile)
     check("T6 landFrac 0.50", "case 6 -> 0.50" in profile)
     check("T4 landFrac 0.37", "case 4 -> 0.37" in profile)
-    check("T5 landFrac 0.48", "case 5 -> 0.48" in profile)
+    check("T5 landFrac 0.50", "case 5 -> 0.50" in profile)
     check("KP landing 1.5%/lvl", "kiProtectionLevel * 0.015" in profile)
     check("fill-to-landing floor", "preAmount < land)" in events and "land * 0.45" not in events)
     check("progressive soft-caps", "case 5 -> 0.52" in events and "case 6 -> 0.58" in events and "case 7 -> 0.62" in events)
@@ -299,7 +299,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 2.3.56", "2.3.56" in readme)
+    check("README version 2.3.57", "2.3.57" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -312,11 +312,11 @@ def main() -> int:
     check("README skill-aware / sponge", "Ki Infusion" in readme or "ki_infusion" in readme or "1.05" in readme)
 
     print("\n=== Soft-cap ladder (1.0.33) ===")
-    check("T3 soft-cap 0.46", "case 3 -> 0.46" in events and "case 3 -> 0.46" in profile)
+    check("T3 soft-cap 0.44", "case 3 -> 0.44" in events and "case 3 -> 0.44" in profile)
     check("T4 soft-cap 0.50", "case 4 -> 0.50" in events and "case 4 -> 0.50" in profile)
-    check("T1 soft-cap 0.40", "default -> 0.40" in events and "default -> 0.40" in profile)
-    check("T2 soft-cap 0.43", "case 2 -> 0.43" in events and "case 2 -> 0.43" in profile)
-    check("README soft-cap ladder", "0.46" in readme and "soft-cap" in readme.lower())
+    check("T1 soft-cap 0.34", "default -> 0.34" in events and "default -> 0.34" in profile)
+    check("T2 soft-cap 0.36", "case 2 -> 0.36" in events and "case 2 -> 0.36" in profile)
+    check("README soft-cap ladder", "0.36" in readme and "soft-cap" in readme.lower())
 
     print("\n=== Ladder retune (1.0.35) ===")
     check("T4 form nudge 1.58", "case 4 -> 1.58" in profile)
@@ -347,7 +347,7 @@ def main() -> int:
     check("dual upgrade band uses same roll", "roll < upgradeChance" in coins)
     check("coinDropChanceMigratedV1", "coinDropChanceMigratedV1" in cfg)
     check("admin set drop chance", "ancientcoindropchance" in cmds or "coindropchance" in cmds)
-    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.56" in readme)
+    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.57" in readme)
 
     print("\n=== Mohist CMI /lmdo routing (2.3.54) ===")
     gui_root = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit"

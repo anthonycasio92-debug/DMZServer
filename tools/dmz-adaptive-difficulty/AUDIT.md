@@ -1,3 +1,19 @@
+## Live telemetry retune (2.3.57)
+
+Pulled `hits-2026-08-29.jsonl` + `hits-2026-08-30.jsonl` from production SFTP
+(`uploads/live-telemetry-2026-08-30/`, 2132 hits).
+
+Signals:
+- T2 god forms soft-cap pinned at **43%** bag (71% of hits) — too hot for early buy
+- T4/T5 wouldCancel 90–96% is expected: soft-cap &lt; mit/thr so pierce cannot clear cancel;
+  real pressure is landing + soft-cap (T4 ~50%, T5 ~46%)
+
+Changes:
+- Soft-caps **T1 0.34 · T2 0.36 · T3 0.44** (T4–T7 unchanged)
+- Ease T1–T2 landFrac/landCap + form bump; T5 landFrac → 0.50
+- Trim T1–T2 threat floors / liveShare
+- Formula fingerprint **38**
+
 ## End exit podium repair (2.3.56)
 
 Older egg-clear used `Blocks.f_50259_` believing it was `end_portal` — that SRG

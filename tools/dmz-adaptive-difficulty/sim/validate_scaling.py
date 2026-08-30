@@ -224,7 +224,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     # DEF-cancel pierce applied after hit-cap (below).
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.56, 2: 0.70, 3: 0.80}[tier]
+        threat = {1: 0.52, 2: 0.60, 3: 0.80}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
@@ -234,7 +234,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
         nudge = {4: 1.58, 5: 1.78, 6: 1.82, 7: 1.62}[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
-        live_share = {1: 0.32, 2: 0.42, 3: 0.52, 4: 0.60, 5: 0.74, 6: 0.74, 7: 0.74}[tier]
+        live_share = {1: 0.28, 2: 0.34, 3: 0.52, 4: 0.60, 5: 0.74, 6: 0.74, 7: 0.74}[tier]
         if form_boost >= 6.0:
             mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
         else:
@@ -256,7 +256,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     allow_pierce = tier >= 4 or (tier >= 3 and form_boost >= 6.0)
     if live_flat > 1.0 and dmg_capped * 2.5 <= live_flat and allow_pierce:
         dmg_capped = max(dmg_capped, live_flat / 2.5 * 1.08)
-    soft_cap_frac = {1: 0.40, 2: 0.43, 3: 0.46, 4: 0.50, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
+    soft_cap_frac = {1: 0.34, 2: 0.36, 3: 0.44, 4: 0.50, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
     dmg_capped = min(dmg_capped, max(20.0, live_hp) * soft_cap_frac)
 
     # No-counter baseline (still with PWR/ENE offense + floors).
@@ -270,7 +270,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     dmg_old_raw = max(dmg_old_raw, defense * pct * TANK_DEF_RATIO * floor_strength)
     dmg_old_raw = max(dmg_old_raw, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.56, 2: 0.70, 3: 0.80}[tier]
+        threat = {1: 0.52, 2: 0.60, 3: 0.80}[tier]
         dmg_old_raw = max(dmg_old_raw, offense_no_pwr * threat)
     if tier >= 4 and form_boost > 1.12:
         nudge = {4: 1.58, 5: 1.78, 6: 1.82, 7: 1.62}[tier]
@@ -306,13 +306,14 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     mob_hp = max(10.0, min(base_hp_mob, hard) * MOB_HP_SCALE * hp_overlay)
 
     hit_frac = dmg_capped / max(1.0, live_hp)
-    land_frac = {1: 0.14, 2: 0.19, 3: 0.30, 4: 0.37, 5: 0.48, 6: 0.50, 7: 0.58}[tier]
+    land_frac = {1: 0.13, 2: 0.16, 3: 0.30, 4: 0.37, 5: 0.50, 6: 0.50, 7: 0.58}[tier]
     if form_boost > 1.12:
         t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
-        land_frac *= 1.0 + 0.12 * t
+        bump = 0.06 if tier <= 2 else 0.12
+        land_frac *= 1.0 + bump * t
     bag = max(cap_hp, live_hp * 0.90)
     landing = bag * land_frac
-    land_cap = {1: 0.21, 2: 0.27, 3: 0.38, 4: 0.48, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
+    land_cap = {1: 0.18, 2: 0.23, 3: 0.38, 4: 0.48, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
     landing = max(live_hp * max(0.05, pct * 0.08), landing)
     landing = min(landing, live_hp * land_cap)
     return {
