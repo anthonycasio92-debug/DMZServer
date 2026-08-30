@@ -8,7 +8,9 @@ Cadmus / Flan — **not** GriefPrevention. Do not enable it for this server.
 
 ## How it works
 
-1. Staff mint voucher paper: `/claimvoucher give <player> <blocks> [count]`
+1. Staff mint voucher paper (op):
+   - `/claimvoucher me 100 64` (simplest — gives yourself 64x 100-block vouchers)
+   - `/claimvoucher give <player> <blocks> [count]`
 2. Put that exact stack in a Lightman's **Item Trader** sell slot
 3. Set the coin price in the trader UI
 4. Players buy the paper, then **right-click** it
@@ -20,9 +22,9 @@ Voucher NBT key: `dmzClaimVoucher` (int = claim blocks granted).
 
 | Voucher | Command |
 |---------|---------|
-| 100 blocks | `/claimvoucher give <you> 100 64` |
-| 500 blocks | `/claimvoucher give <you> 500 64` |
-| 1000 blocks | `/claimvoucher give <you> 1000 64` |
+| 100 blocks | `/claimvoucher me 100 64` |
+| 500 blocks | `/claimvoucher me 500 64` |
+| 1000 blocks | `/claimvoucher me 1000 64` |
 
 Prices are set in Lightman's — pick whatever fits your coin economy.
 
@@ -46,13 +48,24 @@ After uploading `kubejs/server_scripts/claim_vouchers.js`:
 /kubejs reload server_scripts
 ```
 
-No full restart required for script-only changes. Restart still needed if you
-also swap jars.
+Then check console for: ` /claimvoucher registered on live dispatcher (reload-safe)`
+
+No full restart required for this script. If the command is still unknown after
+reload, run `/claimvoucher me 100` again after reconnecting, or restart once.
+
+### Vanilla fallback (if command still missing)
+
+Use Mojang give (keeps NBT on Mohist — do **not** use Bukkit `/give`):
+
+```
+/minecraft:give @s paper{dmzClaimVoucher:100,display:{Name:'{"text":"Claim Block Voucher (100)","color":"gold","italic":false}',Lore:['{"text":"Right-click to redeem","color":"gray","italic":false}','{"text":"+100 GriefPrevention claim blocks","color":"green","italic":false}']}} 64
+```
 
 ## Staff checks
 
 - `/claimvoucher denoms` — print suggested amounts
-- `/acb <player> 0` or GP's claim info tools — confirm bonus blocks rose after redeem
+- `/claimvoucher me 100` — mint one voucher to yourself
+- GP claim info / `/acb` — confirm bonus blocks rose after redeem
 - Permission for `acb` is console-only here (script uses `runCommandSilent`)
 
 ## Files

@@ -8,12 +8,15 @@
  *   acb <player> <blocks>
  * which is GriefPrevention adjustbonusclaimblocks.
  *
- * Staff mint stock:
+ * Staff mint stock (op / permission level 2):
  *   /claimvoucher give <player> <blocks> [count]
- *   /claimvoucher give <player> 100
- *   /claimvoucher give <player> 500 16
+ *   /claimvoucher me <blocks> [count]
+ *   /claimvoucher denoms
  *
- * Reload: /kubejs reload server_scripts
+ * IMPORTANT: ServerEvents.commandRegistry only runs on full server start.
+ * This script ALSO registers into the live Brigadier dispatcher when
+ * /kubejs reload server_scripts runs, so a restart is not required.
+ *
  * Setup notes: kubejs/CLAIM_VOUCHERS.md
  */
 
@@ -234,6 +237,45 @@ ItemEvents.rightClicked("minecraft:paper", function (event) {
     }
 });
 
+function asKjsPlayer(player) {
+    if (player == null) return null;
+    try {
+        if (player.give) return player;
+    } catch (e1) {}
+    try {
+        return Player.of(player);
+    } catch (e2) {}
+    return player;
+}
+
+function giveVoucherToPlayer(target, blocks, count) {
+    var kjs = asKjsPlayer(target);
+    if (kjs == null) return "no target player";
+    if (blocks <= 0) return "blocks must be > 0";
+    if (blocks > MAX_BLOCKS_PER_VOUCHER) {
+        return "blocks max is " + MAX_BLOCKS_PER_VOUCHER;
+    }
+    if (count <= 0) count = 1;
+    if (count > 64) count = 64;
+
+    var item = makeVoucherItem(blocks, count);
+    try {
+        kjs.give(item);
+    } catch (eGive) {
+        return "give failed: " + eGive;
+    }
+
+    tell(
+        kjs,
+        "\u00A7aReceived \u00A7e" +
+            count +
+            "x \u00A7aclaim voucher (\u00A7e" +
+            blocks +
+            " \u00A7ablocks each)."
+    );
+    return null;
+}
+
 function cmdMsg(src, msg, failure) {
     try {
         if (failure) {
@@ -247,9 +289,289 @@ function cmdMsg(src, msg, failure) {
         }
     } catch (e1) {}
     try {
-        if (src.player) tell(src.player, (failure ? "\u00A7c" : "\u00A7a") + msg);
+        if (src.player) {
+            tell(src.player, (failure ? "\u00A7c" : "\u00A7a") + msg);
+            return;
+        }
     } catch (e2) {}
+    try {
+        if (src.getPlayer && src.getPlayer()) {
+            tell(src.getPlayer(), (failure ? "\u00A7c" : "\u00A7a") + msg);
+            return;
+        }
+    } catch (e3) {}
     console.info("[Claim Vouchers] " + msg);
+}
+
+function cmdGiveFromCtx(ctx, Arguments, count) {
+    var target = Arguments.PLAYER.getResult(ctx, "player");
+    var blocks = Arguments.INTEGER.getResult(ctx, "blocks");
+    var err = giveVoucherToPlayer(target, blocks, count);
+    if (err) {
+        cmdMsg(ctx.source, err, true);
+        return 0;
+    }
+    cmdMsg(
+        ctx.source,
+        "Gave " +
+            count +
+            "x claim voucher (" +
+            blocks +
+            " blocks) to " +
+            playerName(target),
+        false
+    );
+    return 1;
+}
+
+function getLiveServer() {
+    try {
+        if (typeof Utils !== "undefined" && Utils.server) return Utils.server;
+    } catch (e1) {}
+    try {
+        if (typeof Platform !== "undefined" && Platform.server) {
+            return Platform.server;
+        }
+    } catch (e2) {}
+    return null;
+}
+
+/*
+ * Direct Brigadier registration against the running server.
+ * Needed because ServerEvents.commandRegistry does NOT re-fire on
+ * /kubejs reload server_scripts.
+ */
+var CLAIMVOUCHER_REGISTERED = false;
+
+function registerClaimVoucherDispatcher(dispatcher) {
+    if (dispatcher == null) return false;
+
+    var CommandsMc = Java.loadClass("net.minecraft.commands.Commands");
+    var EntityArgument = Java.loadClass(
+        "net.minecraft.commands.arguments.EntityArgument"
+    );
+    var IntegerArgumentType = Java.loadClass(
+        "com.mojang.brigadier.arguments.IntegerArgumentType"
+    );
+
+    var root = CommandsMc.literal("claimvoucher").requires(function (src) {
+        try {
+            return src.hasPermission(2);
+        } catch (e) {
+            return false;
+        }
+    });
+
+    var giveNode = CommandsMc.literal("give")
+        .then(
+            CommandsMc.argument("player", EntityArgument.player())
+                .then(
+                    CommandsMc.argument(
+                        "blocks",
+                        IntegerArgumentType.integer(1, MAX_BLOCKS_PER_VOUCHER)
+                    )
+                        .executes(function (ctx) {
+                            var target = EntityArgument.getPlayer(ctx, "player");
+                            var blocks = IntegerArgumentType.getInteger(
+                                ctx,
+                                "blocks"
+                            );
+                            var err = giveVoucherToPlayer(target, blocks, 1);
+                            if (err) {
+                                cmdMsg(ctx.getSource(), err, true);
+                                return 0;
+                            }
+                            cmdMsg(
+                                ctx.getSource(),
+                                "Gave 1x claim voucher (" +
+                                    blocks +
+                                    " blocks) to " +
+                                    playerName(target),
+                                false
+                            );
+                            return 1;
+                        })
+                        .then(
+                            CommandsMc.argument(
+                                "count",
+                                IntegerArgumentType.integer(1, 64)
+                            ).executes(function (ctx) {
+                                var target = EntityArgument.getPlayer(
+                                    ctx,
+                                    "player"
+                                );
+                                var blocks = IntegerArgumentType.getInteger(
+                                    ctx,
+                                    "blocks"
+                                );
+                                var count = IntegerArgumentType.getInteger(
+                                    ctx,
+                                    "count"
+                                );
+                                var err = giveVoucherToPlayer(
+                                    target,
+                                    blocks,
+                                    count
+                                );
+                                if (err) {
+                                    cmdMsg(ctx.getSource(), err, true);
+                                    return 0;
+                                }
+                                cmdMsg(
+                                    ctx.getSource(),
+                                    "Gave " +
+                                        count +
+                                        "x claim voucher (" +
+                                        blocks +
+                                        " blocks) to " +
+                                        playerName(target),
+                                    false
+                                );
+                                return 1;
+                            })
+                        )
+                )
+        );
+
+    var meNode = CommandsMc.literal("me")
+        .then(
+            CommandsMc.argument(
+                "blocks",
+                IntegerArgumentType.integer(1, MAX_BLOCKS_PER_VOUCHER)
+            )
+                .executes(function (ctx) {
+                    var src = ctx.getSource();
+                    var self = null;
+                    try {
+                        self = src.getPlayerOrException();
+                    } catch (e) {
+                        cmdMsg(src, "players only", true);
+                        return 0;
+                    }
+                    var blocks = IntegerArgumentType.getInteger(ctx, "blocks");
+                    var err = giveVoucherToPlayer(self, blocks, 1);
+                    if (err) {
+                        cmdMsg(src, err, true);
+                        return 0;
+                    }
+                    cmdMsg(
+                        src,
+                        "Gave yourself 1x claim voucher (" + blocks + " blocks)",
+                        false
+                    );
+                    return 1;
+                })
+                .then(
+                    CommandsMc.argument(
+                        "count",
+                        IntegerArgumentType.integer(1, 64)
+                    ).executes(function (ctx) {
+                        var src = ctx.getSource();
+                        var self = null;
+                        try {
+                            self = src.getPlayerOrException();
+                        } catch (e) {
+                            cmdMsg(src, "players only", true);
+                            return 0;
+                        }
+                        var blocks = IntegerArgumentType.getInteger(
+                            ctx,
+                            "blocks"
+                        );
+                        var count = IntegerArgumentType.getInteger(ctx, "count");
+                        var err = giveVoucherToPlayer(self, blocks, count);
+                        if (err) {
+                            cmdMsg(src, err, true);
+                            return 0;
+                        }
+                        cmdMsg(
+                            src,
+                            "Gave yourself " +
+                                count +
+                                "x claim voucher (" +
+                                blocks +
+                                " blocks)",
+                            false
+                        );
+                        return 1;
+                    })
+                )
+        );
+
+    var denomsNode = CommandsMc.literal("denoms").executes(function (ctx) {
+        cmdMsg(
+            ctx.getSource(),
+            "Suggested denoms: " + DEFAULT_DENOMS.join(", "),
+            false
+        );
+        cmdMsg(
+            ctx.getSource(),
+            "Mint: /claimvoucher me <blocks> [count]  OR  /claimvoucher give <player> <blocks> [count]",
+            false
+        );
+        return 1;
+    });
+
+    dispatcher.register(root.then(giveNode).then(meNode).then(denomsNode));
+    CLAIMVOUCHER_REGISTERED = true;
+    return true;
+}
+
+function tryRegisterLive() {
+    try {
+        var server = getLiveServer();
+        if (server == null) {
+            console.info(
+                "[Claim Vouchers] no live server yet — waiting for loaded/commandRegistry"
+            );
+            return false;
+        }
+        var commands = null;
+        try {
+            commands = server.getCommands();
+        } catch (e1) {
+            try {
+                commands = server.commands;
+            } catch (e2) {}
+        }
+        if (commands == null) {
+            console.error("[Claim Vouchers] server.getCommands() missing");
+            return false;
+        }
+        var dispatcher = null;
+        try {
+            dispatcher = commands.getDispatcher();
+        } catch (e3) {
+            try {
+                dispatcher = commands.dispatcher;
+            } catch (e4) {}
+        }
+        if (dispatcher == null) {
+            console.error("[Claim Vouchers] dispatcher missing");
+            return false;
+        }
+
+        /* Drop prior node if reloading so we do not duplicate children oddly. */
+        try {
+            var root = dispatcher.getRoot();
+            var child = root.getChild("claimvoucher");
+            if (child != null && root.getChildren) {
+                try {
+                    root.getChildren().remove(child);
+                } catch (eRem) {}
+            }
+        } catch (eDrop) {}
+
+        if (registerClaimVoucherDispatcher(dispatcher)) {
+            console.info(
+                "[Claim Vouchers] /claimvoucher registered on live dispatcher (reload-safe)"
+            );
+            return true;
+        }
+    } catch (err) {
+        console.error("[Claim Vouchers] live register failed: " + err);
+    }
+    return false;
 }
 
 ServerEvents.commandRegistry(function (event) {
@@ -267,37 +589,107 @@ ServerEvents.commandRegistry(function (event) {
                     return src.hasPermission(2);
                 })
                 .then(
-                    Commands.literal("give")
+                    Commands.literal("give").then(
+                        Commands.argument(
+                            "player",
+                            Arguments.PLAYER.create(event)
+                        ).then(
+                            Commands.argument(
+                                "blocks",
+                                Arguments.INTEGER.create(event)
+                            )
+                                .executes(function (ctx) {
+                                    return cmdGiveFromCtx(ctx, Arguments, 1);
+                                })
+                                .then(
+                                    Commands.argument(
+                                        "count",
+                                        Arguments.INTEGER.create(event)
+                                    ).executes(function (ctx) {
+                                        var count =
+                                            Arguments.INTEGER.getResult(
+                                                ctx,
+                                                "count"
+                                            );
+                                        return cmdGiveFromCtx(
+                                            ctx,
+                                            Arguments,
+                                            count
+                                        );
+                                    })
+                                )
+                        )
+                    )
+                )
+                .then(
+                    Commands.literal("me")
                         .then(
                             Commands.argument(
-                                "player",
-                                Arguments.PLAYER.create(event)
-                            ).then(
-                                Commands.argument(
-                                    "blocks",
-                                    Arguments.INTEGER.create(event)
-                                )
-                                    .executes(function (ctx) {
-                                        return cmdGive(ctx, Arguments, 1);
-                                    })
-                                    .then(
-                                        Commands.argument(
-                                            "count",
-                                            Arguments.INTEGER.create(event)
-                                        ).executes(function (ctx) {
-                                            var count =
-                                                Arguments.INTEGER.getResult(
-                                                    ctx,
-                                                    "count"
-                                                );
-                                            return cmdGive(
-                                                ctx,
-                                                Arguments,
-                                                count
-                                            );
-                                        })
-                                    )
+                                "blocks",
+                                Arguments.INTEGER.create(event)
                             )
+                                .executes(function (ctx) {
+                                    var self = ctx.source.player;
+                                    var blocks =
+                                        Arguments.INTEGER.getResult(
+                                            ctx,
+                                            "blocks"
+                                        );
+                                    var err = giveVoucherToPlayer(
+                                        self,
+                                        blocks,
+                                        1
+                                    );
+                                    if (err) {
+                                        cmdMsg(ctx.source, err, true);
+                                        return 0;
+                                    }
+                                    cmdMsg(
+                                        ctx.source,
+                                        "Gave yourself 1x claim voucher (" +
+                                            blocks +
+                                            " blocks)",
+                                        false
+                                    );
+                                    return 1;
+                                })
+                                .then(
+                                    Commands.argument(
+                                        "count",
+                                        Arguments.INTEGER.create(event)
+                                    ).executes(function (ctx) {
+                                        var self = ctx.source.player;
+                                        var blocks =
+                                            Arguments.INTEGER.getResult(
+                                                ctx,
+                                                "blocks"
+                                            );
+                                        var count =
+                                            Arguments.INTEGER.getResult(
+                                                ctx,
+                                                "count"
+                                            );
+                                        var err = giveVoucherToPlayer(
+                                            self,
+                                            blocks,
+                                            count
+                                        );
+                                        if (err) {
+                                            cmdMsg(ctx.source, err, true);
+                                            return 0;
+                                        }
+                                        cmdMsg(
+                                            ctx.source,
+                                            "Gave yourself " +
+                                                count +
+                                                "x claim voucher (" +
+                                                blocks +
+                                                " blocks)",
+                                            false
+                                        );
+                                        return 1;
+                                    })
+                                )
                         )
                 )
                 .then(
@@ -309,66 +701,29 @@ ServerEvents.commandRegistry(function (event) {
                         );
                         cmdMsg(
                             ctx.source,
-                            "Mint: /claimvoucher give <player> <blocks> [count]",
+                            "Mint: /claimvoucher me <blocks> [count]",
                             false
                         );
                         return 1;
                     })
                 )
         );
-        console.info("[Claim Vouchers] /claimvoucher registered");
+        CLAIMVOUCHER_REGISTERED = true;
+        console.info(
+            "[Claim Vouchers] /claimvoucher registered via commandRegistry"
+        );
     } catch (err) {
         console.error("[Claim Vouchers] commandRegistry failed: " + err);
     }
 });
 
-function cmdGive(ctx, Arguments, count) {
-    var target = Arguments.PLAYER.getResult(ctx, "player");
-    var blocks = Arguments.INTEGER.getResult(ctx, "blocks");
-    if (blocks <= 0) {
-        cmdMsg(ctx.source, "blocks must be > 0", true);
-        return 0;
-    }
-    if (blocks > MAX_BLOCKS_PER_VOUCHER) {
-        cmdMsg(
-            ctx.source,
-            "blocks max is " + MAX_BLOCKS_PER_VOUCHER,
-            true
-        );
-        return 0;
-    }
-    if (count <= 0) count = 1;
-    if (count > 64) count = 64;
+ServerEvents.loaded(function (event) {
+    tryRegisterLive();
+});
 
-    var item = makeVoucherItem(blocks, count);
-    try {
-        target.give(item);
-    } catch (eGive) {
-        cmdMsg(ctx.source, "give failed: " + eGive, true);
-        return 0;
-    }
-
-    cmdMsg(
-        ctx.source,
-        "Gave " +
-            count +
-            "x claim voucher (" +
-            blocks +
-            " blocks) to " +
-            playerName(target),
-        false
-    );
-    tell(
-        target,
-        "\u00A7aReceived \u00A7e" +
-            count +
-            "x \u00A7aclaim voucher (\u00A7e" +
-            blocks +
-            " \u00A7ablocks each)."
-    );
-    return 1;
-}
+/* On /kubejs reload server_scripts the server is already up — register now. */
+tryRegisterLive();
 
 console.info(
-    "[Claim Vouchers] ready — right-click paper with dmzClaimVoucher NBT; /claimvoucher give"
+    "[Claim Vouchers] ready — right-click paper with dmzClaimVoucher NBT; /claimvoucher me 100"
 );
