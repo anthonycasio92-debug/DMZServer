@@ -9,7 +9,8 @@ Cadmus / Flan — **not** GriefPrevention. Do not enable it for this server.
 ## How it works
 
 1. Staff mint voucher paper (op):
-   - `/claimvoucher me 100 64` (simplest — gives yourself 64x 100-block vouchers)
+   - `/claimvoucher me 100 64` (after reload — preferred)
+   - `!claimvoucher me 100 64` (chat fallback — always works after reload on Mohist)
    - `/claimvoucher give <player> <blocks> [count]`
 2. Put that exact stack in a Lightman's **Item Trader** sell slot
 3. Set the coin price in the trader UI

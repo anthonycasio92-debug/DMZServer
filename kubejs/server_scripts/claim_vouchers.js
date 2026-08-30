@@ -724,6 +724,134 @@ ServerEvents.loaded(function (event) {
 /* On /kubejs reload server_scripts the server is already up — register now. */
 tryRegisterLive();
 
+/*
+ * Mohist/Bukkit fallback: op chat command works immediately after reload even
+ * when Brigadier registration is not visible to the Bukkit command map.
+ *   !claimvoucher me 100 64
+ *   !claimvoucher give PlayerName 100 64
+ *   !claimvoucher denoms
+ */
+function playerIsOp(player) {
+    try {
+        if (player.isOp && player.isOp()) return true;
+    } catch (e1) {}
+    try {
+        if (player.op) return true;
+    } catch (e2) {}
+    try {
+        if (player.hasPermissions && player.hasPermissions(2)) return true;
+    } catch (e3) {}
+    try {
+        if (player.permissionLevel >= 2) return true;
+    } catch (e4) {}
+    return false;
+}
+
+function findOnlinePlayer(server, name) {
+    if (!server || !name) return null;
+    var want = String(name).toLowerCase();
+    try {
+        var list = server.players;
+        for (var i = 0; i < list.length; i++) {
+            if (playerName(list[i]).toLowerCase() === want) return list[i];
+        }
+    } catch (e1) {}
+    try {
+        return server.getPlayerList().getPlayerByName(name);
+    } catch (e2) {}
+    return null;
+}
+
+function handleClaimVoucherArgs(player, server, parts) {
+    if (!parts || parts.length < 1) {
+        tell(
+            player,
+            "\u00A7eUsage: !claimvoucher me <blocks> [count]  |  give <player> <blocks> [count]  |  denoms"
+        );
+        return;
+    }
+    var sub = String(parts[0]).toLowerCase();
+    if (sub === "denoms") {
+        tell(
+            player,
+            "\u00A7aSuggested denoms: \u00A7e" + DEFAULT_DENOMS.join(", ")
+        );
+        return;
+    }
+    if (sub === "me") {
+        var blocksMe = parseInt(parts[1], 10);
+        var countMe = parts.length >= 3 ? parseInt(parts[2], 10) : 1;
+        var errMe = giveVoucherToPlayer(player, blocksMe, countMe);
+        if (errMe) tell(player, "\u00A7c" + errMe);
+        else {
+            tell(
+                player,
+                "\u00A7aMinted \u00A7e" +
+                    countMe +
+                    "x \u00A7avoucher (\u00A7e" +
+                    blocksMe +
+                    " \u00A7ablocks)."
+            );
+        }
+        return;
+    }
+    if (sub === "give") {
+        if (parts.length < 3) {
+            tell(
+                player,
+                "\u00A7eUsage: !claimvoucher give <player> <blocks> [count]"
+            );
+            return;
+        }
+        var target = findOnlinePlayer(server, parts[1]);
+        if (target == null) {
+            tell(player, "\u00A7cPlayer not found: " + parts[1]);
+            return;
+        }
+        var blocksG = parseInt(parts[2], 10);
+        var countG = parts.length >= 4 ? parseInt(parts[3], 10) : 1;
+        var errG = giveVoucherToPlayer(target, blocksG, countG);
+        if (errG) tell(player, "\u00A7c" + errG);
+        else {
+            tell(
+                player,
+                "\u00A7aGave \u00A7e" +
+                    countG +
+                    "x \u00A7avoucher (\u00A7e" +
+                    blocksG +
+                    " \u00A7ablocks) to \u00A7e" +
+                    playerName(target)
+            );
+        }
+        return;
+    }
+    tell(player, "\u00A7cUnknown subcommand. Try me / give / denoms");
+}
+
+PlayerEvents.chat(function (event) {
+    try {
+        var msg = String(event.message);
+        if (msg.length < 2) return;
+        if (msg.charAt(0) !== "!") return;
+        var body = msg.substring(1).trim();
+        if (body.toLowerCase().indexOf("claimvoucher") !== 0) return;
+
+        var player = event.player;
+        if (!playerIsOp(player)) {
+            tell(player, "\u00A7cOps only.");
+            event.cancel();
+            return;
+        }
+
+        var rest = body.substring("claimvoucher".length).trim();
+        var parts = rest.length ? rest.split(/\s+/) : [];
+        handleClaimVoucherArgs(player, event.server, parts);
+        event.cancel();
+    } catch (err) {
+        console.error("[Claim Vouchers] chat fallback error: " + err);
+    }
+});
+
 console.info(
-    "[Claim Vouchers] ready — right-click paper with dmzClaimVoucher NBT; /claimvoucher me 100"
+    "[Claim Vouchers] ready — /claimvoucher me 100  OR  !claimvoucher me 100"
 );
