@@ -1,0 +1,35 @@
+'Ancient Saiyan': 
+  name: 'Ancient Saiyan'
+  type: 'Race'
+  'max-level': 1
+  'skill-req-lvl': 0
+  'needs-permission': 'true'
+  'cooldown-message': 'true'
+  incompatible: []
+  attributes: 
+    'level-base': '1'
+    'level-scale': '0'
+    'cost-base': '2000000000'
+    'cost-scale': '0'
+    'cooldown-base': '0'
+    'cooldown-scale': '0'
+    'mana-base': '0'
+    'mana-scale': '0'
+    'points-spent-req-base': '0'
+    'points-spent-req-scale': '0'
+  msg: '&6{player} &2has cast &6{skill}'
+  icon: 'betteritem_blackform'
+  'icon-data': 0
+  'icon-durability': 0
+  'icon-lore': 
+  - '&d{name} &7({level}/{max})'
+  - '&2Type: &6{type}'
+  - ''
+  - '{req:level}Level: {attr:level}'
+  - '{req:cost}Cost: {attr:cost}'
+  - ''
+  - 'Unlock the Ancient Saiyan Race'
+  - '&7Requires LP &7fabled.skill.ancient-saiyan&7'
+  - '&7(Ancient Rights / unlockrace). Not prestige level.'
+  desc: []
+  components: {}
