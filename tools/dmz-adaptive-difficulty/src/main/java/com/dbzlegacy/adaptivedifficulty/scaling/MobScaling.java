@@ -418,6 +418,11 @@ public final class MobScaling {
         if (entity == null || entity.m_9236_().f_46443_) {
             return false;
         }
+        // EnderDragon.kill() removes without die()/loot — that strips Simply Swords /
+        // Simply More unique injections on minecraft:entities/ender_dragon. Never force-kill.
+        if (entity instanceof EnderDragon) {
+            return entity.m_213877_() || entity.m_21224_();
+        }
         // Fast reject: healthy mobs never need NBT.
         float hp = entity.m_21223_();
         if (hp > 0.0f && !Float.isNaN(hp) && !Float.isInfinite(hp)) {

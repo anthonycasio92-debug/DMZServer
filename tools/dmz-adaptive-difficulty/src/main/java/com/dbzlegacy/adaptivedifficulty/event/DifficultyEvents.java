@@ -63,6 +63,7 @@ import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
+import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -677,6 +678,25 @@ public final class DifficultyEvents {
     }
 
     /**
+     * Preserve Simply Swords / Simply More End Dragon loot. Their uniques inject into
+     * {@code minecraft:entities/ender_dragon}; we never clear this drop list and mark
+     * the roll so our kill fallback does not double-drop.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void onLivingDrops(LivingDropsEvent event) {
+        LivingEntity dead = event.getEntity();
+        if (!(dead instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon)) {
+            return;
+        }
+        // Do not call event.getDrops().clear() — leave Simply Swords / Simply More stacks.
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength
+                    .markDragonLootRolled(dead);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
      * Post-mitigation safety net.
      * <ul>
      *   <li>Hostiles at ≤0 HP — force terminate</li>
@@ -690,7 +710,12 @@ public final class DifficultyEvents {
             return;
         }
         LivingEntity victim = event.getEntity();
-        if (victim != null && HostileMobs.isHostile(victim) && victim.m_21223_() <= 0.0f) {
+        // Never force-terminate Ender Dragons here — EnderDragon.kill() skips loot tables
+        // (Simply Swords / Simply More uniques on entities/ender_dragon).
+        if (victim != null
+                && !(victim instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon)
+                && HostileMobs.isHostile(victim)
+                && victim.m_21223_() <= 0.0f) {
             MobScaling.terminateIfZeroHealth(victim);
         }
         // Personal OFF / whitelist-blocked: never inject landing damage.

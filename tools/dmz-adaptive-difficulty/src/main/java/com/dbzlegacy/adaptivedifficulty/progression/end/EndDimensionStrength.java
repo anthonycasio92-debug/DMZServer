@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.BlockPos;
@@ -85,6 +86,13 @@ public final class EndDimensionStrength {
     private static final String NBT_AD_SIG = "end_dragon_ad_sig";
     /** Legacy staff-spawn stamp — staff spawn removed; kept so old entities are not culled as vanilla. */
     private static final String NBT_STAFF_SPAWN = "end_dragon_staff";
+    /**
+     * Set when {@code minecraft:entities/ender_dragon} loot (Simply Swords / Simply More)
+     * already rolled for this dragon — avoids double drops.
+     */
+    private static final String NBT_LOOT_ROLLED = "end_dragon_loot_rolled";
+    private static final Set<UUID> SESSION_LOOT_ROLLED = ConcurrentHashMap.newKeySet();
+    private static final String ENDER_DRAGON_LOOT = "minecraft:entities/ender_dragon";
     private static final long PLAYER_DRAGON_RETARGET_MS = 750L;
 
     /** Minimum active Unlock Tier for paid GUI summons. */
@@ -447,7 +455,163 @@ public final class EndDimensionStrength {
             }
         } catch (Throwable ignored) {
         }
+        // Simply Swords / Simply More inject uniques into entities/ender_dragon.
+        // Schedule a fallback roll after vanilla LivingDrops so we never strip those mods' loot.
+        try {
+            scheduleEnsureDragonLootTable(dead, killer, event.getSource());
+        } catch (Throwable ignored) {
+        }
         SystemTelemetry.log("end_strength", "dragon_kill", killer, null, Map.of("kind", kind));
+    }
+
+    /** Mark that entity loot already ran (LivingDropsEvent) — skip our fallback roll. */
+    public static void markDragonLootRolled(LivingEntity dragon) {
+        if (dragon == null) {
+            return;
+        }
+        SESSION_LOOT_ROLLED.add(dragon.m_20148_());
+        try {
+            CompoundTag tag = PersistentDataAccess.get(dragon);
+            if (PersistentDataAccess.isWritable(tag)) {
+                tag.m_128379_(NBT_LOOT_ROLLED, true);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static boolean wasDragonLootRolled(LivingEntity dragon) {
+        if (dragon == null) {
+            return false;
+        }
+        if (SESSION_LOOT_ROLLED.contains(dragon.m_20148_())) {
+            return true;
+        }
+        return PersistentDataAccess.flag(dragon, NBT_LOOT_ROLLED);
+    }
+
+    /**
+     * After death processing, if vanilla did not roll {@code entities/ender_dragon}
+     * (so Simply Swords / Simply More uniques never appeared), roll it once at the
+     * death position. Never clears existing drops.
+     */
+    private static void scheduleEnsureDragonLootTable(
+            LivingEntity dead, ServerPlayer killer, net.minecraft.world.damagesource.DamageSource source
+    ) {
+        if (!(dead instanceof EnderDragon dragon) || killer == null) {
+            return;
+        }
+        MinecraftServer server = killer.m_20194_();
+        if (server == null || !(dragon.m_9236_() instanceof ServerLevel end)) {
+            return;
+        }
+        UUID dragonId = dragon.m_20148_();
+        Vec3 origin = dragon.m_20182_();
+        net.minecraft.world.damagesource.DamageSource dmg = source != null
+                ? source
+                : killer.m_269291_().m_269333_(killer);
+        server.execute(() -> { // next tick — after LivingDropsEvent marks vanilla roll
+            try {
+                if (SESSION_LOOT_ROLLED.contains(dragonId)) {
+                    return;
+                }
+                EnderDragon still = null;
+                for (EnderDragon d : findDragons(end)) {
+                    if (d != null && dragonId.equals(d.m_20148_())) {
+                        still = d;
+                        break;
+                    }
+                }
+                if (still != null && wasDragonLootRolled(still)) {
+                    return;
+                }
+                LivingEntity lootEntity = still != null ? still : dragon;
+                if (wasDragonLootRolled(lootEntity)) {
+                    return;
+                }
+                int spawned = rollEnderDragonLootTable(end, lootEntity, killer, dmg, origin);
+                markDragonLootRolled(lootEntity);
+                if (spawned > 0) {
+                    AdaptiveDifficultyMod.LOGGER.info(
+                            "[{}] End dragon loot fallback spawned {} stack(s) (Simply Swords/More table)",
+                            AdaptiveDifficultyMod.MOD_ID, spawned);
+                }
+            } catch (Throwable t) {
+                AdaptiveDifficultyMod.LOGGER.debug(
+                        "[{}] ensure dragon loot: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            }
+        });
+    }
+
+    /** Roll {@code minecraft:entities/ender_dragon} and spawn stacks in-world (never into inventory). */
+    private static int rollEnderDragonLootTable(
+            ServerLevel end,
+            LivingEntity dragon,
+            ServerPlayer killer,
+            net.minecraft.world.damagesource.DamageSource source,
+            Vec3 origin
+    ) {
+        if (end == null || dragon == null) {
+            return 0;
+        }
+        MinecraftServer server = end.m_7654_();
+        if (server == null) {
+            return 0;
+        }
+        var lootData = server.m_278653_(); // getLootData
+        if (lootData == null) {
+            return 0;
+        }
+        ResourceLocation tableId = new ResourceLocation("minecraft", "entities/ender_dragon");
+        var table = lootData.m_278676_(tableId); // getLootTable
+        if (table == null || table == net.minecraft.world.level.storage.loot.LootTable.f_79105_) {
+            return 0;
+        }
+        Vec3 at = origin != null ? origin : dragon.m_20182_();
+        var paramsBuilder = new net.minecraft.world.level.storage.loot.LootParams.Builder(end)
+                .m_287286_(net.minecraft.world.level.storage.loot.parameters.LootContextParams.f_81455_, dragon) // THIS_ENTITY
+                .m_287286_(net.minecraft.world.level.storage.loot.parameters.LootContextParams.f_81460_, at) // ORIGIN
+                .m_287286_(net.minecraft.world.level.storage.loot.parameters.LootContextParams.f_81457_,
+                        source != null ? source : killer.m_269291_().m_269333_(killer)) // DAMAGE_SOURCE
+                .m_287289_(net.minecraft.world.level.storage.loot.parameters.LootContextParams.f_81458_, killer) // KILLER
+                .m_287289_(net.minecraft.world.level.storage.loot.parameters.LootContextParams.f_81459_, killer); // DIRECT_KILLER
+        if (killer != null) {
+            paramsBuilder.m_287286_(
+                    net.minecraft.world.level.storage.loot.parameters.LootContextParams.f_81456_, killer); // LAST_DAMAGE_PLAYER
+            try {
+                paramsBuilder.m_287239_(killer.m_36336_()); // withLuck
+            } catch (Throwable ignored) {
+            }
+        }
+        var params = paramsBuilder.m_287235_(
+                net.minecraft.world.level.storage.loot.parameters.LootContextParamSets.f_81415_); // ENTITY
+        java.util.ArrayList<ItemStack> stacks = new java.util.ArrayList<>();
+        table.m_287228_(params, stack -> { // getRandomItems consumer
+            if (stack != null && !stack.m_41619_()) {
+                stacks.add(stack.m_41777_());
+            }
+        });
+        if (stacks.isEmpty()) {
+            return 0;
+        }
+        int spawned = 0;
+        for (ItemStack stack : stacks) {
+            if (stack == null || stack.m_41619_()) {
+                continue;
+            }
+            try {
+                // Spawn at death origin so off-island kills keep loot near the fight.
+                net.minecraft.world.entity.item.ItemEntity drop = new net.minecraft.world.entity.item.ItemEntity(
+                        end, at.f_82479_, at.f_82480_ + 0.5, at.f_82481_, stack);
+                drop.m_20334_(
+                        (end.f_46441_.m_188501_() - 0.5) * 0.15,
+                        0.2,
+                        (end.f_46441_.m_188501_() - 0.5) * 0.15);
+                end.m_7967_(drop);
+                spawned++;
+            } catch (Throwable ignored) {
+            }
+        }
+        return spawned;
     }
 
     /** Staff spawn removed — use Difficulty GUI player summon. Clear via {@link #cmdCleanupDragons}. */
