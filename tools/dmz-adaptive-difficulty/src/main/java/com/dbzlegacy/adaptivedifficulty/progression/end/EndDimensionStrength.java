@@ -217,11 +217,9 @@ public final class EndDimensionStrength {
             enforceSingleDragon(end);
             for (EnderDragon dragon : findDragons(end)) {
                 if (isPlayerSummoned(dragon)) {
-                    // Locked to summoner AD profile — never grow to a stronger bystander.
-                    ServerPlayer owner = resolveSummoner(end, dragon);
-                    if (owner != null) {
-                        maybeRescaleDragon(dragon, end, adScaledPower(owner), now);
-                    }
+                    // Never rescale to nearby/stronger bystanders — spawn stats stay locked.
+                    // Despawn if summoner left, died, or turned personal AD off.
+                    maybeDespawnOrphanedPlayerDragon(end, dragon);
                     continue;
                 }
                 PlayerPower strongest = strongestInEnd(end, null);
@@ -298,19 +296,19 @@ public final class EndDimensionStrength {
         double def = readDef(target);
         if (!(def > 0.0) && event.getSource() != null
                 && event.getSource().m_7639_() instanceof ServerPlayer attacker) {
-            ServerLevel level = attacker.m_284548_();
-            PlayerPower power;
+            // Player-summoned dragons keep spawn-time AD stats — never retarget to another player on hit.
             if (dragon && target instanceof EnderDragon enderDragon && isPlayerSummoned(enderDragon)) {
-                power = adScaledPower(attacker);
+                def = readDef(target);
             } else {
-                power = strongestInEnd(level, attacker);
+                ServerLevel level = attacker.m_284548_();
+                PlayerPower power = strongestInEnd(level, attacker);
+                if (dragon && target instanceof EnderDragon enderDragon) {
+                    applyDragonStats(enderDragon, power, "onhit");
+                } else if (mobScaling) {
+                    buffMob(target, kind, power);
+                }
+                def = readDef(target);
             }
-            if (dragon && target instanceof EnderDragon enderDragon) {
-                applyDragonStats(enderDragon, power, "onhit");
-            } else if (mobScaling) {
-                buffMob(target, kind, power);
-            }
-            def = readDef(target);
         }
         if (!(def > 0.0)) {
             return;
@@ -713,6 +711,61 @@ public final class EndDimensionStrength {
         return removed;
     }
 
+    /**
+     * Despawn the player's Difficulty-GUI End Dragon (personal AD off / death / orphan).
+     *
+     * @return number of dragons removed
+     */
+    public static int despawnOwnedDragon(ServerPlayer owner) {
+        if (owner == null) {
+            return 0;
+        }
+        MinecraftServer server = owner.m_20194_();
+        if (server == null) {
+            return 0;
+        }
+        ServerLevel end = server.m_129880_(Level.f_46430_);
+        if (end == null) {
+            return 0;
+        }
+        int removed = 0;
+        for (EnderDragon dragon : findDragons(end)) {
+            if (!isPlayerSummoned(dragon) || !isSummoner(dragon, owner)) {
+                continue;
+            }
+            try {
+                dragon.m_146870_();
+                removed++;
+            } catch (Throwable ignored) {
+            }
+        }
+        if (removed > 0) {
+            msg(owner, "§7[The End] §cYour Ender Dragon despawned.");
+            SystemTelemetry.log("end_strength", "dragon_despawn", owner, null,
+                    Map.of("removed", removed, "reason", "owner_gate"));
+        }
+        return removed;
+    }
+
+    /** Pulse: drop player dragons whose summoner is gone or no longer participating. */
+    private static void maybeDespawnOrphanedPlayerDragon(ServerLevel end, EnderDragon dragon) {
+        if (end == null || dragon == null || !isPlayerSummoned(dragon)) {
+            return;
+        }
+        ServerPlayer owner = resolveSummoner(end, dragon);
+        if (owner == null || !owner.m_6084_() || !SystemGate.participates(owner)) {
+            try {
+                dragon.m_146870_();
+            } catch (Throwable ignored) {
+            }
+            if (owner != null && owner.m_6084_()) {
+                msg(owner, "§7[The End] §cYour Ender Dragon despawned (difficulty off).");
+            }
+            SystemTelemetry.log("end_strength", "dragon_despawn", owner, null,
+                    Map.of("reason", owner == null ? "owner_offline" : "owner_gate"));
+        }
+    }
+
     private static void maybeNaturalDragon(ServerPlayer player, long now) {
         if (!DifficultyConfig.get().enableEndNaturalDragonSpawn) {
             return;
@@ -727,7 +780,10 @@ public final class EndDimensionStrength {
         }
         EnderDragon kept = enforceSingleDragon(end);
         if (kept != null) {
-            maybeRescaleDragon(kept, end, strongestInEnd(end, player), now);
+            // Player-summoned dragons stay frozen to summoner spawn stats.
+            if (!isPlayerSummoned(kept)) {
+                maybeRescaleDragon(kept, end, strongestInEnd(end, player), now);
+            }
             return;
         }
         // Script: first boot arms the timer and waits a full interval before spawning.
@@ -1632,6 +1688,10 @@ public final class EndDimensionStrength {
 
     private static void maybeRescaleDragon(EnderDragon dragon, ServerLevel level, PlayerPower power, long now) {
         if (dragon == null || power == null) {
+            return;
+        }
+        // Player GUI summons are frozen to spawn-time AD stats for the summoner only.
+        if (isPlayerSummoned(dragon)) {
             return;
         }
         if (now - lastDragonRescaleAt < DRAGON_RESCALE_MS) {

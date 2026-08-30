@@ -191,6 +191,11 @@ public final class DifficultyActions {
         if (!on) {
             ScaledMobTracker.releaseAndRevertPlayer(player);
             NearbyMobScaler.processEvictions();
+            try {
+                com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength
+                        .despawnOwnedDragon(player);
+            } catch (Throwable ignored) {
+            }
         }
         String returnPage = page == null || page.isBlank() ? "main" : page;
         openGui(player, returnPage);

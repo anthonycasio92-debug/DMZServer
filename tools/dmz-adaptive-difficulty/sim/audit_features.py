@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.65", 'VERSION = "2.3.65"' in mod)
+    check("VERSION 2.3.66", 'VERSION = "2.3.66"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -845,6 +845,10 @@ def main() -> int:
     check("summoner NBT stamp", "end_dragon_summoner" in end_str)
     check("owner-only damage gate", "Only the summoner can damage" in end_str)
     check("AD scaled power", "adScaledPower" in end_str)
+    check("despawnOwnedDragon", "despawnOwnedDragon" in end_str)
+    check("player dragon rescale blocked",
+          "Player GUI summons are frozen" in end_str)
+    check("orphan despawn pulse", "maybeDespawnOrphanedPlayerDragon" in end_str)
     check("DifficultyActions summon_end_dragon", "ACT_SUMMON_END_DRAGON" in diff_actions)
     check("ForgeBridge allows summon_end_dragon", "summon_end_dragon" in forge_bridge)
     check("Chest GUI summon button", "summon_end_dragon" in chest and "Summon End Dragon" in chest)

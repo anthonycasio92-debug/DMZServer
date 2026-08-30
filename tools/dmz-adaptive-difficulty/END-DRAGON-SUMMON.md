@@ -1,4 +1,4 @@
-# End Dragon — Adaptive Difficulty summon (2.3.65)
+# End Dragon — Adaptive Difficulty summon (2.3.66)
 
 ## Player path (Difficulty GUI only)
 - Button: **Summon End Dragon** on `/difficulty` main page
@@ -19,3 +19,7 @@
 - `enableEndPlayerDragonSummon` (default true)
 - `endDragonSummonNetheriteCost` (default 3)
 - `enableEndNaturalDragonSpawn` (default **false** — GUI is the player path)
+
+## Scale lock & despawn (2.3.66)
+- Player-summoned dragons **never** rescale to nearby / stronger players.
+- Despawn when the summoner: turns personal difficulty **OFF**, **dies**, goes offline, or stops participating in AD.

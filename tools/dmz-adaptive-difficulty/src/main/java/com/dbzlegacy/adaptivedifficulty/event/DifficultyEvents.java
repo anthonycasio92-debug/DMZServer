@@ -751,6 +751,11 @@ public final class DifficultyEvents {
         if (dead instanceof ServerPlayer victim) {
             // Title no-death streaks always break on death (even if personal OFF).
             TitleSystem.noteDeath(victim);
+            try {
+                com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength
+                        .despawnOwnedDragon(victim);
+            } catch (Throwable ignored) {
+            }
             if (SystemGate.allows(victim)
                     && DifficultyConfig.get().deathResetsActiveDifficulty) {
                 var data = DifficultyCache.data(victim);
