@@ -1,4 +1,4 @@
-# End Dragon — Adaptive Difficulty summon (2.3.75)
+# End Dragon — Adaptive Difficulty summon (2.3.76)
 
 ## Player path (Difficulty GUI only)
 - Button: **Summon End Dragon** on `/difficulty` main page
@@ -37,8 +37,9 @@
 - Despawn when the summoner: turns personal difficulty **OFF**, **dies**, goes offline, or stops participating in AD.
 - Auto / vanilla End Dragon spawning is **removed**.
 
-## Loot (Simply Swords / Simply More)
+## Loot (Simply Swords / Simply More) + XP
 - Unique weapon injections on `minecraft:entities/ender_dragon` are **preserved**.
 - LM never clears `LivingDropsEvent` for End dragons.
-- AD zero-HP force-kill is skipped for Ender Dragons (`EnderDragon.kill()` would strip loot).
+- AD zero-HP force-kill is skipped for Ender Dragons (`EnderDragon.kill()` would strip loot/XP).
+- On player-summon kills, vanilla dragon **XP** (12 000 first End kill / 500 after) is awarded at the **death position** (including off-island). The dying animation is then stopped so XP is not double-dropped at the main island.
 - If the loot table somehow does not roll on death, LM falls back once at the death position (no double-drop when vanilla already rolled).

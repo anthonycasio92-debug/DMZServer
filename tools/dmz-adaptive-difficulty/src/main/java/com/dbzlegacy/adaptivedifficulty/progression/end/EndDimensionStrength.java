@@ -91,8 +91,15 @@ public final class EndDimensionStrength {
      * already rolled for this dragon — avoids double drops.
      */
     private static final String NBT_LOOT_ROLLED = "end_dragon_loot_rolled";
+    /** Set when we already awarded vanilla End Dragon XP at the death position. */
+    private static final String NBT_XP_AWARDED = "end_dragon_xp_awarded";
     private static final Set<UUID> SESSION_LOOT_ROLLED = ConcurrentHashMap.newKeySet();
+    private static final Set<UUID> SESSION_XP_AWARDED = ConcurrentHashMap.newKeySet();
     private static final String ENDER_DRAGON_LOOT = "minecraft:entities/ender_dragon";
+    /** Vanilla first-kill dragon XP (EndDragonFight has not killed before). */
+    private static final int DRAGON_XP_FIRST = 12_000;
+    /** Vanilla repeat dragon XP. */
+    private static final int DRAGON_XP_REPEAT = 500;
     private static final long PLAYER_DRAGON_RETARGET_MS = 750L;
 
     /** Minimum active Unlock Tier for paid GUI summons. */
@@ -455,10 +462,9 @@ public final class EndDimensionStrength {
             }
         } catch (Throwable ignored) {
         }
-        // Simply Swords / Simply More inject uniques into entities/ender_dragon.
-        // Schedule a fallback roll after vanilla LivingDrops so we never strip those mods' loot.
+        // Simply Swords / Simply More loot + vanilla dragon XP at the death position.
         try {
-            scheduleEnsureDragonLootTable(dead, killer, event.getSource());
+            scheduleEnsureDragonDeathRewards(dead, killer, event.getSource());
         } catch (Throwable ignored) {
         }
         SystemTelemetry.log("end_strength", "dragon_kill", killer, null, Map.of("kind", kind));
@@ -489,12 +495,36 @@ public final class EndDimensionStrength {
         return PersistentDataAccess.flag(dragon, NBT_LOOT_ROLLED);
     }
 
+    private static void markDragonXpAwarded(LivingEntity dragon) {
+        if (dragon == null) {
+            return;
+        }
+        SESSION_XP_AWARDED.add(dragon.m_20148_());
+        try {
+            CompoundTag tag = PersistentDataAccess.get(dragon);
+            if (PersistentDataAccess.isWritable(tag)) {
+                tag.m_128379_(NBT_XP_AWARDED, true);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static boolean wasDragonXpAwarded(LivingEntity dragon) {
+        if (dragon == null) {
+            return false;
+        }
+        if (SESSION_XP_AWARDED.contains(dragon.m_20148_())) {
+            return true;
+        }
+        return PersistentDataAccess.flag(dragon, NBT_XP_AWARDED);
+    }
+
     /**
-     * After death processing, if vanilla did not roll {@code entities/ender_dragon}
-     * (so Simply Swords / Simply More uniques never appeared), roll it once at the
-     * death position. Never clears existing drops.
+     * After death processing: ensure Simply Swords/More loot and vanilla dragon XP
+     * appear at the death position (including off-island fights). Player-summoned
+     * dragons are then removed so the dying-animation XP pass cannot double-award.
      */
-    private static void scheduleEnsureDragonLootTable(
+    private static void scheduleEnsureDragonDeathRewards(
             LivingEntity dead, ServerPlayer killer, net.minecraft.world.damagesource.DamageSource source
     ) {
         if (!(dead instanceof EnderDragon dragon) || killer == null) {
@@ -506,14 +536,12 @@ public final class EndDimensionStrength {
         }
         UUID dragonId = dragon.m_20148_();
         Vec3 origin = dragon.m_20182_();
+        boolean playerSummon = isPlayerSummoned(dragon);
         net.minecraft.world.damagesource.DamageSource dmg = source != null
                 ? source
                 : killer.m_269291_().m_269333_(killer);
-        server.execute(() -> { // next tick — after LivingDropsEvent marks vanilla roll
+        server.execute(() -> {
             try {
-                if (SESSION_LOOT_ROLLED.contains(dragonId)) {
-                    return;
-                }
                 EnderDragon still = null;
                 for (EnderDragon d : findDragons(end)) {
                     if (d != null && dragonId.equals(d.m_20148_())) {
@@ -521,25 +549,77 @@ public final class EndDimensionStrength {
                         break;
                     }
                 }
-                if (still != null && wasDragonLootRolled(still)) {
-                    return;
-                }
                 LivingEntity lootEntity = still != null ? still : dragon;
-                if (wasDragonLootRolled(lootEntity)) {
-                    return;
+
+                if (!SESSION_LOOT_ROLLED.contains(dragonId) && !wasDragonLootRolled(lootEntity)) {
+                    int spawned = rollEnderDragonLootTable(end, lootEntity, killer, dmg, origin);
+                    markDragonLootRolled(lootEntity);
+                    if (spawned > 0) {
+                        AdaptiveDifficultyMod.LOGGER.info(
+                                "[{}] End dragon loot fallback spawned {} stack(s) (Simply Swords/More table)",
+                                AdaptiveDifficultyMod.MOD_ID, spawned);
+                    }
                 }
-                int spawned = rollEnderDragonLootTable(end, lootEntity, killer, dmg, origin);
-                markDragonLootRolled(lootEntity);
-                if (spawned > 0) {
-                    AdaptiveDifficultyMod.LOGGER.info(
-                            "[{}] End dragon loot fallback spawned {} stack(s) (Simply Swords/More table)",
-                            AdaptiveDifficultyMod.MOD_ID, spawned);
+
+                // Player summons: award vanilla XP at the fight and stop the dying
+                // animation so tickDeath cannot drop a second orb shower at 0,0.
+                if (playerSummon && !SESSION_XP_AWARDED.contains(dragonId)
+                        && !wasDragonXpAwarded(lootEntity)) {
+                    int xp = awardVanillaDragonExperience(end, origin);
+                    markDragonXpAwarded(lootEntity);
+                    if (xp > 0) {
+                        AdaptiveDifficultyMod.LOGGER.info(
+                                "[{}] End dragon XP awarded at death pos: {}",
+                                AdaptiveDifficultyMod.MOD_ID, xp);
+                    }
+                    if (still != null && !still.m_213877_()) {
+                        try {
+                            still.m_142687_(Entity.RemovalReason.KILLED); // remove — no tickDeath XP
+                        } catch (Throwable t) {
+                            try {
+                                still.m_146870_();
+                            } catch (Throwable ignored) {
+                            }
+                        }
+                    }
                 }
             } catch (Throwable t) {
                 AdaptiveDifficultyMod.LOGGER.debug(
-                        "[{}] ensure dragon loot: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+                        "[{}] ensure dragon death rewards: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
             }
         });
+    }
+
+    /**
+     * Vanilla End Dragon XP totals from {@code EnderDragon.tickDeath}:
+     * 12_000 on the world's first kill, otherwise 500.
+     */
+    private static int awardVanillaDragonExperience(ServerLevel end, Vec3 origin) {
+        if (end == null || origin == null) {
+            return 0;
+        }
+        try {
+            if (!end.m_46469_().m_46207_(net.minecraft.world.level.GameRules.f_46135_)) { // doMobLoot
+                return 0;
+            }
+        } catch (Throwable ignored) {
+        }
+        int xp = DRAGON_XP_REPEAT;
+        try {
+            EndDragonFight fight = end.m_8586_();
+            if (fight != null && !fight.m_64099_()) { // hasPreviouslyKilledDragon
+                xp = DRAGON_XP_FIRST;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            net.minecraft.world.entity.ExperienceOrb.m_147082_(end, origin, xp); // award
+            return xp;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] dragon XP award failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            return 0;
+        }
     }
 
     /** Roll {@code minecraft:entities/ender_dragon} and spawn stacks in-world (never into inventory). */
@@ -981,6 +1061,10 @@ public final class EndDimensionStrength {
      * @return true if the dragon was despawned */
     private static boolean maybeDespawnOrphanedPlayerDragon(ServerLevel end, EnderDragon dragon) {
         if (end == null || dragon == null || !isPlayerSummoned(dragon)) {
+            return false;
+        }
+        // Let kill rewards (loot + XP) finish — do not wipe a dying dragon.
+        if (isDragonDying(dragon) || wasDragonXpAwarded(dragon) || wasDragonLootRolled(dragon)) {
             return false;
         }
         ServerPlayer owner = resolveSummoner(end, dragon);

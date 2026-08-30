@@ -232,7 +232,7 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 2.3.75", 'VERSION = "2.3.75"' in mod)
+    check("VERSION 2.3.76", 'VERSION = "2.3.76"' in mod)
 
     check("RaceSkillSync present", (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/bridge/RaceSkillSync.java").is_file())
     check("formula revision 38", "mix(h, 38L)" in profile)
