@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.60", 'VERSION = "2.3.60"' in mod)
+    check("VERSION 2.3.61", 'VERSION = "2.3.61"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -118,6 +118,8 @@ def main() -> int:
         "enableClassCounters": "true",
         "enableStrongStatCounters": "true",
         "tierCostLevelDivisor": "50_000.0",
+        "tierCostLevelAnchor": "150_000.0",
+        "tierCostT7TargetCopper": "10_000_000L",
     }
     for name, want in expected.items():
         got = field_default(cfg, name)
@@ -277,8 +279,10 @@ def main() -> int:
     check("fill-to-landing floor", "preAmount < land)" in events and "land * 0.45" not in events)
     check("progressive soft-caps", "case 5 -> 0.52" in events and "case 6 -> 0.58" in events and "case 7 -> 0.62" in events)
     check("README 1.0.25 balance", "1.0.25" in readme and "T4 tank" in readme)
-    check("README 1.0.26 tier costs", "1.0.26" in readme and "tierCostLevelDivisor" in readme)
+    check("README 2.3.61 tier costs", "2.3.61" in readme and "tierCostLevelAnchor" in readme and "100× Netherite" in readme)
     check("tierCostDivisorMigratedV1", "tierCostDivisorMigratedV1" in cfg)
+    check("tierCostCurveMigratedV2", "tierCostCurveMigratedV2" in cfg)
+    check("tierCostLevelMultiplier", "tierCostLevelMultiplier" in cfg)
     unlock_tier = read(SRC / "com/dbzlegacy/adaptivedifficulty/tier/UnlockTier.java")
     cmi_gui = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/CmiDifficultyGui.java")
     check("UnlockTier.requirementTip", "requirementTip" in unlock_tier and "requiredPrestige" in unlock_tier)
@@ -299,7 +303,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 2.3.60", "2.3.60" in readme)
+    check("README version 2.3.61", "2.3.61" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -347,7 +351,7 @@ def main() -> int:
     check("dual upgrade band uses same roll", "roll < upgradeChance" in coins)
     check("coinDropChanceMigratedV1", "coinDropChanceMigratedV1" in cfg)
     check("admin set drop chance", "ancientcoindropchance" in cmds or "coindropchance" in cmds)
-    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.60" in readme)
+    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.61" in readme)
 
     print("\n=== Mohist CMI /lmdo routing (2.3.54) ===")
     gui_root = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit"

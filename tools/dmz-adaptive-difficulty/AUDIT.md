@@ -1,3 +1,11 @@
+## Tier cost anchors (2.3.61)
+
+Absolute-level exponential curve:
+- **DMZ 1 / T1** = **1× Copper**
+- **DMZ 150000 / T7** = **100× Netherite** (`tierCostT7TargetCopper` = 10_000_000)
+- Shared mult across tiers; progress clamps at `tierCostLevelAnchor` (150000)
+- Admin: `/difficulty admin set tierCostLevelAnchor|tierCostT7TargetCopper <n>`
+
 ## Global TP boost persistence (2.3.60)
 
 Active window saved to `config/legacymechanics/global-tp-boost.json` (wall-clock

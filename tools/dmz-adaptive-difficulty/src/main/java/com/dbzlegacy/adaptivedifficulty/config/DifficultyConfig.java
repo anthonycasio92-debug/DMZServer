@@ -344,16 +344,23 @@ public final class DifficultyConfig {
     public long unlockTier6Cost = 500L;
     public long unlockTier7Cost = 1_500L;
     /**
-     * Tier purchase cost scales with how far above the tier's unlock level the
-     * player is: {@code base × (1 + max(0, dmzLevel - requiredLevel) / divisor)}.
-     * Buying at the unlock threshold ≈ base cost.
-     * <p>
-     * Default {@code 50000} matches the T6→T7 unlock gap so a player at DMZ 100k
-     * pays ~T7 base (15× Gold), not a ladder-inflated mid-tier pile. The old
-     * {@code 1000} divisor made T6 ≈ 51× base at 100k, then the monotonic floor
-     * dragged T7 to ~33× Emerald.
+     * Legacy excess-above-unlock divisor (pre-2.3.61). Kept for config/admin
+     * compat; stock pricing now uses {@link #tierCostLevelAnchor} +
+     * {@link #tierCostT7TargetCopper}.
      */
     public double tierCostLevelDivisor = 50_000.0;
+    /**
+     * DMZ level where stock T7 hits {@link #tierCostT7TargetCopper}.
+     * Cost mult is exponential in absolute level from 1 → this anchor
+     * (progress clamped), shared across all tiers: {@code base × endMult^progress}.
+     * Stock: level 1 → T1 = 1× Copper; level 150000 → T7 = 100× Netherite.
+     */
+    public double tierCostLevelAnchor = 150_000.0;
+    /**
+     * Target copper-value for T7 at {@link #tierCostLevelAnchor}.
+     * Stock {@code 10_000_000} = 100× Netherite Ancient Coins.
+     */
+    public long tierCostT7TargetCopper = 10_000_000L;
     /**
      * Nearby-mob scale vs the player's post-transform / limit-release stats.
      * Defaults (1.0.1): T1 21% · T2 42% · T3 65% · T4 90% · T5 135% · T6 160% · T7 200%.
@@ -517,6 +524,11 @@ public final class DifficultyConfig {
      */
     public Boolean tierCostDivisorMigratedV1 = Boolean.FALSE;
     /**
+     * One-time (2.3.61): absolute-level curve — L1/T1 = 1× Copper,
+     * L150k/T7 = 100× Netherite. Rewrites stock anchor/target only.
+     */
+    public Boolean tierCostCurveMigratedV2 = Boolean.FALSE;
+    /**
      * One-time (1.0.45): stock coin drop 100%→5%, upgrade duo 2%→0.5%.
      * Custom admin chances are kept.
      */
@@ -641,24 +653,26 @@ public final class DifficultyConfig {
         };
     }
 
-    /** Level-scaled tier purchase cost for a player at {@code dmzLevel}. */
+    /**
+     * Level-scaled tier purchase cost for a player at {@code dmzLevel}.
+     * <p>
+     * Stock curve (2.3.61+): exponential in absolute DMZ level from 1 →
+     * {@link #tierCostLevelAnchor}, with end multiplier
+     * {@code tierCostT7TargetCopper / T7 base} so T1@1 ≈ 1× Copper and
+     * T7@150k ≈ 100× Netherite. Progress is clamped at the anchor (no further
+     * rise past it). Higher tiers stay ≥ ~25% above the previous tier.
+     */
     public long tierActivationCostScaled(int tierId, int dmzLevel) {
         long base = tierActivationCost(tierId);
         if (base <= 0L) {
             return 0L;
         }
-        double divisor = Math.max(1.0, tierCostLevelDivisor);
-        // Scale only by levels above this tier's unlock requirement.
-        // Absolute-level scaling made T7 (req 100k) cost 152× Netherite at unlock.
-        long required = tierRequiredLevel(tierId);
-        long excess = Math.max(0L, (long) Math.max(0, dmzLevel) - required);
-        double mult = 1.0 + excess / divisor;
+        double mult = tierCostLevelMultiplier(Math.max(1, dmzLevel));
         long scaled = Math.round(base * mult);
         long raw = Math.max(base, scaled);
         // Cap at 128 of one coin type, then promote (top rung = 128× Netherite).
         long cost = com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.normalizeCost(raw);
 
-        // Excess-above-unlock scaling can invert the ladder (T7 << T6 near T7 unlock).
         // Always keep higher tiers at least ~25% above the previous tier's cost.
         if (tierId > 1) {
             long prev = tierActivationCostScaled(tierId - 1, dmzLevel);
@@ -673,6 +687,25 @@ public final class DifficultyConfig {
             }
         }
         return cost;
+    }
+
+    /**
+     * Shared level multiplier for tier buy costs: 1.0 at DMZ 1, rising
+     * exponentially to {@code target/T7base} at {@link #tierCostLevelAnchor}.
+     */
+    public double tierCostLevelMultiplier(int dmzLevel) {
+        long t7Base = Math.max(1L, tierActivationCost(7));
+        long target = Math.max(t7Base, Math.max(1L, tierCostT7TargetCopper));
+        double endMult = Math.max(1.0, (double) target / (double) t7Base);
+        double anchor = Math.max(2.0, tierCostLevelAnchor);
+        double progress = (Math.max(1, dmzLevel) - 1.0) / (anchor - 1.0);
+        if (progress <= 0.0) {
+            return 1.0;
+        }
+        if (progress >= 1.0) {
+            return endMult;
+        }
+        return Math.exp(progress * Math.log(endMult));
     }
 
     public double tierEnemyMult(int tierId) {
@@ -1271,6 +1304,25 @@ public final class DifficultyConfig {
         }
         if (cfg.tierCostLevelDivisor < 1.0) {
             cfg.tierCostLevelDivisor = 50_000.0;
+        }
+        // 2.3.61: absolute-level anchors — L1/T1 = 1× Copper, L150k/T7 = 100× Netherite.
+        if (!Boolean.TRUE.equals(cfg.tierCostCurveMigratedV2)) {
+            boolean stockDivisor = nearly(cfg.tierCostLevelDivisor, 50_000.0)
+                    || nearly(cfg.tierCostLevelDivisor, 1_000.0);
+            boolean stockTarget = cfg.tierCostT7TargetCopper <= 0L
+                    || cfg.tierCostT7TargetCopper == 10_000_000L
+                    || cfg.tierCostT7TargetCopper == 1_500L;
+            if (stockDivisor && stockTarget) {
+                cfg.tierCostLevelAnchor = 150_000.0;
+                cfg.tierCostT7TargetCopper = 10_000_000L;
+            }
+            cfg.tierCostCurveMigratedV2 = Boolean.TRUE;
+        }
+        if (cfg.tierCostLevelAnchor < 2.0) {
+            cfg.tierCostLevelAnchor = 150_000.0;
+        }
+        if (cfg.tierCostT7TargetCopper < 1L) {
+            cfg.tierCostT7TargetCopper = 10_000_000L;
         }
         // 1.0.45: stock kill coins are chance-gated (was always-on + 2% upgrade).
         if (!Boolean.TRUE.equals(cfg.coinDropChanceMigratedV1)) {

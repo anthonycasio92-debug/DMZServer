@@ -1118,6 +1118,10 @@ public final class DifficultyCommands {
                 }
                 case "tiercostleveldivisor", "costleveldivisor", "tiercostdivisor" ->
                         cfg.tierCostLevelDivisor = Math.max(1.0, Double.parseDouble(value));
+                case "tiercostlevelanchor", "costlevelanchor", "tiercostanchor" ->
+                        cfg.tierCostLevelAnchor = Math.max(2.0, Double.parseDouble(value));
+                case "tiercostt7targetcopper", "tiercostt7target", "t7targetcopper", "tiercosttarget" ->
+                        cfg.tierCostT7TargetCopper = Math.max(1L, Long.parseLong(value));
 
                 // ── V3 Ancient Coins + feature gates ───────────────────────
                 case "enableancientcoindrops", "ancientcoindrops" ->
