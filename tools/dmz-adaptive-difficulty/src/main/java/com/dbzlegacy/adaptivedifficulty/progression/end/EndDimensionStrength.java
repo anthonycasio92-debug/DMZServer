@@ -650,7 +650,7 @@ public final class EndDimensionStrength {
         if (n <= cap) {
             return;
         }
-        // Flooded End: command purge is far cheaper than discarding thousands 1-by-1.
+        // Flooded End: discard collected entities in one pass (no console kill spam).
         if (n > cap * 2) {
             purgeEndKiCommands(end);
             AdaptiveDifficultyMod.LOGGER.info(
@@ -910,16 +910,8 @@ public final class EndDimensionStrength {
             }
         }
         if (removed <= 0) {
-            MinecraftServer server = end.m_7654_();
-            if (server != null) {
-                try {
-                    server.m_129892_().m_230957_(
-                            server.m_129893_(),
-                            "execute in minecraft:the_end run kill @e[type=minecraft:end_crystal]");
-                    removed = 1;
-                } catch (Throwable ignored) {
-                }
-            }
+            // Already empty — do not run console kill @e (spams "No entity was found").
+            return 0;
         }
         return removed;
     }
@@ -995,22 +987,28 @@ public final class EndDimensionStrength {
         }
     }
 
+    /**
+     * Remove all End ki_laser / ki_blast via entity discard (silent).
+     * Avoids console {@code kill @e[…]} which prints "No entity was found" every hygiene pulse
+     * when The End is empty.
+     */
     private static void purgeEndKiCommands(ServerLevel end) {
-        MinecraftServer server = end == null ? null : end.m_7654_();
-        if (server == null) {
+        if (end == null) {
             return;
         }
-        try {
-            server.m_129892_().m_230957_(
-                    server.m_129893_(),
-                    "execute in minecraft:the_end run kill @e[type=dragonminez:ki_laser]");
-        } catch (Throwable ignored) {
+        List<Entity> ents = collectEndKiEntities(end);
+        if (ents.isEmpty()) {
+            return;
         }
-        try {
-            server.m_129892_().m_230957_(
-                    server.m_129893_(),
-                    "execute in minecraft:the_end run kill @e[type=dragonminez:ki_blast]");
-        } catch (Throwable ignored) {
+        int killed = 0;
+        for (Entity e : ents) {
+            if (discardEntitySafe(e)) {
+                killed++;
+            }
+        }
+        if (killed > 0) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] Purged {} End ki projectiles", AdaptiveDifficultyMod.MOD_ID, killed);
         }
     }
 

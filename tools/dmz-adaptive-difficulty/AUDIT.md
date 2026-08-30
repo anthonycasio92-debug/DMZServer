@@ -1,4 +1,10 @@
-## Player command whitelist (2.3.53)
+## End ki purge console spam (2.3.54)
+
+End hygiene was running `kill @e[type=dragonminez:ki_laser|ki_blast]` every ~1.5s
+when no dragon was present, printing **"No entity was found"** twice per pulse.
+Purge now discards entities in Java and no-ops when empty (same for crystal clear).
+
+## Player command whitelist (2.3.54)
 
 Players may slash only:
 `/lm` · `/difficulty` · `/rival` · `/spar` · `/progression meditation` · `/skillcheck` (donator).
@@ -6,7 +12,7 @@ Players may slash only:
 Prestige, Remove Android, Skills, and other progression actions are **GUI-only**
 via `/lm` (CMI clicks still use internal `/lmdo`). Staff keep full slash trees.
 
-## Script parity deep check (2.3.53)
+## Script parity deep check (2.3.54)
 
 Re-verified Java vs live/backup scripts (`uploads/live-scripts-2026-08-27/`,
 `script-backups-full`). Core Rival/Spar/Prestige/End/Android/SkillCheck/Meditation/

@@ -1,4 +1,4 @@
-# LegacyMechanics (v2.3.53)
+# LegacyMechanics (v2.3.54)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -41,8 +41,8 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/LegacyMechanics-2.3.53.jar` (remove older AD jars)
-2. `plugins/LegacyMechanicsGUI-2.3.53.jar` (or matching GUI if available)
+1. `mods/LegacyMechanics-2.3.54.jar` (remove older AD jars)
+2. `plugins/LegacyMechanicsGUI-2.3.54.jar` (or matching GUI if available)
 3. **Do not load CNPC Global Player / NPC scripts** for systems this mod owns (`CNPC-FREE.md`)
 4. Tag GUI NPCs (`lm_rival`, `lm_spar`, `lm_skillcheck`, …) or use slash commands
 5. Restart — config at `config/legacymechanics.json` (auto-migrates from `dmz_adaptive_difficulty.json`)

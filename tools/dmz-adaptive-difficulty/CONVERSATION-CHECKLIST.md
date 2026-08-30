@@ -1,6 +1,6 @@
 # Conversation commitments checklist
 
-Verified against LegacyMechanics **2.3.53**. These are decisions from the
+Verified against LegacyMechanics **2.3.54**. These are decisions from the
 progression / CNPC-free / GUI-audit conversation thread — do not revert.
 
 | Commitment | Where | Status |

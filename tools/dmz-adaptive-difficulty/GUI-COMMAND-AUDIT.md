@@ -5,9 +5,9 @@ command tree, `/lmdo` bridge, inspect routing, and former CNPC script parity.
 
 ## Verdict
 
-**Ship 2.3.51 (+ script parity 2.3.53).** Critical/HIGH navigation and permission bugs found in the audit
+**Ship 2.3.51 (+ script parity 2.3.54).** Critical/HIGH navigation and permission bugs found in the audit
 are fixed. Script-owned systems remain Java-owned (CNPC-free). Remaining notes
-are MEDIUM/intentional. See `SCRIPT-AUDIT.md` for 2.3.53 Yardrat/RaceLock/ShadowDummy/TP-boost fixes.
+are MEDIUM/intentional. See `SCRIPT-AUDIT.md` for 2.3.54 Yardrat/RaceLock/ShadowDummy/TP-boost fixes.
 
 ---
 
