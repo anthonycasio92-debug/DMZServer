@@ -699,6 +699,28 @@ def main() -> int:
     check("GlobalTpBoost END_LOCK_MS 5s", "END_LOCK_MS = 5000L" in boost)
     check("SCRIPT-AUDIT documents 2.3.52", "2.3.52" in script_audit)
 
+    print("\n=== Conversation commitments (2.3.52) ===")
+    conv = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "CONVERSATION-CHECKLIST.md")
+    check("CONVERSATION-CHECKLIST.md present", "Conversation commitments checklist" in conv)
+    check("conv: mentor 2 min locked", "Mentor invite **2 min**" in conv)
+    check("conv: spar 3 cards locked", "individual** report cards" in conv)
+    check("conv: CNPC-free locked", "CNPC-free" in conv)
+    check("conv: player prestige+android locked", "Player Prestige + Remove Android" in conv)
+    check("conv: enddragon StaffAccess locked", "StaffAccess" in conv and "/enddragon" in conv)
+    # Code still matches conversation — robust needles (avoid javadoc / call-site splits).
+    check("conv code: no soft hay.contains(rival)",
+          'hay.contains("rival")' not in cnpc and 'contains("rival")' not in cnpc.replace(
+              'Soft substrings like {@code contains("rival")}', ''))
+    check("conv code: inspect android_remove case",
+          'case "android_remove", "androidremove"' in plugin
+          and "progressionChestGui.open(admin, \"android_remove\")" in plugin)
+    check("conv code: lmdo hub everywhere chest",
+          'SlotAction.cmd("lm")' not in rival_chest
+          and 'lmdo lm open hub' in rival_chest
+          and 'lmdo lm open hub' in prestige_chest)
+    check("conv code: chat hub android+prestige",
+          "android_remove" in mech_chat and "prestige" in mech_chat)
+
     print("\n=== Summary ===")
     for w in warns:
         print(f"WARN: {w}")

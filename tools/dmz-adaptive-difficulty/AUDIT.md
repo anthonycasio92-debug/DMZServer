@@ -10,8 +10,9 @@ Gaps fixed in this release:
 - ShadowDummy dual-reads legacy CD NBT key
 - Global TP Boost 5s end debounce
 
-Conversation-era changes (GUI hub hops, StaffAccess enddragon, player prestige/
-android remove, CNPC-free) preserved — not regressions vs scripts.
+Conversation-era changes preserved — see `CONVERSATION-CHECKLIST.md`
+(GUI hub hops, StaffAccess enddragon, player prestige/android remove, CNPC-free,
+mentor 2 min, spar 3-card reports, Skill Check no soft rival match).
 
 ## GUI + command audit (2.3.51)
 
