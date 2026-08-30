@@ -91,7 +91,7 @@ public final class SparChatMenu {
                     .m_7220_(btn("§c[End]", "/spar do end main", "End spar session"));
         }
         send(player, row);
-        send(player, btn("§7« Hub", "/lm", "Legacy Mechanics hub"));
+        send(player, btn("§7« Hub", "/lmdo lm open hub", "Legacy Mechanics hub"));
         send(player, Component.m_237113_("§8────────────────"));
     }
 

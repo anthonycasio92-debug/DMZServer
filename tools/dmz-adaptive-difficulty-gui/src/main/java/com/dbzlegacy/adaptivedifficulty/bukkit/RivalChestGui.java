@@ -100,7 +100,7 @@ public final class RivalChestGui implements Listener {
             put(holder, inv, 4, item(Material.NETHER_STAR,
                     !bridgeOk ? "&c&lUNAVAILABLE" : "&c&lRIVAL DISABLED",
                     unavailableLore(bridgeOk)));
-            put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+            put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
             put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
             return inv;
         }
@@ -150,7 +150,7 @@ public final class RivalChestGui implements Listener {
                     )), SlotAction.act("instinct", "toggle", "main"));
         }
 
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         if (ForgeBridge.isStaff(viewer)) {
             put(holder, inv, 37, pageBtn(viewer, Material.COMMAND_BLOCK, "&cAdmin",
@@ -188,7 +188,7 @@ public final class RivalChestGui implements Listener {
             put(holder, inv, slots[i], item(mats[i], titles[i], lore), SlotAction.page(pages[i]));
         }
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -215,7 +215,7 @@ public final class RivalChestGui implements Listener {
             }
         }
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page(back));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -244,7 +244,7 @@ public final class RivalChestGui implements Listener {
             put(holder, inv, slots[i], item(tile.icon, tile.title, tip));
         }
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page(back));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -268,7 +268,7 @@ public final class RivalChestGui implements Listener {
                 List.of("&7Enabled + path summary", "&8/rival admin status")),
                 SlotAction.act("admin", "status", "admin"));
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Player Rival menu"), SlotAction.page("main"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }

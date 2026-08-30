@@ -82,21 +82,21 @@ public final class ProgressionCommands {
                                 ctx.getSource(),
                                 StringArgumentType.getString(ctx, "page")))));
 
-        // End Dimension Strength triggers 50/51
+        // End Dimension Strength — StaffAccess (Bukkit OP / admin node), not Forge level-2 only
         event.getDispatcher().register(Commands.m_82127_("enddragon")
-                .requires(src -> src.m_6761_(2))
+                .requires(ProgressionCommands::staff)
                 .executes(ctx -> endSpawn(ctx.getSource()))
                 .then(Commands.m_82127_("spawn").executes(ctx -> endSpawn(ctx.getSource())))
                 .then(Commands.m_82127_("clear").executes(ctx -> endClear(ctx.getSource())))
                 .then(Commands.m_82127_("cleanup").executes(ctx -> endClear(ctx.getSource()))));
         event.getDispatcher().register(Commands.m_82127_("spawndragon")
-                .requires(src -> src.m_6761_(2))
+                .requires(ProgressionCommands::staff)
                 .executes(ctx -> endSpawn(ctx.getSource())));
         event.getDispatcher().register(Commands.m_82127_("cleardragons")
-                .requires(src -> src.m_6761_(2))
+                .requires(ProgressionCommands::staff)
                 .executes(ctx -> endClear(ctx.getSource())));
         event.getDispatcher().register(Commands.m_82127_("killdragons")
-                .requires(src -> src.m_6761_(2))
+                .requires(ProgressionCommands::staff)
                 .executes(ctx -> endClear(ctx.getSource())));
 
         AdaptiveDifficultyMod.LOGGER.info(
@@ -176,13 +176,19 @@ public final class ProgressionCommands {
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> build(String name) {
+        // Root is open so players can run meditation status + android remove.
+        // Staff-only leaves keep .requires(staff) / handler checks.
         return Commands.m_82127_(name)
-                .requires(ProgressionCommands::staff)
-                .executes(ctx -> gui(ctx.getSource(), "main"))
-                .then(Commands.m_82127_("gui").executes(ctx -> gui(ctx.getSource(), "main")))
-                .then(Commands.m_82127_("help").executes(ctx -> gui(ctx.getSource(), "help")))
-                .then(Commands.m_82127_("status").executes(ctx -> status(ctx.getSource())))
+                .executes(ctx -> helpOrGui(ctx.getSource()))
+                .then(Commands.m_82127_("gui")
+                        .requires(ProgressionCommands::staff)
+                        .executes(ctx -> gui(ctx.getSource(), "main")))
+                .then(Commands.m_82127_("help").executes(ctx -> helpOrGui(ctx.getSource())))
+                .then(Commands.m_82127_("status")
+                        .requires(ProgressionCommands::staff)
+                        .executes(ctx -> status(ctx.getSource())))
                 .then(Commands.m_82127_("do")
+                        .requires(ProgressionCommands::staff)
                         .then(Commands.m_82127_("page")
                                 .then(Commands.m_82129_("page", StringArgumentType.word())
                                         .executes(ctx -> gui(
@@ -268,14 +274,25 @@ public final class ProgressionCommands {
 
     private static boolean skillCheck(CommandSourceStack src) {
         try {
-            if (src.m_6761_(2)) {
-                return true;
-            }
             ServerPlayer p = src.m_81375_();
             return SkillCheckService.canUse(p);
         } catch (Exception e) {
-            return src.m_6761_(2);
+            return false;
         }
+    }
+
+    private static int helpOrGui(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player != null && StaffAccess.isStaff(player)) {
+            return gui(source, "help");
+        }
+        // Player-facing help (no progression GUI).
+        String msg = "§6§l/progression\n"
+                + "§e/progression meditation §7— current trial status\n"
+                + "§e/progression android remove §7— remove your Android upgrade\n"
+                + "§8Staff: /progression gui · boost · meditation next · android <player>";
+        reply(source, player, msg);
+        return 1;
     }
 
     private static int gui(CommandSourceStack source, String page) {

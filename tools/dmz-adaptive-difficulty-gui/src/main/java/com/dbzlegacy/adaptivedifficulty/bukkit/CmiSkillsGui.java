@@ -229,7 +229,7 @@ public final class CmiSkillsGui {
     private static CMIGuiButton hubBtn(int slot) {
         CMIGuiButton btn = new CMIGuiButton(slot, Material.COMPASS, "&7« Hub");
         btn.lockField();
-        btn.addCommand("lm");
+        btn.addCommand("lmdo lm open hub");
         btn.setCloseInv(true);
         return btn;
     }

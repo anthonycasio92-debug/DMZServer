@@ -137,6 +137,7 @@ public final class DifficultyChatMenu {
         if (isStaff(player)) {
             send(player, btn("§8[Details]", "/difficulty do page stats", "Staff breakdown"));
         }
+        send(player, btn("§7« Hub", "/lmdo lm open hub", "Legacy Mechanics hub"));
         send(player, Component.m_237113_("§8────────────────"));
     }
 

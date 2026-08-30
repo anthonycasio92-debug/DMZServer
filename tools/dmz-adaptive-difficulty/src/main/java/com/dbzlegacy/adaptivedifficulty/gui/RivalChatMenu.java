@@ -109,7 +109,7 @@ public final class RivalChatMenu {
                             "/rival do instinct toggle main", "Toggle Rival Instinct"));
         }
         send(player, row3);
-        send(player, btn("§7« Hub", "/lm", "Legacy Mechanics hub"));
+        send(player, btn("§7« Hub", "/lmdo lm open hub", "Legacy Mechanics hub"));
         send(player, Component.m_237113_("§8────────────────"));
     }
 

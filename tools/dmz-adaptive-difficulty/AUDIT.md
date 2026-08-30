@@ -1,3 +1,10 @@
+## GUI + command audit (2.3.51)
+
+Full GUI/command/lmdo/inspect audit: `GUI-COMMAND-AUDIT.md`.
+Fixes: bare `/lm` hub hops → `/lmdo lm open hub`; enddragon + difficulty staff
+via `StaffAccess`; progression player root; skillcheck no op2 grant; android_remove
+inspect + chat-backend inventory; prestige/player hub buttons.
+
 ## CNPC-free (2.3.50)
 
 LegacyMechanics replaces all CNPC scripts. See `CNPC-FREE.md`.

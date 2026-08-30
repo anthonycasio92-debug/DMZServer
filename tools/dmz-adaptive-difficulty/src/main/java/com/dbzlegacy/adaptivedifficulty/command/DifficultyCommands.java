@@ -13,6 +13,7 @@ import com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler;
 import com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
@@ -156,7 +157,7 @@ public final class DifficultyCommands {
 
     private static LiteralArgumentBuilder<CommandSourceStack> vanillaDifficultyLiteral(String level) {
         return Commands.m_82127_(level)
-                .requires(src -> src.m_6761_(2))
+                .requires(DifficultyCommands::isStaff)
                 .executes(ctx -> setVanillaDifficulty(ctx.getSource(), level));
     }
 
@@ -256,17 +257,7 @@ public final class DifficultyCommands {
             return true;
         }
         ServerPlayer player = src.m_230896_();
-        if (player == null) {
-            return false;
-        }
-        String node = DifficultyConfig.get().adminPermission;
-        try {
-            var method = player.getClass().getMethod("hasPermission", String.class);
-            Object result = method.invoke(player, node);
-            return result instanceof Boolean b && b;
-        } catch (Throwable ignored) {
-        }
-        return false;
+        return player != null && StaffAccess.isStaff(player);
     }
 
     private static int openGui(CommandSourceStack source) {

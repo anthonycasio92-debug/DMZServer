@@ -218,9 +218,11 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             case "skills", "skill" -> skillsChestGui.open(admin, p.equals("main") ? "core" : p);
             case "prestige" -> prestigeChestGui.open(admin, p);
             case "progression", "prog" -> progressionChestGui.open(admin, p);
+            case "android_remove", "androidremove", "remove_android", "deandroid" ->
+                    progressionChestGui.open(admin, "android_remove");
             default -> {
                 admin.sendMessage("§cUnknown system: §f" + s
-                        + " §8(hub|difficulty|rival|spar|skillcheck|prestige|progression|skills)");
+                        + " §8(hub|difficulty|rival|spar|skillcheck|prestige|progression|skills|android_remove)");
                 hubChestGui.open(admin, "main");
             }
         }
@@ -239,6 +241,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     public void openMenuRespectingConfig(Player player, String page) {
         if (player == null) {
             return;
+        }
+        // Keep staff inspect sessions — CMI/lmdo difficulty reopen must stay on the subject.
+        if (AdminInspectSessions.isInspecting(player.getUniqueId())) {
+            Player subject = AdminInspectSessions.resolveSubject(player);
+            if (subject != null) {
+                chestGui.openAs(player, subject, page == null || page.isBlank() ? "main" : page);
+                return;
+            }
         }
         AdminInspectSessions.clear(player.getUniqueId());
         String backend = ForgeBridge.guiBackend();
@@ -472,6 +482,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if (player == null) {
             return;
         }
+        // Inspect sessions stay on chest hub for the subject (CMI/chat would paint self).
+        if (AdminInspectSessions.isInspecting(player.getUniqueId())) {
+            Player subject = AdminInspectSessions.resolveSubject(player);
+            if (subject != null && !subject.getUniqueId().equals(player.getUniqueId())) {
+                hubChestGui.open(player, page == null || page.isBlank() ? "main" : page);
+                return;
+            }
+        }
         String backend = ForgeBridge.guiBackend();
         if ("chat".equals(backend)) {
             if (!ForgeBridge.openHubChatMenu(player, page)) {
@@ -521,18 +539,38 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if (player == null) {
             return;
         }
+        String p = page == null || page.isBlank() ? "main" : page;
+        // Player-facing Android remove: inventory only (chat progression menu is staff-gated).
+        if (isAndroidRemovePage(p)) {
+            if ("chest".equals(ForgeBridge.guiBackend())) {
+                progressionChestGui.open(player, "android_remove");
+            } else {
+                openProgressionInventory(player, "android_remove");
+            }
+            return;
+        }
         String backend = ForgeBridge.guiBackend();
         if ("chat".equals(backend)) {
-            if (!ForgeBridge.openProgressionChatMenu(player, page)) {
+            if (!ForgeBridge.openProgressionChatMenu(player, p)) {
                 player.sendMessage("§cProgression chat menu unavailable (is the Forge mod loaded?).");
             }
             return;
         }
         if ("chest".equals(backend)) {
-            progressionChestGui.open(player, page);
+            progressionChestGui.open(player, p);
             return;
         }
-        openProgressionInventory(player, page);
+        openProgressionInventory(player, p);
+    }
+
+    private static boolean isAndroidRemovePage(String page) {
+        if (page == null) {
+            return false;
+        }
+        return switch (page.toLowerCase(Locale.ROOT).trim()) {
+            case "android_remove", "androidremove", "remove_android", "deandroid" -> true;
+            default -> false;
+        };
     }
 
     // ── Prestige ───────────────────────────────────────────────────────
@@ -789,24 +827,71 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
 
         switch (system) {
             case "rival", "rivals" -> {
-                if ("chat".equals(ForgeBridge.guiBackend())) {
-                    ForgeBridge.openRivalChatMenu(player, reopen);
-                } else {
-                    openRivalInventory(player, reopen);
+                if (AdminInspectSessions.isInspecting(player.getUniqueId()) && subject != null) {
+                    openInspectSystem(player, subject, "rival", reopen);
+                    return true;
                 }
+                openRivalRespectingConfig(player, reopen);
             }
             case "spar", "sparring" -> {
-                if ("chat".equals(ForgeBridge.guiBackend())) {
-                    ForgeBridge.openSparChatMenu(player, reopen);
-                } else {
-                    openSparInventory(player, reopen);
+                if (AdminInspectSessions.isInspecting(player.getUniqueId()) && subject != null) {
+                    openInspectSystem(player, subject, "spar", reopen);
+                    return true;
                 }
+                openSparRespectingConfig(player, reopen);
             }
             case "difficulty", "diff", "ad" -> openMenuRespectingConfig(player, reopen);
-            case "lm", "hub", "legacymechanics" -> openHubRespectingConfig(player, reopen);
-            case "progression", "prog" -> openProgressionRespectingConfig(player, reopen);
-            case "prestige" -> openPrestigeRespectingConfig(player, reopen);
-            case "skills", "skillcheck" -> openSkillsRespectingConfig(player, reopen);
+            case "lm", "hub", "legacymechanics" -> {
+                if (AdminInspectSessions.isInspecting(player.getUniqueId()) && subject != null
+                        && !subject.getUniqueId().equals(player.getUniqueId())) {
+                    openInspectSystem(player, subject, "hub", reopen);
+                    return true;
+                }
+                openHubRespectingConfig(player, reopen);
+            }
+            case "progression", "prog" -> {
+                if (!ForgeBridge.isStaff(player) && !isAndroidRemovePage(reopen)) {
+                    player.sendMessage("§cStaff only.");
+                    return true;
+                }
+                if (AdminInspectSessions.isInspecting(player.getUniqueId()) && subject != null) {
+                    openInspectSystem(player, subject,
+                            isAndroidRemovePage(reopen) ? "android_remove" : "progression",
+                            reopen);
+                    return true;
+                }
+                openProgressionRespectingConfig(player, reopen);
+            }
+            case "prestige" -> {
+                if (AdminInspectSessions.isInspecting(player.getUniqueId()) && subject != null) {
+                    openInspectSystem(player, subject, "prestige", reopen);
+                    return true;
+                }
+                openPrestigeRespectingConfig(player, reopen);
+            }
+            case "skills" -> {
+                if (!ForgeBridge.isStaff(player)) {
+                    player.sendMessage("§cStaff only. Use Skill Check if you have access.");
+                    return true;
+                }
+                if (AdminInspectSessions.isInspecting(player.getUniqueId()) && subject != null) {
+                    openInspectSystem(player, subject, "skills", reopen);
+                    return true;
+                }
+                openSkillsRespectingConfig(player, reopen);
+            }
+            case "skillcheck" -> {
+                if (!ForgeBridge.hasSkillCheck(player) && !ForgeBridge.isStaff(player)) {
+                    player.sendMessage("§cSkill Check requires donator access.");
+                    return true;
+                }
+                if (AdminInspectSessions.isInspecting(player.getUniqueId()) && subject != null) {
+                    openInspectSystem(player, subject, "skillcheck", reopen);
+                    return true;
+                }
+                ForgeBridge.markSkillCheckSession(player);
+                openSkillsRespectingConfig(player, reopen);
+            }
             default -> player.sendMessage("§cUnknown lmdo system: " + system);
         }
         return true;
@@ -1115,6 +1200,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     "skillcheck", "skill_check",
                     "skills", "skill",
                     "prestige",
+                    "android_remove", "androidremove", "remove_android", "deandroid",
                     "progression", "prog",
                     "admin", "logs", "syslog", "help" -> true;
             default -> false;

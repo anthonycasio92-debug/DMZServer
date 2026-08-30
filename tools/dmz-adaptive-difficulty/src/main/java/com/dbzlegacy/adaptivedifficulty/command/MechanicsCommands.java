@@ -152,11 +152,18 @@ public final class MechanicsCommands {
                 yield 1;
             }
             case "prestige" -> {
-                if (!StaffAccess.isStaff(player)) {
-                    player.m_213846_(Component.m_237113_("§cStaff only."));
-                    yield 0;
-                }
                 com.dbzlegacy.adaptivedifficulty.gui.PrestigeMenu.open(player, "main");
+                yield 1;
+            }
+            case "android_remove", "androidremove", "removeandroid" -> {
+                // Open the confirm GUI (matches Bukkit hub /lmdo lm open android_remove).
+                if (!com.dbzlegacy.adaptivedifficulty.gui.BukkitGuiBridge.openProgression(player, "android_remove")
+                        && !com.dbzlegacy.adaptivedifficulty.gui.CmiGuiBridge.openProgression(player, "android_remove")) {
+                    String msg = com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.androidRemove(player, "");
+                    if (msg != null && !msg.isBlank()) {
+                        player.m_213846_(Component.m_237113_(msg));
+                    }
+                }
                 yield 1;
             }
             case "skills", "skill" -> {
@@ -173,7 +180,8 @@ public final class MechanicsCommands {
             }
             default -> {
                 player.m_213846_(Component.m_237113_(
-                        "§cUnknown: " + s + " §8(difficulty|rival|spar|progression|prestige|skills)"));
+                        "§cUnknown: " + s
+                                + " §8(difficulty|rival|spar|prestige|skillcheck|android_remove|progression|skills)"));
                 yield 0;
             }
         };

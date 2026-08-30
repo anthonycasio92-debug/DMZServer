@@ -54,19 +54,22 @@ public final class MechanicsChatMenu {
         send(player, row);
         boolean staff = StaffAccess.isStaff(player);
         boolean skillCheck = SkillCheckService.canUse(player);
+        MutableComponent row2 = Component.m_237113_("§7");
+        boolean row2Used = false;
         if (skillCheck || staff) {
-            MutableComponent row2 = Component.m_237113_("§7");
-            if (skillCheck || staff) {
-                row2.m_7220_(btn(staff && !skillCheck ? "§e[Skills]" : "§e[Skill Check]",
-                        staff && !skillCheck ? "/lmdo lm open skills" : "/lmdo lm open skillcheck",
-                        staff && !skillCheck ? "Skill unlock admin" : "Donator skill progress"));
-            }
-            if (staff) {
-                row2.m_7220_(Component.m_237113_("  "))
-                        .m_7220_(btn("§6[Prestige]", "/lmdo lm open prestige", "Prestige shop"));
-            }
-            send(player, row2);
+            row2.m_7220_(btn(staff && !skillCheck ? "§e[Skills]" : "§e[Skill Check]",
+                    staff && !skillCheck ? "/lmdo lm open skills" : "/lmdo lm open skillcheck",
+                    staff && !skillCheck ? "Skill unlock admin" : "Donator skill progress"));
+            row2Used = true;
         }
+        if (row2Used) {
+            row2.m_7220_(Component.m_237113_("  "));
+        }
+        row2.m_7220_(btn("§6[Prestige]", "/lmdo lm open prestige", "Prestige shop"));
+        row2.m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn("§c[Remove Android]", "/lmdo lm open android_remove",
+                        "Remove Android upgrade"));
+        send(player, row2);
         if (staff) {
             MutableComponent row3 = Component.m_237113_("§7")
                     .m_7220_(btn("§d[Progression]", "/lmdo lm open progression", "Natural progression"))

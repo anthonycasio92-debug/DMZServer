@@ -396,7 +396,7 @@ public final class CmiProgressionGui {
             CMIGuiButton hub = new CMIGuiButton(36, Material.ARROW, "&7Back");
             hub.lockField();
             hub.addLore(List.of("", "&7Legacy Mechanics hub"));
-            hub.addCommand("lm");
+            hub.addCommand("lmdo lm open hub");
             hub.setCloseInv(true);
             gui.addButton(hub);
         }
@@ -595,7 +595,7 @@ public final class CmiProgressionGui {
         CMIGuiButton btn = new CMIGuiButton(slot, Material.COMPASS, "&7« Hub");
         btn.lockField();
         btn.addLore(List.of("", "&7Legacy Mechanics hub"));
-        btn.addCommand("lm");
+        btn.addCommand("lmdo lm open hub");
         btn.setCloseInv(true);
         return btn;
     }

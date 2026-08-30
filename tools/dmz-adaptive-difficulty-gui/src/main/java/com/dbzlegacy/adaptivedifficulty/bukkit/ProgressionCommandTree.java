@@ -115,13 +115,17 @@ public final class ProgressionCommandTree implements TabCompleter {
         }
 
         if (!ForgeBridge.isStaff(player)) {
-            // Non-staff: meditation / android remove / help (above).
-            player.sendMessage("§7Use §f/progression meditation §7for the trial, or §f/lm §7→ Remove Android.");
+            // Non-staff: meditation / android remove / help (above). Match Forge helpOrGui.
+            player.sendMessage("§6§l/progression");
+            player.sendMessage("§e/progression meditation §7— current trial status");
+            player.sendMessage("§e/progression android remove §7— remove your Android upgrade");
+            player.sendMessage("§8Or open §f/lm §8→ Remove Android.");
             return true;
         }
 
         if (args.length == 0) {
-            plugin.openProgressionRespectingConfig(player, "main");
+            // Staff bare → help text (Forge helpOrGui), not auto-main GUI.
+            sendMultiline(player, ForgeBridge.progressionHelp(player));
             return true;
         }
 

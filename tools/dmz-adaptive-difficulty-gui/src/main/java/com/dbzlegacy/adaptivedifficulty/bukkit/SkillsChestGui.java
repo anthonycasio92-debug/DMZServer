@@ -74,7 +74,7 @@ public final class SkillsChestGui implements Listener {
             put(holder, inv, 4, item(mat,
                     !bridgeOk ? "&c&lUNAVAILABLE" : "&c&lSKILLS DISABLED",
                     unavailableLore(bridgeOk)));
-            put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
+            put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
             put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
             return inv;
         }
@@ -126,7 +126,7 @@ public final class SkillsChestGui implements Listener {
         put(holder, inv, 46, pageBtn(viewer, Material.AMETHYST_SHARD, "&dSaga",
                         "&7Saga unlocks · Defense Pen · Healing Red · Ki skills"),
                 SlotAction.page("saga"));
-        put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         if (staffAdmin) {
             put(holder, inv, 51, tipBtn(viewer, Material.BREWING_STAND, "&dProgression",
                     List.of("&7Back to progression")), SlotAction.cmd("lmdo lm open progression"));

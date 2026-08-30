@@ -48,7 +48,9 @@ public final class CmiPrestigeGui {
             status.addLore(unavailableLore(bridgeOk));
             gui.addButton(status);
             gui.addButton(hubBtn(27));
-            gui.addButton(progBtn(31));
+            if (ForgeBridge.isStaff(player)) {
+                gui.addButton(progBtn(31));
+            }
             gui.addButton(closeBtn(35));
             fillEmpty(gui, 4);
             GuiFeedback.openCmi(gui);
@@ -71,7 +73,9 @@ public final class CmiPrestigeGui {
         gui.addButton(confirm);
 
         gui.addButton(hubBtn(27));
-        gui.addButton(progBtn(31));
+        if (ForgeBridge.isStaff(player)) {
+            gui.addButton(progBtn(31));
+        }
         gui.addButton(closeBtn(35));
         fillEmpty(gui, 4);
         GuiFeedback.openCmi(gui);
@@ -120,7 +124,7 @@ public final class CmiPrestigeGui {
     private static CMIGuiButton hubBtn(int slot) {
         CMIGuiButton btn = new CMIGuiButton(slot, Material.COMPASS, "&7« Hub");
         btn.lockField();
-        btn.addCommand("lm");
+        btn.addCommand("lmdo lm open hub");
         btn.setCloseInv(true);
         return btn;
     }
@@ -128,7 +132,7 @@ public final class CmiPrestigeGui {
     private static CMIGuiButton progBtn(int slot) {
         CMIGuiButton btn = new CMIGuiButton(slot, Material.BREWING_STAND, "&dProgression");
         btn.lockField();
-        btn.addCommand("progression");
+        btn.addCommand("lmdo lm open progression");
         btn.setCloseInv(true);
         return btn;
     }

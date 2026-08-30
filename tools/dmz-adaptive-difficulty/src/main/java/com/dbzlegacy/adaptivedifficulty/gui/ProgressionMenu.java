@@ -17,17 +17,30 @@ public final class ProgressionMenu {
         if (player == null) {
             return;
         }
-        if (!StaffAccess.isStaff(player)) {
+        String target = page == null || page.isBlank() ? "main" : page;
+        boolean androidRemove = isAndroidRemovePage(target);
+        if (!androidRemove && !StaffAccess.isStaff(player)) {
             DmzRewards.msg(player, "§cStaff only.");
             return;
         }
         if (!DifficultyConfig.get().enableProgression) {
+            if (androidRemove) {
+                DmzRewards.msg(player, "§cProgression system is disabled.");
+                return;
+            }
             ProgressionChatMenu.open(player, page);
             return;
         }
-        String target = page == null || page.isBlank() ? "main" : page;
 
         GuiBackend backend = GuiBackend.fromConfig();
+        // Android remove is player-facing inventory — skip staff-only chat menu.
+        if (androidRemove && backend == GuiBackend.CHAT) {
+            boolean opened = openInventory(player, "android_remove");
+            if (!opened) {
+                DmzRewards.msg(player, "§cAndroid remove GUI unavailable. Use §f/progression android remove§c.");
+            }
+            return;
+        }
         boolean opened = switch (backend) {
             case CMI -> openInventory(player, target);
             case CHEST -> BukkitGuiBridge.openProgression(player, target);
@@ -45,8 +58,22 @@ public final class ProgressionMenu {
                         player.m_6302_()
                 );
             }
-            ProgressionChatMenu.open(player, target);
+            if (androidRemove) {
+                DmzRewards.msg(player, "§cAndroid remove GUI unavailable. Use §f/progression android remove§c.");
+            } else {
+                ProgressionChatMenu.open(player, target);
+            }
         }
+    }
+
+    private static boolean isAndroidRemovePage(String page) {
+        if (page == null) {
+            return false;
+        }
+        return switch (page.toLowerCase()) {
+            case "android_remove", "androidremove", "remove_android", "deandroid" -> true;
+            default -> false;
+        };
     }
 
     private static boolean openInventory(ServerPlayer player, String page) {

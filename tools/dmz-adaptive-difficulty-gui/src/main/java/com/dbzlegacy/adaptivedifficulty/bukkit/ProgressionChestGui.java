@@ -134,7 +134,7 @@ public final class ProgressionChestGui implements Listener {
             put(holder, inv, 4, item(Material.BREWING_STAND,
                     !bridgeOk ? "&c&lUNAVAILABLE" : "&c&lPROGRESSION DISABLED",
                     unavailableLore(bridgeOk)));
-            put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
+            put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
             put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
             return inv;
         }
@@ -171,7 +171,7 @@ public final class ProgressionChestGui implements Listener {
             put(holder, inv, 40, pageBtn(Material.REPEATER, "&cAll Flags",
                     "&7Full flag board"), SlotAction.page("admin"));
         }
-        put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -256,7 +256,7 @@ public final class ProgressionChestGui implements Listener {
             }
         }
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -297,7 +297,7 @@ public final class ProgressionChestGui implements Listener {
         put(holder, inv, 47, pageBtn(Material.AMETHYST_SHARD, "&dFabled Subflags",
                 "&7Energy, TP/SP, race class, etc."), SlotAction.page("flags_fabled"));
         put(holder, inv, 45, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 49, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -322,7 +322,7 @@ public final class ProgressionChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return to Flags"),
                 SlotAction.page("admin"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -363,7 +363,7 @@ public final class ProgressionChestGui implements Listener {
                 SlotAction.page("boost_panel"));
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7TP Gains"),
                 SlotAction.page("tp"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -390,7 +390,7 @@ public final class ProgressionChestGui implements Listener {
                 SlotAction.page("android_remove"));
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Race section"),
                 SlotAction.page("race"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -437,9 +437,9 @@ public final class ProgressionChestGui implements Listener {
                     SlotAction.page("android_panel"));
         } else {
             put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Legacy Mechanics hub"),
-                    SlotAction.cmd("lm"));
+                    SlotAction.cmd("lmdo lm open hub"));
         }
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -475,7 +475,7 @@ public final class ProgressionChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Android tools"),
                 SlotAction.page("android_panel"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }

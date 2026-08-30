@@ -90,7 +90,7 @@ public final class SparChestGui implements Listener {
             put(holder, inv, 4, item(Material.NETHER_STAR,
                     !bridgeOk ? "&c&lUNAVAILABLE" : "&c&lSPARRING DISABLED",
                     unavailableLore(bridgeOk)));
-            put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+            put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
             put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
             return inv;
         }
@@ -123,7 +123,7 @@ public final class SparChestGui implements Listener {
                     SlotAction.act("end", "0", "main"));
         }
 
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         if (ForgeBridge.isStaff(viewer)) {
             put(holder, inv, 37, pageBtn(viewer, Material.COMMAND_BLOCK, "&cAdmin",
@@ -171,7 +171,7 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 33, pageBtn(viewer, Material.NETHER_STAR, "&bPerfect", "&7Perfect spars"),
                 SlotAction.page("top_perfect"));
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -204,7 +204,7 @@ public final class SparChestGui implements Listener {
             put(holder, inv, slots[i], item(tile.icon, tile.title, tip));
         }
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -228,7 +228,7 @@ public final class SparChestGui implements Listener {
                 List.of("&7Clear your mentor cooldown", "&8/spar admin mentor resetcd")),
                 SlotAction.act("admin", "resetcd", "admin"));
         put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Player Spar menu"), SlotAction.page("main"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }

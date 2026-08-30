@@ -107,7 +107,7 @@ public final class DifficultyChestGui implements Listener {
             String title = !bridgeOk ? "&c&lUNAVAILABLE"
                     : !systemOn ? "&c&lSYSTEM DISABLED" : "&e&lWHITELIST ONLY";
             put(holder, inv, 13, item(Material.BEACON, title, unavailableLore(viewer, subject, systemOn, bridgeOk)));
-            put(holder, inv, 27, hubBtn(), SlotAction.cmd("lm"));
+            put(holder, inv, 27, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
             put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
             return inv;
         }
@@ -163,7 +163,7 @@ public final class DifficultyChestGui implements Listener {
                     "&7Staff breakdown", "&8CR · prestige · kit gates"),
                     SlotAction.page("stats"));
         }
-        put(holder, inv, 27, hubBtn(), SlotAction.cmd("lm"));
+        put(holder, inv, 27, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
         return inv;
     }
