@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.54", 'VERSION = "2.3.54"' in mod)
+    check("VERSION 2.3.55", 'VERSION = "2.3.55"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -299,7 +299,7 @@ def main() -> int:
     print("\n=== README alignment ===")
     check("README stock percents", "21%" in readme and "200%" in readme)
     check("README PWR/ENE + top-2", "PWR" in readme and "ENE" in readme and "top-2" in readme)
-    check("README version 2.3.54", "2.3.54" in readme)
+    check("README version 2.3.55", "2.3.55" in readme)
 
     print("\n=== Ghast aim fix (1.0.31) ===")
     ki = read(SRC / "com/dbzlegacy/adaptivedifficulty/evolution/KiAttackHelper.java")
@@ -347,7 +347,7 @@ def main() -> int:
     check("dual upgrade band uses same roll", "roll < upgradeChance" in coins)
     check("coinDropChanceMigratedV1", "coinDropChanceMigratedV1" in cfg)
     check("admin set drop chance", "ancientcoindropchance" in cmds or "coindropchance" in cmds)
-    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.54" in readme)
+    check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.55" in readme)
 
     print("\n=== Mohist CMI /lmdo routing (2.3.54) ===")
     gui_root = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit"
@@ -569,6 +569,25 @@ def main() -> int:
           'kill @e[type=dragonminez:ki_blast]' not in end_str)
     check("clearEndCrystals no empty kill spam",
           'kill @e[type=minecraft:end_crystal]' not in end_str)
+
+    print("\n=== Dragon ki launch fix (2.3.55) ===")
+    spawn_fire = end_str.split("private static boolean spawnAndFireKi")[1].split(
+        "/** Live DESTROY_CRYSTALS_ON_KILL")[0] if "private static boolean spawnAndFireKi" in end_str else ""
+    check("spawnAndFireKi never aborts on failed add",
+          "return false" not in spawn_fire.split("end.m_7967_")[1].split("int life")[0]
+          if "end.m_7967_" in spawn_fire else False)
+    check("spawnAndFireKi always fireHability", "fireHability" in spawn_fire)
+    check("dragon ki explicit launchToward", "launchDragonKiToward" in end_str)
+    blast_fn = end_str.split("private static boolean fireDragonKiBlast")[1].split(
+        "private static boolean spawnAndFireKi")[0] if "private static boolean fireDragonKiBlast" in end_str else ""
+    beam_fn = end_str.split("private static boolean fireDragonKiBeam")[1].split(
+        "private static boolean fireDragonKiBlast")[0] if "private static boolean fireDragonKiBeam" in end_str else ""
+    check("dragon blast uses mob setupKiLargeBlast first",
+          "setupKiLargeBlast" in blast_fn.split("catch")[0] if blast_fn else False)
+    check("dragon beam prefers setupKiLaser cast 0",
+          "setupKiLaser" in beam_fn.split("catch")[0] if beam_fn else False)
+    check("dragon blast unparks controllable",
+          "setParked(false)" in blast_fn and "setControllable(false)" in blast_fn)
 
     print("\n=== Skill Check real max levels (2.3.54) ===")
     skill_unlock = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java")

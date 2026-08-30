@@ -34,6 +34,7 @@ import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Endermite;
 import net.minecraft.world.entity.monster.Phantom;
 import net.minecraft.world.entity.monster.Shulker;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -798,26 +799,28 @@ public final class EndDimensionStrength {
 
     private static boolean fireDragonKiBeam(ServerLevel end, EnderDragon dragon, ServerPlayer target) {
         try {
+            aimLivingAt(dragon, target);
             float dmg = (float) calcDragonKiDamage(target);
             KiLaserEntity beam = new KiLaserEntity(end, dragon);
             try {
-                beam.setupKiBeamPlayer(dragon, dmg, DRAGON_DMZ_KI_SPEED_BEAM,
-                        DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER, DRAGON_DMZ_KI_COLOR_OUTLINE);
+                // Mob path: cast=0, spawns into world. Player setup leaves cast>0 / no launch.
+                beam.setupKiLaser(dragon, dmg, DRAGON_DMZ_KI_SPEED_BEAM,
+                        DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER,
+                        DRAGON_DMZ_KI_COLOR_OUTLINE, 0);
             } catch (Throwable t1) {
                 try {
                     beam.setupKiBeamPlayer(dragon, dmg, DRAGON_DMZ_KI_SPEED_BEAM,
-                            DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER);
+                            DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER, DRAGON_DMZ_KI_COLOR_OUTLINE);
                 } catch (Throwable t2) {
-                    beam.setupKiLaser(dragon, dmg, DRAGON_DMZ_KI_SPEED_BEAM,
-                            DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER,
-                            DRAGON_DMZ_KI_COLOR_OUTLINE, 0);
+                    beam.setupKiBeamPlayer(dragon, dmg, DRAGON_DMZ_KI_SPEED_BEAM,
+                            DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER);
                 }
             }
             try {
                 beam.setHomingTarget(target.m_19879_());
             } catch (Throwable ignored) {
             }
-            return spawnAndFireKi(beam, end, DRAGON_DMZ_KI_LIFE_BEAM);
+            return spawnAndFireKi(beam, end, dragon, target, DRAGON_DMZ_KI_SPEED_BEAM, DRAGON_DMZ_KI_LIFE_BEAM);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
                     "[{}] dragon ki beam failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
@@ -827,27 +830,36 @@ public final class EndDimensionStrength {
 
     private static boolean fireDragonKiBlast(ServerLevel end, EnderDragon dragon, ServerPlayer target) {
         try {
+            aimLivingAt(dragon, target);
             float dmg = (float) calcDragonKiDamage(target);
             KiBlastEntity blast = new KiBlastEntity(end, dragon);
             try {
-                blast.setupKiBlastPlayer(dragon, dmg, DRAGON_DMZ_KI_SPEED_BLAST,
+                // Mob large-blast path (cast=0). setupKiBlastPlayer parks the shot with
+                // maxLife=99999 / firing=false and already adds it to the world — that left
+                // dragon blasts hovering until fireHability ran (which the old spawn path skipped).
+                blast.setupKiLargeBlast(dragon, dmg, DRAGON_DMZ_KI_SPEED_BLAST,
                         DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER,
-                        DRAGON_DMZ_KI_COLOR_OUTLINE, DRAGON_DMZ_KI_SIZE_BLAST);
+                        DRAGON_DMZ_KI_COLOR_OUTLINE, DRAGON_DMZ_KI_SIZE_BLAST, 0);
             } catch (Throwable t1) {
                 try {
                     blast.setupKiBlastPlayer(dragon, dmg, DRAGON_DMZ_KI_SPEED_BLAST,
-                            DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER, DRAGON_DMZ_KI_SIZE_BLAST);
-                } catch (Throwable t2) {
-                    blast.setupKiLargeBlast(dragon, dmg, DRAGON_DMZ_KI_SPEED_BLAST,
                             DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER,
-                            DRAGON_DMZ_KI_COLOR_OUTLINE, DRAGON_DMZ_KI_SIZE_BLAST, 0);
+                            DRAGON_DMZ_KI_COLOR_OUTLINE, DRAGON_DMZ_KI_SIZE_BLAST);
+                } catch (Throwable t2) {
+                    blast.setupKiBlastPlayer(dragon, dmg, DRAGON_DMZ_KI_SPEED_BLAST,
+                            DRAGON_DMZ_KI_COLOR_MAIN, DRAGON_DMZ_KI_COLOR_BORDER, DRAGON_DMZ_KI_SIZE_BLAST);
                 }
             }
             try {
                 blast.setHomingTarget(target.m_19879_());
             } catch (Throwable ignored) {
             }
-            return spawnAndFireKi(blast, end, DRAGON_DMZ_KI_LIFE_BLAST);
+            try {
+                blast.setParked(false);
+                blast.setControllable(false);
+            } catch (Throwable ignored) {
+            }
+            return spawnAndFireKi(blast, end, dragon, target, DRAGON_DMZ_KI_SPEED_BLAST, DRAGON_DMZ_KI_LIFE_BLAST);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
                     "[{}] dragon ki blast failed: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
@@ -855,7 +867,21 @@ public final class EndDimensionStrength {
         }
     }
 
-    private static boolean spawnAndFireKi(Entity proj, ServerLevel end, int lifeTicks) {
+    /**
+     * Finish a DMZ ki projectile for the dragon.
+     * <p>
+     * DMZ {@code setup*} methods often {@code addFreshEntity} themselves. Returning early
+     * when a second add fails left shots parked with {@code firing=false} / zero velocity
+     * (hovering in air). Mirror the live script: always {@code fireHability}, then apply
+     * explicit launch velocity — EnderDragon body look is unreliable for {@code getViewVector}.
+     */
+    private static boolean spawnAndFireKi(
+            Entity proj,
+            ServerLevel end,
+            EnderDragon dragon,
+            ServerPlayer target,
+            float speed,
+            int lifeTicks) {
         if (proj == null || end == null) {
             return false;
         }
@@ -867,12 +893,10 @@ public final class EndDimensionStrength {
             proj.getClass().getMethod("setBlockDestructionEnabled", boolean.class).invoke(proj, false);
         } catch (Throwable ignored) {
         }
+        // Setup may already have spawned the entity — never abort on a failed second add.
         try {
-            if (!end.m_7967_(proj)) {
-                return false;
-            }
-        } catch (Throwable t) {
-            return false;
+            end.m_7967_(proj);
+        } catch (Throwable ignored) {
         }
         int life = Math.max(10, lifeTicks);
         try {
@@ -884,7 +908,37 @@ public final class EndDimensionStrength {
             } catch (Throwable ignored) {
             }
         }
+        // Explicit shoot toward the player — same fix as KiAttackHelper for mob ki.
+        launchDragonKiToward(proj, dragon, target, speed);
         return true;
+    }
+
+    /** Apply real launch velocity toward the target (homing alone won't move a zero-speed shot). */
+    private static void launchDragonKiToward(
+            Entity proj, EnderDragon dragon, ServerPlayer target, float speed) {
+        if (!(proj instanceof Projectile projectile) || dragon == null || target == null) {
+            return;
+        }
+        try {
+            aimLivingAt(dragon, target);
+            double dx = target.m_20185_() - projectile.m_20185_();
+            double dy = (target.m_20186_() + target.m_20206_() * 0.45) - projectile.m_20186_();
+            double dz = target.m_20189_() - projectile.m_20189_();
+            if (dx * dx + dy * dy + dz * dz < 1.0E-6) {
+                Vec3 from = dragon.m_146892_();
+                Vec3 to = target.m_146892_();
+                dx = to.f_82479_ - from.f_82479_;
+                dy = to.f_82480_ - from.f_82480_;
+                dz = to.f_82481_ - from.f_82481_;
+            }
+            float launchSpeed = Math.max(0.75f, speed);
+            projectile.m_6686_(dx, dy, dz, launchSpeed, 0.15f);
+            try {
+                proj.getClass().getMethod("setFiring", boolean.class).invoke(proj, true);
+            } catch (Throwable ignored) {
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     /** Live DESTROY_CRYSTALS_ON_KILL — despawn all End crystals in The End. */

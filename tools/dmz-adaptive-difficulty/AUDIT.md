@@ -1,3 +1,11 @@
+## Dragon ki launch (2.3.55)
+
+End dragon DMZ ki blasts were hovering: `setupKiBlastPlayer` already spawns the
+entity, then `spawnAndFireKi` aborted when a second `addFreshEntity` failed —
+so `fireHability` never ran (firing=false / zero velocity). Fix: mob setup path
+(`setupKiLargeBlast` / `setupKiLaser` cast 0), always fire after setup, explicit
+`launchDragonKiToward` velocity (same pattern as `KiAttackHelper`).
+
 ## End ki purge console spam (2.3.54)
 
 End hygiene was running `kill @e[type=dragonminez:ki_laser|ki_blast]` every ~1.5s
