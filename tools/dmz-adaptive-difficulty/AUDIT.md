@@ -8,8 +8,9 @@
   re-floored with `raw * minFrac`, which undid the ~250-hit fight length).
 - **Egg clear**: only `minecraft:dragon_egg` — older builds cleared `end_portal`
   near 0,0 and broke the exit portal.
-- **CMI aliases**: `EndDragon-Alias.yml` now calls `lmdo enddragon spawn|clear`
-  (CNPC triggers 50/51 are stubs). Re-import the yml.
+- **CMI aliases**: do **not** use CMI for `/enddragon`. Delete any CMI
+  CustomAlias for `enddragon` / `spawndragon` / `cleardragons` / `killdragons`
+  (old ones fired stub CNPC triggers 50/51). Forge owns the commands.
 
 ## CNPC GUI open without permission (2.3.46)
 
