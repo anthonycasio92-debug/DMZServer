@@ -705,6 +705,7 @@ public final class ForgeBridge {
                  "toggle_personal", "personal", "toggle_difficulty", "difficulty_toggle",
                  "toggle_coin_chat", "coin_chat", "toggle_chat", "chat_drops",
                  "toggle_title_sense", "title_sense", "toggle_sense", "sense_chat",
+                 "summon_end_dragon", "end_dragon", "summon_dragon", "dragon_summon",
                  "page", "refresh", "set" -> true;
             default -> false;
         };

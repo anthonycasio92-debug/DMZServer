@@ -446,6 +446,7 @@ public final class ProgressionGuiApi {
         // End
         out.put("flag_end", c.enableEndDimensionStrength ? "true" : "false");
         out.put("flag_endportal", c.enableEndPortalGuard ? "true" : "false");
+        out.put("flag_endsummon", c.enableEndPlayerDragonSummon ? "true" : "false");
         // Shop
         out.put("flag_skills", c.enableSkillUnlockService ? "true" : "false");
         out.put("flag_prestige", c.enablePrestigeSystem ? "true" : "false");

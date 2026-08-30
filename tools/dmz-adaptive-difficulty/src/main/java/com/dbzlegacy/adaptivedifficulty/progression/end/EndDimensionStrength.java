@@ -1,11 +1,16 @@
 package com.dbzlegacy.adaptivedifficulty.progression.end;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
+import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
+import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import com.dragonminez.common.init.entities.ki.KiBlastEntity;
 import com.dragonminez.common.init.entities.ki.KiLaserEntity;
 import com.dragonminez.common.stats.StatsData;
@@ -52,10 +57,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Core port of {@code End Dimension Strength.js} 2.12.0:
- * scale End dragon from the strongest End player, settle dragon kill TP,
- * dragon spawn/cleanup commands (trigger 50/51), damage mitigation,
- * single-dragon enforcement, and End ki_laser/ki_blast world hygiene.
- * End mob HP/DEF scaling is off by default (v2.11.0).
+ * Player End dragons are summoned from the Difficulty GUI (T4–T7, 3× Netherite),
+ * scaled to the summoner's Adaptive Difficulty profile, and damage-locked to that
+ * player. Staff {@code /enddragon} remains a free override. Same ki beam/blast
+ * attacks as before. End mob HP/DEF scaling is off by default (v2.11.0).
  */
 public final class EndDimensionStrength {
     private static final String TAG_BUFFED = "end_strength_v15";
@@ -63,6 +68,18 @@ public final class EndDimensionStrength {
     private static final String NBT_MAX = "end_strength_real_max";
     private static final String NBT_HITS = "end_strength_hit_target";
     private static final String NBT_DMZ_HP = "end_strength_dmz_hp_src";
+    /** UUID string of the Difficulty-GUI summoner (player-summoned dragons only). */
+    private static final String NBT_SUMMONER = "end_dragon_summoner";
+    private static final String NBT_PLAYER_SUMMON = "end_dragon_player_summon";
+    private static final String NBT_AD_TIER = "end_dragon_ad_tier";
+    private static final String NBT_KI_MELEE = "end_dragon_ki_melee";
+
+    /** Minimum active Unlock Tier for paid GUI summons. */
+    public static final int PLAYER_SUMMON_MIN_TIER = 4;
+    /** Maximum active Unlock Tier for paid GUI summons. */
+    public static final int PLAYER_SUMMON_MAX_TIER = 7;
+    /** Cost in Ancient Netherite coins (each = 100_000 copper). */
+    public static final int PLAYER_SUMMON_NETHERITE_COST = 3;
 
     private static final double SCAN_RADIUS = 96.0;
     private static final long SCAN_MS = 1500L;
@@ -198,8 +215,16 @@ public final class EndDimensionStrength {
         // World-wide End dragon scan — dragons fly far; do not require player proximity.
         if (end != null) {
             enforceSingleDragon(end);
-            PlayerPower strongest = strongestInEnd(end, null);
             for (EnderDragon dragon : findDragons(end)) {
+                if (isPlayerSummoned(dragon)) {
+                    // Locked to summoner AD profile — never grow to a stronger bystander.
+                    ServerPlayer owner = resolveSummoner(end, dragon);
+                    if (owner != null) {
+                        maybeRescaleDragon(dragon, end, adScaledPower(owner), now);
+                    }
+                    continue;
+                }
+                PlayerPower strongest = strongestInEnd(end, null);
                 maybeRescaleDragon(dragon, end, strongest, now);
             }
             boolean mobScaling = DifficultyConfig.get().enableEndMobScaling;
@@ -252,6 +277,20 @@ public final class EndDimensionStrength {
                 return;
             }
         }
+        // Player-summoned dragons: only the summoner may deal player damage.
+        if (dragon && target instanceof EnderDragon enderDragon && isPlayerSummoned(enderDragon)) {
+            ServerPlayer attacker = resolvePlayerAttacker(event);
+            if (attacker != null && !isSummoner(enderDragon, attacker)) {
+                event.setCanceled(true);
+                event.setAmount(0.0f);
+                try {
+                    attacker.m_213846_(Component.m_237113_(
+                            "§c[The End] §7Only the summoner can damage this dragon."));
+                } catch (Throwable ignored) {
+                }
+                return;
+            }
+        }
         float raw = event.getAmount();
         if (!(raw > 0.0f)) {
             return;
@@ -260,7 +299,12 @@ public final class EndDimensionStrength {
         if (!(def > 0.0) && event.getSource() != null
                 && event.getSource().m_7639_() instanceof ServerPlayer attacker) {
             ServerLevel level = attacker.m_284548_();
-            PlayerPower power = strongestInEnd(level, attacker);
+            PlayerPower power;
+            if (dragon && target instanceof EnderDragon enderDragon && isPlayerSummoned(enderDragon)) {
+                power = adScaledPower(attacker);
+            } else {
+                power = strongestInEnd(level, attacker);
+            }
             if (dragon && target instanceof EnderDragon enderDragon) {
                 applyDragonStats(enderDragon, power, "onhit");
             } else if (mobScaling) {
@@ -391,6 +435,112 @@ public final class EndDimensionStrength {
                 + " §eDEF §8(scaled to " + power.name + " / Lv" + power.level + ")");
         SystemTelemetry.log("end_strength", "dragon_spawn", player, null, Map.of("via", "command"));
         return 1;
+    }
+
+    /**
+     * Difficulty GUI paid summon: personal AD ON, active T4–T7, 3× Ancient Netherite.
+     * Scales to the summoner's Adaptive Difficulty profile; damage-locked to them.
+     *
+     * @return chat message (empty = silent success path already messaged)
+     */
+    public static String cmdPlayerSummon(ServerPlayer player) {
+        if (player == null) {
+            return "§cPlayers only.";
+        }
+        if (!DifficultyConfig.get().enableEndDimensionStrength) {
+            return "§cEnd Dimension Strength is disabled.";
+        }
+        if (!DifficultyConfig.get().enableEndPlayerDragonSummon) {
+            return "§cPlayer End Dragon summons are disabled.";
+        }
+        if (!SystemGate.participates(player)) {
+            return "§cTurn personal Adaptive Difficulty ON to summon the End Dragon.";
+        }
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        int tier = data.getActiveTier();
+        if (tier < PLAYER_SUMMON_MIN_TIER || tier > PLAYER_SUMMON_MAX_TIER) {
+            return "§cNeed an active Unlock Tier T"
+                    + PLAYER_SUMMON_MIN_TIER + "–T" + PLAYER_SUMMON_MAX_TIER
+                    + " (you: T" + tier + "). Prestige "
+                    + PLAYER_SUMMON_MIN_TIER + "+ unlocks T"
+                    + PLAYER_SUMMON_MIN_TIER + " eligibility — buy/activate it first.";
+        }
+        if (!isTheEnd(player.m_9236_())) {
+            return "§cYou must be in The End to summon the dragon. §7Use a teleport to reach it.";
+        }
+        MinecraftServer server = player.m_20194_();
+        if (server == null) {
+            return "§cServer unavailable.";
+        }
+        ServerLevel end = server.m_129880_(Level.f_46430_);
+        if (end == null) {
+            return "§cEnd dimension unavailable.";
+        }
+        EnderDragon existing = enforceSingleDragon(end);
+        if (existing != null) {
+            if (isSummoner(existing, player)) {
+                return "§eYour Ender Dragon is already alive."
+                        + " §8HP §c" + DmzRewards.formatWhole(existing.m_21233_())
+                        + " §8· DEF §b" + DmzRewards.formatWhole(readDef(existing));
+            }
+            return "§cAn Ender Dragon is already alive in The End.";
+        }
+        long cost = summonCopperCost();
+        String costText = AncientCoinEconomy.formatExactCost(cost);
+        if (!AncientCoinEconomy.canAfford(player, cost)) {
+            return AncientCoinEconomy.missingText(player, cost);
+        }
+        if (!AncientCoinEconomy.charge(player, cost)) {
+            return AncientCoinEconomy.missingText(player, cost);
+        }
+        msg(player, "§7[The End] Spawning Ender Dragon (T" + tier + " AD)…");
+        try {
+            repairEndExitPodium(end, true);
+        } catch (Throwable ignored) {
+        }
+        PlayerPower power = adScaledPower(player);
+        EnderDragon dragon = spawnFightLinkedDragon(end, player);
+        if (dragon == null) {
+            // Refund on spawn failure.
+            AncientCoinEconomy.grantExact(player, AncientCoinEconomy.CoinKind.NETHERITE,
+                    PLAYER_SUMMON_NETHERITE_COST);
+            return "§cFailed to spawn — visit The End once, then retry.";
+        }
+        stampPlayerSummon(dragon, player, tier, power);
+        applyDragonStats(dragon, power, "spawn");
+        lastDragonScaleScore = score(power);
+        lastNaturalSpawnAt = System.currentTimeMillis();
+        naturalTimerArmed = true;
+        msg(player, "§6[The End] §eSummoned Ender Dragon with §c"
+                + DmzRewards.formatWhole(dragon.m_21233_())
+                + " §eHP / §b" + DmzRewards.formatWhole(readDef(dragon))
+                + " §eDEF §8(T" + tier + " AD · " + power.name + " / Lv" + power.level + ")");
+        msg(player, "§8Cost §f" + costText
+                + " §8· only you can damage this dragon.");
+        SystemTelemetry.log("end_strength", "dragon_spawn", player, null, Map.of(
+                "via", "gui_summon",
+                "tier", tier,
+                "cost", cost));
+        return ""; // already messaged; GUI treats blank as silent ok
+    }
+
+    /** Copper value of {@link #PLAYER_SUMMON_NETHERITE_COST} Ancient Netherite coins. */
+    public static long summonCopperCost() {
+        int n = Math.max(1, DifficultyConfig.get().endDragonSummonNetheriteCost);
+        return AncientCoinEconomy.CoinKind.NETHERITE.copperValue * (long) n;
+    }
+
+    /** Short GUI tip for the summon button. */
+    public static String summonRequirementTip(ServerPlayer player) {
+        long cost = summonCopperCost();
+        String costText = AncientCoinEconomy.formatExactCost(cost);
+        if (player == null) {
+            return "T4–T7 ON · " + costText;
+        }
+        int tier = DifficultyCache.data(player).getActiveTier();
+        boolean on = SystemGate.participates(player);
+        return (on ? "§aON" : "§cOFF") + " §8· T" + tier
+                + " §8· " + costText;
     }
 
     /**
@@ -740,7 +890,7 @@ public final class EndDimensionStrength {
             if (dragon == null || !dragon.m_6084_()) {
                 return;
             }
-            ServerPlayer target = nearestEndPlayer(end, dragon, DRAGON_ATTACK_RANGE);
+            ServerPlayer target = preferredDragonTarget(end, dragon, DRAGON_ATTACK_RANGE);
             if (target == null) {
                 return;
             }
@@ -781,12 +931,23 @@ public final class EndDimensionStrength {
         return best;
     }
 
-    private static double calcDragonKiDamage(ServerPlayer target) {
+    private static double calcDragonKiDamage(EnderDragon dragon, ServerPlayer target) {
         double base = DRAGON_DMZ_KI_DAMAGE;
         double melee = 0.0;
-        try {
-            melee = Math.max(0.0, readPower(target).melee);
-        } catch (Throwable ignored) {
+        if (dragon != null) {
+            try {
+                CompoundTag tag = PersistentDataAccess.get(dragon);
+                if (PersistentDataAccess.isWritable(tag) && tag.m_128441_(NBT_KI_MELEE)) {
+                    melee = Math.max(0.0, tag.m_128459_(NBT_KI_MELEE));
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        if (!(melee > 0.0) && target != null) {
+            try {
+                melee = Math.max(0.0, readPower(target).melee);
+            } catch (Throwable ignored) {
+            }
         }
         double scaled = Math.max(base, melee * DRAGON_DMZ_KI_MELEE_FRAC);
         return Math.min(DRAGON_DMZ_KI_DAMAGE_CAP, scaled);
@@ -824,7 +985,7 @@ public final class EndDimensionStrength {
     private static boolean fireDragonKiBeam(ServerLevel end, EnderDragon dragon, ServerPlayer target) {
         try {
             aimLivingAt(dragon, target);
-            float dmg = (float) calcDragonKiDamage(target);
+            float dmg = (float) calcDragonKiDamage(dragon, target);
             KiLaserEntity beam = new KiLaserEntity(end, dragon);
             try {
                 // Mob path: cast=0, spawns into world. Player setup leaves cast>0 / no launch.
@@ -855,7 +1016,7 @@ public final class EndDimensionStrength {
     private static boolean fireDragonKiBlast(ServerLevel end, EnderDragon dragon, ServerPlayer target) {
         try {
             aimLivingAt(dragon, target);
-            float dmg = (float) calcDragonKiDamage(target);
+            float dmg = (float) calcDragonKiDamage(dragon, target);
             KiBlastEntity blast = new KiBlastEntity(end, dragon);
             try {
                 // Mob large-blast path (cast=0). setupKiBlastPlayer parks the shot with
@@ -1969,6 +2130,143 @@ public final class EndDimensionStrength {
 
     private static boolean alreadyBuffed(LivingEntity entity) {
         return PersistentDataAccess.flag(entity, TAG_BUFFED);
+    }
+
+    private static void stampPlayerSummon(
+            EnderDragon dragon, ServerPlayer summoner, int tier, PlayerPower power
+    ) {
+        if (dragon == null || summoner == null) {
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(dragon);
+        if (!PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
+        tag.m_128359_(NBT_SUMMONER, summoner.m_20148_().toString());
+        tag.m_128379_(NBT_PLAYER_SUMMON, true);
+        tag.m_128405_(NBT_AD_TIER, Math.max(0, tier));
+        if (power != null) {
+            tag.m_128347_(NBT_KI_MELEE, Math.max(0.0, power.melee));
+        }
+    }
+
+    private static boolean isPlayerSummoned(EnderDragon dragon) {
+        return dragon != null && PersistentDataAccess.flag(dragon, NBT_PLAYER_SUMMON);
+    }
+
+    private static boolean isSummoner(EnderDragon dragon, ServerPlayer player) {
+        if (dragon == null || player == null) {
+            return false;
+        }
+        String id = PersistentDataAccess.getString(dragon, NBT_SUMMONER);
+        if (id == null || id.isBlank()) {
+            return false;
+        }
+        return id.equalsIgnoreCase(player.m_20148_().toString());
+    }
+
+    private static ServerPlayer resolveSummoner(ServerLevel end, EnderDragon dragon) {
+        if (end == null || dragon == null) {
+            return null;
+        }
+        String id = PersistentDataAccess.getString(dragon, NBT_SUMMONER);
+        if (id == null || id.isBlank()) {
+            return null;
+        }
+        try {
+            UUID uuid = UUID.fromString(id);
+            MinecraftServer server = end.m_7654_();
+            if (server == null) {
+                return null;
+            }
+            return server.m_6846_().m_11259_(uuid); // getPlayer(UUID)
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static ServerPlayer resolvePlayerAttacker(LivingHurtEvent event) {
+        if (event == null || event.getSource() == null) {
+            return null;
+        }
+        Entity src = event.getSource().m_7639_(); // getEntity
+        if (src instanceof ServerPlayer sp) {
+            return sp;
+        }
+        if (src instanceof Projectile proj) {
+            Entity owner = projectileOwner(proj);
+            if (owner instanceof ServerPlayer sp) {
+                return sp;
+            }
+        }
+        return null;
+    }
+
+    private static Entity projectileOwner(Projectile proj) {
+        if (proj == null) {
+            return null;
+        }
+        try {
+            return proj.m_19749_(); // getOwner
+        } catch (Throwable ignored) {
+        }
+        try {
+            java.lang.reflect.Method m = proj.getClass().getMethod("getOwner");
+            Object o = m.invoke(proj);
+            return o instanceof Entity e ? e : null;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * Adaptive Difficulty–scaled power for dragon sizing (player stats × active tier %).
+     */
+    private static PlayerPower adScaledPower(ServerPlayer player) {
+        PlayerPower raw = readPower(player);
+        if (player == null) {
+            return raw;
+        }
+        try {
+            PlayerCombatProfile profile = PlayerCombatProfile.of(player);
+            if (profile == null || profile.activeTier <= 0 || !(profile.tierPercent > 0.0)) {
+                return raw;
+            }
+            double pct = profile.tierPercent;
+            // Prefer profile combat numbers (already soft-curved); fall back to raw × pct.
+            if (profile.maxHealth > 20.0) {
+                raw.maxHp = profile.maxHealth;
+            } else {
+                raw.maxHp = Math.max(20.0, raw.maxHp * pct);
+            }
+            if (profile.meleeDamage > 0.0) {
+                raw.melee = profile.meleeDamage;
+            } else {
+                raw.melee = Math.max(0.0, raw.melee * pct);
+            }
+            if (profile.defense > 0.0) {
+                raw.defense = profile.defense;
+            } else {
+                raw.defense = Math.max(0.0, raw.defense * pct);
+            }
+            raw.bp = Math.max(0.0, raw.bp * pct);
+        } catch (Throwable ignored) {
+        }
+        return raw;
+    }
+
+    /** Prefer the summoner for ki attacks when present and in range. */
+    private static ServerPlayer preferredDragonTarget(ServerLevel end, EnderDragon dragon, double range) {
+        if (dragon != null && isPlayerSummoned(dragon)) {
+            ServerPlayer owner = resolveSummoner(end, dragon);
+            if (owner != null && owner.m_6084_() && isTheEnd(owner.m_9236_())) {
+                double d = owner.m_20275_(dragon.m_20185_(), dragon.m_20186_(), dragon.m_20189_());
+                if (d <= range * range) {
+                    return owner;
+                }
+            }
+        }
+        return nearestEndPlayer(end, dragon, range);
     }
 
     private static void msg(ServerPlayer player, String text) {

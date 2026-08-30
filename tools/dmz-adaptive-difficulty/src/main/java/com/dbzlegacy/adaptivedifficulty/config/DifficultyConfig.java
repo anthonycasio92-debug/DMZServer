@@ -212,7 +212,14 @@ public final class DifficultyConfig {
     public boolean enableEndDimensionStrength = true;
     /** Block vanilla End portal / gateway travel and Eye-of-Ender frame lighting. */
     public boolean enableEndPortalGuard = true;
-    public boolean enableEndNaturalDragonSpawn = true;
+    public boolean enableEndNaturalDragonSpawn = false;
+    /**
+     * Difficulty GUI paid End Dragon summon (T4–T7, Ancient Netherite cost).
+     * Natural spawn stays off while this is the intended player path.
+     */
+    public boolean enableEndPlayerDragonSummon = true;
+    /** Ancient Netherite coins charged for a player GUI End Dragon summon. */
+    public int endDragonSummonNetheriteCost = 3;
     /**
      * Scale Enderman / Shulker / Phantom / Endermite HP/DEF (End Dimension Strength).
      * Default {@code false} matches script v2.11.0 — dragon-only scaling.
@@ -1545,6 +1552,7 @@ public final class DifficultyConfig {
         }
         cfg.maxScaledMobsPerPlayer = Math.max(1, Math.min(5, cfg.maxScaledMobsPerPlayer));
         cfg.endKiMaxAliveWhileDragon = Math.max(1, Math.min(512, cfg.endKiMaxAliveWhileDragon));
+        cfg.endDragonSummonNetheriteCost = Math.max(1, Math.min(64, cfg.endDragonSummonNetheriteCost));
         cfg.nearbyScaleBudgetPerPlayer = cfg.maxScaledMobsPerPlayer;
         // Never allow free tiers via live admin set / bad JSON.
         cfg.unlockTier1Cost = Math.max(1L, cfg.unlockTier1Cost);

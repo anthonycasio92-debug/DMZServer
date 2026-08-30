@@ -39,6 +39,8 @@ public final class DifficultyActions {
     public static final String ACT_TOGGLE_PERSONAL = "toggle_personal";
     public static final String ACT_TOGGLE_COIN_CHAT = "toggle_coin_chat";
     public static final String ACT_TOGGLE_TITLE_SENSE = "toggle_title_sense";
+    public static final String ACT_SUMMON_END_DRAGON = "summon_end_dragon";
+    public static final String ACT_END_DRAGON = "end_dragon";
 
     /**
      * When true, {@link #openGui} syncs unlocks/titles but does not reopen a menu.
@@ -148,6 +150,10 @@ public final class DifficultyActions {
                 || "toggle_sense".equals(act) || "sense_chat".equals(act)) {
             return toggleTitleSense(player, page);
         }
+        if (ACT_SUMMON_END_DRAGON.equals(act) || ACT_END_DRAGON.equals(act)
+                || "summon_dragon".equals(act) || "dragon_summon".equals(act)) {
+            return summonEndDragon(player, page);
+        }
 
         // Personal OFF freezes buy / lower / reset until the player turns it back on.
         if (!SystemGate.participates(player)
@@ -214,6 +220,17 @@ public final class DifficultyActions {
         return Result.ok(on
                 ? "Title Sense ON — Elite/Boss recognition chat enabled."
                 : "Title Sense OFF — recognition chat muted.");
+    }
+
+    private static Result summonEndDragon(ServerPlayer player, String page) {
+        String returnPage = page == null || page.isBlank() ? "main" : page;
+        String msg = com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength
+                .cmdPlayerSummon(player);
+        openGui(player, returnPage);
+        if (msg == null || msg.isBlank()) {
+            return Result.ok("");
+        }
+        return Result.fail(msg);
     }
 
     private static Result equipTitle(ServerPlayer player, String titleId, String page) {

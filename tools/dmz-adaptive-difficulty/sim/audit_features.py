@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.64", 'VERSION = "2.3.64"' in mod)
+    check("VERSION 2.3.65", 'VERSION = "2.3.65"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -673,7 +673,7 @@ def main() -> int:
     gui_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
     forge_cmds = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/ProgressionCommands.java")
     forge_bridge = read(gui_root / "ForgeBridge.java")
-    check("console androidify leaf", "executeAndroidify" in prog_tree and "androidConvertConsole" in forge)
+    check("console androidify leaf", "executeAndroidify" in prog_tree and "androidConvertConsole" in forge_bridge)
     check("console boost example", "progression boost start 2 30" in prog_tree)
     check("GuiApi console default purchaser", 'actor == null ? "Server"' in gui_api)
     check("GuiApi console usage hint", "Console OK (store)" in gui_api)
@@ -835,6 +835,23 @@ def main() -> int:
           and 'lmdo lm open hub' in prestige_chest)
     check("conv code: chat hub android+prestige",
           "android_remove" in mech_chat and "prestige" in mech_chat)
+
+    print("\n=== End Dragon AD summon (2.3.65) ===")
+    end_str = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/end/EndDimensionStrength.java")
+    diff_actions = read(SRC / "com/dbzlegacy/adaptivedifficulty/service/DifficultyActions.java")
+    chest = read(gui_root / "DifficultyChestGui.java")
+    cmi_diff = read(gui_root / "CmiDifficultyGui.java")
+    check("cmdPlayerSummon present", "cmdPlayerSummon" in end_str)
+    check("summoner NBT stamp", "end_dragon_summoner" in end_str)
+    check("owner-only damage gate", "Only the summoner can damage" in end_str)
+    check("AD scaled power", "adScaledPower" in end_str)
+    check("DifficultyActions summon_end_dragon", "ACT_SUMMON_END_DRAGON" in diff_actions)
+    check("ForgeBridge allows summon_end_dragon", "summon_end_dragon" in forge_bridge)
+    check("Chest GUI summon button", "summon_end_dragon" in chest and "Summon End Dragon" in chest)
+    check("CMI GUI summon button", "summon_end_dragon" in cmi_diff and "Summon End Dragon" in cmi_diff)
+    check("natural spawn default off", "enableEndNaturalDragonSpawn = false" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))
+    check("3 netherite cost constant", "PLAYER_SUMMON_NETHERITE_COST = 3" in end_str)
 
     print("\n=== Summary ===")
     for w in warns:

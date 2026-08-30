@@ -1,0 +1,21 @@
+# End Dragon — Adaptive Difficulty summon (2.3.65)
+
+## Player path (Difficulty GUI only)
+- Button: **Summon End Dragon** on `/difficulty` main page
+- Requirements:
+  - Personal Adaptive Difficulty **ON**
+  - Active Unlock Tier **T4–T7** (Prestige 4 unlocks T4 eligibility — still must buy/activate)
+  - Standing in **The End**
+  - Cost: **3 Ancient Netherite** coins (pay-up OK, change returned)
+- Dragon scales to the summoner's **AD profile** (stats × tier %)
+- **Only the summoner** can damage it (anti-farm)
+- Same ki beam / blast attacks as before; prefer targeting the summoner
+
+## Staff
+- `/enddragon` remains a free staff override (no summoner lock)
+- `/cleardragons` unchanged
+
+## Config
+- `enableEndPlayerDragonSummon` (default true)
+- `endDragonSummonNetheriteCost` (default 3)
+- `enableEndNaturalDragonSpawn` (default **false** — GUI is the player path)

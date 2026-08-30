@@ -103,6 +103,33 @@ public final class CmiDifficultyGui {
                 "&7Equip difficulty titles",
                 "&8Earned from tiers and combat"));
 
+        int activeTier = 0;
+        try {
+            activeTier = Integer.parseInt(ph.getOrDefault("active_tier", "0"));
+        } catch (NumberFormatException ignored) {
+        }
+        boolean canSummon = personalOn && activeTier >= 4 && activeTier <= 7;
+        List<String> dragonLore = new ArrayList<>();
+        dragonLore.add("");
+        dragonLore.add("&7Summon the End Dragon scaled to");
+        dragonLore.add("&7your Adaptive Difficulty (T4–T7).");
+        dragonLore.add("&8Cost: &f3 Ancient Netherite");
+        dragonLore.add("&8Must be &fin The End");
+        dragonLore.add("&8Only &fyou &8can damage it.");
+        dragonLore.add("");
+        if (!personalOn) {
+            dragonLore.add("&cDifficulty is OFF");
+        } else if (activeTier < 4 || activeTier > 7) {
+            dragonLore.add("&cNeed active T4–T7 (you: T" + activeTier + ")");
+        } else {
+            dragonLore.add("&aReady · click to summon");
+        }
+        gui.addButton(actionBtn(player, 15,
+                canSummon ? Material.DRAGON_EGG : Material.GRAY_DYE,
+                canSummon ? "&5&lSummon End Dragon" : "&8Summon End Dragon",
+                "summon_end_dragon", "0", "main",
+                dragonLore));
+
         boolean coinChatOn = "true".equalsIgnoreCase(ph.getOrDefault("coin_drop_chat", "false"));
         gui.addButton(actionBtn(player, 29,
                 personalOn ? Material.LIME_DYE : Material.GRAY_DYE,

@@ -315,6 +315,7 @@ public final class ProgressionSystem {
             case "end", "endstrength", "enableenddimensionstrength" -> cfg.enableEndDimensionStrength = on;
             case "endportal", "endportalguard", "enableendportalguard" -> cfg.enableEndPortalGuard = on;
             case "endnatural", "enableendnaturaldragonspawn" -> cfg.enableEndNaturalDragonSpawn = on;
+            case "endsummon", "enableendplayerdragonsummon", "enddragonsummon" -> cfg.enableEndPlayerDragonSummon = on;
             case "shadow", "shadowdummy", "enableshadowdummylimiter" -> cfg.enableShadowDummyLimiter = on;
             case "statchecker", "playerstatchecker", "enableplayerstatchecker" -> cfg.enablePlayerStatChecker = on;
             case "skills", "skillunlock", "enableskillunlockservice" -> cfg.enableSkillUnlockService = on;
