@@ -73,6 +73,9 @@ public final class EndDimensionStrength {
     private static final String NBT_PLAYER_SUMMON = "end_dragon_player_summon";
     private static final String NBT_AD_TIER = "end_dragon_ad_tier";
     private static final String NBT_KI_MELEE = "end_dragon_ki_melee";
+    /** Last {@link PlayerCombatProfile#signature} applied for a player-summoned dragon. */
+    private static final String NBT_AD_SIG = "end_dragon_ad_sig";
+    private static final long PLAYER_DRAGON_RETARGET_MS = 750L;
 
     /** Minimum active Unlock Tier for paid GUI summons. */
     public static final int PLAYER_SUMMON_MIN_TIER = 4;
@@ -217,9 +220,10 @@ public final class EndDimensionStrength {
             enforceSingleDragon(end);
             for (EnderDragon dragon : findDragons(end)) {
                 if (isPlayerSummoned(dragon)) {
-                    // Never rescale to nearby/stronger bystanders — spawn stats stay locked.
-                    // Despawn if summoner left, died, or turned personal AD off.
-                    maybeDespawnOrphanedPlayerDragon(end, dragon);
+                    // Live AD retarget to the summoner only (forms in/out). Never other players.
+                    if (!maybeDespawnOrphanedPlayerDragon(end, dragon)) {
+                        retargetPlayerDragonToSummoner(dragon, end, now);
+                    }
                     continue;
                 }
                 PlayerPower strongest = strongestInEnd(end, null);
@@ -275,7 +279,7 @@ public final class EndDimensionStrength {
                 return;
             }
         }
-        // Player-summoned dragons: only the summoner may deal player damage.
+        // Player-summoned: only summoner may damage; live-retarget to their current AD/form.
         if (dragon && target instanceof EnderDragon enderDragon && isPlayerSummoned(enderDragon)) {
             ServerPlayer attacker = resolvePlayerAttacker(event);
             if (attacker != null && !isSummoner(enderDragon, attacker)) {
@@ -288,6 +292,9 @@ public final class EndDimensionStrength {
                 }
                 return;
             }
+            if (attacker != null && isSummoner(enderDragon, attacker)) {
+                applySummonerAdStats(enderDragon, attacker, "onhit");
+            }
         }
         float raw = event.getAmount();
         if (!(raw > 0.0f)) {
@@ -296,10 +303,8 @@ public final class EndDimensionStrength {
         double def = readDef(target);
         if (!(def > 0.0) && event.getSource() != null
                 && event.getSource().m_7639_() instanceof ServerPlayer attacker) {
-            // Player-summoned dragons keep spawn-time AD stats — never retarget to another player on hit.
-            if (dragon && target instanceof EnderDragon enderDragon && isPlayerSummoned(enderDragon)) {
-                def = readDef(target);
-            } else {
+            // Player-summoned dragons only sync from the summoner's AD profile (handled above).
+            if (!(dragon && target instanceof EnderDragon ed && isPlayerSummoned(ed))) {
                 ServerLevel level = attacker.m_284548_();
                 PlayerPower power = strongestInEnd(level, attacker);
                 if (dragon && target instanceof EnderDragon enderDragon) {
@@ -307,8 +312,8 @@ public final class EndDimensionStrength {
                 } else if (mobScaling) {
                     buffMob(target, kind, power);
                 }
-                def = readDef(target);
             }
+            def = readDef(target);
         }
         if (!(def > 0.0)) {
             return;
@@ -505,7 +510,7 @@ public final class EndDimensionStrength {
             return "§cFailed to spawn — visit The End once, then retry.";
         }
         stampPlayerSummon(dragon, player, tier, power);
-        applyDragonStats(dragon, power, "spawn");
+        applySummonerAdStats(dragon, player, "spawn");
         lastDragonScaleScore = score(power);
         lastNaturalSpawnAt = System.currentTimeMillis();
         naturalTimerArmed = true;
@@ -747,10 +752,11 @@ public final class EndDimensionStrength {
         return removed;
     }
 
-    /** Pulse: drop player dragons whose summoner is gone or no longer participating. */
-    private static void maybeDespawnOrphanedPlayerDragon(ServerLevel end, EnderDragon dragon) {
+    /** Pulse: drop player dragons whose summoner is gone or no longer participating.
+     * @return true if the dragon was despawned */
+    private static boolean maybeDespawnOrphanedPlayerDragon(ServerLevel end, EnderDragon dragon) {
         if (end == null || dragon == null || !isPlayerSummoned(dragon)) {
-            return;
+            return false;
         }
         ServerPlayer owner = resolveSummoner(end, dragon);
         if (owner == null || !owner.m_6084_() || !SystemGate.participates(owner)) {
@@ -763,7 +769,9 @@ public final class EndDimensionStrength {
             }
             SystemTelemetry.log("end_strength", "dragon_despawn", owner, null,
                     Map.of("reason", owner == null ? "owner_offline" : "owner_gate"));
+            return true;
         }
+        return false;
     }
 
     private static void maybeNaturalDragon(ServerPlayer player, long now) {
@@ -1690,7 +1698,7 @@ public final class EndDimensionStrength {
         if (dragon == null || power == null) {
             return;
         }
-        // Player GUI summons are frozen to spawn-time AD stats for the summoner only.
+        // Player GUI summons use {@link #retargetPlayerDragonToSummoner} only.
         if (isPlayerSummoned(dragon)) {
             return;
         }
@@ -1708,6 +1716,91 @@ public final class EndDimensionStrength {
         lastDragonRescaleAt = now;
         applyDragonStats(dragon, power, "rescale");
         lastDragonScaleScore = desired;
+    }
+
+    /**
+     * Live Adaptive Difficulty retarget for a player-summoned dragon.
+     * Tracks the summoner's form/stat signature only — never other players.
+     */
+    private static void retargetPlayerDragonToSummoner(EnderDragon dragon, ServerLevel end, long now) {
+        if (dragon == null || end == null || !isPlayerSummoned(dragon)) {
+            return;
+        }
+        ServerPlayer owner = resolveSummoner(end, dragon);
+        if (owner == null || !owner.m_6084_() || !SystemGate.participates(owner)) {
+            return;
+        }
+        long last = PersistentDataAccess.getLong(dragon, "end_dragon_retarget_at", 0L);
+        if (now - last < PLAYER_DRAGON_RETARGET_MS) {
+            return;
+        }
+        long sig = 0L;
+        try {
+            PlayerCombatProfile profile = PlayerCombatProfile.of(owner);
+            if (profile != null) {
+                sig = profile.signature;
+            }
+        } catch (Throwable ignored) {
+        }
+        long prev = PersistentDataAccess.getLong(dragon, NBT_AD_SIG, Long.MIN_VALUE);
+        if (prev != Long.MIN_VALUE && prev == sig && alreadyBuffed(dragon) && readDef(dragon) > 0.0) {
+            CompoundTag tag = PersistentDataAccess.get(dragon);
+            if (PersistentDataAccess.isWritable(tag)) {
+                tag.m_128356_("end_dragon_retarget_at", now);
+            }
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(dragon);
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128356_("end_dragon_retarget_at", now);
+        }
+        applySummonerAdStats(dragon, owner, "summoner_ad");
+    }
+
+    /**
+     * Apply the summoner's current AD combat profile to the dragon (forms up/down).
+     * Preserves HP ratio so form changes don't fully heal or wipe the fight.
+     */
+    private static void applySummonerAdStats(EnderDragon dragon, ServerPlayer summoner, String source) {
+        if (dragon == null || summoner == null || !isPlayerSummoned(dragon)) {
+            return;
+        }
+        if (!isSummoner(dragon, summoner)) {
+            return;
+        }
+        PlayerPower power = adScaledPower(summoner);
+        double hp = mapDmzHp(power.maxHp, DRAGON_BASE_HP, DRAGON_HP_CAP);
+        double def = calcDragonDef(power);
+        double prevMax = Math.max(1.0, dragon.m_21233_());
+        double prevHp = Math.max(0.0, dragon.m_21223_());
+        double ratio = alreadyBuffed(dragon) && prevMax > 20.0
+                ? Math.min(1.0, prevHp / prevMax)
+                : 1.0;
+        setMaxHealth(dragon, hp, Math.max(1.0, hp * ratio));
+        storeDef(dragon, def);
+        storeHits(dragon, DRAGON_TARGET_HITS);
+        storeDmzHp(dragon, power.maxHp);
+        markBuffed(dragon);
+        CompoundTag tag = PersistentDataAccess.get(dragon);
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128347_(NBT_KI_MELEE, Math.max(0.0, power.melee));
+            try {
+                PlayerCombatProfile profile = PlayerCombatProfile.of(summoner);
+                if (profile != null) {
+                    tag.m_128356_(NBT_AD_SIG, profile.signature);
+                }
+            } catch (Throwable ignored) {
+            }
+            int tier = DifficultyCache.data(summoner).getActiveTier();
+            tag.m_128405_(NBT_AD_TIER, Math.max(0, tier));
+        }
+        try {
+            dragon.m_6593_(Component.m_237113_(
+                    "§5Ender Dragon §8[T" + DifficultyCache.data(summoner).getActiveTier()
+                            + " · " + DmzRewards.formatWhole(hp) + " HP / DEF "
+                            + DmzRewards.formatWhole(def) + "]"));
+        } catch (Throwable ignored) {
+        }
     }
 
     private static void applyDragonStats(EnderDragon dragon, PlayerPower power, String source) {
@@ -2207,6 +2300,13 @@ public final class EndDimensionStrength {
         tag.m_128405_(NBT_AD_TIER, Math.max(0, tier));
         if (power != null) {
             tag.m_128347_(NBT_KI_MELEE, Math.max(0.0, power.melee));
+        }
+        try {
+            PlayerCombatProfile profile = PlayerCombatProfile.of(summoner);
+            if (profile != null) {
+                tag.m_128356_(NBT_AD_SIG, profile.signature);
+            }
+        } catch (Throwable ignored) {
         }
     }
 

@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.66", 'VERSION = "2.3.66"' in mod)
+    check("VERSION 2.3.67", 'VERSION = "2.3.67"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -846,8 +846,8 @@ def main() -> int:
     check("owner-only damage gate", "Only the summoner can damage" in end_str)
     check("AD scaled power", "adScaledPower" in end_str)
     check("despawnOwnedDragon", "despawnOwnedDragon" in end_str)
-    check("player dragon rescale blocked",
-          "Player GUI summons are frozen" in end_str)
+    check("summoner live AD retarget", "retargetPlayerDragonToSummoner" in end_str)
+    check("summoner form apply", "applySummonerAdStats" in end_str)
     check("orphan despawn pulse", "maybeDespawnOrphanedPlayerDragon" in end_str)
     check("DifficultyActions summon_end_dragon", "ACT_SUMMON_END_DRAGON" in diff_actions)
     check("ForgeBridge allows summon_end_dragon", "summon_end_dragon" in forge_bridge)
