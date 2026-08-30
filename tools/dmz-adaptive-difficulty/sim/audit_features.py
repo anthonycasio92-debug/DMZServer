@@ -87,7 +87,12 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.72", 'VERSION = "2.3.72"' in mod)
+    check("VERSION 2.3.73", 'VERSION = "2.3.73"' in mod)
+
+    med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
+    check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
+    check("meditation full-ki hint only while charging", 'if (charging)' in med and "Ki full" in med)
+    check("meditation no chat tellCondition", "DmzRewards.msg(player, LmChat.tagged(\"Meditation\", text))" not in med)
 
     mob_scaling = read(SRC / "com/dbzlegacy/adaptivedifficulty/scaling/MobScaling.java")
     end_str = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/end/EndDimensionStrength.java")

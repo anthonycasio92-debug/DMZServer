@@ -10,8 +10,8 @@ import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Screen title/subtitle feedback for blocked / not-allowed actions.
- * Prefer this over chat for deny messages players need to notice in-world.
+ * Screen title/subtitle feedback for in-world notices.
+ * Prefer this over chat for hints players need while fighting / training.
  */
 public final class ScreenNotify {
     private static final String DEFAULT_CD_KEY = "lm.screen.notify";
@@ -31,6 +31,25 @@ public final class ScreenNotify {
     public static void blocked(
             ServerPlayer player, String title, String subtitle, String cooldownKey, long cooldownMs
     ) {
+        show(player, title, subtitle, ChatFormatting.RED, ChatFormatting.GRAY, cooldownKey, cooldownMs);
+    }
+
+    /** Soft training / progress hint (gold title). No chat. */
+    public static void hint(
+            ServerPlayer player, String title, String subtitle, String cooldownKey, long cooldownMs
+    ) {
+        show(player, title, subtitle, ChatFormatting.GOLD, ChatFormatting.YELLOW, cooldownKey, cooldownMs);
+    }
+
+    private static void show(
+            ServerPlayer player,
+            String title,
+            String subtitle,
+            ChatFormatting titleColor,
+            ChatFormatting subtitleColor,
+            String cooldownKey,
+            long cooldownMs
+    ) {
         if (player == null || title == null || title.isBlank()) {
             return;
         }
@@ -48,10 +67,10 @@ public final class ScreenNotify {
             }
             player.f_8906_.m_9829_(new ClientboundClearTitlesPacket(false));
             player.f_8906_.m_9829_(new ClientboundSetTitlesAnimationPacket(5, 45, 10));
-            player.f_8906_.m_9829_(new ClientboundSetTitleTextPacket(styled(title, ChatFormatting.RED)));
+            player.f_8906_.m_9829_(new ClientboundSetTitleTextPacket(styled(title, titleColor)));
             if (subtitle != null && !subtitle.isBlank()) {
                 player.f_8906_.m_9829_(
-                        new ClientboundSetSubtitleTextPacket(styled(subtitle, ChatFormatting.GRAY)));
+                        new ClientboundSetSubtitleTextPacket(styled(subtitle, subtitleColor)));
             }
         } catch (Throwable ignored) {
         }

@@ -7,6 +7,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
+import com.dbzlegacy.adaptivedifficulty.util.ScreenNotify;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
@@ -49,7 +50,8 @@ public final class MeditationProgression {
     private static final long TRIAL_WARNING_MS = 5L * 60L * 1000L;
     private static final long ROTATION_LOCK_MS = 3_000L;
     private static final long FOCUS_WINDOW_MS = 10_000L;
-    private static final long CONDITION_MESSAGE_COOLDOWN_MS = 5_000L;
+    private static final long CONDITION_MESSAGE_COOLDOWN_MS = 8_000L;
+    private static final long PROGRESS_SUBTITLE_COOLDOWN_MS = 5_000L;
     private static final long WRONG_BIOME_DELAY_MS = 10_000L;
     private static final long WRONG_BIOME_RELEASE_GRACE_MS = 2_500L;
     private static final long WRONG_BIOME_HARD_COOLDOWN_MS = 60_000L;
@@ -158,13 +160,24 @@ public final class MeditationProgression {
             }
             if (energy >= maxEnergy * 0.995f) {
                 resetFocus(player);
-                tellCondition(player, "§eYour Ki must be below 100% before you can meditate.", nowMs);
+                // Only while actively charging — never spam chat when idle in the biome.
+                if (charging) {
+                    tellCondition(
+                            player,
+                            "Ki full",
+                            "Spend some Ki, then charge again to train.",
+                            nowMs);
+                }
                 return;
             }
             if (!passesFocus(player, charging, nowMs)) {
                 return;
             }
             if (!passesCondition(player, trial, energy, maxEnergy, nowMs)) {
+                // Hint the trial goal only while charging (subtitle, anti-spam).
+                if (charging) {
+                    tellCondition(player, "Meditation", plainCondition(trial), nowMs);
+                }
                 return;
             }
             addProgress(player, skills, level, max);
@@ -404,13 +417,22 @@ public final class MeditationProgression {
             DmzRewards.msg(player, LmChat.tagged("Meditation", "§dIncreased to level " + next + "."));
             SystemTelemetry.log("progression", "meditation_level", player, null,
                     Map.of("level", next));
+            ScreenNotify.hint(
+                    player,
+                    "Meditation",
+                    "Level " + next,
+                    "med2_progress_subtitle",
+                    0L);
         } else {
             ProgressionData.storedPut(player, key, progress);
-            // Match Meditation new.js SHOW_PROGRESS_CONFIRMATION (1st tick + every 5s).
+            // Subtitle only while training — no chat spam (1st tick + every 5s).
             if (progress == 1L || progress % 5L == 0L) {
-                DmzRewards.msg(player, LmChat.tagged("Meditation",
-                        "§7Progress: §e" + progress + "§7/§e" + need
-                                + " §7toward level §e" + next + "§7."));
+                ScreenNotify.hint(
+                        player,
+                        "Meditation",
+                        progress + " / " + need + " → Lv " + next,
+                        "med2_progress_subtitle",
+                        PROGRESS_SUBTITLE_COOLDOWN_MS);
             }
         }
     }
@@ -453,7 +475,7 @@ public final class MeditationProgression {
         }
 
         if (waiting) {
-            tellCondition(player, "§eRelease Ki and begin charging again to renew your focus.", now);
+            tellCondition(player, "Focus", "Release Ki, then charge again.", now);
             return false;
         }
 
@@ -464,7 +486,7 @@ public final class MeditationProgression {
 
         if (now - started >= FOCUS_WINDOW_MS) {
             ProgressionData.tempPut(player, "med2_focus_wait_release", "1");
-            tellCondition(player, "§eRelease Ki and begin charging again to renew your focus.", now);
+            tellCondition(player, "Focus", "Release Ki, then charge again.", now);
             return false;
         }
         return true;
@@ -499,8 +521,12 @@ public final class MeditationProgression {
             if (!warned
                     && now - started >= WRONG_BIOME_DELAY_MS
                     && now - lastMessage >= WRONG_BIOME_HARD_COOLDOWN_MS) {
-                DmzRewards.msg(player, LmChat.tagged("Meditation", "§7Current Trial: §e" + trial.name
-                        + "§7. You are charging in the wrong biome."));
+                ScreenNotify.hint(
+                        player,
+                        "Wrong biome",
+                        "Trial: " + trial.name,
+                        "med2_wrong_subtitle",
+                        WRONG_BIOME_HARD_COOLDOWN_MS);
                 ProgressionData.tempPut(player, "med2_wrong_warned", "1");
                 ProgressionData.tempPut(player, "med2_wrong_last_message", now);
             }
@@ -515,13 +541,26 @@ public final class MeditationProgression {
         ProgressionData.tempPut(player, "med2_wrong_warned", "0");
     }
 
-    private static void tellCondition(ServerPlayer player, String text, long now) {
+    /** Subtitle-only condition hint. Never chat — avoids idle biome spam. */
+    private static void tellCondition(ServerPlayer player, String title, String subtitle, long now) {
         long next = ProgressionData.tempGetLong(player, "med2_message_next", 0L);
         if (now < next) {
             return;
         }
         ProgressionData.tempPut(player, "med2_message_next", now + CONDITION_MESSAGE_COOLDOWN_MS);
-        DmzRewards.msg(player, LmChat.tagged("Meditation", text));
+        ScreenNotify.hint(
+                player,
+                title == null || title.isBlank() ? "Meditation" : title,
+                subtitle,
+                "med2_condition_subtitle",
+                CONDITION_MESSAGE_COOLDOWN_MS);
+    }
+
+    private static String plainCondition(Trial trial) {
+        if (trial == null || trial.condition == null) {
+            return "Charge Ki to train.";
+        }
+        return trial.condition.replaceAll("§.", "").trim();
     }
 
     private static boolean passesCondition(
