@@ -39,8 +39,8 @@ public final class CmiDifficultyGui {
         if (player == null || !available()) {
             return false;
         }
-        // Match chat menu: refresh unlock / title grants before painting slots.
-        ForgeBridge.syncPlayerProgress(player);
+        // Pull live DMZ level + unlock/title data before painting slots.
+        ForgeBridge.prepareDifficultyGui(player);
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         try {
             switch (p) {

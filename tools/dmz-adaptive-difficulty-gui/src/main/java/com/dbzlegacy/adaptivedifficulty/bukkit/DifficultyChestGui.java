@@ -50,8 +50,8 @@ public final class DifficultyChestGui implements Listener {
             AdminInspectSessions.clear(viewer.getUniqueId());
             subject = viewer;
         }
-        // Match chat menu: refresh unlock / title grants before painting slots.
-        ForgeBridge.syncPlayerProgress(subject);
+        // Pull live DMZ level + unlock/title data before painting slots.
+        ForgeBridge.prepareDifficultyGui(subject);
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         Inventory inv = switch (p) {
             case "adjust", "change", "set", "lower" -> lower(viewer, subject);

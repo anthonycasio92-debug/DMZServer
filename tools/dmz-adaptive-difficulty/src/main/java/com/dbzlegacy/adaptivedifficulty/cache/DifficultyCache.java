@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.cache;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultyCalculator;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import java.util.Map;
@@ -50,6 +51,9 @@ public final class DifficultyCache {
     }
 
     public static DifficultySnapshot refresh(ServerPlayer player) {
+        // Always re-sample base-form DMZ level on refresh so Bukkit GUI opens /
+        // placeholder rebuilds cannot paint a stuck session sample.
+        DmzProgression.sampleLevelOnGuiOpen(player);
         invalidate(player.m_20148_());
         DifficultySnapshot snap = DifficultyCalculator.snapshot(player, data(player));
         CACHE.put(player.m_20148_(), snap);

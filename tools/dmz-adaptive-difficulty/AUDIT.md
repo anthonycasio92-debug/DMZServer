@@ -1,3 +1,14 @@
+## Difficulty GUI live level pull (2.3.62)
+
+Mohist {@code /difficulty} opens the Bukkit CMI/chest GUI without going through
+Forge {@code DifficultyActions.openGui}, so the Buy menu could paint a stuck
+session DMZ sample (level 1 / stale mid-level) until {@code resynclevel}.
+
+Fix: {@code DifficultyActions.prepareGui} + {@code ForgeBridge.prepareDifficultyGui}
+on every open; {@code DifficultyCache.refresh} always re-samples; GUI-open sampling
+no longer writes placeholder level-1 while StatsData is missing, and heals polluted
+caches when transform detection is weak.
+
 ## Tier cost anchors (2.3.61)
 
 Absolute-level exponential curve:

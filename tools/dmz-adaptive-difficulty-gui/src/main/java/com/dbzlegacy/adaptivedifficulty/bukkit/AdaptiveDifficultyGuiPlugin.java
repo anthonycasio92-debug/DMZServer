@@ -87,6 +87,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return;
         }
         AdminInspectSessions.clear(player.getUniqueId());
+        ForgeBridge.prepareDifficultyGui(player);
         openInventory(player, page);
     }
 
@@ -121,6 +122,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return;
         }
         AdminInspectSessions.clear(player.getUniqueId());
+        ForgeBridge.prepareDifficultyGui(player);
         chestGui.open(player, page);
     }
 
@@ -246,11 +248,13 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if (AdminInspectSessions.isInspecting(player.getUniqueId())) {
             Player subject = AdminInspectSessions.resolveSubject(player);
             if (subject != null) {
+                ForgeBridge.prepareDifficultyGui(subject);
                 chestGui.openAs(player, subject, page == null || page.isBlank() ? "main" : page);
                 return;
             }
         }
         AdminInspectSessions.clear(player.getUniqueId());
+        ForgeBridge.prepareDifficultyGui(player);
         String backend = ForgeBridge.guiBackend();
         if ("chat".equals(backend)) {
             if (!ForgeBridge.openChatMenu(player, page)) {
@@ -267,6 +271,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     }
 
     private void openInventory(Player player, String page) {
+        // prepareDifficultyGui already ran from openMenuRespectingConfig; still safe if
+        // Forge openMenuForUuid lands here without that path.
+        ForgeBridge.prepareDifficultyGui(player);
         if (CmiDifficultyGui.available() && CmiDifficultyGui.open(player, page)) {
             return;
         }

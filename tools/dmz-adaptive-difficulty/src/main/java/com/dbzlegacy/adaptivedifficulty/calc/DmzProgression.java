@@ -312,26 +312,60 @@ public final class DmzProgression {
 
     /**
      * Refresh the base-form DMZ sample when in base form; otherwise return the cached sample.
+     * Never writes a placeholder level-1 while DMZ {@link StatsData} is missing (login race).
      */
     public static int refreshBaseFormSample(Player player) {
         if (player == null) {
             return 1;
         }
+        StatsData data = stats(player);
+        UUID id = player.m_20148_();
+        if (data == null) {
+            Integer cached = BASE_FORM_LEVEL.get(id);
+            return cached != null ? Math.max(1, cached) : 1;
+        }
         if (!isTransformed(player)) {
             int live = dmzLevel(player);
-            BASE_FORM_LEVEL.put(player.m_20148_(), live);
+            BASE_FORM_LEVEL.put(id, live);
             return live;
         }
-        Integer cached = BASE_FORM_LEVEL.get(player.m_20148_());
+        Integer cached = BASE_FORM_LEVEL.get(id);
         return cached != null ? Math.max(1, cached) : 1;
     }
 
     /**
-     * GUI-open hook: refresh the base-form DMZ sample, then return the unlock-gate level.
+     * GUI-open / command hook: refresh the base-form DMZ sample, then return it.
      * Does not require personal difficulty ON — opening the menu alone is enough.
+     * <p>
+     * Also heals polluted session samples (cached ≪ live) when transform detection
+     * is weak (form peak ≤ 2.0), so Buy GUI cannot stick on an early-login level-1
+     * or a stale mid-level sample after stats attach.
      */
     public static int sampleLevelOnGuiOpen(Player player) {
-        return refreshBaseFormSample(player);
+        if (player == null) {
+            return 1;
+        }
+        StatsData data = stats(player);
+        UUID id = player.m_20148_();
+        if (data == null) {
+            Integer cached = BASE_FORM_LEVEL.get(id);
+            return cached != null ? Math.max(1, cached) : 1;
+        }
+        int live = dmzLevel(player);
+        if (!isTransformed(player)) {
+            BASE_FORM_LEVEL.put(id, live);
+            return live;
+        }
+        Integer cached = BASE_FORM_LEVEL.get(id);
+        double peak = formMultiplierPeak(data);
+        // Weak/false transform + stale/polluted cache → prefer live for GUI display.
+        if (peak <= 2.0 && (cached == null
+                || (cached <= 1 && live >= 25)
+                || live > cached + 500)) {
+            BASE_FORM_LEVEL.put(id, live);
+            return live;
+        }
+        return cached != null ? Math.max(1, cached) : 1;
     }
 
     /**

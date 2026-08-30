@@ -49,17 +49,30 @@ public final class DifficultyActions {
 
     private DifficultyActions() {}
 
-    public static void openGui(ServerPlayer player, String page) {
-        String target = page == null || page.isBlank() ? "main" : page;
-        // Re-read DMZ level when the menu opens (not only on death with personal ON).
+    /**
+     * Re-read live DMZ level/data before painting Buy GUI / placeholders.
+     * Bukkit {@code /difficulty} opens inventory without going through {@link #openGui},
+     * so this must also be invoked from the companion bridge on every open.
+     */
+    public static void prepareGui(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
         int sampled = DmzProgression.sampleLevelOnGuiOpen(player);
         if (!DmzProgression.isTransformed(player)) {
             DifficultyCache.data(player).noteDmzLevel(sampled);
         }
+        // refresh() re-samples + snapshot syncs unlocks/gate level.
+        DifficultyCache.refresh(player);
+        TitleSystem.syncTierTitles(player, false);
+    }
+
+    public static void openGui(ServerPlayer player, String page) {
+        String target = page == null || page.isBlank() ? "main" : page;
+        prepareGui(player);
         if ("titles".equalsIgnoreCase(target) || "title".equalsIgnoreCase(target)) {
             TitleSystem.syncTierTitles(player, true);
         }
-        UnlockSystem.syncUnlocks(player, DifficultyCache.data(player));
         if (Boolean.TRUE.equals(SUPPRESS_GUI_REOPEN.get())) {
             return;
         }

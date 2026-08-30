@@ -2603,6 +2603,42 @@ public final class ForgeBridge {
     }
 
     /**
+     * Pull live DMZ level + unlock data before opening Buy / Difficulty GUI.
+     * Mohist {@code /difficulty} owns the inventory open and previously skipped
+     * Forge {@code DifficultyActions.openGui}, so placeholders could show a stuck
+     * session sample (level 1 / stale mid-level) until {@code resynclevel}.
+     */
+    public static boolean prepareDifficultyGui(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return false;
+        }
+        try {
+            ensureResolved(nms.getClass().getClassLoader());
+            try {
+                Method prep = actionsCls.getMethod("prepareGui", serverPlayerCls);
+                prep.invoke(null, nms);
+            } catch (NoSuchMethodException legacy) {
+                // Older Forge jars: sample + refresh only.
+                ClassLoader cl = nms.getClass().getClassLoader();
+                Class<?> dmz = loadClass(
+                        "com.dbzlegacy.adaptivedifficulty.calc.DmzProgression", cl);
+                Class<?> playerCls = loadClass("net.minecraft.world.entity.player.Player", cl);
+                dmz.getMethod("sampleLevelOnGuiOpen", playerCls).invoke(null, nms);
+                if (cacheRefresh != null) {
+                    cacheRefresh.invoke(null, nms);
+                }
+                syncPlayerProgress(player);
+            }
+            PLACEHOLDER_CACHE.remove(player.getUniqueId());
+            return true;
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return false;
+        }
+    }
+
+    /**
      * Refresh unlock-tier grants and difficulty titles from current DMZ / prestige
      * (same sync chat menu runs when opening Buy / Titles).
      */
@@ -2618,6 +2654,13 @@ public final class ForgeBridge {
             }
             Object data = cacheData.invoke(null, nms);
             ClassLoader cl = nms.getClass().getClassLoader();
+            try {
+                Class<?> dmz = loadClass(
+                        "com.dbzlegacy.adaptivedifficulty.calc.DmzProgression", cl);
+                Class<?> playerCls = loadClass("net.minecraft.world.entity.player.Player", cl);
+                dmz.getMethod("sampleLevelOnGuiOpen", playerCls).invoke(null, nms);
+            } catch (Throwable ignored) {
+            }
             Class.forName("com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem", true, cl)
                     .getMethod("syncUnlocks",
                             Class.forName("net.minecraft.server.level.ServerPlayer", true, cl),
@@ -2628,6 +2671,9 @@ public final class ForgeBridge {
                             Class.forName("net.minecraft.server.level.ServerPlayer", true, cl),
                             boolean.class)
                     .invoke(null, nms, false);
+            if (cacheRefresh != null) {
+                cacheRefresh.invoke(null, nms);
+            }
             PLACEHOLDER_CACHE.remove(player.getUniqueId());
         } catch (Throwable ignored) {
         }
