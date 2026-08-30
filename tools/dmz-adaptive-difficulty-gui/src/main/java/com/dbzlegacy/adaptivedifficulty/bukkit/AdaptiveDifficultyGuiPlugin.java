@@ -735,6 +735,22 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return true;
         }
 
+        // End dragon spawn/clear — no GUI reopen (CMI /enddragon aliases land here).
+        if ("enddragon".equals(system) || "cleardragons".equals(system)
+                || "spawndragon".equals(system) || "killdragons".equals(system)) {
+            String endAction = "enddragon".equals(system) || "spawndragon".equals(system)
+                    ? action
+                    : "clear";
+            if ("cleardragons".equals(system) || "killdragons".equals(system)) {
+                endAction = "clear";
+            }
+            String msg = ForgeBridge.endDragon(player, endAction);
+            if (msg != null && !msg.isBlank()) {
+                GuiChat.sendResult(player, msg);
+            }
+            return true;
+        }
+
         Player subject = AdminInspectSessions.resolveSubject(player);
         String reopen;
         if ("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action)) {

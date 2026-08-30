@@ -92,6 +92,7 @@ public final class ForgeBridge {
     private static Method meditationAdvanceMethod;
     private static Method androidConvertMethod;
     private static Method androidRemoveMethod;
+    private static Method endDragonMethod;
     private static Method boostMethod;
     private static Method progressionHelpMethod;
     private static Method progressionHelpForStaffMethod;
@@ -1351,6 +1352,26 @@ public final class ForgeBridge {
         }
     }
 
+    /** Staff: End dragon spawn/clear via {@code /lmdo enddragon spawn|clear}. */
+    public static String endDragon(Player actor, String action) {
+        Object nms = nmsPlayer(actor);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (endDragonMethod == null) {
+                return "§cEnd dragon API missing — update LegacyMechanics jar.";
+            }
+            Object raw = endDragonMethod.invoke(null, nms, action == null ? "spawn" : action);
+            return raw == null ? "" : String.valueOf(raw);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cEnd dragon failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
     /**
      * Staff: global TP boost — status / start / end.
      * {@code argsJoined} is everything after {@code /progression boost}.
@@ -1914,6 +1935,13 @@ public final class ForgeBridge {
                 androidRemoveMethod = api.getMethod("androidRemove", sp, String.class);
             } catch (Throwable missing) {
                 androidRemoveMethod = null;
+            }
+        }
+        if (endDragonMethod == null) {
+            try {
+                endDragonMethod = api.getMethod("endDragon", sp, String.class);
+            } catch (Throwable missing) {
+                endDragonMethod = null;
             }
         }
         if (boostMethod == null) {

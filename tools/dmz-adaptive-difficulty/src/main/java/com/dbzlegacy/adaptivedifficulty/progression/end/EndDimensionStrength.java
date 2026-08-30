@@ -265,8 +265,9 @@ public final class EndDimensionStrength {
         double redCap = dragon ? END_REDUCTION_CAP : END_MOB_REDUCTION_CAP;
         double defScale = dragon ? END_DEF_SCALE : END_MOB_DEF_SCALE;
         float mitigated = (float) mitigate(raw, def, minFrac, absorb, redCap, defScale);
+        // Hit-cap AFTER mitigation — do not re-floor with raw*minFrac (that undoes the cap).
         mitigated = capForHits(target, kind, mitigated);
-        event.setAmount(Math.max(mitigated, raw * (float) minFrac));
+        event.setAmount(mitigated);
     }
 
     public static void onKill(LivingDeathEvent event, ServerPlayer killer) {
@@ -923,7 +924,7 @@ public final class EndDimensionStrength {
         return removed;
     }
 
-    /** Live REMOVE_EGG_BLOCK — clear podium dragon_egg blocks near 0,0. */
+    /** Live REMOVE_EGG_BLOCK — clear podium dragon_egg blocks near 0,0 (never end_portal). */
     static int clearDragonEggBlocks(ServerLevel end) {
         if (!REMOVE_EGG_BLOCK || end == null) {
             return 0;
@@ -936,22 +937,35 @@ public final class EndDimensionStrength {
                     pos.m_122178_(x, y, z); // set
                     try {
                         var state = end.m_8055_(pos);
-                        String name = "";
-                        try {
-                            name = ForgeRegistries.BLOCKS.getKey(state.m_60734_()).toString();
-                        } catch (Throwable ignored) {
+                        if (!isDragonEggBlock(state)) {
+                            continue;
                         }
-                        if (state.m_60713_(Blocks.f_50259_)
-                                || (name != null && name.toLowerCase(Locale.ROOT).contains("dragon_egg"))) {
-                            end.m_46597_(pos, Blocks.f_50016_.m_49966_()); // AIR
-                            removed++;
-                        }
+                        end.m_46597_(pos, Blocks.f_50016_.m_49966_()); // AIR
+                        removed++;
                     } catch (Throwable ignored) {
                     }
                 }
             }
         }
         return removed;
+    }
+
+    /** Dragon egg only — never end_portal / end_gateway (older builds wrongly cleared portals). */
+    private static boolean isDragonEggBlock(net.minecraft.world.level.block.state.BlockState state) {
+        if (state == null) {
+            return false;
+        }
+        try {
+            var key = ForgeRegistries.BLOCKS.getKey(state.m_60734_());
+            if (key == null) {
+                return false;
+            }
+            String name = key.toString().toLowerCase(Locale.ROOT);
+            // Exact id only — never "end_portal" (previous bug used END_PORTAL constant).
+            return "minecraft:dragon_egg".equals(name) || name.endsWith(":dragon_egg");
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private static List<EnderDragon> findDragons(ServerLevel end) {

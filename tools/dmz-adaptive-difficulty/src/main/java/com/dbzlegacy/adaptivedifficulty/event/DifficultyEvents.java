@@ -609,11 +609,14 @@ public final class DifficultyEvents {
                 event.setCanceled(true);
                 return;
             }
-            if (com.dbzlegacy.adaptivedifficulty.gui.CnpcGuiOpener.tryOpenFromNpc(
+            // Tags cancel — name matches must NOT cancel (CNPC Skill Check scripts still fire).
+            if (com.dbzlegacy.adaptivedifficulty.gui.CnpcGuiOpener.tryOpenFromTags(
                     player, event.getTarget())) {
                 event.setCanceled(true);
                 return;
             }
+            com.dbzlegacy.adaptivedifficulty.gui.CnpcGuiOpener.tryOpenFromName(
+                    player, event.getTarget());
         }
         PlayerStatChecker.onEntityInteract(event);
     }

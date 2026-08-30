@@ -116,6 +116,33 @@ public final class ProgressionGuiApi {
     }
 
     /**
+     * Staff End dragon spawn/clear — Bukkit {@code /lmdo enddragon …} so CMI aliases
+     * do not die on stubbed CNPC triggers 50/51.
+     */
+    public static String endDragon(ServerPlayer actor, String action) {
+        if (actor == null) {
+            return "§cPlayers only.";
+        }
+        if (!StaffAccess.isStaff(actor)) {
+            return "§cStaff only. §7Use §f/enddragon §7(op) or staff.";
+        }
+        if (!DifficultyConfig.get().enableEndDimensionStrength) {
+            return "§cEnd Dimension Strength is disabled.";
+        }
+        String a = action == null ? "spawn" : action.trim().toLowerCase(java.util.Locale.ROOT);
+        return switch (a) {
+            case "clear", "cleanup", "kill", "cleardragons", "killdragons" -> {
+                com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdCleanupDragons(actor);
+                yield "";
+            }
+            default -> {
+                com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdSpawnDragon(actor);
+                yield "";
+            }
+        };
+    }
+
+    /**
      * Staff: Dr. Gero android upgrade for {@code actor} (blank target) or an online player name.
      * Used by Bukkit {@code /progression android} — avoids Mohist brigadier forwardCommand.
      */

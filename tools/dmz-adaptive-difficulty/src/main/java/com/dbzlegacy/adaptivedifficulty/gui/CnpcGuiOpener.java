@@ -13,16 +13,63 @@ import net.minecraft.world.entity.LivingEntity;
  * Open player-facing LegacyMechanics GUIs from CustomNPC right-click.
  * <p>
  * No permission nodes required — the NPC itself is the access gate for normal players.
- * Match scoreboard tags ({@code lm_rival}, {@code lm_spar}, …) or display-name needles.
+ * Match scoreboard tags ({@code lm_rival}, {@code lm_spar}, …) or <b>strict</b> display-name
+ * needles. Soft substrings like {@code contains("rival")} are intentionally avoided — they
+ * steal clicks from scripted Skill Check NPCs (and false-positives like "Arrival").
+ * <p>
+ * Tag matches should cancel the interact. Name matches open the GUI but must <b>not</b>
+ * cancel — otherwise CNPC interact scripts never run (Skill Check script on a Rival-named NPC).
  * Skill Check has its own opener ({@link SkillCheckService#tryOpenFromNpc}).
  */
 public final class CnpcGuiOpener {
     private CnpcGuiOpener() {}
 
     /**
-     * @return true if a GUI was opened (caller should cancel the interact)
+     * Tag-based open — safe to cancel the interact.
+     *
+     * @return true if a GUI was opened from a scoreboard tag
+     */
+    public static boolean tryOpenFromTags(ServerPlayer player, Entity npc) {
+        if (!eligible(player, npc)) {
+            return false;
+        }
+        String system = fromTags(npc);
+        if (system == null) {
+            return false;
+        }
+        return openSystem(player, system);
+    }
+
+    /**
+     * Strict name-based open — do <b>not</b> cancel the interact (CNPC scripts must still fire).
+     *
+     * @return true if a GUI was opened from the display name
+     */
+    public static boolean tryOpenFromName(ServerPlayer player, Entity npc) {
+        if (!eligible(player, npc)) {
+            return false;
+        }
+        // Tags already handled — avoid double-open.
+        if (fromTags(npc) != null) {
+            return false;
+        }
+        String system = fromName(npc);
+        if (system == null) {
+            return false;
+        }
+        return openSystem(player, system);
+    }
+
+    /**
+     * @return true if a GUI was opened from a <b>tag</b> (caller should cancel the interact).
+     *         Name-only matches are opened without being reported here — use
+     *         {@link #tryOpenFromName} separately without canceling.
      */
     public static boolean tryOpenFromNpc(ServerPlayer player, Entity npc) {
+        return tryOpenFromTags(player, npc);
+    }
+
+    private static boolean eligible(ServerPlayer player, Entity npc) {
         if (player == null || npc == null) {
             return false;
         }
@@ -32,11 +79,8 @@ public final class CnpcGuiOpener {
         if (!SkillCheckService.looksLikeCustomNpc(npc)) {
             return false;
         }
-        String system = resolveSystem(npc);
-        if (system == null) {
-            return false;
-        }
-        return openSystem(player, system);
+        // Never steal Skill Check NPCs (tag / name / scripted Skill Check markers).
+        return !SkillCheckService.isSkillCheckNpc(npc);
     }
 
     private static boolean openSystem(ServerPlayer player, String system) {
@@ -68,35 +112,38 @@ public final class CnpcGuiOpener {
         };
     }
 
-    /** Prefer tags, then display-name needles. */
-    private static String resolveSystem(Entity npc) {
-        String fromTag = fromTags(npc);
-        if (fromTag != null) {
-            return fromTag;
-        }
-        return fromName(npc);
-    }
-
     private static String fromTags(Entity npc) {
         for (String tag : collectTags(npc)) {
-            String t = tag.toLowerCase(Locale.ROOT);
-            if (t.contains("lm_rival") || t.equals("rival")) {
+            String t = tag.toLowerCase(Locale.ROOT).trim();
+            // Skill Check tags are handled elsewhere — never map them to Rival/etc.
+            if (t.contains("lm_skillcheck") || t.equals("skillcheck") || t.equals("skill_check")) {
+                continue;
+            }
+            if (tagEquals(t, "lm_rival") || t.equals("rival")) {
                 return "rival";
             }
-            if (t.contains("lm_spar") || t.contains("lm_sparring") || t.equals("spar")) {
+            if (tagEquals(t, "lm_spar") || tagEquals(t, "lm_sparring") || t.equals("spar")) {
                 return "spar";
             }
-            if (t.contains("lm_hub") || t.contains("lm_legacy") || t.equals("lm")) {
+            if (tagEquals(t, "lm_hub") || tagEquals(t, "lm_legacy") || t.equals("lm")) {
                 return "hub";
             }
-            if (t.contains("lm_diff") || t.contains("lm_difficulty") || t.equals("difficulty")) {
+            if (tagEquals(t, "lm_diff") || tagEquals(t, "lm_difficulty") || t.equals("difficulty")) {
                 return "difficulty";
             }
-            if (t.contains("lm_prestige") || t.equals("prestige")) {
+            if (tagEquals(t, "lm_prestige") || t.equals("prestige")) {
                 return "prestige";
             }
         }
         return null;
+    }
+
+    /** Exact tag or tag with a suffix separator ({@code lm_rival_1}). */
+    private static boolean tagEquals(String tag, String key) {
+        if (tag == null || key == null) {
+            return false;
+        }
+        return tag.equals(key) || tag.startsWith(key + "_") || tag.startsWith(key + "-");
     }
 
     private static String fromName(Entity npc) {
@@ -104,37 +151,25 @@ public final class CnpcGuiOpener {
         if (name == null || name.isBlank()) {
             return null;
         }
-        String hay = stripFormatting(name).toLowerCase(Locale.ROOT);
-        // More specific first.
-        if (containsAny(hay, "sparring", "spar npc", "sparring npc") || hay.equals("spar")) {
+        String hay = stripFormatting(name).toLowerCase(Locale.ROOT).trim();
+        // Skill Check names — leave for SkillCheckService / CNPC scripts.
+        if (containsAny(hay, "skill check", "skillcheck", "skill progress")) {
+            return null;
+        }
+        // Strict phrases / exact names only — no bare substring "rival"/"spar".
+        if (hay.equals("spar") || containsAny(hay, "sparring", "spar npc", "sparring npc")) {
             return "spar";
         }
-        if (containsAny(hay, "rival system", "rivalry", "rival npc") || hay.equals("rival")) {
+        if (hay.equals("rival") || containsAny(hay, "rival system", "rivalry", "rival npc")) {
             return "rival";
         }
-        if (containsAny(hay, "adaptive difficulty", "difficulty npc") || hay.equals("difficulty")) {
+        if (hay.equals("difficulty") || containsAny(hay, "adaptive difficulty", "difficulty npc")) {
             return "difficulty";
         }
-        if (containsAny(hay, "prestige npc") || hay.equals("prestige")) {
+        if (hay.equals("prestige") || containsAny(hay, "prestige npc")) {
             return "prestige";
         }
-        if (containsAny(hay, "legacy mechanics", "mechanics hub", "lm hub") || hay.equals("lm")) {
-            return "hub";
-        }
-        // Soft name matches (substring).
-        if (hay.contains("spar")) {
-            return "spar";
-        }
-        if (hay.contains("rival")) {
-            return "rival";
-        }
-        if (hay.contains("difficulty")) {
-            return "difficulty";
-        }
-        if (hay.contains("prestige")) {
-            return "prestige";
-        }
-        if (hay.contains("legacy mechanics") || hay.contains("mechanics hub")) {
+        if (hay.equals("lm") || containsAny(hay, "legacy mechanics", "mechanics hub", "lm hub")) {
             return "hub";
         }
         return null;

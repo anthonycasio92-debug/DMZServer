@@ -89,7 +89,13 @@ public final class ProgressionCommands {
                 .then(Commands.m_82127_("spawn").executes(ctx -> endSpawn(ctx.getSource())))
                 .then(Commands.m_82127_("clear").executes(ctx -> endClear(ctx.getSource())))
                 .then(Commands.m_82127_("cleanup").executes(ctx -> endClear(ctx.getSource()))));
+        event.getDispatcher().register(Commands.m_82127_("spawndragon")
+                .requires(src -> src.m_6761_(2))
+                .executes(ctx -> endSpawn(ctx.getSource())));
         event.getDispatcher().register(Commands.m_82127_("cleardragons")
+                .requires(src -> src.m_6761_(2))
+                .executes(ctx -> endClear(ctx.getSource())));
+        event.getDispatcher().register(Commands.m_82127_("killdragons")
                 .requires(src -> src.m_6761_(2))
                 .executes(ctx -> endClear(ctx.getSource())));
 

@@ -1,3 +1,16 @@
+## End dragon parity + Skill Check CNPC (2.3.47)
+
+- **Skill Check CNPC**: Forge no longer soft-matches `contains("rival")` (stole
+  scripted Skill Check clicks / false-positives like "Arrival"). Tag opens cancel;
+  name opens do **not** cancel so CNPC scripts still fire. Re-paste
+  `LM-SkillCheck-NPC.js` (2.3.47+).
+- **End hit cap**: damage is set to the capped mitigated value (no longer
+  re-floored with `raw * minFrac`, which undid the ~250-hit fight length).
+- **Egg clear**: only `minecraft:dragon_egg` — older builds cleared `end_portal`
+  near 0,0 and broke the exit portal.
+- **CMI aliases**: `EndDragon-Alias.yml` now calls `lmdo enddragon spawn|clear`
+  (CNPC triggers 50/51 are stubs). Re-import the yml.
+
 ## CNPC GUI open without permission (2.3.46)
 
 Right-click CustomNPCs open player GUIs with **no permission**:
