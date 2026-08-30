@@ -1,0 +1,36 @@
+'Sento Saiyan': 
+  name: 'Sento Saiyan'
+  type: 'Race'
+  'max-level': 1
+  'skill-req-lvl': 0
+  'needs-permission': 'false'
+  'cooldown-message': 'true'
+  incompatible: 
+  - 'Ancient Saiyan'
+  attributes: 
+    'level-base': '2'
+    'level-scale': '0'
+    'cost-base': '20000000'
+    'cost-scale': '0'
+    'cooldown-base': '0'
+    'cooldown-scale': '0'
+    'mana-base': '0'
+    'mana-scale': '0'
+    'points-spent-req-base': '0'
+    'points-spent-req-scale': '0'
+  msg: '&6{player} &2has cast &6{skill}'
+  icon: 'betteritem_yform'
+  'icon-data': 0
+  'icon-durability': 0
+  'icon-lore': 
+  - '&d{name} &7({level}/{max})'
+  - '&2Type: &6{type}'
+  - ''
+  - '{req:level}Level: {attr:level}'
+  - '{req:cost}Cost: {attr:cost}'
+  - ''
+  - 'Unlock the Sento Saiyan Race'
+  - '&7Requires Prestige 1 (class level 2) + TP cost.'
+  - '&7Once purchased, stays unlocked.'
+  desc: []
+  components: {}

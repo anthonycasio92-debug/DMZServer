@@ -1,0 +1,120 @@
+ATTRIBUTES: 
+  rows: 1
+  pages: 1
+  slots: 
+    1: 
+      str: 1
+      vit: 4
+      res: 3
+      skp: 2
+      pwr: 5
+      ene: 6
+      movementspeed: 0
+stViltrumite: 
+  rows: 6
+  pages: 1
+  slots: 
+    1: 
+      'wrathful pursuit': 8
+stPrestige: 
+  rows: 6
+  pages: 1
+  slots: 
+    1: 
+      'permanent majin': 10
+      'permanent mutant': 12
+      'sento saiyan': 28
+      'ancient saiyan': 30
+      unlockrace: 16
+'stDeath God': 
+  rows: 1
+  pages: 1
+  slots: 
+    1: 
+      levitate: 0
+stTechniques: 
+  rows: 6
+  pages: 1
+  slots: 
+    1: 
+      'basic psychokinesis': 0
+stJobs: 
+  rows: 4
+  pages: 1
+  slots: 
+    1: 
+      'hyperbolic time chamber': 5
+      fishing: 3
+      farming: 4
+      building: 2
+stRisen: 
+  rows: 5
+  pages: 1
+  slots: 
+    1: 
+      'frightful visage': 31
+      'flesh hungry': 22
+      'risen dead': 4
+      'hunger unending': 13
+CLASS_DETAILS: 
+  rows: 4
+  pages: 1
+  slots: 
+    1: 
+      race: 22
+      jobs: 4
+      prestige: 13
+      class: 31
+stStrix: 
+  rows: 6
+  pages: 1
+  slots: 
+    1: 
+      'night kin': 4
+      'nocturnal adaptation': 13
+      'soul rend': 31
+      bloodthirst: 40
+      shimmer: 22
+'stDark God': 
+  rows: 3
+  pages: 1
+  slots: 
+    1: 
+      choke: 0
+stTsufaru: 
+  rows: 6
+  pages: 1
+  slots: 
+    1: 
+      'ki sense': 28
+      'ki volley': 8
+      'hellzone grenade': 17
+      'final kamehameha': 34
+      'ki disc': 6
+      'ki laser': 7
+      kamehameha: 16
+      'potential unlock': 36
+      fusion: 45
+      'ki manipulation': 27
+      fly: 9
+      meditation: 19
+      'spirit bomb': 35
+      'ki control': 18
+      jump: 0
+stApprentice: 
+  rows: 3
+  pages: 1
+  slots: 
+    1: 
+      scholarly: 0
+      'magic missile': 2
+      'fire bolt': 4
+stFighter: 
+  rows: 3
+  pages: 1
+  slots: 
+    1: 
+      'power strike': 1
+      roar: 2
+      gutsy: 0
+      courage: 3
