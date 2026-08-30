@@ -5,7 +5,7 @@ progression / CNPC-free / GUI-audit conversation thread — do not revert.
 
 | Commitment | Where | Status |
 |------------|-------|--------|
-| End portals stay blocked; reach End via TP then `/enddragon` | `EndPortalGuard`, `CNPC-FREE.md` | locked |
+| End portals stay blocked; reach End via TP then Difficulty GUI summon | `EndPortalGuard`, `CNPC-FREE.md` | locked |
 | End commands Forge-only (`StaffAccess`); delete CMI enddragon aliases | `ProgressionCommands` | locked |
 | End hit-cap after mitigation; egg clear = `dragon_egg` only | `EndDimensionStrength` | locked |
 | Skill Check: no soft `contains("rival")`; cancel on tag **or** name | `CnpcGuiOpener`, `SkillCheckService` | locked |

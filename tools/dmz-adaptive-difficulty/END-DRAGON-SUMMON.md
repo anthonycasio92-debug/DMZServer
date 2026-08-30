@@ -1,4 +1,4 @@
-# End Dragon — Adaptive Difficulty summon (2.3.72)
+# End Dragon — Adaptive Difficulty summon (2.3.74)
 
 ## Player path (Difficulty GUI only)
 - Button: **Summon End Dragon** on `/difficulty` main page
@@ -13,20 +13,25 @@
   - **No** legacy End Strength HP log-curve or DEF sponge / hit-cap
 - **Only the summoner** can damage it (anti-farm)
 - Ki beam / blast use painted AD attack
+- **Multi-player:** each eligible player may summon their own dragon. Spawn is **near the summoner** (player position + ~16 Y), including off the main island — not forced to `0,0`.
+- Hygiene keeps **at most one living dragon per summoner** and never culls another player's fight.
 
 ## Staff
-- `/enddragon` remains a free staff override using **legacy End Strength** HP/DEF formulas (no summoner lock)
-- `/cleardragons` unchanged
+- **No staff spawn** — `/enddragon`, `/enddragon spawn`, and `/spawndragon` are denied.
+- Clear: `/cleardragons`, `/killdragons`, `/enddragon clear|cleanup`
+- Repair exit podium: `/enddragon repair`
+- Bare `/enddragon` prints staff usage help
 
 ## Config
 - `enableEndPlayerDragonSummon` (default true)
 - `endDragonSummonNetheriteCost` (default 3)
 - `enableEndNaturalDragonSpawn` (default **false** — GUI is the player path)
+- `endEnforceSingleDragon` (default true) — per-summoner cap + strip unauthorized vanilla dragons
 - `bossStatMultiplier` (default 1.5) — shared with AD bosses
 
 ## Fight AI + AD isolation
 - Player-summoned dragons focus the summoner: faster ki cadence, strafe/charge phase steering, optional beam+blast combo.
-- While your summoned dragon is alive, **nearby Adaptive Difficulty mob scaling is suspended** for you (reverts claimed mobs). Staff dragons do not trigger this.
+- While your summoned dragon is alive, **nearby Adaptive Difficulty mob scaling is suspended** for you (reverts claimed mobs).
 
 ## Despawn
 - Despawn when the summoner: turns personal difficulty **OFF**, **dies**, goes offline, or stops participating in AD.

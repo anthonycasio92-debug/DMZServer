@@ -225,7 +225,11 @@ public final class DifficultyConfig {
      * Default {@code false} matches script v2.11.0 — dragon-only scaling.
      */
     public boolean enableEndMobScaling = false;
-    /** Keep at most one living Ender Dragon in The End (script v2.12.0). */
+    /**
+     * Cap living End dragons: at most one player-summoned dragon per summoner,
+     * and strip unauthorized vanilla dragons. Never removes another player's fight.
+     * (Legacy name — was “one dragon in the whole End”.)
+     */
     public boolean endEnforceSingleDragon = true;
     /** Purge / cap leftover DMZ {@code ki_laser} / {@code ki_blast} in The End (v2.12.0). */
     public boolean endKiCleanupEnabled = true;

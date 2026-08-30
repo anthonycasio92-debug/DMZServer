@@ -58,7 +58,7 @@ main `/lm` hub window is titled **Legacy Mechanics**.
 - `/spar admin save|status|mentor resetcd [player]` — sparring.json
 - `/progression admin …` / `/prog admin <flag> on|off` — module flags
 - `/progression boost start|end`, `meditation next`, `android` (staff)
-- `/enddragon`, `/cleardragons`
+- `/enddragon clear|repair`, `/cleardragons` (staff spawn disabled; players use Difficulty GUI)
 
 Data is **mod JSON only** (`config/legacymechanics/rivalry-v4.json`, `progression-v4.json`,
 `sparring.json`) — no CNPC writes.

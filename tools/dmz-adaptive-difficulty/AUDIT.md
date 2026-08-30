@@ -79,8 +79,8 @@ re-placed `EndPodiumFeature` → stacked portals / ruined underside.
 Fix:
 - Egg clear uses real `dragon_egg` (`f_50260_`) + registry id only
 - `repairEndExitPodium` collapses ghost portal layers and rebuilds one fountain
-- Runs on dragon kill, `/enddragon` spawn, hygiene when duplicates detected
-- Staff: `/enddragon repair`
+- Runs on dragon kill, GUI player summon, hygiene when duplicates detected
+- Staff: `/enddragon repair` / `/cleardragons` (staff spawn disabled)
 - `EndPortalGuard` fast-path constants corrected (`end_portal=f_50257_`,
   `end_gateway=f_50446_`)
 

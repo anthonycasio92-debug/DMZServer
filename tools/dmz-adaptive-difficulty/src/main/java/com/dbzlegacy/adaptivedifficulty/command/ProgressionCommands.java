@@ -83,17 +83,17 @@ public final class ProgressionCommands {
                                 ctx.getSource(),
                                 StringArgumentType.getString(ctx, "page")))));
 
-        // End Dimension Strength — StaffAccess (Bukkit OP / admin node), not Forge level-2 only
+        // End Dimension Strength — staff clear/repair only (players summon via Difficulty GUI)
         event.getDispatcher().register(Commands.m_82127_("enddragon")
                 .requires(ProgressionCommands::staff)
-                .executes(ctx -> endSpawn(ctx.getSource()))
-                .then(Commands.m_82127_("spawn").executes(ctx -> endSpawn(ctx.getSource())))
+                .executes(ctx -> endDragonHelp(ctx.getSource()))
+                .then(Commands.m_82127_("spawn").executes(ctx -> endSpawnDenied(ctx.getSource())))
                 .then(Commands.m_82127_("repair").executes(ctx -> endRepair(ctx.getSource())))
                 .then(Commands.m_82127_("clear").executes(ctx -> endClear(ctx.getSource())))
                 .then(Commands.m_82127_("cleanup").executes(ctx -> endClear(ctx.getSource()))));
         event.getDispatcher().register(Commands.m_82127_("spawndragon")
                 .requires(ProgressionCommands::staff)
-                .executes(ctx -> endSpawn(ctx.getSource())));
+                .executes(ctx -> endSpawnDenied(ctx.getSource())));
         event.getDispatcher().register(Commands.m_82127_("cleardragons")
                 .requires(ProgressionCommands::staff)
                 .executes(ctx -> endClear(ctx.getSource())));
@@ -196,9 +196,17 @@ public final class ProgressionCommands {
         return 1;
     }
 
-    private static int endSpawn(CommandSourceStack source) {
+    private static int endDragonHelp(CommandSourceStack source) {
+        reply(source, playerOrNull(source),
+                "§7Staff: §f/enddragon clear§7 · §f/enddragon repair§7 · §f/cleardragons"
+                        + " §8· Player summons: Difficulty GUI only (staff spawn disabled).");
+        return 1;
+    }
+
+    private static int endSpawnDenied(CommandSourceStack source) {
         ServerPlayer p = playerOrNull(source);
         if (p == null) {
+            reply(source, null, "§c[The End] Staff dragon spawn is disabled. §7Use §f/cleardragons§7.");
             return 0;
         }
         return com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdSpawnDragon(p);

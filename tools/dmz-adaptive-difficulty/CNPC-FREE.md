@@ -15,7 +15,7 @@ reference only** — do not load them while matching `enable*` flags are ON.
 | Sparring TP + Command Handler | `/spar` · `/lm` → Spar · tag `lm_spar` |
 | Prestige NPC | `/prestige` · tag `lm_prestige` |
 | SkillCheck / SkillUnlock / trigger 21 | `/skillcheck` (perm) · NPC tag `lm_skillcheck` |
-| End Dimension Strength / triggers 50–51 | `/enddragon` · `/cleardragons` |
+| End Dimension Strength / triggers 50–51 | `/enddragon clear|repair` · `/cleardragons` |
 | Global TP Boost / triggers 30–31 | `/progression boost …` |
 | Meditation + ChangeBiomeMED / trigger 41 | auto rotate · `/progression meditation next` |
 | Android trigger 45 | `/progression android [player]` |

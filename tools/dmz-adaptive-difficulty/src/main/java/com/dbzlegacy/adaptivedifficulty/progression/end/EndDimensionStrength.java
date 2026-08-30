@@ -66,9 +66,9 @@ import net.minecraftforge.registries.ForgeRegistries;
  * Player End dragons are summoned from the Difficulty GUI (T4–T7, 3× Netherite),
  * painted with the summoner's Adaptive Difficulty boss profile (same formulas as
  * nearby AD mobs × boss mult — not the legacy End Strength HP/DEF curve), and
- * damage-locked to that player. Staff {@code /enddragon} still uses End Strength
- * scaling. Same ki beam/blast attacks as before. End mob HP/DEF scaling is off
- * by default (v2.11.0).
+ * damage-locked to that player. Multiple players may each have their own dragon
+ * near them (not forced to the main island). Staff may {@code /cleardragons} /
+ * {@code /enddragon clear|repair} only — no staff spawn.
  */
 public final class EndDimensionStrength {
     private static final String TAG_BUFFED = "end_strength_v15";
@@ -83,7 +83,7 @@ public final class EndDimensionStrength {
     private static final String NBT_KI_MELEE = "end_dragon_ki_melee";
     /** Last {@link PlayerCombatProfile#signature} applied for a player-summoned dragon. */
     private static final String NBT_AD_SIG = "end_dragon_ad_sig";
-    /** Staff {@code /enddragon} spawn — not despawned as vanilla natural. */
+    /** Legacy staff-spawn stamp — staff spawn removed; kept so old entities are not culled as vanilla. */
     private static final String NBT_STAFF_SPAWN = "end_dragon_staff";
     private static final long PLAYER_DRAGON_RETARGET_MS = 750L;
 
@@ -207,7 +207,7 @@ public final class EndDimensionStrength {
         if (!DifficultyConfig.get().enableEndDimensionStrength) {
             return false;
         }
-        // Product rule: only Difficulty GUI / staff /enddragon may spawn dragons.
+        // Product rule: only Difficulty GUI player summons may spawn dragons.
         if (isIntentionalDragonSpawnAllowed()) {
             return false;
         }
@@ -253,7 +253,7 @@ public final class EndDimensionStrength {
             if (!isTheEnd(player.m_9236_())) {
                 continue;
             }
-            // Natural/auto End Dragon spawn removed — GUI summon only (staff /enddragon OK).
+            // Natural/auto End Dragon spawn removed — Difficulty GUI summon only.
         }
 
         ServerLevel end = server.m_129880_(Level.f_46430_); // END
@@ -269,7 +269,7 @@ public final class EndDimensionStrength {
 
         // World-wide End dragon scan — dragons fly far; do not require player proximity.
         if (end != null) {
-            enforceSingleDragon(end);
+            hygieneDragons(end);
             for (EnderDragon dragon : findDragons(end)) {
                 if (isPlayerSummoned(dragon)) {
                     // Live AD retarget to the summoner only (forms in/out). Never other players.
@@ -285,8 +285,7 @@ public final class EndDimensionStrength {
                     }
                     continue;
                 }
-                PlayerPower strongest = strongestInEnd(end, null);
-                maybeRescaleDragon(dragon, end, strongest, now);
+                // Non-player leftover (should be rare) — leave alone after hygiene.
             }
             boolean mobScaling = DifficultyConfig.get().enableEndMobScaling;
             if (mobScaling) {
@@ -331,12 +330,9 @@ public final class EndDimensionStrength {
         if (!dragon && !mobScaling) {
             return;
         }
-        // Attack-tick path: keep a single dragon before DEF mitigation.
+        // Attack-tick path: drop unauthorized vanilla dragons; keep multi-player fights.
         if (dragon && target.m_9236_() instanceof ServerLevel endLevel) {
-            EnderDragon kept = enforceSingleDragon(endLevel);
-            if (kept != null && kept != target) {
-                return;
-            }
+            hygieneDragons(endLevel);
         }
         // Player-summoned: only summoner may damage; live-retarget to their current AD/form.
         // AD-painted dragons skip legacy End Strength DEF sponge / hit-cap — they fight like AD bosses.
@@ -454,59 +450,19 @@ public final class EndDimensionStrength {
         SystemTelemetry.log("end_strength", "dragon_kill", killer, null, Map.of("kind", kind));
     }
 
-    /** Trigger 50 — spawn / refresh End dragon (EndDragonFight-linked like the script). */
+    /** Staff spawn removed — use Difficulty GUI player summon. Clear via {@link #cmdCleanupDragons}. */
     public static int cmdSpawnDragon(ServerPlayer player) {
-        if (player == null) {
-            return 0;
+        if (player != null) {
+            msg(player, "§c[The End] Staff dragon spawn is disabled."
+                    + " §7Players summon from §f/difficulty§7; staff clear with §f/cleardragons§7.");
         }
-        MinecraftServer server = player.m_20194_();
-        if (server == null) {
-            return 0;
-        }
-        ServerLevel end = server.m_129880_(Level.f_46430_); // END
-        if (end == null) {
-            msg(player, "§c[The End] End dimension unavailable.");
-            return 0;
-        }
-        EnderDragon existing = enforceSingleDragon(end);
-        if (existing != null) {
-            PlayerPower power = strongestInEnd(end, player);
-            applyDragonStats(existing, power, "cmd");
-            stampStaffSpawn(existing);
-            lastDragonScaleScore = score(power);
-            msg(player, "§e[The End] An Ender Dragon is already alive.");
-            msg(player, "§8Scaled to §f" + power.name + " §8· HP §c"
-                    + DmzRewards.formatWhole(existing.m_21233_())
-                    + " §8· DEF §b" + DmzRewards.formatWhole(readDef(existing)));
-            return 1;
-        }
-        msg(player, "§7[The End] Spawning Ender Dragon...");
-        try {
-            repairEndExitPodium(end, true);
-        } catch (Throwable ignored) {
-        }
-        PlayerPower power = strongestInEnd(end, player);
-        EnderDragon dragon = spawnFightLinkedDragon(end, player);
-        if (dragon == null) {
-            msg(player, "§c[The End] Failed to spawn — visit The End once, then retry /enddragon.");
-            return 0;
-        }
-        applyDragonStats(dragon, power, "spawn");
-        stampStaffSpawn(dragon);
-        lastDragonScaleScore = score(power);
-        lastNaturalSpawnAt = System.currentTimeMillis();
-        naturalTimerArmed = true;
-        msg(player, "§6[The End] §eSpawned Ender Dragon with §c"
-                + DmzRewards.formatWhole(dragon.m_21233_())
-                + " §eHP / §b" + DmzRewards.formatWhole(readDef(dragon))
-                + " §eDEF §8(scaled to " + power.name + " / Lv" + power.level + ")");
-        SystemTelemetry.log("end_strength", "dragon_spawn", player, null, Map.of("via", "command"));
-        return 1;
+        return 0;
     }
 
     /**
      * Difficulty GUI paid summon: personal AD ON, active T4–T7, 3× Ancient Netherite.
      * Scales to the summoner's Adaptive Difficulty profile; damage-locked to them.
+     * Spawns near the summoner so off-island players get a local fight.
      *
      * @return chat message (empty = silent success path already messaged)
      */
@@ -543,14 +499,12 @@ public final class EndDimensionStrength {
         if (end == null) {
             return "§cEnd dimension unavailable.";
         }
-        EnderDragon existing = enforceSingleDragon(end);
-        if (existing != null) {
-            if (isSummoner(existing, player)) {
-                return "§eYour Ender Dragon is already alive."
-                        + " §8HP §c" + DmzRewards.formatWhole(existing.m_21233_())
-                        + " §8· AD T" + Math.max(0, PersistentDataAccess.getLong(existing, NBT_AD_TIER, tier));
-            }
-            return "§cAn Ender Dragon is already alive in The End.";
+        hygieneDragons(end);
+        EnderDragon owned = findOwnedDragon(end, player);
+        if (owned != null && owned.m_6084_()) {
+            return "§eYour Ender Dragon is already alive."
+                    + " §8HP §c" + DmzRewards.formatWhole(owned.m_21233_())
+                    + " §8· AD T" + Math.max(0, PersistentDataAccess.getLong(owned, NBT_AD_TIER, tier));
         }
         long cost = summonCopperCost();
         String costText = AncientCoinEconomy.formatExactCost(cost);
@@ -560,18 +514,13 @@ public final class EndDimensionStrength {
         if (!AncientCoinEconomy.charge(player, cost)) {
             return AncientCoinEconomy.missingText(player, cost);
         }
-        msg(player, "§7[The End] Spawning Ender Dragon (T" + tier + " AD)…");
-        try {
-            repairEndExitPodium(end, true);
-        } catch (Throwable ignored) {
-        }
+        msg(player, "§7[The End] Spawning Ender Dragon near you (T" + tier + " AD)…");
         PlayerPower power = adScaledPower(player);
-        EnderDragon dragon = spawnFightLinkedDragon(end, player);
+        EnderDragon dragon = spawnNearPlayerDragon(end, player);
         if (dragon == null) {
-            // Refund on spawn failure.
             AncientCoinEconomy.grantExact(player, AncientCoinEconomy.CoinKind.NETHERITE,
                     PLAYER_SUMMON_NETHERITE_COST);
-            return "§cFailed to spawn — visit The End once, then retry.";
+            return "§cFailed to spawn — try again in open sky nearby.";
         }
         stampPlayerSummon(dragon, player, tier, power);
         applySummonerAdStats(dragon, player, "spawn");
@@ -610,8 +559,19 @@ public final class EndDimensionStrength {
     }
 
     /**
-     * Spawn through {@link EndDragonFight} so perch / charge / crystal AI stays linked.
-     * Raw {@code EntityType} summon orphans the dragon (script warning).
+     * Spawn a dragon near the summoner without clearing other players' dragons.
+     * Uses orphan spawn (not EndDragonFight island create) so off-island fights work.
+     */
+    private static EnderDragon spawnNearPlayerDragon(ServerLevel end, ServerPlayer requester) {
+        if (end == null || requester == null) {
+            return null;
+        }
+        return spawnOrphanFallback(end, requester);
+    }
+
+    /**
+     * Legacy EndDragonFight-linked spawn at the main island. Kept for internal
+     * recovery only — clears existing dragons; do not use for multi-player summons.
      */
     private static EnderDragon spawnFightLinkedDragon(ServerLevel end, ServerPlayer requester) {
         if (end == null) {
@@ -619,13 +579,6 @@ public final class EndDimensionStrength {
         }
         ALLOW_INTENTIONAL_DRAGON_SPAWN.set(Boolean.TRUE);
         try {
-            // Clear any leftovers first.
-            for (EnderDragon d : findDragons(end)) {
-                try {
-                    d.m_146870_();
-                } catch (Throwable ignored) {
-                }
-            }
             EndDragonFight fight = end.m_8586_(); // dragonFight
             if (fight == null) {
                 AdaptiveDifficultyMod.LOGGER.warn(
@@ -637,7 +590,6 @@ public final class EndDimensionStrength {
                 fight.m_287277_(); // skipArenaLoadedCheck
             } catch (Throwable ignored) {
             }
-            // dragonKilled=false, previouslyKilled=true (script field names f_64068_/f_64069_).
             setFightBoolean(fight, "f_64068_", false);
             setFightBoolean(fight, "f_64069_", true);
             try {
@@ -681,12 +633,20 @@ public final class EndDimensionStrength {
             double x = 0.5;
             double y = 128.0;
             double z = 0.5;
+            float yaw = 0.0f;
             if (requester != null && isTheEnd(requester.m_9236_())) {
                 x = requester.m_20185_();
-                y = requester.m_20186_() + 12.0;
+                y = requester.m_20186_() + 16.0;
                 z = requester.m_20189_();
+                yaw = requester.m_146908_();
+                if (y < 40.0) {
+                    y = 72.0;
+                }
+                if (y > 240.0) {
+                    y = 200.0;
+                }
             }
-            dragon.m_7678_(x, y, z, 0.0f, 0.0f);
+            dragon.m_7678_(x, y, z, yaw, 0.0f);
             end.m_7967_(dragon);
             return dragon;
         } catch (Throwable t) {
@@ -876,46 +836,24 @@ public final class EndDimensionStrength {
     }
 
     private static void maybeNaturalDragon(ServerPlayer player, long now) {
+        // Natural/auto spawn permanently disabled — Difficulty GUI only.
         if (!DifficultyConfig.get().enableEndNaturalDragonSpawn) {
             return;
         }
-        if (now - lastNaturalCheckAt < NATURAL_CHECK_MS) {
-            return;
-        }
-        lastNaturalCheckAt = now;
-        ServerLevel end = player.m_284548_();
-        if (end == null || !isTheEnd(end)) {
-            return;
-        }
-        EnderDragon kept = enforceSingleDragon(end);
-        if (kept != null) {
-            // Player-summoned dragons stay frozen to summoner spawn stats.
-            if (!isPlayerSummoned(kept)) {
-                maybeRescaleDragon(kept, end, strongestInEnd(end, player), now);
-            }
-            return;
-        }
-        // Script: first boot arms the timer and waits a full interval before spawning.
-        if (!naturalTimerArmed || lastNaturalSpawnAt <= 0L) {
-            lastNaturalSpawnAt = now;
-            naturalTimerArmed = true;
-            return;
-        }
-        if (now - lastNaturalSpawnAt < NATURAL_SPAWN_MS) {
-            return;
-        }
-        int spawned = cmdSpawnDragon(player);
-        if (spawned > 0) {
-            lastNaturalSpawnAt = now;
-            DmzRewards.msg(player, "§5[The End] §cAn Ender Dragon has appeared!");
-        }
+        // Staff natural path removed with staff spawn; keep no-op even if config flipped.
     }
 
     /**
-     * Keep at most one living Ender Dragon. Prefer the healthiest.
-     * Returns the kept dragon, or null if none.
+     * End dragon hygiene:
+     * <ul>
+     *   <li>Remove unauthorized vanilla dragons</li>
+     *   <li>At most one living player-summoned dragon per summoner UUID</li>
+     *   <li>Never cull another player's summoned dragon</li>
+     * </ul>
+     *
+     * @return any remaining living dragon (for ki-cleanup “has dragon” checks), or null
      */
-    static EnderDragon enforceSingleDragon(ServerLevel end) {
+    static EnderDragon hygieneDragons(ServerLevel end) {
         if (end == null) {
             return null;
         }
@@ -923,46 +861,89 @@ public final class EndDimensionStrength {
         if (dragons.isEmpty()) {
             return null;
         }
-        if (!DifficultyConfig.get().endEnforceSingleDragon) {
-            return dragons.get(0);
-        }
-        if (dragons.size() == 1) {
-            return dragons.get(0);
-        }
-        EnderDragon keep = dragons.get(0);
-        double keepHp = dragonHealthScore(keep);
-        for (int i = 1; i < dragons.size(); i++) {
-            EnderDragon d = dragons.get(i);
-            if (d == null) {
+        Map<String, EnderDragon> keepBySummoner = new HashMap<>();
+        List<EnderDragon> remove = new ArrayList<>();
+        EnderDragon any = null;
+        for (EnderDragon d : dragons) {
+            if (d == null || !d.m_6084_()) {
                 continue;
             }
-            double hp = dragonHealthScore(d);
-            if (hp > keepHp) {
-                keep = d;
-                keepHp = hp;
+            if (isUnauthorizedNaturalDragon(d)) {
+                remove.add(d);
+                continue;
             }
+            if (isPlayerSummoned(d)) {
+                String owner = PersistentDataAccess.getString(d, NBT_SUMMONER);
+                if (owner == null || owner.isBlank()) {
+                    remove.add(d);
+                    continue;
+                }
+                if (!DifficultyConfig.get().endEnforceSingleDragon) {
+                    any = d;
+                    continue;
+                }
+                EnderDragon prev = keepBySummoner.get(owner.toLowerCase(Locale.ROOT));
+                if (prev == null) {
+                    keepBySummoner.put(owner.toLowerCase(Locale.ROOT), d);
+                    any = d;
+                } else if (dragonHealthScore(d) > dragonHealthScore(prev)) {
+                    remove.add(prev);
+                    keepBySummoner.put(owner.toLowerCase(Locale.ROOT), d);
+                    any = d;
+                } else {
+                    remove.add(d);
+                }
+                continue;
+            }
+            // Staff-stamped leftovers (legacy) — leave until staff clear.
+            any = d;
         }
-        UUID keepId = keep.m_20148_();
         int removed = 0;
-        for (EnderDragon extra : dragons) {
-            if (extra == null || extra == keep) {
-                continue;
-            }
-            if (keepId != null && keepId.equals(extra.m_20148_())) {
-                continue;
-            }
+        for (EnderDragon extra : remove) {
             try {
-                extra.m_146870_(); // discard
+                extra.m_146870_();
                 removed++;
             } catch (Throwable ignored) {
             }
         }
         if (removed > 0) {
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] Enforced single dragon: removed {} duplicate(s), kept {}",
-                    AdaptiveDifficultyMod.MOD_ID, removed, keepId);
+                    "[{}] End dragon hygiene: removed {} (multi-player safe)",
+                    AdaptiveDifficultyMod.MOD_ID, removed);
         }
-        return keep;
+        if (any != null && any.m_6084_()) {
+            return any;
+        }
+        for (EnderDragon d : findDragons(end)) {
+            if (d != null && d.m_6084_()) {
+                return d;
+            }
+        }
+        return null;
+    }
+
+    /** @deprecated use {@link #hygieneDragons(ServerLevel)} — multi-player safe. */
+    static EnderDragon enforceSingleDragon(ServerLevel end) {
+        return hygieneDragons(end);
+    }
+
+    private static EnderDragon findOwnedDragon(ServerLevel end, ServerPlayer owner) {
+        if (end == null || owner == null) {
+            return null;
+        }
+        EnderDragon best = null;
+        double bestHp = -1.0;
+        for (EnderDragon d : findDragons(end)) {
+            if (d == null || !d.m_6084_() || !isPlayerSummoned(d) || !isSummoner(d, owner)) {
+                continue;
+            }
+            double hp = dragonHealthScore(d);
+            if (hp > bestHp) {
+                best = d;
+                bestHp = hp;
+            }
+        }
+        return best;
     }
 
     /**
@@ -1029,7 +1010,7 @@ public final class EndDimensionStrength {
                 return;
             }
             lastHygieneAt = now;
-            EnderDragon kept = enforceSingleDragon(end);
+            EnderDragon kept = hygieneDragons(end);
             cleanupEndKiProjectiles(end, kept != null);
             // Opportunistic: only when duplicate portal Y-levels are present.
             if (countExitPortalYLevels(end) > 1) {
@@ -1041,53 +1022,59 @@ public final class EndDimensionStrength {
         }
     }
 
-    /** Live 2.12.0+ — periodic DMZ ki beam/blast; player summons get focused AI. */
+    /** Live 2.12.0+ — periodic DMZ ki beam/blast; each living summon gets its own AI tick. */
     static void tickDragonExtraAttacks(ServerLevel end, long now) {
         if (!DRAGON_EXTRA_ATTACKS || end == null || !DifficultyConfig.get().enableEndDimensionStrength) {
             return;
         }
         try {
-            EnderDragon dragon = enforceSingleDragon(end);
-            if (dragon == null || !dragon.m_6084_()) {
-                return;
-            }
-            boolean playerFight = isPlayerSummoned(dragon);
-            long interval = playerFight ? PLAYER_DRAGON_ATTACK_INTERVAL_MS : DRAGON_ATTACK_INTERVAL_MS;
-            if (now - lastDragonAttackAt < interval) {
-                return;
-            }
-            if (isDragonDying(dragon)) {
-                return;
-            }
-            double range = playerFight ? PLAYER_DRAGON_ATTACK_RANGE : DRAGON_ATTACK_RANGE;
-            ServerPlayer target = preferredDragonTarget(end, dragon, range);
-            if (target == null) {
-                return;
-            }
-            lastDragonAttackAt = now;
-            // Steer vanilla phases at the summoner (strafe / charge) without replacing ki types.
-            if (playerFight) {
-                maybeSteerDragonPhase(dragon, target, now);
-            }
-            aimLivingAt(dragon, target);
-            double roll = Math.random();
-            boolean beamFirst = roll < DRAGON_KI_BEAM_CHANCE;
-            boolean fired;
-            if (beamFirst) {
-                fired = fireDragonKiBeam(end, dragon, target);
-                if (!fired) {
+            for (EnderDragon dragon : findDragons(end)) {
+                if (dragon == null || !dragon.m_6084_() || isUnauthorizedNaturalDragon(dragon)) {
+                    continue;
+                }
+                boolean playerFight = isPlayerSummoned(dragon);
+                long interval = playerFight ? PLAYER_DRAGON_ATTACK_INTERVAL_MS : DRAGON_ATTACK_INTERVAL_MS;
+                long lastAt = PersistentDataAccess.getLong(dragon, "end_dragon_atk_at", 0L);
+                if (now - lastAt < interval) {
+                    continue;
+                }
+                if (isDragonDying(dragon)) {
+                    continue;
+                }
+                double range = playerFight ? PLAYER_DRAGON_ATTACK_RANGE : DRAGON_ATTACK_RANGE;
+                ServerPlayer target = preferredDragonTarget(end, dragon, range);
+                if (target == null) {
+                    continue;
+                }
+                CompoundTag tag = PersistentDataAccess.get(dragon);
+                if (PersistentDataAccess.isWritable(tag)) {
+                    tag.m_128356_("end_dragon_atk_at", now);
+                }
+                // Steer vanilla phases at the summoner (strafe / charge) without replacing ki types.
+                if (playerFight) {
+                    maybeSteerDragonPhase(dragon, target, now);
+                }
+                aimLivingAt(dragon, target);
+                double roll = Math.random();
+                boolean beamFirst = roll < DRAGON_KI_BEAM_CHANCE;
+                boolean fired;
+                if (beamFirst) {
+                    fired = fireDragonKiBeam(end, dragon, target);
+                    if (!fired) {
+                        fired = fireDragonKiBlast(end, dragon, target);
+                    }
+                } else {
                     fired = fireDragonKiBlast(end, dragon, target);
                 }
-            } else {
-                fired = fireDragonKiBlast(end, dragon, target);
-            }
-            // Occasional combo: second shot of the other type.
-            if (fired && playerFight && Math.random() < DRAGON_COMBO_CHANCE) {
-                if (beamFirst) {
-                    fireDragonKiBlast(end, dragon, target);
-                } else {
-                    fireDragonKiBeam(end, dragon, target);
+                // Occasional combo: second shot of the other type.
+                if (fired && playerFight && Math.random() < DRAGON_COMBO_CHANCE) {
+                    if (beamFirst) {
+                        fireDragonKiBlast(end, dragon, target);
+                    } else {
+                        fireDragonKiBeam(end, dragon, target);
+                    }
                 }
+                lastDragonAttackAt = now;
             }
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
@@ -1116,8 +1103,13 @@ public final class EndDimensionStrength {
         if (dragon == null || target == null) {
             return;
         }
-        if (now - lastDragonPhaseSteerAt < PLAYER_DRAGON_PHASE_STEER_MS) {
+        long lastSteer = PersistentDataAccess.getLong(dragon, "end_dragon_phase_steer_at", 0L);
+        if (now - lastSteer < PLAYER_DRAGON_PHASE_STEER_MS) {
             return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(dragon);
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128356_("end_dragon_phase_steer_at", now);
         }
         lastDragonPhaseSteerAt = now;
         try {

@@ -23,7 +23,7 @@ are MEDIUM/intentional. See `SCRIPT-AUDIT.md` for 2.3.54 Yardrat/RaceLock/Shadow
 | Skill Check | `/skillcheck` | SkillsChest / CmiSkills / SkillsMenu | `lm_skillcheck` | donator | — |
 | Skills admin | `/skills` | same Skills GUIs | hub | staff | unlock admin |
 | Progression | `/progression`, `/prog` | ProgressionChest / CmiProg / ProgChat | hub staff | meditation + android remove | flags / boost / convert |
-| End dragon | `/enddragon`, `/spawndragon`, `/cleardragons`, `/killdragons` | — | — | staff (`StaffAccess`) | spawn/clear |
+| End dragon | `/enddragon clear|repair`, `/cleardragons`, `/killdragons` (`/spawndragon` denied) | — | — | staff (`StaffAccess`) | clear/repair only |
 | Bridge | `/lmdo …` | — | CMI clicks | internal | — |
 
 Hub hops and CMI buttons must use **`/lmdo lm open <system>`** (not bare `/lm`)

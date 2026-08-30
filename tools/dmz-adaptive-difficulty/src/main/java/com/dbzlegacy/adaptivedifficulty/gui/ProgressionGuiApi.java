@@ -113,29 +113,35 @@ public final class ProgressionGuiApi {
     }
 
     /**
-     * Staff End dragon spawn/clear — optional Bukkit {@code /lmdo enddragon …}
-     * bridge. Prefer Forge {@code /enddragon} / {@code /cleardragons} (no CMI).
+     * Staff End dragon clear/repair — optional Bukkit {@code /lmdo enddragon …}
+     * bridge. Prefer Forge {@code /enddragon clear} / {@code /cleardragons} (no CMI).
+     * Staff spawn is disabled; players summon from the Difficulty GUI.
      */
     public static String endDragon(ServerPlayer actor, String action) {
         if (actor == null) {
             return "§cPlayers only.";
         }
         if (!StaffAccess.isStaff(actor)) {
-            return "§cStaff only. §7Use §f/enddragon §7(op) or staff.";
+            return "§cStaff only. §7Use §f/enddragon clear§7 (op) or staff.";
         }
         if (!DifficultyConfig.get().enableEndDimensionStrength) {
             return "§cEnd Dimension Strength is disabled.";
         }
-        String a = action == null ? "spawn" : action.trim().toLowerCase(java.util.Locale.ROOT);
+        String a = action == null ? "" : action.trim().toLowerCase(java.util.Locale.ROOT);
         return switch (a) {
             case "clear", "cleanup", "kill", "cleardragons", "killdragons" -> {
                 com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdCleanupDragons(actor);
                 yield "";
             }
-            default -> {
+            case "repair" -> {
+                com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdRepairPodium(actor);
+                yield "";
+            }
+            case "spawn", "spawndragon" -> {
                 com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength.cmdSpawnDragon(actor);
                 yield "";
             }
+            default -> "§7Staff: §fclear§7 / §frepair§7. §8Player summons: Difficulty GUI only.";
         };
     }
 
