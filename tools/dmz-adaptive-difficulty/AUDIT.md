@@ -1,3 +1,18 @@
+## Script parity deep check (2.3.52)
+
+Re-verified Java vs live/backup scripts (`uploads/live-scripts-2026-08-27/`,
+`script-backups-full`). Core Rival/Spar/Prestige/End/Android/SkillCheck/Meditation/
+Flight/SprintJump/Farming/Building/combat/Fabled OK.
+
+Gaps fixed in this release:
+- Yardrat starters → real skill IDs `kimanipulation` / `kicontrol`
+- RaceLock clears stuck saga `difficultyChosen` after reset + while create incomplete
+- ShadowDummy dual-reads legacy CD NBT key
+- Global TP Boost 5s end debounce
+
+Conversation-era changes (GUI hub hops, StaffAccess enddragon, player prestige/
+android remove, CNPC-free) preserved — not regressions vs scripts.
+
 ## GUI + command audit (2.3.51)
 
 Full GUI/command/lmdo/inspect audit: `GUI-COMMAND-AUDIT.md`.

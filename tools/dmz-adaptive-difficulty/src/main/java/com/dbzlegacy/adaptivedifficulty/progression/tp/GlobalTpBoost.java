@@ -22,6 +22,8 @@ public final class GlobalTpBoost {
     private static final int ENCODED_MINUTE_DIVISOR = 10_000;
     private static final int EFFECT_REFRESH_BUFFER_TICKS = 100;
     private static final long TRIGGER_LOCK_MS = 3000L;
+    /** Script TP boost end.js END_LOCK_MS — debounce duplicate end. */
+    private static final long END_LOCK_MS = 5000L;
 
     private static final AtomicBoolean ACTIVE = new AtomicBoolean(false);
     private static final AtomicReference<Double> MULTIPLIER = new AtomicReference<>(0.0);
@@ -30,6 +32,7 @@ public final class GlobalTpBoost {
     private static final AtomicReference<String> PURCHASER = new AtomicReference<>("");
     private static final AtomicLong TRIGGER_LOCK = new AtomicLong(0L);
     private static final AtomicReference<String> TRIGGER_SIGNATURE = new AtomicReference<>("");
+    private static final AtomicLong END_LOCK = new AtomicLong(0L);
 
     private GlobalTpBoost() {}
 
@@ -127,9 +130,14 @@ public final class GlobalTpBoost {
 
     /** Trigger 31 / {@code /progression boost end}. */
     public static String endBoost(boolean announce) {
+        long now = System.currentTimeMillis();
+        if (now < END_LOCK.get()) {
+            return "§7Global TP boost end is on cooldown.";
+        }
         if (!ACTIVE.get() && AMPLIFIER.get() < 0) {
             return "§7No global TP boost is active.";
         }
+        END_LOCK.set(now + END_LOCK_MS);
         clear();
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {

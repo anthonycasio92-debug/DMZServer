@@ -33,6 +33,8 @@ public final class ShadowDummyLimiter {
     private static final String TAG_SPAWN_PROTECT_UNTIL = "dmz_minigame_spawn_protect_until";
     private static final String NBT_LIMITER_LOCKED = "dmz_shadow_limiter_locked";
     private static final String KEY_COOLDOWN = "lm_shadow_dummy_cd_until";
+    /** Legacy CNPC / script key — read so mid-cooldown players keep their CD after migrate. */
+    private static final String KEY_COOLDOWN_LEGACY = "dmz_minigame_shadow_dummy_cooldown_until";
 
     private static final Map<UUID, Long> COOLDOWN_UNTIL = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> PROTECT_UNTIL = new ConcurrentHashMap<>();
@@ -94,8 +96,13 @@ public final class ShadowDummyLimiter {
 
         long cdUntil = COOLDOWN_UNTIL.getOrDefault(player.m_20148_(), 0L);
         CompoundTag pdata = PersistentDataAccess.get(player);
-        if (PersistentDataAccess.isWritable(pdata) && pdata.m_128441_(KEY_COOLDOWN)) {
-            cdUntil = Math.max(cdUntil, pdata.m_128454_(KEY_COOLDOWN));
+        if (PersistentDataAccess.isWritable(pdata)) {
+            if (pdata.m_128441_(KEY_COOLDOWN)) {
+                cdUntil = Math.max(cdUntil, pdata.m_128454_(KEY_COOLDOWN));
+            }
+            if (pdata.m_128441_(KEY_COOLDOWN_LEGACY)) {
+                cdUntil = Math.max(cdUntil, pdata.m_128454_(KEY_COOLDOWN_LEGACY));
+            }
         }
         if (now < cdUntil) {
             deny(player, found, data, status, "cooldown");
@@ -180,6 +187,7 @@ public final class ShadowDummyLimiter {
         CompoundTag pdata = PersistentDataAccess.get(player);
         if (PersistentDataAccess.isWritable(pdata)) {
             pdata.m_128356_(KEY_COOLDOWN, now + COOLDOWN_MS);
+            pdata.m_128356_(KEY_COOLDOWN_LEGACY, now + COOLDOWN_MS);
         }
 
         DmzRewards.msg(player, "§5[Shadow Dummy] §dShadow Dummy summoned.");

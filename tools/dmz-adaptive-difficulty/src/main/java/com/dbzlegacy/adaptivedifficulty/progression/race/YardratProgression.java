@@ -15,8 +15,9 @@ import net.minecraft.server.level.ServerPlayer;
 /** Port of Yardrat.js — form mastery double-gain + starter ki skills. */
 public final class YardratProgression {
     private static final String RACE = "yardrat";
-    private static final String SKILL_ONE = "ki_manipulation";
-    private static final String SKILL_TWO = "ki_control";
+    /** Live skills.json IDs (script used underscores — those IDs do not exist). */
+    private static final String SKILL_ONE = "kimanipulation";
+    private static final String SKILL_TWO = "kicontrol";
 
     private YardratProgression() {}
 

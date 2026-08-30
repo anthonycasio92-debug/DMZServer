@@ -5,9 +5,15 @@ import com.dbzlegacy.adaptivedifficulty.progression.FabledSkills;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
+import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.ScreenNotify;
+import com.dragonminez.common.network.NetworkHandler;
+import com.dragonminez.common.network.S2C.ProgressionSyncS2C;
+import com.dragonminez.common.quest.PartyManager;
+import com.dragonminez.common.quest.PlayerQuestData;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Character;
+import com.dragonminez.common.stats.character.Status;
 import java.util.Locale;
 import java.util.Map;
 import net.minecraft.commands.CommandSourceStack;
@@ -17,12 +23,14 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Port of DMZ RACE LOCK.js — restricted races require a Fabled unlock skill.
+ * Also clears stuck saga {@code difficultyChosen} after reset (script parity).
  */
 public final class RaceLock {
     /** Must match live {@code DMZ RACE LOCK.js} RESTRICTED_RACE_IDS. */
     private static final String[] RESTRICTED_RACE_IDS = {"ancient_saiyan", "sento_saiyan"};
     private static final String[] REQUIRED_FABLED_SKILLS = {"Ancient Saiyan", "Sento Saiyan"};
     private static final String[] DISPLAY_NAMES = {"Ancient Saiyan", "Sento Saiyan"};
+    private static final long SAGA_DIFF_COOLDOWN_MS = 8_000L;
 
     private RaceLock() {}
 
@@ -36,7 +44,33 @@ public final class RaceLock {
         ProgressionData.tempPut(player, "restricted_race_command_tick", nowMs + 1000L);
         try {
             StatsData data = DmzProgression.stats(player);
-            Character ch = data == null ? null : data.getCharacter();
+            if (data == null) {
+                return;
+            }
+            Status status;
+            try {
+                status = data.getStatus();
+            } catch (Throwable t) {
+                return;
+            }
+            if (status == null) {
+                return;
+            }
+
+            // Character not finished: allow race GUI preview + unlock stuck saga picker.
+            boolean created;
+            try {
+                created = status.isHasCreatedCharacter();
+            } catch (Throwable t) {
+                created = true;
+            }
+            if (!created) {
+                maybeAutoUnlockStuckDifficulty(player, data, nowMs);
+                ProgressionData.tempRemove(player, "restricted_race_command_last_state");
+                return;
+            }
+
+            Character ch = data.getCharacter();
             if (ch == null) {
                 return;
             }
@@ -86,8 +120,142 @@ public final class RaceLock {
 
             String cmd = "dmzstats reset " + player.m_7755_().getString() + " 0 false";
             dispatchConsole(player.m_20194_(), cmd);
+            // Script: clear stuck saga difficulty as soon as reset is issued.
+            clearStuckSagaDifficulty(player, data, true);
             SystemTelemetry.log("progression", "race_lock_reset", player, null,
-                    Map.of("race", lower, "required", required));
+                    Map.of("race", lower, "required", required, "display", display));
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * While create is incomplete, keep clearing stuck difficultyChosen / ghost party
+     * so the Easy/Normal/Hard picker can open (DMZ RACE LOCK.js maybeAutoUnlockStuckDifficulty).
+     */
+    private static void maybeAutoUnlockStuckDifficulty(ServerPlayer player, StatsData data, long nowMs) {
+        PlayerQuestData quest = questData(data);
+        if (quest == null) {
+            return;
+        }
+        boolean chosen = false;
+        boolean inParty = false;
+        boolean leader = false;
+        try {
+            chosen = quest.isDifficultyChosen();
+        } catch (Throwable ignored) {
+        }
+        try {
+            inParty = quest.isInParty();
+            leader = quest.isPartyLeader(player.m_20148_());
+        } catch (Throwable ignored) {
+        }
+        boolean stuck = chosen || (inParty && !leader);
+        if (!stuck) {
+            return;
+        }
+        long coolUntil = ProgressionData.tempGetLong(player, "race_lock_saga_diff_cooldown", 0L);
+        if (nowMs < coolUntil) {
+            return;
+        }
+        ProgressionData.tempPut(player, "race_lock_saga_diff_cooldown", nowMs + SAGA_DIFF_COOLDOWN_MS);
+        clearStuckSagaDifficulty(player, data, false);
+    }
+
+    /**
+     * Port of clearStuckSagaDifficulty — leave non-leader party, requestDifficultyReselect,
+     * force setDifficultyChosen(false), sync.
+     */
+    private static boolean clearStuckSagaDifficulty(ServerPlayer player, StatsData data, boolean notify) {
+        if (data == null || player == null) {
+            return false;
+        }
+        PlayerQuestData quest = questData(data);
+        if (quest == null) {
+            return false;
+        }
+        boolean wasInParty = false;
+        boolean wasLeader = false;
+        try {
+            wasInParty = quest.isInParty();
+            wasLeader = quest.isPartyLeader(player.m_20148_());
+        } catch (Throwable ignored) {
+        }
+        if (wasInParty && !wasLeader) {
+            leaveDmzParty(player, data);
+            quest = questData(data);
+            if (quest == null) {
+                return false;
+            }
+        }
+        try {
+            quest.requestDifficultyReselect();
+        } catch (Throwable t) {
+            try {
+                quest.setDifficultyChosen(false);
+            } catch (Throwable setErr) {
+                if (notify) {
+                    DmzRewards.msg(player, "§c[Race Lock] Could not clear difficultyChosen.");
+                }
+                return false;
+            }
+        }
+        try {
+            quest.setDifficultyChosen(false);
+        } catch (Throwable ignored) {
+        }
+        syncProgression(player);
+        boolean stillChosen = false;
+        try {
+            stillChosen = quest.isDifficultyChosen();
+        } catch (Throwable ignored) {
+        }
+        if (notify) {
+            if (!stillChosen) {
+                DmzRewards.msg(player, "§5[Race Lock] §aSaga difficulty unlocked.");
+                DmzRewards.msg(player,
+                        "§7Close and reopen the Saga / Quest Tree, then choose Easy, Normal, or Hard.");
+            } else {
+                DmzRewards.msg(player, "§c[Race Lock] Unlock ran but difficultyChosen is still true.");
+            }
+            if (wasInParty && !wasLeader) {
+                DmzRewards.msg(player, "§e[Race Lock] Left DMZ party so difficulty selection is allowed.");
+            }
+        }
+        return !stillChosen;
+    }
+
+    private static void leaveDmzParty(ServerPlayer player, StatsData data) {
+        try {
+            PartyManager.leaveParty(player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            PlayerQuestData quest = questData(data);
+            if (quest != null && quest.isInParty()) {
+                quest.clearPartyState();
+            }
+        } catch (Throwable ignored) {
+        }
+        syncProgression(player);
+    }
+
+    private static PlayerQuestData questData(StatsData data) {
+        if (data == null) {
+            return null;
+        }
+        try {
+            return data.getPlayerQuestData();
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static void syncProgression(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        try {
+            NetworkHandler.sendToPlayer(new ProgressionSyncS2C(player), player);
         } catch (Throwable ignored) {
         }
     }
