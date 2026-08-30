@@ -232,7 +232,7 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 2.3.63", 'VERSION = "2.3.63"' in mod)
+    check("VERSION 2.3.64", 'VERSION = "2.3.64"' in mod)
     check("formula revision 38", "mix(h, 38L)" in profile)
     check("hpFloorStrength present", "hpFloorStrength" in profile)
     check("T1–T3 god-form floors raised", "case 1 -> 0.52" in profile and "case 3 -> 0.80" in profile)

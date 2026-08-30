@@ -91,6 +91,7 @@ public final class ForgeBridge {
     private static Method meditationExplainForPlayerMethod;
     private static Method meditationAdvanceMethod;
     private static Method androidConvertMethod;
+    private static Method androidConvertConsoleMethod;
     private static Method androidRemoveMethod;
     private static Method endDragonMethod;
     private static Method boostMethod;
@@ -1332,6 +1333,32 @@ public final class ForgeBridge {
         }
     }
 
+    /**
+     * Console / Saga / Fabled — no Bukkit player actor.
+     * {@code androidify <player>} or {@code progression android <player>}.
+     */
+    public static String androidConvertConsole(String targetName) {
+        try {
+            ensureProgressionResolved(preferredProgressionClassLoader());
+            if (androidConvertConsoleMethod != null) {
+                Object raw = androidConvertConsoleMethod.invoke(
+                        null, targetName == null ? "" : targetName);
+                return raw == null ? "" : String.valueOf(raw);
+            }
+            // Older jars: androidConvert(null, name) after 2.3.64 API.
+            if (androidConvertMethod != null) {
+                Object raw = androidConvertMethod.invoke(
+                        null, null, targetName == null ? "" : targetName);
+                return raw == null ? "" : String.valueOf(raw);
+            }
+            return "§cAndroid console API missing — update LegacyMechanics jar.";
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cAndroid convert failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
     /** Staff: remove Android upgrade (two-click confirm) for self or online name. */
     public static String androidRemove(Player actor, String targetName) {
         Object nms = nmsPlayer(actor);
@@ -1932,6 +1959,13 @@ public final class ForgeBridge {
                 androidConvertMethod = api.getMethod("androidConvert", sp, String.class);
             } catch (Throwable missing) {
                 androidConvertMethod = null;
+            }
+        }
+        if (androidConvertConsoleMethod == null) {
+            try {
+                androidConvertConsoleMethod = api.getMethod("androidConvertConsole", String.class);
+            } catch (Throwable missing) {
+                androidConvertConsoleMethod = null;
             }
         }
         if (androidRemoveMethod == null) {

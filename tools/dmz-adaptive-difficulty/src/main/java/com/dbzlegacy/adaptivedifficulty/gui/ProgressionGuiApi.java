@@ -142,19 +142,32 @@ public final class ProgressionGuiApi {
     /**
      * Staff: Dr. Gero android upgrade for {@code actor} (blank target) or an online player name.
      * Used by Bukkit {@code /progression android} — avoids Mohist brigadier forwardCommand.
+     * <p>
+     * Console / Saga: pass {@code actor == null} with a non-blank online {@code targetName}
+     * (also exposed as {@link #androidConvertConsole(String)}).
      */
     public static String androidConvert(ServerPlayer actor, String targetName) {
+        if (!DifficultyConfig.get().enableProgression) {
+            return "§cProgression system is disabled.";
+        }
+        if (!DifficultyConfig.get().enableAndroidConversion) {
+            return "§cAndroid conversion is disabled.";
+        }
+        String name = targetName == null ? "" : targetName.trim();
         if (actor == null) {
-            return "§cPlayers only.";
+            if (name.isBlank()) {
+                return "§cConsole usage: §fandroidify <player>";
+            }
+            ServerPlayer target = resolveOnlineByName(name);
+            if (target == null) {
+                return "§cPlayer not found (must be online): §f" + name;
+            }
+            return ProgressionSystem.androidConvert(target);
         }
         if (!StaffAccess.isStaff(actor)) {
             return "§cStaff only.";
         }
-        if (!DifficultyConfig.get().enableProgression) {
-            return "§cProgression system is disabled.";
-        }
         ServerPlayer target = actor;
-        String name = targetName == null ? "" : targetName.trim();
         if (!name.isBlank()) {
             target = resolveOnline(actor, name);
             if (target == null) {
@@ -162,6 +175,13 @@ public final class ProgressionGuiApi {
             }
         }
         return ProgressionSystem.androidConvert(target);
+    }
+
+    /**
+     * Console / Saga / Fabled: {@code androidify <playerName>} (player must be online).
+     */
+    public static String androidConvertConsole(String targetName) {
+        return androidConvert(null, targetName);
     }
 
     /**
@@ -339,7 +359,7 @@ public final class ProgressionGuiApi {
         try {
             var server = actor.m_20194_(); // getServer
             if (server == null) {
-                return null;
+                return resolveOnlineByName(name);
             }
             ServerPlayer exact = server.m_6846_().m_11255_(name);
             if (exact != null) {
@@ -347,6 +367,30 @@ public final class ProgressionGuiApi {
             }
             for (ServerPlayer online : server.m_6846_().m_11314_()) {
                 if (online.m_7755_().getString().equalsIgnoreCase(name)) {
+                    return online;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return resolveOnlineByName(name);
+    }
+
+    /** Resolve an online player without an actor (console / Saga). */
+    private static ServerPlayer resolveOnlineByName(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        try {
+            var server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+            if (server == null) {
+                return null;
+            }
+            ServerPlayer exact = server.m_6846_().m_11255_(name.trim());
+            if (exact != null) {
+                return exact;
+            }
+            for (ServerPlayer online : server.m_6846_().m_11314_()) {
+                if (online.m_7755_().getString().equalsIgnoreCase(name.trim())) {
                     return online;
                 }
             }

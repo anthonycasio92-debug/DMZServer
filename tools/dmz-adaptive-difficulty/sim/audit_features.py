@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.63", 'VERSION = "2.3.63"' in mod)
+    check("VERSION 2.3.64", 'VERSION = "2.3.64"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -673,7 +673,7 @@ def main() -> int:
     gui_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
     forge_cmds = read(SRC / "com/dbzlegacy/adaptivedifficulty/command/ProgressionCommands.java")
     forge_bridge = read(gui_root / "ForgeBridge.java")
-    check("console boost leaf", "executeConsoleBoost" in prog_tree)
+    check("console androidify leaf", "executeAndroidify" in prog_tree and "androidConvertConsole" in forge)
     check("console boost example", "progression boost start 2 30" in prog_tree)
     check("GuiApi console default purchaser", 'actor == null ? "Server"' in gui_api)
     check("GuiApi console usage hint", "Console OK (store)" in gui_api)

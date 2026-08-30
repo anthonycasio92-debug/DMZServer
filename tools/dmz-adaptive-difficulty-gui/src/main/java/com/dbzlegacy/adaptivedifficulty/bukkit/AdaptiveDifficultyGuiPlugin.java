@@ -76,7 +76,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 getLogger().info("Version handshake OK: " + pluginVer);
             }
         }
-        getLogger().info("Registered Bukkit /difficulty /rival /spar /lm /progression /prestige /skills /skillcheck.");
+        getLogger().info("Registered Bukkit /difficulty /rival /spar /lm /progression /androidify /prestige /skills /skillcheck.");
     }
 
     /**
@@ -713,6 +713,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         }
         if ("progression".equals(name)) {
             return handleProgression(sender, args);
+        }
+        if ("androidify".equals(name) || "androidification".equals(name)) {
+            return progressionCommandTree.executeAndroidify(sender, args);
         }
         if ("prestige".equals(name)) {
             return handlePrestige(sender, args);

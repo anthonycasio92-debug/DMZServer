@@ -101,9 +101,35 @@ public final class ProgressionCommands {
                 .requires(ProgressionCommands::staff)
                 .executes(ctx -> endClear(ctx.getSource())));
 
+        // Console / Saga aliases — Mohist Bukkit /progression blocks console except boost.
+        registerAndroidify(event, "androidify");
+        registerAndroidify(event, "androidification");
+
         AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] registered /progression /prog /prestige /skills /skillcheck /enddragon",
+                "[{}] registered /progression /prog /prestige /skills /skillcheck /enddragon"
+                        + " /androidify /androidification",
                 AdaptiveDifficultyMod.MOD_ID
+        );
+    }
+
+    private static void registerAndroidify(RegisterCommandsEvent event, String name) {
+        event.getDispatcher().register(
+                Commands.m_82127_(name)
+                        .requires(src -> src.m_6761_(2) || staff(src))
+                        .then(Commands.m_82129_("player", StringArgumentType.word())
+                                .executes(ctx -> androidPlayer(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "player"))))
+                        .executes(ctx -> {
+                            if (playerOrNull(ctx.getSource()) == null) {
+                                ctx.getSource().m_288197_(
+                                        () -> Component.m_237113_(
+                                                "§cUsage: §f/" + name + " <player>"),
+                                        false);
+                                return 0;
+                            }
+                            return androidSelf(ctx.getSource());
+                        })
         );
     }
 

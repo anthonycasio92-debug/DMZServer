@@ -17,7 +17,8 @@ import org.bukkit.entity.Player;
  * <p>
  * <b>Players:</b> {@code /progression meditation} only — other actions via {@code /lm} GUI.
  * <b>Staff:</b> full tree (GUI · boost · android · flags · do).
- * <b>Console:</b> {@code /progression boost …} only (store / Tebex TP boost purchases).
+ * <b>Console:</b> {@code /progression boost …} (store / Tebex) and
+ * {@code /progression android <player>} / {@code /androidify <player>} (Saga).
  * <p>
  * Mohist: this plugin owns the command name, so every leaf must be handled here and
  * call into LegacyMechanics via {@link ForgeBridge} — never Forge brigadier
@@ -63,9 +64,9 @@ public final class ProgressionCommandTree implements TabCompleter {
 
     /** @return true (always handled) */
     public boolean execute(CommandSender sender, String[] args) {
-        // Console / command blocks: TP boost only (store / Tebex purchases).
+        // Console / command blocks: boost + androidify (Saga / Fabled).
         if (!(sender instanceof Player player)) {
-            return executeConsoleBoost(sender, args);
+            return executeConsole(sender, args);
         }
         if (!AdaptiveDifficultyGuiPlugin.canUsePlayerGui(player)) {
             player.sendMessage("§cNo permission: dmzdiff.gui");
@@ -157,29 +158,59 @@ public final class ProgressionCommandTree implements TabCompleter {
     }
 
     /**
-     * Console-safe TP boost for store purchases (Tebex / panel).
+     * Console-safe commands for store / Saga / Fabled.
      * Examples:
      * <pre>
      *   progression boost start 2 30 PlayerName
-     *   progression boost start 1250030 PlayerName
-     *   progression boost end
-     *   progression boost
+     *   progression android PlayerName
+     *   androidify PlayerName
      * </pre>
      */
-    private boolean executeConsoleBoost(CommandSender sender, String[] args) {
+    private boolean executeConsole(CommandSender sender, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage("§cConsole usage: §fprogression boost start <mult> <minutes> [name]");
-            sender.sendMessage("§8Also: §fprogression boost end §8· §fprogression boost status");
+            sender.sendMessage("§cConsole: §fprogression boost … §8| §fprogression android <player>");
+            sender.sendMessage("§8Also: §fandroidify <player>");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
-        if (!("boost".equals(sub) || "tpboost".equals(sub))) {
-            sender.sendMessage("§cConsole may only run §f/progression boost …");
-            sender.sendMessage("§8Example: §fprogression boost start 2 30 {username}");
+        if ("boost".equals(sub) || "tpboost".equals(sub)) {
+            String joined = joinFrom(args, 1);
+            sendMultiline(sender, ForgeBridge.boost(null, joined));
             return true;
         }
-        String joined = joinFrom(args, 1);
-        sendMultiline(sender, ForgeBridge.boost(null, joined));
+        if ("android".equals(sub) || "androidify".equals(sub) || "androidification".equals(sub)) {
+            if (args.length < 2 || args[1] == null || args[1].isBlank()) {
+                sender.sendMessage("§cUsage: §fprogression android <player>");
+                return true;
+            }
+            if ("remove".equalsIgnoreCase(args[1]) || "unandroid".equalsIgnoreCase(args[1])) {
+                sender.sendMessage("§cAndroid remove is player/staff GUI only (not console).");
+                return true;
+            }
+            sendMultiline(sender, ForgeBridge.androidConvertConsole(args[1].trim()));
+            return true;
+        }
+        sender.sendMessage("§cConsole may run §f/progression boost … §7or §f/progression android <player>");
+        sender.sendMessage("§8Saga alias: §fandroidify <player>");
+        return true;
+    }
+
+    /** Dedicated {@code /androidify <player>} console/Saga entry (also works as staff in-game). */
+    public boolean executeAndroidify(CommandSender sender, String[] args) {
+        if (args.length < 1 || args[0] == null || args[0].isBlank()) {
+            sender.sendMessage("§cUsage: §fandroidify <player>");
+            return true;
+        }
+        String target = args[0].trim();
+        if (!(sender instanceof Player player)) {
+            sendMultiline(sender, ForgeBridge.androidConvertConsole(target));
+            return true;
+        }
+        if (!ForgeBridge.isStaff(player)) {
+            player.sendMessage("§cStaff / console only.");
+            return true;
+        }
+        sendMultiline(player, ForgeBridge.androidConvert(player, target));
         return true;
     }
 
