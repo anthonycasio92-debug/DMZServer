@@ -5,8 +5,7 @@
   'skill-req-lvl': 0
   'needs-permission': 'false'
   'cooldown-message': 'true'
-  incompatible: 
-  - 'Ancient Saiyan'
+  incompatible: []
   attributes: 
     'level-base': '2'
     'level-scale': '0'

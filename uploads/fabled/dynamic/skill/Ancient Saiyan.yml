@@ -5,8 +5,7 @@
   'skill-req-lvl': 0
   'needs-permission': 'true'
   'cooldown-message': 'true'
-  incompatible: 
-  - 'Sento Saiyan'
+  incompatible: []
   attributes: 
     'level-base': '1'
     'level-scale': '0'
