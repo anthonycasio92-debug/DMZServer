@@ -1,7 +1,10 @@
-# LegacyMechanics (v2.3.49)
+# LegacyMechanics (v2.3.50)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
+
+**CNPC scripts are not required.** This mod replaces the old CustomNPC pack —
+see `CNPC-FREE.md` (tags + Forge commands). Repo script folders are backups only.
 
 Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Player NBT root `dmz_adaptive_difficulty` and PlaceholderAPI `%dmzdiff_*%` are unchanged.
 
@@ -38,10 +41,12 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 
 ## Install
 
-1. `mods/LegacyMechanics-2.3.49.jar` (remove older AD jars)
-2. `plugins/LegacyMechanicsGUI-2.3.49.jar` (or matching GUI if available)
-3. Restart — config at `config/legacymechanics.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
-4. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
+1. `mods/LegacyMechanics-2.3.50.jar` (remove older AD jars)
+2. `plugins/LegacyMechanicsGUI-2.3.50.jar` (or matching GUI if available)
+3. **Do not load CNPC Global Player / NPC scripts** for systems this mod owns (`CNPC-FREE.md`)
+4. Tag GUI NPCs (`lm_rival`, `lm_spar`, `lm_skillcheck`, …) or use slash commands
+5. Restart — config at `config/legacymechanics.json` (auto-migrates from `dmz_adaptive_difficulty.json`)
+6. `/difficulty` → hub: Buy / Lower / Titles + personal & coin-chat toggles (Details is ops-only)
 
 ## Commands
 

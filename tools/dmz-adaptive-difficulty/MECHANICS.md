@@ -1,4 +1,4 @@
-# Legacy Mechanics 2.3.49
+# Legacy Mechanics 2.3.50
 
 Forge mod packaging **Difficulty**, **Rival System 4.7.10**, **Sparring TP 3.2.11**,
 and **natural progression / Fabled bridges** (from CNPC scripts) under one product.
@@ -7,7 +7,7 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` and NBT root
 
 ## Install (test)
 
-1. Build / install `LegacyMechanics-2.3.49.jar` (+ matching `LegacyMechanicsGUI-2.3.49.jar`).
+1. Build / install `LegacyMechanics-2.3.50.jar` (+ matching `LegacyMechanicsGUI-2.3.50.jar`).
 2. Disable CNPC Global Player scripts to avoid double systems — see **[PROGRESSION.md](PROGRESSION.md)**
    for the full disable list (Fabled bridges + natural ports + rival/spar).
 3. Do **not** deploy to live until tested.
@@ -85,7 +85,9 @@ Fabled · Utility (plus Prestige/Skills shortcuts). Also includes Building TP, E
 guard, and Title progression / Admin inspect (from the server-fixes line).
 
 Donators: grant `legacymechanics.skillcheck` (LuckPerms) — hub hides Skill Check without it.
-CNPC Skill Check: name “Skill Check” / tag `lm_skillcheck` / `noppes script trigger 21 <player>` /
+CNPC Skill Check: tag `lm_skillcheck` or name “Skill Check” (no NPC script).
+Slash `/skillcheck` needs `legacymechanics.skillcheck`.
+
 NPC command `skillcheck`. Staff Skills: NPC command `skills` or `lm open skills`.
 
 ## Telemetry

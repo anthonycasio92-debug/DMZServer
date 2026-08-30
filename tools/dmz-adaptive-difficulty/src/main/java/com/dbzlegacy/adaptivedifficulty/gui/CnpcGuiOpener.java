@@ -17,15 +17,15 @@ import net.minecraft.world.entity.LivingEntity;
  * needles. Soft substrings like {@code contains("rival")} are intentionally avoided — they
  * steal clicks from scripted Skill Check NPCs (and false-positives like "Arrival").
  * <p>
- * Tag matches should cancel the interact. Name matches open the GUI but must <b>not</b>
- * cancel — otherwise CNPC interact scripts never run (Skill Check script on a Rival-named NPC).
+ * Tag matches should cancel the interact. Name matches also cancel when CNPC
+ * scripts are not used (LegacyMechanics replaces those scripts entirely).
  * Skill Check has its own opener ({@link SkillCheckService#tryOpenFromNpc}).
  */
 public final class CnpcGuiOpener {
     private CnpcGuiOpener() {}
 
     /**
-     * Tag-based open — safe to cancel the interact.
+     * Tag-based open — cancel the interact.
      *
      * @return true if a GUI was opened from a scoreboard tag
      */
@@ -41,7 +41,7 @@ public final class CnpcGuiOpener {
     }
 
     /**
-     * Strict name-based open — do <b>not</b> cancel the interact (CNPC scripts must still fire).
+     * Strict name-based open — cancel the interact (no CNPC scripts required).
      *
      * @return true if a GUI was opened from the display name
      */
@@ -61,12 +61,11 @@ public final class CnpcGuiOpener {
     }
 
     /**
-     * @return true if a GUI was opened from a <b>tag</b> (caller should cancel the interact).
-     *         Name-only matches are opened without being reported here — use
-     *         {@link #tryOpenFromName} separately without canceling.
+     * @return true if a GUI was opened (caller should cancel the interact).
+     *         Tries tags first, then strict display-name needles.
      */
     public static boolean tryOpenFromNpc(ServerPlayer player, Entity npc) {
-        return tryOpenFromTags(player, npc);
+        return tryOpenFromTags(player, npc) || tryOpenFromName(player, npc);
     }
 
     private static boolean eligible(ServerPlayer player, Entity npc) {
@@ -152,7 +151,7 @@ public final class CnpcGuiOpener {
             return null;
         }
         String hay = stripFormatting(name).toLowerCase(Locale.ROOT).trim();
-        // Skill Check names — leave for SkillCheckService / CNPC scripts.
+        // Skill Check names — leave for SkillCheckService.
         if (containsAny(hay, "skill check", "skillcheck", "skill progress")) {
             return null;
         }
