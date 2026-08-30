@@ -418,8 +418,8 @@ public final class MobScaling {
         if (entity == null || entity.m_9236_().f_46443_) {
             return false;
         }
-        // EnderDragon.kill() removes without die()/loot — that strips Simply Swords /
-        // Simply More unique injections on minecraft:entities/ender_dragon. Never force-kill.
+        // EnderDragon.kill() removes without die()/loot — that strips every mod's
+    // entities/ender_dragon loot (Iron's Spellbooks, Simply Swords/More, …). Never force-kill.
         if (entity instanceof EnderDragon) {
             return entity.m_213877_() || entity.m_21224_();
         }

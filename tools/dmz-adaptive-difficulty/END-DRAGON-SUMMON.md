@@ -1,4 +1,4 @@
-# End Dragon — Adaptive Difficulty summon (2.3.76)
+# End Dragon — Adaptive Difficulty summon (2.3.77)
 
 ## Player path (Difficulty GUI only)
 - Button: **Summon End Dragon** on `/difficulty` main page
@@ -37,9 +37,11 @@
 - Despawn when the summoner: turns personal difficulty **OFF**, **dies**, goes offline, or stops participating in AD.
 - Auto / vanilla End Dragon spawning is **removed**.
 
-## Loot (Simply Swords / Simply More) + XP
-- Unique weapon injections on `minecraft:entities/ender_dragon` are **preserved**.
-- LM never clears `LivingDropsEvent` for End dragons.
+## Loot (all entities/ender_dragon mods) + XP
+- Player-summon kills **force-roll** `minecraft:entities/ender_dragon` at the death position via Forge’s patched loot API, so **every** loot-table / GLM mod applies, including:
+  - **Iron’s Spellbooks** (dragonskin, arcane essence via global loot modifier)
+  - **Simply Swords / Simply More** (unique weapon injects)
+  - Any other mod injecting into that table
+- Vanilla `LivingDrops` for GUI summons are cleared then replaced by that single roll (no doubles).
 - AD zero-HP force-kill is skipped for Ender Dragons (`EnderDragon.kill()` would strip loot/XP).
-- On player-summon kills, vanilla dragon **XP** (12 000 first End kill / 500 after) is awarded at the **death position** (including off-island). The dying animation is then stopped so XP is not double-dropped at the main island.
-- If the loot table somehow does not roll on death, LM falls back once at the death position (no double-drop when vanilla already rolled).
+- Vanilla dragon **XP** (12 000 first End kill / 500 after) is awarded at the **death position**; dying animation is stopped so XP is not double-dropped at the main island.

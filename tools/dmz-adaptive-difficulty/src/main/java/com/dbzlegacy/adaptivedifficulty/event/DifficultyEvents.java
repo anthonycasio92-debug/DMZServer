@@ -678,9 +678,13 @@ public final class DifficultyEvents {
     }
 
     /**
-     * Preserve Simply Swords / Simply More End Dragon loot. Their uniques inject into
-     * {@code minecraft:entities/ender_dragon}; we never clear this drop list and mark
-     * the roll so our kill fallback does not double-drop.
+     * Preserve End Dragon loot-table drops from every mod (Iron's Spellbooks GLM,
+     * Simply Swords / Simply More Architectury injects, Apotheosis, etc.).
+     * <p>
+     * Player-summoned dragons: clear vanilla {@link LivingDropsEvent} stacks — we
+     * force-roll {@code minecraft:entities/ender_dragon} next tick (Forge GLMs
+     * included) at the death position so off-island kills keep full loot.
+     * Other dragons: leave drops intact and mark so the fallback does not double.
      */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onLivingDrops(LivingDropsEvent event) {
@@ -688,8 +692,13 @@ public final class DifficultyEvents {
         if (!(dead instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon)) {
             return;
         }
-        // Do not call event.getDrops().clear() — leave Simply Swords / Simply More stacks.
         try {
+            if (com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength
+                    .isPlayerSummonedDragon(dead)) {
+                // Force-roll path owns loot for GUI summons — avoid double stacks.
+                event.getDrops().clear();
+                return;
+            }
             com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength
                     .markDragonLootRolled(dead);
         } catch (Throwable ignored) {
@@ -711,7 +720,7 @@ public final class DifficultyEvents {
         }
         LivingEntity victim = event.getEntity();
         // Never force-terminate Ender Dragons here — EnderDragon.kill() skips loot tables
-        // (Simply Swords / Simply More uniques on entities/ender_dragon).
+        // (Iron's Spellbooks, Simply Swords/More, and other entities/ender_dragon loot mods).
         if (victim != null
                 && !(victim instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon)
                 && HostileMobs.isHostile(victim)

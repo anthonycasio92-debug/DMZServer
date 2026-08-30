@@ -462,12 +462,17 @@ public final class EndDimensionStrength {
             }
         } catch (Throwable ignored) {
         }
-        // Simply Swords / Simply More loot + vanilla dragon XP at the death position.
+        // Full entities/ender_dragon loot (all mods) + vanilla dragon XP at death pos.
         try {
             scheduleEnsureDragonDeathRewards(dead, killer, event.getSource());
         } catch (Throwable ignored) {
         }
         SystemTelemetry.log("end_strength", "dragon_kill", killer, null, Map.of("kind", kind));
+    }
+
+    /** True when this is a Difficulty-GUI player summon (loot force-rolled by LM). */
+    public static boolean isPlayerSummonedDragon(LivingEntity entity) {
+        return entity instanceof EnderDragon dragon && isPlayerSummoned(dragon);
     }
 
     /** Mark that entity loot already ran (LivingDropsEvent) — skip our fallback roll. */
@@ -520,9 +525,11 @@ public final class EndDimensionStrength {
     }
 
     /**
-     * After death processing: ensure Simply Swords/More loot and vanilla dragon XP
-     * appear at the death position (including off-island fights). Player-summoned
-     * dragons are then removed so the dying-animation XP pass cannot double-award.
+     * After death processing: force-roll {@code minecraft:entities/ender_dragon} for
+     * player summons (Forge GLMs + Architectury injects — Iron's Spellbooks dragonskin,
+     * Simply Swords/More uniques, and any other loot-table mod) and award vanilla XP
+     * at the death position. Player-summoned dragons are then removed so the dying
+     * animation cannot double-award XP at the main island.
      */
     private static void scheduleEnsureDragonDeathRewards(
             LivingEntity dead, ServerPlayer killer, net.minecraft.world.damagesource.DamageSource source
@@ -551,12 +558,17 @@ public final class EndDimensionStrength {
                 }
                 LivingEntity lootEntity = still != null ? still : dragon;
 
-                if (!SESSION_LOOT_ROLLED.contains(dragonId) && !wasDragonLootRolled(lootEntity)) {
+                // Player summons: always roll the full ender_dragon table once (all mods).
+                // Others: fallback only when LivingDrops never marked a roll.
+                boolean needLoot = !SESSION_LOOT_ROLLED.contains(dragonId)
+                        && !wasDragonLootRolled(lootEntity);
+                if (needLoot) {
                     int spawned = rollEnderDragonLootTable(end, lootEntity, killer, dmg, origin);
                     markDragonLootRolled(lootEntity);
                     if (spawned > 0) {
                         AdaptiveDifficultyMod.LOGGER.info(
-                                "[{}] End dragon loot fallback spawned {} stack(s) (Simply Swords/More table)",
+                                "[{}] End dragon loot table rolled {} stack(s) at death pos"
+                                        + " (Iron's / Simply / other entities/ender_dragon mods)",
                                 AdaptiveDifficultyMod.MOD_ID, spawned);
                     }
                 }
@@ -622,7 +634,11 @@ public final class EndDimensionStrength {
         }
     }
 
-    /** Roll {@code minecraft:entities/ender_dragon} and spawn stacks in-world (never into inventory). */
+    /**
+     * Roll {@code minecraft:entities/ender_dragon} via Forge's patched loot API so
+     * global loot modifiers (e.g. Iron's Spellbooks dragonskin) and table injects
+     * (Simply Swords / Simply More) all apply. Spawns stacks in-world at the death origin.
+     */
     private static int rollEnderDragonLootTable(
             ServerLevel end,
             LivingEntity dragon,
