@@ -344,6 +344,13 @@ public final class MobScaling {
             if (!SystemGate.participates(player)) {
                 return;
             }
+            try {
+                if (com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength
+                        .hasAliveSummonedDragon(player)) {
+                    return;
+                }
+            } catch (Throwable ignored) {
+            }
             if (cfg.scaleHostileOnly && !HostileMobs.isHostile(entity)) {
                 return;
             }

@@ -68,6 +68,15 @@ public final class NearbyMobScaler {
                 ScaledMobTracker.releaseAndRevertPlayer(player);
                 continue;
             }
+            // End Dragon fight owns AD pressure — suspend nearby mob scaling for the summoner.
+            try {
+                if (com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength
+                        .hasAliveSummonedDragon(player)) {
+                    ScaledMobTracker.releaseAndRevertPlayer(player);
+                    continue;
+                }
+            } catch (Throwable ignored) {
+            }
             ScaledMobTracker.prunePlayer(player);
             scaleAround(player, cfg);
         }

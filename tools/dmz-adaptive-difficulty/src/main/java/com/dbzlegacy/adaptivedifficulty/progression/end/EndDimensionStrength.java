@@ -36,6 +36,11 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
+import net.minecraft.world.entity.boss.enderdragon.phases.DragonChargePlayerPhase;
+import net.minecraft.world.entity.boss.enderdragon.phases.DragonPhaseInstance;
+import net.minecraft.world.entity.boss.enderdragon.phases.DragonStrafePlayerPhase;
+import net.minecraft.world.entity.boss.enderdragon.phases.EnderDragonPhase;
+import net.minecraft.world.entity.boss.enderdragon.phases.EnderDragonPhaseManager;
 import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.monster.Endermite;
 import net.minecraft.world.entity.monster.Phantom;
@@ -103,8 +108,13 @@ public final class EndDimensionStrength {
     /** Live End Dimension Strength.js 2.12.0 — dragon extra DMZ ki attacks. */
     private static final boolean DRAGON_EXTRA_ATTACKS = true;
     private static final long DRAGON_ATTACK_INTERVAL_MS = 3200L;
+    /** Faster cadence for Difficulty-GUI summons focused on the summoner. */
+    private static final long PLAYER_DRAGON_ATTACK_INTERVAL_MS = 1700L;
+    private static final long PLAYER_DRAGON_PHASE_STEER_MS = 4500L;
     private static final double DRAGON_ATTACK_RANGE = 96.0;
-    private static final double DRAGON_KI_BEAM_CHANCE = 0.60;
+    private static final double PLAYER_DRAGON_ATTACK_RANGE = 128.0;
+    private static final double DRAGON_KI_BEAM_CHANCE = 0.55;
+    private static final double DRAGON_COMBO_CHANCE = 0.28;
     private static final double DRAGON_DMZ_KI_DAMAGE = 450.0;
     private static final double DRAGON_DMZ_KI_MELEE_FRAC = 0.10;
     private static final double DRAGON_DMZ_KI_DAMAGE_CAP = 8000.0;
@@ -161,6 +171,7 @@ public final class EndDimensionStrength {
     private static volatile long lastDragonRescaleAt;
     private static volatile long lastHygieneAt;
     private static volatile long lastDragonAttackAt;
+    private static volatile long lastDragonPhaseSteerAt;
     /** Retry crystal/egg podium clear for a few seconds after dragon kill. */
     private static volatile long crystalClearUntil;
     /** Last power score we sized the living dragon to (script TEMP_DRAGON_SCALE_SCORE). */
@@ -812,6 +823,31 @@ public final class EndDimensionStrength {
         return removed;
     }
 
+    /**
+     * True when this player has a living Difficulty-GUI End Dragon.
+     * Used to suspend nearby Adaptive Difficulty mob scaling during the fight.
+     */
+    public static boolean hasAliveSummonedDragon(ServerPlayer owner) {
+        if (owner == null) {
+            return false;
+        }
+        MinecraftServer server = owner.m_20194_();
+        if (server == null) {
+            return false;
+        }
+        ServerLevel end = server.m_129880_(Level.f_46430_);
+        if (end == null) {
+            return false;
+        }
+        for (EnderDragon dragon : findDragons(end)) {
+            if (dragon != null && dragon.m_6084_()
+                    && isPlayerSummoned(dragon) && isSummoner(dragon, owner)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Pulse: drop player dragons whose summoner is gone or no longer participating.
      * @return true if the dragon was despawned */
     private static boolean maybeDespawnOrphanedPlayerDragon(ServerLevel end, EnderDragon dragon) {
@@ -1000,36 +1036,125 @@ public final class EndDimensionStrength {
         }
     }
 
-    /** Live 2.12.0 — periodic DMZ ki beam/blast from the single kept dragon. */
+    /** Live 2.12.0+ — periodic DMZ ki beam/blast; player summons get focused AI. */
     static void tickDragonExtraAttacks(ServerLevel end, long now) {
         if (!DRAGON_EXTRA_ATTACKS || end == null || !DifficultyConfig.get().enableEndDimensionStrength) {
             return;
         }
-        if (now - lastDragonAttackAt < DRAGON_ATTACK_INTERVAL_MS) {
-            return;
-        }
-        lastDragonAttackAt = now;
         try {
             EnderDragon dragon = enforceSingleDragon(end);
             if (dragon == null || !dragon.m_6084_()) {
                 return;
             }
-            ServerPlayer target = preferredDragonTarget(end, dragon, DRAGON_ATTACK_RANGE);
+            boolean playerFight = isPlayerSummoned(dragon);
+            long interval = playerFight ? PLAYER_DRAGON_ATTACK_INTERVAL_MS : DRAGON_ATTACK_INTERVAL_MS;
+            if (now - lastDragonAttackAt < interval) {
+                return;
+            }
+            if (isDragonDying(dragon)) {
+                return;
+            }
+            double range = playerFight ? PLAYER_DRAGON_ATTACK_RANGE : DRAGON_ATTACK_RANGE;
+            ServerPlayer target = preferredDragonTarget(end, dragon, range);
             if (target == null) {
                 return;
             }
+            lastDragonAttackAt = now;
+            // Steer vanilla phases at the summoner (strafe / charge) without replacing ki types.
+            if (playerFight) {
+                maybeSteerDragonPhase(dragon, target, now);
+            }
             aimLivingAt(dragon, target);
             double roll = Math.random();
-            if (roll < DRAGON_KI_BEAM_CHANCE) {
-                if (!fireDragonKiBeam(end, dragon, target)) {
-                    fireDragonKiBlast(end, dragon, target);
+            boolean beamFirst = roll < DRAGON_KI_BEAM_CHANCE;
+            boolean fired;
+            if (beamFirst) {
+                fired = fireDragonKiBeam(end, dragon, target);
+                if (!fired) {
+                    fired = fireDragonKiBlast(end, dragon, target);
                 }
             } else {
-                fireDragonKiBlast(end, dragon, target);
+                fired = fireDragonKiBlast(end, dragon, target);
+            }
+            // Occasional combo: second shot of the other type.
+            if (fired && playerFight && Math.random() < DRAGON_COMBO_CHANCE) {
+                if (beamFirst) {
+                    fireDragonKiBlast(end, dragon, target);
+                } else {
+                    fireDragonKiBeam(end, dragon, target);
+                }
             }
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
                     "[{}] dragon extra attack: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
+    }
+
+    private static boolean isDragonDying(EnderDragon dragon) {
+        try {
+            EnderDragonPhaseManager mgr = dragon.m_31157_();
+            if (mgr == null) {
+                return false;
+            }
+            DragonPhaseInstance phase = mgr.m_31415_();
+            return phase != null && phase.m_7309_() == EnderDragonPhase.f_31386_; // DYING
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * Nudge vanilla EndDragonFight AI toward the summoner (strafe fireballs / charge).
+     * Ki beam/blast extras stay separate.
+     */
+    private static void maybeSteerDragonPhase(EnderDragon dragon, ServerPlayer target, long now) {
+        if (dragon == null || target == null) {
+            return;
+        }
+        if (now - lastDragonPhaseSteerAt < PLAYER_DRAGON_PHASE_STEER_MS) {
+            return;
+        }
+        lastDragonPhaseSteerAt = now;
+        try {
+            EnderDragonPhaseManager mgr = dragon.m_31157_();
+            if (mgr == null) {
+                return;
+            }
+            DragonPhaseInstance cur = mgr.m_31415_();
+            if (cur != null && cur.m_7309_() == EnderDragonPhase.f_31386_) { // DYING
+                return;
+            }
+            // Skip while already landing / sitting crystal phases.
+            if (cur != null) {
+                var t = cur.m_7309_();
+                if (t == EnderDragonPhase.f_31379_ // LANDING_APPROACH
+                        || t == EnderDragonPhase.f_31380_ // LANDING
+                        || t == EnderDragonPhase.f_31382_ // SITTING_FLAMING
+                        || t == EnderDragonPhase.f_31383_ // SITTING_SCANNING
+                        || t == EnderDragonPhase.f_31384_) { // SITTING_ATTACKING
+                    return;
+                }
+            }
+            boolean charge = Math.random() < 0.42;
+            if (charge) {
+                mgr.m_31416_(EnderDragonPhase.f_31385_); // CHARGING_PLAYER
+                DragonChargePlayerPhase phase = mgr.m_31418_(EnderDragonPhase.f_31385_);
+                if (phase != null) {
+                    phase.m_31207_(new Vec3(
+                            target.m_20185_(),
+                            target.m_20186_() + target.m_20206_() * 0.35,
+                            target.m_20189_()));
+                }
+            } else {
+                mgr.m_31416_(EnderDragonPhase.f_31378_); // STRAFE_PLAYER
+                DragonStrafePlayerPhase phase = mgr.m_31418_(EnderDragonPhase.f_31378_);
+                if (phase != null) {
+                    phase.m_31358_(target); // setAttackTarget
+                }
+            }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] dragon phase steer: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
         }
     }
 
@@ -2496,7 +2621,7 @@ public final class EndDimensionStrength {
         return raw;
     }
 
-    /** Prefer the summoner for ki attacks when present and in range. */
+    /** Prefer the summoner for ki attacks when present; never target bystanders on player fights. */
     private static ServerPlayer preferredDragonTarget(ServerLevel end, EnderDragon dragon, double range) {
         if (dragon != null && isPlayerSummoned(dragon)) {
             ServerPlayer owner = resolveSummoner(end, dragon);
@@ -2506,6 +2631,8 @@ public final class EndDimensionStrength {
                     return owner;
                 }
             }
+            // Player-summoned dragons do not farm nearby non-summoners.
+            return null;
         }
         return nearestEndPlayer(end, dragon, range);
     }

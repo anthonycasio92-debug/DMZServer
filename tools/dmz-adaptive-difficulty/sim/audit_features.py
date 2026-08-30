@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.68", 'VERSION = "2.3.68"' in mod)
+    check("VERSION 2.3.69", 'VERSION = "2.3.69"' in mod)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -856,6 +856,11 @@ def main() -> int:
     check("natural spawn default off", "enableEndNaturalDragonSpawn = false" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))
     check("reject unauthorized dragon join", "rejectUnauthorizedDragonJoin" in end_str)
+    check("hasAliveSummonedDragon", "hasAliveSummonedDragon" in end_str)
+    check("dragon phase steer", "maybeSteerDragonPhase" in end_str)
+    check("AD off during dragon", "hasAliveSummonedDragon" in
+          read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "java" /
+               "com/dbzlegacy/adaptivedifficulty/tick/NearbyMobScaler.java"))
     check("natural spawn forced off sanitize",
           'cfg.enableEndNaturalDragonSpawn = false' in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))

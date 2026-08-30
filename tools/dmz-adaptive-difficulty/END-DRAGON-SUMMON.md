@@ -1,4 +1,4 @@
-# End Dragon — Adaptive Difficulty summon (2.3.68)
+# End Dragon — Adaptive Difficulty summon (2.3.69)
 
 ## Player path (Difficulty GUI only)
 - Button: **Summon End Dragon** on `/difficulty` main page
@@ -20,13 +20,17 @@
 - `endDragonSummonNetheriteCost` (default 3)
 - `enableEndNaturalDragonSpawn` (default **false** — GUI is the player path)
 
-## Live summoner AD scale & despawn (2.3.68)
+## Live summoner AD scale & despawn (2.3.69)
 - Dragon tracks the **summoner's** Adaptive Difficulty profile live (forms in/out), like nearby AD mobs.
 - **Other players cannot** change its scale or damage it.
 - Despawn when the summoner: turns personal difficulty **OFF**, **dies**, goes offline, or stops participating in AD.
 
 
-## No natural spawn (2.3.68)
+## No natural spawn (2.3.69)
 - Auto / vanilla End Dragon spawning is **removed**.
 - Only Difficulty GUI summons and staff `/enddragon` can create a dragon.
 - Config `enableEndNaturalDragonSpawn` is forced **false** on load.
+
+## Fight AI + AD isolation (2.3.69)
+- Player-summoned dragons focus the summoner: faster ki cadence, strafe/charge phase steering, optional beam+blast combo.
+- While your summoned dragon is alive, **nearby Adaptive Difficulty mob scaling is suspended** for you (reverts claimed mobs). Staff dragons do not trigger this.

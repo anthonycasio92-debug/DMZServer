@@ -311,6 +311,13 @@ public final class DifficultyEvents {
         }
         LivingEntity neu = event.getNewTarget();
         if (neu instanceof ServerPlayer player && SystemGate.participates(player)) {
+            try {
+                if (com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength
+                        .hasAliveSummonedDragon(player)) {
+                    return;
+                }
+            } catch (Throwable ignored) {
+            }
             CombatIndex.mark(mob);
             MobScaling.retargetToPlayer(mob, player);
             return;
