@@ -156,7 +156,7 @@ Staff `/skills` has no special CNPC name hook — use an NPC interaction command
 | `enablePrestigeSkillSync` | true | Prestige class → DMZ skill |
 | `enablePrestigeFactionSync` | true | Prestige → CNPC faction 4 |
 | `enableValueCleaner` | true | Persistent value cleaner |
-| `enableRaceClassSync` | true | Race → Fabled class |
+| `enableRaceClassSync` | true | Race → Fabled class + auto race skill |
 | `enableClassPermissionSync` | true | Class → LuckPerms `fabled.skill.*` |
 
 ### Utility
@@ -192,7 +192,8 @@ Staff `/skills` has no special CNPC name hook — use an NPC interaction command
 | `PrestigeSkillSync` | `Prestige Sync Fabled.js` |
 | `PrestigeFactionSync` | `Fabled Prestige Faction Sync.js` |
 | `ValueCleaner` | `Universal Fabled Value Cleaner.js` |
-| `RaceClassSync` | `Races.js` |
+| `RaceClassSync` | `Races.js` (+ race skill ensure/grant) |
+| `RaceSkillSync` | (new) DMZ races → Fabled Race skills |
 | `ClassPermissionSync` | `DMZ Class Permission.js` |
 
 ## CNPC scripts to DISABLE on test
@@ -261,7 +262,7 @@ Staff `/skills` has no special CNPC name hook — use an NPC interaction command
 - Staff: `/prog do page admin` · `/prog admin <flag> on|off`
 - System telemetry (`enableSystemTelemetry`): rate-limited `system=fabled` events
   (`login_sync`, `energy_spend`, `tp_sp_spend`, `prestige_skill`, `prestige_faction`,
-  `race_class`, `class_perm_grant`, `value_clean`)
+  `race_class`, `race_skill`, `class_perm_grant`, `value_clean`)
 
 ## API notes
 

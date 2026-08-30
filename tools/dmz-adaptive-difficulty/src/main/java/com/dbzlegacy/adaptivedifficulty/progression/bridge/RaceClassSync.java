@@ -11,7 +11,8 @@ import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Port of {@code Races.js} — DMZ race → Fabled main class (direct API, no commands).
+ * Port of {@code Races.js} — DMZ race → Fabled main class (direct API, no commands),
+ * plus auto race-skill ensure/grant via {@link RaceSkillSync}.
  */
 public final class RaceClassSync {
     private static final String NEXT_KEY = "dmzRaceNextCheck";
@@ -45,6 +46,9 @@ public final class RaceClassSync {
         if (fabledClass == null) {
             return;
         }
+
+        // Always keep race skills in sync (even when class already matches).
+        RaceSkillSync.sync(player, dmzRace);
 
         Object targetClass = resolveRegisteredClass(fabledClass, dmzRace);
         if (targetClass == null) {

@@ -87,7 +87,12 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.70", 'VERSION = "2.3.70"' in mod)
+    check("VERSION 2.3.71", 'VERSION = "2.3.71"' in mod)
+
+    race_skill = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/RaceSkillSync.java")
+    check("RaceSkillSync discovers DMZ races", "discoverDmzRaceIds" in race_skill)
+    check("RaceSkillSync grants Fabled skill", "addSkillExternally" in race_skill and "race_skill" in race_skill)
+    check("RaceSkillSync skips race-lock purchase gates", "isPurchaseGatedSkill" in race_skill)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {

@@ -57,7 +57,8 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 2.3.70
+- ✅ VERSION 2.3.71
+- ✅ RaceSkillSync present
 - ✅ formula revision 38
 - ✅ hpFloorStrength present
 - ✅ T1–T3 god-form floors raised
@@ -88,4 +89,4 @@ Fail-closed checks against the player's stated balance concept.
 |------|--------:|---------:|---------:|
 | androidforms.ssdroid4 | 0.520 | 0.182 | 0.79 |
 
-**Result:** PASS — 53 ok, 0 error(s).
+**Result:** PASS — 54 ok, 0 error(s).

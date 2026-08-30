@@ -70,6 +70,7 @@ public final class FabledBridge {
             EnergyManaSync.sync(player);
             StatScreenSync.sync(player);
             TpSpMirror.sync(player);
+            RaceSkillSync.ensureRaceSkills();
             RaceClassSync.sync(player);
             PrestigeSkillSync.sync(player);
             PrestigeFactionSync.sync(player);
@@ -128,6 +129,9 @@ public final class FabledBridge {
                 }
                 // Race sync more often so first-login profession is not delayed.
                 if (cfg.enableRaceClassSync && tick % 40 == 0) {
+                    if (tick % 200 == 0) {
+                        RaceSkillSync.ensureRaceSkills();
+                    }
                     RaceClassSync.sync(player);
                 }
                 if (cfg.enableClassPermissionSync && tick % 20 == 0) {
