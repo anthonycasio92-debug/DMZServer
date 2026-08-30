@@ -1,33 +1,22 @@
 #
-# End Dimension Strength - CMI aliases
+# End Dimension Strength — DO NOT use CMI aliases
 #
-# LegacyMechanics owns End dragon spawn/clear in Java.
-# Do NOT call CNPC triggers 50/51 — those scripts are stubs and no-op.
+# LegacyMechanics (Forge) owns these commands directly:
+#   /enddragon          — spawn / refresh End dragon
+#   /enddragon spawn
+#   /enddragon clear
+#   /spawndragon
+#   /cleardragons
+#   /killdragons
 #
-# /enddragon · /spawndragon  -> lmdo enddragon spawn
-# /cleardragons · /killdragons -> lmdo enddragon clear
+# Requires: LegacyMechanics-2.3.47+ (op / permission level 2)
+# GUI jar is optional for End — not required for these commands.
 #
-# Requires: LegacyMechanics + LegacyMechanicsGUI 2.3.47+
+# If /enddragon does nothing, you still have OLD CMI CustomAlias entries
+# that fire stub CNPC triggers 50/51. Delete these aliases in CMI:
+#   enddragon, spawndragon, cleardragons, killdragons
+#
+# Do NOT re-add CustomAlias blocks for these names — they shadow the mod.
 #
 
-CustomAlias:
-  enddragon:
-    Cmds:
-    - asOp! lmdo enddragon spawn
-    AddTabs: true
-    ExactMatch: true
-  spawndragon:
-    Cmds:
-    - asOp! lmdo enddragon spawn
-    AddTabs: true
-    ExactMatch: true
-  cleardragons:
-    Cmds:
-    - asOp! lmdo enddragon clear
-    AddTabs: true
-    ExactMatch: true
-  killdragons:
-    Cmds:
-    - asOp! lmdo enddragon clear
-    AddTabs: true
-    ExactMatch: true
+# (intentionally empty — no CustomAlias)

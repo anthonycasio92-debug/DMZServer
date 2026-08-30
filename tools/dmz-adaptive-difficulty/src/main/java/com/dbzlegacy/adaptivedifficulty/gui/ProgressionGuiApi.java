@@ -116,8 +116,8 @@ public final class ProgressionGuiApi {
     }
 
     /**
-     * Staff End dragon spawn/clear — Bukkit {@code /lmdo enddragon …} so CMI aliases
-     * do not die on stubbed CNPC triggers 50/51.
+     * Staff End dragon spawn/clear — optional Bukkit {@code /lmdo enddragon …}
+     * bridge. Prefer Forge {@code /enddragon} / {@code /cleardragons} (no CMI).
      */
     public static String endDragon(ServerPlayer actor, String action) {
         if (actor == null) {
