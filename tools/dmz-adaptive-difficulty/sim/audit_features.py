@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.92", 'VERSION = "2.3.92"' in mod)
+    check("VERSION 2.3.93", 'VERSION = "2.3.93"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -861,7 +861,9 @@ def main() -> int:
     cmi_hub_pp = read(gui_root / "CmiHubGui.java")
     prestige_chest_pp = read(gui_root / "PrestigeChestGui.java")
     prestige_cmi_pp = read(gui_root / "CmiPrestigeGui.java")
-    check("PrestigePointsSystem present", "class PrestigePointsSystem" in pp)
+    check("potentialunlock 2 levels per point",
+          "POTENTIAL_UNLOCK_LEVELS_PER_POINT = 2" in pp
+          and "levelsPerPoint" in pp)
     check("turnIn bonus +1 per 3", "n + (n / 3)" in pp and "pointsForTurnIn" in pp)
     prestige_skill_sync = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/PrestigeSkillSync.java")
     prestige_faction_sync = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/PrestigeFactionSync.java")

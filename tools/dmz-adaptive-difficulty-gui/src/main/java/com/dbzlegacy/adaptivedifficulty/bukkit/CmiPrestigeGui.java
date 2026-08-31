@@ -90,7 +90,7 @@ public final class CmiPrestigeGui {
                         "&7Balance: &e" + ph.getOrDefault("points", "0")),
                 "turnin"));
         gui.addButton(navBtn(24, Material.EXPERIENCE_BOTTLE, "&aSkill Shop",
-                List.of("&71 point = +1 permanent DMZ skill level",
+                List.of("&71 point = +1 skill level (&dPotential &7+2)",
                         "&7Skill Check skills only (Natural + Saga)"), "shop"));
         gui.addButton(navBtn(30, Material.MAGENTA_DYE, "&dEffects",
                 List.of("&7Permanent Majin / Mutant (&e5 &7pts)"), "effects"));
@@ -272,7 +272,10 @@ public final class CmiPrestigeGui {
         btn.addLore(List.of("",
                 "&7Prestige floor: &f" + ph.getOrDefault("skill_" + id, "0")
                         + "&7/&f" + ph.getOrDefault("skill_" + id + "_max", "10"),
-                "&7Cost: &e1 &7point → &a+1 &7level",
+                "&7Cost: &e1 &7point → &a+"
+                        + ("potentialunlock".equalsIgnoreCase(id) ? "2" : "1")
+                        + " &7level"
+                        + ("potentialunlock".equalsIgnoreCase(id) ? "s" : ""),
                 "&8Survives prestige reset"));
         btn.addCommand("lmdo prestige skill " + id + " " + reopenPage);
         gui.addButton(btn);

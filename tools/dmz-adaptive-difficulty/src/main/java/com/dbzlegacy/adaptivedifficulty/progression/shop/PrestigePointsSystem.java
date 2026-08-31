@@ -24,6 +24,7 @@ import net.minecraft.server.level.ServerPlayer;
  * <p>Turn-in: 1 point per prestige + 1 bonus per 3 turned in ({@code N + floor(N/3)}).
  * Skills: 1 point = +1 permanent skill level for Skill Check skills only
  * (Natural + Saga — not ultimates / ki attacks). Survives prestige reset.
+ * {@code potentialunlock} is the exception: 1 point = +2 levels.
  * Caps come from {@code skills.json} cost ladders.
  * Majin/Mutant: 5 points each, mutually exclusive; unpurchase free (no refund).
  * Breakthroughs: raise <b>your</b> DMZ level cap by +10k (max 5 → 150k) so you can
@@ -37,6 +38,8 @@ public final class PrestigePointsSystem {
     public static final int ABSOLUTE_LEVEL_CAP = BASE_LEVEL_CAP + MAX_BREAKTHROUGHS * BREAKTHROUGH_STEP;
     public static final int FORM_COST = 5;
     public static final int SKILL_POINT_COST = 1;
+    /** Levels granted per point for Potential Unlock in the prestige shop. */
+    public static final int POTENTIAL_UNLOCK_LEVELS_PER_POINT = 2;
     /** Skills shown per prestige shop inventory page. */
     public static final int SKILL_SHOP_PAGE_SIZE = 21;
 
@@ -297,21 +300,37 @@ public final class PrestigePointsSystem {
         if (points < SKILL_POINT_COST) {
             return "§cNeed §e" + SKILL_POINT_COST + " §cpoint (have §e" + points + "§c).";
         }
+        int levelsPerPoint = levelsPerPoint(offer.id);
+        int room = Math.max(0, max - Math.max(current, purchased));
+        if (room <= 0) {
+            return "§c" + offer.label + " is already at max level.";
+        }
+        int gain = Math.min(levelsPerPoint, room);
         setPoints(player, points - SKILL_POINT_COST);
-        int nextPurchased = purchased + 1;
+        int nextPurchased = Math.min(max, purchased + gain);
         ProgressionData.storedPut(player, KEY_SKILL_PREFIX + offer.id, nextPurchased);
-        int newLevel = Math.min(max, Math.max(current + 1, nextPurchased));
+        int newLevel = Math.min(max, Math.max(current + gain, nextPurchased));
         DmzSkillUtil.setLevel(skills, offer.id, newLevel);
         DmzSkillUtil.sync(player);
         SystemTelemetry.log("prestige_points", "buy_skill", player, null, Map.of(
                 "skill", offer.id,
                 "purchased", nextPurchased,
                 "level", newLevel,
+                "gain", gain,
                 "points", getPoints(player)
         ));
-        return "§a+" + SKILL_POINT_COST + " §7" + offer.label + " → §fLv " + newLevel
-                + " §8(prestige floor §f" + nextPurchased + "§8)"
+        return "§a+" + gain + " §7" + offer.label + " → §fLv " + newLevel
+                + " §8(prestige floor §f" + nextPurchased + "§8 · §e"
+                + SKILL_POINT_COST + "§8 pt)"
                 + "\n§7Points left: §e" + getPoints(player);
+    }
+
+    /** Prestige-shop levels gained per spent point for {@code skillId}. */
+    public static int levelsPerPoint(String skillId) {
+        if (skillId != null && "potentialunlock".equalsIgnoreCase(skillId.trim())) {
+            return POTENTIAL_UNLOCK_LEVELS_PER_POINT;
+        }
+        return 1;
     }
 
     /** Re-apply purchased skill floors after prestige reset / on login. */

@@ -99,7 +99,7 @@ public final class PrestigeChestGui implements Listener {
                         "&7Balance: &e" + ph.getOrDefault("points", "0"))),
                 SlotAction.page("turnin"));
         put(holder, inv, 24, tipBtn(viewer, Material.EXPERIENCE_BOTTLE, "&aSkill Shop",
-                List.of("&71 point = +1 permanent DMZ skill level",
+                List.of("&71 point = +1 skill level (&dPotential &7+2)",
                         "&7Skill Check skills only (Natural + Saga)")),
                 SlotAction.page("shop"));
         put(holder, inv, 30, tipBtn(viewer, Material.MAGENTA_DYE, "&dEffects",
@@ -282,7 +282,10 @@ public final class PrestigeChestGui implements Listener {
         List<String> lore = new ArrayList<>();
         lore.add("");
         lore.add("&7Prestige floor: &f" + bought + "&7/&f" + max);
-        lore.add("&7Cost: &e1 &7point → &a+1 &7level");
+        lore.add("&7Cost: &e1 &7point → &a+"
+                + ("potentialunlock".equalsIgnoreCase(id) ? "2" : "1")
+                + " &7level"
+                + ("potentialunlock".equalsIgnoreCase(id) ? "s" : ""));
         lore.add("&8Survives prestige reset");
         put(holder, inv, slot, item(mat, "&a" + label, lore),
                 SlotAction.act("skill", id, holder.page));
