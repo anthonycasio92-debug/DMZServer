@@ -804,16 +804,11 @@ public final class ProgressionGuiApi {
             out.put("tier_" + t + "_cost", String.valueOf(PrestigePointsSystem.tierPointCost(t)));
             boolean purchased = PrestigePointsSystem.hasPurchasedTier(player, t);
             out.put("tier_" + t + "_owned", purchased ? "true" : "false");
-            boolean unlocked = false;
-            try {
-                var pdata = com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.data(player);
-                var utier = com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.byId(t);
-                unlocked = (pdata != null && pdata.hasUnlockedTier(t))
-                        || (utier != null
-                        && com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem.isEligible(player, utier));
-            } catch (Throwable ignored) {
-            }
-            out.put("tier_" + t + "_unlocked", unlocked || purchased ? "true" : "false");
+            // Actual unlock bit / purchase only — not bare eligibility (T1 @ DMZ 1).
+            boolean unlocked = PrestigePointsSystem.isTierUnlockedOrPurchased(player, t);
+            out.put("tier_" + t + "_unlocked", unlocked ? "true" : "false");
+            boolean canBuy = PrestigePointsSystem.canBuyDifficultyTier(player, t);
+            out.put("tier_" + t + "_can_buy", canBuy ? "true" : "false");
             var ut = com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.byId(t);
             out.put("tier_" + t + "_label", ut == null ? ("T" + t) : ut.display);
         }

@@ -422,8 +422,47 @@ public final class PrestigePointsSystem {
     }
 
     /**
+     * True when the tier is permanently purchased <b>or</b> actually unlocked in
+     * difficulty data (level/prestige sync). Does <b>not</b> use bare eligibility —
+     * T1 is eligible at DMZ 1, which previously let players skip straight to T2+.
+     */
+    public static boolean isTierUnlockedOrPurchased(ServerPlayer player, int tierId) {
+        if (player == null || tierId < 1 || tierId > 7) {
+            return false;
+        }
+        if (hasPurchasedTier(player, tierId)) {
+            return true;
+        }
+        try {
+            var data = com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.data(player);
+            return data != null && data.hasUnlockedTier(tierId);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * Whether the player may buy permanent T{@code tierId} with prestige points.
+     * Requires every lower tier (1 … tierId-1) to already be unlocked or purchased.
+     */
+    public static boolean canBuyDifficultyTier(ServerPlayer player, int tierId) {
+        if (player == null || tierId < 1 || tierId > 7) {
+            return false;
+        }
+        if (hasPurchasedTier(player, tierId)) {
+            return false;
+        }
+        for (int prev = 1; prev < tierId; prev++) {
+            if (!isTierUnlockedOrPurchased(player, prev)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Buy a permanent difficulty-tier unlock with prestige points.
-     * Requires the previous tier to already be unlocked (level/prestige or purchased).
+     * Requires every lower tier to already be unlocked (level/prestige) or purchased.
      * Allowed even when the tier is already unlocked via level — purchase makes it
      * permanent so it survives prestige / level-gate revoke.
      */
@@ -440,13 +479,10 @@ public final class PrestigePointsSystem {
         }
         var data = com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.data(player);
         if (tierId > 1) {
-            int prev = tierId - 1;
-            boolean prevOk = hasPurchasedTier(player, prev)
-                    || (data != null && data.hasUnlockedTier(prev))
-                    || com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem.isEligible(
-                            player, com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.byId(prev));
-            if (!prevOk) {
-                return "§cUnlock §fT" + prev + " §cfirst before buying §fT" + tierId + "§c.";
+            for (int prev = 1; prev < tierId; prev++) {
+                if (!isTierUnlockedOrPurchased(player, prev)) {
+                    return "§cUnlock §fT" + prev + " §cfirst before buying §fT" + tierId + "§c.";
+                }
             }
         }
         int cost = tierPointCost(tierId);

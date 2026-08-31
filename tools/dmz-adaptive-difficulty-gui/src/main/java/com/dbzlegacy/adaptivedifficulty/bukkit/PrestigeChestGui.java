@@ -407,12 +407,16 @@ public final class PrestigeChestGui implements Listener {
         for (int t = 1; t <= 7; t++) {
             boolean owned = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_owned", "false"));
             boolean unlocked = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_unlocked", "false"));
+            boolean canBuy = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_can_buy", "false"));
             String label = ph.getOrDefault("tier_" + t + "_label", "T" + t);
             String cost = ph.getOrDefault("tier_" + t + "_cost", String.valueOf((t + 1) / 2));
             List<String> lore = new ArrayList<>();
             lore.add("");
             if (owned) {
                 lore.add("&aOwned · permanent");
+            } else if (!canBuy) {
+                lore.add("&cLocked");
+                lore.add("&7Unlock or buy &fT" + (t - 1) + " &7first");
             } else {
                 lore.add("&7Cost: &e" + cost + " &7point" + ("1".equals(cost) ? "" : "s"));
                 if (unlocked) {
@@ -423,13 +427,20 @@ public final class PrestigeChestGui implements Listener {
                 }
             }
             if (!owned && t > 1) {
-                lore.add("&8Requires T" + (t - 1) + " unlocked or purchased");
+                lore.add("&8Requires T1–T" + (t - 1) + " unlocked or purchased");
             }
             lore.add("&8Activate after buy via /difficulty → Buy Tier");
-            put(holder, inv, slots[t - 1], tipBtn(viewer, mats[t - 1],
-                    (owned ? "&aT" : "&6T") + t + " " + label,
-                    lore),
-                    owned ? null : SlotAction.act("tier", String.valueOf(t), "tiers"));
+            String title;
+            if (owned) {
+                title = "&aT" + t + " " + label;
+            } else if (canBuy) {
+                title = "&6T" + t + " " + label;
+            } else {
+                title = "&8T" + t + " " + label;
+            }
+            put(holder, inv, slots[t - 1], tipBtn(viewer,
+                    canBuy || owned ? mats[t - 1] : Material.GRAY_DYE, title, lore),
+                    canBuy ? SlotAction.act("tier", String.valueOf(t), "tiers") : null);
         }
 
         put(holder, inv, 36, backBtn(), SlotAction.page("main"));
