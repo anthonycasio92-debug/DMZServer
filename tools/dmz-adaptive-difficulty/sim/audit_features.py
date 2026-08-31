@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.91", 'VERSION = "2.3.91"' in mod)
+    check("VERSION 2.3.92", 'VERSION = "2.3.92"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -875,6 +875,10 @@ def main() -> int:
     check("requiredLevel uses personal cap",
           "effectiveMaxLevel(player)" in prestige_sys
           and "requiredLevel(ServerPlayer" in prestige_sys)
+    check("prestige need floor",
+          "prestige_need_floor" in prestige_sys and "raiseNeedFloor" in prestige_sys)
+    check("completed never from Fabled-only",
+          "inferCompletedFromShop" in prestige_sys and "KEY_NEED_FLOOR" in prestige_sys)
     check("prestige admin command registered",
           '"admin"' in read(SRC / "com/dbzlegacy/adaptivedifficulty/command/ProgressionCommands.java")
           and "prestigeAdminAdjust" in
@@ -884,7 +888,7 @@ def main() -> int:
     check("handlePrestigeAdmin API", "handlePrestigeAdmin" in gui_api_pp)
     check("Bukkit prestige admin via ForgeBridge",
           "prestigeAdmin" in forge_bridge
-          and 'if ("admin".equals(sub))' in
+          and "isPrestigeAdminSub" in
           read(gui_root / "AdaptiveDifficultyGuiPlugin.java"))
     check("form XOR majin/mutant", "buyMajin" in pp and "buyMutant" in pp and "unbuyMajin" in pp)
     check("breakthrough costs 15..35", "breakthroughCost" in pp and "15" in pp and "35" in pp)

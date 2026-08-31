@@ -23,6 +23,9 @@ import net.minecraft.server.level.ServerPlayer;
  * Port of {@code Prestige NPC.js} purchase logic as {@code /prestige} chat GUI.
  * Cost = DMZ level gate {@code (completed+1) * 20000}, capped at the player's
  * personal level cap (100k base, raised by prestige-point breakthroughs toward 150k).
+ *
+ * <p><b>Lifetime completed</b> never drops when held/Fabled Prestige is turned in —
+ * otherwise Need would snap back to 20k after a completed prestige.
  */
 public final class PrestigeSystem {
     private static final int LEVELS_PER_PRESTIGE = 20_000;
@@ -33,6 +36,8 @@ public final class PrestigeSystem {
     private static final int FACTION_HELD_ID = 4;
 
     private static final String KEY_TOTAL = "prestige_total_completed";
+    /** Highest Need already earned — never let Need fall below this (capped at personal cap). */
+    private static final String KEY_NEED_FLOOR = "prestige_need_floor";
     private static final String KEY_HELD = "lm_prestige_held";
     private static final String KEY_CONFIRM_UNTIL = "lm_prestige_confirm_until";
 
@@ -114,6 +119,8 @@ public final class PrestigeSystem {
         int newCompleted = completed + 1;
         setHeld(player, newHeld);
         setCompleted(player, newCompleted);
+        // Lock Need so turn-in / Fabled spend cannot snap the next gate back to 20k.
+        raiseNeedFloor(player, required);
         resetPrestigeProgress(player);
 
         String name = player.m_6302_();
@@ -285,13 +292,17 @@ public final class PrestigeSystem {
 
     /**
      * Next prestige DMZ level gate for {@code player}: {@code (completed+1)×20000},
-     * capped at their personal breakthrough ceiling (100k…150k).
+     * raised to the lifetime Need floor (so completed prestiges never snap Need back
+     * to 20k after turn-in), then capped at personal breakthrough ceiling (100k…150k).
      */
     public static int requiredLevel(ServerPlayer player) {
         if (player == null) {
             return requiredLevel(0, MAX_REQUIRED_LEVEL);
         }
-        return requiredLevel(getCompleted(player), PrestigePointsSystem.effectiveMaxLevel(player));
+        int cap = PrestigePointsSystem.effectiveMaxLevel(player);
+        int fromCompleted = requiredLevel(getCompleted(player), cap);
+        int floor = getNeedFloor(player);
+        return Math.min(cap, Math.max(fromCompleted, floor));
     }
 
     /** @deprecated prefer {@link #requiredLevel(ServerPlayer)} — uses absolute 150k ceiling. */
@@ -313,18 +324,100 @@ public final class PrestigeSystem {
         return LEVELS_PER_PRESTIGE;
     }
 
+    /**
+     * Lifetime prestiges completed. Never decreases when held/Fabled Prestige is
+     * spent on turn-in (DMZ {@code prestige} skill tracks current Fabled, not lifetime).
+     */
     public static int getCompleted(ServerPlayer player) {
-        int fromSkill = Math.max(0, DmzProgression.prestige(player));
-        CompoundTag tag = PersistentDataAccess.get(player);
-        int stored = 0;
-        if (PersistentDataAccess.isWritable(tag) && tag.m_128441_(KEY_TOTAL)) {
-            try {
-                stored = Integer.parseInt(tag.m_128461_(KEY_TOTAL));
-            } catch (Exception e) {
-                stored = (int) tag.m_128451_(KEY_TOTAL);
-            }
+        if (player == null) {
+            return 0;
         }
-        return Math.max(fromSkill, stored);
+        CompoundTag tag = PersistentDataAccess.get(player);
+        boolean hasKey = PersistentDataAccess.isWritable(tag) && tag.m_128441_(KEY_TOTAL);
+        int stored = readStoredInt(tag, KEY_TOTAL);
+
+        if (!hasKey) {
+            // One-time migrate from legacy Fabled/DMZ skill (old NPC overwrote total from Fabled).
+            int legacy = Math.max(0, DmzProgression.prestige(player));
+            try {
+                int fabled = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                        .fabledPrestigeLevel(player);
+                legacy = Math.max(legacy, Math.max(0, fabled - 1));
+            } catch (Throwable ignored) {
+            }
+            if (legacy > 0) {
+                setCompletedPublic(player, legacy);
+                raiseNeedFloor(player, requiredLevel(legacy, PrestigePointsSystem.effectiveMaxLevel(player)));
+                return legacy;
+            }
+            // Shop evidence of a past prestige when total was zeroed by turn-in.
+            if (inferCompletedFromShop(player)) {
+                setCompletedPublic(player, 1);
+                raiseNeedFloor(player, LEVELS_PER_PRESTIGE);
+                return 1;
+            }
+            return 0;
+        }
+
+        // High-watermark: if DMZ/Fabled still show a higher lifetime, keep it.
+        int fromSkill = Math.max(0, DmzProgression.prestige(player));
+        int best = Math.max(stored, fromSkill);
+        if (best > stored) {
+            setCompletedPublic(player, best);
+        }
+        if (best <= 0 && inferCompletedFromShop(player)) {
+            setCompletedPublic(player, 1);
+            raiseNeedFloor(player, LEVELS_PER_PRESTIGE);
+            return 1;
+        }
+        return best;
+    }
+
+    /** Points / breakthroughs / permanent forms imply at least one completed prestige. */
+    private static boolean inferCompletedFromShop(ServerPlayer player) {
+        try {
+            if (PrestigePointsSystem.getPoints(player) > 0) {
+                return true;
+            }
+            if (PrestigePointsSystem.getBreakthroughs(player) > 0) {
+                return true;
+            }
+            if (PrestigePointsSystem.hasMajin(player) || PrestigePointsSystem.hasMutant(player)) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
+    }
+
+    private static int getNeedFloor(ServerPlayer player) {
+        CompoundTag tag = PersistentDataAccess.get(player);
+        return Math.max(0, readStoredInt(tag, KEY_NEED_FLOOR));
+    }
+
+    private static void raiseNeedFloor(ServerPlayer player, int requiredMet) {
+        if (player == null || requiredMet <= 0) {
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (!PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
+        int cur = Math.max(0, readStoredInt(tag, KEY_NEED_FLOOR));
+        if (requiredMet > cur) {
+            tag.m_128405_(KEY_NEED_FLOOR, requiredMet);
+        }
+    }
+
+    private static int readStoredInt(CompoundTag tag, String key) {
+        if (!PersistentDataAccess.isWritable(tag) || !tag.m_128441_(key)) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(tag.m_128461_(key));
+        } catch (Exception e) {
+            return (int) tag.m_128451_(key);
+        }
     }
 
     public static int getHeld(ServerPlayer player) {
@@ -350,6 +443,11 @@ public final class PrestigeSystem {
         CompoundTag tag = PersistentDataAccess.get(player);
         if (PersistentDataAccess.isWritable(tag)) {
             tag.m_128359_(KEY_TOTAL, Integer.toString(Math.max(0, value)));
+        }
+        // Keep Need floor aligned when staff raise completed (never lower floor here).
+        if (value > 0) {
+            int cap = PrestigePointsSystem.effectiveMaxLevel(player);
+            raiseNeedFloor(player, requiredLevel(value, cap));
         }
     }
 

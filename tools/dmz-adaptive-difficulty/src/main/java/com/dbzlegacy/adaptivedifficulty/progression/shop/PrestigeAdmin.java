@@ -23,7 +23,8 @@ public final class PrestigeAdmin {
                 + "§e/prestige admin breakthroughs <player> <set|add|remove> <n>\n"
                 + "§e/prestige admin fabled <player> <set|add|take> <n>\n"
                 + "§e/prestige admin sync <player>\n"
-                + "§8Breakthroughs raise personal cap; prestige Need scales up to that cap.";
+                + "§8Breakthroughs raise personal cap; prestige Need scales up to that cap.\n"
+                + "§8Need never resets to 20k after a completed prestige (turn-in safe).";
     }
 
     public static String info(ServerPlayer target) {
