@@ -293,7 +293,7 @@ public final class CmiPrestigeGui {
                 "&7Cost: &e1 &7point → &a+{gain_levels} &7level" + ("1".equals(gainLevels) ? "" : "s"),
                 "&aPermanent &8· survives prestige reset");
         CMIGuiButton btn = new CMIGuiButton(slot, mat,
-                GuiTooltips.name("prestige.shop.skill", "&a" + label));
+                GuiTooltips.name("prestige.shop.skill", "&a" + label, vars));
         btn.lockField();
         btn.addLore(GuiTooltips.buttonLore("prestige.shop.skill", defaults, vars, null));
         btn.addCommand("lmdo prestige skill " + id + " " + reopenPage);
@@ -571,7 +571,7 @@ public final class CmiPrestigeGui {
             int slot, String key, Material mat, String name, List<String> tip,
             Map<String, String> vars, String page
     ) {
-        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name);
+        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name, vars);
         CMIGuiButton btn = new CMIGuiButton(slot, mat, display);
         btn.lockField();
         btn.addLore(key == null || key.isBlank()

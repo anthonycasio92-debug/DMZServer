@@ -902,7 +902,7 @@ public final class CmiRivalGui {
             Player player, int slot, String key, Material mat, String name, String action, String arg,
             String returnPage, List<String> tip, Map<String, String> vars
     ) {
-        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name);
+        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name, vars);
         CMIGuiButton btn = new CMIGuiButton(slot, mat, display);
         btn.lockField();
         btn.addLore(key == null || key.isBlank()
@@ -939,7 +939,7 @@ public final class CmiRivalGui {
                 }
             }
         }
-        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name);
+        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name, vars);
         CMIGuiButton btn = new CMIGuiButton(slot, mat, display);
         btn.lockField();
         btn.addLore(key == null || key.isBlank()

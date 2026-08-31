@@ -306,7 +306,7 @@ public final class PrestigeChestGui implements Listener {
                 "&7Cost: &e1 &7point → &a+{gain_levels} &7level" + ("1".equals(gainLevels) ? "" : "s"),
                 "&aPermanent &8· survives prestige reset");
         put(holder, inv, slot, item(mat,
-                GuiTooltips.name("prestige.shop.skill", "&a" + label),
+                GuiTooltips.name("prestige.shop.skill", "&a" + label, vars),
                 GuiTooltips.buttonLore("prestige.shop.skill", defaults, vars, null)),
                 SlotAction.act("skill", id, holder.page));
     }
@@ -661,7 +661,7 @@ public final class PrestigeChestGui implements Listener {
             }
             return item(mat, name, lore);
         }
-        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip, vars, extra));
+        return item(mat, GuiTooltips.name(key, name, vars), GuiTooltips.buttonLore(key, tip, vars, extra));
     }
 
     private static ItemStack hubBtn() {

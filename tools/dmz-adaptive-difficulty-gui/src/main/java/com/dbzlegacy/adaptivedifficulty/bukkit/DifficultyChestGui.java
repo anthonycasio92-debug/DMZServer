@@ -804,7 +804,7 @@ public final class DifficultyChestGui implements Listener {
             }
             return item(mat, name, lore);
         }
-        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip, vars, null));
+        return item(mat, GuiTooltips.name(key, name, vars), GuiTooltips.buttonLore(key, tip, vars, null));
     }
 
     private static ItemStack pageBtn(Player player, Material mat, String name, String... tips) {

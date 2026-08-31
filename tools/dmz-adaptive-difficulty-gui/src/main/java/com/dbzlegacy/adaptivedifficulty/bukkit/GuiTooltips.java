@@ -180,11 +180,19 @@ final class GuiTooltips {
 
     /** Display name override, or {@code fallback} when unset. */
     static String name(String key, String fallback) {
+        return name(key, fallback, null);
+    }
+
+    /** Display name with {@code {var}} substitution from {@code vars}. */
+    static String name(String key, String fallback, Map<String, String> vars) {
         Entry e = ENTRIES.get(normalize(key));
+        String raw;
         if (e != null && e.name != null && !e.name.isBlank()) {
-            return e.name;
+            raw = e.name;
+        } else {
+            raw = fallback == null ? "" : fallback;
         }
-        return fallback;
+        return applyVars(raw, vars);
     }
 
     /** Lore lines for {@code key}, or a copy of {@code defaults} when unset. */

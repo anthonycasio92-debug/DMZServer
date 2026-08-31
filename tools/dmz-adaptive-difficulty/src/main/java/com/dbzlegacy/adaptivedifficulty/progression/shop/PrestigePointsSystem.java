@@ -777,7 +777,7 @@ public final class PrestigePointsSystem {
         }
         setPoints(player, points - FORM_COST);
         ProgressionData.storedPutBool(player, majin ? KEY_MAJIN : KEY_MUTANT, true);
-        grantFormSkill(player, majin);
+        // Fabled Permanent Majin/Mutant skills removed — LM owns the effect via dmzeffect.
         runDmzEffect(player, majin ? "majin" : "mutant", true);
         SystemTelemetry.log("prestige_points", majin ? "buy_majin" : "buy_mutant", player, null, Map.of(
                 "points", getPoints(player)
@@ -803,19 +803,18 @@ public final class PrestigePointsSystem {
 
     private static void clearForm(ServerPlayer player, boolean majin) {
         ProgressionData.storedPutBool(player, majin ? KEY_MAJIN : KEY_MUTANT, false);
+        // Drop any leftover Fabled grant if an older skill still exists on the server.
         removeFormSkill(player, majin);
         runDmzEffect(player, majin ? "majin" : "mutant", false);
     }
 
     private static void reapplyForms(ServerPlayer player) {
         if (hasMajin(player)) {
-            grantFormSkill(player, true);
             runDmzEffect(player, "majin", true);
         } else {
             removeFormSkill(player, true);
         }
         if (hasMutant(player)) {
-            grantFormSkill(player, false);
             runDmzEffect(player, "mutant", true);
         } else {
             removeFormSkill(player, false);

@@ -21,8 +21,6 @@ stPrestige:
   pages: 1
   slots: 
     1: 
-      'permanent majin': 10
-      'permanent mutant': 12
       'sento saiyan': 28
       'ancient saiyan': 30
       unlockrace: 16
