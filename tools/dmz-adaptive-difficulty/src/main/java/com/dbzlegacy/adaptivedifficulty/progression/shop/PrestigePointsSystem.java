@@ -382,6 +382,12 @@ public final class PrestigePointsSystem {
         return Math.max(min, Math.min(max, next));
     }
 
+    /**
+     * Buy prestige-invested skill floor levels.
+     * Gated only on the stored prestige floor vs catalog max — live DMZ skill
+     * level may already be maxed from training; players can still raise the
+     * permanent floor that survives prestige reset.
+     */
     public static String buySkillLevel(ServerPlayer player, String skillId) {
         if (player == null) {
             return "§cPlayers only.";
@@ -391,45 +397,51 @@ public final class PrestigePointsSystem {
             return "§cOnly Skill Check skills are purchasable here (Natural + Saga).";
         }
         int purchased = getPurchasedSkillLevels(player, offer.id);
-        if (purchased >= offer.maxLevel) {
-            return "§c" + offer.label + " prestige upgrades are maxed (§f" + offer.maxLevel + "§c).";
-        }
-        Skills skills = DmzSkillUtil.skills(player);
-        if (skills == null) {
-            return "§cCould not read your DMZ skills.";
-        }
-        DmzSkillUtil.ensureRegistered(skills, offer.id, offer.maxLevel);
-        int current = DmzSkillUtil.level(skills, offer.id);
-        int max = Math.max(offer.maxLevel, DmzSkillUtil.maxLevel(skills, offer.id, offer.maxLevel));
-        if (current >= max && purchased >= max) {
-            return "§c" + offer.label + " is already at max level.";
+        int floorMax = Math.max(1, offer.maxLevel);
+        if (purchased >= floorMax) {
+            return "§c" + offer.label + " prestige floor is maxed (§f" + floorMax + "§c).";
         }
         int points = getPoints(player);
         if (points < SKILL_POINT_COST) {
             return "§cNeed §e" + SKILL_POINT_COST + " §cpoint (have §e" + points + "§c).";
         }
         int levelsPerPoint = levelsPerPoint(offer.id);
-        int room = Math.max(0, max - Math.max(current, purchased));
+        int room = Math.max(0, floorMax - purchased);
         if (room <= 0) {
-            return "§c" + offer.label + " is already at max level.";
+            return "§c" + offer.label + " prestige floor is maxed (§f" + floorMax + "§c).";
         }
         int gain = Math.min(levelsPerPoint, room);
         setPoints(player, points - SKILL_POINT_COST);
-        int nextPurchased = Math.min(max, purchased + gain);
+        int nextPurchased = Math.min(floorMax, purchased + gain);
         ProgressionData.storedPut(player, KEY_SKILL_PREFIX + offer.id, nextPurchased);
-        int newLevel = Math.min(max, Math.max(current + gain, nextPurchased));
-        DmzSkillUtil.setLevel(skills, offer.id, newLevel);
-        DmzSkillUtil.sync(player);
+
+        // Raise live skill only when below the new floor; never block the floor buy.
+        int liveBefore = 0;
+        int liveAfter = 0;
+        Skills skills = DmzSkillUtil.skills(player);
+        if (skills != null) {
+            DmzSkillUtil.ensureRegistered(skills, offer.id, floorMax);
+            liveBefore = DmzSkillUtil.level(skills, offer.id);
+            int liveMax = Math.max(floorMax, DmzSkillUtil.maxLevel(skills, offer.id, floorMax));
+            liveAfter = Math.min(liveMax, Math.max(liveBefore, nextPurchased));
+            if (liveAfter != liveBefore) {
+                DmzSkillUtil.setLevel(skills, offer.id, liveAfter);
+                DmzSkillUtil.sync(player);
+            }
+        }
         SystemTelemetry.log("prestige_points", "buy_skill", player, null, Map.of(
                 "skill", offer.id,
                 "purchased", nextPurchased,
-                "level", newLevel,
+                "level", liveAfter,
                 "gain", gain,
                 "points", getPoints(player)
         ));
-        return "§a+" + gain + " §7" + offer.label + " → §fLv " + newLevel
-                + " §8(prestige floor §f" + nextPurchased + "§8 · §e"
-                + SKILL_POINT_COST + "§8 pt)"
+        String liveNote = liveAfter > liveBefore
+                ? " → §fLv " + liveAfter
+                : " §8(live already §f" + liveBefore + "§8)";
+        return "§a+" + gain + " §7" + offer.label + " prestige floor §f" + purchased
+                + " §7→ §f" + nextPurchased + liveNote
+                + " §8(§e" + SKILL_POINT_COST + "§8 pt)"
                 + "\n§7Points left: §e" + getPoints(player);
     }
 

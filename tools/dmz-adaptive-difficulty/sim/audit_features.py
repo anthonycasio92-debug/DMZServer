@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.120", 'VERSION = "2.3.120"' in mod)
+    check("VERSION 2.3.121", 'VERSION = "2.3.121"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -922,6 +922,10 @@ def main() -> int:
           and "LmTips.pulse" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/ProgressionSystem.java"))
     check("LM tips config flag", "enableLmTips" in read(CFG) and "lmTipFrequentGroups" in read(CFG))
+    check("prestige skill buy ignores live max",
+          "Gated only on the stored prestige floor" in pp
+          and "max - Math.max(current, purchased)" not in pp
+          and "prestige floor is maxed" in pp)
     check("breakthrough costs 15..35", "breakthroughCost" in pp and "15" in pp and "35" in pp)
     check("MAX_BREAKTHROUGHS 5", "MAX_BREAKTHROUGHS = 5" in pp)
     check("StatsDataMixin personal cap", "getConfiguredMaxValue" in mixin and "effectiveMaxLevel" in mixin)
