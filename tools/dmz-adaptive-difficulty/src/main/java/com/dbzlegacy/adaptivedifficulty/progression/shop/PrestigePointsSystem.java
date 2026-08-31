@@ -1194,12 +1194,13 @@ public final class PrestigePointsSystem {
     }
 
     /**
-     * Apply / clear DMZ majin or mutant.
+     * Apply / clear DMZ majin or mutant <b>silently</b>.
      * <p>
-     * Uses DMZ Java APIs (MutantManager / Effects). Command fallback uses the real
-     * Brigadier order: {@code dmzeffect give <effect> <duration> [player]} —
-     * the previous {@code give <player> <effect> <duration>} never matched and
-     * silently failed after Fabled Permanent Majin/Mutant skills were removed.
+     * Never call {@code MutantManager.grant} — it always chats
+     * {@code message.dragonminez.mutant.gained} even when already mutant, which
+     * spammed every form pulse / death reapply. Prefer Effects + MutantSavedData
+     * (or {@code reconcileHolder} when already present). No {@code dmzeffect}
+     * command fallback on give — Brigadier {@code sendSuccess} also chats.
      */
     private static void runDmzEffect(ServerPlayer player, String effect, boolean give) {
         if (player == null || effect == null || effect.isBlank()) {
@@ -1209,57 +1210,75 @@ public final class PrestigePointsSystem {
         boolean mutant = "mutant".equals(effectId);
         try {
             var data = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.stats(player);
-            if (data != null) {
-                if (mutant) {
-                    if (give) {
-                        com.dragonminez.server.util.MutantManager.grant(player, data);
-                    } else if (com.dragonminez.server.util.MutantManager.isMutant(data)) {
-                        com.dragonminez.server.util.MutantManager.revoke(player, data);
-                    }
-                    return;
+            if (data == null) {
+                return;
+            }
+            var effects = data.getEffects();
+            if (effects == null) {
+                return;
+            }
+            if (mutant) {
+                if (give) {
+                    ensureMutantSilent(player, data, effects);
+                } else if (com.dragonminez.server.util.MutantManager.isMutant(data)) {
+                    com.dragonminez.server.util.MutantManager.revoke(player, data);
                 }
-                var effects = data.getEffects();
-                if (effects == null) {
-                    // Fall through to command.
-                } else if (give) {
-                    // Already permanent — skip (avoids sync spam on the 5s pulse).
-                    if (effects.hasEffect(effectId) && effects.getEffectDuration(effectId) == -1) {
-                        return;
-                    }
-                    double power = majinEffectPower();
-                    effects.addEffect(effectId, power, -1);
-                    DmzSkillUtil.sync(player);
-                    return;
-                } else if (effects.hasEffect(effectId)) {
-                    effects.removeEffect(effectId);
-                    DmzSkillUtil.sync(player);
-                    return;
-                } else {
-                    return;
-                }
+                return;
+            }
+            // Majin (and any other non-mutant effect id).
+            if (give) {
+                ensureEffectSilent(player, effects, effectId, majinEffectPower());
+            } else if (effects.hasEffect(effectId)) {
+                effects.removeEffect(effectId);
+                DmzSkillUtil.sync(player);
             }
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
                     "[{}] prestige form API soft-fail ({}): {}",
                     AdaptiveDifficultyMod.MOD_ID, effectId, t.toString());
         }
+    }
 
-        MinecraftServer server = player.m_20194_();
-        if (server == null) {
+    /**
+     * Keep permanent Mutant applied without {@link com.dragonminez.server.util.MutantManager#grant}'s chat.
+     */
+    private static void ensureMutantSilent(
+            ServerPlayer player,
+            com.dragonminez.common.stats.StatsData data,
+            com.dragonminez.common.stats.character.Effects effects
+    ) {
+        if (com.dragonminez.server.util.MutantManager.isMutant(data)) {
+            // Already has effect — only ensure lottery holder registration (no chat).
+            try {
+                com.dragonminez.server.util.MutantManager.reconcileHolder(player, data);
+            } catch (Throwable ignored) {
+            }
             return;
         }
-        String name = player.m_6302_();
-        // Correct order: effect + duration, optional player target last.
-        String cmd = give
-                ? "dmzeffect give " + effectId + " -1 " + name
-                : "dmzeffect remove " + effectId + " " + name;
+        effects.addEffect("mutant", 1.0, -1);
         try {
-            server.m_129892_().m_230957_(server.m_129893_(), cmd);
-        } catch (Throwable t) {
-            AdaptiveDifficultyMod.LOGGER.debug(
-                    "[{}] prestige points dmzeffect soft-fail: {}",
-                    AdaptiveDifficultyMod.MOD_ID, t.toString());
+            MinecraftServer server = player.m_20194_();
+            if (server != null) {
+                com.dragonminez.server.world.data.MutantSavedData.get(server)
+                        .addHolder(player.m_20148_());
+            }
+        } catch (Throwable ignored) {
         }
+        DmzSkillUtil.sync(player);
+    }
+
+    /** Apply or upgrade an effect to permanent duration without command chat. */
+    private static void ensureEffectSilent(
+            ServerPlayer player,
+            com.dragonminez.common.stats.character.Effects effects,
+            String effectId,
+            double power
+    ) {
+        if (effects.hasEffect(effectId) && effects.getEffectDuration(effectId) == -1) {
+            return;
+        }
+        effects.addEffect(effectId, power, -1);
+        DmzSkillUtil.sync(player);
     }
 
     private static double majinEffectPower() {

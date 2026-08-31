@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.115", 'VERSION = "2.3.115"' in mod)
+    check("VERSION 2.3.116", 'VERSION = "2.3.116"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -897,6 +897,15 @@ def main() -> int:
           and "isPrestigeAdminSub" in
           read(gui_root / "AdaptiveDifficultyGuiPlugin.java"))
     check("form XOR majin/mutant", "buyMajin" in pp and "buyMutant" in pp and "unbuyMajin" in pp)
+    # MutantManager.grant always chats message.dragonminez.mutant.gained — pulse must not call it.
+    check("silent mutant ensure (no grant chat spam)",
+          "ensureMutantSilent" in pp
+          and "MutantManager.grant(" not in pp
+          and "reconcileHolder" in pp)
+    check("silent majin ensure (no dmzeffect give chat)",
+          "ensureEffectSilent" in pp
+          and '"dmzeffect give "' not in pp
+          and "'dmzeffect give '" not in pp)
     check("breakthrough costs 15..35", "breakthroughCost" in pp and "15" in pp and "35" in pp)
     check("MAX_BREAKTHROUGHS 5", "MAX_BREAKTHROUGHS = 5" in pp)
     check("StatsDataMixin personal cap", "getConfiguredMaxValue" in mixin and "effectiveMaxLevel" in mixin)
