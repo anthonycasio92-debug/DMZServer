@@ -113,6 +113,7 @@ public final class DifficultyChatMenu {
         if (!TitleSystem.activeDisplay(player).equals("None")) {
             send(player, Component.m_237113_("§7Title §e" + TitleSystem.activeDisplay(player)));
         }
+        send(player, Component.m_237113_("§cWarning: §7Scaled mobs can attack other players as well"));
         send(player, Component.m_237113_(""));
         MutableComponent hub = Component.m_237113_("§7")
                 .m_7220_(btn("§a[Buy Tier]", "/difficulty do page buy", "Purchase a higher Unlock Tier"))
@@ -126,7 +127,7 @@ public final class DifficultyChatMenu {
                         "/difficulty do toggle_personal 0 main",
                         personalOn
                                 ? "Turn OFF — no scaling, kill coins, AI pressure, or tier buys"
-                                : "Turn ON — restore scaling, kill coins, and tier buys"))
+                                : "Turn ON — restore scaling. Scaled mobs can attack other players as well"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn(coinChatOn ? "§a[Coin Chat ON]" : "§8[Coin Chat OFF]",
                         "/difficulty do toggle_coin_chat 0 main",

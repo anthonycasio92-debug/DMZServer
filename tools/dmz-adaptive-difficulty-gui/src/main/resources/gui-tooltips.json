@@ -9,11 +9,12 @@
           "&8/lm"
         ]
       },
-      "difficulty": {
+        "difficulty": {
         "name": "&aDifficulty",
         "lore": [
           "&7Gain and spend ancient coins- tiers are lost on death",
           "&7Challenge yourself to custom scaled mobs",
+          "&cWarning: &7Scaled mobs can attack other players as well",
           "&eClick to open"
         ]
       },
@@ -337,7 +338,8 @@
         "lore": [
           "&7Click to turn OFF for you only",
           "&8OFF disables scaling, kill coins,",
-          "&8AI pressure, and tier buys"
+          "&8AI pressure, and tier buys",
+          "&cWarning: &7Scaled mobs can attack other players as well"
         ]
       },
       "personal_off": {
@@ -345,7 +347,8 @@
         "lore": [
           "&7Click to turn ON for you only",
           "&8ON restores scaling, kill coins,",
-          "&8AI pressure, and tier buys"
+          "&8AI pressure, and tier buys",
+          "&cWarning: &7Scaled mobs can attack other players as well"
         ]
       },
       "coin_chat_on": {

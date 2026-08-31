@@ -71,7 +71,9 @@ public final class CmiHubGui {
 
         // Row 2 — core
         gui.addButton(openBtn(player, 20, "hub.main.difficulty", Material.BEACON, "&aDifficulty", "difficulty",
-                "&7Unlock tiers & world scaling", "&eClick to open"));
+                "&7Unlock tiers & world scaling",
+                "&cWarning: &7Scaled mobs can attack other players as well",
+                "&eClick to open"));
         gui.addButton(openBtn(player, 22, "hub.main.rival", Material.NAME_TAG, "&6Rival", "rival",
                 "&7Rivalry, challenges & RP", "&eClick to open"));
         gui.addButton(openBtn(player, 24, "hub.main.spar", Material.GOLDEN_SWORD, "&bSpar", "spar",

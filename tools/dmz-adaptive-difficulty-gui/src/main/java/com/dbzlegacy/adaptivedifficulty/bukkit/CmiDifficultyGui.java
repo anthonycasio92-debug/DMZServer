@@ -146,7 +146,8 @@ public final class CmiDifficultyGui {
                                 : "&8ON restores scaling, kill coins,",
                         personalOn
                                 ? "&8AI pressure, and tier buys"
-                                : "&8AI pressure, and tier buys"
+                                : "&8AI pressure, and tier buys",
+                        "&cWarning: &7Scaled mobs can attack other players as well"
                 )));
         gui.addButton(actionBtn(player, 31,
                 coinChatOn ? "difficulty.main.coin_chat_on" : "difficulty.main.coin_chat_off",
@@ -619,6 +620,7 @@ public final class CmiDifficultyGui {
             lore.add("&7Title &e" + title);
         }
         lore.add("");
+        lore.add("&cWarning: &7Scaled mobs can attack other players as well");
         lore.addAll(coinLore(ph));
         if (staff) {
             lore.add("");

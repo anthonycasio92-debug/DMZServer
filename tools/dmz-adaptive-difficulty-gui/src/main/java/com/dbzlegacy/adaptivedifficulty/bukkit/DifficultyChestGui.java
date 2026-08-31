@@ -178,7 +178,8 @@ public final class DifficultyChestGui implements Listener {
                                 : "&8ON restores scaling, kill coins,",
                         personalOn
                                 ? "&8AI pressure, and tier buys"
-                                : "&8AI pressure, and tier buys"
+                                : "&8AI pressure, and tier buys",
+                        "&cWarning: &7Scaled mobs can attack other players as well"
                 )), SlotAction.act("toggle_personal", "0", "main"));
         put(holder, inv, 31, tipBtn(viewer,
                 coinChatOn ? "difficulty.main.coin_chat_on" : "difficulty.main.coin_chat_off",
@@ -630,6 +631,7 @@ public final class DifficultyChestGui implements Listener {
             lore.add("&7Title &e" + title);
         }
         lore.add("");
+        lore.add("&cWarning: &7Scaled mobs can attack other players as well");
         lore.addAll(coinLore(ph));
         if (staff) {
             lore.add("");

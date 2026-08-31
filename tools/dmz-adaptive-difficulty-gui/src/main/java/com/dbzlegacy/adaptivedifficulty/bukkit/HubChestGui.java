@@ -74,7 +74,9 @@ public final class HubChestGui implements Listener {
 
         // Row 2 — core (everyone): Difficulty · Rival · Spar
         put(holder, inv, 20, tipBtn(player, "hub.main.difficulty", Material.BEACON, "&aDifficulty",
-                List.of("&7Unlock tiers & world scaling", "&eClick to open")),
+                List.of("&7Unlock tiers & world scaling",
+                        "&cWarning: &7Scaled mobs can attack other players as well",
+                        "&eClick to open")),
                 SlotAction.open("difficulty"));
         put(holder, inv, 22, tipBtn(player, "hub.main.rival", Material.NAME_TAG, "&6Rival",
                 List.of("&7Rivalry, challenges & RP", "&eClick to open")),
