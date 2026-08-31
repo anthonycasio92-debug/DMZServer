@@ -848,9 +848,9 @@ public final class ProgressionGuiApi {
             case "cap", "breakthrough", "breakthroughs" -> {
                 lore.add("§7Breakthroughs: §f" + ph.getOrDefault("breakthroughs", "0")
                         + "§7/§f" + ph.getOrDefault("breakthroughs_max", "5"));
-                lore.add("§7+10k hard stats per core stat · ~§f"
-                        + ph.getOrDefault("level_cap_fmt", "100000") + " §7power");
-                lore.add("§8Server DMZ level cap stays §f100000 §8for everyone");
+                lore.add("§7Your personal level cap: §f"
+                        + ph.getOrDefault("level_cap_fmt", "100000"));
+                lore.add("§8Server hardcap stays §f100000 §8— you level into your raised cap");
                 int btCount = 0;
                 try {
                     btCount = Integer.parseInt(ph.getOrDefault("breakthroughs", "0"));
@@ -858,9 +858,9 @@ public final class ProgressionGuiApi {
                 }
                 if (btCount < PrestigePointsSystem.MAX_BREAKTHROUGHS) {
                     lore.add("§7Next cost: §e" + ph.getOrDefault("next_breakthrough_cost", "15")
-                            + " §7points");
+                            + " §7points (+10k cap)");
                 } else {
-                    lore.add("§aMax hard-stat breakthroughs reached");
+                    lore.add("§aMax personal cap reached");
                 }
             }
             default -> {

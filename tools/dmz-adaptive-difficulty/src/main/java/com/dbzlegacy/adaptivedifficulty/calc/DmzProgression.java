@@ -187,7 +187,7 @@ public final class DmzProgression {
         } else {
             ceiling = (int) Math.min(Integer.MAX_VALUE, Math.max(1L, adMax));
         }
-        // Prestige breakthroughs raise personal cap from 100k toward 150k.
+        // Prestige breakthroughs raise personal cap from 100k toward 150k (mixin + AD).
         try {
             int personal = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
                     .BASE_LEVEL_CAP;
@@ -195,7 +195,9 @@ public final class DmzProgression {
                 personal = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
                         .effectiveMaxLevel(sp);
             }
-            ceiling = Math.min(ceiling, Math.max(1, personal));
+            // Allow personal headroom above the configured server maxValue.
+            int absolute = (int) Math.min(Integer.MAX_VALUE, Math.max(1L, adMax));
+            ceiling = Math.min(absolute, Math.max(ceiling, personal));
         } catch (Throwable ignored) {
         }
         return Math.max(1, ceiling);

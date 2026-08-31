@@ -100,10 +100,10 @@ public final class PrestigeChestGui implements Listener {
         put(holder, inv, 30, tipBtn(viewer, Material.MAGENTA_DYE, "&dForms",
                 List.of("&7Permanent Majin / Mutant (&e5 &7pts)")),
                 SlotAction.page("forms"));
-        put(holder, inv, 32, tipBtn(viewer, Material.NETHER_STAR, "&bHard-Stat Breakthrough",
-                List.of("&7+10k hard stats per core stat (past 100k body)",
-                        "&7Equiv power: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
-                        "&8Server level cap stays &f100000")),
+        put(holder, inv, 32, tipBtn(viewer, Material.NETHER_STAR, "&bLevel Cap Breakthrough",
+                List.of("&7Raise &fyour &7personal level cap +10k",
+                        "&7Cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
+                        "&8Server hardcap stays &f100000")),
                 SlotAction.page("cap"));
 
         put(holder, inv, 36, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
@@ -258,11 +258,11 @@ public final class PrestigeChestGui implements Listener {
     private Inventory cap(Player viewer, Player subject) {
         Map<String, String> ph = ForgeBridge.prestigePlaceholders(subject);
         Holder holder = new Holder("cap");
-        Inventory inv = Bukkit.createInventory(holder, 36, invTitle(viewer, subject, "&8Prestige · Breakthrough"));
+        Inventory inv = Bukkit.createInventory(holder, 36, invTitle(viewer, subject, "&8Prestige · Level Cap"));
         holder.bind(inv);
         frame(inv, 36);
 
-        put(holder, inv, 4, item(Material.NETHER_STAR, "&b&lHard-Stat Breakthrough",
+        put(holder, inv, 4, item(Material.NETHER_STAR, "&b&lPersonal Level Cap",
                 prependBlank(toAmp(ForgeBridge.prestigeLines(subject, "cap")))));
 
         int bt = parseInt(ph.get("breakthroughs"), 0);
@@ -270,19 +270,20 @@ public final class PrestigeChestGui implements Listener {
         boolean canBuy = bt < max;
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.add("&7Equivalent power: &f" + ph.getOrDefault("level_cap_fmt", "100000"));
+        lore.add("&7Your level cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"));
         lore.add("&7Breakthroughs: &f" + bt + "&7/&f" + max);
-        lore.add("&8DMZ level cap stays &f100000 &8for everyone");
+        lore.add("&8Server hardcap stays &f100000 &8for everyone else");
         if (canBuy) {
-            lore.add("&7Next: &a+10,000 &7to each hard stat for &e"
+            lore.add("&7Next: &a+10,000 &7personal cap for &e"
                     + ph.getOrDefault("next_breakthrough_cost", "15") + " &7points");
+            lore.add("&8Then keep leveling with TP into the new cap");
             lore.add("&8Costs: 15 → 20 → 25 → 30 → 35");
         } else {
-            lore.add("&aMax breakthroughs (~150000 power)");
+            lore.add("&aMax personal cap (150000)");
         }
         put(holder, inv, 22, item(
                 canBuy ? Material.NETHER_STAR : Material.BEACON,
-                canBuy ? "&bBuy Breakthrough" : "&aBreakthroughs Maxed",
+                canBuy ? "&bBuy Breakthrough" : "&aCap Maxed",
                 lore),
                 canBuy ? SlotAction.act("breakthrough", "0", "cap") : null);
 

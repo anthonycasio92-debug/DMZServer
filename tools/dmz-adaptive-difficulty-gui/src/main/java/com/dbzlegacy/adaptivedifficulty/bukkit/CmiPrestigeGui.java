@@ -88,10 +88,10 @@ public final class CmiPrestigeGui {
                 List.of("&71 point = +1 permanent skill level"), "shop"));
         gui.addButton(navBtn(30, Material.MAGENTA_DYE, "&dForms",
                 List.of("&7Permanent Majin / Mutant (&e5 &7pts)"), "forms"));
-        gui.addButton(navBtn(32, Material.NETHER_STAR, "&bHard-Stat Breakthrough",
-                List.of("&7+10k hard stats per core stat (past 100k body)",
-                        "&7Equiv power: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
-                        "&8Server level cap stays &f100000"),
+        gui.addButton(navBtn(32, Material.NETHER_STAR, "&bLevel Cap Breakthrough",
+                List.of("&7Raise &fyour &7personal level cap +10k",
+                        "&7Cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
+                        "&8Server hardcap stays &f100000"),
                 "cap"));
 
         gui.addButton(hubBtn(36));
@@ -238,8 +238,8 @@ public final class CmiPrestigeGui {
 
     private static void openCap(Player player) {
         Map<String, String> ph = ForgeBridge.prestigePlaceholders(player);
-        CMIGui gui = base(player, "&8Prestige · Breakthrough", 4);
-        CMIGuiButton status = new CMIGuiButton(4, Material.NETHER_STAR, "&b&lHard-Stat Breakthrough");
+        CMIGui gui = base(player, "&8Prestige · Level Cap", 4);
+        CMIGuiButton status = new CMIGuiButton(4, Material.NETHER_STAR, "&b&lPersonal Level Cap");
         status.lockField();
         status.addLore(toAmp(ForgeBridge.prestigeLines(player, "cap")));
         gui.addButton(status);
@@ -249,18 +249,18 @@ public final class CmiPrestigeGui {
         boolean canBuy = bt < max;
         CMIGuiButton buy = new CMIGuiButton(22,
                 canBuy ? Material.NETHER_STAR : Material.BEACON,
-                canBuy ? "&bBuy Breakthrough" : "&aBreakthroughs Maxed");
+                canBuy ? "&bBuy Breakthrough" : "&aCap Maxed");
         buy.lockField();
         buy.addLore(List.of("",
-                "&7Equivalent power: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
+                "&7Your level cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
                 "&7Breakthroughs: &f" + bt + "&7/&f" + max,
-                "&8DMZ level cap stays &f100000 &8for everyone"));
+                "&8Server hardcap stays &f100000 &8for everyone else"));
         if (canBuy) {
-            buy.addLore("&7Next: &a+10,000 &7to each hard stat for &e"
+            buy.addLore("&7Next: &a+10,000 &7personal cap for &e"
                     + ph.getOrDefault("next_breakthrough_cost", "15") + " &7points");
             buy.addCommand("lmdo prestige breakthrough 0 cap");
         } else {
-            buy.addLore("&aMax breakthroughs (~150000 power)");
+            buy.addLore("&aMax personal cap (150000)");
         }
         gui.addButton(buy);
 

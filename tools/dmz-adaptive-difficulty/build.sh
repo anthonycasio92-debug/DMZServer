@@ -16,7 +16,7 @@ if [[ ! -f "$FTB" ]]; then
   curl -fsSL -o "$FTB" \
     "https://maven.ftb.dev/releases/dev/ftb/mods/ftb-teams-forge/2001.3.1/ftb-teams-forge-2001.3.1.jar"
 fi
-VERSION="2.3.79"
+VERSION="2.3.80"
 NAME="LegacyMechanics"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
@@ -38,6 +38,7 @@ $ROOT/libraries/net/minecraftforge/javafmllanguage/1.20.1-47.4.10/javafmllanguag
 $ROOT/libraries/net/minecraftforge/eventbus/6.0.5/eventbus-6.0.5.jar:\
 $ROOT/libraries/org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar:\
 $ROOT/libraries/org/ow2/asm/asm/9.6/asm-9.6.jar:\
+$ROOT/libraries/org/spongepowered/mixin/0.8.5/mixin-0.8.5.jar:\
 $ROOT/libraries/org/apache/logging/log4j/log4j-api/2.19.0/log4j-api-2.19.0.jar:\
 $ROOT/libraries/com/mojang/authlib/4.0.43/authlib-4.0.43.jar:\
 $ROOT/libraries/com/mojang/brigadier/1.1.8/brigadier-1.1.8.jar:\
@@ -55,7 +56,9 @@ javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
   cd "$OUT"
   jar cvmf "$RES/META-INF/MANIFEST.MF" "$JAR" $(find com -name '*.class') \
     -C "$RES" META-INF/mods.toml \
-    -C "$RES" pack.mcmeta
+    -C "$RES" pack.mcmeta \
+    -C "$RES" legacymechanics.mixins.json \
+    -C "$RES" legacymechanics.refmap.json
 )
 echo "Built $JAR"
 jar tf "$JAR"

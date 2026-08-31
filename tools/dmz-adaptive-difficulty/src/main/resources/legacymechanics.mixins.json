@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.dbzlegacy.adaptivedifficulty.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "legacymechanics.refmap.json",
+  "mixins": [
+    "StatsDataMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
