@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.80", 'VERSION = "2.3.80"' in mod)
+    check("VERSION 2.3.81", 'VERSION = "2.3.81"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -851,6 +851,49 @@ def main() -> int:
           and 'lmdo lm open hub' in prestige_chest)
     check("conv code: chat hub android+prestige",
           "android_remove" in mech_chat and "prestige" in mech_chat)
+
+    print("\n=== Prestige points shop (2.3.81) ===")
+    pp = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigePointsSystem.java")
+    mixin = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataMixin.java")
+    mixins_json = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "resources" / "legacymechanics.mixins.json")
+    gui_api_pp = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java")
+    hub_pp = read(gui_root / "HubChestGui.java")
+    cmi_hub_pp = read(gui_root / "CmiHubGui.java")
+    prestige_chest_pp = read(gui_root / "PrestigeChestGui.java")
+    prestige_cmi_pp = read(gui_root / "CmiPrestigeGui.java")
+    check("PrestigePointsSystem present", "class PrestigePointsSystem" in pp)
+    check("turnIn bonus +1 per 3", "n + (n / 3)" in pp and "pointsForTurnIn" in pp)
+    check("form XOR majin/mutant", "buyMajin" in pp and "buyMutant" in pp and "unbuyMajin" in pp)
+    check("breakthrough costs 15..35", "breakthroughCost" in pp and "15" in pp and "35" in pp)
+    check("MAX_BREAKTHROUGHS 5", "MAX_BREAKTHROUGHS = 5" in pp)
+    check("StatsDataMixin personal cap", "getConfiguredMaxValue" in mixin and "effectiveMaxLevel" in mixin)
+    check("mixins.json registers StatsDataMixin", '"StatsDataMixin"' in mixins_json)
+    check("AD referenceMaxLevel 150k", "referenceMaxLevel = 150_000L" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))
+    check("grant staff-gated",
+          'if (!StaffAccess.isStaff(player))' in gui_api_pp.split('give_points')[1].split('balance')[0]
+          if "give_points" in gui_api_pp else False)
+    check("spend ungated for NPC",
+          "spendForNpc" in gui_api_pp.split('"spend"')[1].split('"grant"')[0]
+          if '"spend"' in gui_api_pp else False)
+    check("Chest pages turnin/shop/forms/cap",
+          'case "turnin", "points"' in prestige_chest_pp
+          and 'case "shop", "skills"' in prestige_chest_pp
+          and 'case "forms", "form"' in prestige_chest_pp
+          and 'case "cap", "breakthrough"' in prestige_chest_pp)
+    check("CMI pages turnin/shop/forms/cap",
+          '"turnin", "points"' in prestige_cmi_pp
+          and '"shop", "skills"' in prestige_cmi_pp
+          and '"forms", "form"' in prestige_cmi_pp
+          and '"cap", "breakthrough"' in prestige_cmi_pp)
+    check("CMI uses lmdo prestige",
+          'lmdo prestige confirm' in prestige_cmi_pp
+          and 'lmdo prestige turnin' in prestige_cmi_pp
+          and 'lmdo prestige breakthrough' in prestige_cmi_pp)
+    check("Hub Prestige tip mentions points shop",
+          "skill/forms shop" in hub_pp and "skill/forms shop" in cmi_hub_pp)
+    check("Papi prestige_points bridge",
+          "prestige_points" in forge_bridge and "prestige_level_cap" in forge_bridge)
 
     print("\n=== End Dragon AD summon (2.3.65) ===")
     end_str = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/end/EndDimensionStrength.java")

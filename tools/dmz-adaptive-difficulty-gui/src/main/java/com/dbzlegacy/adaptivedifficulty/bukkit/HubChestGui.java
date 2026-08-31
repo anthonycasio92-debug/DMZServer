@@ -95,7 +95,8 @@ public final class HubChestGui implements Listener {
                     SlotAction.open("skills"));
         }
         put(holder, inv, 23, tipBtn(player, Material.GOLDEN_APPLE, "&6Prestige",
-                List.of("&7Prestige shop / levels", "&eClick to open")),
+                List.of("&7Turn in prestiges · skill/forms shop · level-cap",
+                        "&eClick to open")),
                 SlotAction.open("prestige"));
 
         // Row 4 — player Android remove + staff tools

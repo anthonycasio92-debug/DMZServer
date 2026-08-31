@@ -937,6 +937,10 @@ public final class ProgressionGuiApi {
             return PrestigePointsSystem.spendForNpc(player, amount, reason);
         }
         if ("grant".equals(act) || "give_points".equals(act) || "add_points".equals(act)) {
+            // Spend stays open for NPC shops; grant is staff-only.
+            if (!StaffAccess.isStaff(player)) {
+                return "§cStaff only.";
+            }
             int amount;
             try {
                 amount = Integer.parseInt(arg == null || arg.isBlank() ? "0" : arg.trim());

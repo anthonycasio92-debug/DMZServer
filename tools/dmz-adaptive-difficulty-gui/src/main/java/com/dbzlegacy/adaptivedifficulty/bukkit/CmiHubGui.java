@@ -89,7 +89,8 @@ public final class CmiHubGui {
                     "&7Skill unlock admin browser", "&8No Skill Check perm", "&eClick to open"));
         }
         gui.addButton(openBtn(player, 23, Material.GOLDEN_APPLE, "&6Prestige", "prestige",
-                "&7Prestige shop / levels", "&eClick to open"));
+                "&7Turn in prestiges · skill/forms shop · level-cap",
+                "&eClick to open"));
 
         // Row 4 — player Android remove + staff tools
         gui.addButton(openBtn(player, 31, Material.REDSTONE, "&cRemove Android", "android_remove",

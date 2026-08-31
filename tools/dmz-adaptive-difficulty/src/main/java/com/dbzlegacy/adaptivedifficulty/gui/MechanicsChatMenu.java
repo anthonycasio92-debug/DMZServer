@@ -65,7 +65,8 @@ public final class MechanicsChatMenu {
         if (row2Used) {
             row2.m_7220_(Component.m_237113_("  "));
         }
-        row2.m_7220_(btn("§6[Prestige]", "/lmdo lm open prestige", "Prestige shop"));
+        row2.m_7220_(btn("§6[Prestige]", "/lmdo lm open prestige",
+                "Turn in · skill/forms shop · level-cap"));
         row2.m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§c[Remove Android]", "/lmdo lm open android_remove",
                         "Remove Android upgrade"));
