@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.85", 'VERSION = "2.3.85"' in mod)
+    check("VERSION 2.3.86", 'VERSION = "2.3.86"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -882,7 +882,12 @@ def main() -> int:
     check("DMZ maxValue 150000 for client UI", '"maxValue": 150000' in dmz_general)
     events_pp = read(SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")
     check("TP soft-lock at personal cap", "onTpGain" in events_pp and "effectiveMaxLevel" in events_pp)
+    check("TP soft-lock silent (no chat spam)",
+          "event.setTpGain(0)" in events_pp
+          and "pp_cap_msg_next" not in events_pp)
     check("Stat soft-lock at personal*6", "onStatChange" in events_pp and "personal * 6" in events_pp)
+    check("Stat soft-lock uses ScreenNotify",
+          "ScreenNotify.hint" in events_pp and "pp_stat_cap_title" in events_pp)
     check("Chest lore maxValue 150000 soft-lock",
           "DMZ maxValue 150000" in prestige_chest_pp and "Server hardcap stays" not in prestige_chest_pp)
     check("CMI lore maxValue 150000 soft-lock",

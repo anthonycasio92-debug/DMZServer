@@ -178,6 +178,8 @@ public final class DifficultyEvents {
      * progress requires the next breakthrough. Server DMZ {@code maxValue} is 150k
      * (so clients can display/buy into raised caps); personal soft-locks keep
      * non-breakthrough players at 100k / breakthrough buyers at 110k…150k.
+     * <p>Silent while at cap — chat spam during combat/mining was unusable.
+     * Over-cap buy attempts still tip via {@link #onStatChange}.
      */
     @SubscribeEvent
     public void onTpGain(DMZEvent.TPGainEvent event) {
@@ -202,17 +204,6 @@ public final class DifficultyEvents {
                 return;
             }
             event.setTpGain(0);
-            long now = System.currentTimeMillis();
-            long next = com.dbzlegacy.adaptivedifficulty.progression.ProgressionData
-                    .tempGetLong(player, "pp_cap_msg_next", 0L);
-            if (now >= next) {
-                com.dbzlegacy.adaptivedifficulty.progression.ProgressionData
-                        .tempPut(player, "pp_cap_msg_next", now + 15_000L);
-                player.m_213846_(net.minecraft.network.chat.Component.m_237113_(
-                        "§ePersonal level cap §f"
-                                + com.dbzlegacy.adaptivedifficulty.util.DmzRewards.formatWhole(cap)
-                                + " §ereached. §7Buy another breakthrough in §6/lm §7→ Prestige."));
-            }
         } catch (Throwable ignored) {
         }
     }
@@ -256,17 +247,16 @@ public final class DifficultyEvents {
             } catch (Throwable ignored) {
             }
             com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil.sync(player);
-            long now = System.currentTimeMillis();
-            long next = com.dbzlegacy.adaptivedifficulty.progression.ProgressionData
-                    .tempGetLong(player, "pp_stat_cap_msg_next", 0L);
-            if (now >= next) {
-                com.dbzlegacy.adaptivedifficulty.progression.ProgressionData
-                        .tempPut(player, "pp_stat_cap_msg_next", now + 10_000L);
-                player.m_213846_(net.minecraft.network.chat.Component.m_237113_(
-                        "§ePersonal level cap §f"
-                                + com.dbzlegacy.adaptivedifficulty.util.DmzRewards.formatWhole(personal)
-                                + " §e— need a breakthrough in §6/lm §7→ Prestige to buy more stats."));
-            }
+            // Title tip only — no chat. Long cooldown so hold-to-buy cannot spam.
+            com.dbzlegacy.adaptivedifficulty.util.ScreenNotify.hint(
+                    player,
+                    "Personal Cap",
+                    "Breakthrough in /lm → Prestige ("
+                            + com.dbzlegacy.adaptivedifficulty.util.DmzRewards.formatWhole(personal)
+                            + ")",
+                    "pp_stat_cap_title",
+                    120_000L
+            );
         } catch (Throwable ignored) {
         }
     }
