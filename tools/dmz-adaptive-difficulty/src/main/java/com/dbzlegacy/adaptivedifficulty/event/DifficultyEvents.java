@@ -40,6 +40,7 @@ import com.dragonminez.common.events.DMZEvent;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import net.minecraft.tags.DamageTypeTags;
@@ -327,13 +328,57 @@ public final class DifficultyEvents {
         }
         DifficultyCache.save(old);
         var data = DifficultyCache.data(old);
+        var oldTag = PersistentDataAccess.get(old);
         var neuTag = PersistentDataAccess.get(neu);
-        if (PersistentDataAccess.isWritable(neuTag)) {
+        if (PersistentDataAccess.isWritable(neuTag) && PersistentDataAccess.isWritable(oldTag)) {
+            // Death respawn builds a new player entity. Forge does not always copy
+            // Entity#getPersistentData() for wasDeath — without this, prestige wallet /
+            // invested skill floors / breakthroughs under lm_progression are wiped.
+            copyLmPersistentData(oldTag, neuTag);
+            data.writeToPlayerNbt(neuTag);
+        } else if (PersistentDataAccess.isWritable(neuTag)) {
             data.writeToPlayerNbt(neuTag);
         }
         DifficultyCache.putData(neu, data);
         DifficultyCache.remove(old.m_20148_());
         CombatGravity.clearPlayer(old);
+        if (event.isWasDeath()) {
+            // DMZ may rebuild skills on respawn — re-apply prestige floors shortly after.
+            try {
+                com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                        .scheduleReapplyAfterPrestige(neu);
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    /**
+     * Copy LegacyMechanics persistent bags/keys from the dying (or dimension-travel)
+     * player onto the clone. Safe to call even when Forge already merged some keys —
+     * we overwrite with the old player's authoritative values.
+     */
+    private static void copyLmPersistentData(CompoundTag from, CompoundTag to) {
+        if (from == null || to == null) {
+            return;
+        }
+        // Prestige points wallet, invested skill floors, tiers, forms, breakthroughs,
+        // meditation / flight / potential progress, CNPC migrate marks, etc.
+        if (from.m_128441_("lm_progression")) {
+            to.m_128365_("lm_progression", from.m_128469_("lm_progression").m_6426_());
+        }
+        // Prestige lifetime / held tokens stored at the persistent-data root.
+        copyTagIfPresent(from, to, "prestige_total_completed");
+        copyTagIfPresent(from, to, "prestige_need_floor");
+        copyTagIfPresent(from, to, "lm_prestige_held");
+        copyTagIfPresent(from, to, "lm_prestige_confirm_until");
+        copyTagIfPresent(from, to, "lm_cnpc_player_migrated");
+        copyTagIfPresent(from, to, "lm_shadow_dummy_cd_until");
+    }
+
+    private static void copyTagIfPresent(CompoundTag from, CompoundTag to, String key) {
+        if (from.m_128441_(key)) {
+            to.m_128365_(key, from.m_128423_(key).m_6426_());
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.LOW)
