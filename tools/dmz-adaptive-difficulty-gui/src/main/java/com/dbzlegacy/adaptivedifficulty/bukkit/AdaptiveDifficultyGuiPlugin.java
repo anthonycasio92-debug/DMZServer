@@ -1353,11 +1353,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
 
     private static boolean isPrestigeAdminSub(String sub) {
         return "info".equals(sub) || "held".equals(sub) || "completed".equals(sub)
-                || "points".equals(sub) || "breakthroughs".equals(sub)
+                || "points".equals(sub) || "breakthroughs".equals(sub) || "breakthrough".equals(sub)
+                || "cap".equals(sub)
                 || "fabled".equals(sub) || "sync".equals(sub)
                 || "addpoints".equals(sub) || "givepoints".equals(sub) || "grantpoints".equals(sub)
                 || "removepoints".equals(sub) || "takepoints".equals(sub)
-                || "tier".equals(sub) || "tiers".equals(sub) || "difficulty".equals(sub);
+                || "tier".equals(sub) || "tiers".equals(sub) || "difficulty".equals(sub)
+                || "skill".equals(sub) || "skills".equals(sub)
+                || "invest".equals(sub) || "invested".equals(sub);
     }
 
     private static void sendMultilineToSender(CommandSender sender, String raw) {

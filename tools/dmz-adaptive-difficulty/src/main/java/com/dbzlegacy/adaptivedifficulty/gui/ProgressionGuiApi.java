@@ -1140,7 +1140,8 @@ public final class ProgressionGuiApi {
         }
         if ("tier".equals(sub) || "tiers".equals(sub) || "difficulty".equals(sub)) {
             if (parts.length < 4) {
-                return "§cUsage: /padmin tier <player> give <1-7>"
+                return "§cUsage: /padmin tier <player> <set|add|remove> <0-7>"
+                        + "\n§c       /padmin tier <player> give <1-7>"
                         + "\n§c       /padmin tier <player> clear <1-7|all>";
             }
             ServerPlayer target = resolveOnline(actor, parts[1]);
@@ -1155,15 +1156,57 @@ public final class ProgressionGuiApi {
                 try {
                     tierId = Integer.parseInt(parts[3]);
                 } catch (NumberFormatException e) {
-                    return "§cTier must be 1–7 or all.";
+                    return "§cTier must be 0–7 or all.";
                 }
             }
             return PrestigeAdmin.adjustTier(target, mode, tierId);
         }
+        if ("skills".equals(sub) || "invested".equals(sub)) {
+            if (parts.length < 2) {
+                return "§cUsage: /padmin skills <player>";
+            }
+            ServerPlayer target = resolveOnline(actor, parts[1]);
+            if (target == null) {
+                return "§cPlayer not online: §f" + parts[1];
+            }
+            return PrestigeAdmin.listSkills(target);
+        }
+        if ("skill".equals(sub) || "invest".equals(sub)) {
+            if (parts.length == 2) {
+                ServerPlayer target = resolveOnline(actor, parts[1]);
+                if (target == null) {
+                    return "§cPlayer not online: §f" + parts[1];
+                }
+                return PrestigeAdmin.listSkills(target);
+            }
+            if (parts.length < 5) {
+                return "§cUsage: /padmin skill <player> <skillId> <set|add|remove> <levels>"
+                        + "\n§8Example: /padmin skill Steve potentialunlock set 10"
+                        + "\n§8List: /padmin skills <player>";
+            }
+            ServerPlayer target = resolveOnline(actor, parts[1]);
+            if (target == null) {
+                return "§cPlayer not online: §f" + parts[1];
+            }
+            String skillId = parts[2];
+            String mode = parts[3];
+            int amount;
+            try {
+                amount = Integer.parseInt(parts[4]);
+            } catch (NumberFormatException e) {
+                return "§cLevels must be a number.";
+            }
+            return PrestigeAdmin.adjustSkill(target, skillId, mode, amount);
+        }
         if ("held".equals(sub) || "completed".equals(sub) || "points".equals(sub)
-                || "breakthroughs".equals(sub) || "fabled".equals(sub)) {
+                || "breakthroughs".equals(sub) || "fabled".equals(sub)
+                || "cap".equals(sub) || "breakthrough".equals(sub)) {
+            String field = switch (sub) {
+                case "cap", "breakthrough" -> "breakthroughs";
+                default -> sub;
+            };
             if (parts.length < 4) {
-                return "§cUsage: /padmin " + sub + " <player> <set|add|remove> <n>";
+                return "§cUsage: /padmin " + field + " <player> <set|add|remove> <n>";
             }
             ServerPlayer target = resolveOnline(actor, parts[1]);
             if (target == null) {
@@ -1176,7 +1219,7 @@ public final class ProgressionGuiApi {
             } catch (NumberFormatException e) {
                 return "§cAmount must be a number.";
             }
-            return switch (sub) {
+            return switch (field) {
                 case "held" -> PrestigeAdmin.adjustHeld(target, mode, amount);
                 case "completed" -> PrestigeAdmin.adjustCompleted(target, mode, amount);
                 case "points" -> PrestigeAdmin.adjustPoints(target, mode, amount);

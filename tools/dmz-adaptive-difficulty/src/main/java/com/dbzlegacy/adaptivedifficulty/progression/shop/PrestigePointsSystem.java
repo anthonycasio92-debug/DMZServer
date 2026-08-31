@@ -278,6 +278,110 @@ public final class PrestigePointsSystem {
                 player, KEY_SKILL_PREFIX + skillId.toLowerCase(Locale.ROOT), 0L));
     }
 
+    /**
+     * Staff: set the prestige-invested skill floor (levels bought in the prestige shop).
+     * Does not change the wallet. Re-applies the live DMZ skill to match.
+     */
+    public static String adminAdjustSkill(
+            ServerPlayer player, String skillId, String mode, int amount
+    ) {
+        if (player == null) {
+            return "§cPlayer not online.";
+        }
+        SkillOffer offer = resolveOffer(skillId);
+        if (offer == null) {
+            // Allow adjusting a legacy stored id even if it left the catalog.
+            String id = skillId == null ? "" : skillId.toLowerCase(Locale.ROOT).trim();
+            if (id.isBlank()) {
+                return "§cUsage: skill <player> <skillId> <set|add|remove> <levels>"
+                        + "\n§8Example: skill Steve potentialunlock set 10";
+            }
+            int max = DmzSkillUtil.configuredMaxLevel(id);
+            if (max <= 0) {
+                max = Math.max(getPurchasedSkillLevels(player, id), 10);
+            }
+            offer = new SkillOffer(id, DmzSkillUtil.prettySkillLabel(id), max);
+        }
+        if (!ProgressionData.storedWritable(player)) {
+            return "§cCould not save prestige data for §f" + player.m_6302_() + "§c.";
+        }
+        int before = getPurchasedSkillLevels(player, offer.id);
+        Integer next = applyIntMode(before, mode, amount, 0, offer.maxLevel);
+        if (next == null) {
+            return "§cUsage: skill <player> <skillId> <set|add|remove> <levels>"
+                    + "\n§8Example: skill Steve potentialunlock add 2";
+        }
+        ProgressionData.storedPut(player, KEY_SKILL_PREFIX + offer.id, next);
+        Skills skills = DmzSkillUtil.skills(player);
+        int liveBefore = 0;
+        int liveAfter = 0;
+        if (skills != null) {
+            DmzSkillUtil.ensureRegistered(skills, offer.id, offer.maxLevel);
+            liveBefore = DmzSkillUtil.level(skills, offer.id);
+            int max = Math.max(offer.maxLevel, DmzSkillUtil.maxLevel(skills, offer.id, offer.maxLevel));
+            if (next > before) {
+                liveAfter = Math.min(max, Math.max(liveBefore, next));
+            } else if (next < before && liveBefore > next) {
+                // Lowering invested floor — clamp live skill down with it.
+                liveAfter = Math.min(max, next);
+            } else {
+                liveAfter = liveBefore;
+            }
+            if (liveAfter != liveBefore) {
+                DmzSkillUtil.setLevel(skills, offer.id, liveAfter);
+                DmzSkillUtil.sync(player);
+            }
+        }
+        reapplySkillBonuses(player);
+        SystemTelemetry.log("prestige_admin", "admin_skill", player, null, Map.of(
+                "skill", offer.id,
+                "mode", mode == null ? "" : mode,
+                "before", before,
+                "after", next,
+                "live_before", liveBefore,
+                "live_after", liveAfter
+        ));
+        String perPoint = levelsPerPoint(offer.id) > 1
+                ? " §8(" + levelsPerPoint(offer.id) + " levels/point in shop)"
+                : "";
+        return "§a" + offer.label + " §7prestige floor §f" + before + " §7→ §f" + next
+                + " §8/ §f" + offer.maxLevel + perPoint
+                + "\n§7Live skill §f" + liveBefore + " §7→ §f" + liveAfter
+                + " §8(" + player.m_6302_() + ")";
+    }
+
+    /** Skills with a prestige-invested floor &gt; 0 (for admin info). */
+    public static List<String> investedSkillSummary(ServerPlayer player) {
+        List<String> out = new ArrayList<>();
+        if (player == null) {
+            return out;
+        }
+        for (SkillOffer offer : skillOffers()) {
+            int bought = getPurchasedSkillLevels(player, offer.id);
+            if (bought > 0) {
+                out.add(offer.label + " §f" + bought + "§7/§f" + offer.maxLevel);
+            }
+        }
+        return out;
+    }
+
+    private static Integer applyIntMode(int current, String mode, int amount, int min, int max) {
+        if (mode == null) {
+            return null;
+        }
+        String m = mode.toLowerCase(Locale.ROOT).trim();
+        int next;
+        switch (m) {
+            case "set" -> next = amount;
+            case "add" -> next = current + amount;
+            case "remove", "take", "sub" -> next = current - amount;
+            default -> {
+                return null;
+            }
+        }
+        return Math.max(min, Math.min(max, next));
+    }
+
     public static String buySkillLevel(ServerPlayer player, String skillId) {
         if (player == null) {
             return "§cPlayers only.";
@@ -554,6 +658,42 @@ public final class PrestigePointsSystem {
                 + "\n§7Activate via §f/difficulty §7Buy Tier (Ancient Coins).";
     }
 
+    /**
+     * Staff: set/add/remove highest permanent difficulty tier (shop ladder).
+     * {@code set 3} → owns T1–T3; {@code set 0} / clear all → none.
+     */
+    public static String adminAdjustHighestTier(ServerPlayer player, String mode, int amount) {
+        if (player == null) {
+            return "§cPlayer not online.";
+        }
+        int before = highestPurchasedTier(player);
+        Integer next = applyIntMode(before, mode, amount, 0, 7);
+        if (next == null) {
+            return "§cUsage: tier <player> <set|add|remove> <0-7>"
+                    + "\n§8Or: tier <player> give <1-7> | clear <1-7|all>";
+        }
+        if (!ProgressionData.storedWritable(player)) {
+            return "§cCould not save prestige data for §f" + player.m_6302_() + "§c.";
+        }
+        for (int t = 1; t <= 7; t++) {
+            if (t <= next) {
+                ProgressionData.storedPutBool(player, KEY_TIER_PREFIX + t, true);
+            } else {
+                ProgressionData.storedRemove(player, KEY_TIER_PREFIX + t);
+            }
+        }
+        reapplyTierUnlocks(player);
+        try {
+            com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.save(player);
+        } catch (Throwable ignored) {
+        }
+        return "§aPermanent difficulty tiers §fT" + before + " §7→ §fT" + next
+                + " §8(" + player.m_6302_() + ")"
+                + (next > 0
+                ? "\n§7Owns permanent §fT1–T" + next + "§7. Activate via §f/difficulty§7."
+                : "\n§7No permanent prestige tiers.");
+    }
+
     /** Staff: clear one or all permanent prestige-purchased tiers. */
     public static String adminClearTier(ServerPlayer player, int tierId) {
         if (player == null) {
@@ -706,6 +846,10 @@ public final class PrestigePointsSystem {
         }
         int n = Math.max(0, Math.min(MAX_BREAKTHROUGHS, breakthroughs));
         ProgressionData.storedPut(player, KEY_BREAKTHROUGHS, n);
+        try {
+            DmzSkillUtil.sync(player);
+        } catch (Throwable ignored) {
+        }
     }
 
     /** Personal DMZ level cap: 100k + breakthroughs×10k (mixin + soft-locks). */
