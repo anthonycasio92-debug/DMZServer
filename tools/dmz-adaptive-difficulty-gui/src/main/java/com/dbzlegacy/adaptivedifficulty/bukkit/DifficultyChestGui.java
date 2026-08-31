@@ -212,7 +212,7 @@ public final class DifficultyChestGui implements Listener {
         boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
         if (!bridgeOk || !systemOn || !allowed) {
             put(holder, inv, 4, item(Material.BARRIER, "&c&lBuy Locked", unavailableLore(viewer, subject, systemOn, bridgeOk)));
-            put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+            put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
             put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
             return inv;
         }
@@ -224,7 +224,7 @@ public final class DifficultyChestGui implements Listener {
             info.add("&cPersonal difficulty is OFF");
             info.add("&7Turn it ON on the main menu to buy.");
             put(holder, inv, 4, item(Material.BARRIER, "&c&lBuy Locked", info));
-            put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+            put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
             put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
             return inv;
         }
@@ -233,6 +233,8 @@ public final class DifficultyChestGui implements Listener {
         info.add("&7DMZ Level &f" + ph.getOrDefault("level", "?")
                 + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"));
         info.add("");
+        info.addAll(GuiTooltips.lore("difficulty.buy.info",
+                List.of("&7Unlock with DMZ level or Prestige", "&8Costs scale with level"), null));
         info.addAll(GuiBoardHelper.tips(viewer,
                 "&eUnlock with DMZ level &7OR &ePrestige",
                 "&8Either one qualifies — prestige is not required",
@@ -248,8 +250,8 @@ public final class DifficultyChestGui implements Listener {
         put(holder, inv, 4, item(Material.GOLD_INGOT, "&e&lBuy Higher Tier", info));
 
         placeTierItems(holder, inv, ph, true, viewer);
-        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 40, pageBtn(viewer, Material.WHITE_CONCRETE, "&fLower Tier",
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 40, pageBtn(viewer, "difficulty.buy.nav_lower", Material.WHITE_CONCRETE, "&fLower Tier",
                 "&7Select a lower unlocked tier"), SlotAction.page("lower"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
@@ -267,7 +269,7 @@ public final class DifficultyChestGui implements Listener {
         boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
         if (!bridgeOk || !systemOn || !allowed) {
             put(holder, inv, 4, item(Material.BARRIER, "&c&lLower Locked", unavailableLore(viewer, subject, systemOn, bridgeOk)));
-            put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+            put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
             put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
             return inv;
         }
@@ -279,7 +281,7 @@ public final class DifficultyChestGui implements Listener {
                     "&cPersonal difficulty is OFF",
                     "&7Turn it ON on the main menu to change tiers."
             )));
-            put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+            put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
             put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
             return inv;
         }
@@ -289,17 +291,19 @@ public final class DifficultyChestGui implements Listener {
         lowerHeader.add("&7Current Tier &f" + ph.getOrDefault("active_tier_name", "None"));
         lowerHeader.add("&7Combat Rating &f" + ph.getOrDefault("combat_rating", "?"));
         lowerHeader.add("");
+        lowerHeader.addAll(GuiTooltips.lore("difficulty.lower.info",
+                List.of("&7Select a lower unlocked tier"), null));
         lowerHeader.addAll(GuiBoardHelper.tips(viewer,
                 "&8Select a lower unlocked tier",
                 "&8Or reset to None — always free"));
         put(holder, inv, 4, item(Material.IRON_INGOT, "&f&lLower Tier", lowerHeader));
-        put(holder, inv, 8, tipBtn(viewer, Material.RED_DYE, "&cReset to None",
+        put(holder, inv, 8, tipBtn(viewer, "difficulty.lower.reset", Material.RED_DYE, "&cReset to None",
                 List.of("&7Clear active tier", "&8Unlocks & coins kept", "&8Always free")),
                 SlotAction.act("lower_tier", "0", "lower"));
 
         placeTierItems(holder, inv, ph, false, viewer);
-        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 40, pageBtn(viewer, Material.GOLD_INGOT, "&eBuy Tier",
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 40, pageBtn(viewer, "difficulty.lower.nav_buy", Material.GOLD_INGOT, "&eBuy Tier",
                 "&7Purchase a higher Unlock Tier"), SlotAction.page("buy"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
@@ -326,14 +330,17 @@ public final class DifficultyChestGui implements Listener {
                 + "  &7Bosses &f" + ph.getOrDefault("bosses_killed", "0"));
         titlesHeader.add("&7Nearby Elites &f" + ph.getOrDefault("nearby_elites", "0"));
         titlesHeader.add("");
+        titlesHeader.addAll(GuiTooltips.lore("difficulty.titles.header",
+                List.of("&8Small perks only — tiers stay primary power"), null));
         titlesHeader.addAll(GuiBoardHelper.tips(viewer, "&8Small perks only — tiers stay primary power"));
         put(holder, inv, 4, item(Material.NAME_TAG, "&d&lTitles", titlesHeader));
         boolean senseOn = "true".equalsIgnoreCase(ph.getOrDefault("title_sense", "true"));
-        put(holder, inv, 7, tipBtn(viewer, senseOn ? Material.BELL : Material.NOTE_BLOCK,
+        put(holder, inv, 7, tipBtn(viewer, senseOn ? "difficulty.titles.sense_on" : "difficulty.titles.sense_off",
+                senseOn ? Material.BELL : Material.NOTE_BLOCK,
                 senseOn ? "&aTitle Sense ON" : "&8Title Sense OFF",
                 List.of("&7Elite / Boss recognition chat", "&8Click to toggle")),
                 SlotAction.act("toggle_title_sense", "0", "titles"));
-        put(holder, inv, 8, tipBtn(viewer, Material.NAME_TAG, "&cClear Title",
+        put(holder, inv, 8, tipBtn(viewer, "difficulty.titles.clear", Material.NAME_TAG, "&cClear Title",
                 List.of("&7Unequip your title")), SlotAction.act("clear_title", "0", "titles"));
 
         // Tier titles row
@@ -356,7 +363,7 @@ public final class DifficultyChestGui implements Listener {
                 Material.GOLD_BLOCK, Material.CLOCK, Material.END_CRYSTAL
         }, new int[]{28, 29, 30, 31, 32, 33, 37, 39, 41});
 
-        put(holder, inv, 45, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 45, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -377,20 +384,29 @@ public final class DifficultyChestGui implements Listener {
             String rarityColor = ph.getOrDefault("title_" + id + "_rarity_color", "7");
             boolean isEquipped = id.equalsIgnoreCase(equipped);
             String title = isEquipped ? "&a● " + name : earned ? "&e" + name : "&8" + name;
-            List<String> tipLore = new ArrayList<>();
+            String state = isEquipped ? "equipped" : earned ? "unlocked" : "locked";
+            Map<String, String> vars = Map.of(
+                    "rarity", rarity, "req", tip, "perk", perk, "state", state);
+
+            List<String> defaults = new ArrayList<>();
             if (!rarity.isBlank()) {
-                tipLore.add("&" + rarityColor + rarity);
+                defaults.add("&" + rarityColor + "{rarity}");
             }
-            tipLore.add("&7" + tip);
+            defaults.add("&7{req}");
             if (!perk.isBlank()) {
-                tipLore.add("&f" + perk);
+                defaults.add("&f{perk}");
             }
+            List<String> tipLore = new ArrayList<>(
+                    GuiTooltips.lore("difficulty.titles.item", defaults, vars));
             if (isEquipped) {
-                tipLore.add(staff ? "&aCurrently equipped &8· click to unequip" : "&aCurrently equipped");
+                tipLore.addAll(GuiTooltips.lore("difficulty.titles.state_equipped",
+                        List.of(staff ? "&aCurrently equipped &8· click to unequip" : "&aCurrently equipped"),
+                        vars));
             } else if (earned) {
-                tipLore.add(staff ? "&aUnlocked &8· click to equip" : "&aUnlocked");
+                tipLore.addAll(GuiTooltips.lore("difficulty.titles.state_unlocked",
+                        List.of(staff ? "&aUnlocked &8· click to equip" : "&aUnlocked"), vars));
             } else {
-                tipLore.add("&cLocked");
+                tipLore.addAll(GuiTooltips.lore("difficulty.titles.state_locked", List.of("&cLocked"), vars));
             }
             if (earned) {
                 put(holder, inv, slots[i], tipBtn(viewer, mats[i], title, tipLore),
@@ -413,7 +429,7 @@ public final class DifficultyChestGui implements Listener {
                 "",
                 "&8No team actions can be taken from this menu."
         )));
-        put(holder, inv, 18, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 18, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 26, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -455,7 +471,7 @@ public final class DifficultyChestGui implements Listener {
         coins.add("");
         coins.add("&8Tier purchases: pay-up OK, change returned");
         put(holder, inv, 15, item(Material.GOLD_INGOT, "&f&lAncient Coins", coins));
-        put(holder, inv, 27, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 27, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -469,21 +485,30 @@ public final class DifficultyChestGui implements Listener {
         };
         int activeTier = (int) parseLong(ph.getOrDefault("active_tier", "0"));
         int highest = (int) parseLong(ph.getOrDefault("highest_unlocked", "0"));
+        String key = buyMode ? "difficulty.buy.tier" : "difficulty.lower.tier";
         for (int t = 1; t <= 7; t++) {
             String cost = ph.getOrDefault("tier_" + t + "_cost", "?");
             String name = ph.getOrDefault("tier_" + t + "_name", "T" + t);
             boolean unlocked = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_unlocked", "false"));
             boolean active = activeTier == t;
-            List<String> tip = new ArrayList<>();
-            tip.add("&7" + name);
-            String reqTip = ph.getOrDefault("tier_" + t + "_req",
-                    "DMZ " + ph.getOrDefault("tier_" + t + "_req_level", "?")
-                            + " or Prestige " + ph.getOrDefault("tier_" + t + "_req_prestige",
-                            String.valueOf(t)));
             String reqLevel = ph.getOrDefault("tier_" + t + "_req_level", "?");
             String reqPrestige = ph.getOrDefault("tier_" + t + "_req_prestige", String.valueOf(t));
+            String reqTip = ph.getOrDefault("tier_" + t + "_req",
+                    "DMZ " + reqLevel + " or Prestige " + reqPrestige);
+            Map<String, String> tierVars = Map.of(
+                    "tier", String.valueOf(t),
+                    "cost", cost,
+                    "name", name,
+                    "req_level", reqLevel,
+                    "req_prestige", reqPrestige,
+                    "level", ph.getOrDefault("level", "?"),
+                    "prestige", ph.getOrDefault("prestige", "?"),
+                    "req", reqTip);
+
+            List<String> tip = new ArrayList<>();
+            tip.add("&7{name}");
             if (buyMode) {
-                tip.add("&7Cost &e" + cost);
+                tip.add("&7Cost &e{cost}");
                 if (staff) {
                     tip.add("&8Scaled for your DMZ level");
                 }
@@ -499,11 +524,10 @@ public final class DifficultyChestGui implements Listener {
                 tip.add(staff ? "&aOwned &8· click to lower here" : "&aOwned");
             } else if (!unlocked) {
                 tip.add("&cLocked");
-                tip.add("&7Need &fDMZ " + reqLevel + " &7or &fPrestige " + reqPrestige);
+                tip.add("&7Need &fDMZ {req_level} &7or &fPrestige {req_prestige}");
                 if (staff) {
-                    tip.add("&8" + reqTip);
-                    tip.add("&8You: DMZ " + ph.getOrDefault("level", "?")
-                            + " · Prestige " + ph.getOrDefault("prestige", "?"));
+                    tip.add("&8{req}");
+                    tip.add("&8You: DMZ {level} · Prestige {prestige}");
                     tip.add("&8CR/BP ignored — use DMZ level or Prestige");
                 }
             } else if (!buyMode && staff) {
@@ -523,13 +547,13 @@ public final class DifficultyChestGui implements Listener {
             boolean clickable = buyMode
                     ? (unlocked && !active)
                     : (unlocked && t < activeTier);
+            ItemStack stack = tipBtn(viewer, key, mats[t - 1], title, tip, tierVars);
             if (clickable) {
                 String action = buyMode ? "activate" : "lower_tier";
                 String page = buyMode ? "buy" : "lower";
-                put(holder, inv, TIER_SLOTS[t - 1], tipBtn(viewer, mats[t - 1], title, tip),
-                        SlotAction.act(action, String.valueOf(t), page));
+                put(holder, inv, TIER_SLOTS[t - 1], stack, SlotAction.act(action, String.valueOf(t), page));
             } else {
-                put(holder, inv, TIER_SLOTS[t - 1], item(mats[t - 1], title, prependBlank(tip)));
+                put(holder, inv, TIER_SLOTS[t - 1], stack);
             }
         }
     }
@@ -770,16 +794,25 @@ public final class DifficultyChestGui implements Listener {
     }
 
     private static ItemStack pageBtn(Player player, Material mat, String name, String... tips) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
+        return pageBtn(player, null, mat, name, tips);
+    }
+
+    private static ItemStack pageBtn(Player player, String key, Material mat, String name, String... tips) {
+        List<String> defaults = new ArrayList<>();
         if (tips != null) {
             for (String tip : tips) {
                 if (tip != null) {
-                    lore.add(tip);
+                    defaults.add(tip);
                 }
             }
         }
-        return item(mat, name, lore);
+        if (key == null || key.isBlank()) {
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.addAll(defaults);
+            return item(mat, name, lore);
+        }
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, defaults));
     }
 
     private static ItemStack hubBtn() {

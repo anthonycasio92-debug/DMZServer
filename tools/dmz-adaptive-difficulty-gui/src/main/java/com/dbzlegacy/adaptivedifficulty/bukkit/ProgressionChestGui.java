@@ -205,7 +205,7 @@ public final class ProgressionChestGui implements Listener {
                     lore.add("");
                     lore.add("&eClick · Convert / Remove");
                 }
-                ItemStack stack = tipBtn(Material.IRON_INGOT,
+                ItemStack stack = tipBtn("progression.race.android_tools", Material.IRON_INGOT,
                         staff ? "&bAndroid Tools" : "&bAndroid", lore);
                 if (staff) {
                     put(holder, inv, slots[i], stack, SlotAction.page("android_panel"));
@@ -225,7 +225,8 @@ public final class ProgressionChestGui implements Listener {
                     lore.add("");
                     lore.add("&eClick · start / end boost");
                 }
-                ItemStack stack = tipBtn(Material.GOLDEN_APPLE, "&6Global TP Boost", lore);
+                ItemStack stack = tipBtn("progression.tp.boost_panel", Material.GOLDEN_APPLE,
+                        "&6Global TP Boost", lore);
                 if (staff) {
                     put(holder, inv, slots[i], stack, SlotAction.page("boost_panel"));
                 } else {
@@ -245,17 +246,20 @@ public final class ProgressionChestGui implements Listener {
                 lore.add("");
                 lore.add("&eClick to toggle");
             }
-            ItemStack stack = tipBtn(
-                    on ? Material.LIME_DYE : Material.GRAY_DYE,
-                    (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF"),
-                    lore);
+            String flagTitle = (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF");
+            Map<String, String> flagVars = Map.of(
+                    "title", info[0],
+                    "status", on ? "ON" : "OFF",
+                    "desc", info[1]);
+            ItemStack stack = tipBtn("progression." + page + ".flag",
+                    on ? Material.LIME_DYE : Material.GRAY_DYE, flagTitle, lore, flagVars);
             if (staff) {
                 put(holder, inv, slots[i], stack, SlotAction.act("flag", key, page));
             } else {
                 put(holder, inv, slots[i], stack);
             }
         }
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 36, pageBtn("common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
@@ -287,16 +291,20 @@ public final class ProgressionChestGui implements Listener {
             for (int g = 1; g < group.length && si < slots.length; g++) {
                 String key = group[g];
                 boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
-                put(holder, inv, slots[si++], tipBtn(
+                Map<String, String> flagVars = Map.of(
+                        "title", key,
+                        "status", on ? "ON" : "OFF",
+                        "desc", stripAmp(sectionTitle));
+                put(holder, inv, slots[si++], tipBtn("progression.admin.flag",
                         on ? Material.LIME_DYE : Material.GRAY_DYE,
                         (on ? "&a" : "&8") + key + (on ? " ON" : " OFF"),
-                        List.of("&8" + stripAmp(sectionTitle), "&7Click to toggle " + key)),
+                        List.of("&8" + stripAmp(sectionTitle), "&7Click to toggle " + key), flagVars),
                         SlotAction.act("flag", key, "admin"));
             }
         }
-        put(holder, inv, 47, pageBtn(Material.AMETHYST_SHARD, "&dFabled Subflags",
+        put(holder, inv, 47, pageBtn("progression.fabled.subflags", Material.AMETHYST_SHARD, "&dFabled Subflags",
                 "&7Energy, TP/SP, race class, etc."), SlotAction.page("flags_fabled"));
-        put(holder, inv, 45, pageBtn(Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 45, pageBtn("common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
         return inv;
@@ -314,13 +322,17 @@ public final class ProgressionChestGui implements Listener {
         for (int i = 0; i < FABLED_FLAG_KEYS.length && i < slots.length; i++) {
             String key = FABLED_FLAG_KEYS[i];
             boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
-            put(holder, inv, slots[i], tipBtn(
+            Map<String, String> flagVars = Map.of(
+                    "title", key,
+                    "status", on ? "ON" : "OFF",
+                    "desc", "Fabled");
+            put(holder, inv, slots[i], tipBtn("progression.fabled.flag",
                     on ? Material.LIME_DYE : Material.GRAY_DYE,
                     (on ? "&a" : "&8") + key + (on ? " ON" : " OFF"),
-                    List.of("&8Fabled", "&7Click to toggle " + key)),
+                    List.of("&8Fabled", "&7Click to toggle " + key), flagVars),
                     SlotAction.act("flag", key, "flags_fabled"));
         }
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Return to Flags"),
+        put(holder, inv, 36, pageBtn("progression.fabled.back", Material.ARROW, "&7Back", "&7Return to Flags"),
                 SlotAction.page("admin"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -340,28 +352,28 @@ public final class ProgressionChestGui implements Listener {
                         "&8/progression boost start <mult> <min>",
                         "&8/progression boost end")));
         // Presets: mult:minutes
-        put(holder, inv, 19, tipBtn(Material.GOLD_NUGGET, "&e1.25x · 30m",
+        put(holder, inv, 19, tipBtn("progression.boost.n125_30", Material.GOLD_NUGGET, "&e1.25x · 30m",
                 List.of("&7Start 1.25x for 30 minutes", "", "&eClick to start")),
                 SlotAction.act("boost", "1.25:30", "boost_panel"));
-        put(holder, inv, 20, tipBtn(Material.GOLD_INGOT, "&e1.5x · 30m",
+        put(holder, inv, 20, tipBtn("progression.boost.n15_30", Material.GOLD_INGOT, "&e1.5x · 30m",
                 List.of("&7Start 1.5x for 30 minutes", "", "&eClick to start")),
                 SlotAction.act("boost", "1.5:30", "boost_panel"));
-        put(holder, inv, 21, tipBtn(Material.GOLD_BLOCK, "&62x · 30m",
+        put(holder, inv, 21, tipBtn("progression.boost.n2_30", Material.GOLD_BLOCK, "&62x · 30m",
                 List.of("&7Start 2x for 30 minutes", "", "&eClick to start")),
                 SlotAction.act("boost", "2:30", "boost_panel"));
-        put(holder, inv, 22, tipBtn(Material.GOLD_BLOCK, "&62x · 60m",
+        put(holder, inv, 22, tipBtn("progression.boost.n2_60", Material.GOLD_BLOCK, "&62x · 60m",
                 List.of("&7Start 2x for 60 minutes", "", "&eClick to start")),
                 SlotAction.act("boost", "2:60", "boost_panel"));
-        put(holder, inv, 23, tipBtn(Material.CLOCK, "&e3x · 30m",
+        put(holder, inv, 23, tipBtn("progression.boost.n3_30", Material.CLOCK, "&e3x · 30m",
                 List.of("&7Start 3x for 30 minutes", "", "&eClick to start")),
                 SlotAction.act("boost", "3:30", "boost_panel"));
-        put(holder, inv, 25, tipBtn(Material.BARRIER, "&cEnd Boost",
+        put(holder, inv, 25, tipBtn("progression.boost.end", Material.BARRIER, "&cEnd Boost",
                 List.of("&7Stop the active global TP boost", "", "&eClick to end")),
                 SlotAction.act("boost", "end", "boost_panel"));
-        put(holder, inv, 31, tipBtn(Material.CLOCK, "&7Refresh Status",
+        put(holder, inv, 31, tipBtn("progression.boost.refresh", Material.CLOCK, "&7Refresh Status",
                 List.of("&7Reload this panel", "", "&eClick")),
                 SlotAction.page("boost_panel"));
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7TP Gains"),
+        put(holder, inv, 36, pageBtn("progression.boost.back", Material.ARROW, "&7Back", "&7TP Gains"),
                 SlotAction.page("tp"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -377,18 +389,18 @@ public final class ProgressionChestGui implements Listener {
                 List.of("", "&7Dr. Gero upgrade path",
                         "&7Convert · remove Android upgrade",
                         "&8Race / stats / progression preserved on remove")));
-        put(holder, inv, 20, tipBtn(Material.NETHERITE_INGOT, "&aConvert to Android",
+        put(holder, inv, 20, tipBtn("progression.android.convert", Material.NETHERITE_INGOT, "&aConvert to Android",
                 List.of("&7Pick a player to convert",
                         "&8Human → androidforms.androidbase",
                         "", "&eClick to open")),
                 SlotAction.page("android_convert"));
-        put(holder, inv, 24, tipBtn(Material.REDSTONE, "&cRemove Android",
+        put(holder, inv, 24, tipBtn("progression.android.remove", Material.REDSTONE, "&cRemove Android",
                 List.of("&7Pick a player to remove upgrade",
                         "&8Restores superforms / legendaryforms",
                         "&8Two-click confirm within 10s",
                         "", "&eClick to open")),
                 SlotAction.page("android_remove"));
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Race section"),
+        put(holder, inv, 36, pageBtn("progression.android.back", Material.ARROW, "&7Back", "&7Race section"),
                 SlotAction.page("race"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -410,7 +422,8 @@ public final class ProgressionChestGui implements Listener {
                                 : "&8/progression android remove")));
         // Self remove — available to everyone (subject when inspecting, else viewer).
         Player selfTarget = subject != null ? subject : viewer;
-        put(holder, inv, staff ? 8 : 22, tipBtn(Material.NETHERITE_SCRAP, "&cRemove Android Upgrade",
+        put(holder, inv, staff ? 8 : 22, tipBtn("progression.android.remove_self", Material.NETHERITE_SCRAP,
+                "&cRemove Android Upgrade",
                 List.of("&7Remove the Android upgrade",
                         "&7Race, stats, and progression stay",
                         "", "&eClick · confirm within 10s")),
@@ -433,11 +446,11 @@ public final class ProgressionChestGui implements Listener {
                         List.of("", "&7Use Remove Yourself above",
                                 "&8or /progression android remove <name>")));
             }
-            put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Android tools"),
-                    SlotAction.page("android_panel"));
+            put(holder, inv, 36, pageBtn("progression.android.remove_back", Material.ARROW, "&7Back",
+                    "&7Android tools"), SlotAction.page("android_panel"));
         } else {
-            put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Legacy Mechanics hub"),
-                    SlotAction.cmd("lmdo lm open hub"));
+            put(holder, inv, 36, pageBtn("progression.android.remove_back_hub", Material.ARROW, "&7Back",
+                    "&7Legacy Mechanics hub"), SlotAction.cmd("lmdo lm open hub"));
         }
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -453,7 +466,8 @@ public final class ProgressionChestGui implements Listener {
                 List.of("", "&7Dr. Gero upgrade path",
                         "&7Human → androidforms.androidbase",
                         "&8/progression android [player]")));
-        put(holder, inv, 8, tipBtn(Material.NETHERITE_INGOT, "&aConvert Yourself",
+        put(holder, inv, 8, tipBtn("progression.android.convert_self", Material.NETHERITE_INGOT,
+                "&aConvert Yourself",
                 List.of("&7Apply conversion to you", "", "&eClick to convert")),
                 SlotAction.act("android", subject.getName(), "android_convert"));
         List<Player> online = GuiPlayerPicker.onlineExcept(subject);
@@ -473,8 +487,8 @@ public final class ProgressionChestGui implements Listener {
                     List.of("", "&7Use Convert Yourself above",
                             "&8or /progression android <name>")));
         }
-        put(holder, inv, 36, pageBtn(Material.ARROW, "&7Back", "&7Android tools"),
-                SlotAction.page("android_panel"));
+        put(holder, inv, 36, pageBtn("progression.android.convert_back", Material.ARROW, "&7Back",
+                "&7Android tools"), SlotAction.page("android_panel"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
@@ -592,10 +606,16 @@ public final class ProgressionChestGui implements Listener {
     }
 
     private static ItemStack tipBtn(Material mat, String name, List<String> tip) {
-        return tipBtn(null, mat, name, tip);
+        return tipBtn(null, mat, name, tip, null);
     }
 
     private static ItemStack tipBtn(String key, Material mat, String name, List<String> tip) {
+        return tipBtn(key, mat, name, tip, null);
+    }
+
+    private static ItemStack tipBtn(
+            String key, Material mat, String name, List<String> tip, Map<String, String> vars
+    ) {
         if (key == null || key.isBlank()) {
             List<String> lore = new ArrayList<>();
             lore.add("");
@@ -604,16 +624,29 @@ public final class ProgressionChestGui implements Listener {
             }
             return item(mat, name, lore);
         }
-        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip));
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip, vars, null));
     }
 
     private static ItemStack pageBtn(Material mat, String name, String... tips) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        for (String tip : tips) {
-            lore.add(tip);
+        return pageBtn(null, mat, name, tips);
+    }
+
+    private static ItemStack pageBtn(String key, Material mat, String name, String... tips) {
+        List<String> defaults = new ArrayList<>();
+        if (tips != null) {
+            for (String tip : tips) {
+                if (tip != null) {
+                    defaults.add(tip);
+                }
+            }
         }
-        return item(mat, name, lore);
+        if (key == null || key.isBlank()) {
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.addAll(defaults);
+            return item(mat, name, lore);
+        }
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, defaults));
     }
 
     private static ItemStack hubBtn() {

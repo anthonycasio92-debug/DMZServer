@@ -136,8 +136,9 @@ public final class HubChestGui implements Listener {
         logsHeader.add("&7System telemetry &f" + (on ? "ON" : "OFF"));
         logsHeader.add("&8" + statusLine.replace('§', '&'));
         logsHeader.add("");
-        logsHeader.addAll(GuiBoardHelper.tips(player, "&7Use buttons below to toggle / flush"));
-        put(holder, inv, 4, item(Material.CLOCK, "&8&lLogs", logsHeader));
+        logsHeader.addAll(GuiTooltips.lore("hub.logs.header",
+                GuiBoardHelper.tips(player, "&7Use buttons below to toggle / flush")));
+        put(holder, inv, 4, item(Material.CLOCK, GuiTooltips.name("hub.logs.header", "&8&lLogs"), logsHeader));
         List<String> lore = toAmp(ForgeBridge.hubLines(player, "logs"));
         List<List<String>> parts = GuiLoreChunks.chunk(lore);
         int placed = 0;
@@ -160,7 +161,8 @@ public final class HubChestGui implements Listener {
         put(holder, inv, 33, tipBtn(player, "hub.logs.flush", Material.HOPPER, "&eFlush",
                 List.of("&7Flush log writers")),
                 SlotAction.act("syslog", "flush", "logs"));
-        put(holder, inv, 36, pageBtn(player, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 36, pageBtn(player, "hub.logs.back", Material.ARROW, "&7Back", "&7Return"),
+                SlotAction.page("main"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -287,16 +289,25 @@ public final class HubChestGui implements Listener {
     }
 
     private static ItemStack pageBtn(Player player, Material mat, String name, String... tips) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
+        return pageBtn(player, null, mat, name, tips);
+    }
+
+    private static ItemStack pageBtn(Player player, String key, Material mat, String name, String... tips) {
+        List<String> defaults = new ArrayList<>();
         if (tips != null) {
             for (String tip : tips) {
                 if (tip != null) {
-                    lore.add(tip);
+                    defaults.add(tip);
                 }
             }
         }
-        return item(mat, name, lore);
+        if (key == null || key.isBlank()) {
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.addAll(defaults);
+            return item(mat, name, lore);
+        }
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, defaults));
     }
 
     private static ItemStack closeBtn() {

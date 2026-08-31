@@ -59,21 +59,30 @@ final class GuiTooltips {
     }
 
     static String reload() {
-        Map<String, Entry> next = new LinkedHashMap<>();
-        // Start with jar defaults, then overlay disk so edits win.
+        Map<String, Entry> jarEntries = new LinkedHashMap<>();
+        String jarJson = null;
         try (InputStream in = AdaptiveDifficultyGuiPlugin.class.getClassLoader()
                 .getResourceAsStream("gui-tooltips.json")) {
             if (in != null) {
-                parseInto(new String(in.readAllBytes(), StandardCharsets.UTF_8), next);
+                jarJson = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+                parseInto(jarJson, jarEntries);
             }
         } catch (Throwable ignored) {
         }
+
+        Map<String, Entry> next = new LinkedHashMap<>(jarEntries);
         Path path = filePath;
         int fromDisk = 0;
+        int merged = 0;
         if (path != null && Files.isRegularFile(path)) {
             try {
+                String diskJson = Files.readString(path, StandardCharsets.UTF_8);
                 Map<String, Entry> disk = new LinkedHashMap<>();
-                fromDisk = parseInto(Files.readString(path, StandardCharsets.UTF_8), disk);
+                fromDisk = parseInto(diskJson, disk);
+                // Preserve edits, but fill any new jar keys into the on-disk file for editing.
+                if (jarJson != null) {
+                    merged = mergeMissingKeysToDisk(path, jarJson, diskJson, jarEntries.keySet(), disk.keySet());
+                }
                 next.putAll(disk);
             } catch (Throwable t) {
                 String err = "gui-tooltips reload failed: " + t.getMessage();
@@ -82,15 +91,87 @@ final class GuiTooltips {
                 }
                 return "§c" + err;
             }
+        } else if (path != null && jarJson != null) {
+            try {
+                Files.createDirectories(path.getParent());
+                Files.writeString(path, jarJson, StandardCharsets.UTF_8);
+            } catch (Throwable ignored) {
+            }
         }
         ENTRIES.clear();
         ENTRIES.putAll(next);
         String msg = "§aGUI tooltips loaded §f" + ENTRIES.size() + " §akeys"
-                + (fromDisk > 0 ? " §8(" + fromDisk + " from gui-tooltips.json)" : "");
+                + (fromDisk > 0 ? " §8(" + fromDisk + " from gui-tooltips.json)" : "")
+                + (merged > 0 ? " §a(+ " + merged + " new keys merged into file)" : "");
         if (log != null) {
-            log.info("GUI tooltips: " + ENTRIES.size() + " keys");
+            log.info("GUI tooltips: " + ENTRIES.size() + " keys"
+                    + (merged > 0 ? " (merged " + merged + " new)" : ""));
         }
         return msg;
+    }
+
+    /**
+     * Deep-merge jar keys missing from the disk JSON so admins always see the full editable catalog
+     * after a mod update, without wiping their edits.
+     */
+    private static int mergeMissingKeysToDisk(
+            Path path, String jarJson, String diskJson,
+            java.util.Set<String> jarKeys, java.util.Set<String> diskKeys
+    ) {
+        java.util.Set<String> missing = new java.util.LinkedHashSet<>();
+        for (String k : jarKeys) {
+            if (!diskKeys.contains(k)) {
+                missing.add(k);
+            }
+        }
+        if (missing.isEmpty()) {
+            return 0;
+        }
+        try {
+            JsonObject jarRoot = JsonParser.parseString(jarJson).getAsJsonObject();
+            JsonObject diskRoot = JsonParser.parseString(diskJson).getAsJsonObject();
+            int added = 0;
+            for (String key : missing) {
+                if (copyPath(jarRoot, diskRoot, key.split("\\."))) {
+                    added++;
+                }
+            }
+            if (added > 0) {
+                Files.writeString(path, GSON.toJson(diskRoot) + "\n", StandardCharsets.UTF_8);
+            }
+            return added;
+        } catch (Throwable t) {
+            if (log != null) {
+                log.warning("Could not merge new tooltip keys to disk: " + t.getMessage());
+            }
+            return 0;
+        }
+    }
+
+    private static boolean copyPath(JsonObject from, JsonObject to, String[] parts) {
+        if (parts == null || parts.length == 0) {
+            return false;
+        }
+        JsonObject src = from;
+        JsonObject dst = to;
+        for (int i = 0; i < parts.length - 1; i++) {
+            String p = parts[i];
+            if (!src.has(p) || !src.get(p).isJsonObject()) {
+                return false;
+            }
+            JsonObject srcChild = src.getAsJsonObject(p);
+            if (!dst.has(p) || !dst.get(p).isJsonObject()) {
+                dst.add(p, new JsonObject());
+            }
+            src = srcChild;
+            dst = dst.getAsJsonObject(p);
+        }
+        String leaf = parts[parts.length - 1];
+        if (!src.has(leaf) || dst.has(leaf)) {
+            return false;
+        }
+        dst.add(leaf, src.get(leaf).deepCopy());
+        return true;
     }
 
     static int size() {
@@ -197,7 +278,13 @@ final class GuiTooltips {
                 count++;
             } else if (val.isJsonObject()) {
                 JsonObject child = val.getAsJsonObject();
-                boolean leaf = child.has("lore") || child.has("name") || child.has("title");
+                // A leaf button has "name"/"title" as a plain string and/or "lore" as an array.
+                // Checking mere key presence would misfire when a *container* object happens to
+                // have a nested leaf literally named "name", "lore", or "title" (e.g. a
+                // "progress" group with a "title" sub-button), swallowing its other children.
+                boolean leaf = (child.has("lore") && child.get("lore").isJsonArray())
+                        || (child.has("name") && child.get("name").isJsonPrimitive())
+                        || (child.has("title") && child.get("title").isJsonPrimitive());
                 if (leaf) {
                     String name = null;
                     if (child.has("name") && child.get("name").isJsonPrimitive()) {
@@ -205,7 +292,8 @@ final class GuiTooltips {
                     } else if (child.has("title") && child.get("title").isJsonPrimitive()) {
                         name = child.get("title").getAsString();
                     }
-                    List<String> lore = List.of();
+                    // null lore = keep Java defaults; explicit [] clears lore.
+                    List<String> lore = null;
                     if (child.has("lore") && child.get("lore").isJsonArray()) {
                         lore = readArray(child.getAsJsonArray("lore"));
                     }
@@ -251,7 +339,8 @@ final class GuiTooltips {
 
         Entry(String name, List<String> lore) {
             this.name = name;
-            this.lore = lore == null ? List.of() : List.copyOf(lore);
+            // null = fall back to Java defaults; non-null (even empty) = intentional override
+            this.lore = lore == null ? null : List.copyOf(lore);
         }
 
         static Entry loreOnly(List<String> lore) {

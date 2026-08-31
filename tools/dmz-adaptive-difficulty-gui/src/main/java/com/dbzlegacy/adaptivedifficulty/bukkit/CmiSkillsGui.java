@@ -86,8 +86,8 @@ public final class CmiSkillsGui {
                     ? List.of("&7DMZ stats unavailable")
                     : split.header);
             headerLore.add("");
-            headerLore.addAll(GuiBoardHelper.tips(player,
-                    skillCheckUi ? "&eSkill Check · one item per skill" : "&8One item per skill below"));
+            headerLore.addAll(GuiTooltips.lore("skills.main.header", GuiBoardHelper.tips(player,
+                    skillCheckUi ? "&eSkill Check · one item per skill" : "&8One item per skill below")));
             status.addLore(headerLore);
             gui.addButton(status);
 
@@ -113,16 +113,17 @@ public final class CmiSkillsGui {
                 gui.addButton(btn);
             }
             if (placed == 0) {
-                CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&cNo skills listed");
+                CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER,
+                        GuiTooltips.name("skills.empty", "&cNo skills listed"));
                 empty.lockField();
-                empty.addLore(List.of("", "&7Bridge returned no skill rows"));
+                empty.addLore(GuiTooltips.buttonLore("skills.empty", List.of("&7Bridge returned no skill rows")));
                 gui.addButton(empty);
             }
         }
 
-        gui.addButton(pageBtn(player, 45, Material.FEATHER, "&aNatural", "core", skillCheckUi,
+        gui.addButton(pageBtn(player, 45, "skills.main.natural", Material.FEATHER, "&aNatural", "core", skillCheckUi,
                 "&7Potential · Flight · Meditation · Jump · Sprint"));
-        gui.addButton(pageBtn(player, 46, Material.AMETHYST_SHARD, "&dSaga", "saga", skillCheckUi,
+        gui.addButton(pageBtn(player, 46, "skills.main.saga", Material.AMETHYST_SHARD, "&dSaga", "saga", skillCheckUi,
                 "&7Saga unlocks · Defense Pen · Healing Red · Ki skills"));
 
         gui.addButton(hubBtn(49));
@@ -214,19 +215,29 @@ public final class CmiSkillsGui {
     }
 
     private static CMIGuiButton pageBtn(
-            Player player, int slot, Material mat, String name, String page,
+            Player player, int slot, String key, Material mat, String name, String page,
             boolean skillCheckUi, String... tips) {
-        CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
+        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name);
+        CMIGuiButton btn = new CMIGuiButton(slot, mat, display);
         btn.lockField();
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(GuiBoardHelper.tips(player, tips));
-        btn.addLore(lore);
+        List<String> defaults = GuiBoardHelper.tips(player, tips);
+        btn.addLore(key == null || key.isBlank()
+                ? withBlank(defaults)
+                : GuiTooltips.buttonLore(key, defaults));
         // Skill Check pages must keep the session route — lmdo skills is staff-only
         // and blocked normal players from Natural ↔ Saga.
         String cmdRoot = skillCheckUi ? "skillcheck" : "skills";
         btn.addCommand("lmdo " + cmdRoot + " page " + page);
         return btn;
+    }
+
+    private static List<String> withBlank(List<String> tip) {
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        if (tip != null) {
+            lore.addAll(tip);
+        }
+        return lore;
     }
 
     private static CMIGuiButton hubBtn(int slot) {
@@ -238,12 +249,11 @@ public final class CmiSkillsGui {
     }
 
     private static CMIGuiButton progBtn(Player player, int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.BREWING_STAND, "&dProgression");
+        CMIGuiButton btn = new CMIGuiButton(slot, Material.BREWING_STAND,
+                GuiTooltips.name("skills.main.progression", "&dProgression"));
         btn.lockField();
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(GuiBoardHelper.tipsList(player, List.of("&7Back to progression")));
-        btn.addLore(lore);
+        btn.addLore(GuiTooltips.buttonLore("skills.main.progression",
+                GuiBoardHelper.tipsList(player, List.of("&7Skills · TP · Race · Combat flags", "&eClick to open"))));
         btn.addCommand("lmdo lm open progression");
         btn.setCloseInv(true);
         return btn;

@@ -157,7 +157,7 @@ public final class SparChestGui implements Listener {
                 "&7Sparring leaderboard", "&8Player heads below · categories on bottom"));
         put(holder, inv, 4, item(Material.GOLDEN_HELMET, "&f&lTop — " + cat, topHeader));
         if (entries.isEmpty()) {
-            put(holder, inv, 13, tipBtn(viewer, Material.BARRIER, "&7No sparring data yet",
+            put(holder, inv, 13, tipBtn(viewer, "spar.empty.no_top", Material.BARRIER, "&7No sparring data yet",
                     List.of("&7Spar nearby to earn TP", "&8Categories: TP · Sessions · Perfect")));
         } else {
             // Heads on rows 1–2 only; category buttons sit on row 3 (29/31/33).
@@ -166,13 +166,14 @@ public final class SparChestGui implements Listener {
                 put(holder, inv, slots[i], GuiBoardHelper.topHead(entries.get(i)));
             }
         }
-        put(holder, inv, 29, pageBtn(viewer, Material.GOLD_INGOT, "&eTP", "&7Total TP"),
+        put(holder, inv, 29, pageBtn(viewer, "spar.top.tp", Material.GOLD_INGOT, "&eTP", "&7Total TP"),
                 SlotAction.page("top_tp"));
-        put(holder, inv, 31, pageBtn(viewer, Material.CLOCK, "&aSessions", "&7Sessions"),
+        put(holder, inv, 31, pageBtn(viewer, "spar.top.sessions", Material.CLOCK, "&aSessions", "&7Sessions"),
                 SlotAction.page("top_sessions"));
-        put(holder, inv, 33, pageBtn(viewer, Material.NETHER_STAR, "&bPerfect", "&7Perfect spars"),
-                SlotAction.page("top_perfect"));
-        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 33, pageBtn(viewer, "spar.top.perfect", Material.NETHER_STAR, "&bPerfect",
+                "&7Perfect spars"), SlotAction.page("top_perfect"));
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
+                SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
@@ -205,7 +206,8 @@ public final class SparChestGui implements Listener {
             tip.addAll(tile.lore);
             put(holder, inv, slots[i], item(tile.icon, tile.title, tip));
         }
-        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
+                SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
@@ -220,16 +222,17 @@ public final class SparChestGui implements Listener {
                 List.of("", "&7Staff-only tools",
                         "&8Save · status · mentor resetcd",
                         "&8Player menus stay on the main Spar GUI")));
-        put(holder, inv, 20, tipBtn(viewer, Material.WRITABLE_BOOK, "&aSave",
+        put(holder, inv, 20, tipBtn(viewer, "spar.admin.save", Material.WRITABLE_BOOK, "&aSave",
                 List.of("&7Write sparring.json", "&8/spar admin save")),
                 SlotAction.act("admin", "save", "admin"));
-        put(holder, inv, 22, tipBtn(viewer, Material.SPYGLASS, "&bStatus",
+        put(holder, inv, 22, tipBtn(viewer, "spar.admin.status", Material.SPYGLASS, "&bStatus",
                 List.of("&7Enabled + path", "&8/spar admin status")),
                 SlotAction.act("admin", "status", "admin"));
-        put(holder, inv, 24, tipBtn(viewer, Material.EMERALD, "&eReset Mentor CD",
+        put(holder, inv, 24, tipBtn(viewer, "spar.admin.resetcd", Material.EMERALD, "&eReset Mentor CD",
                 List.of("&7Clear your mentor cooldown", "&8/spar admin mentor resetcd")),
                 SlotAction.act("admin", "resetcd", "admin"));
-        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Player Spar menu"), SlotAction.page("main"));
+        put(holder, inv, 36, pageBtn(viewer, "spar.admin.back", Material.ARROW, "&7Back", "&7Player Spar menu"),
+                SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
@@ -242,9 +245,9 @@ public final class SparChestGui implements Listener {
         frame(inv, 45);
         put(holder, inv, 4, item(Material.EMERALD, "&b&lMentor",
                 prependBlank(toAmp(ForgeBridge.sparLines(subject, "mentor")))));
-        put(holder, inv, 19, pageBtn(viewer, Material.LIME_DYE, "&aInvite apprentice…",
+        put(holder, inv, 19, pageBtn(viewer, "spar.mentor.invite", Material.LIME_DYE, "&aInvite apprentice…",
                 "&7Pick a player to mentor"), SlotAction.page("pick_apprentice"));
-        put(holder, inv, 20, pageBtn(viewer, Material.LIGHT_BLUE_DYE, "&bAsk mentor…",
+        put(holder, inv, 20, pageBtn(viewer, "spar.mentor.ask", Material.LIGHT_BLUE_DYE, "&bAsk mentor…",
                 "&7Pick a player to ask as mentor"), SlotAction.page("pick_mentor"));
         Map<String, String> ph = ForgeBridge.sparPlaceholders(subject);
         int pendingCount = 0;
@@ -253,38 +256,41 @@ public final class SparChestGui implements Listener {
         } catch (NumberFormatException ignored) {
             pendingCount = 0;
         }
-        put(holder, inv, 21, pageBtn(viewer, Material.CLOCK,
+        put(holder, inv, 21, pageBtn(viewer, "spar.mentor.pending", Material.CLOCK,
                 pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
                 "&7View incoming + outgoing invites",
                 pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"),
                 SlotAction.page("pending"));
-        put(holder, inv, 22, pageBtn(viewer, Material.YELLOW_DYE, "&eAccept…",
+        put(holder, inv, 22, pageBtn(viewer, "spar.mentor.accept", Material.YELLOW_DYE, "&eAccept…",
                 "&7Accept an incoming mentor invite"), SlotAction.page("pick_accept"));
-        put(holder, inv, 23, pageBtn(viewer, Material.ORANGE_DYE, "&6Decline…",
+        put(holder, inv, 23, pageBtn(viewer, "spar.mentor.decline", Material.ORANGE_DYE, "&6Decline…",
                 "&7Decline an incoming mentor invite"), SlotAction.page("pick_decline"));
         boolean hasMentor = "true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"));
         boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));
         String mentorName = blank(ph.get("mentor_name"), "?");
         String apprenticeName = blank(ph.get("apprentice_name"), "?");
         if (hasMentor) {
-            put(holder, inv, 24, tipBtn(viewer, Material.RED_DYE, "&cLeave mentor",
+            put(holder, inv, 24, tipBtn(viewer, "spar.mentor.leave", Material.RED_DYE, "&cLeave mentor",
                     List.of("&7End bond with &f" + mentorName,
-                            "&87-day cooldown after leaving")),
+                            "&87-day cooldown after leaving"),
+                    Map.of("name", mentorName)),
                     SlotAction.act("mentor_leave", "0", "mentor"));
         } else {
-            put(holder, inv, 24, tipBtn(viewer, Material.GRAY_DYE, "&8Leave mentor",
-                    List.of("&7You have no mentor")));
+            put(holder, inv, 24, tipBtn(viewer, "spar.mentor.leave", Material.GRAY_DYE, "&8Leave mentor",
+                    List.of("&7You have no mentor"), Map.of("name", mentorName)));
         }
         if (hasApprentice) {
-            put(holder, inv, 25, tipBtn(viewer, Material.ORANGE_DYE, "&6Release apprentice",
+            put(holder, inv, 25, tipBtn(viewer, "spar.mentor.release", Material.ORANGE_DYE, "&6Release apprentice",
                     List.of("&7End bond with &f" + apprenticeName,
-                            "&87-day cooldown after releasing")),
+                            "&87-day cooldown after releasing"),
+                    Map.of("name", apprenticeName)),
                     SlotAction.act("mentor_release", "0", "mentor"));
         } else {
-            put(holder, inv, 25, tipBtn(viewer, Material.GRAY_DYE, "&8Release apprentice",
-                    List.of("&7You have no apprentice")));
+            put(holder, inv, 25, tipBtn(viewer, "spar.mentor.release", Material.GRAY_DYE, "&8Release apprentice",
+                    List.of("&7You have no apprentice"), Map.of("name", apprenticeName)));
         }
-        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
+                SlotAction.page("main"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -304,7 +310,7 @@ public final class SparChestGui implements Listener {
                 "&6▶ Outgoing &7= waiting on them"));
         put(holder, inv, 4, item(Material.YELLOW_DYE, "&e&lPending Invites", pendingHeader));
         if (invites.isEmpty()) {
-            put(holder, inv, 22, tipBtn(viewer, Material.BARRIER, "&7No pending invites",
+            put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_pending", Material.BARRIER, "&7No pending invites",
                     List.of("&7Invite apprentice or ask a mentor",
                             "&7Incoming shows when they invite you")));
         } else {
@@ -321,13 +327,14 @@ public final class SparChestGui implements Listener {
                 }
             }
         }
-        put(holder, inv, 37, pageBtn(viewer, Material.YELLOW_DYE, "&eAccept…",
+        put(holder, inv, 37, pageBtn(viewer, "spar.pending.accept_pick", Material.YELLOW_DYE, "&eAccept…",
                 "&7Accept an incoming invite"), SlotAction.page("pick_accept"));
-        put(holder, inv, 38, pageBtn(viewer, Material.ORANGE_DYE, "&6Decline…",
+        put(holder, inv, 38, pageBtn(viewer, "spar.pending.decline_pick", Material.ORANGE_DYE, "&6Decline…",
                 "&7Decline an incoming invite"), SlotAction.page("pick_decline"));
-        put(holder, inv, 39, pageBtn(viewer, Material.EMERALD, "&bMentor",
+        put(holder, inv, 39, pageBtn(viewer, "spar.pending.nav_mentor", Material.EMERALD, "&bMentor",
                 "&7Full mentor menu"), SlotAction.page("mentor"));
-        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Mentor"), SlotAction.page("mentor"));
+        put(holder, inv, 36, pageBtn(viewer, "spar.pending.back", Material.ARROW, "&7Back", "&7Mentor"),
+                SlotAction.page("mentor"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -383,12 +390,13 @@ public final class SparChestGui implements Listener {
             put(holder, inv, slot, head, SlotAction.act(action, arg, backPage));
         }
         if (placed == 0) {
-            put(holder, inv, 22, tipBtn(viewer, Material.BARRIER,
+            put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_pending", Material.BARRIER,
                     acceptMode ? "&eNothing to accept" : "&eNo pending invites",
                     List.of("&7When someone invites you,",
                             "&7they appear here.")));
         }
-        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page(backPage));
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
+                SlotAction.page(backPage));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -416,10 +424,11 @@ public final class SparChestGui implements Listener {
                     SlotAction.act(action, "uuid:" + other.getUniqueId(), backPage));
         }
         if (placed == 0) {
-            put(holder, inv, 22, tipBtn(viewer, Material.BARRIER, "&cNo one online",
+            put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_online", Material.BARRIER, "&cNo one online",
                     List.of("&7Other players must be online")));
         }
-        put(holder, inv, 36, pageBtn(viewer, Material.ARROW, "&7Back", "&7Return"), SlotAction.page(backPage));
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
+                SlotAction.page(backPage));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -568,11 +577,18 @@ public final class SparChestGui implements Listener {
     }
 
     private static ItemStack tipBtn(Player player, Material mat, String name, List<String> tip) {
-        return tipBtn(player, null, mat, name, tip);
+        return tipBtn(player, null, mat, name, tip, null);
     }
 
     private static ItemStack tipBtn(
             Player player, String key, Material mat, String name, List<String> tip
+    ) {
+        return tipBtn(player, key, mat, name, tip, null);
+    }
+
+    private static ItemStack tipBtn(
+            Player player, String key, Material mat, String name, List<String> tip,
+            Map<String, String> vars
     ) {
         if (key == null || key.isBlank()) {
             List<String> lore = new ArrayList<>();
@@ -582,20 +598,29 @@ public final class SparChestGui implements Listener {
             }
             return item(mat, name, lore);
         }
-        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip));
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip, vars, null));
     }
 
     private static ItemStack pageBtn(Player player, Material mat, String name, String... tips) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
+        return pageBtn(player, null, mat, name, tips);
+    }
+
+    private static ItemStack pageBtn(Player player, String key, Material mat, String name, String... tips) {
+        List<String> defaults = new ArrayList<>();
         if (tips != null) {
             for (String tip : tips) {
                 if (tip != null) {
-                    lore.add(tip);
+                    defaults.add(tip);
                 }
             }
         }
-        return item(mat, name, lore);
+        if (key == null || key.isBlank()) {
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.addAll(defaults);
+            return item(mat, name, lore);
+        }
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, defaults));
     }
 
     private static ItemStack hubBtn() {

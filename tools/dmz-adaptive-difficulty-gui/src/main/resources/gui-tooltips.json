@@ -1,64 +1,117 @@
 {
-  "_comment": "LegacyMechanics GUI tooltips. Edit name/lore, then /lm admin reload. Placeholders like {points} are filled when the GUI supports them. Missing keys use Java defaults. Nested objects with name/lore are buttons; bare string arrays are lore-only.",
+  "_comment": "FULL LegacyMechanics GUI tooltip catalog. Edit name and/or lore, then /lm admin reload. Omit lore on a key to keep the live Java tip (name-only override). Placeholders like {points},{cost},{tier},{name},{status} are filled when supported. After a mod update, /lm admin reload merges any NEW jar keys into this file without wiping edits.",
   "hub": {
     "main": {
       "header": {
         "name": "&f&lLegacy Mechanics",
-        "lore": ["&7Choose a system", "&8/lm"]
+        "lore": [
+          "&7Choose a system",
+          "&8/lm"
+        ]
       },
       "difficulty": {
         "name": "&aDifficulty",
-        "lore": ["&7Unlock tiers & world scaling", "&eClick to open"]
+        "lore": [
+          "&7Unlock tiers & world scaling",
+          "&eClick to open"
+        ]
       },
       "rival": {
         "name": "&6Rival",
-        "lore": ["&7Rivalry, challenges & RP", "&eClick to open"]
+        "lore": [
+          "&7Rivalry, challenges & RP",
+          "&eClick to open"
+        ]
       },
       "spar": {
         "name": "&bSpar",
-        "lore": ["&7Sparring TP & mentor bonds", "&eClick to open"]
+        "lore": [
+          "&7Sparring TP & mentor bonds",
+          "&eClick to open"
+        ]
       },
       "skillcheck": {
         "name": "&eSkill Check",
-        "lore": ["&7Natural · Saga progress", "&eClick to open"]
+        "lore": [
+          "&7Natural · Saga progress",
+          "&eClick to open"
+        ]
       },
       "skills": {
         "name": "&eSkills",
-        "lore": ["&7Skill unlock admin browser", "&8No Skill Check perm", "&eClick to open"]
+        "lore": [
+          "&7Skill unlock admin browser",
+          "&8No Skill Check perm",
+          "&eClick to open"
+        ]
       },
       "prestige": {
         "name": "&6Prestige",
-        "lore": ["&7Turn in prestiges · skill/forms shop · level-cap", "&eClick to open"]
+        "lore": [
+          "&7Turn in prestiges · skill/forms shop · level-cap",
+          "&eClick to open"
+        ]
       },
       "android_remove": {
         "name": "&cRemove Android",
-        "lore": ["&7Remove your Android upgrade", "&8Two-click confirm · forms restored", "&eClick to open"]
+        "lore": [
+          "&7Remove your Android upgrade",
+          "&8Two-click confirm · forms restored",
+          "&eClick to open"
+        ]
       },
       "progression": {
         "name": "&dProgression",
-        "lore": ["&7Skills · TP · Race · Combat flags", "&eClick to open"]
+        "lore": [
+          "&7Skills · TP · Race · Combat flags",
+          "&eClick to open"
+        ]
       },
       "admin": {
         "name": "&cAdmin",
-        "lore": ["&7Reload · syslog · open systems", "&8/lm admin"]
+        "lore": [
+          "&7Reload · syslog · open systems",
+          "&8/lm admin"
+        ]
       },
       "logs": {
         "name": "&8Logs",
-        "lore": ["&7System telemetry", "&eClick to open"]
+        "lore": [
+          "&7System telemetry",
+          "&eClick to open"
+        ]
       }
     },
     "logs": {
+      "header": {
+        "name": "&8&lLogs",
+        "lore": [
+          "&7Use buttons below to toggle / flush"
+        ]
+      },
+      "back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Return"
+        ]
+      },
       "syslog_on": {
         "name": "&aSyslog ON",
-        "lore": ["&7Enable system telemetry"]
+        "lore": [
+          "&7Enable system telemetry"
+        ]
       },
       "syslog_off": {
         "name": "&cSyslog OFF",
-        "lore": ["&7Disable system telemetry"]
+        "lore": [
+          "&7Disable system telemetry"
+        ]
       },
       "flush": {
         "name": "&eFlush",
-        "lore": ["&7Flush log writers"]
+        "lore": [
+          "&7Flush log writers"
+        ]
       }
     }
   },
@@ -66,69 +119,205 @@
     "main": {
       "confirm": {
         "name": "&aConfirm Prestige",
-        "lore": ["&7Click to prestige (confirm within 10s)", "&8Resets DMZ stats · awards held Prestige"]
+        "lore": [
+          "&7Click to prestige (confirm within 10s)",
+          "&8Resets DMZ stats · awards held Prestige"
+        ]
       },
       "turnin": {
         "name": "&eTurn In Prestiges",
-        "lore": ["&7Convert held prestiges into points", "&7Balance: &e{points}"]
+        "lore": [
+          "&7Convert held prestiges into points",
+          "&7Balance: &e{points}"
+        ]
       },
       "shop": {
         "name": "&aSkill Shop",
-        "lore": ["&71 point = +1 skill level (&dPotential &7+2)", "&7Skill Check skills only · &apermanent", "&8Survives prestige reset"]
+        "lore": [
+          "&71 point = +1 skill level (&dPotential &7+2)",
+          "&7Skill Check skills only · &apermanent",
+          "&8Survives prestige reset"
+        ]
       },
       "effects": {
         "name": "&dEffects",
-        "lore": ["&7Permanent Majin / Mutant (&e5 &7pts)", "&aPermanent purchase &8· unpurchase = no refund"]
+        "lore": [
+          "&7Permanent Majin / Mutant (&e5 &7pts)",
+          "&aPermanent purchase &8· unpurchase = no refund"
+        ]
       },
       "tiers": {
         "name": "&6Difficulty Tiers",
-        "lore": ["&7Permanent unlocks with prestige points", "&7T1–2 &e1pt &8· &7T3–4 &e2pt &8· &7T5–6 &e3pt &8· &7T7 &e4pt", "&aPermanent &8· survives prestige"]
+        "lore": [
+          "&7Permanent unlocks with prestige points",
+          "&7T1–2 &e1pt &8· &7T3–4 &e2pt &8· &7T5–6 &e3pt &8· &7T7 &e4pt",
+          "&aPermanent &8· survives prestige"
+        ]
       },
       "cap": {
         "name": "&bLevel Cap Breakthrough",
-        "lore": ["&7Raise &fyour &7personal level cap +10k", "&7Cap: &f{level_cap}", "&8DMZ maxValue 150000 — soft-lock holds others at their cap"]
+        "lore": [
+          "&7Raise &fyour &7personal level cap +10k",
+          "&7Cap: &f{level_cap}",
+          "&8DMZ maxValue 150000 — soft-lock holds others at their cap"
+        ]
       },
       "wallet": {
         "name": "&e&lWallet",
-        "lore": ["&6Wallet: &e{points} &7prestige points"]
+        "lore": [
+          "&6Wallet: &e{points} &7prestige points"
+        ]
       },
       "progression": {
         "name": "&dProgression",
-        "lore": ["&7Skills · TP · Race · Combat flags", "&eClick to open"]
+        "lore": [
+          "&7Skills · TP · Race · Combat flags",
+          "&eClick to open"
+        ]
       }
     },
     "tiers": {
-      "owned": ["&aOwned · permanent"],
-      "locked": ["&cLocked", "&7Buy permanent &fT{prev} &7first (shop ladder)"],
-      "buyable": ["&7Cost: &e{cost} &7point(s)", "&aPermanent unlock &8· survives prestige"],
-      "buyable_unlocked": ["&7Cost: &e{cost} &7point(s)", "&eCurrently unlocked via level/prestige", "&7Buy to make it &apermanent &7(survives prestige)"],
-      "footer": ["&8Requires permanent T1–T{prev} from this shop", "&8Then activate with Ancient Coins via /difficulty → Buy Tier"]
+      "owned": [
+        "&aOwned · permanent"
+      ],
+      "locked": [
+        "&cLocked",
+        "&7Buy permanent &fT{prev} &7first (shop ladder)"
+      ],
+      "buyable": [
+        "&7Cost: &e{cost} &7point(s)",
+        "&aPermanent unlock &8· survives prestige"
+      ],
+      "buyable_unlocked": [
+        "&7Cost: &e{cost} &7point(s)",
+        "&eCurrently unlocked via level/prestige",
+        "&7Buy to make it &apermanent &7(survives prestige)"
+      ],
+      "footer": [
+        "&8Requires permanent T1–T{prev} from this shop",
+        "&8Then activate with Ancient Coins via /difficulty → Buy Tier"
+      ]
     },
     "turnin": {
-      "amount": ["&7Turn in &6{amount}", "&7Gain &e{gain} &7points"],
-      "all": ["&7Turn in all &6{held} &7held", "&7Gain &e{gain} &7points", "&7+1 bonus point per 3 turned in"]
+      "amount": {
+        "name": "&eTurn In &f{amount}",
+        "lore": [
+          "&7Turn in &6{amount}",
+          "&7Gain &e{gain} &7points"
+        ]
+      },
+      "all": {
+        "name": "&6Turn In All",
+        "lore": [
+          "&7Turn in all &6{held} &7held",
+          "&7Gain &e{gain} &7points",
+          "&7+1 bonus point per 3 turned in"
+        ]
+      }
     },
     "effects": {
-      "majin": ["&7Cost: &e{cost} &7points", "&aPermanent · survives prestige", "&8XOR with Mutant"],
-      "mutant": ["&7Cost: &e{cost} &7points", "&aPermanent · survives prestige", "&8XOR with Majin"]
+      "majin": {
+        "name": "&dBuy Permanent Majin",
+        "lore": [
+          "&7Cost: &e{cost} &7points",
+          "&aPermanent · survives prestige",
+          "&8XOR with Mutant"
+        ]
+      },
+      "mutant": {
+        "name": "&aBuy Permanent Mutant",
+        "lore": [
+          "&7Cost: &e{cost} &7points",
+          "&aPermanent · survives prestige",
+          "&8XOR with Majin"
+        ]
+      },
+      "majin_owned": {
+        "name": "&aPermanent Majin",
+        "lore": [
+          "&aOwned",
+          "&aPermanent purchase &8· only one at a time"
+        ]
+      },
+      "mutant_owned": {
+        "name": "&aPermanent Mutant",
+        "lore": [
+          "&aOwned",
+          "&aPermanent purchase &8· only one at a time"
+        ]
+      },
+      "unmajin": {
+        "name": "&cUnpurchase Majin",
+        "lore": [
+          "&7Removes Majin · &cno point refund"
+        ]
+      },
+      "unmutant": {
+        "name": "&cUnpurchase Mutant",
+        "lore": [
+          "&7Removes Mutant · &cno point refund"
+        ]
+      }
     },
     "cap": {
-      "buy": ["&7Next: &a+10,000 &7personal cap for &e{cost} &7points"]
+      "buy": {
+        "name": "&bBuy Breakthrough",
+        "lore": [
+          "&7Your level cap: &f{level_cap}",
+          "&7Breakthroughs: &f{breakthroughs}&7/&f{max}",
+          "&8DMZ maxValue 150000 — soft-lock holds others at their cap",
+          "&7Next: &a+10,000 &7personal cap for &e{cost} &7points",
+          "&8Then keep leveling with TP into the new cap",
+          "&8Future prestige Need scales up to your new cap",
+          "&8Costs: 15 → 20 → 25 → 30 → 35"
+        ]
+      }
+    },
+    "shop": {
+      "skill": {
+        "name": "&a{label}",
+        "lore": [
+          "&7Prestige floor: &f{bought}&7/&f{max}",
+          "&7Cost: &e1 &7point → &a+{gain_levels} &7level(s)",
+          "&aPermanent &8· survives prestige reset"
+        ]
+      },
+      "prev": {
+        "name": "&7« Prev",
+        "lore": [
+          "&7Page {page}/{pages}"
+        ]
+      },
+      "next": {
+        "name": "&7Next »",
+        "lore": [
+          "&7Page {page}/{pages}"
+        ]
+      }
     }
   },
   "difficulty": {
     "main": {
       "buy": {
         "name": "&eBuy Tier",
-        "lore": ["&7Purchase a higher Unlock Tier", "&8Ancient Coins · pay-up OK · change returned"]
+        "lore": [
+          "&7Purchase a higher Unlock Tier",
+          "&8Ancient Coins · pay-up OK · change returned"
+        ]
       },
       "lower": {
         "name": "&fLower Tier",
-        "lore": ["&7Select a lower unlocked tier", "&8Or reset to None · always free"]
+        "lore": [
+          "&7Select a lower unlocked tier",
+          "&8Or reset to None · always free"
+        ]
       },
       "titles": {
         "name": "&dTitles",
-        "lore": ["&7Equip difficulty titles", "&8Earned from tiers and combat"]
+        "lore": [
+          "&7Equip difficulty titles",
+          "&8Earned from tiers and combat"
+        ]
       },
       "summon_dragon": {
         "name": "&5&lSummon End Dragon",
@@ -144,156 +333,930 @@
       },
       "personal_on": {
         "name": "&aDifficulty ON",
-        "lore": ["&7Click to turn OFF for you only", "&8OFF disables scaling, kill coins,", "&8AI pressure, and tier buys"]
+        "lore": [
+          "&7Click to turn OFF for you only",
+          "&8OFF disables scaling, kill coins,",
+          "&8AI pressure, and tier buys"
+        ]
       },
       "personal_off": {
         "name": "&cDifficulty OFF",
-        "lore": ["&7Click to turn ON for you only", "&8ON restores scaling, kill coins,", "&8AI pressure, and tier buys"]
+        "lore": [
+          "&7Click to turn ON for you only",
+          "&8ON restores scaling, kill coins,",
+          "&8AI pressure, and tier buys"
+        ]
       },
       "coin_chat_on": {
         "name": "&aCoin Chat ON",
-        "lore": ["&7Click to mute drop messages", "&8Only affects Ancient Coin kill chat"]
+        "lore": [
+          "&7Click to mute drop messages",
+          "&8Only affects Ancient Coin kill chat"
+        ]
       },
       "coin_chat_off": {
         "name": "&8Coin Chat OFF",
-        "lore": ["&7Click to show drop messages", "&8Only affects Ancient Coin kill chat"]
+        "lore": [
+          "&7Click to show drop messages",
+          "&8Only affects Ancient Coin kill chat"
+        ]
       },
       "details": {
         "name": "&8Details",
-        "lore": ["&7Staff breakdown", "&8CR · prestige · kit gates"]
+        "lore": [
+          "&7Staff breakdown",
+          "&8CR · prestige · kit gates"
+        ]
       }
     },
     "buy": {
-      "info": ["&7Unlock with DMZ level or Prestige", "&8Costs scale with level"]
+      "info": {
+        "name": "&e&lBuy Higher Tier",
+        "lore": [
+          "&7Unlock with DMZ level or Prestige",
+          "&8Costs scale with level"
+        ]
+      },
+      "nav_lower": {
+        "name": "&fLower Tier",
+        "lore": [
+          "&7Select a lower unlocked tier"
+        ]
+      },
+      "tier": {
+        "name": "&eBuy T{tier}"
+      }
     },
     "lower": {
-      "info": ["&7Select a lower unlocked tier"],
-      "reset": ["&7Clear active tier", "&8Unlocks & coins kept", "&8Always free"]
+      "info": {
+        "name": "&f&lLower Tier",
+        "lore": [
+          "&7Select a lower unlocked tier"
+        ]
+      },
+      "reset": {
+        "name": "&cReset to None",
+        "lore": [
+          "&7Clear active tier",
+          "&8Unlocks & coins kept",
+          "&8Always free"
+        ]
+      },
+      "nav_buy": {
+        "name": "&eBuy Tier",
+        "lore": [
+          "&7Purchase a higher Unlock Tier"
+        ]
+      },
+      "tier": {
+        "name": "&fLower to T{tier}"
+      }
+    },
+    "titles": {
+      "header": {
+        "name": "&d&lTitles",
+        "lore": [
+          "&8Small perks only — tiers stay primary power"
+        ]
+      },
+      "sense_on": {
+        "name": "&aTitle Sense ON",
+        "lore": [
+          "&7Elite / Boss recognition chat",
+          "&8Click to toggle"
+        ]
+      },
+      "sense_off": {
+        "name": "&8Title Sense OFF",
+        "lore": [
+          "&7Elite / Boss recognition chat",
+          "&8Click to toggle"
+        ]
+      },
+      "clear": {
+        "name": "&cClear Title",
+        "lore": [
+          "&7Unequip your title"
+        ]
+      },
+      "item": {
+        "name": "{name}",
+        "lore": [
+          "{rarity_line}",
+          "&7{req}",
+          "&f{perk}"
+        ]
+      },
+      "state_equipped": [
+        "&aCurrently equipped"
+      ],
+      "state_unlocked": [
+        "&aUnlocked"
+      ],
+      "state_locked": [
+        "&cLocked"
+      ]
     }
   },
   "rival": {
     "main": {
       "list": {
         "name": "&6List",
-        "lore": ["&7Current rivals", "&8Heads · hover for stats"]
+        "lore": [
+          "&7Current rivals",
+          "&8Heads · hover for stats"
+        ]
       },
       "actions": {
         "name": "&aActions",
-        "lore": ["&7Declare · accept · decline · remove", "{pending}"]
+        "lore": [
+          "&7Declare · accept · decline · remove",
+          "{pending}"
+        ]
       },
       "challenge": {
         "name": "&cChallenge",
-        "lore": ["&7Send · accept · decline · spectate"]
+        "lore": [
+          "&7Send · accept · decline · spectate"
+        ]
       },
       "top": {
         "name": "&fTop",
-        "lore": ["&7RP leaderboard"]
+        "lore": [
+          "&7RP leaderboard"
+        ]
       },
       "history": {
         "name": "&8History",
-        "lore": ["&7Previous rivals", "&8Archived when removed"]
+        "lore": [
+          "&7Previous rivals",
+          "&8Archived when removed"
+        ]
       },
       "progress": {
         "name": "&bProgress",
-        "lore": ["&7Season · quests · achs · HOF · journal · title"]
+        "lore": [
+          "&7Season · quests · achs · HOF · journal · title"
+        ]
       },
       "tpmsg_on": {
         "name": "&aTP Msg ON",
-        "lore": ["&7Click to mute rival TP messages", "&8Only affects rivalry TP chat"]
+        "lore": [
+          "&7Click to mute rival TP messages",
+          "&8Only affects rivalry TP chat"
+        ]
       },
       "tpmsg_off": {
         "name": "&8TP Msg OFF",
-        "lore": ["&7Click to show rival TP messages", "&8Only affects rivalry TP chat"]
+        "lore": [
+          "&7Click to show rival TP messages",
+          "&8Only affects rivalry TP chat"
+        ]
       },
       "instinct_on": {
         "name": "&aInstinct ON",
-        "lore": ["&7Click to disable Rival Instinct", "&8Alerts for mutual / nemesis rivals"]
+        "lore": [
+          "&7Click to disable Rival Instinct",
+          "&8Alerts for mutual / nemesis rivals"
+        ]
       },
       "instinct_off": {
         "name": "&8Instinct OFF",
-        "lore": ["&7Click to enable Rival Instinct", "&8Alerts for mutual / nemesis rivals"]
+        "lore": [
+          "&7Click to enable Rival Instinct",
+          "&8Alerts for mutual / nemesis rivals"
+        ]
       },
       "admin": {
         "name": "&cAdmin",
-        "lore": ["&7Save · refresh · status"]
+        "lore": [
+          "&7Save · refresh · status"
+        ]
       }
+    },
+    "actions": {
+      "declare": {
+        "name": "&aDeclare…",
+        "lore": [
+          "&7Visible declare → they Accept → Mutual"
+        ]
+      },
+      "pending": {
+        "name": "&ePending",
+        "lore": [
+          "&7View incoming + outgoing invites"
+        ]
+      },
+      "accept": {
+        "name": "&eAccept…",
+        "lore": [
+          "&7Pending declares, or Declared → Mutual",
+          "&8Both Silent → Declared shows here"
+        ]
+      },
+      "decline": {
+        "name": "&6Decline…",
+        "lore": [
+          "&7Decline a pending declare"
+        ]
+      },
+      "remove": {
+        "name": "&cRemove…",
+        "lore": [
+          "&7Pick one of your rivals to remove"
+        ]
+      },
+      "silent": {
+        "name": "&8Silent…",
+        "lore": [
+          "&7One-sided Unknown (they are not told)",
+          "&8Both Silent → Declared (both notified)"
+        ]
+      },
+      "nav_list": {
+        "name": "&6List",
+        "lore": [
+          "&7Back to current rivals"
+        ]
+      }
+    },
+    "challenge": {
+      "send": {
+        "name": "&eSend Challenge…",
+        "lore": [
+          "&7Pick rival, then choose 1–10 minutes"
+        ]
+      },
+      "accept": {
+        "name": "&aAccept",
+        "lore": [
+          "&7Accept pending challenge"
+        ]
+      },
+      "decline": {
+        "name": "&cDecline",
+        "lore": [
+          "&7Decline pending challenge"
+        ]
+      },
+      "cancel": {
+        "name": "&8Cancel",
+        "lore": [
+          "&7Cancel your outgoing challenge"
+        ]
+      },
+      "spectate": {
+        "name": "&bSpectate…",
+        "lore": [
+          "&7Watch an online player's challenge"
+        ]
+      },
+      "spectate_stop": {
+        "name": "&8Stop Spectate",
+        "lore": [
+          "&7End spectating early"
+        ]
+      },
+      "back_picker": {
+        "name": "&7Back",
+        "lore": [
+          "&7Pick another player"
+        ]
+      },
+      "duration": {
+        "name": "&e{minutes} minute(s)",
+        "lore": [
+          "&7Choose fight length",
+          "&8Click to send"
+        ]
+      }
+    },
+    "admin": {
+      "save": {
+        "name": "&aSave",
+        "lore": [
+          "&7Write rivalry-v4 + progression-v4",
+          "&8/rival admin save"
+        ]
+      },
+      "refresh": {
+        "name": "&eRefresh",
+        "lore": [
+          "&7Reload stores from disk",
+          "&8/rival admin refresh"
+        ]
+      },
+      "status": {
+        "name": "&bStatus",
+        "lore": [
+          "&7Enabled + path summary",
+          "&8/rival admin status"
+        ]
+      },
+      "back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Player Rival menu"
+        ]
+      }
+    },
+    "progress": {
+      "stats": {
+        "name": "&eStats",
+        "lore": [
+          "&eClick to open"
+        ]
+      },
+      "season": {
+        "name": "&aSeason",
+        "lore": [
+          "&eClick to open"
+        ]
+      },
+      "quests": {
+        "name": "&bQuests",
+        "lore": [
+          "&eClick to open"
+        ]
+      },
+      "achs": {
+        "name": "&dAchs",
+        "lore": [
+          "&eClick to open"
+        ]
+      },
+      "hof": {
+        "name": "&6HOF",
+        "lore": [
+          "&eClick to open"
+        ]
+      },
+      "journal": {
+        "name": "&fJournal",
+        "lore": [
+          "&eClick to open"
+        ]
+      },
+      "title": {
+        "name": "&eTitle",
+        "lore": [
+          "&eClick to open"
+        ]
+      }
+    },
+    "list": {
+      "nav_actions": {
+        "name": "&aActions",
+        "lore": [
+          "&7Declare · accept · remove · pending"
+        ]
+      },
+      "nav_history": {
+        "name": "&8History",
+        "lore": [
+          "&7Previous rivals"
+        ]
+      }
+    },
+    "pending": {
+      "accept_pick": {
+        "name": "&eAccept…",
+        "lore": [
+          "&7Accept incoming / Declared"
+        ]
+      },
+      "decline_pick": {
+        "name": "&6Decline…",
+        "lore": [
+          "&7Decline an incoming declare"
+        ]
+      },
+      "nav_actions": {
+        "name": "&aActions",
+        "lore": [
+          "&7Full actions menu"
+        ]
+      },
+      "back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Actions"
+        ]
+      }
+    },
+    "history": {
+      "nav_list": {
+        "name": "&6List",
+        "lore": [
+          "&7Current rivals"
+        ]
+      }
+    },
+    "empty": {
+      "no_rivals": [
+        "&7Use Actions → Declare to start"
+      ],
+      "no_pending": [
+        "&7Declare someone to send an invite",
+        "&7Incoming shows when they Declare you"
+      ],
+      "no_online": [
+        "&7Other players must be online"
+      ],
+      "no_history": [
+        "&7Removed rivals show here"
+      ],
+      "no_top": [
+        "&7Challenge rivals to earn RP"
+      ]
+    },
+    "picker": {
+      "tip": [
+        "{tip}"
+      ]
     }
   },
   "spar": {
     "main": {
       "stats": {
         "name": "&eStats",
-        "lore": ["&7Last 3 spar reports", "&8One item per spar"]
+        "lore": [
+          "&7Last 3 spar reports",
+          "&8One item per spar"
+        ]
       },
       "top": {
         "name": "&fTop",
-        "lore": ["&7Leaderboard"]
+        "lore": [
+          "&7Leaderboard"
+        ]
       },
       "mentor": {
         "name": "&bMentor",
-        "lore": ["&7Invite · pending · accept · remove"]
+        "lore": [
+          "&7Invite · pending · accept · remove"
+        ]
       },
       "tpmsg_on": {
         "name": "&aTP Msg ON",
-        "lore": ["&7Click to mute spar TP chat", "&8Batched +TP lines during spars", "", "&eClick to toggle"]
+        "lore": [
+          "&7Click to mute spar TP chat",
+          "&8Batched +TP lines during spars",
+          "",
+          "&eClick to toggle"
+        ]
       },
       "tpmsg_off": {
         "name": "&8TP Msg OFF",
-        "lore": ["&7Click to show spar TP chat while fighting", "&8Batched +TP lines during spars", "", "&eClick to toggle"]
+        "lore": [
+          "&7Click to show spar TP chat while fighting",
+          "&8Batched +TP lines during spars",
+          "",
+          "&eClick to toggle"
+        ]
       },
       "end_session": {
         "name": "&cEnd Session",
-        "lore": ["&7End your active spar session"]
+        "lore": [
+          "&7End your active spar session"
+        ]
       },
       "admin": {
         "name": "&cAdmin",
-        "lore": ["&7Save · status · mentor resetcd"]
+        "lore": [
+          "&7Save · status · mentor resetcd"
+        ]
       }
+    },
+    "top": {
+      "tp": {
+        "name": "&eTP",
+        "lore": [
+          "&7Total TP"
+        ]
+      },
+      "sessions": {
+        "name": "&aSessions",
+        "lore": [
+          "&7Sessions"
+        ]
+      },
+      "perfect": {
+        "name": "&bPerfect",
+        "lore": [
+          "&7Perfect spars"
+        ]
+      }
+    },
+    "mentor": {
+      "invite": {
+        "name": "&aInvite apprentice…",
+        "lore": [
+          "&7Pick a player to mentor"
+        ]
+      },
+      "ask": {
+        "name": "&bAsk mentor…",
+        "lore": [
+          "&7Pick a player to ask as mentor"
+        ]
+      },
+      "pending": {
+        "name": "&ePending",
+        "lore": [
+          "&7View incoming + outgoing invites"
+        ]
+      },
+      "accept": {
+        "name": "&eAccept…",
+        "lore": [
+          "&7Accept an incoming mentor invite"
+        ]
+      },
+      "decline": {
+        "name": "&6Decline…",
+        "lore": [
+          "&7Decline an incoming mentor invite"
+        ]
+      },
+      "leave": {
+        "name": "&cLeave mentor",
+        "lore": [
+          "&7End bond with &f{name}",
+          "&87-day cooldown"
+        ]
+      },
+      "release": {
+        "name": "&6Release apprentice",
+        "lore": [
+          "&7End bond with &f{name}"
+        ]
+      }
+    },
+    "admin": {
+      "save": {
+        "name": "&aSave",
+        "lore": [
+          "&7Write sparring.json",
+          "&8/spar admin save"
+        ]
+      },
+      "status": {
+        "name": "&bStatus",
+        "lore": [
+          "&7Enabled + path",
+          "&8/spar admin status"
+        ]
+      },
+      "resetcd": {
+        "name": "&eReset Mentor CD",
+        "lore": [
+          "&7Clear your mentor cooldown",
+          "&8/spar admin mentor resetcd"
+        ]
+      },
+      "back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Player Spar menu"
+        ]
+      }
+    },
+    "pending": {
+      "accept_pick": {
+        "name": "&eAccept…",
+        "lore": [
+          "&7Accept an incoming invite"
+        ]
+      },
+      "decline_pick": {
+        "name": "&6Decline…",
+        "lore": [
+          "&7Decline an incoming invite"
+        ]
+      },
+      "nav_mentor": {
+        "name": "&bMentor",
+        "lore": [
+          "&7Full mentor menu"
+        ]
+      },
+      "back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Mentor"
+        ]
+      }
+    },
+    "empty": {
+      "no_top": [
+        "&7Spar nearby to earn TP",
+        "&8Categories: TP · Sessions · Perfect"
+      ],
+      "no_pending": [
+        "&7Invite apprentice or ask a mentor",
+        "&7Incoming shows when they invite you"
+      ],
+      "no_online": [
+        "&7Other players must be online"
+      ]
     }
   },
   "progression": {
     "main": {
       "skills": {
         "name": "&eSkills",
-        "lore": ["&7Flight · Sprint · Meditation · Potential", "", "&eClick to open"]
+        "lore": [
+          "&7Flight · Sprint · Meditation · Potential",
+          "",
+          "&eClick to open"
+        ]
       },
       "tp": {
         "name": "&6TP Gains",
-        "lore": ["&7Farming · Building · Boost · Bio", "", "&eClick to open"]
+        "lore": [
+          "&7Farming · Building · Boost · Bio",
+          "",
+          "&eClick to open"
+        ]
       },
       "race": {
         "name": "&bRace & Form",
-        "lore": ["&7Race lock · Yardrat · Spiritualist · Android", "", "&eClick to open"]
+        "lore": [
+          "&7Race lock · Yardrat · Spiritualist · Android",
+          "",
+          "&eClick to open"
+        ]
       },
       "combat": {
         "name": "&cCombat",
-        "lore": ["&7Ki weapons · Piercing · DoT · Apothic", "", "&eClick to open"]
+        "lore": [
+          "&7Ki weapons · Piercing · DoT · Apothic",
+          "",
+          "&eClick to open"
+        ]
       },
       "end": {
         "name": "&5End",
-        "lore": ["&7End strength · Portal guard", "", "&eClick to open"]
+        "lore": [
+          "&7End strength · Portal guard",
+          "",
+          "&eClick to open"
+        ]
       },
       "fabled": {
         "name": "&dFabled",
-        "lore": ["&7Soft Fabled bridges", "", "&eClick to open"]
+        "lore": [
+          "&7Soft Fabled bridges",
+          "",
+          "&eClick to open"
+        ]
       },
       "utility": {
         "name": "&7Utility",
-        "lore": ["&7Shadow dummy · Stat checker", "", "&eClick to open"]
+        "lore": [
+          "&7Shadow dummy · Stat checker",
+          "",
+          "&eClick to open"
+        ]
       },
       "admin": {
         "name": "&cAll Flags",
-        "lore": ["&7Full flag board"]
+        "lore": [
+          "&7Full flag board"
+        ]
+      }
+    },
+    "fabled": {
+      "subflags": {
+        "name": "&dFabled Subflags",
+        "lore": [
+          "&7Energy, TP/SP, race class, etc."
+        ]
+      },
+      "back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Return to Flags"
+        ]
+      },
+      "flag": {
+        "name": "{name}",
+        "lore": [
+          "{status}",
+          "{desc}"
+        ]
+      }
+    },
+    "boost": {
+      "n125_30": {
+        "name": "&e1.25x · 30m",
+        "lore": [
+          "&7Start 1.25x for 30 minutes",
+          "",
+          "&eClick to start"
+        ]
+      },
+      "n15_30": {
+        "name": "&e1.5x · 30m",
+        "lore": [
+          "&7Start 1.5x for 30 minutes",
+          "",
+          "&eClick to start"
+        ]
+      },
+      "n2_30": {
+        "name": "&62x · 30m",
+        "lore": [
+          "&7Start 2x for 30 minutes",
+          "",
+          "&eClick to start"
+        ]
+      },
+      "n2_60": {
+        "name": "&62x · 60m",
+        "lore": [
+          "&7Start 2x for 60 minutes",
+          "",
+          "&eClick to start"
+        ]
+      },
+      "n3_30": {
+        "name": "&e3x · 30m",
+        "lore": [
+          "&7Start 3x for 30 minutes",
+          "",
+          "&eClick to start"
+        ]
+      },
+      "end": {
+        "name": "&cEnd Boost",
+        "lore": [
+          "&7Stop the active global TP boost",
+          "",
+          "&eClick to end"
+        ]
+      },
+      "refresh": {
+        "name": "&7Refresh Status",
+        "lore": [
+          "&7Reload this panel"
+        ]
+      },
+      "back": {
+        "name": "&7Back",
+        "lore": [
+          "&7TP Gains"
+        ]
+      }
+    },
+    "android": {
+      "convert": {
+        "name": "&aConvert to Android",
+        "lore": [
+          "&7Pick a player to convert",
+          "&8Human → androidforms.androidbase",
+          "",
+          "&eClick to open"
+        ]
+      },
+      "remove": {
+        "name": "&cRemove Android",
+        "lore": [
+          "&7Pick a player to remove upgrade",
+          "&8Restores superforms / legendaryforms",
+          "&8Two-click confirm within 10s",
+          "",
+          "&eClick to open"
+        ]
+      },
+      "convert_self": {
+        "name": "&aConvert Yourself",
+        "lore": [
+          "&7Apply conversion to you",
+          "",
+          "&eClick to convert"
+        ]
+      },
+      "remove_self": {
+        "name": "&cRemove Android Upgrade",
+        "lore": [
+          "&7Remove the Android upgrade",
+          "&7Race, stats, and progression stay",
+          "",
+          "&eClick · confirm within 10s"
+        ]
+      },
+      "back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Race section"
+        ]
+      },
+      "convert_back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Android tools"
+        ]
+      },
+      "remove_back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Android tools"
+        ]
+      },
+      "remove_back_hub": {
+        "name": "&7Back",
+        "lore": [
+          "&7Legacy Mechanics hub"
+        ]
+      }
+    },
+    "race": {
+      "android_tools": {
+        "name": "&bAndroid Tools",
+        "lore": [
+          "&7Convert or remove Android upgrade (Gero path).",
+          "",
+          "&eClick · Convert / Remove"
+        ]
+      }
+    },
+    "tp": {
+      "boost_panel": {
+        "name": "&6Global TP Boost",
+        "lore": [
+          "&7Timed global TP multiplier",
+          "",
+          "&eClick to open"
+        ]
+      }
+    },
+    "admin": {
+      "flag": {
+        "name": "{name}",
+        "lore": [
+          "{status}",
+          "{desc}"
+        ]
+      }
+    },
+    "section": {
+      "flag": {
+        "name": "{name}",
+        "lore": [
+          "{status}",
+          "{desc}"
+        ]
       }
     }
   },
   "skills": {
     "main": {
-      "header": ["&7Natural / Saga skill progress"],
+      "header": [
+        "&7Natural / Saga skill progress"
+      ],
+      "natural": {
+        "name": "&aNatural",
+        "lore": [
+          "&7Potential · Flight · Meditation · Jump · Sprint"
+        ]
+      },
+      "saga": {
+        "name": "&dSaga",
+        "lore": [
+          "&7Saga unlocks · Defense Pen · Healing Red · Ki skills"
+        ]
+      },
       "progression": {
         "name": "&dProgression",
-        "lore": ["&7Skills · TP · Race · Combat flags", "&eClick to open"]
+        "lore": [
+          "&7Skills · TP · Race · Combat flags",
+          "&eClick to open"
+        ]
       }
+    },
+    "empty": {
+      "name": "&cNo skills listed",
+      "lore": [
+        "&7No skills to show"
+      ]
+    },
+    "list": {
+      "skill": {
+        "name": "&f{name}",
+        "lore": [
+          "&7{desc}"
+        ]
+      }
+    }
+  },
+  "common": {
+    "back": {
+      "name": "&7Back",
+      "lore": [
+        "&7Return"
+      ]
     }
   }
 }

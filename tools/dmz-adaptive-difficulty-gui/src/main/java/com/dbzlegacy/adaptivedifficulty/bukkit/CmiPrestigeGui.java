@@ -123,10 +123,16 @@ public final class CmiPrestigeGui {
         addTurnIn(gui, 19, 1, held, ph);
         addTurnIn(gui, 21, 3, held, ph);
         addTurnIn(gui, 23, 5, held, ph);
-        CMIGuiButton all = new CMIGuiButton(25, Material.GOLD_BLOCK, "&6Turn In All");
+        Map<String, String> allVars = Map.of(
+                "held", String.valueOf(held),
+                "gain", ph.getOrDefault("turnin_all_points", "0"));
+        List<String> allDefaults = List.of(
+                "&7Turn in all &6{held} &7held",
+                "&7Gain &e{gain} &7points");
+        CMIGuiButton all = new CMIGuiButton(25, Material.GOLD_BLOCK,
+                GuiTooltips.name("prestige.turnin.all", "&6Turn In All"));
         all.lockField();
-        all.addLore(List.of("", "&7Turn in all &6" + held + " &7held",
-                "&7Gain &e" + ph.getOrDefault("turnin_all_points", "0") + " &7points"));
+        all.addLore(GuiTooltips.buttonLore("prestige.turnin.all", allDefaults, allVars, null));
         if (held > 0) {
             all.addCommand("lmdo prestige turnin all turnin");
         }
@@ -141,13 +147,18 @@ public final class CmiPrestigeGui {
 
     private static void addTurnIn(CMIGui gui, int slot, int amount, int held, Map<String, String> ph) {
         boolean ok = held >= amount;
+        Map<String, String> vars = Map.of(
+                "amount", String.valueOf(amount),
+                "gain", ph.getOrDefault("turnin_" + amount + "_points", "0"),
+                "held", String.valueOf(held));
+        List<String> defaults = List.of(
+                "&7Spend &6{amount} &7held prestige" + (amount == 1 ? "" : "s"),
+                "&7Gain &e{gain} &7points");
         CMIGuiButton btn = new CMIGuiButton(slot,
                 ok ? Material.GOLD_INGOT : Material.GRAY_DYE,
-                (ok ? "&eTurn In &f" : "&8Need &f") + amount);
+                GuiTooltips.name("prestige.turnin.amount", (ok ? "&eTurn In &f" : "&8Need &f") + amount));
         btn.lockField();
-        btn.addLore(List.of("",
-                "&7Spend &6" + amount + " &7held",
-                "&7Gain &e" + ph.getOrDefault("turnin_" + amount + "_points", "0") + " &7points"));
+        btn.addLore(GuiTooltips.buttonLore("prestige.turnin.amount", defaults, vars, null));
         if (ok) {
             btn.addCommand("lmdo prestige turnin " + amount + " turnin");
         }
@@ -205,13 +216,16 @@ public final class CmiPrestigeGui {
         gui.addButton(backBtn(45));
         if (page > 0) {
             String prev = page == 1 ? "shop" : ("shop" + page);
-            gui.addButton(navBtn(48, Material.ARROW, "&7« Prev",
-                    List.of("&7Page " + page + "/" + pages), prev));
+            Map<String, String> prevVars = Map.of("page", String.valueOf(page), "pages", String.valueOf(pages));
+            gui.addButton(navBtn(48, "prestige.shop.prev", Material.ARROW, "&7« Prev",
+                    List.of("&7Page {page}/{pages}"), prevVars, prev));
         }
         gui.addButton(hubBtn(49));
         if (page + 1 < pages) {
-            gui.addButton(navBtn(50, Material.ARROW, "&7Next »",
-                    List.of("&7Page " + (page + 2) + "/" + pages),
+            Map<String, String> nextVars = Map.of(
+                    "page", String.valueOf(page + 2), "pages", String.valueOf(pages));
+            gui.addButton(navBtn(50, "prestige.shop.next", Material.ARROW, "&7Next »",
+                    List.of("&7Page {page}/{pages}"), nextVars,
                     "shop" + (page + 2)));
         }
         gui.addButton(closeBtn(53));
@@ -266,16 +280,22 @@ public final class CmiPrestigeGui {
             CMIGui gui, int slot, Material mat, String id, String label,
             Map<String, String> ph, String reopenPage
     ) {
-        CMIGuiButton btn = new CMIGuiButton(slot, mat, "&a" + label);
+        String bought = ph.getOrDefault("skill_" + id, "0");
+        String max = ph.getOrDefault("skill_" + id + "_max", "10");
+        String gainLevels = "potentialunlock".equalsIgnoreCase(id) ? "2" : "1";
+        Map<String, String> vars = Map.of(
+                "label", label,
+                "bought", bought,
+                "max", max,
+                "gain_levels", gainLevels);
+        List<String> defaults = List.of(
+                "&7Prestige floor: &f{bought}&7/&f{max}",
+                "&7Cost: &e1 &7point → &a+{gain_levels} &7level" + ("1".equals(gainLevels) ? "" : "s"),
+                "&aPermanent &8· survives prestige reset");
+        CMIGuiButton btn = new CMIGuiButton(slot, mat,
+                GuiTooltips.name("prestige.shop.skill", "&a" + label));
         btn.lockField();
-        btn.addLore(List.of("",
-                "&7Prestige floor: &f" + ph.getOrDefault("skill_" + id, "0")
-                        + "&7/&f" + ph.getOrDefault("skill_" + id + "_max", "10"),
-                "&7Cost: &e1 &7point → &a+"
-                        + ("potentialunlock".equalsIgnoreCase(id) ? "2" : "1")
-                        + " &7level"
-                        + ("potentialunlock".equalsIgnoreCase(id) ? "s" : ""),
-                "&aPermanent &8· survives prestige reset"));
+        btn.addLore(GuiTooltips.buttonLore("prestige.shop.skill", defaults, vars, null));
         btn.addCommand("lmdo prestige skill " + id + " " + reopenPage);
         gui.addButton(btn);
     }
@@ -288,39 +308,66 @@ public final class CmiPrestigeGui {
         boolean hasMajin = "true".equalsIgnoreCase(ph.getOrDefault("majin", "false"));
         boolean hasMutant = "true".equalsIgnoreCase(ph.getOrDefault("mutant", "false"));
         String cost = ph.getOrDefault("form_cost", "5");
-
-        CMIGuiButton majin = new CMIGuiButton(20,
-                hasMajin ? Material.LIME_DYE : Material.PINK_DYE,
-                hasMajin ? "&aPermanent Majin" : "&dBuy Permanent Majin");
-        majin.lockField();
-        majin.addLore(List.of("", hasMajin ? "&aOwned" : "&7Cost: &e" + cost + " &7points",
-                "&aPermanent purchase &8· only one at a time"));
-        if (!hasMajin) {
-            majin.addCommand("lmdo prestige majin 0 forms");
-        }
-        gui.addButton(majin);
-
-        CMIGuiButton mutant = new CMIGuiButton(22,
-                hasMutant ? Material.LIME_DYE : Material.SLIME_BALL,
-                hasMutant ? "&aPermanent Mutant" : "&aBuy Permanent Mutant");
-        mutant.lockField();
-        mutant.addLore(List.of("", hasMutant ? "&aOwned" : "&7Cost: &e" + cost + " &7points",
-                "&aPermanent purchase &8· only one at a time"));
-        if (!hasMutant) {
-            mutant.addCommand("lmdo prestige mutant 0 forms");
-        }
-        gui.addButton(mutant);
+        Map<String, String> costVars = Map.of("cost", cost);
 
         if (hasMajin) {
-            CMIGuiButton un = new CMIGuiButton(24, Material.BARRIER, "&cUnpurchase Majin");
+            CMIGuiButton majin = new CMIGuiButton(20, Material.LIME_DYE,
+                    GuiTooltips.name("prestige.effects.majin_owned", "&aPermanent Majin"));
+            majin.lockField();
+            majin.addLore(GuiTooltips.buttonLore("prestige.effects.majin_owned",
+                    List.of("&aOwned", "&aPermanent purchase &8· only one at a time"), costVars, null));
+            gui.addButton(majin);
+        } else {
+            List<String> majinDefaults = new ArrayList<>();
+            majinDefaults.add("&7Cost: &e{cost} &7points");
+            if (hasMutant) {
+                majinDefaults.add("&8Buying removes Mutant (no refund)");
+            }
+            majinDefaults.add("&aPermanent purchase &8· only one at a time");
+            CMIGuiButton majin = new CMIGuiButton(20, Material.PINK_DYE,
+                    GuiTooltips.name("prestige.effects.majin", "&dBuy Permanent Majin"));
+            majin.lockField();
+            majin.addLore(GuiTooltips.buttonLore("prestige.effects.majin", majinDefaults, costVars, null));
+            majin.addCommand("lmdo prestige majin 0 forms");
+            gui.addButton(majin);
+        }
+
+        if (hasMutant) {
+            CMIGuiButton mutant = new CMIGuiButton(22, Material.LIME_DYE,
+                    GuiTooltips.name("prestige.effects.mutant_owned", "&aPermanent Mutant"));
+            mutant.lockField();
+            mutant.addLore(GuiTooltips.buttonLore("prestige.effects.mutant_owned",
+                    List.of("&aOwned", "&aPermanent purchase &8· only one at a time"), costVars, null));
+            gui.addButton(mutant);
+        } else {
+            List<String> mutantDefaults = new ArrayList<>();
+            mutantDefaults.add("&7Cost: &e{cost} &7points");
+            if (hasMajin) {
+                mutantDefaults.add("&8Buying removes Majin (no refund)");
+            }
+            mutantDefaults.add("&aPermanent purchase &8· only one at a time");
+            CMIGuiButton mutant = new CMIGuiButton(22, Material.SLIME_BALL,
+                    GuiTooltips.name("prestige.effects.mutant", "&aBuy Permanent Mutant"));
+            mutant.lockField();
+            mutant.addLore(GuiTooltips.buttonLore("prestige.effects.mutant", mutantDefaults, costVars, null));
+            mutant.addCommand("lmdo prestige mutant 0 forms");
+            gui.addButton(mutant);
+        }
+
+        if (hasMajin) {
+            CMIGuiButton un = new CMIGuiButton(24, Material.BARRIER,
+                    GuiTooltips.name("prestige.effects.unmajin", "&cUnpurchase Majin"));
             un.lockField();
-            un.addLore(List.of("", "&7Removes Majin · &cno point refund"));
+            un.addLore(GuiTooltips.buttonLore("prestige.effects.unmajin",
+                    List.of("&7Removes Majin · &cno point refund")));
             un.addCommand("lmdo prestige unmajin 0 forms");
             gui.addButton(un);
         } else if (hasMutant) {
-            CMIGuiButton un = new CMIGuiButton(24, Material.BARRIER, "&cUnpurchase Mutant");
+            CMIGuiButton un = new CMIGuiButton(24, Material.BARRIER,
+                    GuiTooltips.name("prestige.effects.unmutant", "&cUnpurchase Mutant"));
             un.lockField();
-            un.addLore(List.of("", "&7Removes Mutant · &cno point refund"));
+            un.addLore(GuiTooltips.buttonLore("prestige.effects.unmutant",
+                    List.of("&7Removes Mutant · &cno point refund")));
             un.addCommand("lmdo prestige unmutant 0 forms");
             gui.addButton(un);
         }
@@ -340,17 +387,25 @@ public final class CmiPrestigeGui {
         int bt = parseInt(ph.get("breakthroughs"), 0);
         int max = parseInt(ph.get("breakthroughs_max"), 5);
         boolean canBuy = bt < max;
+        String levelCapFmt = ph.getOrDefault("level_cap_fmt", "100000");
+        String nextCost = ph.getOrDefault("next_breakthrough_cost", "15");
+        Map<String, String> capVars = Map.of(
+                "level_cap", levelCapFmt,
+                "breakthroughs", String.valueOf(bt),
+                "max", String.valueOf(max),
+                "cost", nextCost);
         CMIGuiButton buy = new CMIGuiButton(22,
                 canBuy ? Material.NETHER_STAR : Material.BEACON,
-                canBuy ? "&bBuy Breakthrough" : "&aCap Maxed");
+                canBuy ? GuiTooltips.name("prestige.cap.buy", "&bBuy Breakthrough") : "&aCap Maxed");
         buy.lockField();
         buy.addLore(List.of("",
-                "&7Your level cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
+                "&7Your level cap: &f" + levelCapFmt,
                 "&7Breakthroughs: &f" + bt + "&7/&f" + max,
                 "&8DMZ maxValue 150000 — soft-lock holds others at their cap"));
         if (canBuy) {
-            buy.addLore("&7Next: &a+10,000 &7personal cap for &e"
-                    + ph.getOrDefault("next_breakthrough_cost", "15") + " &7points");
+            buy.addLore(GuiTooltips.lore("prestige.cap.buy",
+                    List.of("&7Next: &a+10,000 &7personal cap for &e{cost} &7points"),
+                    capVars));
             buy.addCommand("lmdo prestige breakthrough 0 cap");
         } else {
             buy.addLore("&aMax personal cap (150000)");
@@ -442,16 +497,26 @@ public final class CmiPrestigeGui {
 
     private static CMIGuiButton walletBtn(Player player, String page, String title, List<String> overrideLore) {
         Map<String, String> ph = ForgeBridge.prestigePlaceholders(player);
-        CMIGuiButton btn = new CMIGuiButton(4, Material.GOLD_INGOT, title);
+        if (overrideLore != null && !overrideLore.isEmpty()) {
+            CMIGuiButton btn = new CMIGuiButton(4, Material.GOLD_INGOT, title);
+            btn.lockField();
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.add("&6Wallet: &e" + ph.getOrDefault("points", "0") + " &7prestige points");
+            lore.addAll(overrideLore);
+            btn.addLore(lore);
+            return btn;
+        }
+        Map<String, String> vars = Map.of("points", ph.getOrDefault("points", "0"));
+        List<String> walletLine = GuiTooltips.lore("prestige.main.wallet",
+                List.of("&6Wallet: &e{points} &7prestige points"), vars);
+        CMIGuiButton btn = new CMIGuiButton(4, Material.GOLD_INGOT,
+                GuiTooltips.name("prestige.main.wallet", title));
         btn.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.add("&6Wallet: &e" + ph.getOrDefault("points", "0") + " &7prestige points");
-        if (overrideLore != null && !overrideLore.isEmpty()) {
-            lore.addAll(overrideLore);
-        } else {
-            lore.addAll(toAmp(ForgeBridge.prestigeLines(player, page == null ? "main" : page)));
-        }
+        lore.addAll(walletLine.isEmpty() ? List.of("") : walletLine);
+        lore.addAll(toAmp(ForgeBridge.prestigeLines(player, page == null ? "main" : page)));
         btn.addLore(lore);
         return btn;
     }
@@ -541,8 +606,11 @@ public final class CmiPrestigeGui {
     }
 
     private static CMIGuiButton progBtn(int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.BREWING_STAND, "&dProgression");
+        CMIGuiButton btn = new CMIGuiButton(slot, Material.BREWING_STAND,
+                GuiTooltips.name("prestige.main.progression", "&dProgression"));
         btn.lockField();
+        btn.addLore(GuiTooltips.buttonLore("prestige.main.progression",
+                List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")));
         btn.addCommand("lmdo lm open progression");
         btn.setCloseInv(true);
         return btn;

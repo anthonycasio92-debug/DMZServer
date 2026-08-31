@@ -90,8 +90,8 @@ public final class SkillsChestGui implements Listener {
             headerLore.addAll(split.header.isEmpty()
                     ? List.of("&7DMZ stats unavailable") : split.header);
             headerLore.add("");
-            headerLore.addAll(GuiBoardHelper.tips(viewer,
-                    skillCheckUi ? "&eSkill Check · one item per skill" : "&8One item per skill below"));
+            headerLore.addAll(GuiTooltips.lore("skills.main.header", GuiBoardHelper.tips(viewer,
+                    skillCheckUi ? "&eSkill Check · one item per skill" : "&8One item per skill below")));
             // Skill Check: EXPERIENCE_BOTTLE header. Staff Skills: BOOK.
             Material headerMat = skillCheckUi ? Material.EXPERIENCE_BOTTLE : Material.BOOK;
             put(holder, inv, 4, item(headerMat,
@@ -115,15 +115,15 @@ public final class SkillsChestGui implements Listener {
                 put(holder, inv, slot, item(icon, name, lore));
             }
             if (placed == 0) {
-                put(holder, inv, 22, tipBtn(viewer, Material.BARRIER, "&cNo skills listed",
+                put(holder, inv, 22, tipBtn(viewer, "skills.empty", Material.BARRIER, "&cNo skills listed",
                         List.of("&7Bridge returned no skill rows")));
             }
         }
 
-        put(holder, inv, 45, pageBtn(viewer, Material.FEATHER, "&aNatural",
+        put(holder, inv, 45, pageBtn(viewer, "skills.main.natural", Material.FEATHER, "&aNatural",
                         "&7Potential · Flight · Meditation · Jump · Sprint"),
                 SlotAction.page("core"));
-        put(holder, inv, 46, pageBtn(viewer, Material.AMETHYST_SHARD, "&dSaga",
+        put(holder, inv, 46, pageBtn(viewer, "skills.main.saga", Material.AMETHYST_SHARD, "&dSaga",
                         "&7Saga unlocks · Defense Pen · Healing Red · Ki skills"),
                 SlotAction.page("saga"));
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
@@ -264,16 +264,25 @@ public final class SkillsChestGui implements Listener {
     }
 
     private static ItemStack pageBtn(Player player, Material mat, String name, String... tips) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
+        return pageBtn(player, null, mat, name, tips);
+    }
+
+    private static ItemStack pageBtn(Player player, String key, Material mat, String name, String... tips) {
+        List<String> defaults = new ArrayList<>();
         if (tips != null) {
             for (String tip : tips) {
                 if (tip != null) {
-                    lore.add(tip);
+                    defaults.add(tip);
                 }
             }
         }
-        return item(mat, name, lore);
+        if (key == null || key.isBlank()) {
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.addAll(defaults);
+            return item(mat, name, lore);
+        }
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, defaults));
     }
 
     private static ItemStack hubBtn() {

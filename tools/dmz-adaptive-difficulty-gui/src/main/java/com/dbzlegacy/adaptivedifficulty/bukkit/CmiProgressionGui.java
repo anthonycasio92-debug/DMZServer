@@ -221,12 +221,13 @@ public final class CmiProgressionGui {
                     lore.add("&eClick · Android tools");
                 }
                 if (staff) {
-                    gui.addButton(pageBtn(slots[i], Material.IRON_INGOT, "&bAndroid Tools",
-                            "android_panel", lore.toArray(new String[0])));
+                    gui.addButton(pageBtn(slots[i], "progression.race.android_tools", Material.IRON_INGOT,
+                            "&bAndroid Tools", "android_panel", lore.toArray(new String[0])));
                 } else {
-                    CMIGuiButton btn = new CMIGuiButton(slots[i], Material.IRON_INGOT, "&bAndroid");
+                    CMIGuiButton btn = new CMIGuiButton(slots[i], Material.IRON_INGOT,
+                            GuiTooltips.name("progression.race.android_tools", "&bAndroid"));
                     btn.lockField();
-                    btn.addLore(lore);
+                    btn.addLore(GuiTooltips.buttonLore("progression.race.android_tools", lore));
                     gui.addButton(btn);
                 }
                 continue;
@@ -242,12 +243,13 @@ public final class CmiProgressionGui {
                     lore.add("&eClick · start / end boost");
                 }
                 if (staff) {
-                    gui.addButton(pageBtn(slots[i], Material.GOLDEN_APPLE, "&6Global TP Boost",
-                            "boost_panel", lore.toArray(new String[0])));
+                    gui.addButton(pageBtn(slots[i], "progression.tp.boost_panel", Material.GOLDEN_APPLE,
+                            "&6Global TP Boost", "boost_panel", lore.toArray(new String[0])));
                 } else {
-                    CMIGuiButton btn = new CMIGuiButton(slots[i], Material.GOLDEN_APPLE, "&6Global TP Boost");
+                    CMIGuiButton btn = new CMIGuiButton(slots[i], Material.GOLDEN_APPLE,
+                            GuiTooltips.name("progression.tp.boost_panel", "&6Global TP Boost"));
                     btn.lockField();
-                    btn.addLore(lore);
+                    btn.addLore(GuiTooltips.buttonLore("progression.tp.boost_panel", lore));
                     gui.addButton(btn);
                 }
                 continue;
@@ -263,27 +265,31 @@ public final class CmiProgressionGui {
                 lore.add("");
                 lore.add("&eClick to toggle");
             }
+            Map<String, String> flagVars = Map.of(
+                    "title", info[0],
+                    "status", on ? "ON" : "OFF",
+                    "desc", info[1]);
+            String flagTitle = (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF");
             if (staff) {
-                gui.addButton(actionBtn(slots[i],
+                gui.addButton(actionBtn(slots[i], "progression." + page + ".flag",
                         on ? Material.LIME_DYE : Material.GRAY_DYE,
-                        (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF"),
-                        "flag", key, page, lore));
+                        flagTitle, "flag", key, page, lore, flagVars));
             } else {
                 CMIGuiButton btn = new CMIGuiButton(slots[i],
                         on ? Material.LIME_DYE : Material.GRAY_DYE,
-                        (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF"));
+                        GuiTooltips.name("progression." + page + ".flag", flagTitle));
                 btn.lockField();
-                btn.addLore(lore);
+                btn.addLore(GuiTooltips.buttonLore("progression." + page + ".flag", lore, flagVars, null));
                 gui.addButton(btn);
             }
         }
 
         if ("fabled".equals(page) && staff) {
-            gui.addButton(pageBtn(31, Material.AMETHYST_SHARD, "&dFabled Subflags", "flags_fabled",
-                    "&7Energy, TP/SP, race class, etc."));
+            gui.addButton(pageBtn(31, "progression.fabled.subflags", Material.AMETHYST_SHARD, "&dFabled Subflags",
+                    "flags_fabled", "&7Energy, TP/SP, race class, etc."));
         }
 
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(pageBtn(36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
@@ -301,26 +307,27 @@ public final class CmiProgressionGui {
                 "&8/progression boost start <mult> <min>",
                 "&8/progression boost end"));
         gui.addButton(header);
-        gui.addButton(actionBtn(19, Material.GOLD_NUGGET, "&e1.25x · 30m",
+        gui.addButton(actionBtn(19, "progression.boost.n125_30", Material.GOLD_NUGGET, "&e1.25x · 30m",
                 "boost", "1.25:30", "boost_panel",
                 List.of("&7Start 1.25x for 30 minutes", "", "&eClick to start")));
-        gui.addButton(actionBtn(20, Material.GOLD_INGOT, "&e1.5x · 30m",
+        gui.addButton(actionBtn(20, "progression.boost.n15_30", Material.GOLD_INGOT, "&e1.5x · 30m",
                 "boost", "1.5:30", "boost_panel",
                 List.of("&7Start 1.5x for 30 minutes", "", "&eClick to start")));
-        gui.addButton(actionBtn(21, Material.GOLD_BLOCK, "&62x · 30m",
+        gui.addButton(actionBtn(21, "progression.boost.n2_30", Material.GOLD_BLOCK, "&62x · 30m",
                 "boost", "2:30", "boost_panel",
                 List.of("&7Start 2x for 30 minutes", "", "&eClick to start")));
-        gui.addButton(actionBtn(22, Material.GOLD_BLOCK, "&62x · 60m",
+        gui.addButton(actionBtn(22, "progression.boost.n2_60", Material.GOLD_BLOCK, "&62x · 60m",
                 "boost", "2:60", "boost_panel",
                 List.of("&7Start 2x for 60 minutes", "", "&eClick to start")));
-        gui.addButton(actionBtn(23, Material.CLOCK, "&e3x · 30m",
+        gui.addButton(actionBtn(23, "progression.boost.n3_30", Material.CLOCK, "&e3x · 30m",
                 "boost", "3:30", "boost_panel",
                 List.of("&7Start 3x for 30 minutes", "", "&eClick to start")));
-        gui.addButton(actionBtn(25, Material.BARRIER, "&cEnd Boost",
+        gui.addButton(actionBtn(25, "progression.boost.end", Material.BARRIER, "&cEnd Boost",
                 "boost", "end", "boost_panel",
                 List.of("&7Stop the active global TP boost", "", "&eClick to end")));
-        gui.addButton(pageBtn(31, Material.CLOCK, "&7Refresh Status", "boost_panel", "&7Reload this panel"));
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "tp", "&7TP Gains"));
+        gui.addButton(pageBtn(31, "progression.boost.refresh", Material.CLOCK, "&7Refresh Status", "boost_panel",
+                "&7Reload this panel"));
+        gui.addButton(pageBtn(36, "progression.boost.back", Material.ARROW, "&7Back", "tp", "&7TP Gains"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
@@ -335,17 +342,17 @@ public final class CmiProgressionGui {
                 "&7Convert · remove Android upgrade",
                 "&8/progression android · android remove"));
         gui.addButton(header);
-        gui.addButton(pageBtn(20, Material.NETHERITE_INGOT, "&aConvert to Android",
+        gui.addButton(pageBtn(20, "progression.android.convert", Material.NETHERITE_INGOT, "&aConvert to Android",
                 "android_convert",
                 "&7Upgrade a player via Dr. Gero path",
                 "&8Human → androidforms.androidbase",
                 "", "&eClick · choose player"));
-        gui.addButton(pageBtn(24, Material.REDSTONE, "&cRemove Android",
+        gui.addButton(pageBtn(24, "progression.android.remove", Material.REDSTONE, "&cRemove Android",
                 "android_remove",
                 "&7Restore normal forms (CNPC script parity)",
                 "&8Confirm within 10s by clicking again",
                 "", "&eClick · choose player"));
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "race", "&7Race section"));
+        gui.addButton(pageBtn(36, "progression.android.back", Material.ARROW, "&7Back", "race", "&7Race section"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
@@ -364,7 +371,8 @@ public final class CmiProgressionGui {
                         ? "&8/progression android remove [player]"
                         : "&8/progression android remove"));
         gui.addButton(header);
-        gui.addButton(actionBtn(staff ? 8 : 22, Material.NETHERITE_SCRAP, "&cRemove Android Upgrade",
+        gui.addButton(actionBtn(staff ? 8 : 22, "progression.android.remove_self", Material.NETHERITE_SCRAP,
+                "&cRemove Android Upgrade",
                 "android_remove", player.getName(), "android_remove",
                 List.of("&7Remove the Android upgrade",
                         "&7Race, stats, and progression stay",
@@ -391,11 +399,14 @@ public final class CmiProgressionGui {
                         "&8or /progression android remove <name>"));
                 gui.addButton(empty);
             }
-            gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "android_panel", "&7Android tools"));
+            gui.addButton(pageBtn(36, "progression.android.remove_back", Material.ARROW, "&7Back",
+                    "android_panel", "&7Android tools"));
         } else {
-            CMIGuiButton hub = new CMIGuiButton(36, Material.ARROW, "&7Back");
+            CMIGuiButton hub = new CMIGuiButton(36, Material.ARROW,
+                    GuiTooltips.name("progression.android.remove_back_hub", "&7Back"));
             hub.lockField();
-            hub.addLore(List.of("", "&7Legacy Mechanics hub"));
+            hub.addLore(GuiTooltips.buttonLore("progression.android.remove_back_hub",
+                    List.of("&7Legacy Mechanics hub")));
             hub.addCommand("lmdo lm open hub");
             hub.setCloseInv(true);
             gui.addButton(hub);
@@ -414,7 +425,8 @@ public final class CmiProgressionGui {
                 "&7Human → androidforms.androidbase",
                 "&8/progression android [player]"));
         gui.addButton(header);
-        gui.addButton(actionBtn(8, Material.NETHERITE_INGOT, "&aConvert Yourself",
+        gui.addButton(actionBtn(8, "progression.android.convert_self", Material.NETHERITE_INGOT,
+                "&aConvert Yourself",
                 "android", player.getName(), "android_convert",
                 List.of("&7Apply conversion to you", "", "&eClick to convert")));
         List<Player> online = GuiPlayerPicker.onlineExcept(player);
@@ -438,7 +450,8 @@ public final class CmiProgressionGui {
                     "&8or /progression android <name>"));
             gui.addButton(empty);
         }
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "android_panel", "&7Android tools"));
+        gui.addButton(pageBtn(36, "progression.android.convert_back", Material.ARROW, "&7Back", "android_panel",
+                "&7Android tools"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
@@ -473,17 +486,21 @@ public final class CmiProgressionGui {
             for (int g = 1; g < group.length && si < slots.length; g++) {
                 String key = group[g];
                 boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
-                gui.addButton(actionBtn(slots[si++],
+                Map<String, String> flagVars = Map.of(
+                        "title", key,
+                        "status", on ? "ON" : "OFF",
+                        "desc", stripSection(sectionTitle));
+                gui.addButton(actionBtn(slots[si++], "progression.admin.flag",
                         on ? Material.LIME_DYE : Material.GRAY_DYE,
                         (on ? "&a" : "&8") + key + (on ? " ON" : " OFF"),
                         "flag", key, "admin",
-                        List.of("&8" + stripSection(sectionTitle), "&7Click to toggle")));
+                        List.of("&8" + stripSection(sectionTitle), "&7Click to toggle " + key), flagVars));
             }
         }
 
-        gui.addButton(pageBtn(47, Material.ENCHANTED_BOOK, "&dFabled Subflags", "flags_fabled",
-                "&7Energy, TP/SP, race class, etc."));
-        gui.addButton(pageBtn(45, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(pageBtn(47, "progression.fabled.subflags", Material.ENCHANTED_BOOK, "&dFabled Subflags",
+                "flags_fabled", "&7Energy, TP/SP, race class, etc."));
+        gui.addButton(pageBtn(45, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(hubBtn(49));
         gui.addButton(closeBtn(53));
         fillEmpty(gui, 6);
@@ -502,14 +519,19 @@ public final class CmiProgressionGui {
         for (int i = 0; i < FABLED_FLAG_KEYS.length && i < slots.length; i++) {
             String key = FABLED_FLAG_KEYS[i];
             boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
-            gui.addButton(actionBtn(slots[i],
+            Map<String, String> flagVars = Map.of(
+                    "title", key,
+                    "status", on ? "ON" : "OFF",
+                    "desc", "Fabled");
+            gui.addButton(actionBtn(slots[i], "progression.fabled.flag",
                     on ? Material.LIME_DYE : Material.GRAY_DYE,
                     (on ? "&a" : "&8") + key + (on ? " ON" : " OFF"),
                     "flag", key, "flags_fabled",
-                    List.of("&8Fabled", "&7Click to toggle")));
+                    List.of("&8Fabled", "&7Click to toggle " + key), flagVars));
         }
 
-        gui.addButton(pageBtn(36, Material.ARROW, "&7Back", "admin", "&7Return to Flags"));
+        gui.addButton(pageBtn(36, "progression.fabled.back", Material.ARROW, "&7Back", "admin",
+                "&7Return to Flags"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
@@ -568,12 +590,24 @@ public final class CmiProgressionGui {
 
     private static CMIGuiButton actionBtn(
             int slot, Material mat, String name, String action, String arg, String returnPage, List<String> tip) {
-        CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
+        return actionBtn(slot, null, mat, name, action, arg, returnPage, tip, null);
+    }
+
+    private static CMIGuiButton actionBtn(
+            int slot, String key, Material mat, String name, String action, String arg, String returnPage,
+            List<String> tip) {
+        return actionBtn(slot, key, mat, name, action, arg, returnPage, tip, null);
+    }
+
+    private static CMIGuiButton actionBtn(
+            int slot, String key, Material mat, String name, String action, String arg, String returnPage,
+            List<String> tip, Map<String, String> vars) {
+        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name);
+        CMIGuiButton btn = new CMIGuiButton(slot, mat, display);
         btn.lockField();
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(tip);
-        btn.addLore(lore);
+        btn.addLore(key == null || key.isBlank()
+                ? withBlank(tip)
+                : GuiTooltips.buttonLore(key, tip, vars, null));
         btn.addCommand("lmdo progression " + action + " " + arg + " " + returnPage);
         return btn;
     }

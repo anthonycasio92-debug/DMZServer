@@ -143,15 +143,17 @@ public final class PrestigeChestGui implements Listener {
         putWallet(holder, inv, viewer, subject, "turnin", "&e&lWallet", null);
 
         int held = parseInt(ph.get("held"), 0);
-        putTurnIn(holder, inv, 19, 1, held, ph);
-        putTurnIn(holder, inv, 21, 3, held, ph);
-        putTurnIn(holder, inv, 23, 5, held, ph);
-        List<String> allLore = new ArrayList<>();
-        allLore.add("");
-        allLore.add("&7Turn in all &6" + held + " &7held");
-        allLore.add("&7Gain &e" + ph.getOrDefault("turnin_all_points", "0") + " &7points");
-        allLore.addAll(GuiBoardHelper.tips(viewer, "&7+1 bonus point per 3 turned in"));
-        put(holder, inv, 25, item(Material.GOLD_BLOCK, "&6Turn In All", allLore),
+        putTurnIn(viewer, holder, inv, 19, 1, held, ph);
+        putTurnIn(viewer, holder, inv, 21, 3, held, ph);
+        putTurnIn(viewer, holder, inv, 23, 5, held, ph);
+        Map<String, String> allVars = Map.of(
+                "held", String.valueOf(held),
+                "gain", ph.getOrDefault("turnin_all_points", "0"));
+        List<String> allDefaults = List.of(
+                "&7Turn in all &6{held} &7held",
+                "&7Gain &e{gain} &7points");
+        put(holder, inv, 25, tipBtn(viewer, "prestige.turnin.all", Material.GOLD_BLOCK, "&6Turn In All",
+                allDefaults, allVars, GuiBoardHelper.tips(viewer, "&7+1 bonus point per 3 turned in")),
                 held > 0 ? SlotAction.act("turnin", "all", "turnin") : null);
 
         put(holder, inv, 27, backBtn(), SlotAction.page("main"));
@@ -161,20 +163,21 @@ public final class PrestigeChestGui implements Listener {
     }
 
     private void putTurnIn(
-            Holder holder, Inventory inv, int slot, int amount, int held, Map<String, String> ph
+            Player viewer, Holder holder, Inventory inv, int slot, int amount, int held, Map<String, String> ph
     ) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add("&7Spend &6" + amount + " &7held prestige" + (amount == 1 ? "" : "s"));
-        lore.add("&7Gain &e" + ph.getOrDefault("turnin_" + amount + "_points", "0") + " &7points");
-        if (amount >= 3) {
-            lore.add("&aIncludes bonus for packs of 3");
-        }
+        Map<String, String> vars = Map.of(
+                "amount", String.valueOf(amount),
+                "gain", ph.getOrDefault("turnin_" + amount + "_points", "0"),
+                "held", String.valueOf(held));
+        List<String> defaults = List.of(
+                "&7Spend &6{amount} &7held prestige" + (amount == 1 ? "" : "s"),
+                "&7Gain &e{gain} &7points");
+        List<String> extra = amount >= 3 ? List.of("&aIncludes bonus for packs of 3") : null;
         boolean ok = held >= amount;
-        put(holder, inv, slot, item(
+        put(holder, inv, slot, tipBtn(viewer, "prestige.turnin.amount",
                 ok ? Material.GOLD_INGOT : Material.GRAY_DYE,
                 (ok ? "&eTurn In &f" : "&8Need &f") + amount,
-                lore),
+                defaults, vars, extra),
                 ok ? SlotAction.act("turnin", String.valueOf(amount), "turnin") : null);
     }
 
@@ -233,14 +236,17 @@ public final class PrestigeChestGui implements Listener {
         put(holder, inv, 45, backBtn(), SlotAction.page("main"));
         if (page > 0) {
             String prev = page == 1 ? "shop" : ("shop" + page);
-            put(holder, inv, 48, tipBtn(viewer, Material.ARROW, "&7« Prev",
-                    List.of("&7Page " + page + "/" + pages)),
+            Map<String, String> prevVars = Map.of("page", String.valueOf(page), "pages", String.valueOf(pages));
+            put(holder, inv, 48, tipBtn(viewer, "prestige.shop.prev", Material.ARROW, "&7« Prev",
+                    List.of("&7Page {page}/{pages}"), prevVars),
                     SlotAction.page(prev));
         }
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         if (page + 1 < pages) {
-            put(holder, inv, 50, tipBtn(viewer, Material.ARROW, "&7Next »",
-                    List.of("&7Page " + (page + 2) + "/" + pages)),
+            Map<String, String> nextVars = Map.of(
+                    "page", String.valueOf(page + 2), "pages", String.valueOf(pages));
+            put(holder, inv, 50, tipBtn(viewer, "prestige.shop.next", Material.ARROW, "&7Next »",
+                    List.of("&7Page {page}/{pages}"), nextVars),
                     SlotAction.page("shop" + (page + 2)));
         }
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
@@ -289,15 +295,19 @@ public final class PrestigeChestGui implements Listener {
     ) {
         String bought = ph.getOrDefault("skill_" + id, "0");
         String max = ph.getOrDefault("skill_" + id + "_max", "10");
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add("&7Prestige floor: &f" + bought + "&7/&f" + max);
-        lore.add("&7Cost: &e1 &7point → &a+"
-                + ("potentialunlock".equalsIgnoreCase(id) ? "2" : "1")
-                + " &7level"
-                + ("potentialunlock".equalsIgnoreCase(id) ? "s" : ""));
-        lore.add("&aPermanent &8· survives prestige reset");
-        put(holder, inv, slot, item(mat, "&a" + label, lore),
+        String gainLevels = "potentialunlock".equalsIgnoreCase(id) ? "2" : "1";
+        Map<String, String> vars = Map.of(
+                "label", label,
+                "bought", bought,
+                "max", max,
+                "gain_levels", gainLevels);
+        List<String> defaults = List.of(
+                "&7Prestige floor: &f{bought}&7/&f{max}",
+                "&7Cost: &e1 &7point → &a+{gain_levels} &7level" + ("1".equals(gainLevels) ? "" : "s"),
+                "&aPermanent &8· survives prestige reset");
+        put(holder, inv, slot, item(mat,
+                GuiTooltips.name("prestige.shop.skill", "&a" + label),
+                GuiTooltips.buttonLore("prestige.shop.skill", defaults, vars, null)),
                 SlotAction.act("skill", id, holder.page));
     }
 
@@ -313,39 +323,46 @@ public final class PrestigeChestGui implements Listener {
         boolean hasMajin = "true".equalsIgnoreCase(ph.getOrDefault("majin", "false"));
         boolean hasMutant = "true".equalsIgnoreCase(ph.getOrDefault("mutant", "false"));
         String cost = ph.getOrDefault("form_cost", "5");
-
-        List<String> majinLore = new ArrayList<>();
-        majinLore.add("");
-        majinLore.add(hasMajin ? "&aOwned" : "&7Cost: &e" + cost + " &7points");
-        if (hasMutant && !hasMajin) {
-            majinLore.add("&8Buying removes Mutant (no refund)");
-        }
-        majinLore.add("&aPermanent purchase &8· only one at a time");
-        put(holder, inv, 20, item(
-                hasMajin ? Material.LIME_DYE : Material.PINK_DYE,
-                hasMajin ? "&aPermanent Majin" : "&dBuy Permanent Majin",
-                majinLore),
-                hasMajin ? null : SlotAction.act("majin", "0", "forms"));
-
-        List<String> mutantLore = new ArrayList<>();
-        mutantLore.add("");
-        mutantLore.add(hasMutant ? "&aOwned" : "&7Cost: &e" + cost + " &7points");
-        if (hasMajin && !hasMutant) {
-            mutantLore.add("&8Buying removes Majin (no refund)");
-        }
-        mutantLore.add("&aPermanent purchase &8· only one at a time");
-        put(holder, inv, 22, item(
-                hasMutant ? Material.LIME_DYE : Material.SLIME_BALL,
-                hasMutant ? "&aPermanent Mutant" : "&aBuy Permanent Mutant",
-                mutantLore),
-                hasMutant ? null : SlotAction.act("mutant", "0", "forms"));
+        Map<String, String> costVars = Map.of("cost", cost);
 
         if (hasMajin) {
-            put(holder, inv, 24, tipBtn(viewer, Material.BARRIER, "&cUnpurchase Majin",
+            put(holder, inv, 20, tipBtn(viewer, "prestige.effects.majin_owned", Material.LIME_DYE,
+                    "&aPermanent Majin",
+                    List.of("&aOwned", "&aPermanent purchase &8· only one at a time"), costVars));
+        } else {
+            List<String> majinDefaults = new ArrayList<>();
+            majinDefaults.add("&7Cost: &e{cost} &7points");
+            if (hasMutant) {
+                majinDefaults.add("&8Buying removes Mutant (no refund)");
+            }
+            majinDefaults.add("&aPermanent purchase &8· only one at a time");
+            put(holder, inv, 20, tipBtn(viewer, "prestige.effects.majin", Material.PINK_DYE,
+                    "&dBuy Permanent Majin", majinDefaults, costVars),
+                    SlotAction.act("majin", "0", "forms"));
+        }
+
+        if (hasMutant) {
+            put(holder, inv, 22, tipBtn(viewer, "prestige.effects.mutant_owned", Material.LIME_DYE,
+                    "&aPermanent Mutant",
+                    List.of("&aOwned", "&aPermanent purchase &8· only one at a time"), costVars));
+        } else {
+            List<String> mutantDefaults = new ArrayList<>();
+            mutantDefaults.add("&7Cost: &e{cost} &7points");
+            if (hasMajin) {
+                mutantDefaults.add("&8Buying removes Majin (no refund)");
+            }
+            mutantDefaults.add("&aPermanent purchase &8· only one at a time");
+            put(holder, inv, 22, tipBtn(viewer, "prestige.effects.mutant", Material.SLIME_BALL,
+                    "&aBuy Permanent Mutant", mutantDefaults, costVars),
+                    SlotAction.act("mutant", "0", "forms"));
+        }
+
+        if (hasMajin) {
+            put(holder, inv, 24, tipBtn(viewer, "prestige.effects.unmajin", Material.BARRIER, "&cUnpurchase Majin",
                     List.of("&7Removes Majin · &cno point refund")),
                     SlotAction.act("unmajin", "0", "forms"));
         } else if (hasMutant) {
-            put(holder, inv, 24, tipBtn(viewer, Material.BARRIER, "&cUnpurchase Mutant",
+            put(holder, inv, 24, tipBtn(viewer, "prestige.effects.unmutant", Material.BARRIER, "&cUnpurchase Mutant",
                     List.of("&7Removes Mutant · &cno point refund")),
                     SlotAction.act("unmutant", "0", "forms"));
         }
@@ -368,14 +385,22 @@ public final class PrestigeChestGui implements Listener {
         int bt = parseInt(ph.get("breakthroughs"), 0);
         int max = parseInt(ph.get("breakthroughs_max"), 5);
         boolean canBuy = bt < max;
+        String levelCapFmt = ph.getOrDefault("level_cap_fmt", "100000");
+        String nextCost = ph.getOrDefault("next_breakthrough_cost", "15");
+        Map<String, String> capVars = Map.of(
+                "level_cap", levelCapFmt,
+                "breakthroughs", String.valueOf(bt),
+                "max", String.valueOf(max),
+                "cost", nextCost);
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.add("&7Your level cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"));
+        lore.add("&7Your level cap: &f" + levelCapFmt);
         lore.add("&7Breakthroughs: &f" + bt + "&7/&f" + max);
         lore.add("&8DMZ maxValue 150000 — soft-lock holds others at their cap");
         if (canBuy) {
-            lore.add("&7Next: &a+10,000 &7personal cap for &e"
-                    + ph.getOrDefault("next_breakthrough_cost", "15") + " &7points");
+            lore.addAll(GuiTooltips.lore("prestige.cap.buy",
+                    List.of("&7Next: &a+10,000 &7personal cap for &e{cost} &7points"),
+                    capVars));
             lore.add("&8Then keep leveling with TP into the new cap");
             lore.add("&8Future prestige Need scales up to your new cap");
             lore.add("&8Costs: 15 → 20 → 25 → 30 → 35");
@@ -384,7 +409,7 @@ public final class PrestigeChestGui implements Listener {
         }
         put(holder, inv, 22, item(
                 canBuy ? Material.NETHER_STAR : Material.BEACON,
-                canBuy ? "&bBuy Breakthrough" : "&aCap Maxed",
+                canBuy ? GuiTooltips.name("prestige.cap.buy", "&bBuy Breakthrough") : "&aCap Maxed",
                 lore),
                 canBuy ? SlotAction.act("breakthrough", "0", "cap") : null);
 
@@ -476,19 +501,23 @@ public final class PrestigeChestGui implements Listener {
             Holder holder, Inventory inv, Player viewer, Player subject,
             String page, String title, List<String> overrideLore
     ) {
-        List<String> lore;
         if (overrideLore != null && !overrideLore.isEmpty()) {
-            lore = new ArrayList<>(overrideLore);
+            List<String> lore = new ArrayList<>(overrideLore);
             if (lore.isEmpty() || !lore.get(0).isBlank()) {
                 lore.add(0, "");
             }
-        } else {
-            lore = prependBlank(toAmp(ForgeBridge.prestigeLines(subject, page == null ? "main" : page)));
+            put(holder, inv, 4, item(Material.GOLD_INGOT, title, lore));
+            return;
         }
+        List<String> lore = prependBlank(toAmp(ForgeBridge.prestigeLines(subject, page == null ? "main" : page)));
         // Emphasize wallet balance at the top of the status block.
         Map<String, String> ph = ForgeBridge.prestigePlaceholders(subject);
-        lore.add(1, "&6Wallet: &e" + ph.getOrDefault("points", "0") + " &7prestige points");
-        put(holder, inv, 4, item(Material.GOLD_INGOT, title, lore));
+        Map<String, String> vars = Map.of("points", ph.getOrDefault("points", "0"));
+        List<String> walletLine = GuiTooltips.lore("prestige.main.wallet",
+                List.of("&6Wallet: &e{points} &7prestige points"), vars);
+        lore.add(1, walletLine.isEmpty() ? "" : walletLine.get(0));
+        put(holder, inv, 4, item(Material.GOLD_INGOT,
+                GuiTooltips.name("prestige.main.wallet", title), lore));
     }
 
     private static int parseInt(String raw, int fallback) {
@@ -614,15 +643,25 @@ public final class PrestigeChestGui implements Listener {
             Player player, String key, Material mat, String name, List<String> tip,
             Map<String, String> vars
     ) {
+        return tipBtn(player, key, mat, name, tip, vars, null);
+    }
+
+    private static ItemStack tipBtn(
+            Player player, String key, Material mat, String name, List<String> tip,
+            Map<String, String> vars, List<String> extra
+    ) {
         if (key == null || key.isBlank()) {
             List<String> lore = new ArrayList<>();
             lore.add("");
             if (tip != null) {
                 lore.addAll(tip);
             }
+            if (extra != null) {
+                lore.addAll(extra);
+            }
             return item(mat, name, lore);
         }
-        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip, vars, null));
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip, vars, extra));
     }
 
     private static ItemStack hubBtn() {

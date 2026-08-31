@@ -117,14 +117,16 @@ public final class CmiHubGui {
         boolean on = "true".equalsIgnoreCase(ph.getOrDefault("syslog", "false"));
         String statusLine = ph.getOrDefault("syslog_status", "unknown");
 
-        CMIGuiButton header = new CMIGuiButton(4, Material.CLOCK, "&8&lLogs");
+        CMIGuiButton header = new CMIGuiButton(4, Material.CLOCK,
+                GuiTooltips.name("hub.logs.header", "&8&lLogs"));
         header.lockField();
         List<String> logsHeader = new ArrayList<>();
         logsHeader.add("");
         logsHeader.add("&7System telemetry &f" + (on ? "ON" : "OFF"));
         logsHeader.add("&8" + statusLine.replace('§', '&'));
         logsHeader.add("");
-        logsHeader.addAll(GuiBoardHelper.tips(player, "&7Use buttons below to toggle / flush"));
+        logsHeader.addAll(GuiTooltips.lore("hub.logs.header",
+                GuiBoardHelper.tips(player, "&7Use buttons below to toggle / flush")));
         header.addLore(logsHeader);
         gui.addButton(header);
 
@@ -154,7 +156,7 @@ public final class CmiHubGui {
         gui.addButton(actionBtn(player, 33, "hub.logs.flush", Material.HOPPER, "&eFlush",
                 "syslog", "flush", "logs", List.of("&7Flush log writers")));
 
-        gui.addButton(pageBtn(player, 36, Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(pageBtn(player, 36, "hub.logs.back", Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(44));
         fillFrameOnly(gui, 5);
         GuiFeedback.openCmi(gui);
