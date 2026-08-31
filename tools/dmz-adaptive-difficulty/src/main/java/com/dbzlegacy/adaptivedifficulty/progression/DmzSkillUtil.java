@@ -2,10 +2,17 @@ package com.dbzlegacy.adaptivedifficulty.progression;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dragonminez.common.config.ConfigManager;
+import com.dragonminez.common.config.SkillsConfig;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.skills.Skills;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
 import net.minecraft.server.level.ServerPlayer;
 
 /** Shared DMZ skill sync / level helpers for progression modules. */
@@ -49,18 +56,171 @@ public final class DmzSkillUtil {
         }
     }
 
-    public static int maxLevel(Skills skills, String id, int fallbackCap) {
-        if (skills == null || id == null) {
-            return fallbackCap;
+    /**
+     * Authoritative max from {@code config/dragonminez/skills.json} cost ladder length
+     * (same source DMZ {@code Skills#calculateMaxLevel} uses).
+     */
+    public static int configuredMaxLevel(String id) {
+        if (id == null || id.isBlank()) {
+            return 0;
+        }
+        String key = id.toLowerCase(Locale.ROOT);
+        try {
+            SkillsConfig cfg = ConfigManager.getSkillsConfig();
+            if (cfg == null) {
+                return 0;
+            }
+            var costs = cfg.getSkillCosts(key);
+            if (costs == null || costs.getCosts() == null || costs.getCosts().isEmpty()) {
+                return 0;
+            }
+            int max = costs.getCosts().size();
+            // Match DMZ calculateMaxLevel: potentialunlock hard-capped at 30.
+            if ("potentialunlock".equals(key)) {
+                return Math.min(max, 30);
+            }
+            return Math.min(max, 50);
+        } catch (Throwable ignored) {
+            return 0;
+        }
+    }
+
+    /** True when {@code id} is a DMZ form-skill ladder (not prestige-purchasable). */
+    public static boolean isFormSkill(String id) {
+        if (id == null || id.isBlank()) {
+            return false;
+        }
+        String key = id.toLowerCase(Locale.ROOT);
+        try {
+            SkillsConfig cfg = ConfigManager.getSkillsConfig();
+            if (cfg == null || cfg.getFormSkills() == null) {
+                return false;
+            }
+            for (String form : cfg.getFormSkills()) {
+                if (form != null && key.equals(form.toLowerCase(Locale.ROOT))) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
+    }
+
+    /**
+     * All non-form skill ids from DMZ skills config (stable sorted order).
+     * Used by prestige permanent skill shop + Skill Check max resolution.
+     */
+    public static List<String> allNonFormSkillIds() {
+        LinkedHashSet<String> out = new LinkedHashSet<>();
+        // Prefer natural/saga order first for shop UX.
+        for (String id : new String[]{
+                "meditation", "fly", "sprint", "jump", "potentialunlock",
+                "kicontrol", "kimanipulation", "kisense",
+                "defense_penetration", "healing_reduction",
+                "instant_transmission", "ki_infusion", "kiboost", "kiprotection",
+                "kaioken", "fusion", "ultimate"
+        }) {
+            if (configuredMaxLevel(id) > 0 && !isFormSkill(id)) {
+                out.add(id);
+            }
         }
         try {
-            int max = skills.getMaxSkillLevel(id);
-            if (max <= 0) {
-                return fallbackCap;
+            SkillsConfig cfg = ConfigManager.getSkillsConfig();
+            if (cfg != null && cfg.getSkills() != null) {
+                List<String> keys = new ArrayList<>(cfg.getSkills().keySet());
+                Collections.sort(keys);
+                for (String raw : keys) {
+                    if (raw == null || raw.isBlank()) {
+                        continue;
+                    }
+                    String id = raw.toLowerCase(Locale.ROOT);
+                    if (isFormSkill(id)) {
+                        continue;
+                    }
+                    if (configuredMaxLevel(id) > 0) {
+                        out.add(id);
+                    }
+                }
             }
-            return Math.min(max, fallbackCap);
         } catch (Throwable ignored) {
-            return fallbackCap;
+        }
+        return List.copyOf(out);
+    }
+
+    public static String prettySkillLabel(String id) {
+        if (id == null || id.isBlank()) {
+            return "Skill";
+        }
+        return switch (id.toLowerCase(Locale.ROOT)) {
+            case "potentialunlock" -> "Potential Unlock";
+            case "fly" -> "Fly";
+            case "meditation" -> "Meditation";
+            case "sprint" -> "Sprint";
+            case "jump" -> "Jump";
+            case "kicontrol" -> "Ki Control";
+            case "kimanipulation" -> "Ki Manipulation";
+            case "kisense" -> "Ki Sense";
+            case "defense_penetration" -> "Defense Penetration";
+            case "healing_reduction" -> "Healing Reduction";
+            case "instant_transmission" -> "Instant Transmission";
+            case "ki_infusion" -> "Ki Infusion";
+            case "kiboost" -> "Ki Boost";
+            case "kiprotection" -> "Ki Protection";
+            case "kaioken" -> "Kaioken";
+            case "fusion" -> "Fusion";
+            case "ultimate" -> "Ultimate";
+            default -> {
+                String[] parts = id.toLowerCase(Locale.ROOT).split("[_\\-]+");
+                StringBuilder sb = new StringBuilder();
+                for (String p : parts) {
+                    if (p.isEmpty()) {
+                        continue;
+                    }
+                    if (sb.length() > 0) {
+                        sb.append(' ');
+                    }
+                    sb.append(Character.toUpperCase(p.charAt(0)));
+                    if (p.length() > 1) {
+                        sb.append(p.substring(1));
+                    }
+                }
+                yield sb.length() == 0 ? id : sb.toString();
+            }
+        };
+    }
+
+    /**
+     * Best-known max: live skill map after refresh, else skills.json ladder, else fallback.
+     * Does <b>not</b> clamp a live/config max down to {@code fallbackCap}.
+     */
+    public static int maxLevel(Skills skills, String id, int fallbackCap) {
+        if (id == null) {
+            return Math.max(0, fallbackCap);
+        }
+        refreshMaxes(skills);
+        try {
+            if (skills != null) {
+                int max = skills.getMaxSkillLevel(id);
+                if (max > 0) {
+                    return max;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        int cfg = configuredMaxLevel(id);
+        if (cfg > 0) {
+            return cfg;
+        }
+        return Math.max(0, fallbackCap);
+    }
+
+    public static void refreshMaxes(Skills skills) {
+        if (skills == null) {
+            return;
+        }
+        try {
+            skills.refreshNonFormSkillMaxLevels();
+        } catch (Throwable ignored) {
         }
     }
 
@@ -81,7 +241,11 @@ public final class DmzSkillUtil {
             return;
         }
         try {
-            skills.registerDefaultSkill(id, max);
+            int want = max > 0 ? max : configuredMaxLevel(id);
+            if (want <= 0) {
+                want = 10;
+            }
+            skills.registerDefaultSkill(id, want);
             skills.refreshNonFormSkillMaxLevels();
         } catch (Throwable ignored) {
         }

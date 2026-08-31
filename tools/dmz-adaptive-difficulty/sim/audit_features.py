@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.81", 'VERSION = "2.3.81"' in mod)
+    check("VERSION 2.3.82", 'VERSION = "2.3.82"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -876,14 +876,24 @@ def main() -> int:
     check("spend ungated for NPC",
           "spendForNpc" in gui_api_pp.split('"spend"')[1].split('"grant"')[0]
           if '"spend"' in gui_api_pp else False)
+    check("configuredMaxLevel helper", "configuredMaxLevel" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzSkillUtil.java"))
+    check("skillMax prefers skills.json", "configuredMaxLevel(id)" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java"))
+    check("prestige shop all non-form skills", "skillOffers()" in pp and "allNonFormSkillIds" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzSkillUtil.java"))
+    check("kiboost fallback max 4", '"kiboost", "Ki Boost", "§3", 4' in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java"))
+    check("kicontrol fallback max 1", '"kicontrol", "Ki Control", "§3", 1' in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java"))
     check("Chest pages turnin/shop/forms/cap",
           'case "turnin", "points"' in prestige_chest_pp
-          and 'case "shop", "skills"' in prestige_chest_pp
+          and 'p.startsWith("shop")' in prestige_chest_pp
           and 'case "forms", "form"' in prestige_chest_pp
           and 'case "cap", "breakthrough"' in prestige_chest_pp)
     check("CMI pages turnin/shop/forms/cap",
           '"turnin", "points"' in prestige_cmi_pp
-          and '"shop", "skills"' in prestige_cmi_pp
+          and 'p.startsWith("shop")' in prestige_cmi_pp
           and '"forms", "form"' in prestige_cmi_pp
           and '"cap", "breakthrough"' in prestige_cmi_pp)
     check("CMI uses lmdo prestige",

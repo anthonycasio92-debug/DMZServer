@@ -46,10 +46,14 @@ public final class PrestigeChestGui implements Listener {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         Inventory inv = switch (p) {
             case "turnin", "points" -> turnIn(viewer, subject);
-            case "shop", "skills" -> shop(viewer, subject);
             case "forms", "form" -> forms(viewer, subject);
             case "cap", "breakthrough", "breakthroughs" -> cap(viewer, subject);
-            default -> main(viewer, subject);
+            default -> {
+                if (p.startsWith("shop") || p.startsWith("skills")) {
+                    yield shop(viewer, subject, shopPageIndex(p));
+                }
+                yield main(viewer, subject);
+            }
         };
         GuiFeedback.openChest(viewer, inv);
     }
@@ -95,7 +99,8 @@ public final class PrestigeChestGui implements Listener {
                         "&7Balance: &e" + ph.getOrDefault("points", "0"))),
                 SlotAction.page("turnin"));
         put(holder, inv, 24, tipBtn(viewer, Material.EXPERIENCE_BOTTLE, "&aSkill Shop",
-                List.of("&71 point = +1 permanent skill level")),
+                List.of("&71 point = +1 permanent DMZ skill level",
+                        "&7All non-form skills from skills.json")),
                 SlotAction.page("shop"));
         put(holder, inv, 30, tipBtn(viewer, Material.MAGENTA_DYE, "&dForms",
                 List.of("&7Permanent Majin / Mutant (&e5 &7pts)")),
@@ -162,26 +167,107 @@ public final class PrestigeChestGui implements Listener {
                 ok ? SlotAction.act("turnin", String.valueOf(amount), "turnin") : null);
     }
 
-    private Inventory shop(Player viewer, Player subject) {
+    private static int shopPageIndex(String page) {
+        if (page == null || page.isBlank()) {
+            return 0;
+        }
+        String p = page.toLowerCase(Locale.ROOT);
+        if ("shop".equals(p) || "skills".equals(p)) {
+            return 0;
+        }
+        String num = null;
+        if (p.startsWith("shop") && p.length() > 4) {
+            num = p.substring(4);
+        } else if (p.startsWith("skills") && p.length() > 6) {
+            num = p.substring(6);
+        }
+        if (num != null) {
+            try {
+                return Math.max(0, Integer.parseInt(num) - 1);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 0;
+    }
+
+    private Inventory shop(Player viewer, Player subject, int pageIndex) {
         Map<String, String> ph = ForgeBridge.prestigePlaceholders(subject);
-        Holder holder = new Holder("shop");
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Prestige · Skills"));
+        Holder holder = new Holder(pageIndex <= 0 ? "shop" : ("shop" + (pageIndex + 1)));
+        int pages = Math.max(1, parseInt(ph.get("shop_pages"), 1));
+        int page = Math.max(0, Math.min(pages - 1, pageIndex));
+        Inventory inv = Bukkit.createInventory(holder, 54,
+                invTitle(viewer, subject, "&8Prestige · Skills &7(" + (page + 1) + "/" + pages + ")"));
         holder.bind(inv);
-        frame(inv, 45);
+        frame(inv, 54);
 
         put(holder, inv, 4, item(Material.EXPERIENCE_BOTTLE, "&a&lSkill Shop",
                 prependBlank(toAmp(ForgeBridge.prestigeLines(subject, "shop")))));
 
-        putSkill(holder, inv, 19, Material.ENCHANTED_BOOK, "meditation", "Meditation", ph);
-        putSkill(holder, inv, 20, Material.FEATHER, "fly", "Fly", ph);
-        putSkill(holder, inv, 21, Material.SUGAR, "sprint", "Sprint", ph);
-        putSkill(holder, inv, 22, Material.RABBIT_FOOT, "jump", "Jump", ph);
-        putSkill(holder, inv, 23, Material.NETHER_STAR, "potentialunlock", "Potential Unlock", ph);
+        List<String> ids = shopSkillIds(ph);
+        int pageSize = Math.max(1, parseInt(ph.get("shop_page_size"), GuiPlayerPicker.CONTENT_SLOTS.length));
+        int from = page * pageSize;
+        int placed = 0;
+        for (int i = from; i < ids.size() && placed < GuiPlayerPicker.CONTENT_SLOTS.length; i++) {
+            String id = ids.get(i);
+            if (id == null || id.isBlank()) {
+                continue;
+            }
+            String label = ph.getOrDefault("skill_" + id + "_label", prettyId(id));
+            putSkill(holder, inv, GuiPlayerPicker.CONTENT_SLOTS[placed++],
+                    GuiLoreChunks.skillIcon(label), id, label, ph);
+        }
 
-        put(holder, inv, 36, backBtn(), SlotAction.page("main"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
-        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        put(holder, inv, 45, backBtn(), SlotAction.page("main"));
+        if (page > 0) {
+            String prev = page == 1 ? "shop" : ("shop" + page);
+            put(holder, inv, 48, tipBtn(viewer, Material.ARROW, "&7« Prev",
+                    List.of("&7Page " + page + "/" + pages)),
+                    SlotAction.page(prev));
+        }
+        put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        if (page + 1 < pages) {
+            put(holder, inv, 50, tipBtn(viewer, Material.ARROW, "&7Next »",
+                    List.of("&7Page " + (page + 2) + "/" + pages)),
+                    SlotAction.page("shop" + (page + 2)));
+        }
+        put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
         return inv;
+    }
+
+    private static List<String> shopSkillIds(Map<String, String> ph) {
+        List<String> out = new ArrayList<>();
+        String raw = ph.getOrDefault("shop_skill_ids", "");
+        if (raw == null || raw.isBlank()) {
+            // Fallback natural skills if bridge older than catalog.
+            return List.of("meditation", "fly", "sprint", "jump", "potentialunlock");
+        }
+        for (String part : raw.split(",")) {
+            if (part != null && !part.isBlank()) {
+                out.add(part.trim().toLowerCase(Locale.ROOT));
+            }
+        }
+        return out;
+    }
+
+    private static String prettyId(String id) {
+        if (id == null || id.isBlank()) {
+            return "Skill";
+        }
+        String[] parts = id.split("[_\\-]+");
+        StringBuilder sb = new StringBuilder();
+        for (String p : parts) {
+            if (p.isEmpty()) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append(' ');
+            }
+            sb.append(Character.toUpperCase(p.charAt(0)));
+            if (p.length() > 1) {
+                sb.append(p.substring(1));
+            }
+        }
+        return sb.length() == 0 ? id : sb.toString();
     }
 
     private void putSkill(
@@ -196,7 +282,7 @@ public final class PrestigeChestGui implements Listener {
         lore.add("&7Cost: &e1 &7point → &a+1 &7level");
         lore.add("&8Survives prestige reset");
         put(holder, inv, slot, item(mat, "&a" + label, lore),
-                SlotAction.act("skill", id, "shop"));
+                SlotAction.act("skill", id, holder.page));
     }
 
     private Inventory forms(Player viewer, Player subject) {

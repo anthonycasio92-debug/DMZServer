@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.shop;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.InvestedStrength;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.FlightProgression;
@@ -98,6 +99,8 @@ public final class SkillUnlockService {
             out.add("§c[Skill Progress] ERROR: No DMZ skill data found.");
             return out;
         }
+        // Keep live max levels aligned with skills.json before we read them.
+        DmzSkillUtil.refreshMaxes(skills);
         int level = safeLevel(data);
         double kiDamage = safeKi(data);
         double maxEnergy = safeEnergy(data);
@@ -249,7 +252,7 @@ public final class SkillUnlockService {
     private static void appendSaga(List<String> out, Skills skills) {
         out.add("§6§lSaga Skills§r");
         out.add("§8Unlocked by completing skill sagas / story progress.");
-        appendSagaSkill(out, skills, "kicontrol", "Ki Control", "§3", 10,
+        appendSagaSkill(out, skills, "kicontrol", "Ki Control", "§3", 1,
                 "Complete the Saga Story to unlock Ki Control.");
         appendSagaSkill(out, skills, "kimanipulation", "Ki Manipulation", "§9", 10,
                 "Complete the Saga Story to unlock Ki Manipulation.");
@@ -264,11 +267,11 @@ public final class SkillUnlockService {
                 "Complete the Saga Story to unlock Instant Transmission.");
         appendSagaSkill(out, skills, "ki_infusion", "Ki Infusion", "§b", 10,
                 "Complete the Saga Story to unlock Ki Infusion.");
-        appendSagaSkill(out, skills, "kiboost", "Ki Boost", "§3", 10,
+        appendSagaSkill(out, skills, "kiboost", "Ki Boost", "§3", 4,
                 "Complete the Saga Story to unlock Ki Boost.");
         appendSagaSkill(out, skills, "kiprotection", "Ki Protection", "§9", 10,
                 "Complete the Saga Story to unlock Ki Protection.");
-        appendSagaSkill(out, skills, "kaioken", "Kaioken", "§c", 10,
+        appendSagaSkill(out, skills, "kaioken", "Kaioken", "§c", 5,
                 "Unlock via Saiyan saga progress.");
         appendSagaSkill(out, skills, "fusion", "Fusion", "§d", 5,
                 "Unlock via fusion saga progress.");
@@ -414,12 +417,21 @@ public final class SkillUnlockService {
     }
 
     private static int skillMax(Skills skills, String id, int fallback) {
-        try {
-            int max = skills.getMaxSkillLevel(id);
-            return max > 0 ? max : fallback;
-        } catch (Throwable t) {
-            return fallback;
+        // skills.json cost-ladder length is authoritative (kiboost=4, kicontrol=1, …).
+        int cfg = DmzSkillUtil.configuredMaxLevel(id);
+        if (cfg > 0) {
+            return cfg;
         }
+        try {
+            if (skills != null) {
+                int max = skills.getMaxSkillLevel(id);
+                if (max > 0) {
+                    return max;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return fallback;
     }
 
     private static int safeLevel(StatsData data) {

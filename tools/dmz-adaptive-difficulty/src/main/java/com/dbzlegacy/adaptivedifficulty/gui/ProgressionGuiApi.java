@@ -799,11 +799,22 @@ public final class ProgressionGuiApi {
         out.put("majin", PrestigePointsSystem.hasMajin(player) ? "true" : "false");
         out.put("mutant", PrestigePointsSystem.hasMutant(player) ? "true" : "false");
         out.put("form_cost", String.valueOf(PrestigePointsSystem.FORM_COST));
-        for (var offer : PrestigePointsSystem.SKILL_OFFERS.values()) {
+        List<PrestigePointsSystem.SkillOffer> offers = PrestigePointsSystem.skillOffers();
+        StringBuilder ids = new StringBuilder();
+        for (var offer : offers) {
+            if (ids.length() > 0) {
+                ids.append(',');
+            }
+            ids.append(offer.id());
             int bought = PrestigePointsSystem.getPurchasedSkillLevels(player, offer.id());
             out.put("skill_" + offer.id(), String.valueOf(bought));
             out.put("skill_" + offer.id() + "_max", String.valueOf(offer.maxLevel()));
+            out.put("skill_" + offer.id() + "_label", offer.label());
         }
+        out.put("shop_skill_ids", ids.toString());
+        out.put("shop_skill_count", String.valueOf(offers.size()));
+        out.put("shop_pages", String.valueOf(PrestigePointsSystem.skillShopPageCount()));
+        out.put("shop_page_size", String.valueOf(PrestigePointsSystem.SKILL_SHOP_PAGE_SIZE));
         // Turn-in previews
         for (int n : new int[]{1, 3, 5}) {
             out.put("turnin_" + n + "_points", String.valueOf(PrestigePointsSystem.pointsForTurnIn(n)));
@@ -836,7 +847,9 @@ public final class ProgressionGuiApi {
             }
             case "shop", "skills" -> {
                 lore.add("§71 point → +1 permanent DMZ skill level");
-                lore.add("§7Floors survive prestige reset");
+                lore.add("§7All non-form DMZ skills · floors survive prestige");
+                lore.add("§7Catalog: §f" + ph.getOrDefault("shop_skill_count", "0")
+                        + " §7skills · §f" + ph.getOrDefault("shop_pages", "1") + " §7page(s)");
             }
             case "forms", "form" -> {
                 lore.add("§7Permanent Majin / Mutant: §e"
