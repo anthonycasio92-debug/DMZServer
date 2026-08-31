@@ -76,7 +76,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 getLogger().info("Version handshake OK: " + pluginVer);
             }
         }
-        getLogger().info("Registered Bukkit /difficulty /rival /spar /lm /progression /androidify /prestige /skills /skillcheck.");
+        getLogger().info("Registered Bukkit /difficulty /rival /spar /lm /progression /androidify /prestige /padmin /skills /skillcheck.");
     }
 
     /**
@@ -717,7 +717,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if ("androidify".equals(name) || "androidification".equals(name)) {
             return progressionCommandTree.executeAndroidify(sender, args);
         }
-        if ("prestige".equals(name)) {
+        if ("prestige".equals(name) || "padmin".equals(name) || "prestigeadmin".equals(name)) {
+            if ("padmin".equals(name) || "prestigeadmin".equals(name)) {
+                // Dedicated staff command — never contested by Forge /prestige.
+                String[] adminArgs = new String[args.length + 1];
+                adminArgs[0] = "admin";
+                System.arraycopy(args, 0, adminArgs, 1, args.length);
+                return handlePrestige(sender, adminArgs);
+            }
             return handlePrestige(sender, args);
         }
         if ("skills".equals(name)) {
@@ -1139,6 +1146,21 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 String mode = args.length > 2 ? args[2].toLowerCase(Locale.ROOT) : "status";
                 sender.sendMessage(ForgeBridge.syslogCommand(mode));
             }
+            case "prestige", "padmin", "prestigeadmin" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage("§cRun /padmin in-game (or /prestige admin).");
+                    return true;
+                }
+                if (!ForgeBridge.isStaff(player)) {
+                    sender.sendMessage("§cStaff only.");
+                    return true;
+                }
+                String raw = joinArgs(args, 2);
+                if (raw.isBlank()) {
+                    raw = "help";
+                }
+                GuiChat.sendChatResult(player, ForgeBridge.prestigeAdmin(player, raw));
+            }
             case "open" -> {
                 if (!(sender instanceof Player player)) {
                     sender.sendMessage("Players only for open.");
@@ -1251,6 +1273,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§e/lm admin open <difficulty|rival|spar|progression|prestige|skills|hub>");
         sender.sendMessage("§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|prestige|progression|skills]");
         sender.sendMessage("§e/lm admin inspect clear §7— stop inspecting");
+        sender.sendMessage("§e/lm admin prestige … §7— same as /padmin /prestige admin");
+        sender.sendMessage("§e/padmin info [player] §7— prestige admin (chat)");
         sender.sendMessage("§8Also: /difficulty admin gui|inspect <player>");
     }
 
@@ -1296,7 +1320,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             if (raw.isBlank()) {
                 raw = "help";
             }
-            sendMultiline(player, ForgeBridge.prestigeAdmin(player, raw));
+            sendMultilineChat(player, ForgeBridge.prestigeAdmin(player, raw));
             return true;
         }
         if ("do".equals(sub)) {
@@ -1319,7 +1343,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             openPrestigeInventory(player, reopen);
             return true;
         }
-        sendMultiline(player, ForgeBridge.prestigeAdmin(player, "help"));
+        sendMultilineChat(player, ForgeBridge.prestigeAdmin(player, "help"));
         return true;
     }
 
@@ -1341,6 +1365,11 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             raw.append(args[i]);
         }
         return raw.toString();
+    }
+
+    /** Staff slash results — always chat (never GUI feedback swallow). */
+    private static void sendMultilineChat(Player player, String msg) {
+        GuiChat.sendChatResult(player, msg);
     }
 
     private boolean handleSkills(CommandSender sender, String[] args) {

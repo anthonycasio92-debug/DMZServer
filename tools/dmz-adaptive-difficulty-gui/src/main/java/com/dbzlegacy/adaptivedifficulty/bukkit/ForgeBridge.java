@@ -1594,8 +1594,13 @@ public final class ForgeBridge {
         }
         try {
             ensureProgressionResolved(nms.getClass().getClassLoader());
+            // Force re-resolve if a prior boot missed the method (hot jar swap / load order).
             if (prestigeAdminMethod == null) {
-                return "§cPrestige admin API missing — update LegacyMechanics jar to 2.3.90+.";
+                resolvePrestigeAdminMethod(nms.getClass().getClassLoader());
+            }
+            if (prestigeAdminMethod == null) {
+                return "§cPrestige admin API missing — update LegacyMechanics jar to 2.3.90+"
+                        + (resolveError == null || resolveError.isBlank() ? "" : "\n§8" + resolveError);
             }
             Object msg = prestigeAdminMethod.invoke(null, nms, rawArgs == null ? "" : rawArgs);
             return msg == null ? "" : String.valueOf(msg);
@@ -1603,6 +1608,36 @@ public final class ForgeBridge {
             Throwable root = t.getCause() == null ? t : t.getCause();
             return "§cPrestige admin failed: " + root.getClass().getSimpleName()
                     + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    private static void resolvePrestigeAdminMethod(ClassLoader preferred) {
+        try {
+            Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi", preferred);
+            Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+            try {
+                prestigeAdminMethod = api.getMethod("handlePrestigeAdmin", sp, String.class);
+                return;
+            } catch (NoSuchMethodException ignored) {
+            }
+            // Fallback: scan in case classloader ServerPlayer identity differs.
+            for (Method m : api.getMethods()) {
+                if (!"handlePrestigeAdmin".equals(m.getName()) || m.getParameterCount() != 2) {
+                    continue;
+                }
+                Class<?>[] pts = m.getParameterTypes();
+                if (pts[1] == String.class
+                        && pts[0].getName().endsWith("ServerPlayer")) {
+                    prestigeAdminMethod = m;
+                    return;
+                }
+            }
+            resolveError = "handlePrestigeAdmin not found on ProgressionGuiApi";
+            prestigeAdminMethod = null;
+        } catch (Throwable t) {
+            resolveError = "resolve prestigeAdmin: " + t.getClass().getSimpleName()
+                    + (t.getMessage() == null ? "" : " — " + t.getMessage());
+            prestigeAdminMethod = null;
         }
     }
 
@@ -1977,11 +2012,7 @@ public final class ForgeBridge {
         }
         // Resolve admin API independently so older jars still load the rest.
         if (prestigeAdminMethod == null) {
-            try {
-                prestigeAdminMethod = api.getMethod("handlePrestigeAdmin", sp, String.class);
-            } catch (Throwable missing) {
-                prestigeAdminMethod = null;
-            }
+            resolvePrestigeAdminMethod(preferred);
         }
         if (meditationExplainMethod == null) {
             try {

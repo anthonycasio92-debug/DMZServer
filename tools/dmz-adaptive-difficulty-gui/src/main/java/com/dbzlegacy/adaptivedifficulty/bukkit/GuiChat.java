@@ -79,6 +79,17 @@ final class GuiChat {
             GuiFeedback.setFromResult(player, msg);
             return;
         }
+        sendChatResult(player, msg);
+    }
+
+    /**
+     * Always deliver to chat (never swallow into GUI feedback).
+     * Use for staff slash commands like {@code /prestige admin}.
+     */
+    static void sendChatResult(Player player, String msg) {
+        if (player == null || msg == null || msg.isBlank()) {
+            return;
+        }
         for (String line : msg.split("\n")) {
             if (line == null || line.isBlank()) {
                 continue;

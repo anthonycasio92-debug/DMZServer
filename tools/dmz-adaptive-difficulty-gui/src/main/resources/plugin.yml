@@ -1,5 +1,5 @@
 name: LegacyMechanicsGUI
-version: '2.3.96'
+version: '2.3.97'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
@@ -24,6 +24,10 @@ commands:
   prestige:
     description: Prestige GUI (staff slash; players use /lm → Prestige)
     usage: /prestige
+  padmin:
+    description: Prestige admin tools (staff)
+    usage: /padmin [info|held|completed|points|breakthroughs|fabled|sync] …
+    aliases: [prestigeadmin]
   progression:
     description: Players — /progression meditation only; staff — full tree; console — boost + android
     usage: /progression meditation | android <player> | boost …
