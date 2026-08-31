@@ -227,10 +227,10 @@ public final class SkillUnlockService {
         int max = skillMax(skills, "meditation", 10);
         if (level >= max && max > 0) {
             out.add("§aMeditation§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-            how(out, "Charge Ki in the trial biome while meeting the goal (/progression meditation).");
+            how(out, "Charge Ki in the trial biome while meeting the trial (/progression meditation).");
         } else {
             out.add("§aMeditation§7: §f" + level + "/" + max);
-            how(out, "Charge Ki in the trial biome while meeting the goal (/progression meditation).");
+            how(out, "Charge Ki in the trial biome while meeting the trial (/progression meditation).");
             int next = level + 1;
             int needSec = MeditationProgression.requiredSecondsForLevel(next);
             if (needSec > 0) {
@@ -246,9 +246,9 @@ public final class SkillUnlockService {
         if (trial != null && !trial.isBlank()) {
             long rem = MeditationProgression.trialRemainingMs();
             out.add("§8  - §7Trial §f" + trial + " §8(" + formatTime(rem / 1000L) + " left)");
-            String goal = MeditationProgression.currentTrialGoal();
-            if (goal != null && !goal.isBlank()) {
-                out.add("§8  - §7Do this: §f" + goal);
+            String trialText = MeditationProgression.currentTrialGoal();
+            if (trialText != null && !trialText.isBlank()) {
+                out.add("§8  - §7Trial: §f" + trialText);
             }
         }
     }

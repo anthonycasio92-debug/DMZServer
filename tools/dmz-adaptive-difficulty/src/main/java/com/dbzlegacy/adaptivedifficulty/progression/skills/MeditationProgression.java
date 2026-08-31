@@ -60,7 +60,7 @@ public final class MeditationProgression {
     };
 
     /**
-     * Global trial biomes. {@link Trial#condition} is the player-facing goal —
+     * Global trial biomes. {@link Trial#condition} is the player-facing trial text —
      * spell out Ki %, height, sneak, and “stay still” so it is not confused
      * with “go somewhere” or vague percentages.
      */
@@ -178,7 +178,7 @@ public final class MeditationProgression {
                 return;
             }
             if (!passesCondition(player, trial, energy, maxEnergy, nowMs)) {
-                // Hint the trial goal only while charging (subtitle, anti-spam).
+                // Hint the trial only while charging (subtitle, anti-spam).
                 if (charging) {
                     tellCondition(player, "Meditation", plainCondition(trial), nowMs);
                 }
@@ -240,20 +240,20 @@ public final class MeditationProgression {
         sb.append(LmChat.title("Meditation Trial")).append('\n');
         sb.append(LmChat.DIVIDER).append('\n');
         sb.append("§7Level Meditation by §fcharging Ki§7 in the active trial biome\n");
-        sb.append("§7while meeting §fevery part§7 of the goal.\n");
+        sb.append("§7while meeting §fevery part§7 of the trial.\n");
         sb.append('\n');
         if (t == null) {
             sb.append("§7No trial is active right now.\n");
             sb.append("§8A new biome will be chosen shortly.\n");
         } else {
             sb.append("§7Where   §f").append(t.name).append(" §8biome\n");
-            sb.append("§7Do this §f").append(t.condition).append('\n');
+            sb.append("§7Trial   §f").append(t.condition).append('\n');
             sb.append("§7Ends in §e").append(formatDuration(rem)).append('\n');
         }
         sb.append('\n');
         sb.append("§aHow to train\n");
         sb.append("§7• Stand in §f").append(t == null ? "the trial biome" : t.name).append('\n');
-        sb.append("§7• Charge Ki only while the goal above is true\n");
+        sb.append("§7• Charge Ki only while the trial above is true\n");
         sb.append("§7• Ki % = your current Ki ÷ max Ki (spend Ki if you are too full)\n");
         sb.append("§7• “Stay still” = do not wander from where you started charging\n");
         sb.append("§7• Focus window: charge up to §f10s§7, release, charge again\n");
@@ -275,7 +275,7 @@ public final class MeditationProgression {
         }
         long rem = Math.max(0L, GLOBAL_END.get() - System.currentTimeMillis());
         return "§7Trial §e" + t.name + " §8· §f" + formatDuration(rem) + " left"
-                + "\n§8Do this: §7" + t.condition;
+                + "\n§8Trial: §7" + t.condition;
     }
 
     public static int requiredSecondsForLevel(int nextLevel) {
@@ -291,7 +291,7 @@ public final class MeditationProgression {
         return t == null ? "" : t.name;
     }
 
-    /** Player-facing goal text for the active trial (empty if none). */
+    /** Player-facing trial text for the active trial (empty if none). */
     public static String currentTrialGoal() {
         ensureLoaded();
         Trial t = currentTrial(System.currentTimeMillis());
@@ -356,9 +356,9 @@ public final class MeditationProgression {
         // Public broadcast — never mention staff/ops or staff commands.
         broadcastChat(LmChat.title("Meditation Trial"));
         broadcastChat(LmChat.DIVIDER);
-        broadcastChat("§7Charge Ki in §f" + trial.name + " §7and meet the goal to level Meditation.");
+        broadcastChat("§7Charge Ki in §f" + trial.name + " §7and meet the trial to level Meditation.");
         broadcastChat("§7Where   §f" + trial.name + " §8biome");
-        broadcastChat("§7Do this §f" + trial.condition);
+        broadcastChat("§7Trial   §f" + trial.condition);
         broadcastChat("§7Ends in §e" + formatDuration(remaining));
         broadcastChat(LmChat.tip("/progression meditation", "full how-to"));
         if (manual) {

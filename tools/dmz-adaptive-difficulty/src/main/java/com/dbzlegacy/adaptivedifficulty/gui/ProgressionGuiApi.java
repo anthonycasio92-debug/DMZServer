@@ -59,7 +59,7 @@ public final class ProgressionGuiApi {
                     "§d§lMeditation Trial",
                     "§8────────────",
                     "§e/progression meditation §7— where to go, what to do, timer",
-                    "§8Charge Ki in the trial biome while meeting the goal.",
+                    "§8Charge Ki in the trial biome while meeting the trial.",
                     "",
                     "§7Other actions: §f/lm §7→ Prestige · Remove Android · Skill Check");
         }
@@ -583,7 +583,7 @@ public final class ProgressionGuiApi {
                     help.add("§8Staff · /prog admin · toggle flags in section GUIs");
                 } else {
                     help.add("§7Other actions: §f/lm §7→ Prestige · Remove Android");
-                    help.add("§8Charge Ki in the trial biome while meeting the goal.");
+                    help.add("§8Charge Ki in the trial biome while meeting the trial.");
                 }
                 yield help;
             }
