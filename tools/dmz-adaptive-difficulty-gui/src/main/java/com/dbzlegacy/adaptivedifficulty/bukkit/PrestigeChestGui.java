@@ -46,7 +46,7 @@ public final class PrestigeChestGui implements Listener {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         Inventory inv = switch (p) {
             case "turnin", "points" -> turnIn(viewer, subject);
-            case "forms", "form" -> forms(viewer, subject);
+            case "forms", "form", "effects", "effect" -> forms(viewer, subject);
             case "cap", "breakthrough", "breakthroughs" -> cap(viewer, subject);
             default -> {
                 if (p.startsWith("shop") || p.startsWith("skills")) {
@@ -102,9 +102,9 @@ public final class PrestigeChestGui implements Listener {
                 List.of("&71 point = +1 permanent DMZ skill level",
                         "&7Skill Check skills only (Natural + Saga)")),
                 SlotAction.page("shop"));
-        put(holder, inv, 30, tipBtn(viewer, Material.MAGENTA_DYE, "&dForms",
+        put(holder, inv, 30, tipBtn(viewer, Material.MAGENTA_DYE, "&dEffects",
                 List.of("&7Permanent Majin / Mutant (&e5 &7pts)")),
-                SlotAction.page("forms"));
+                SlotAction.page("effects"));
         put(holder, inv, 32, tipBtn(viewer, Material.NETHER_STAR, "&bLevel Cap Breakthrough",
                 List.of("&7Raise &fyour &7personal level cap +10k",
                         "&7Cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
@@ -195,8 +195,11 @@ public final class PrestigeChestGui implements Listener {
         Holder holder = new Holder(pageIndex <= 0 ? "shop" : ("shop" + (pageIndex + 1)));
         int pages = Math.max(1, parseInt(ph.get("shop_pages"), 1));
         int page = Math.max(0, Math.min(pages - 1, pageIndex));
+        String shopTitle = pages > 1
+                ? "&8Prestige · Skills &7(" + (page + 1) + "/" + pages + ")"
+                : "&8Prestige · Skills";
         Inventory inv = Bukkit.createInventory(holder, 54,
-                invTitle(viewer, subject, "&8Prestige · Skills &7(" + (page + 1) + "/" + pages + ")"));
+                invTitle(viewer, subject, shopTitle));
         holder.bind(inv);
         frame(inv, 54);
 
@@ -288,11 +291,11 @@ public final class PrestigeChestGui implements Listener {
     private Inventory forms(Player viewer, Player subject) {
         Map<String, String> ph = ForgeBridge.prestigePlaceholders(subject);
         Holder holder = new Holder("forms");
-        Inventory inv = Bukkit.createInventory(holder, 36, invTitle(viewer, subject, "&8Prestige · Forms"));
+        Inventory inv = Bukkit.createInventory(holder, 36, invTitle(viewer, subject, "&8Prestige · Effects"));
         holder.bind(inv);
         frame(inv, 36);
 
-        put(holder, inv, 4, item(Material.MAGENTA_DYE, "&d&lPermanent Forms",
+        put(holder, inv, 4, item(Material.MAGENTA_DYE, "&d&lEffects",
                 prependBlank(toAmp(ForgeBridge.prestigeLines(subject, "forms")))));
 
         boolean hasMajin = "true".equalsIgnoreCase(ph.getOrDefault("majin", "false"));
@@ -305,7 +308,7 @@ public final class PrestigeChestGui implements Listener {
         if (hasMutant && !hasMajin) {
             majinLore.add("&8Buying removes Mutant (no refund)");
         }
-        majinLore.add("&8Only one form at a time");
+        majinLore.add("&8Only one effect at a time");
         put(holder, inv, 20, item(
                 hasMajin ? Material.LIME_DYE : Material.PINK_DYE,
                 hasMajin ? "&aPermanent Majin" : "&dBuy Permanent Majin",
@@ -318,7 +321,7 @@ public final class PrestigeChestGui implements Listener {
         if (hasMajin && !hasMutant) {
             mutantLore.add("&8Buying removes Majin (no refund)");
         }
-        mutantLore.add("&8Only one form at a time");
+        mutantLore.add("&8Only one effect at a time");
         put(holder, inv, 22, item(
                 hasMutant ? Material.LIME_DYE : Material.SLIME_BALL,
                 hasMutant ? "&aPermanent Mutant" : "&aBuy Permanent Mutant",

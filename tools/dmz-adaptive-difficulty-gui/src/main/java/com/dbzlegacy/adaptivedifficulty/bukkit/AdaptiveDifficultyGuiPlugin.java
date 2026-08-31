@@ -1259,8 +1259,20 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     }
 
     private boolean handlePrestige(CommandSender sender, String[] args) {
+        // Console: staff admin only (no GUI).
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            if (args.length == 0 || "help".equalsIgnoreCase(args[0])) {
+                sender.sendMessage("§cConsole: /prestige admin … (players use /lm → Prestige)");
+                return true;
+            }
+            String sub = args[0].toLowerCase();
+            if ("admin".equals(sub) || isPrestigeAdminSub(sub)) {
+                String raw = joinArgs(args, "admin".equals(sub) ? 1 : 0);
+                sender.sendMessage("§cConsole prestige admin needs an online staff actor — run in-game.");
+                sender.sendMessage("§8Would run: /prestige admin " + raw);
+                return true;
+            }
+            sender.sendMessage("Players only for prestige GUI. Staff: /prestige admin … in-game.");
             return true;
         }
         if (!canUsePlayerGui(player)) {
@@ -1277,15 +1289,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return true;
         }
         String sub = args[0].toLowerCase();
-        if ("admin".equals(sub)) {
-            StringBuilder raw = new StringBuilder();
-            for (int i = 1; i < args.length; i++) {
-                if (raw.length() > 0) {
-                    raw.append(' ');
-                }
-                raw.append(args[i]);
+        // Never forward /prestige to Forge brigadier on Mohist — it fails with
+        // "Forge command bridge failed". Route admin (and shorthand) via reflection.
+        if ("admin".equals(sub) || isPrestigeAdminSub(sub) || "help".equals(sub)) {
+            String raw = "admin".equals(sub) ? joinArgs(args, 1) : joinArgs(args, 0);
+            if (raw.isBlank()) {
+                raw = "help";
             }
-            sendMultiline(player, ForgeBridge.prestigeAdmin(player, raw.toString()));
+            sendMultiline(player, ForgeBridge.prestigeAdmin(player, raw));
             return true;
         }
         if ("do".equals(sub)) {
@@ -1308,13 +1319,28 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             openPrestigeInventory(player, reopen);
             return true;
         }
-        // Prefer reflection admin/help over brigadier forward (Mohist often fails).
-        if ("help".equals(sub)) {
-            sendMultiline(player, ForgeBridge.prestigeAdmin(player, "help"));
-            return true;
-        }
-        forwardToForge(player, "prestige", args);
+        sendMultiline(player, ForgeBridge.prestigeAdmin(player, "help"));
         return true;
+    }
+
+    private static boolean isPrestigeAdminSub(String sub) {
+        return "info".equals(sub) || "held".equals(sub) || "completed".equals(sub)
+                || "points".equals(sub) || "breakthroughs".equals(sub)
+                || "fabled".equals(sub) || "sync".equals(sub);
+    }
+
+    private static String joinArgs(String[] args, int from) {
+        if (args == null || from >= args.length) {
+            return "";
+        }
+        StringBuilder raw = new StringBuilder();
+        for (int i = from; i < args.length; i++) {
+            if (raw.length() > 0) {
+                raw.append(' ');
+            }
+            raw.append(args[i]);
+        }
+        return raw.toString();
     }
 
     private boolean handleSkills(CommandSender sender, String[] args) {

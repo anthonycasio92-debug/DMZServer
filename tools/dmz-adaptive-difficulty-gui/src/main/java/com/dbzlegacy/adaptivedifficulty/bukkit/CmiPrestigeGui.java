@@ -29,7 +29,7 @@ public final class CmiPrestigeGui {
             String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
             switch (p) {
                 case "turnin", "points" -> openTurnIn(player);
-                case "forms", "form" -> openForms(player);
+                case "forms", "form", "effects", "effect" -> openForms(player);
                 case "cap", "breakthrough", "breakthroughs" -> openCap(player);
                 default -> {
                     if (p.startsWith("shop") || p.startsWith("skills")) {
@@ -92,8 +92,8 @@ public final class CmiPrestigeGui {
         gui.addButton(navBtn(24, Material.EXPERIENCE_BOTTLE, "&aSkill Shop",
                 List.of("&71 point = +1 permanent DMZ skill level",
                         "&7Skill Check skills only (Natural + Saga)"), "shop"));
-        gui.addButton(navBtn(30, Material.MAGENTA_DYE, "&dForms",
-                List.of("&7Permanent Majin / Mutant (&e5 &7pts)"), "forms"));
+        gui.addButton(navBtn(30, Material.MAGENTA_DYE, "&dEffects",
+                List.of("&7Permanent Majin / Mutant (&e5 &7pts)"), "effects"));
         gui.addButton(navBtn(32, Material.NETHER_STAR, "&bLevel Cap Breakthrough",
                 List.of("&7Raise &fyour &7personal level cap +10k",
                         "&7Cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
@@ -180,7 +180,10 @@ public final class CmiPrestigeGui {
         int pages = Math.max(1, parseInt(ph.get("shop_pages"), 1));
         int page = Math.max(0, Math.min(pages - 1, pageIndex));
         String pageKey = page <= 0 ? "shop" : ("shop" + (page + 1));
-        CMIGui gui = base(player, "&8Prestige · Skills &7(" + (page + 1) + "/" + pages + ")", 6);
+        String shopTitle = pages > 1
+                ? "&8Prestige · Skills &7(" + (page + 1) + "/" + pages + ")"
+                : "&8Prestige · Skills";
+        CMIGui gui = base(player, shopTitle, 6);
         CMIGuiButton status = new CMIGuiButton(4, Material.EXPERIENCE_BOTTLE, "&a&lSkill Shop");
         status.lockField();
         status.addLore(toAmp(ForgeBridge.prestigeLines(player, "shop")));
@@ -277,8 +280,8 @@ public final class CmiPrestigeGui {
 
     private static void openForms(Player player) {
         Map<String, String> ph = ForgeBridge.prestigePlaceholders(player);
-        CMIGui gui = base(player, "&8Prestige · Forms", 4);
-        CMIGuiButton status = new CMIGuiButton(4, Material.MAGENTA_DYE, "&d&lPermanent Forms");
+        CMIGui gui = base(player, "&8Prestige · Effects", 4);
+        CMIGuiButton status = new CMIGuiButton(4, Material.MAGENTA_DYE, "&d&lEffects");
         status.lockField();
         status.addLore(toAmp(ForgeBridge.prestigeLines(player, "forms")));
         gui.addButton(status);
@@ -292,7 +295,7 @@ public final class CmiPrestigeGui {
                 hasMajin ? "&aPermanent Majin" : "&dBuy Permanent Majin");
         majin.lockField();
         majin.addLore(List.of("", hasMajin ? "&aOwned" : "&7Cost: &e" + cost + " &7points",
-                "&8Only one form at a time"));
+                "&8Only one effect at a time"));
         if (!hasMajin) {
             majin.addCommand("lmdo prestige majin 0 forms");
         }
@@ -303,7 +306,7 @@ public final class CmiPrestigeGui {
                 hasMutant ? "&aPermanent Mutant" : "&aBuy Permanent Mutant");
         mutant.lockField();
         mutant.addLore(List.of("", hasMutant ? "&aOwned" : "&7Cost: &e" + cost + " &7points",
-                "&8Only one form at a time"));
+                "&8Only one effect at a time"));
         if (!hasMutant) {
             mutant.addCommand("lmdo prestige mutant 0 forms");
         }

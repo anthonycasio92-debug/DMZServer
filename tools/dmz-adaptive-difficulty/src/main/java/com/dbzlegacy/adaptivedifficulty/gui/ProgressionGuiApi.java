@@ -852,7 +852,7 @@ public final class ProgressionGuiApi {
                 lore.add("§7Catalog: §f" + ph.getOrDefault("shop_skill_count", "0")
                         + " §7skills · §f" + ph.getOrDefault("shop_pages", "1") + " §7page(s)");
             }
-            case "forms", "form" -> {
+            case "forms", "form", "effects", "effect" -> {
                 lore.add("§7Permanent Majin / Mutant: §e"
                         + ph.getOrDefault("form_cost", "5") + " §7points each");
                 lore.add("§7Only one at a time · unpurchase = no refund");
@@ -887,7 +887,7 @@ public final class ProgressionGuiApi {
                 } else {
                     lore.add("§cNot ready yet");
                 }
-                lore.add("§8Turn-in · Shop · Forms · Cap via buttons");
+                lore.add("§8Turn-in · Shop · Effects · Cap via buttons");
             }
         }
         return lore;
