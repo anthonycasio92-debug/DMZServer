@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.94", 'VERSION = "2.3.94"' in mod)
+    check("VERSION 2.3.95", 'VERSION = "2.3.95"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -512,8 +512,8 @@ def main() -> int:
           'Material.IRON_INGOT, "&f&lLower Tier"' in diff_chest)
     check("Difficulty Clear Title not BARRIER",
           'Material.NAME_TAG, "&cClear Title"' in diff_chest)
-    check("Prestige header GOLDEN_APPLE",
-          'Material.GOLDEN_APPLE, "&6&lPrestige"' in prestige)
+    check("Prestige wallet GOLD_INGOT",
+          'Material.GOLD_INGOT' in prestige and "putWallet" in prestige)
     check("Prestige Progression BREWING_STAND",
           'Material.BREWING_STAND, "&dProgression"' in prestige)
     check("Rival Progress tiles BOOK/WRITABLE_BOOK/MAP",
@@ -864,6 +864,10 @@ def main() -> int:
     check("potentialunlock 2 levels per point",
           "POTENTIAL_UNLOCK_LEVELS_PER_POINT = 2" in pp
           and "levelsPerPoint" in pp)
+    check("tier point cost ladder",
+          "tierPointCost" in pp and "buyDifficultyTier" in pp)
+    check("prestige wallet GUI",
+          "putWallet" in prestige_chest_pp and "Difficulty Tiers" in prestige_chest_pp)
     check("turnIn bonus +1 per 3", "n + (n / 3)" in pp and "pointsForTurnIn" in pp)
     prestige_skill_sync = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/PrestigeSkillSync.java")
     prestige_faction_sync = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/PrestigeFactionSync.java")

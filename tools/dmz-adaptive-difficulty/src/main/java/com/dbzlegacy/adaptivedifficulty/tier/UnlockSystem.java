@@ -23,6 +23,14 @@ public final class UnlockSystem {
         if (player == null || tier == null) {
             return false;
         }
+        // Prestige-point permanent unlocks bypass DMZ level / Fabled prestige gates.
+        try {
+            if (com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                    .hasPurchasedTier(player, tier.id)) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
         int prestige = DmzProgression.prestige(player);
         if (prestige >= tier.id) {
             return true;
@@ -136,6 +144,12 @@ public final class UnlockSystem {
                     data.revokeTier(id);
                 }
             }
+        }
+        // Prestige-point permanent tiers must survive revoke/reconcile.
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                    .reapplyTierUnlocks(player);
+        } catch (Throwable ignored) {
         }
         return newly;
     }

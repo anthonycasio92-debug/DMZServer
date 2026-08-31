@@ -48,6 +48,7 @@ public final class PrestigeChestGui implements Listener {
             case "turnin", "points" -> turnIn(viewer, subject);
             case "forms", "form", "effects", "effect" -> forms(viewer, subject);
             case "cap", "breakthrough", "breakthroughs" -> cap(viewer, subject);
+            case "tiers", "tier", "difficulty" -> tiers(viewer, subject);
             default -> {
                 if (p.startsWith("shop") || p.startsWith("skills")) {
                     yield shop(viewer, subject, shopPageIndex(p));
@@ -68,9 +69,9 @@ public final class PrestigeChestGui implements Listener {
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
         if (!bridgeOk || !systemOn) {
-            put(holder, inv, 4, item(Material.GOLDEN_APPLE,
+            putWallet(holder, inv, viewer, subject, "main",
                     !bridgeOk ? "&c&lUNAVAILABLE" : "&c&lPRESTIGE DISABLED",
-                    unavailableLore(bridgeOk)));
+                    unavailableLore(bridgeOk));
             put(holder, inv, 36, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
             if (ForgeBridge.isStaff(viewer)) {
                 put(holder, inv, 40, tipBtn(viewer, Material.BREWING_STAND, "&dProgression",
@@ -81,8 +82,7 @@ public final class PrestigeChestGui implements Listener {
             return inv;
         }
 
-        put(holder, inv, 4, item(Material.GOLDEN_APPLE, "&6&lPrestige",
-                prependBlank(toAmp(ForgeBridge.prestigeLines(subject, "main")))));
+        putWallet(holder, inv, viewer, subject, "main", "&e&lWallet", null);
 
         boolean ready = "true".equalsIgnoreCase(ph.getOrDefault("ready", "false"));
         List<String> confirmLore = new ArrayList<>();
@@ -103,11 +103,16 @@ public final class PrestigeChestGui implements Listener {
                         "&7Skill Check skills only · &apermanent",
                         "&8Survives prestige reset")),
                 SlotAction.page("shop"));
-        put(holder, inv, 30, tipBtn(viewer, Material.MAGENTA_DYE, "&dEffects",
+        put(holder, inv, 29, tipBtn(viewer, Material.MAGENTA_DYE, "&dEffects",
                 List.of("&7Permanent Majin / Mutant (&e5 &7pts)",
                         "&aPermanent purchase &8· unpurchase = no refund")),
                 SlotAction.page("effects"));
-        put(holder, inv, 32, tipBtn(viewer, Material.NETHER_STAR, "&bLevel Cap Breakthrough",
+        put(holder, inv, 31, tipBtn(viewer, Material.BEACON, "&6Difficulty Tiers",
+                List.of("&7Permanent unlocks with prestige points",
+                        "&7T1–2 &e1pt &8· &7T3–4 &e2pt &8· &7T5–6 &e3pt &8· &7T7 &e4pt",
+                        "&aPermanent &8· survives prestige")),
+                SlotAction.page("tiers"));
+        put(holder, inv, 33, tipBtn(viewer, Material.NETHER_STAR, "&bLevel Cap Breakthrough",
                 List.of("&7Raise &fyour &7personal level cap +10k",
                         "&7Cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
                         "&8DMZ maxValue 150000 — soft-lock holds others at their cap")),
@@ -130,8 +135,7 @@ public final class PrestigeChestGui implements Listener {
         holder.bind(inv);
         frame(inv, 36);
 
-        put(holder, inv, 4, item(Material.GOLD_NUGGET, "&e&lTurn In Prestiges",
-                prependBlank(toAmp(ForgeBridge.prestigeLines(subject, "turnin")))));
+        putWallet(holder, inv, viewer, subject, "turnin", "&e&lWallet", null);
 
         int held = parseInt(ph.get("held"), 0);
         putTurnIn(holder, inv, 19, 1, held, ph);
@@ -205,8 +209,7 @@ public final class PrestigeChestGui implements Listener {
         holder.bind(inv);
         frame(inv, 54);
 
-        put(holder, inv, 4, item(Material.EXPERIENCE_BOTTLE, "&a&lSkill Shop",
-                prependBlank(toAmp(ForgeBridge.prestigeLines(subject, "shop")))));
+        putWallet(holder, inv, viewer, subject, "shop", "&e&lWallet", null);
 
         List<String> ids = shopSkillIds(ph);
         int pageSize = Math.max(1, parseInt(ph.get("shop_page_size"), GuiPlayerPicker.CONTENT_SLOTS.length));
@@ -300,8 +303,7 @@ public final class PrestigeChestGui implements Listener {
         holder.bind(inv);
         frame(inv, 36);
 
-        put(holder, inv, 4, item(Material.MAGENTA_DYE, "&d&lEffects",
-                prependBlank(toAmp(ForgeBridge.prestigeLines(subject, "forms")))));
+        putWallet(holder, inv, viewer, subject, "forms", "&e&lWallet", null);
 
         boolean hasMajin = "true".equalsIgnoreCase(ph.getOrDefault("majin", "false"));
         boolean hasMutant = "true".equalsIgnoreCase(ph.getOrDefault("mutant", "false"));
@@ -356,8 +358,7 @@ public final class PrestigeChestGui implements Listener {
         holder.bind(inv);
         frame(inv, 36);
 
-        put(holder, inv, 4, item(Material.NETHER_STAR, "&b&lPersonal Level Cap",
-                prependBlank(toAmp(ForgeBridge.prestigeLines(subject, "cap")))));
+        putWallet(holder, inv, viewer, subject, "cap", "&e&lWallet", null);
 
         int bt = parseInt(ph.get("breakthroughs"), 0);
         int max = parseInt(ph.get("breakthroughs_max"), 5);
@@ -386,6 +387,67 @@ public final class PrestigeChestGui implements Listener {
         put(holder, inv, 31, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
         return inv;
+    }
+
+    private Inventory tiers(Player viewer, Player subject) {
+        Map<String, String> ph = ForgeBridge.prestigePlaceholders(subject);
+        Holder holder = new Holder("tiers");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Prestige · Difficulty Tiers"));
+        holder.bind(inv);
+        frame(inv, 45);
+
+        putWallet(holder, inv, viewer, subject, "tiers", "&e&lWallet", null);
+
+        Material[] mats = {
+                Material.COPPER_INGOT, Material.IRON_INGOT, Material.GOLD_INGOT,
+                Material.EMERALD, Material.DIAMOND, Material.NETHERITE_INGOT, Material.NETHER_STAR
+        };
+        // Centered row for T1–T7 across content slots.
+        int[] slots = {19, 20, 21, 22, 23, 24, 25};
+        for (int t = 1; t <= 7; t++) {
+            boolean owned = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_owned", "false"));
+            String label = ph.getOrDefault("tier_" + t + "_label", "T" + t);
+            String cost = ph.getOrDefault("tier_" + t + "_cost", String.valueOf((t + 1) / 2));
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.add(owned ? "&aOwned · permanent" : "&7Cost: &e" + cost + " &7point" + ("1".equals(cost) ? "" : "s"));
+            lore.add("&aPermanent unlock &8· survives prestige");
+            if (!owned && t > 1) {
+                lore.add("&8Requires T" + (t - 1) + " unlocked or purchased");
+            }
+            lore.add("&8Activate after buy via /difficulty → Buy Tier");
+            put(holder, inv, slots[t - 1], tipBtn(viewer, mats[t - 1],
+                    (owned ? "&aT" : "&6T") + t + " " + label,
+                    lore),
+                    owned ? null : SlotAction.act("tier", String.valueOf(t), "tiers"));
+        }
+
+        put(holder, inv, 36, backBtn(), SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    /**
+     * Stats/points display as a wallet (slot 4 center) — not a thematic top-right icon.
+     */
+    private void putWallet(
+            Holder holder, Inventory inv, Player viewer, Player subject,
+            String page, String title, List<String> overrideLore
+    ) {
+        List<String> lore;
+        if (overrideLore != null && !overrideLore.isEmpty()) {
+            lore = new ArrayList<>(overrideLore);
+            if (lore.isEmpty() || !lore.get(0).isBlank()) {
+                lore.add(0, "");
+            }
+        } else {
+            lore = prependBlank(toAmp(ForgeBridge.prestigeLines(subject, page == null ? "main" : page)));
+        }
+        // Emphasize wallet balance at the top of the status block.
+        Map<String, String> ph = ForgeBridge.prestigePlaceholders(subject);
+        lore.add(1, "&6Wallet: &e" + ph.getOrDefault("points", "0") + " &7prestige points");
+        put(holder, inv, 4, item(Material.GOLD_INGOT, title, lore));
     }
 
     private static int parseInt(String raw, int fallback) {

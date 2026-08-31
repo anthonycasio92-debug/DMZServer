@@ -30,6 +30,8 @@ import net.minecraft.server.level.ServerPlayer;
  * Breakthroughs: raise <b>your</b> DMZ level cap by +10k (max 5 → 150k) so you can
  * level normally into the new cap. Server {@code maxValue} is 150k (client UI/level
  * math); personal soft-locks keep everyone else at 100k. Costs 15, 20, 25, 30, 35.
+ * Difficulty tiers: permanent unlock with prestige points —
+ * T1–2 = 1pt, T3–4 = 2pt, T5–6 = 3pt, T7 = 4pt ({@code (tier+1)/2}).
  */
 public final class PrestigePointsSystem {
     public static final int BASE_LEVEL_CAP = 100_000;
@@ -48,6 +50,8 @@ public final class PrestigePointsSystem {
     private static final String KEY_MAJIN = "pp_perm_majin";
     private static final String KEY_MUTANT = "pp_perm_mutant";
     private static final String KEY_SKILL_PREFIX = "pp_skill_";
+    /** Permanent difficulty-tier unlocks bought with prestige points ({@code pp_tier_1}…{@code 7}). */
+    private static final String KEY_TIER_PREFIX = "pp_tier_";
 
     private static final String SKILL_MAJIN = "Permanent Majin";
     private static final String SKILL_MUTANT = "Permanent Mutant";
@@ -380,9 +384,118 @@ public final class PrestigePointsSystem {
             }
         }
         reapplyForms(player);
+        reapplyTierUnlocks(player);
     }
 
-    // ── Permanent Majin / Mutant ────────────────────────────────────────
+    // ── Permanent difficulty tiers (prestige points) ───────────────────
+
+    /**
+     * Prestige-point cost for permanent unlock of difficulty tier {@code tierId} (1–7).
+     * T1–2 → 1, T3–4 → 2, T5–6 → 3, T7 → 4.
+     */
+    public static int tierPointCost(int tierId) {
+        if (tierId < 1 || tierId > 7) {
+            return 0;
+        }
+        return (tierId + 1) / 2;
+    }
+
+    public static boolean hasPurchasedTier(ServerPlayer player, int tierId) {
+        if (player == null || tierId < 1 || tierId > 7) {
+            return false;
+        }
+        return ProgressionData.storedGetBool(player, KEY_TIER_PREFIX + tierId);
+    }
+
+    /** Highest permanently purchased tier (0 if none). */
+    public static int highestPurchasedTier(ServerPlayer player) {
+        if (player == null) {
+            return 0;
+        }
+        int best = 0;
+        for (int t = 1; t <= 7; t++) {
+            if (hasPurchasedTier(player, t)) {
+                best = t;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * Buy a permanent difficulty-tier unlock with prestige points.
+     * Requires the previous tier to already be unlocked (level/prestige or purchased).
+     */
+    public static String buyDifficultyTier(ServerPlayer player, int tierId) {
+        if (player == null) {
+            return "§cPlayers only.";
+        }
+        var tier = com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.byId(tierId);
+        if (tier == null) {
+            return "§cUnknown tier. Use 1–7.";
+        }
+        if (hasPurchasedTier(player, tierId)) {
+            return "§eYou already own permanent §fT" + tierId + " " + tier.display + "§e.";
+        }
+        var data = com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.data(player);
+        if (data != null && data.hasUnlockedTier(tierId)
+                && com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem.isEligible(player, tier)) {
+            // Already unlocked via level/prestige — no purchase needed.
+            return "§eT" + tierId + " " + tier.display
+                    + " §eis already unlocked via level/prestige (no purchase needed).";
+        }
+        if (tierId > 1) {
+            int prev = tierId - 1;
+            boolean prevOk = hasPurchasedTier(player, prev)
+                    || (data != null && data.hasUnlockedTier(prev))
+                    || com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem.isEligible(
+                            player, com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.byId(prev));
+            if (!prevOk) {
+                return "§cUnlock §fT" + prev + " §cfirst before buying §fT" + tierId + "§c.";
+            }
+        }
+        int cost = tierPointCost(tierId);
+        int points = getPoints(player);
+        if (points < cost) {
+            return "§cNeed §e" + cost + " §cpoint" + (cost == 1 ? "" : "s")
+                    + " (have §e" + points + "§c).";
+        }
+        setPoints(player, points - cost);
+        ProgressionData.storedPutBool(player, KEY_TIER_PREFIX + tierId, true);
+        if (data != null) {
+            data.unlockTier(tierId);
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem.syncUnlocks(player, data);
+        } catch (Throwable ignored) {
+        }
+        // Re-apply after sync in case sync raced; purchased must stick.
+        reapplyTierUnlocks(player);
+        SystemTelemetry.log("prestige_points", "buy_tier", player, null, Map.of(
+                "tier", tierId,
+                "cost", cost,
+                "points", getPoints(player)
+        ));
+        return "§aPermanent unlock §fT" + tierId + " " + tier.display
+                + " §7(§e-" + cost + " §7point" + (cost == 1 ? "" : "s") + ")"
+                + "\n§7Survives prestige · activate via §f/difficulty §7Buy Tier"
+                + "\n§7Points left: §e" + getPoints(player);
+    }
+
+    /** Ensure prestige-purchased tiers stay unlocked (survives sync revoke + prestige). */
+    public static void reapplyTierUnlocks(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        var data = com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.data(player);
+        if (data == null) {
+            return;
+        }
+        for (int t = 1; t <= 7; t++) {
+            if (hasPurchasedTier(player, t)) {
+                data.unlockTier(t);
+            }
+        }
+    }
 
     public static boolean hasMajin(ServerPlayer player) {
         return player != null && ProgressionData.storedGetBool(player, KEY_MAJIN);

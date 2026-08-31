@@ -800,6 +800,15 @@ public final class ProgressionGuiApi {
         out.put("majin", PrestigePointsSystem.hasMajin(player) ? "true" : "false");
         out.put("mutant", PrestigePointsSystem.hasMutant(player) ? "true" : "false");
         out.put("form_cost", String.valueOf(PrestigePointsSystem.FORM_COST));
+        for (int t = 1; t <= 7; t++) {
+            out.put("tier_" + t + "_cost", String.valueOf(PrestigePointsSystem.tierPointCost(t)));
+            out.put("tier_" + t + "_owned",
+                    PrestigePointsSystem.hasPurchasedTier(player, t) ? "true" : "false");
+            var ut = com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.byId(t);
+            out.put("tier_" + t + "_label", ut == null ? ("T" + t) : ut.display);
+        }
+        out.put("tier_highest_purchased",
+                String.valueOf(PrestigePointsSystem.highestPurchasedTier(player)));
         List<PrestigePointsSystem.SkillOffer> offers = PrestigePointsSystem.skillOffers();
         StringBuilder ids = new StringBuilder();
         for (var offer : offers) {
@@ -878,6 +887,12 @@ public final class ProgressionGuiApi {
                     lore.add("§aMax personal cap reached");
                 }
             }
+            case "tiers", "tier", "difficulty" -> {
+                lore.add("§7Buy permanent difficulty tier unlocks with prestige points");
+                lore.add("§7T1–2 §e1pt §8· §7T3–4 §e2pt §8· §7T5–6 §e3pt §8· §7T7 §e4pt");
+                lore.add("§aPermanent §7· survives prestige · unlock T(n-1) first");
+                lore.add("§7Highest purchased: §fT" + ph.getOrDefault("tier_highest_purchased", "0"));
+            }
             default -> {
                 lore.add("§7DMZ Level: §f" + ph.getOrDefault("level_fmt", "0")
                         + " §8| §7Need: §e" + ph.getOrDefault("required_fmt", "0"));
@@ -887,7 +902,7 @@ public final class ProgressionGuiApi {
                 } else {
                     lore.add("§cNot ready yet");
                 }
-                lore.add("§8Turn-in · Shop · Effects · Cap via buttons");
+                lore.add("§8Turn-in · Shop · Effects · Tiers · Cap via buttons");
             }
         }
         return lore;
@@ -940,6 +955,15 @@ public final class ProgressionGuiApi {
         }
         if ("breakthrough".equals(act) || "cap".equals(act) || "buy_cap".equals(act)) {
             return PrestigePointsSystem.buyBreakthrough(player);
+        }
+        if ("tier".equals(act) || "buy_tier".equals(act) || "unlock_tier".equals(act)) {
+            int tierId;
+            try {
+                tierId = Integer.parseInt(arg == null || arg.isBlank() ? "0" : arg.trim());
+            } catch (NumberFormatException e) {
+                return "§cUsage: buy tier 1–7.";
+            }
+            return PrestigePointsSystem.buyDifficultyTier(player, tierId);
         }
         if ("spend".equals(act) || "pay".equals(act) || "npc_spend".equals(act)) {
             int amount;

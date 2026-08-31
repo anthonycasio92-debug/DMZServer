@@ -31,6 +31,7 @@ public final class CmiPrestigeGui {
                 case "turnin", "points" -> openTurnIn(player);
                 case "forms", "form", "effects", "effect" -> openForms(player);
                 case "cap", "breakthrough", "breakthroughs" -> openCap(player);
+                case "tiers", "tier", "difficulty" -> openTiers(player);
                 default -> {
                     if (p.startsWith("shop") || p.startsWith("skills")) {
                         openShop(player, shopPageIndex(p));
@@ -52,14 +53,10 @@ public final class CmiPrestigeGui {
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
-        CMIGuiButton status = new CMIGuiButton(4, Material.GOLDEN_APPLE,
-                !bridgeOk ? "&c&lUNAVAILABLE"
-                        : !systemOn ? "&c&lPRESTIGE DISABLED"
-                        : "&6&lPrestige");
-        status.lockField();
         if (!bridgeOk || !systemOn) {
-            status.addLore(unavailableLore(bridgeOk));
-            gui.addButton(status);
+            gui.addButton(walletBtn(player, "main",
+                    !bridgeOk ? "&c&lUNAVAILABLE" : "&c&lPRESTIGE DISABLED",
+                    unavailableLore(bridgeOk)));
             gui.addButton(hubBtn(36));
             if (ForgeBridge.isStaff(player)) {
                 gui.addButton(progBtn(40));
@@ -69,8 +66,7 @@ public final class CmiPrestigeGui {
             GuiFeedback.openCmi(gui);
             return;
         }
-        status.addLore(toAmp(ForgeBridge.prestigeLines(player, "main")));
-        gui.addButton(status);
+        gui.addButton(walletBtn(player, "main", "&e&lWallet", null));
 
         boolean ready = "true".equalsIgnoreCase(ph.getOrDefault("ready", "false"));
         CMIGuiButton confirm = new CMIGuiButton(20,
@@ -93,10 +89,14 @@ public final class CmiPrestigeGui {
                 List.of("&71 point = +1 skill level (&dPotential &7+2)",
                         "&7Skill Check skills only · &apermanent",
                         "&8Survives prestige reset"), "shop"));
-        gui.addButton(navBtn(30, Material.MAGENTA_DYE, "&dEffects",
+        gui.addButton(navBtn(29, Material.MAGENTA_DYE, "&dEffects",
                 List.of("&7Permanent Majin / Mutant (&e5 &7pts)",
                         "&aPermanent purchase &8· unpurchase = no refund"), "effects"));
-        gui.addButton(navBtn(32, Material.NETHER_STAR, "&bLevel Cap Breakthrough",
+        gui.addButton(navBtn(31, Material.BEACON, "&6Difficulty Tiers",
+                List.of("&7Permanent unlocks with prestige points",
+                        "&7T1–2 &e1pt &8· &7T3–4 &e2pt &8· &7T5–6 &e3pt &8· &7T7 &e4pt",
+                        "&aPermanent &8· survives prestige"), "tiers"));
+        gui.addButton(navBtn(33, Material.NETHER_STAR, "&bLevel Cap Breakthrough",
                 List.of("&7Raise &fyour &7personal level cap +10k",
                         "&7Cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
                         "&8DMZ maxValue 150000 — soft-lock holds others at their cap"),
@@ -114,10 +114,7 @@ public final class CmiPrestigeGui {
     private static void openTurnIn(Player player) {
         Map<String, String> ph = ForgeBridge.prestigePlaceholders(player);
         CMIGui gui = base(player, "&8Prestige · Turn In", 4);
-        CMIGuiButton status = new CMIGuiButton(4, Material.GOLD_NUGGET, "&e&lTurn In Prestiges");
-        status.lockField();
-        status.addLore(toAmp(ForgeBridge.prestigeLines(player, "turnin")));
-        gui.addButton(status);
+        gui.addButton(walletBtn(player, "turnin", "&e&lWallet", null));
 
         int held = parseInt(ph.get("held"), 0);
         addTurnIn(gui, 19, 1, held, ph);
@@ -186,10 +183,7 @@ public final class CmiPrestigeGui {
                 ? "&8Prestige · Skills &7(" + (page + 1) + "/" + pages + ")"
                 : "&8Prestige · Skills";
         CMIGui gui = base(player, shopTitle, 6);
-        CMIGuiButton status = new CMIGuiButton(4, Material.EXPERIENCE_BOTTLE, "&a&lSkill Shop");
-        status.lockField();
-        status.addLore(toAmp(ForgeBridge.prestigeLines(player, "shop")));
-        gui.addButton(status);
+        gui.addButton(walletBtn(player, "shop", "&e&lWallet", null));
 
         List<String> ids = shopSkillIds(ph);
         int pageSize = Math.max(1, parseInt(ph.get("shop_page_size"), GuiPlayerPicker.CONTENT_SLOTS.length));
@@ -286,10 +280,7 @@ public final class CmiPrestigeGui {
     private static void openForms(Player player) {
         Map<String, String> ph = ForgeBridge.prestigePlaceholders(player);
         CMIGui gui = base(player, "&8Prestige · Effects", 4);
-        CMIGuiButton status = new CMIGuiButton(4, Material.MAGENTA_DYE, "&d&lEffects");
-        status.lockField();
-        status.addLore(toAmp(ForgeBridge.prestigeLines(player, "forms")));
-        gui.addButton(status);
+        gui.addButton(walletBtn(player, "forms", "&e&lWallet", null));
 
         boolean hasMajin = "true".equalsIgnoreCase(ph.getOrDefault("majin", "false"));
         boolean hasMutant = "true".equalsIgnoreCase(ph.getOrDefault("mutant", "false"));
@@ -341,10 +332,7 @@ public final class CmiPrestigeGui {
     private static void openCap(Player player) {
         Map<String, String> ph = ForgeBridge.prestigePlaceholders(player);
         CMIGui gui = base(player, "&8Prestige · Level Cap", 4);
-        CMIGuiButton status = new CMIGuiButton(4, Material.NETHER_STAR, "&b&lPersonal Level Cap");
-        status.lockField();
-        status.addLore(toAmp(ForgeBridge.prestigeLines(player, "cap")));
-        gui.addButton(status);
+        gui.addButton(walletBtn(player, "cap", "&e&lWallet", null));
 
         int bt = parseInt(ph.get("breakthroughs"), 0);
         int max = parseInt(ph.get("breakthroughs_max"), 5);
@@ -371,6 +359,61 @@ public final class CmiPrestigeGui {
         gui.addButton(closeBtn(35));
         fillEmpty(gui, 4);
         GuiFeedback.openCmi(gui);
+    }
+
+    private static void openTiers(Player player) {
+        Map<String, String> ph = ForgeBridge.prestigePlaceholders(player);
+        CMIGui gui = base(player, "&8Prestige · Difficulty Tiers", 5);
+        gui.addButton(walletBtn(player, "tiers", "&e&lWallet", null));
+
+        Material[] mats = {
+                Material.COPPER_INGOT, Material.IRON_INGOT, Material.GOLD_INGOT,
+                Material.EMERALD, Material.DIAMOND, Material.NETHERITE_INGOT, Material.NETHER_STAR
+        };
+        int[] slots = {19, 20, 21, 22, 23, 24, 25};
+        for (int t = 1; t <= 7; t++) {
+            boolean owned = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_owned", "false"));
+            String label = ph.getOrDefault("tier_" + t + "_label", "T" + t);
+            String cost = ph.getOrDefault("tier_" + t + "_cost", String.valueOf((t + 1) / 2));
+            CMIGuiButton btn = new CMIGuiButton(slots[t - 1], mats[t - 1],
+                    (owned ? "&aT" : "&6T") + t + " " + label);
+            btn.lockField();
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            lore.add(owned ? "&aOwned · permanent" : "&7Cost: &e" + cost + " &7point" + ("1".equals(cost) ? "" : "s"));
+            lore.add("&aPermanent unlock &8· survives prestige");
+            if (!owned && t > 1) {
+                lore.add("&8Requires T" + (t - 1) + " unlocked or purchased");
+            }
+            lore.add("&8Activate after buy via /difficulty → Buy Tier");
+            btn.addLore(lore);
+            if (!owned) {
+                btn.addCommand("lmdo prestige tier " + t + " tiers");
+            }
+            gui.addButton(btn);
+        }
+
+        gui.addButton(backBtn(36));
+        gui.addButton(hubBtn(40));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        GuiFeedback.openCmi(gui);
+    }
+
+    private static CMIGuiButton walletBtn(Player player, String page, String title, List<String> overrideLore) {
+        Map<String, String> ph = ForgeBridge.prestigePlaceholders(player);
+        CMIGuiButton btn = new CMIGuiButton(4, Material.GOLD_INGOT, title);
+        btn.lockField();
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        lore.add("&6Wallet: &e" + ph.getOrDefault("points", "0") + " &7prestige points");
+        if (overrideLore != null && !overrideLore.isEmpty()) {
+            lore.addAll(overrideLore);
+        } else {
+            lore.addAll(toAmp(ForgeBridge.prestigeLines(player, page == null ? "main" : page)));
+        }
+        btn.addLore(lore);
+        return btn;
     }
 
     private static List<String> unavailableLore(boolean bridgeOk) {
