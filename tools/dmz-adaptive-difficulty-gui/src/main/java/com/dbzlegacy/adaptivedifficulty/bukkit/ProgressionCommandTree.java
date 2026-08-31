@@ -92,7 +92,7 @@ public final class ProgressionCommandTree implements TabCompleter {
         }
         // Player-facing help (meditation only).
         if (args.length > 0 && ("help".equalsIgnoreCase(args[0]) || "?".equals(args[0]))) {
-            sendMultiline(player, ForgeBridge.progressionHelp(player));
+            GuiChat.sendChatResult(player, ForgeBridge.progressionHelp(player));
             return true;
         }
 
@@ -107,7 +107,7 @@ public final class ProgressionCommandTree implements TabCompleter {
 
         if (args.length == 0) {
             // Staff bare → help text (Forge helpOrGui), not auto-main GUI.
-            sendMultiline(player, ForgeBridge.progressionHelp(player));
+            GuiChat.sendChatResult(player, ForgeBridge.progressionHelp(player));
             return true;
         }
 
@@ -119,7 +119,7 @@ public final class ProgressionCommandTree implements TabCompleter {
                 yield true;
             }
             case "status", "summary", "info" -> {
-                sendMultiline(player, ForgeBridge.progressionStatus());
+                GuiChat.sendChatResult(player, ForgeBridge.progressionStatus());
                 yield true;
             }
             case "flags", "flagboard" -> {
@@ -219,14 +219,15 @@ public final class ProgressionCommandTree implements TabCompleter {
         if ("next".equals(medSub) || "advance".equals(medSub) || "cycle".equals(medSub)) {
             if (!ForgeBridge.isStaff(player)) {
                 // Do not acknowledge staff commands to non-ops — show the trial card only.
-                sendMultiline(player, ForgeBridge.meditationExplain(player));
+                GuiChat.sendChatResult(player, ForgeBridge.meditationExplain(player));
                 return true;
             }
-            sendMultiline(player, ForgeBridge.meditationAdvance(player));
-            sendMultiline(player, ForgeBridge.meditationExplain(player));
+            GuiChat.sendChatResult(player, ForgeBridge.meditationAdvance(player));
+            GuiChat.sendChatResult(player, ForgeBridge.meditationExplain(player));
             return true;
         }
-        sendMultiline(player, ForgeBridge.meditationExplain(player));
+        // Always chat — never stash into GuiFeedback (player has no inventory open).
+        GuiChat.sendChatResult(player, ForgeBridge.meditationExplain(player));
         return true;
     }
 
