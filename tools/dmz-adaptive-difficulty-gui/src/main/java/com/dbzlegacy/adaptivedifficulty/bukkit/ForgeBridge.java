@@ -84,6 +84,7 @@ public final class ForgeBridge {
     private static Method prestigePlaceholdersMethod;
     private static Method prestigeLinesMethod;
     private static Method prestigeHandleDoMethod;
+    private static Method prestigeAdminMethod;
     private static Method skillsPlaceholdersMethod;
     private static Method skillsLinesMethod;
     private static Method skillsHandleDoMethod;
@@ -1580,6 +1581,31 @@ public final class ForgeBridge {
         }
     }
 
+    /**
+     * Staff {@code /prestige admin …} via reflection — Mohist often cannot forward
+     * this to Forge brigadier ({@code forwardCommand} fails).
+     *
+     * @param rawArgs text after {@code admin} (blank = help)
+     */
+    public static String prestigeAdmin(Player actor, String rawArgs) {
+        Object nms = nmsPlayer(actor);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureProgressionResolved(nms.getClass().getClassLoader());
+            if (prestigeAdminMethod == null) {
+                return "§cPrestige admin API missing — update LegacyMechanics jar to 2.3.90+.";
+            }
+            Object msg = prestigeAdminMethod.invoke(null, nms, rawArgs == null ? "" : rawArgs);
+            return msg == null ? "" : String.valueOf(msg);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cPrestige admin failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public static Map<String, String> skillsPlaceholders(Player player) {
         Map<String, String> fail = new HashMap<>();
@@ -1947,6 +1973,14 @@ public final class ForgeBridge {
                         .getMethod("open", sp, String.class);
             } catch (Throwable missing) {
                 progressionChatMenuOpen = null;
+            }
+        }
+        // Resolve admin API independently so older jars still load the rest.
+        if (prestigeAdminMethod == null) {
+            try {
+                prestigeAdminMethod = api.getMethod("handlePrestigeAdmin", sp, String.class);
+            } catch (Throwable missing) {
+                prestigeAdminMethod = null;
             }
         }
         if (meditationExplainMethod == null) {

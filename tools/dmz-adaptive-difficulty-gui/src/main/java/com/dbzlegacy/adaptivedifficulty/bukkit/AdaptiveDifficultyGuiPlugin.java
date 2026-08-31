@@ -1277,6 +1277,17 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return true;
         }
         String sub = args[0].toLowerCase();
+        if ("admin".equals(sub)) {
+            StringBuilder raw = new StringBuilder();
+            for (int i = 1; i < args.length; i++) {
+                if (raw.length() > 0) {
+                    raw.append(' ');
+                }
+                raw.append(args[i]);
+            }
+            sendMultiline(player, ForgeBridge.prestigeAdmin(player, raw.toString()));
+            return true;
+        }
         if ("do".equals(sub)) {
             String action = args.length > 1 ? args[1] : "";
             String arg = args.length > 2 ? args[2] : "";
@@ -1295,6 +1306,11 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 }
             }
             openPrestigeInventory(player, reopen);
+            return true;
+        }
+        // Prefer reflection admin/help over brigadier forward (Mohist often fails).
+        if ("help".equals(sub)) {
+            sendMultiline(player, ForgeBridge.prestigeAdmin(player, "help"));
             return true;
         }
         forwardToForge(player, "prestige", args);

@@ -1032,6 +1032,73 @@ public final class ProgressionGuiApi {
         return "§cUnknown prestige action: " + act;
     }
 
+    /**
+     * Staff prestige admin — used by Bukkit {@code /prestige admin …} via ForgeBridge
+     * (avoids Mohist brigadier forward failures).
+     *
+     * @param rawArgs text after {@code admin} (may be blank for help)
+     */
+    public static String handlePrestigeAdmin(ServerPlayer actor, String rawArgs) {
+        if (actor == null) {
+            return "§cPlayers only.";
+        }
+        if (!StaffAccess.isStaff(actor)) {
+            return "§cStaff only.";
+        }
+        if (!DifficultyConfig.get().enablePrestigeSystem) {
+            return "§cPrestige system is disabled.";
+        }
+        String trimmed = rawArgs == null ? "" : rawArgs.trim();
+        if (trimmed.isBlank() || "help".equalsIgnoreCase(trimmed)) {
+            return PrestigeAdmin.help();
+        }
+        String[] parts = trimmed.split("\\s+");
+        String sub = parts[0].toLowerCase(Locale.ROOT);
+        if ("info".equals(sub)) {
+            ServerPlayer target = parts.length > 1 ? resolveOnline(actor, parts[1]) : actor;
+            if (target == null) {
+                return "§cPlayer not online: §f" + parts[1];
+            }
+            return PrestigeAdmin.info(target);
+        }
+        if ("sync".equals(sub)) {
+            if (parts.length < 2) {
+                return "§cUsage: /prestige admin sync <player>";
+            }
+            ServerPlayer target = resolveOnline(actor, parts[1]);
+            if (target == null) {
+                return "§cPlayer not online: §f" + parts[1];
+            }
+            return PrestigeAdmin.sync(target);
+        }
+        if ("held".equals(sub) || "completed".equals(sub) || "points".equals(sub)
+                || "breakthroughs".equals(sub) || "fabled".equals(sub)) {
+            if (parts.length < 4) {
+                return "§cUsage: /prestige admin " + sub + " <player> <set|add|remove> <n>";
+            }
+            ServerPlayer target = resolveOnline(actor, parts[1]);
+            if (target == null) {
+                return "§cPlayer not online: §f" + parts[1];
+            }
+            String mode = parts[2];
+            int amount;
+            try {
+                amount = Integer.parseInt(parts[3]);
+            } catch (NumberFormatException e) {
+                return "§cAmount must be a number.";
+            }
+            return switch (sub) {
+                case "held" -> PrestigeAdmin.adjustHeld(target, mode, amount);
+                case "completed" -> PrestigeAdmin.adjustCompleted(target, mode, amount);
+                case "points" -> PrestigeAdmin.adjustPoints(target, mode, amount);
+                case "breakthroughs" -> PrestigeAdmin.adjustBreakthroughs(target, mode, amount);
+                case "fabled" -> PrestigeAdmin.adjustFabled(target, mode, amount);
+                default -> "§cUnknown admin field.";
+            };
+        }
+        return "§cUnknown: /prestige admin " + sub + "\n" + PrestigeAdmin.help();
+    }
+
     // ── Skills ─────────────────────────────────────────────────────────
 
     public static Map<String, String> skillsPlaceholders(ServerPlayer player) {

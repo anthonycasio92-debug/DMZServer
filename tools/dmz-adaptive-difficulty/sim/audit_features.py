@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.89", 'VERSION = "2.3.89"' in mod)
+    check("VERSION 2.3.90", 'VERSION = "2.3.90"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -881,6 +881,11 @@ def main() -> int:
           read(SRC / "com/dbzlegacy/adaptivedifficulty/command/ProgressionCommands.java"))
     check("breakthrough mentions prestige Need scale",
           "Future prestige requirements now scale" in pp)
+    check("handlePrestigeAdmin API", "handlePrestigeAdmin" in gui_api_pp)
+    check("Bukkit prestige admin via ForgeBridge",
+          "prestigeAdmin" in forge_bridge
+          and 'if ("admin".equals(sub))' in
+          read(gui_root / "AdaptiveDifficultyGuiPlugin.java"))
     check("form XOR majin/mutant", "buyMajin" in pp and "buyMutant" in pp and "unbuyMajin" in pp)
     check("breakthrough costs 15..35", "breakthroughCost" in pp and "15" in pp and "35" in pp)
     check("MAX_BREAKTHROUGHS 5", "MAX_BREAKTHROUGHS = 5" in pp)
