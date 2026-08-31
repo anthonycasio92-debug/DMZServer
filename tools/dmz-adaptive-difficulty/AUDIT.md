@@ -442,7 +442,7 @@ Admin GUI shows only Save / Refresh / Status (no Help tile; no Top/Stats/Challen
 - 5-minute remaining warning
 - Focus: progress during first 10s of charge, then release & re-charge
 - Wrong-biome warnings independent of progress (10s delay, 60s hard CD)
-- Same biomes + condition strings as the script
+- Clearer player-facing goal text (Ki %, height, stay-still) — same biome gates as the script
 - Screen title on announce (extra vs chat-only script)
 - CNPC `Meditation new.js` + `ChangeBiomeMED.js` stubbed (Java owns trials)
 

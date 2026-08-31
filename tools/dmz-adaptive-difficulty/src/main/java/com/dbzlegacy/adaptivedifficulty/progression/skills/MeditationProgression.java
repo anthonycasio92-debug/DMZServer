@@ -59,28 +59,32 @@ public final class MeditationProgression {
             0, 0, 30, 60, 120, 240, 360, 480, 600, 720, 900
     };
 
-    /** Same trials + condition text as Meditation new.js. */
+    /**
+     * Global trial biomes. {@link Trial#condition} is the player-facing goal —
+     * spell out Ki %, height, sneak, and “stay still” so it is not confused
+     * with “go somewhere” or vague percentages.
+     */
     private static final Trial[] TRIALS = {
             new Trial("minecraft:plains", "Plains", "plains",
-                    "Sneak while charging Ki below 50%."),
+                    "Hold sneak and charge Ki while your Ki is at 50% or less."),
             new Trial("minecraft:desert", "Desert", "desert",
-                    "Charge Ki during daytime while below 40%."),
+                    "Charge Ki during daytime while your Ki is at 40% or less."),
             new Trial("minecraft:snowy_plains", "Snowy Plains", "snowy_plains",
-                    "Sneak above Y 80 while charging Ki."),
+                    "Hold sneak and charge Ki while standing at Y 80 or higher."),
             new Trial("minecraft:nether_wastes", "Nether Wastes", "nether_wastes",
-                    "Charge Ki below Y 64 while below 40%."),
+                    "Charge Ki below Y 64 while your Ki is at 40% or less."),
             new Trial("minecraft:warped_forest", "Warped Forest", "warped_forest",
-                    "Sneak and remain within 1.5 blocks while charging."),
+                    "Hold sneak and charge Ki without moving more than 1.5 blocks from where you started."),
             new Trial("minecraft:soul_sand_valley", "Soul Sand Valley", "soul_sand_valley",
-                    "Remain within 1 block and avoid damage for 12 seconds while charging."),
+                    "Charge Ki for 12s without taking damage, staying within 1 block of where you started."),
             new Trial("dragonminez:ajissa_plains", "Ajissa Plains", "ajissa_plains",
-                    "Sneak while charging Ki below 50%."),
+                    "Hold sneak and charge Ki while your Ki is at 50% or less."),
             new Trial("dragonminez:namekian_rivers", "Namekian Rivers", "namekian_rivers",
-                    "Charge Ki below 50% while inside the Namekian Rivers biome."),
+                    "Charge Ki while your Ki is at 50% or less."),
             new Trial("dragonminez:sacredkai_hills", "Sacred Kai Hills", "sacredkai_hills",
-                    "Charge above Y 90 without taking damage for 10 seconds."),
+                    "Charge Ki at Y 90 or higher for 10s without taking damage."),
             new Trial("dragonminez:hyperbolic_time_chamber", "Hyperbolic Time Chamber", "htc",
-                    "Remain within 1.5 blocks for 10 seconds while charging below 30%.")
+                    "Charge Ki at 30% or less for 10s, staying within 1.5 blocks of where you started.")
     };
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -235,19 +239,25 @@ public final class MeditationProgression {
         StringBuilder sb = new StringBuilder();
         sb.append(LmChat.title("Meditation Trial")).append('\n');
         sb.append(LmChat.DIVIDER).append('\n');
+        sb.append("§7Level Meditation by §fcharging Ki§7 in the active trial biome\n");
+        sb.append("§7while meeting §fevery part§7 of the goal.\n");
+        sb.append('\n');
         if (t == null) {
             sb.append("§7No trial is active right now.\n");
             sb.append("§8A new biome will be chosen shortly.\n");
         } else {
-            sb.append("§7Biome   §f").append(t.name).append('\n');
-            sb.append("§7Goal    §f").append(t.condition).append('\n');
+            sb.append("§7Where   §f").append(t.name).append(" §8biome\n");
+            sb.append("§7Do this §f").append(t.condition).append('\n');
             sb.append("§7Ends in §e").append(formatDuration(rem)).append('\n');
         }
         sb.append('\n');
         sb.append("§aHow to train\n");
-        sb.append("§7• Go to the §f").append(t == null ? "trial biome" : t.name).append('\n');
-        sb.append("§7• Charge Ki and complete the goal\n");
-        sb.append("§7• Stay focused — wrong biome warns after §f10s\n");
+        sb.append("§7• Stand in §f").append(t == null ? "the trial biome" : t.name).append('\n');
+        sb.append("§7• Charge Ki only while the goal above is true\n");
+        sb.append("§7• Ki % = your current Ki ÷ max Ki (spend Ki if you are too full)\n");
+        sb.append("§7• “Stay still” = do not wander from where you started charging\n");
+        sb.append("§7• Focus window: charge up to §f10s§7, release, charge again\n");
+        sb.append("§7• Wrong biome: warning after §f10s§7 of charging there\n");
         sb.append('\n');
         sb.append(LmChat.tip("/progression meditation", "refreshes this card"));
         if (includeStaffHints) {
@@ -265,7 +275,7 @@ public final class MeditationProgression {
         }
         long rem = Math.max(0L, GLOBAL_END.get() - System.currentTimeMillis());
         return "§7Trial §e" + t.name + " §8· §f" + formatDuration(rem) + " left"
-                + "\n§8" + t.condition;
+                + "\n§8Do this: §7" + t.condition;
     }
 
     public static int requiredSecondsForLevel(int nextLevel) {
@@ -279,6 +289,13 @@ public final class MeditationProgression {
         ensureLoaded();
         Trial t = currentTrial(System.currentTimeMillis());
         return t == null ? "" : t.name;
+    }
+
+    /** Player-facing goal text for the active trial (empty if none). */
+    public static String currentTrialGoal() {
+        ensureLoaded();
+        Trial t = currentTrial(System.currentTimeMillis());
+        return t == null || t.condition == null ? "" : t.condition;
     }
 
     public static long trialRemainingMs() {
@@ -339,10 +356,11 @@ public final class MeditationProgression {
         // Public broadcast — never mention staff/ops or staff commands.
         broadcastChat(LmChat.title("Meditation Trial"));
         broadcastChat(LmChat.DIVIDER);
-        broadcastChat("§7Biome   §f" + trial.name);
-        broadcastChat("§7Goal    §f" + trial.condition);
+        broadcastChat("§7Charge Ki in §f" + trial.name + " §7and meet the goal to level Meditation.");
+        broadcastChat("§7Where   §f" + trial.name + " §8biome");
+        broadcastChat("§7Do this §f" + trial.condition);
         broadcastChat("§7Ends in §e" + formatDuration(remaining));
-        broadcastChat(LmChat.tip("/progression meditation", "for how to train"));
+        broadcastChat(LmChat.tip("/progression meditation", "full how-to"));
         if (manual) {
             broadcastStaffChat("§8Staff · trial was rotated manually"
                     + " · §f/progression meditation next");

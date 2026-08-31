@@ -58,8 +58,8 @@ public final class ProgressionGuiApi {
             return String.join("\n",
                     "§d§lMeditation Trial",
                     "§8────────────",
-                    "§e/progression meditation §7— current biome, goal, and timer",
-                    "§8Charge Ki in the trial biome to level Meditation.",
+                    "§e/progression meditation §7— where to go, what to do, timer",
+                    "§8Charge Ki in the trial biome while meeting the goal.",
                     "",
                     "§7Other actions: §f/lm §7→ Prestige · Remove Android · Skill Check");
         }
@@ -580,7 +580,7 @@ public final class ProgressionGuiApi {
                     help.add("§8Staff · /prog admin · toggle flags in section GUIs");
                 } else {
                     help.add("§7Other actions: §f/lm §7→ Prestige · Remove Android");
-                    help.add("§8Charge Ki in the trial biome to level Meditation.");
+                    help.add("§8Charge Ki in the trial biome while meeting the goal.");
                 }
                 yield help;
             }
