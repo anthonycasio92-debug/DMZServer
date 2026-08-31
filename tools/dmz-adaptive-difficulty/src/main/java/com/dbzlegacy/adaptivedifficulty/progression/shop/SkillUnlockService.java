@@ -255,30 +255,20 @@ public final class SkillUnlockService {
 
     private static void appendSaga(List<String> out, Skills skills) {
         out.add("§6§lSaga Skills§r");
-        out.add("§8Unlocked by completing skill sagas / story progress.");
-        appendSagaSkill(out, skills, "kicontrol", "Ki Control", "§3", 1,
-                "Complete the Saga Story to unlock Ki Control.");
-        appendSagaSkill(out, skills, "kimanipulation", "Ki Manipulation", "§9", 10,
-                "Complete the Saga Story to unlock Ki Manipulation.");
-        appendSagaSkill(out, skills, "kisense", "Ki Sense", "§5", 10,
-                "Complete the Saga Story to unlock Ki Sense.");
+        out.add("§8Unlock and level up via the skills saga.");
+        String tip = "Unlock and level up via the skills saga.";
+        appendSagaSkill(out, skills, "kicontrol", "Ki Control", "§3", 1, tip);
+        appendSagaSkill(out, skills, "kimanipulation", "Ki Manipulation", "§9", 10, tip);
+        appendSagaSkill(out, skills, "kisense", "Ki Sense", "§5", 10, tip);
         // Same locked-saga format as Instant Transmission / Ki skills (script parity).
-        appendSagaSkill(out, skills, "defense_penetration", "Defense Penetration", "§c", 10,
-                "Complete the Saga Story to unlock Defense Penetration.");
-        appendSagaSkill(out, skills, "healing_reduction", "Healing Reduction", "§4", 10,
-                "Complete the Saga Story to unlock Healing Reduction.");
-        appendSagaSkill(out, skills, "instant_transmission", "Instant Transmission", "§d", 10,
-                "Complete the Saga Story to unlock Instant Transmission.");
-        appendSagaSkill(out, skills, "ki_infusion", "Ki Infusion", "§b", 10,
-                "Complete the Saga Story to unlock Ki Infusion.");
-        appendSagaSkill(out, skills, "kiboost", "Ki Boost", "§3", 4,
-                "Complete the Saga Story to unlock Ki Boost.");
-        appendSagaSkill(out, skills, "kiprotection", "Ki Protection", "§9", 10,
-                "Complete the Saga Story to unlock Ki Protection.");
-        appendSagaSkill(out, skills, "kaioken", "Kaioken", "§c", 5,
-                "Unlock via Saiyan saga progress.");
-        appendSagaSkill(out, skills, "fusion", "Fusion", "§d", 5,
-                "Unlock via fusion saga progress.");
+        appendSagaSkill(out, skills, "defense_penetration", "Defense Penetration", "§c", 10, tip);
+        appendSagaSkill(out, skills, "healing_reduction", "Healing Reduction", "§4", 10, tip);
+        appendSagaSkill(out, skills, "instant_transmission", "Instant Transmission", "§d", 10, tip);
+        appendSagaSkill(out, skills, "ki_infusion", "Ki Infusion", "§b", 10, tip);
+        appendSagaSkill(out, skills, "kiboost", "Ki Boost", "§3", 4, tip);
+        appendSagaSkill(out, skills, "kiprotection", "Ki Protection", "§9", 10, tip);
+        appendSagaSkill(out, skills, "kaioken", "Kaioken", "§c", 5, tip);
+        appendSagaSkill(out, skills, "fusion", "Fusion", "§d", 5, tip);
     }
 
     private static void appendLine(
@@ -354,14 +344,11 @@ public final class SkillUnlockService {
 
     private static String howToLevel(String id) {
         return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
-            case "kicontrol", "kimanipulation", "kisense" -> "Gained by skill saga.";
-            case "defense_penetration", "healing_reduction" ->
-                    "Train after unlocking via the Saga Story.";
-            case "instant_transmission", "ki_infusion", "kiboost", "kiprotection" ->
-                    "Train after unlocking via the Saga Story.";
-            case "kaioken" -> "Continue Saiyan saga milestones to raise this skill.";
-            case "fusion" -> "Continue fusion saga milestones to raise this skill.";
-            default -> "Unlock via saga / story progress, then train in play.";
+            case "kicontrol", "kimanipulation", "kisense",
+                 "defense_penetration", "healing_reduction",
+                 "instant_transmission", "ki_infusion", "kiboost", "kiprotection",
+                 "kaioken", "fusion" -> "Unlock and level up via the skills saga.";
+            default -> "Unlock and level up via the skills saga.";
         };
     }
 
