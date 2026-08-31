@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.server.level.ServerPlayer;
@@ -12,12 +13,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Per-player DMZ level cap from prestige breakthroughs.
- * Server {@code maxValue} stays 100k; breakthrough buyers get a higher personal
- * {@link StatsData#getConfiguredMaxValue()} so they can level into 110k…150k normally.
+ * Server {@code maxValue} is 150k so clients can display/buy past 100k; this mixin
+ * clamps each player's {@link StatsData#getConfiguredMaxValue()} to their personal
+ * breakthrough ceiling (100k…150k) on the server.
  *
  * <p>{@code remap = false} is required — DMZ methods are not obfuscated (same pattern as
  * {@code dmz_mohist_melee_fix} StatsData mixins). With remap left on, this inject never
- * applied and the personal cap stayed stuck at the server 100k.
+ * applied and the personal cap stayed stuck at the server default.
  */
 @Mixin(value = StatsData.class, remap = false)
 public abstract class StatsDataMixin {
@@ -26,8 +28,14 @@ public abstract class StatsDataMixin {
 
     @Inject(method = "getConfiguredMaxValue", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$personalBreakthroughCap(CallbackInfoReturnable<Integer> cir) {
+        try {
+            if (!DifficultyConfig.get().enablePrestigeSystem) {
+                return;
+            }
+        } catch (Throwable t) {
+            return;
+        }
         Integer serverMax = cir.getReturnValue();
-        int base = serverMax == null || serverMax <= 0 ? PrestigePointsSystem.BASE_LEVEL_CAP : serverMax;
         Player p;
         try {
             p = getPlayer();
@@ -39,7 +47,10 @@ public abstract class StatsDataMixin {
         }
         try {
             int personal = PrestigePointsSystem.effectiveMaxLevel(sp);
-            if (personal > base) {
+            if (personal <= 0) {
+                return;
+            }
+            if (serverMax == null || personal != serverMax.intValue()) {
                 cir.setReturnValue(personal);
             }
         } catch (Throwable ignored) {

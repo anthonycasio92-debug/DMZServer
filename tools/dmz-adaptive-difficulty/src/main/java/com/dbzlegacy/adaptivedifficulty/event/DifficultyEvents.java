@@ -175,7 +175,9 @@ public final class DifficultyEvents {
 
     /**
      * Soft-lock TP at the player's personal breakthrough level cap so further
-     * progress requires the next breakthrough (server maxValue stays 100k).
+     * progress requires the next breakthrough. Server DMZ {@code maxValue} is 150k
+     * (so clients can display/buy into raised caps); personal soft-locks keep
+     * non-breakthrough players at 100k / breakthrough buyers at 110k…150k.
      */
     @SubscribeEvent
     public void onTpGain(DMZEvent.TPGainEvent event) {
@@ -212,6 +214,82 @@ public final class DifficultyEvents {
                                 + " §ereached. §7Buy another breakthrough in §6/lm §7→ Prestige."));
             }
         } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * Soft-lock primary-stat purchases past the personal breakthrough ceiling.
+     * DMZ {@code maxValue} is 150k for client UI/level math; this reverts over-cap
+     * buys and refunds the spent points as pending attribute points.
+     */
+    @SubscribeEvent
+    public void onStatChange(DMZEvent.StatChangeEvent event) {
+        if (event == null || event.getNewValue() <= event.getOldValue()) {
+            return;
+        }
+        if (!(event.getPlayer() instanceof ServerPlayer player)) {
+            return;
+        }
+        if (!DifficultyConfig.get().enablePrestigeSystem) {
+            return;
+        }
+        try {
+            int personal = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                    .effectiveMaxLevel(player);
+            var data = DmzProgression.stats(player);
+            if (data == null || data.getStats() == null) {
+                return;
+            }
+            int total = data.getStats().getTotalStats();
+            int maxTotal = personal * 6;
+            if (total <= maxTotal) {
+                return;
+            }
+            int delta = event.getNewValue() - event.getOldValue();
+            if (delta <= 0) {
+                return;
+            }
+            // Revert this primary and refund as pending AP (menu spends AP first).
+            revertPrimaryStat(data, event.getStat(), event.getOldValue());
+            try {
+                data.getResources().addPendingAttributePoints(delta);
+            } catch (Throwable ignored) {
+            }
+            com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil.sync(player);
+            long now = System.currentTimeMillis();
+            long next = com.dbzlegacy.adaptivedifficulty.progression.ProgressionData
+                    .tempGetLong(player, "pp_stat_cap_msg_next", 0L);
+            if (now >= next) {
+                com.dbzlegacy.adaptivedifficulty.progression.ProgressionData
+                        .tempPut(player, "pp_stat_cap_msg_next", now + 10_000L);
+                player.m_213846_(net.minecraft.network.chat.Component.m_237113_(
+                        "§ePersonal level cap §f"
+                                + com.dbzlegacy.adaptivedifficulty.util.DmzRewards.formatWhole(personal)
+                                + " §e— need a breakthrough in §6/lm §7→ Prestige to buy more stats."));
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void revertPrimaryStat(
+            com.dragonminez.common.stats.StatsData data,
+            DMZEvent.StatChangeEvent.StatType type,
+            int oldValue
+    ) {
+        if (data == null || data.getStats() == null || type == null) {
+            return;
+        }
+        var stats = data.getStats();
+        int v = Math.max(0, oldValue);
+        switch (type) {
+            case STRENGTH -> stats.setStrength(v);
+            case STRIKE_POWER -> stats.setStrikePower(v);
+            case RESISTANCE -> stats.setResistance(v);
+            case VITALITY -> stats.setVitality(v);
+            case KI_POWER -> stats.setKiPower(v);
+            case ENERGY -> stats.setEnergy(v);
+            default -> {
+            }
         }
     }
 

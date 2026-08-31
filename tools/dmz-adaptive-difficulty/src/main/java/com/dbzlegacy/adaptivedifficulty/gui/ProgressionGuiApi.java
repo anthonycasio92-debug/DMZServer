@@ -863,7 +863,7 @@ public final class ProgressionGuiApi {
                         + "§7/§f" + ph.getOrDefault("breakthroughs_max", "5"));
                 lore.add("§7Your personal level cap: §f"
                         + ph.getOrDefault("level_cap_fmt", "100000"));
-                lore.add("§8Server hardcap stays §f100000 §8— you level into your raised cap");
+                lore.add("§8Server maxValue is §f150000 §8— soft-lock holds others at their cap");
                 int btCount = 0;
                 try {
                     btCount = Integer.parseInt(ph.getOrDefault("breakthroughs", "0"));

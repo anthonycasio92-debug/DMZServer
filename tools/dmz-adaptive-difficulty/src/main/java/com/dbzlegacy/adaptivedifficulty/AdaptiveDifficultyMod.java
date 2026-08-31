@@ -30,7 +30,7 @@ public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
     public static final String MOD_ID = "legacymechanics";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "2.3.84";
+    public static final String VERSION = "2.3.85";
     public static final String DISPLAY_NAME = "LegacyMechanics";
     public static final Logger LOGGER = LogManager.getLogger(DISPLAY_NAME);
 
@@ -63,6 +63,10 @@ public final class AdaptiveDifficultyMod {
                 com.dbzlegacy.adaptivedifficulty.gui.CmiGuiBridge.available(),
                 com.dbzlegacy.adaptivedifficulty.gui.BukkitGuiBridge.available(),
                 DifficultyConfig.get().enableProgression
+        );
+        LOGGER.info(
+                "[{}] personal level-cap mixin: StatsDataMixin via MixinConfigs=legacymechanics.mixins.json",
+                MOD_ID
         );
     }
 }

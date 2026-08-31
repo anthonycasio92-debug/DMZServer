@@ -97,7 +97,7 @@ public final class CmiPrestigeGui {
         gui.addButton(navBtn(32, Material.NETHER_STAR, "&bLevel Cap Breakthrough",
                 List.of("&7Raise &fyour &7personal level cap +10k",
                         "&7Cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
-                        "&8Server hardcap stays &f100000"),
+                        "&8DMZ maxValue 150000 — soft-lock holds others at their cap"),
                 "cap"));
 
         gui.addButton(hubBtn(36));
@@ -348,7 +348,7 @@ public final class CmiPrestigeGui {
         buy.addLore(List.of("",
                 "&7Your level cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
                 "&7Breakthroughs: &f" + bt + "&7/&f" + max,
-                "&8Server hardcap stays &f100000 &8for everyone else"));
+                "&8DMZ maxValue 150000 — soft-lock holds others at their cap"));
         if (canBuy) {
             buy.addLore("&7Next: &a+10,000 &7personal cap for &e"
                     + ph.getOrDefault("next_breakthrough_cost", "15") + " &7points");

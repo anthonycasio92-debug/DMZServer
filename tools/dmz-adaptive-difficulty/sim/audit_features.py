@@ -869,12 +869,24 @@ def main() -> int:
     check("StatsDataMixin personal cap", "getConfiguredMaxValue" in mixin and "effectiveMaxLevel" in mixin)
     check("StatsDataMixin remap false",
           'remap = false' in mixin and '@Mixin(value = StatsData.class, remap = false)' in mixin)
+    check("StatsDataMixin clamps down to personal",
+          "personal != serverMax.intValue()" in mixin or "personal != serverMax" in mixin)
+    check("StatsDataMixin gated on prestige flag", "enablePrestigeSystem" in mixin)
     manifest = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "resources" / "META-INF" / "MANIFEST.MF")
     check("MANIFEST MixinConfigs for Mohist",
           "MixinConfigs: legacymechanics.mixins.json" in manifest)
     check("mixins.json registers StatsDataMixin", '"StatsDataMixin"' in mixins_json)
     check("AD referenceMaxLevel 150k", "referenceMaxLevel = 150_000L" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))
+    dmz_general = read(ROOT / "config" / "dragonminez" / "general-server.json")
+    check("DMZ maxValue 150000 for client UI", '"maxValue": 150000' in dmz_general)
+    events_pp = read(SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")
+    check("TP soft-lock at personal cap", "onTpGain" in events_pp and "effectiveMaxLevel" in events_pp)
+    check("Stat soft-lock at personal*6", "onStatChange" in events_pp and "personal * 6" in events_pp)
+    check("Chest lore maxValue 150000 soft-lock",
+          "DMZ maxValue 150000" in prestige_chest_pp and "Server hardcap stays" not in prestige_chest_pp)
+    check("CMI lore maxValue 150000 soft-lock",
+          "DMZ maxValue 150000" in prestige_cmi_pp and "Server hardcap stays" not in prestige_cmi_pp)
     check("grant staff-gated",
           'if (!StaffAccess.isStaff(player))' in gui_api_pp.split('give_points')[1].split('balance')[0]
           if "give_points" in gui_api_pp else False)

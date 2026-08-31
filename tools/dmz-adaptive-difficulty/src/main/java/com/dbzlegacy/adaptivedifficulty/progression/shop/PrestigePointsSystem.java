@@ -27,8 +27,8 @@ import net.minecraft.server.level.ServerPlayer;
  * (survives prestige reset). Caps come from {@code skills.json} cost ladders.
  * Majin/Mutant: 5 points each, mutually exclusive; unpurchase free (no refund).
  * Breakthroughs: raise <b>your</b> DMZ level cap by +10k (max 5 → 150k) so you can
- * level normally into the new cap. Server {@code maxValue} stays 100k for everyone else
- * ({@code StatsDataMixin}). Costs 15, 20, 25, 30, 35.
+ * level normally into the new cap. Server {@code maxValue} is 150k (client UI/level
+ * math); personal soft-locks keep everyone else at 100k. Costs 15, 20, 25, 30, 35.
  */
 public final class PrestigePointsSystem {
     public static final int BASE_LEVEL_CAP = 100_000;
@@ -438,7 +438,7 @@ public final class PrestigePointsSystem {
         }
     }
 
-    // ── Personal level-cap breakthroughs (server maxValue stays 100k) ─
+    // ── Personal level-cap breakthroughs (maxValue 150k + personal soft-lock) ─
 
     public static int getBreakthroughs(ServerPlayer player) {
         if (player == null) {
@@ -456,7 +456,7 @@ public final class PrestigePointsSystem {
         return 15 + (nextIndex - 1) * 5;
     }
 
-    /** Personal DMZ level cap: 100k + breakthroughs×10k (via StatsDataMixin). */
+    /** Personal DMZ level cap: 100k + breakthroughs×10k (mixin + soft-locks). */
     public static int effectiveMaxLevel(ServerPlayer player) {
         return Math.min(ABSOLUTE_LEVEL_CAP,
                 BASE_LEVEL_CAP + getBreakthroughs(player) * BREAKTHROUGH_STEP);
@@ -510,8 +510,8 @@ public final class PrestigePointsSystem {
                         + "§c) — remount / report if this persists.";
         return "§aPersonal level cap raised to §f" + DmzRewards.formatWhole(newCap)
                 + " §7(§e-" + cost + " §7points)"
-                + "\n§7Keep leveling with TP into the new cap."
-                + "\n§8Server default hardcap stays §f100000 §8for everyone else."
+                + "\n§7Keep leveling with TP / buy stats into the new cap."
+                + "\n§8Others stay soft-locked at their personal cap until they breakthrough too."
                 + "\n§7Breakthrough §f" + next + "§7/§f" + MAX_BREAKTHROUGHS
                 + " · Points left: §e" + getPoints(player)
                 + "\n§7Live DMZ max now: §f" + DmzRewards.formatWhole(liveCap)
