@@ -42,7 +42,7 @@ javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
   cd "$OUT"
   jar xf "$GSON"
   rm -rf META-INF/maven META-INF/MANIFEST.MF 2>/dev/null || true
-  jar cf "$JAR" $(find com google -type f | sort)
+  jar cf "$JAR" $(find com -type f | sort)
 )
 jar uf "$JAR" -C "$RES" plugin.yml
 jar uf "$JAR" -C "$RES" gui-tooltips.json
