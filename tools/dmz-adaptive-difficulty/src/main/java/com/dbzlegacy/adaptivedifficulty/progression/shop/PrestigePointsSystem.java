@@ -10,7 +10,6 @@ import com.dragonminez.common.stats.skills.Skills;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -23,8 +22,9 @@ import net.minecraft.server.level.ServerPlayer;
  * Permanent Majin / Mutant, and personal level-cap breakthroughs.
  *
  * <p>Turn-in: 1 point per prestige + 1 bonus per 3 turned in ({@code N + floor(N/3)}).
- * Skills: 1 point = +1 permanent skill level for any non-form DMZ skill
- * (survives prestige reset). Caps come from {@code skills.json} cost ladders.
+ * Skills: 1 point = +1 permanent skill level for Skill Check skills only
+ * (Natural + Saga — not ultimates / ki attacks). Survives prestige reset.
+ * Caps come from {@code skills.json} cost ladders.
  * Majin/Mutant: 5 points each, mutually exclusive; unpurchase free (no refund).
  * Breakthroughs: raise <b>your</b> DMZ level cap by +10k (max 5 → 150k) so you can
  * level normally into the new cap. Server {@code maxValue} is 150k (client UI/level
@@ -58,12 +58,12 @@ public final class PrestigePointsSystem {
     public static final Map<String, SkillOffer> SKILL_OFFERS = new LinkedHashMap<>();
 
     static {
-        // Seed with natural skills so static audits / early boot still see entries;
-        // runtime catalog expands to every non-form DMZ skill from skills.json.
-        for (String id : new String[]{
-                "meditation", "fly", "sprint", "jump", "potentialunlock"
-        }) {
-            SKILL_OFFERS.put(id, resolveOffer(id));
+        // Seed with Skill Check Natural skills so static audits / early boot still see entries.
+        for (String id : DmzSkillUtil.SKILL_CHECK_NATURAL) {
+            SkillOffer offer = resolveOffer(id);
+            if (offer != null) {
+                SKILL_OFFERS.put(id, offer);
+            }
         }
     }
 
@@ -71,24 +71,23 @@ public final class PrestigePointsSystem {
 
     public record SkillOffer(String id, String label, int maxLevel) {}
 
-    /** Resolve a purchasable offer for any non-form DMZ skill id. */
+    /** Resolve a purchasable offer — Skill Check Natural/Saga skills only. */
     public static SkillOffer resolveOffer(String skillId) {
         if (skillId == null || skillId.isBlank()) {
             return null;
         }
         String id = skillId.toLowerCase(Locale.ROOT).trim();
-        if (DmzSkillUtil.isFormSkill(id)) {
+        if (!DmzSkillUtil.isSkillCheckSkill(id) || DmzSkillUtil.isFormSkill(id)) {
             return null;
         }
         int max = DmzSkillUtil.configuredMaxLevel(id);
         if (max <= 0) {
-            // Still allow known legacy ids before config is loaded.
+            // Still allow known Skill Check ids before config is loaded.
             max = switch (id) {
                 case "potentialunlock" -> 30;
                 case "fusion", "kaioken" -> 5;
                 case "kiboost" -> 4;
                 case "kicontrol" -> 1;
-                case "ultimate" -> 2;
                 case "meditation", "fly", "sprint", "jump",
                      "kimanipulation", "kisense", "defense_penetration",
                      "healing_reduction", "instant_transmission",
@@ -102,10 +101,10 @@ public final class PrestigePointsSystem {
         return new SkillOffer(id, DmzSkillUtil.prettySkillLabel(id), max);
     }
 
-    /** Full purchasable catalog (non-form DMZ skills). */
+    /** Prestige shop catalog — Skill Check Natural + Saga only (no ultimate / attacks). */
     public static List<SkillOffer> skillOffers() {
         List<SkillOffer> out = new ArrayList<>();
-        for (String id : DmzSkillUtil.allNonFormSkillIds()) {
+        for (String id : DmzSkillUtil.skillCheckSkillIds()) {
             SkillOffer offer = resolveOffer(id);
             if (offer != null) {
                 out.add(offer);
@@ -278,7 +277,7 @@ public final class PrestigePointsSystem {
         }
         SkillOffer offer = resolveOffer(skillId);
         if (offer == null) {
-            return "§cUnknown DMZ skill (forms aren't purchasable here).";
+            return "§cOnly Skill Check skills are purchasable here (Natural + Saga).";
         }
         int purchased = getPurchasedSkillLevels(player, offer.id);
         if (purchased >= offer.maxLevel) {
@@ -323,10 +322,27 @@ public final class PrestigePointsSystem {
         Skills skills = DmzSkillUtil.skills(player);
         if (skills != null) {
             boolean changed = false;
-            Collection<SkillOffer> offers = skillOffers();
-            // Also re-seed SKILL_OFFERS so placeholders stay current.
-            for (SkillOffer offer : offers) {
+            // Shop catalog + any legacy purchased ids still stored on the player.
+            LinkedHashMap<String, SkillOffer> apply = new LinkedHashMap<>();
+            for (SkillOffer offer : skillOffers()) {
+                apply.put(offer.id, offer);
                 SKILL_OFFERS.put(offer.id, offer);
+            }
+            for (String id : DmzSkillUtil.allNonFormSkillIds()) {
+                if (apply.containsKey(id)) {
+                    continue;
+                }
+                int purchased = getPurchasedSkillLevels(player, id);
+                if (purchased <= 0) {
+                    continue;
+                }
+                int max = DmzSkillUtil.configuredMaxLevel(id);
+                if (max <= 0) {
+                    max = Math.max(purchased, 10);
+                }
+                apply.put(id, new SkillOffer(id, DmzSkillUtil.prettySkillLabel(id), max));
+            }
+            for (SkillOffer offer : apply.values()) {
                 int purchased = getPurchasedSkillLevels(player, offer.id);
                 if (purchased <= 0) {
                     continue;

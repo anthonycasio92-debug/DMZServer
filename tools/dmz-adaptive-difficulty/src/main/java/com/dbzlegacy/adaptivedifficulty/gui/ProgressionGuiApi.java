@@ -847,7 +847,7 @@ public final class ProgressionGuiApi {
             }
             case "shop", "skills" -> {
                 lore.add("§71 point → +1 permanent DMZ skill level");
-                lore.add("§7All non-form DMZ skills · floors survive prestige");
+                lore.add("§7Skill Check skills only (Natural + Saga) · floors survive prestige");
                 lore.add("§7Catalog: §f" + ph.getOrDefault("shop_skill_count", "0")
                         + " §7skills · §f" + ph.getOrDefault("shop_pages", "1") + " §7page(s)");
             }

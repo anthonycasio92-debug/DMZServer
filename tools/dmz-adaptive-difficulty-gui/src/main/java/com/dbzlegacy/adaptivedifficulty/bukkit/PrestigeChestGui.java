@@ -100,7 +100,7 @@ public final class PrestigeChestGui implements Listener {
                 SlotAction.page("turnin"));
         put(holder, inv, 24, tipBtn(viewer, Material.EXPERIENCE_BOTTLE, "&aSkill Shop",
                 List.of("&71 point = +1 permanent DMZ skill level",
-                        "&7All non-form skills from skills.json")),
+                        "&7Skill Check skills only (Natural + Saga)")),
                 SlotAction.page("shop"));
         put(holder, inv, 30, tipBtn(viewer, Material.MAGENTA_DYE, "&dForms",
                 List.of("&7Permanent Majin / Mutant (&e5 &7pts)")),

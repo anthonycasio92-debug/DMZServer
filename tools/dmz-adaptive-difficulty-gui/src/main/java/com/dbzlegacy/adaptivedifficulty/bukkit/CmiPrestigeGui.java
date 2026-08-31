@@ -91,7 +91,7 @@ public final class CmiPrestigeGui {
                 "turnin"));
         gui.addButton(navBtn(24, Material.EXPERIENCE_BOTTLE, "&aSkill Shop",
                 List.of("&71 point = +1 permanent DMZ skill level",
-                        "&7All non-form skills from skills.json"), "shop"));
+                        "&7Skill Check skills only (Natural + Saga)"), "shop"));
         gui.addButton(navBtn(30, Material.MAGENTA_DYE, "&dForms",
                 List.of("&7Permanent Majin / Mutant (&e5 &7pts)"), "forms"));
         gui.addButton(navBtn(32, Material.NETHER_STAR, "&bLevel Cap Breakthrough",

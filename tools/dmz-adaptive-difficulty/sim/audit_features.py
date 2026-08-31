@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.86", 'VERSION = "2.3.86"' in mod)
+    check("VERSION 2.3.87", 'VERSION = "2.3.87"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -902,8 +902,22 @@ def main() -> int:
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzSkillUtil.java"))
     check("skillMax prefers skills.json", "configuredMaxLevel(id)" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java"))
-    check("prestige shop all non-form skills", "skillOffers()" in pp and "allNonFormSkillIds" in
+    check("prestige shop Skill Check skills only",
+          "skillOffers()" in pp and "skillCheckSkillIds" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzSkillUtil.java"))
+    check("skillCheckSkillIds excludes ultimate",
+          "skillCheckSkillIds" in read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzSkillUtil.java")
+          and '"ultimate"' not in "".join(
+              read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzSkillUtil.java")
+              .split("SKILL_CHECK_NATURAL")[1]
+              .split("allNonFormSkillIds")[0]
+          ))
+    check("resolveOffer rejects non-SkillCheck",
+          "isSkillCheckSkill" in pp and "Only Skill Check skills" in pp)
+    check("Chest skill shop tip Skill Check only",
+          "Skill Check skills only" in prestige_chest_pp)
+    check("CMI skill shop tip Skill Check only",
+          "Skill Check skills only" in prestige_cmi_pp)
     check("kiboost fallback max 4", '"kiboost", "Ki Boost", "§3", 4' in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java"))
     check("kicontrol fallback max 1", '"kicontrol", "Ki Control", "§3", 1' in

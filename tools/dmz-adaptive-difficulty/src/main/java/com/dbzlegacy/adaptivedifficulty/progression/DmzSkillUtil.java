@@ -107,23 +107,64 @@ public final class DmzSkillUtil {
     }
 
     /**
-     * All non-form skill ids from DMZ skills config (stable sorted order).
-     * Used by prestige permanent skill shop + Skill Check max resolution.
+     * Skill Check Natural page — Potential Unlock, Flight, Meditation, Jump, Sprint.
+     * Prestige skill shop is limited to these + {@link #SKILL_CHECK_SAGA}.
      */
-    public static List<String> allNonFormSkillIds() {
-        LinkedHashSet<String> out = new LinkedHashSet<>();
-        // Prefer natural/saga order first for shop UX.
-        for (String id : new String[]{
-                "meditation", "fly", "sprint", "jump", "potentialunlock",
-                "kicontrol", "kimanipulation", "kisense",
-                "defense_penetration", "healing_reduction",
-                "instant_transmission", "ki_infusion", "kiboost", "kiprotection",
-                "kaioken", "fusion", "ultimate"
-        }) {
-            if (configuredMaxLevel(id) > 0 && !isFormSkill(id)) {
-                out.add(id);
+    public static final String[] SKILL_CHECK_NATURAL = {
+            "potentialunlock", "fly", "meditation", "jump", "sprint"
+    };
+
+    /**
+     * Skill Check Saga page — same ids {@code SkillUnlockService} shows under Saga.
+     * Excludes ultimates / ki attacks / strike skills.
+     */
+    public static final String[] SKILL_CHECK_SAGA = {
+            "kicontrol", "kimanipulation", "kisense",
+            "defense_penetration", "healing_reduction",
+            "instant_transmission", "ki_infusion", "kiboost", "kiprotection",
+            "kaioken", "fusion"
+    };
+
+    /** True when {@code id} appears on Skill Check (Natural or Saga). */
+    public static boolean isSkillCheckSkill(String id) {
+        if (id == null || id.isBlank()) {
+            return false;
+        }
+        String key = id.toLowerCase(Locale.ROOT);
+        for (String s : SKILL_CHECK_NATURAL) {
+            if (key.equals(s)) {
+                return true;
             }
         }
+        for (String s : SKILL_CHECK_SAGA) {
+            if (key.equals(s)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Skill Check catalog (Natural then Saga). Prestige permanent skill shop uses this —
+     * not every non-form entry in skills.json (no ultimate / ki attacks).
+     */
+    public static List<String> skillCheckSkillIds() {
+        List<String> out = new ArrayList<>(SKILL_CHECK_NATURAL.length + SKILL_CHECK_SAGA.length);
+        for (String id : SKILL_CHECK_NATURAL) {
+            out.add(id);
+        }
+        for (String id : SKILL_CHECK_SAGA) {
+            out.add(id);
+        }
+        return List.copyOf(out);
+    }
+
+    /**
+     * All non-form skill ids from DMZ skills config (stable sorted order).
+     * Used for max-level resolution / reapply of legacy purchases — not the prestige shop catalog.
+     */
+    public static List<String> allNonFormSkillIds() {
+        LinkedHashSet<String> out = new LinkedHashSet<>(skillCheckSkillIds());
         try {
             SkillsConfig cfg = ConfigManager.getSkillsConfig();
             if (cfg != null && cfg.getSkills() != null) {
