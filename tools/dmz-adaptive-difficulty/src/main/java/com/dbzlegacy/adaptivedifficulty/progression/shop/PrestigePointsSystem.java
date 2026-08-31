@@ -928,22 +928,54 @@ public final class PrestigePointsSystem {
         }
         // Stagger reapply so DMZ / Fabled finish loading.
         ProgressionData.tempPut(player, KEY_REAPPLY_AT, System.currentTimeMillis() + 2000L);
-        reapplySkillBonuses(player);
+        reapplyAllShopPurchases(player);
     }
 
     public static void scheduleReapplyAfterPrestige(ServerPlayer player) {
+        scheduleReapplyAfterDeath(player);
+    }
+
+    /**
+     * After death respawn (or prestige reset), re-apply every prestige-shop purchase:
+     * skill floors, permanent difficulty tiers, Majin/Mutant, and breakthrough soft-lock.
+     * Immediate + next-tick + pulse window cover DMZ skill rebuild races.
+     */
+    public static void scheduleReapplyAfterDeath(ServerPlayer player) {
         if (player == null) {
             return;
         }
         long now = System.currentTimeMillis();
-        ProgressionData.tempPut(player, KEY_REAPPLY_AT, now + 3000L);
+        // Pulse path: keep reapplying until this deadline (skills/forms/tiers).
+        ProgressionData.tempPut(player, KEY_REAPPLY_AT, now + 8000L);
+        reapplyAllShopPurchases(player);
         MinecraftServer server = player.m_20194_();
-        if (server != null) {
-            server.execute(() -> {
-                if (player.m_6084_()) {
-                    reapplySkillBonuses(player);
-                }
-            });
+        if (server == null) {
+            return;
+        }
+        final java.util.UUID id = player.m_20148_();
+        // Next-tick pass after DMZ finishes respawn rebuild (UUID — clone/original share id).
+        server.execute(() -> {
+            ServerPlayer p = server.m_6846_().m_11259_(id);
+            if (p != null && p.m_6084_()) {
+                reapplyAllShopPurchases(p);
+            }
+        });
+    }
+
+    /**
+     * Restore live DMZ / difficulty state from stored prestige-shop purchases.
+     * Does not spend points — only reapplies owned floors / effects / unlocks.
+     */
+    public static void reapplyAllShopPurchases(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        reapplySkillBonuses(player);
+        // Breakthroughs are read live from NBT (effectiveMaxLevel); force a sync so
+        // clients / soft-locks see the personal cap immediately after respawn.
+        try {
+            DmzSkillUtil.sync(player);
+        } catch (Throwable ignored) {
         }
     }
 
@@ -953,9 +985,13 @@ public final class PrestigePointsSystem {
             return;
         }
         long at = ProgressionData.tempGetLong(player, KEY_REAPPLY_AT, 0L);
-        if (at > 0L && nowMs >= at) {
-            ProgressionData.tempRemove(player, KEY_REAPPLY_AT);
-            reapplySkillBonuses(player);
+        if (at > 0L) {
+            // While a post-death / login window is open, keep reapplying every pulse
+            // until the deadline (DMZ may wipe skills mid-window).
+            reapplyAllShopPurchases(player);
+            if (nowMs >= at) {
+                ProgressionData.tempRemove(player, KEY_REAPPLY_AT);
+            }
         }
         // Fabled Permanent Majin/Mutant skills are gone — LM must keep dmzeffect applied.
         if (hasMajin(player) || hasMutant(player)) {

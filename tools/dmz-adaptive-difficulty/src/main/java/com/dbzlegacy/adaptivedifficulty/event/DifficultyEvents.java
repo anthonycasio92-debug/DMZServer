@@ -332,23 +332,38 @@ public final class DifficultyEvents {
         var neuTag = PersistentDataAccess.get(neu);
         if (PersistentDataAccess.isWritable(neuTag) && PersistentDataAccess.isWritable(oldTag)) {
             // Death respawn builds a new player entity. Forge does not always copy
-            // Entity#getPersistentData() for wasDeath — without this, prestige wallet /
-            // invested skill floors / breakthroughs under lm_progression are wiped.
+            // Entity#getPersistentData() for wasDeath — without this, the whole
+            // prestige shop (wallet, skills, tiers, Majin/Mutant, breakthroughs)
+            // under lm_progression is wiped.
             copyLmPersistentData(oldTag, neuTag);
             data.writeToPlayerNbt(neuTag);
         } else if (PersistentDataAccess.isWritable(neuTag)) {
             data.writeToPlayerNbt(neuTag);
         }
-        DifficultyCache.putData(neu, data);
+        // Original and clone share the same UUID — never remove() after putData(),
+        // or the restored cache entry is dropped and the next read may race an empty bag.
         DifficultyCache.remove(old.m_20148_());
+        DifficultyCache.putData(neu, data);
         CombatGravity.clearPlayer(old);
         if (event.isWasDeath()) {
-            // DMZ may rebuild skills on respawn — re-apply prestige floors shortly after.
             try {
                 com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
-                        .scheduleReapplyAfterPrestige(neu);
+                        .scheduleReapplyAfterDeath(neu);
             } catch (Throwable ignored) {
             }
+        }
+    }
+
+    @SubscribeEvent
+    public void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        // Belt-and-suspenders: DMZ may finish rebuilding skills after Clone.
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                    .scheduleReapplyAfterDeath(player);
+        } catch (Throwable ignored) {
         }
     }
 
@@ -361,8 +376,9 @@ public final class DifficultyEvents {
         if (from == null || to == null) {
             return;
         }
-        // Prestige points wallet, invested skill floors, tiers, forms, breakthroughs,
-        // meditation / flight / potential progress, CNPC migrate marks, etc.
+        // Prestige wallet + every prestige-shop purchase:
+        // prestige_points, pp_skill_*, pp_tier_*, pp_perm_majin/mutant, pp_level_breakthroughs,
+        // plus meditation / flight / potential progress, CNPC migrate marks, etc.
         if (from.m_128441_("lm_progression")) {
             to.m_128365_("lm_progression", from.m_128469_("lm_progression").m_6426_());
         }
