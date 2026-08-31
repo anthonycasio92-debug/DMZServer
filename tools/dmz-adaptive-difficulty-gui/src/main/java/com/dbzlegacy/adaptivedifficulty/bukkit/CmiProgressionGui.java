@@ -265,11 +265,12 @@ public final class CmiProgressionGui {
                 lore.add("");
                 lore.add("&eClick to toggle");
             }
+            String flagTitle = (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF");
             Map<String, String> flagVars = Map.of(
+                    "name", flagTitle,
                     "title", info[0],
                     "status", on ? "ON" : "OFF",
                     "desc", info[1]);
-            String flagTitle = (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF");
             if (staff) {
                 gui.addButton(actionBtn(slots[i], "progression." + page + ".flag",
                         on ? Material.LIME_DYE : Material.GRAY_DYE,
@@ -486,13 +487,15 @@ public final class CmiProgressionGui {
             for (int g = 1; g < group.length && si < slots.length; g++) {
                 String key = group[g];
                 boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
+                String flagTitle = (on ? "&a" : "&8") + key + (on ? " ON" : " OFF");
                 Map<String, String> flagVars = Map.of(
+                        "name", flagTitle,
                         "title", key,
                         "status", on ? "ON" : "OFF",
                         "desc", stripSection(sectionTitle));
                 gui.addButton(actionBtn(slots[si++], "progression.admin.flag",
                         on ? Material.LIME_DYE : Material.GRAY_DYE,
-                        (on ? "&a" : "&8") + key + (on ? " ON" : " OFF"),
+                        flagTitle,
                         "flag", key, "admin",
                         List.of("&8" + stripSection(sectionTitle), "&7Click to toggle " + key), flagVars));
             }
@@ -519,13 +522,15 @@ public final class CmiProgressionGui {
         for (int i = 0; i < FABLED_FLAG_KEYS.length && i < slots.length; i++) {
             String key = FABLED_FLAG_KEYS[i];
             boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
+            String flagTitle = (on ? "&a" : "&8") + key + (on ? " ON" : " OFF");
             Map<String, String> flagVars = Map.of(
+                    "name", flagTitle,
                     "title", key,
                     "status", on ? "ON" : "OFF",
                     "desc", "Fabled");
             gui.addButton(actionBtn(slots[i], "progression.fabled.flag",
                     on ? Material.LIME_DYE : Material.GRAY_DYE,
-                    (on ? "&a" : "&8") + key + (on ? " ON" : " OFF"),
+                    flagTitle,
                     "flag", key, "flags_fabled",
                     List.of("&8Fabled", "&7Click to toggle " + key), flagVars));
         }

@@ -244,7 +244,8 @@ public final class CmiSparGui {
                             "&87-day cooldown after leaving"),
                     Map.of("name", mentorName)));
         } else {
-            String display = GuiTooltips.name("spar.mentor.leave", "&8Leave mentor");
+            String display = GuiTooltips.name("spar.mentor.leave", "&8Leave mentor",
+                    Map.of("name", mentorName));
             CMIGuiButton leaveOff = new CMIGuiButton(24, Material.GRAY_DYE, display);
             leaveOff.lockField();
             leaveOff.addLore(GuiTooltips.buttonLore("spar.mentor.leave", List.of("&7You have no mentor"),
@@ -258,7 +259,8 @@ public final class CmiSparGui {
                             "&87-day cooldown after releasing"),
                     Map.of("name", apprenticeName)));
         } else {
-            String display = GuiTooltips.name("spar.mentor.release", "&8Release apprentice");
+            String display = GuiTooltips.name("spar.mentor.release", "&8Release apprentice",
+                    Map.of("name", apprenticeName));
             CMIGuiButton releaseOff = new CMIGuiButton(25, Material.GRAY_DYE, display);
             releaseOff.lockField();
             releaseOff.addLore(GuiTooltips.buttonLore("spar.mentor.release", List.of("&7You have no apprentice"),

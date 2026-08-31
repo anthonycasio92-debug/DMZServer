@@ -620,7 +620,9 @@ public final class CmiRivalGui {
             org.bukkit.inventory.meta.ItemMeta meta = clock.getItemMeta();
             if (meta != null) {
                 Map<String, String> durVars = Map.of("minutes", String.valueOf(minutes));
-                meta.setDisplayName(color("&e" + minutes + " minute" + (minutes == 1 ? "" : "s")));
+                String fallback = "&e" + minutes + " minute" + (minutes == 1 ? "" : "s");
+                meta.setDisplayName(color(GuiTooltips.name(
+                        "rival.challenge.duration", fallback, durVars)));
                 List<String> clockLore = new ArrayList<>();
                 clockLore.add(color(""));
                 clockLore.add(color("&7Challenge &f" + display));
@@ -914,7 +916,18 @@ public final class CmiRivalGui {
 
     /** Player-head tip lines, staff-only, wired through the picker's GuiTooltips key. */
     private static List<String> pickerTip(Player player, String... tips) {
-        return GuiTooltips.lore("rival.picker.tip", GuiBoardHelper.tips(player, tips));
+        List<String> defaults = GuiBoardHelper.tips(player, tips);
+        List<String> out = new ArrayList<>();
+        for (String tip : defaults) {
+            if (tip == null) {
+                continue;
+            }
+            out.addAll(GuiTooltips.lore(
+                    "rival.picker.tip",
+                    List.of(tip),
+                    Map.of("tip", tip)));
+        }
+        return out;
     }
 
     private static CMIGuiButton pageBtn(Player player, int slot, Material mat, String name, String page, String... tips) {

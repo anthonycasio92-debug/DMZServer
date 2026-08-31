@@ -248,6 +248,7 @@ public final class ProgressionChestGui implements Listener {
             }
             String flagTitle = (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF");
             Map<String, String> flagVars = Map.of(
+                    "name", flagTitle,
                     "title", info[0],
                     "status", on ? "ON" : "OFF",
                     "desc", info[1]);
@@ -291,13 +292,15 @@ public final class ProgressionChestGui implements Listener {
             for (int g = 1; g < group.length && si < slots.length; g++) {
                 String key = group[g];
                 boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
+                String flagTitle = (on ? "&a" : "&8") + key + (on ? " ON" : " OFF");
                 Map<String, String> flagVars = Map.of(
+                        "name", flagTitle,
                         "title", key,
                         "status", on ? "ON" : "OFF",
                         "desc", stripAmp(sectionTitle));
                 put(holder, inv, slots[si++], tipBtn("progression.admin.flag",
                         on ? Material.LIME_DYE : Material.GRAY_DYE,
-                        (on ? "&a" : "&8") + key + (on ? " ON" : " OFF"),
+                        flagTitle,
                         List.of("&8" + stripAmp(sectionTitle), "&7Click to toggle " + key), flagVars),
                         SlotAction.act("flag", key, "admin"));
             }
@@ -322,13 +325,15 @@ public final class ProgressionChestGui implements Listener {
         for (int i = 0; i < FABLED_FLAG_KEYS.length && i < slots.length; i++) {
             String key = FABLED_FLAG_KEYS[i];
             boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
+            String flagTitle = (on ? "&a" : "&8") + key + (on ? " ON" : " OFF");
             Map<String, String> flagVars = Map.of(
+                    "name", flagTitle,
                     "title", key,
                     "status", on ? "ON" : "OFF",
                     "desc", "Fabled");
             put(holder, inv, slots[i], tipBtn("progression.fabled.flag",
                     on ? Material.LIME_DYE : Material.GRAY_DYE,
-                    (on ? "&a" : "&8") + key + (on ? " ON" : " OFF"),
+                    flagTitle,
                     List.of("&8Fabled", "&7Click to toggle " + key), flagVars),
                     SlotAction.act("flag", key, "flags_fabled"));
         }

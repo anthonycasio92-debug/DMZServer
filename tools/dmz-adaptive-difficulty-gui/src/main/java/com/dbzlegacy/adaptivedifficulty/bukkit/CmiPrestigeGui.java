@@ -330,7 +330,7 @@ public final class CmiPrestigeGui {
             }
             majinDefaults.add("&aPermanent purchase &8· only one at a time");
             CMIGuiButton majin = new CMIGuiButton(20, Material.PINK_DYE,
-                    GuiTooltips.name("prestige.effects.majin", "&dBuy Permanent Majin"));
+                    GuiTooltips.name("prestige.effects.majin", "&dBuy Permanent Majin", costVars));
             majin.lockField();
             majin.addLore(GuiTooltips.buttonLore("prestige.effects.majin", majinDefaults, costVars, null));
             majin.addCommand("lmdo prestige majin 0 forms");
@@ -352,7 +352,7 @@ public final class CmiPrestigeGui {
             }
             mutantDefaults.add("&aPermanent purchase &8· only one at a time");
             CMIGuiButton mutant = new CMIGuiButton(22, Material.SLIME_BALL,
-                    GuiTooltips.name("prestige.effects.mutant", "&aBuy Permanent Mutant"));
+                    GuiTooltips.name("prestige.effects.mutant", "&aBuy Permanent Mutant", costVars));
             mutant.lockField();
             mutant.addLore(GuiTooltips.buttonLore("prestige.effects.mutant", mutantDefaults, costVars, null));
             mutant.addCommand("lmdo prestige mutant 0 forms");
@@ -401,7 +401,7 @@ public final class CmiPrestigeGui {
                 "cost", nextCost);
         CMIGuiButton buy = new CMIGuiButton(22,
                 canBuy ? Material.NETHER_STAR : Material.BEACON,
-                canBuy ? GuiTooltips.name("prestige.cap.buy", "&bBuy Breakthrough") : "&aCap Maxed");
+                canBuy ? GuiTooltips.name("prestige.cap.buy", "&bBuy Breakthrough", capVars) : "&aCap Maxed");
         buy.lockField();
         buy.addLore(List.of("",
                 "&7Your level cap: &f" + levelCapFmt,
@@ -516,7 +516,7 @@ public final class CmiPrestigeGui {
         List<String> walletLine = GuiTooltips.lore("prestige.main.wallet",
                 List.of("&6Wallet: &e{points} &7prestige points"), vars);
         CMIGuiButton btn = new CMIGuiButton(4, Material.GOLD_INGOT,
-                GuiTooltips.name("prestige.main.wallet", title));
+                GuiTooltips.name("prestige.main.wallet", title, vars));
         btn.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");

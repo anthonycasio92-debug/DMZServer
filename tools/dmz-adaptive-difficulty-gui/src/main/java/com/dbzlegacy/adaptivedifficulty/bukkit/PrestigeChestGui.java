@@ -416,7 +416,7 @@ public final class PrestigeChestGui implements Listener {
         }
         put(holder, inv, 22, item(
                 canBuy ? Material.NETHER_STAR : Material.BEACON,
-                canBuy ? GuiTooltips.name("prestige.cap.buy", "&bBuy Breakthrough") : "&aCap Maxed",
+                canBuy ? GuiTooltips.name("prestige.cap.buy", "&bBuy Breakthrough", capVars) : "&aCap Maxed",
                 lore),
                 canBuy ? SlotAction.act("breakthrough", "0", "cap") : null);
 
@@ -524,7 +524,7 @@ public final class PrestigeChestGui implements Listener {
                 List.of("&6Wallet: &e{points} &7prestige points"), vars);
         lore.add(1, walletLine.isEmpty() ? "" : walletLine.get(0));
         put(holder, inv, 4, item(Material.GOLD_INGOT,
-                GuiTooltips.name("prestige.main.wallet", title), lore));
+                GuiTooltips.name("prestige.main.wallet", title, vars), lore));
     }
 
     private static int parseInt(String raw, int fallback) {
