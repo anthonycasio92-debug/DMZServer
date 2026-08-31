@@ -260,16 +260,28 @@ public final class DifficultyConfig {
 
     /**
      * Periodic on-screen Legacy Mechanics tips ({@code /lm} hub reminders).
-     * Title/subtitle only — no chat. Helps new players discover systems.
+     * Title/subtitle only — no chat. Helps newer ranks discover systems.
      */
     public boolean enableLmTips = true;
-    /** Seconds between tips for established players (default 10 minutes). */
+    /** Seconds between tips for higher ranks (default 10 minutes). */
     public int lmTipIntervalSeconds = 600;
-    /** Seconds between tips for new players (low level / no prestige). Default 4 minutes. */
+    /**
+     * Seconds between tips for LuckPerms primary groups in {@link #lmTipFrequentGroups}
+     * (default / student / novice). Default 4 minutes.
+     */
     public int lmTipNewPlayerIntervalSeconds = 240;
     /** Seconds after login before the first tip. */
     public int lmTipLoginDelaySeconds = 75;
-    /** DMZ level below this counts as “new” for tip cadence. */
+    /**
+     * LuckPerms <b>primary</b> groups that get the frequent tip cadence.
+     * Default: {@code default}, {@code student}, {@code novice}.
+     */
+    public List<String> lmTipFrequentGroups = new ArrayList<>(Arrays.asList(
+            "default", "student", "novice"
+    ));
+    /**
+     * Fallback when LuckPerms is unavailable: DMZ level below this uses frequent cadence.
+     */
     public int lmTipNewPlayerMaxLevel = 2500;
 
     /**
