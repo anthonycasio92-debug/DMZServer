@@ -802,8 +802,18 @@ public final class ProgressionGuiApi {
         out.put("form_cost", String.valueOf(PrestigePointsSystem.FORM_COST));
         for (int t = 1; t <= 7; t++) {
             out.put("tier_" + t + "_cost", String.valueOf(PrestigePointsSystem.tierPointCost(t)));
-            out.put("tier_" + t + "_owned",
-                    PrestigePointsSystem.hasPurchasedTier(player, t) ? "true" : "false");
+            boolean purchased = PrestigePointsSystem.hasPurchasedTier(player, t);
+            out.put("tier_" + t + "_owned", purchased ? "true" : "false");
+            boolean unlocked = false;
+            try {
+                var pdata = com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.data(player);
+                var utier = com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.byId(t);
+                unlocked = (pdata != null && pdata.hasUnlockedTier(t))
+                        || (utier != null
+                        && com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem.isEligible(player, utier));
+            } catch (Throwable ignored) {
+            }
+            out.put("tier_" + t + "_unlocked", unlocked || purchased ? "true" : "false");
             var ut = com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.byId(t);
             out.put("tier_" + t + "_label", ut == null ? ("T" + t) : ut.display);
         }

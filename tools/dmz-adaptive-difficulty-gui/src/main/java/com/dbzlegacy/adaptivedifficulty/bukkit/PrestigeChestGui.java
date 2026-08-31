@@ -406,12 +406,22 @@ public final class PrestigeChestGui implements Listener {
         int[] slots = {19, 20, 21, 22, 23, 24, 25};
         for (int t = 1; t <= 7; t++) {
             boolean owned = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_owned", "false"));
+            boolean unlocked = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_unlocked", "false"));
             String label = ph.getOrDefault("tier_" + t + "_label", "T" + t);
             String cost = ph.getOrDefault("tier_" + t + "_cost", String.valueOf((t + 1) / 2));
             List<String> lore = new ArrayList<>();
             lore.add("");
-            lore.add(owned ? "&aOwned · permanent" : "&7Cost: &e" + cost + " &7point" + ("1".equals(cost) ? "" : "s"));
-            lore.add("&aPermanent unlock &8· survives prestige");
+            if (owned) {
+                lore.add("&aOwned · permanent");
+            } else {
+                lore.add("&7Cost: &e" + cost + " &7point" + ("1".equals(cost) ? "" : "s"));
+                if (unlocked) {
+                    lore.add("&eCurrently unlocked via level/prestige");
+                    lore.add("&7Buy to make it &apermanent &7(survives prestige)");
+                } else {
+                    lore.add("&aPermanent unlock &8· survives prestige");
+                }
+            }
             if (!owned && t > 1) {
                 lore.add("&8Requires T" + (t - 1) + " unlocked or purchased");
             }

@@ -424,6 +424,8 @@ public final class PrestigePointsSystem {
     /**
      * Buy a permanent difficulty-tier unlock with prestige points.
      * Requires the previous tier to already be unlocked (level/prestige or purchased).
+     * Allowed even when the tier is already unlocked via level — purchase makes it
+     * permanent so it survives prestige / level-gate revoke.
      */
     public static String buyDifficultyTier(ServerPlayer player, int tierId) {
         if (player == null) {
@@ -437,12 +439,6 @@ public final class PrestigePointsSystem {
             return "§eYou already own permanent §fT" + tierId + " " + tier.display + "§e.";
         }
         var data = com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.data(player);
-        if (data != null && data.hasUnlockedTier(tierId)
-                && com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem.isEligible(player, tier)) {
-            // Already unlocked via level/prestige — no purchase needed.
-            return "§eT" + tierId + " " + tier.display
-                    + " §eis already unlocked via level/prestige (no purchase needed).";
-        }
         if (tierId > 1) {
             int prev = tierId - 1;
             boolean prevOk = hasPurchasedTier(player, prev)
@@ -465,11 +461,20 @@ public final class PrestigePointsSystem {
             data.unlockTier(tierId);
         }
         try {
+            com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.save(player);
+            com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.invalidate(player.m_20148_());
+        } catch (Throwable ignored) {
+        }
+        try {
             com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem.syncUnlocks(player, data);
         } catch (Throwable ignored) {
         }
         // Re-apply after sync in case sync raced; purchased must stick.
         reapplyTierUnlocks(player);
+        try {
+            com.dbzlegacy.adaptivedifficulty.title.TitleSystem.syncTierTitles(player, true);
+        } catch (Throwable ignored) {
+        }
         SystemTelemetry.log("prestige_points", "buy_tier", player, null, Map.of(
                 "tier", tierId,
                 "cost", cost,
