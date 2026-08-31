@@ -12,13 +12,15 @@
       "difficulty": {
         "name": "&aDifficulty",
         "lore": [
-          "&7Unlock tiers & world scaling",
+          "&7Gain and spend ancient coins- tiers are lost on death",
+          "&7Challenge yourself to custom scaled mobs",
           "&eClick to open"
         ]
       },
       "rival": {
         "name": "&6Rival",
         "lore": [
+          "&7Use the rival system for more TP",
           "&7Rivalry, challenges & RP",
           "&eClick to open"
         ]
@@ -40,15 +42,14 @@
       "skills": {
         "name": "&eSkills",
         "lore": [
-          "&7Skill unlock admin browser",
-          "&8No Skill Check perm",
+          "&7Skill check ADMIN",
           "&eClick to open"
         ]
       },
       "prestige": {
         "name": "&6Prestige",
         "lore": [
-          "&7Turn in prestiges · skill/forms shop · level-cap",
+          "&7Prestiges · Prestige shop",
           "&eClick to open"
         ]
       },
@@ -56,7 +57,7 @@
         "name": "&cRemove Android",
         "lore": [
           "&7Remove your Android upgrade",
-          "&8Two-click confirm · forms restored",
+          "&8Double-click to confirm",
           "&eClick to open"
         ]
       },
@@ -121,7 +122,7 @@
         "name": "&aConfirm Prestige",
         "lore": [
           "&7Click to prestige (confirm within 10s)",
-          "&8Resets DMZ stats · awards held Prestige"
+          "&8Resets DMZ stats · Awards 1 held prestige"
         ]
       },
       "turnin": {
@@ -134,9 +135,9 @@
       "shop": {
         "name": "&aSkill Shop",
         "lore": [
-          "&71 point = +1 skill level (&dPotential &7+2)",
-          "&7Skill Check skills only · &apermanent",
-          "&8Survives prestige reset"
+          "&7Spend your prestige points to increase your skills",
+          "&7All purchases are &4PERMANENT",
+          "&8Skills stay the same throughout resets"
         ]
       },
       "effects": {
@@ -149,7 +150,7 @@
       "tiers": {
         "name": "&6Difficulty Tiers",
         "lore": [
-          "&7Permanent unlocks with prestige points",
+          "&7Permanent unlock the ability to purchase tiers with prestige points",
           "&7T1–2 &e1pt &8· &7T3–4 &e2pt &8· &7T5–6 &e3pt &8· &7T7 &e4pt",
           "&aPermanent &8· survives prestige"
         ]
@@ -157,9 +158,9 @@
       "cap": {
         "name": "&bLevel Cap Breakthrough",
         "lore": [
-          "&7Raise &fyour &7personal level cap +10k",
+          "&7Raise &fyour &7personal level cap by 10k",
           "&7Cap: &f{level_cap}",
-          "&8DMZ maxValue 150000 — soft-lock holds others at their cap"
+          "&8Max LVL cap is 150000"
         ]
       },
       "wallet": {
@@ -178,11 +179,11 @@
     },
     "tiers": {
       "owned": [
-        "&aOwned · permanent"
+        "&aOwned"
       ],
       "locked": [
         "&cLocked",
-        "&7Buy permanent &fT{prev} &7first (shop ladder)"
+        "&7Buy permanent &fT{prev} &7first"
       ],
       "buyable": [
         "&7Cost: &e{cost} &7point(s)",
@@ -191,7 +192,7 @@
       "buyable_unlocked": [
         "&7Cost: &e{cost} &7point(s)",
         "&eCurrently unlocked via level/prestige",
-        "&7Buy to make it &apermanent &7(survives prestige)"
+        "&7Buy to make it &apermanent &7Unlocked"
       ],
       "footer": [
         "&8Requires permanent T1–T{prev} from this shop",
@@ -220,7 +221,7 @@
         "name": "&dBuy Permanent Majin",
         "lore": [
           "&7Cost: &e{cost} &7points",
-          "&aPermanent · survives prestige",
+          "&aPermanent",
           "&8XOR with Mutant"
         ]
       },
@@ -228,32 +229,32 @@
         "name": "&aBuy Permanent Mutant",
         "lore": [
           "&7Cost: &e{cost} &7points",
-          "&aPermanent · survives prestige",
+          "&aPermanent",
           "&8XOR with Majin"
         ]
       },
       "majin_owned": {
-        "name": "&aPermanent Majin",
+        "name": "&a You are a Permanent Majin",
         "lore": [
           "&aOwned",
           "&aPermanent purchase &8· only one at a time"
         ]
       },
       "mutant_owned": {
-        "name": "&aPermanent Mutant",
+        "name": "&aYou are a permanent Mutant",
         "lore": [
           "&aOwned",
           "&aPermanent purchase &8· only one at a time"
         ]
       },
       "unmajin": {
-        "name": "&cUnpurchase Majin",
+        "name": "&cGive up your evil ways",
         "lore": [
           "&7Removes Majin · &cno point refund"
         ]
       },
       "unmutant": {
-        "name": "&cUnpurchase Mutant",
+        "name": "&cRemove your Mutant genes",
         "lore": [
           "&7Removes Mutant · &cno point refund"
         ]
@@ -265,7 +266,7 @@
         "lore": [
           "&7Your level cap: &f{level_cap}",
           "&7Breakthroughs: &f{breakthroughs}&7/&f{max}",
-          "&8DMZ maxValue 150000 — soft-lock holds others at their cap",
+          "&8Max LVL cap is 150000",
           "&7Next: &a+10,000 &7personal cap for &e{cost} &7points",
           "&8Then keep leveling with TP into the new cap",
           "&8Future prestige Need scales up to your new cap",
@@ -279,7 +280,7 @@
         "lore": [
           "&7Prestige floor: &f{bought}&7/&f{max}",
           "&7Cost: &e1 &7point → &a+{gain_levels} &7level(s)",
-          "&aPermanent &8· survives prestige reset"
+          "&aPermanent"
         ]
       },
       "prev": {
@@ -302,7 +303,7 @@
         "name": "&eBuy Tier",
         "lore": [
           "&7Purchase a higher Unlock Tier",
-          "&8Ancient Coins · pay-up OK · change returned"
+          "&8Costs Ancient Coins change is returned"
         ]
       },
       "lower": {
@@ -373,7 +374,7 @@
       "info": {
         "name": "&e&lBuy Higher Tier",
         "lore": [
-          "&7Unlock with DMZ level or Prestige",
+          "&7Unlock ability to purchase with DMZ level, current prestige, or permanent prestige unlocks",
           "&8Costs scale with level"
         ]
       },
@@ -397,9 +398,7 @@
       "reset": {
         "name": "&cReset to None",
         "lore": [
-          "&7Clear active tier",
-          "&8Unlocks & coins kept",
-          "&8Always free"
+          "&7Clear active tier"
         ]
       },
       "nav_buy": {
@@ -415,9 +414,7 @@
     "titles": {
       "header": {
         "name": "&d&lTitles",
-        "lore": [
-          "&8Small perks only — tiers stay primary power"
-        ]
+        "lore": []
       },
       "sense_on": {
         "name": "&aTitle Sense ON",
@@ -444,7 +441,7 @@
         "lore": [
           "{rarity_line}",
           "&7{req}",
-          "{perk_line}"
+          "&f{perk}"
         ]
       },
       "state_equipped": [
@@ -889,7 +886,8 @@
       "release": {
         "name": "&6Release apprentice",
         "lore": [
-          "&7End bond with &f{name}"
+          "&7End bond with &f{name}",
+          "&87-day cooldown"
         ]
       }
     },
@@ -1142,7 +1140,7 @@
         "name": "&cRemove Android Upgrade",
         "lore": [
           "&7Remove the Android upgrade",
-          "&7Race, stats, and progression stay",
+          "&7Lose your android status start with no forms will need to redo sagas",
           "",
           "&eClick · confirm within 10s"
         ]
