@@ -154,9 +154,14 @@ public final class CmiPrestigeGui {
         List<String> defaults = List.of(
                 "&7Spend &6{amount} &7held prestige" + (amount == 1 ? "" : "s"),
                 "&7Gain &e{gain} &7points");
+        String fallback = (ok ? "&eTurn In &f" : "&8Need &f") + amount;
+        // When unaffordable, keep Need styling (JSON name is always "Turn In {amount}").
+        String display = ok
+                ? GuiTooltips.name("prestige.turnin.amount", fallback, vars)
+                : fallback;
         CMIGuiButton btn = new CMIGuiButton(slot,
                 ok ? Material.GOLD_INGOT : Material.GRAY_DYE,
-                GuiTooltips.name("prestige.turnin.amount", (ok ? "&eTurn In &f" : "&8Need &f") + amount));
+                display);
         btn.lockField();
         btn.addLore(GuiTooltips.buttonLore("prestige.turnin.amount", defaults, vars, null));
         if (ok) {

@@ -174,10 +174,17 @@ public final class PrestigeChestGui implements Listener {
                 "&7Gain &e{gain} &7points");
         List<String> extra = amount >= 3 ? List.of("&aIncludes bonus for packs of 3") : null;
         boolean ok = held >= amount;
-        put(holder, inv, slot, tipBtn(viewer, "prestige.turnin.amount",
+        String fallback = (ok ? "&eTurn In &f" : "&8Need &f") + amount;
+        // tipBtn applies vars to JSON name; when unaffordable force Need styling.
+        ItemStack stack = tipBtn(viewer, "prestige.turnin.amount",
                 ok ? Material.GOLD_INGOT : Material.GRAY_DYE,
-                (ok ? "&eTurn In &f" : "&8Need &f") + amount,
-                defaults, vars, extra),
+                fallback,
+                defaults, vars, extra);
+        if (!ok) {
+            stack = item(ok ? Material.GOLD_INGOT : Material.GRAY_DYE, fallback,
+                    GuiTooltips.buttonLore("prestige.turnin.amount", defaults, vars, extra));
+        }
+        put(holder, inv, slot, stack,
                 ok ? SlotAction.act("turnin", String.valueOf(amount), "turnin") : null);
     }
 
