@@ -93,13 +93,13 @@ public final class CmiDifficultyGui {
         gui.addButton(status);
 
         // Primary actions — centered trio
-        gui.addButton(pageBtn(player, 20, Material.GOLD_INGOT, "&eBuy Tier", "buy",
+        gui.addButton(pageBtn(player, 20, "difficulty.main.buy", Material.GOLD_INGOT, "&eBuy Tier", "buy",
                 "&7Purchase a higher Unlock Tier",
                 "&8Ancient Coins · pay-up OK · change returned"));
-        gui.addButton(pageBtn(player, 22, Material.IRON_INGOT, "&fLower Tier", "lower",
+        gui.addButton(pageBtn(player, 22, "difficulty.main.lower", Material.IRON_INGOT, "&fLower Tier", "lower",
                 "&7Select a lower unlocked tier",
                 "&8Or reset to None · always free"));
-        gui.addButton(pageBtn(player, 24, Material.NAME_TAG, "&dTitles", "titles",
+        gui.addButton(pageBtn(player, 24, "difficulty.main.titles", Material.NAME_TAG, "&dTitles", "titles",
                 "&7Equip difficulty titles",
                 "&8Earned from tiers and combat"));
 
@@ -109,29 +109,31 @@ public final class CmiDifficultyGui {
         } catch (NumberFormatException ignored) {
         }
         boolean canSummon = personalOn && activeTier >= 4 && activeTier <= 7;
-        List<String> dragonLore = new ArrayList<>();
-        dragonLore.add("");
-        dragonLore.add("&7Summon the End Dragon scaled to");
-        dragonLore.add("&7your Adaptive Difficulty (T4–T7).");
-        dragonLore.add("&8Cost: &f3 Ancient Netherite");
-        dragonLore.add("&8Must be &fin The End");
-        dragonLore.add("&8Only &fyou &8can damage it.");
-        dragonLore.add("");
+        String dragonStatus;
         if (!personalOn) {
-            dragonLore.add("&cDifficulty is OFF");
+            dragonStatus = "&cDifficulty is OFF";
         } else if (activeTier < 4 || activeTier > 7) {
-            dragonLore.add("&cNeed active T4–T7 (you: T" + activeTier + ")");
+            dragonStatus = "&cNeed active T4–T7 (you: T" + activeTier + ")";
         } else {
-            dragonLore.add("&aReady · click to summon");
+            dragonStatus = "&aReady · click to summon";
         }
-        gui.addButton(actionBtn(player, 15,
+        List<String> dragonDefaults = List.of(
+                "&7Summon the End Dragon scaled to",
+                "&7your Adaptive Difficulty (T4–T7).",
+                "&8Cost: &f3 Ancient Netherite",
+                "&8Must be &fin The End",
+                "&8Only &fyou &8can damage it.",
+                "",
+                dragonStatus);
+        gui.addButton(actionBtn(player, 15, "difficulty.main.summon_dragon",
                 canSummon ? Material.DRAGON_EGG : Material.GRAY_DYE,
                 canSummon ? "&5&lSummon End Dragon" : "&8Summon End Dragon",
                 "summon_end_dragon", "0", "main",
-                dragonLore));
+                dragonDefaults, Map.of("status", dragonStatus)));
 
         boolean coinChatOn = "true".equalsIgnoreCase(ph.getOrDefault("coin_drop_chat", "false"));
         gui.addButton(actionBtn(player, 29,
+                personalOn ? "difficulty.main.personal_on" : "difficulty.main.personal_off",
                 personalOn ? Material.LIME_DYE : Material.GRAY_DYE,
                 personalOn ? "&aDifficulty ON" : "&cDifficulty OFF",
                 "toggle_personal", "0", "main",
@@ -147,6 +149,7 @@ public final class CmiDifficultyGui {
                                 : "&8AI pressure, and tier buys"
                 )));
         gui.addButton(actionBtn(player, 31,
+                coinChatOn ? "difficulty.main.coin_chat_on" : "difficulty.main.coin_chat_off",
                 coinChatOn ? Material.BELL : Material.GRAY_DYE,
                 coinChatOn ? "&aCoin Chat ON" : "&8Coin Chat OFF",
                 "toggle_coin_chat", "0", "main",
@@ -157,7 +160,7 @@ public final class CmiDifficultyGui {
                         "&8Only affects Ancient Coin kill chat"
                 )));
         if (ForgeBridge.isStaff(player)) {
-            gui.addButton(pageBtn(player, 33, Material.SPYGLASS, "&8Details", "stats",
+            gui.addButton(pageBtn(player, 33, "difficulty.main.details", Material.SPYGLASS, "&8Details", "stats",
                     "&7Staff breakdown",
                     "&8CR · prestige · kit gates"));
         }
@@ -646,26 +649,63 @@ public final class CmiDifficultyGui {
     private static CMIGuiButton actionBtn(
             Player player, int slot, Material mat, String name, String action, String arg, String returnPage,
             List<String> tip) {
-        CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
+        return actionBtn(player, slot, null, mat, name, action, arg, returnPage, tip, null);
+    }
+
+    private static CMIGuiButton actionBtn(
+            Player player, int slot, String key, Material mat, String name, String action, String arg,
+            String returnPage, List<String> tip
+    ) {
+        return actionBtn(player, slot, key, mat, name, action, arg, returnPage, tip, null);
+    }
+
+    private static CMIGuiButton actionBtn(
+            Player player, int slot, String key, Material mat, String name, String action, String arg,
+            String returnPage, List<String> tip, Map<String, String> vars
+    ) {
+        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name);
+        CMIGuiButton btn = new CMIGuiButton(slot, mat, display);
         btn.lockField();
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(GuiBoardHelper.tipsList(player, tip));
-        btn.addLore(lore);
+        btn.addLore(key == null || key.isBlank()
+                ? withBlank(tip)
+                : GuiTooltips.buttonLore(key, tip, vars, null));
         // Bukkit-only /lmdo — Mohist may route /difficulty do to Forge's word()-limited tree.
         btn.addCommand("lmdo difficulty " + action + " " + arg + " " + returnPage);
         return btn;
     }
 
     private static CMIGuiButton pageBtn(Player player, int slot, Material mat, String name, String page, String... tips) {
-        CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
+        return pageBtn(player, slot, null, mat, name, page, tips);
+    }
+
+    private static CMIGuiButton pageBtn(
+            Player player, int slot, String key, Material mat, String name, String page, String... tips
+    ) {
+        List<String> defaults = new ArrayList<>();
+        if (tips != null) {
+            for (String tip : tips) {
+                if (tip != null) {
+                    defaults.add(tip);
+                }
+            }
+        }
+        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name);
+        CMIGuiButton btn = new CMIGuiButton(slot, mat, display);
         btn.lockField();
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(GuiBoardHelper.tips(player, tips));
-        btn.addLore(lore);
+        btn.addLore(key == null || key.isBlank()
+                ? withBlank(defaults)
+                : GuiTooltips.buttonLore(key, defaults));
         btn.addCommand("lmdo difficulty page " + page);
         return btn;
+    }
+
+    private static List<String> withBlank(List<String> tip) {
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        if (tip != null) {
+            lore.addAll(tip);
+        }
+        return lore;
     }
 
     private static CMIGuiButton hubBtn(int slot) {

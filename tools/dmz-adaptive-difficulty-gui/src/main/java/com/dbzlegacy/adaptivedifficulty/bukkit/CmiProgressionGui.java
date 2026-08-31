@@ -176,12 +176,12 @@ public final class CmiProgressionGui {
                 "&7Shadow dummy · Stat checker"
         };
         for (int i = 0; i < pages.length && i < slots.length; i++) {
-            gui.addButton(pageBtn(slots[i], mats[i], titles[i], pages[i],
+            gui.addButton(pageBtn(slots[i], "progression.main." + pages[i], mats[i], titles[i], pages[i],
                     tips[i], "", "&eClick to open"));
         }
 
         if (ForgeBridge.isStaff(player)) {
-            gui.addButton(pageBtn(40, Material.REPEATER, "&cAll Flags", "admin",
+            gui.addButton(pageBtn(40, "progression.main.admin", Material.REPEATER, "&cAll Flags", "admin",
                     "&7Full flag board"));
         }
 
@@ -579,16 +579,37 @@ public final class CmiProgressionGui {
     }
 
     private static CMIGuiButton pageBtn(int slot, Material mat, String name, String page, String... tips) {
-        CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
-        btn.lockField();
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        for (String tip : tips) {
-            lore.add(tip);
+        return pageBtn(slot, null, mat, name, page, tips);
+    }
+
+    private static CMIGuiButton pageBtn(
+            int slot, String key, Material mat, String name, String page, String... tips
+    ) {
+        List<String> defaults = new ArrayList<>();
+        if (tips != null) {
+            for (String tip : tips) {
+                if (tip != null) {
+                    defaults.add(tip);
+                }
+            }
         }
-        btn.addLore(lore);
+        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name);
+        CMIGuiButton btn = new CMIGuiButton(slot, mat, display);
+        btn.lockField();
+        btn.addLore(key == null || key.isBlank()
+                ? withBlank(defaults)
+                : GuiTooltips.buttonLore(key, defaults));
         btn.addCommand("lmdo progression page " + page);
         return btn;
+    }
+
+    private static List<String> withBlank(List<String> tip) {
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        if (tip != null) {
+            lore.addAll(tip);
+        }
+        return lore;
     }
 
     private static CMIGuiButton hubBtn(int slot) {

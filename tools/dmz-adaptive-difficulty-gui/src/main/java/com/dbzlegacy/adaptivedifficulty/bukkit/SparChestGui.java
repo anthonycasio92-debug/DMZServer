@@ -97,16 +97,18 @@ public final class SparChestGui implements Listener {
 
         put(holder, inv, 4, item(Material.GOLDEN_SWORD, "&b&lSparring", statusLore(viewer, ph)));
         // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
-        put(holder, inv, 19, pageBtn(viewer, Material.BOOK, "&eStats",
-                        "&7Last 3 spar reports", "&8One item per spar"),
+        put(holder, inv, 19, tipBtn(viewer, "spar.main.stats", Material.BOOK, "&eStats",
+                        List.of("&7Last 3 spar reports", "&8One item per spar")),
                 SlotAction.page("stats"));
-        put(holder, inv, 21, pageBtn(viewer, Material.GOLDEN_HELMET, "&fTop", "&7Leaderboard"),
+        put(holder, inv, 21, tipBtn(viewer, "spar.main.top", Material.GOLDEN_HELMET, "&fTop",
+                List.of("&7Leaderboard")),
                 SlotAction.page("top"));
-        put(holder, inv, 23, pageBtn(viewer, Material.EMERALD, "&bMentor",
-                "&7Invite · pending · accept · remove"), SlotAction.page("mentor"));
+        put(holder, inv, 23, tipBtn(viewer, "spar.main.mentor", Material.EMERALD, "&bMentor",
+                List.of("&7Invite · pending · accept · remove")), SlotAction.page("mentor"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "true"));
         put(holder, inv, 25, tipBtn(viewer,
+                tpOn ? "spar.main.tpmsg_on" : "spar.main.tpmsg_off",
                 tpOn ? Material.BELL : Material.GRAY_DYE,
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 List.of(
@@ -118,7 +120,7 @@ public final class SparChestGui implements Listener {
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
         if (session) {
-            put(holder, inv, 31, tipBtn(viewer, Material.RED_DYE, "&cEnd Session",
+            put(holder, inv, 31, tipBtn(viewer, "spar.main.end_session", Material.RED_DYE, "&cEnd Session",
                     List.of("&7End your active spar session")),
                     SlotAction.act("end", "0", "main"));
         }
@@ -126,8 +128,8 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         if (ForgeBridge.isStaff(viewer)) {
-            put(holder, inv, 37, pageBtn(viewer, Material.COMMAND_BLOCK, "&cAdmin",
-                    "&7Save · status · mentor resetcd"), SlotAction.page("admin"));
+            put(holder, inv, 37, tipBtn(viewer, "spar.main.admin", Material.COMMAND_BLOCK, "&cAdmin",
+                    List.of("&7Save · status · mentor resetcd")), SlotAction.page("admin"));
         }
         return inv;
     }
@@ -566,16 +568,33 @@ public final class SparChestGui implements Listener {
     }
 
     private static ItemStack tipBtn(Player player, Material mat, String name, List<String> tip) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(GuiBoardHelper.tipsList(player, tip));
-        return item(mat, name, lore);
+        return tipBtn(player, null, mat, name, tip);
+    }
+
+    private static ItemStack tipBtn(
+            Player player, String key, Material mat, String name, List<String> tip
+    ) {
+        if (key == null || key.isBlank()) {
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            if (tip != null) {
+                lore.addAll(tip);
+            }
+            return item(mat, name, lore);
+        }
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip));
     }
 
     private static ItemStack pageBtn(Player player, Material mat, String name, String... tips) {
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.addAll(GuiBoardHelper.tips(player, tips));
+        if (tips != null) {
+            for (String tip : tips) {
+                if (tip != null) {
+                    lore.add(tip);
+                }
+            }
+        }
         return item(mat, name, lore);
     }
 

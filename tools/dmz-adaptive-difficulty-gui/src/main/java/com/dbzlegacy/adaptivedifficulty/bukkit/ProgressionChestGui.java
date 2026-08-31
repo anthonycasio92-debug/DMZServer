@@ -162,14 +162,14 @@ public final class ProgressionChestGui implements Listener {
                 "&7Shadow dummy · Stat checker"
         };
         for (int i = 0; i < pages.length && i < slots.length; i++) {
-            put(holder, inv, slots[i], tipBtn(mats[i], titles[i],
+            put(holder, inv, slots[i], tipBtn("progression.main." + pages[i], mats[i], titles[i],
                     List.of(tips[i], "", "&eClick to open")),
                     SlotAction.page(pages[i]));
         }
 
         if (ForgeBridge.isStaff(viewer)) {
-            put(holder, inv, 40, pageBtn(Material.REPEATER, "&cAll Flags",
-                    "&7Full flag board"), SlotAction.page("admin"));
+            put(holder, inv, 40, tipBtn("progression.main.admin", Material.REPEATER, "&cAll Flags",
+                    List.of("&7Full flag board")), SlotAction.page("admin"));
         }
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
@@ -592,10 +592,19 @@ public final class ProgressionChestGui implements Listener {
     }
 
     private static ItemStack tipBtn(Material mat, String name, List<String> tip) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(tip);
-        return item(mat, name, lore);
+        return tipBtn(null, mat, name, tip);
+    }
+
+    private static ItemStack tipBtn(String key, Material mat, String name, List<String> tip) {
+        if (key == null || key.isBlank()) {
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            if (tip != null) {
+                lore.addAll(tip);
+            }
+            return item(mat, name, lore);
+        }
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip));
     }
 
     private static ItemStack pageBtn(Material mat, String name, String... tips) {

@@ -106,7 +106,7 @@ public final class CmiRivalGui {
         gui.addButton(status);
 
         // Main: List · Actions · Challenge · Top · History · Progress · toggles
-        gui.addButton(pageBtn(player, 19, Material.PLAYER_HEAD, "&6List", "list",
+        gui.addButton(pageBtn(player, 19, "rival.main.list", Material.PLAYER_HEAD, "&6List", "list",
                 "&7Current rivals", "&8Heads · hover for stats"));
         int pendingCount = 0;
         try {
@@ -114,22 +114,24 @@ public final class CmiRivalGui {
         } catch (NumberFormatException ignored) {
             pendingCount = 0;
         }
-        gui.addButton(pageBtn(player, 21, Material.EMERALD, "&aActions", "actions",
-                "&7Declare · accept · decline · remove",
-                pendingCount > 0
-                        ? "&e" + pendingCount + " pending invite" + (pendingCount == 1 ? "" : "s")
-                        : "&8Pending invites live here"));
-        gui.addButton(pageBtn(player, 23, Material.DIAMOND_SWORD, "&cChallenge", "challenge",
+        String pendingLine = pendingCount > 0
+                ? "&e" + pendingCount + " pending invite" + (pendingCount == 1 ? "" : "s")
+                : "&8Pending invites live here";
+        gui.addButton(pageBtn(player, 21, "rival.main.actions", Material.EMERALD, "&aActions", "actions",
+                Map.of("pending", pendingLine),
+                "&7Declare · accept · decline · remove", pendingLine));
+        gui.addButton(pageBtn(player, 23, "rival.main.challenge", Material.DIAMOND_SWORD, "&cChallenge", "challenge",
                 "&7Send · accept · decline · spectate"));
-        gui.addButton(pageBtn(player, 25, Material.GOLDEN_HELMET, "&fTop", "top",
+        gui.addButton(pageBtn(player, 25, "rival.main.top", Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7RP leaderboard"));
-        gui.addButton(pageBtn(player, 29, Material.SKELETON_SKULL, "&8History", "history",
+        gui.addButton(pageBtn(player, 29, "rival.main.history", Material.SKELETON_SKULL, "&8History", "history",
                 "&7Previous rivals", "&8Archived when removed"));
-        gui.addButton(pageBtn(player, 31, Material.BOOK, "&bProgress", "progress",
+        gui.addButton(pageBtn(player, 31, "rival.main.progress", Material.BOOK, "&bProgress", "progress",
                 "&7Season · quests · achs · HOF · journal · title"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "false"));
         gui.addButton(actionBtn(player, 33,
+                tpOn ? "rival.main.tpmsg_on" : "rival.main.tpmsg_off",
                 tpOn ? Material.BELL : Material.GRAY_DYE,
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 "tpmsg", "toggle", "main",
@@ -142,6 +144,7 @@ public final class CmiRivalGui {
         if (instinctFeature) {
             boolean instinctOn = "true".equalsIgnoreCase(ph.getOrDefault("instinct", "false"));
             gui.addButton(actionBtn(player, 34,
+                    instinctOn ? "rival.main.instinct_on" : "rival.main.instinct_off",
                     instinctOn ? Material.LIME_DYE : Material.GRAY_DYE,
                     instinctOn ? "&aInstinct ON" : "&8Instinct OFF",
                     "instinct", "toggle", "main",
@@ -154,7 +157,7 @@ public final class CmiRivalGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         if (ForgeBridge.isStaff(player)) {
-            gui.addButton(pageBtn(player, 37, Material.COMMAND_BLOCK, "&cAdmin", "admin",
+            gui.addButton(pageBtn(player, 37, "rival.main.admin", Material.COMMAND_BLOCK, "&cAdmin", "admin",
                     "&7Save · refresh · status"));
         }
         fillEmpty(gui, 5);
@@ -888,25 +891,62 @@ public final class CmiRivalGui {
     private static CMIGuiButton actionBtn(
             Player player, int slot, Material mat, String name, String action, String arg, String returnPage,
             List<String> tip) {
-        CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
+        return actionBtn(player, slot, null, mat, name, action, arg, returnPage, tip);
+    }
+
+    private static CMIGuiButton actionBtn(
+            Player player, int slot, String key, Material mat, String name, String action, String arg,
+            String returnPage, List<String> tip
+    ) {
+        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name);
+        CMIGuiButton btn = new CMIGuiButton(slot, mat, display);
         btn.lockField();
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(GuiBoardHelper.tipsList(player, tip));
-        btn.addLore(lore);
+        btn.addLore(key == null || key.isBlank()
+                ? withBlank(tip)
+                : GuiTooltips.buttonLore(key, tip));
         btn.addCommand("lmdo rival " + action + " " + arg + " " + returnPage);
         return btn;
     }
 
     private static CMIGuiButton pageBtn(Player player, int slot, Material mat, String name, String page, String... tips) {
-        CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
+        return pageBtn(player, slot, null, mat, name, page, null, tips);
+    }
+
+    private static CMIGuiButton pageBtn(
+            Player player, int slot, String key, Material mat, String name, String page, String... tips
+    ) {
+        return pageBtn(player, slot, key, mat, name, page, null, tips);
+    }
+
+    private static CMIGuiButton pageBtn(
+            Player player, int slot, String key, Material mat, String name, String page,
+            Map<String, String> vars, String... tips
+    ) {
+        List<String> defaults = new ArrayList<>();
+        if (tips != null) {
+            for (String tip : tips) {
+                if (tip != null) {
+                    defaults.add(tip);
+                }
+            }
+        }
+        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name);
+        CMIGuiButton btn = new CMIGuiButton(slot, mat, display);
         btn.lockField();
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(GuiBoardHelper.tips(player, tips));
-        btn.addLore(lore);
+        btn.addLore(key == null || key.isBlank()
+                ? withBlank(defaults)
+                : GuiTooltips.buttonLore(key, defaults, vars, null));
         btn.addCommand("lmdo rival page " + page);
         return btn;
+    }
+
+    private static List<String> withBlank(List<String> tip) {
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        if (tip != null) {
+            lore.addAll(tip);
+        }
+        return lore;
     }
 
     private static CMIGuiButton cmdBtn(int slot, Material mat, String name, String command, String... tips) {

@@ -74,8 +74,9 @@ public final class PrestigeChestGui implements Listener {
                     unavailableLore(bridgeOk));
             put(holder, inv, 36, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
             if (ForgeBridge.isStaff(viewer)) {
-                put(holder, inv, 40, tipBtn(viewer, Material.BREWING_STAND, "&dProgression",
-                        List.of("&7Staff progression flags")),
+                put(holder, inv, 40, tipBtn(viewer, "prestige.main.progression", Material.BREWING_STAND,
+                        "&dProgression",
+                        List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")),
                         SlotAction.cmd("lmdo lm open progression"));
             }
             put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -85,43 +86,47 @@ public final class PrestigeChestGui implements Listener {
         putWallet(holder, inv, viewer, subject, "main", "&e&lWallet", null);
 
         boolean ready = "true".equalsIgnoreCase(ph.getOrDefault("ready", "false"));
-        List<String> confirmLore = new ArrayList<>();
-        confirmLore.add("");
-        confirmLore.addAll(GuiBoardHelper.tips(viewer, "&7Click to prestige (confirm within 10s)"));
-        confirmLore.add("&8Resets DMZ stats · awards held Prestige");
+        List<String> confirmDefaults = List.of(
+                "&7Click to prestige (confirm within 10s)",
+                "&8Resets DMZ stats · awards held Prestige");
         put(holder, inv, 20, item(
                 ready ? Material.LIME_CONCRETE : Material.ORANGE_CONCRETE,
-                ready ? "&aConfirm Prestige" : "&eAttempt Prestige",
-                confirmLore), SlotAction.act("confirm", "0", "main"));
+                GuiTooltips.name("prestige.main.confirm",
+                        ready ? "&aConfirm Prestige" : "&eAttempt Prestige"),
+                GuiTooltips.buttonLore("prestige.main.confirm", confirmDefaults)),
+                SlotAction.act("confirm", "0", "main"));
 
-        put(holder, inv, 22, tipBtn(viewer, Material.GOLD_NUGGET, "&eTurn In Prestiges",
+        Map<String, String> vars = Map.of(
+                "points", ph.getOrDefault("points", "0"),
+                "level_cap", ph.getOrDefault("level_cap_fmt", "100000"));
+        put(holder, inv, 22, tipBtn(viewer, "prestige.main.turnin", Material.GOLD_NUGGET, "&eTurn In Prestiges",
                 List.of("&7Convert held prestiges into points",
-                        "&7Balance: &e" + ph.getOrDefault("points", "0"))),
+                        "&7Balance: &e" + vars.get("points")), vars),
                 SlotAction.page("turnin"));
-        put(holder, inv, 24, tipBtn(viewer, Material.EXPERIENCE_BOTTLE, "&aSkill Shop",
+        put(holder, inv, 24, tipBtn(viewer, "prestige.main.shop", Material.EXPERIENCE_BOTTLE, "&aSkill Shop",
                 List.of("&71 point = +1 skill level (&dPotential &7+2)",
                         "&7Skill Check skills only · &apermanent",
                         "&8Survives prestige reset")),
                 SlotAction.page("shop"));
-        put(holder, inv, 29, tipBtn(viewer, Material.MAGENTA_DYE, "&dEffects",
+        put(holder, inv, 29, tipBtn(viewer, "prestige.main.effects", Material.MAGENTA_DYE, "&dEffects",
                 List.of("&7Permanent Majin / Mutant (&e5 &7pts)",
                         "&aPermanent purchase &8· unpurchase = no refund")),
                 SlotAction.page("effects"));
-        put(holder, inv, 31, tipBtn(viewer, Material.BEACON, "&6Difficulty Tiers",
+        put(holder, inv, 31, tipBtn(viewer, "prestige.main.tiers", Material.BEACON, "&6Difficulty Tiers",
                 List.of("&7Permanent unlocks with prestige points",
                         "&7T1–2 &e1pt &8· &7T3–4 &e2pt &8· &7T5–6 &e3pt &8· &7T7 &e4pt",
                         "&aPermanent &8· survives prestige")),
                 SlotAction.page("tiers"));
-        put(holder, inv, 33, tipBtn(viewer, Material.NETHER_STAR, "&bLevel Cap Breakthrough",
+        put(holder, inv, 33, tipBtn(viewer, "prestige.main.cap", Material.NETHER_STAR, "&bLevel Cap Breakthrough",
                 List.of("&7Raise &fyour &7personal level cap +10k",
-                        "&7Cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
-                        "&8DMZ maxValue 150000 — soft-lock holds others at their cap")),
+                        "&7Cap: &f" + vars.get("level_cap"),
+                        "&8DMZ maxValue 150000 — soft-lock holds others at their cap"), vars),
                 SlotAction.page("cap"));
 
         put(holder, inv, 36, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         if (ForgeBridge.isStaff(viewer)) {
-            put(holder, inv, 40, tipBtn(viewer, Material.BREWING_STAND, "&dProgression",
-                    List.of("&7Staff progression flags")),
+            put(holder, inv, 40, tipBtn(viewer, "prestige.main.progression", Material.BREWING_STAND, "&dProgression",
+                    List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")),
                     SlotAction.cmd("lmdo lm open progression"));
         }
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -410,26 +415,41 @@ public final class PrestigeChestGui implements Listener {
             boolean canBuy = "true".equalsIgnoreCase(ph.getOrDefault("tier_" + t + "_can_buy", "false"));
             String label = ph.getOrDefault("tier_" + t + "_label", "T" + t);
             String cost = ph.getOrDefault("tier_" + t + "_cost", String.valueOf((t + 1) / 2));
+            Map<String, String> tierVars = Map.of(
+                    "tier", String.valueOf(t),
+                    "prev", String.valueOf(Math.max(1, t - 1)),
+                    "cost", cost,
+                    "label", label);
             List<String> lore = new ArrayList<>();
             lore.add("");
             if (owned) {
-                lore.add("&aOwned · permanent");
+                lore.addAll(GuiTooltips.lore("prestige.tiers.owned",
+                        List.of("&aOwned · permanent"), tierVars));
             } else if (!canBuy) {
-                lore.add("&cLocked");
-                lore.add("&7Buy permanent &fT" + (t - 1) + " &7first (shop ladder)");
+                lore.addAll(GuiTooltips.lore("prestige.tiers.locked",
+                        List.of("&cLocked",
+                                "&7Buy permanent &fT" + (t - 1) + " &7first (shop ladder)"),
+                        tierVars));
+            } else if (unlocked) {
+                lore.addAll(GuiTooltips.lore("prestige.tiers.buyable_unlocked",
+                        List.of("&7Cost: &e" + cost + " &7point" + ("1".equals(cost) ? "" : "s"),
+                                "&eCurrently unlocked via level/prestige",
+                                "&7Buy to make it &apermanent &7(survives prestige)"),
+                        tierVars));
             } else {
-                lore.add("&7Cost: &e" + cost + " &7point" + ("1".equals(cost) ? "" : "s"));
-                if (unlocked) {
-                    lore.add("&eCurrently unlocked via level/prestige");
-                    lore.add("&7Buy to make it &apermanent &7(survives prestige)");
-                } else {
-                    lore.add("&aPermanent unlock &8· survives prestige");
-                }
+                lore.addAll(GuiTooltips.lore("prestige.tiers.buyable",
+                        List.of("&7Cost: &e" + cost + " &7point" + ("1".equals(cost) ? "" : "s"),
+                                "&aPermanent unlock &8· survives prestige"),
+                        tierVars));
             }
             if (!owned && t > 1) {
-                lore.add("&8Requires permanent T1–T" + (t - 1) + " from this shop");
+                lore.addAll(GuiTooltips.lore("prestige.tiers.footer",
+                        List.of("&8Requires permanent T1–T" + (t - 1) + " from this shop",
+                                "&8Then activate with Ancient Coins via /difficulty → Buy Tier"),
+                        tierVars));
+            } else {
+                lore.add("&8Then activate with Ancient Coins via /difficulty → Buy Tier");
             }
-            lore.add("&8Then activate with Ancient Coins via /difficulty → Buy Tier");
             String title;
             if (owned) {
                 title = "&aT" + t + " " + label;
@@ -581,10 +601,28 @@ public final class PrestigeChestGui implements Listener {
     }
 
     private static ItemStack tipBtn(Player player, Material mat, String name, List<String> tip) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(GuiBoardHelper.tipsList(player, tip));
-        return item(mat, name, lore);
+        return tipBtn(player, null, mat, name, tip, null);
+    }
+
+    private static ItemStack tipBtn(
+            Player player, String key, Material mat, String name, List<String> tip
+    ) {
+        return tipBtn(player, key, mat, name, tip, null);
+    }
+
+    private static ItemStack tipBtn(
+            Player player, String key, Material mat, String name, List<String> tip,
+            Map<String, String> vars
+    ) {
+        if (key == null || key.isBlank()) {
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            if (tip != null) {
+                lore.addAll(tip);
+            }
+            return item(mat, name, lore);
+        }
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip, vars, null));
     }
 
     private static ItemStack hubBtn() {

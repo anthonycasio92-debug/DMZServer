@@ -124,14 +124,14 @@ public final class DifficultyChestGui implements Listener {
                 personalOn ? "&a&lAdaptive Difficulty" : "&c&lDIFFICULTY OFF",
                 status));
         // Primary actions — centered trio
-        put(holder, inv, 20, pageBtn(viewer, Material.GOLD_INGOT, "&eBuy Tier",
-                "&7Purchase a higher Unlock Tier", "&8Ancient Coins · pay-up OK · change returned"),
+        put(holder, inv, 20, tipBtn(viewer, "difficulty.main.buy", Material.GOLD_INGOT, "&eBuy Tier",
+                List.of("&7Purchase a higher Unlock Tier", "&8Ancient Coins · pay-up OK · change returned")),
                 SlotAction.page("buy"));
-        put(holder, inv, 22, pageBtn(viewer, Material.IRON_INGOT, "&fLower Tier",
-                "&7Select a lower unlocked tier", "&8Or reset to None · always free"),
+        put(holder, inv, 22, tipBtn(viewer, "difficulty.main.lower", Material.IRON_INGOT, "&fLower Tier",
+                List.of("&7Select a lower unlocked tier", "&8Or reset to None · always free")),
                 SlotAction.page("lower"));
-        put(holder, inv, 24, pageBtn(viewer, Material.NAME_TAG, "&dTitles",
-                "&7Equip difficulty titles", "&8Earned from tiers and combat"),
+        put(holder, inv, 24, tipBtn(viewer, "difficulty.main.titles", Material.NAME_TAG, "&dTitles",
+                List.of("&7Equip difficulty titles", "&8Earned from tiers and combat")),
                 SlotAction.page("titles"));
 
         // End Dragon summon — T4–T7 AD, 3× Ancient Netherite, summoner-only damage.
@@ -141,29 +141,32 @@ public final class DifficultyChestGui implements Listener {
         } catch (NumberFormatException ignored) {
         }
         boolean canSummon = personalOn && activeTier >= 4 && activeTier <= 7;
-        List<String> dragonLore = new ArrayList<>();
-        dragonLore.add("");
-        dragonLore.add("&7Summon the End Dragon scaled to");
-        dragonLore.add("&7your Adaptive Difficulty (T4–T7).");
-        dragonLore.add("&8Cost: &f3 Ancient Netherite");
-        dragonLore.add("&8Must be &fin The End");
-        dragonLore.add("&8Only &fyou &8can damage it.");
-        dragonLore.add("");
+        String dragonStatus;
         if (!personalOn) {
-            dragonLore.add("&cDifficulty is OFF");
+            dragonStatus = "&cDifficulty is OFF";
         } else if (activeTier < 4 || activeTier > 7) {
-            dragonLore.add("&cNeed active T4–T7 (you: T" + activeTier + ")");
+            dragonStatus = "&cNeed active T4–T7 (you: T" + activeTier + ")";
         } else {
-            dragonLore.add("&aReady · click to summon");
+            dragonStatus = "&aReady · click to summon";
         }
-        put(holder, inv, 15, tipBtn(viewer,
+        Map<String, String> dragonVars = Map.of("status", dragonStatus, "active_tier", String.valueOf(activeTier));
+        List<String> dragonDefaults = List.of(
+                "&7Summon the End Dragon scaled to",
+                "&7your Adaptive Difficulty (T4–T7).",
+                "&8Cost: &f3 Ancient Netherite",
+                "&8Must be &fin The End",
+                "&8Only &fyou &8can damage it.",
+                "",
+                dragonStatus);
+        put(holder, inv, 15, tipBtn(viewer, "difficulty.main.summon_dragon",
                 canSummon ? Material.DRAGON_EGG : Material.GRAY_DYE,
                 canSummon ? "&5&lSummon End Dragon" : "&8Summon End Dragon",
-                dragonLore),
+                dragonDefaults, dragonVars),
                 SlotAction.act("summon_end_dragon", "0", "main"));
 
         boolean coinChatOn = "true".equalsIgnoreCase(ph.getOrDefault("coin_drop_chat", "false"));
         put(holder, inv, 29, tipBtn(viewer,
+                personalOn ? "difficulty.main.personal_on" : "difficulty.main.personal_off",
                 personalOn ? Material.LIME_DYE : Material.GRAY_DYE,
                 personalOn ? "&aDifficulty ON" : "&cDifficulty OFF",
                 List.of(
@@ -178,6 +181,7 @@ public final class DifficultyChestGui implements Listener {
                                 : "&8AI pressure, and tier buys"
                 )), SlotAction.act("toggle_personal", "0", "main"));
         put(holder, inv, 31, tipBtn(viewer,
+                coinChatOn ? "difficulty.main.coin_chat_on" : "difficulty.main.coin_chat_off",
                 coinChatOn ? Material.BELL : Material.GRAY_DYE,
                 coinChatOn ? "&aCoin Chat ON" : "&8Coin Chat OFF",
                 List.of(
@@ -187,8 +191,8 @@ public final class DifficultyChestGui implements Listener {
                         "&8Only affects Ancient Coin kill chat"
                 )), SlotAction.act("toggle_coin_chat", "0", "main"));
         if (ForgeBridge.isStaff(viewer)) {
-            put(holder, inv, 33, pageBtn(viewer, Material.SPYGLASS, "&8Details",
-                    "&7Staff breakdown", "&8CR · prestige · kit gates"),
+            put(holder, inv, 33, tipBtn(viewer, "difficulty.main.details", Material.SPYGLASS, "&8Details",
+                    List.of("&7Staff breakdown", "&8CR · prestige · kit gates")),
                     SlotAction.page("stats"));
         }
         put(holder, inv, 27, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
@@ -741,16 +745,40 @@ public final class DifficultyChestGui implements Listener {
     }
 
     private static ItemStack tipBtn(Player player, Material mat, String name, List<String> tip) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(GuiBoardHelper.tipsList(player, tip));
-        return item(mat, name, lore);
+        return tipBtn(player, null, mat, name, tip, null);
+    }
+
+    private static ItemStack tipBtn(
+            Player player, String key, Material mat, String name, List<String> tip
+    ) {
+        return tipBtn(player, key, mat, name, tip, null);
+    }
+
+    private static ItemStack tipBtn(
+            Player player, String key, Material mat, String name, List<String> tip,
+            Map<String, String> vars
+    ) {
+        if (key == null || key.isBlank()) {
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            if (tip != null) {
+                lore.addAll(tip);
+            }
+            return item(mat, name, lore);
+        }
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip, vars, null));
     }
 
     private static ItemStack pageBtn(Player player, Material mat, String name, String... tips) {
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.addAll(GuiBoardHelper.tips(player, tips));
+        if (tips != null) {
+            for (String tip : tips) {
+                if (tip != null) {
+                    lore.add(tip);
+                }
+            }
+        }
         return item(mat, name, lore);
     }
 

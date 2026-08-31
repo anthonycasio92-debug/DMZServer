@@ -44,6 +44,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(prestigeChestGui, this);
         getServer().getPluginManager().registerEvents(skillsChestGui, this);
         getServer().getPluginManager().registerEvents(new DeathDropGuard(), this);
+        GuiTooltips.init(this);
 
         var progCmd = getCommand("progression");
         if (progCmd != null) {
@@ -1089,6 +1090,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     String err = ForgeBridge.lastError();
                     sender.sendMessage("§cReload failed" + (err == null ? "." : ": " + err));
                 }
+                sender.sendMessage(GuiTooltips.reload());
             }
             case "migrate-cnpc", "migratecnpc", "cnpcmigrate", "cnpc-migrate" -> {
                 boolean force = args.length > 2 && (
@@ -1263,7 +1265,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     private static void sendLmAdminHelp(CommandSender sender) {
         sender.sendMessage("§6§l/lm admin §8— Legacy Mechanics");
         sender.sendMessage("§e/lm admin help §7— this list");
-        sender.sendMessage("§e/lm admin reload §7— reload config");
+        sender.sendMessage("§e/lm admin reload §7— Forge config + gui-tooltips.json");
         sender.sendMessage("§e/lm admin migrate-cnpc §7— import CNPC Rival/Spar (live → backup → world_data.json)");
         sender.sendMessage("§e/lm admin migrate-cnpc force §7— wipe LM Rival/Spar + re-import from those sources");
         sender.sendMessage("§8If CNPC was wiped: put world_data.json in config/legacymechanics/cnpc-import-backup/ then force");

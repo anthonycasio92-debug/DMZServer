@@ -67,17 +67,19 @@ public final class HubChestGui implements Listener {
             hubHeaderLore.add("&7You see and edit their LM systems.");
             hubHeaderLore.add("");
         }
-        hubHeaderLore.addAll(GuiBoardHelper.tips(player, "&7Choose a system", "&8/lm"));
-        put(holder, inv, 4, item(Material.NETHER_STAR, "&f&lLegacy Mechanics", hubHeaderLore));
+        hubHeaderLore.addAll(GuiTooltips.lore("hub.main.header",
+                List.of("&7Choose a system", "&8/lm")));
+        put(holder, inv, 4, item(Material.NETHER_STAR,
+                GuiTooltips.name("hub.main.header", "&f&lLegacy Mechanics"), hubHeaderLore));
 
         // Row 2 — core (everyone): Difficulty · Rival · Spar
-        put(holder, inv, 20, tipBtn(player, Material.BEACON, "&aDifficulty",
+        put(holder, inv, 20, tipBtn(player, "hub.main.difficulty", Material.BEACON, "&aDifficulty",
                 List.of("&7Unlock tiers & world scaling", "&eClick to open")),
                 SlotAction.open("difficulty"));
-        put(holder, inv, 22, tipBtn(player, Material.NAME_TAG, "&6Rival",
+        put(holder, inv, 22, tipBtn(player, "hub.main.rival", Material.NAME_TAG, "&6Rival",
                 List.of("&7Rivalry, challenges & RP", "&eClick to open")),
                 SlotAction.open("rival"));
-        put(holder, inv, 24, tipBtn(player, Material.GOLDEN_SWORD, "&bSpar",
+        put(holder, inv, 24, tipBtn(player, "hub.main.spar", Material.GOLDEN_SWORD, "&bSpar",
                 List.of("&7Sparring TP & mentor bonds", "&eClick to open")),
                 SlotAction.open("spar"));
 
@@ -86,33 +88,33 @@ public final class HubChestGui implements Listener {
 
         // Row 3 — Skill Check (donator) / Skills (staff) · Prestige (everyone)
         if (skillCheck) {
-            put(holder, inv, 21, tipBtn(player, Material.EXPERIENCE_BOTTLE, "&eSkill Check",
+            put(holder, inv, 21, tipBtn(player, "hub.main.skillcheck", Material.EXPERIENCE_BOTTLE, "&eSkill Check",
                     List.of("&7Natural · Saga progress", "&eClick to open")),
                     SlotAction.open("skillcheck"));
         } else if (staff) {
-            put(holder, inv, 21, tipBtn(player, Material.BOOK, "&eSkills",
+            put(holder, inv, 21, tipBtn(player, "hub.main.skills", Material.BOOK, "&eSkills",
                     List.of("&7Skill unlock admin browser", "&8No Skill Check perm", "&eClick to open")),
                     SlotAction.open("skills"));
         }
-        put(holder, inv, 23, tipBtn(player, Material.GOLDEN_APPLE, "&6Prestige",
+        put(holder, inv, 23, tipBtn(player, "hub.main.prestige", Material.GOLDEN_APPLE, "&6Prestige",
                 List.of("&7Turn in prestiges · skill/forms shop · level-cap",
                         "&eClick to open")),
                 SlotAction.open("prestige"));
 
         // Row 4 — player Android remove + staff tools
-        put(holder, inv, 31, tipBtn(player, Material.REDSTONE, "&cRemove Android",
+        put(holder, inv, 31, tipBtn(player, "hub.main.android_remove", Material.REDSTONE, "&cRemove Android",
                 List.of("&7Remove your Android upgrade",
                         "&8Two-click confirm · forms restored",
                         "&eClick to open")),
                 SlotAction.open("android_remove"));
         if (staff) {
-            put(holder, inv, 38, tipBtn(player, Material.BREWING_STAND, "&dProgression",
+            put(holder, inv, 38, tipBtn(player, "hub.main.progression", Material.BREWING_STAND, "&dProgression",
                     List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")),
                     SlotAction.open("progression"));
-            put(holder, inv, 40, tipBtn(player, Material.COMMAND_BLOCK, "&cAdmin",
+            put(holder, inv, 40, tipBtn(player, "hub.main.admin", Material.COMMAND_BLOCK, "&cAdmin",
                     List.of("&7Reload · syslog · open systems", "&8/lm admin")),
                     SlotAction.open("admin"));
-            put(holder, inv, 42, tipBtn(player, Material.CLOCK, "&8Logs",
+            put(holder, inv, 42, tipBtn(player, "hub.main.logs", Material.CLOCK, "&8Logs",
                     List.of("&7System telemetry", "&eClick to open")),
                     SlotAction.page("logs"));
         }
@@ -149,13 +151,13 @@ public final class HubChestGui implements Listener {
                     prependBlank(part)));
             placed++;
         }
-        put(holder, inv, 29, tipBtn(player, Material.LIME_DYE, "&aSyslog ON",
+        put(holder, inv, 29, tipBtn(player, "hub.logs.syslog_on", Material.LIME_DYE, "&aSyslog ON",
                 List.of("&7Enable system telemetry")),
                 SlotAction.act("syslog", "on", "logs"));
-        put(holder, inv, 31, tipBtn(player, Material.GRAY_DYE, "&cSyslog OFF",
+        put(holder, inv, 31, tipBtn(player, "hub.logs.syslog_off", Material.GRAY_DYE, "&cSyslog OFF",
                 List.of("&7Disable system telemetry")),
                 SlotAction.act("syslog", "off", "logs"));
-        put(holder, inv, 33, tipBtn(player, Material.HOPPER, "&eFlush",
+        put(holder, inv, 33, tipBtn(player, "hub.logs.flush", Material.HOPPER, "&eFlush",
                 List.of("&7Flush log writers")),
                 SlotAction.act("syslog", "flush", "logs"));
         put(holder, inv, 36, pageBtn(player, Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
@@ -267,16 +269,33 @@ public final class HubChestGui implements Listener {
     }
 
     private static ItemStack tipBtn(Player player, Material mat, String name, List<String> tip) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(GuiBoardHelper.tipsList(player, tip));
-        return item(mat, name, lore);
+        return tipBtn(player, null, mat, name, tip);
+    }
+
+    private static ItemStack tipBtn(
+            Player player, String key, Material mat, String name, List<String> tip
+    ) {
+        if (key == null || key.isBlank()) {
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            if (tip != null) {
+                lore.addAll(tip);
+            }
+            return item(mat, name, lore);
+        }
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip));
     }
 
     private static ItemStack pageBtn(Player player, Material mat, String name, String... tips) {
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.addAll(GuiBoardHelper.tips(player, tips));
+        if (tips != null) {
+            for (String tip : tips) {
+                if (tip != null) {
+                    lore.add(tip);
+                }
+            }
+        }
         return item(mat, name, lore);
     }
 

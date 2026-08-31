@@ -1,0 +1,299 @@
+{
+  "_comment": "LegacyMechanics GUI tooltips. Edit name/lore, then /lm admin reload. Placeholders like {points} are filled when the GUI supports them. Missing keys use Java defaults. Nested objects with name/lore are buttons; bare string arrays are lore-only.",
+  "hub": {
+    "main": {
+      "header": {
+        "name": "&f&lLegacy Mechanics",
+        "lore": ["&7Choose a system", "&8/lm"]
+      },
+      "difficulty": {
+        "name": "&aDifficulty",
+        "lore": ["&7Unlock tiers & world scaling", "&eClick to open"]
+      },
+      "rival": {
+        "name": "&6Rival",
+        "lore": ["&7Rivalry, challenges & RP", "&eClick to open"]
+      },
+      "spar": {
+        "name": "&bSpar",
+        "lore": ["&7Sparring TP & mentor bonds", "&eClick to open"]
+      },
+      "skillcheck": {
+        "name": "&eSkill Check",
+        "lore": ["&7Natural · Saga progress", "&eClick to open"]
+      },
+      "skills": {
+        "name": "&eSkills",
+        "lore": ["&7Skill unlock admin browser", "&8No Skill Check perm", "&eClick to open"]
+      },
+      "prestige": {
+        "name": "&6Prestige",
+        "lore": ["&7Turn in prestiges · skill/forms shop · level-cap", "&eClick to open"]
+      },
+      "android_remove": {
+        "name": "&cRemove Android",
+        "lore": ["&7Remove your Android upgrade", "&8Two-click confirm · forms restored", "&eClick to open"]
+      },
+      "progression": {
+        "name": "&dProgression",
+        "lore": ["&7Skills · TP · Race · Combat flags", "&eClick to open"]
+      },
+      "admin": {
+        "name": "&cAdmin",
+        "lore": ["&7Reload · syslog · open systems", "&8/lm admin"]
+      },
+      "logs": {
+        "name": "&8Logs",
+        "lore": ["&7System telemetry", "&eClick to open"]
+      }
+    },
+    "logs": {
+      "syslog_on": {
+        "name": "&aSyslog ON",
+        "lore": ["&7Enable system telemetry"]
+      },
+      "syslog_off": {
+        "name": "&cSyslog OFF",
+        "lore": ["&7Disable system telemetry"]
+      },
+      "flush": {
+        "name": "&eFlush",
+        "lore": ["&7Flush log writers"]
+      }
+    }
+  },
+  "prestige": {
+    "main": {
+      "confirm": {
+        "name": "&aConfirm Prestige",
+        "lore": ["&7Click to prestige (confirm within 10s)", "&8Resets DMZ stats · awards held Prestige"]
+      },
+      "turnin": {
+        "name": "&eTurn In Prestiges",
+        "lore": ["&7Convert held prestiges into points", "&7Balance: &e{points}"]
+      },
+      "shop": {
+        "name": "&aSkill Shop",
+        "lore": ["&71 point = +1 skill level (&dPotential &7+2)", "&7Skill Check skills only · &apermanent", "&8Survives prestige reset"]
+      },
+      "effects": {
+        "name": "&dEffects",
+        "lore": ["&7Permanent Majin / Mutant (&e5 &7pts)", "&aPermanent purchase &8· unpurchase = no refund"]
+      },
+      "tiers": {
+        "name": "&6Difficulty Tiers",
+        "lore": ["&7Permanent unlocks with prestige points", "&7T1–2 &e1pt &8· &7T3–4 &e2pt &8· &7T5–6 &e3pt &8· &7T7 &e4pt", "&aPermanent &8· survives prestige"]
+      },
+      "cap": {
+        "name": "&bLevel Cap Breakthrough",
+        "lore": ["&7Raise &fyour &7personal level cap +10k", "&7Cap: &f{level_cap}", "&8DMZ maxValue 150000 — soft-lock holds others at their cap"]
+      },
+      "wallet": {
+        "name": "&e&lWallet",
+        "lore": ["&6Wallet: &e{points} &7prestige points"]
+      },
+      "progression": {
+        "name": "&dProgression",
+        "lore": ["&7Skills · TP · Race · Combat flags", "&eClick to open"]
+      }
+    },
+    "tiers": {
+      "owned": ["&aOwned · permanent"],
+      "locked": ["&cLocked", "&7Buy permanent &fT{prev} &7first (shop ladder)"],
+      "buyable": ["&7Cost: &e{cost} &7point(s)", "&aPermanent unlock &8· survives prestige"],
+      "buyable_unlocked": ["&7Cost: &e{cost} &7point(s)", "&eCurrently unlocked via level/prestige", "&7Buy to make it &apermanent &7(survives prestige)"],
+      "footer": ["&8Requires permanent T1–T{prev} from this shop", "&8Then activate with Ancient Coins via /difficulty → Buy Tier"]
+    },
+    "turnin": {
+      "amount": ["&7Turn in &6{amount}", "&7Gain &e{gain} &7points"],
+      "all": ["&7Turn in all &6{held} &7held", "&7Gain &e{gain} &7points", "&7+1 bonus point per 3 turned in"]
+    },
+    "effects": {
+      "majin": ["&7Cost: &e{cost} &7points", "&aPermanent · survives prestige", "&8XOR with Mutant"],
+      "mutant": ["&7Cost: &e{cost} &7points", "&aPermanent · survives prestige", "&8XOR with Majin"]
+    },
+    "cap": {
+      "buy": ["&7Next: &a+10,000 &7personal cap for &e{cost} &7points"]
+    }
+  },
+  "difficulty": {
+    "main": {
+      "buy": {
+        "name": "&eBuy Tier",
+        "lore": ["&7Purchase a higher Unlock Tier", "&8Ancient Coins · pay-up OK · change returned"]
+      },
+      "lower": {
+        "name": "&fLower Tier",
+        "lore": ["&7Select a lower unlocked tier", "&8Or reset to None · always free"]
+      },
+      "titles": {
+        "name": "&dTitles",
+        "lore": ["&7Equip difficulty titles", "&8Earned from tiers and combat"]
+      },
+      "summon_dragon": {
+        "name": "&5&lSummon End Dragon",
+        "lore": [
+          "&7Summon the End Dragon scaled to",
+          "&7your Adaptive Difficulty (T4–T7).",
+          "&8Cost: &f3 Ancient Netherite",
+          "&8Must be &fin The End",
+          "&8Only &fyou &8can damage it.",
+          "",
+          "{status}"
+        ]
+      },
+      "personal_on": {
+        "name": "&aDifficulty ON",
+        "lore": ["&7Click to turn OFF for you only", "&8OFF disables scaling, kill coins,", "&8AI pressure, and tier buys"]
+      },
+      "personal_off": {
+        "name": "&cDifficulty OFF",
+        "lore": ["&7Click to turn ON for you only", "&8ON restores scaling, kill coins,", "&8AI pressure, and tier buys"]
+      },
+      "coin_chat_on": {
+        "name": "&aCoin Chat ON",
+        "lore": ["&7Click to mute drop messages", "&8Only affects Ancient Coin kill chat"]
+      },
+      "coin_chat_off": {
+        "name": "&8Coin Chat OFF",
+        "lore": ["&7Click to show drop messages", "&8Only affects Ancient Coin kill chat"]
+      },
+      "details": {
+        "name": "&8Details",
+        "lore": ["&7Staff breakdown", "&8CR · prestige · kit gates"]
+      }
+    },
+    "buy": {
+      "info": ["&7Unlock with DMZ level or Prestige", "&8Costs scale with level"]
+    },
+    "lower": {
+      "info": ["&7Select a lower unlocked tier"],
+      "reset": ["&7Clear active tier", "&8Unlocks & coins kept", "&8Always free"]
+    }
+  },
+  "rival": {
+    "main": {
+      "list": {
+        "name": "&6List",
+        "lore": ["&7Current rivals", "&8Heads · hover for stats"]
+      },
+      "actions": {
+        "name": "&aActions",
+        "lore": ["&7Declare · accept · decline · remove", "{pending}"]
+      },
+      "challenge": {
+        "name": "&cChallenge",
+        "lore": ["&7Send · accept · decline · spectate"]
+      },
+      "top": {
+        "name": "&fTop",
+        "lore": ["&7RP leaderboard"]
+      },
+      "history": {
+        "name": "&8History",
+        "lore": ["&7Previous rivals", "&8Archived when removed"]
+      },
+      "progress": {
+        "name": "&bProgress",
+        "lore": ["&7Season · quests · achs · HOF · journal · title"]
+      },
+      "tpmsg_on": {
+        "name": "&aTP Msg ON",
+        "lore": ["&7Click to mute rival TP messages", "&8Only affects rivalry TP chat"]
+      },
+      "tpmsg_off": {
+        "name": "&8TP Msg OFF",
+        "lore": ["&7Click to show rival TP messages", "&8Only affects rivalry TP chat"]
+      },
+      "instinct_on": {
+        "name": "&aInstinct ON",
+        "lore": ["&7Click to disable Rival Instinct", "&8Alerts for mutual / nemesis rivals"]
+      },
+      "instinct_off": {
+        "name": "&8Instinct OFF",
+        "lore": ["&7Click to enable Rival Instinct", "&8Alerts for mutual / nemesis rivals"]
+      },
+      "admin": {
+        "name": "&cAdmin",
+        "lore": ["&7Save · refresh · status"]
+      }
+    }
+  },
+  "spar": {
+    "main": {
+      "stats": {
+        "name": "&eStats",
+        "lore": ["&7Last 3 spar reports", "&8One item per spar"]
+      },
+      "top": {
+        "name": "&fTop",
+        "lore": ["&7Leaderboard"]
+      },
+      "mentor": {
+        "name": "&bMentor",
+        "lore": ["&7Invite · pending · accept · remove"]
+      },
+      "tpmsg_on": {
+        "name": "&aTP Msg ON",
+        "lore": ["&7Click to mute spar TP chat", "&8Batched +TP lines during spars", "", "&eClick to toggle"]
+      },
+      "tpmsg_off": {
+        "name": "&8TP Msg OFF",
+        "lore": ["&7Click to show spar TP chat while fighting", "&8Batched +TP lines during spars", "", "&eClick to toggle"]
+      },
+      "end_session": {
+        "name": "&cEnd Session",
+        "lore": ["&7End your active spar session"]
+      },
+      "admin": {
+        "name": "&cAdmin",
+        "lore": ["&7Save · status · mentor resetcd"]
+      }
+    }
+  },
+  "progression": {
+    "main": {
+      "skills": {
+        "name": "&eSkills",
+        "lore": ["&7Flight · Sprint · Meditation · Potential", "", "&eClick to open"]
+      },
+      "tp": {
+        "name": "&6TP Gains",
+        "lore": ["&7Farming · Building · Boost · Bio", "", "&eClick to open"]
+      },
+      "race": {
+        "name": "&bRace & Form",
+        "lore": ["&7Race lock · Yardrat · Spiritualist · Android", "", "&eClick to open"]
+      },
+      "combat": {
+        "name": "&cCombat",
+        "lore": ["&7Ki weapons · Piercing · DoT · Apothic", "", "&eClick to open"]
+      },
+      "end": {
+        "name": "&5End",
+        "lore": ["&7End strength · Portal guard", "", "&eClick to open"]
+      },
+      "fabled": {
+        "name": "&dFabled",
+        "lore": ["&7Soft Fabled bridges", "", "&eClick to open"]
+      },
+      "utility": {
+        "name": "&7Utility",
+        "lore": ["&7Shadow dummy · Stat checker", "", "&eClick to open"]
+      },
+      "admin": {
+        "name": "&cAll Flags",
+        "lore": ["&7Full flag board"]
+      }
+    }
+  },
+  "skills": {
+    "main": {
+      "header": ["&7Natural / Saga skill progress"],
+      "progression": {
+        "name": "&dProgression",
+        "lore": ["&7Skills · TP · Race · Combat flags", "&eClick to open"]
+      }
+    }
+  }
+}

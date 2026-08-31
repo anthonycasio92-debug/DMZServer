@@ -106,31 +106,33 @@ public final class RivalChestGui implements Listener {
         }
 
         put(holder, inv, 4, item(Material.NAME_TAG, "&6&lRival", statusLore(viewer, ph)));
-        put(holder, inv, 19, pageBtn(viewer, Material.PLAYER_HEAD, "&6List",
-                "&7Current rivals", "&8Heads · hover for stats"), SlotAction.page("list"));
+        put(holder, inv, 19, tipBtn(viewer, "rival.main.list", Material.PLAYER_HEAD, "&6List",
+                List.of("&7Current rivals", "&8Heads · hover for stats")), SlotAction.page("list"));
         int pendingCount = 0;
         try {
             pendingCount = Integer.parseInt(ph.getOrDefault("pending_invites", "0"));
         } catch (NumberFormatException ignored) {
             pendingCount = 0;
         }
-        put(holder, inv, 21, pageBtn(viewer, Material.EMERALD, "&aActions",
-                "&7Declare · accept · decline · remove",
-                pendingCount > 0
-                        ? "&e" + pendingCount + " pending invite" + (pendingCount == 1 ? "" : "s")
-                        : "&8Pending invites live here"),
+        String pendingLine = pendingCount > 0
+                ? "&e" + pendingCount + " pending invite" + (pendingCount == 1 ? "" : "s")
+                : "&8Pending invites live here";
+        put(holder, inv, 21, tipBtn(viewer, "rival.main.actions", Material.EMERALD, "&aActions",
+                List.of("&7Declare · accept · decline · remove", pendingLine),
+                Map.of("pending", pendingLine)),
                 SlotAction.page("actions"));
-        put(holder, inv, 23, pageBtn(viewer, Material.DIAMOND_SWORD, "&cChallenge",
-                "&7Send · accept · decline · spectate"), SlotAction.page("challenge"));
-        put(holder, inv, 25, pageBtn(viewer, Material.GOLDEN_HELMET, "&fTop",
-                "&7RP leaderboard"), SlotAction.page("top"));
-        put(holder, inv, 29, pageBtn(viewer, Material.SKELETON_SKULL, "&8History",
-                "&7Previous rivals", "&8Archived when removed"), SlotAction.page("history"));
-        put(holder, inv, 31, pageBtn(viewer, Material.BOOK, "&bProgress",
-                "&7Season · quests · achs · HOF · journal · title"), SlotAction.page("progress"));
+        put(holder, inv, 23, tipBtn(viewer, "rival.main.challenge", Material.DIAMOND_SWORD, "&cChallenge",
+                List.of("&7Send · accept · decline · spectate")), SlotAction.page("challenge"));
+        put(holder, inv, 25, tipBtn(viewer, "rival.main.top", Material.GOLDEN_HELMET, "&fTop",
+                List.of("&7RP leaderboard")), SlotAction.page("top"));
+        put(holder, inv, 29, tipBtn(viewer, "rival.main.history", Material.SKELETON_SKULL, "&8History",
+                List.of("&7Previous rivals", "&8Archived when removed")), SlotAction.page("history"));
+        put(holder, inv, 31, tipBtn(viewer, "rival.main.progress", Material.BOOK, "&bProgress",
+                List.of("&7Season · quests · achs · HOF · journal · title")), SlotAction.page("progress"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "false"));
         put(holder, inv, 33, tipBtn(viewer,
+                tpOn ? "rival.main.tpmsg_on" : "rival.main.tpmsg_off",
                 tpOn ? Material.BELL : Material.GRAY_DYE,
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 List.of(
@@ -142,6 +144,7 @@ public final class RivalChestGui implements Listener {
         if (instinctFeature) {
             boolean instinctOn = "true".equalsIgnoreCase(ph.getOrDefault("instinct", "false"));
             put(holder, inv, 34, tipBtn(viewer,
+                    instinctOn ? "rival.main.instinct_on" : "rival.main.instinct_off",
                     instinctOn ? Material.LIME_DYE : Material.GRAY_DYE,
                     instinctOn ? "&aInstinct ON" : "&8Instinct OFF",
                     List.of(
@@ -153,8 +156,8 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         if (ForgeBridge.isStaff(viewer)) {
-            put(holder, inv, 37, pageBtn(viewer, Material.COMMAND_BLOCK, "&cAdmin",
-                    "&7Save · refresh · status"), SlotAction.page("admin"));
+            put(holder, inv, 37, tipBtn(viewer, "rival.main.admin", Material.COMMAND_BLOCK, "&cAdmin",
+                    List.of("&7Save · refresh · status")), SlotAction.page("admin"));
         }
         return inv;
     }
@@ -843,16 +846,40 @@ public final class RivalChestGui implements Listener {
     }
 
     private static ItemStack tipBtn(Player player, Material mat, String name, List<String> tip) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(GuiBoardHelper.tipsList(player, tip));
-        return item(mat, name, lore);
+        return tipBtn(player, null, mat, name, tip, null);
+    }
+
+    private static ItemStack tipBtn(
+            Player player, String key, Material mat, String name, List<String> tip
+    ) {
+        return tipBtn(player, key, mat, name, tip, null);
+    }
+
+    private static ItemStack tipBtn(
+            Player player, String key, Material mat, String name, List<String> tip,
+            Map<String, String> vars
+    ) {
+        if (key == null || key.isBlank()) {
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            if (tip != null) {
+                lore.addAll(tip);
+            }
+            return item(mat, name, lore);
+        }
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip, vars, null));
     }
 
     private static ItemStack pageBtn(Player player, Material mat, String name, String... tips) {
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.addAll(GuiBoardHelper.tips(player, tips));
+        if (tips != null) {
+            for (String tip : tips) {
+                if (tip != null) {
+                    lore.add(tip);
+                }
+            }
+        }
         return item(mat, name, lore);
     }
 

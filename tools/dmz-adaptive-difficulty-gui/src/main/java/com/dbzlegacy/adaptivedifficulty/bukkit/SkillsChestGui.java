@@ -128,8 +128,9 @@ public final class SkillsChestGui implements Listener {
                 SlotAction.page("saga"));
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         if (staffAdmin) {
-            put(holder, inv, 51, tipBtn(viewer, Material.BREWING_STAND, "&dProgression",
-                    List.of("&7Back to progression")), SlotAction.cmd("lmdo lm open progression"));
+            put(holder, inv, 51, tipBtn(viewer, "skills.main.progression", Material.BREWING_STAND, "&dProgression",
+                    List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")),
+                    SlotAction.cmd("lmdo lm open progression"));
         }
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
         return inv;
@@ -245,16 +246,33 @@ public final class SkillsChestGui implements Listener {
     }
 
     private static ItemStack tipBtn(Player player, Material mat, String name, List<String> tip) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(GuiBoardHelper.tipsList(player, tip));
-        return item(mat, name, lore);
+        return tipBtn(player, null, mat, name, tip);
+    }
+
+    private static ItemStack tipBtn(
+            Player player, String key, Material mat, String name, List<String> tip
+    ) {
+        if (key == null || key.isBlank()) {
+            List<String> lore = new ArrayList<>();
+            lore.add("");
+            if (tip != null) {
+                lore.addAll(tip);
+            }
+            return item(mat, name, lore);
+        }
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, tip));
     }
 
     private static ItemStack pageBtn(Player player, Material mat, String name, String... tips) {
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.addAll(GuiBoardHelper.tips(player, tips));
+        if (tips != null) {
+            for (String tip : tips) {
+                if (tip != null) {
+                    lore.add(tip);
+                }
+            }
+        }
         return item(mat, name, lore);
     }
 

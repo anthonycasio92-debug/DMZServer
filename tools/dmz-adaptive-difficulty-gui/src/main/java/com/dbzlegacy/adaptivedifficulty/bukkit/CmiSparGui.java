@@ -94,15 +94,16 @@ public final class CmiSparGui {
         gui.addButton(status);
 
         // Main: Status · Stats · Top · Mentor · End Session · Hub · Close (pickers on Mentor only)
-        gui.addButton(pageBtn(player, 19, Material.BOOK, "&eStats", "stats",
+        gui.addButton(pageBtn(player, 19, "spar.main.stats", Material.BOOK, "&eStats", "stats",
                 "&7Last 3 spar reports", "&8One item per spar"));
-        gui.addButton(pageBtn(player, 21, Material.GOLDEN_HELMET, "&fTop", "top",
+        gui.addButton(pageBtn(player, 21, "spar.main.top", Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7Leaderboard"));
-        gui.addButton(pageBtn(player, 23, Material.EMERALD, "&bMentor", "mentor",
+        gui.addButton(pageBtn(player, 23, "spar.main.mentor", Material.EMERALD, "&bMentor", "mentor",
                 "&7Invite · pending · accept · remove"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "true"));
         gui.addButton(actionBtn(player, 25,
+                tpOn ? "spar.main.tpmsg_on" : "spar.main.tpmsg_off",
                 tpOn ? Material.BELL : Material.GRAY_DYE,
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 "tpmsg", "toggle", "main",
@@ -115,7 +116,7 @@ public final class CmiSparGui {
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
         if (session) {
-            gui.addButton(actionBtn(player, 31, Material.RED_DYE, "&cEnd Session",
+            gui.addButton(actionBtn(player, 31, "spar.main.end_session", Material.RED_DYE, "&cEnd Session",
                     "end", "0", "main",
                     List.of("&7End your active spar session")));
         }
@@ -123,7 +124,7 @@ public final class CmiSparGui {
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         if (ForgeBridge.isStaff(player)) {
-            gui.addButton(pageBtn(player, 37, Material.COMMAND_BLOCK, "&cAdmin", "admin",
+            gui.addButton(pageBtn(player, 37, "spar.main.admin", Material.COMMAND_BLOCK, "&cAdmin", "admin",
                     "&7Save · status · mentor resetcd"));
         }
         fillEmpty(gui, 5);
@@ -553,25 +554,55 @@ public final class CmiSparGui {
     private static CMIGuiButton actionBtn(
             Player player, int slot, Material mat, String name, String action, String arg, String returnPage,
             List<String> tip) {
-        CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
+        return actionBtn(player, slot, null, mat, name, action, arg, returnPage, tip);
+    }
+
+    private static CMIGuiButton actionBtn(
+            Player player, int slot, String key, Material mat, String name, String action, String arg,
+            String returnPage, List<String> tip
+    ) {
+        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name);
+        CMIGuiButton btn = new CMIGuiButton(slot, mat, display);
         btn.lockField();
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(GuiBoardHelper.tipsList(player, tip));
-        btn.addLore(lore);
+        btn.addLore(key == null || key.isBlank()
+                ? withBlank(tip)
+                : GuiTooltips.buttonLore(key, tip));
         btn.addCommand("lmdo spar " + action + " " + arg + " " + returnPage);
         return btn;
     }
 
     private static CMIGuiButton pageBtn(Player player, int slot, Material mat, String name, String page, String... tips) {
-        CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
+        return pageBtn(player, slot, null, mat, name, page, tips);
+    }
+
+    private static CMIGuiButton pageBtn(
+            Player player, int slot, String key, Material mat, String name, String page, String... tips
+    ) {
+        List<String> defaults = new ArrayList<>();
+        if (tips != null) {
+            for (String tip : tips) {
+                if (tip != null) {
+                    defaults.add(tip);
+                }
+            }
+        }
+        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name);
+        CMIGuiButton btn = new CMIGuiButton(slot, mat, display);
         btn.lockField();
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(GuiBoardHelper.tips(player, tips));
-        btn.addLore(lore);
+        btn.addLore(key == null || key.isBlank()
+                ? withBlank(defaults)
+                : GuiTooltips.buttonLore(key, defaults));
         btn.addCommand("lmdo spar page " + page);
         return btn;
+    }
+
+    private static List<String> withBlank(List<String> tip) {
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        if (tip != null) {
+            lore.addAll(tip);
+        }
+        return lore;
     }
 
     private static CMIGuiButton cmdBtn(int slot, Material mat, String name, String command, String... tips) {

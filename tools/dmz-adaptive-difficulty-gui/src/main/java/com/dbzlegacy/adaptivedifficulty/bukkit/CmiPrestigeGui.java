@@ -69,38 +69,41 @@ public final class CmiPrestigeGui {
         gui.addButton(walletBtn(player, "main", "&e&lWallet", null));
 
         boolean ready = "true".equalsIgnoreCase(ph.getOrDefault("ready", "false"));
+        List<String> confirmDefaults = List.of(
+                "&7Click to prestige (confirm within 10s)",
+                "&8Resets DMZ stats · awards held Prestige");
         CMIGuiButton confirm = new CMIGuiButton(20,
                 ready ? Material.LIME_CONCRETE : Material.ORANGE_CONCRETE,
-                ready ? "&aConfirm Prestige" : "&eAttempt Prestige");
+                GuiTooltips.name("prestige.main.confirm",
+                        ready ? "&aConfirm Prestige" : "&eAttempt Prestige"));
         confirm.lockField();
-        List<String> confirmLore = new ArrayList<>();
-        confirmLore.add("");
-        confirmLore.addAll(GuiBoardHelper.tips(player, "&7Click to prestige (confirm within 10s)"));
-        confirmLore.add("&8Resets DMZ stats · awards held Prestige");
-        confirm.addLore(confirmLore);
+        confirm.addLore(GuiTooltips.buttonLore("prestige.main.confirm", confirmDefaults));
         confirm.addCommand("lmdo prestige confirm 0 main");
         gui.addButton(confirm);
 
-        gui.addButton(navBtn(22, Material.GOLD_NUGGET, "&eTurn In Prestiges",
+        Map<String, String> vars = Map.of(
+                "points", ph.getOrDefault("points", "0"),
+                "level_cap", ph.getOrDefault("level_cap_fmt", "100000"));
+        gui.addButton(navBtn(22, "prestige.main.turnin", Material.GOLD_NUGGET, "&eTurn In Prestiges",
                 List.of("&7Convert held prestiges into points",
-                        "&7Balance: &e" + ph.getOrDefault("points", "0")),
-                "turnin"));
-        gui.addButton(navBtn(24, Material.EXPERIENCE_BOTTLE, "&aSkill Shop",
+                        "&7Balance: &e" + vars.get("points")),
+                vars, "turnin"));
+        gui.addButton(navBtn(24, "prestige.main.shop", Material.EXPERIENCE_BOTTLE, "&aSkill Shop",
                 List.of("&71 point = +1 skill level (&dPotential &7+2)",
                         "&7Skill Check skills only · &apermanent",
-                        "&8Survives prestige reset"), "shop"));
-        gui.addButton(navBtn(29, Material.MAGENTA_DYE, "&dEffects",
+                        "&8Survives prestige reset"), null, "shop"));
+        gui.addButton(navBtn(29, "prestige.main.effects", Material.MAGENTA_DYE, "&dEffects",
                 List.of("&7Permanent Majin / Mutant (&e5 &7pts)",
-                        "&aPermanent purchase &8· unpurchase = no refund"), "effects"));
-        gui.addButton(navBtn(31, Material.BEACON, "&6Difficulty Tiers",
+                        "&aPermanent purchase &8· unpurchase = no refund"), null, "effects"));
+        gui.addButton(navBtn(31, "prestige.main.tiers", Material.BEACON, "&6Difficulty Tiers",
                 List.of("&7Permanent unlocks with prestige points",
                         "&7T1–2 &e1pt &8· &7T3–4 &e2pt &8· &7T5–6 &e3pt &8· &7T7 &e4pt",
-                        "&aPermanent &8· survives prestige"), "tiers"));
-        gui.addButton(navBtn(33, Material.NETHER_STAR, "&bLevel Cap Breakthrough",
+                        "&aPermanent &8· survives prestige"), null, "tiers"));
+        gui.addButton(navBtn(33, "prestige.main.cap", Material.NETHER_STAR, "&bLevel Cap Breakthrough",
                 List.of("&7Raise &fyour &7personal level cap +10k",
-                        "&7Cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
+                        "&7Cap: &f" + vars.get("level_cap"),
                         "&8DMZ maxValue 150000 — soft-lock holds others at their cap"),
-                "cap"));
+                vars, "cap"));
 
         gui.addButton(hubBtn(36));
         if (ForgeBridge.isStaff(player)) {
@@ -388,26 +391,41 @@ public final class CmiPrestigeGui {
             CMIGuiButton btn = new CMIGuiButton(slots[t - 1],
                     canBuy || owned ? mats[t - 1] : Material.GRAY_DYE, title);
             btn.lockField();
+            Map<String, String> tierVars = Map.of(
+                    "tier", String.valueOf(t),
+                    "prev", String.valueOf(Math.max(1, t - 1)),
+                    "cost", cost,
+                    "label", label);
             List<String> lore = new ArrayList<>();
             lore.add("");
             if (owned) {
-                lore.add("&aOwned · permanent");
+                lore.addAll(GuiTooltips.lore("prestige.tiers.owned",
+                        List.of("&aOwned · permanent"), tierVars));
             } else if (!canBuy) {
-                lore.add("&cLocked");
-                lore.add("&7Buy permanent &fT" + (t - 1) + " &7first (shop ladder)");
+                lore.addAll(GuiTooltips.lore("prestige.tiers.locked",
+                        List.of("&cLocked",
+                                "&7Buy permanent &fT" + (t - 1) + " &7first (shop ladder)"),
+                        tierVars));
+            } else if (unlocked) {
+                lore.addAll(GuiTooltips.lore("prestige.tiers.buyable_unlocked",
+                        List.of("&7Cost: &e" + cost + " &7point" + ("1".equals(cost) ? "" : "s"),
+                                "&eCurrently unlocked via level/prestige",
+                                "&7Buy to make it &apermanent &7(survives prestige)"),
+                        tierVars));
             } else {
-                lore.add("&7Cost: &e" + cost + " &7point" + ("1".equals(cost) ? "" : "s"));
-                if (unlocked) {
-                    lore.add("&eCurrently unlocked via level/prestige");
-                    lore.add("&7Buy to make it &apermanent &7(survives prestige)");
-                } else {
-                    lore.add("&aPermanent unlock &8· survives prestige");
-                }
+                lore.addAll(GuiTooltips.lore("prestige.tiers.buyable",
+                        List.of("&7Cost: &e" + cost + " &7point" + ("1".equals(cost) ? "" : "s"),
+                                "&aPermanent unlock &8· survives prestige"),
+                        tierVars));
             }
             if (!owned && t > 1) {
-                lore.add("&8Requires permanent T1–T" + (t - 1) + " from this shop");
+                lore.addAll(GuiTooltips.lore("prestige.tiers.footer",
+                        List.of("&8Requires permanent T1–T" + (t - 1) + " from this shop",
+                                "&8Then activate with Ancient Coins via /difficulty → Buy Tier"),
+                        tierVars));
+            } else {
+                lore.add("&8Then activate with Ancient Coins via /difficulty → Buy Tier");
             }
-            lore.add("&8Then activate with Ancient Coins via /difficulty → Buy Tier");
             btn.addLore(lore);
             if (canBuy) {
                 btn.addCommand("lmdo prestige tier " + t + " tiers");
@@ -481,14 +499,30 @@ public final class CmiPrestigeGui {
     private static CMIGuiButton navBtn(
             int slot, Material mat, String name, List<String> tip, String page
     ) {
-        CMIGuiButton btn = new CMIGuiButton(slot, mat, name);
+        return navBtn(slot, null, mat, name, tip, null, page);
+    }
+
+    private static CMIGuiButton navBtn(
+            int slot, String key, Material mat, String name, List<String> tip,
+            Map<String, String> vars, String page
+    ) {
+        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name);
+        CMIGuiButton btn = new CMIGuiButton(slot, mat, display);
         btn.lockField();
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.addAll(tip);
-        btn.addLore(lore);
+        btn.addLore(key == null || key.isBlank()
+                ? withBlank(tip)
+                : GuiTooltips.buttonLore(key, tip, vars, null));
         btn.addCommand("lmdo lm open prestige " + page);
         return btn;
+    }
+
+    private static List<String> withBlank(List<String> tip) {
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        if (tip != null) {
+            lore.addAll(tip);
+        }
+        return lore;
     }
 
     private static CMIGuiButton hubBtn(int slot) {
