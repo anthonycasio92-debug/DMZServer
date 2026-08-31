@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.119", 'VERSION = "2.3.119"' in mod)
+    check("VERSION 2.3.120", 'VERSION = "2.3.120"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -907,7 +907,9 @@ def main() -> int:
           and '"dmzeffect give "' not in pp
           and "'dmzeffect give '" not in pp)
     lm_tips = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/LmTips.java")
-    check("LM onboarding tips class", "class LmTips" in lm_tips and "Type /lm" in lm_tips)
+    check("LM onboarding tips class",
+          "class LmTips" in lm_tips
+          and "Use command /lm to open the GUI" in lm_tips)
     check("LM tips use action bar",
           "ScreenNotify.actionBar" in lm_tips
           and "void actionBar" in read(SRC / "com/dbzlegacy/adaptivedifficulty/util/ScreenNotify.java"))

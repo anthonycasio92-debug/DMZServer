@@ -26,15 +26,11 @@ public final class LmTips {
     private record Tip(String title, String subtitle) {}
 
     private static final Tip[] TIPS = {
-            new Tip("Legacy Mechanics", "Type /lm to open the hub"),
-            new Tip("Difficulty", "/lm → Difficulty — unlock & activate tiers"),
-            new Tip("Ancient Coins", "Scaled kills drop coins — spend them in /lm"),
-            new Tip("Rival", "/lm → Rival — declare rivals & challenges"),
-            new Tip("Spar", "/lm → Spar — sparring TP & mentor bonds"),
-            new Tip("Prestige", "/lm → Prestige — turn-in, skills & breakthroughs"),
-            new Tip("Personal Cap", "/lm → Prestige — raise your level breakthrough"),
-            new Tip("Skill Check", "Talk to a Skill Check NPC — or /lm if you have access"),
-            new Tip("Legacy Mechanics", "Everything lives under /lm — open it anytime"),
+            new Tip("Legacy Mechanics", "Use command /lm to open the GUI"),
+            new Tip("Adaptive Difficulty", "Fight custom scaled mobs using /lm"),
+            new Tip("Rival", "Create rivalries with your friends either friend or foes /lm"),
+            new Tip("Spar", "Become stronger fighting your friends, create mentorships to get stronger /lm"),
+            new Tip("Prestige", "Become stronger through playthroughs — invest your prestige's /lm"),
     };
 
     private LmTips() {}
