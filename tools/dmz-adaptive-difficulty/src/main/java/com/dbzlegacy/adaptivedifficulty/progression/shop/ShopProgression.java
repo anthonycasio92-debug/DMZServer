@@ -9,7 +9,7 @@ public final class ShopProgression {
     private ShopProgression() {}
 
     public static void onLogin(ServerPlayer player) {
-        // no-op
+        PrestigePointsSystem.onLogin(player);
     }
 
     public static void onLogout(ServerPlayer player) {
@@ -19,6 +19,14 @@ public final class ShopProgression {
     }
 
     public static void pulse(MinecraftServer server, int tick) {
-        // shop is command/GUI driven
+        if (server == null || tick % 20 != 0) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        for (ServerPlayer player : server.m_6846_().m_11314_()) {
+            if (player != null) {
+                PrestigePointsSystem.pulsePlayer(player, now);
+            }
+        }
     }
 }

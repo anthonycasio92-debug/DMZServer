@@ -134,6 +134,8 @@ public final class PrestigeSystem {
                         "[{}] prestige dmzstats reset soft-fail: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
             }
         }
+        // Prestige-point skill floors + Permanent Majin/Mutant must survive dmzstats reset.
+        PrestigePointsSystem.scheduleReapplyAfterPrestige(player);
 
         int nextRequired = requiredLevel(newCompleted);
         String summary = "§aPrestige Level §f" + newCompleted + " §aComplete!\n"
@@ -300,6 +302,11 @@ public final class PrestigeSystem {
     }
 
     private static void setHeld(ServerPlayer player, int value) {
+        setHeldPublic(player, value);
+    }
+
+    /** Public for prestige-points turn-in (must also lower Fabled Prestige class). */
+    public static void setHeldPublic(ServerPlayer player, int value) {
         int clamped = Math.max(0, Math.min(MAX_HELD, value));
         CompoundTag tag = PersistentDataAccess.get(player);
         if (PersistentDataAccess.isWritable(tag)) {

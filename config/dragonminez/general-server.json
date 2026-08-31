@@ -30,7 +30,7 @@
     "gravityBonusEnabled": true,
     "HTCTpMultiplier": 1.75,
     "maxLevelValueInsteadOfStats": true,
-    "maxValue": 100000,
+    "maxValue": 150000,
     "capsules": {
       "statSeparator": ", ",
       "values": {

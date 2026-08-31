@@ -3,7 +3,9 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
+import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillUnlockService;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;
@@ -782,6 +784,32 @@ public final class ProgressionGuiApi {
         out.put("required", String.valueOf(required));
         out.put("required_fmt", DmzRewards.formatWhole(required));
         out.put("ready", level >= required && held < 10 ? "true" : "false");
+        int points = PrestigePointsSystem.getPoints(player);
+        int breakthroughs = PrestigePointsSystem.getBreakthroughs(player);
+        int levelCap = PrestigePointsSystem.effectiveMaxLevel(player);
+        int nextBt = breakthroughs + 1;
+        int nextBtCost = breakthroughs >= PrestigePointsSystem.MAX_BREAKTHROUGHS
+                ? 0 : PrestigePointsSystem.breakthroughCost(nextBt);
+        out.put("points", String.valueOf(points));
+        out.put("breakthroughs", String.valueOf(breakthroughs));
+        out.put("breakthroughs_max", String.valueOf(PrestigePointsSystem.MAX_BREAKTHROUGHS));
+        out.put("level_cap", String.valueOf(levelCap));
+        out.put("level_cap_fmt", DmzRewards.formatWhole(levelCap));
+        out.put("next_breakthrough_cost", String.valueOf(nextBtCost));
+        out.put("majin", PrestigePointsSystem.hasMajin(player) ? "true" : "false");
+        out.put("mutant", PrestigePointsSystem.hasMutant(player) ? "true" : "false");
+        out.put("form_cost", String.valueOf(PrestigePointsSystem.FORM_COST));
+        for (var offer : PrestigePointsSystem.SKILL_OFFERS.values()) {
+            int bought = PrestigePointsSystem.getPurchasedSkillLevels(player, offer.id());
+            out.put("skill_" + offer.id(), String.valueOf(bought));
+            out.put("skill_" + offer.id() + "_max", String.valueOf(offer.maxLevel()));
+        }
+        // Turn-in previews
+        for (int n : new int[]{1, 3, 5}) {
+            out.put("turnin_" + n + "_points", String.valueOf(PrestigePointsSystem.pointsForTurnIn(n)));
+        }
+        out.put("turnin_all_points", String.valueOf(PrestigePointsSystem.pointsForTurnIn(held)));
+        out.put("last_spend_ok", ProgressionData.tempGet(player, "pp_last_spend_ok", "false"));
         return out;
     }
 
@@ -793,22 +821,62 @@ public final class ProgressionGuiApi {
         if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
             return List.of("§cPrestige system is disabled.");
         }
+        String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         List<String> lore = new ArrayList<>();
         lore.add("§7Completed: §f" + ph.getOrDefault("completed", "0")
                 + " §8| §7Held: §6" + ph.getOrDefault("held", "0")
                 + "§7/§f" + ph.getOrDefault("held_max", "10"));
-        lore.add("§7DMZ Level: §f" + ph.getOrDefault("level_fmt", "0")
-                + " §8| §7Need: §e" + ph.getOrDefault("required_fmt", "0"));
-        if ("true".equalsIgnoreCase(ph.get("ready"))) {
-            lore.add("§aReady to prestige");
-        } else {
-            lore.add("§cNot ready yet");
+        lore.add("§7Points: §e" + ph.getOrDefault("points", "0")
+                + " §8| §7Cap: §f" + ph.getOrDefault("level_cap_fmt", "100000"));
+        switch (p) {
+            case "turnin", "points" -> {
+                lore.add("§7Turn in held prestiges: §f1 §7point each");
+                lore.add("§7Every §f3 §7turned in grants §a+1 §7bonus point");
+                lore.add("§8Example: turn in 3 → 4 points");
+            }
+            case "shop", "skills" -> {
+                lore.add("§71 point → +1 permanent DMZ skill level");
+                lore.add("§7Floors survive prestige reset");
+            }
+            case "forms", "form" -> {
+                lore.add("§7Permanent Majin / Mutant: §e"
+                        + ph.getOrDefault("form_cost", "5") + " §7points each");
+                lore.add("§7Only one at a time · unpurchase = no refund");
+                lore.add("§7Majin: " + ("true".equals(ph.get("majin")) ? "§aOwned" : "§cNot owned"));
+                lore.add("§7Mutant: " + ("true".equals(ph.get("mutant")) ? "§aOwned" : "§cNot owned"));
+            }
+            case "cap", "breakthrough", "breakthroughs" -> {
+                lore.add("§7Breakthroughs: §f" + ph.getOrDefault("breakthroughs", "0")
+                        + "§7/§f" + ph.getOrDefault("breakthroughs_max", "5"));
+                lore.add("§7+10k level cap each · up to §f150000");
+                int btCount = 0;
+                try {
+                    btCount = Integer.parseInt(ph.getOrDefault("breakthroughs", "0"));
+                } catch (Exception ignored) {
+                }
+                if (btCount < PrestigePointsSystem.MAX_BREAKTHROUGHS) {
+                    lore.add("§7Next cost: §e" + ph.getOrDefault("next_breakthrough_cost", "15")
+                            + " §7points");
+                } else {
+                    lore.add("§aMax level cap reached");
+                }
+            }
+            default -> {
+                lore.add("§7DMZ Level: §f" + ph.getOrDefault("level_fmt", "0")
+                        + " §8| §7Need: §e" + ph.getOrDefault("required_fmt", "0"));
+                if ("true".equalsIgnoreCase(ph.get("ready"))) {
+                    lore.add("§aReady to prestige");
+                } else {
+                    lore.add("§cNot ready yet");
+                }
+                lore.add("§8Turn-in · Shop · Forms · Cap via buttons");
+            }
         }
         return lore;
     }
 
     /**
-     * Dispatch {@code /prestige do} — {@code confirm} runs {@link PrestigeSystem#confirmOrPrompt}.
+     * Dispatch {@code /prestige do} — confirm, turn-in, shop buys.
      */
     public static String handlePrestigeDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
@@ -823,6 +891,63 @@ public final class ProgressionGuiApi {
         }
         if ("confirm".equals(act) || "buy".equals(act) || "purchase".equals(act)) {
             return PrestigeSystem.confirmOrPrompt(player);
+        }
+        if ("turnin".equals(act) || "turn_in".equals(act) || "redeem".equals(act)) {
+            int amount;
+            try {
+                amount = Integer.parseInt(arg == null || arg.isBlank() ? "0" : arg.trim());
+            } catch (NumberFormatException e) {
+                if ("all".equalsIgnoreCase(arg)) {
+                    amount = PrestigeSystem.getHeld(player);
+                } else {
+                    return "§cUsage: turn in 1 / 3 / 5 / all.";
+                }
+            }
+            return PrestigePointsSystem.turnIn(player, amount);
+        }
+        if ("skill".equals(act) || "buy_skill".equals(act) || "skillup".equals(act)) {
+            return PrestigePointsSystem.buySkillLevel(player, arg);
+        }
+        if ("majin".equals(act) || "buy_majin".equals(act)) {
+            return PrestigePointsSystem.buyMajin(player);
+        }
+        if ("mutant".equals(act) || "buy_mutant".equals(act)) {
+            return PrestigePointsSystem.buyMutant(player);
+        }
+        if ("unmajin".equals(act) || "unbuy_majin".equals(act) || "remove_majin".equals(act)) {
+            return PrestigePointsSystem.unbuyMajin(player);
+        }
+        if ("unmutant".equals(act) || "unbuy_mutant".equals(act) || "remove_mutant".equals(act)) {
+            return PrestigePointsSystem.unbuyMutant(player);
+        }
+        if ("breakthrough".equals(act) || "cap".equals(act) || "buy_cap".equals(act)) {
+            return PrestigePointsSystem.buyBreakthrough(player);
+        }
+        if ("spend".equals(act) || "pay".equals(act) || "npc_spend".equals(act)) {
+            int amount;
+            try {
+                amount = Integer.parseInt(arg == null || arg.isBlank() ? "0" : arg.trim());
+            } catch (NumberFormatException e) {
+                return "§cUsage: spend <amount> [reason].";
+            }
+            // page doubles as optional reason/tag for NPC shops when present
+            String reason = page == null || page.isBlank() || "main".equalsIgnoreCase(page) ? "npc" : page;
+            return PrestigePointsSystem.spendForNpc(player, amount, reason);
+        }
+        if ("grant".equals(act) || "give_points".equals(act) || "add_points".equals(act)) {
+            int amount;
+            try {
+                amount = Integer.parseInt(arg == null || arg.isBlank() ? "0" : arg.trim());
+            } catch (NumberFormatException e) {
+                return "§cUsage: grant <amount> [reason].";
+            }
+            String reason = page == null || page.isBlank() || "main".equalsIgnoreCase(page) ? "admin" : page;
+            return PrestigePointsSystem.grantForNpc(player, amount, reason);
+        }
+        if ("balance".equals(act) || "points".equals(act)) {
+            return "§7Prestige points: §e" + PrestigePointsSystem.getPoints(player)
+                    + " §8| §7Held: §6" + PrestigeSystem.getHeld(player)
+                    + " §8| §7Cap: §f" + PrestigePointsSystem.effectiveMaxLevel(player);
         }
         return "§cUnknown prestige action: " + act;
     }

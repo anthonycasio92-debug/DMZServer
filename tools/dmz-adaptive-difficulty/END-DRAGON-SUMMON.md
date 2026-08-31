@@ -1,4 +1,4 @@
-# End Dragon — Adaptive Difficulty summon (2.3.77)
+# End Dragon — Adaptive Difficulty summon (2.3.78)
 
 ## Player path (Difficulty GUI only)
 - Button: **Summon End Dragon** on `/difficulty` main page

@@ -174,6 +174,47 @@ public final class DifficultyEvents {
     }
 
     /**
+     * Soft-lock TP gains at the player's prestige level cap so breakthroughs are required
+     * to push past 100k / 110k / … / 150k once DMZ maxValue allows the headroom.
+     */
+    @SubscribeEvent
+    public void onTpGain(DMZEvent.TPGainEvent event) {
+        if (event == null || event.getTpGain() <= 0) {
+            return;
+        }
+        if (!(event.getPlayer() instanceof ServerPlayer player)) {
+            return;
+        }
+        if (!DifficultyConfig.get().enablePrestigeSystem) {
+            return;
+        }
+        try {
+            var data = DmzProgression.stats(player);
+            if (data == null) {
+                return;
+            }
+            int raw = Math.max(0, data.getLevel());
+            int cap = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                    .effectiveMaxLevel(player);
+            if (raw < cap) {
+                return;
+            }
+            event.setTpGain(0);
+            long now = System.currentTimeMillis();
+            long next = com.dbzlegacy.adaptivedifficulty.progression.ProgressionData
+                    .tempGetLong(player, "pp_cap_msg_next", 0L);
+            if (now >= next) {
+                com.dbzlegacy.adaptivedifficulty.progression.ProgressionData
+                        .tempPut(player, "pp_cap_msg_next", now + 15_000L);
+                player.m_213846_(net.minecraft.network.chat.Component.m_237113_(
+                        "§eLevel cap §f" + com.dbzlegacy.adaptivedifficulty.util.DmzRewards.formatWhole(cap)
+                                + " §ereached. §7Buy a breakthrough in §6/lm §7→ Prestige."));
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
      * Forge persists players via SaveToFile — often before {@link PlayerEvent.PlayerLoggedOutEvent}.
      * Always flush AD data here so purchased tiers survive disconnect.
      */

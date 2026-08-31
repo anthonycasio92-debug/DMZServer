@@ -217,7 +217,7 @@ public final class FabledBridge {
     }
 
     /** Resolve {@code Fabled.getData(OfflinePlayer)} via the plugin classloader. */
-    static Object fabledData(ServerPlayer player) {
+    public static Object fabledData(ServerPlayer player) {
         if (player == null) {
             return null;
         }
@@ -252,7 +252,7 @@ public final class FabledBridge {
         }
     }
 
-    static Class<?> fabledClass() {
+    public static Class<?> fabledClass() {
         try {
             Object plugin = getPlugin(PLUGIN_NAME);
             if (plugin == null) {

@@ -51,6 +51,10 @@ public final class ProgressionSystem {
             } catch (Throwable ignored) {
             }
         }
+        try {
+            ShopProgression.onLogin(player);
+        } catch (Throwable ignored) {
+        }
     }
 
     public static void onLogout(ServerPlayer player) {
@@ -151,6 +155,10 @@ public final class ProgressionSystem {
                 FabledBridge.pulse(server, tick);
             } catch (Throwable ignored) {
             }
+        }
+        try {
+            ShopProgression.pulse(server, tick);
+        } catch (Throwable ignored) {
         }
     }
 

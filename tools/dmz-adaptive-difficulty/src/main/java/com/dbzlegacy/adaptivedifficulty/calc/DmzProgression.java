@@ -129,6 +129,7 @@ public final class DmzProgression {
      * character counter. Clamp to the configured DMZ/AD max so costs / GUI never
      * show values above the server level ceiling (e.g. 100k players reading as
      * ~987k when maxValue / max-stats mode disagrees).
+     * Respects prestige-point level-cap breakthroughs per player.
      */
     public static int dmzLevel(Player player) {
         StatsData data = stats(player);
@@ -136,7 +137,7 @@ public final class DmzProgression {
             return 1;
         }
         try {
-            return clampDmzLevel(data.getLevel(), data);
+            return clampDmzLevel(data.getLevel(), data, player);
         } catch (Throwable ignored) {
             return 1;
         }
@@ -144,9 +145,19 @@ public final class DmzProgression {
 
     /**
      * Hard ceiling for AD level reads: min(DMZ gameplay maxValue, AD referenceMaxLevel).
-     * Always ≥ 1.
+     * Always ≥ 1. Prefer {@link #configuredMaxDmzLevel(Player)} when a player is known
+     * so prestige breakthroughs apply.
      */
     public static int configuredMaxDmzLevel(StatsData data) {
+        return configuredMaxDmzLevel(data, null);
+    }
+
+    /** Player-aware ceiling including prestige level-cap breakthroughs. */
+    public static int configuredMaxDmzLevel(Player player) {
+        return configuredMaxDmzLevel(stats(player), player);
+    }
+
+    public static int configuredMaxDmzLevel(StatsData data, Player player) {
         int dmzMax = 0;
         try {
             if (data != null) {
@@ -176,15 +187,30 @@ public final class DmzProgression {
         } else {
             ceiling = (int) Math.min(Integer.MAX_VALUE, Math.max(1L, adMax));
         }
+        // Prestige breakthroughs raise personal cap from 100k toward 150k.
+        try {
+            int personal = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                    .BASE_LEVEL_CAP;
+            if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                personal = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                        .effectiveMaxLevel(sp);
+            }
+            ceiling = Math.min(ceiling, Math.max(1, personal));
+        } catch (Throwable ignored) {
+        }
         return Math.max(1, ceiling);
     }
 
     public static int clampDmzLevel(int raw) {
-        return clampDmzLevel(raw, null);
+        return clampDmzLevel(raw, null, null);
     }
 
     public static int clampDmzLevel(int raw, StatsData data) {
-        int max = configuredMaxDmzLevel(data);
+        return clampDmzLevel(raw, data, null);
+    }
+
+    public static int clampDmzLevel(int raw, StatsData data, Player player) {
+        int max = configuredMaxDmzLevel(data, player);
         if (raw < 1) {
             return 1;
         }
@@ -211,10 +237,10 @@ public final class DmzProgression {
         }
         Integer cached = BASE_FORM_LEVEL.get(id);
         if (cached != null) {
-            return clampDmzLevel(cached);
+            return clampDmzLevel(cached, stats(player), player);
         }
         if (fallbackWhenTransformed > 0L) {
-            long capped = Math.min(fallbackWhenTransformed, configuredMaxDmzLevel(stats(player)));
+            long capped = Math.min(fallbackWhenTransformed, configuredMaxDmzLevel(player));
             return (int) Math.max(1L, Math.min(Integer.MAX_VALUE, capped));
         }
         // Last resort: live level (may be form-sensitive on some race setups).
@@ -246,7 +272,7 @@ public final class DmzProgression {
         if (!isTransformed(player)) {
             int live;
             try {
-                live = clampDmzLevel(data.getLevel(), data);
+                live = clampDmzLevel(data.getLevel(), data, player);
             } catch (Throwable ignored) {
                 return 1;
             }
@@ -288,7 +314,7 @@ public final class DmzProgression {
         // attached, while the live (possibly form-inflated) level is far above 1.
         if (cached <= 1) {
             try {
-                int live = clampDmzLevel(data.getLevel(), data);
+                int live = clampDmzLevel(data.getLevel(), data, player);
                 if (live >= 25) {
                     BASE_FORM_LEVEL.remove(player.m_20148_());
                     return false;

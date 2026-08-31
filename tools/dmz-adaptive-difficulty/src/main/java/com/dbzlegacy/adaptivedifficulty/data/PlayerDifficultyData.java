@@ -56,7 +56,7 @@ public final class PlayerDifficultyData {
 
     public long getHighestDmzLevel() {
         try {
-            long max = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.configuredMaxDmzLevel(null);
+            long max = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.configuredMaxDmzLevel((com.dragonminez.common.stats.StatsData) null);
             if (highestDmzLevel > max) {
                 highestDmzLevel = max;
             }
@@ -72,7 +72,7 @@ public final class PlayerDifficultyData {
         }
         // Repair legacy NBT that stored an unclamped / inflated high-water mark.
         try {
-            long max = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.configuredMaxDmzLevel(null);
+            long max = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.configuredMaxDmzLevel((com.dragonminez.common.stats.StatsData) null);
             if (highestDmzLevel > max) {
                 highestDmzLevel = max;
             }
@@ -325,7 +325,7 @@ public final class PlayerDifficultyData {
         highestDmzLevel = Math.max(0L, tag.m_128454_("highestDmzLevel"));
         // Clamp legacy inflated high-water (pre-1.0.35 unclamped getLevel reads).
         try {
-            long max = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.configuredMaxDmzLevel(null);
+            long max = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.configuredMaxDmzLevel((com.dragonminez.common.stats.StatsData) null);
             if (highestDmzLevel > max) {
                 highestDmzLevel = max;
             }

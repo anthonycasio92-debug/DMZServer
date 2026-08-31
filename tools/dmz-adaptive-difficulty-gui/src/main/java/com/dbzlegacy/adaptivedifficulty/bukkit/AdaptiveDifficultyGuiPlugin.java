@@ -780,7 +780,13 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         // Hub "open <system>" must switch menus — do not reopen the hub afterward.
         if (("lm".equals(system) || "hub".equals(system) || "legacymechanics".equals(system))
                 && "open".equalsIgnoreCase(action)) {
-            openSystemFromHub(player, arg);
+            String openPage = returnPage == null || returnPage.isBlank() || "main".equalsIgnoreCase(returnPage)
+                    ? "main" : returnPage;
+            // When only system is given (3 tokens), keep default main page.
+            if (args.length < 4) {
+                openPage = "main";
+            }
+            openSystemFromHub(player, arg, openPage);
             return true;
         }
 
@@ -980,21 +986,30 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
      * and does not clear the inspect session.
      */
     public void openSystemFromHub(Player player, String system) {
+        openSystemFromHub(player, system, "main");
+    }
+
+    /**
+     * Hub hop into a system GUI. {@code page} is honored for multi-page systems
+     * (prestige turn-in / shop / forms / cap).
+     */
+    public void openSystemFromHub(Player player, String system, String page) {
         if (player == null) {
             return;
         }
         String s = system == null ? "" : system.toLowerCase(Locale.ROOT).trim();
+        String p = page == null || page.isBlank() ? "main" : page;
         if (AdminInspectSessions.isInspecting(player.getUniqueId())) {
             Player subject = AdminInspectSessions.resolveSubject(player);
             if (subject != null && !subject.getUniqueId().equals(player.getUniqueId())) {
-                openInspectSystem(player, subject, s.isBlank() ? "hub" : s, "main");
+                openInspectSystem(player, subject, s.isBlank() ? "hub" : s, p);
                 return;
             }
         }
         switch (s) {
-            case "difficulty", "diff", "ad" -> openMenuRespectingConfig(player, "main");
-            case "rival", "rivals", "rivalry" -> openRivalRespectingConfig(player, "main");
-            case "spar", "sparring" -> openSparRespectingConfig(player, "main");
+            case "difficulty", "diff", "ad" -> openMenuRespectingConfig(player, p);
+            case "rival", "rivals", "rivalry" -> openRivalRespectingConfig(player, p);
+            case "spar", "sparring" -> openSparRespectingConfig(player, p);
             case "skillcheck", "skill_check" -> {
                 if (!ForgeBridge.hasSkillCheck(player) && !ForgeBridge.isStaff(player)) {
                     player.sendMessage("§cSkill Check requires donator access.");
@@ -1002,7 +1017,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     return;
                 }
                 ForgeBridge.markSkillCheckSession(player);
-                openSkillsRespectingConfig(player, "core");
+                openSkillsRespectingConfig(player, "core".equals(p) || "main".equals(p) ? "core" : p);
             }
             case "skills", "skill" -> {
                 if (!ForgeBridge.isStaff(player)) {
@@ -1010,9 +1025,9 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     openHubInventory(player, "main");
                     return;
                 }
-                openSkillsRespectingConfig(player, "core");
+                openSkillsRespectingConfig(player, "core".equals(p) || "main".equals(p) ? "core" : p);
             }
-            case "prestige" -> openPrestigeRespectingConfig(player, "main");
+            case "prestige" -> openPrestigeRespectingConfig(player, p);
             case "android_remove", "androidremove", "remove_android", "deandroid" ->
                     openProgressionRespectingConfig(player, "android_remove");
             case "progression", "prog" -> {
@@ -1021,7 +1036,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     openHubInventory(player, "main");
                     return;
                 }
-                openProgressionRespectingConfig(player, "main");
+                openProgressionRespectingConfig(player, p);
             }
             case "admin" -> {
                 if (!ForgeBridge.isStaff(player)) {

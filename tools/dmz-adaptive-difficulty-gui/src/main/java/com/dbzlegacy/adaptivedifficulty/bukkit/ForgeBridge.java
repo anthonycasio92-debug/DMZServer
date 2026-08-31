@@ -255,6 +255,21 @@ public final class ForgeBridge {
             out.put("coin_drop_chat", coinChatOn ? "true" : "false");
             putCounterPlaceholders(out, nms);
 
+            // Prestige points shop — for NPC scripts / PlaceholderAPI.
+            try {
+                Map<String, String> pp = prestigePlaceholders(player);
+                if (pp != null) {
+                    out.put("prestige_points", pp.getOrDefault("points", "0"));
+                    out.put("prestige_held", pp.getOrDefault("held", "0"));
+                    out.put("prestige_level_cap", pp.getOrDefault("level_cap", "100000"));
+                    out.put("prestige_breakthroughs", pp.getOrDefault("breakthroughs", "0"));
+                    out.put("prestige_majin", pp.getOrDefault("majin", "false"));
+                    out.put("prestige_mutant", pp.getOrDefault("mutant", "false"));
+                    out.put("prestige_spend_ok", pp.getOrDefault("last_spend_ok", "false"));
+                }
+            } catch (Throwable ignored) {
+            }
+
             // UnlockTier 1–7 — level-scaled activation costs + live unlock flags.
             Object playerData = null;
             if (cacheData != null) {
