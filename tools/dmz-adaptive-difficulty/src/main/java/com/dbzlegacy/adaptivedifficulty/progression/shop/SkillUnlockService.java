@@ -138,7 +138,7 @@ public final class SkillUnlockService {
                         cmdRoot + " do page core", "Natural progression"))
                 .m_7220_(Component.m_237113_(" "))
                 .m_7220_(btn(pageEquals(page, "saga") ? "§e[Saga]" : "§7[Saga]",
-                        cmdRoot + " do page saga", "Saga unlocks"));
+                        cmdRoot + " do page saga", "Unlock and level up via the skills saga."));
         send(player, nav);
         send(player, "§8────────────────");
     }

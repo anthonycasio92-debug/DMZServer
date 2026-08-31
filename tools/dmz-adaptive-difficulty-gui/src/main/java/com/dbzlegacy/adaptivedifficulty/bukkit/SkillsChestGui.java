@@ -124,7 +124,7 @@ public final class SkillsChestGui implements Listener {
                         "&7Potential · Flight · Meditation · Jump · Sprint"),
                 SlotAction.page("core"));
         put(holder, inv, 46, pageBtn(viewer, "skills.main.saga", Material.AMETHYST_SHARD, "&dSaga",
-                        "&7Saga unlocks · Defense Pen · Healing Red · Ki skills"),
+                        "&7Unlock and level up via the skills saga."),
                 SlotAction.page("saga"));
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         if (staffAdmin) {
