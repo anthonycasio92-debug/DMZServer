@@ -582,6 +582,21 @@ public final class PrestigePointsSystem {
         if (player == null || amount <= 0) {
             return;
         }
+        // Prefer Fabled API — console "class level … take" often no-ops on Mohist,
+        // leaving Prestige class high so faction sync restores held tokens.
+        int lost = 0;
+        try {
+            lost = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .takePrestigeLevels(player, amount);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] prestige points API take soft-fail: {}",
+                    AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
+        if (lost >= amount) {
+            return;
+        }
+        int remain = amount - lost;
         MinecraftServer server = player.m_20194_();
         if (server == null) {
             return;
@@ -590,12 +605,21 @@ public final class PrestigePointsSystem {
         try {
             server.m_129892_().m_230957_(
                     server.m_129893_(),
-                    "class level " + name + " take " + amount + " Prestige"
+                    "class level " + name + " take " + remain + " Prestige"
             );
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
                     "[{}] prestige points class take soft-fail: {}",
                     AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
+        // Console path still needs DMZ skill + faction catch-up.
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync.sync(player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeFactionSync.forceSync(player);
+        } catch (Throwable ignored) {
         }
     }
 

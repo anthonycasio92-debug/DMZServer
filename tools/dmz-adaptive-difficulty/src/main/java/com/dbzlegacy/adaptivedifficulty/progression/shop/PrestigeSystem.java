@@ -117,15 +117,33 @@ public final class PrestigeSystem {
 
         String name = player.m_6302_();
         MinecraftServer server = player.m_20194_();
+        boolean apiAdded = false;
+        try {
+            apiAdded = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .addPrestigeLevels(player, 1) > 0;
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] prestige class level API soft-fail: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
         if (server != null) {
-            try {
-                server.m_129892_().m_230957_(
-                        server.m_129893_(),
-                        "class level " + name + " add 1 Prestige"
-                );
-            } catch (Throwable t) {
-                AdaptiveDifficultyMod.LOGGER.debug(
-                        "[{}] prestige class level soft-fail: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+            if (!apiAdded) {
+                try {
+                    server.m_129892_().m_230957_(
+                            server.m_129893_(),
+                            "class level " + name + " add 1 Prestige"
+                    );
+                    try {
+                        com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync.sync(player);
+                    } catch (Throwable ignored) {
+                    }
+                    try {
+                        com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeFactionSync.forceSync(player);
+                    } catch (Throwable ignored) {
+                    }
+                } catch (Throwable t) {
+                    AdaptiveDifficultyMod.LOGGER.debug(
+                            "[{}] prestige class level soft-fail: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+                }
             }
             try {
                 server.m_129892_().m_230957_(server.m_129893_(), "dmzstats reset " + name);

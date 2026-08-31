@@ -71,7 +71,114 @@ public final class PrestigeSkillSync {
                 targetSkillLevel);
     }
 
-    private static Object findPrestigeClass(Object fabledData) {
+    /** Current Fabled Prestige class level, or 0 if missing. */
+    public static int fabledPrestigeLevel(ServerPlayer player) {
+        if (player == null) {
+            return 0;
+        }
+        Object data = FabledBridge.fabledData(player);
+        if (data == null) {
+            return 0;
+        }
+        Object prestigeClass = findPrestigeClass(data);
+        if (prestigeClass == null) {
+            return 0;
+        }
+        return Math.max(0, FabledBridge.invokeInt(prestigeClass, "getLevel"));
+    }
+
+    /**
+     * Lower Fabled Prestige class by {@code amount} (Fabled floors at level 1).
+     * Syncs DMZ prestige skill + CNPC faction held immediately.
+     *
+     * @return levels actually removed
+     */
+    public static int takePrestigeLevels(ServerPlayer player, int amount) {
+        if (player == null || amount <= 0) {
+            return 0;
+        }
+        Object data = FabledBridge.fabledData(player);
+        if (data == null) {
+            return 0;
+        }
+        Object prestigeClass = findPrestigeClass(data);
+        if (prestigeClass == null) {
+            return 0;
+        }
+        int current = Math.max(0, FabledBridge.invokeInt(prestigeClass, "getLevel"));
+        // Fabled PlayerClass.setLevel / loseLevels refuse going below 1.
+        int canLose = Math.max(0, current - 1);
+        int lose = Math.min(amount, canLose);
+        if (lose <= 0) {
+            return 0;
+        }
+        boolean ok = false;
+        try {
+            prestigeClass.getClass().getMethod("loseLevels", int.class).invoke(prestigeClass, lose);
+            ok = true;
+        } catch (Throwable ignored) {
+        }
+        if (!ok) {
+            try {
+                prestigeClass.getClass().getMethod("setLevel", int.class)
+                        .invoke(prestigeClass, current - lose);
+                ok = true;
+            } catch (Throwable ignored) {
+                return 0;
+            }
+        }
+        try {
+            sync(player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            PrestigeFactionSync.forceSync(player);
+        } catch (Throwable ignored) {
+        }
+        FabledBridge.logSync(player, "prestige_take", "lost", lose, "level", current - lose);
+        return lose;
+    }
+
+    /**
+     * Raise Fabled Prestige class by {@code amount} via API ({@code giveLevels}).
+     *
+     * @return levels actually added
+     */
+    public static int addPrestigeLevels(ServerPlayer player, int amount) {
+        if (player == null || amount <= 0) {
+            return 0;
+        }
+        Object data = FabledBridge.fabledData(player);
+        if (data == null) {
+            return 0;
+        }
+        Object prestigeClass = findPrestigeClass(data);
+        if (prestigeClass == null) {
+            return 0;
+        }
+        int before = Math.max(0, FabledBridge.invokeInt(prestigeClass, "getLevel"));
+        try {
+            prestigeClass.getClass().getMethod("giveLevels", int.class).invoke(prestigeClass, amount);
+        } catch (Throwable t) {
+            return 0;
+        }
+        int after = Math.max(0, FabledBridge.invokeInt(prestigeClass, "getLevel"));
+        int gained = Math.max(0, after - before);
+        if (gained > 0) {
+            try {
+                sync(player);
+            } catch (Throwable ignored) {
+            }
+            try {
+                PrestigeFactionSync.forceSync(player);
+            } catch (Throwable ignored) {
+            }
+            FabledBridge.logSync(player, "prestige_add", "gained", gained, "level", after);
+        }
+        return gained;
+    }
+
+    static Object findPrestigeClass(Object fabledData) {
         try {
             Object direct = fabledData.getClass()
                     .getMethod("getClass", String.class)

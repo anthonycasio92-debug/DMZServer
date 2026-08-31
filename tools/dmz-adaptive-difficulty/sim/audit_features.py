@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.87", 'VERSION = "2.3.87"' in mod)
+    check("VERSION 2.3.88", 'VERSION = "2.3.88"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -863,6 +863,12 @@ def main() -> int:
     prestige_cmi_pp = read(gui_root / "CmiPrestigeGui.java")
     check("PrestigePointsSystem present", "class PrestigePointsSystem" in pp)
     check("turnIn bonus +1 per 3", "n + (n / 3)" in pp and "pointsForTurnIn" in pp)
+    prestige_skill_sync = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/PrestigeSkillSync.java")
+    prestige_faction_sync = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/PrestigeFactionSync.java")
+    check("takePrestigeLevels API", "takePrestigeLevels" in prestige_skill_sync and "loseLevels" in prestige_skill_sync)
+    check("addPrestigeLevels API", "addPrestigeLevels" in prestige_skill_sync and "giveLevels" in prestige_skill_sync)
+    check("turnIn uses Fabled API take", "takePrestigeLevels" in pp)
+    check("PrestigeFactionSync forceSync", "forceSync" in prestige_faction_sync)
     check("form XOR majin/mutant", "buyMajin" in pp and "buyMutant" in pp and "unbuyMajin" in pp)
     check("breakthrough costs 15..35", "breakthroughCost" in pp and "15" in pp and "35" in pp)
     check("MAX_BREAKTHROUGHS 5", "MAX_BREAKTHROUGHS = 5" in pp)

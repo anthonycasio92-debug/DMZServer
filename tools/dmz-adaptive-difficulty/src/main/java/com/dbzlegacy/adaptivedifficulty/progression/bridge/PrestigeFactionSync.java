@@ -17,6 +17,15 @@ public final class PrestigeFactionSync {
 
     private PrestigeFactionSync() {}
 
+    /** Clear the throttle and sync faction held from Fabled Prestige immediately. */
+    public static void forceSync(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        ProgressionData.storedPut(player, NEXT_KEY, 0L);
+        sync(player);
+    }
+
     public static void sync(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enablePrestigeFactionSync) {
             return;
