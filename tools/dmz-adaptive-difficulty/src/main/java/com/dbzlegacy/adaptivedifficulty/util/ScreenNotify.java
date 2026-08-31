@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.util;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.protocol.game.ClientboundClearTitlesPacket;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
@@ -10,7 +11,7 @@ import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Screen title/subtitle feedback for in-world notices.
+ * Screen feedback for in-world notices (title, subtitle, or action bar).
  * Prefer this over chat for hints players need while fighting / training.
  */
 public final class ScreenNotify {
@@ -31,17 +32,56 @@ public final class ScreenNotify {
     public static void blocked(
             ServerPlayer player, String title, String subtitle, String cooldownKey, long cooldownMs
     ) {
-        show(player, title, subtitle, ChatFormatting.RED, ChatFormatting.GRAY, cooldownKey, cooldownMs);
+        showTitle(player, title, subtitle, ChatFormatting.RED, ChatFormatting.GRAY, cooldownKey, cooldownMs);
     }
 
     /** Soft training / progress hint (gold title). No chat. */
     public static void hint(
             ServerPlayer player, String title, String subtitle, String cooldownKey, long cooldownMs
     ) {
-        show(player, title, subtitle, ChatFormatting.GOLD, ChatFormatting.YELLOW, cooldownKey, cooldownMs);
+        showTitle(player, title, subtitle, ChatFormatting.GOLD, ChatFormatting.YELLOW, cooldownKey, cooldownMs);
     }
 
-    private static void show(
+    /**
+     * Soft tip on the action bar (above hotbar) — less intrusive than a full-screen title.
+     * Combines {@code title} · {@code detail} into one line.
+     */
+    public static void actionBar(
+            ServerPlayer player, String title, String detail, String cooldownKey, long cooldownMs
+    ) {
+        if (player == null) {
+            return;
+        }
+        try {
+            if (cooldownKey != null && !cooldownKey.isBlank() && cooldownMs > 0L) {
+                long now = System.currentTimeMillis();
+                long last = ProgressionData.tempGetLong(player, cooldownKey, 0L);
+                if (last > 0L && now - last < cooldownMs) {
+                    return;
+                }
+                ProgressionData.tempPut(player, cooldownKey, now);
+            }
+            String head = plain(title);
+            String rest = plain(detail);
+            MutableComponent line;
+            if (!head.isEmpty() && !rest.isEmpty()) {
+                line = Component.m_237113_(head).m_130940_(ChatFormatting.GOLD)
+                        .m_7220_(Component.m_237113_(" · ").m_130940_(ChatFormatting.DARK_GRAY))
+                        .m_7220_(Component.m_237113_(rest).m_130940_(ChatFormatting.YELLOW));
+            } else if (!head.isEmpty()) {
+                line = Component.m_237113_(head).m_130940_(ChatFormatting.GOLD);
+            } else if (!rest.isEmpty()) {
+                line = Component.m_237113_(rest).m_130940_(ChatFormatting.YELLOW);
+            } else {
+                return;
+            }
+            // true = action bar (hotbar overlay), not chat.
+            player.m_5661_(line, true);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void showTitle(
             ServerPlayer player,
             String title,
             String subtitle,
@@ -78,7 +118,10 @@ public final class ScreenNotify {
 
     /** Strip legacy § codes and apply a solid formatting (titles render § poorly on some clients). */
     private static Component styled(String raw, ChatFormatting color) {
-        String plain = raw == null ? "" : raw.replaceAll("§.", "").trim();
-        return Component.m_237113_(plain).m_130940_(color);
+        return Component.m_237113_(plain(raw)).m_130940_(color);
+    }
+
+    private static String plain(String raw) {
+        return raw == null ? "" : raw.replaceAll("§.", "").trim();
     }
 }

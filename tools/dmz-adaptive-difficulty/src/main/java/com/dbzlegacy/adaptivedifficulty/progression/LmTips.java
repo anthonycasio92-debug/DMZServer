@@ -10,7 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Periodic on-screen Legacy Mechanics tips so newer ranks learn {@code /lm}.
- * Uses title/subtitle only — no chat spam.
+ * Action-bar only — no chat and no full-screen title.
  * <p>
  * Frequent cadence (default 4 min) for LuckPerms primary groups
  * {@code default}, {@code student}, {@code novice}; everyone else gets the longer interval.
@@ -87,8 +87,8 @@ public final class LmTips {
     private static void showNext(ServerPlayer player) {
         int index = Math.max(0, (int) ProgressionData.storedGetLong(player, KEY_INDEX, 0L));
         Tip tip = TIPS[index % TIPS.length];
-        // Cooldown slightly under the shortest interval so ScreenNotify never double-blocks.
-        ScreenNotify.hint(player, tip.title, tip.subtitle, CD_KEY, 20_000L);
+        // Action bar (above hotbar) — less intrusive than a full-screen title.
+        ScreenNotify.actionBar(player, tip.title, tip.subtitle, CD_KEY, 20_000L);
         ProgressionData.storedPut(player, KEY_INDEX, (index + 1L) % TIPS.length);
     }
 
