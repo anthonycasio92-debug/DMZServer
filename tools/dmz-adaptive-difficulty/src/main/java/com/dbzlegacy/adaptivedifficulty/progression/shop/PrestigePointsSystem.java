@@ -918,6 +918,9 @@ public final class PrestigePointsSystem {
     // ── Login / post-prestige ──────────────────────────────────────────
 
     private static final String KEY_REAPPLY_AT = "pp_reapply_at_ms";
+    private static final String KEY_FORM_PULSE_AT = "pp_form_pulse_at_ms";
+    /** Match old Fabled Passive interval that re-gave majin/mutant when missing. */
+    private static final long FORM_PULSE_MS = 5000L;
 
     public static void onLogin(ServerPlayer player) {
         if (player == null) {
@@ -944,17 +947,24 @@ public final class PrestigePointsSystem {
         }
     }
 
-    /** Called from shop pulse — drains delayed reapply markers. */
+    /** Called from shop pulse — drains delayed reapply markers + keeps forms live. */
     public static void pulsePlayer(ServerPlayer player, long nowMs) {
         if (player == null) {
             return;
         }
         long at = ProgressionData.tempGetLong(player, KEY_REAPPLY_AT, 0L);
-        if (at <= 0L || nowMs < at) {
-            return;
+        if (at > 0L && nowMs >= at) {
+            ProgressionData.tempRemove(player, KEY_REAPPLY_AT);
+            reapplySkillBonuses(player);
         }
-        ProgressionData.tempRemove(player, KEY_REAPPLY_AT);
-        reapplySkillBonuses(player);
+        // Fabled Permanent Majin/Mutant skills are gone — LM must keep dmzeffect applied.
+        if (hasMajin(player) || hasMutant(player)) {
+            long next = ProgressionData.tempGetLong(player, KEY_FORM_PULSE_AT, 0L);
+            if (next <= 0L || nowMs >= next) {
+                ProgressionData.tempPut(player, KEY_FORM_PULSE_AT, nowMs + FORM_PULSE_MS);
+                reapplyForms(player);
+            }
+        }
     }
 
     // ── Fabled / DMZ helpers ───────────────────────────────────────────
@@ -1147,15 +1157,66 @@ public final class PrestigePointsSystem {
         }
     }
 
+    /**
+     * Apply / clear DMZ majin or mutant.
+     * <p>
+     * Uses DMZ Java APIs (MutantManager / Effects). Command fallback uses the real
+     * Brigadier order: {@code dmzeffect give <effect> <duration> [player]} —
+     * the previous {@code give <player> <effect> <duration>} never matched and
+     * silently failed after Fabled Permanent Majin/Mutant skills were removed.
+     */
     private static void runDmzEffect(ServerPlayer player, String effect, boolean give) {
+        if (player == null || effect == null || effect.isBlank()) {
+            return;
+        }
+        String effectId = effect.trim().toLowerCase(Locale.ROOT);
+        boolean mutant = "mutant".equals(effectId);
+        try {
+            var data = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.stats(player);
+            if (data != null) {
+                if (mutant) {
+                    if (give) {
+                        com.dragonminez.server.util.MutantManager.grant(player, data);
+                    } else if (com.dragonminez.server.util.MutantManager.isMutant(data)) {
+                        com.dragonminez.server.util.MutantManager.revoke(player, data);
+                    }
+                    return;
+                }
+                var effects = data.getEffects();
+                if (effects == null) {
+                    // Fall through to command.
+                } else if (give) {
+                    // Already permanent — skip (avoids sync spam on the 5s pulse).
+                    if (effects.hasEffect(effectId) && effects.getEffectDuration(effectId) == -1) {
+                        return;
+                    }
+                    double power = majinEffectPower();
+                    effects.addEffect(effectId, power, -1);
+                    DmzSkillUtil.sync(player);
+                    return;
+                } else if (effects.hasEffect(effectId)) {
+                    effects.removeEffect(effectId);
+                    DmzSkillUtil.sync(player);
+                    return;
+                } else {
+                    return;
+                }
+            }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] prestige form API soft-fail ({}): {}",
+                    AdaptiveDifficultyMod.MOD_ID, effectId, t.toString());
+        }
+
         MinecraftServer server = player.m_20194_();
         if (server == null) {
             return;
         }
         String name = player.m_6302_();
+        // Correct order: effect + duration, optional player target last.
         String cmd = give
-                ? "dmzeffect give " + name + " " + effect + " -1"
-                : "dmzeffect remove " + name + " " + effect;
+                ? "dmzeffect give " + effectId + " -1 " + name
+                : "dmzeffect remove " + effectId + " " + name;
         try {
             server.m_129892_().m_230957_(server.m_129893_(), cmd);
         } catch (Throwable t) {
@@ -1163,5 +1224,19 @@ public final class PrestigePointsSystem {
                     "[{}] prestige points dmzeffect soft-fail: {}",
                     AdaptiveDifficultyMod.MOD_ID, t.toString());
         }
+    }
+
+    private static double majinEffectPower() {
+        try {
+            var gameplay = com.dragonminez.common.config.ConfigManager.getServerConfig().getGameplay();
+            // Prefer configured majin power when present; 1.0 matches typical give defaults.
+            Method m = gameplay.getClass().getMethod("getMajinPower");
+            Object v = m.invoke(gameplay);
+            if (v instanceof Number n && n.doubleValue() > 0.0) {
+                return n.doubleValue();
+            }
+        } catch (Throwable ignored) {
+        }
+        return 1.0;
     }
 }
