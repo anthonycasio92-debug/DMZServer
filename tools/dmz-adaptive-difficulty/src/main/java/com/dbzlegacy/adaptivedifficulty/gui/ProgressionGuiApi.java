@@ -848,7 +848,9 @@ public final class ProgressionGuiApi {
             case "cap", "breakthrough", "breakthroughs" -> {
                 lore.add("§7Breakthroughs: §f" + ph.getOrDefault("breakthroughs", "0")
                         + "§7/§f" + ph.getOrDefault("breakthroughs_max", "5"));
-                lore.add("§7+10k level cap each · up to §f150000");
+                lore.add("§7+10k hard stats per core stat · ~§f"
+                        + ph.getOrDefault("level_cap_fmt", "100000") + " §7power");
+                lore.add("§8Server DMZ level cap stays §f100000 §8for everyone");
                 int btCount = 0;
                 try {
                     btCount = Integer.parseInt(ph.getOrDefault("breakthroughs", "0"));
@@ -858,7 +860,7 @@ public final class ProgressionGuiApi {
                     lore.add("§7Next cost: §e" + ph.getOrDefault("next_breakthrough_cost", "15")
                             + " §7points");
                 } else {
-                    lore.add("§aMax level cap reached");
+                    lore.add("§aMax hard-stat breakthroughs reached");
                 }
             }
             default -> {

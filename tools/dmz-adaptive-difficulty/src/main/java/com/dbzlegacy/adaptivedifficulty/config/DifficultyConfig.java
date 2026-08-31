@@ -116,9 +116,10 @@ public final class DifficultyConfig {
     /**
      * Reference caps used to document the top tier (Zenith).
      * Theoretical max ≈ referenceMaxLevel × referenceMaxPrestige × prestigeMultiplier
-     * = 150000 × 10 × 10 = 15,000,000 with defaults (100k base + prestige breakthroughs to 150k).
+     * = 100000 × 10 × 10 = 10,000,000 with defaults.
+     * Prestige breakthroughs add hard stats past the 100k level body without raising DMZ maxValue.
      */
-    public long referenceMaxLevel = 150_000L;
+    public long referenceMaxLevel = 100_000L;
     public int referenceMaxPrestige = 10;
 
     // Ability unlock tier thresholds (admin-editable)

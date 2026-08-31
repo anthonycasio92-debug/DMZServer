@@ -17,12 +17,14 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Prestige Points shop: turn in held prestiges for points, spend on DMZ skill levels,
- * Permanent Majin / Mutant, and level-cap breakthroughs (100k → 150k).
+ * Permanent Majin / Mutant, and hard-stat breakthroughs past the 100k body.
  *
  * <p>Turn-in: 1 point per prestige + 1 bonus per 3 turned in ({@code N + floor(N/3)}).
  * Skills: 1 point = +1 permanent skill level (survives prestige reset).
  * Majin/Mutant: 5 points each, mutually exclusive; unpurchase free (no refund).
- * Breakthroughs: +10k level cap each (max 5); costs 15, 20, 25, 30, 35.
+ * Breakthroughs: grant hard stats worth +10k level power each (max 5 → ~150k equivalent)
+ * without raising the server-wide DMZ {@code maxValue} (stays 100k for everyone).
+ * Costs 15, 20, 25, 30, 35.
  */
 public final class PrestigePointsSystem {
     public static final int BASE_LEVEL_CAP = 100_000;
@@ -31,12 +33,23 @@ public final class PrestigePointsSystem {
     public static final int ABSOLUTE_LEVEL_CAP = BASE_LEVEL_CAP + MAX_BREAKTHROUGHS * BREAKTHROUGH_STEP;
     public static final int FORM_COST = 5;
     public static final int SKILL_POINT_COST = 1;
+    /**
+     * DMZ level ≈ totalHardStats / 6 when maxTotalStats = maxValue×6.
+     * One breakthrough (+10k level equivalent) → +10k on each of the 6 hard stats.
+     */
+    public static final int HARD_STAT_PER_BREAKTHROUGH = 10_000;
 
     private static final String KEY_POINTS = "prestige_points";
     private static final String KEY_BREAKTHROUGHS = "pp_level_breakthroughs";
+    /** How many breakthroughs' hard-stat grants are currently on this body. */
+    private static final String KEY_BT_HARD_APPLIED = "pp_bt_hard_applied";
     private static final String KEY_MAJIN = "pp_perm_majin";
     private static final String KEY_MUTANT = "pp_perm_mutant";
     private static final String KEY_SKILL_PREFIX = "pp_skill_";
+
+    private static final String[] HARD_STAT_IDS = {
+            "str", "skp", "res", "vit", "pwr", "ene"
+    };
 
     private static final String SKILL_MAJIN = "Permanent Majin";
     private static final String SKILL_MUTANT = "Permanent Mutant";
@@ -238,34 +251,34 @@ public final class PrestigePointsSystem {
                 + "\n§7Points left: §e" + getPoints(player);
     }
 
-    /** Re-apply purchased skill floors after prestige reset / on login. */
+    /** Re-apply purchased skill floors + breakthrough hard stats after prestige reset / on login. */
     public static void reapplySkillBonuses(ServerPlayer player) {
         if (player == null) {
             return;
         }
         Skills skills = DmzSkillUtil.skills(player);
-        if (skills == null) {
-            return;
-        }
-        boolean changed = false;
-        for (SkillOffer offer : SKILL_OFFERS.values()) {
-            int purchased = getPurchasedSkillLevels(player, offer.id);
-            if (purchased <= 0) {
-                continue;
+        if (skills != null) {
+            boolean changed = false;
+            for (SkillOffer offer : SKILL_OFFERS.values()) {
+                int purchased = getPurchasedSkillLevels(player, offer.id);
+                if (purchased <= 0) {
+                    continue;
+                }
+                DmzSkillUtil.ensureRegistered(skills, offer.id, offer.maxLevel);
+                int current = DmzSkillUtil.level(skills, offer.id);
+                int max = DmzSkillUtil.maxLevel(skills, offer.id, offer.maxLevel);
+                int target = Math.min(max, Math.max(current, purchased));
+                if (target > current) {
+                    DmzSkillUtil.setLevel(skills, offer.id, target);
+                    changed = true;
+                }
             }
-            DmzSkillUtil.ensureRegistered(skills, offer.id, offer.maxLevel);
-            int current = DmzSkillUtil.level(skills, offer.id);
-            int max = DmzSkillUtil.maxLevel(skills, offer.id, offer.maxLevel);
-            int target = Math.min(max, Math.max(current, purchased));
-            if (target > current) {
-                DmzSkillUtil.setLevel(skills, offer.id, target);
-                changed = true;
+            if (changed) {
+                DmzSkillUtil.sync(player);
             }
-        }
-        if (changed) {
-            DmzSkillUtil.sync(player);
         }
         reapplyForms(player);
+        syncBreakthroughHardStats(player);
     }
 
     // ── Permanent Majin / Mutant ────────────────────────────────────────
@@ -359,7 +372,7 @@ public final class PrestigePointsSystem {
         }
     }
 
-    // ── Level-cap breakthroughs ────────────────────────────────────────
+    // ── Hard-stat breakthroughs (personal; server maxValue stays 100k) ─
 
     public static int getBreakthroughs(ServerPlayer player) {
         if (player == null) {
@@ -377,6 +390,7 @@ public final class PrestigePointsSystem {
         return 15 + (nextIndex - 1) * 5;
     }
 
+    /** Equivalent power level: 100k + breakthroughs×10k (DMZ displayed level stays ≤100k). */
     public static int effectiveMaxLevel(ServerPlayer player) {
         return Math.min(ABSOLUTE_LEVEL_CAP,
                 BASE_LEVEL_CAP + getBreakthroughs(player) * BREAKTHROUGH_STEP);
@@ -393,7 +407,8 @@ public final class PrestigePointsSystem {
         }
         int current = getBreakthroughs(player);
         if (current >= MAX_BREAKTHROUGHS) {
-            return "§cLevel cap fully broken through (§f" + ABSOLUTE_LEVEL_CAP + "§c).";
+            return "§cHard-stat breakthroughs maxed (§f~"
+                    + DmzRewards.formatWhole(ABSOLUTE_LEVEL_CAP) + " §cequivalent).";
         }
         int next = current + 1;
         int cost = breakthroughCost(next);
@@ -404,17 +419,106 @@ public final class PrestigePointsSystem {
         }
         setPoints(player, points - cost);
         ProgressionData.storedPut(player, KEY_BREAKTHROUGHS, next);
-        int newCap = effectiveMaxLevel(player);
+        int granted = grantHardStatBatches(player, 1);
+        if (granted > 0) {
+            int applied = getHardStatsApplied(player) + granted;
+            ProgressionData.storedPut(player, KEY_BT_HARD_APPLIED, applied);
+        }
+        int equiv = effectiveMaxLevel(player);
         SystemTelemetry.log("prestige_points", "breakthrough", player, null, Map.of(
                 "breakthrough", next,
-                "cap", newCap,
+                "equiv", equiv,
+                "hardPerStat", HARD_STAT_PER_BREAKTHROUGH,
                 "cost", cost,
                 "points", getPoints(player)
         ));
-        return "§aLevel cap raised to §f" + DmzRewards.formatWhole(newCap)
-                + " §7(§e-" + cost + " §7points)"
-                + "\n§7Breakthrough §f" + next + "§7/§f" + MAX_BREAKTHROUGHS
-                + " · Points left: §e" + getPoints(player);
+        return "§aBreakthrough §f#" + next + "§a — hard stats +"
+                + DmzRewards.formatWhole(HARD_STAT_PER_BREAKTHROUGH)
+                + " §ato each core stat"
+                + "\n§7Equivalent power ~§f" + DmzRewards.formatWhole(equiv)
+                + " §8(server level cap stays §f100000§8)"
+                + "\n§7Cost §e" + cost + " §7· Points left: §e" + getPoints(player);
+    }
+
+    /** Call before/with prestige reset so hard-stat grants are re-seeded onto the new body. */
+    public static void markHardStatsCleared(ServerPlayer player) {
+        if (player != null) {
+            ProgressionData.storedPut(player, KEY_BT_HARD_APPLIED, 0L);
+        }
+    }
+
+    private static int getHardStatsApplied(ServerPlayer player) {
+        return Math.max(0, (int) ProgressionData.storedGetLong(player, KEY_BT_HARD_APPLIED, 0L));
+    }
+
+    /**
+     * Ensure owned breakthroughs have matching hard-stat grants on the current body.
+     * Safe to call repeatedly — only grants the missing delta.
+     */
+    public static void syncBreakthroughHardStats(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        int owned = getBreakthroughs(player);
+        int applied = getHardStatsApplied(player);
+        if (owned <= applied) {
+            return;
+        }
+        int missing = owned - applied;
+        int granted = grantHardStatBatches(player, missing);
+        if (granted > 0) {
+            ProgressionData.storedPut(player, KEY_BT_HARD_APPLIED, applied + granted);
+        }
+    }
+
+    /**
+     * Add {@code batches} × {@link #HARD_STAT_PER_BREAKTHROUGH} to each hard core stat.
+     * Uses real {@link com.dragonminez.common.stats.character.Stats} — not BonusStats.
+     */
+    private static int grantHardStatBatches(ServerPlayer player, int batches) {
+        if (player == null || batches <= 0) {
+            return 0;
+        }
+        var data = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.stats(player);
+        if (data == null) {
+            return 0;
+        }
+        com.dragonminez.common.stats.character.Stats stats;
+        try {
+            stats = data.getStats();
+        } catch (Throwable t) {
+            return 0;
+        }
+        if (stats == null) {
+            return 0;
+        }
+        int per = HARD_STAT_PER_BREAKTHROUGH * batches;
+        // Prefer named adders; fall back to addStat ids used by DMZ.
+        try {
+            stats.addStrength(per);
+            stats.addStrikePower(per);
+            stats.addResistance(per);
+            stats.addVitality(per);
+            stats.addKiPower(per);
+            stats.addEnergy(per);
+        } catch (Throwable t) {
+            try {
+                for (String id : HARD_STAT_IDS) {
+                    stats.addStat(id, per);
+                }
+            } catch (Throwable t2) {
+                AdaptiveDifficultyMod.LOGGER.debug(
+                        "[{}] breakthrough hard-stat grant failed: {}",
+                        AdaptiveDifficultyMod.MOD_ID, t2.toString());
+                return 0;
+            }
+        }
+        try {
+            com.dragonminez.common.network.NetworkHandler.sendToTrackingEntityAndSelf(
+                    new com.dragonminez.common.network.S2C.StatsSyncS2C(player), player);
+        } catch (Throwable ignored) {
+        }
+        return batches;
     }
 
     // ── Login / post-prestige ──────────────────────────────────────────
@@ -434,6 +538,7 @@ public final class PrestigePointsSystem {
         if (player == null) {
             return;
         }
+        markHardStatsCleared(player);
         long now = System.currentTimeMillis();
         ProgressionData.tempPut(player, KEY_REAPPLY_AT, now + 3000L);
         MinecraftServer server = player.m_20194_();
