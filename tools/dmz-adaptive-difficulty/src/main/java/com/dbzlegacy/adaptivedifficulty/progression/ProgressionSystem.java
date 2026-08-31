@@ -55,6 +55,10 @@ public final class ProgressionSystem {
             ShopProgression.onLogin(player);
         } catch (Throwable ignored) {
         }
+        try {
+            LmTips.onLogin(player);
+        } catch (Throwable ignored) {
+        }
     }
 
     public static void onLogout(ServerPlayer player) {
@@ -158,6 +162,10 @@ public final class ProgressionSystem {
         }
         try {
             ShopProgression.pulse(server, tick);
+        } catch (Throwable ignored) {
+        }
+        try {
+            LmTips.pulse(server, tick);
         } catch (Throwable ignored) {
         }
     }

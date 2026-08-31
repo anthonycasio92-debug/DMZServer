@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.116", 'VERSION = "2.3.116"' in mod)
+    check("VERSION 2.3.117", 'VERSION = "2.3.117"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -906,6 +906,13 @@ def main() -> int:
           "ensureEffectSilent" in pp
           and '"dmzeffect give "' not in pp
           and "'dmzeffect give '" not in pp)
+    lm_tips = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/LmTips.java")
+    check("LM onboarding tips class", "class LmTips" in lm_tips and "Type /lm" in lm_tips)
+    check("LM tips wired on login+pulse",
+          "LmTips.onLogin" in read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/ProgressionSystem.java")
+          and "LmTips.pulse" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/ProgressionSystem.java"))
+    check("LM tips config flag", "enableLmTips" in read(CFG))
     check("breakthrough costs 15..35", "breakthroughCost" in pp and "15" in pp and "35" in pp)
     check("MAX_BREAKTHROUGHS 5", "MAX_BREAKTHROUGHS = 5" in pp)
     check("StatsDataMixin personal cap", "getConfiguredMaxValue" in mixin and "effectiveMaxLevel" in mixin)

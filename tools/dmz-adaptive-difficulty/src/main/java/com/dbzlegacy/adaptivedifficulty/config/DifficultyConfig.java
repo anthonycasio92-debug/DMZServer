@@ -259,6 +259,20 @@ public final class DifficultyConfig {
     public boolean enablePlayerStatChecker = true;
 
     /**
+     * Periodic on-screen Legacy Mechanics tips ({@code /lm} hub reminders).
+     * Title/subtitle only — no chat. Helps new players discover systems.
+     */
+    public boolean enableLmTips = true;
+    /** Seconds between tips for established players (default 10 minutes). */
+    public int lmTipIntervalSeconds = 600;
+    /** Seconds between tips for new players (low level / no prestige). Default 4 minutes. */
+    public int lmTipNewPlayerIntervalSeconds = 240;
+    /** Seconds after login before the first tip. */
+    public int lmTipLoginDelaySeconds = 75;
+    /** DMZ level below this counts as “new” for tip cadence. */
+    public int lmTipNewPlayerMaxLevel = 2500;
+
+    /**
      * Soft-dependency Fabled bridges (mana/SP/attrs/prestige/race/class perms).
      * Safe when Fabled / LuckPerms / Bukkit are missing — reflection never hard-crashes.
      */
@@ -1558,6 +1572,10 @@ public final class DifficultyConfig {
         cfg.maxScaledMobsPerPlayer = Math.max(1, Math.min(5, cfg.maxScaledMobsPerPlayer));
         cfg.endKiMaxAliveWhileDragon = Math.max(1, Math.min(512, cfg.endKiMaxAliveWhileDragon));
         cfg.endDragonSummonNetheriteCost = Math.max(1, Math.min(64, cfg.endDragonSummonNetheriteCost));
+        cfg.lmTipIntervalSeconds = Math.max(60, Math.min(7200, cfg.lmTipIntervalSeconds));
+        cfg.lmTipNewPlayerIntervalSeconds = Math.max(45, Math.min(3600, cfg.lmTipNewPlayerIntervalSeconds));
+        cfg.lmTipLoginDelaySeconds = Math.max(15, Math.min(600, cfg.lmTipLoginDelaySeconds));
+        cfg.lmTipNewPlayerMaxLevel = Math.max(1, Math.min(150_000, cfg.lmTipNewPlayerMaxLevel));
         // Product rule: no natural/vanilla auto End Dragon — Difficulty GUI / staff only.
         cfg.enableEndNaturalDragonSpawn = false;
         cfg.nearbyScaleBudgetPerPlayer = cfg.maxScaledMobsPerPlayer;
