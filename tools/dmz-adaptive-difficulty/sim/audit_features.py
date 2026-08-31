@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.83", 'VERSION = "2.3.83"' in mod)
+    check("VERSION 2.3.84", 'VERSION = "2.3.84"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -869,6 +869,9 @@ def main() -> int:
     check("StatsDataMixin personal cap", "getConfiguredMaxValue" in mixin and "effectiveMaxLevel" in mixin)
     check("StatsDataMixin remap false",
           'remap = false' in mixin and '@Mixin(value = StatsData.class, remap = false)' in mixin)
+    manifest = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "resources" / "META-INF" / "MANIFEST.MF")
+    check("MANIFEST MixinConfigs for Mohist",
+          "MixinConfigs: legacymechanics.mixins.json" in manifest)
     check("mixins.json registers StatsDataMixin", '"StatsDataMixin"' in mixins_json)
     check("AD referenceMaxLevel 150k", "referenceMaxLevel = 150_000L" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))
