@@ -64,6 +64,11 @@ public final class DifficultyActions {
         if (!DmzProgression.isTransformed(player)) {
             DifficultyCache.data(player).noteDmzLevel(sampled);
         }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                    .reapplyTierUnlocks(player);
+        } catch (Throwable ignored) {
+        }
         // refresh() re-samples + snapshot syncs unlocks/gate level.
         DifficultyCache.refresh(player);
         TitleSystem.syncTierTitles(player, false);
@@ -267,6 +272,12 @@ public final class DifficultyActions {
      */
     private static Result setTier(ServerPlayer player, int tierId, String page) {
         PlayerDifficultyData data = DifficultyCache.data(player);
+        // Prestige-point permanent unlocks must be visible before eligibility/owned checks.
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                    .reapplyTierUnlocks(player);
+        } catch (Throwable ignored) {
+        }
         UnlockSystem.syncUnlocks(player, data);
         UnlockTier tier = UnlockTier.byId(tierId);
         String returnPage = page == null || page.isBlank() ? "buy" : page;
@@ -276,9 +287,21 @@ public final class DifficultyActions {
         }
         // Live gate — unlock bits alone are not enough after a reliable prestige/level reset.
         // While the base-form sample is unavailable, keep already-unlocked tiers usable.
+        // Prestige-point purchases count as eligible via UnlockSystem.isEligible.
         boolean reliable = DmzProgression.hasReliableUnlockGateSample(player);
         boolean eligible = UnlockSystem.isEligible(player, tier);
         boolean owned = data.hasUnlockedTier(tier.id);
+        boolean prestigeOwned = false;
+        try {
+            prestigeOwned = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                    .hasPurchasedTier(player, tier.id);
+        } catch (Throwable ignored) {
+        }
+        if (prestigeOwned && !owned) {
+            data.unlockTier(tier.id);
+            owned = true;
+            eligible = true;
+        }
         if (!(eligible && owned) && !(owned && !reliable)) {
             openGui(player, returnPage);
             long gate = UnlockSystem.gateLevelForEligibility(player);

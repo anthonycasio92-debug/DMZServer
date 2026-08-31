@@ -416,7 +416,7 @@ public final class PrestigeChestGui implements Listener {
                 lore.add("&aOwned · permanent");
             } else if (!canBuy) {
                 lore.add("&cLocked");
-                lore.add("&7Unlock or buy &fT" + (t - 1) + " &7first");
+                lore.add("&7Buy permanent &fT" + (t - 1) + " &7first (shop ladder)");
             } else {
                 lore.add("&7Cost: &e" + cost + " &7point" + ("1".equals(cost) ? "" : "s"));
                 if (unlocked) {
@@ -427,9 +427,9 @@ public final class PrestigeChestGui implements Listener {
                 }
             }
             if (!owned && t > 1) {
-                lore.add("&8Requires T1–T" + (t - 1) + " unlocked or purchased");
+                lore.add("&8Requires permanent T1–T" + (t - 1) + " from this shop");
             }
-            lore.add("&8Activate after buy via /difficulty → Buy Tier");
+            lore.add("&8Then activate with Ancient Coins via /difficulty → Buy Tier");
             String title;
             if (owned) {
                 title = "&aT" + t + " " + label;

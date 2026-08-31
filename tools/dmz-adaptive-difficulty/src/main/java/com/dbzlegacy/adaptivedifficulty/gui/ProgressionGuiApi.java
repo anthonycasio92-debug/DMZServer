@@ -365,6 +365,9 @@ public final class ProgressionGuiApi {
     }
 
     private static ServerPlayer resolveOnline(ServerPlayer actor, String name) {
+        if (actor == null) {
+            return resolveOnlineByName(name);
+        }
         try {
             var server = actor.m_20194_(); // getServer
             if (server == null) {
@@ -1062,16 +1065,14 @@ public final class ProgressionGuiApi {
     }
 
     /**
-     * Staff prestige admin — used by Bukkit {@code /prestige admin …} via ForgeBridge
-     * (avoids Mohist brigadier forward failures).
+     * Staff prestige admin — used by Bukkit {@code /prestige admin …} / {@code /padmin}
+     * via ForgeBridge (avoids Mohist brigadier forward failures).
+     * {@code actor} may be {@code null} when invoked from console (already privileged).
      *
      * @param rawArgs text after {@code admin} (may be blank for help)
      */
     public static String handlePrestigeAdmin(ServerPlayer actor, String rawArgs) {
-        if (actor == null) {
-            return "§cPlayers only.";
-        }
-        if (!StaffAccess.isStaff(actor)) {
+        if (actor != null && !StaffAccess.isStaff(actor)) {
             return "§cStaff only.";
         }
         if (!DifficultyConfig.get().enablePrestigeSystem) {
@@ -1083,16 +1084,53 @@ public final class ProgressionGuiApi {
         }
         String[] parts = trimmed.split("\\s+");
         String sub = parts[0].toLowerCase(Locale.ROOT);
+
+        // Shorthand: /padmin addpoints <player> <n>  ·  /padmin removepoints <player> <n>
+        if ("addpoints".equals(sub) || "givepoints".equals(sub) || "grantpoints".equals(sub)) {
+            if (parts.length < 3) {
+                return "§cUsage: /padmin addpoints <player> <n>";
+            }
+            ServerPlayer target = resolveOnline(actor, parts[1]);
+            if (target == null) {
+                return "§cPlayer not online: §f" + parts[1];
+            }
+            int amount;
+            try {
+                amount = Integer.parseInt(parts[2]);
+            } catch (NumberFormatException e) {
+                return "§cAmount must be a number.";
+            }
+            return PrestigeAdmin.adjustPoints(target, "add", amount);
+        }
+        if ("removepoints".equals(sub) || "takepoints".equals(sub)) {
+            if (parts.length < 3) {
+                return "§cUsage: /padmin removepoints <player> <n>";
+            }
+            ServerPlayer target = resolveOnline(actor, parts[1]);
+            if (target == null) {
+                return "§cPlayer not online: §f" + parts[1];
+            }
+            int amount;
+            try {
+                amount = Integer.parseInt(parts[2]);
+            } catch (NumberFormatException e) {
+                return "§cAmount must be a number.";
+            }
+            return PrestigeAdmin.adjustPoints(target, "remove", amount);
+        }
+
         if ("info".equals(sub)) {
             ServerPlayer target = parts.length > 1 ? resolveOnline(actor, parts[1]) : actor;
             if (target == null) {
-                return "§cPlayer not online: §f" + parts[1];
+                return parts.length > 1
+                        ? "§cPlayer not online: §f" + parts[1]
+                        : "§cUsage: /padmin info <player>";
             }
             return PrestigeAdmin.info(target);
         }
         if ("sync".equals(sub)) {
             if (parts.length < 2) {
-                return "§cUsage: /prestige admin sync <player>";
+                return "§cUsage: /padmin sync <player>";
             }
             ServerPlayer target = resolveOnline(actor, parts[1]);
             if (target == null) {
@@ -1100,10 +1138,32 @@ public final class ProgressionGuiApi {
             }
             return PrestigeAdmin.sync(target);
         }
+        if ("tier".equals(sub) || "tiers".equals(sub) || "difficulty".equals(sub)) {
+            if (parts.length < 4) {
+                return "§cUsage: /padmin tier <player> give <1-7>"
+                        + "\n§c       /padmin tier <player> clear <1-7|all>";
+            }
+            ServerPlayer target = resolveOnline(actor, parts[1]);
+            if (target == null) {
+                return "§cPlayer not online: §f" + parts[1];
+            }
+            String mode = parts[2];
+            int tierId;
+            if ("all".equalsIgnoreCase(parts[3])) {
+                tierId = 0;
+            } else {
+                try {
+                    tierId = Integer.parseInt(parts[3]);
+                } catch (NumberFormatException e) {
+                    return "§cTier must be 1–7 or all.";
+                }
+            }
+            return PrestigeAdmin.adjustTier(target, mode, tierId);
+        }
         if ("held".equals(sub) || "completed".equals(sub) || "points".equals(sub)
                 || "breakthroughs".equals(sub) || "fabled".equals(sub)) {
             if (parts.length < 4) {
-                return "§cUsage: /prestige admin " + sub + " <player> <set|add|remove> <n>";
+                return "§cUsage: /padmin " + sub + " <player> <set|add|remove> <n>";
             }
             ServerPlayer target = resolveOnline(actor, parts[1]);
             if (target == null) {
@@ -1125,7 +1185,7 @@ public final class ProgressionGuiApi {
                 default -> "§cUnknown admin field.";
             };
         }
-        return "§cUnknown: /prestige admin " + sub + "\n" + PrestigeAdmin.help();
+        return "§cUnknown: /padmin " + sub + "\n" + PrestigeAdmin.help();
     }
 
     // ── Skills ─────────────────────────────────────────────────────────

@@ -1147,19 +1147,19 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 sender.sendMessage(ForgeBridge.syslogCommand(mode));
             }
             case "prestige", "padmin", "prestigeadmin" -> {
-                if (!(sender instanceof Player player)) {
-                    sender.sendMessage("§cRun /padmin in-game (or /prestige admin).");
-                    return true;
-                }
-                if (!ForgeBridge.isStaff(player)) {
-                    sender.sendMessage("§cStaff only.");
-                    return true;
-                }
                 String raw = joinArgs(args, 2);
                 if (raw.isBlank()) {
                     raw = "help";
                 }
-                GuiChat.sendChatResult(player, ForgeBridge.prestigeAdmin(player, raw));
+                if (sender instanceof Player player) {
+                    if (!ForgeBridge.isStaff(player)) {
+                        sender.sendMessage("§cStaff only.");
+                        return true;
+                    }
+                    GuiChat.sendChatResult(player, ForgeBridge.prestigeAdmin(player, raw));
+                } else {
+                    sendMultilineToSender(sender, ForgeBridge.prestigeAdmin(null, raw));
+                }
             }
             case "open" -> {
                 if (!(sender instanceof Player player)) {
@@ -1273,7 +1273,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§e/lm admin open <difficulty|rival|spar|progression|prestige|skills|hub>");
         sender.sendMessage("§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|prestige|progression|skills]");
         sender.sendMessage("§e/lm admin inspect clear §7— stop inspecting");
-        sender.sendMessage("§e/lm admin prestige … §7— same as /padmin /prestige admin");
+        sender.sendMessage("§e/padmin points <player> add|remove|set <n> §7— wallet for all prestige shops");
+        sender.sendMessage("§e/padmin addpoints|removepoints <player> <n>");
         sender.sendMessage("§e/padmin info [player] §7— prestige admin (chat)");
         sender.sendMessage("§8Also: /difficulty admin gui|inspect <player>");
     }
@@ -1283,20 +1284,23 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     }
 
     private boolean handlePrestige(CommandSender sender, String[] args) {
-        // Console: staff admin only (no GUI).
+        // Console: staff admin (points add/remove for all prestige shops, etc.).
         if (!(sender instanceof Player player)) {
             if (args.length == 0 || "help".equalsIgnoreCase(args[0])) {
-                sender.sendMessage("§cConsole: /prestige admin … (players use /lm → Prestige)");
+                String help = ForgeBridge.prestigeAdmin(null, "help");
+                sendMultilineToSender(sender, help);
                 return true;
             }
             String sub = args[0].toLowerCase();
-            if ("admin".equals(sub) || isPrestigeAdminSub(sub)) {
-                String raw = joinArgs(args, "admin".equals(sub) ? 1 : 0);
-                sender.sendMessage("§cConsole prestige admin needs an online staff actor — run in-game.");
-                sender.sendMessage("§8Would run: /prestige admin " + raw);
+            if ("admin".equals(sub) || isPrestigeAdminSub(sub) || "help".equals(sub)) {
+                String raw = "admin".equals(sub) ? joinArgs(args, 1) : joinArgs(args, 0);
+                if (raw.isBlank()) {
+                    raw = "help";
+                }
+                sendMultilineToSender(sender, ForgeBridge.prestigeAdmin(null, raw));
                 return true;
             }
-            sender.sendMessage("Players only for prestige GUI. Staff: /prestige admin … in-game.");
+            sender.sendMessage("Players only for prestige GUI. Console: /padmin points <player> add|remove|set <n>");
             return true;
         }
         if (!canUsePlayerGui(player)) {
@@ -1350,7 +1354,19 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     private static boolean isPrestigeAdminSub(String sub) {
         return "info".equals(sub) || "held".equals(sub) || "completed".equals(sub)
                 || "points".equals(sub) || "breakthroughs".equals(sub)
-                || "fabled".equals(sub) || "sync".equals(sub);
+                || "fabled".equals(sub) || "sync".equals(sub)
+                || "addpoints".equals(sub) || "givepoints".equals(sub) || "grantpoints".equals(sub)
+                || "removepoints".equals(sub) || "takepoints".equals(sub)
+                || "tier".equals(sub) || "tiers".equals(sub) || "difficulty".equals(sub);
+    }
+
+    private static void sendMultilineToSender(CommandSender sender, String raw) {
+        if (raw == null || raw.isBlank()) {
+            return;
+        }
+        for (String line : raw.split("\n")) {
+            sender.sendMessage(line);
+        }
     }
 
     private static String joinArgs(String[] args, int from) {

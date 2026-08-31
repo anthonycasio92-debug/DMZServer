@@ -1588,18 +1588,20 @@ public final class ForgeBridge {
      * @param rawArgs text after {@code admin} (blank = help)
      */
     public static String prestigeAdmin(Player actor, String rawArgs) {
-        Object nms = nmsPlayer(actor);
-        if (nms == null) {
-            return "§cCould not reach LegacyMechanics mod.";
-        }
         try {
-            ensureProgressionResolved(nms.getClass().getClassLoader());
-            // Force re-resolve if a prior boot missed the method (hot jar swap / load order).
+            Object nms = actor == null ? null : nmsPlayer(actor);
+            if (actor != null && nms == null) {
+                return "§cCould not reach LegacyMechanics mod.";
+            }
+            ClassLoader preferred = nms != null
+                    ? nms.getClass().getClassLoader()
+                    : preferredProgressionClassLoader();
+            ensureProgressionResolved(preferred);
             if (prestigeAdminMethod == null) {
-                resolvePrestigeAdminMethod(nms.getClass().getClassLoader());
+                resolvePrestigeAdminMethod(preferred);
             }
             if (prestigeAdminMethod == null) {
-                return "§cPrestige admin API missing — update LegacyMechanics jar to 2.3.90+"
+                return "§cPrestige admin API missing — update LegacyMechanics jar to 2.3.100+"
                         + (resolveError == null || resolveError.isBlank() ? "" : "\n§8" + resolveError);
             }
             Object msg = prestigeAdminMethod.invoke(null, nms, rawArgs == null ? "" : rawArgs);

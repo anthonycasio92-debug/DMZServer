@@ -423,8 +423,7 @@ public final class PrestigePointsSystem {
 
     /**
      * True when the tier is permanently purchased <b>or</b> actually unlocked in
-     * difficulty data (level/prestige sync). Does <b>not</b> use bare eligibility —
-     * T1 is eligible at DMZ 1, which previously let players skip straight to T2+.
+     * difficulty data (level/prestige sync).
      */
     public static boolean isTierUnlockedOrPurchased(ServerPlayer player, int tierId) {
         if (player == null || tierId < 1 || tierId > 7) {
@@ -443,7 +442,8 @@ public final class PrestigePointsSystem {
 
     /**
      * Whether the player may buy permanent T{@code tierId} with prestige points.
-     * Requires every lower tier (1 … tierId-1) to already be unlocked or purchased.
+     * Shop ladder: every lower tier must already be <b>permanently purchased</b>
+     * (level unlock alone does not skip the chain — that left gaps after prestige).
      */
     public static boolean canBuyDifficultyTier(ServerPlayer player, int tierId) {
         if (player == null || tierId < 1 || tierId > 7) {
@@ -453,7 +453,7 @@ public final class PrestigePointsSystem {
             return false;
         }
         for (int prev = 1; prev < tierId; prev++) {
-            if (!isTierUnlockedOrPurchased(player, prev)) {
+            if (!hasPurchasedTier(player, prev)) {
                 return false;
             }
         }
@@ -462,7 +462,7 @@ public final class PrestigePointsSystem {
 
     /**
      * Buy a permanent difficulty-tier unlock with prestige points.
-     * Requires every lower tier to already be unlocked (level/prestige) or purchased.
+     * Requires T1…T(n-1) permanently purchased first (shop ladder).
      * Allowed even when the tier is already unlocked via level — purchase makes it
      * permanent so it survives prestige / level-gate revoke.
      */
@@ -474,14 +474,17 @@ public final class PrestigePointsSystem {
         if (tier == null) {
             return "§cUnknown tier. Use 1–7.";
         }
+        if (!ProgressionData.storedWritable(player)) {
+            return "§cCould not save prestige data — try relogging, then buy again.";
+        }
         if (hasPurchasedTier(player, tierId)) {
             return "§eYou already own permanent §fT" + tierId + " " + tier.display + "§e.";
         }
-        var data = com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.data(player);
         if (tierId > 1) {
             for (int prev = 1; prev < tierId; prev++) {
-                if (!isTierUnlockedOrPurchased(player, prev)) {
-                    return "§cUnlock §fT" + prev + " §cfirst before buying §fT" + tierId + "§c.";
+                if (!hasPurchasedTier(player, prev)) {
+                    return "§cBuy permanent §fT" + prev + " §cfirst (shop ladder T1→T"
+                            + tierId + ").";
                 }
             }
         }
@@ -493,20 +496,24 @@ public final class PrestigePointsSystem {
         }
         setPoints(player, points - cost);
         ProgressionData.storedPutBool(player, KEY_TIER_PREFIX + tierId, true);
-        if (data != null) {
-            data.unlockTier(tierId);
-        }
+        // Apply unlock bits for every permanently purchased tier (fills gaps).
+        var data = com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.data(player);
+        reapplyTierUnlocks(player);
         try {
             com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.save(player);
-            com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.invalidate(player.m_20148_());
         } catch (Throwable ignored) {
         }
         try {
-            com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem.syncUnlocks(player, data);
+            if (data != null) {
+                com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem.syncUnlocks(player, data);
+            }
         } catch (Throwable ignored) {
         }
-        // Re-apply after sync in case sync raced; purchased must stick.
         reapplyTierUnlocks(player);
+        try {
+            com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.save(player);
+        } catch (Throwable ignored) {
+        }
         try {
             com.dbzlegacy.adaptivedifficulty.title.TitleSystem.syncTierTitles(player, true);
         } catch (Throwable ignored) {
@@ -518,8 +525,56 @@ public final class PrestigePointsSystem {
         ));
         return "§aPermanent unlock §fT" + tierId + " " + tier.display
                 + " §7(§e-" + cost + " §7point" + (cost == 1 ? "" : "s") + ")"
-                + "\n§7Survives prestige · activate via §f/difficulty §7Buy Tier"
+                + "\n§7Survives prestige · still activate with Ancient Coins via §f/difficulty §7Buy Tier"
                 + "\n§7Points left: §e" + getPoints(player);
+    }
+
+    /** Staff: grant permanent tier unlock(s) without spending points. */
+    public static String adminGrantTier(ServerPlayer player, int tierId) {
+        if (player == null) {
+            return "§cPlayer not online.";
+        }
+        if (tierId < 1 || tierId > 7) {
+            return "§cTier must be 1–7.";
+        }
+        if (!ProgressionData.storedWritable(player)) {
+            return "§cCould not save prestige data for §f" + player.m_6302_() + "§c.";
+        }
+        // Grant the full ladder through tierId so activation has no gaps.
+        for (int t = 1; t <= tierId; t++) {
+            ProgressionData.storedPutBool(player, KEY_TIER_PREFIX + t, true);
+        }
+        reapplyTierUnlocks(player);
+        try {
+            com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.save(player);
+        } catch (Throwable ignored) {
+        }
+        return "§aGranted permanent difficulty tiers §fT1–T" + tierId
+                + " §8(" + player.m_6302_() + ")"
+                + "\n§7Activate via §f/difficulty §7Buy Tier (Ancient Coins).";
+    }
+
+    /** Staff: clear one or all permanent prestige-purchased tiers. */
+    public static String adminClearTier(ServerPlayer player, int tierId) {
+        if (player == null) {
+            return "§cPlayer not online.";
+        }
+        if (!ProgressionData.storedWritable(player)) {
+            return "§cCould not save prestige data for §f" + player.m_6302_() + "§c.";
+        }
+        if (tierId <= 0) {
+            for (int t = 1; t <= 7; t++) {
+                ProgressionData.storedRemove(player, KEY_TIER_PREFIX + t);
+            }
+            return "§7Cleared all permanent prestige difficulty tiers for §f"
+                    + player.m_6302_() + "§7.";
+        }
+        if (tierId > 7) {
+            return "§cTier must be 1–7 (or 0 for all).";
+        }
+        ProgressionData.storedRemove(player, KEY_TIER_PREFIX + tierId);
+        return "§7Cleared permanent §fT" + tierId + " §7for §f" + player.m_6302_() + "§7."
+                + "\n§8Level/prestige unlocks are unchanged.";
     }
 
     /** Ensure prestige-purchased tiers stay unlocked (survives sync revoke + prestige). */

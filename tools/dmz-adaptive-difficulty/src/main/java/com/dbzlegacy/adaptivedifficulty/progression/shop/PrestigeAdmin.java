@@ -10,21 +10,25 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Staff tools for adjusting prestige state (held, completed, points, breakthroughs, Fabled).
+ * Points are the shared wallet for every prestige shop (skills, effects, breakthroughs, tiers).
  */
 public final class PrestigeAdmin {
     private PrestigeAdmin() {}
 
     public static String help() {
-        return "§6§l/prestige admin\n"
-                + "§e/prestige admin info [player]\n"
-                + "§e/prestige admin held <player> <set|add|remove> <n>\n"
-                + "§e/prestige admin completed <player> <set|add|remove> <n>\n"
-                + "§e/prestige admin points <player> <set|add|remove> <n>\n"
-                + "§e/prestige admin breakthroughs <player> <set|add|remove> <n>\n"
-                + "§e/prestige admin fabled <player> <set|add|take> <n>\n"
-                + "§e/prestige admin sync <player>\n"
-                + "§8Breakthroughs raise personal cap; prestige Need scales up to that cap.\n"
-                + "§8Need never resets to 20k after a completed prestige (turn-in safe).";
+        return "§6§l/padmin §8(or /prestige admin)\n"
+                + "§e/padmin info [player]\n"
+                + "§e/padmin points <player> <set|add|remove> <n>\n"
+                + "§e/padmin addpoints <player> <n> §8— same wallet all shops use\n"
+                + "§e/padmin removepoints <player> <n>\n"
+                + "§e/padmin held <player> <set|add|remove> <n>\n"
+                + "§e/padmin completed <player> <set|add|remove> <n>\n"
+                + "§e/padmin breakthroughs <player> <set|add|remove> <n>\n"
+                + "§e/padmin fabled <player> <set|add|take> <n>\n"
+                + "§e/padmin tier <player> give <1-7> §8— grant permanent T1…Tn\n"
+                + "§e/padmin tier <player> clear <1-7|all>\n"
+                + "§e/padmin sync <player>\n"
+                + "§8Points spend in: Skills · Effects · Breakthroughs · Difficulty Tiers.";
     }
 
     public static String info(ServerPlayer target) {
@@ -38,6 +42,7 @@ public final class PrestigeAdmin {
         int cap = PrestigePointsSystem.effectiveMaxLevel(target);
         int need = PrestigeSystem.requiredLevel(target);
         int fabled = PrestigeSkillSync.fabledPrestigeLevel(target);
+        int highestTier = PrestigePointsSystem.highestPurchasedTier(target);
         return "§6Prestige §f" + target.m_6302_() + "\n"
                 + "§7Completed: §f" + completed
                 + " §8| §7Held: §6" + held + "§7/§f" + PrestigeSystem.maxHeld() + "\n"
@@ -45,7 +50,8 @@ public final class PrestigeAdmin {
                 + " §8| §7Breakthroughs: §b" + bt + "§7/§f" + PrestigePointsSystem.MAX_BREAKTHROUGHS + "\n"
                 + "§7Personal cap: §f" + DmzRewards.formatWhole(cap)
                 + " §8| §7Next prestige need: §e" + DmzRewards.formatWhole(need) + "\n"
-                + "§7Fabled Prestige class: §f" + fabled;
+                + "§7Fabled Prestige class: §f" + fabled
+                + " §8| §7Permanent tiers: §fT" + highestTier;
     }
 
     public static String adjustHeld(ServerPlayer target, String mode, int amount) {
@@ -86,12 +92,14 @@ public final class PrestigeAdmin {
         int before = PrestigePointsSystem.getPoints(target);
         Integer next = applyMode(before, mode, amount, 0, 1_000_000);
         if (next == null) {
-            return "§cUsage: points <player> <set|add|remove> <n>";
+            return "§cUsage: points <player> <set|add|remove> <n>\n"
+                    + "§8Or: addpoints <player> <n> · removepoints <player> <n>";
         }
         PrestigePointsSystem.setPoints(target, next);
         log(target, "admin_points", mode, before, next);
         return "§aPrestige points §e" + before + " §7→ §e" + PrestigePointsSystem.getPoints(target)
-                + " §8(" + target.m_6302_() + ")";
+                + " §8(" + target.m_6302_() + ")"
+                + "\n§8Wallet for Skills · Effects · Breakthroughs · Difficulty Tiers.";
     }
 
     public static String adjustBreakthroughs(ServerPlayer target, String mode, int amount) {
@@ -153,6 +161,26 @@ public final class PrestigeAdmin {
                 + " §8(" + target.m_6302_() + ")";
     }
 
+    public static String adjustTier(ServerPlayer target, String mode, int tierId) {
+        if (target == null) {
+            return "§cPlayer not online.";
+        }
+        String m = mode == null ? "" : mode.toLowerCase(Locale.ROOT).trim();
+        return switch (m) {
+            case "give", "grant", "set", "add" -> {
+                String msg = PrestigePointsSystem.adminGrantTier(target, tierId);
+                log(target, "admin_tier_give", m, 0, tierId);
+                yield msg;
+            }
+            case "clear", "remove", "take" -> {
+                String msg = PrestigePointsSystem.adminClearTier(target, tierId);
+                log(target, "admin_tier_clear", m, tierId, 0);
+                yield msg;
+            }
+            default -> "§cUsage: tier <player> give <1-7> | tier <player> clear <1-7|all>";
+        };
+    }
+
     public static String sync(ServerPlayer target) {
         if (target == null) {
             return "§cPlayer not online.";
@@ -165,8 +193,14 @@ public final class PrestigeAdmin {
             PrestigeFactionSync.forceSync(target);
         } catch (Throwable ignored) {
         }
+        try {
+            PrestigePointsSystem.reapplyTierUnlocks(target);
+            com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.save(target);
+        } catch (Throwable ignored) {
+        }
         log(target, "admin_sync", "sync", 0, 0);
-        return "§aSynced Fabled Prestige → DMZ skill + faction for §f" + target.m_6302_();
+        return "§aSynced Fabled Prestige → DMZ skill + faction + permanent tiers for §f"
+                + target.m_6302_();
     }
 
     private static Integer applyMode(int current, String mode, int amount, int min, int max) {
