@@ -100,10 +100,12 @@ public final class PrestigeChestGui implements Listener {
                 SlotAction.page("turnin"));
         put(holder, inv, 24, tipBtn(viewer, Material.EXPERIENCE_BOTTLE, "&aSkill Shop",
                 List.of("&71 point = +1 skill level (&dPotential &7+2)",
-                        "&7Skill Check skills only (Natural + Saga)")),
+                        "&7Skill Check skills only · &apermanent",
+                        "&8Survives prestige reset")),
                 SlotAction.page("shop"));
         put(holder, inv, 30, tipBtn(viewer, Material.MAGENTA_DYE, "&dEffects",
-                List.of("&7Permanent Majin / Mutant (&e5 &7pts)")),
+                List.of("&7Permanent Majin / Mutant (&e5 &7pts)",
+                        "&aPermanent purchase &8· unpurchase = no refund")),
                 SlotAction.page("effects"));
         put(holder, inv, 32, tipBtn(viewer, Material.NETHER_STAR, "&bLevel Cap Breakthrough",
                 List.of("&7Raise &fyour &7personal level cap +10k",
@@ -286,7 +288,7 @@ public final class PrestigeChestGui implements Listener {
                 + ("potentialunlock".equalsIgnoreCase(id) ? "2" : "1")
                 + " &7level"
                 + ("potentialunlock".equalsIgnoreCase(id) ? "s" : ""));
-        lore.add("&8Survives prestige reset");
+        lore.add("&aPermanent &8· survives prestige reset");
         put(holder, inv, slot, item(mat, "&a" + label, lore),
                 SlotAction.act("skill", id, holder.page));
     }
@@ -311,7 +313,7 @@ public final class PrestigeChestGui implements Listener {
         if (hasMutant && !hasMajin) {
             majinLore.add("&8Buying removes Mutant (no refund)");
         }
-        majinLore.add("&8Only one effect at a time");
+        majinLore.add("&aPermanent purchase &8· only one at a time");
         put(holder, inv, 20, item(
                 hasMajin ? Material.LIME_DYE : Material.PINK_DYE,
                 hasMajin ? "&aPermanent Majin" : "&dBuy Permanent Majin",
@@ -324,7 +326,7 @@ public final class PrestigeChestGui implements Listener {
         if (hasMajin && !hasMutant) {
             mutantLore.add("&8Buying removes Majin (no refund)");
         }
-        mutantLore.add("&8Only one effect at a time");
+        mutantLore.add("&aPermanent purchase &8· only one at a time");
         put(holder, inv, 22, item(
                 hasMutant ? Material.LIME_DYE : Material.SLIME_BALL,
                 hasMutant ? "&aPermanent Mutant" : "&aBuy Permanent Mutant",

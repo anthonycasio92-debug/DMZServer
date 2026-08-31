@@ -91,9 +91,11 @@ public final class CmiPrestigeGui {
                 "turnin"));
         gui.addButton(navBtn(24, Material.EXPERIENCE_BOTTLE, "&aSkill Shop",
                 List.of("&71 point = +1 skill level (&dPotential &7+2)",
-                        "&7Skill Check skills only (Natural + Saga)"), "shop"));
+                        "&7Skill Check skills only · &apermanent",
+                        "&8Survives prestige reset"), "shop"));
         gui.addButton(navBtn(30, Material.MAGENTA_DYE, "&dEffects",
-                List.of("&7Permanent Majin / Mutant (&e5 &7pts)"), "effects"));
+                List.of("&7Permanent Majin / Mutant (&e5 &7pts)",
+                        "&aPermanent purchase &8· unpurchase = no refund"), "effects"));
         gui.addButton(navBtn(32, Material.NETHER_STAR, "&bLevel Cap Breakthrough",
                 List.of("&7Raise &fyour &7personal level cap +10k",
                         "&7Cap: &f" + ph.getOrDefault("level_cap_fmt", "100000"),
@@ -276,7 +278,7 @@ public final class CmiPrestigeGui {
                         + ("potentialunlock".equalsIgnoreCase(id) ? "2" : "1")
                         + " &7level"
                         + ("potentialunlock".equalsIgnoreCase(id) ? "s" : ""),
-                "&8Survives prestige reset"));
+                "&aPermanent &8· survives prestige reset"));
         btn.addCommand("lmdo prestige skill " + id + " " + reopenPage);
         gui.addButton(btn);
     }
@@ -298,7 +300,7 @@ public final class CmiPrestigeGui {
                 hasMajin ? "&aPermanent Majin" : "&dBuy Permanent Majin");
         majin.lockField();
         majin.addLore(List.of("", hasMajin ? "&aOwned" : "&7Cost: &e" + cost + " &7points",
-                "&8Only one effect at a time"));
+                "&aPermanent purchase &8· only one at a time"));
         if (!hasMajin) {
             majin.addCommand("lmdo prestige majin 0 forms");
         }
@@ -309,7 +311,7 @@ public final class CmiPrestigeGui {
                 hasMutant ? "&aPermanent Mutant" : "&aBuy Permanent Mutant");
         mutant.lockField();
         mutant.addLore(List.of("", hasMutant ? "&aOwned" : "&7Cost: &e" + cost + " &7points",
-                "&8Only one effect at a time"));
+                "&aPermanent purchase &8· only one at a time"));
         if (!hasMutant) {
             mutant.addCommand("lmdo prestige mutant 0 forms");
         }
