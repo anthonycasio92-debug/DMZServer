@@ -444,7 +444,7 @@
         "lore": [
           "{rarity_line}",
           "&7{req}",
-          "&f{perk}"
+          "{perk_line}"
         ]
       },
       "state_equipped": [

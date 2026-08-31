@@ -369,19 +369,31 @@ public final class CmiDifficultyGui {
                     : earned ? "&e" + name
                     : "&8" + name;
             String state = isEquipped ? "equipped" : earned ? "unlocked" : "locked";
+            String rarityLine = rarity.isBlank() ? "" : ("&" + rarityColor + rarity);
+            String perkLine = titlePerk.isBlank() ? "" : ("&f" + titlePerk);
             Map<String, String> vars = Map.of(
-                    "rarity", rarity, "req", tip, "perk", titlePerk, "state", state);
+                    "name", name,
+                    "rarity", rarity,
+                    "rarity_line", rarityLine,
+                    "req", tip == null ? "" : tip,
+                    "perk", titlePerk == null ? "" : titlePerk,
+                    "perk_line", perkLine,
+                    "state", state);
 
             List<String> defaults = new ArrayList<>();
-            if (!rarity.isBlank()) {
-                defaults.add("&" + rarityColor + "{rarity}");
+            if (!rarityLine.isBlank()) {
+                defaults.add("{rarity_line}");
             }
             defaults.add("&7{req}");
-            if (!titlePerk.isBlank()) {
-                defaults.add("&f{perk}");
+            if (!perkLine.isBlank()) {
+                defaults.add("{perk_line}");
             }
-            List<String> lore = new ArrayList<>(
-                    GuiTooltips.lore("difficulty.titles.item", defaults, vars));
+            List<String> lore = new ArrayList<>();
+            for (String line : GuiTooltips.lore("difficulty.titles.item", defaults, vars)) {
+                if (line != null && !line.isBlank()) {
+                    lore.add(line);
+                }
+            }
             if (isEquipped) {
                 lore.addAll(GuiTooltips.lore("difficulty.titles.state_equipped",
                         List.of(staff ? "&aCurrently equipped &8· click to unequip" : "&aCurrently equipped"),

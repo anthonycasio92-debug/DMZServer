@@ -385,19 +385,31 @@ public final class DifficultyChestGui implements Listener {
             boolean isEquipped = id.equalsIgnoreCase(equipped);
             String title = isEquipped ? "&a● " + name : earned ? "&e" + name : "&8" + name;
             String state = isEquipped ? "equipped" : earned ? "unlocked" : "locked";
+            String rarityLine = rarity.isBlank() ? "" : ("&" + rarityColor + rarity);
+            String perkLine = perk.isBlank() ? "" : ("&f" + perk);
             Map<String, String> vars = Map.of(
-                    "rarity", rarity, "req", tip, "perk", perk, "state", state);
+                    "name", name,
+                    "rarity", rarity,
+                    "rarity_line", rarityLine,
+                    "req", tip == null ? "" : tip,
+                    "perk", perk == null ? "" : perk,
+                    "perk_line", perkLine,
+                    "state", state);
 
             List<String> defaults = new ArrayList<>();
-            if (!rarity.isBlank()) {
-                defaults.add("&" + rarityColor + "{rarity}");
+            if (!rarityLine.isBlank()) {
+                defaults.add("{rarity_line}");
             }
             defaults.add("&7{req}");
-            if (!perk.isBlank()) {
-                defaults.add("&f{perk}");
+            if (!perkLine.isBlank()) {
+                defaults.add("{perk_line}");
             }
-            List<String> tipLore = new ArrayList<>(
-                    GuiTooltips.lore("difficulty.titles.item", defaults, vars));
+            List<String> tipLore = new ArrayList<>();
+            for (String line : GuiTooltips.lore("difficulty.titles.item", defaults, vars)) {
+                if (line != null && !line.isBlank()) {
+                    tipLore.add(line);
+                }
+            }
             if (isEquipped) {
                 tipLore.addAll(GuiTooltips.lore("difficulty.titles.state_equipped",
                         List.of(staff ? "&aCurrently equipped &8· click to unequip" : "&aCurrently equipped"),
