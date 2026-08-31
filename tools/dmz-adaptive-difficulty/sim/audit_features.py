@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.82", 'VERSION = "2.3.82"' in mod)
+    check("VERSION 2.3.83", 'VERSION = "2.3.83"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -867,6 +867,8 @@ def main() -> int:
     check("breakthrough costs 15..35", "breakthroughCost" in pp and "15" in pp and "35" in pp)
     check("MAX_BREAKTHROUGHS 5", "MAX_BREAKTHROUGHS = 5" in pp)
     check("StatsDataMixin personal cap", "getConfiguredMaxValue" in mixin and "effectiveMaxLevel" in mixin)
+    check("StatsDataMixin remap false",
+          'remap = false' in mixin and '@Mixin(value = StatsData.class, remap = false)' in mixin)
     check("mixins.json registers StatsDataMixin", '"StatsDataMixin"' in mixins_json)
     check("AD referenceMaxLevel 150k", "referenceMaxLevel = 150_000L" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/config/DifficultyConfig.java"))

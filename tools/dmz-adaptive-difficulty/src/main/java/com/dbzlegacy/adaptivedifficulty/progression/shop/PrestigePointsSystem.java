@@ -486,18 +486,36 @@ public final class PrestigePointsSystem {
         setPoints(player, points - cost);
         ProgressionData.storedPut(player, KEY_BREAKTHROUGHS, next);
         int newCap = effectiveMaxLevel(player);
+        // Force a live DMZ read so the client/stat screen picks up the raised max.
+        int liveCap = newCap;
+        try {
+            var data = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.stats(player);
+            if (data != null) {
+                liveCap = Math.max(newCap, data.getConfiguredMaxValue());
+                com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil.sync(player);
+            }
+        } catch (Throwable ignored) {
+        }
         SystemTelemetry.log("prestige_points", "breakthrough", player, null, Map.of(
                 "breakthrough", next,
                 "cap", newCap,
+                "live_cap", liveCap,
                 "cost", cost,
                 "points", getPoints(player)
         ));
+        String note = liveCap >= newCap
+                ? ""
+                : "\n§cWarning: live DMZ max still §f" + DmzRewards.formatWhole(liveCap)
+                        + " §c(expected §f" + DmzRewards.formatWhole(newCap)
+                        + "§c) — remount / report if this persists.";
         return "§aPersonal level cap raised to §f" + DmzRewards.formatWhole(newCap)
                 + " §7(§e-" + cost + " §7points)"
                 + "\n§7Keep leveling with TP into the new cap."
                 + "\n§8Server default hardcap stays §f100000 §8for everyone else."
                 + "\n§7Breakthrough §f" + next + "§7/§f" + MAX_BREAKTHROUGHS
-                + " · Points left: §e" + getPoints(player);
+                + " · Points left: §e" + getPoints(player)
+                + "\n§7Live DMZ max now: §f" + DmzRewards.formatWhole(liveCap)
+                + note;
     }
 
     // ── Login / post-prestige ──────────────────────────────────────────

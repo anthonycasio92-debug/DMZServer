@@ -14,17 +14,26 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Per-player DMZ level cap from prestige breakthroughs.
  * Server {@code maxValue} stays 100k; breakthrough buyers get a higher personal
  * {@link StatsData#getConfiguredMaxValue()} so they can level into 110k…150k normally.
+ *
+ * <p>{@code remap = false} is required — DMZ methods are not obfuscated (same pattern as
+ * {@code dmz_mohist_melee_fix} StatsData mixins). With remap left on, this inject never
+ * applied and the personal cap stayed stuck at the server 100k.
  */
-@Mixin(StatsData.class)
+@Mixin(value = StatsData.class, remap = false)
 public abstract class StatsDataMixin {
-    @Shadow
+    @Shadow(remap = false)
     public abstract Player getPlayer();
 
-    @Inject(method = "getConfiguredMaxValue", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "getConfiguredMaxValue", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$personalBreakthroughCap(CallbackInfoReturnable<Integer> cir) {
         Integer serverMax = cir.getReturnValue();
         int base = serverMax == null || serverMax <= 0 ? PrestigePointsSystem.BASE_LEVEL_CAP : serverMax;
-        Player p = getPlayer();
+        Player p;
+        try {
+            p = getPlayer();
+        } catch (Throwable t) {
+            return;
+        }
         if (!(p instanceof ServerPlayer sp)) {
             return;
         }
