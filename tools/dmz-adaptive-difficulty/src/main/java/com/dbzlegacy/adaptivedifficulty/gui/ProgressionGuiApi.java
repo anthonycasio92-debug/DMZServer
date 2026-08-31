@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionSystem;
+import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillUnlockService;
@@ -775,15 +776,15 @@ public final class ProgressionGuiApi {
         }
         int completed = PrestigeSystem.getCompleted(player);
         int held = PrestigeSystem.getHeld(player);
-        int required = PrestigeSystem.requiredLevel(completed);
+        int required = PrestigeSystem.requiredLevel(player);
         out.put("level", String.valueOf(level));
         out.put("level_fmt", DmzRewards.formatWhole(level));
         out.put("completed", String.valueOf(completed));
         out.put("held", String.valueOf(held));
-        out.put("held_max", "10");
+        out.put("held_max", String.valueOf(PrestigeSystem.maxHeld()));
         out.put("required", String.valueOf(required));
         out.put("required_fmt", DmzRewards.formatWhole(required));
-        out.put("ready", level >= required && held < 10 ? "true" : "false");
+        out.put("ready", level >= required && held < PrestigeSystem.maxHeld() ? "true" : "false");
         int points = PrestigePointsSystem.getPoints(player);
         int breakthroughs = PrestigePointsSystem.getBreakthroughs(player);
         int levelCap = PrestigePointsSystem.effectiveMaxLevel(player);
@@ -872,6 +873,7 @@ public final class ProgressionGuiApi {
                 if (btCount < PrestigePointsSystem.MAX_BREAKTHROUGHS) {
                     lore.add("§7Next cost: §e" + ph.getOrDefault("next_breakthrough_cost", "15")
                             + " §7points (+10k cap)");
+                    lore.add("§8Raising cap also raises future prestige Need");
                 } else {
                     lore.add("§aMax personal cap reached");
                 }
@@ -879,6 +881,7 @@ public final class ProgressionGuiApi {
             default -> {
                 lore.add("§7DMZ Level: §f" + ph.getOrDefault("level_fmt", "0")
                         + " §8| §7Need: §e" + ph.getOrDefault("required_fmt", "0"));
+                lore.add("§8Need = (completed+1)×20k, capped at your personal level cap");
                 if ("true".equalsIgnoreCase(ph.get("ready"))) {
                     lore.add("§aReady to prestige");
                 } else {
@@ -963,10 +966,68 @@ public final class ProgressionGuiApi {
             String reason = page == null || page.isBlank() || "main".equalsIgnoreCase(page) ? "admin" : page;
             return PrestigePointsSystem.grantForNpc(player, amount, reason);
         }
+        if ("admin".equals(act) || "admin_help".equals(act)) {
+            if (!StaffAccess.isStaff(player)) {
+                return "§cStaff only.";
+            }
+            return PrestigeAdmin.help();
+        }
+        if ("admin_info".equals(act) || "info".equals(act)) {
+            if (!StaffAccess.isStaff(player)) {
+                return "§cStaff only.";
+            }
+            return PrestigeAdmin.info(player);
+        }
+        if ("admin_sync".equals(act) || "sync".equals(act)) {
+            if (!StaffAccess.isStaff(player)) {
+                return "§cStaff only.";
+            }
+            return PrestigeAdmin.sync(player);
+        }
+        if ("admin_held".equals(act) || "admin_completed".equals(act)
+                || "admin_points".equals(act) || "admin_breakthroughs".equals(act)
+                || "admin_fabled".equals(act)) {
+            if (!StaffAccess.isStaff(player)) {
+                return "§cStaff only.";
+            }
+            // arg: mode:amount  (e.g. set:3) — page unused
+            String raw = arg == null ? "" : arg.trim();
+            String mode;
+            int amount;
+            int colon = raw.indexOf(':');
+            if (colon > 0) {
+                mode = raw.substring(0, colon);
+                try {
+                    amount = Integer.parseInt(raw.substring(colon + 1).trim());
+                } catch (NumberFormatException e) {
+                    return "§cUsage: " + act + " <set|add|remove>:<n>";
+                }
+            } else {
+                String[] parts = raw.split("\\s+");
+                if (parts.length < 2) {
+                    return "§cUsage: " + act + " <set|add|remove> <n>";
+                }
+                mode = parts[0];
+                try {
+                    amount = Integer.parseInt(parts[1]);
+                } catch (NumberFormatException e) {
+                    return "§cUsage: " + act + " <set|add|remove> <n>";
+                }
+            }
+            return switch (act) {
+                case "admin_held" -> PrestigeAdmin.adjustHeld(player, mode, amount);
+                case "admin_completed" -> PrestigeAdmin.adjustCompleted(player, mode, amount);
+                case "admin_points" -> PrestigeAdmin.adjustPoints(player, mode, amount);
+                case "admin_breakthroughs" -> PrestigeAdmin.adjustBreakthroughs(player, mode, amount);
+                case "admin_fabled" -> PrestigeAdmin.adjustFabled(player, mode, amount);
+                default -> "§cUnknown admin action.";
+            };
+        }
         if ("balance".equals(act) || "points".equals(act)) {
             return "§7Prestige points: §e" + PrestigePointsSystem.getPoints(player)
                     + " §8| §7Held: §6" + PrestigeSystem.getHeld(player)
-                    + " §8| §7Cap: §f" + PrestigePointsSystem.effectiveMaxLevel(player);
+                    + " §8| §7Cap: §f" + PrestigePointsSystem.effectiveMaxLevel(player)
+                    + " §8| §7Need: §e" + PrestigeSystem.requiredLevel(player);
         }
         return "§cUnknown prestige action: " + act;
     }

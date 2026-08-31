@@ -21,7 +21,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Port of {@code Prestige NPC.js} purchase logic as {@code /prestige} chat GUI.
- * Cost = DMZ level gate ({@code (current+1) * 20000}, capped at 100000).
+ * Cost = DMZ level gate {@code (completed+1) * 20000}, capped at the player's
+ * personal level cap (100k base, raised by prestige-point breakthroughs toward 150k).
  */
 public final class PrestigeSystem {
     private static final int LEVELS_PER_PRESTIGE = 20_000;
@@ -63,7 +64,7 @@ public final class PrestigeSystem {
 
         int completed = getCompleted(player);
         int held = getHeld(player);
-        int required = requiredLevel(completed);
+        int required = requiredLevel(player);
         int next = completed + 1;
 
         if (held >= MAX_HELD) {
@@ -155,10 +156,11 @@ public final class PrestigeSystem {
         // Prestige-point skill floors + Permanent Majin/Mutant must survive dmzstats reset.
         PrestigePointsSystem.scheduleReapplyAfterPrestige(player);
 
-        int nextRequired = requiredLevel(newCompleted);
+        int nextRequired = requiredLevel(player);
         String summary = "§aPrestige Level §f" + newCompleted + " §aComplete!\n"
                 + "§7Held: §6" + newHeld + "§7/§f" + MAX_HELD + "\n"
-                + "§7Next needs §e" + DmzRewards.formatWhole(nextRequired) + " §7DMZ levels.";
+                + "§7Next needs §e" + DmzRewards.formatWhole(nextRequired) + " §7DMZ levels"
+                + " §8(cap §f" + DmzRewards.formatWhole(PrestigePointsSystem.effectiveMaxLevel(player)) + "§8).";
         if (!preferGuiFeedback()) {
             send(player, "");
             send(player, "§8--------------------------------");
@@ -187,12 +189,14 @@ public final class PrestigeSystem {
         }
         int completed = getCompleted(player);
         int held = getHeld(player);
-        int required = requiredLevel(completed);
+        int required = requiredLevel(player);
+        int cap = PrestigePointsSystem.effectiveMaxLevel(player);
         send(player, "");
         send(player, "§8── §6Prestige §8──");
         send(player, "§7Completed: §f" + completed + " §8| §7Held: §6" + held + "§7/§f" + MAX_HELD);
         send(player, "§7DMZ Level: §f" + DmzRewards.formatWhole(level)
-                + " §8| §7Need: §e" + DmzRewards.formatWhole(required));
+                + " §8| §7Need: §e" + DmzRewards.formatWhole(required)
+                + " §8| §7Cap: §f" + DmzRewards.formatWhole(cap));
         MutableComponent row = Component.m_237113_("§7")
                 .m_7220_(btn("§a[Prestige]", "/lmdo prestige confirm 0 main", "Confirm prestige purchase"))
                 .m_7220_(Component.m_237113_("  "))
@@ -279,9 +283,34 @@ public final class PrestigeSystem {
         }
     }
 
+    /**
+     * Next prestige DMZ level gate for {@code player}: {@code (completed+1)×20000},
+     * capped at their personal breakthrough ceiling (100k…150k).
+     */
+    public static int requiredLevel(ServerPlayer player) {
+        if (player == null) {
+            return requiredLevel(0, MAX_REQUIRED_LEVEL);
+        }
+        return requiredLevel(getCompleted(player), PrestigePointsSystem.effectiveMaxLevel(player));
+    }
+
+    /** @deprecated prefer {@link #requiredLevel(ServerPlayer)} — uses absolute 150k ceiling. */
     public static int requiredLevel(int currentCompleted) {
-        int required = (currentCompleted + 1) * LEVELS_PER_PRESTIGE;
-        return Math.min(MAX_REQUIRED_LEVEL, required);
+        return requiredLevel(currentCompleted, PrestigePointsSystem.ABSOLUTE_LEVEL_CAP);
+    }
+
+    public static int requiredLevel(int currentCompleted, int personalCap) {
+        int cap = personalCap > 0 ? personalCap : MAX_REQUIRED_LEVEL;
+        int required = Math.max(0, currentCompleted + 1) * LEVELS_PER_PRESTIGE;
+        return Math.min(cap, required);
+    }
+
+    public static int maxHeld() {
+        return MAX_HELD;
+    }
+
+    public static int levelsPerPrestige() {
+        return LEVELS_PER_PRESTIGE;
     }
 
     public static int getCompleted(ServerPlayer player) {
@@ -313,6 +342,11 @@ public final class PrestigeSystem {
     }
 
     private static void setCompleted(ServerPlayer player, int value) {
+        setCompletedPublic(player, value);
+    }
+
+    /** Public for staff admin tools. */
+    public static void setCompletedPublic(ServerPlayer player, int value) {
         CompoundTag tag = PersistentDataAccess.get(player);
         if (PersistentDataAccess.isWritable(tag)) {
             tag.m_128359_(KEY_TOTAL, Integer.toString(Math.max(0, value)));

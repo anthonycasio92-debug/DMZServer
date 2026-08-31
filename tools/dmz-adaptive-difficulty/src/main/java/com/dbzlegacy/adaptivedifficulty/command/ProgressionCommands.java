@@ -41,6 +41,65 @@ public final class ProgressionCommands {
                 .requires(ProgressionCommands::staff)
                 .executes(ctx -> prestigeGui(ctx.getSource(), "main"))
                 .then(Commands.m_82127_("gui").executes(ctx -> prestigeGui(ctx.getSource(), "main")))
+                .then(Commands.m_82127_("admin")
+                        .executes(ctx -> prestigeAdminHelp(ctx.getSource()))
+                        .then(Commands.m_82127_("help").executes(ctx -> prestigeAdminHelp(ctx.getSource())))
+                        .then(Commands.m_82127_("info")
+                                .executes(ctx -> prestigeAdminInfo(ctx.getSource(), null))
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .executes(ctx -> prestigeAdminInfo(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player")))))
+                        .then(Commands.m_82127_("sync")
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .executes(ctx -> prestigeAdminSync(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player")))))
+                        .then(Commands.m_82127_("held")
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .then(Commands.m_82129_("mode", StringArgumentType.word())
+                                                .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
+                                                        .executes(ctx -> prestigeAdminAdjust(
+                                                                ctx.getSource(), "held",
+                                                                StringArgumentType.getString(ctx, "player"),
+                                                                StringArgumentType.getString(ctx, "mode"),
+                                                                IntegerArgumentType.getInteger(ctx, "amount")))))))
+                        .then(Commands.m_82127_("completed")
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .then(Commands.m_82129_("mode", StringArgumentType.word())
+                                                .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
+                                                        .executes(ctx -> prestigeAdminAdjust(
+                                                                ctx.getSource(), "completed",
+                                                                StringArgumentType.getString(ctx, "player"),
+                                                                StringArgumentType.getString(ctx, "mode"),
+                                                                IntegerArgumentType.getInteger(ctx, "amount")))))))
+                        .then(Commands.m_82127_("points")
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .then(Commands.m_82129_("mode", StringArgumentType.word())
+                                                .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
+                                                        .executes(ctx -> prestigeAdminAdjust(
+                                                                ctx.getSource(), "points",
+                                                                StringArgumentType.getString(ctx, "player"),
+                                                                StringArgumentType.getString(ctx, "mode"),
+                                                                IntegerArgumentType.getInteger(ctx, "amount")))))))
+                        .then(Commands.m_82127_("breakthroughs")
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .then(Commands.m_82129_("mode", StringArgumentType.word())
+                                                .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
+                                                        .executes(ctx -> prestigeAdminAdjust(
+                                                                ctx.getSource(), "breakthroughs",
+                                                                StringArgumentType.getString(ctx, "player"),
+                                                                StringArgumentType.getString(ctx, "mode"),
+                                                                IntegerArgumentType.getInteger(ctx, "amount")))))))
+                        .then(Commands.m_82127_("fabled")
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .then(Commands.m_82129_("mode", StringArgumentType.word())
+                                                .then(Commands.m_82129_("amount", IntegerArgumentType.integer())
+                                                        .executes(ctx -> prestigeAdminAdjust(
+                                                                ctx.getSource(), "fabled",
+                                                                StringArgumentType.getString(ctx, "player"),
+                                                                StringArgumentType.getString(ctx, "mode"),
+                                                                IntegerArgumentType.getInteger(ctx, "amount"))))))))
                 .then(Commands.m_82127_("do")
                         .then(Commands.m_82127_("confirm")
                                 .executes(ctx -> prestigeConfirm(ctx.getSource(), "main"))
@@ -107,7 +166,7 @@ public final class ProgressionCommands {
 
         AdaptiveDifficultyMod.LOGGER.info(
                 "[{}] registered /progression /prog /prestige /skills /skillcheck /enddragon"
-                        + " /androidify /androidification",
+                        + " /androidify /androidification (+ /prestige admin)",
                 AdaptiveDifficultyMod.MOD_ID
         );
     }
@@ -172,6 +231,82 @@ public final class ProgressionCommands {
         }
         PrestigeMenu.open(p, page);
         return 1;
+    }
+
+    private static int prestigeAdminHelp(CommandSourceStack source) {
+        reply(source, playerOrNull(source),
+                com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin.help());
+        return 1;
+    }
+
+    private static int prestigeAdminInfo(CommandSourceStack source, String playerName) {
+        ServerPlayer target = resolveAdminTarget(source, playerName);
+        if (target == null) {
+            reply(source, playerOrNull(source), "§cPlayer not online"
+                    + (playerName == null || playerName.isBlank() ? " (self)." : ": §f" + playerName));
+            return 0;
+        }
+        reply(source, playerOrNull(source),
+                com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin.info(target));
+        return 1;
+    }
+
+    private static int prestigeAdminSync(CommandSourceStack source, String playerName) {
+        ServerPlayer target = resolveAdminTarget(source, playerName);
+        if (target == null) {
+            reply(source, playerOrNull(source), "§cPlayer not online: §f" + playerName);
+            return 0;
+        }
+        reply(source, playerOrNull(source),
+                com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin.sync(target));
+        return 1;
+    }
+
+    private static int prestigeAdminAdjust(
+            CommandSourceStack source, String field, String playerName, String mode, int amount
+    ) {
+        ServerPlayer target = resolveAdminTarget(source, playerName);
+        if (target == null) {
+            reply(source, playerOrNull(source), "§cPlayer not online: §f" + playerName);
+            return 0;
+        }
+        String msg = switch (field == null ? "" : field.toLowerCase()) {
+            case "held" -> com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin
+                    .adjustHeld(target, mode, amount);
+            case "completed" -> com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin
+                    .adjustCompleted(target, mode, amount);
+            case "points" -> com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin
+                    .adjustPoints(target, mode, amount);
+            case "breakthroughs" -> com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin
+                    .adjustBreakthroughs(target, mode, amount);
+            case "fabled" -> com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeAdmin
+                    .adjustFabled(target, mode, amount);
+            default -> "§cUnknown field: " + field;
+        };
+        reply(source, playerOrNull(source), msg);
+        return msg != null && msg.startsWith("§c") ? 0 : 1;
+    }
+
+    private static ServerPlayer resolveAdminTarget(CommandSourceStack source, String playerName) {
+        if (playerName == null || playerName.isBlank() || "self".equalsIgnoreCase(playerName)
+                || "me".equalsIgnoreCase(playerName)) {
+            return playerOrNull(source);
+        }
+        var server = source.m_81377_();
+        if (server == null) {
+            return null;
+        }
+        ServerPlayer byName = server.m_6846_().m_11255_(playerName.trim());
+        if (byName != null) {
+            return byName;
+        }
+        String needle = playerName.trim().toLowerCase();
+        for (ServerPlayer p : server.m_6846_().m_11314_()) {
+            if (p != null && p.m_6302_() != null && p.m_6302_().toLowerCase().startsWith(needle)) {
+                return p;
+            }
+        }
+        return null;
     }
 
     private static int prestigeConfirm(CommandSourceStack source, String page) {

@@ -363,6 +363,7 @@ public final class PrestigeChestGui implements Listener {
             lore.add("&7Next: &a+10,000 &7personal cap for &e"
                     + ph.getOrDefault("next_breakthrough_cost", "15") + " &7points");
             lore.add("&8Then keep leveling with TP into the new cap");
+            lore.add("&8Future prestige Need scales up to your new cap");
             lore.add("&8Costs: 15 → 20 → 25 → 30 → 35");
         } else {
             lore.add("&aMax personal cap (150000)");

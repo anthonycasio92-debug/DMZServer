@@ -472,6 +472,14 @@ public final class PrestigePointsSystem {
         return 15 + (nextIndex - 1) * 5;
     }
 
+    public static void setBreakthroughs(ServerPlayer player, int breakthroughs) {
+        if (player == null) {
+            return;
+        }
+        int n = Math.max(0, Math.min(MAX_BREAKTHROUGHS, breakthroughs));
+        ProgressionData.storedPut(player, KEY_BREAKTHROUGHS, n);
+    }
+
     /** Personal DMZ level cap: 100k + breakthroughs×10k (mixin + soft-locks). */
     public static int effectiveMaxLevel(ServerPlayer player) {
         return Math.min(ABSOLUTE_LEVEL_CAP,
@@ -527,6 +535,8 @@ public final class PrestigePointsSystem {
         return "§aPersonal level cap raised to §f" + DmzRewards.formatWhole(newCap)
                 + " §7(§e-" + cost + " §7points)"
                 + "\n§7Keep leveling with TP / buy stats into the new cap."
+                + "\n§7Future prestige requirements now scale up to §f"
+                + DmzRewards.formatWhole(newCap) + "§7."
                 + "\n§8Others stay soft-locked at their personal cap until they breakthrough too."
                 + "\n§7Breakthrough §f" + next + "§7/§f" + MAX_BREAKTHROUGHS
                 + " · Points left: §e" + getPoints(player)
