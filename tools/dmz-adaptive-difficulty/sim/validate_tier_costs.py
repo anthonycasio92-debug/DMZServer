@@ -125,6 +125,31 @@ def main() -> int:
         line = ", ".join(f"T{t}={fmt(costs[t])}" for t in range(1, 8))
         check(mono, f"lvl {level}: {line}")
 
+    print("\n=== Full scan: every level 1..150000 (T-ladder + non-decreasing) ===")
+    import time
+    t0 = time.time()
+    mono_fail = None
+    drop_fail = None
+    prev = None
+    for level in range(1, 150_001):
+        costs = scaled_costs(level)
+        if mono_fail is None:
+            for t in range(2, 8):
+                if costs[t] <= costs[t - 1]:
+                    mono_fail = f"lvl {level}: T{t-1}={costs[t-1]} ≥ T{t}={costs[t]}"
+                    break
+        if drop_fail is None and prev is not None:
+            for t in range(1, 8):
+                if costs[t] < prev[t]:
+                    drop_fail = f"lvl {level}: T{t} dropped {prev[t]} → {costs[t]}"
+                    break
+        prev = costs
+        if mono_fail and drop_fail:
+            break
+    elapsed = time.time() - t0
+    check(mono_fail is None, mono_fail or f"T1<…<T7 at all 150000 levels ({elapsed:.2f}s)")
+    check(drop_fail is None, drop_fail or f"costs non-decreasing with level ({elapsed:.2f}s)")
+
     print("\n=== Clamp past anchor (200k == 150k) ===")
     c200 = scaled_costs(200_000)
     check(c200[7] == c150[7], f"T7 at 200k ({c200[7]}) == T7 at 150k ({c150[7]})")
