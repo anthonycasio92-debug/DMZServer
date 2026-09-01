@@ -81,9 +81,12 @@ public final class DifficultyActions {
         // refresh() re-samples + snapshot syncs unlocks/gate level.
         DifficultyCache.refresh(player);
         TitleSystem.syncTierTitles(player, false);
-        // Character may still be missing on first open after login — keep pulling.
-        if (!DmzProgression.hasReliableUnlockGateSample(player)
-                || DmzProgression.character(player) == null) {
+        // Keep pulling while Character is missing OR live DMZ level is still a
+        // placeholder — some players attach/stats-load later than others.
+        int shown = DmzProgression.guiDisplayDmzLevel(player);
+        if (DmzProgression.character(player) == null
+                || shown <= 1
+                || !DmzProgression.hasReliableUnlockGateSample(player)) {
             scheduleLevelPull(player);
         }
     }
@@ -157,23 +160,18 @@ public final class DifficultyActions {
             return;
         }
         UUID id = player.m_20148_();
-        int sampled = DmzProgression.sampleLevelOnGuiOpen(player);
+        int display = DmzProgression.guiDisplayDmzLevel(player);
         if (DmzProgression.hasReliableUnlockGateSample(player)
                 && !DmzProgression.isTransformed(player)
-                && sampled > 1) {
-            DifficultyCache.data(player).noteDmzLevel(sampled);
-            DifficultyCache.refresh(player);
-            LEVEL_PULL_UNTIL_MS.remove(id);
-            return;
+                && display > 1) {
+            DifficultyCache.data(player).noteDmzLevel(display);
         }
-        // Still waiting for Character / meaningful level.
-        if (DmzProgression.character(player) != null
-                && DmzProgression.hasReliableUnlockGateSample(player)
-                && sampled >= 1
-                && !DmzProgression.isTransformed(player)) {
-            DifficultyCache.data(player).noteDmzLevel(sampled);
+        // Always refresh the snapshot so Buy GUI / placeholders pick up live level
+        // even while transformed (display uses live getLevel).
+        if (display > 1 || DmzProgression.character(player) != null) {
             DifficultyCache.refresh(player);
-            // Genuine level-1 characters can clear once Character is attached.
+        }
+        if (display > 1 && DmzProgression.character(player) != null) {
             LEVEL_PULL_UNTIL_MS.remove(id);
         }
     }

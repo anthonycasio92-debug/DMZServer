@@ -414,34 +414,30 @@ public final class DmzProgression {
 
     /**
      * DMZ level painted in Buy GUI / placeholders.
-     * Prefers a meaningful live or session sample over a polluted gate of 1 /
-     * empty freeze, so the menu cannot stick on placeholder level after login.
+     * <p>
+     * Uses live {@link #dmzLevel} (same formula as DMZ's own level readout) whenever
+     * it is meaningful. Unlock gates / tier costs still use base-form freeze separately
+     * — this method is display-only so transformed or late-attach players cannot stay
+     * stuck on a stale highestDmzLevel / session freeze while others update immediately.
      */
     public static int guiDisplayDmzLevel(Player player) {
         if (player == null) {
             return 1;
         }
+        // Refresh session sample (heals weak-transform freezes) but paint live first.
         int sampled = sampleLevelOnGuiOpen(player);
         int live = dmzLevel(player);
-        if (!isTransformed(player)) {
-            // Base form: live getLevel is the source of truth for the menu.
-            return Math.max(1, Math.max(sampled, live));
-        }
-        Integer frozen = BASE_FORM_LEVEL.get(player.m_20148_());
-        if (frozen != null && frozen > 1) {
-            StatsData data = stats(player);
-            double peak = data == null ? 1.0 : formMultiplierPeak(data);
-            // Weak/false transform + live far above freeze → show live.
-            if (peak <= 2.0 && live > frozen + 500) {
-                return Math.max(1, live);
-            }
-            return frozen;
-        }
-        // Transformed with no base-form sample yet — prefer live over lying at 1.
         if (live > 1) {
             return live;
         }
-        return Math.max(1, sampled);
+        if (sampled > 1) {
+            return sampled;
+        }
+        Integer frozen = BASE_FORM_LEVEL.get(player.m_20148_());
+        if (frozen != null && frozen > 1) {
+            return frozen;
+        }
+        return 1;
     }
 
     /**

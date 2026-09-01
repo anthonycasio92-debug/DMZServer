@@ -1,3 +1,14 @@
+## Buy GUI live level for all players (2.3.124)
+
+Some players updated immediately; others stayed stuck on a stale gate. Snapshot
+preferred {@code gateLevelForEligibility} when {@code highestDmzLevel > 1} and
+refused to raise it while transformed — so form users / late-attach players
+kept an old high-water while base-form players showed live {@code getLevel()}.
+
+Fix: Buy GUI paint always prefers live DMZ {@code getLevel()} via
+{@code guiDisplayDmzLevel}. Tier costs still use base-form freeze separately.
+Level-pull retries also continue while the painted level is still ≤1.
+
 ## Difficulty GUI shows live DMZ level (2.3.123)
 
 Root cause after 2.3.122: Buy GUI paints {@code DifficultySnapshot.dmzLevel}, which

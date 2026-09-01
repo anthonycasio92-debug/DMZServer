@@ -15,20 +15,17 @@ public final class DifficultyCalculator {
     public static DifficultySnapshot snapshot(ServerPlayer player, PlayerDifficultyData data) {
         UnlockSystem.syncUnlocks(player, data);
 
-        // Buy GUI reads snap.dmzLevel. Prefer a meaningful live/GUI sample over a
-        // polluted gate of 1 (highestDmzLevel stuck from early-login) so the menu
-        // cannot disagree with the player's real DMZ level.
-        long gate = UnlockSystem.gateLevelForEligibility(player);
+        // Buy GUI reads snap.dmzLevel. Always prefer live DMZ readout for paint so
+        // transformed / late-attach players are not stuck on a stale gate while
+        // base-form players update immediately. Tier costs still use
+        // dmzLevelForProgression via AncientCoinEconomy (base-form freeze).
         int display = DmzProgression.guiDisplayDmzLevel(player);
+        long gate = UnlockSystem.gateLevelForEligibility(player);
         int level;
-        if (gate > 1L) {
-            level = (int) Math.min(Integer.MAX_VALUE, gate);
-            // Base-form live sample can outrank a stale high-water / unlock gate.
-            if (!DmzProgression.isTransformed(player) && display > level) {
-                level = display;
-            }
-        } else if (display > 1) {
+        if (display > 1) {
             level = display;
+        } else if (gate > 1L) {
+            level = (int) Math.min(Integer.MAX_VALUE, gate);
         } else if (gate > 0L) {
             level = (int) Math.min(Integer.MAX_VALUE, gate);
         } else {
