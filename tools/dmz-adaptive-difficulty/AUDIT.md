@@ -1,3 +1,12 @@
+## Combat Rating Long.MAX_VALUE overflow (2.3.126)
+
+Buy GUI showed CR {@code 9223372036854775807} ({@code Long.MAX_VALUE}) for high-form
+players. {@code transformationPower} is {@code battlePower/1000}; absurd/Inf BP made
+{@code Math.round} overflow. {@code hardCapDifficulty=0} applied no ceiling.
+
+Fix: sanitize non-finite BP, cap transform contribution, and clamp CR to a 1e15
+display absolute cap (or configured hardCap when set).
+
 ## High-CR players stuck at level 1 (2.3.125)
 
 Combat Rating includes form battle power (`BP/1000`), so high-form players show

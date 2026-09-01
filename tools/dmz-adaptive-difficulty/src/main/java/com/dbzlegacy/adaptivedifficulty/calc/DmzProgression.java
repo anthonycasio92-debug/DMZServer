@@ -641,6 +641,7 @@ public final class DmzProgression {
     /**
      * Transformation / form power contribution for Combat Rating.
      * Uses battle power (includes form multipliers) scaled into CR units.
+     * Caps absurd / non-finite BP so CR cannot paint {@link Long#MAX_VALUE}.
      */
     public static double transformationPower(Player player) {
         StatsData data = stats(player);
@@ -649,11 +650,20 @@ public final class DmzProgression {
         }
         try {
             double bp = data.getBattlePowerExact();
-            if (!(bp > 0.0) || Double.isNaN(bp) || Double.isInfinite(bp)) {
+            if (!Double.isFinite(bp) || bp <= 0.0) {
                 bp = data.getBattlePower();
             }
-            // Keep CR readable — raw BP can be multi-million.
-            return Math.max(0.0, bp / 1000.0);
+            if (!Double.isFinite(bp) || bp <= 0.0) {
+                return 0.0;
+            }
+            // Keep CR readable — raw BP can be multi-million, but god-form
+            // overflow / Inf must not become Long.MAX_VALUE in the Buy GUI.
+            double scaled = bp / 1000.0;
+            if (!Double.isFinite(scaled) || scaled < 0.0) {
+                return 0.0;
+            }
+            // Transform term alone capped well below CR display abs cap.
+            return Math.min(scaled, 100_000_000_000_000.0); // 1e14
         } catch (Throwable ignored) {
             return 0.0;
         }
