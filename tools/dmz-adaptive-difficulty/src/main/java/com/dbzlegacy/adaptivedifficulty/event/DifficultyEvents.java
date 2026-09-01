@@ -891,6 +891,13 @@ public final class DifficultyEvents {
      *   <li>AD mob → player hard-cancelled by DMZ DEF ({@code flatMit ≥ dmg×2.5}) —
      *       restore tier-scaled landing damage so SSJB/T7 cannot knock without hurting</li>
      * </ul>
+     * <p>
+     * DMZ {@code CombatEvent.overrideVanillaArmorReduction} is also {@code LOWEST} and
+     * recalculates from the {@code dmz_raw_damage} NBT tag — often <em>after</em> this
+     * handler when registration order puts DragonMineZ later. High-DEF / Android forms
+     * then hit {@code applyFullNegation} and the player takes 0 while our telemetry still
+     * logged the restored amount. Clearing those tags after we finalize the AD bite stops
+     * DMZ from overwriting the landing / soft-cap.
      */
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
     public void onDamageDone(LivingDamageEvent event) {
@@ -930,14 +937,17 @@ public final class DifficultyEvents {
             return;
         }
         double land = profile.targetLandingDamage(DifficultyConfig.get());
+        boolean intervened = false;
         if (cancelled) {
             // DMZ applyFullNegation zeroed the hit — put the tier bite back.
             event.setCanceled(false);
             event.setAmount((float) Math.max(1.0, land));
+            intervened = true;
         } else if (preAmount < land) {
             // 1.0.24: always fill up to the landing floor when short.
             // Old 0.45× gate left T4 tanks below T3 (Got2takeitez 0.17 vs 0.24).
             event.setAmount((float) Math.max(preAmount, land));
+            intervened = true;
         }
         // Soft-cap crushing hits — monotonic buy ladder.
         // 2.3.57 (hits-2026-08-29..30): ease T1–T3 — T2 gods were pinned at 43% bag.
@@ -952,14 +962,41 @@ public final class DifficultyEvents {
             case 2 -> 0.36;
             default -> 0.34; // T1
         };
-        float softCap = (float) (bag * maxFrac);
+        float softCap = (float) Math.min((double) Float.MAX_VALUE, bag * maxFrac);
         if (event.getAmount() > softCap) {
             event.setAmount(softCap);
+            intervened = true;
+        }
+        // 2.3.130: when AD finalizes incoming, strip DMZ raw-damage NBT so same-priority
+        // CombatEvent cannot re-zero Androids / high-DEF gods after our restore.
+        // Painted packs already went through pierce + soft-cap paint — DMZ's second pass
+        // from dmz_raw_damage was wiping the landing floor (telemetry looked fine, HP didn't).
+        if (intervened) {
+            clearDmzRawDamageOverride(player);
+            event.setCanceled(false);
         }
         // Whitelist telemetry — log pre/post so cancelled zeros stay visible.
         if (BalanceTelemetry.shouldLog(player)) {
             BalanceTelemetry.logIncomingHit(
                     player, mob, profile, preAmount, cancelled, event.getAmount());
+        }
+    }
+
+    /**
+     * DMZ stores pre-armor raw damage on the player and rewrites {@link LivingDamageEvent}
+     * at {@code LOWEST}. Remove those tags once AD has chosen the final incoming amount.
+     */
+    private static void clearDmzRawDamageOverride(ServerPlayer player) {
+        try {
+            var data = PersistentDataAccess.get(player);
+            if (!PersistentDataAccess.isWritable(data)) {
+                return;
+            }
+            data.m_128473_("dmz_raw_damage");
+            data.m_128473_("dmz_defense_pen");
+            data.m_128473_("dmz_block_multiplier");
+        } catch (Throwable ignored) {
+            // Never let NBT cleanup break the damage path.
         }
     }
 

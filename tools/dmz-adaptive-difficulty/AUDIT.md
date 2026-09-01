@@ -1,3 +1,15 @@
+## Android T5 zero damage (2.3.130)
+
+Live report: Android-upgraded players on T5 took no real HP damage. Telemetry still
+showed ~42–52% bag because AD logged `event.getAmount()` after restoring landing,
+then DMZ `CombatEvent.overrideVanillaArmorReduction` (also `LOWEST`) rewrote from
+`dmz_raw_damage` and `applyFullNegation` → 0. Androids / high-DEF gods hit
+wouldCancel ~90%+ so they lived almost entirely on the safety-net path.
+
+Fix: when AD finalizes landing / soft-cap on a painted mob hit, clear
+`dmz_raw_damage` / `dmz_defense_pen` / `dmz_block_multiplier` so DMZ cannot
+overwrite the bite. Soft-caps / landFrac ladder unchanged (fingerprint 39).
+
 ## Live telemetry calibration (2.3.129)
 
 Pulled production hits from SFTP `config/legacymechanics/telemetry/`:
