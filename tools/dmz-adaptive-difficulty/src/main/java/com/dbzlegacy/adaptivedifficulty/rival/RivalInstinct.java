@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.rival;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dragonminez.common.stats.StatsData;
@@ -154,9 +155,11 @@ public final class RivalInstinct {
                                 player, now, RivalConstants.INSTINCT_EVENT_CD_MS);
                     }
                 }
-                double formMult = DmzProgression.transformationPower(rival);
+                double formMult = PlayerCombatProfile.liveFormMultiplier(rival);
                 Double prev = LAST_FORM_MULT.put(rivalId, formMult);
-                if (prev != null && formMult > prev * 1.15) {
+                // Detect real form spikes via form⊕stack mult (not CR/BP) so Android
+                // Inf BP and released-stat CR cannot false-trigger or miss surges.
+                if (prev != null && formMult > prev * 1.15 && formMult > 1.12) {
                     alert(nearKey + ":form",
                             "§d[Rival Instinct] §e" + link.name + " §dpower surged!",
                             player, now, RivalConstants.INSTINCT_EVENT_CD_MS);

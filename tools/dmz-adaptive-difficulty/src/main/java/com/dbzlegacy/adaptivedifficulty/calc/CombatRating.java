@@ -103,8 +103,13 @@ public final class CombatRating {
     }
 
     /**
-     * Own BP-like rating from live combat channels × power release.
+     * Own BP-like rating from <b>live</b> combat channels × power release.
      * Safe for Androids whose {@code getBattlePowerExact()} overflows.
+     * <p>
+     * Channels are DMZ live getters ({@code getMeleeDamage}, etc.) which already
+     * include active form/stack multipliers — so CR rises in form and falls when
+     * dropping to base. Nearby mob scaling does <b>not</b> use this value; it uses
+     * {@link PlayerCombatProfile} (soft + liveOffense + formBoost) instead.
      */
     public static double releasedStatPower(Player player) {
         if (player == null) {
@@ -115,6 +120,7 @@ public final class CombatRating {
             return 0.0;
         }
         try {
+            // Live form-included channels (same sources PlayerCombatProfile paints from).
             double melee = CombatSanity.saneLive(read(() -> data.getMeleeDamage(), 1.0), 1.0);
             double strike = CombatSanity.saneLive(read(() -> data.getStrikeDamage(), 1.0), 1.0);
             double ki = CombatSanity.saneLive(read(() -> data.getKiDamage(), 1.0), 1.0);

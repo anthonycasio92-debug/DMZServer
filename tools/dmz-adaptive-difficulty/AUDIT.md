@@ -1,3 +1,11 @@
+## Form-aware CR vs mob scaling (2.3.128)
+
+Verified: nearby mob HP/damage paint uses {@code PlayerCombatProfile} (liveOffense +
+formBoost), not Combat Rating. CR uses the same live form-included damage channels
+× power release so display rises/falls with transforms. Form change clears profile,
+refreshes CR snapshot, clears area CR cache, and retargets claimed mobs.
+Rival Instinct form-surge alerts now key off form⊕stack mult (not BP/CR).
+
 ## Android-safe CR from released stats (2.3.127)
 
 Androids (and similar) can report Inf / absurd DMZ battle power, so Buy GUI CR

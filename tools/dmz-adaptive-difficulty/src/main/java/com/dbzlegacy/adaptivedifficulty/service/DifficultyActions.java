@@ -510,6 +510,8 @@ public final class DifficultyActions {
     /**
      * Immediate combat-profile + claimed-mob repaint after form / tier changes.
      * Avoids ~2s nearby-pulse lag where T7 paint lingered after lower/form-down.
+     * Also refreshes CR snapshot (form-boosted released stats) and area CR cache
+     * so transform up/down cannot leave stale ratings beside live mob paint.
      */
     public static void refreshCombatPaint(ServerPlayer player) {
         if (player == null) {
@@ -517,6 +519,10 @@ public final class DifficultyActions {
         }
         PlayerCombatProfile.clear(player.m_20148_());
         DifficultyCache.refresh(player);
+        try {
+            com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty.clearCache();
+        } catch (Throwable ignored) {
+        }
         ScaledMobTracker.forEachClaimedMob(player, mob -> MobScaling.retargetToPlayer(mob, player));
     }
 
