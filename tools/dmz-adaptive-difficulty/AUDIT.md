@@ -1,3 +1,11 @@
+## Android-safe CR from released stats (2.3.127)
+
+Androids (and similar) can report Inf / absurd DMZ battle power, so Buy GUI CR
+painted {@code Long.MAX_VALUE}. Combat Rating transform term now uses an own
+rating from live combat channels (melee/strike/ki/energy/def/hp) × power release
+— sparring-style released statistics — with {@code CombatSanity} clamps. Spar /
+Rival BP helpers fall back to the same proxy when DMZ BP is unsafe.
+
 ## Combat Rating Long.MAX_VALUE overflow (2.3.126)
 
 Buy GUI showed CR {@code 9223372036854775807} ({@code Long.MAX_VALUE}) for high-form

@@ -640,32 +640,13 @@ public final class DmzProgression {
 
     /**
      * Transformation / form power contribution for Combat Rating.
-     * Uses battle power (includes form multipliers) scaled into CR units.
-     * Caps absurd / non-finite BP so CR cannot paint {@link Long#MAX_VALUE}.
+     * <p>
+     * Built from <b>released combat statistics</b> (live damage/defense channels ×
+     * power release) — same idea as sparring's release-aware rating — not raw DMZ
+     * {@code getBattlePowerExact()}. Androids and similar races can report Inf /
+     * absurd BP that previously painted {@link Long#MAX_VALUE} in the Buy GUI.
      */
     public static double transformationPower(Player player) {
-        StatsData data = stats(player);
-        if (data == null) {
-            return 0.0;
-        }
-        try {
-            double bp = data.getBattlePowerExact();
-            if (!Double.isFinite(bp) || bp <= 0.0) {
-                bp = data.getBattlePower();
-            }
-            if (!Double.isFinite(bp) || bp <= 0.0) {
-                return 0.0;
-            }
-            // Keep CR readable — raw BP can be multi-million, but god-form
-            // overflow / Inf must not become Long.MAX_VALUE in the Buy GUI.
-            double scaled = bp / 1000.0;
-            if (!Double.isFinite(scaled) || scaled < 0.0) {
-                return 0.0;
-            }
-            // Transform term alone capped well below CR display abs cap.
-            return Math.min(scaled, 100_000_000_000_000.0); // 1e14
-        } catch (Throwable ignored) {
-            return 0.0;
-        }
+        return CombatRating.transformFromReleasedStats(player);
     }
 }

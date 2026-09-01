@@ -63,16 +63,10 @@ public final class DmzRewards {
 
     public static double battlePower(ServerPlayer player) {
         try {
-            StatsData data = DmzProgression.stats(player);
-            if (data == null) {
-                return 0.0;
-            }
-            double exact = data.getBattlePowerExact();
-            if (Double.isFinite(exact) && exact > 0.0) {
-                return exact;
-            }
-            float bp = data.getBattlePower();
-            return Double.isFinite(bp) && bp > 0.0f ? bp : 0.0;
+            // Prefer sane DMZ BP; Androids / overflowed forms fall back to
+            // released-stat power (same basis as Combat Rating).
+            return Math.max(0.0,
+                    com.dbzlegacy.adaptivedifficulty.calc.CombatRating.safeBattlePower(player));
         } catch (Throwable ignored) {
             return 0.0;
         }
@@ -80,12 +74,29 @@ public final class DmzRewards {
 
     public static double releasedBattlePower(ServerPlayer player) {
         try {
-            double bp = battlePower(player);
-            double release = powerReleasePercent(player) / 100.0;
-            if (!(release > 0.0)) {
-                release = 1.0;
+            // When DMZ BP is sane, apply power-release like Rival instinct.
+            // When we already fell back to released-stat power, do not double-apply.
+            StatsData data = DmzProgression.stats(player);
+            if (data != null) {
+                double exact = data.getBattlePowerExact();
+                float raw = data.getBattlePower();
+                boolean dmzSane = (Double.isFinite(exact) && exact > 0.0
+                        && exact <= com.dbzlegacy.adaptivedifficulty.calc.CombatRating.SAFE_DMZ_BATTLE_POWER_MAX)
+                        || (Double.isFinite(raw) && raw > 0.0f
+                        && raw <= com.dbzlegacy.adaptivedifficulty.calc.CombatRating.SAFE_DMZ_BATTLE_POWER_MAX);
+                if (dmzSane) {
+                    double bp = Double.isFinite(exact) && exact > 0.0
+                            && exact <= com.dbzlegacy.adaptivedifficulty.calc.CombatRating.SAFE_DMZ_BATTLE_POWER_MAX
+                            ? exact : raw;
+                    double release = powerReleasePercent(player) / 100.0;
+                    if (!(release > 0.0) || !Double.isFinite(release)) {
+                        release = 1.0;
+                    }
+                    double out = bp * Math.max(0.5, Math.min(2.0, release));
+                    return Double.isFinite(out) && out > 0.0 ? out : bp;
+                }
             }
-            return bp * release;
+            return com.dbzlegacy.adaptivedifficulty.calc.CombatRating.releasedStatPower(player);
         } catch (Throwable ignored) {
             return battlePower(player);
         }
