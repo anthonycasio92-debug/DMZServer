@@ -1,3 +1,14 @@
+## Difficulty GUI shows live DMZ level (2.3.123)
+
+Root cause after 2.3.122: Buy GUI paints {@code DifficultySnapshot.dmzLevel}, which
+preferred {@code gateLevelForEligibility}. When the unlock sample was unreliable,
+that fell back to persisted {@code highestDmzLevel}. Early-login pollution often
+left highest at **1**, and because {@code gate > 0} the snapshot never fell through
+to live {@code getLevel()} — so the menu stayed at 1 even after Character attached.
+
+Fix: treat highest≤1 as unknown; {@code guiDisplayDmzLevel} prefers live/base-form
+sample; snapshot + ForgeBridge placeholders use that for the painted level.
+
 ## Difficulty level sample before death (2.3.122)
 
 Buy GUI / unlock-gate DMZ level stayed at placeholder 1 until the player died

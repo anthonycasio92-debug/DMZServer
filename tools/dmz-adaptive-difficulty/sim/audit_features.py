@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.122", 'VERSION = "2.3.122"' in mod)
+    check("VERSION 2.3.123", 'VERSION = "2.3.123"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -300,6 +300,8 @@ def main() -> int:
     check("README 2.3.63 death drop guard", "DeathDropGuard" in readme and "AllowCombatItemDrop" in readme)
     check("scheduleLevelPull on login race", "scheduleLevelPull" in actions)
     check("Character-null not transformed", "never freeze sampling" in progression)
+    check("guiDisplayDmzLevel for Buy GUI", "guiDisplayDmzLevel" in progression)
+    check("polluted highestDmzLevel<=1 ignored", "hw <= 1L" in unlock)
     check("prepareDifficultyGui bridge", "prepareDifficultyGui" in bridge)
     gui_plugin_src = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/AdaptiveDifficultyGuiPlugin.java")
     death_guard = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/DeathDropGuard.java")

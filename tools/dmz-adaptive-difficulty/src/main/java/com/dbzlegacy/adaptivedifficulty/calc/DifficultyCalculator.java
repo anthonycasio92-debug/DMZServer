@@ -15,17 +15,32 @@ public final class DifficultyCalculator {
     public static DifficultySnapshot snapshot(ServerPlayer player, PlayerDifficultyData data) {
         UnlockSystem.syncUnlocks(player, data);
 
-        // Same level the Buy GUI / unlock gates use — never show a form-inflated
-        // live reading that disagrees with prestige-or-level eligibility.
+        // Buy GUI reads snap.dmzLevel. Prefer a meaningful live/GUI sample over a
+        // polluted gate of 1 (highestDmzLevel stuck from early-login) so the menu
+        // cannot disagree with the player's real DMZ level.
         long gate = UnlockSystem.gateLevelForEligibility(player);
-        int level = gate > 0L
-                ? (int) Math.min(Integer.MAX_VALUE, gate)
-                : DmzProgression.dmzLevelForProgression(player, data.getHighestDmzLevel());
+        int display = DmzProgression.guiDisplayDmzLevel(player);
+        int level;
+        if (gate > 1L) {
+            level = (int) Math.min(Integer.MAX_VALUE, gate);
+            // Base-form live sample can outrank a stale high-water / unlock gate.
+            if (!DmzProgression.isTransformed(player) && display > level) {
+                level = display;
+            }
+        } else if (display > 1) {
+            level = display;
+        } else if (gate > 0L) {
+            level = (int) Math.min(Integer.MAX_VALUE, gate);
+        } else {
+            level = Math.max(1, DmzProgression.dmzLevelForProgression(
+                    player, data.getHighestDmzLevel()));
+        }
         int prestige = DmzProgression.prestige(player);
         double transform = DmzProgression.transformationPower(player);
         // Never ratchet highest DMZ level from a form-inflated or login-race reading.
         if (!DmzProgression.isTransformed(player)
-                && DmzProgression.hasReliableUnlockGateSample(player)) {
+                && DmzProgression.hasReliableUnlockGateSample(player)
+                && level > 1) {
             data.noteDmzLevel(level);
         }
 

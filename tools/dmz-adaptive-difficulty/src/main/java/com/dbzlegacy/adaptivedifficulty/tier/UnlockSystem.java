@@ -74,7 +74,12 @@ public final class UnlockSystem {
             return 0L;
         }
         long hw = data.getHighestDmzLevel();
-        return hw > 0L ? hw : 0L;
+        // Placeholder / early-login pollution (highest=1) is not a real gate sample —
+        // treat as unknown so the Buy GUI can fall through to live DMZ level.
+        if (hw <= 1L) {
+            return 0L;
+        }
+        return hw;
     }
 
     /**
