@@ -20,6 +20,12 @@ public final class DifficultyCalculator {
         // base-form players update immediately. Tier costs still use
         // dmzLevelForProgression via AncientCoinEconomy (base-form freeze).
         int display = DmzProgression.guiDisplayDmzLevel(player);
+        long hw = data.getHighestDmzLevel();
+        // High CR comes from form battle power even when getLevel() is still
+        // placeholder 1 — fall back to a real high-water so the menu is not stuck.
+        if (display <= 1 && hw > 1L) {
+            display = (int) Math.min(Integer.MAX_VALUE, hw);
+        }
         long gate = UnlockSystem.gateLevelForEligibility(player);
         int level;
         if (display > 1) {

@@ -1,3 +1,12 @@
+## High-CR players stuck at level 1 (2.3.125)
+
+Combat Rating includes form battle power (`BP/1000`), so high-form players show
+high CR even when DMZ `getLevel()` is still placeholder 1 (config/maxValue race).
+Buy GUI looked "stuck" for those players while low-CR / base-form players updated.
+
+Fix: when `getLevel()` ≤ 1, recompute level from base stat totals; GUI also falls
+back to persisted high-water if live is still a placeholder.
+
 ## Buy GUI live level for all players (2.3.124)
 
 Some players updated immediately; others stayed stuck on a stale gate. Snapshot

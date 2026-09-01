@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.124", 'VERSION = "2.3.124"' in mod)
+    check("VERSION 2.3.125", 'VERSION = "2.3.125"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -301,6 +301,7 @@ def main() -> int:
     check("scheduleLevelPull on login race", "scheduleLevelPull" in actions)
     check("Character-null not transformed", "never freeze sampling" in progression)
     check("guiDisplayDmzLevel for Buy GUI", "guiDisplayDmzLevel" in progression)
+    check("recompute level when getLevel placeholder", "recomputeLevelFromStats" in progression)
     check("polluted highestDmzLevel<=1 ignored", "hw <= 1L" in unlock)
     check("prepareDifficultyGui bridge", "prepareDifficultyGui" in bridge)
     gui_plugin_src = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/AdaptiveDifficultyGuiPlugin.java")

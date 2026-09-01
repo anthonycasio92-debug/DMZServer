@@ -130,6 +130,10 @@ public final class DmzProgression {
      * show values above the server level ceiling (e.g. 100k players reading as
      * ~987k when maxValue / max-stats mode disagrees).
      * Respects prestige-point level-cap breakthroughs per player.
+     * <p>
+     * When DMZ {@code getLevel()} returns placeholder 1 (config race / maxValue not
+     * ready) but base stats or battle power clearly show progression, recompute
+     * level from stats so high-CR form players are not stuck at 1 in the Buy GUI.
      */
     public static int dmzLevel(Player player) {
         StatsData data = stats(player);
@@ -137,7 +141,85 @@ public final class DmzProgression {
             return 1;
         }
         try {
-            return clampDmzLevel(data.getLevel(), data, player);
+            int raw;
+            try {
+                raw = data.getLevel();
+            } catch (Throwable t) {
+                raw = 0;
+            }
+            int clamped = clampDmzLevel(Math.max(0, raw), data, player);
+            if (clamped > 1) {
+                return clamped;
+            }
+            int recomputed = recomputeLevelFromStats(player, data);
+            if (recomputed > 1) {
+                return recomputed;
+            }
+            return Math.max(1, clamped);
+        } catch (Throwable ignored) {
+            return 1;
+        }
+    }
+
+    /**
+     * Recompute DMZ level from base stat totals when {@link StatsData#getLevel()}
+     * is stuck at placeholder 1 (often while form battle power / CR is already high).
+     */
+    private static int recomputeLevelFromStats(Player player, StatsData data) {
+        if (data == null) {
+            return 1;
+        }
+        try {
+            int maxValue = configuredMaxDmzLevel(data, player);
+            if (maxValue <= 1) {
+                return 1;
+            }
+            var st = data.getStats();
+            if (st == null) {
+                return 1;
+            }
+            int total = Math.max(0, st.getTotalStats());
+            if (total <= 6) {
+                // Fresh / empty sheet — only trust BP as a last resort signal.
+                double bp = 0.0;
+                try {
+                    bp = data.getBattlePowerExact();
+                    if (!(bp > 0.0)) {
+                        bp = data.getBattlePower();
+                    }
+                } catch (Throwable ignored) {
+                }
+                if (bp < 25_000.0) {
+                    return 1;
+                }
+            }
+            int initial = 0;
+            try {
+                Object v = data.getClass().getMethod("getInitialTotalStats").invoke(data);
+                if (v instanceof Number n) {
+                    initial = Math.max(0, n.intValue());
+                }
+            } catch (Throwable ignored) {
+            }
+            long maxTotal;
+            try {
+                maxTotal = Math.max(1L, data.getConfiguredMaxTotalStats());
+            } catch (Throwable t) {
+                maxTotal = Math.max(1L, (long) maxValue * 6L);
+            }
+            // If DMZ max-total is also broken/tiny while stats are huge, estimate.
+            if (maxTotal < Math.max(initial + 1L, (long) total)) {
+                maxTotal = Math.max(maxTotal, Math.max((long) maxValue * 6L, (long) total));
+            }
+            double denom = Math.max(1.0, (double) maxTotal - (double) initial);
+            double progress = (Math.max(initial, total) - (double) initial) / denom;
+            if (progress < 0.0) {
+                progress = 0.0;
+            } else if (progress > 1.0) {
+                progress = 1.0;
+            }
+            int level = 1 + (int) Math.floor(progress * (maxValue - 1));
+            return clampDmzLevel(level, data, player);
         } catch (Throwable ignored) {
             return 1;
         }
@@ -416,28 +498,31 @@ public final class DmzProgression {
      * DMZ level painted in Buy GUI / placeholders.
      * <p>
      * Uses live {@link #dmzLevel} (same formula as DMZ's own level readout) whenever
-     * it is meaningful. Unlock gates / tier costs still use base-form freeze separately
-     * — this method is display-only so transformed or late-attach players cannot stay
-     * stuck on a stale highestDmzLevel / session freeze while others update immediately.
+     * it is meaningful. High combat-rating / form players often have battle power
+     * loaded while {@code getLevel()} is still placeholder 1 — {@link #dmzLevel}
+     * recomputes from stats in that case so the menu cannot stay stuck.
+     * Unlock gates / tier costs still use base-form freeze separately.
      */
     public static int guiDisplayDmzLevel(Player player) {
         if (player == null) {
             return 1;
         }
-        // Refresh session sample (heals weak-transform freezes) but paint live first.
         int sampled = sampleLevelOnGuiOpen(player);
         int live = dmzLevel(player);
-        if (live > 1) {
-            return live;
+        int best = Math.max(1, Math.max(sampled, live));
+        // High CR is driven heavily by form battle power. If level still looks like
+        // a placeholder while BP is clearly progressed, keep pulling via sample/live
+        // recompute — never paint 1 over a known session sample.
+        if (best <= 1) {
+            double tp = transformationPower(player);
+            if (tp >= 25.0) { // BP >= ~25k
+                Integer frozen = BASE_FORM_LEVEL.get(player.m_20148_());
+                if (frozen != null && frozen > 1) {
+                    return frozen;
+                }
+            }
         }
-        if (sampled > 1) {
-            return sampled;
-        }
-        Integer frozen = BASE_FORM_LEVEL.get(player.m_20148_());
-        if (frozen != null && frozen > 1) {
-            return frozen;
-        }
-        return 1;
+        return best;
     }
 
     /**

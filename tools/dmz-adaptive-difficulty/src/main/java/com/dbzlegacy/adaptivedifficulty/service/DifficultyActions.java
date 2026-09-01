@@ -81,11 +81,14 @@ public final class DifficultyActions {
         // refresh() re-samples + snapshot syncs unlocks/gate level.
         DifficultyCache.refresh(player);
         TitleSystem.syncTierTitles(player, false);
-        // Keep pulling while Character is missing OR live DMZ level is still a
-        // placeholder — some players attach/stats-load later than others.
+        // Keep pulling while Character is missing, painted level is still a
+        // placeholder, OR battle power/CR is high while level still looks wrong —
+        // high-form players often load BP before getLevel() catches up.
         int shown = DmzProgression.guiDisplayDmzLevel(player);
+        double tp = DmzProgression.transformationPower(player);
         if (DmzProgression.character(player) == null
                 || shown <= 1
+                || (tp >= 25.0 && shown <= 1)
                 || !DmzProgression.hasReliableUnlockGateSample(player)) {
             scheduleLevelPull(player);
         }
