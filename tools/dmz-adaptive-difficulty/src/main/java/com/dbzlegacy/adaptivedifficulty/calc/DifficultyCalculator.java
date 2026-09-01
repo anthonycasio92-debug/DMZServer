@@ -23,8 +23,9 @@ public final class DifficultyCalculator {
                 : DmzProgression.dmzLevelForProgression(player, data.getHighestDmzLevel());
         int prestige = DmzProgression.prestige(player);
         double transform = DmzProgression.transformationPower(player);
-        // Never ratchet highest DMZ level from a form-inflated reading.
-        if (!DmzProgression.isTransformed(player)) {
+        // Never ratchet highest DMZ level from a form-inflated or login-race reading.
+        if (!DmzProgression.isTransformed(player)
+                && DmzProgression.hasReliableUnlockGateSample(player)) {
             data.noteDmzLevel(level);
         }
 

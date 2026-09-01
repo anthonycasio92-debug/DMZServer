@@ -30,7 +30,8 @@ public final class DifficultyChatMenu {
     public static void open(ServerPlayer player, String page) {
         // Chat pages open without DifficultyMenu sometimes — still re-sample DMZ level.
         int sampled = DmzProgression.sampleLevelOnGuiOpen(player);
-        if (!DmzProgression.isTransformed(player)) {
+        if (DmzProgression.hasReliableUnlockGateSample(player)
+                && !DmzProgression.isTransformed(player)) {
             DifficultyCache.data(player).noteDmzLevel(sampled);
         }
         DifficultyCache.refresh(player);

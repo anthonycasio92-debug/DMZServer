@@ -1,3 +1,14 @@
+## Difficulty level sample before death (2.3.122)
+
+Buy GUI / unlock-gate DMZ level stayed at placeholder 1 until the player died
+because login often has StatsData before Character. `isTransformed` treated
+form-multiplier peak as transformed when Character was null, freezing
+`BASE_FORM_LEVEL`, and early samples wrote level-1 into the session cache.
+
+Fix: Character-null is never transformed; unreliable until Character attaches;
+never freeze placeholder 1 over a good sample; `scheduleLevelPull` on login /
+GUI open / death clone with delayed retries.
+
 ## PvP corpse empty inventory (2.3.63)
 
 Root cause: GriefPrevention **16.18.3** `AllowCombatItemDrop: false` cancels

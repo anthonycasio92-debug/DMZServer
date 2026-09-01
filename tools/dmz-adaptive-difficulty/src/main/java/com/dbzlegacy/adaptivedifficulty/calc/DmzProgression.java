@@ -234,7 +234,7 @@ public final class DmzProgression {
         int live = dmzLevel(player);
         UUID id = player.m_20148_();
         if (!isTransformed(player)) {
-            BASE_FORM_LEVEL.put(id, live);
+            rememberBaseFormLevel(id, player, live);
             return live;
         }
         Integer cached = BASE_FORM_LEVEL.get(id);
@@ -278,7 +278,7 @@ public final class DmzProgression {
             } catch (Throwable ignored) {
                 return 1;
             }
-            BASE_FORM_LEVEL.put(id, live);
+            rememberBaseFormLevel(id, player, live);
             return live;
         }
         Integer cached = BASE_FORM_LEVEL.get(id);
@@ -303,6 +303,11 @@ public final class DmzProgression {
         }
         StatsData data = stats(player);
         if (data == null) {
+            return false;
+        }
+        // Character attaches after StatsData on login/respawn. Sampling before that
+        // writes placeholder level-1 into BASE_FORM_LEVEL and freezes Buy GUI until death.
+        if (character(player) == null) {
             return false;
         }
         if (!isTransformed(player)) {
@@ -354,7 +359,7 @@ public final class DmzProgression {
         }
         if (!isTransformed(player)) {
             int live = dmzLevel(player);
-            BASE_FORM_LEVEL.put(id, live);
+            rememberBaseFormLevel(id, player, live);
             return live;
         }
         Integer cached = BASE_FORM_LEVEL.get(id);
@@ -380,9 +385,19 @@ public final class DmzProgression {
             return cached != null ? Math.max(1, cached) : 1;
         }
         int live = dmzLevel(player);
+        // Login/respawn race: StatsData exists but Character is not attached yet.
+        // Prefer a meaningful live read for GUI paint; never freeze placeholder 1.
+        if (character(player) == null) {
+            Integer cached = BASE_FORM_LEVEL.get(id);
+            if (live > 1) {
+                return live;
+            }
+            return cached != null ? Math.max(1, cached) : 1;
+        }
         if (!isTransformed(player)) {
-            BASE_FORM_LEVEL.put(id, live);
-            return live;
+            rememberBaseFormLevel(id, player, live);
+            Integer cached = BASE_FORM_LEVEL.get(id);
+            return cached != null ? cached : Math.max(1, live);
         }
         Integer cached = BASE_FORM_LEVEL.get(id);
         double peak = formMultiplierPeak(data);
@@ -390,10 +405,30 @@ public final class DmzProgression {
         if (peak <= 2.0 && (cached == null
                 || (cached <= 1 && live >= 25)
                 || live > cached + 500)) {
-            BASE_FORM_LEVEL.put(id, live);
-            return live;
+            rememberBaseFormLevel(id, player, live);
+            Integer healed = BASE_FORM_LEVEL.get(id);
+            return healed != null ? healed : Math.max(1, live);
         }
         return cached != null ? Math.max(1, cached) : 1;
+    }
+
+    /**
+     * Persist a base-form DMZ sample only when Character is attached.
+     * Skips login-race writes and refuses to overwrite a good sample with placeholder 1.
+     */
+    private static void rememberBaseFormLevel(UUID id, Player player, int live) {
+        if (id == null || player == null) {
+            return;
+        }
+        if (character(player) == null) {
+            return;
+        }
+        int clamped = Math.max(1, live);
+        Integer cached = BASE_FORM_LEVEL.get(id);
+        if (clamped <= 1 && cached != null && cached > 1) {
+            return;
+        }
+        BASE_FORM_LEVEL.put(id, clamped);
     }
 
     /**
@@ -405,7 +440,8 @@ public final class DmzProgression {
      * {@code BASE_FORM_LEVEL} (e.g. stuck at ~7k while live DMZ level is 30k+) and the Buy GUI
      * kept showing the stale sample.
      * <p>
-     * Multiplier peak is only a fallback when character form fields are unavailable.
+     * When Character is missing (login/respawn race), treat as <b>not</b> transformed —
+     * form-multiplier peak alone previously froze the Buy GUI level until death rebuilt Character.
      */
     public static boolean isTransformed(Player player) {
         StatsData data = stats(player);
@@ -426,8 +462,8 @@ public final class DmzProgression {
             }
         } catch (Throwable ignored) {
         }
-        // No character object — last resort. Use a high bar so mild passive boosts do not stick.
-        return formMultiplierPeak(data) > 2.0;
+        // No character yet — never freeze sampling on form-mult noise.
+        return false;
     }
 
     /** False for null/blank/{@code base} — those are not combat forms. */

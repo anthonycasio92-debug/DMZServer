@@ -18,6 +18,11 @@ import com.dbzlegacy.adaptivedifficulty.title.TitleSystem;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -49,6 +54,9 @@ public final class DifficultyActions {
     private static final ThreadLocal<Boolean> SUPPRESS_GUI_REOPEN =
             ThreadLocal.withInitial(() -> Boolean.FALSE);
 
+    /** Login/respawn: keep re-sampling DMZ level until Character attaches (or deadline). */
+    private static final Map<UUID, Long> LEVEL_PULL_UNTIL_MS = new ConcurrentHashMap<>();
+
     private DifficultyActions() {}
 
     /**
@@ -61,7 +69,8 @@ public final class DifficultyActions {
             return;
         }
         int sampled = DmzProgression.sampleLevelOnGuiOpen(player);
-        if (!DmzProgression.isTransformed(player)) {
+        if (DmzProgression.hasReliableUnlockGateSample(player)
+                && !DmzProgression.isTransformed(player)) {
             DifficultyCache.data(player).noteDmzLevel(sampled);
         }
         try {
@@ -72,6 +81,107 @@ public final class DifficultyActions {
         // refresh() re-samples + snapshot syncs unlocks/gate level.
         DifficultyCache.refresh(player);
         TitleSystem.syncTierTitles(player, false);
+        // Character may still be missing on first open after login — keep pulling.
+        if (!DmzProgression.hasReliableUnlockGateSample(player)
+                || DmzProgression.character(player) == null) {
+            scheduleLevelPull(player);
+        }
+    }
+
+    /**
+     * After login/respawn, pull DMZ level once Character attaches.
+     * Immediate + next-tick + delayed ticks cover the DMZ attach race that previously
+     * left Buy GUI stuck at level 1 until the player died.
+     */
+    public static void scheduleLevelPull(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        UUID id = player.m_20148_();
+        LEVEL_PULL_UNTIL_MS.put(id, System.currentTimeMillis() + 12_000L);
+        pullLevelNow(player);
+        MinecraftServer server = player.m_20194_();
+        if (server == null) {
+            return;
+        }
+        server.execute(() -> {
+            ServerPlayer p = server.m_6846_().m_11259_(id);
+            if (p != null && p.m_6084_()) {
+                pullLevelNow(p);
+            }
+        });
+        // Character often attaches a few seconds after StatsData — retry at 1s/2s/4s/8s.
+        for (int delay : new int[] {20, 40, 80, 160}) {
+            final int ticks = delay;
+            try {
+                server.m_6937_(new TickTask(server.m_129921_() + ticks, () -> {
+                    ServerPlayer p = server.m_6846_().m_11259_(id);
+                    if (p != null && p.m_6084_()) {
+                        pullLevelNow(p);
+                    }
+                }));
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    /** Drain pending level pulls (called from server tick). */
+    public static void pulseLevelPulls(MinecraftServer server) {
+        if (server == null || LEVEL_PULL_UNTIL_MS.isEmpty()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        for (UUID id : LEVEL_PULL_UNTIL_MS.keySet()) {
+            Long until = LEVEL_PULL_UNTIL_MS.get(id);
+            if (until == null) {
+                continue;
+            }
+            ServerPlayer p = server.m_6846_().m_11259_(id);
+            if (p == null || !p.m_6084_()) {
+                LEVEL_PULL_UNTIL_MS.remove(id);
+                continue;
+            }
+            if (now > until) {
+                LEVEL_PULL_UNTIL_MS.remove(id);
+                continue;
+            }
+            // Pulse every ~1s while waiting for Character.
+            if (server.m_129921_() % 20 == 0) {
+                pullLevelNow(p);
+            }
+        }
+    }
+
+    private static void pullLevelNow(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        UUID id = player.m_20148_();
+        int sampled = DmzProgression.sampleLevelOnGuiOpen(player);
+        if (DmzProgression.hasReliableUnlockGateSample(player)
+                && !DmzProgression.isTransformed(player)
+                && sampled > 1) {
+            DifficultyCache.data(player).noteDmzLevel(sampled);
+            DifficultyCache.refresh(player);
+            LEVEL_PULL_UNTIL_MS.remove(id);
+            return;
+        }
+        // Still waiting for Character / meaningful level.
+        if (DmzProgression.character(player) != null
+                && DmzProgression.hasReliableUnlockGateSample(player)
+                && sampled >= 1
+                && !DmzProgression.isTransformed(player)) {
+            DifficultyCache.data(player).noteDmzLevel(sampled);
+            DifficultyCache.refresh(player);
+            // Genuine level-1 characters can clear once Character is attached.
+            LEVEL_PULL_UNTIL_MS.remove(id);
+        }
+    }
+
+    public static void clearLevelPull(UUID playerId) {
+        if (playerId != null) {
+            LEVEL_PULL_UNTIL_MS.remove(playerId);
+        }
     }
 
     public static void openGui(ServerPlayer player, String page) {

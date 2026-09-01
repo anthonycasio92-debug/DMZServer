@@ -1,5 +1,5 @@
 name: LegacyMechanicsGUI
-version: '2.3.120'
+version: '2.3.122'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn

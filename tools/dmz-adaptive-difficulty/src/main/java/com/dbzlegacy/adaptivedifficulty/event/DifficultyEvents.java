@@ -21,6 +21,7 @@ import com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty;
 import com.dbzlegacy.adaptivedifficulty.scaling.HostileMobs;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.scaling.SlimeSplitGuard;
+import com.dbzlegacy.adaptivedifficulty.service.DifficultyActions;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparStore;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparringSystem;
 import com.dbzlegacy.adaptivedifficulty.tick.BehaviorScheduler;
@@ -171,6 +172,8 @@ public final class DifficultyEvents {
             RivalSystem.onLogin(player);
             SparringSystem.onLogin(player);
             ProgressionSystem.onLogin(player);
+            // DMZ Character often attaches after this event — keep pulling level until ready.
+            DifficultyActions.scheduleLevelPull(player);
         }
     }
 
@@ -318,6 +321,7 @@ public final class DifficultyEvents {
             RivalSystem.onLogout(player);
             SparringSystem.onLogout(player);
             ProgressionSystem.onLogout(player);
+            DifficultyActions.clearLevelPull(player.m_20148_());
         }
     }
 
@@ -351,6 +355,9 @@ public final class DifficultyEvents {
                         .scheduleReapplyAfterDeath(neu);
             } catch (Throwable ignored) {
             }
+            // Death rebuilds DMZ Character — clear any polluted sample and re-pull.
+            DmzProgression.clearBaseFormLevel(neu.m_20148_());
+            DifficultyActions.scheduleLevelPull(neu);
         }
     }
 
@@ -551,6 +558,7 @@ public final class DifficultyEvents {
         RivalSystem.pulse(server, server.m_129921_());
         SparringSystem.pulse(server, server.m_129921_());
         ProgressionSystem.pulse(server, server.m_129921_());
+        DifficultyActions.pulseLevelPulls(server);
     }
 
     @SubscribeEvent
