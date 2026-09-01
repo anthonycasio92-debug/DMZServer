@@ -110,6 +110,9 @@ public final class BalanceTelemetry {
                     .append(",\"uuid\":\"").append(player.m_20148_()).append('"')
                     .append(",\"race\":\"").append(escape(profile.race)).append('"')
                     .append(",\"class\":\"").append(escape(profile.fightingClass)).append('"')
+                    .append(",\"android\":").append(
+                            com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion
+                                    .isAndroidUpgraded(player))
                     .append(",\"tier\":").append(profile.activeTier)
                     .append(",\"formBoost\":").append(round3(profile.formBoost))
                     .append(",\"kp\":").append(profile.kiProtectionLevel)

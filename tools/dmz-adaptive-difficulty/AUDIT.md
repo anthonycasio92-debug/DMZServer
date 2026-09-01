@@ -1,3 +1,17 @@
+## Android upgrade all races (2.3.131)
+
+Android is a Gero **upgrade flag** on races that ship `androidforms` TP costs — not a
+race swap. Stock configs: **Human, Saiyan, Frost Demon, Viltrumite**. Bio-Android is
+blocked (already an android lineage). Namekian / Majin / Monkey / Sento / Ancient have
+no `androidforms` group.
+
+Convert gate matches DMZ Gero (`getFormSkillTpCosts("androidforms").length > 0`).
+Combat scaling stays race-agnostic (live stats + form mults); 2.3.130 landing fix
+applies to every upgraded race the same way. Sim T5 peak androidforms: all four
+eligible races hitFrac ≥ 0.48 with landing ≤ soft-cap.
+
+Also: deny/GUI copy no longer says "humans only"; hit telemetry logs `"android":true|false`.
+
 ## Android T5 zero damage (2.3.130)
 
 Live report: Android-upgraded players on T5 took no real HP damage. Telemetry still

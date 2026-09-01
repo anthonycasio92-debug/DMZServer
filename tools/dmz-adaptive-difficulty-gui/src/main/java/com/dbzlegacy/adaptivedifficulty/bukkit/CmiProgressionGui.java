@@ -345,8 +345,8 @@ public final class CmiProgressionGui {
         gui.addButton(header);
         gui.addButton(pageBtn(20, "progression.android.convert", Material.NETHERITE_INGOT, "&aConvert to Android",
                 "android_convert",
-                "&7Upgrade a player via Dr. Gero path",
-                "&8Human → androidforms.androidbase",
+                "&7Gero upgrade — keeps race, unlocks androidforms",
+                "&8Human · Saiyan · Frost Demon · Viltrumite",
                 "", "&eClick · choose player"));
         gui.addButton(pageBtn(24, "progression.android.remove", Material.REDSTONE, "&cRemove Android",
                 "android_remove",
@@ -422,8 +422,8 @@ public final class CmiProgressionGui {
         CMIGui gui = base(player, "&8Android Convert", 5);
         CMIGuiButton header = new CMIGuiButton(4, Material.IRON_INGOT, "&b&lAndroid Convert");
         header.lockField();
-        header.addLore(List.of("", "&7Dr. Gero upgrade path",
-                "&7Human → androidforms.androidbase",
+        header.addLore(List.of("", "&7Gero upgrade — keeps race, unlocks androidforms",
+                "&8Human · Saiyan · Frost Demon · Viltrumite",
                 "&8/progression android [player]"));
         gui.addButton(header);
         gui.addButton(actionBtn(8, "progression.android.convert_self", Material.NETHERITE_INGOT,

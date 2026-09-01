@@ -12,18 +12,31 @@ import com.dragonminez.common.stats.character.Character;
 import com.dragonminez.common.stats.character.Status;
 import com.dragonminez.common.stats.skills.Skills;
 import com.dragonminez.common.util.TransformationsHelper;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.fml.loading.FMLPaths;
 
 /**
  * Port of AndrioidConversion.js / DragonMineZ {@code NPCActionC2S.handleGero}
  * and the CNPC Android Upgrade Removal script — Dr. Gero convert + remove.
+ * <p>
+ * Android is an <b>upgrade flag</b> on supported races (not a race swap). Eligible
+ * when that race has {@code androidforms} TP costs configured — currently Human,
+ * Saiyan, Frost Demon, and Viltrumite on stock configs. Bio-Android is blocked
+ * (already an android lineage). Combat scaling stays race-agnostic via live DMZ
+ * stats + form mults; the upgrade only swaps form skills / {@code isAndroidUpgraded}.
  */
 public final class AndroidConversion {
+    /** Native android lineage — cannot take the Gero upgrade on top. */
     private static final Set<String> BLOCKED = Set.of("bioandroid");
     private static final String ANDROID_FORM_GROUP = "androidforms";
     private static final String ANDROID_BASE_FORM = "androidbase";
@@ -33,6 +46,70 @@ public final class AndroidConversion {
     private static final Map<UUID, PendingRemove> PENDING_REMOVE = new ConcurrentHashMap<>();
 
     private AndroidConversion() {}
+
+    /** True when the player has the Gero Android upgrade flag. */
+    public static boolean isAndroidUpgraded(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        try {
+            StatsData data = DmzProgression.stats(player);
+            Status status = data == null ? null : data.getStatus();
+            return status != null && status.isAndroidUpgraded();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /**
+     * Race ids on disk that currently expose {@code androidforms} TP costs
+     * (Bio-Android excluded). Empty if configs are not loaded yet.
+     */
+    public static List<String> configuredAndroidRaceIds() {
+        List<String> out = new ArrayList<>();
+        try {
+            Path dir = FMLPaths.CONFIGDIR.get().resolve("dragonminez").resolve("races");
+            if (!Files.isDirectory(dir)) {
+                return out;
+            }
+            try (Stream<Path> stream = Files.list(dir)) {
+                stream.filter(Files::isDirectory)
+                        .map(p -> p.getFileName().toString())
+                        .sorted()
+                        .forEach(id -> {
+                            if (id == null || id.isBlank()) {
+                                return;
+                            }
+                            String lower = id.toLowerCase(Locale.ROOT);
+                            if (BLOCKED.contains(lower)) {
+                                return;
+                            }
+                            if (raceAllowsAndroidForms(id)) {
+                                out.add(id);
+                            }
+                        });
+            }
+        } catch (Throwable ignored) {
+            // Config not ready — callers fall back to generic copy.
+        }
+        return out;
+    }
+
+    /** Player-facing eligible-race hint for GUI / deny messages. */
+    public static String eligibleRaceHint() {
+        List<String> ids = configuredAndroidRaceIds();
+        if (ids.isEmpty()) {
+            return "Human, Saiyan, Frost Demon, Viltrumite (when androidforms are configured)";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < ids.size(); i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append(prettyRace(ids.get(i)));
+        }
+        return sb.toString();
+    }
 
     public static String convert(ServerPlayer player) {
         if (!ProgressionConfig.androidConversion()) {
@@ -61,12 +138,13 @@ public final class AndroidConversion {
             }
             String lower = raceName.toLowerCase(Locale.ROOT);
             if (BLOCKED.contains(lower)) {
-                return "§c[Android] §f" + raceName + " cannot be android-upgraded.";
+                return "§c[Android] §f" + prettyRace(raceName)
+                        + " §7is already an android lineage and cannot take the Gero upgrade.";
             }
-            // Match Gero: race must have androidforms TP costs configured (humans).
+            // Match Gero: race must have androidforms TP costs configured.
             if (!raceAllowsAndroidForms(raceName)) {
-                return "§c[Android] §fOnly races with android forms (humans) can be converted. §7Race: §f"
-                        + raceName;
+                return "§c[Android] §f" + prettyRace(raceName)
+                        + " §7has no android forms. §8Eligible: §7" + eligibleRaceHint() + "§8.";
             }
 
             status.setAndroidUpgraded(true);
@@ -95,10 +173,12 @@ public final class AndroidConversion {
             } catch (Throwable ignored) {
             }
             DmzSkillUtil.sync(player);
-            DmzRewards.msg(player, "§a[Android] §fConversion complete. §7Android forms unlocked.");
+            DmzRewards.msg(player, "§a[Android] §fConversion complete. §7Android forms unlocked for §f"
+                    + prettyRace(raceName) + "§7.");
             SystemTelemetry.log("progression", "android_conversion", player, null,
-                    Map.of("race", raceName));
-            return "§a[Android] Conversion complete for §f" + player.m_7755_().getString() + "§a.";
+                    Map.of("race", raceName, "android", "true"));
+            return "§a[Android] Conversion complete for §f" + player.m_7755_().getString()
+                    + " §7(" + prettyRace(raceName) + ")§a.";
         } catch (Throwable t) {
             return "§c[Android Trigger Error] §f" + t;
         }
@@ -254,7 +334,11 @@ public final class AndroidConversion {
         }
     }
 
-    private static boolean raceAllowsAndroidForms(String raceName) {
+    /** Match Gero: {@code getFormSkillTpCosts("androidforms").length > 0}. */
+    public static boolean raceAllowsAndroidForms(String raceName) {
+        if (raceName == null || raceName.isBlank()) {
+            return false;
+        }
         try {
             RaceCharacterConfig cfg = ConfigManager.getRaceCharacter(raceName);
             if (cfg == null) {
@@ -265,6 +349,42 @@ public final class AndroidConversion {
         } catch (Throwable ignored) {
             return false;
         }
+    }
+
+    private static String prettyRace(String raceId) {
+        if (raceId == null || raceId.isBlank()) {
+            return "Unknown";
+        }
+        String id = raceId.trim().toLowerCase(Locale.ROOT);
+        return switch (id) {
+            case "frostdemon" -> "Frost Demon";
+            case "bioandroid" -> "Bio-Android";
+            case "sento_saiyan" -> "Sento Saiyan";
+            case "ancient_saiyan" -> "Ancient Saiyan";
+            case "namekian" -> "Namekian";
+            case "viltrumite" -> "Viltrumite";
+            case "saiyan" -> "Saiyan";
+            case "human" -> "Human";
+            case "majin" -> "Majin";
+            case "monkey" -> "Monkey";
+            default -> {
+                String[] parts = id.split("[_\\-]+");
+                StringBuilder sb = new StringBuilder();
+                for (String p : parts) {
+                    if (p.isEmpty()) {
+                        continue;
+                    }
+                    if (sb.length() > 0) {
+                        sb.append(' ');
+                    }
+                    sb.append(java.lang.Character.toUpperCase(p.charAt(0)));
+                    if (p.length() > 1) {
+                        sb.append(p.substring(1));
+                    }
+                }
+                yield sb.length() == 0 ? raceId : sb.toString();
+            }
+        };
     }
 
     private record PendingRemove(UUID target, long until) {}

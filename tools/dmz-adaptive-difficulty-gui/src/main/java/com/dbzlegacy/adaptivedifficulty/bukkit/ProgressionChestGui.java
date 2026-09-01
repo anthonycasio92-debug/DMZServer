@@ -395,8 +395,8 @@ public final class ProgressionChestGui implements Listener {
                         "&7Convert · remove Android upgrade",
                         "&8Race / stats / progression preserved on remove")));
         put(holder, inv, 20, tipBtn("progression.android.convert", Material.NETHERITE_INGOT, "&aConvert to Android",
-                List.of("&7Pick a player to convert",
-                        "&8Human → androidforms.androidbase",
+                List.of("&7Gero upgrade — keeps race, unlocks androidforms",
+                        "&8Human · Saiyan · Frost Demon · Viltrumite",
                         "", "&eClick to open")),
                 SlotAction.page("android_convert"));
         put(holder, inv, 24, tipBtn("progression.android.remove", Material.REDSTONE, "&cRemove Android",
@@ -468,8 +468,8 @@ public final class ProgressionChestGui implements Listener {
         holder.bind(inv);
         frame(inv, 45);
         put(holder, inv, 4, item(Material.IRON_INGOT, "&b&lAndroid Convert",
-                List.of("", "&7Dr. Gero upgrade path",
-                        "&7Human → androidforms.androidbase",
+                List.of("", "&7Gero upgrade — keeps race, unlocks androidforms",
+                        "&8Human · Saiyan · Frost Demon · Viltrumite",
                         "&8/progression android [player]")));
         put(holder, inv, 8, tipBtn("progression.android.convert_self", Material.NETHERITE_INGOT,
                 "&aConvert Yourself",

@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.130", 'VERSION = "2.3.130"' in mod)
+    check("VERSION 2.3.131", 'VERSION = "2.3.131"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -544,6 +544,33 @@ def main() -> int:
     check("AndroidConversion.remove", "public static String remove(" in android)
     check("AndroidConversion two-click confirm", "CONFIRM_MS = 10_000L" in android)
     check("AndroidConversion restore superforms", 'ensureSkillAtZero(skills, "superforms")' in android)
+    check("Android blocks bioandroid only", 'BLOCKED = Set.of("bioandroid")' in android)
+    check("Android gate via androidforms TP costs", "getFormSkillTpCosts" in android and "ANDROID_FORM_GROUP" in android)
+    check("Android eligibleRaceHint", "eligibleRaceHint" in android and "configuredAndroidRaceIds" in android)
+    check("Android isAndroidUpgraded helper", "public static boolean isAndroidUpgraded(" in android)
+    check("Android deny message not humans-only", "Only races with android forms (humans)" not in android)
+    check("GUI lists all Android-capable races", "Frost Demon" in prog_chest and "Viltrumite" in prog_chest
+          and "Frost Demon" in prog_cmi)
+    tel = read(SRC / "com/dbzlegacy/adaptivedifficulty/telemetry/BalanceTelemetry.java")
+    check(
+        "telemetry logs android upgrade flag",
+        '\\"android\\"' in tel and "isAndroidUpgraded" in tel,
+    )
+    races_root = Path("/workspace/config/dragonminez/races")
+    if not races_root.is_dir():
+        races_root = ROOT.parents[1] / "config" / "dragonminez" / "races"
+    for race in ("human", "saiyan", "frostdemon", "viltrumite"):
+        check(
+            f"stock {race} androidforms.json",
+            (races_root / race / "forms" / "androidforms.json").is_file(),
+        )
+        ch_path = races_root / race / "character.json"
+        ch = ch_path.read_text(encoding="utf-8", errors="replace") if ch_path.is_file() else ""
+        check(f"stock {race} androidforms TP costs", '"androidforms"' in ch and '"prices"' in ch)
+    check(
+        "bioandroid has no androidforms upgrade group",
+        not (races_root / "bioandroid" / "forms" / "androidforms.json").is_file(),
+    )
     check("Chest android_panel", "android_panel" in prog_chest and "androidPanel" in prog_chest)
     check("Chest android_remove picker", "androidRemovePicker" in prog_chest)
     check("CMI android_panel", "openAndroidPanel" in prog_cmi)
