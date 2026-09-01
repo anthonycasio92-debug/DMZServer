@@ -94,6 +94,9 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Stock tier costs (copper-value bases): T1 **1× Copper** · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling is exponential in **absolute** DMZ level from 1 → `tierCostLevelAnchor` (**150000**): T1 at level 1 stays **1× Copper**, T7 at level 150k is **100× Netherite** (`tierCostT7TargetCopper` = 10_000_000). Progress clamps at the anchor. Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
+### Bugfix (2.3.129)
+- Live telemetry calibration (22k hits Aug31–Sep1): lift T4/T6 landFrac + T6 painted bite
+
 ### Bugfix (2.3.128)
 - Form change refreshes CR + clears area cache; Rival form surge uses form mult (scaling still PlayerCombatProfile)
 
@@ -138,6 +141,14 @@ Kill coin drops are chance-gated (was always-on):
 - `ancientCoinDropChance` **0.05** (5% any coin)
 - `ancientCoinUpgradeChance` **0.005** (0.5% original + next-higher dual)
 Existing configs auto-migrate stock 2% upgrade → 0.5%.
+
+### Live balance (2.3.129)
+From live `hits-2026-08-31..09-01.jsonl` (22442 hits, post-2.3.57 window):
+- Soft-caps unchanged (**T1 0.34 · T2 0.36 · T3 0.44 · T4 0.50 · T5 0.52 · T6 0.58 · T7 0.62**).
+- God avgHF was on-target per tier, but **T5→T6 landing was flat** (landFrac both 0.50;
+  god +0.014) and **T4→T5 cliffed** (god 0.359→0.501).
+- Lift **T4 landFrac 0.37→0.40** / landCap 0.48→0.50; **T6 landFrac 0.50→0.54**.
+- T6 form nudge 1.82→1.90; T6/T7 liveShare 0.74→0.80. Formula fingerprint **39**.
 
 ### Live balance (2.3.60)
 From live `hits-2026-08-29..30.jsonl` (2132 hits pulled from production):

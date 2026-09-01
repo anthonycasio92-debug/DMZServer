@@ -57,9 +57,9 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 2.3.128
+- ✅ VERSION 2.3.129
 - ✅ RaceSkillSync present
-- ✅ formula revision 38
+- ✅ formula revision 39
 - ✅ hpFloorStrength present
 - ✅ T1–T3 god-form floors raised
 - ✅ T7 incoming soft-cap in events

@@ -566,12 +566,12 @@ public final class PlayerCombatProfile {
             base = Math.max(base, softFloor);
         }
 
-        // T4–T7 form nudges — 1.0.35 (hits-2026-08-06..08): ease T4 cliff, push T5/T7.
+        // T4–T7 form nudges — 2.3.129: lift T6 nudge so buy pressure progresses vs T5.
         if (activeTier >= 4 && formBoost > 1.12) {
             double nudge = switch (activeTier) {
                 case 4 -> 1.58;
                 case 5 -> 1.78;
-                case 6 -> 1.82;
+                case 6 -> 1.90; // was 1.82 — T5/T6 painted bite was nearly flat
                 default -> 1.62; // T7 — was soft-capped rarely; raise painted bite
             };
             base = Math.max(base, offenseShare * nudge);
@@ -580,15 +580,15 @@ public final class PlayerCombatProfile {
         // Live-offense pressure: soft-curve alone under-represents god forms. Pull a
         // bounded slice of live offense×tier% so transforms actually raise threat.
         if (formBoost > 1.12 && liveOffense > offense * 1.05) {
-            // 2.3.57: trim early live-slice — T2 gods were soft-cap pinned at 43%.
+            // 2.3.129: T6 liveShare above T5 so god packs climb after T6 buy.
             double liveShare = switch (activeTier) {
                 case 1 -> 0.28;
                 case 2 -> 0.34;
                 case 3 -> 0.52;
                 case 4 -> 0.60;
                 case 5 -> 0.74;
-                case 6 -> 0.74;
-                default -> 0.74; // T7 align with T5/T6 live slice
+                case 6 -> 0.80; // was 0.74 — match T5→T6 soft-cap gap
+                default -> 0.80; // T7 keep pace with T6 live slice
             };
             // Mega forms: more of the live slice (still hit-capped after).
             double megaBoost = formBoost >= 6.0
@@ -659,8 +659,9 @@ public final class PlayerCombatProfile {
     /**
      * Post-mitigation HP restored when DMZ hard-cancels a hit.
      * <p>
-     * 2.3.57 (hits-2026-08-29..30): ease T1–T2 landing; lift T5 landFrac toward soft-cap.
-     * Soft-caps stay monotonic. Pierce cannot clear wouldCancel while soft-cap &lt; mit/thr.
+     * 2.3.129 (hits-2026-08-31..09-01): lift T4 landFrac (ease T4→T5 cliff) and T6
+     * landFrac (T5/T6 were identical on landing path). Soft-caps unchanged / monotonic.
+     * Pierce cannot clear wouldCancel while soft-cap &lt; mit/thr.
      */
     public double targetLandingDamage(DifficultyConfig cfg) {
         double liveBag = Math.max(20.0, liveMaxHealth);
@@ -672,9 +673,9 @@ public final class PlayerCombatProfile {
             case 1 -> 0.13;
             case 2 -> 0.16;
             case 3 -> 0.30;
-            case 4 -> 0.37;
+            case 4 -> 0.40; // was 0.37 — close T4→T5 cliff (god 0.359→0.501)
             case 5 -> 0.50;
-            case 6 -> 0.50;
+            case 6 -> 0.54; // was 0.50 — T5/T6 landing was flat (god +0.014)
             default -> 0.58;
         };
         if (formBoost > 1.12) {
@@ -696,7 +697,7 @@ public final class PlayerCombatProfile {
             case 1 -> 0.18;
             case 2 -> 0.23;
             case 3 -> 0.38;
-            case 4 -> 0.48;
+            case 4 -> 0.50; // align with soft-cap so lifted landFrac can land
             case 5 -> 0.52;
             case 6 -> 0.58;
             default -> 0.62;
@@ -1165,7 +1166,7 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
         // Formula revision: Aug 29–30 early soft-cap + landing ease (2.3.57).
-        h = mix(h, 38L);
+        h = mix(h, 39L); // 2.3.129 live telemetry cal (T4/T6 land + T6 liveShare)
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

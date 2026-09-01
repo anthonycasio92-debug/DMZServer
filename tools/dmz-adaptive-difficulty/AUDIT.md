@@ -1,3 +1,32 @@
+## Live telemetry calibration (2.3.129)
+
+Pulled production hits from SFTP `config/legacymechanics/telemetry/`:
+`uploads/live-telemetry-2026-09-01/` — **33469** hits (Aug 29–Sep 1).
+Calibration window = post-2.3.57 days **Aug 31 + Sep 1** (**22442** hits).
+
+God-form avg hitFracPost (soft-caps unchanged):
+
+| tier | n | avgHF | softCap | pin% | path |
+|-----:|--:|------:|--------:|-----:|------|
+| T1 | 46 | 0.122 | 0.34 | 0% | landing |
+| T2 | 95 | 0.145 | 0.36 | 0% | landing |
+| T3 | 3526 | 0.293 | 0.44 | 8% | landing |
+| T4 | 1705 | 0.359 | 0.50 | 23% | mostly landing |
+| T5 | 11045 | 0.501 | 0.52 | 73% | soft-cap |
+| T6 | 2748 | 0.515 | 0.58 | 48% | 50/50 |
+| T7 | 691 | 0.612 | 0.62 | 93% | soft-cap |
+
+Signals:
+- T1–T5 / T7 pressure on-target; soft-cap ladder healthy
+- **T5→T6 flat** on landing path (both landFrac 0.50; god +0.014 only)
+- **T4→T5 cliff** (god 0.359→0.501)
+- High wouldCancel at T4+ still expected (soft-cap &lt; mit/thr)
+
+Changes (fingerprint **39**):
+- T4 landFrac **0.37→0.40**, landCap **0.48→0.50**
+- T6 landFrac **0.50→0.54**
+- T6 form nudge **1.82→1.90**; T6/T7 liveShare **0.74→0.80**
+
 ## Form-aware CR vs mob scaling (2.3.128)
 
 Verified: nearby mob HP/damage paint uses {@code PlayerCombatProfile} (liveOffense +
