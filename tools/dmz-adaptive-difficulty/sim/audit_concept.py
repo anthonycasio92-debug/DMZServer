@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed concept audit for LegacyMechanics 2.3.63.
+"""Fail-closed concept audit for LegacyMechanics 2.3.129.
 
 Encodes the player's stated balance intent:
   1. Buy tiers 1–7 feel progressively harder (stock 21→200%).
@@ -8,6 +8,8 @@ Encodes the player's stated balance intent:
   4. God / high forms must not out-tank packs after DMZ DEF.
   5. Melee AD kits chase / hit (feature presence).
   6. GUI ABI + version handshake stay intact.
+  7. Soft-cap + landing ladders stay monotonic; each mid/high buy matters
+     (T4&lt;T5&lt;T6&lt;T7 landing; soft-cap T3→T7 rises — 2.3.129 live cal).
 
 Writes:
   /opt/cursor/artifacts/ad-concept-audit.md
@@ -50,7 +52,7 @@ def main() -> int:
     errors: list[str] = []
     ok: list[str] = []
     lines = [
-        "# LegacyMechanics concept audit (2.3.63)",
+        "# LegacyMechanics concept audit (2.3.129)",
         "",
         "Fail-closed checks against the player's stated balance concept.",
         "",
@@ -246,13 +248,61 @@ def main() -> int:
     check("T6 soft-cap 58%", "case 6 -> 0.58" in events)
     check("T3 soft-cap ≤ T4", "case 3 -> 0.44" in events and "case 4 -> 0.50" in events)
     check("T4 soft-cap ≤ T5", "case 4 -> 0.50" in events and "case 5 -> 0.52" in events)
-    # Sim: god soft-cap-bound hitFrac must rise T3→T4→T5.
+    check("T5 soft-cap ≤ T6", "case 5 -> 0.52" in events and "case 6 -> 0.58" in events)
+    check("T6 soft-cap ≤ T7", "case 6 -> 0.58" in events and "case 7 -> 0.62" in events)
+    # Source landFrac must stay strictly progressive (2.3.129 live cal — buys matter).
+    check(
+        "landFrac ladder progressive T4<T5<T6<T7",
+        "case 4 -> 0.40" in profile
+        and "case 5 -> 0.50" in profile
+        and "case 6 -> 0.54" in profile
+        and "default -> 0.58" in profile,
+    )
+    # Sim: god soft-cap-bound hitFrac must rise T3→T4→T5→T6→T7.
     god_t3 = simulate(pts("even"), st["scale"], fmap, "warrior", 3, SKILL_LOADOUTS["none"])
     god_t4 = simulate(pts("even"), st["scale"], fmap, "warrior", 4, SKILL_LOADOUTS["none"])
+    god_t5 = simulate(pts("even"), st["scale"], fmap, "warrior", 5, SKILL_LOADOUTS["none"])
+    god_t6 = simulate(pts("even"), st["scale"], fmap, "warrior", 6, SKILL_LOADOUTS["none"])
+    god_t7 = simulate(pts("even"), st["scale"], fmap, "warrior", 7, SKILL_LOADOUTS["none"])
     check(
         "god soft-cap ladder T3≤T4",
         god_t3["hitFrac"] <= god_t4["hitFrac"] + 1e-9,
         f"T3={god_t3['hitFrac']:.3f} T4={god_t4['hitFrac']:.3f}",
+    )
+    check(
+        "god soft-cap ladder T4≤T5",
+        god_t4["hitFrac"] <= god_t5["hitFrac"] + 1e-9,
+        f"T4={god_t4['hitFrac']:.3f} T5={god_t5['hitFrac']:.3f}",
+    )
+    check(
+        "god soft-cap ladder T5≤T6",
+        god_t5["hitFrac"] <= god_t6["hitFrac"] + 1e-9,
+        f"T5={god_t5['hitFrac']:.3f} T6={god_t6['hitFrac']:.3f}",
+    )
+    check(
+        "god soft-cap ladder T6≤T7",
+        god_t6["hitFrac"] <= god_t7["hitFrac"] + 1e-9,
+        f"T6={god_t6['hitFrac']:.3f} T7={god_t7['hitFrac']:.3f}",
+    )
+    check(
+        "god landing T5 < T6 (buy matters)",
+        god_t5.get("landingFrac", 0) + 0.01 < god_t6.get("landingFrac", 0),
+        f"T5={god_t5.get('landingFrac', 0):.3f} T6={god_t6.get('landingFrac', 0):.3f}",
+    )
+    check(
+        "god landing T4 < T5",
+        god_t4.get("landingFrac", 0) + 0.01 < god_t5.get("landingFrac", 0),
+        f"T4={god_t4.get('landingFrac', 0):.3f} T5={god_t5.get('landingFrac', 0):.3f}",
+    )
+    check(
+        "god landing ≤ soft-cap T5",
+        god_t5.get("landingFrac", 0) <= 0.52 + 0.02,
+        f"landing={god_t5.get('landingFrac', 0):.3f}",
+    )
+    check(
+        "god landing ≤ soft-cap T6",
+        god_t6.get("landingFrac", 0) <= 0.58 + 0.02,
+        f"landing={god_t6.get('landingFrac', 0):.3f}",
     )
     tel = (
         ROOT
@@ -261,8 +311,8 @@ def main() -> int:
     check("combat telemetry present", "shouldLog" in tel and "logIncomingHit" in tel)
     # Landing ladder (cancel path) must rise with tier for god-form tanks.
     land_t1 = simulate(pts("even"), st["scale"], fmap, "warrior", 1, SKILL_LOADOUTS["none"])
-    land_t5 = simulate(pts("even"), st["scale"], fmap, "warrior", 5, SKILL_LOADOUTS["none"])
-    land_t7 = simulate(pts("even"), st["scale"], fmap, "warrior", 7, SKILL_LOADOUTS["none"])
+    land_t5 = god_t5
+    land_t7 = god_t7
     check(
         "god-form landing T1≥10%",
         land_t1.get("landingFrac", 0) >= 0.10,

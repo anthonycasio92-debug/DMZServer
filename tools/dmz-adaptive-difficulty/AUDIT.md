@@ -27,6 +27,13 @@ Changes (fingerprint **39**):
 - T6 landFrac **0.50→0.54**
 - T6 form nudge **1.82→1.90**; T6/T7 liveShare **0.74→0.80**
 
+Concept compliance (audit_concept + ladder sim):
+- Soft-caps monotonic T1→T7; landFrac strictly progressive T1→T7
+- God hitFrac rises every buy T3→T7; landing T4&lt;T5&lt;T6&lt;T7 (T5→T6 buy matters)
+- Even T1→T5 ≥1.4× / T5→T7 ≥1.10×; dumps still ≥28% bag at T5
+- Landing stays ≤ soft-cap; god forms cannot out-tank (SSJG/SSJB landing ≥35% at T7)
+- Soft-caps unchanged so early-tier feel (T1–T3) stays the 2.3.57 concept retune
+
 ## Form-aware CR vs mob scaling (2.3.128)
 
 Verified: nearby mob HP/damage paint uses {@code PlayerCombatProfile} (liveOffense +

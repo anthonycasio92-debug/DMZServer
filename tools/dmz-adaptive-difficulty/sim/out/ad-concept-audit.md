@@ -67,7 +67,17 @@ Fail-closed checks against the player's stated balance concept.
 - ✅ T6 soft-cap 58%
 - ✅ T3 soft-cap ≤ T4
 - ✅ T4 soft-cap ≤ T5
+- ✅ T5 soft-cap ≤ T6
+- ✅ T6 soft-cap ≤ T7
+- ✅ landFrac ladder progressive T4<T5<T6<T7
 - ✅ god soft-cap ladder T3≤T4 — T3=0.440 T4=0.500
+- ✅ god soft-cap ladder T4≤T5 — T4=0.500 T5=0.520
+- ✅ god soft-cap ladder T5≤T6 — T5=0.520 T6=0.580
+- ✅ god soft-cap ladder T6≤T7 — T6=0.580 T7=0.620
+- ✅ god landing T5 < T6 (buy matters) — T5=0.520 T6=0.580
+- ✅ god landing T4 < T5 — T4=0.443 T5=0.520
+- ✅ god landing ≤ soft-cap T5 — landing=0.520
+- ✅ god landing ≤ soft-cap T6 — landing=0.580
 - ✅ combat telemetry present
 - ✅ god-form landing T1≥10% — landingFrac=0.137
 - ✅ god-form landing T5≥28% — landingFrac=0.520
@@ -89,4 +99,4 @@ Fail-closed checks against the player's stated balance concept.
 |------|--------:|---------:|---------:|
 | androidforms.ssdroid4 | 0.520 | 0.182 | 0.79 |
 
-**Result:** PASS — 54 ok, 0 error(s).
+**Result:** PASS — 64 ok, 0 error(s).
