@@ -1,3 +1,20 @@
+## Full mod audit (2.3.131) — 2026-09-01
+
+Fail-closed suite all green on `cursor/telemetry-scaling-cal-c766`:
+
+| Audit | Result |
+|-------|:------:|
+| audit_features (555) | PASS |
+| audit_concept (64) | PASS |
+| validate_tier_costs (1–150k) | PASS |
+| validate_scaling (73) | PASS |
+| simulate_build_matrix --check (35) | PASS |
+| simulate_race_forms --check (10 races) | PASS |
+| audit_tier_level_matrix (72; 1554 form cells) | PASS |
+| audit_gui_abi | PASS |
+
+Report: `sim/out/full-mod-audit.md`. Jars on disk: LegacyMechanics / GUI **2.3.131**.
+
 ## Android upgrade all races (2.3.131)
 
 Android is a Gero **upgrade flag** on races that ship `androidforms` TP costs — not a

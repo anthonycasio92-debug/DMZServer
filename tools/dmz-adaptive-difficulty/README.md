@@ -13,11 +13,15 @@ Java package stays `com.dbzlegacy.adaptivedifficulty` (GUI reflection ABI). Play
 ```bash
 python3 tools/dmz-adaptive-difficulty/sim/audit_gui_abi.py   # Forge↔GUI reflection + version handshake
 python3 tools/dmz-adaptive-difficulty/sim/audit_features.py  # intended product features vs source
+python3 tools/dmz-adaptive-difficulty/sim/audit_concept.py   # stated balance concept (soft-cap / landing / skills)
 python3 tools/dmz-adaptive-difficulty/sim/validate_scaling.py # PWR/ENE + class/top-2 combat sim
+python3 tools/dmz-adaptive-difficulty/sim/simulate_build_matrix.py --check  # race × class × archetype
 python3 tools/dmz-adaptive-difficulty/sim/simulate_race_forms.py --check  # full race/form pack
 python3 tools/dmz-adaptive-difficulty/sim/validate_tier_costs.py  # buy-cost ladder at unlock / 100k
 python3 tools/dmz-adaptive-difficulty/sim/audit_tier_level_matrix.py  # T1–T7 × levels 1–150k + all races/forms
 ```
+
+Latest consolidated run: `sim/out/full-mod-audit.md`.
 
 Keep Forge `AdaptiveDifficultyMod.VERSION` = GUI `plugin.yml` version (both jars same).  
 Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fields, or Bukkit `openMenu*` / `openChestMenu*` entrypoints.
