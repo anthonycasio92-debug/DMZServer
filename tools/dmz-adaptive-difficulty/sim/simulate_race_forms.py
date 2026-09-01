@@ -564,6 +564,9 @@ def main() -> None:
             f"{s['hitCapFrac']} | `{s['topForm']}` |"
         )
 
+    # Soft-cap table (mirrors DifficultyEvents maxFrac / PlayerCombatProfile).
+    SOFT = {1: 0.34, 2: 0.36, 3: 0.44, 4: 0.50, 5: 0.52, 6: 0.58, 7: 0.62}
+
     # Informational notes (glass packs vs mega forms are intentional — RES counters STR).
     notes = []
     # Hard --check failures: future races that would break the difficulty contract.
@@ -584,6 +587,27 @@ def main() -> None:
             hard.append(f"- **{s['race']}**: form ×{s['topFormBoost']} barely moves dmg ({s['dmgJump']}×)")
         if (s["topHitsToKill"] or 0) < 0.08:
             notes.append(f"- **{s['race']}**: packs die in {s['topHitsToKill']} live hits (glass OK if RES counters)")
+
+    # Full soft-cap scan: every race × form × mastery × class × tier in the CSV.
+    soft_over = []
+    zero_dmg = []
+    for r in rows:
+        soft = SOFT.get(int(r["tier"]), 0.62)
+        hf = float(r["hitFracPlayer"])
+        if hf > soft + 1e-6:
+            if len(soft_over) < 20:
+                soft_over.append(
+                    f"- **{r['race']}** `{r['formGroup']}.{r['form']}` "
+                    f"{r['class']} T{r['tier']}: hitFrac {hf} > soft {soft}"
+                )
+        if float(r["mobDmg"]) <= 0.0:
+            if len(zero_dmg) < 20:
+                zero_dmg.append(
+                    f"- **{r['race']}** `{r['formGroup']}.{r['form']}` "
+                    f"{r['class']} T{r['tier']}: mobDmg 0"
+                )
+    hard.extend(soft_over)
+    hard.extend(zero_dmg)
 
     md += ["", "## Hard flags (--check)", ""]
     md.extend(hard or ["None."])

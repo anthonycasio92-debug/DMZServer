@@ -11,7 +11,7 @@ Fail-closed checks for unlock tiers T1–T7 across the DMZ level cap.
 
 ## 2) Buy-cost ladder T1<T2<…<T7 at every level
 
-- ✅ cost T-ladder mono across 150000 levels — 0.84s
+- ✅ cost T-ladder mono across 150000 levels — 0.85s
 - ✅ cost non-decreasing with level (≤150k) — ok
 - ✅ past-anchor clamp T7 200k==150k — 10000000 vs 10000000
 - ✅ past-anchor clamp T1 200k==150k — 6700 vs 6700
@@ -104,4 +104,34 @@ Fail-closed checks for unlock tiers T1–T7 across the DMZ level cap.
 - ✅ lvl 150000: eligible tiers match gates — T[1, 2, 3, 4, 5, 6, 7]
 - ✅ lvl 150000: cost mono — T1=67× Gold, T2=34× Emerald, T3=1× Netherite, T4=34× Diamond, T5=10× Netherite, T6=34× Netherite, T7=100× Netherite
 
-**Result:** PASS — 63 ok, 0 error(s).
+## 5) All races × all forms × T1–T7
+
+Combat is level-invariant; buy-cost scan above covers levels 1–150k.
+Each form checked at mastery 0% + 100% (Base once). Soft-cap + no zero dmg.
+
+- ✅ discovered ≥8 stock races — 10: ancient_saiyan, bioandroid, frostdemon, human, majin, monkey, namekian, saiyan, sento_saiyan, viltrumite
+| race | forms | cells | soft≤cap | dmg>0 | peak mono T3→T7 | peak T5≥28% |
+|------|------:|------:|:--------:|:-----:|:---------------:|:-----------:|
+| ancient_saiyan | 3 | 49 | OK | OK | OK | OK |
+| bioandroid | 11 | 161 | OK | OK | OK | OK |
+| frostdemon | 14 | 203 | OK | OK | OK | OK |
+| human | 14 | 203 | OK | OK | OK | OK |
+| majin | 9 | 133 | OK | OK | OK | OK |
+| monkey | 6 | 91 | OK | OK | OK | OK |
+| namekian | 8 | 119 | OK | OK | OK | OK |
+| saiyan | 22 | 315 | OK | OK | OK | OK |
+| sento_saiyan | 11 | 161 | OK | OK | OK | OK |
+| viltrumite | 8 | 119 | OK | OK | OK | OK |
+- ✅ race/form soft-cap all cells (1554) — 0.04s
+- ✅ race/form mobDmg > 0 all cells — ok
+- ✅ race peak form ladders / floors — 10 peaks ok
+
+### Android forms coverage
+
+- ✅ human has android form entries — 5 forms
+- ✅ saiyan has android form entries — 5 forms
+- ✅ frostdemon has android form entries — 5 forms
+- ✅ viltrumite has android form entries — 4 forms
+- ✅ bioandroid has no androidforms upgrade group — android-named=0
+
+**Result:** PASS — 72 ok, 0 error(s).

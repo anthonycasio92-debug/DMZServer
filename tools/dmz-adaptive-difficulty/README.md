@@ -16,7 +16,7 @@ python3 tools/dmz-adaptive-difficulty/sim/audit_features.py  # intended product 
 python3 tools/dmz-adaptive-difficulty/sim/validate_scaling.py # PWR/ENE + class/top-2 combat sim
 python3 tools/dmz-adaptive-difficulty/sim/simulate_race_forms.py --check  # full race/form pack
 python3 tools/dmz-adaptive-difficulty/sim/validate_tier_costs.py  # buy-cost ladder at unlock / 100k
-python3 tools/dmz-adaptive-difficulty/sim/audit_tier_level_matrix.py  # T1–T7 × levels 1–150k (costs + gates + combat)
+python3 tools/dmz-adaptive-difficulty/sim/audit_tier_level_matrix.py  # T1–T7 × levels 1–150k + all races/forms
 ```
 
 Keep Forge `AdaptiveDifficultyMod.VERSION` = GUI `plugin.yml` version (both jars same).  
