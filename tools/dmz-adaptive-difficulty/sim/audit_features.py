@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.158", 'VERSION = "2.3.158"' in mod)
+    check("VERSION 2.3.159", 'VERSION = "2.3.159"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -536,6 +536,28 @@ def main() -> int:
     check("Rival Progress HOF+Journal secondary",
           'SlotAction.page("hof")' in rival and 'SlotAction.page("journal")' in rival
           and "records" in rival)
+
+    print("\n=== GUI coherence Skill Check (2.3.159) ===")
+    unlock = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java")
+    tips_json159 = read(ROOT / "tools/dmz-adaptive-difficulty-gui/src/main/resources/gui-tooltips.json")
+    cmi_sk159 = read(gui_root / "CmiSkillsGui.java")
+    cmi_pr159 = read(gui_root / "CmiPrestigeGui.java")
+    check("Skill tips drop long progress essays",
+          "Progress to next:" not in unlock and "Air time toward next:" not in unlock
+          and "Current trial:" not in unlock)
+    check("Skill header one DMZ line",
+          'out.add("§7DMZ §f"' in unlock or 'out.add("§7DMZ §f" + level' in unlock)
+    check("Skills Chest uses full frame + centeredSlots",
+          "private static void frame(" in skills and "GuiBoardHelper.centeredSlots" in skills
+          and "frameOnly" not in skills)
+    check("Skills CMI uses fillEmpty + centeredSlots",
+          "fillEmpty(gui, 6)" in cmi_sk159 and "GuiBoardHelper.centeredSlots" in cmi_sk159
+          and "fillFrameOnly" not in cmi_sk159)
+    check("skills.main.header short Natural · Saga",
+          '"&7Natural · Saga"' in tips_json159)
+    check("Prestige main hub @40 like Spar",
+          "put(holder, inv, 40, hubBtn()" in prestige
+          and "gui.addButton(hubBtn(40))" in cmi_pr159)
 
     print("\n=== Rival relationship semantics (2.3.142+) ===")
     rival_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.java")

@@ -72,9 +72,9 @@ public final class PrestigeChestGui implements Listener {
             putWallet(holder, inv, viewer, subject, "main",
                     !bridgeOk ? "&c&lUNAVAILABLE" : "&c&lPRESTIGE DISABLED",
                     unavailableLore(bridgeOk));
-            put(holder, inv, 36, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+            put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
             if (ForgeBridge.isStaff(viewer)) {
-                put(holder, inv, 40, tipBtn(viewer, "prestige.main.progression", Material.BREWING_STAND,
+                put(holder, inv, 38, tipBtn(viewer, "prestige.main.progression", Material.BREWING_STAND,
                         "&dProgression",
                         List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")),
                         SlotAction.cmd("lmdo lm open progression"));
@@ -123,9 +123,9 @@ public final class PrestigeChestGui implements Listener {
                         "&8DMZ maxValue 150000 — soft-lock holds others at their cap"), vars),
                 SlotAction.page("cap"));
 
-        put(holder, inv, 36, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         if (ForgeBridge.isStaff(viewer)) {
-            put(holder, inv, 40, tipBtn(viewer, "prestige.main.progression", Material.BREWING_STAND, "&dProgression",
+            put(holder, inv, 38, tipBtn(viewer, "prestige.main.progression", Material.BREWING_STAND, "&dProgression",
                     List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")),
                     SlotAction.cmd("lmdo lm open progression"));
         }

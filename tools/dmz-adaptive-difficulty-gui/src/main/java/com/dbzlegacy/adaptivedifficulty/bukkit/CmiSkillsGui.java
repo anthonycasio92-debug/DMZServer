@@ -12,9 +12,10 @@ import org.bukkit.entity.Player;
 
 /**
  * CMILib inventory GUI — Legacy Mechanics Skills / Skill Check.
- * Pages: Natural (core) · Saga. One item per skill in content slots.
+ * Pages: Natural (core) · Saga. Centered skill tiles; chrome matches Spar/Prestige.
  */
 public final class CmiSkillsGui {
+    private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
     private static final Material ACCENT = Material.GRAY_STAINED_GLASS_PANE;
 
     private CmiSkillsGui() {}
@@ -67,7 +68,7 @@ public final class CmiSkillsGui {
             gui.addButton(status);
             gui.addButton(hubBtn(49));
             gui.addButton(closeBtn(53));
-            fillFrameOnly(gui, 6);
+            fillEmpty(gui, 6);
             GuiFeedback.openCmi(gui);
             return;
         }
@@ -82,21 +83,24 @@ public final class CmiSkillsGui {
             GuiLoreChunks.SkillPage split = GuiLoreChunks.splitSkillsPage(raw);
             List<String> headerLore = new ArrayList<>();
             headerLore.add("");
-            headerLore.addAll(split.header.isEmpty()
-                    ? List.of("&7DMZ stats unavailable")
-                    : split.header);
+            if (split.header.isEmpty()) {
+                headerLore.add("&7DMZ stats unavailable");
+            } else {
+                headerLore.add(split.header.get(0));
+            }
             headerLore.add("");
-            headerLore.addAll(GuiTooltips.lore("skills.main.header", GuiBoardHelper.tips(player,
-                    skillCheckUi ? "&eSkill Check · one item per skill" : "&8One item per skill below")));
+            headerLore.addAll(GuiTooltips.lore("skills.main.header",
+                    List.of(skillCheckUi ? "&7Natural · Saga progress" : "&7Natural · Saga")));
             status.addLore(headerLore);
             gui.addButton(status);
 
+            int[] slots = GuiBoardHelper.centeredSlots(split.skills.size());
             int placed = 0;
             for (List<String> skill : split.skills) {
-                if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                if (placed >= slots.length) {
                     break;
                 }
-                int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+                int slot = slots[placed++];
                 String name = GuiLoreChunks.skillDisplayName(skill);
                 Material icon = GuiLoreChunks.skillIcon(name);
                 CMIGuiButton btn = new CMIGuiButton(slot, icon, name);
@@ -138,7 +142,7 @@ public final class CmiSkillsGui {
             gui.addButton(progBtn(player, 51));
         }
         gui.addButton(closeBtn(53));
-        fillFrameOnly(gui, 6);
+        fillEmpty(gui, 6);
         GuiFeedback.openCmi(gui);
     }
 
@@ -196,7 +200,7 @@ public final class CmiSkillsGui {
         return out;
     }
 
-    private static void fillFrameOnly(CMIGui gui, int rows) {
+    private static void fillEmpty(CMIGui gui, int rows) {
         int size = rows * 9;
         Map<Integer, CMIGuiButton> existing = gui.getButtons();
         for (int i = 0; i < size; i++) {
@@ -204,10 +208,7 @@ public final class CmiSkillsGui {
                 continue;
             }
             boolean edge = i < 9 || i >= size - 9 || i % 9 == 0 || i % 9 == 8;
-            if (!edge) {
-                continue;
-            }
-            CMIGuiButton pane = new CMIGuiButton(i, ACCENT, " ");
+            CMIGuiButton pane = new CMIGuiButton(i, edge ? ACCENT : FILL, " ");
             pane.lockField();
             gui.addButton(pane);
         }

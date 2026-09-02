@@ -82,6 +82,7 @@ final class GuiTooltips {
             "spar.mentor.release",
             "spar.mentor.release_none",
             "spar.mentor.dojo",
+            "skills.main.header",
     };
 
     static String reload() {

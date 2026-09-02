@@ -17,8 +17,9 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-/** Bukkit chest GUI fallback — Legacy Mechanics Skills. */
+/** Bukkit chest GUI fallback — Legacy Mechanics Skills / Skill Check. */
 public final class SkillsChestGui implements Listener {
+    private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
     private static final Material ACCENT = Material.GRAY_STAINED_GLASS_PANE;
 
     private final AdaptiveDifficultyGuiPlugin plugin;
@@ -66,7 +67,7 @@ public final class SkillsChestGui implements Listener {
                 : staffAdmin ? "&8Skills (Admin)" : "&8Skills";
         Inventory inv = Bukkit.createInventory(holder, 54, invTitle(viewer, subject, baseTitle));
         holder.bind(inv);
-        frameOnly(inv, 54);
+        frame(inv, 54);
 
         boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
         boolean systemOn = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("system_enabled", "false"));
@@ -87,29 +88,32 @@ public final class SkillsChestGui implements Listener {
             GuiLoreChunks.SkillPage split = GuiLoreChunks.splitSkillsPage(raw);
             List<String> headerLore = new ArrayList<>();
             headerLore.add("");
-            headerLore.addAll(split.header.isEmpty()
-                    ? List.of("&7DMZ stats unavailable") : split.header);
+            if (split.header.isEmpty()) {
+                headerLore.add("&7DMZ stats unavailable");
+            } else {
+                // First live-stat line only — keep header short like Spar/Rival.
+                headerLore.add(split.header.get(0));
+            }
             headerLore.add("");
-            headerLore.addAll(GuiTooltips.lore("skills.main.header", GuiBoardHelper.tips(viewer,
-                    skillCheckUi ? "&eSkill Check · one item per skill" : "&8One item per skill below")));
-            // Skill Check: EXPERIENCE_BOTTLE header. Staff Skills: BOOK.
+            headerLore.addAll(GuiTooltips.lore("skills.main.header",
+                    List.of(skillCheckUi ? "&7Natural · Saga progress" : "&7Natural · Saga")));
             Material headerMat = skillCheckUi ? Material.EXPERIENCE_BOTTLE : Material.BOOK;
             put(holder, inv, 4, item(headerMat,
                     skillCheckUi ? title + " Skill Check"
                             : staffAdmin ? title + " (Admin)" : title + " Skills",
                     headerLore));
 
+            int[] slots = GuiBoardHelper.centeredSlots(split.skills.size());
             int placed = 0;
             for (List<String> skill : split.skills) {
-                if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                if (placed >= slots.length) {
                     break;
                 }
-                int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+                int slot = slots[placed++];
                 String name = GuiLoreChunks.skillDisplayName(skill);
                 Material icon = GuiLoreChunks.skillIcon(name);
                 List<String> lore = new ArrayList<>();
                 lore.add("");
-                // First line is the title — keep level/status only, then the single tip.
                 if (skill != null && !skill.isEmpty()) {
                     String levelLine = skill.get(0);
                     int sep = Math.max(levelLine.indexOf("§7:"), levelLine.indexOf("&7:"));
@@ -193,12 +197,10 @@ public final class SkillsChestGui implements Listener {
         return out;
     }
 
-    private static void frameOnly(Inventory inv, int size) {
+    private static void frame(Inventory inv, int size) {
         for (int i = 0; i < size; i++) {
             boolean edge = i < 9 || i >= size - 9 || i % 9 == 0 || i % 9 == 8;
-            if (edge) {
-                inv.setItem(i, item(ACCENT, " ", List.of()));
-            }
+            inv.setItem(i, item(edge ? ACCENT : FILL, " ", List.of()));
         }
     }
 

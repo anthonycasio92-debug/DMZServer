@@ -1,3 +1,9 @@
+## GUI coherence + Skill Check cleanup (2.3.159)
+
+Skill Check / Skills tips are short how-tos; progress sits on the level line.
+Skills GUI matches Spar/Prestige chrome (full frame, centered tiles, slim header).
+Prestige main hub sits at slot 40 like Spar/Rival.
+
 ## My Dojo Release tip {name} (2.3.158)
 
 My Dojo → Release no longer shows literal `{name}` — tip vars pass the dojo

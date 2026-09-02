@@ -57,9 +57,9 @@ public final class CmiPrestigeGui {
             gui.addButton(walletBtn(player, "main",
                     !bridgeOk ? "&c&lUNAVAILABLE" : "&c&lPRESTIGE DISABLED",
                     unavailableLore(bridgeOk)));
-            gui.addButton(hubBtn(36));
+            gui.addButton(hubBtn(40));
             if (ForgeBridge.isStaff(player)) {
-                gui.addButton(progBtn(40));
+                gui.addButton(progBtn(38));
             }
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
@@ -105,9 +105,9 @@ public final class CmiPrestigeGui {
                         "&8DMZ maxValue 150000 — soft-lock holds others at their cap"),
                 vars, "cap"));
 
-        gui.addButton(hubBtn(36));
+        gui.addButton(hubBtn(40));
         if (ForgeBridge.isStaff(player)) {
-            gui.addButton(progBtn(40));
+            gui.addButton(progBtn(38));
         }
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);

@@ -107,9 +107,11 @@ public final class SkillUnlockService {
         double maxEnergy = safeEnergy(data);
         int totalStr = safeStrength(data);
         int investedStr = InvestedStrength.points(player);
-        out.add("§7DMZ Level: §f" + level + " §8| §7Ki Damage: §f" + format(kiDamage));
-        out.add("§7Max Energy: §f" + format(maxEnergy)
-                + " §8| §7STR §f" + totalStr + " §8(invested §f" + investedStr + "§8)");
+        // Slim header — one live line for inventory GUIs (chat path still gets separator).
+        out.add("§7DMZ §f" + level
+                + " §8· §7Ki §f" + format(kiDamage)
+                + " §8· §7Energy §f" + format(maxEnergy)
+                + " §8· §7STR §f" + totalStr + " §8(§f" + investedStr + "§8 invested)");
         out.add("§8----------------------------");
         switch (page.toLowerCase(Locale.ROOT)) {
             case "saga", "advanced", "dmz" -> appendSaga(out, skills);
@@ -165,35 +167,29 @@ public final class SkillUnlockService {
         boolean piccolo = PotentialProgression.hasPiccoloUnlock(player);
         if (level >= HARD_MAX_POTENTIAL) {
             out.add("§dPotential Unlock§7: §6§lMAX§r §7(" + level + "/" + HARD_MAX_POTENTIAL + ")");
-            tip(out, "You've pushed Potential as far as it goes.");
+            tip(out, "Potential is fully unlocked.");
             return;
         }
         if (level >= 10 && !piccolo) {
             out.add("§dPotential Unlock§7: §f" + level + "/" + HARD_MAX_POTENTIAL
                     + " §8· §eSOFT CAP");
-            tip(out, "Fighting other players got you here. Beat Piccolo in the skill saga to open the path toward 30.");
+            tip(out, "Beat Piccolo in the skill saga to open the path to 30.");
             return;
         }
-        out.add("§dPotential Unlock§7: §f" + level + "/" + HARD_MAX_POTENTIAL
-                + (piccolo && level >= 10 ? " §8· §aPiccolo unlocked" : ""));
         int next = level + 1;
         int required = next * 100;
         long progress = ProgressionData.storedGetLong(player, "potentialunlock_points_to_level_" + next, 0L);
         if (progress > required) {
             progress = required;
         }
-        String method = ProgressionData.storedGet(player, "potentialunlock_last_method", "");
-        StringBuilder tip = new StringBuilder();
+        String status = piccolo && level >= 10 ? " §8· §aPiccolo" : "";
+        out.add("§dPotential Unlock§7: §f" + level + "/" + HARD_MAX_POTENTIAL
+                + status + " §8· §f" + progress + "/" + required);
         if (level < 10) {
-            tip.append("Spar with other players — land hits and take a few too. Soft caps at 10 until you beat Piccolo in the skill saga.");
+            tip(out, "Spar with players — soft caps at 10 until Piccolo.");
         } else {
-            tip.append("Keep sparring. Piccolo opened the rest of the ladder — you can climb toward 30.");
+            tip(out, "Keep sparring to climb toward 30.");
         }
-        tip.append(" Progress to next: ").append(progress).append("/").append(required).append(".");
-        if (method != null && !method.isBlank()) {
-            tip.append(" Lately: ").append(formatPotentialMethod(method)).append(".");
-        }
-        tip(out, tip.toString());
     }
 
     private static void appendFlight(List<String> out, ServerPlayer player, Skills skills) {
@@ -201,13 +197,12 @@ public final class SkillUnlockService {
         int max = skillMax(skills, "fly", 10);
         if (level >= max && max > 0) {
             out.add("§bFlight§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-            tip(out, "You've mastered staying airborne.");
+            tip(out, "Flight is fully trained.");
             return;
         }
-        out.add("§bFlight§7: §f" + level + "/" + max);
         int next = level + 1;
         int needSec = FlightProgression.requiredSecondsForLevel(next);
-        StringBuilder tip = new StringBuilder("Take off and stay in the air while flying — the longer you hold it, the stronger your Flight gets.");
+        String progressNote = "";
         if (needSec > 0) {
             long progress = ProgressionData.storedGetLong(player, "fly_training_progress_to_level_" + next, 0L);
             if (progress > needSec * 20L) {
@@ -216,45 +211,33 @@ public final class SkillUnlockService {
             if (progress > needSec) {
                 progress = needSec;
             }
-            tip.append(" Air time toward next: ")
-                    .append(formatTime(progress)).append(" / ").append(formatTime(needSec)).append(".");
+            progressNote = " §8· §f" + formatTime(progress) + "/" + formatTime(needSec);
         }
-        tip(out, tip.toString());
+        out.add("§bFlight§7: §f" + level + "/" + max + progressNote);
+        tip(out, "Stay airborne while flying to raise Flight.");
     }
 
     private static void appendMeditation(List<String> out, ServerPlayer player, Skills skills) {
         int level = skillLevel(skills, "meditation");
         int max = skillMax(skills, "meditation", 10);
-        StringBuilder tip = new StringBuilder();
         if (level >= max && max > 0) {
             out.add("§aMeditation§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-            tip.append("Your meditation practice is fully refined.");
-        } else {
-            out.add("§aMeditation§7: §f" + level + "/" + max);
-            tip.append("Sit and charge Ki in the trial biome. Match today's trial (/progression meditation) and let the calm build the skill.");
-            int next = level + 1;
-            int needSec = MeditationProgression.requiredSecondsForLevel(next);
-            if (needSec > 0) {
-                long progress = ProgressionData.storedGetLong(
-                        player, "meditation_restore_progress_to_level_" + next, 0L);
-                if (progress > needSec) {
-                    progress = needSec;
-                }
-                tip.append(" Progress: ")
-                        .append(formatTime(progress)).append(" / ").append(formatTime(needSec)).append(".");
-            }
+            tip(out, "Meditation is fully refined.");
+            return;
         }
-        String trial = MeditationProgression.currentTrialName();
-        if (trial != null && !trial.isBlank()) {
-            long rem = MeditationProgression.trialRemainingMs();
-            tip.append(" Current trial: ").append(trial)
-                    .append(" (").append(formatTime(rem / 1000L)).append(" left).");
-            String trialText = MeditationProgression.currentTrialGoal();
-            if (trialText != null && !trialText.isBlank()) {
-                tip.append(" ").append(trialText);
+        int next = level + 1;
+        int needSec = MeditationProgression.requiredSecondsForLevel(next);
+        String progressNote = "";
+        if (needSec > 0) {
+            long progress = ProgressionData.storedGetLong(
+                    player, "meditation_restore_progress_to_level_" + next, 0L);
+            if (progress > needSec) {
+                progress = needSec;
             }
+            progressNote = " §8· §f" + formatTime(progress) + "/" + formatTime(needSec);
         }
-        tip(out, tip.toString());
+        out.add("§aMeditation§7: §f" + level + "/" + max + progressNote);
+        tip(out, "Sit and charge Ki in the trial biome (/progression meditation).");
     }
 
     private static void appendSaga(List<String> out, Skills skills) {
@@ -281,12 +264,12 @@ public final class SkillUnlockService {
         String human = sagaHow(id);
         if (level < 1) {
             out.add(color + name + "§7: §f0/" + max);
-            tip(out, "Not unlocked yet. " + human);
+            tip(out, "Locked — " + human);
             return;
         }
         if (level >= max) {
             out.add(color + name + "§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-            tip(out, "Fully trained. " + human);
+            tip(out, human);
         } else {
             out.add(color + name + "§7: §f" + level + "/" + max);
             tip(out, human);
@@ -305,11 +288,15 @@ public final class SkillUnlockService {
         }
         int next = level + 1;
         int required = strengthRequirement(next);
-        out.add(color + name + "§7: §f" + level + "/" + max);
+        int need = Math.max(0, required - investedStr);
+        String needNote = need <= 0
+                ? " §8· §aready"
+                : " §8· need §f" + need + " STR";
+        out.add(color + name + "§7: §f" + level + "/" + max + needNote);
         tip(out, strengthHow(id, false, investedStr, required));
     }
 
-    /** One human tip line per skill (no separate formula / How: rows). */
+    /** One short human tip line per skill (progress lives on the level line). */
     private static void tip(List<String> out, String tip) {
         if (tip == null || tip.isBlank()) {
             return;
@@ -320,50 +307,29 @@ public final class SkillUnlockService {
     private static String strengthHow(String id, boolean maxed, int investedStr, int required) {
         String skill = "jump".equals(id) ? "Jump" : "Sprint";
         if (maxed) {
-            return skill + " is fully unlocked from the Strength you've invested.";
+            return skill + " is fully unlocked.";
         }
         if (investedStr >= required) {
-            return "You've invested enough Strength for the next " + skill
-                    + " rank — it should unlock as you keep training.";
+            return "Enough Strength invested — keep training for the next " + skill + " rank.";
         }
-        int need = Math.max(0, required - investedStr);
-        return "Put more Strength into yourself to raise " + skill
-                + ". You need about " + need + " more invested Strength for the next rank"
-                + " (have " + investedStr + ").";
+        return "Invest Strength to raise " + skill + ".";
     }
 
     private static String sagaHow(String id) {
         return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
-            case "kicontrol" -> "Learn Ki Control from the skills saga masters, then keep training with them to deepen it.";
-            case "kimanipulation" -> "Shape your Ki through master training in the skills saga.";
-            case "kisense" -> "Sharpen your sense for nearby Ki by progressing the skills saga.";
-            case "defense_penetration" -> "Earn Defense Penetration by finishing skills-saga challenges with the masters.";
-            case "healing_reduction" -> "Unlock Healing Reduction through the skills saga, then keep training it up.";
-            case "instant_transmission" -> "Masters in the skills saga teach Instant Transmission — complete their path to learn it.";
-            case "ki_infusion" -> "Infuse your strikes with Ki after unlocking it in the skills saga.";
-            case "kiboost" -> "Raise Ki Boost by training with the masters once the skills saga opens it.";
-            case "kiprotection" -> "Build Ki Protection through skills-saga master training.";
-            case "kaioken" -> "Kaioken comes from the skills saga — unlock it, then push the ranks with the masters.";
-            case "fusion" -> "Fusion is a skills-saga unlock — finish the master path, then train the ranks.";
-            default -> "Train with the masters in the skills saga to unlock and raise this.";
+            case "kicontrol" -> "Train Ki Control with skills-saga masters.";
+            case "kimanipulation" -> "Shape Ki through skills-saga master training.";
+            case "kisense" -> "Sharpen Ki Sense in the skills saga.";
+            case "defense_penetration" -> "Earn this through skills-saga challenges.";
+            case "healing_reduction" -> "Unlock and train this in the skills saga.";
+            case "instant_transmission" -> "Learn Instant Transmission from saga masters.";
+            case "ki_infusion" -> "Unlock Ki Infusion in the skills saga.";
+            case "kiboost" -> "Raise Ki Boost with skills-saga masters.";
+            case "kiprotection" -> "Build Ki Protection through saga training.";
+            case "kaioken" -> "Unlock Kaioken in the skills saga, then train ranks.";
+            case "fusion" -> "Unlock Fusion via the skills-saga master path.";
+            default -> "Train with skills-saga masters to unlock and raise this.";
         };
-    }
-
-    private static String formatPotentialMethod(String method) {
-        if (method == null || method.isBlank()) {
-            return "";
-        }
-        if ("blocking".equalsIgnoreCase(method) || "taking_damage".equalsIgnoreCase(method)
-                || "getting_hit".equalsIgnoreCase(method)) {
-            return "taking hits";
-        }
-        if ("physical_hit".equalsIgnoreCase(method)) {
-            return "physical hits";
-        }
-        if ("ki_attack".equalsIgnoreCase(method)) {
-            return "ki attacks";
-        }
-        return method.replace('_', ' ');
     }
 
     private static int strengthRequirement(int next) {
