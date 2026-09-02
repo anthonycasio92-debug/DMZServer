@@ -119,21 +119,22 @@ public final class RivalSystem {
             return;
         }
         long now = System.currentTimeMillis();
+        // Challenge KOs only — open-world PvP never reaches here.
+        // wins/losses are recorded by RivalChallengeManager.applyWinLoss; only
+        // deathLosses/deathWins drive the Nemesis climb.
         vLink.deathLosses++;
-        vLink.losses++;
         vLink.touch(now);
         if (kLink != null) {
             kLink.deathWins++;
-            kLink.wins++;
             kLink.touch(now);
         }
         if (vLink.deathLosses >= RivalConstants.NEMESIS_DEATH_LOSSES) {
             vLink.isNemesis = true;
             vRec.nemesisUuid = kRec.uuid;
             DmzRewards.msg(victim, "§c[Rival] " + killer.m_7755_().getString()
-                    + " is now your Nemesis (" + vLink.deathLosses + " challenge losses).");
+                    + " is now your Nemesis (" + vLink.deathLosses + " challenge deaths).");
             DmzRewards.msg(killer, "§6[Rival] You became Nemesis to "
-                    + victim.m_7755_().getString() + " (3 challenge KOs).");
+                    + victim.m_7755_().getString() + " (3 challenge deaths).");
         }
         store.markDirty();
     }

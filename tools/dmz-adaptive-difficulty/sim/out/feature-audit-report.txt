@@ -1,5 +1,5 @@
 === Version ===
-  OK  VERSION 2.3.135
+  OK  VERSION 2.3.136
   OK  meditation hints use ScreenNotify subtitle
   OK  meditation full-ki hint only while charging
   OK  meditation no chat tellCondition
@@ -388,7 +388,7 @@
   OK  remove demotes mutual to one-way
   OK  remove archives remover history
   OK  pending excluded from rival list
-  OK  nemesis only from challenge KO
+  OK  nemesis only from challenge death KO
   OK  dual silent → Declared
   OK  Spar Stats button BOOK
   OK  Skills admin header BOOK

@@ -1,3 +1,9 @@
+## Nemesis = challenge deaths only (2.3.136)
+
+Nemesis climb uses challenge knockouts only (`deathLosses`), not open-world PvP
+and not damage-timer challenge losses. Wins/losses stay on the challenge score
+path so KO deaths are not double-counted.
+
 ## Rival Progress UI cleanup (2.3.135)
 
 Progress hub is 4 buttons (Stats · Season · Quests · More). More opens Records
