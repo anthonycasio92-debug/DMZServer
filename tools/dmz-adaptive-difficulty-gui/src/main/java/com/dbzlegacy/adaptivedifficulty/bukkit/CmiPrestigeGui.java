@@ -121,22 +121,10 @@ public final class CmiPrestigeGui {
 
         int held = parseInt(ph.get("held"), 0);
         addTurnIn(gui, 19, 1, held, ph);
+        addTurnIn(gui, 20, 2, held, ph);
         addTurnIn(gui, 21, 3, held, ph);
-        addTurnIn(gui, 23, 5, held, ph);
-        Map<String, String> allVars = Map.of(
-                "held", String.valueOf(held),
-                "gain", ph.getOrDefault("turnin_all_points", "0"));
-        List<String> allDefaults = List.of(
-                "&7Turn in all &6{held} &7held",
-                "&7Gain &e{gain} &7points");
-        CMIGuiButton all = new CMIGuiButton(25, Material.GOLD_BLOCK,
-                GuiTooltips.name("prestige.turnin.all", "&6Turn In All"));
-        all.lockField();
-        all.addLore(GuiTooltips.buttonLore("prestige.turnin.all", allDefaults, allVars, null));
-        if (held > 0) {
-            all.addCommand("lmdo prestige turnin all turnin");
-        }
-        gui.addButton(all);
+        addTurnIn(gui, 23, 6, held, ph);
+        addTurnIn(gui, 24, 9, held, ph);
 
         gui.addButton(backBtn(27));
         gui.addButton(hubBtn(31));
@@ -163,7 +151,10 @@ public final class CmiPrestigeGui {
                 ok ? Material.GOLD_INGOT : Material.GRAY_DYE,
                 display);
         btn.lockField();
-        btn.addLore(GuiTooltips.buttonLore("prestige.turnin.amount", defaults, vars, null));
+        btn.addLore(GuiTooltips.buttonLore("prestige.turnin.amount", defaults, vars,
+                (amount == 3 || amount == 6 || amount == 9)
+                        ? List.of("&aPack bonus: &f3→4 &8· &f6→9 &8· &f9→15")
+                        : null));
         if (ok) {
             btn.addCommand("lmdo prestige turnin " + amount + " turnin");
         }

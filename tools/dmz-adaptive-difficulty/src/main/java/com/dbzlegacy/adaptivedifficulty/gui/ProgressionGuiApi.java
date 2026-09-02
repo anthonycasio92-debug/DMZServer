@@ -833,11 +833,10 @@ public final class ProgressionGuiApi {
         out.put("shop_skill_count", String.valueOf(offers.size()));
         out.put("shop_pages", String.valueOf(PrestigePointsSystem.skillShopPageCount()));
         out.put("shop_page_size", String.valueOf(PrestigePointsSystem.SKILL_SHOP_PAGE_SIZE));
-        // Turn-in previews
-        for (int n : new int[]{1, 3, 5}) {
+        // Turn-in previews (1 / 2 / 3 / 6 / 9 only)
+        for (int n : PrestigePointsSystem.TURN_IN_AMOUNTS) {
             out.put("turnin_" + n + "_points", String.valueOf(PrestigePointsSystem.pointsForTurnIn(n)));
         }
-        out.put("turnin_all_points", String.valueOf(PrestigePointsSystem.pointsForTurnIn(held)));
         out.put("last_spend_ok", ProgressionData.tempGet(player, "pp_last_spend_ok", "false"));
         return out;
     }
@@ -859,9 +858,9 @@ public final class ProgressionGuiApi {
                 + " §8| §7Cap: §f" + ph.getOrDefault("level_cap_fmt", "100000"));
         switch (p) {
             case "turnin", "points" -> {
-                lore.add("§7Turn in held prestiges: §f1 §7point each");
-                lore.add("§7Every §f3 §7turned in grants §a+1 §7bonus point");
-                lore.add("§8Example: turn in 3 → 4 points");
+                lore.add("§7Turn in §f1§7, §f2§7, §f3§7, §f6§7, or §f9 §7at a time");
+                lore.add("§7Payout: §f3→4 §8· §f6→9 §8· §f9→15 §7points");
+                lore.add("§81–2 give 1 point each (no pack bonus)");
             }
             case "shop", "skills" -> {
                 lore.add("§71 point → +1 skill level · §dPotential Unlock §7→ +2");
@@ -938,11 +937,7 @@ public final class ProgressionGuiApi {
             try {
                 amount = Integer.parseInt(arg == null || arg.isBlank() ? "0" : arg.trim());
             } catch (NumberFormatException e) {
-                if ("all".equalsIgnoreCase(arg)) {
-                    amount = PrestigeSystem.getHeld(player);
-                } else {
-                    return "§cUsage: turn in 1 / 3 / 5 / all.";
-                }
+                return "§cUsage: turn in 1 / 2 / 3 / 6 / 9.";
             }
             return PrestigePointsSystem.turnIn(player, amount);
         }

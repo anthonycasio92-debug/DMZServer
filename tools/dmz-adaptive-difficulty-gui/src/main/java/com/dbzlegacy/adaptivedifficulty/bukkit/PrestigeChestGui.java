@@ -144,17 +144,10 @@ public final class PrestigeChestGui implements Listener {
 
         int held = parseInt(ph.get("held"), 0);
         putTurnIn(viewer, holder, inv, 19, 1, held, ph);
+        putTurnIn(viewer, holder, inv, 20, 2, held, ph);
         putTurnIn(viewer, holder, inv, 21, 3, held, ph);
-        putTurnIn(viewer, holder, inv, 23, 5, held, ph);
-        Map<String, String> allVars = Map.of(
-                "held", String.valueOf(held),
-                "gain", ph.getOrDefault("turnin_all_points", "0"));
-        List<String> allDefaults = List.of(
-                "&7Turn in all &6{held} &7held",
-                "&7Gain &e{gain} &7points");
-        put(holder, inv, 25, tipBtn(viewer, "prestige.turnin.all", Material.GOLD_BLOCK, "&6Turn In All",
-                allDefaults, allVars, GuiBoardHelper.tips(viewer, "&7+1 bonus point per 3 turned in")),
-                held > 0 ? SlotAction.act("turnin", "all", "turnin") : null);
+        putTurnIn(viewer, holder, inv, 23, 6, held, ph);
+        putTurnIn(viewer, holder, inv, 24, 9, held, ph);
 
         put(holder, inv, 27, backBtn(), SlotAction.page("main"));
         put(holder, inv, 31, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
@@ -172,7 +165,9 @@ public final class PrestigeChestGui implements Listener {
         List<String> defaults = List.of(
                 "&7Spend &6{amount} &7held prestige" + (amount == 1 ? "" : "s"),
                 "&7Gain &e{gain} &7points");
-        List<String> extra = amount >= 3 ? List.of("&aIncludes bonus for packs of 3") : null;
+        List<String> extra = (amount == 3 || amount == 6 || amount == 9)
+                ? List.of("&aPack bonus: &f3→4 &8· &f6→9 &8· &f9→15")
+                : null;
         boolean ok = held >= amount;
         String fallback = (ok ? "&eTurn In &f" : "&8Need &f") + amount;
         // tipBtn applies vars to JSON name; when unaffordable force Need styling.

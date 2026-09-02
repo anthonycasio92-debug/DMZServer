@@ -1,3 +1,16 @@
+## Prestige turn-in ladder (2.3.132)
+
+Turn-in packs are **1 / 2 / 3 / 6 / 9** only (removed 5 and Turn In All).
+Points: {@code N + T(N/3)} with triangular {@code T(k)=k(k+1)/2}:
+
+| Amount | Points |
+|-------:|-------:|
+| 1 | 1 |
+| 2 | 2 |
+| 3 | 4 |
+| 6 | 9 |
+| 9 | 15 |
+
 ## Full mod audit (2.3.131) — 2026-09-01
 
 Fail-closed suite all green on `cursor/telemetry-scaling-cal-c766`:

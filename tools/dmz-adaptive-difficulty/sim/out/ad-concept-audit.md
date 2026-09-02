@@ -57,7 +57,7 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 2.3.131
+- ✅ VERSION 2.3.132
 - ✅ RaceSkillSync present
 - ✅ formula revision 39
 - ✅ hpFloorStrength present

@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.131", 'VERSION = "2.3.131"' in mod)
+    check("VERSION 2.3.132", 'VERSION = "2.3.132"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -905,7 +905,8 @@ def main() -> int:
           "tierPointCost" in pp and "buyDifficultyTier" in pp)
     check("prestige wallet GUI",
           "putWallet" in prestige_chest_pp and "Difficulty Tiers" in prestige_chest_pp)
-    check("turnIn bonus +1 per 3", "n + (n / 3)" in pp and "pointsForTurnIn" in pp)
+    check("turnIn triangular pack bonus", "packs * (packs + 1) / 2" in pp and "pointsForTurnIn" in pp)
+    check("turnIn amounts 1/2/3/6/9", "TURN_IN_AMOUNTS = {1, 2, 3, 6, 9}" in pp)
     prestige_skill_sync = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/PrestigeSkillSync.java")
     prestige_faction_sync = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/PrestigeFactionSync.java")
     check("takePrestigeLevels API", "takePrestigeLevels" in prestige_skill_sync and "loseLevels" in prestige_skill_sync)

@@ -21,7 +21,9 @@ import net.minecraft.server.level.ServerPlayer;
  * Prestige Points shop: turn in held prestiges for points, spend on DMZ skill levels,
  * Permanent Majin / Mutant, and personal level-cap breakthroughs.
  *
- * <p>Turn-in: 1 point per prestige + 1 bonus per 3 turned in ({@code N + floor(N/3)}).
+ * <p>Turn-in amounts: {@code 1, 2, 3, 6, 9} only.
+ * Points: {@code N + T(N/3)} where {@code T(k)=k(k+1)/2}
+ * (3→4, 6→9, 9→15).
  * Skills: 1 point = +1 permanent skill level for Skill Check skills only
  * (Natural + Saga — not ultimates / ki attacks). Survives prestige reset.
  * {@code potentialunlock} is the exception: 1 point = +2 levels.
@@ -229,9 +231,27 @@ public final class PrestigePointsSystem {
                 + " · Balance: §e" + getPoints(player);
     }
 
+    /** Allowed single turn-in pack sizes (GUI + command). */
+    public static final int[] TURN_IN_AMOUNTS = {1, 2, 3, 6, 9};
+
+    public static boolean isAllowedTurnInAmount(int amount) {
+        for (int n : TURN_IN_AMOUNTS) {
+            if (n == amount) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Points for turning in {@code amount} prestiges in one action.
+     * {@code N + triangular(N/3)} → 1→1, 2→2, 3→4, 6→9, 9→15.
+     */
     public static int pointsForTurnIn(int amount) {
         int n = Math.max(0, amount);
-        return n + (n / 3);
+        int packs = n / 3;
+        int bonus = packs * (packs + 1) / 2;
+        return n + bonus;
     }
 
     /**
@@ -246,6 +266,9 @@ public final class PrestigePointsSystem {
         int want = Math.max(0, amount);
         if (want <= 0) {
             return "§cChoose how many prestiges to turn in.";
+        }
+        if (!isAllowedTurnInAmount(want)) {
+            return "§cTurn in §f1§7, §f2§7, §f3§7, §f6§7, or §f9 §cprestiges at a time.";
         }
         if (want > held) {
             return "§cYou only hold §6" + held + " §cprestige" + (held == 1 ? "" : "s") + ".";
