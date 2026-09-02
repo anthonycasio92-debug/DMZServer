@@ -46,7 +46,6 @@ function unwrapPlayer(player) {
 }
 
 function getPitch(player) {
-    // Prefer KubeJS xRot / pitch wrappers
     try {
         if (player.xRot !== undefined && player.xRot !== null) {
             return Number(player.xRot);
@@ -58,7 +57,6 @@ function getPitch(player) {
     try {
         if (player.getPitch) return Number(player.getPitch());
     } catch (e3) {}
-    // Raw MC entity
     var mc = unwrapPlayer(player);
     try {
         if (mc.getXRot) return Number(mc.getXRot());
@@ -70,7 +68,6 @@ function getPitch(player) {
 }
 
 function doKick(player, server, name) {
-    // Prefer disconnect/kick APIs; fall back to console kick command.
     try {
         if (typeof Component !== "undefined" && Component.literal) {
             player.kick(Component.literal(KICK_MESSAGE));
@@ -114,7 +111,6 @@ PlayerEvents.tick(function (event) {
 
     var pitch = getPitch(player);
 
-    // Occasional debug so we can see pitch in logs/kubejs/server.log
     var dc = (debugCount[name] || 0) + 1;
     debugCount[name] = dc;
     if (dc % debugEvery === 1) {
