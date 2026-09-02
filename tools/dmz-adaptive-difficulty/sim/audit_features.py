@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.134", 'VERSION = "2.3.134"' in mod)
+    check("VERSION 2.3.135", 'VERSION = "2.3.135"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -528,9 +528,11 @@ def main() -> int:
           'Material.BREWING_STAND, "&dProgression"' in prestige)
     check("Rival Progress compact hub",
           'Inventory inv = Bukkit.createInventory(holder, 27' in rival
-          and '"stats", "season", "quests", "achievements", "title"' in rival)
+          and 'SlotAction.page("records")' in rival
+          and '"&eStats"' in rival)
     check("Rival Progress HOF+Journal secondary",
-          'SlotAction.page("hof")' in rival and 'SlotAction.page("journal")' in rival)
+          'SlotAction.page("hof")' in rival and 'SlotAction.page("journal")' in rival
+          and "records" in rival)
 
     print("\n=== Rival relationship semantics (2.3.134) ===")
     rival_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.java")

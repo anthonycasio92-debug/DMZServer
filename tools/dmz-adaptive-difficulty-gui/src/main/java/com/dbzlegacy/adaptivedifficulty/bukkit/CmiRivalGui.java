@@ -58,13 +58,14 @@ public final class CmiRivalGui {
                 case "challenge", "challenges" -> openChallenge(player);
                 case "top", "leaderboard" -> openTop(player);
                 case "progress" -> openProgress(player);
+                case "records", "more" -> openRecords(player);
                 case "season" -> openDetail(player, "season", "&aSeason", Material.CLOCK, "progress");
                 case "quests", "quest" -> openDetail(player, "quests", "&bQuests", Material.WRITABLE_BOOK, "progress");
                 case "achievements", "achs", "ach" ->
-                        openDetail(player, "achievements", "&dAchievements", Material.DIAMOND, "progress");
-                case "hof", "hall" -> openDetail(player, "hof", "&6Hall of Fame", Material.GOLD_BLOCK, "progress");
-                case "journal" -> openDetail(player, "journal", "&fJournal", Material.MAP, "progress");
-                case "title", "titles" -> openDetail(player, "title", "&eTitle", Material.NAME_TAG, "progress");
+                        openDetail(player, "achievements", "&dAchievements", Material.DIAMOND, "records");
+                case "hof", "hall" -> openDetail(player, "hof", "&6Hall of Fame", Material.GOLD_BLOCK, "records");
+                case "journal" -> openDetail(player, "journal", "&fJournal", Material.MAP, "records");
+                case "title", "titles" -> openDetail(player, "title", "&eTitle", Material.NAME_TAG, "records");
                 case "help" -> openMain(player);
                 case "admin" -> {
                     if (ForgeBridge.isStaff(player)) {
@@ -127,7 +128,7 @@ public final class CmiRivalGui {
         gui.addButton(pageBtn(player, 29, "rival.main.history", Material.SKELETON_SKULL, "&8History", "history",
                 "&7Previous rivals", "&8Archived when removed"));
         gui.addButton(pageBtn(player, 31, "rival.main.progress", Material.BOOK, "&bProgress", "progress",
-                "&7Season · quests · records"));
+                "&7Stats · season · quests"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "false"));
         gui.addButton(actionBtn(player, 33,
@@ -168,40 +169,40 @@ public final class CmiRivalGui {
         CMIGui gui = base(player, "&8Rival Progress", 3);
         CMIGuiButton info = new CMIGuiButton(4, Material.BOOK, "&b&lProgress");
         info.lockField();
-        info.addLore(List.of("", "&7Season · quests · records"));
+        info.addLore(List.of("", "&7Pick a page"));
         gui.addButton(info);
 
-        String[] pages = {"stats", "season", "quests", "achievements", "title"};
-        Material[] mats = {
-                Material.BOOK, Material.CLOCK, Material.WRITABLE_BOOK, Material.DIAMOND, Material.NAME_TAG
-        };
-        String[] titles = {"&eStats", "&aSeason", "&bQuests", "&dAchs", "&eTitle"};
-        String[] tipKeys = {
-                "rival.progress.stats", "rival.progress.season", "rival.progress.quests",
-                "rival.progress.achs", "rival.progress.title"
-        };
-        int[] slots = {11, 12, 13, 14, 15};
-        for (int i = 0; i < pages.length; i++) {
-            CMIGuiButton btn = new CMIGuiButton(slots[i], mats[i], GuiTooltips.name(tipKeys[i], titles[i]));
-            btn.lockField();
-            btn.addLore(GuiTooltips.lore(tipKeys[i], List.of("&eClick to open")));
-            btn.addCommand("lmdo rival page " + pages[i]);
-            gui.addButton(btn);
-        }
-        CMIGuiButton hof = new CMIGuiButton(20, Material.GOLD_BLOCK,
-                GuiTooltips.name("rival.progress.hof", "&6HOF"));
-        hof.lockField();
-        hof.addLore(GuiTooltips.lore("rival.progress.hof", List.of("&7Hall of Fame")));
-        hof.addCommand("lmdo rival page hof");
-        gui.addButton(hof);
-        CMIGuiButton journal = new CMIGuiButton(21, Material.MAP,
-                GuiTooltips.name("rival.progress.journal", "&fJournal"));
-        journal.lockField();
-        journal.addLore(GuiTooltips.lore("rival.progress.journal", List.of("&7Recent rivalry notes")));
-        journal.addCommand("lmdo rival page journal");
-        gui.addButton(journal);
+        gui.addButton(pageBtn(player, 11, "rival.progress.stats", Material.BOOK, "&eStats", "stats",
+                "&7Wins · RP · rivals"));
+        gui.addButton(pageBtn(player, 12, "rival.progress.season", Material.CLOCK, "&aSeason", "season",
+                "&7Season RP · top 5"));
+        gui.addButton(pageBtn(player, 13, "rival.progress.quests", Material.WRITABLE_BOOK, "&bQuests", "quests",
+                "&7Weekly goals"));
+        gui.addButton(pageBtn(player, 15, "rival.progress.more", Material.CHEST, "&6More", "records",
+                "&7Title · achs · HOF · journal"));
 
         gui.addButton(pageBtn(player, 18, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(22));
+        gui.addButton(closeBtn(26));
+        fillEmpty(gui, 3);
+        GuiFeedback.openCmi(gui);
+    }
+
+    private static void openRecords(Player player) {
+        CMIGui gui = base(player, "&8Rival Records", 3);
+        CMIGuiButton info = new CMIGuiButton(4, Material.CHEST, "&6&lRecords");
+        info.lockField();
+        info.addLore(List.of("", "&7Pick a page"));
+        gui.addButton(info);
+        gui.addButton(pageBtn(player, 11, "rival.progress.title", Material.NAME_TAG, "&eTitle", "title",
+                "&7RP tier · perk"));
+        gui.addButton(pageBtn(player, 12, "rival.progress.achs", Material.DIAMOND, "&dAchs", "achievements",
+                "&7Unlocked achievements"));
+        gui.addButton(pageBtn(player, 14, "rival.progress.hof", Material.GOLD_BLOCK, "&6HOF", "hof",
+                "&7Hall of Fame"));
+        gui.addButton(pageBtn(player, 15, "rival.progress.journal", Material.MAP, "&fJournal", "journal",
+                "&7Recent battles"));
+        gui.addButton(pageBtn(player, 18, "common.back", Material.ARROW, "&7Back", "progress", "&7Progress"));
         gui.addButton(hubBtn(22));
         gui.addButton(closeBtn(26));
         fillEmpty(gui, 3);
@@ -243,35 +244,38 @@ public final class CmiRivalGui {
     }
 
     private static void openDetail(Player player, String page, String title, Material mat, String backPage) {
-        CMIGui gui = base(player, "&8Rival", 5);
-        String back = backPage == null || backPage.isBlank() ? "main" : backPage;
+        CMIGui gui = base(player, "&8Rival", 3);
+        String back = backPage == null || backPage.isBlank() ? "progress" : backPage;
         List<String> lore = toAmp(ForgeBridge.rivalLines(player, page));
         if (lore.isEmpty()) {
-            lore = List.of("&7Nothing here yet.", "&8Data: config/legacymechanics/");
+            lore = List.of("&7Nothing here yet.");
         }
-        CMIGuiButton header = new CMIGuiButton(4, mat, title);
-        header.lockField();
-        List<String> detailHeader = new ArrayList<>();
-        detailHeader.add("");
-        detailHeader.addAll(GuiBoardHelper.tips(player, "&7One item per entry", "&8Centered below"));
-        header.addLore(detailHeader);
-        gui.addButton(header);
-        List<GuiBoardHelper.DetailTile> tiles = GuiBoardHelper.detailTiles(lore);
-        int[] slots = GuiBoardHelper.centeredSlots(Math.min(tiles.size(), 21));
-        for (int i = 0; i < slots.length && i < tiles.size(); i++) {
-            GuiBoardHelper.DetailTile tile = tiles.get(i);
-            CMIGuiButton btn = new CMIGuiButton(slots[i], tile.icon, tile.title);
-            btn.lockField();
-            List<String> tip = new ArrayList<>();
-            tip.add("");
-            tip.addAll(tile.lore);
-            btn.addLore(tip);
-            gui.addButton(btn);
+        List<String> body = new ArrayList<>();
+        body.add("");
+        int shown = 0;
+        for (String line : lore) {
+            if (line == null) {
+                continue;
+            }
+            String plain = GuiBoardHelper.strip(line).trim();
+            if (plain.isEmpty() || plain.startsWith("---") || plain.startsWith("──")) {
+                continue;
+            }
+            body.add(line);
+            shown++;
+            if (shown >= 18) {
+                body.add("&8…");
+                break;
+            }
         }
-        gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", back, "&7Return"));
-        gui.addButton(hubBtn(40));
-        gui.addButton(closeBtn(44));
-        fillEmpty(gui, 5);
+        CMIGuiButton summary = new CMIGuiButton(13, mat, title);
+        summary.lockField();
+        summary.addLore(body);
+        gui.addButton(summary);
+        gui.addButton(pageBtn(player, 18, "common.back", Material.ARROW, "&7Back", back, "&7Return"));
+        gui.addButton(hubBtn(22));
+        gui.addButton(closeBtn(26));
+        fillEmpty(gui, 3);
         GuiFeedback.openCmi(gui);
     }
 

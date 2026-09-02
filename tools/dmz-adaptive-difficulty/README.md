@@ -99,6 +99,9 @@ Runtime guards for unknown races: NaN/absurd form&stat clamps, race-tagged basel
 - Stock tier costs (copper-value bases): T1 **1× Copper** · T2 5 · T3 15 · T4 50 · T5 150 · T6 500 · T7 1500. Level scaling is exponential in **absolute** DMZ level from 1 → `tierCostLevelAnchor` (**150000**): T1 at level 1 stays **1× Copper**, T7 at level 150k is **100× Netherite** (`tierCostT7TargetCopper` = 10_000_000). Progress clamps at the anchor. Higher tiers are always ≥ ~25% more than the previous tier’s cost for the same player. Buy prices / unlock gates use a **base-form** DMZ level — transforming must not change the cost.
 - Saga/quest entities are exempt by class (`DBSagasEntity`) and by tags (`dmz_quest_*` / `dmz_saga_id`). Vanilla cage spawners, SDD Advanced Spawner mobs (`sdd_spawner` / `sdd_boss`), the Ender Dragon, and **slime/magma cube split children** are also never AD-converted. Transform forms keep quest HP — AD never rolls them back to the entity-default 300 max health.
 - **God forms:** hit-cap blends soft↔live HP and pulls live-offense pressure so transforms cannot out-tank packs after DMZ DEF. T4+ also pierces DMZ’s hard cancel (`flatMit ≥ dmg×2.5`) using live `getFlatMitigation()` (DEF form), with a LivingDamageEvent safety net that restores tier-scaled landing damage if a hit is still zeroed (SSJB knockback-with-0-damage fix).
+### Bugfix (2.3.135)
+- Rival Progress: 4-button hub + Records; single-item detail boards
+
 ### Bugfix (2.3.134)
 - Rival remove keeps other side Silent after Mutual end; Pending only in invites; Nemesis = 3 challenge KOs; Silent label; cleaner Progress hub
 

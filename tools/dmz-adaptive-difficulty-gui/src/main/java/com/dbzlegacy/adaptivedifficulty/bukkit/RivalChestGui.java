@@ -72,13 +72,14 @@ public final class RivalChestGui implements Listener {
             case "challenge", "challenges" -> challenge(viewer, subject);
             case "top", "leaderboard" -> topBoard(viewer, subject, "top", "&fRP Top", "main");
             case "progress" -> progress(viewer, subject);
+            case "records", "more" -> records(viewer, subject);
             case "season" -> detailBoard(viewer, subject, "season", "&aSeason", Material.CLOCK, "progress");
             case "quests", "quest" -> detailBoard(viewer, subject, "quests", "&bQuests", Material.WRITABLE_BOOK, "progress");
             case "achievements", "achs", "ach" ->
-                    detailBoard(viewer, subject, "achievements", "&dAchievements", Material.DIAMOND, "progress");
-            case "hof", "hall" -> detailBoard(viewer, subject, "hof", "&6Hall of Fame", Material.GOLD_BLOCK, "progress");
-            case "journal" -> detailBoard(viewer, subject, "journal", "&fJournal", Material.MAP, "progress");
-            case "title", "titles" -> detailBoard(viewer, subject, "title", "&eTitle", Material.NAME_TAG, "progress");
+                    detailBoard(viewer, subject, "achievements", "&dAchievements", Material.DIAMOND, "records");
+            case "hof", "hall" -> detailBoard(viewer, subject, "hof", "&6Hall of Fame", Material.GOLD_BLOCK, "records");
+            case "journal" -> detailBoard(viewer, subject, "journal", "&fJournal", Material.MAP, "records");
+            case "title", "titles" -> detailBoard(viewer, subject, "title", "&eTitle", Material.NAME_TAG, "records");
             // Help page removed — open hub main.
             case "help" -> main(viewer, subject);
             case "admin" -> ForgeBridge.isStaff(viewer) ? admin(viewer, subject) : main(viewer, subject);
@@ -128,7 +129,7 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 29, tipBtn(viewer, "rival.main.history", Material.SKELETON_SKULL, "&8History",
                 List.of("&7Previous rivals", "&8Archived when removed")), SlotAction.page("history"));
         put(holder, inv, 31, tipBtn(viewer, "rival.main.progress", Material.BOOK, "&bProgress",
-                List.of("&7Season · quests · records")), SlotAction.page("progress"));
+                List.of("&7Stats · season · quests")), SlotAction.page("progress"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "false"));
         put(holder, inv, 33, tipBtn(viewer,
@@ -168,31 +169,41 @@ public final class RivalChestGui implements Listener {
         holder.bind(inv);
         frame(inv, 27);
         put(holder, inv, 4, item(Material.BOOK, "&b&lProgress",
-                List.of("", "&7Season · quests · records")));
+                List.of("", "&7Pick a page")));
 
-        // Compact hub: Stats · Season · Quests · Achievements · Title
-        String[] pages = {"stats", "season", "quests", "achievements", "title"};
-        Material[] mats = {
-                Material.BOOK, Material.CLOCK, Material.WRITABLE_BOOK, Material.DIAMOND, Material.NAME_TAG
-        };
-        String[] titles = {"&eStats", "&aSeason", "&bQuests", "&dAchs", "&eTitle"};
-        String[] tipKeys = {
-                "rival.progress.stats", "rival.progress.season", "rival.progress.quests",
-                "rival.progress.achs", "rival.progress.title"
-        };
-        int[] slots = {11, 12, 13, 14, 15};
-        for (int i = 0; i < pages.length; i++) {
-            put(holder, inv, slots[i],
-                    tipBtn(viewer, tipKeys[i], mats[i], titles[i], List.of("&eClick to open")),
-                    SlotAction.page(pages[i]));
-        }
-        // Secondary: HOF + Journal tucked beside nav
-        put(holder, inv, 20, tipBtn(viewer, "rival.progress.hof", Material.GOLD_BLOCK, "&6HOF",
-                List.of("&7Hall of Fame")), SlotAction.page("hof"));
-        put(holder, inv, 21, tipBtn(viewer, "rival.progress.journal", Material.MAP, "&fJournal",
-                List.of("&7Recent rivalry notes")), SlotAction.page("journal"));
+        put(holder, inv, 11, tipBtn(viewer, "rival.progress.stats", Material.BOOK, "&eStats",
+                List.of("&7Wins · RP · rivals")), SlotAction.page("stats"));
+        put(holder, inv, 12, tipBtn(viewer, "rival.progress.season", Material.CLOCK, "&aSeason",
+                List.of("&7Season RP · top 5")), SlotAction.page("season"));
+        put(holder, inv, 13, tipBtn(viewer, "rival.progress.quests", Material.WRITABLE_BOOK, "&bQuests",
+                List.of("&7Weekly goals")), SlotAction.page("quests"));
+        put(holder, inv, 15, tipBtn(viewer, "rival.progress.more", Material.CHEST, "&6More",
+                List.of("&7Title · achs · HOF · journal")), SlotAction.page("records"));
+
         put(holder, inv, 18, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
+        put(holder, inv, 22, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 26, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    /** Compact secondary progress pages: Title · Achievements · HOF · Journal. */
+    private Inventory records(Player viewer, Player subject) {
+        Holder holder = new Holder("records");
+        Inventory inv = Bukkit.createInventory(holder, 27, invTitle(viewer, subject, "&8Rival Records"));
+        holder.bind(inv);
+        frame(inv, 27);
+        put(holder, inv, 4, item(Material.CHEST, "&6&lRecords", List.of("", "&7Pick a page")));
+        put(holder, inv, 11, tipBtn(viewer, "rival.progress.title", Material.NAME_TAG, "&eTitle",
+                List.of("&7RP tier · perk")), SlotAction.page("title"));
+        put(holder, inv, 12, tipBtn(viewer, "rival.progress.achs", Material.DIAMOND, "&dAchs",
+                List.of("&7Unlocked achievements")), SlotAction.page("achievements"));
+        put(holder, inv, 14, tipBtn(viewer, "rival.progress.hof", Material.GOLD_BLOCK, "&6HOF",
+                List.of("&7Hall of Fame")), SlotAction.page("hof"));
+        put(holder, inv, 15, tipBtn(viewer, "rival.progress.journal", Material.MAP, "&fJournal",
+                List.of("&7Recent battles")), SlotAction.page("journal"));
+        put(holder, inv, 18, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Progress"),
+                SlotAction.page("progress"));
         put(holder, inv, 22, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 26, closeBtn(), SlotAction.dismiss());
         return inv;
@@ -228,31 +239,38 @@ public final class RivalChestGui implements Listener {
 
     private Inventory detailBoard(Player viewer, Player subject, String page, String title, Material mat, String backPage) {
         Holder holder = new Holder(page);
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Rival"));
+        Inventory inv = Bukkit.createInventory(holder, 27, invTitle(viewer, subject, "&8Rival"));
         holder.bind(inv);
-        frame(inv, 45);
-        String back = backPage == null || backPage.isBlank() ? "main" : backPage;
+        frame(inv, 27);
+        String back = backPage == null || backPage.isBlank() ? "progress" : backPage;
         List<String> lore = toAmp(ForgeBridge.rivalLines(subject, page));
         if (lore.isEmpty()) {
-            lore = List.of("&7Nothing here yet.", "&8Data: config/legacymechanics/");
+            lore = List.of("&7Nothing here yet.");
         }
-        List<String> detailHeader = new ArrayList<>();
-        detailHeader.add("");
-        detailHeader.addAll(GuiBoardHelper.tips(viewer, "&7One item per entry", "&8Centered below"));
-        put(holder, inv, 4, item(mat, title, detailHeader));
-        List<GuiBoardHelper.DetailTile> tiles = GuiBoardHelper.detailTiles(lore);
-        int[] slots = GuiBoardHelper.centeredSlots(Math.min(tiles.size(), 21));
-        for (int i = 0; i < slots.length && i < tiles.size(); i++) {
-            GuiBoardHelper.DetailTile tile = tiles.get(i);
-            List<String> tip = new ArrayList<>();
-            tip.add("");
-            tip.addAll(tile.lore);
-            put(holder, inv, slots[i], item(tile.icon, tile.title, tip));
+        // One summary item — no tip spam, no tile wall.
+        List<String> body = new ArrayList<>();
+        body.add("");
+        int shown = 0;
+        for (String line : lore) {
+            if (line == null) {
+                continue;
+            }
+            String plain = GuiBoardHelper.strip(line).trim();
+            if (plain.isEmpty() || plain.startsWith("---") || plain.startsWith("──")) {
+                continue;
+            }
+            body.add(line);
+            shown++;
+            if (shown >= 18) {
+                body.add("&8…");
+                break;
+            }
         }
-        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
+        put(holder, inv, 13, item(mat, title, body));
+        put(holder, inv, 18, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page(back));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
-        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        put(holder, inv, 22, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 26, closeBtn(), SlotAction.dismiss());
         return inv;
     }
 

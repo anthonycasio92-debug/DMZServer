@@ -1,3 +1,9 @@
+## Rival Progress UI cleanup (2.3.135)
+
+Progress hub is 4 buttons (Stats · Season · Quests · More). More opens Records
+(Title · Achs · HOF · Journal). Detail pages are a single summary item on a
+3-row board — no tip spam / tile walls.
+
 ## Rival remove semantics + progress UI (2.3.134)
 
 Rival relationship model (labels + menus):

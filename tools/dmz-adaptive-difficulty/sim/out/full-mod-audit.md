@@ -1,4 +1,4 @@
-# Full mod audit — 2.3.134 (rival remove semantics)
+# Full mod audit — 2.3.135 (Rival Progress UI)
 
 | Audit | Result |
 |-------|:------:|
@@ -6,4 +6,5 @@
 | audit_concept | PASS |
 | audit_gui_abi | PASS |
 
-Rival: Mutual remove → other Silent; Pending invites only; Nemesis = 3 challenge KOs; Progress hub compact.
+Progress hub: Stats · Season · Quests · More. Records: Title · Achs · HOF · Journal.
+Detail pages: single summary item on 3-row board.
