@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Status;
 import java.util.ArrayList;
@@ -878,9 +879,12 @@ public final class SparringSystem {
                     return;
                 }
             }
-            DmzRewards.awardTp(mentor, share, "Mentor share from " + apprentice.m_7755_().getString()
-                            + (roster > 1 ? " §8(dojo " + roster + ")" : ""),
-                    true, "§6[Mentor] ");
+            boolean staff = StaffAccess.isStaff(mentor);
+            String reason = staff
+                    ? ("Mentor share from " + apprentice.m_7755_().getString()
+                    + (roster > 1 ? " §8(dojo " + roster + ")" : ""))
+                    : "apprentice";
+            DmzRewards.awardTp(mentor, share, reason, true, "§6[Mentor] ");
         } catch (Throwable ignored) {
         }
     }

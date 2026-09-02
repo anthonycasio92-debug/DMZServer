@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.sparring;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Status;
 import com.dragonminez.server.util.GravityLogic;
@@ -446,7 +447,7 @@ public final class SparCombat {
         return total;
     }
 
-    /** Compact active-bonus tags for TP chat (script parity visibility). */
+    /** Compact active-bonus tags for staff TP chat. */
     public static String activeBonusTags(
             ServerPlayer player, SparPlayerRuntime rt, TrainingValues a, TrainingValues b
     ) {
@@ -480,8 +481,93 @@ public final class SparCombat {
         return sb.toString();
     }
 
+    /**
+     * Staff-only multiplier stack tags (BP · rival · release · gravity · weight · style · ×total).
+     * Player chat stays simple — see {@link #flushTpMessage}.
+     */
+    public static String staffStackTags(
+            ServerPlayer player, SparPlayerRuntime rt, TrainingValues a, TrainingValues b
+    ) {
+        if (a == null || b == null) {
+            return "";
+        }
+        double trainingBp = Math.min(a.bp, b.bp);
+        if (!(trainingBp > 0.0)) {
+            trainingBp = Math.max(a.bp, Math.max(b.bp, 1.0));
+        }
+        double avgRelease = (a.release + b.release) / 2.0;
+        double avgGravity = (a.gravity + b.gravity) / 2.0;
+        double avgWeight = (a.weight + b.weight) / 2.0;
+        float bp = battlePowerMultiplier(trainingBp);
+        float rival = rivalMultiplier(a.bp, b.bp);
+        float release = releaseMultiplier(avgRelease);
+        float gravity = gravityMultiplier(avgGravity);
+        float weight = weightMultiplier(avgWeight);
+        float style = styleMultiplier(rt);
+        float total = buildTotalMultiplier(player, null, rt, a, b) * GLOBAL_TP_GAIN_MULT;
+        StringBuilder sb = new StringBuilder();
+        appendStaffMult(sb, "bp", bp);
+        appendStaffMult(sb, "riv", rival);
+        appendStaffMult(sb, "rel", release);
+        appendStaffMult(sb, "grav", gravity);
+        appendStaffMult(sb, "wt", weight);
+        appendStaffMult(sb, "sty", style);
+        sb.append(" §8×§f").append(formatMult(total));
+        return sb.toString();
+    }
+
+    private static void appendStaffMult(StringBuilder sb, String key, float mult) {
+        if (mult > 1.001f) {
+            sb.append(" §8").append(key).append("§fx").append(formatMult(mult));
+        }
+    }
+
     private static String formatMult(float mult) {
         return String.format(java.util.Locale.ROOT, "%.2f", mult);
+    }
+
+    /**
+     * Burst source label — matches CNPC script (prefer this burst's melee/ki/clash mix
+     * over the long-session style name alone).
+     */
+    public static String burstLabel(
+            SparPlayerRuntime rt, int pendingMelee, int pendingKi, int pendingClash
+    ) {
+        String id = styleId(rt);
+        boolean pureClash = pendingClash > 0 && pendingMelee <= 0 && pendingKi <= 0;
+        boolean pureKi = pendingKi > 0 && pendingMelee <= 0 && pendingClash <= 0;
+        boolean pureMelee = pendingMelee > 0 && pendingKi <= 0 && pendingClash <= 0;
+        if (pureClash) {
+            return "beam".equals(id) ? styleDisplayName("beam") : "Beam Clash";
+        }
+        if (pureKi) {
+            if ("ki".equals(id)) {
+                return styleDisplayName("ki");
+            }
+            if ("beam".equals(id)) {
+                return styleDisplayName("beam");
+            }
+            return "Ki";
+        }
+        if (pureMelee) {
+            return "melee".equals(id) ? styleDisplayName("melee") : "Melee";
+        }
+        if (pendingKi > 0 && pendingMelee > 0) {
+            if ("balanced".equals(id)) {
+                return styleDisplayName("balanced");
+            }
+            if ("ki".equals(id) || "beam".equals(id)) {
+                return styleDisplayName(id);
+            }
+            if ("melee".equals(id)) {
+                return styleDisplayName("melee");
+            }
+            return "Mixed";
+        }
+        if (!"none".equals(id)) {
+            return styleDisplayName(id);
+        }
+        return "Combat";
     }
 
     public static float maxTpForAction(float bpMult) {
@@ -643,6 +729,9 @@ public final class SparCombat {
             return;
         }
         int pending = (int) Math.floor(rt.tpPending);
+        int pendingMelee = (int) Math.floor(rt.tpPendingMelee);
+        int pendingKi = (int) Math.floor(rt.tpPendingKi);
+        int pendingClash = (int) Math.floor(rt.tpPendingClash);
         rt.tpPending = 0;
         rt.tpPendingMelee = 0;
         rt.tpPendingKi = 0;
@@ -650,7 +739,13 @@ public final class SparCombat {
         if (player == null || !SparStore.get().tpMessagesOn(player.m_20148_())) {
             return;
         }
-        String label = styleDisplayName(styleId(rt));
+        String label = burstLabel(rt, pendingMelee, pendingKi, pendingClash);
+        String base = "§6[Sparring] §a+" + DmzRewards.formatWhole(pending) + " TP §8(" + label + ")";
+        // Players: clean +TP (label). Staff: bonus tags + stack + session.
+        if (!StaffAccess.isStaff(player)) {
+            DmzRewards.msg(player, base);
+            return;
+        }
         TrainingValues a = liveValues(player);
         TrainingValues b = null;
         if (rt.partner != null && player.m_20194_() != null) {
@@ -659,10 +754,17 @@ public final class SparCombat {
                 b = liveValues(partner);
             }
         }
-        String bonuses = activeBonusTags(player, rt, a, b);
-        DmzRewards.msg(player, "§6[Sparring] §a+" + DmzRewards.formatWhole(pending) + " TP §8(" + label + ")"
-                + bonuses
-                + " §7· session §f" + DmzRewards.formatWhole(rt.sessionTp));
+        StringBuilder detail = new StringBuilder(base);
+        detail.append(activeBonusTags(player, rt, a, b));
+        detail.append(staffStackTags(player, rt, a, b));
+        if (pendingMelee > 0 || pendingKi > 0 || pendingClash > 0) {
+            detail.append(" §8m/k/c §f")
+                    .append(pendingMelee).append('/')
+                    .append(pendingKi).append('/')
+                    .append(pendingClash);
+        }
+        detail.append(" §7· session §f").append(DmzRewards.formatWhole(rt.sessionTp));
+        DmzRewards.msg(player, detail.toString());
     }
 
     public static void updateMomentum(ServerPlayer player, SparPlayerRuntime rt) {

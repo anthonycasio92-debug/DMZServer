@@ -1,3 +1,8 @@
+## Spar TP lines player/staff (2.3.147)
+
+Spar combat TP chat is simple for players (`+TP (style)`). Staff see bonus tags,
+multiplier stack (bp/riv/rel/grav/wt/sty ×total), melee/ki/clash split, and session total.
+
 ## Mentor Actions GUI (2.3.146)
 
 Mentor bonds are handled in-GUI like Rival Actions: Invite · Ask · Pending · Leave ·

@@ -802,7 +802,8 @@
         "name": "&aTP Msg ON",
         "lore": [
           "&7Click to mute spar TP chat",
-          "&8Batched +TP lines during spars",
+          "&8Players: +TP (style)",
+          "&8Staff: full bonus / stack detail",
           "",
           "&eClick to toggle"
         ]
@@ -811,7 +812,8 @@
         "name": "&8TP Msg OFF",
         "lore": [
           "&7Click to show spar TP chat while fighting",
-          "&8Batched +TP lines during spars",
+          "&8Players: +TP (style)",
+          "&8Staff: full bonus / stack detail",
           "",
           "&eClick to toggle"
         ]

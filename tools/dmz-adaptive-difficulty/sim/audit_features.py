@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.146", 'VERSION = "2.3.146"' in mod)
+    check("VERSION 2.3.147", 'VERSION = "2.3.147"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -770,6 +770,21 @@ def main() -> int:
     check("TP activeBonusTags", "activeBonusTags" in spar_c145)
     check("MOMENTUM_MULTIPLIERS script values",
           "1.05f, 1.10f, 1.20f, 1.35f, 1.50f, 2.00f" in spar_c145)
+
+    print("\n=== Spar TP lines player/staff (2.3.147) ===")
+    spar_c147 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparCombat.java")
+    flush_fn = spar_c147.split("public static void flushTpMessage", 1)[1].split(
+        "public static void updateMomentum", 1)[0] if "public static void flushTpMessage" in spar_c147 else ""
+    check("flushTpMessage staff gate",
+          "StaffAccess.isStaff(player)" in flush_fn)
+    check("player TP line is simple +TP (label)",
+          'DmzRewards.msg(player, base)' in flush_fn
+          and "activeBonusTags" not in flush_fn.split("if (!StaffAccess.isStaff(player))", 1)[0]
+          if "if (!StaffAccess.isStaff(player))" in flush_fn else False)
+    check("staff TP line has bonus + stack + session",
+          "activeBonusTags" in flush_fn and "staffStackTags" in flush_fn
+          and "session" in flush_fn and "m/k/c" in flush_fn)
+    check("staffStackTags API", "staffStackTags(" in spar_c147 and "burstLabel(" in spar_c147)
 
     print("\n=== Mentor Actions GUI (2.3.146) ===")
     spar_chest146 = read(gui_root / "SparChestGui.java")

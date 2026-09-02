@@ -120,7 +120,8 @@ public final class SparChestGui implements Listener {
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 List.of(
                         tpOn ? "&7Click to mute spar TP chat" : "&7Click to show spar TP chat while fighting",
-                        "&8Batched +TP lines during spars",
+                        "&8Players: +TP (style)",
+                        "&8Staff: full bonus / stack detail",
                         "",
                         "&eClick to toggle"
                 )), SlotAction.act("tpmsg", "toggle", "main"));

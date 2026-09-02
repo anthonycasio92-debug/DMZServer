@@ -115,7 +115,8 @@ public final class CmiSparGui {
                 "tpmsg", "toggle", "main",
                 List.of(
                         tpOn ? "&7Click to mute spar TP chat" : "&7Click to show spar TP chat while fighting",
-                        "&8Batched +TP lines during spars",
+                        "&8Players: +TP (style)",
+                        "&8Staff: full bonus / stack detail",
                         "",
                         "&eClick to toggle"
                 )));
