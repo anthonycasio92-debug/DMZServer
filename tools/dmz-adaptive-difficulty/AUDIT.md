@@ -1,3 +1,9 @@
+## Mentor Actions cooldown tooltip (2.3.150)
+
+On-disk `plugins/LegacyMechanicsGUI/gui-tooltips.json` was still showing **7-day** Leave/Release
+cooldown after the real bond CD moved to **12 hours** (disk overrides jar). Reload now rewrites
+stale `7-day` / `7d` mentor cooldown phrases to **12-hour** / **12h** and persists the file.
+
 ## Mentor invite 1h + dojo peer spar (2.3.149)
 
 Mentor/apprentice **Pending invites last 1 hour** (was 2 minutes). Apprentices of the

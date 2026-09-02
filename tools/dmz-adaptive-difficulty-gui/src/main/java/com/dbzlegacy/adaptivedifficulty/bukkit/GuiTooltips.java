@@ -58,6 +58,19 @@ final class GuiTooltips {
         reload();
     }
 
+    /**
+     * Balance / copy fixes that must win over stale on-disk lore (disk overrides jar).
+     * Longer phrases first. Applied to {@code plugins/.../gui-tooltips.json} on reload.
+     */
+    private static final String[][] STALE_COPY_FIXES = {
+            {"&87-day cooldown after leaving", "&812-hour cooldown after leaving"},
+            {"&87-day cooldown after releasing", "&812-hour cooldown after releasing"},
+            {"&87-day cooldown", "&812-hour cooldown"},
+            {"7-day cooldown", "12-hour cooldown"},
+            {"(7d cooldown)", "(12h cooldown)"},
+            {"7d cooldown", "12h cooldown"},
+    };
+
     static String reload() {
         Map<String, Entry> jarEntries = new LinkedHashMap<>();
         String jarJson = null;
@@ -74,9 +87,20 @@ final class GuiTooltips {
         Path path = filePath;
         int fromDisk = 0;
         int merged = 0;
+        int staleFixed = 0;
         if (path != null && Files.isRegularFile(path)) {
             try {
                 String diskJson = Files.readString(path, StandardCharsets.UTF_8);
+                String sanitized = sanitizeStaleCopy(diskJson);
+                if (!sanitized.equals(diskJson)) {
+                    Files.writeString(path, sanitized, StandardCharsets.UTF_8);
+                    staleFixed = countStaleFixes(diskJson);
+                    diskJson = sanitized;
+                    if (log != null) {
+                        log.info("GUI tooltips: rewrote " + staleFixed
+                                + " stale mentor-cooldown phrase(s) to 12h on disk");
+                    }
+                }
                 Map<String, Entry> disk = new LinkedHashMap<>();
                 fromDisk = parseInto(diskJson, disk);
                 // Preserve edits, but fill any new jar keys into the on-disk file for editing.
@@ -102,12 +126,46 @@ final class GuiTooltips {
         ENTRIES.putAll(next);
         String msg = "§aGUI tooltips loaded §f" + ENTRIES.size() + " §akeys"
                 + (fromDisk > 0 ? " §8(" + fromDisk + " from gui-tooltips.json)" : "")
-                + (merged > 0 ? " §a(+ " + merged + " new keys merged into file)" : "");
+                + (merged > 0 ? " §a(+ " + merged + " new keys merged into file)" : "")
+                + (staleFixed > 0 ? " §a(+ " + staleFixed + " stale 7d→12h fixes)" : "");
         if (log != null) {
             log.info("GUI tooltips: " + ENTRIES.size() + " keys"
-                    + (merged > 0 ? " (merged " + merged + " new)" : ""));
+                    + (merged > 0 ? " (merged " + merged + " new)" : "")
+                    + (staleFixed > 0 ? " (fixed " + staleFixed + " stale)" : ""));
         }
         return msg;
+    }
+
+    private static String sanitizeStaleCopy(String json) {
+        if (json == null || json.isBlank()) {
+            return json == null ? "" : json;
+        }
+        String out = json;
+        for (String[] pair : STALE_COPY_FIXES) {
+            out = out.replace(pair[0], pair[1]);
+        }
+        return out;
+    }
+
+    private static int countStaleFixes(String before) {
+        if (before == null || before.isBlank()) {
+            return 0;
+        }
+        int n = 0;
+        String cursor = before;
+        for (String[] pair : STALE_COPY_FIXES) {
+            int from = 0;
+            while (true) {
+                int at = cursor.indexOf(pair[0], from);
+                if (at < 0) {
+                    break;
+                }
+                n++;
+                from = at + pair[0].length();
+            }
+            cursor = cursor.replace(pair[0], pair[1]);
+        }
+        return n;
     }
 
     /**

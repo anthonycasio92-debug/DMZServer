@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.149", 'VERSION = "2.3.149"' in mod)
+    check("VERSION 2.3.150", 'VERSION = "2.3.150"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -821,6 +821,14 @@ def main() -> int:
     check("DOJO_PEER_SPAR_BONUS_PCT 0.10", "DOJO_PEER_SPAR_BONUS_PCT = 0.10f" in spar_c149)
     check("awardCombatTp uses dojo peer bonus",
           "withDojoPeer" in spar_c149 and "DOJO_PEER_SPAR_BONUS_PCT" in spar_c149)
+
+    print("\n=== Mentor cooldown tooltip sanitize (2.3.150) ===")
+    gui_tips = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/GuiTooltips.java")
+    tips_json = read(ROOT / "tools/dmz-adaptive-difficulty-gui/src/main/resources/gui-tooltips.json")
+    check("STALE_COPY_FIXES present", "STALE_COPY_FIXES" in gui_tips and "sanitizeStaleCopy" in gui_tips)
+    check("stale 7-day → 12-hour rewrite", '"&87-day cooldown"' in gui_tips and '"&812-hour cooldown"' in gui_tips)
+    check("jar leave lore is 12-hour", '"&812-hour cooldown after leaving"' in tips_json)
+    check("jar leave lore not 7-day", '"&87-day cooldown"' not in tips_json)
 
     print("\n=== Mentor dojo multi-apprentice (2.3.144) ===")
     spar_store144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")
