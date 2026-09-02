@@ -1,8 +1,9 @@
 /*
  * Kick zapzxv2 when they look up (toward the sky).
  *
- * Pitch in Minecraft: 0 = horizon, negative = up, positive = down.
- * LOOK_UP_PITCH: kick when pitch <= this (e.g. -45 = looking well upward).
+ * Pure ASCII only (KubeJS MalformedInputException on non-ASCII).
+ * Pitch: 0 = horizon, negative = up, positive = down.
+ * LOOK_UP_PITCH: kick when xRot <= this (e.g. -30 = looking upward).
  *
  *   /kubejs reload server_scripts
  */
@@ -10,12 +11,14 @@
 var ENABLED = true;
 var TARGET = "zapzxv2";
 var KICK_MESSAGE = "the sky";
-var LOOK_UP_PITCH = -45.0; // degrees; more negative = must look higher
-var CHECK_EVERY_TICKS = 5; // throttle (player ticks)
-var COOLDOWN_TICKS = 40; // avoid double-fire if kick is slow
+var LOOK_UP_PITCH = -30.0;
+var CHECK_EVERY_TICKS = 2;
+var COOLDOWN_TICKS = 40;
 
 var tickAccum = {};
 var cooldownUntil = {};
+var debugEvery = 100;
+var debugCount = {};
 
 function playerName(player) {
     try {
@@ -32,52 +35,113 @@ function playerName(player) {
     return "";
 }
 
-function getPitch(player) {
+function unwrapPlayer(player) {
     try {
-        if (typeof player.pitch === "number") return player.pitch;
+        if (player.minecraftPlayer) return player.minecraftPlayer;
     } catch (e1) {}
     try {
-        if (player.getXRot) return player.getXRot();
+        if (player.minecraftEntity) return player.minecraftEntity;
+    } catch (e2) {}
+    return player;
+}
+
+function getPitch(player) {
+    // Prefer KubeJS xRot / pitch wrappers
+    try {
+        if (player.xRot !== undefined && player.xRot !== null) {
+            return Number(player.xRot);
+        }
+    } catch (e1) {}
+    try {
+        if (typeof player.pitch === "number") return player.pitch;
     } catch (e2) {}
     try {
-        if (player.xRot !== undefined) return Number(player.xRot);
+        if (player.getPitch) return Number(player.getPitch());
     } catch (e3) {}
+    // Raw MC entity
+    var mc = unwrapPlayer(player);
+    try {
+        if (mc.getXRot) return Number(mc.getXRot());
+    } catch (e4) {}
+    try {
+        if (mc.xRot !== undefined) return Number(mc.xRot);
+    } catch (e5) {}
     return 0;
+}
+
+function doKick(player, server, name) {
+    // Prefer disconnect/kick APIs; fall back to console kick command.
+    try {
+        if (typeof Component !== "undefined" && Component.literal) {
+            player.kick(Component.literal(KICK_MESSAGE));
+            return true;
+        }
+    } catch (e1) {}
+    try {
+        player.kick(KICK_MESSAGE);
+        return true;
+    } catch (e2) {}
+    try {
+        var mc = unwrapPlayer(player);
+        if (mc.connection && mc.connection.disconnect) {
+            if (typeof Component !== "undefined" && Component.literal) {
+                mc.connection.disconnect(Component.literal(KICK_MESSAGE));
+            } else {
+                mc.connection.disconnect(KICK_MESSAGE);
+            }
+            return true;
+        }
+    } catch (e3) {}
+    try {
+        server.runCommandSilent("kick " + name + " " + KICK_MESSAGE);
+        return true;
+    } catch (e4) {
+        console.error("[sky_kick] kick failed: " + e4);
+        return false;
+    }
 }
 
 PlayerEvents.tick(function (event) {
     if (!ENABLED) return;
     var player = event.player;
     var name = playerName(player);
-    if (name !== TARGET) return;
+    if (!name) return;
+    if (name.toLowerCase() !== TARGET.toLowerCase()) return;
 
     var n = (tickAccum[name] || 0) + 1;
     tickAccum[name] = n;
     if (n % CHECK_EVERY_TICKS !== 0) return;
 
-    var now = player.level && player.level.time !== undefined ? Number(player.level.time) : n;
+    var pitch = getPitch(player);
+
+    // Occasional debug so we can see pitch in logs/kubejs/server.log
+    var dc = (debugCount[name] || 0) + 1;
+    debugCount[name] = dc;
+    if (dc % debugEvery === 1) {
+        console.info("[sky_kick] " + name + " pitch=" + pitch);
+    }
+
+    var now = n;
     if (cooldownUntil[name] && now < cooldownUntil[name]) return;
 
-    var pitch = getPitch(player);
     if (pitch > LOOK_UP_PITCH) return;
 
     cooldownUntil[name] = now + COOLDOWN_TICKS;
     console.info(
-        "[sky_kick] " + name + " looked up (pitch=" + pitch.toFixed(1) + ") — kicking"
+        "[sky_kick] " + name + " looked up (pitch=" + pitch + ") - kicking"
     );
-    try {
-        player.kick(KICK_MESSAGE);
-    } catch (e1) {
-        try {
-            event.server.runCommandSilent("kick " + name + " " + KICK_MESSAGE);
-        } catch (e2) {
-            console.error("[sky_kick] kick failed: " + e2);
-        }
-    }
+    doKick(player, event.server, name);
+});
+
+PlayerEvents.loggedIn(function (event) {
+    if (!ENABLED) return;
+    var name = playerName(event.player);
+    if (name.toLowerCase() !== TARGET.toLowerCase()) return;
+    console.info("[sky_kick] target online: " + name + " (look up to get kicked)");
 });
 
 console.info(
-    "[sky_kick] loaded — ENABLED=" +
+    "[sky_kick] loaded ENABLED=" +
         ENABLED +
         " TARGET=" +
         TARGET +
