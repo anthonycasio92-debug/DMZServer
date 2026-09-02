@@ -141,7 +141,7 @@ public final class SparGuiApi {
         if (pending > 0) {
             lines.add("§ePending invites §f" + pending + " §8— open Pending");
         } else {
-            lines.add("§8Pending · Accept · Decline · Leave / Release");
+            lines.add("§8Invite · Pending · Dojo · Leave / Release");
         }
         return lines;
     }
@@ -217,14 +217,13 @@ public final class SparGuiApi {
         return switch (lower) {
             case "stats", "statistics" -> statsLines(player);
             case "top", "leaderboard" -> topLines(player, "tp");
-            case "mentor" -> mentorLines(player);
+            case "mentor", "actions", "dojo", "roster", "apprentices" -> mentorLines(player);
             case "pending", "invites", "pendinginvites" -> pendingMentorLines(player);
             case "help" -> List.of(
                     "§6§l/spar §8— Sparring TP",
-                    "§7Open GUI for mentor invites",
+                    "§7Mentor bonds: GUI → Mentor Actions",
                     "§e/spar stats|end|top [category]",
-                    "§e/spar mentor <player>|accept|decline|leave",
-                    "§e/spar apprentice <player>|release"
+                    "§8Commands still work for staff / scripts"
             );
             default -> {
                 Map<String, String> ph = placeholders(player);
@@ -334,7 +333,7 @@ public final class SparGuiApi {
                 boolean hasApprentice = bond != null && bond.apprenticeCount() > 0;
                 if (hasMentor && hasApprentice) {
                     return "§eChoose: §fLeave mentor §8or §fRelease apprentice"
-                            + "\n§8GUI: Mentor → Leave / Release · Commands: /spar mentor remove · /spar apprentice remove [name]";
+                            + "\n§8GUI: Mentor Actions → Leave / Release…";
                 }
                 return SparringSystem.removeBond(player);
             }

@@ -795,7 +795,7 @@
       "mentor": {
         "name": "&bMentor",
         "lore": [
-          "&7Invite · pending · accept · remove"
+          "&7Invite · Pending · Dojo · Leave / Release"
         ]
       },
       "tpmsg_on": {
@@ -853,45 +853,52 @@
       "invite": {
         "name": "&aInvite apprentice…",
         "lore": [
-          "&7Pick a player to mentor"
+          "&7Pick a player to join your dojo"
         ]
       },
       "ask": {
         "name": "&bAsk mentor…",
         "lore": [
-          "&7Pick a player to ask as mentor"
+          "&7Pick a player to ask as your master"
         ]
       },
       "pending": {
         "name": "&ePending",
         "lore": [
-          "&7View incoming + outgoing invites"
+          "&7Incoming + outgoing invites",
+          "&aClick a head to Accept / Decline"
         ]
       },
       "accept": {
         "name": "&eAccept…",
         "lore": [
-          "&7Accept an incoming mentor invite"
+          "&7Legacy deep-link — use Pending"
         ]
       },
       "decline": {
         "name": "&6Decline…",
         "lore": [
-          "&7Decline an incoming mentor invite"
+          "&7Legacy deep-link — use Pending"
         ]
       },
       "leave": {
         "name": "&cLeave mentor",
         "lore": [
           "&7End bond with &f{name}",
-          "&812-hour cooldown"
+          "&812-hour cooldown after leaving"
         ]
       },
       "release": {
-        "name": "&6Release apprentice",
+        "name": "&6Release…",
         "lore": [
-          "&7End bond with &f{name}",
-          "&812-hour cooldown"
+          "&7Pick an apprentice to release",
+          "&812-hour cooldown after releasing"
+        ]
+      },
+      "dojo": {
+        "name": "&bDojo",
+        "lore": [
+          "&7View your apprentices"
         ]
       }
     },
@@ -928,19 +935,43 @@
       "accept_pick": {
         "name": "&eAccept…",
         "lore": [
-          "&7Accept an incoming invite"
+          "&7Legacy deep-link — use Pending"
         ]
       },
       "decline_pick": {
         "name": "&6Decline…",
         "lore": [
-          "&7Decline an incoming invite"
+          "&7Legacy deep-link — use Pending"
+        ]
+      },
+      "decide_info": {
+        "name": "&e&lRespond",
+        "lore": [
+          "&7Accept or decline this invite"
+        ]
+      },
+      "accept": {
+        "name": "&aAccept",
+        "lore": [
+          "&7Accept this mentor invite"
+        ]
+      },
+      "decline": {
+        "name": "&cDecline",
+        "lore": [
+          "&7Decline this mentor invite"
+        ]
+      },
+      "decide_back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Pending invites"
         ]
       },
       "nav_mentor": {
         "name": "&bMentor",
         "lore": [
-          "&7Full mentor menu"
+          "&7Mentor Actions"
         ]
       },
       "back": {
@@ -958,6 +989,9 @@
       "no_pending": [
         "&7Invite apprentice or ask a mentor",
         "&7Incoming shows when they invite you"
+      ],
+      "no_apprentice": [
+        "&7Invite apprentices from Mentor Actions"
       ],
       "no_online": [
         "&7Other players must be online"

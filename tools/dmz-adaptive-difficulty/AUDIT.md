@@ -1,3 +1,9 @@
+## Mentor Actions GUI (2.3.146)
+
+Mentor bonds are handled in-GUI like Rival Actions: Invite · Ask · Pending · Leave ·
+Release · Dojo. Incoming pending opens Accept/Decline submenu; outgoing cancels.
+Legacy Accept…/Decline… hub buttons removed (deep-links kept).
+
 ## Spar CNPC multiplier parity (2.3.145)
 
 Restored/hardened CNPC spar TP multiplier stack visibility and edge cases:

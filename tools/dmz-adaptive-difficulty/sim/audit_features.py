@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.145", 'VERSION = "2.3.145"' in mod)
+    check("VERSION 2.3.146", 'VERSION = "2.3.146"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -534,7 +534,7 @@ def main() -> int:
           'SlotAction.page("hof")' in rival and 'SlotAction.page("journal")' in rival
           and "records" in rival)
 
-    print("\n=== Rival relationship semantics (2.3.145) ===")
+    print("\n=== Rival relationship semantics (2.3.142+) ===")
     rival_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.java")
     rival_st = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalStatus.java")
     rival_link = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalLink.java")
@@ -771,7 +771,34 @@ def main() -> int:
     check("MOMENTUM_MULTIPLIERS script values",
           "1.05f, 1.10f, 1.20f, 1.35f, 1.50f, 2.00f" in spar_c145)
 
-    print("\n=== Mentor dojo multi-apprentice (2.3.145) ===")
+    print("\n=== Mentor Actions GUI (2.3.146) ===")
+    spar_chest146 = read(gui_root / "SparChestGui.java")
+    spar_cmi146 = read(gui_root / "CmiSparGui.java")
+    mentor_hub = spar_chest146.split("private Inventory mentor(", 1)[1].split("private Inventory pending(", 1)[0] \
+        if "private Inventory mentor(" in spar_chest146 else ""
+    cmi_mentor_hub = spar_cmi146.split("private static void openMentor(", 1)[1].split(
+        "private static void openPending(", 1)[0] if "private static void openMentor(" in spar_cmi146 else ""
+    check("chest mentor Actions hub",
+          "Mentor Actions" in mentor_hub
+          and 'page("pick_apprentice")' in mentor_hub
+          and 'page("pending")' in mentor_hub
+          and 'page("dojo")' in mentor_hub
+          and 'page("pick_accept")' not in mentor_hub
+          and 'page("pick_decline")' not in mentor_hub)
+    check("chest pending_decide + outgoing cancel",
+          "pending_decide:" in spar_chest146 and "pendingDecide" in spar_chest146
+          and 'SlotAction.act("mentor_cancel"' in spar_chest146)
+    check("CMI mentor Actions + pending_decide + dojo",
+          "openPendingDecide" in spar_cmi146 and "openDojo" in spar_cmi146
+          and "Mentor Actions" in spar_cmi146
+          and 'lmdo spar page pending_decide:' in spar_cmi146)
+    check("CMI mentor hub has no Accept…/Decline…",
+          "spar.mentor.accept" not in cmi_mentor_hub
+          and "spar.mentor.decline" not in cmi_mentor_hub
+          and "pick_apprentice" in cmi_mentor_hub
+          and '"dojo"' in cmi_mentor_hub)
+
+    print("\n=== Mentor dojo multi-apprentice (2.3.144) ===")
     spar_store144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")
     spar_sys144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
     spar_combat144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparCombat.java")
@@ -783,7 +810,7 @@ def main() -> int:
     check("apprenticeCards API", "apprenticeCards" in spar_sys144)
     check("MENTOR_SHARE_PCT 0.15", "MENTOR_SHARE_PCT = 0.15f" in spar_combat144)
 
-    print("\n=== Spar active TP + ki-charge hold (2.3.145) ===")
+    print("\n=== Spar active TP + ki-charge hold (2.3.143) ===")
     spar_rt = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparPlayerRuntime.java")
     spar_sys143 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
     events143 = read(SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")

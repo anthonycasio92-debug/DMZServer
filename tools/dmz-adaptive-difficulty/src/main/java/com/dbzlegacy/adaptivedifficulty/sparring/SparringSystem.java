@@ -1315,7 +1315,7 @@ public final class SparringSystem {
         }
         if (hasMentor && hasApprentice) {
             return "§eChoose: §fLeave mentor §8or §fRelease apprentice"
-                    + "\n§8GUI: Mentor → Leave / Release · Commands: /spar mentor remove · /spar apprentice remove [name]";
+                    + "\n§8GUI: Mentor Actions → Leave / Release…";
         }
         return "§cYou have no mentor bond to remove.";
     }
@@ -1360,7 +1360,7 @@ public final class SparringSystem {
         } else {
             return "§ePick which apprentice to release (§f"
                     + bond.apprenticeNamesSummary()
-                    + "§e).\n§8GUI: Mentor → Release… · /spar apprentice release <player>";
+                    + "§e).\n§8GUI: Mentor Actions → Release… / Dojo";
         }
         clearBond(appUuid, player.m_20148_().toString(), true);
         return "§7Released apprentice §f" + name + "§7. 12-hour cooldown started.";

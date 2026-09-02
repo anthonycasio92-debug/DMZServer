@@ -47,14 +47,18 @@ public final class SparChestGui implements Listener {
         String raw = page == null || page.isBlank() ? "main" : page.trim();
         String p = raw.toLowerCase(Locale.ROOT);
         Inventory inv;
-        if (p.startsWith("top_") || p.startsWith("top ") || "top".equals(p) || "leaderboard".equals(p)) {
+        if (p.startsWith("pending_decide:")) {
+            inv = pendingDecide(viewer, subject, raw.substring("pending_decide:".length()).trim());
+        } else if (p.startsWith("top_") || p.startsWith("top ") || "top".equals(p) || "leaderboard".equals(p)) {
             inv = top(viewer, subject, p);
         } else if ("stats".equals(p) || "statistics".equals(p)) {
             inv = detailBoard(viewer, subject, "stats", "&eLast 3 Spar Reports", Material.WRITTEN_BOOK);
-        } else if ("mentor".equals(p)) {
+        } else if ("mentor".equals(p) || "actions".equals(p)) {
             inv = mentor(viewer, subject);
         } else if ("pending".equals(p) || "invites".equals(p) || "pendinginvites".equals(p)) {
             inv = pending(viewer, subject);
+        } else if ("dojo".equals(p) || "roster".equals(p) || "apprentices".equals(p)) {
+            inv = dojo(viewer, subject);
         } else if ("pick_apprentice".equals(p)) {
             inv = picker(viewer, subject, "mentor_invite", "mentor",
                     "&aInvite Apprentice", "&7Ask them to be your apprentice");
@@ -62,6 +66,7 @@ public final class SparChestGui implements Listener {
             inv = picker(viewer, subject, "apprentice_invite", "mentor",
                     "&bAsk Mentor", "&7Ask them to be your mentor");
         } else if ("pick_accept".equals(p)) {
+            // Legacy deep-link — prefer pending_decide from Pending board.
             inv = pendingPicker(viewer, subject, "mentor_accept", "pending",
                     "&aAccept Invite", "&7Accept this mentor invite", true);
         } else if ("pick_decline".equals(p)) {
@@ -106,7 +111,7 @@ public final class SparChestGui implements Listener {
                 List.of("&7Leaderboard")),
                 SlotAction.page("top"));
         put(holder, inv, 23, tipBtn(viewer, "spar.main.mentor", Material.EMERALD, "&bMentor",
-                List.of("&7Invite · pending · accept · remove")), SlotAction.page("mentor"));
+                List.of("&7Invite · Pending · Dojo · Leave / Release")), SlotAction.page("mentor"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "true"));
         put(holder, inv, 25, tipBtn(viewer,
@@ -240,17 +245,21 @@ public final class SparChestGui implements Listener {
         return inv;
     }
 
+    /**
+     * Mentor Actions hub — mirrors Rival Actions:
+     * Invite · Ask · Pending · Leave · Release · Dojo.
+     */
     private Inventory mentor(Player viewer, Player subject) {
         Holder holder = new Holder("mentor");
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Spar Mentor"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Mentor Actions"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.EMERALD, "&b&lMentor",
+        put(holder, inv, 4, item(Material.EMERALD, "&b&lMentor Actions",
                 prependBlank(toAmp(ForgeBridge.sparLines(subject, "mentor")))));
         put(holder, inv, 19, pageBtn(viewer, "spar.mentor.invite", Material.LIME_DYE, "&aInvite apprentice…",
-                "&7Pick a player to mentor"), SlotAction.page("pick_apprentice"));
+                "&7Pick a player to join your dojo"), SlotAction.page("pick_apprentice"));
         put(holder, inv, 20, pageBtn(viewer, "spar.mentor.ask", Material.LIGHT_BLUE_DYE, "&bAsk mentor…",
-                "&7Pick a player to ask as mentor"), SlotAction.page("pick_mentor"));
+                "&7Pick a player to ask as your master"), SlotAction.page("pick_mentor"));
         Map<String, String> ph = ForgeBridge.sparPlaceholders(subject);
         int pendingCount = 0;
         try {
@@ -260,13 +269,9 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 21, pageBtn(viewer, "spar.mentor.pending", Material.CLOCK,
                 pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
-                "&7View incoming + outgoing invites",
-                pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"),
+                "&7Incoming + outgoing invites",
+                pendingCount > 0 ? "&aClick to Accept / Decline" : "&8No pending invites"),
                 SlotAction.page("pending"));
-        put(holder, inv, 22, pageBtn(viewer, "spar.mentor.accept", Material.YELLOW_DYE, "&eAccept…",
-                "&7Accept an incoming mentor invite"), SlotAction.page("pick_accept"));
-        put(holder, inv, 23, pageBtn(viewer, "spar.mentor.decline", Material.ORANGE_DYE, "&6Decline…",
-                "&7Decline an incoming mentor invite"), SlotAction.page("pick_decline"));
         boolean hasMentor = "true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"));
         boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));
         String mentorName = blank(ph.get("mentor_name"), "?");
@@ -277,35 +282,36 @@ public final class SparChestGui implements Listener {
         } catch (NumberFormatException ignored) {
             appCount = 0;
         }
+        String appMax = blank(ph.get("apprentice_max"), "8");
         if (hasMentor) {
-            put(holder, inv, 24, tipBtn(viewer, "spar.mentor.leave", Material.RED_DYE, "&cLeave mentor",
+            put(holder, inv, 23, tipBtn(viewer, "spar.mentor.leave", Material.RED_DYE, "&cLeave mentor",
                     List.of("&7End bond with &f" + mentorName,
                             "&812-hour cooldown after leaving"),
                     Map.of("name", mentorName)),
                     SlotAction.act("mentor_leave", "0", "mentor"));
         } else {
-            put(holder, inv, 24, tipBtn(viewer, "spar.mentor.leave", Material.GRAY_DYE, "&8Leave mentor",
+            put(holder, inv, 23, tipBtn(viewer, "spar.mentor.leave", Material.GRAY_DYE, "&8Leave mentor",
                     List.of("&7You have no mentor"), Map.of("name", mentorName)));
         }
         if (hasApprentice) {
-            if (appCount > 1) {
-                put(holder, inv, 25, tipBtn(viewer, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
-                        List.of("&7Dojo &f" + appCount + " &7apprentices",
-                                "&f" + apprenticeName,
-                                "&7Pick who to release",
-                                "&812-hour cooldown after releasing"),
-                        Map.of("name", apprenticeName)),
-                        SlotAction.page("pick_release"));
-            } else {
-                put(holder, inv, 25, tipBtn(viewer, "spar.mentor.release", Material.ORANGE_DYE, "&6Release apprentice",
-                        List.of("&7End bond with &f" + apprenticeName,
-                                "&812-hour cooldown after releasing"),
-                        Map.of("name", apprenticeName)),
-                        SlotAction.act("mentor_release", "0", "mentor"));
-            }
+            put(holder, inv, 24, tipBtn(viewer, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
+                    List.of("&7Dojo &f" + appCount + "&7/&f" + appMax,
+                            "&f" + apprenticeName,
+                            "&7Pick who to release",
+                            "&812-hour cooldown after releasing"),
+                    Map.of("name", apprenticeName)),
+                    SlotAction.page("pick_release"));
+            put(holder, inv, 25, tipBtn(viewer, "spar.mentor.dojo", Material.BOOKSHELF, "&bDojo",
+                    List.of("&7View your apprentices",
+                            "&f" + appCount + "&7/&f" + appMax,
+                            "&8" + apprenticeName)),
+                    SlotAction.page("dojo"));
         } else {
-            put(holder, inv, 25, tipBtn(viewer, "spar.mentor.release", Material.GRAY_DYE, "&8Release apprentice",
-                    List.of("&7You have no apprentice"), Map.of("name", apprenticeName)));
+            put(holder, inv, 24, tipBtn(viewer, "spar.mentor.release", Material.GRAY_DYE, "&8Release…",
+                    List.of("&7You have no apprentices"), Map.of("name", apprenticeName)));
+            put(holder, inv, 25, tipBtn(viewer, "spar.mentor.dojo", Material.GRAY_DYE, "&8Dojo",
+                    List.of("&7Invite apprentices to fill your dojo",
+                            "&8Max &f" + appMax)));
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
@@ -324,8 +330,8 @@ public final class SparChestGui implements Listener {
         pendingHeader.add("");
         pendingHeader.add(invites.isEmpty() ? "&7No pending invites." : "&7" + invites.size() + " pending");
         pendingHeader.addAll(GuiBoardHelper.tips(viewer,
-                "&a◀ Incoming &7= they invited you",
-                "&6▶ Outgoing &7= waiting on them"));
+                "&a◀ Incoming &7= click to Accept / Decline",
+                "&6▶ Outgoing &7= click to cancel"));
         put(holder, inv, 4, item(Material.YELLOW_DYE, "&e&lPending Invites", pendingHeader));
         if (invites.isEmpty()) {
             put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_pending", Material.BARRIER, "&7No pending invites",
@@ -338,20 +344,133 @@ public final class SparChestGui implements Listener {
                 ItemStack head = GuiBoardHelper.pendingInviteHead(viewer, invite);
                 if (invite.incoming) {
                     put(holder, inv, slots[i], head,
-                            SlotAction.act("mentor_accept", invite.pickerArg(), "pending"));
+                            SlotAction.page("pending_decide:" + invite.pickerArg()));
                 } else {
                     put(holder, inv, slots[i], head,
                             SlotAction.act("mentor_cancel", invite.pickerArg(), "pending"));
                 }
             }
         }
-        put(holder, inv, 37, pageBtn(viewer, "spar.pending.accept_pick", Material.YELLOW_DYE, "&eAccept…",
-                "&7Accept an incoming invite"), SlotAction.page("pick_accept"));
-        put(holder, inv, 38, pageBtn(viewer, "spar.pending.decline_pick", Material.ORANGE_DYE, "&6Decline…",
-                "&7Decline an incoming invite"), SlotAction.page("pick_decline"));
         put(holder, inv, 39, pageBtn(viewer, "spar.pending.nav_mentor", Material.EMERALD, "&bMentor",
-                "&7Full mentor menu"), SlotAction.page("mentor"));
+                "&7Mentor Actions"), SlotAction.page("mentor"));
         put(holder, inv, 36, pageBtn(viewer, "spar.pending.back", Material.ARROW, "&7Back", "&7Mentor"),
+                SlotAction.page("mentor"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    /** Per-request Accept / Decline submenu — Rival pending_decide parity. */
+    private Inventory pendingDecide(Player viewer, Player subject, String arg) {
+        Holder holder = new Holder("pending_decide");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Pending Mentor Request"));
+        holder.bind(inv);
+        frame(inv, 45);
+        GuiBoardHelper.PendingInvite invite = findMentorPendingInvite(subject, arg);
+        String display = invite != null ? invite.name : (arg == null || arg.isBlank() ? "?" : arg);
+        if (display.regionMatches(true, 0, "uuid:", 0, 5)) {
+            display = display.substring(5).trim();
+        }
+        String pickerArg = invite != null ? invite.pickerArg()
+                : (arg == null || arg.isBlank() ? display : arg.trim());
+        ItemStack head = invite != null
+                ? GuiBoardHelper.pendingInviteHead(viewer, invite)
+                : item(Material.PLAYER_HEAD, "&f" + display, List.of("&7Pending mentor invite"));
+        put(holder, inv, 13, head);
+        boolean theyAskYouMentor = invite != null && "mentor".equalsIgnoreCase(invite.kind);
+        String roleLine = theyAskYouMentor
+                ? "&7They want you as their &bMentor"
+                : "&7They want you as their &aApprentice";
+        put(holder, inv, 4, tipBtn(viewer, "spar.pending.decide_info", Material.YELLOW_DYE, "&e&lRespond",
+                List.of("&7Invite from &f" + display,
+                        roleLine,
+                        "&aAccept &7→ create bond",
+                        "&cDecline &7→ refuse")));
+        put(holder, inv, 20, tipBtn(viewer, "spar.pending.accept", Material.LIME_DYE, "&aAccept",
+                List.of("&7Accept " + display + "'s invite")),
+                SlotAction.act("mentor_accept", pickerArg, "pending"));
+        put(holder, inv, 24, tipBtn(viewer, "spar.pending.decline", Material.ORANGE_DYE, "&cDecline",
+                List.of("&7Decline " + display + "'s invite")),
+                SlotAction.act("mentor_decline", pickerArg, "pending"));
+        put(holder, inv, 36, pageBtn(viewer, "spar.pending.decide_back", Material.ARROW, "&7Back",
+                "&7Pending invites"), SlotAction.page("pending"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private static GuiBoardHelper.PendingInvite findMentorPendingInvite(Player subject, String arg) {
+        if (arg == null || arg.isBlank()) {
+            return null;
+        }
+        String raw = arg.trim();
+        String uuid = "";
+        String name = raw;
+        if (raw.regionMatches(true, 0, "uuid:", 0, 5)) {
+            uuid = raw.substring(5).trim();
+            name = "";
+        }
+        for (GuiBoardHelper.PendingInvite invite : GuiBoardHelper.parsePendingInvites(
+                ForgeBridge.sparPendingMentorInviteCards(subject))) {
+            if (invite == null || !invite.incoming) {
+                continue;
+            }
+            if (!uuid.isBlank() && uuid.equalsIgnoreCase(invite.uuid)) {
+                return invite;
+            }
+            if (!name.isBlank() && name.equalsIgnoreCase(invite.name)) {
+                return invite;
+            }
+            if (!uuid.isBlank() && uuid.equalsIgnoreCase(invite.pickerArg())) {
+                return invite;
+            }
+        }
+        return null;
+    }
+
+    /** Read-only dojo roster (Rival List twin). */
+    private Inventory dojo(Player viewer, Player subject) {
+        Holder holder = new Holder("dojo");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Dojo Roster"));
+        holder.bind(inv);
+        frame(inv, 45);
+        Map<String, String> ph = ForgeBridge.sparPlaceholders(subject);
+        List<String> cards = ForgeBridge.sparApprenticeCards(subject);
+        int appCount = cards.size();
+        String appMax = blank(ph.get("apprentice_max"), "8");
+        List<String> header = new ArrayList<>();
+        header.add("");
+        header.add(appCount <= 0 ? "&7No apprentices yet." : "&7" + appCount + "/" + appMax + " apprentices");
+        if ("true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"))) {
+            header.add("&7Your master &f" + blank(ph.get("mentor_name"), "?"));
+        }
+        header.addAll(GuiBoardHelper.tips(viewer, "&8Release from Mentor Actions"));
+        put(holder, inv, 4, item(Material.BOOKSHELF, "&b&lDojo", header));
+        if (cards.isEmpty()) {
+            put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_apprentice", Material.BARRIER, "&7Empty dojo",
+                    List.of("&7Invite apprentices from Mentor Actions")));
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
+            for (int i = 0; i < slots.length && i < cards.size(); i++) {
+                String card = cards.get(i);
+                String[] parts = card.split("\t", 2);
+                String uuid = parts.length > 0 ? parts[0] : "";
+                String name = parts.length > 1 ? parts[1] : uuid;
+                ItemStack head;
+                try {
+                    head = GuiPlayerPicker.headByUuid(
+                            java.util.UUID.fromString(uuid), name, "&f" + name,
+                            List.of("&7Apprentice", "&8Release via Mentor → Release…"));
+                } catch (IllegalArgumentException ex) {
+                    head = GuiPlayerPicker.headByName(name, "&f" + name,
+                            List.of("&7Apprentice", "&8Release via Mentor → Release…"));
+                }
+                put(holder, inv, slots[i], head);
+            }
+        }
+        if (appCount > 0) {
+            put(holder, inv, 39, pageBtn(viewer, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
+                    "&7Pick an apprentice to release"), SlotAction.page("pick_release"));
+        }
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Mentor"),
                 SlotAction.page("mentor"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;

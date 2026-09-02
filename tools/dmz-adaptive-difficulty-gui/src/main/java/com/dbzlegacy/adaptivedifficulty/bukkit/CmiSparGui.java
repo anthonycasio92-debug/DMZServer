@@ -13,7 +13,7 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * CMILib inventory GUI — Legacy Mechanics Sparring.
- * Pages: main · stats · top · mentor · pending · pick_apprentice · pick_mentor · pick_accept/decline.
+ * Pages: main · stats · top · mentor (Actions) · pending · pending_decide · dojo · pickers.
  */
 public final class CmiSparGui {
     private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
@@ -32,14 +32,18 @@ public final class CmiSparGui {
         String raw = page == null || page.isBlank() ? "main" : page.trim();
         String p = raw.toLowerCase(Locale.ROOT);
         try {
-            if (p.startsWith("top_") || p.startsWith("top ") || "top".equals(p) || "leaderboard".equals(p)) {
+            if (p.startsWith("pending_decide:")) {
+                openPendingDecide(player, raw.substring("pending_decide:".length()).trim());
+            } else if (p.startsWith("top_") || p.startsWith("top ") || "top".equals(p) || "leaderboard".equals(p)) {
                 openTop(player, p);
             } else if ("stats".equals(p) || "statistics".equals(p)) {
                 openDetail(player, "stats", "&eLast 3 Spar Reports", Material.WRITTEN_BOOK);
-            } else if ("mentor".equals(p)) {
+            } else if ("mentor".equals(p) || "actions".equals(p)) {
                 openMentor(player);
             } else if ("pending".equals(p) || "invites".equals(p) || "pendinginvites".equals(p)) {
                 openPending(player);
+            } else if ("dojo".equals(p) || "roster".equals(p) || "apprentices".equals(p)) {
+                openDojo(player);
             } else if ("pick_apprentice".equals(p)) {
                 openPicker(player, "mentor_invite", "mentor",
                         "&aInvite Apprentice", "&7Ask them to be your apprentice");
@@ -101,7 +105,7 @@ public final class CmiSparGui {
         gui.addButton(pageBtn(player, 21, "spar.main.top", Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7Leaderboard"));
         gui.addButton(pageBtn(player, 23, "spar.main.mentor", Material.EMERALD, "&bMentor", "mentor",
-                "&7Invite · pending · accept · remove"));
+                "&7Invite · Pending · Dojo · Leave / Release"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "true"));
         gui.addButton(actionBtn(player, 25,
@@ -208,17 +212,21 @@ public final class CmiSparGui {
         GuiFeedback.openCmi(gui);
     }
 
+    /**
+     * Mentor Actions hub — mirrors Rival Actions:
+     * Invite · Ask · Pending · Leave · Release · Dojo.
+     */
     private static void openMentor(Player player) {
-        CMIGui gui = base(player, "&8Spar Mentor", 5);
-        CMIGuiButton info = new CMIGuiButton(4, Material.EMERALD, "&b&lMentor");
+        CMIGui gui = base(player, "&8Mentor Actions", 5);
+        CMIGuiButton info = new CMIGuiButton(4, Material.EMERALD, "&b&lMentor Actions");
         info.lockField();
         info.addLore(toAmp(ForgeBridge.sparLines(player, "mentor")));
         gui.addButton(info);
 
         gui.addButton(pageBtn(player, 19, "spar.mentor.invite", Material.LIME_DYE, "&aInvite apprentice…",
-                "pick_apprentice", "&7Pick a player to mentor"));
+                "pick_apprentice", "&7Pick a player to join your dojo"));
         gui.addButton(pageBtn(player, 20, "spar.mentor.ask", Material.LIGHT_BLUE_DYE, "&bAsk mentor…",
-                "pick_mentor", "&7Pick a player to ask as mentor"));
+                "pick_mentor", "&7Pick a player to ask as your master"));
         Map<String, String> ph = ForgeBridge.sparPlaceholders(player);
         int pendingCount = 0;
         try {
@@ -229,12 +237,8 @@ public final class CmiSparGui {
         gui.addButton(pageBtn(player, 21, "spar.mentor.pending", Material.CLOCK,
                 pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
                 "pending",
-                "&7View incoming + outgoing invites",
-                pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"));
-        gui.addButton(pageBtn(player, 22, "spar.mentor.accept", Material.YELLOW_DYE, "&eAccept…", "pick_accept",
-                "&7Accept an incoming mentor invite"));
-        gui.addButton(pageBtn(player, 23, "spar.mentor.decline", Material.ORANGE_DYE, "&6Decline…", "pick_decline",
-                "&7Decline an incoming mentor invite"));
+                "&7Incoming + outgoing invites",
+                pendingCount > 0 ? "&aClick to Accept / Decline" : "&8No pending invites"));
         boolean hasMentor = "true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"));
         boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));
         String mentorName = blank(ph.get("mentor_name"), "?");
@@ -245,8 +249,9 @@ public final class CmiSparGui {
         } catch (NumberFormatException ignored) {
             appCount = 0;
         }
+        String appMax = blank(ph.get("apprentice_max"), "8");
         if (hasMentor) {
-            gui.addButton(actionBtn(player, 24, "spar.mentor.leave", Material.RED_DYE, "&cLeave mentor",
+            gui.addButton(actionBtn(player, 23, "spar.mentor.leave", Material.RED_DYE, "&cLeave mentor",
                     "mentor_leave", "0", "mentor",
                     List.of("&7End bond with &f" + mentorName,
                             "&812-hour cooldown after leaving"),
@@ -254,35 +259,38 @@ public final class CmiSparGui {
         } else {
             String display = GuiTooltips.name("spar.mentor.leave", "&8Leave mentor",
                     Map.of("name", mentorName));
-            CMIGuiButton leaveOff = new CMIGuiButton(24, Material.GRAY_DYE, display);
+            CMIGuiButton leaveOff = new CMIGuiButton(23, Material.GRAY_DYE, display);
             leaveOff.lockField();
             leaveOff.addLore(GuiTooltips.buttonLore("spar.mentor.leave", List.of("&7You have no mentor"),
                     Map.of("name", mentorName), null));
             gui.addButton(leaveOff);
         }
         if (hasApprentice) {
-            if (appCount > 1) {
-                gui.addButton(pageBtn(player, 25, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
-                        "pick_release",
-                        "&7Dojo &f" + appCount + " &7apprentices",
-                        "&f" + apprenticeName,
-                        "&7Pick who to release",
-                        "&812-hour cooldown after releasing"));
-            } else {
-                gui.addButton(actionBtn(player, 25, "spar.mentor.release", Material.ORANGE_DYE, "&6Release apprentice",
-                        "mentor_release", "0", "mentor",
-                        List.of("&7End bond with &f" + apprenticeName,
-                                "&812-hour cooldown after releasing"),
-                        Map.of("name", apprenticeName)));
-            }
+            gui.addButton(pageBtn(player, 24, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
+                    "pick_release",
+                    "&7Dojo &f" + appCount + "&7/&f" + appMax,
+                    "&f" + apprenticeName,
+                    "&7Pick who to release",
+                    "&812-hour cooldown after releasing"));
+            gui.addButton(pageBtn(player, 25, "spar.mentor.dojo", Material.BOOKSHELF, "&bDojo",
+                    "dojo",
+                    "&7View your apprentices",
+                    "&f" + appCount + "&7/&f" + appMax,
+                    "&8" + apprenticeName));
         } else {
-            String display = GuiTooltips.name("spar.mentor.release", "&8Release apprentice",
+            String display = GuiTooltips.name("spar.mentor.release", "&8Release…",
                     Map.of("name", apprenticeName));
-            CMIGuiButton releaseOff = new CMIGuiButton(25, Material.GRAY_DYE, display);
+            CMIGuiButton releaseOff = new CMIGuiButton(24, Material.GRAY_DYE, display);
             releaseOff.lockField();
-            releaseOff.addLore(GuiTooltips.buttonLore("spar.mentor.release", List.of("&7You have no apprentice"),
-                    Map.of("name", apprenticeName), null));
+            releaseOff.addLore(GuiTooltips.buttonLore("spar.mentor.release",
+                    List.of("&7You have no apprentices"), Map.of("name", apprenticeName), null));
             gui.addButton(releaseOff);
+            String dojoName = GuiTooltips.name("spar.mentor.dojo", "&8Dojo");
+            CMIGuiButton dojoOff = new CMIGuiButton(25, Material.GRAY_DYE, dojoName);
+            dojoOff.lockField();
+            dojoOff.addLore(GuiTooltips.buttonLore("spar.mentor.dojo",
+                    List.of("&7Invite apprentices to fill your dojo", "&8Max &f" + appMax)));
+            gui.addButton(dojoOff);
         }
 
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
@@ -302,8 +310,8 @@ public final class CmiSparGui {
         pendingHeader.add("");
         pendingHeader.add(invites.isEmpty() ? "&7No pending invites." : "&7" + invites.size() + " pending");
         pendingHeader.addAll(GuiBoardHelper.tips(player,
-                "&a◀ Incoming &7= they invited you",
-                "&6▶ Outgoing &7= waiting on them"));
+                "&a◀ Incoming &7= click to Accept / Decline",
+                "&6▶ Outgoing &7= click to cancel"));
         info.addLore(pendingHeader);
         gui.addButton(info);
 
@@ -311,12 +319,9 @@ public final class CmiSparGui {
             CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER,
                     GuiTooltips.name("spar.empty.no_pending", "&7No pending invites"));
             empty.lockField();
-            List<String> emptyLore = new ArrayList<>();
-            emptyLore.add("");
-            emptyLore.addAll(GuiTooltips.lore("spar.empty.no_pending", GuiBoardHelper.tipsList(player, List.of(
+            empty.addLore(GuiTooltips.buttonLore("spar.empty.no_pending", GuiBoardHelper.tipsList(player, List.of(
                     "&7Invite apprentice or ask a mentor",
                     "&7Incoming shows when they invite you"))));
-            empty.addLore(emptyLore);
             gui.addButton(empty);
         } else {
             int[] slots = GuiBoardHelper.centeredSlots(Math.min(invites.size(), 21));
@@ -326,7 +331,7 @@ public final class CmiSparGui {
                 CMIGuiButton btn = new CMIGuiButton(slots[i], head);
                 btn.lockField();
                 if (invite.incoming) {
-                    btn.addCommand("lmdo spar mentor_accept " + invite.pickerArg() + " pending");
+                    btn.addCommand("lmdo spar page pending_decide:" + invite.pickerArg());
                 } else {
                     btn.addCommand("lmdo spar mentor_cancel " + invite.pickerArg() + " pending");
                 }
@@ -334,13 +339,139 @@ public final class CmiSparGui {
             }
         }
 
-        gui.addButton(pageBtn(player, 37, "spar.pending.accept_pick", Material.YELLOW_DYE, "&eAccept…",
-                "pick_accept", "&7Accept an incoming invite"));
-        gui.addButton(pageBtn(player, 38, "spar.pending.decline_pick", Material.ORANGE_DYE, "&6Decline…",
-                "pick_decline", "&7Decline an incoming invite"));
         gui.addButton(pageBtn(player, 39, "spar.pending.nav_mentor", Material.EMERALD, "&bMentor", "mentor",
-                "&7Full mentor menu"));
+                "&7Mentor Actions"));
         gui.addButton(pageBtn(player, 36, "spar.pending.back", Material.ARROW, "&7Back", "mentor", "&7Mentor"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        GuiFeedback.openCmi(gui);
+    }
+
+    /** Per-request Accept / Decline submenu — Rival pending_decide parity. */
+    private static void openPendingDecide(Player player, String arg) {
+        CMIGui gui = base(player, "&8Pending Mentor Request", 5);
+        GuiBoardHelper.PendingInvite invite = findMentorPendingInvite(player, arg);
+        String display = invite != null ? invite.name : (arg == null || arg.isBlank() ? "?" : arg.trim());
+        if (display.regionMatches(true, 0, "uuid:", 0, 5)) {
+            display = display.substring(5).trim();
+        }
+        String pickerArg = invite != null ? invite.pickerArg()
+                : (arg == null || arg.isBlank() ? display : arg.trim());
+        boolean theyAskYouMentor = invite != null && "mentor".equalsIgnoreCase(invite.kind);
+
+        CMIGuiButton info = new CMIGuiButton(4, Material.YELLOW_DYE,
+                GuiTooltips.name("spar.pending.decide_info", "&e&lRespond"));
+        info.lockField();
+        info.addLore(GuiTooltips.buttonLore("spar.pending.decide_info", List.of(
+                "&7Invite from &f" + display,
+                theyAskYouMentor
+                        ? "&7They want you as their &bMentor"
+                        : "&7They want you as their &aApprentice",
+                "&aAccept &7→ create bond",
+                "&cDecline &7→ refuse")));
+        gui.addButton(info);
+
+        ItemStack head = invite != null
+                ? GuiBoardHelper.pendingInviteHead(player, invite)
+                : new ItemStack(Material.PLAYER_HEAD);
+        CMIGuiButton headBtn = new CMIGuiButton(13, head);
+        headBtn.lockField();
+        gui.addButton(headBtn);
+
+        gui.addButton(actionBtn(player, 20, "spar.pending.accept", Material.LIME_DYE, "&aAccept",
+                "mentor_accept", pickerArg, "pending",
+                List.of("&7Accept " + display + "'s invite")));
+        gui.addButton(actionBtn(player, 24, "spar.pending.decline", Material.ORANGE_DYE, "&cDecline",
+                "mentor_decline", pickerArg, "pending",
+                List.of("&7Decline " + display + "'s invite")));
+        gui.addButton(pageBtn(player, 36, "spar.pending.decide_back", Material.ARROW, "&7Back", "pending",
+                "&7Pending invites"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        GuiFeedback.openCmi(gui);
+    }
+
+    private static GuiBoardHelper.PendingInvite findMentorPendingInvite(Player player, String arg) {
+        if (arg == null || arg.isBlank()) {
+            return null;
+        }
+        String raw = arg.trim();
+        String uuid = "";
+        String name = raw;
+        if (raw.regionMatches(true, 0, "uuid:", 0, 5)) {
+            uuid = raw.substring(5).trim();
+            name = "";
+        }
+        for (GuiBoardHelper.PendingInvite invite : GuiBoardHelper.parsePendingInvites(
+                ForgeBridge.sparPendingMentorInviteCards(player))) {
+            if (invite == null || !invite.incoming) {
+                continue;
+            }
+            if (!uuid.isBlank() && uuid.equalsIgnoreCase(invite.uuid)) {
+                return invite;
+            }
+            if (!name.isBlank() && name.equalsIgnoreCase(invite.name)) {
+                return invite;
+            }
+            if (raw.equalsIgnoreCase(invite.pickerArg())) {
+                return invite;
+            }
+        }
+        return null;
+    }
+
+    /** Read-only dojo roster (Rival List twin). */
+    private static void openDojo(Player player) {
+        CMIGui gui = base(player, "&8Dojo Roster", 5);
+        Map<String, String> ph = ForgeBridge.sparPlaceholders(player);
+        List<String> cards = ForgeBridge.sparApprenticeCards(player);
+        int appCount = cards.size();
+        String appMax = blank(ph.get("apprentice_max"), "8");
+        CMIGuiButton info = new CMIGuiButton(4, Material.BOOKSHELF, "&b&lDojo");
+        info.lockField();
+        List<String> header = new ArrayList<>();
+        header.add("");
+        header.add(appCount <= 0 ? "&7No apprentices yet." : "&7" + appCount + "/" + appMax + " apprentices");
+        if ("true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"))) {
+            header.add("&7Your master &f" + blank(ph.get("mentor_name"), "?"));
+        }
+        header.addAll(GuiBoardHelper.tips(player, "&8Release from Mentor Actions"));
+        info.addLore(header);
+        gui.addButton(info);
+
+        if (cards.isEmpty()) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER,
+                    GuiTooltips.name("spar.empty.no_apprentice", "&7Empty dojo"));
+            empty.lockField();
+            empty.addLore(GuiTooltips.buttonLore("spar.empty.no_apprentice",
+                    GuiBoardHelper.tipsList(player, List.of("&7Invite apprentices from Mentor Actions"))));
+            gui.addButton(empty);
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
+            for (int i = 0; i < slots.length && i < cards.size(); i++) {
+                String card = cards.get(i);
+                String[] parts = card.split("\t", 2);
+                String uuid = parts.length > 0 ? parts[0] : "";
+                String name = parts.length > 1 ? parts[1] : uuid;
+                ItemStack head;
+                try {
+                    head = GuiPlayerPicker.headByUuid(
+                            java.util.UUID.fromString(uuid), name, "&f" + name,
+                            List.of("&7Apprentice", "&8Release via Mentor → Release…"));
+                } catch (IllegalArgumentException ex) {
+                    head = GuiPlayerPicker.headByName(name, "&f" + name,
+                            List.of("&7Apprentice", "&8Release via Mentor → Release…"));
+                }
+                CMIGuiButton btn = new CMIGuiButton(slots[i], head);
+                btn.lockField();
+                gui.addButton(btn);
+            }
+        }
+        if (appCount > 0) {
+            gui.addButton(pageBtn(player, 39, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
+                    "pick_release", "&7Pick an apprentice to release"));
+        }
+        gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "mentor", "&7Mentor"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
