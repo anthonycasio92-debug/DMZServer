@@ -187,6 +187,7 @@ public final class RivalSystem {
         // One-sided silent: you get Silent benefits; target is not notified / sees nothing.
         myLink.declaredByMe = true;
         myLink.declaredByThem = false;
+        myLink.visibleDeclare = false;
         myLink.inviteSent = false;
         myLink.inviteReceived = false;
         myLink.mutual = false;
@@ -232,8 +233,9 @@ public final class RivalSystem {
             declaredNote = " §8(was Declared — sending visible declare for Mutual)";
         }
 
-        // You keep benefits (declaredByMe). They get invite only — no benefits until accept.
+        // You keep Declared on your list. They get a Pending invite — accept → Mutual.
         myLink.declaredByMe = true;
+        myLink.visibleDeclare = true;
         myLink.inviteSent = true;
         myLink.pendingExpireAt = now + RivalConstants.REQUEST_EXPIRE_MS;
         myLink.mutual = false;
@@ -255,8 +257,9 @@ public final class RivalSystem {
         store.markDirty();
 
         DmzRewards.msg(target, LmChat.tagged("Rival", "§e" + me.name + " §7visibly declared you as a rival!"));
-        DmzRewards.msg(target, LmChat.tip("/rival", "→ Actions → Accept… or Decline…"));
-        return "§aDeclared §f" + them.name + " §a(Pending). They were notified." + declaredNote;
+        DmzRewards.msg(target, LmChat.tip("/rival", "→ Actions → Pending → Accept or Decline"));
+        return "§aDeclared §f" + them.name + "§a. §8They appear on your list as Declared;"
+                + " they were notified (Pending)." + declaredNote;
     }
 
     public static String accept(ServerPlayer player, String otherName) {
@@ -343,13 +346,25 @@ public final class RivalSystem {
         }
         store.clearInviteFlags(them.uuid, me.uuid);
         store.declareRequests.remove(them.uuid + ">" + me.uuid);
-        // Decliner keeps no benefits; declarer keeps declaredByMe
+        // Decliner keeps no benefits; declarer keeps Declared on their list.
         myLink.declaredByMe = false;
+        myLink.visibleDeclare = false;
+        myLink.inviteReceived = false;
+        myLink.pendingExpireAt = 0L;
+        RivalLink theirLink = them.rivals.get(me.uuid);
+        if (theirLink != null) {
+            theirLink.inviteSent = false;
+            theirLink.pendingExpireAt = 0L;
+            theirLink.declaredByMe = true;
+            theirLink.visibleDeclare = true;
+            theirLink.declaredByThem = false;
+        }
         me.declarationsDeclined++;
         store.markDirty();
         ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
         if (online != null) {
             DmzRewards.msg(online, "§c[Rival] " + me.name + " declined your declare.");
+            DmzRewards.msg(online, "§8They stay on your list as Declared.");
         }
         return "§eDeclined rivalry from " + them.name + ".";
     }
@@ -422,9 +437,9 @@ public final class RivalSystem {
 
         String msg = "§eRemoved rivalry with §f" + them.name + ".";
         if (wasShared) {
-            msg += "\n§8Saved to History. They still have you as a Silent rival.";
+            msg += "\n§8Saved to History. They still have you as Declared.";
         } else if (wasDeclared) {
-            msg += "\n§8Saved to History. They may still have you as Silent.";
+            msg += "\n§8Saved to History. They may still have you as Declared.";
         } else {
             msg += "\n§8Saved to History.";
         }
@@ -434,17 +449,17 @@ public final class RivalSystem {
             if (online != null) {
                 if (wasShared) {
                     DmzRewards.msg(online, "§c[Rival] " + me.name + " ended Mutual rivalry with you.");
-                    DmzRewards.msg(online, "§8You still have them as a Silent rival.");
+                    DmzRewards.msg(online, "§8You still have them as Declared.");
                 } else if (wasDeclared) {
                     DmzRewards.msg(online, "§e[Rival] " + me.name + " ended Declared rivalry with you.");
-                    DmzRewards.msg(online, "§8You still have them as a Silent rival.");
+                    DmzRewards.msg(online, "§8You still have them as Declared.");
                 }
             }
         }
         return msg;
     }
 
-    /** Keep one-way Silent declare (benefits for this owner only). */
+    /** Keep one-way Declared (visible) after Mutual remove — benefits for this owner only. */
     private static void demoteToOneWayDeclare(RivalLink link, String otherName) {
         if (link == null) {
             return;
@@ -452,6 +467,7 @@ public final class RivalSystem {
         link.mutual = false;
         link.isNemesis = false;
         link.declaredByMe = true;
+        link.visibleDeclare = true;
         link.declaredByThem = false;
         link.inviteSent = false;
         link.inviteReceived = false;
@@ -480,8 +496,8 @@ public final class RivalSystem {
                 continue;
             }
             RivalStatus st = link.status();
-            // Visible Declares live under Pending — not the main rival list.
-            // Silent only shows for the player who Silent'd (declaredByMe).
+            // Incoming Pending Declares live under Pending Invites (accept/decline).
+            // Outgoing Declares show on this list as Declared (even while invite is open).
             if (st == RivalStatus.PENDING || st == RivalStatus.NONE) {
                 continue;
             }
@@ -649,8 +665,8 @@ public final class RivalSystem {
             if (link == null) {
                 continue;
             }
-            // Current list hides Pending declares — those are Pending Invites only.
-            // Silent only shows for the player who Silent'd (declaredByMe).
+            // Incoming Pending Declares are Pending Invites only.
+            // Outgoing visible Declares stay on the list as Declared.
             if (!past) {
                 RivalStatus cur = link.status();
                 if (cur == RivalStatus.PENDING || cur == RivalStatus.NONE) {
@@ -809,6 +825,7 @@ public final class RivalSystem {
         snap.firstMetAt = link.firstMetAt;
         snap.mutualSince = link.mutualSince;
         snap.lastBattleAt = link.lastBattleAt;
+        snap.visibleDeclare = link.visibleDeclare;
         snap.provingGrounds = link.provingGrounds;
         owner.pastRivals.put(rivalUuid, snap);
     }
@@ -842,6 +859,9 @@ public final class RivalSystem {
         }
         if (link.provingGrounds == null && past.provingGrounds != null) {
             link.provingGrounds = past.provingGrounds;
+        }
+        if (past.visibleDeclare) {
+            link.visibleDeclare = true;
         }
     }
 
@@ -966,9 +986,21 @@ public final class RivalSystem {
         if (name == null || name.isBlank()) {
             return null;
         }
-        String want = name.trim().toLowerCase();
+        String want = name.trim();
+        if (want.regionMatches(true, 0, "uuid:", 0, 5)) {
+            RivalPlayerRecord byId = store.get(want.substring(5).trim());
+            if (byId != null) {
+                return byId;
+            }
+            want = want.substring(5).trim();
+        }
+        RivalPlayerRecord byUuid = store.get(want);
+        if (byUuid != null) {
+            return byUuid;
+        }
+        String lower = want.toLowerCase();
         for (RivalPlayerRecord rec : store.players.values()) {
-            if (rec.name != null && rec.name.toLowerCase().equals(want)) {
+            if (rec.name != null && rec.name.toLowerCase().equals(lower)) {
                 return rec;
             }
         }

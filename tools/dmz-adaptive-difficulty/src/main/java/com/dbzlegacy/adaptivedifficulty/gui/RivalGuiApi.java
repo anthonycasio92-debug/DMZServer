@@ -418,10 +418,10 @@ public final class RivalGuiApi {
             case "pending", "invites", "pendinginvites" -> RivalSystem.pendingInviteLines(player);
             case "actions" -> List.of(
                     "§6§lRival Actions",
-                    "§7Silent → Unknown (they are not told)",
-                    "§7Both Silent → Declared (both notified)",
-                    "§7Declared → Accept → Mutual",
-                    "§7Or Declare → Pending → Accept → Mutual"
+                    "§7Silent → only you see them",
+                    "§7Declare → on your list as Declared; they get Pending",
+                    "§7They Accept → Mutual (Decline/ignore: you keep Declared)",
+                    "§7Both Silent → Declared → Accept → Mutual"
             );
             case "stats", "statistics" -> statsLines(player);
             case "challenge", "challenges" -> challengeLines(player);
@@ -538,21 +538,14 @@ public final class RivalGuiApi {
             if (a.isBlank()) {
                 return "§cPick a player to accept.";
             }
-            String name = resolveNameArg(player, a);
-            if (name.isBlank()) {
-                return "§cPick a player to accept.";
-            }
-            return RivalSystem.accept(player, name);
+            // Pass uuid: args through — name-only lookup misses offline declarers.
+            return RivalSystem.accept(player, a);
         }
         if ("decline".equals(act) || "deny".equals(act)) {
             if (a.isBlank()) {
                 return "§cPick a player to decline.";
             }
-            String name = resolveNameArg(player, a);
-            if (name.isBlank()) {
-                return "§cPick a player to decline.";
-            }
-            return RivalSystem.decline(player, name);
+            return RivalSystem.decline(player, a);
         }
         if ("remove".equals(act)) {
             if (a.isBlank()) {

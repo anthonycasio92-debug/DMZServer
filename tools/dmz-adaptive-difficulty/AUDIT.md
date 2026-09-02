@@ -1,3 +1,10 @@
+## Declared stays on list after decline/ignore (2.3.137)
+
+Visible Declare sets `visibleDeclare` so the declarer keeps a **Declared** entry on
+their rival list even if the target declines, ignores, or the invite expires.
+Incoming declares stay on **Pending** (Accept / Decline). Accept/Decline resolve
+`uuid:` args so offline declarers work.
+
 ## Nemesis = challenge deaths only (2.3.136)
 
 Nemesis climb uses challenge knockouts only (`deathLosses`), not open-world PvP

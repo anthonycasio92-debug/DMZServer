@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.136", 'VERSION = "2.3.136"' in mod)
+    check("VERSION 2.3.137", 'VERSION = "2.3.137"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -534,13 +534,17 @@ def main() -> int:
           'SlotAction.page("hof")' in rival and 'SlotAction.page("journal")' in rival
           and "records" in rival)
 
-    print("\n=== Rival relationship semantics (2.3.134) ===")
+    print("\n=== Rival relationship semantics (2.3.137) ===")
     rival_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.java")
     rival_st = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalStatus.java")
+    rival_link = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalLink.java")
     check("Silent label (not Unknown)", 'case UNKNOWN -> "Silent"' in rival_st)
     check("remove demotes mutual to one-way", "demoteToOneWayDeclare" in rival_sys)
     check("remove archives remover history", "archiveRivalLink(me, them.uuid, myLink)" in rival_sys)
     check("pending excluded from rival list", "st == RivalStatus.PENDING" in rival_sys)
+    check("visibleDeclare flag", "visibleDeclare" in rival_sys and "visibleDeclare" in rival_link)
+    check("declare sets visibleDeclare", "myLink.visibleDeclare = true" in rival_sys)
+    check("accept/decline resolve uuid", 'regionMatches(true, 0, "uuid:"' in rival_sys)
     check("nemesis only from challenge death KO", "challengeKo" in rival_sys and "Phase.ACTIVE" in rival_sys)
     check("dual silent → Declared", "promoteDeclared" in rival_sys)
     check("Spar Stats button BOOK",

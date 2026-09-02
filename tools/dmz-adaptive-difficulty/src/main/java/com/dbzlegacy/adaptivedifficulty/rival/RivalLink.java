@@ -12,6 +12,11 @@ public final class RivalLink {
     public boolean declaredByThem;
     public boolean inviteSent;
     public boolean inviteReceived;
+    /**
+     * Set when this owner used a visible Declare (not Silent). Survives decline/expire
+     * so the declarer keeps a Declared entry on their rival list.
+     */
+    public boolean visibleDeclare;
     public double points;
     public int wins;
     public int losses;
@@ -41,10 +46,12 @@ public final class RivalLink {
             isNemesis = false;
             return RivalStatus.MUTUAL;
         }
-        if (inviteSent || inviteReceived) {
+        // Incoming visible declare — Pending Invites (accept/decline).
+        if (inviteReceived) {
             return RivalStatus.PENDING;
         }
-        if (declaredByMe && declaredByThem) {
+        // Dual Silent, or you visibly Declared them (even one-way / after decline).
+        if ((declaredByMe && declaredByThem) || (declaredByMe && (visibleDeclare || inviteSent))) {
             return RivalStatus.DECLARED;
         }
         if (declaredByMe || declaredByThem) {

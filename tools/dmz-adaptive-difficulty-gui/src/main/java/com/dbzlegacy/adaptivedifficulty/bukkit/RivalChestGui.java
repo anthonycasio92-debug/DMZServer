@@ -393,8 +393,10 @@ public final class RivalChestGui implements Listener {
                 GuiBoardHelper.PendingInvite invite = invites.get(i);
                 ItemStack head = GuiBoardHelper.pendingInviteHead(viewer, invite);
                 if (invite.incoming) {
+                    // Click = Accept; Decline… picker for refuse (uuid-safe).
                     put(holder, inv, slots[i], head, SlotAction.act("accept", invite.pickerArg(), "pending"));
                 } else {
+                    // Outgoing: on your list as Declared; here is waiting-only (no self accept).
                     put(holder, inv, slots[i], head);
                 }
             }
@@ -419,7 +421,8 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 4, item(Material.EMERALD, "&a&lRival Actions",
                 prependBlank(toAmp(ForgeBridge.rivalLines(subject, "actions")))));
         put(holder, inv, 19, pageBtn(viewer, "rival.actions.declare", Material.LIME_DYE, "&aDeclare…",
-                "&7Visible declare → they Accept → Mutual"), SlotAction.page("pick_declare"));
+                "&7Shows on your list as Declared",
+                "&7They get Pending → Accept → Mutual"), SlotAction.page("pick_declare"));
         Map<String, String> ph = ForgeBridge.rivalPlaceholders(subject);
         int pendingCount = 0;
         try {

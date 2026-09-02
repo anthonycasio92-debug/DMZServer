@@ -440,7 +440,8 @@ public final class CmiRivalGui {
         gui.addButton(info);
 
         gui.addButton(pageBtn(player, 19, "rival.actions.declare", Material.LIME_DYE, "&aDeclare…", "pick_declare",
-                "&7Visible declare → they Accept → Mutual"));
+                "&7Shows on your list as Declared",
+                "&7They get Pending → Accept → Mutual"));
         Map<String, String> ph = ForgeBridge.rivalPlaceholders(player);
         int pendingCount = 0;
         try {
