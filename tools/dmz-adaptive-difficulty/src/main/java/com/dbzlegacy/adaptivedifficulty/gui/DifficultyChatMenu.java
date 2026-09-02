@@ -231,7 +231,8 @@ public final class DifficultyChatMenu {
         PlayerDifficultyData data = DifficultyCache.data(player);
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§8──────── §dDifficulty Titles §8────────"));
-        send(player, Component.m_237113_("§7Titles need higher CR milestones / kill feats."));
+        send(player, Component.m_237113_("§7Unlock with DMZ level or Prestige — keeps after lowering tier."));
+        send(player, Component.m_237113_("§7Swap freely. Rarity adds landing relief · AD damage · TP."));
         send(player, Component.m_237113_("§7Equipped §e" + TitleSystem.activeDisplay(player)));
         send(player, btn("§c[Clear Title]", "/difficulty do clear_title 0 titles", "Unequip title"));
         send(player, Component.m_237113_(""));

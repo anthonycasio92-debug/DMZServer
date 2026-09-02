@@ -28,7 +28,7 @@ public final class TitleSystem {
         if (player == null) {
             return unlocked;
         }
-        DifficultySnapshot snap = DifficultyCache.refresh(player);
+        DifficultyCache.refresh(player);
         PlayerDifficultyData data = DifficultyCache.data(player);
         boolean dirty = data.normalizeTitles();
         int level = DmzProgression.dmzLevelForProgression(player);
@@ -37,9 +37,7 @@ public final class TitleSystem {
             if (title.kind != DifficultyTitle.Kind.TIER || title.unlockTier == null) {
                 continue;
             }
-            if (snap.activeTier < title.unlockTier.id) {
-                continue;
-            }
+            // Permanent unlock from DMZ level OR prestige — not active tier (no regress on lower).
             if (level < title.requiredDmzLevel && prestige < title.requiredPrestige) {
                 continue;
             }
@@ -57,7 +55,9 @@ public final class TitleSystem {
         }
         if (announce) {
             for (String name : unlocked) {
-                player.m_213846_(Component.m_237113_("§6✦ Title unlocked: §e" + name));
+                player.m_213846_(Component.m_237113_(
+                        com.dbzlegacy.adaptivedifficulty.util.LmChat.ok(
+                                "Difficulty", "Title unlocked: §e" + name)));
             }
         }
         return unlocked;
@@ -97,8 +97,8 @@ public final class TitleSystem {
         }
         PlayerDifficultyData data = DifficultyCache.data(player);
         TitleProgress p = data.titleProgress();
-        DifficultySnapshot snap = DifficultyCache.get(player);
-        boolean ready = snap.activeTier >= 7
+        // Ascendant: ever unlocked T7 (Buy ladder), not currently holding it.
+        boolean ready = data.hasUnlockedTier(7)
                 && p.elitesT7() >= 100L
                 && p.bossesT7() >= 25L
                 && p.killsNoDeath() >= 100L
@@ -110,7 +110,9 @@ public final class TitleSystem {
             return false;
         }
         if (announce) {
-            player.m_213846_(Component.m_237113_("§6✦ Title unlocked: §eAscendant"));
+            player.m_213846_(Component.m_237113_(
+                    com.dbzlegacy.adaptivedifficulty.util.LmChat.ok(
+                            "Difficulty", "Title unlocked: §eAscendant")));
         }
         return true;
     }

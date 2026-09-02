@@ -9,39 +9,39 @@ import java.util.Locale;
  */
 public enum DifficultyTitle {
     T1_AWAKENED("t1_awakened", "Awakened", Kind.TIER, TitleRarity.COMMON, UnlockTier.T1, 150, 2, 10,
-            Perk.COIN_DROP, 0.02),
-    T2_ENHANCED("t2_enhanced", "Enhanced", Kind.TIER, TitleRarity.COMMON, UnlockTier.T2, 750, 3, 10,
             Perk.COIN_DROP, 0.03),
+    T2_ENHANCED("t2_enhanced", "Enhanced", Kind.TIER, TitleRarity.COMMON, UnlockTier.T2, 750, 3, 10,
+            Perk.COIN_DROP, 0.04),
     T3_ELITE("t3_elite", "Elite", Kind.TIER, TitleRarity.COMMON, UnlockTier.T3, 1_500, 4, 10,
-            Perk.ELITE_DAMAGE, 0.03),
+            Perk.ELITE_DAMAGE, 0.04),
     T4_ADVANCED("t4_advanced", "Advanced", Kind.TIER, TitleRarity.RARE, UnlockTier.T4, 7_500, 5, 10,
-            Perk.ELITE_DAMAGE, 0.05),
+            Perk.ELITE_DAMAGE, 0.06),
     T5_MASTER("t5_master", "Master", Kind.TIER, TitleRarity.RARE, UnlockTier.T5, 15_000, 6, 10,
-            Perk.MUTATION_DAMAGE, 0.05),
+            Perk.MUTATION_DAMAGE, 0.07),
     T6_LEGENDARY("t6_legendary", "Legendary", Kind.TIER, TitleRarity.EPIC, UnlockTier.T6, 75_000, 7, 10,
-            Perk.BOSS_DAMAGE, 0.05),
-    T7_GOD("t7_god", "Godslayer", Kind.TIER, TitleRarity.LEGENDARY, UnlockTier.T7, 150_000, 7, 10,
             Perk.BOSS_DAMAGE, 0.08),
+    T7_GOD("t7_god", "Godslayer", Kind.TIER, TitleRarity.LEGENDARY, UnlockTier.T7, 150_000, 7, 10,
+            Perk.BOSS_DAMAGE, 0.10),
 
     BOSS_SLAYER("boss_slayer", "Boss Slayer", Kind.COMBAT, TitleRarity.EPIC, null, 0, 0, 50,
-            Perk.BOSS_COIN, 0.05),
+            Perk.BOSS_COIN, 0.07),
     ELITE_HUNTER("elite_hunter", "Elite Hunter", Kind.COMBAT, TitleRarity.RARE, null, 0, 0, 25,
-            Perk.ELITE_REWARD, 0.05),
+            Perk.ELITE_REWARD, 0.07),
     ASCENDANT("ascendant", "Ascendant", Kind.COMBAT, TitleRarity.LEGENDARY, null, 0, 0, 100,
-            Perk.COIN_MULT, 0.02),
+            Perk.COIN_MULT, 0.04),
 
     MUTATION_HUNTER("mutation_hunter", "Mutation Hunter", Kind.CHALLENGE, TitleRarity.EPIC, null, 0, 0, 50,
-            Perk.MUTATION_DAMAGE, 0.03),
+            Perk.MUTATION_DAMAGE, 0.05),
     UNTOUCHABLE("untouchable", "Untouchable", Kind.CHALLENGE, TitleRarity.MYTHIC, null, 0, 0, 75,
-            Perk.AD_DAMAGE, 0.01),
-    IMMORTAL("immortal", "Immortal", Kind.CHALLENGE, TitleRarity.MYTHIC, null, 0, 0, 75,
-            Perk.AD_DAMAGE, 0.015),
-    COIN_LORD("coin_lord", "Coin Lord", Kind.CHALLENGE, TitleRarity.MYTHIC, null, 0, 0, 75,
-            Perk.COIN_MULT, 0.02),
-    WORLD_BREAKER("worldbreaker", "Worldbreaker", Kind.CHALLENGE, TitleRarity.MYTHIC, null, 0, 0, 100,
             Perk.AD_DAMAGE, 0.02),
+    IMMORTAL("immortal", "Immortal", Kind.CHALLENGE, TitleRarity.MYTHIC, null, 0, 0, 75,
+            Perk.AD_DAMAGE, 0.025),
+    COIN_LORD("coin_lord", "Coin Lord", Kind.CHALLENGE, TitleRarity.MYTHIC, null, 0, 0, 75,
+            Perk.COIN_MULT, 0.04),
+    WORLD_BREAKER("worldbreaker", "Worldbreaker", Kind.CHALLENGE, TitleRarity.MYTHIC, null, 0, 0, 100,
+            Perk.AD_DAMAGE, 0.03),
     SURVIVOR("survivor", "Survivor", Kind.CHALLENGE, TitleRarity.MYTHIC, null, 0, 0, 50,
-            Perk.COIN_DROP, 0.01);
+            Perk.COIN_DROP, 0.025);
 
     public enum Kind {
         TIER,
@@ -130,7 +130,7 @@ public enum DifficultyTitle {
     public String perkTip(int masteryLevel) {
         double value = TitleEffects.equippedPerkValue(this, masteryLevel);
         String pct = String.format(Locale.ROOT, "%.1f", value * 100.0);
-        return switch (perk) {
+        String specific = switch (perk) {
             case COIN_DROP -> "+" + pct + "% Ancient Coin drop chance";
             case COIN_MULT -> "+" + pct + "% Ancient Coin quantity";
             case ELITE_DAMAGE -> "+" + pct + "% damage vs Elites";
@@ -138,16 +138,21 @@ public enum DifficultyTitle {
             case BOSS_DAMAGE -> "+" + pct + "% damage vs Bosses";
             case AD_DAMAGE -> "+" + pct + "% damage vs Adaptive enemies";
             case BOSS_COIN -> "+" + pct + "% boss coin / loot chance";
-            case ELITE_REWARD -> "+" + pct + "% Elite spawn reward";
+            case ELITE_REWARD -> "+" + pct + "% Elite Ancient Coin drop chance";
             default -> "No passive";
         };
+        String presence = TitleEffects.presenceTipShort(this);
+        if (presence == null || presence.isBlank()) {
+            return specific;
+        }
+        return specific + " §8| " + presence;
     }
 
     public String requirementTip() {
         return switch (this) {
             case BOSS_SLAYER -> "Kill a boss while on Tier 5+";
             case ELITE_HUNTER -> "Kill an elite while on Tier 6+";
-            case ASCENDANT -> "T7 + 100 T7 elites + 25 T7 bosses + 100 no-death T7 kills + all mutations";
+            case ASCENDANT -> "Ever unlocked T7 + 100 T7 elites + 25 T7 bosses + 100 no-death T7 kills + all mutations";
             case MUTATION_HUNTER -> "Kill every mutation type";
             case UNTOUCHABLE -> "Kill 100 T6+ enemies without dying";
             case IMMORTAL -> "Kill 1,000 Adaptive enemies without dying";
@@ -158,8 +163,8 @@ public enum DifficultyTitle {
                 if (unlockTier == null) {
                     yield "Locked";
                 }
-                yield "Hold T" + unlockTier.id + " · DMZ " + requiredDmzLevel
-                        + " or Prestige " + requiredPrestige;
+                yield "DMZ " + requiredDmzLevel + " or Prestige " + requiredPrestige
+                        + " §8(keeps after lowering tier)";
             }
         };
     }

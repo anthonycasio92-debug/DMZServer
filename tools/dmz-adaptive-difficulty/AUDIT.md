@@ -1,3 +1,11 @@
+## Difficulty titles: no tier regress + presence (2.3.154)
+
+Tier titles unlock from **DMZ level or Prestige** (not the active difficulty tier), so
+lowering tier never blocks or revokes them. Free swap among unlocked titles stays.
+Equipped titles gain **rarity presence** (softer Adaptive landings, small AD damage,
+TP while a tier is on) plus buffed specific perks. Godslayer sense/quality no longer
+requires holding T7. Ascendant needs ever-unlocked T7, not active T7.
+
 ## Unified chat style (2.3.153)
 
 All player-facing system chat uses Meditation-style {@code §5§l[System] §r…} tags via

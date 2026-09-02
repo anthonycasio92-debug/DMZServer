@@ -37,7 +37,15 @@ public final class DmzRewards {
             if (resources == null) {
                 return false;
             }
-            resources.addTrainingPoints(amount);
+            float grant = amount;
+            try {
+                double tpBonus = com.dbzlegacy.adaptivedifficulty.title.TitleEffects.tpGainBonus(player);
+                if (tpBonus > 0.0) {
+                    grant = (float) (grant * (1.0 + tpBonus));
+                }
+            } catch (Throwable ignored) {
+            }
+            resources.addTrainingPoints(grant);
             try {
                 NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
             } catch (Throwable syncErr) {
@@ -49,7 +57,7 @@ public final class DmzRewards {
                 );
             }
             if (showMessage) {
-                msg(player, LmChat.tp(resolveTpSystem(prefix), formatWhole(amount), reason));
+                msg(player, LmChat.tp(resolveTpSystem(prefix), formatWhole(grant), reason));
             }
             return true;
         } catch (Throwable t) {

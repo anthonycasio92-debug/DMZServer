@@ -319,7 +319,8 @@
         "name": "&dTitles",
         "lore": [
           "&7Equip difficulty titles",
-          "&8Earned from tiers and combat"
+          "&7Unlock via DMZ level or Prestige",
+          "&8Keeps after lowering tier · free swap"
         ]
       },
       "summon_dragon": {
@@ -418,7 +419,10 @@
     "titles": {
       "header": {
         "name": "&d&lTitles",
-        "lore": []
+        "lore": [
+          "&7Unlock via DMZ or Prestige — keeps after lowering tier",
+          "&7Swap freely · rarity adds landing/TP/AD presence"
+        ]
       },
       "sense_on": {
         "name": "&aTitle Sense ON",

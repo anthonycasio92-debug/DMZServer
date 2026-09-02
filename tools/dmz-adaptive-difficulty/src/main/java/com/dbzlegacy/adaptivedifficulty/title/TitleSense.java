@@ -71,11 +71,12 @@ public final class TitleSense {
             player.m_213846_(Component.m_237113_(
                     "§c☠ Your Boss Slayer title recognizes a worthy opponent."));
         }
-        if (equipped == DifficultyTitle.T7_GOD && data.getActiveTier() >= 7 && bossNear
+        if (equipped == DifficultyTitle.T7_GOD && bossNear
                 && now - LAST_GOD_MSG.getOrDefault(id, 0L) >= COOLDOWN_MS * 2L) {
             LAST_GOD_MSG.put(id, now);
             player.m_213846_(Component.m_237113_(
-                    "§6⚡ The Godslayer has entered the battlefield."));
+                    com.dbzlegacy.adaptivedifficulty.util.LmChat.note(
+                            "Difficulty", "§6Godslayer senses a boss nearby.")));
         }
     }
 

@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.153", 'VERSION = "2.3.153"' in mod)
+    check("VERSION 2.3.154", 'VERSION = "2.3.154"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -830,7 +830,7 @@ def main() -> int:
     check("jar leave lore is 12-hour", '"&812-hour cooldown after leaving"' in tips_json)
     check("jar leave lore not 7-day", '"&87-day cooldown"' not in tips_json)
 
-    print("\n=== Mentor tip placeholders (2.3.153) ===")
+    print("\n=== Mentor tip placeholders (2.3.154) ===")
     chest = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/SparChestGui.java")
     cmi = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/CmiSparGui.java")
     check("leave_none tip key", "spar.mentor.leave_none" in chest and "spar.mentor.leave_none" in cmi)
@@ -841,7 +841,7 @@ def main() -> int:
     check("CMI pageBtn accepts vars", "Map<String, String> vars, String... tips" in cmi)
 
 
-    print("\n=== Dojo membership roster (2.3.153) ===")
+    print("\n=== Dojo membership roster (2.3.154) ===")
     spar_sys152 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
     spar_api152 = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.java")
     chest152 = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/SparChestGui.java")
@@ -855,7 +855,24 @@ def main() -> int:
     check("Dojo opens for apprentices", 'hasMentor || hasApprentice' in chest152 and 'hasMentor || hasApprentice' in cmi152)
 
 
-    print("\n=== Unified chat style (2.3.153) ===")
+
+    print("\n=== Difficulty titles presence (2.3.154) ===")
+    title_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/title/TitleSystem.java")
+    title_fx = read(SRC / "com/dbzlegacy/adaptivedifficulty/title/TitleEffects.java")
+    title_def = read(SRC / "com/dbzlegacy/adaptivedifficulty/title/DifficultyTitle.java")
+    events = read(SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")
+    rewards = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/DmzRewards.java")
+    check("tier titles ignore activeTier", "snap.activeTier < title.unlockTier.id" not in title_sys)
+    check("tier titles use DMZ/prestige", "requiredDmzLevel" in title_sys and "requiredPrestige" in title_sys)
+    check("Ascendant uses hasUnlockedTier(7)", "hasUnlockedTier(7)" in title_sys)
+    check("landFracRelief helper", "landFracRelief" in title_fx and "presenceDamageBonus" in title_fx)
+    check("tpGainBonus helper", "tpGainBonus" in title_fx)
+    check("landing applies title relief", "landFracRelief(player)" in events)
+    check("awardTp applies title TP", "tpGainBonus(player)" in rewards)
+    check("req tip no Hold T", '"Hold T"' not in title_def and "keeps after lowering tier" in title_def)
+    check("Godslayer perk 0.10", "Perk.BOSS_DAMAGE, 0.10" in title_def)
+
+    print("\n=== Unified chat style (2.3.154) ===")
     lmchat = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/LmChat.java")
     rewards = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/DmzRewards.java")
     guichat = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/GuiChat.java")

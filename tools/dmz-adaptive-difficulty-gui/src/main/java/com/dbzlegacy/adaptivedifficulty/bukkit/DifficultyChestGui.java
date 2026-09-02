@@ -332,8 +332,11 @@ public final class DifficultyChestGui implements Listener {
         titlesHeader.add("&7Nearby Elites &f" + ph.getOrDefault("nearby_elites", "0"));
         titlesHeader.add("");
         titlesHeader.addAll(GuiTooltips.lore("difficulty.titles.header",
-                List.of("&8Small perks only — tiers stay primary power"), null));
-        titlesHeader.addAll(GuiBoardHelper.tips(viewer, "&8Small perks only — tiers stay primary power"));
+                List.of("&7Unlock via DMZ level or Prestige — keeps after lowering tier",
+                        "&7Swap freely among unlocked · rarity adds landing/TP/AD presence"), null));
+        titlesHeader.addAll(GuiBoardHelper.tips(viewer,
+                "&7Unlock via DMZ/Prestige — never regresses on lower tier",
+                "&8Rarity presence: softer landings · AD dmg · TP while tier on"));
         put(holder, inv, 4, item(Material.NAME_TAG, "&d&lTitles", titlesHeader));
         boolean senseOn = "true".equalsIgnoreCase(ph.getOrDefault("title_sense", "true"));
         put(holder, inv, 7, tipBtn(viewer, senseOn ? "difficulty.titles.sense_on" : "difficulty.titles.sense_off",

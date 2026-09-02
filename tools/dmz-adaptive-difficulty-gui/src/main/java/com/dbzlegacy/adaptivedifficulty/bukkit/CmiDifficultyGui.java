@@ -326,8 +326,11 @@ public final class CmiDifficultyGui {
         titlesHeader.add("&7Nearby Elites &f" + ph.getOrDefault("nearby_elites", "0"));
         titlesHeader.add("");
         titlesHeader.addAll(GuiTooltips.lore("difficulty.titles.header",
-                List.of("&8Small perks only — tiers stay primary power"), null));
-        titlesHeader.addAll(GuiBoardHelper.tips(player, "&8Small perks only — tiers stay primary power"));
+                List.of("&7Unlock via DMZ level or Prestige — keeps after lowering tier",
+                        "&7Swap freely among unlocked · rarity adds landing/TP/AD presence"), null));
+        titlesHeader.addAll(GuiBoardHelper.tips(player,
+                "&7Unlock via DMZ/Prestige — never regresses on lower tier",
+                "&8Rarity presence: softer landings · AD dmg · TP while tier on"));
         info.addLore(titlesHeader);
         gui.addButton(info);
         boolean senseOn = "true".equalsIgnoreCase(ph.getOrDefault("title_sense", "true"));

@@ -937,6 +937,13 @@ public final class DifficultyEvents {
             return;
         }
         double land = profile.targetLandingDamage(DifficultyConfig.get());
+        try {
+            double relief = com.dbzlegacy.adaptivedifficulty.title.TitleEffects.landFracRelief(player);
+            if (relief > 0.0) {
+                land = Math.max(1.0, land * (1.0 - relief));
+            }
+        } catch (Throwable ignored) {
+        }
         boolean intervened = false;
         if (cancelled) {
             // DMZ applyFullNegation zeroed the hit — put the tier bite back.
