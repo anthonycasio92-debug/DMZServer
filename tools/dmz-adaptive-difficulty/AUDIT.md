@@ -1,3 +1,20 @@
+## Full mod audit (2.3.156) — 2026-09-02
+
+Fail-closed suite all green on tip with Skill Check / Potential Piccolo (2.3.156):
+
+| Audit | Result |
+|-------|:------:|
+| audit_features (646) | PASS |
+| audit_concept (64) | PASS |
+| validate_tier_costs (1–150k) | PASS |
+| validate_scaling (73) | PASS |
+| simulate_build_matrix --check (35) | PASS |
+| simulate_race_forms --check (10 races) | PASS |
+| audit_tier_level_matrix (72; 1554 form cells) | PASS |
+| audit_gui_abi | PASS |
+
+Report: `sim/out/full-mod-audit.md`. Jars on disk: LegacyMechanics / GUI **2.3.156**.
+
 ## Skill Check tips + Potential Piccolo gate (2.3.156)
 
 Skill Check / Skills tooltips drop formula “How:” rows — one human-written tip per
