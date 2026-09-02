@@ -1,3 +1,10 @@
+## Spar CNPC multiplier parity (2.3.145)
+
+Restored/hardened CNPC spar TP multiplier stack visibility and edge cases:
+BP × rival × release × gravity × weight × prestige × momentum × session × streak ×
+style × perfect × global 1.50 (+ mentor pair). Prestige reads max(DMZ skill, Fabled−1).
+Momentum tier-up messages + TP chat bonus tags (combo/mom/streak/pres/sess/★).
+
 ## Mentor dojo multi-apprentice (2.3.144)
 
 Mentor/apprentice change cooldown is **12 hours** (was 7 days). Mentors may train up to

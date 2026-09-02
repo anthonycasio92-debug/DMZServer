@@ -44,6 +44,11 @@ public final class SparCombat {
     public static final float RELEASE_CONTROL_TP_PER_SEC = 4.0f;
     public static final float HIGH_RELEASE_THRESHOLD = 180.0f;
     public static final long PERFECT_ACTIONBAR_MS = 2500L;
+    public static final float STREAK_BONUS_PER_DAY = 0.02f;
+    public static final int MAX_STREAK_DAYS_FOR_BONUS = 14;
+    public static final float MAX_STREAK_MULTIPLIER = 1.25f;
+    public static final long MOMENTUM_DURATION_MS = 10_000L;
+    public static final boolean SHOW_MOMENTUM_MESSAGES = true;
 
     private static final int[] MOMENTUM_THRESHOLDS = {5, 10, 15, 20, 30, 40};
     private static final float[] MOMENTUM_MULTIPLIERS = {1.05f, 1.10f, 1.20f, 1.35f, 1.50f, 2.00f};
@@ -144,8 +149,34 @@ public final class SparCombat {
         return 1.0f + p * PRESTIGE_MULTIPLIER_PER_LEVEL;
     }
 
+    /**
+     * Prestige for spar TP — matches CNPC script: Fabled Prestige class level − 1,
+     * with DMZ {@code prestige} skill as the synced value (take the higher).
+     */
+    public static int sparPrestigeLevel(ServerPlayer player) {
+        int skill = Math.max(0, DmzProgression.prestige(player));
+        int fabled = 0;
+        try {
+            int classLevel = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .fabledPrestigeLevel(player);
+            fabled = Math.max(0, classLevel - 1);
+        } catch (Throwable ignored) {
+            fabled = 0;
+        }
+        return Math.max(0, Math.min(MAX_PRESTIGE_LEVEL, Math.max(skill, fabled)));
+    }
+
     public static float momentumMultiplier(SparPlayerRuntime rt) {
-        if (rt == null || rt.momentumTier <= 0) {
+        if (rt == null) {
+            return 1.0f;
+        }
+        long now = System.currentTimeMillis();
+        // Script getMomentumMultiplier clears expired tier on read.
+        if (rt.momentumUntil > 0L && now > rt.momentumUntil) {
+            rt.momentumTier = 0;
+            rt.momentumUntil = 0L;
+        }
+        if (rt.momentumTier <= 0) {
             return 1.0f;
         }
         int idx = Math.min(rt.momentumTier, MOMENTUM_MULTIPLIERS.length) - 1;
@@ -168,8 +199,14 @@ public final class SparCombat {
         if (bond == null) {
             return 1.0f;
         }
-        int days = Math.max(0, Math.min(14, bond.streakCurrent));
-        return Math.min(1.25f, 1.0f + days * 0.02f);
+        // Script getCurrentTrainingStreak: miss a day → treat as 0 until next qualify.
+        long today = System.currentTimeMillis() / 86_400_000L;
+        int current = bond.streakCurrent;
+        if (bond.streakLastDay >= 0 && today - bond.streakLastDay > 1) {
+            current = 0;
+        }
+        int days = Math.max(0, Math.min(MAX_STREAK_DAYS_FOR_BONUS, current));
+        return Math.min(MAX_STREAK_MULTIPLIER, 1.0f + days * STREAK_BONUS_PER_DAY);
     }
 
     /** Matches live Sparring Tp System.js {@code STYLE_BONUS}. */
@@ -183,6 +220,18 @@ public final class SparCombat {
             case "guardian" -> 1.06f;
             case "speed" -> 1.05f;
             default -> 1.0f;
+        };
+    }
+
+    public static String styleDisplayName(String id) {
+        return switch (id == null ? "none" : id) {
+            case "melee" -> "Melee Specialist";
+            case "ki" -> "Ki Specialist";
+            case "beam" -> "Beam Specialist";
+            case "balanced" -> "Balanced Fighter";
+            case "guardian" -> "Guardian";
+            case "speed" -> "Speed Fighter";
+            default -> "Developing";
         };
     }
 
@@ -329,7 +378,7 @@ public final class SparCombat {
             } catch (Throwable ignored) {
                 v.weight = 0.0;
             }
-            v.prestige = DmzProgression.prestige(player);
+            v.prestige = sparPrestigeLevel(player);
             return v;
         } catch (Throwable t) {
             return null;
@@ -382,6 +431,7 @@ public final class SparCombat {
             rt.sessionPerfect = true;
         }
         float bpMult = battlePowerMultiplier(trainingBp);
+        // CNPC buildCombatMultiplier product — keep every factor.
         float total = bpMult
                 * rivalMultiplier(a.bp, b.bp)
                 * releaseMultiplier(avgRelease)
@@ -394,6 +444,44 @@ public final class SparCombat {
                 * styleMultiplier(rt)
                 * (perfect ? PERFECT_TRAINING_MULTIPLIER : 1.0f);
         return total;
+    }
+
+    /** Compact active-bonus tags for TP chat (script parity visibility). */
+    public static String activeBonusTags(
+            ServerPlayer player, SparPlayerRuntime rt, TrainingValues a, TrainingValues b
+    ) {
+        StringBuilder sb = new StringBuilder();
+        if (rt != null && rt.combo > 1) {
+            sb.append(" §8combo§f").append(rt.combo);
+        }
+        float mom = momentumMultiplier(rt);
+        if (mom > 1.001f) {
+            sb.append(" §emom§fx").append(formatMult(mom));
+        }
+        float streak = 1.0f;
+        if (player != null) {
+            streak = streakMultiplier(SparStore.get().bond(player.m_20148_()));
+        }
+        if (streak > 1.001f) {
+            sb.append(" §astreak§fx").append(formatMult(streak));
+        }
+        int prestige = a != null ? a.prestige : (player == null ? 0 : sparPrestigeLevel(player));
+        float prest = prestigeMultiplier(prestige);
+        if (prest > 1.001f) {
+            sb.append(" §dpres§fx").append(formatMult(prest));
+        }
+        float session = sessionBonusMultiplier(rt);
+        if (session > 1.001f) {
+            sb.append(" §bsess§fx").append(formatMult(session));
+        }
+        if (a != null && b != null && isPerfect(a, b)) {
+            sb.append(" §6★");
+        }
+        return sb.toString();
+    }
+
+    private static String formatMult(float mult) {
+        return String.format(java.util.Locale.ROOT, "%.2f", mult);
     }
 
     public static float maxTpForAction(float bpMult) {
@@ -449,7 +537,7 @@ public final class SparCombat {
             return 0;
         }
         rt.sessionTp += award;
-        queueTpMessage(player, rt, award, hitKind);
+        queueTpMessage(player, rt, award, hitKind, a, b);
         SparringSystem.shareTpWithMentor(player, award);
         return award;
     }
@@ -483,7 +571,7 @@ public final class SparCombat {
             SparringSystem.breakCombo(attacker, atkRt, "attack blocked");
             return;
         }
-        SparringSystem.registerCombatHit(atkRt);
+        SparringSystem.registerCombatHit(attacker, atkRt);
         long now = System.currentTimeMillis();
         if (now <= atkRt.heavyMotionUntil) {
             atkRt.sessionKb++;
@@ -505,7 +593,20 @@ public final class SparCombat {
         }
     }
 
-    public static void queueTpMessage(ServerPlayer player, SparPlayerRuntime rt, int amount, String hitKind) {
+    public static void queueTpMessage(
+            ServerPlayer player, SparPlayerRuntime rt, int amount, String hitKind
+    ) {
+        queueTpMessage(player, rt, amount, hitKind, null, null);
+    }
+
+    public static void queueTpMessage(
+            ServerPlayer player,
+            SparPlayerRuntime rt,
+            int amount,
+            String hitKind,
+            TrainingValues a,
+            TrainingValues b
+    ) {
         if (rt == null || amount <= 0) {
             return;
         }
@@ -549,25 +650,28 @@ public final class SparCombat {
         if (player == null || !SparStore.get().tpMessagesOn(player.m_20148_())) {
             return;
         }
-        String style = styleId(rt);
-        String label = switch (style) {
-            case "melee" -> "Melee Specialist";
-            case "ki" -> "Ki Specialist";
-            case "beam" -> "Beam Specialist";
-            case "balanced" -> "Balanced";
-            case "guardian" -> "Guardian";
-            default -> "Combat";
-        };
+        String label = styleDisplayName(styleId(rt));
+        TrainingValues a = liveValues(player);
+        TrainingValues b = null;
+        if (rt.partner != null && player.m_20194_() != null) {
+            ServerPlayer partner = player.m_20194_().m_6846_().m_11259_(rt.partner);
+            if (partner != null) {
+                b = liveValues(partner);
+            }
+        }
+        String bonuses = activeBonusTags(player, rt, a, b);
         DmzRewards.msg(player, "§6[Sparring] §a+" + DmzRewards.formatWhole(pending) + " TP §8(" + label + ")"
+                + bonuses
                 + " §7· session §f" + DmzRewards.formatWhole(rt.sessionTp));
     }
 
-    public static void updateMomentum(SparPlayerRuntime rt) {
+    public static void updateMomentum(ServerPlayer player, SparPlayerRuntime rt) {
         if (rt == null) {
             return;
         }
+        int oldTier = rt.momentumTier;
         // Script refreshes momentum window on every scored hit, not only tier-ups.
-        rt.momentumUntil = System.currentTimeMillis() + 10_000L;
+        rt.momentumUntil = System.currentTimeMillis() + MOMENTUM_DURATION_MS;
         int tier = 0;
         for (int i = 0; i < MOMENTUM_THRESHOLDS.length; i++) {
             if (rt.combo >= MOMENTUM_THRESHOLDS[i]) {
@@ -576,6 +680,16 @@ public final class SparCombat {
         }
         rt.momentumTier = tier;
         rt.sessionMaxMom = Math.max(rt.sessionMaxMom, tier);
+        if (SHOW_MOMENTUM_MESSAGES && player != null && tier > oldTier && tier > 0) {
+            float mult = MOMENTUM_MULTIPLIERS[Math.min(tier, MOMENTUM_MULTIPLIERS.length) - 1];
+            DmzRewards.msg(player, "§6[Sparring] §eMomentum " + tier
+                    + " §8(§fx" + formatMult(mult) + " §8TP)");
+        }
+    }
+
+    /** @deprecated use {@link #updateMomentum(ServerPlayer, SparPlayerRuntime)} */
+    public static void updateMomentum(SparPlayerRuntime rt) {
+        updateMomentum(null, rt);
     }
 
     public static final class TrainingValues {

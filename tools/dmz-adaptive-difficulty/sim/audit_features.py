@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.144", 'VERSION = "2.3.144"' in mod)
+    check("VERSION 2.3.145", 'VERSION = "2.3.145"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -534,7 +534,7 @@ def main() -> int:
           'SlotAction.page("hof")' in rival and 'SlotAction.page("journal")' in rival
           and "records" in rival)
 
-    print("\n=== Rival relationship semantics (2.3.144) ===")
+    print("\n=== Rival relationship semantics (2.3.145) ===")
     rival_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.java")
     rival_st = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalStatus.java")
     rival_link = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalLink.java")
@@ -752,7 +752,26 @@ def main() -> int:
           'ForgeBridge.sparHandleDo(player, "tpmsg"' not in bukkit_plugin)
 
     
-    print("\n=== Mentor dojo multi-apprentice (2.3.144) ===")
+    
+    print("\n=== Spar CNPC multiplier parity (2.3.145) ===")
+    spar_c145 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparCombat.java")
+    build_fn = spar_c145.split("buildTotalMultiplier", 1)[1].split("maxTpForAction", 1)[0] if "buildTotalMultiplier" in spar_c145 else ""
+    check("buildTotal has BP rival release gravity weight",
+          "battlePowerMultiplier" in build_fn and "rivalMultiplier" in build_fn
+          and "releaseMultiplier" in build_fn and "gravityMultiplier" in build_fn
+          and "weightMultiplier" in build_fn)
+    check("buildTotal has prestige momentum session streak style perfect",
+          "prestigeMultiplier" in build_fn and "momentumMultiplier" in build_fn
+          and "sessionBonusMultiplier" in build_fn and "streakMultiplier" in build_fn
+          and "styleMultiplier" in build_fn and "PERFECT_TRAINING_MULTIPLIER" in build_fn)
+    check("GLOBAL_TP_GAIN_MULT 1.50", "GLOBAL_TP_GAIN_MULT = 1.50f" in spar_c145)
+    check("sparPrestigeLevel Fabled fallback", "sparPrestigeLevel" in spar_c145 and "fabledPrestigeLevel" in spar_c145)
+    check("momentum messages", "SHOW_MOMENTUM_MESSAGES" in spar_c145 and "Momentum " in spar_c145)
+    check("TP activeBonusTags", "activeBonusTags" in spar_c145)
+    check("MOMENTUM_MULTIPLIERS script values",
+          "1.05f, 1.10f, 1.20f, 1.35f, 1.50f, 2.00f" in spar_c145)
+
+    print("\n=== Mentor dojo multi-apprentice (2.3.145) ===")
     spar_store144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")
     spar_sys144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
     spar_combat144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparCombat.java")
@@ -764,7 +783,7 @@ def main() -> int:
     check("apprenticeCards API", "apprenticeCards" in spar_sys144)
     check("MENTOR_SHARE_PCT 0.15", "MENTOR_SHARE_PCT = 0.15f" in spar_combat144)
 
-    print("\n=== Spar active TP + ki-charge hold (2.3.144) ===")
+    print("\n=== Spar active TP + ki-charge hold (2.3.145) ===")
     spar_rt = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparPlayerRuntime.java")
     spar_sys143 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
     events143 = read(SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")

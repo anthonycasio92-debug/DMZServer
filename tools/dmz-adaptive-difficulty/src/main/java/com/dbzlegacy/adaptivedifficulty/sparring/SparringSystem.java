@@ -441,13 +441,16 @@ public final class SparringSystem {
         }
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
         long today = System.currentTimeMillis() / 86_400_000L;
-        if (bond.streakLastDay >= 0 && today - bond.streakLastDay > 1) {
-            bond.streakCurrent = 0;
-        }
         if (bond.streakLastDay != today) {
-            bond.streakCurrent++;
+            if (bond.streakLastDay == today - 1) {
+                bond.streakCurrent = Math.max(0, bond.streakCurrent) + 1;
+            } else {
+                bond.streakCurrent = 1;
+            }
             bond.streakLastDay = today;
             bond.streakBest = Math.max(bond.streakBest, bond.streakCurrent);
+            DmzRewards.msg(player, "§6[Sparring] §aDaily training secured! §eStreak "
+                    + bond.streakCurrent + " day" + (bond.streakCurrent == 1 ? "" : "s"));
         }
     }
 
@@ -802,7 +805,7 @@ public final class SparringSystem {
         return now - rt.lastOutAt <= window;
     }
 
-    public static void registerCombatHit(SparPlayerRuntime rt) {
+    public static void registerCombatHit(ServerPlayer player, SparPlayerRuntime rt) {
         long now = System.currentTimeMillis();
         if (now <= rt.comboUntil) {
             rt.combo++;
@@ -811,7 +814,12 @@ public final class SparringSystem {
         }
         rt.comboUntil = now + COMBO_TIMEOUT_MS;
         rt.sessionMaxCombo = Math.max(rt.sessionMaxCombo, rt.combo);
-        SparCombat.updateMomentum(rt);
+        SparCombat.updateMomentum(player, rt);
+    }
+
+    /** @deprecated prefer {@link #registerCombatHit(ServerPlayer, SparPlayerRuntime)} */
+    public static void registerCombatHit(SparPlayerRuntime rt) {
+        registerCombatHit(null, rt);
     }
 
     public static void breakCombo(ServerPlayer player, SparPlayerRuntime rt, String reason) {
