@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.133", 'VERSION = "2.3.133"' in mod)
+    check("VERSION 2.3.134", 'VERSION = "2.3.134"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -526,9 +526,21 @@ def main() -> int:
           'Material.GOLD_INGOT' in prestige and "putWallet" in prestige)
     check("Prestige Progression BREWING_STAND",
           'Material.BREWING_STAND, "&dProgression"' in prestige)
-    check("Rival Progress tiles BOOK/WRITABLE_BOOK/MAP",
-          "Material.BOOK, Material.CLOCK, Material.WRITABLE_BOOK" in rival
-          and "Material.GOLD_BLOCK, Material.MAP, Material.NAME_TAG" in rival)
+    check("Rival Progress compact hub",
+          'Inventory inv = Bukkit.createInventory(holder, 27' in rival
+          and '"stats", "season", "quests", "achievements", "title"' in rival)
+    check("Rival Progress HOF+Journal secondary",
+          'SlotAction.page("hof")' in rival and 'SlotAction.page("journal")' in rival)
+
+    print("\n=== Rival relationship semantics (2.3.134) ===")
+    rival_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.java")
+    rival_st = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalStatus.java")
+    check("Silent label (not Unknown)", 'case UNKNOWN -> "Silent"' in rival_st)
+    check("remove demotes mutual to one-way", "demoteToOneWayDeclare" in rival_sys)
+    check("remove archives remover history", "archiveRivalLink(me, them.uuid, myLink)" in rival_sys)
+    check("pending excluded from rival list", "st == RivalStatus.PENDING" in rival_sys)
+    check("nemesis only from challenge KO", "challengeKo" in rival_sys and "Phase.ACTIVE" in rival_sys)
+    check("dual silent → Declared", "promoteDeclared" in rival_sys)
     check("Spar Stats button BOOK",
           'Material.BOOK, "&eStats"' in spar)
     check("Skills admin header BOOK",

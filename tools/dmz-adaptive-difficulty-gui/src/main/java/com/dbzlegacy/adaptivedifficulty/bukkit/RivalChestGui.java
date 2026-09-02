@@ -128,7 +128,7 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 29, tipBtn(viewer, "rival.main.history", Material.SKELETON_SKULL, "&8History",
                 List.of("&7Previous rivals", "&8Archived when removed")), SlotAction.page("history"));
         put(holder, inv, 31, tipBtn(viewer, "rival.main.progress", Material.BOOK, "&bProgress",
-                List.of("&7Season · quests · achs · HOF · journal · title")), SlotAction.page("progress"));
+                List.of("&7Season · quests · records")), SlotAction.page("progress"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "false"));
         put(holder, inv, 33, tipBtn(viewer,
@@ -164,41 +164,37 @@ public final class RivalChestGui implements Listener {
 
     private Inventory progress(Player viewer, Player subject) {
         Holder holder = new Holder("progress");
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Rival Progress"));
+        Inventory inv = Bukkit.createInventory(holder, 27, invTitle(viewer, subject, "&8Rival Progress"));
         holder.bind(inv);
-        frame(inv, 45);
-        List<String> progHeader = new ArrayList<>();
-        progHeader.add("");
-        progHeader.addAll(GuiBoardHelper.tips(viewer,
-                "&7Each section is its own board",
-                "&7Stats · Season · Quests · Achs · HOF · Journal · Title"));
-        put(holder, inv, 4, item(Material.BOOK, "&b&lProgress", progHeader));
+        frame(inv, 27);
+        put(holder, inv, 4, item(Material.BOOK, "&b&lProgress",
+                List.of("", "&7Season · quests · records")));
 
-        String[] pages = {"stats", "season", "quests", "achievements", "hof", "journal", "title"};
+        // Compact hub: Stats · Season · Quests · Achievements · Title
+        String[] pages = {"stats", "season", "quests", "achievements", "title"};
         Material[] mats = {
-                Material.BOOK, Material.CLOCK, Material.WRITABLE_BOOK, Material.DIAMOND,
-                Material.GOLD_BLOCK, Material.MAP, Material.NAME_TAG
+                Material.BOOK, Material.CLOCK, Material.WRITABLE_BOOK, Material.DIAMOND, Material.NAME_TAG
         };
-        String[] titles = {"&eStats", "&aSeason", "&bQuests", "&dAchs", "&6HOF", "&fJournal", "&eTitle"};
+        String[] titles = {"&eStats", "&aSeason", "&bQuests", "&dAchs", "&eTitle"};
         String[] tipKeys = {
                 "rival.progress.stats", "rival.progress.season", "rival.progress.quests",
-                "rival.progress.achs", "rival.progress.hof", "rival.progress.journal", "rival.progress.title"
+                "rival.progress.achs", "rival.progress.title"
         };
-        int[] slots = GuiBoardHelper.centeredRow(7);
-        for (int i = 0; i < pages.length && i < slots.length; i++) {
-            List<String> preview = previewLines(ForgeBridge.rivalLines(subject, pages[i]), 4);
-            List<String> lore = new ArrayList<>();
-            lore.add("");
-            lore.addAll(preview);
-            lore.add("");
-            lore.addAll(GuiTooltips.lore(tipKeys[i], GuiBoardHelper.tips(viewer, "&eClick to open")));
+        int[] slots = {11, 12, 13, 14, 15};
+        for (int i = 0; i < pages.length; i++) {
             put(holder, inv, slots[i],
-                    item(mats[i], GuiTooltips.name(tipKeys[i], titles[i]), lore), SlotAction.page(pages[i]));
+                    tipBtn(viewer, tipKeys[i], mats[i], titles[i], List.of("&eClick to open")),
+                    SlotAction.page(pages[i]));
         }
-        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
+        // Secondary: HOF + Journal tucked beside nav
+        put(holder, inv, 20, tipBtn(viewer, "rival.progress.hof", Material.GOLD_BLOCK, "&6HOF",
+                List.of("&7Hall of Fame")), SlotAction.page("hof"));
+        put(holder, inv, 21, tipBtn(viewer, "rival.progress.journal", Material.MAP, "&fJournal",
+                List.of("&7Recent rivalry notes")), SlotAction.page("journal"));
+        put(holder, inv, 18, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
-        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        put(holder, inv, 22, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 26, closeBtn(), SlotAction.dismiss());
         return inv;
     }
 
@@ -426,8 +422,8 @@ public final class RivalChestGui implements Listener {
         put(holder, inv, 23, pageBtn(viewer, "rival.actions.remove", Material.RED_DYE, "&cRemove…",
                 "&7Pick one of your rivals to remove"), SlotAction.page("pick_remove"));
         put(holder, inv, 25, pageBtn(viewer, "rival.actions.silent", Material.GRAY_DYE, "&8Silent…",
-                "&7One-sided Unknown (they are not told)",
-                "&8Both Silent → Declared (both notified)"), SlotAction.page("pick_silent"));
+                "&7One-sided Silent (they are not told)",
+                "&8Both Silent → Declared → Accept for Mutual"), SlotAction.page("pick_silent"));
         put(holder, inv, 37, pageBtn(viewer, "rival.actions.nav_list", Material.PLAYER_HEAD, "&6List",
                 "&7Back to current rivals"), SlotAction.page("list"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),

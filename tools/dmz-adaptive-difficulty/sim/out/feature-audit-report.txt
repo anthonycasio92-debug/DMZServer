@@ -1,5 +1,5 @@
 === Version ===
-  OK  VERSION 2.3.133
+  OK  VERSION 2.3.134
   OK  meditation hints use ScreenNotify subtitle
   OK  meditation full-ki hint only while charging
   OK  meditation no chat tellCondition
@@ -380,7 +380,16 @@
   OK  Difficulty Clear Title not BARRIER
   OK  Prestige wallet GOLD_INGOT
   OK  Prestige Progression BREWING_STAND
-  OK  Rival Progress tiles BOOK/WRITABLE_BOOK/MAP
+  OK  Rival Progress compact hub
+  OK  Rival Progress HOF+Journal secondary
+
+=== Rival relationship semantics (2.3.134) ===
+  OK  Silent label (not Unknown)
+  OK  remove demotes mutual to one-way
+  OK  remove archives remover history
+  OK  pending excluded from rival list
+  OK  nemesis only from challenge KO
+  OK  dual silent → Declared
   OK  Spar Stats button BOOK
   OK  Skills admin header BOOK
 
@@ -661,4 +670,4 @@
   OK  3 netherite cost constant
 
 === Summary ===
-PASS — intended features intact (556 checks, 0 warning(s))
+PASS — intended features intact (563 checks, 0 warning(s))

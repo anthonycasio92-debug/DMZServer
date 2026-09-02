@@ -89,9 +89,19 @@ public final class RivalSystem {
             return;
         }
         ServerPlayer killer = killerEntity instanceof ServerPlayer sp ? sp : null;
+        // Nemesis climbs only from challenge knockouts (not open-world PvP).
+        boolean challengeKo = false;
+        if (killer != null && DifficultyConfig.get().rivalChallenges) {
+            RivalChallenge ch = RivalChallengeManager.get().getChallenge(victim.m_20148_());
+            challengeKo = ch != null
+                    && ch.status == RivalChallenge.Phase.ACTIVE
+                    && ch.involves(killer.m_20148_());
+        }
         RivalChallengeManager.get().onDeath(victim, killer);
         if (killer != null) {
-            registerNemesisDeath(victim, killer);
+            if (challengeKo) {
+                registerNemesisDeath(victim, killer);
+            }
             RivalProximity.handleKillNearRivals(killer, victim);
         }
     }
@@ -121,9 +131,9 @@ public final class RivalSystem {
             vLink.isNemesis = true;
             vRec.nemesisUuid = kRec.uuid;
             DmzRewards.msg(victim, "§c[Rival] " + killer.m_7755_().getString()
-                    + " is now your Nemesis (" + vLink.deathLosses + " death losses).");
+                    + " is now your Nemesis (" + vLink.deathLosses + " challenge losses).");
             DmzRewards.msg(killer, "§6[Rival] You became Nemesis to "
-                    + victim.m_7755_().getString() + ".");
+                    + victim.m_7755_().getString() + " (3 challenge KOs).");
         }
         store.markDirty();
     }
@@ -158,7 +168,7 @@ public final class RivalSystem {
         // Already one-sided silent.
         if (myLink.declaredByMe && !myLink.declaredByThem) {
             return "§eAlready silently rivaled §f" + them.name
-                    + " §8(Unknown). §7They are not notified. For Mutual: Declare.";
+                    + " §8(Silent). §7They are not notified. For Mutual: Declare.";
         }
 
         RivalLink theirLink = them.rivals.get(me.uuid);
@@ -173,7 +183,7 @@ public final class RivalSystem {
                     + " §8For Mutual: Actions → Accept…";
         }
 
-        // One-sided silent: you get Unknown benefits; target is not notified / sees nothing.
+        // One-sided silent: you get Silent benefits; target is not notified / sees nothing.
         myLink.declaredByMe = true;
         myLink.declaredByThem = false;
         myLink.inviteSent = false;
@@ -182,7 +192,7 @@ public final class RivalSystem {
         myLink.touch(now);
         me.declarationsSent++;
         store.markDirty();
-        return "§aSilent rival on §f" + them.name + " §8[Unknown]"
+        return "§aSilent rival on §f" + them.name + " §8[Silent]"
                 + "\n§8They are not notified and do not see you."
                 + "\n§8If they Silent you too, it becomes Declared. For Mutual: Declare.";
     }
@@ -350,27 +360,106 @@ public final class RivalSystem {
         if (them == null) {
             return "§cRival not found: " + otherName;
         }
-        RivalLink myLink = me.rivals.remove(them.uuid);
+        RivalLink myLink = me.rivals.get(them.uuid);
         if (myLink == null) {
             return "§cYou have no rivalry with " + them.name + ".";
         }
+        RivalStatus st = myLink.status();
+        boolean wasShared = st == RivalStatus.MUTUAL || st == RivalStatus.NEMESIS;
+        boolean wasDeclared = st == RivalStatus.DECLARED;
+        boolean notifyThem = wasShared || wasDeclared;
+
+        // Remover always archives their side into history.
+        me.rivals.remove(them.uuid);
         archiveRivalLink(me, them.uuid, myLink);
-        RivalLink theirLink = them.rivals.get(me.uuid);
-        if (theirLink != null) {
-            archiveRivalLink(them, me.uuid, theirLink);
-            them.rivals.remove(me.uuid);
-            them.recalcTotalRp();
-        }
         me.rivalsRemoved++;
-        me.recalcTotalRp();
         if (them.uuid.equals(me.nemesisUuid)) {
             me.nemesisUuid = "";
         }
-        if (me.uuid.equals(them.nemesisUuid)) {
-            them.nemesisUuid = "";
+
+        RivalLink theirLink = them.rivals.get(me.uuid);
+        if (wasShared) {
+            /*
+             * Mutual / Nemesis remove: other keeps a one-way declare (Silent) toward you.
+             * Remover sees them in History only.
+             */
+            if (theirLink != null) {
+                demoteToOneWayDeclare(theirLink, me.name);
+                if (me.uuid.equals(them.nemesisUuid)) {
+                    them.nemesisUuid = "";
+                }
+                them.recalcTotalRp();
+            }
+        } else if (wasDeclared) {
+            /* Reciprocated Declared: they keep one-way Silent if they still declare you. */
+            if (theirLink != null) {
+                if (theirLink.declaredByMe) {
+                    demoteToOneWayDeclare(theirLink, me.name);
+                } else {
+                    them.rivals.remove(me.uuid);
+                }
+                them.recalcTotalRp();
+            }
+        } else {
+            /* Silent / Pending: clear only your side; scrub invite / mirror flags on them. */
+            if (theirLink != null) {
+                theirLink.declaredByThem = false;
+                theirLink.inviteReceived = false;
+                theirLink.inviteSent = false;
+                theirLink.pendingExpireAt = 0L;
+                if (!theirLink.declaredByMe && !theirLink.mutual) {
+                    them.rivals.remove(me.uuid);
+                }
+                them.recalcTotalRp();
+            }
         }
+        store.clearInviteFlags(me.uuid, them.uuid);
+        store.declareRequests.remove(me.uuid + ">" + them.uuid);
+        store.declareRequests.remove(them.uuid + ">" + me.uuid);
+        me.recalcTotalRp();
         store.markDirty();
-        return "§eRemoved rivalry with §f" + them.name + ".";
+
+        String msg = "§eRemoved rivalry with §f" + them.name + ".";
+        if (wasShared) {
+            msg += "\n§8Saved to History. They still have you as a Silent rival.";
+        } else if (wasDeclared) {
+            msg += "\n§8Saved to History. They may still have you as Silent.";
+        } else {
+            msg += "\n§8Saved to History.";
+        }
+
+        if (notifyThem) {
+            ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
+            if (online != null) {
+                if (wasShared) {
+                    DmzRewards.msg(online, "§c[Rival] " + me.name + " ended Mutual rivalry with you.");
+                    DmzRewards.msg(online, "§8You still have them as a Silent rival.");
+                } else if (wasDeclared) {
+                    DmzRewards.msg(online, "§e[Rival] " + me.name + " ended Declared rivalry with you.");
+                    DmzRewards.msg(online, "§8You still have them as a Silent rival.");
+                }
+            }
+        }
+        return msg;
+    }
+
+    /** Keep one-way Silent declare (benefits for this owner only). */
+    private static void demoteToOneWayDeclare(RivalLink link, String otherName) {
+        if (link == null) {
+            return;
+        }
+        link.mutual = false;
+        link.isNemesis = false;
+        link.declaredByMe = true;
+        link.declaredByThem = false;
+        link.inviteSent = false;
+        link.inviteReceived = false;
+        link.pendingExpireAt = 0L;
+        link.mutualSince = 0L;
+        if (otherName != null && !otherName.isBlank()) {
+            link.name = otherName;
+        }
+        link.touch(System.currentTimeMillis());
     }
 
     public static List<String> listLines(ServerPlayer player) {
@@ -390,6 +479,14 @@ public final class RivalSystem {
                 continue;
             }
             RivalStatus st = link.status();
+            // Visible Declares live under Pending — not the main rival list.
+            // Silent only shows for the player who Silent'd (declaredByMe).
+            if (st == RivalStatus.PENDING || st == RivalStatus.NONE) {
+                continue;
+            }
+            if (!link.mutual && !link.declaredByMe) {
+                continue;
+            }
             RivalConstants.RpTier tier = RivalConstants.tierFor(link.points);
             lines.add("§f" + link.name + " §8[" + st.label() + "] §"
                     + tier.color() + tier.name() + " §7RP §f" + (int) link.points
@@ -550,6 +647,17 @@ public final class RivalSystem {
             RivalLink link = e.getValue();
             if (link == null) {
                 continue;
+            }
+            // Current list hides Pending declares — those are Pending Invites only.
+            // Silent only shows for the player who Silent'd (declaredByMe).
+            if (!past) {
+                RivalStatus cur = link.status();
+                if (cur == RivalStatus.PENDING || cur == RivalStatus.NONE) {
+                    continue;
+                }
+                if (!link.mutual && !link.declaredByMe) {
+                    continue;
+                }
             }
             String uuid = link.uuid == null || link.uuid.isBlank() ? e.getKey() : link.uuid;
             String name = link.name == null || link.name.isBlank() ? uuid : link.name;

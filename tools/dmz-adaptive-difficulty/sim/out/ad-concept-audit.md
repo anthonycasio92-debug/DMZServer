@@ -57,7 +57,7 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 2.3.133
+- ✅ VERSION 2.3.134
 - ✅ RaceSkillSync present
 - ✅ formula revision 40
 - ✅ hpFloorStrength present
@@ -100,3 +100,4 @@ Fail-closed checks against the player's stated balance concept.
 | androidforms.ssdroid4 | 0.520 | 0.182 | 0.79 |
 
 **Result:** PASS — 64 ok, 0 error(s).
+

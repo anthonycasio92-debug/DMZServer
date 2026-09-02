@@ -1,3 +1,23 @@
+## Rival remove semantics + progress UI (2.3.134)
+
+Rival relationship model (labels + menus):
+
+| Status | How | Who sees it |
+|--------|-----|-------------|
+| **Silent** | `/rival` or Actions → Silent | Only the player who Silent'd (no notify) |
+| **Pending** | Actions → Declare | Pending Invites only (target notified) |
+| **Declared** | Both Silent each other | Both lists; Accept → Mutual |
+| **Mutual** | Accept pending or Declared | Both |
+| **Nemesis** | Mutual + **3 challenge KOs** | Both |
+
+**Remove:**
+- Remover always archives to **History**
+- Mutual/Nemesis remove: other keeps a one-way **Silent** declare (no longer clears both)
+- Declared remove: other may keep Silent one-way
+- Silent/Pending remove: own side only
+
+Progress hub tightened to a compact 3-row board (less tip spam).
+
 ## Live telemetry retune (2.3.133)
 
 Pulled production hits to `uploads/live-telemetry-2026-09-02/` (**40302** hit lines;

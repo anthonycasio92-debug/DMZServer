@@ -16,7 +16,7 @@ public enum RivalStatus {
     public String label() {
         return switch (this) {
             case NONE -> "None";
-            case UNKNOWN -> "Unknown";
+            case UNKNOWN -> "Silent";
             case DECLARED -> "Declared";
             case PENDING -> "Pending";
             case MUTUAL -> "Mutual";
