@@ -951,11 +951,12 @@ public final class DifficultyEvents {
         }
         // Soft-cap crushing hits — monotonic buy ladder.
         // 2.3.57 (hits-2026-08-29..30): ease T1–T3 — T2 gods were pinned at 43% bag.
-        // Ladder: T1 0.34 · T2 0.36 · T3 0.44 · T4 0.50 · T5 0.52 · T6 0.58 · T7 0.62.
+        // 2.3.148: T6 0.58→0.60 (KP8+ T5→T6 climb; fingerprint 41).
+        // Ladder: T1 0.34 · T2 0.36 · T3 0.44 · T4 0.50 · T5 0.52 · T6 0.60 · T7 0.62.
         double bag = Math.max(20.0, profile.liveMaxHealth);
         double maxFrac = switch (profile.activeTier) {
             case 7 -> 0.62;
-            case 6 -> 0.58;
+            case 6 -> 0.60;
             case 5 -> 0.52;
             case 4 -> 0.50;
             case 3 -> 0.44;

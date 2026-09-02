@@ -256,7 +256,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     allow_pierce = tier >= 4 or (tier >= 3 and form_boost >= 6.0)
     if live_flat > 1.0 and dmg_capped * 2.5 <= live_flat and allow_pierce:
         dmg_capped = max(dmg_capped, live_flat / 2.5 * 1.08)
-    soft_cap_frac = {1: 0.34, 2: 0.36, 3: 0.44, 4: 0.50, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
+    soft_cap_frac = {1: 0.34, 2: 0.36, 3: 0.44, 4: 0.50, 5: 0.52, 6: 0.60, 7: 0.62}[tier]
     dmg_capped = min(dmg_capped, max(20.0, live_hp) * soft_cap_frac)
 
     # No-counter baseline (still with PWR/ENE offense + floors).
@@ -306,7 +306,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     mob_hp = max(10.0, min(base_hp_mob, hard) * MOB_HP_SCALE * hp_overlay)
 
     hit_frac = dmg_capped / max(1.0, live_hp)
-    land_frac = {1: 0.13, 2: 0.16, 3: 0.30, 4: 0.44, 5: 0.50, 6: 0.57, 7: 0.58}[tier]
+    land_frac = {1: 0.13, 2: 0.16, 3: 0.30, 4: 0.48, 5: 0.50, 6: 0.58, 7: 0.60}[tier]
     if form_boost > 1.12:
         t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
         bump = 0.06 if tier <= 2 else 0.12

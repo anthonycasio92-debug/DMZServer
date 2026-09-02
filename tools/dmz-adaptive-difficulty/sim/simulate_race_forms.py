@@ -372,7 +372,7 @@ def simulate_ad(
     if live_flat > 1.0 and dmg * cancel_thr <= live_flat and allow_pierce:
         dmg = max(dmg, live_flat / cancel_thr * 1.08)
     # 1.0.25: clamp post-pierce to live incoming soft-cap (mirrors DifficultyEvents).
-    soft_cap_frac = {1: 0.34, 2: 0.36, 3: 0.44, 4: 0.50, 5: 0.52, 6: 0.58, 7: 0.62}[tier]
+    soft_cap_frac = {1: 0.34, 2: 0.36, 3: 0.44, 4: 0.50, 5: 0.52, 6: 0.60, 7: 0.62}[tier]
     bag_cap = max(20.0, live_hp) * soft_cap_frac
     dmg = min(dmg, bag_cap)
 
@@ -565,7 +565,7 @@ def main() -> None:
         )
 
     # Soft-cap table (mirrors DifficultyEvents maxFrac / PlayerCombatProfile).
-    SOFT = {1: 0.34, 2: 0.36, 3: 0.44, 4: 0.50, 5: 0.52, 6: 0.58, 7: 0.62}
+    SOFT = {1: 0.34, 2: 0.36, 3: 0.44, 4: 0.50, 5: 0.52, 6: 0.60, 7: 0.62}
 
     # Informational notes (glass packs vs mega forms are intentional — RES counters STR).
     notes = []

@@ -57,14 +57,14 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 2.3.147
+- ✅ VERSION 2.3.148
 - ✅ RaceSkillSync present
-- ✅ formula revision 40
+- ✅ formula revision 41
 - ✅ hpFloorStrength present
 - ✅ T1–T3 god-form floors raised
 - ✅ T7 incoming soft-cap in events
 - ✅ T5 soft-cap 52%
-- ✅ T6 soft-cap 58%
+- ✅ T6 soft-cap 60%
 - ✅ T3 soft-cap ≤ T4
 - ✅ T4 soft-cap ≤ T5
 - ✅ T5 soft-cap ≤ T6
@@ -72,10 +72,10 @@ Fail-closed checks against the player's stated balance concept.
 - ✅ landFrac ladder progressive T4<T5<T6<T7
 - ✅ god soft-cap ladder T3≤T4 — T3=0.440 T4=0.500
 - ✅ god soft-cap ladder T4≤T5 — T4=0.500 T5=0.520
-- ✅ god soft-cap ladder T5≤T6 — T5=0.520 T6=0.580
-- ✅ god soft-cap ladder T6≤T7 — T6=0.580 T7=0.620
+- ✅ god soft-cap ladder T5≤T6 — T5=0.520 T6=0.600
+- ✅ god soft-cap ladder T6≤T7 — T6=0.600 T7=0.620
 - ✅ god landing T5 < T6 (buy matters) — T5=0.520 T6=0.580
-- ✅ god landing T4 < T5 — T4=0.487 T5=0.520
+- ✅ god landing T4 < T5 — T4=0.500 T5=0.520
 - ✅ god landing ≤ soft-cap T5 — landing=0.520
 - ✅ god landing ≤ soft-cap T6 — landing=0.580
 - ✅ combat telemetry present

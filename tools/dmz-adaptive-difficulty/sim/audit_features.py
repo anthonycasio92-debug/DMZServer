@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.147", 'VERSION = "2.3.147"' in mod)
+    check("VERSION 2.3.148", 'VERSION = "2.3.148"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -270,7 +270,7 @@ def main() -> int:
     print("\n=== Post-pierce soft-cap clamp (1.0.25) ===")
     check("incomingSoftCapFrac helper", "incomingSoftCapFrac" in profile)
     check("post-pierce bagCap clamp", "bagCap" in profile and "incomingSoftCapFrac()" in profile)
-    check("formula revision 40", "mix(h, 40L)" in profile)
+    check("formula revision 41", "mix(h, 41L)" in profile)
     check("README pierce clamp", "Post-pierce" in readme or "post-pierce" in readme)
 
     print("\n=== Telemetry retune (1.0.28) ===")
@@ -286,15 +286,15 @@ def main() -> int:
     check("README 1.0.30 HP trim", "1.0.30" in readme and "0.75" in readme)
 
     print("\n=== Telemetry retune (1.0.24) ===")
-    check("formula revision 40", "mix(h, 40L)" in profile)
+    check("formula revision 41", "mix(h, 41L)" in profile)
     check("T1 landCap 0.18", "case 1 -> 0.18" in profile)
     check("T1 landFrac 0.13", "case 1 -> 0.13" in profile)
-    check("T6 landFrac 0.57", "case 6 -> 0.57" in profile)
-    check("T4 landFrac 0.44", "case 4 -> 0.44" in profile)
+    check("T6 landFrac 0.58", "case 6 -> 0.58" in profile)
+    check("T4 landFrac 0.48", "case 4 -> 0.48" in profile)
     check("T5 landFrac 0.50", "case 5 -> 0.50" in profile)
     check("KP landing 1.5%/lvl", "kiProtectionLevel * 0.015" in profile)
     check("fill-to-landing floor", "preAmount < land)" in events and "land * 0.45" not in events)
-    check("progressive soft-caps", "case 5 -> 0.52" in events and "case 6 -> 0.58" in events and "case 7 -> 0.62" in events)
+    check("progressive soft-caps", "case 5 -> 0.52" in events and "case 6 -> 0.60" in events and "case 7 -> 0.62" in events)
     check("README 1.0.25 balance", "1.0.25" in readme and "T4 tank" in readme)
     check("README 2.3.61 tier costs", "2.3.61" in readme and "tierCostLevelAnchor" in readme and "100× Netherite" in readme)
     check("README 2.3.62 gui level pull", "2.3.62" in readme and "prepareGui" in actions)
@@ -366,7 +366,7 @@ def main() -> int:
     check("T4 landCap 0.50", "case 4 -> 0.50" in profile)
     check("T5 landCap 0.52", "case 5 -> 0.52" in profile)
     check("T3 landFrac 0.30", "case 3 -> 0.30" in profile)
-    check("T7 landFrac 0.58", "default -> 0.58" in profile)
+    check("T7 landFrac 0.60", "default -> 0.60" in profile)
     check("README 1.0.35 retune", "1.0.35" in readme and "hits-2026-08-06" in readme)
 
     print("\n=== Level clamp + mount guard (1.0.35) ===")

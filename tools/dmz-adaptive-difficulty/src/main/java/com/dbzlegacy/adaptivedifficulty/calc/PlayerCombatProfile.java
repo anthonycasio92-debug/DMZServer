@@ -644,10 +644,11 @@ public final class PlayerCombatProfile {
     /** Same progressive ceilings as {@code DifficultyEvents.onDamageDone}. */
     public double incomingSoftCapFrac() {
         // 2.3.57 (hits-2026-08-29..30): ease T1–T3 ceilings — T2 gods were soft-cap
-        // pinned at 43% bag. T4+ unchanged (buy pressure). Still monotonic.
+        // pinned at 43% bag. T4+ buy pressure. Still monotonic.
+        // 2.3.148: T6 0.58→0.60 so KP8+ T5→T6 landing/soft climb (fp41).
         return switch (activeTier) {
             case 7 -> 0.62;
-            case 6 -> 0.58;
+            case 6 -> 0.60;
             case 5 -> 0.52;
             case 4 -> 0.50;
             case 3 -> 0.44;
@@ -659,10 +660,10 @@ public final class PlayerCombatProfile {
     /**
      * Post-mitigation HP restored when DMZ hard-cancels a hit.
      * <p>
-     * 2.3.133 (hits-2026-08-31..09-02, post-129 window): KP8+ gods still flat on
-     * T3→T4 and T5→T6 landing (JarebearT 0.284→0.311; Rogerio 0.471→0.500). Lift T4
-     * and T6 landFrac further; soft-caps unchanged / monotonic.
-     * Pierce cannot clear wouldCancel while soft-cap &lt; mit/thr.
+     * 2.3.148 (uploads/live-telemetry-2026-09-02-retune, Aug31–Sep2): after fp40,
+     * KP8+ gods still flat — JarebearT T3→T4 +0.027 (0.284→0.311); Rogerio T5→T6
+     * +0.027 (0.473→0.500). Lift T4 landFrac toward soft-cap; raise T6 soft/landCap
+     * so the T5→T6 buy can move. Soft-caps stay monotonic T1→T7.
      */
     public double targetLandingDamage(DifficultyConfig cfg) {
         double liveBag = Math.max(20.0, liveMaxHealth);
@@ -674,10 +675,10 @@ public final class PlayerCombatProfile {
             case 1 -> 0.13;
             case 2 -> 0.16;
             case 3 -> 0.30;
-            case 4 -> 0.44; // was 0.40 — KP10 T4 still ~0.31 (T3→T4 flat)
+            case 4 -> 0.48; // was 0.44 — KP10 T4 still ~0.31 after fp40
             case 5 -> 0.50;
-            case 6 -> 0.57; // was 0.54 — KP10 T5→T6 only +0.029
-            default -> 0.58;
+            case 6 -> 0.58; // was 0.57 — pair with T6 soft/landCap 0.60
+            default -> 0.60; // T7 — keep > T6 landFrac
         };
         if (formBoost > 1.12) {
             double t = Math.min(1.0, Math.log(Math.max(1.12, formBoost)) / Math.log(80.0));
@@ -700,7 +701,7 @@ public final class PlayerCombatProfile {
             case 3 -> 0.38;
             case 4 -> 0.50; // align with soft-cap so lifted landFrac can land
             case 5 -> 0.52;
-            case 6 -> 0.58;
+            case 6 -> 0.60; // was 0.58 — match soft-cap lift (fp41)
             default -> 0.62;
         };
         land = Math.min(land, liveBag * landCap);
@@ -1167,7 +1168,7 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
         // Formula revision: Aug 29–30 early soft-cap + landing ease (2.3.57).
-        h = mix(h, 40L); // 2.3.133 live telemetry cal (T4/T6 landFrac KP10 climb)
+        h = mix(h, 41L); // 2.3.148 live telemetry cal (T4 landFrac + T6 soft/landCap)
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

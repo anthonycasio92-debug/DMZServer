@@ -96,6 +96,25 @@ Rival relationship model (labels + menus):
 
 Progress hub tightened to a compact 3-row board (less tip spam).
 
+## Live telemetry retune (2.3.148)
+
+Pulled production hits to `uploads/live-telemetry-2026-09-02-retune/` (**40628** hit
+lines). Calibration window = Aug 31 + Sep 1 + Sep 2 (**23997** hits). Soft-cap
+fingerprint was **40**.
+
+Signals after 2.3.133 (fp40):
+- KP0–2 gods soft-cap-pin healthy
+- **KP8+ T3→T4 still flat** (0.282→0.315; JarebearT +0.027)
+- **KP8+ T5→T6 still flat** (0.462→0.487; Rogerio +0.027)
+
+Changes (fingerprint **41**):
+- T4 landFrac **0.44→0.48** (still ≤ soft/landCap 0.50)
+- T6 landFrac **0.57→0.58**; T7 landFrac **0.58→0.60**
+- T6 soft-cap + landCap **0.58→0.60** (still ≤ T7 0.62)
+- Soft-caps T1–T5 / T7 unchanged
+
+Expected KP10: T4 landing climbs toward ~0.34+; T6 soft/landing headroom above T5.
+
 ## Live telemetry retune (2.3.133)
 
 Pulled production hits to `uploads/live-telemetry-2026-09-02/` (**40302** hit lines;
