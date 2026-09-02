@@ -441,10 +441,155 @@ function tryRegisterLive() {
     tryRegisterLiveOne("smite67", handleSmite67Sub, "smite");
 }
 
+tryRegisterLive();
+
+var BUKKIT_CHAT_REGISTERED = false;
+
+function findBukkitPlugin() {
+    try {
+        var Bukkit = Java.loadClass("org.bukkit.Bukkit");
+        var pm = Bukkit.getPluginManager();
+        var names = [
+            "KubeJS",
+            "kubejs",
+            "Mohist",
+            "CMI",
+            "PlaceholderAPI",
+            "LuckPerms",
+            "WorldEdit"
+        ];
+        for (var i = 0; i < names.length; i++) {
+            try {
+                var p = pm.getPlugin(names[i]);
+                if (p != null) return p;
+            } catch (e1) {}
+        }
+        var all = pm.getPlugins();
+        if (all != null && all.length > 0) return all[0];
+    } catch (err) {
+        console.error("[smite67] Bukkit plugin lookup failed: " + err);
+    }
+    return null;
+}
+
+function smiteByNameConsole(name) {
+    try {
+        var Bukkit = Java.loadClass("org.bukkit.Bukkit");
+        Bukkit.dispatchCommand(
+            Bukkit.getConsoleSender(),
+            "execute as " +
+                name +
+                " at @s run summon minecraft:lightning_bolt ~ ~ ~"
+        );
+        try {
+            Bukkit.dispatchCommand(
+                Bukkit.getConsoleSender(),
+                "execute as " + name + " at @s run data merge entity @s {Fire:60s}"
+            );
+        } catch (eFire) {}
+        console.info("[smite67] smote " + name + " (Bukkit chat)");
+        return true;
+    } catch (err) {
+        console.error("[smite67] Bukkit smite failed: " + err);
+        return false;
+    }
+}
+
+function markSmiteCd(name) {
+    try {
+        if (!global.smite67Cd) global.smite67Cd = {};
+        var key = String(name).toLowerCase();
+        var now = new Date().getTime();
+        var last = global.smite67Cd[key] || 0;
+        if (now - last < 2000) return false;
+        global.smite67Cd[key] = now;
+        return true;
+    } catch (e1) {
+        return true;
+    }
+}
+
+function registerBukkitChatSmite() {
+    if (BUKKIT_CHAT_REGISTERED) return true;
+    if (!SMITE67_ENABLED && false) {
+        // still register; enabled checked at event time
+    }
+    try {
+        var Bukkit = Java.loadClass("org.bukkit.Bukkit");
+        var EventPriority = Java.loadClass("org.bukkit.event.EventPriority");
+        var Listener = Java.loadClass("org.bukkit.event.Listener");
+        var EventExecutor = Java.loadClass("org.bukkit.plugin.EventExecutor");
+        var Runnable = Java.loadClass("java.lang.Runnable");
+        var AsyncPlayerChatEvent = Java.loadClass(
+            "org.bukkit.event.player.AsyncPlayerChatEvent"
+        );
+        var plugin = findBukkitPlugin();
+        if (plugin == null) {
+            console.error("[smite67] no Bukkit plugin found to register chat listener");
+            return false;
+        }
+
+        var listener = new JavaAdapter(Listener, {});
+        var executor = new JavaAdapter(EventExecutor, {
+            execute: function (l, event) {
+                try {
+                    if (!SMITE67_ENABLED) return;
+                    try {
+                        if (global.smite67Enabled === false) return;
+                    } catch (eG) {}
+                    var msg = "";
+                    try {
+                        msg = String(event.getMessage());
+                    } catch (eM) {
+                        return;
+                    }
+                    if (!contains67(msg)) return;
+                    var bp = event.getPlayer();
+                    var name = String(bp.getName());
+                    if (!markSmiteCd(name)) return;
+                    console.info("[smite67] " + name + " said (bukkit): " + msg);
+                    var task = new JavaAdapter(Runnable, {
+                        run: function () {
+                            smiteByNameConsole(name);
+                        }
+                    });
+                    Bukkit.getScheduler().runTask(plugin, task);
+                } catch (err) {
+                    console.error("[smite67] Bukkit chat handler error: " + err);
+                }
+            }
+        });
+
+        Bukkit.getPluginManager().registerEvent(
+            AsyncPlayerChatEvent,
+            listener,
+            EventPriority.MONITOR,
+            executor,
+            plugin,
+            false
+        );
+        BUKKIT_CHAT_REGISTERED = true;
+        console.info(
+            "[smite67] Bukkit AsyncPlayerChatEvent registered via plugin=" +
+                plugin.getName()
+        );
+        return true;
+    } catch (err) {
+        console.error("[smite67] Bukkit chat register failed: " + err);
+        return false;
+    }
+}
+
 ServerEvents.loaded(function () {
     tryRegisterLive();
+    registerBukkitChatSmite();
 });
-tryRegisterLive();
+
+/* Also try immediately after reload when server already running. */
+try {
+    registerBukkitChatSmite();
+} catch (eBoot) {}
+
 
 function extractChatText(event) {
     try {
@@ -520,6 +665,7 @@ PlayerEvents.chat(function (event) {
     }
     if (smiteCooldownUntil[n] && tick < smiteCooldownUntil[n]) return;
     smiteCooldownUntil[n] = tick + SMITE_COOLDOWN_TICKS;
+    if (!markSmiteCd(n)) return;
 
     console.info("[smite67] " + n + " said: " + msg);
     smitePlayer(p, event.server);

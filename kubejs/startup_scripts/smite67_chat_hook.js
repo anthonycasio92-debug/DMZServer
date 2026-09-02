@@ -91,8 +91,19 @@ function onServerChat(event) {
         } catch (e5) {}
         if (player == null) return;
 
+        var pname = playerName(player);
+        try {
+            if (typeof global !== "undefined") {
+                if (!global.smite67Cd) global.smite67Cd = {};
+                var last = global.smite67Cd[pname.toLowerCase()] || 0;
+                var now = new Date().getTime();
+                if (now - last < 2000) return;
+                global.smite67Cd[pname.toLowerCase()] = now;
+            }
+        } catch (eCd) {}
+
         console.info(
-            "[smite67] " + playerName(player) + " said (forge): " + raw
+            "[smite67] " + pname + " said (forge): " + raw
         );
 
         try {
