@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.157", 'VERSION = "2.3.157"' in mod)
+    check("VERSION 2.3.158", 'VERSION = "2.3.158"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -842,6 +842,12 @@ def main() -> int:
     check("jar leave_none present", '"leave_none"' in tips_json and "You have no mentor" in tips_json)
     check("jar release uses {name} dojo", '"&7Dojo &f{name}"' in tips_json)
     check("CMI pageBtn accepts vars", "Map<String, String> vars, String... tips" in cmi)
+    cmi_own = cmi.split("private static void fillOwnDojoCmi", 1)[1].split("private static ItemStack dojoRoleHead", 1)[0]
+    chest_own = chest.split("private void fillOwnDojo(", 1)[1].split("private static ItemStack dojoRoleHead", 1)[0]
+    check("My Dojo CMI release passes {name}",
+          "pick_release" in cmi_own and 'Map.of("name", dojoLabel)' in cmi_own)
+    check("My Dojo Chest release passes {name}",
+          "pick_release" in chest_own and 'Map.of("name", dojoLabel)' in chest_own)
 
 
     print("\n=== Dojo membership roster (2.3.154) ===")

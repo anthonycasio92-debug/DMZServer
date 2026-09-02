@@ -1,3 +1,8 @@
+## My Dojo Release tip {name} (2.3.158)
+
+My Dojo → Release no longer shows literal `{name}` — tip vars pass the dojo
+roster label (same as Mentor Actions Release).
+
 ## Prestige skill floors reapply after reset (2.3.157)
 
 Prestige-shop skill floors (`pp_skill_*`) now keep applying after prestige,

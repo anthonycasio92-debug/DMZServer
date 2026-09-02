@@ -571,8 +571,14 @@ public final class CmiSparGui {
             }
         }
         if (appCount > 0) {
+            String apprenticeName = blank(ph.get("apprentice_name"), "your dojo");
+            String dojoLabel = appCount + "/" + appMax + " · " + apprenticeName;
             gui.addButton(pageBtn(player, 40, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
-                    "pick_release", "&7Pick an apprentice to release"));
+                    "pick_release",
+                    Map.of("name", dojoLabel),
+                    "&7Dojo &f" + dojoLabel,
+                    "&7Pick who to release",
+                    "&812-hour cooldown after releasing"));
         }
         if (hasMentor) {
             gui.addButton(pageBtn(player, 39, "spar.mentor.dojo", Material.EMERALD, "&bTheir Dojo",

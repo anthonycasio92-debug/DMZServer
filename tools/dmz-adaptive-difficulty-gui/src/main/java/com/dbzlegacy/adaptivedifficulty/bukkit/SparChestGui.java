@@ -564,8 +564,14 @@ public final class SparChestGui implements Listener {
             }
         }
         if (appCount > 0) {
-            put(holder, inv, 40, pageBtn(viewer, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
-                    "&7Pick an apprentice to release"), SlotAction.page("pick_release"));
+            String apprenticeName = blank(ph.get("apprentice_name"), "your dojo");
+            String dojoLabel = appCount + "/" + appMax + " · " + apprenticeName;
+            put(holder, inv, 40, tipBtn(viewer, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
+                    List.of("&7Dojo &f" + dojoLabel,
+                            "&7Pick who to release",
+                            "&812-hour cooldown after releasing"),
+                    Map.of("name", dojoLabel)),
+                    SlotAction.page("pick_release"));
         }
         if (hasMentor) {
             put(holder, inv, 39, pageBtn(viewer, "spar.mentor.dojo", Material.EMERALD, "&bTheir Dojo",
