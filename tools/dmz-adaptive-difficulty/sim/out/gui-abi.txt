@@ -1,0 +1,199 @@
+Forge jar: LegacyMechanics-2.3.132.jar
+GUI jar:   LegacyMechanicsGUI-2.3.132.jar
+=== Version handshake ===
+  AdaptiveDifficultyMod.VERSION = 2.3.132
+  mods.toml version             = 2.3.132
+  GUI plugin.yml (jar)          = 2.3.132
+  GUI plugin.yml (source)       = 2.3.133
+  OK Forge VERSION vs mods.toml: 2.3.132
+  OK Forge VERSION vs GUI jar: 2.3.132
+
+=== Required Forge classes ===
+  OK com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod
+  OK com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache
+  OK com.dbzlegacy.adaptivedifficulty.service.DifficultyActions
+  OK com.dbzlegacy.adaptivedifficulty.service.DifficultyActions$Result
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig
+  OK com.dbzlegacy.adaptivedifficulty.util.SystemGate
+
+=== Optional Forge classes ===
+  OK com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy
+  OK com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy$CoinKind
+  OK com.dbzlegacy.adaptivedifficulty.tier.UnlockTier
+  OK com.dbzlegacy.adaptivedifficulty.title.TitleSystem
+  OK com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle
+  OK com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile
+  OK com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu
+  OK com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi
+  OK com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi
+  OK com.dbzlegacy.adaptivedifficulty.gui.RivalChatMenu
+  OK com.dbzlegacy.adaptivedifficulty.gui.SparChatMenu
+  OK com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData
+  OK com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem
+  OK com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty
+  OK com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler
+  OK com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker
+  OK com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard
+
+=== Required methods/fields ===
+  OK com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.get(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.refresh(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.data(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.invalidateAll()
+  OK com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache.save(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.handle(ServerPlayer, java.lang.String, long, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.handleArg(ServerPlayer, java.lang.String, java.lang.String, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.handleArgNoReopen(ServerPlayer, java.lang.String, java.lang.String, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.service.DifficultyActions$Result.ok()
+  OK com.dbzlegacy.adaptivedifficulty.service.DifficultyActions$Result.message()
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.get()
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.isEnabled()
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.setEnabled(boolean)
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.isWhitelistEnabled()
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.setWhitelistEnabled(boolean)
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.whitelistEntries()
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.addWhitelistEntry(java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.removeWhitelistEntry(java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.reload()
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.save()
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.sanitizeLive()
+  OK com.dbzlegacy.adaptivedifficulty.util.SystemGate.allows(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.state()
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.stateColorCode()
+  OK com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod.VERSION
+  OK com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod.MOD_ID
+  OK com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod.DISPLAY_NAME
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.active
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.availableMax
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.calculated
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.purchased
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.personalMax
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.teamThresholdBonus
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.teamContribution
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.combatRating
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.ancientCopper
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.dmzLevel
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.prestige
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.activeTier
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.highestUnlockedTier
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.teamMode
+  OK com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot.activeTierName
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.enabled
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.whitelistEnabled
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.whitelist
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.guiBackend
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.adminPermission
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.areaDifficultyMode
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.mobScaleRadius
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.areaGroupBonusPercent
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.mobHealthScale
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.maxFormBoost
+  OK com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig.maxLiveCombatChannel
+  OK com.dbzlegacy.adaptivedifficulty.service.DifficultyActions$Result.message
+  OK com.dbzlegacy.adaptivedifficulty.service.DifficultyActions$Result.ok
+
+=== Optional methods/fields ===
+  OK com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.balanceText(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.format(long)
+  OK com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.formatExactCost(long)
+  OK com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.balance(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.countOf(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy.activationCost(UnlockTier, net.minecraft.server.level.ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.values()
+  OK com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.byId(int)
+  OK com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.activationCost()
+  OK com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.maxDifficulty()
+  OK com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.activationCostForLevel(int)
+  OK com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.requiredDmzLevel()
+  OK com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.requiredPrestige()
+  OK com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.requirementTip()
+  OK com.dbzlegacy.adaptivedifficulty.title.TitleSystem.activeDisplay(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.title.TitleSystem.activeId(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.title.TitleSystem.has(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.title.TitleSystem.syncTierTitles(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle.values()
+  OK com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle.requirementTip()
+  OK com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile.of(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile.topStatsLabel()
+  OK com.dbzlegacy.adaptivedifficulty.gui.DifficultyChatMenu.open(ServerPlayer, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi.placeholders(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi.linesForPage(ServerPlayer, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi.handleDo(ServerPlayer, java.lang.String, java.lang.String, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi.onlinePlayerNames(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi.resolveOnline(ServerPlayer, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi.currentRivalCards(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi.pastRivalCards(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi.currentRivalArgs(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi.placeholders(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi.linesForPage(ServerPlayer, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi.handleDo(ServerPlayer, java.lang.String, java.lang.String, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi.resolveOnline(ServerPlayer, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi.placeholders(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi.linesForPage(ServerPlayer, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi.handleDo(ServerPlayer, java.lang.String, java.lang.String, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.placeholders(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.linesForPage(ServerPlayer, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.handleDo(ServerPlayer, java.lang.String, java.lang.String, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.prestigePlaceholders(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.prestigeLines(ServerPlayer, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.handlePrestigeDo(ServerPlayer, java.lang.String, java.lang.String, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.skillsPlaceholders(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.skillsLines(ServerPlayer, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.handleSkillsDo(ServerPlayer, java.lang.String, java.lang.String, java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData.isPersonalEnabled()
+  OK com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData.isCoinDropChat()
+  OK com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData.hasUnlockedTier(int)
+  OK com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData.resetTemporary()
+  OK com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData.setActiveDifficultyLevel(long)
+  OK com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData.setActiveTier(int)
+  OK com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem.syncUnlocks(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty.clearCache()
+  OK com.dbzlegacy.adaptivedifficulty.scaling.AreaDifficulty.at()
+  OK com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler.shutdownAllScaling()
+  OK com.dbzlegacy.adaptivedifficulty.tick.NearbyMobScaler.processEvictions()
+  OK com.dbzlegacy.adaptivedifficulty.tick.ScaledMobTracker.releaseAndRevertPlayer(ServerPlayer)
+  OK com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard.parse(java.lang.String)
+  OK com.dbzlegacy.adaptivedifficulty.world.VanillaDifficultyGuard.set(MinecraftServer)
+  OK com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.id
+  OK com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.display
+  OK com.dbzlegacy.adaptivedifficulty.tier.UnlockTier.defaultMaxDifficulty
+  OK com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle.id
+  OK com.dbzlegacy.adaptivedifficulty.title.DifficultyTitle.display
+  OK com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile.fightingClass
+  OK com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile.race
+  OK com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile.style
+  OK com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile.weakest
+
+=== GUI plugin Forge entrypoints ===
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openMenu(Player)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openMenuForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openChestMenu(Player)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openChestMenuForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openRivalMenu(Player)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openRivalMenuForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openRivalChestMenuForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openSparMenu(Player)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openSparMenuForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openSparChestMenuForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openHubMenu(Player)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openHubMenuForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openHubChestMenuForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openProgressionMenu(Player)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openProgressionMenuForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openProgressionChestMenuForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openPrestigeMenu(Player)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openPrestigeMenuForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openPrestigeChestMenuForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openSkillsMenu(Player)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openSkillsMenuForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openSkillsChestMenuForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openInspectForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.openLmInspectForUuid(UUID)
+  OK com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin.clearInspectForUuid(UUID)
+
+=== Package root OK (227 classes under com.dbzlegacy.adaptivedifficulty) ===
+
+=== Summary ===
+FAIL: version skew (GUI jar vs source plugin.yml): '2.3.132' != '2.3.133'
+1 error(s), 0 warning(s)

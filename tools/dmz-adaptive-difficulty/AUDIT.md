@@ -1,3 +1,8 @@
+## Pending request submenu (2.3.139)
+
+Actions menu: Declare · Pending · Remove · Silent.
+Pending list: click an incoming head → submenu with Accept / Decline for that request.
+
 ## Pending Accept/Decline on each invite row (2.3.138)
 
 Pending Invites shows Accept and Decline beside each incoming request

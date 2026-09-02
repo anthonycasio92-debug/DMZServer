@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.138", 'VERSION = "2.3.138"' in mod)
+    check("VERSION 2.3.139", 'VERSION = "2.3.139"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -534,7 +534,7 @@ def main() -> int:
           'SlotAction.page("hof")' in rival and 'SlotAction.page("journal")' in rival
           and "records" in rival)
 
-    print("\n=== Rival relationship semantics (2.3.138) ===")
+    print("\n=== Rival relationship semantics (2.3.139) ===")
     rival_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.java")
     rival_st = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalStatus.java")
     rival_link = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalLink.java")
@@ -549,21 +549,20 @@ def main() -> int:
     check("dual silent → Declared", "promoteDeclared" in rival_sys)
     rival_chest = read(gui_root / "RivalChestGui.java")
     cmi_rival = read(gui_root / "CmiRivalGui.java")
-    board = read(gui_root / "GuiBoardHelper.java")
-    check("pendingInviteActionSlots helper", "pendingInviteActionSlots" in board)
-    check("chest pending Accept/Decline on row",
-          'SlotAction.act("accept"' in rival_chest
-          and 'SlotAction.act("decline"' in rival_chest
-          and "pendingInviteActionSlots" in rival_chest)
-    check("chest pending no Accept…/Decline… menus",
-          'page("pick_accept")' not in rival_chest.split("private Inventory pending")[1].split("private Inventory actions")[0]
-          if "private Inventory pending" in rival_chest else False)
-    check("CMI pending Accept/Decline on row",
-          "pendingInviteActionSlots" in cmi_rival
-          and '"accept"' in cmi_rival
-          and '"decline"' in cmi_rival)
-    check("Actions keeps Accept Declared for silent path",
-          "Accept Declared" in rival_chest and "Accept Declared" in cmi_rival)
+    check("pending_decide submenu page",
+          "pending_decide:" in rival_chest and "pendingDecide" in rival_chest
+          and "pending_decide:" in cmi_rival and "openPendingDecide" in cmi_rival)
+    check("chest pending head opens decide submenu",
+          'SlotAction.page("pending_decide:' in rival_chest)
+    check("CMI pending head opens decide submenu",
+          'lmdo rival page pending_decide:' in cmi_rival)
+    check("Actions is Declare Pending Remove Silent",
+          'page("pick_declare")' in rival_chest
+          and 'page("pending")' in rival_chest
+          and 'page("pick_remove")' in rival_chest
+          and 'page("pick_silent")' in rival_chest
+          and "Accept Declared" not in rival_chest
+          and "Accept Declared" not in cmi_rival)
     check("Spar Stats button BOOK",
           'Material.BOOK, "&eStats"' in spar)
     check("Skills admin header BOOK",

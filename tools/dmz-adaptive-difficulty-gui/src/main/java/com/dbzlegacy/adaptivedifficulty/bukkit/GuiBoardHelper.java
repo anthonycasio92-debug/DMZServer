@@ -366,7 +366,7 @@ final class GuiBoardHelper {
             if (inv.incoming) {
                 lore.add("&aIncoming mentor invite");
                 lore.add("&7They want you as their &f" + role);
-                lore.addAll(tips(player, "&aAccept &7/ &cDecline &7on this row"));
+                lore.addAll(tips(player, "&eClick to Accept / Decline"));
             } else {
                 lore.add("&6Outgoing mentor invite");
                 lore.add("&7Waiting — they would be your &f" + role);
@@ -375,7 +375,7 @@ final class GuiBoardHelper {
         } else if (inv.incoming) {
             lore.add("&aIncoming declare");
             lore.add("&7They Declared you");
-            lore.add("&aAccept &7or &cDecline &7on this row");
+            lore.add("&eClick to Accept or Decline");
         } else {
             lore.add("&6Outgoing declare");
             lore.add("&7On your list as Declared");

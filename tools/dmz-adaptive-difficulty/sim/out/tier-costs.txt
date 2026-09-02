@@ -1,0 +1,39 @@
+=== Anchors (2.3.61 stock curve) ===
+[PASS] T1 at lvl 1 = 1× Copper (1 copper) == 1× Copper
+[PASS] T7 at lvl 150000 = 100× Netherite (10000000 copper) == 100× Netherite
+
+=== Unlock prices (informative; no longer forced ≈ base) ===
+  T1 at unlock lvl 1: 1× Copper (1 copper)
+  T2 at unlock lvl 500: 5× Copper (5 copper)
+  T3 at unlock lvl 1000: 16× Copper (16 copper)
+  T4 at unlock lvl 5000: 67× Copper (67 copper)
+  T5 at unlock lvl 10000: 27× Iron (270 copper)
+  T6 at unlock lvl 50000: 95× Gold (9500 copper)
+  T7 at unlock lvl 100000: 54× Diamond (540000 copper)
+
+=== Monotonic ladder at key levels ===
+[PASS] lvl 1: T1=1× Copper, T2=5× Copper, T3=15× Copper, T4=5× Iron, T5=15× Iron, T6=5× Gold, T7=15× Gold
+[PASS] lvl 500: T1=1× Copper, T2=5× Copper, T3=15× Copper, T4=51× Copper, T5=16× Iron, T6=52× Iron, T7=16× Gold
+[PASS] lvl 1000: T1=1× Copper, T2=5× Copper, T3=16× Copper, T4=53× Copper, T5=16× Iron, T6=53× Iron, T7=16× Gold
+[PASS] lvl 5000: T1=1× Copper, T2=7× Copper, T3=2× Iron, T4=67× Copper, T5=21× Iron, T6=68× Iron, T7=21× Gold
+[PASS] lvl 10000: T1=2× Copper, T2=9× Copper, T3=27× Copper, T4=9× Iron, T5=27× Iron, T6=9× Gold, T7=27× Gold
+[PASS] lvl 50000: T1=19× Copper, T2=94× Copper, T3=29× Iron, T4=95× Iron, T5=29× Gold, T6=95× Gold, T7=29× Emerald
+[PASS] lvl 100000: T1=36× Iron, T2=18× Gold, T3=54× Gold, T4=18× Emerald, T5=54× Emerald, T6=18× Diamond, T7=54× Diamond
+[PASS] lvl 150000: T1=67× Gold, T2=34× Emerald, T3=1× Netherite, T4=34× Diamond, T5=10× Netherite, T6=34× Netherite, T7=100× Netherite
+[PASS] lvl 200000: T1=67× Gold, T2=34× Emerald, T3=1× Netherite, T4=34× Diamond, T5=10× Netherite, T6=34× Netherite, T7=100× Netherite
+[PASS] lvl 500000: T1=67× Gold, T2=34× Emerald, T3=1× Netherite, T4=34× Diamond, T5=10× Netherite, T6=34× Netherite, T7=100× Netherite
+
+=== Full scan: every level 1..150000 (T-ladder + non-decreasing) ===
+[PASS] T1<…<T7 at all 150000 levels (0.82s)
+[PASS] costs non-decreasing with level (0.82s)
+
+=== Clamp past anchor (200k == 150k) ===
+[PASS] T7 at 200k (10000000) == T7 at 150k (10000000)
+[PASS] T1 at 200k (6700) == T1 at 150k (6700)
+
+=== Mid-ladder sanity ===
+[PASS] T1 (6700) < T7 (10000000) at 150k
+[PASS] T6 (34× Netherite) < T7 (100× Netherite) at 150k
+[PASS] T7 at lvl 1 stays near base (15× Gold)
+
+All tier-cost checks passed.
