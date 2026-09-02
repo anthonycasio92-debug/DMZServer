@@ -15,6 +15,9 @@
 
 var SKY_ENABLED = true;
 var SMITE67_ENABLED = true;
+try {
+    global.smite67Enabled = SMITE67_ENABLED;
+} catch (eGlobal0) {}
 
 var TARGET = "zapzxv2";
 var KICK_MESSAGE = "the sky";
@@ -155,6 +158,12 @@ function handleSkySub(sub, source) {
     return 1;
 }
 
+function syncSmite67Global() {
+    try {
+        global.smite67Enabled = SMITE67_ENABLED;
+    } catch (e1) {}
+}
+
 function handleSmite67Sub(sub, source) {
     sub = String(sub || "").toLowerCase();
     if (sub === "on" || sub === "enable" || sub === "true" || sub === "1") {
@@ -164,6 +173,7 @@ function handleSmite67Sub(sub, source) {
     } else if (sub === "toggle" || sub === "t") {
         SMITE67_ENABLED = !SMITE67_ENABLED;
     } else if (sub === "status" || sub === "state" || sub === "") {
+        syncSmite67Global();
         replySource(source, "[smite67] " + smite67Status());
         console.info("[smite67] " + smite67Status());
         return 1;
@@ -171,6 +181,7 @@ function handleSmite67Sub(sub, source) {
         replySource(source, "[smite67] usage: /smite67 on|off|toggle|status");
         return 0;
     }
+    syncSmite67Global();
     replySource(source, "[smite67] " + smite67Status());
     console.info("[smite67] " + smite67Status());
     return 1;
@@ -224,7 +235,7 @@ function contains67(msg) {
     return false;
 }
 
-function smitePlayer(player, server) {
+function smitePlayerNow(player, server) {
     var name = playerName(player);
     var ok = false;
     try {
@@ -234,22 +245,17 @@ function smitePlayer(player, server) {
                 " at @s run summon minecraft:lightning_bolt ~ ~ ~"
         );
         ok = true;
-    } catch (e1) {}
-    try {
-        if (player.block && player.block.createEntity) {
-            // no-op fallback path
-        }
-    } catch (e2) {}
-    try {
-        // light them up a bit for flair
-        server.runCommandSilent(
-            "execute as " + name + " at @s run ignite @s 3"
-        );
-    } catch (e3) {
-        try {
-            server.runCommandSilent("data merge entity @e[type=player,name=" + name + ",limit=1] {}");
-        } catch (e4) {}
+    } catch (e1) {
+        console.error("[smite67] summon failed: " + e1);
     }
+    try {
+        server.runCommand(
+            "execute as " +
+                name +
+                " at @s run summon minecraft:lightning_bolt ~ ~ ~"
+        );
+        ok = true;
+    } catch (e1b) {}
     try {
         if (player.setSecondsOnFire) player.setSecondsOnFire(3);
     } catch (e5) {}
@@ -258,6 +264,18 @@ function smitePlayer(player, server) {
     } catch (e6) {}
     console.info("[smite67] smote " + name);
     return ok;
+}
+
+function smitePlayer(player, server) {
+    try {
+        if (server && server.scheduleInTicks) {
+            server.scheduleInTicks(1, function () {
+                smitePlayerNow(player, server);
+            });
+            return true;
+        }
+    } catch (e0) {}
+    return smitePlayerNow(player, server);
 }
 
 PlayerEvents.tick(function (event) {
@@ -428,13 +446,31 @@ ServerEvents.loaded(function () {
 });
 tryRegisterLive();
 
-PlayerEvents.chat(function (event) {
-    var msg = "";
+function extractChatText(event) {
     try {
-        msg = String(event.message || "");
-    } catch (e1) {
-        return;
-    }
+        var m = event.message;
+        if (m && m.getString) return String(m.getString());
+    } catch (e1) {}
+    try {
+        if (event.getMessage) {
+            var g = event.getMessage();
+            if (g && g.getString) return String(g.getString());
+            if (g != null) return String(g);
+        }
+    } catch (e2) {}
+    try {
+        if (event.message != null) return String(event.message);
+    } catch (e3) {}
+    try {
+        if (event.component && event.component.getString) {
+            return String(event.component.getString());
+        }
+    } catch (e4) {}
+    return "";
+}
+
+PlayerEvents.chat(function (event) {
+    var msg = extractChatText(event);
     if (!msg) return;
 
     // Op toggles via chat fallback
@@ -489,6 +525,7 @@ PlayerEvents.chat(function (event) {
     smitePlayer(p, event.server);
 });
 
+syncSmite67Global();
 console.info(
     "[sky_kick] loaded " +
         skyStatus() +
