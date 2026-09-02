@@ -463,7 +463,7 @@ public final class SparringSystem {
             bond.streakLastDay = today;
             bond.streakBest = Math.max(bond.streakBest, bond.streakCurrent);
             DmzRewards.msg(player, LmChat.ok("Spar", "Daily training secured! §eStreak "
-                    + bond.streakCurrent + " day" + (bond.streakCurrent == 1 ? "" : "s"));
+                    + bond.streakCurrent + " day" + (bond.streakCurrent == 1 ? "" : "s")));
         }
     }
 

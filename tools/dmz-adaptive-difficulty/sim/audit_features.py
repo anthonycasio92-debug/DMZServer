@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.152", 'VERSION = "2.3.152"' in mod)
+    check("VERSION 2.3.153", 'VERSION = "2.3.153"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -830,7 +830,7 @@ def main() -> int:
     check("jar leave lore is 12-hour", '"&812-hour cooldown after leaving"' in tips_json)
     check("jar leave lore not 7-day", '"&87-day cooldown"' not in tips_json)
 
-    print("\n=== Mentor tip placeholders (2.3.152) ===")
+    print("\n=== Mentor tip placeholders (2.3.153) ===")
     chest = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/SparChestGui.java")
     cmi = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/CmiSparGui.java")
     check("leave_none tip key", "spar.mentor.leave_none" in chest and "spar.mentor.leave_none" in cmi)
@@ -841,7 +841,7 @@ def main() -> int:
     check("CMI pageBtn accepts vars", "Map<String, String> vars, String... tips" in cmi)
 
 
-    print("\n=== Dojo membership roster (2.3.152) ===")
+    print("\n=== Dojo membership roster (2.3.153) ===")
     spar_sys152 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
     spar_api152 = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.java")
     chest152 = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/SparChestGui.java")
@@ -853,6 +853,20 @@ def main() -> int:
     check("Chest dojo_member/dojo_mine", "dojo_member" in chest152 and "dojo_mine" in chest152)
     check("CMI dojo_member/dojo_mine", "dojo_member" in cmi152 and "dojo_mine" in cmi152)
     check("Dojo opens for apprentices", 'hasMentor || hasApprentice' in chest152 and 'hasMentor || hasApprentice' in cmi152)
+
+
+    print("\n=== Unified chat style (2.3.153) ===")
+    lmchat = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/LmChat.java")
+    rewards = read(SRC / "com/dbzlegacy/adaptivedifficulty/util/DmzRewards.java")
+    guichat = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/GuiChat.java")
+    spar_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
+    check("LmChat TAG_ALIASES", "TAG_ALIASES" in lmchat and 'systemName' in lmchat)
+    check("LmChat ok/fail/tp helpers", 'ok(String' in lmchat and 'fail(String' in lmchat and 'tp(String' in lmchat)
+    check("LmChat open-tip normalize", "normalizeOpenTip" in lmchat)
+    check("awardTp uses LmChat.tp", "LmChat.tp(resolveTpSystem" in rewards)
+    check("GuiChat mirrors aliases", "TAG_ALIASES" in guichat and "normalizeOpenTip" in guichat)
+    check("Mentor invite uses LmChat.tip", 'LmChat.tip("/spar"' in spar_sys)
+    check("Perfect Training tagged", 'LmChat.tagged("Spar"' in spar_sys and "Perfect Training" in spar_sys)
 
     print("\n=== Mentor dojo multi-apprentice (2.3.144) ===")
     spar_store144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")

@@ -1,3 +1,10 @@
+## Unified chat style (2.3.153)
+
+All player-facing system chat uses Meditation-style {@code §5§l[System] §r…} tags via
+`LmChat` (`tagged` / `ok` / `fail` / `info` / `tip` / `card` / `tp`). Long legacy tags
+(`Sparring`, `Mentor Bond`, `Rival Instinct`, …) alias to short names. `§8Open §e/cmd`
+tips rewrite to `Tip · /cmd`. TP awards go through `LmChat.tp`.
+
 ## Dojo membership roster (2.3.152)
 
 Dojo menu shows the **mentor at the top** plus every apprentice in that dojo when you

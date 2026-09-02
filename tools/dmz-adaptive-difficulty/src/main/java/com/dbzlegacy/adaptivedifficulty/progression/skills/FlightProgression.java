@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Character;
 import com.dragonminez.common.stats.character.Status;
@@ -118,11 +119,11 @@ public final class FlightProgression {
             DmzSkillUtil.setLevel(skills, FLY, next);
             ProgressionData.storedPut(player, progressKey, required);
             DmzSkillUtil.sync(player);
-            DmzRewards.msg(player, "§b[Flight] Flight increased to level " + next + ".");
+            DmzRewards.msg(player, LmChat.ok("Flight", "Increased to level " + next + "."));
             SystemTelemetry.log("progression", "flight_level", player, null,
                     Map.of("level", next));
             if (next >= max) {
-                DmzRewards.msg(player, "§6[Flight] Flight is now maxed.");
+                DmzRewards.msg(player, LmChat.ok("Flight", "Flight is now maxed."));
             } else {
                 ProgressionData.storedPut(player, activeKey, next + 1);
                 String nk = "fly_training_progress_to_level_" + (next + 1);

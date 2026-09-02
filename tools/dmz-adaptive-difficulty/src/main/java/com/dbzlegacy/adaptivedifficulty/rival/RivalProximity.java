@@ -149,7 +149,7 @@ public final class RivalProximity {
                         scaled,
                         "Near " + st.id() + " " + n.link.name,
                         record.tpMessages,
-                        "Rival");
+                        "Rival"
                 )) {
                     SystemTelemetry.log("rival", "presence_tp", player, n.rival,
                             SystemTelemetry.fields("tp", scaled, "status", st.id()));

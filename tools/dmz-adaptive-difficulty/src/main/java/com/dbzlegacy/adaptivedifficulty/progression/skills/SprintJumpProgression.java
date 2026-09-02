@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dragonminez.common.stats.skills.Skills;
 import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
@@ -74,14 +75,14 @@ public final class SprintJumpProgression {
         }
         DmzSkillUtil.setLevel(skills, id, target);
         if (current < 1) {
-            DmzRewards.msg(player, "§a[" + tag + "] " + label + " unlocked at level "
-                    + target + " (" + invested + " STR invested).");
+            DmzRewards.msg(player, LmChat.ok(tag, label + " unlocked at level "
+                    + target + " (" + invested + " STR invested)."));
         } else {
-            DmzRewards.msg(player, "§a[" + tag + "] Increased to level "
-                    + target + " (" + invested + " STR invested).");
+            DmzRewards.msg(player, LmChat.ok(tag, "Increased to level "
+                    + target + " (" + invested + " STR invested)."));
         }
         if (target >= max) {
-            DmzRewards.msg(player, "§6[" + tag + "] " + label + " is now maxed.");
+            DmzRewards.msg(player, LmChat.ok(tag, label + " is now maxed."));
         }
         SystemTelemetry.log("progression", "sprintjump_level", player, null,
                 Map.of("skill", id, "level", target, "investedStr", invested));
