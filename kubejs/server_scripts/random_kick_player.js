@@ -1,30 +1,37 @@
 /*
- * Kick zapzxv2 when they look up (toward the sky).
+ * Joke punishments (pure ASCII - KubeJS MalformedInputException on non-ASCII).
  *
- * Pure ASCII only (KubeJS MalformedInputException on non-ASCII).
+ * 1) Sky kick: zapzxv2 looking up gets kicked with "the sky"
+ *    /skykick on|off|toggle|status
+ *    !skykick on|off|toggle|status
  *
- * Toggle (op / permission 2):
- *   /skykick on
- *   /skykick off
- *   /skykick toggle
- *   /skykick status
- * Chat fallback (op): !skykick on|off|toggle|status
+ * 2) Chat 67: any player saying 67 / variations gets smited (lightning)
+ *    /smite67 on|off|toggle|status
+ *    !smite67 on|off|toggle|status
  *
+ * Op / permission 2 for toggles.
  *   /kubejs reload server_scripts
  */
 
-var ENABLED = true; // runtime toggle; /skykick flips this
+var SKY_ENABLED = true;
+var SMITE67_ENABLED = true;
+
 var TARGET = "zapzxv2";
 var KICK_MESSAGE = "the sky";
 var LOOK_UP_PITCH = -30.0;
 var CHECK_EVERY_TICKS = 2;
 var COOLDOWN_TICKS = 40;
 
+var SMITE_COOLDOWN_TICKS = 40;
+var SMITE_MESSAGE = "Thou shalt not speak of 67.";
+
 var tickAccum = {};
 var cooldownUntil = {};
 var debugEvery = 100;
 var debugCount = {};
+var smiteCooldownUntil = {};
 var SKYKICK_REGISTERED = false;
+var SMITE67_REGISTERED = false;
 
 function playerName(player) {
     try {
@@ -73,10 +80,49 @@ function getPitch(player) {
     return 0;
 }
 
-function statusText() {
+function playerIsOp(player) {
+    try {
+        if (player.isOp && player.isOp()) return true;
+    } catch (e1) {}
+    try {
+        if (player.op) return true;
+    } catch (e2) {}
+    try {
+        if (player.hasPermissions && player.hasPermissions(2)) return true;
+    } catch (e3) {}
+    try {
+        if (player.permissionLevel >= 2) return true;
+    } catch (e4) {}
+    return false;
+}
+
+function tell(player, msg) {
+    try {
+        player.tell(msg);
+        return;
+    } catch (e1) {}
+    try {
+        if (typeof Component !== "undefined" && Component.literal) {
+            player.displayClientMessage(Component.literal(msg), false);
+        }
+    } catch (e2) {}
+}
+
+function replySource(source, msg) {
+    try {
+        if (source && source.tell) source.tell(msg);
+    } catch (e1) {}
+    try {
+        if (source && source.sendSuccess && typeof Component !== "undefined") {
+            source.sendSuccess(Component.literal(msg), true);
+        }
+    } catch (e2) {}
+}
+
+function skyStatus() {
     return (
         "skykick " +
-        (ENABLED ? "ON" : "OFF") +
+        (SKY_ENABLED ? "ON" : "OFF") +
         " target=" +
         TARGET +
         " pitch<=" +
@@ -84,52 +130,50 @@ function statusText() {
     );
 }
 
-function setEnabled(on, source) {
-    ENABLED = !!on;
-    var msg = "[sky_kick] " + statusText();
-    console.info(msg);
-    try {
-        if (source && source.tell) source.tell(msg);
-    } catch (e1) {}
-    try {
-        if (source && source.sendSuccess) {
-            if (typeof Component !== "undefined" && Component.literal) {
-                source.sendSuccess(Component.literal(msg), true);
-            }
-        }
-    } catch (e2) {}
+function smite67Status() {
+    return "smite67 " + (SMITE67_ENABLED ? "ON" : "OFF");
+}
+
+function handleSkySub(sub, source) {
+    sub = String(sub || "").toLowerCase();
+    if (sub === "on" || sub === "enable" || sub === "true" || sub === "1") {
+        SKY_ENABLED = true;
+    } else if (sub === "off" || sub === "disable" || sub === "false" || sub === "0") {
+        SKY_ENABLED = false;
+    } else if (sub === "toggle" || sub === "t") {
+        SKY_ENABLED = !SKY_ENABLED;
+    } else if (sub === "status" || sub === "state" || sub === "") {
+        replySource(source, "[sky_kick] " + skyStatus());
+        console.info("[sky_kick] " + skyStatus());
+        return 1;
+    } else {
+        replySource(source, "[sky_kick] usage: /skykick on|off|toggle|status");
+        return 0;
+    }
+    replySource(source, "[sky_kick] " + skyStatus());
+    console.info("[sky_kick] " + skyStatus());
     return 1;
 }
 
-function handleSub(sub, source) {
+function handleSmite67Sub(sub, source) {
     sub = String(sub || "").toLowerCase();
     if (sub === "on" || sub === "enable" || sub === "true" || sub === "1") {
-        return setEnabled(true, source);
-    }
-    if (sub === "off" || sub === "disable" || sub === "false" || sub === "0") {
-        return setEnabled(false, source);
-    }
-    if (sub === "toggle" || sub === "t") {
-        return setEnabled(!ENABLED, source);
-    }
-    if (sub === "status" || sub === "state" || sub === "") {
-        try {
-            if (source && source.tell) source.tell("[sky_kick] " + statusText());
-        } catch (e1) {}
-        try {
-            if (source && source.sendSuccess && typeof Component !== "undefined") {
-                source.sendSuccess(Component.literal("[sky_kick] " + statusText()), false);
-            }
-        } catch (e2) {}
-        console.info("[sky_kick] " + statusText());
+        SMITE67_ENABLED = true;
+    } else if (sub === "off" || sub === "disable" || sub === "false" || sub === "0") {
+        SMITE67_ENABLED = false;
+    } else if (sub === "toggle" || sub === "t") {
+        SMITE67_ENABLED = !SMITE67_ENABLED;
+    } else if (sub === "status" || sub === "state" || sub === "") {
+        replySource(source, "[smite67] " + smite67Status());
+        console.info("[smite67] " + smite67Status());
         return 1;
+    } else {
+        replySource(source, "[smite67] usage: /smite67 on|off|toggle|status");
+        return 0;
     }
-    try {
-        if (source && source.tell) {
-            source.tell("[sky_kick] usage: /skykick on|off|toggle|status");
-        }
-    } catch (e3) {}
-    return 0;
+    replySource(source, "[smite67] " + smite67Status());
+    console.info("[smite67] " + smite67Status());
+    return 1;
 }
 
 function doKick(player, server, name) {
@@ -163,36 +207,61 @@ function doKick(player, server, name) {
     }
 }
 
-function playerIsOp(player) {
-    try {
-        if (player.isOp && player.isOp()) return true;
-    } catch (e1) {}
-    try {
-        if (player.op) return true;
-    } catch (e2) {}
-    try {
-        if (player.hasPermissions && player.hasPermissions(2)) return true;
-    } catch (e3) {}
-    try {
-        if (player.permissionLevel >= 2) return true;
-    } catch (e4) {}
+function contains67(msg) {
+    if (!msg) return false;
+    var s = String(msg).toLowerCase();
+    // words: sixty-seven / sixty seven / sixtyseven
+    if (s.indexOf("sixtyseven") >= 0) return true;
+    if (/sixty[\s\-_]*seven/.test(s)) return true;
+    // roman numeral
+    if (/\blxvii\b/.test(s)) return true;
+    // digit forms: 67, 6 7, 6-7, 6_7, 6.7 (meme variants)
+    // avoid matching longer numbers like 167 or 670 by checking neighbors
+    if (/(^|[^0-9])6[\s\-_./\\]*7([^0-9]|$)/.test(s)) return true;
+    // spaced letters sometimes used: s i x t y   s e v e n - skip
+    // leet: 6even with 7? keep simple
+    if (/\b6even\b/.test(s)) return true;
     return false;
 }
 
-function tell(player, msg) {
+function smitePlayer(player, server) {
+    var name = playerName(player);
+    var ok = false;
     try {
-        player.tell(msg);
-        return;
+        server.runCommandSilent(
+            "execute as " +
+                name +
+                " at @s run summon minecraft:lightning_bolt ~ ~ ~"
+        );
+        ok = true;
     } catch (e1) {}
     try {
-        if (typeof Component !== "undefined" && Component.literal) {
-            player.displayClientMessage(Component.literal(msg), false);
+        if (player.block && player.block.createEntity) {
+            // no-op fallback path
         }
     } catch (e2) {}
+    try {
+        // light them up a bit for flair
+        server.runCommandSilent(
+            "execute as " + name + " at @s run ignite @s 3"
+        );
+    } catch (e3) {
+        try {
+            server.runCommandSilent("data merge entity @e[type=player,name=" + name + ",limit=1] {}");
+        } catch (e4) {}
+    }
+    try {
+        if (player.setSecondsOnFire) player.setSecondsOnFire(3);
+    } catch (e5) {}
+    try {
+        tell(player, SMITE_MESSAGE);
+    } catch (e6) {}
+    console.info("[smite67] smote " + name);
+    return ok;
 }
 
 PlayerEvents.tick(function (event) {
-    if (!ENABLED) return;
+    if (!SKY_ENABLED) return;
     var player = event.player;
     var name = playerName(player);
     if (!name) return;
@@ -223,61 +292,65 @@ PlayerEvents.tick(function (event) {
 });
 
 PlayerEvents.loggedIn(function (event) {
-    if (!ENABLED) return;
+    if (!SKY_ENABLED) return;
     var name = playerName(event.player);
     if (name.toLowerCase() !== TARGET.toLowerCase()) return;
     console.info("[sky_kick] target online: " + name + " (look up to get kicked)");
 });
 
-/* Brigadier via commandRegistry (full server start). */
+function registerLiteralToggle(Commands, name, handler) {
+    return Commands.literal(name)
+        .requires(function (src) {
+            try {
+                return src.hasPermission(2);
+            } catch (e) {
+                return false;
+            }
+        })
+        .executes(function (ctx) {
+            return handler("status", ctx.source);
+        })
+        .then(
+            Commands.literal("on").executes(function (ctx) {
+                return handler("on", ctx.source);
+            })
+        )
+        .then(
+            Commands.literal("off").executes(function (ctx) {
+                return handler("off", ctx.source);
+            })
+        )
+        .then(
+            Commands.literal("toggle").executes(function (ctx) {
+                return handler("toggle", ctx.source);
+            })
+        )
+        .then(
+            Commands.literal("status").executes(function (ctx) {
+                return handler("status", ctx.source);
+            })
+        );
+}
+
 ServerEvents.commandRegistry(function (event) {
     try {
         var Commands = event.commands;
         if (!Commands) return;
-        event.register(
-            Commands.literal("skykick")
-                .requires(function (src) {
-                    try {
-                        return src.hasPermission(2);
-                    } catch (e) {
-                        return false;
-                    }
-                })
-                .executes(function (ctx) {
-                    return handleSub("status", ctx.source);
-                })
-                .then(
-                    Commands.literal("on").executes(function (ctx) {
-                        return handleSub("on", ctx.source);
-                    })
-                )
-                .then(
-                    Commands.literal("off").executes(function (ctx) {
-                        return handleSub("off", ctx.source);
-                    })
-                )
-                .then(
-                    Commands.literal("toggle").executes(function (ctx) {
-                        return handleSub("toggle", ctx.source);
-                    })
-                )
-                .then(
-                    Commands.literal("status").executes(function (ctx) {
-                        return handleSub("status", ctx.source);
-                    })
-                )
-        );
+        event.register(registerLiteralToggle(Commands, "skykick", handleSkySub));
         SKYKICK_REGISTERED = true;
-        console.info("[sky_kick] /skykick registered via commandRegistry");
+        event.register(registerLiteralToggle(Commands, "smite67", handleSmite67Sub));
+        SMITE67_REGISTERED = true;
+        console.info("[sky_kick] /skykick and /smite67 registered via commandRegistry");
     } catch (err) {
         console.error("[sky_kick] commandRegistry failed: " + err);
     }
 });
 
-/* Live Brigadier register so /kubejs reload picks up the command. */
-function tryRegisterLive() {
-    if (SKYKICK_REGISTERED) return true;
+function tryRegisterLiveOne(cmdName, handler, flagName) {
     try {
+        var already =
+            flagName === "sky" ? SKYKICK_REGISTERED : SMITE67_REGISTERED;
+        if (already) return true;
         var server = null;
         try {
             if (typeof Utils !== "undefined" && Utils.server) server = Utils.server;
@@ -303,7 +376,7 @@ function tryRegisterLive() {
         if (!dispatcher) return false;
 
         var CommandsMc = Java.loadClass("net.minecraft.commands.Commands");
-        var root = CommandsMc.literal("skykick").requires(function (src) {
+        var root = CommandsMc.literal(cmdName).requires(function (src) {
             try {
                 return src.hasPermission(2);
             } catch (e) {
@@ -312,36 +385,42 @@ function tryRegisterLive() {
         });
         root = root
             .executes(function (ctx) {
-                return handleSub("status", ctx.getSource());
+                return handler("status", ctx.getSource());
             })
             .then(
                 CommandsMc.literal("on").executes(function (ctx) {
-                    return handleSub("on", ctx.getSource());
+                    return handler("on", ctx.getSource());
                 })
             )
             .then(
                 CommandsMc.literal("off").executes(function (ctx) {
-                    return handleSub("off", ctx.getSource());
+                    return handler("off", ctx.getSource());
                 })
             )
             .then(
                 CommandsMc.literal("toggle").executes(function (ctx) {
-                    return handleSub("toggle", ctx.getSource());
+                    return handler("toggle", ctx.getSource());
                 })
             )
             .then(
                 CommandsMc.literal("status").executes(function (ctx) {
-                    return handleSub("status", ctx.getSource());
+                    return handler("status", ctx.getSource());
                 })
             );
         dispatcher.register(root);
-        SKYKICK_REGISTERED = true;
-        console.info("[sky_kick] /skykick registered live on dispatcher");
+        if (flagName === "sky") SKYKICK_REGISTERED = true;
+        else SMITE67_REGISTERED = true;
+        console.info("[sky_kick] /" + cmdName + " registered live");
         return true;
     } catch (err) {
-        console.error("[sky_kick] live register failed: " + err);
+        console.error("[sky_kick] live register /" + cmdName + " failed: " + err);
         return false;
     }
+}
+
+function tryRegisterLive() {
+    tryRegisterLiveOne("skykick", handleSkySub, "sky");
+    tryRegisterLiveOne("smite67", handleSmite67Sub, "smite");
 }
 
 ServerEvents.loaded(function () {
@@ -349,7 +428,6 @@ ServerEvents.loaded(function () {
 });
 tryRegisterLive();
 
-/* Mohist chat fallback: !skykick on|off|toggle|status */
 PlayerEvents.chat(function (event) {
     var msg = "";
     try {
@@ -357,33 +435,65 @@ PlayerEvents.chat(function (event) {
     } catch (e1) {
         return;
     }
-    if (msg.length < 8) return;
-    if (msg.charAt(0) !== "!") return;
-    var lower = msg.toLowerCase();
-    if (lower.indexOf("!skykick") !== 0) return;
-    event.cancel();
-    var player = event.player;
-    if (!playerIsOp(player)) {
-        tell(player, "[sky_kick] op only");
-        return;
+    if (!msg) return;
+
+    // Op toggles via chat fallback
+    if (msg.charAt(0) === "!") {
+        var lower = msg.toLowerCase();
+        var player = event.player;
+        if (lower.indexOf("!skykick") === 0) {
+            event.cancel();
+            if (!playerIsOp(player)) {
+                tell(player, "[sky_kick] op only");
+                return;
+            }
+            var parts = msg.substring(1).trim().split(/\s+/);
+            handleSkySub(parts.length > 1 ? parts[1] : "status", {
+                tell: function (m) {
+                    tell(player, m);
+                }
+            });
+            return;
+        }
+        if (lower.indexOf("!smite67") === 0) {
+            event.cancel();
+            if (!playerIsOp(player)) {
+                tell(player, "[smite67] op only");
+                return;
+            }
+            var parts2 = msg.substring(1).trim().split(/\s+/);
+            handleSmite67Sub(parts2.length > 1 ? parts2[1] : "status", {
+                tell: function (m) {
+                    tell(player, m);
+                }
+            });
+            return;
+        }
     }
-    var parts = msg.substring(1).trim().split(/\s+/);
-    var sub = parts.length > 1 ? parts[1] : "status";
-    handleSub(sub, {
-        tell: function (m) {
-            tell(player, m);
-        },
-        sendSuccess: function () {}
-    });
+
+    if (!SMITE67_ENABLED) return;
+    if (!contains67(msg)) return;
+
+    var p = event.player;
+    var n = playerName(p);
+    var tick = 0;
+    try {
+        tick = Number(p.level.time) || 0;
+    } catch (e2) {
+        tick = (tickAccum[n] || 0) + 1;
+    }
+    if (smiteCooldownUntil[n] && tick < smiteCooldownUntil[n]) return;
+    smiteCooldownUntil[n] = tick + SMITE_COOLDOWN_TICKS;
+
+    console.info("[smite67] " + n + " said: " + msg);
+    smitePlayer(p, event.server);
 });
 
 console.info(
-    "[sky_kick] loaded ENABLED=" +
-        ENABLED +
-        " TARGET=" +
-        TARGET +
-        " pitch<=" +
-        LOOK_UP_PITCH +
+    "[sky_kick] loaded " +
+        skyStatus() +
+        " | " +
+        smite67Status() +
         ' msg="' +
         KICK_MESSAGE +
         '"'
