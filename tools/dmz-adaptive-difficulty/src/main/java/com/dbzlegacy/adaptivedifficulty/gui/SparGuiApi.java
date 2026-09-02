@@ -130,16 +130,26 @@ public final class SparGuiApi {
                 float sharePct = SparCombat.MENTOR_SHARE_PCT * 100.0f / Math.max(1, appCount);
                 lines.add("§7Mentor share §f" + String.format(java.util.Locale.ROOT, "%.1f", sharePct)
                         + "% §8each (dojo split)");
+                lines.add("§7Dojo peers spar §a+"
+                        + Math.round(SparCombat.DOJO_PEER_SPAR_BONUS_PCT * 100) + "% TP");
+            }
+            if (hasMentor) {
+                lines.add("§7Spar mentor §a+"
+                        + Math.round(SparCombat.MENTOR_SPAR_BONUS_PCT * 100)
+                        + "% §8· peers +"
+                        + Math.round(SparCombat.DOJO_PEER_SPAR_BONUS_PCT * 100) + "%");
             }
             lines.add("§7Streak §f" + bond.streakCurrent + " §8best §f" + bond.streakBest);
         } else {
             lines.add("§7Invite apprentices or ask a mentor below");
             lines.add("§8Dojo: up to §f" + SparringSystem.MAX_APPRENTICES + " §8apprentices · one master");
+            lines.add("§8Invite lasts §f1 hour §8· peers spar +"
+                    + Math.round(SparCombat.DOJO_PEER_SPAR_BONUS_PCT * 100) + "% TP");
             lines.add(SparringSystem.bondStatus(player));
         }
         int pending = SparringSystem.pendingMentorInviteCount(player);
         if (pending > 0) {
-            lines.add("§ePending invites §f" + pending + " §8— open Pending");
+            lines.add("§ePending invites §f" + pending + " §8— open Pending (§f1h§8)");
         } else {
             lines.add("§8Invite · Pending · Dojo · Leave / Release");
         }

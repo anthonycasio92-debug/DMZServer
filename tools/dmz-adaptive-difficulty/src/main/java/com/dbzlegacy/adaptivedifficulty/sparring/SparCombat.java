@@ -24,6 +24,8 @@ public final class SparCombat {
     public static final float KNOCKBACK_RECOVERY_TP = 45.0f;
     public static final float MENTOR_SHARE_PCT = 0.15f;
     public static final float MENTOR_SPAR_BONUS_PCT = 0.18f;
+    /** Bonus when two apprentices of the same mentor spar each other (dojo peers). */
+    public static final float DOJO_PEER_SPAR_BONUS_PCT = 0.10f;
     public static final float MAX_RIVAL_MULTIPLIER = 3.0f;
     public static final float MAX_BP_MULTIPLIER = 600.0f;
     public static final float MAX_GRAVITY = 1000.0f;
@@ -604,13 +606,16 @@ public final class SparCombat {
         float totalMult = buildTotalMultiplier(player, partner, rt, a, b);
         float amount = (float) Math.floor(base * totalMult * GLOBAL_TP_GAIN_MULT);
         boolean withMentor = SparringSystem.isSparringWithOwnMentor(player, partner);
-        if (withMentor) {
-            amount = (float) Math.floor(amount * (1.0f + MENTOR_SPAR_BONUS_PCT));
+        boolean withDojoPeer = !withMentor && SparringSystem.isSparringWithDojoPeer(player, partner);
+        float bondBonus = withMentor ? MENTOR_SPAR_BONUS_PCT
+                : (withDojoPeer ? DOJO_PEER_SPAR_BONUS_PCT : 0.0f);
+        if (bondBonus > 0.0f) {
+            amount = (float) Math.floor(amount * (1.0f + bondBonus));
         }
         float bpMult = battlePowerMultiplier(Math.min(a.bp, b.bp) > 0 ? Math.min(a.bp, b.bp) : Math.max(a.bp, b.bp));
         float actionCap = maxTpForAction(bpMult) * GLOBAL_TP_GAIN_MULT;
-        if (withMentor) {
-            actionCap *= (1.0f + MENTOR_SPAR_BONUS_PCT);
+        if (bondBonus > 0.0f) {
+            actionCap *= (1.0f + bondBonus);
         }
         if (amount > actionCap) {
             amount = actionCap;

@@ -37,8 +37,8 @@ public final class SparringSystem {
     public static final long COMBO_TIMEOUT_MS = 2500L;
     public static final long PENDING_HP_RESOLVE_MS = 75L;
     public static final long MENTOR_CHANGE_COOLDOWN_MS = 12L * 60L * 60L * 1000L;
-    /** Mentor invite TTL — long enough for a Pending board (was 2 minutes). */
-    public static final long MENTOR_INVITE_MS = 120_000L;
+    /** Mentor invite TTL — 1 hour so Pending Accept/Decline isn't rushed. */
+    public static final long MENTOR_INVITE_MS = 60L * 60L * 1000L;
     /** Max apprentices per mentor (dojo roster). Each player still has at most one master. */
     public static final int MAX_APPRENTICES = 8;
     public static final long TICK_MS = 250L;
@@ -327,18 +327,28 @@ public final class SparringSystem {
         // Seed movement window only — hits/blocks must not refresh the AFK gate.
         refreshMovementActivity(a, aRt, now);
         refreshMovementActivity(b, bRt, now);
+        String tipA = "§8Stay active: trade damage, move, and keep the fight going.";
+        String tipB = tipA;
+        if (isSparringWithOwnMentor(a, b)) {
+            tipA = "§bMentor spar §8· +" + Math.round(SparCombat.MENTOR_SPAR_BONUS_PCT * 100) + "% TP";
+        } else if (isSparringWithOwnMentor(b, a)) {
+            tipB = "§bMentor spar §8· +" + Math.round(SparCombat.MENTOR_SPAR_BONUS_PCT * 100) + "% TP";
+        } else if (isSparringWithDojoPeer(a, b)) {
+            tipA = "§bDojo peers §8· +" + Math.round(SparCombat.DOJO_PEER_SPAR_BONUS_PCT * 100) + "% TP";
+            tipB = tipA;
+        }
         DmzRewards.msg(a, LmChat.card(
                 "Sparring",
                 "/spar",
                 null,
                 "§aSession started with §f" + b.m_7755_().getString(),
-                "§8Stay active: trade damage, move, and keep the fight going."));
+                tipA));
         DmzRewards.msg(b, LmChat.card(
                 "Sparring",
                 "/spar",
                 null,
                 "§aSession started with §f" + a.m_7755_().getString(),
-                "§8Stay active: trade damage, move, and keep the fight going."));
+                tipB));
         SystemTelemetry.log("sparring", "spar_start", a, b, null);
     }
 
@@ -847,6 +857,33 @@ public final class SparringSystem {
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
         return bond.mentorUuid != null
                 && bond.mentorUuid.equals(partner.m_20148_().toString());
+    }
+
+    /**
+     * True when both players are apprentices of the same mentor (dojo peers).
+     * Does not include mentor↔apprentice spars — use {@link #isSparringWithOwnMentor}.
+     */
+    public static boolean isSparringWithDojoPeer(ServerPlayer player, ServerPlayer partner) {
+        if (player == null || partner == null) {
+            return false;
+        }
+        SparStore.MentorBond a = SparStore.get().bond(player.m_20148_());
+        SparStore.MentorBond b = SparStore.get().bond(partner.m_20148_());
+        if (a == null || b == null) {
+            return false;
+        }
+        String mentorA = a.mentorUuid;
+        String mentorB = b.mentorUuid;
+        if (mentorA == null || mentorA.isBlank() || mentorB == null || mentorB.isBlank()) {
+            return false;
+        }
+        if (!mentorA.equalsIgnoreCase(mentorB)) {
+            return false;
+        }
+        // Neither fighter is the shared mentor (that's the mentor-spar path).
+        String mentorKey = mentorA;
+        return !mentorKey.equalsIgnoreCase(player.m_20148_().toString())
+                && !mentorKey.equalsIgnoreCase(partner.m_20148_().toString());
     }
 
     public static void shareTpWithMentor(ServerPlayer apprentice, int amount) {

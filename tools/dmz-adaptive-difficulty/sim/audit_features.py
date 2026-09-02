@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.148", 'VERSION = "2.3.148"' in mod)
+    check("VERSION 2.3.149", 'VERSION = "2.3.149"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -813,6 +813,15 @@ def main() -> int:
           and "pick_apprentice" in cmi_mentor_hub
           and '"dojo"' in cmi_mentor_hub)
 
+    print("\n=== Mentor invite + dojo peer bonus (2.3.149) ===")
+    spar_sys149 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
+    spar_c149 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparCombat.java")
+    check("mentor invite 1h constant", "MENTOR_INVITE_MS = 60L * 60L * 1000L" in spar_sys149)
+    check("dojo peer helper", "isSparringWithDojoPeer" in spar_sys149)
+    check("DOJO_PEER_SPAR_BONUS_PCT 0.10", "DOJO_PEER_SPAR_BONUS_PCT = 0.10f" in spar_c149)
+    check("awardCombatTp uses dojo peer bonus",
+          "withDojoPeer" in spar_c149 and "DOJO_PEER_SPAR_BONUS_PCT" in spar_c149)
+
     print("\n=== Mentor dojo multi-apprentice (2.3.144) ===")
     spar_store144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")
     spar_sys144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
@@ -908,10 +917,10 @@ def main() -> int:
     print("\n=== Script parity fixes (2.3.54) ===")
     spar = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
-    check("mentor invite 2 minutes", "MENTOR_INVITE_MS = 120_000L" in spar)
+    check("mentor invite 1 hour", "MENTOR_INVITE_MS = 60L * 60L * 1000L" in spar)
     check(
-        "invite not 24h",
-        "MENTOR_INVITE_MS = 24L" not in spar and "MENTOR_INVITE_MS = 24 * " not in spar,
+        "invite not 24h / not 2 min",
+        "MENTOR_INVITE_MS = 24L" not in spar and "MENTOR_INVITE_MS = 120_000L" not in spar,
     )
     check("manual meditation 30 min", "MANUAL_TRIAL_DURATION_MS = 30L" in med)
     check("auto meditation 15 min", "TRIAL_DURATION_MS = 15L" in med)
@@ -1013,7 +1022,7 @@ def main() -> int:
     print("\n=== Conversation commitments (2.3.54) ===")
     conv = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "CONVERSATION-CHECKLIST.md")
     check("CONVERSATION-CHECKLIST.md present", "Conversation commitments checklist" in conv)
-    check("conv: mentor 2 min locked", "Mentor invite **2 min**" in conv)
+    check("conv: mentor 1 hour locked", "Mentor invite **1 hour**" in conv)
     check("conv: spar 3 cards locked", "individual** report cards" in conv)
     check("conv: CNPC-free locked", "CNPC-free" in conv)
     check("conv: player prestige+android locked", "Player Prestige + Remove Android" in conv)

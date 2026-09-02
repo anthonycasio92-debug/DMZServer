@@ -1,3 +1,9 @@
+## Mentor invite 1h + dojo peer spar (2.3.149)
+
+Mentor/apprentice **Pending invites last 1 hour** (was 2 minutes). Apprentices of the
+same mentor who spar each other get **+10% TP** (`DOJO_PEER_SPAR_BONUS_PCT`); mentor↔apprentice
+spar stays **+18%**. Bonuses do not stack.
+
 ## Spar TP lines player/staff (2.3.147)
 
 Spar combat TP chat is simple for players (`+TP (style)`). Staff see bonus tags,

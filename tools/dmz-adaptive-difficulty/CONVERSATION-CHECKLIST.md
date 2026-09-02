@@ -10,7 +10,7 @@ progression / CNPC-free / GUI-audit conversation thread — do not revert.
 | End hit-cap after mitigation; egg clear = `dragon_egg` only | `EndDimensionStrength` | locked |
 | Skill Check: no soft `contains("rival")`; cancel on tag **or** name | `CnpcGuiOpener`, `SkillCheckService` | locked |
 | `/skillcheck` perm-gated; NPC tag opens without perm | `StaffAccess`, Skill Check NPC | locked |
-| Mentor invite **2 min** (not 24h) | `SparringSystem.MENTOR_INVITE_MS` | locked |
+| Mentor invite **1 hour** (Pending Accept/Decline) | `SparringSystem.MENTOR_INVITE_MS` | locked |
 | Spar Stats: last **3** spars as **individual** report cards | `appendRecentReport` | locked |
 | Spar TP Msg toggle GUI-only (no `/spar tpmsg`) | Spar GUI / `SparGuiApi` | locked |
 | Manual meditation **30 min** / auto **15 min** | `MeditationProgression` | locked |
