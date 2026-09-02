@@ -220,6 +220,20 @@ public final class RivalStore {
             b.inviteReceived = false;
             b.pendingExpireAt = 0L;
         }
+        // Dual Silent Mutual confirm used inviteReceived on both sides.
+        if (a != null && b != null
+                && a.declaredByMe && a.declaredByThem
+                && b.declaredByMe && b.declaredByThem
+                && !a.mutual && !b.mutual) {
+            a.inviteReceived = false;
+            a.inviteSent = false;
+            a.acceptedMutualOffer = false;
+            a.pendingExpireAt = 0L;
+            b.inviteReceived = false;
+            b.inviteSent = false;
+            b.acceptedMutualOffer = false;
+            b.pendingExpireAt = 0L;
+        }
     }
 
     public List<RivalPlayerRecord> topByRp(int limit) {

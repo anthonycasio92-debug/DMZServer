@@ -17,6 +17,11 @@ public final class RivalLink {
      * so the declarer keeps a Declared entry on their rival list.
      */
     public boolean visibleDeclare;
+    /**
+     * After dual Silent → Declared, each side must Accept for Mutual.
+     * True once this owner accepted the Mutual confirm (waiting on the other).
+     */
+    public boolean acceptedMutualOffer;
     public double points;
     public int wins;
     public int losses;
@@ -46,18 +51,27 @@ public final class RivalLink {
             isNemesis = false;
             return RivalStatus.MUTUAL;
         }
-        // Incoming visible declare — Pending Invites (accept/decline).
+        // Dual Silent Declared stays on the rival list even while Mutual confirm is Pending.
+        if (declaredByMe && declaredByThem) {
+            return RivalStatus.DECLARED;
+        }
+        // One-way visible declare — Pending Invites (accept/decline).
         if (inviteReceived) {
             return RivalStatus.PENDING;
         }
-        // Dual Silent, or you visibly Declared them (even one-way / after decline).
-        if ((declaredByMe && declaredByThem) || (declaredByMe && (visibleDeclare || inviteSent))) {
+        // You visibly Declared them (even one-way / after decline).
+        if (declaredByMe && (visibleDeclare || inviteSent)) {
             return RivalStatus.DECLARED;
         }
         if (declaredByMe || declaredByThem) {
             return RivalStatus.UNKNOWN;
         }
         return RivalStatus.NONE;
+    }
+
+    /** Dual Silent Declared — Mutual needs Accept from both sides. */
+    public boolean needsMutualConfirm() {
+        return declaredByMe && declaredByThem && !mutual && !acceptedMutualOffer;
     }
 
     public void touch(long now) {

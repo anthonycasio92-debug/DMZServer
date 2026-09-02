@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.139", 'VERSION = "2.3.139"' in mod)
+    check("VERSION 2.3.140", 'VERSION = "2.3.140"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -534,7 +534,7 @@ def main() -> int:
           'SlotAction.page("hof")' in rival and 'SlotAction.page("journal")' in rival
           and "records" in rival)
 
-    print("\n=== Rival relationship semantics (2.3.139) ===")
+    print("\n=== Rival relationship semantics (2.3.140) ===")
     rival_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.java")
     rival_st = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalStatus.java")
     rival_link = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalLink.java")
@@ -556,6 +556,12 @@ def main() -> int:
           'SlotAction.page("pending_decide:' in rival_chest)
     check("CMI pending head opens decide submenu",
           'lmdo rival page pending_decide:' in cmi_rival)
+    check("acceptedMutualOffer flag", "acceptedMutualOffer" in rival_link)
+    check("needsMutualConfirm helper", "needsMutualConfirm" in rival_link)
+    check("promoteDeclared sets inviteReceived both",
+          "inviteReceived = true" in rival_sys and "Both must Accept" in rival_sys)
+    check("accept waits for other Mutual confirm",
+          "Waiting for them to Accept" in rival_sys or "waiting for them to Accept" in rival_sys)
     check("Actions is Declare Pending Remove Silent",
           'page("pick_declare")' in rival_chest
           and 'page("pending")' in rival_chest

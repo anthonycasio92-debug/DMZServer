@@ -65,7 +65,8 @@ public final class RivalGuiApi {
                 if (link == null || link.mutual) {
                     continue;
                 }
-                if (!link.inviteSent && !link.inviteReceived) {
+                boolean mutualConfirm = link.needsMutualConfirm();
+                if (!link.inviteSent && !link.inviteReceived && !mutualConfirm) {
                     continue;
                 }
                 if (link.pendingExpireAt > 0L && now > link.pendingExpireAt) {
@@ -243,12 +244,15 @@ public final class RivalGuiApi {
         return out;
     }
 
-    /** Invite-only pending, or also Declared when {@code includeDeclared}. */
+    /** Invite-only pending, or also Declared Mutual-confirm when {@code includeDeclared}. */
     private static boolean matchesIncoming(RivalLink link, long now, boolean includeDeclared) {
         if (link.mutual) {
             return false;
         }
         if (link.inviteReceived) {
+            return link.pendingExpireAt <= 0L || now <= link.pendingExpireAt;
+        }
+        if (includeDeclared && link.needsMutualConfirm()) {
             return link.pendingExpireAt <= 0L || now <= link.pendingExpireAt;
         }
         if (!includeDeclared) {
@@ -421,7 +425,7 @@ public final class RivalGuiApi {
                     "§7Silent → only you see them",
                     "§7Declare → on your list as Declared; they get Pending",
                     "§7They Accept → Mutual (Decline/ignore: you keep Declared)",
-                    "§7Both Silent → Declared → Accept → Mutual"
+                    "§7Both Silent → Declared → both Accept (Pending) → Mutual"
             );
             case "stats", "statistics" -> statsLines(player);
             case "challenge", "challenges" -> challengeLines(player);

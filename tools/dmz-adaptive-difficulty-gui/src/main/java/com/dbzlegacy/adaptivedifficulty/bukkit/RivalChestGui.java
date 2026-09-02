@@ -429,18 +429,35 @@ public final class RivalChestGui implements Listener {
                 ? GuiBoardHelper.pendingInviteHead(viewer, invite)
                 : item(Material.PLAYER_HEAD, "&f" + display, List.of("&7Pending declare"));
         put(holder, inv, 13, head);
-        put(holder, inv, 4, tipBtn(viewer, "rival.pending.decide_info", Material.YELLOW_DYE, "&e&lRespond",
-                List.of("&7Incoming declare from &f" + display,
-                        "&aAccept &7→ Mutual",
-                        "&cDecline &7→ refuse")));
-        put(holder, inv, 20, tipBtn(viewer, "rival.pending.accept", Material.LIME_DYE, "&aAccept",
-                List.of("&7Accept " + display + "'s declare",
-                        "&8→ Mutual rivalry")),
-                SlotAction.act("accept", pickerArg, "pending"));
-        put(holder, inv, 24, tipBtn(viewer, "rival.pending.decline", Material.ORANGE_DYE, "&cDecline",
-                List.of("&7Decline " + display + "'s declare",
-                        "&8They stay Declared on their list")),
-                SlotAction.act("decline", pickerArg, "pending"));
+        boolean mutualConfirm = invite != null && invite.isMutualConfirm();
+        if (mutualConfirm) {
+            put(holder, inv, 4, tipBtn(viewer, "rival.pending.decide_info", Material.YELLOW_DYE, "&e&lMutual Confirm",
+                    List.of("&7Declared with &f" + display,
+                            "&7You both Silent'd each other",
+                            "&aAccept &7→ your side agrees (both needed)",
+                            "&cDecline &7→ stay Declared, cancel confirm")));
+            put(holder, inv, 20, tipBtn(viewer, "rival.pending.accept", Material.LIME_DYE, "&aAccept Mutual",
+                    List.of("&7Accept Mutual with " + display,
+                            "&8Both must Accept")),
+                    SlotAction.act("accept", pickerArg, "pending"));
+            put(holder, inv, 24, tipBtn(viewer, "rival.pending.decline", Material.ORANGE_DYE, "&cDecline Mutual",
+                    List.of("&7Decline Mutual with " + display,
+                            "&8Stay Declared on both lists")),
+                    SlotAction.act("decline", pickerArg, "pending"));
+        } else {
+            put(holder, inv, 4, tipBtn(viewer, "rival.pending.decide_info", Material.YELLOW_DYE, "&e&lRespond",
+                    List.of("&7Incoming declare from &f" + display,
+                            "&aAccept &7→ Mutual",
+                            "&cDecline &7→ refuse")));
+            put(holder, inv, 20, tipBtn(viewer, "rival.pending.accept", Material.LIME_DYE, "&aAccept",
+                    List.of("&7Accept " + display + "'s declare",
+                            "&8→ Mutual rivalry")),
+                    SlotAction.act("accept", pickerArg, "pending"));
+            put(holder, inv, 24, tipBtn(viewer, "rival.pending.decline", Material.ORANGE_DYE, "&cDecline",
+                    List.of("&7Decline " + display + "'s declare",
+                            "&8They stay Declared on their list")),
+                    SlotAction.act("decline", pickerArg, "pending"));
+        }
         put(holder, inv, 36, pageBtn(viewer, "rival.pending.decide_back", Material.ARROW, "&7Back",
                 "&7Pending invites"), SlotAction.page("pending"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());

@@ -326,6 +326,10 @@ final class GuiBoardHelper {
             return "mentor".equalsIgnoreCase(kind) || "apprentice".equalsIgnoreCase(kind);
         }
 
+        boolean isMutualConfirm() {
+            return "mutual".equalsIgnoreCase(kind);
+        }
+
         String pickerArg() {
             if (!uuid.isBlank()) {
                 return "uuid:" + uuid;
@@ -372,6 +376,11 @@ final class GuiBoardHelper {
                 lore.add("&7Waiting — they would be your &f" + role);
                 lore.addAll(tips(player, "&eClick to Cancel · or wait for them"));
             }
+        } else if (inv.isMutualConfirm() && inv.incoming) {
+            lore.add("&eDeclared — Mutual confirm");
+            lore.add("&7You both Silent'd each other");
+            lore.add("&7Both must Accept for Mutual");
+            lore.add("&eClick to Accept or Decline");
         } else if (inv.incoming) {
             lore.add("&aIncoming declare");
             lore.add("&7They Declared you");

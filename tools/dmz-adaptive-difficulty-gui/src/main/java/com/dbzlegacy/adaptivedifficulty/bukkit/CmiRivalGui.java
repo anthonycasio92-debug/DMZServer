@@ -441,14 +441,24 @@ public final class CmiRivalGui {
         }
         String pickerArg = invite != null ? invite.pickerArg()
                 : (arg == null || arg.isBlank() ? display : arg.trim());
+        boolean mutualConfirm = invite != null && invite.isMutualConfirm();
 
         CMIGuiButton info = new CMIGuiButton(4, Material.YELLOW_DYE,
-                GuiTooltips.name("rival.pending.decide_info", "&e&lRespond"));
+                GuiTooltips.name("rival.pending.decide_info",
+                        mutualConfirm ? "&e&lMutual Confirm" : "&e&lRespond"));
         info.lockField();
-        info.addLore(GuiTooltips.buttonLore("rival.pending.decide_info", List.of(
-                "&7Incoming declare from &f" + display,
-                "&aAccept &7→ Mutual",
-                "&cDecline &7→ refuse")));
+        if (mutualConfirm) {
+            info.addLore(GuiTooltips.buttonLore("rival.pending.decide_info", List.of(
+                    "&7Declared with &f" + display,
+                    "&7You both Silent'd each other",
+                    "&aAccept &7→ your side agrees (both needed)",
+                    "&cDecline &7→ stay Declared, cancel confirm")));
+        } else {
+            info.addLore(GuiTooltips.buttonLore("rival.pending.decide_info", List.of(
+                    "&7Incoming declare from &f" + display,
+                    "&aAccept &7→ Mutual",
+                    "&cDecline &7→ refuse")));
+        }
         gui.addButton(info);
 
         ItemStack head = invite != null
@@ -458,14 +468,25 @@ public final class CmiRivalGui {
         headBtn.lockField();
         gui.addButton(headBtn);
 
-        gui.addButton(actionBtn(player, 20, "rival.pending.accept", Material.LIME_DYE, "&aAccept",
-                "accept", pickerArg, "pending",
-                List.of("&7Accept " + display + "'s declare",
-                        "&8→ Mutual rivalry")));
-        gui.addButton(actionBtn(player, 24, "rival.pending.decline", Material.ORANGE_DYE, "&cDecline",
-                "decline", pickerArg, "pending",
-                List.of("&7Decline " + display + "'s declare",
-                        "&8They stay Declared on their list")));
+        if (mutualConfirm) {
+            gui.addButton(actionBtn(player, 20, "rival.pending.accept", Material.LIME_DYE, "&aAccept Mutual",
+                    "accept", pickerArg, "pending",
+                    List.of("&7Accept Mutual with " + display,
+                            "&8Both must Accept")));
+            gui.addButton(actionBtn(player, 24, "rival.pending.decline", Material.ORANGE_DYE, "&cDecline Mutual",
+                    "decline", pickerArg, "pending",
+                    List.of("&7Decline Mutual with " + display,
+                            "&8Stay Declared on both lists")));
+        } else {
+            gui.addButton(actionBtn(player, 20, "rival.pending.accept", Material.LIME_DYE, "&aAccept",
+                    "accept", pickerArg, "pending",
+                    List.of("&7Accept " + display + "'s declare",
+                            "&8→ Mutual rivalry")));
+            gui.addButton(actionBtn(player, 24, "rival.pending.decline", Material.ORANGE_DYE, "&cDecline",
+                    "decline", pickerArg, "pending",
+                    List.of("&7Decline " + display + "'s declare",
+                            "&8They stay Declared on their list")));
+        }
         gui.addButton(pageBtn(player, 36, "rival.pending.decide_back", Material.ARROW, "&7Back", "pending",
                 "&7Pending invites"));
         gui.addButton(closeBtn(44));

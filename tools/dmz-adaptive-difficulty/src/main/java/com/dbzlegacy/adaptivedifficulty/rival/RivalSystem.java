@@ -161,10 +161,14 @@ public final class RivalSystem {
         if (myLink.inviteSent || myLink.inviteReceived) {
             return "§cA visible declare is already pending with that player.";
         }
-        // Already Declared (both silently rivaled) — tell them how to Mutual.
+        // Already Declared (both silently rivaled) — Mutual needs Accept from both via Pending.
         if (isReciprocatedSilent(myLink)) {
+            if (myLink.acceptedMutualOffer) {
+                return "§eAlready Declared with §f" + them.name
+                        + "§e. §8Waiting for them to Accept Mutual (Pending).";
+            }
             return "§eAlready Declared with §f" + them.name
-                    + "§e. §8For Mutual: Actions → Accept…";
+                    + "§e. §8For Mutual: Actions → Pending → Accept.";
         }
         // Already one-sided silent.
         if (myLink.declaredByMe && !myLink.declaredByThem) {
@@ -181,7 +185,7 @@ public final class RivalSystem {
             store.markDirty();
             return "§aDeclared with §f" + them.name
                     + "§a — you both silently rivaled each other."
-                    + " §8For Mutual: Actions → Accept…";
+                    + " §8Both must Accept Mutual in Pending.";
         }
 
         // One-sided silent: you get Silent benefits; target is not notified / sees nothing.
@@ -272,33 +276,50 @@ public final class RivalSystem {
         RivalLink myLink = me.rivals.get(them.uuid);
         long now = System.currentTimeMillis();
 
-        // Declared (both Silent) → Accept upgrades straight to Mutual (no pending invite needed).
-        if (myLink != null && isReciprocatedSilent(myLink) && !myLink.mutual
-                && !myLink.inviteReceived && !myLink.inviteSent) {
+        // Declared (both Silent) → each side Accepts Mutual confirm (both required).
+        if (myLink != null && isReciprocatedSilent(myLink) && !myLink.mutual) {
             RivalLink theirLink = them.getOrCreateLink(me.uuid, me.name, now);
-            myLink.declaredByMe = true;
-            myLink.declaredByThem = true;
-            theirLink.declaredByMe = true;
-            theirLink.declaredByThem = true;
-            promoteMutual(me, them, myLink, theirLink, now);
+            if (myLink.acceptedMutualOffer) {
+                return "§eYou already Accepted — waiting for §f" + them.name + " §eto Accept Mutual.";
+            }
+            myLink.acceptedMutualOffer = true;
+            myLink.inviteReceived = false;
+            myLink.pendingExpireAt = 0L;
             me.declarationsAccepted++;
-            store.markDirty();
-            ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
-            if (online != null) {
-                DmzRewards.msg(online, LmChat.card(
+            if (theirLink.acceptedMutualOffer) {
+                myLink.declaredByMe = true;
+                myLink.declaredByThem = true;
+                theirLink.declaredByMe = true;
+                theirLink.declaredByThem = true;
+                myLink.acceptedMutualOffer = false;
+                theirLink.acceptedMutualOffer = false;
+                promoteMutual(me, them, myLink, theirLink, now);
+                store.markDirty();
+                ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
+                if (online != null) {
+                    DmzRewards.msg(online, LmChat.card(
+                            "Rival Mutual",
+                            "/rival",
+                            null,
+                            "§a" + me.name + " accepted — Declared → Mutual!",
+                            "§8Both accepted. Full rivalry benefits."));
+                }
+                DmzRewards.msg(player, LmChat.card(
                         "Rival Mutual",
                         "/rival",
                         null,
-                        "§a" + me.name + " accepted — Declared → Mutual!",
-                        "§8Both ways. Full rivalry benefits."));
+                        "§aAccepted §f" + them.name + " §a— Declared → Mutual!",
+                        "§8Both accepted. Full rivalry benefits."));
+                return "§aAccepted §f" + them.name + " §a— Declared → Mutual!";
             }
-            DmzRewards.msg(player, LmChat.card(
-                    "Rival Mutual",
-                    "/rival",
-                    null,
-                    "§aAccepted §f" + them.name + " §a— Declared → Mutual!",
-                    "§8Both ways. Full rivalry benefits."));
-            return "§aAccepted §f" + them.name + " §a— Declared → Mutual!";
+            store.markDirty();
+            ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
+            if (online != null) {
+                DmzRewards.msg(online, LmChat.tagged("Rival",
+                        "§e" + me.name + " §7accepted Mutual — your turn (Pending)."));
+            }
+            return "§aAccepted Mutual with §f" + them.name
+                    + "§a. §8Waiting for them to Accept too (Pending).";
         }
 
         if (myLink == null || !myLink.inviteReceived) {
@@ -341,7 +362,35 @@ public final class RivalSystem {
             return "§cNo pending declare from that player.";
         }
         RivalLink myLink = me.rivals.get(them.uuid);
-        if (myLink == null || !myLink.inviteReceived) {
+        if (myLink == null) {
+            return "§cNo pending declare from " + them.name + ".";
+        }
+        // Dual Silent Declared — decline Mutual confirm; stay Declared on both lists.
+        if (isReciprocatedSilent(myLink) && !myLink.mutual
+                && (myLink.inviteReceived || myLink.needsMutualConfirm())) {
+            RivalLink theirLink = them.rivals.get(me.uuid);
+            myLink.inviteReceived = false;
+            myLink.inviteSent = false;
+            myLink.pendingExpireAt = 0L;
+            myLink.acceptedMutualOffer = false;
+            if (theirLink != null) {
+                theirLink.inviteReceived = false;
+                theirLink.inviteSent = false;
+                theirLink.pendingExpireAt = 0L;
+                theirLink.acceptedMutualOffer = false;
+            }
+            store.declareRequests.remove(them.uuid + ">" + me.uuid);
+            store.declareRequests.remove(me.uuid + ">" + them.uuid);
+            me.declarationsDeclined++;
+            store.markDirty();
+            ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
+            if (online != null) {
+                DmzRewards.msg(online, LmChat.tagged("Rival",
+                        "§e" + me.name + " §7declined Mutual — still Declared."));
+            }
+            return "§eDeclined Mutual with §f" + them.name + "§e. §8Still Declared on both lists.";
+        }
+        if (!myLink.inviteReceived) {
             return "§cNo pending declare from " + them.name + ".";
         }
         store.clearInviteFlags(them.uuid, me.uuid);
@@ -471,6 +520,7 @@ public final class RivalSystem {
         link.declaredByThem = false;
         link.inviteSent = false;
         link.inviteReceived = false;
+        link.acceptedMutualOffer = false;
         link.pendingExpireAt = 0L;
         link.mutualSince = 0L;
         if (otherName != null && !otherName.isBlank()) {
@@ -555,8 +605,9 @@ public final class RivalSystem {
             if (link == null || link.mutual) {
                 continue;
             }
-            boolean incoming = link.inviteReceived;
-            boolean outgoing = link.inviteSent;
+            boolean mutualConfirm = link.needsMutualConfirm();
+            boolean incoming = link.inviteReceived || mutualConfirm;
+            boolean outgoing = link.inviteSent && !mutualConfirm;
             if (!incoming && !outgoing) {
                 continue;
             }
@@ -576,12 +627,14 @@ public final class RivalSystem {
             }
             // Prefer showing IN when both flags somehow set (should not happen).
             String dir = incoming ? "IN" : "OUT";
+            String kind = mutualConfirm ? "mutual" : "";
             out.add(String.join("\t",
                     nullToEmpty(uuid),
                     nullToEmpty(name),
                     dir,
                     String.valueOf(Math.max(0L, link.pendingExpireAt)),
-                    online ? "1" : "0"));
+                    online ? "1" : "0",
+                    kind));
         }
         return out;
     }
@@ -605,9 +658,15 @@ public final class RivalSystem {
             String name = p[1];
             String dir = p[2];
             boolean online = p.length > 4 && "1".equals(p[4]);
+            boolean mutualConfirm = p.length > 5 && "mutual".equalsIgnoreCase(p[5]);
             if ("IN".equals(dir)) {
-                lines.add("§a◀ Incoming §f" + name + (online ? " §a●" : " §8○")
-                        + " §8— Accept or Decline");
+                if (mutualConfirm) {
+                    lines.add("§e◀ Mutual confirm §f" + name + (online ? " §a●" : " §8○")
+                            + " §8— both must Accept");
+                } else {
+                    lines.add("§a◀ Incoming §f" + name + (online ? " §a●" : " §8○")
+                            + " §8— Accept or Decline");
+                }
             } else {
                 lines.add("§6▶ Outgoing §f" + name + (online ? " §a●" : " §8○")
                         + " §8— waiting on them");
@@ -865,19 +924,17 @@ public final class RivalSystem {
         }
     }
 
-    /** Both sides silently rivaled each other (Declared, not Mutual, no invites). */
+    /** Both sides silently rivaled each other (Declared, not Mutual). */
     private static boolean isReciprocatedSilent(RivalLink link) {
         return link != null
                 && link.declaredByMe
                 && link.declaredByThem
-                && !link.mutual
-                && !link.inviteSent
-                && !link.inviteReceived;
+                && !link.mutual;
     }
 
     /**
-     * Crossed silent rivals → Declared for both, notify both online players.
-     * Mutual still requires a visible Declare → Accept.
+     * Crossed silent rivals → Declared for both + Pending Mutual confirm for both.
+     * Mutual requires Accept from both sides.
      */
     private static void promoteDeclared(
             ServerPlayer actor,
@@ -888,34 +945,60 @@ public final class RivalSystem {
             RivalLink theirLink,
             long now
     ) {
+        long expire = now + RivalConstants.REQUEST_EXPIRE_MS;
+
         myLink.declaredByMe = true;
         myLink.declaredByThem = true;
         myLink.inviteSent = false;
-        myLink.inviteReceived = false;
+        myLink.inviteReceived = true;
+        myLink.acceptedMutualOffer = false;
+        myLink.pendingExpireAt = expire;
         myLink.mutual = false;
         myLink.touch(now);
 
         theirLink.declaredByMe = true;
         theirLink.declaredByThem = true;
         theirLink.inviteSent = false;
-        theirLink.inviteReceived = false;
+        theirLink.inviteReceived = true;
+        theirLink.acceptedMutualOffer = false;
+        theirLink.pendingExpireAt = expire;
         theirLink.mutual = false;
         theirLink.touch(now);
 
         me.declarationsSent++;
 
+        RivalStore store = RivalStore.get();
+        RivalStore.DeclareRequest aToB = new RivalStore.DeclareRequest();
+        aToB.fromUuid = me.uuid;
+        aToB.fromName = me.name;
+        aToB.toUuid = them.uuid;
+        aToB.toName = them.name;
+        aToB.createdAt = now;
+        aToB.expiresAt = expire;
+        store.declareRequests.put(me.uuid + ">" + them.uuid, aToB);
+        RivalStore.DeclareRequest bToA = new RivalStore.DeclareRequest();
+        bToA.fromUuid = them.uuid;
+        bToA.fromName = them.name;
+        bToA.toUuid = me.uuid;
+        bToA.toName = me.name;
+        bToA.createdAt = now;
+        bToA.expiresAt = expire;
+        store.declareRequests.put(them.uuid + ">" + me.uuid, bToA);
+
         DmzRewards.msg(actor, LmChat.card(
                 "Rival Declared",
                 "/rival",
-                "→ Actions → Accept… for Mutual",
+                "→ Actions → Pending → Accept Mutual",
                 "§7Rival   §e" + them.name,
-                "§8You both silently rivaled each other."));
+                "§8You both silently rivaled each other.",
+                "§8Both must Accept to become Mutual."));
         DmzRewards.msg(target, LmChat.card(
                 "Rival Declared",
                 "/rival",
-                "→ Actions → Accept… for Mutual",
+                "→ Actions → Pending → Accept Mutual",
                 "§7Rival   §e" + me.name,
-                "§8You both silently rivaled each other."));
+                "§8You both silently rivaled each other.",
+                "§8Both must Accept to become Mutual."));
     }
 
     private static void promoteMutual(
@@ -937,6 +1020,12 @@ public final class RivalSystem {
         myLink.inviteReceived = false;
         theirLink.inviteSent = false;
         theirLink.inviteReceived = false;
+        myLink.acceptedMutualOffer = false;
+        theirLink.acceptedMutualOffer = false;
+        myLink.pendingExpireAt = 0L;
+        theirLink.pendingExpireAt = 0L;
+        RivalStore.get().declareRequests.remove(me.uuid + ">" + them.uuid);
+        RivalStore.get().declareRequests.remove(them.uuid + ">" + me.uuid);
         if (myLink.mutualSince <= 0L) {
             myLink.mutualSince = now;
         }

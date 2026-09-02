@@ -1,3 +1,9 @@
+## Dual Silent Mutual confirm (2.3.140)
+
+Both Silent → Declared on both lists + Pending Mutual confirm for both.
+Each must Accept (Pending submenu); Mutual only when both have accepted.
+Decline Mutual keeps Declared.
+
 ## Pending request submenu (2.3.139)
 
 Actions menu: Declare · Pending · Remove · Silent.
