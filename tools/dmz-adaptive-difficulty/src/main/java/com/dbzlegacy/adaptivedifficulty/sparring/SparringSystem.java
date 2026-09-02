@@ -41,6 +41,12 @@ public final class SparringSystem {
     public static final long TICK_MS = 250L;
     public static final long MIN_COUNTED_SESSION_MS = 30_000L;
     public static final long STREAK_MIN_SESSION_MS = 300_000L;
+    /** Keep match alive while charging / briefly after charge so the ki shot can land. */
+    public static final long KI_CHARGE_HOLD_MS = 2800L;
+    /** Soft activity hold while clash is reported (does not count as combat for drip TP). */
+    public static final long CLASH_HOLD_MS = 2500L;
+    /** Real combat window for release-control drip (tighter than AFK hit windows). */
+    public static final long RELEASE_COMBAT_WINDOW_MS = 3500L;
 
     private static long lastPulseAt;
 
@@ -271,6 +277,10 @@ public final class SparringSystem {
             aRt.lastOutPartner = tName;
             aRt.lastOutAt = now;
             aRt.lastOutKind = ki ? "ki" : "melee";
+            // Real damage exchange — used for release-control drip (not charge/clash holds).
+            aRt.lastCombatOutPartner = tName;
+            aRt.lastCombatOutAt = now;
+            aRt.lastCombatOutKind = ki ? "ki" : "melee";
             tRt.lastInPartner = aName;
             tRt.lastInAt = now;
             if (ki) {
@@ -499,7 +509,8 @@ public final class SparringSystem {
         boolean partnerClash = DmzRewards.isClashing(partner.m_20148_());
         boolean bothClashing = selfClash && partnerClash;
         if (selfClash || partnerClash) {
-            // Soft linger keeps activity gates alive even if only one side reports clash.
+            // Soft linger keeps the match held even if only one side reports clash.
+            // Does NOT fake combat clocks — idle drip TP must stop when fighting stops.
             rt.clashUntil = now + 4000L;
         }
         // Script: TP drip only while BOTH fighters are actively clashing.
@@ -509,12 +520,13 @@ public final class SparringSystem {
             rt.styleBeam += 1.0;
             SparCombat.awardCombatTp(player, partner, rt, SparCombat.BEAM_CLASH_TP_PER_TICK, "clash");
         }
-        // Charging / clash holds hit + movement gates (script holdSparForKiCharge).
+        // Charging / clash holds keep the match alive without fake hit stamps for drip TP.
         holdSparForKiOrClash(player, partner, rt, now);
     }
 
     /**
-     * Standing still mid-charge / clash must not trip AFK or hit-activity gates.
+     * Standing still mid-charge / clash must not trip AFK gates — but must not fake
+     * combat activity either (that was letting idle fighters keep earning release TP).
      * @return true when the pair is currently held
      */
     private static boolean holdSparForKiOrClash(
@@ -523,19 +535,81 @@ public final class SparringSystem {
         if (player == null || partner == null || rt == null) {
             return false;
         }
+        SparPlayerRuntime pRt = runtime(partner.m_20148_());
         boolean clashing = now <= rt.clashUntil
                 || DmzRewards.isClashing(player.m_20148_())
                 || DmzRewards.isClashing(partner.m_20148_());
-        boolean charging = isChargingKi(player) || isChargingKi(partner);
+        boolean selfCharging = isChargingKi(player);
+        boolean partnerCharging = isChargingKi(partner);
+        boolean charging = selfCharging || partnerCharging || now < rt.chargingUntil || now < pRt.chargingUntil;
         if (!clashing && !charging) {
-            return false;
+            return isActivityHeld(rt, now) || isActivityHeld(pRt, now);
         }
-        SparPlayerRuntime pRt = runtime(partner.m_20148_());
-        stampHitActivity(rt, partner.m_7755_().getString(), now, "ki");
-        stampHitActivity(pRt, player.m_7755_().getString(), now, "ki");
+        if (clashing) {
+            markHold(rt, now + CLASH_HOLD_MS);
+            markHold(pRt, now + CLASH_HOLD_MS);
+        }
+        if (selfCharging || partnerCharging) {
+            long until = now + KI_CHARGE_HOLD_MS;
+            if (selfCharging) {
+                markCharging(rt, until);
+                markHold(pRt, until);
+            }
+            if (partnerCharging) {
+                markCharging(pRt, until);
+                markHold(rt, until);
+            }
+        }
+        // Movement refresh only — never stamp lastOutAt / lastCombatOutAt here.
         refreshMovementActivity(player, rt, now);
         refreshMovementActivity(partner, pRt, now);
         return true;
+    }
+
+    /**
+     * KiChargeEvent path: Status.isChargingKi can flicker between charge ticks.
+     * Refresh a linger so AFK does not end the spar before the shot lands.
+     */
+    public static void markKiCharging(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return;
+        }
+        SparPlayerRuntime rt = RUNTIME.get(player.m_20148_());
+        if (rt == null || !rt.active || rt.partner == null) {
+            return;
+        }
+        MinecraftServer server = player.m_20194_();
+        ServerPlayer partner = server == null ? null : server.m_6846_().m_11259_(rt.partner);
+        if (partner == null) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        long until = now + KI_CHARGE_HOLD_MS;
+        SparPlayerRuntime pRt = runtime(partner.m_20148_());
+        markCharging(rt, until);
+        markHold(pRt, until);
+        refreshMovementActivity(player, rt, now);
+        refreshMovementActivity(partner, pRt, now);
+    }
+
+    private static void markHold(SparPlayerRuntime rt, long until) {
+        if (rt != null && until > rt.holdUntil) {
+            rt.holdUntil = until;
+        }
+    }
+
+    private static void markCharging(SparPlayerRuntime rt, long until) {
+        if (rt == null) {
+            return;
+        }
+        if (until > rt.chargingUntil) {
+            rt.chargingUntil = until;
+        }
+        markHold(rt, until);
+    }
+
+    private static boolean isActivityHeld(SparPlayerRuntime rt, long now) {
+        return rt != null && (now < rt.holdUntil || now < rt.chargingUntil);
     }
 
     private static void stampHitActivity(SparPlayerRuntime rt, String partnerName, long now, String kind) {
@@ -559,6 +633,19 @@ public final class SparringSystem {
         }
     }
 
+    private static boolean hasRecentCombatOut(SparPlayerRuntime rt, String partnerName, long now, long windowMs) {
+        if (rt == null || partnerName == null || partnerName.isBlank()) {
+            return false;
+        }
+        if (rt.lastCombatOutAt <= 0L) {
+            return false;
+        }
+        if (!rt.lastCombatOutPartner.isBlank() && !rt.lastCombatOutPartner.equalsIgnoreCase(partnerName)) {
+            return false;
+        }
+        return now - rt.lastCombatOutAt <= windowMs;
+    }
+
     private static void tickReleaseControl(
             ServerPlayer player,
             ServerPlayer partner,
@@ -568,13 +655,23 @@ public final class SparringSystem {
         if (rt == null || !rt.active || partner == null) {
             return;
         }
+        // No idle drip during recover grace (stopped fighting → match winding down).
+        if (rt.graceUntil > 0L && now < rt.graceUntil) {
+            return;
+        }
         SparCombat.TrainingValues values = SparCombat.liveValues(player);
         if (values == null || values.release < SparCombat.HIGH_RELEASE_THRESHOLD) {
             return;
         }
-        boolean recentHit = hasRecentOutgoingHit(rt, partner.m_7755_().getString(), now);
-        boolean clashing = now <= rt.clashUntil;
-        if (!recentHit && !clashing) {
+        boolean bothClashing = DmzRewards.isClashing(player.m_20148_())
+                && DmzRewards.isClashing(partner.m_20148_());
+        boolean recentCombat = hasRecentCombatOut(
+                rt, partner.m_7755_().getString(), now, RELEASE_COMBAT_WINDOW_MS);
+        // Charge/clash soft holds must not grant release TP — only live clash or real hits.
+        if (!recentCombat && !bothClashing) {
+            return;
+        }
+        if (!bothClashing && !hasRecentMovement(rt, now)) {
             return;
         }
         if (now < rt.releaseCtrlNext) {
@@ -610,10 +707,14 @@ public final class SparringSystem {
      * Script processSession activity gates:
      * both fighters must exchange damage AND keep moving (unless clash/ki-charge hold).
      * Prevents AFK box-farming: standing still punching still expires the move window.
+     * Ki charge uses holdUntil/chargingUntil — not fake hits — so the match stays open
+     * through charge→shot without idle release TP.
      */
     private static void tickActivity(ServerPlayer player, ServerPlayer partner, SparPlayerRuntime rt, long now) {
         SparPlayerRuntime pRt = runtime(partner.m_20148_());
-        boolean held = holdSparForKiOrClash(player, partner, rt, now);
+        boolean held = holdSparForKiOrClash(player, partner, rt, now)
+                || isActivityHeld(rt, now)
+                || isActivityHeld(pRt, now);
 
         String failure = "";
         if (player.m_9236_() != partner.m_9236_() || player.m_20270_(partner) > MAX_SPAR_DISTANCE) {

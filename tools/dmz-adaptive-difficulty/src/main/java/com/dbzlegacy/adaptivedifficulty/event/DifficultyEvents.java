@@ -1092,6 +1092,8 @@ public final class DifficultyEvents {
             return;
         }
         AdaptiveAiSystem.onPlayerKiCharge(player);
+        // Spar: keep match alive through charge→shot without faking combat for drip TP.
+        SparringSystem.markKiCharging(player);
     }
 
     /**

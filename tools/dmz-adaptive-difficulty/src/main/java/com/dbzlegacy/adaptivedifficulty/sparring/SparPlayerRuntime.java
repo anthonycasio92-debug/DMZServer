@@ -15,11 +15,22 @@ public final class SparPlayerRuntime {
     public String lastOutPartner = "";
     public long lastOutAt;
     public String lastOutKind = "melee";
+    /**
+     * Real damage exchanges only (not ki-charge / clash holds). Used to gate drip TP
+     * so idle fighters stop earning while the session is still held open.
+     */
+    public String lastCombatOutPartner = "";
+    public long lastCombatOutAt;
+    public String lastCombatOutKind = "melee";
     public String lastInPartner = "";
     public long lastInAt;
     public long lastKiOutAt;
     public long lastLaserOutAt;
     public long clashUntil;
+    /** Activity hold while charging / clash (does not fake combat for drip TP). */
+    public long holdUntil;
+    /** Extra linger after ki charge ends so the shot can fire before AFK ends the spar. */
+    public long chargingUntil;
 
     public float pendingSampleHp;
     public UUID pendingAttacker;
@@ -105,6 +116,11 @@ public final class SparPlayerRuntime {
         tpPendingKi = 0;
         tpPendingClash = 0;
         clashUntil = 0L;
+        holdUntil = 0L;
+        chargingUntil = 0L;
+        lastCombatOutAt = 0L;
+        lastCombatOutPartner = "";
+        lastCombatOutKind = "melee";
         pendingUntil = 0L;
         pendingAttacker = null;
     }

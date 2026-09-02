@@ -1,3 +1,10 @@
+## Spar active TP + ki-charge hold (2.3.143)
+
+Release-control drip TP no longer treats ki-charge / soft-clash holds as combat hits.
+Real damage exchanges stamp `lastCombatOut*`; charge/clash only set `holdUntil` /
+`chargingUntil` so the match stays open through charge→shot. Idle fighters stop
+earning drip TP (and during recover grace). `KiChargeEvent` refreshes the charge hold.
+
 ## Rival list status order + underdog any status (2.3.142)
 
 GUI/list order: Nemesis → Mutual → Declared → Silent (RP desc within group).

@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.142", 'VERSION = "2.3.142"' in mod)
+    check("VERSION 2.3.143", 'VERSION = "2.3.143"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -534,7 +534,7 @@ def main() -> int:
           'SlotAction.page("hof")' in rival and 'SlotAction.page("journal")' in rival
           and "records" in rival)
 
-    print("\n=== Rival relationship semantics (2.3.142) ===")
+    print("\n=== Rival relationship semantics (2.3.143) ===")
     rival_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.java")
     rival_st = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalStatus.java")
     rival_link = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalLink.java")
@@ -750,6 +750,25 @@ def main() -> int:
     check("no public Forge /spar tpmsg", 'm_82127_("tpmsg")' not in spar_cmds)
     check("no public Bukkit /spar tpmsg",
           'ForgeBridge.sparHandleDo(player, "tpmsg"' not in bukkit_plugin)
+
+    print("\n=== Spar active TP + ki-charge hold (2.3.143) ===")
+    spar_rt = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparPlayerRuntime.java")
+    spar_sys143 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
+    events143 = read(SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")
+    hold_fn = spar_sys143.split("private static boolean holdSparForKiOrClash", 1)[1].split(
+        "public static void markKiCharging", 1)[0] if "holdSparForKiOrClash" in spar_sys143 else ""
+    release_fn = spar_sys143.split("private static void tickReleaseControl", 1)[1].split(
+        "private static void tickPerfectBanner", 1)[0] if "private static void tickReleaseControl" in spar_sys143 else ""
+    check("lastCombatOut clocks", "lastCombatOutAt" in spar_rt and "lastCombatOutPartner" in spar_rt)
+    check("holdUntil + chargingUntil fields", "holdUntil" in spar_rt and "chargingUntil" in spar_rt)
+    check("hold does not stampHitActivity", "stampHitActivity" not in hold_fn)
+    check("markKiCharging public API", "public static void markKiCharging(" in spar_sys143)
+    check("KiChargeEvent wires spar hold", "SparringSystem.markKiCharging(player)" in events143)
+    check("release drip uses lastCombatOut", "hasRecentCombatOut" in release_fn and "lastCombatOut" in spar_sys143)
+    check("release drip skips grace", "graceUntil" in release_fn)
+    check("release drip requires live both-clash or combat",
+          "bothClashing" in release_fn and "hasRecentCombatOut" in release_fn)
+    check("KI_CHARGE_HOLD_MS present", "KI_CHARGE_HOLD_MS" in spar_sys143)
 
     print("\n=== Global TP boost stacking (2.3.54) ===")
     boost = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/tp/GlobalTpBoost.java")
