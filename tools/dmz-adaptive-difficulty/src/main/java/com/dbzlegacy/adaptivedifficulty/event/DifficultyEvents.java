@@ -177,6 +177,29 @@ public final class DifficultyEvents {
         }
     }
 
+    @SubscribeEvent
+    public void onQuestCompleted(DMZEvent.QuestCompletedEvent event) {
+        if (event == null || !(event.getPlayer() instanceof ServerPlayer)) {
+            return;
+        }
+        try {
+            ServerPlayer player = (ServerPlayer) event.getPlayer();
+            String key = event.getQuestKey();
+            com.dbzlegacy.adaptivedifficulty.progression.skills.PotentialProgression
+                    .onQuestCompleted(player, key);
+            // Party members sharing the clear also unlock.
+            if (event.getPartyMembers() != null) {
+                for (ServerPlayer mate : event.getPartyMembers()) {
+                    if (mate != null && mate != player) {
+                        com.dbzlegacy.adaptivedifficulty.progression.skills.PotentialProgression
+                                .onQuestCompleted(mate, key);
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
     /**
      * Soft-lock TP at the player's personal breakthrough level cap so further
      * progress requires the next breakthrough. Server DMZ {@code maxValue} is 150k
@@ -853,6 +876,11 @@ public final class DifficultyEvents {
                 && !(dead instanceof Player)) {
             RivalSystem.onMobKillNear(killer, (LivingEntity) dead);
             ProgressionSystem.onDeath(event);
+            try {
+                com.dbzlegacy.adaptivedifficulty.progression.skills.PotentialProgression
+                        .onPossiblePiccoloDefeat(killer, dead);
+            } catch (Throwable ignored) {
+            }
         }
     }
 

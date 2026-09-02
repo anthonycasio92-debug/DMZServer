@@ -165,8 +165,9 @@ final class GuiLoreChunks {
         if (n.contains("fusion")) {
             return Material.GOLDEN_APPLE;
         }
-        // Never PAPER — Skill Check already had a paper header; skills need distinct icons.
-        return Material.EMERALD;
+        // Distinct fallback — never PAPER (Skill Check header) and never EMERALD
+        // (two emerald tiles used to read like duplicate tips).
+        return Material.LIME_DYE;
     }
 
     private static int indexOfLevelSep(String line) {

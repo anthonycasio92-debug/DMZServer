@@ -1,3 +1,10 @@
+## Skill Check tips + Potential Piccolo gate (2.3.156)
+
+Skill Check / Skills tooltips drop formula “How:” rows — one human-written tip per
+skill. Lore no longer duplicates the title line. Potential soft-caps at **10** until
+you beat **Piccolo** in the skill saga (master/saga kill or Piccolo quest), then
+natural training continues to **30**.
+
 ## Unified Difficulty Tiers menu (2.3.155)
 
 Buy Tier and Lower Tier are one **Tiers** menu: buy higher, lower unlocked, or reset

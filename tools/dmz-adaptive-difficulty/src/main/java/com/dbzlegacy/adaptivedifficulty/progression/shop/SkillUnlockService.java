@@ -7,6 +7,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.InvestedStrength;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.FlightProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;
+import com.dbzlegacy.adaptivedifficulty.progression.skills.PotentialProgression;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dragonminez.common.stats.StatsData;
@@ -138,7 +139,7 @@ public final class SkillUnlockService {
                         cmdRoot + " do page core", "Natural progression"))
                 .m_7220_(Component.m_237113_(" "))
                 .m_7220_(btn(pageEquals(page, "saga") ? "§e[Saga]" : "§7[Saga]",
-                        cmdRoot + " do page saga", "Unlock and level up via the skills saga."));
+                        cmdRoot + " do page saga", "Train with masters in the skills saga."));
         send(player, nav);
         send(player, "§8────────────────");
     }
@@ -161,39 +162,38 @@ public final class SkillUnlockService {
 
     private static void appendPotential(List<String> out, ServerPlayer player, Skills skills) {
         int level = skillLevel(skills, "potentialunlock");
-        // Always show hard ladder /30 — DMZ max may still read 10 before Guru unlock.
+        boolean piccolo = PotentialProgression.hasPiccoloUnlock(player);
         if (level >= HARD_MAX_POTENTIAL) {
             out.add("§dPotential Unlock§7: §6§lMAX§r §7(" + level + "/" + HARD_MAX_POTENTIAL + ")");
-            how(out, "PvP hits & taking damage. Soft-cap 10 → Guru → 11–30.");
+            tip(out, "You've pushed Potential as far as it goes.");
             return;
         }
-        if (level == 10) {
+        if (level >= 10 && !piccolo) {
             out.add("§dPotential Unlock§7: §f" + level + "/" + HARD_MAX_POTENTIAL
                     + " §8· §eSOFT CAP");
-            out.add("§8  - §eSpeak to Guru to unlock levels 11–30.");
-            how(out, "Natural training stops at 10 until Guru unlocks you.");
+            tip(out, "Fighting other players got you here. Beat Piccolo in the skill saga to open the path toward 30.");
             return;
         }
-        out.add("§dPotential Unlock§7: §f" + level + "/" + HARD_MAX_POTENTIAL);
-        if (level < 10) {
-            how(out, "PvP hits & taking damage. Soft-caps at 10 (then Guru for 11–30).");
-        } else {
-            how(out, "PvP hits & taking damage toward the next Potential Unlock level.");
-        }
+        out.add("§dPotential Unlock§7: §f" + level + "/" + HARD_MAX_POTENTIAL
+                + (piccolo && level >= 10 ? " §8· §aPiccolo unlocked" : ""));
         int next = level + 1;
         int required = next * 100;
         long progress = ProgressionData.storedGetLong(player, "potentialunlock_points_to_level_" + next, 0L);
         if (progress > required) {
             progress = required;
         }
-        out.add("§8  - §7Progress §f" + progress + "§7/§f" + required
-                + " §8· §7to level §f" + next);
         String method = ProgressionData.storedGet(player, "potentialunlock_last_method", "");
-        long streak = ProgressionData.storedGetLong(player, "potentialunlock_same_method_streak", 0L);
-        if (method != null && !method.isBlank()) {
-            out.add("§8  - §7Last method §f" + formatPotentialMethod(method)
-                    + (streak > 0 ? " §8(streak " + streak + "/5)" : ""));
+        StringBuilder tip = new StringBuilder();
+        if (level < 10) {
+            tip.append("Spar with other players — land hits and take a few too. Soft caps at 10 until you beat Piccolo in the skill saga.");
+        } else {
+            tip.append("Keep sparring. Piccolo opened the rest of the ladder — you can climb toward 30.");
         }
+        tip.append(" Progress to next: ").append(progress).append("/").append(required).append(".");
+        if (method != null && !method.isBlank()) {
+            tip.append(" Lately: ").append(formatPotentialMethod(method)).append(".");
+        }
+        tip(out, tip.toString());
     }
 
     private static void appendFlight(List<String> out, ServerPlayer player, Skills skills) {
@@ -201,36 +201,37 @@ public final class SkillUnlockService {
         int max = skillMax(skills, "fly", 10);
         if (level >= max && max > 0) {
             out.add("§bFlight§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-            how(out, "Stay airborne while flying to train flight time.");
+            tip(out, "You've mastered staying airborne.");
             return;
         }
         out.add("§bFlight§7: §f" + level + "/" + max);
-        how(out, "Stay airborne while flying to train flight time.");
         int next = level + 1;
         int needSec = FlightProgression.requiredSecondsForLevel(next);
-        if (needSec <= 0) {
-            return;
+        StringBuilder tip = new StringBuilder("Take off and stay in the air while flying — the longer you hold it, the stronger your Flight gets.");
+        if (needSec > 0) {
+            long progress = ProgressionData.storedGetLong(player, "fly_training_progress_to_level_" + next, 0L);
+            if (progress > needSec * 20L) {
+                progress = progress / 1000L;
+            }
+            if (progress > needSec) {
+                progress = needSec;
+            }
+            tip.append(" Air time toward next: ")
+                    .append(formatTime(progress)).append(" / ").append(formatTime(needSec)).append(".");
         }
-        long progress = ProgressionData.storedGetLong(player, "fly_training_progress_to_level_" + next, 0L);
-        // Live script stored ms historically; normalize to seconds when oversized.
-        if (progress > needSec * 20L) {
-            progress = progress / 1000L;
-        }
-        if (progress > needSec) {
-            progress = needSec;
-        }
-        out.add("§8  - §7Training §f" + formatTime(progress) + "§7/§f" + formatTime(needSec));
+        tip(out, tip.toString());
     }
 
     private static void appendMeditation(List<String> out, ServerPlayer player, Skills skills) {
         int level = skillLevel(skills, "meditation");
         int max = skillMax(skills, "meditation", 10);
+        StringBuilder tip = new StringBuilder();
         if (level >= max && max > 0) {
             out.add("§aMeditation§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-            how(out, "Charge Ki in the trial biome while meeting the trial (/progression meditation).");
+            tip.append("Your meditation practice is fully refined.");
         } else {
             out.add("§aMeditation§7: §f" + level + "/" + max);
-            how(out, "Charge Ki in the trial biome while meeting the trial (/progression meditation).");
+            tip.append("Sit and charge Ki in the trial biome. Match today's trial (/progression meditation) and let the calm build the skill.");
             int next = level + 1;
             int needSec = MeditationProgression.requiredSecondsForLevel(next);
             if (needSec > 0) {
@@ -239,72 +240,56 @@ public final class SkillUnlockService {
                 if (progress > needSec) {
                     progress = needSec;
                 }
-                out.add("§8  - §7Progress §f" + formatTime(progress) + "§7/§f" + formatTime(needSec));
+                tip.append(" Progress: ")
+                        .append(formatTime(progress)).append(" / ").append(formatTime(needSec)).append(".");
             }
         }
         String trial = MeditationProgression.currentTrialName();
         if (trial != null && !trial.isBlank()) {
             long rem = MeditationProgression.trialRemainingMs();
-            out.add("§8  - §7Trial §f" + trial + " §8(" + formatTime(rem / 1000L) + " left)");
+            tip.append(" Current trial: ").append(trial)
+                    .append(" (").append(formatTime(rem / 1000L)).append(" left).");
             String trialText = MeditationProgression.currentTrialGoal();
             if (trialText != null && !trialText.isBlank()) {
-                out.add("§8  - §7Trial: §f" + trialText);
+                tip.append(" ").append(trialText);
             }
         }
+        tip(out, tip.toString());
     }
 
     private static void appendSaga(List<String> out, Skills skills) {
         out.add("§6§lSaga Skills§r");
-        out.add("§8Unlock and level up via the skills saga.");
-        String tip = "Unlock and level up via the skills saga.";
-        appendSagaSkill(out, skills, "kicontrol", "Ki Control", "§3", 1, tip);
-        appendSagaSkill(out, skills, "kimanipulation", "Ki Manipulation", "§9", 10, tip);
-        appendSagaSkill(out, skills, "kisense", "Ki Sense", "§5", 10, tip);
-        // Same locked-saga format as Instant Transmission / Ki skills (script parity).
-        appendSagaSkill(out, skills, "defense_penetration", "Defense Penetration", "§c", 10, tip);
-        appendSagaSkill(out, skills, "healing_reduction", "Healing Reduction", "§4", 10, tip);
-        appendSagaSkill(out, skills, "instant_transmission", "Instant Transmission", "§d", 10, tip);
-        appendSagaSkill(out, skills, "ki_infusion", "Ki Infusion", "§b", 10, tip);
-        appendSagaSkill(out, skills, "kiboost", "Ki Boost", "§3", 4, tip);
-        appendSagaSkill(out, skills, "kiprotection", "Ki Protection", "§9", 10, tip);
-        appendSagaSkill(out, skills, "kaioken", "Kaioken", "§c", 5, tip);
-        appendSagaSkill(out, skills, "fusion", "Fusion", "§d", 5, tip);
+        out.add("§8Train with masters — unlock and raise these in the skills saga.");
+        appendSagaSkill(out, skills, "kicontrol", "Ki Control", "§3", 1);
+        appendSagaSkill(out, skills, "kimanipulation", "Ki Manipulation", "§9", 10);
+        appendSagaSkill(out, skills, "kisense", "Ki Sense", "§5", 10);
+        appendSagaSkill(out, skills, "defense_penetration", "Defense Penetration", "§c", 10);
+        appendSagaSkill(out, skills, "healing_reduction", "Healing Reduction", "§4", 10);
+        appendSagaSkill(out, skills, "instant_transmission", "Instant Transmission", "§d", 10);
+        appendSagaSkill(out, skills, "ki_infusion", "Ki Infusion", "§b", 10);
+        appendSagaSkill(out, skills, "kiboost", "Ki Boost", "§3", 4);
+        appendSagaSkill(out, skills, "kiprotection", "Ki Protection", "§9", 10);
+        appendSagaSkill(out, skills, "kaioken", "Kaioken", "§c", 5);
+        appendSagaSkill(out, skills, "fusion", "Fusion", "§d", 5);
     }
 
-    private static void appendLine(
+    private static void appendSagaSkill(
             List<String> out, Skills skills, String id, String name, String color, int fallbackMax
     ) {
         int level = skillLevel(skills, id);
         int max = skillMax(skills, id, fallbackMax);
-        if (level >= max && max > 0) {
-            out.add(color + name + "§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-        } else {
-            out.add(color + name + "§7: §f" + level + "/" + max);
-        }
-        String tip = howToLevel(id);
-        if (tip != null) {
-            how(out, tip);
-        }
-    }
-
-    private static void appendSagaSkill(
-            List<String> out, Skills skills, String id, String name, String color, int fallbackMax, String lockedHint
-    ) {
-        int level = skillLevel(skills, id);
-        int max = skillMax(skills, id, fallbackMax);
+        String human = sagaHow(id);
         if (level < 1) {
             out.add(color + name + "§7: §f0/" + max);
-            out.add("§8  - §7" + lockedHint);
+            tip(out, "Not unlocked yet. " + human);
             return;
         }
         if (level >= max) {
             out.add(color + name + "§7: §6§lMAX§r §7(" + level + "/" + max + ")");
+            tip(out, "Fully trained. " + human);
         } else {
             out.add(color + name + "§7: §f" + level + "/" + max);
-        }
-        String tip = howToLevel(id);
-        if (tip != null) {
-            how(out, tip);
+            tip(out, human);
         }
     }
 
@@ -315,40 +300,52 @@ public final class SkillUnlockService {
         int max = skillMax(skills, id, 10);
         if (level >= max) {
             out.add(color + name + "§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-            how(out, strengthHow(id));
+            tip(out, strengthHow(id, true, investedStr, 0));
             return;
         }
         int next = level + 1;
         int required = strengthRequirement(next);
-        out.add(color + name + "§7: §f" + level + "/" + max
-                + " §8· §7next §f" + next);
-        how(out, strengthHow(id));
-        out.add("§8  - §7Strength unlock §f" + required
-                + " §8· §7have §f" + investedStr
-                + (investedStr >= required ? " §a✓" : " §c✗"));
+        out.add(color + name + "§7: §f" + level + "/" + max);
+        tip(out, strengthHow(id, false, investedStr, required));
     }
 
-    private static void how(List<String> out, String tip) {
+    /** One human tip line per skill (no separate formula / How: rows). */
+    private static void tip(List<String> out, String tip) {
         if (tip == null || tip.isBlank()) {
             return;
         }
-        out.add("§8  - §7How: " + tip);
+        out.add("§8  - §7" + tip);
     }
 
-    private static String strengthHow(String id) {
-        if ("jump".equals(id) || "sprint".equals(id)) {
-            return "Strength unlocked (invested STR = total − race/class base).";
+    private static String strengthHow(String id, boolean maxed, int investedStr, int required) {
+        String skill = "jump".equals(id) ? "Jump" : "Sprint";
+        if (maxed) {
+            return skill + " is fully unlocked from the Strength you've invested.";
         }
-        return "Unlocked by invested Strength at the next threshold.";
+        if (investedStr >= required) {
+            return "You've invested enough Strength for the next " + skill
+                    + " rank — it should unlock as you keep training.";
+        }
+        int need = Math.max(0, required - investedStr);
+        return "Put more Strength into yourself to raise " + skill
+                + ". You need about " + need + " more invested Strength for the next rank"
+                + " (have " + investedStr + ").";
     }
 
-    private static String howToLevel(String id) {
+    private static String sagaHow(String id) {
         return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
-            case "kicontrol", "kimanipulation", "kisense",
-                 "defense_penetration", "healing_reduction",
-                 "instant_transmission", "ki_infusion", "kiboost", "kiprotection",
-                 "kaioken", "fusion" -> "Unlock and level up via the skills saga.";
-            default -> "Unlock and level up via the skills saga.";
+            case "kicontrol" -> "Learn Ki Control from the skills saga masters, then keep training with them to deepen it.";
+            case "kimanipulation" -> "Shape your Ki through master training in the skills saga.";
+            case "kisense" -> "Sharpen your sense for nearby Ki by progressing the skills saga.";
+            case "defense_penetration" -> "Earn Defense Penetration by finishing skills-saga challenges with the masters.";
+            case "healing_reduction" -> "Unlock Healing Reduction through the skills saga, then keep training it up.";
+            case "instant_transmission" -> "Masters in the skills saga teach Instant Transmission — complete their path to learn it.";
+            case "ki_infusion" -> "Infuse your strikes with Ki after unlocking it in the skills saga.";
+            case "kiboost" -> "Raise Ki Boost by training with the masters once the skills saga opens it.";
+            case "kiprotection" -> "Build Ki Protection through skills-saga master training.";
+            case "kaioken" -> "Kaioken comes from the skills saga — unlock it, then push the ranks with the masters.";
+            case "fusion" -> "Fusion is a skills-saga unlock — finish the master path, then train the ranks.";
+            default -> "Train with the masters in the skills saga to unlock and raise this.";
         };
     }
 
@@ -358,13 +355,13 @@ public final class SkillUnlockService {
         }
         if ("blocking".equalsIgnoreCase(method) || "taking_damage".equalsIgnoreCase(method)
                 || "getting_hit".equalsIgnoreCase(method)) {
-            return "taking damage";
+            return "taking hits";
         }
         if ("physical_hit".equalsIgnoreCase(method)) {
-            return "physical hit";
+            return "physical hits";
         }
         if ("ki_attack".equalsIgnoreCase(method)) {
-            return "ki attack";
+            return "ki attacks";
         }
         return method.replace('_', ' ');
     }

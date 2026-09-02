@@ -103,8 +103,15 @@ public final class CmiSkillsGui {
                 btn.lockField();
                 List<String> lore = new ArrayList<>();
                 lore.add("");
-                for (String line : skill) {
-                    lore.add(line);
+                if (skill != null && !skill.isEmpty()) {
+                    String levelLine = skill.get(0);
+                    int sep = Math.max(levelLine.indexOf("§7:"), levelLine.indexOf("&7:"));
+                    if (sep >= 0 && sep + 3 < levelLine.length()) {
+                        lore.add("&7" + levelLine.substring(sep + 3).trim());
+                    }
+                    for (int i = 1; i < skill.size(); i++) {
+                        lore.add(skill.get(i));
+                    }
                 }
                 boolean unlocked = skillUnlocked(skill);
                 lore.add("");

@@ -109,7 +109,17 @@ public final class SkillsChestGui implements Listener {
                 Material icon = GuiLoreChunks.skillIcon(name);
                 List<String> lore = new ArrayList<>();
                 lore.add("");
-                lore.addAll(skill);
+                // First line is the title — keep level/status only, then the single tip.
+                if (skill != null && !skill.isEmpty()) {
+                    String levelLine = skill.get(0);
+                    int sep = Math.max(levelLine.indexOf("§7:"), levelLine.indexOf("&7:"));
+                    if (sep >= 0 && sep + 3 < levelLine.length()) {
+                        lore.add("&7" + levelLine.substring(sep + 3).trim());
+                    }
+                    for (int i = 1; i < skill.size(); i++) {
+                        lore.add(skill.get(i));
+                    }
+                }
                 lore.add("");
                 lore.add(skillUnlocked(skill) ? "&aUnlocked" : "&cLocked / in progress");
                 put(holder, inv, slot, item(icon, name, lore));
