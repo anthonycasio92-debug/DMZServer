@@ -241,8 +241,8 @@ public final class DifficultyCommands {
         String returnPage = page;
         if (returnPage == null || returnPage.isBlank()) {
             returnPage = switch (act) {
-                case "down", "reset", "zero", "clear", "set", "lower_tier" -> "lower";
-                case "buy", "activate", "purchase_tier" -> "buy";
+                case "down", "reset", "zero", "clear", "set", "lower_tier",
+                     "buy", "activate", "purchase_tier" -> "tiers";
                 case "equip_title", "clear_title", "equip", "unequip_title" -> "titles";
                 default -> "main";
             };

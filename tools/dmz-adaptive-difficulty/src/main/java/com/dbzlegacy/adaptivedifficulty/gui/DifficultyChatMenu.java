@@ -50,13 +50,13 @@ public final class DifficultyChatMenu {
         }
         if (page == null || page.isBlank() || "main".equalsIgnoreCase(page)) {
             main(player);
-        } else if ("adjust".equalsIgnoreCase(page) || "change".equalsIgnoreCase(page)
-                || "set".equalsIgnoreCase(page) || "lower".equalsIgnoreCase(page)) {
-            lower(player);
-        } else if ("buy".equalsIgnoreCase(page) || "purchase".equalsIgnoreCase(page)
-                || "unlock".equalsIgnoreCase(page) || "tiers".equalsIgnoreCase(page)
-                || "enemies".equalsIgnoreCase(page) || "rewards".equalsIgnoreCase(page)) {
-            buy(player);
+        } else if ("tiers".equalsIgnoreCase(page) || "tier".equalsIgnoreCase(page)
+                || "buy".equalsIgnoreCase(page) || "purchase".equalsIgnoreCase(page)
+                || "unlock".equalsIgnoreCase(page) || "enemies".equalsIgnoreCase(page)
+                || "rewards".equalsIgnoreCase(page) || "adjust".equalsIgnoreCase(page)
+                || "change".equalsIgnoreCase(page) || "set".equalsIgnoreCase(page)
+                || "lower".equalsIgnoreCase(page)) {
+            tiers(player);
         } else if ("titles".equalsIgnoreCase(page) || "title".equalsIgnoreCase(page)) {
             titles(player);
         } else if ("team".equalsIgnoreCase(page) || "teams".equalsIgnoreCase(page)) {
@@ -117,9 +117,8 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_("§cWarning: §7Scaled mobs can attack other players as well"));
         send(player, Component.m_237113_(""));
         MutableComponent hub = Component.m_237113_("§7")
-                .m_7220_(btn("§a[Buy Tier]", "/difficulty do page buy", "Purchase a higher Unlock Tier"))
-                .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§f[Lower]", "/difficulty do page lower", "Select a lower unlocked tier"))
+                .m_7220_(btn("§e[Tiers]", "/difficulty do page tiers",
+                        "Buy higher · lower unlocked · reset to None"))
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§d[Titles]", "/difficulty do page titles", "Equip difficulty titles"));
         send(player, hub);
@@ -143,15 +142,15 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_("§8────────────────"));
     }
 
-    private static void buy(ServerPlayer player) {
+    private static void tiers(ServerPlayer player) {
         PlayerDifficultyData data = DifficultyCache.data(player);
         UnlockSystem.syncUnlocks(player, data);
         int level = DmzProgression.dmzLevelForProgression(player);
         int active = data.getActiveTier();
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8──────── §aBuy Higher Tier §8────────"));
+        send(player, Component.m_237113_("§8──────── §eDifficulty Tiers §8────────"));
         if (!data.isPersonalEnabled()) {
-            send(player, Component.m_237113_("§cPersonal difficulty is OFF — turn it ON on the main menu to buy."));
+            send(player, Component.m_237113_("§cPersonal difficulty is OFF — turn it ON on the main menu to change tiers."));
             send(player, btn("§7« Back", "/difficulty do page main", "Return"));
             return;
         }
@@ -159,66 +158,32 @@ public final class DifficultyChatMenu {
         send(player, Component.m_237113_("§7Current §f" + (active <= 0 ? "None" : ("T" + active))
                 + "  §8·  §7DMZ §f" + level
                 + "  §8·  §7Prestige §f" + prestige));
+        send(player, Component.m_237113_("§8Buy higher (coins) · lower unlocked (free) · reset to None."));
         send(player, Component.m_237113_("§8Unlock with §fDMZ level §8OR §fPrestige §8(either one). Costs scale with level."));
-        send(player, Component.m_237113_("§8Ancient Coins — pay-up OK (lower/higher coins OK), change returned."));
         send(player, Component.m_237113_("§f" + AncientCoinEconomy.inventoryBreakdown(player)));
         send(player, Component.m_237113_(""));
+        send(player, btn("§c[Reset to None]", "/difficulty do lower_tier 0 tiers", "Clear active tier"));
         for (UnlockTier tier : UnlockTier.values()) {
             long cost = AncientCoinEconomy.activationCost(tier, player);
             boolean unlocked = data.hasUnlockedTier(tier.id);
             boolean activeHere = active == tier.id;
+            boolean canLower = unlocked && tier.id < active;
             MutableComponent line = Component.m_237113_(
                     (activeHere ? "§a● " : unlocked ? "§e" : "§8")
-                            + "T" + tier.id + " " + tier.display
-                            + " §6" + AncientCoinEconomy.formatExactCost(cost));
+                            + "T" + tier.id + " " + tier.display);
             if (activeHere) {
                 line = line.m_7220_(Component.m_237113_(" §aCURRENT"));
-            } else if (unlocked) {
+            } else if (canLower) {
                 line = line.m_7220_(Component.m_237113_(" "))
-                        .m_7220_(btn("§a[BUY]", "/difficulty do activate " + tier.id + " buy",
+                        .m_7220_(btn("§f[LOWER]", "/difficulty do activate " + tier.id + " tiers",
+                                "Lower to Tier " + tier.id + " (free)"));
+            } else if (unlocked) {
+                line = line.m_7220_(Component.m_237113_(" §6" + AncientCoinEconomy.formatExactCost(cost) + " "))
+                        .m_7220_(btn("§a[BUY]", "/difficulty do activate " + tier.id + " tiers",
                                 "Pay Ancient Coins for Tier " + tier.id + " (pay-up OK, change returned)"));
             } else {
                 line = line.m_7220_(Component.m_237113_(
                         " §cLOCKED §8(" + tier.requirementTip() + ")"));
-            }
-            send(player, line);
-        }
-        send(player, Component.m_237113_(""));
-        send(player, btn("§7« Back", "/difficulty do page main", "Return"));
-    }
-
-    private static void lower(ServerPlayer player) {
-        PlayerDifficultyData data = DifficultyCache.data(player);
-        int active = data.getActiveTier();
-        send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8──────── §fLower Difficulty Tier §8────────"));
-        if (!data.isPersonalEnabled()) {
-            send(player, Component.m_237113_("§cPersonal difficulty is OFF — turn it ON on the main menu to change tiers."));
-            send(player, btn("§7« Back", "/difficulty do page main", "Return"));
-            return;
-        }
-        send(player, Component.m_237113_("§7Current §f" + (active <= 0 ? "None" : ("T" + active + " "
-                + (UnlockTier.byId(active) == null ? "" : UnlockTier.byId(active).display)))));
-        send(player, Component.m_237113_("§8Select a lower unlocked tier, or reset to None."));
-        send(player, Component.m_237113_(""));
-        send(player, btn("§c[Reset to None]", "/difficulty do lower_tier 0 lower", "Clear active tier"));
-        for (UnlockTier tier : UnlockTier.values()) {
-            boolean owned = data.hasUnlockedTier(tier.id);
-            boolean isCurrent = active == tier.id;
-            boolean canLower = owned && tier.id < active;
-            MutableComponent line = Component.m_237113_(
-                    (isCurrent ? "§a● " : canLower ? "§e" : "§8")
-                            + "T" + tier.id + " " + tier.display);
-            if (isCurrent) {
-                line = line.m_7220_(Component.m_237113_(" §aCURRENT"));
-            } else if (canLower) {
-                line = line.m_7220_(Component.m_237113_(" "))
-                        .m_7220_(btn("§f[SELECT]", "/difficulty do lower_tier " + tier.id + " lower",
-                                "Lower active difficulty to Tier " + tier.id));
-            } else if (!owned) {
-                line = line.m_7220_(Component.m_237113_(" §cNOT OWNED"));
-            } else {
-                line = line.m_7220_(Component.m_237113_(" §8HIGHER — use Buy"));
             }
             send(player, line);
         }

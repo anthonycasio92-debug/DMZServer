@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.154", 'VERSION = "2.3.154"' in mod)
+    check("VERSION 2.3.155", 'VERSION = "2.3.155"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -518,8 +518,11 @@ def main() -> int:
     skills = read(gui_root / "SkillsChestGui.java")
     check("Difficulty unavailable close @35",
           'put(holder, inv, 35, closeBtn()' in diff_chest)
-    check("Difficulty Lower header IRON_INGOT",
-          'Material.IRON_INGOT, "&f&lLower Tier"' in diff_chest)
+    check("Difficulty Tiers header GOLD_INGOT",
+          'Material.GOLD_INGOT, "&e&lDifficulty Tiers"' in diff_chest)
+    check("Difficulty hub single Tiers page",
+          'SlotAction.page("tiers")' in diff_chest
+          and 'SlotAction.page("lower")' not in diff_chest)
     check("Difficulty Clear Title not BARRIER",
           'Material.NAME_TAG, "&cClear Title"' in diff_chest)
     check("Prestige wallet GOLD_INGOT",

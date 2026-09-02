@@ -664,7 +664,7 @@ public final class PrestigePointsSystem {
         ));
         return "§aPermanent unlock §fT" + tierId + " " + tier.display
                 + " §7(§e-" + cost + " §7point" + (cost == 1 ? "" : "s") + ")"
-                + "\n§7Survives prestige · still activate with Ancient Coins via §f/difficulty §7Buy Tier"
+                + "\n§7Survives prestige · still activate with Ancient Coins via §f/difficulty §7Tiers"
                 + "\n§7Points left: §e" + getPoints(player);
     }
 
@@ -690,7 +690,7 @@ public final class PrestigePointsSystem {
         }
         return "§aGranted permanent difficulty tiers §fT1–T" + tierId
                 + " §8(" + player.m_6302_() + ")"
-                + "\n§7Activate via §f/difficulty §7Buy Tier (Ancient Coins).";
+                + "\n§7Activate via §f/difficulty §7Tiers (Ancient Coins).";
     }
 
     /**

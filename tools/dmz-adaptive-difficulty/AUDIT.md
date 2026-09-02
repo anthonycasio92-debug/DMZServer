@@ -1,3 +1,9 @@
+## Unified Difficulty Tiers menu (2.3.155)
+
+Buy Tier and Lower Tier are one **Tiers** menu: buy higher, lower unlocked, or reset
+to None. Hub shows Tiers + Titles (no separate Lower). Legacy `/difficulty buy|lower`
+aliases open the same page.
+
 ## Difficulty titles: no tier regress + presence (2.3.154)
 
 Tier titles unlock from **DMZ level or Prestige** (not the active difficulty tier), so

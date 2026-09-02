@@ -199,7 +199,7 @@
       ],
       "footer": [
         "&8Requires permanent T1–T{prev} from this shop",
-        "&8Then activate with Ancient Coins via /difficulty → Buy Tier"
+        "&8Then activate with Ancient Coins via /difficulty → Tiers"
       ]
     },
     "turnin": {
@@ -301,18 +301,11 @@
   },
   "difficulty": {
     "main": {
-      "buy": {
-        "name": "&eBuy Tier",
+      "tiers": {
+        "name": "&eTiers",
         "lore": [
-          "&7Purchase a higher Unlock Tier",
-          "&8Costs Ancient Coins change is returned"
-        ]
-      },
-      "lower": {
-        "name": "&fLower Tier",
-        "lore": [
-          "&7Select a lower unlocked tier",
-          "&8Or reset to None · always free"
+          "&7Buy higher · lower unlocked · reset",
+          "&8Ancient Coins · pay-up OK · change returned"
         ]
       },
       "titles": {
@@ -375,46 +368,24 @@
         ]
       }
     },
-    "buy": {
+    "tiers": {
       "info": {
-        "name": "&e&lBuy Higher Tier",
+        "name": "&e&lDifficulty Tiers",
         "lore": [
-          "&7Unlock ability to purchase with DMZ level, current prestige, or permanent prestige unlocks",
-          "&8Costs scale with level"
-        ]
-      },
-      "nav_lower": {
-        "name": "&fLower Tier",
-        "lore": [
-          "&7Select a lower unlocked tier"
-        ]
-      },
-      "tier": {
-        "name": "&eBuy T{tier}"
-      }
-    },
-    "lower": {
-      "info": {
-        "name": "&f&lLower Tier",
-        "lore": [
-          "&7Select a lower unlocked tier"
+          "&7Click a higher unlocked tier to buy",
+          "&7Click a lower unlocked tier to step down (free)",
+          "&8Unlock with DMZ level or Prestige"
         ]
       },
       "reset": {
         "name": "&cReset to None",
         "lore": [
-          "&7Clear active tier"
+          "&7Clear active tier",
+          "&8Unlocks & coins kept",
+          "&8Always free"
         ]
       },
-      "nav_buy": {
-        "name": "&eBuy Tier",
-        "lore": [
-          "&7Purchase a higher Unlock Tier"
-        ]
-      },
-      "tier": {
-        "name": "&fLower to T{tier}"
-      }
+      "tier": {}
     },
     "titles": {
       "header": {

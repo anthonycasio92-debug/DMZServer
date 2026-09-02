@@ -1889,7 +1889,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 }
                 return true;
             }
-            case "buy", "purchase", "unlock", "lower", "adjust", "titles", "title",
+            case "buy", "purchase", "unlock", "lower", "adjust", "tiers", "tier", "titles", "title",
                  "team", "teams", "stats", "details" -> {
                 if (!(sender instanceof Player player)) {
                     sender.sendMessage("Players only.");
@@ -1900,8 +1900,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     return true;
                 }
                 String page = switch (sub) {
-                    case "purchase", "unlock" -> "buy";
-                    case "adjust" -> "lower";
+                    case "purchase", "unlock", "buy", "lower", "adjust", "tier" -> "tiers";
                     case "title" -> "titles";
                     case "teams" -> "team";
                     case "details" -> "stats";

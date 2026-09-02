@@ -472,10 +472,10 @@ public final class CmiPrestigeGui {
             if (!owned && t > 1) {
                 lore.addAll(GuiTooltips.lore("prestige.tiers.footer",
                         List.of("&8Requires permanent T1–T" + (t - 1) + " from this shop",
-                                "&8Then activate with Ancient Coins via /difficulty → Buy Tier"),
+                                "&8Then activate with Ancient Coins via /difficulty → Tiers"),
                         tierVars));
             } else {
-                lore.add("&8Then activate with Ancient Coins via /difficulty → Buy Tier");
+                lore.add("&8Then activate with Ancient Coins via /difficulty → Tiers");
             }
             btn.addLore(lore);
             if (canBuy) {

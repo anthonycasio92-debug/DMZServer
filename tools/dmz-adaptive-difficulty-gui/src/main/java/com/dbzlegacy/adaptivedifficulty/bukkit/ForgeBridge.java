@@ -14,7 +14,7 @@ import org.bukkit.entity.Player;
 
 /**
  * Reflects into the Forge mod for live values / actions (Mohist shared JVM).
- * Surface: hub status, Buy Tier (UnlockTier 1–7), Lower/Reset, Team (WIP), character_reset.
+ * Surface: hub status, Tiers (UnlockTier 1–7 buy/lower/reset), Team (WIP), character_reset.
  */
 public final class ForgeBridge {
     private static final long PLACEHOLDER_TTL_MS = 200L;
@@ -2168,8 +2168,8 @@ public final class ForgeBridge {
         String act = action == null ? "" : action.toLowerCase(Locale.ROOT);
         return switch (act) {
             case "page" -> arg == null || arg.isBlank() ? "main" : arg.toLowerCase(Locale.ROOT);
-            case "down", "reset", "zero", "clear", "set", "lower_tier" -> "lower";
-            case "buy", "activate", "purchase_tier" -> "buy";
+            case "down", "reset", "zero", "clear", "set", "lower_tier",
+                 "buy", "activate", "purchase_tier" -> "tiers";
             case "equip_title", "clear_title", "equip", "unequip_title" -> "titles";
             case "toggle_personal", "personal", "toggle_difficulty", "difficulty_toggle",
                  "toggle_coin_chat", "coin_chat", "toggle_chat", "chat_drops" -> "main";

@@ -244,8 +244,8 @@ public final class DifficultyActions {
         }
         if ("up".equals(act) || "upgrade".equals(act) || "set_max".equals(act)
                 || "down".equals(act) || "set".equals(act)) {
-            openGui(player, page == null || page.isBlank() ? "buy" : page);
-            return Result.fail("Difficulty points were removed — buy or lower Unlock Tiers instead.");
+            openGui(player, page == null || page.isBlank() ? "tiers" : page);
+            return Result.fail("Difficulty points were removed — use Unlock Tiers instead.");
         }
         if (ACT_CHARACTER_RESET.equals(act) || "char_reset".equals(act) || "characterreset".equals(act)) {
             return characterReset(player, page);
@@ -391,7 +391,7 @@ public final class DifficultyActions {
         }
         UnlockSystem.syncUnlocks(player, data);
         UnlockTier tier = UnlockTier.byId(tierId);
-        String returnPage = page == null || page.isBlank() ? "buy" : page;
+        String returnPage = page == null || page.isBlank() ? "tiers" : page;
         if (tier == null) {
             openGui(player, returnPage);
             return Result.fail("Unknown tier. Use 1–7.");
@@ -461,7 +461,7 @@ public final class DifficultyActions {
     }
 
     private static Result lowerTier(ServerPlayer player, int tierId, String page) {
-        String returnPage = page == null || page.isBlank() ? "lower" : page;
+        String returnPage = page == null || page.isBlank() ? "tiers" : page;
         if (tierId <= 0) {
             return resetActive(player, returnPage);
         }
@@ -472,7 +472,7 @@ public final class DifficultyActions {
             return Result.fail("Unknown tier. Use 1–7.");
         }
         if (tier.id > data.getActiveTier()) {
-            openGui(player, "buy");
+            openGui(player, "tiers");
             return Result.fail("Buy a higher tier to raise difficulty.");
         }
         boolean reliable = DmzProgression.hasReliableUnlockGateSample(player);
