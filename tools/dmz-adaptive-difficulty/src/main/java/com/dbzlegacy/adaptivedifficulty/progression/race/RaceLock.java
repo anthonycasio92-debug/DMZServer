@@ -115,6 +115,12 @@ public final class RaceLock {
 
             String cmd = "dmzstats reset " + player.m_7755_().getString() + " 0 false";
             dispatchConsole(player.m_20194_(), cmd);
+            // Prestige-invested skill floors / Majin / Mutant must survive race lock reset.
+            try {
+                com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                        .scheduleReapplyAfterDeath(player);
+            } catch (Throwable ignored) {
+            }
             // Script: clear stuck saga difficulty as soon as reset is issued.
             clearStuckSagaDifficulty(player, data, true);
             SystemTelemetry.log("progression", "race_lock_reset", player, null,

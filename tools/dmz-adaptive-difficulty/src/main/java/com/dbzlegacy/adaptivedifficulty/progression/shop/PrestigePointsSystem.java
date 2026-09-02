@@ -14,7 +14,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -334,7 +337,7 @@ public final class PrestigePointsSystem {
             return "§cUsage: skill <player> <skillId> <set|add|remove> <levels>"
                     + "\n§8Example: skill Steve potentialunlock add 2";
         }
-        ProgressionData.storedPut(player, KEY_SKILL_PREFIX + offer.id, next);
+        ProgressionData.storedPut(player, KEY_SKILL_PREFIX + offer.id.toLowerCase(Locale.ROOT), next);
         Skills skills = DmzSkillUtil.skills(player);
         int liveBefore = 0;
         int liveAfter = 0;
@@ -436,7 +439,7 @@ public final class PrestigePointsSystem {
         int gain = Math.min(levelsPerPoint, room);
         setPoints(player, points - SKILL_POINT_COST);
         int nextPurchased = Math.min(floorMax, purchased + gain);
-        ProgressionData.storedPut(player, KEY_SKILL_PREFIX + offer.id, nextPurchased);
+        ProgressionData.storedPut(player, KEY_SKILL_PREFIX + offer.id.toLowerCase(Locale.ROOT), nextPurchased);
 
         // Raise live skill only when below the new floor; never block the floor buy.
         int liveBefore = 0;
@@ -476,22 +479,79 @@ public final class PrestigePointsSystem {
         return 1;
     }
 
+    /** True when the player owns any prestige-shop skill floor ({@code pp_skill_*}). */
+    public static boolean hasAnyPurchasedSkillFloor(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        try {
+            CompoundTag tag = ProgressionData.stored(player);
+            for (String key : tag.m_128431_()) {
+                if (key != null && key.startsWith(KEY_SKILL_PREFIX)
+                        && ProgressionData.storedGetLong(player, key, 0L) > 0L) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        for (SkillOffer offer : skillOffers()) {
+            if (getPurchasedSkillLevels(player, offer.id) > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Re-apply purchased skill floors after prestige reset / on login. */
     public static void reapplySkillBonuses(ServerPlayer player) {
         if (player == null) {
             return;
         }
         Skills skills = DmzSkillUtil.skills(player);
-        if (skills != null) {
-            boolean changed = false;
-            // Shop catalog + any legacy purchased ids still stored on the player.
-            LinkedHashMap<String, SkillOffer> apply = new LinkedHashMap<>();
-            for (SkillOffer offer : skillOffers()) {
-                apply.put(offer.id, offer);
-                SKILL_OFFERS.put(offer.id, offer);
+        if (skills == null) {
+            // DMZ Character / skills bag often missing right after prestige or reset —
+            // keep the pulse window open so floors apply once the bag attaches.
+            if (hasAnyPurchasedSkillFloor(player)) {
+                long minUntil = System.currentTimeMillis() + 5_000L;
+                long until = ProgressionData.tempGetLong(player, KEY_REAPPLY_AT, 0L);
+                if (until < minUntil) {
+                    ProgressionData.tempPut(player, KEY_REAPPLY_AT, minUntil);
+                }
             }
-            for (String id : DmzSkillUtil.allNonFormSkillIds()) {
-                if (apply.containsKey(id)) {
+            reapplyForms(player);
+            reapplyTierUnlocks(player);
+            return;
+        }
+        boolean changed = false;
+        // Shop catalog + any legacy purchased ids still stored on the player.
+        LinkedHashMap<String, SkillOffer> apply = new LinkedHashMap<>();
+        for (SkillOffer offer : skillOffers()) {
+            apply.put(offer.id, offer);
+            SKILL_OFFERS.put(offer.id, offer);
+        }
+        for (String id : DmzSkillUtil.allNonFormSkillIds()) {
+            if (apply.containsKey(id)) {
+                continue;
+            }
+            int purchased = getPurchasedSkillLevels(player, id);
+            if (purchased <= 0) {
+                continue;
+            }
+            int max = DmzSkillUtil.configuredMaxLevel(id);
+            if (max <= 0) {
+                max = Math.max(purchased, 10);
+            }
+            apply.put(id, new SkillOffer(id, DmzSkillUtil.prettySkillLabel(id), max));
+        }
+        // Also cover any pp_skill_* keys that left the live catalog.
+        try {
+            CompoundTag tag = ProgressionData.stored(player);
+            for (String key : tag.m_128431_()) {
+                if (key == null || !key.startsWith(KEY_SKILL_PREFIX)) {
+                    continue;
+                }
+                String id = key.substring(KEY_SKILL_PREFIX.length()).toLowerCase(Locale.ROOT);
+                if (id.isBlank() || apply.containsKey(id)) {
                     continue;
                 }
                 int purchased = getPurchasedSkillLevels(player, id);
@@ -504,23 +564,24 @@ public final class PrestigePointsSystem {
                 }
                 apply.put(id, new SkillOffer(id, DmzSkillUtil.prettySkillLabel(id), max));
             }
-            for (SkillOffer offer : apply.values()) {
-                int purchased = getPurchasedSkillLevels(player, offer.id);
-                if (purchased <= 0) {
-                    continue;
-                }
-                DmzSkillUtil.ensureRegistered(skills, offer.id, offer.maxLevel);
-                int current = DmzSkillUtil.level(skills, offer.id);
-                int max = Math.max(offer.maxLevel, DmzSkillUtil.maxLevel(skills, offer.id, offer.maxLevel));
-                int target = Math.min(max, Math.max(current, purchased));
-                if (target > current) {
-                    DmzSkillUtil.setLevel(skills, offer.id, target);
-                    changed = true;
-                }
+        } catch (Throwable ignored) {
+        }
+        for (SkillOffer offer : apply.values()) {
+            int purchased = getPurchasedSkillLevels(player, offer.id);
+            if (purchased <= 0) {
+                continue;
             }
-            if (changed) {
-                DmzSkillUtil.sync(player);
+            DmzSkillUtil.ensureRegistered(skills, offer.id, offer.maxLevel);
+            int current = DmzSkillUtil.level(skills, offer.id);
+            int max = Math.max(offer.maxLevel, DmzSkillUtil.maxLevel(skills, offer.id, offer.maxLevel));
+            int target = Math.min(max, Math.max(current, purchased));
+            if (target > current) {
+                DmzSkillUtil.setLevel(skills, offer.id, target);
+                changed = true;
             }
+        }
+        if (changed) {
+            DmzSkillUtil.sync(player);
         }
         reapplyForms(player);
         reapplyTierUnlocks(player);
@@ -954,15 +1015,23 @@ public final class PrestigePointsSystem {
 
     private static final String KEY_REAPPLY_AT = "pp_reapply_at_ms";
     private static final String KEY_FORM_PULSE_AT = "pp_form_pulse_at_ms";
+    private static final String KEY_SKILL_PULSE_AT = "pp_skill_pulse_at_ms";
     /** Match old Fabled Passive interval that re-gave majin/mutant when missing. */
     private static final long FORM_PULSE_MS = 5000L;
+    /**
+     * Keep prestige skill floors live after {@code dmzstats reset} / Character rebuild.
+     * DMZ can wipe skills well after the short post-reset window.
+     */
+    private static final long SKILL_FLOOR_PULSE_MS = 5000L;
+    /** Post-prestige / death / race-lock: keep forcing floors until this deadline. */
+    private static final long REAPPLY_WINDOW_MS = 30_000L;
 
     public static void onLogin(ServerPlayer player) {
         if (player == null) {
             return;
         }
-        // Stagger reapply so DMZ / Fabled finish loading.
-        ProgressionData.tempPut(player, KEY_REAPPLY_AT, System.currentTimeMillis() + 2000L);
+        // Stagger reapply so DMZ / Fabled finish loading (Character attach can lag).
+        ProgressionData.tempPut(player, KEY_REAPPLY_AT, System.currentTimeMillis() + 12_000L);
         reapplyAllShopPurchases(player);
     }
 
@@ -973,7 +1042,7 @@ public final class PrestigePointsSystem {
     /**
      * After death respawn (or prestige reset), re-apply every prestige-shop purchase:
      * skill floors, permanent difficulty tiers, Majin/Mutant, and breakthrough soft-lock.
-     * Immediate + next-tick + pulse window cover DMZ skill rebuild races.
+     * Immediate + next-tick + delayed ticks + pulse window cover DMZ skill rebuild races.
      */
     public static void scheduleReapplyAfterDeath(ServerPlayer player) {
         if (player == null) {
@@ -981,13 +1050,13 @@ public final class PrestigePointsSystem {
         }
         long now = System.currentTimeMillis();
         // Pulse path: keep reapplying until this deadline (skills/forms/tiers).
-        ProgressionData.tempPut(player, KEY_REAPPLY_AT, now + 8000L);
+        ProgressionData.tempPut(player, KEY_REAPPLY_AT, now + REAPPLY_WINDOW_MS);
         reapplyAllShopPurchases(player);
         MinecraftServer server = player.m_20194_();
         if (server == null) {
             return;
         }
-        final java.util.UUID id = player.m_20148_();
+        final UUID id = player.m_20148_();
         // Next-tick pass after DMZ finishes respawn rebuild (UUID — clone/original share id).
         server.execute(() -> {
             ServerPlayer p = server.m_6846_().m_11259_(id);
@@ -995,6 +1064,19 @@ public final class PrestigePointsSystem {
                 reapplyAllShopPurchases(p);
             }
         });
+        // dmzstats reset / Character rebuild often finishes seconds later — retry like level pull.
+        for (int delay : new int[] {20, 40, 80, 160, 300, 600}) {
+            final int ticks = delay;
+            try {
+                server.m_6937_(new TickTask(server.m_129921_() + ticks, () -> {
+                    ServerPlayer p = server.m_6846_().m_11259_(id);
+                    if (p != null && p.m_6084_()) {
+                        reapplyAllShopPurchases(p);
+                    }
+                }));
+            } catch (Throwable ignored) {
+            }
+        }
     }
 
     /**
@@ -1014,7 +1096,7 @@ public final class PrestigePointsSystem {
         }
     }
 
-    /** Called from shop pulse — drains delayed reapply markers + keeps forms live. */
+    /** Called from shop pulse — drains delayed reapply markers + keeps forms/skills live. */
     public static void pulsePlayer(ServerPlayer player, long nowMs) {
         if (player == null) {
             return;
@@ -1026,6 +1108,17 @@ public final class PrestigePointsSystem {
             reapplyAllShopPurchases(player);
             if (nowMs >= at) {
                 ProgressionData.tempRemove(player, KEY_REAPPLY_AT);
+            }
+        }
+        // Prestige skill floors must survive late Character rebuilds after the window.
+        if (hasAnyPurchasedSkillFloor(player)) {
+            long nextSkill = ProgressionData.tempGetLong(player, KEY_SKILL_PULSE_AT, 0L);
+            if (nextSkill <= 0L || nowMs >= nextSkill) {
+                ProgressionData.tempPut(player, KEY_SKILL_PULSE_AT, nowMs + SKILL_FLOOR_PULSE_MS);
+                // Skip duplicate work when the intensive reapply window is already open.
+                if (at <= 0L || nowMs >= at) {
+                    reapplySkillBonuses(player);
+                }
             }
         }
         // Fabled Permanent Majin/Mutant skills are gone — LM must keep dmzeffect applied.

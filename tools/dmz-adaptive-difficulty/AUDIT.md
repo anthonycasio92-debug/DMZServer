@@ -1,3 +1,10 @@
+## Prestige skill floors reapply after reset (2.3.157)
+
+Prestige-shop skill floors (`pp_skill_*`) now keep applying after prestige,
+death, race-lock reset, and late DMZ Character rebuilds: longer post-reset
+window, delayed tick retries, continuous ~5s floor pulse (like Majin/Mutant),
+and race-lock `dmzstats reset` schedules reapply.
+
 ## Skill Check tips + Potential Piccolo gate (2.3.156)
 
 Skill Check / Skills tooltips drop formula “How:” rows — one human-written tip per

@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.156", 'VERSION = "2.3.156"' in mod)
+    check("VERSION 2.3.157", 'VERSION = "2.3.157"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -1254,6 +1254,15 @@ def main() -> int:
           "skill/forms shop" in hub_pp and "skill/forms shop" in cmi_hub_pp)
     check("Papi prestige_points bridge",
           "prestige_points" in forge_bridge and "prestige_level_cap" in forge_bridge)
+    check("Prestige skill floor continuous pulse",
+          "SKILL_FLOOR_PULSE_MS" in pp and "KEY_SKILL_PULSE_AT" in pp
+          and "hasAnyPurchasedSkillFloor" in pp)
+    check("Prestige reapply delayed ticks after reset",
+          "REAPPLY_WINDOW_MS" in pp and "TickTask" in pp
+          and "scheduleReapplyAfterDeath" in pp)
+    check("Race lock reset schedules prestige reapply",
+          "scheduleReapplyAfterDeath" in read(
+              SRC / "com/dbzlegacy/adaptivedifficulty/progression/race/RaceLock.java"))
 
     print("\n=== End Dragon AD summon (2.3.65) ===")
     end_str = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/end/EndDimensionStrength.java")
