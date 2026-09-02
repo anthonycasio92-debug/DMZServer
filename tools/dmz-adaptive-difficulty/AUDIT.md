@@ -1,3 +1,9 @@
+## Rival list status order + underdog any status (2.3.142)
+
+GUI/list order: Nemesis → Mutual → Declared → Silent (RP desc within group).
+Underdog engage/win TP applies for any rival you declared (including Mutual/Nemesis)
+when they are stronger — not one-sided Silent only.
+
 ## Mutual slot replace picker (2.3.141)
 
 At max Mutuals (2), Accept opens a picker to choose which Mutual to replace

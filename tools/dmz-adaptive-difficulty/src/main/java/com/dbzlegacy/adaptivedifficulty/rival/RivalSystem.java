@@ -666,8 +666,7 @@ public final class RivalSystem {
         }
         lines.add("§6§lYour Rivals");
         List<Map.Entry<String, RivalLink>> entries = new ArrayList<>(me.rivals.entrySet());
-        entries.sort(Comparator.comparingDouble((Map.Entry<String, RivalLink> e) ->
-                e.getValue() == null ? 0.0 : e.getValue().points).reversed());
+        entries.sort(rivalListOrder());
         for (Map.Entry<String, RivalLink> e : entries) {
             RivalLink link = e.getValue();
             if (link == null) {
@@ -845,8 +844,12 @@ public final class RivalSystem {
         }
         MinecraftServer server = player.m_20194_();
         List<Map.Entry<String, RivalLink>> entries = new ArrayList<>(map.entrySet());
-        entries.sort(Comparator.comparingDouble((Map.Entry<String, RivalLink> e) ->
-                e.getValue() == null ? 0.0 : e.getValue().points).reversed());
+        if (past) {
+            entries.sort(Comparator.comparingDouble((Map.Entry<String, RivalLink> e) ->
+                    e.getValue() == null ? 0.0 : e.getValue().points).reversed());
+        } else {
+            entries.sort(rivalListOrder());
+        }
         for (Map.Entry<String, RivalLink> e : entries) {
             RivalLink link = e.getValue();
             if (link == null) {
@@ -898,6 +901,34 @@ public final class RivalSystem {
 
     private static String nullToEmpty(String s) {
         return s == null ? "" : s;
+    }
+
+    /**
+     * GUI / chat list order: Nemesis → Mutual → Declared → Silent, then RP desc within group.
+     * Pending stays off the main list (Pending Invites page).
+     */
+    private static Comparator<Map.Entry<String, RivalLink>> rivalListOrder() {
+        return Comparator
+                .comparingInt((Map.Entry<String, RivalLink> e) -> statusListRank(e.getValue()))
+                .thenComparing((Map.Entry<String, RivalLink> a, Map.Entry<String, RivalLink> b) ->
+                        Double.compare(
+                                b.getValue() == null ? 0.0 : b.getValue().points,
+                                a.getValue() == null ? 0.0 : a.getValue().points));
+    }
+
+    private static int statusListRank(RivalLink link) {
+        if (link == null) {
+            return 90;
+        }
+        RivalStatus st = link.status();
+        return switch (st) {
+            case NEMESIS -> 0;
+            case MUTUAL -> 1;
+            case DECLARED -> 2;
+            case UNKNOWN -> 3;
+            case PENDING -> 4;
+            case NONE -> 5;
+        };
     }
 
     public static List<String> statsLines(ServerPlayer player) {

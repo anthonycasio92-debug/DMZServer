@@ -181,13 +181,14 @@ public final class RivalProximity {
 
         if (victimIsPlayer) {
             RivalLink direct = record.rivals.get(victimUuid);
-            if (direct != null && direct.declaredByMe && !direct.mutual) {
+            // Underdog win: you rivaled them and they are stronger (any status).
+            if (direct != null && direct.declaredByMe) {
                 double victimReleased = DmzRewards.releasedBattlePower((ServerPlayer) victim);
                 if (victimReleased > killerReleased) {
                     float tp = RivalTpCurve.scale(killer, RivalConstants.UNDERDOG_WIN_TP, "burst");
                     DmzRewards.awardTp(killer, tp, "Underdog victory vs " + direct.name, true, "§6[Rival] ");
                     SystemTelemetry.log("rival", "underdog_win", killer, (ServerPlayer) victim,
-                            SystemTelemetry.fields("tp", tp));
+                            SystemTelemetry.fields("tp", tp, "status", direct.status().id()));
                 }
             }
         }
@@ -256,7 +257,7 @@ public final class RivalProximity {
         }
     }
 
-    /** Underdog engage when one-sided declarer fights a stronger rival. */
+    /** Underdog engage when you rival a stronger player (any status you declared). */
     public static void tryUnderdogEngage(ServerPlayer underdog, ServerPlayer stronger) {
         if (!DifficultyConfig.get().enableRivalSystem || underdog == null || stronger == null) {
             return;
@@ -267,7 +268,8 @@ public final class RivalProximity {
         }
         RivalPlayerRecord record = RivalStore.get().ensurePlayer(underdog);
         RivalLink link = record.rivals.get(stronger.m_20148_().toString());
-        if (link == null || !link.declaredByMe || link.mutual) {
+        // Benefits require declaredByMe — Silent / Declared / Mutual / Nemesis all count.
+        if (link == null || !link.declaredByMe) {
             return;
         }
         double myReleased = DmzRewards.releasedBattlePower(underdog);
@@ -285,7 +287,7 @@ public final class RivalProximity {
         float tp = RivalTpCurve.scale(underdog, RivalConstants.UNDERDOG_ENGAGE_TP, "drip");
         DmzRewards.awardTp(underdog, tp, "Engaging rival", record.tpMessages, "§6[Rival] ");
         SystemTelemetry.log("rival", "underdog_engage", underdog, stronger,
-                SystemTelemetry.fields("tp", tp));
+                SystemTelemetry.fields("tp", tp, "status", link.status().id()));
     }
 
     public static void handleDamagedByRival(ServerPlayer victim, ServerPlayer attacker) {
