@@ -67,6 +67,8 @@ public final class SparChestGui implements Listener {
         } else if ("pick_decline".equals(p)) {
             inv = pendingPicker(viewer, subject, "mentor_decline", "pending",
                     "&cDecline Invite", "&7Decline this mentor invite", false);
+        } else if ("pick_release".equals(p)) {
+            inv = releasePicker(viewer, subject);
         } else if ("help".equals(p)) {
             inv = main(viewer, subject);
         } else if ("admin".equals(p)) {
@@ -269,10 +271,16 @@ public final class SparChestGui implements Listener {
         boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));
         String mentorName = blank(ph.get("mentor_name"), "?");
         String apprenticeName = blank(ph.get("apprentice_name"), "?");
+        int appCount = 0;
+        try {
+            appCount = Integer.parseInt(ph.getOrDefault("apprentice_count", "0"));
+        } catch (NumberFormatException ignored) {
+            appCount = 0;
+        }
         if (hasMentor) {
             put(holder, inv, 24, tipBtn(viewer, "spar.mentor.leave", Material.RED_DYE, "&cLeave mentor",
                     List.of("&7End bond with &f" + mentorName,
-                            "&87-day cooldown after leaving"),
+                            "&812-hour cooldown after leaving"),
                     Map.of("name", mentorName)),
                     SlotAction.act("mentor_leave", "0", "mentor"));
         } else {
@@ -280,11 +288,21 @@ public final class SparChestGui implements Listener {
                     List.of("&7You have no mentor"), Map.of("name", mentorName)));
         }
         if (hasApprentice) {
-            put(holder, inv, 25, tipBtn(viewer, "spar.mentor.release", Material.ORANGE_DYE, "&6Release apprentice",
-                    List.of("&7End bond with &f" + apprenticeName,
-                            "&87-day cooldown after releasing"),
-                    Map.of("name", apprenticeName)),
-                    SlotAction.act("mentor_release", "0", "mentor"));
+            if (appCount > 1) {
+                put(holder, inv, 25, tipBtn(viewer, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
+                        List.of("&7Dojo &f" + appCount + " &7apprentices",
+                                "&f" + apprenticeName,
+                                "&7Pick who to release",
+                                "&812-hour cooldown after releasing"),
+                        Map.of("name", apprenticeName)),
+                        SlotAction.page("pick_release"));
+            } else {
+                put(holder, inv, 25, tipBtn(viewer, "spar.mentor.release", Material.ORANGE_DYE, "&6Release apprentice",
+                        List.of("&7End bond with &f" + apprenticeName,
+                                "&812-hour cooldown after releasing"),
+                        Map.of("name", apprenticeName)),
+                        SlotAction.act("mentor_release", "0", "mentor"));
+            }
         } else {
             put(holder, inv, 25, tipBtn(viewer, "spar.mentor.release", Material.GRAY_DYE, "&8Release apprentice",
                     List.of("&7You have no apprentice"), Map.of("name", apprenticeName)));
@@ -401,6 +419,47 @@ public final class SparChestGui implements Listener {
         return inv;
     }
 
+    /** Release picker — current dojo apprentices only. */
+    private Inventory releasePicker(Player viewer, Player subject) {
+        Holder holder = new Holder("pick_release");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Release Apprentice"));
+        holder.bind(inv);
+        frame(inv, 45);
+        List<String> cards = ForgeBridge.sparApprenticeCards(subject);
+        List<String> header = new ArrayList<>();
+        header.add("");
+        header.add(cards.isEmpty() ? "&7No apprentices." : "&7" + cards.size() + " in your dojo");
+        header.addAll(GuiBoardHelper.tips(viewer, "&8Click a head to release", "&812-hour cooldown"));
+        put(holder, inv, 4, item(Material.ORANGE_DYE, "&6&lRelease Apprentice", header));
+        if (cards.isEmpty()) {
+            put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_apprentice", Material.BARRIER, "&7No apprentices",
+                    List.of("&7Invite apprentices from the Mentor page")));
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
+            for (int i = 0; i < slots.length && i < cards.size(); i++) {
+                String card = cards.get(i);
+                String[] parts = card.split("\t", 2);
+                String uuid = parts.length > 0 ? parts[0] : "";
+                String name = parts.length > 1 ? parts[1] : uuid;
+                ItemStack head;
+                try {
+                    head = GuiPlayerPicker.headByUuid(
+                            java.util.UUID.fromString(uuid), name, "&f" + name,
+                            List.of("&cRelease &f" + name, "&812-hour cooldown"));
+                } catch (IllegalArgumentException ex) {
+                    head = GuiPlayerPicker.headByName(name, "&f" + name,
+                            List.of("&cRelease &f" + name, "&812-hour cooldown"));
+                }
+                put(holder, inv, slots[i], head,
+                        SlotAction.act("mentor_release", "uuid:" + uuid, "mentor"));
+            }
+        }
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Mentor"),
+                SlotAction.page("mentor"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
     private Inventory picker(
             Player viewer, Player subject, String action, String backPage, String title, String tip) {
         Holder holder = new Holder("pick_" + action);
@@ -454,6 +513,8 @@ public final class SparChestGui implements Listener {
                         + "  &7streak &f" + ph.getOrDefault("streak", "0"));
             } else if ("mentor".equalsIgnoreCase(role)) {
                 lore.add("&bMentoring &f" + blank(ph.get("apprentice_name"), "?")
+                        + " &8(" + ph.getOrDefault("apprentice_count", "?")
+                        + "/" + ph.getOrDefault("apprentice_max", "8") + ")"
                         + "  &7streak &f" + ph.getOrDefault("streak", "0"));
             } else {
                 lore.add("&bApprentice of &f" + blank(ph.get("mentor_name"), "?")

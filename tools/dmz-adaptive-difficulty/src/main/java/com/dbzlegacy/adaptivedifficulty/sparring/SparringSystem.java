@@ -35,9 +35,11 @@ public final class SparringSystem {
     public static final double HEAVY_MOTION_SPEED = 0.55;
     public static final long COMBO_TIMEOUT_MS = 2500L;
     public static final long PENDING_HP_RESOLVE_MS = 75L;
-    public static final long MENTOR_CHANGE_COOLDOWN_MS = 7L * 24L * 60L * 60L * 1000L;
+    public static final long MENTOR_CHANGE_COOLDOWN_MS = 12L * 60L * 60L * 1000L;
     /** Mentor invite TTL — long enough for a Pending board (was 2 minutes). */
     public static final long MENTOR_INVITE_MS = 120_000L;
+    /** Max apprentices per mentor (dojo roster). Each player still has at most one master. */
+    public static final int MAX_APPRENTICES = 8;
     public static final long TICK_MS = 250L;
     public static final long MIN_COUNTED_SESSION_MS = 30_000L;
     public static final long STREAK_MIN_SESSION_MS = 300_000L;
@@ -851,12 +853,25 @@ public final class SparringSystem {
             return;
         }
         try {
-            ServerPlayer mentor = server.m_6846_().m_11259_(UUID.fromString(bond.mentorUuid));
+            UUID mentorId = UUID.fromString(bond.mentorUuid);
+            ServerPlayer mentor = server.m_6846_().m_11259_(mentorId);
             if (mentor == null) {
                 return;
             }
-            int share = Math.max(1, Math.round(amount * SparCombat.MENTOR_SHARE_PCT));
-            DmzRewards.awardTp(mentor, share, "Mentor share from " + apprentice.m_7755_().getString(),
+            // Dilute share across the dojo so total mentor take stays ≤ one-apprentice rate.
+            SparStore.MentorBond mentorBond = SparStore.get().bond(mentorId);
+            int roster = mentorBond == null ? 1 : Math.max(1, mentorBond.apprenticeCount());
+            float pct = SparCombat.MENTOR_SHARE_PCT / (float) roster;
+            int share = Math.round(amount * pct);
+            if (share < 1) {
+                if (roster == 1) {
+                    share = 1;
+                } else {
+                    return;
+                }
+            }
+            DmzRewards.awardTp(mentor, share, "Mentor share from " + apprentice.m_7755_().getString()
+                            + (roster > 1 ? " §8(dojo " + roster + ")" : ""),
                     true, "§6[Mentor] ");
         } catch (Throwable ignored) {
         }
@@ -883,8 +898,13 @@ public final class SparringSystem {
         lines.add("§bMentor Bond");
         lines.add("§8  - §7Mentor §f"
                 + (bond.mentorName == null || bond.mentorName.isBlank() ? "none" : bond.mentorName));
-        lines.add("§8  - §7Apprentice §f"
-                + (bond.apprenticeName == null || bond.apprenticeName.isBlank() ? "none" : bond.apprenticeName));
+        int apps = bond.apprenticeCount();
+        if (apps <= 0) {
+            lines.add("§8  - §7Apprentices §fnone");
+        } else {
+            lines.add("§8  - §7Apprentices §f" + apps + "§8/§f" + MAX_APPRENTICES
+                    + " §8— §f" + bond.apprenticeNamesSummary());
+        }
         lines.add("§8  - §7Streak §f" + bond.streakCurrent + " §8(best " + bond.streakBest + ")");
         if (lb != null) {
             lines.add("§eLifetime");
@@ -1030,11 +1050,19 @@ public final class SparringSystem {
         }
         SparStore.MentorBond mine = SparStore.get().bond(player.m_20148_());
         long now = System.currentTimeMillis();
-        if (now < mine.mentorChangeReadyAt) {
-            return "§cMentor change cooldown active.";
+        // Cooldown set when releasing an apprentice / changing roster.
+        if (now < mine.apprenticeChangeReadyAt) {
+            return "§cDojo cooldown active (12h).";
         }
-        if (mine.apprenticeUuid != null && !mine.apprenticeUuid.isBlank()) {
-            return "§cYou already have an apprentice.";
+        if (mine.isMentoringUuid(target.m_20148_().toString())) {
+            return "§cYou already mentor §f" + target.m_7755_().getString() + "§c.";
+        }
+        if (mine.apprenticeCount() >= MAX_APPRENTICES) {
+            return "§cDojo full (§f" + MAX_APPRENTICES + " §capprentices max).";
+        }
+        SparStore.MentorBond theirs = SparStore.get().bond(target.m_20148_());
+        if (theirs.mentorUuid != null && !theirs.mentorUuid.isBlank()) {
+            return "§cThey already have a mentor.";
         }
         SparStore.BondInvite invite = new SparStore.BondInvite();
         invite.fromUuid = player.m_20148_().toString();
@@ -1058,11 +1086,16 @@ public final class SparringSystem {
         }
         SparStore.MentorBond mine = SparStore.get().bond(player.m_20148_());
         long now = System.currentTimeMillis();
-        if (now < mine.apprenticeChangeReadyAt) {
-            return "§cApprentice change cooldown active.";
+        // Cooldown set when leaving a mentor.
+        if (now < mine.mentorChangeReadyAt) {
+            return "§cMentor change cooldown active (12h).";
         }
         if (mine.mentorUuid != null && !mine.mentorUuid.isBlank()) {
             return "§cYou already have a mentor.";
+        }
+        SparStore.MentorBond theirs = SparStore.get().bond(target.m_20148_());
+        if (theirs.apprenticeCount() >= MAX_APPRENTICES) {
+            return "§cTheir dojo is full (§f" + MAX_APPRENTICES + " §capprentices).";
         }
         SparStore.BondInvite invite = new SparStore.BondInvite();
         invite.fromUuid = player.m_20148_().toString();
@@ -1176,10 +1209,25 @@ public final class SparringSystem {
             mentor = other;
             apprentice = player;
         }
+        SparStore.MentorBond mentorBond = SparStore.get().bond(mentor.m_20148_());
+        SparStore.MentorBond apprenticeBond = SparStore.get().bond(apprentice.m_20148_());
+        if (apprenticeBond.mentorUuid != null && !apprenticeBond.mentorUuid.isBlank()
+                && !apprenticeBond.mentorUuid.equalsIgnoreCase(mentor.m_20148_().toString())) {
+            SparStore.get().invites.remove(player.m_20148_().toString());
+            SparStore.get().markDirty();
+            return "§cThey already have a mentor.";
+        }
+        if (!mentorBond.isMentoringUuid(apprentice.m_20148_().toString())
+                && mentorBond.apprenticeCount() >= MAX_APPRENTICES) {
+            SparStore.get().invites.remove(player.m_20148_().toString());
+            SparStore.get().markDirty();
+            return "§cDojo full (§f" + MAX_APPRENTICES + " §capprentices max).";
+        }
         bindMentor(mentor, apprentice);
         SparStore.get().invites.remove(player.m_20148_().toString());
         SparStore.get().markDirty();
-        DmzRewards.msg(mentor, "§6[Mentor Bond] §aYou are now mentoring §f" + apprentice.m_7755_().getString());
+        DmzRewards.msg(mentor, "§6[Mentor Bond] §aYou are now mentoring §f" + apprentice.m_7755_().getString()
+                + " §8(" + mentorBond.apprenticeCount() + "/" + MAX_APPRENTICES + ")");
         DmzRewards.msg(apprentice, "§6[Mentor Bond] §aYour mentor is now §f" + mentor.m_7755_().getString());
         return "§aMentor bond created.";
     }
@@ -1250,12 +1298,16 @@ public final class SparringSystem {
     public static String removeBond(ServerPlayer player) {
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
         boolean hasMentor = bond.mentorUuid != null && !bond.mentorUuid.isBlank();
-        boolean hasApprentice = bond.apprenticeUuid != null && !bond.apprenticeUuid.isBlank();
-        if (hasApprentice) {
-            return removeApprentice(player);
+        boolean hasApprentice = bond.apprenticeCount() > 0;
+        if (hasApprentice && !hasMentor) {
+            return removeApprentice(player, null);
         }
-        if (hasMentor) {
+        if (hasMentor && !hasApprentice) {
             return removeMentor(player);
+        }
+        if (hasMentor && hasApprentice) {
+            return "§eChoose: §fLeave mentor §8or §fRelease apprentice"
+                    + "\n§8GUI: Mentor → Leave / Release · Commands: /spar mentor remove · /spar apprentice remove [name]";
         }
         return "§cYou have no mentor bond to remove.";
     }
@@ -1267,17 +1319,93 @@ public final class SparringSystem {
         }
         String mentorName = bond.mentorName;
         clearBond(player.m_20148_().toString(), bond.mentorUuid, true);
-        return "§7Left mentor §f" + mentorName + "§7. 7-day cooldown started.";
+        return "§7Left mentor §f" + mentorName + "§7. 12-hour cooldown started.";
     }
 
     public static String removeApprentice(ServerPlayer player) {
+        return removeApprentice(player, null);
+    }
+
+    /**
+     * Release one apprentice. With no arg and a single apprentice, releases that one;
+     * with multiple apprentices, {@code targetArg} (uuid: or name) is required.
+     */
+    public static String removeApprentice(ServerPlayer player, String targetArg) {
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
-        if (bond.apprenticeUuid == null || bond.apprenticeUuid.isBlank()) {
+        bond.normalizeApprentices();
+        if (bond.apprenticeCount() <= 0) {
             return "§cYou have no apprentice.";
         }
-        String name = bond.apprenticeName;
-        clearBond(bond.apprenticeUuid, player.m_20148_().toString(), true);
-        return "§7Released apprentice §f" + name + "§7. 7-day cooldown started.";
+        String appUuid;
+        String name;
+        if (targetArg != null && !targetArg.isBlank()) {
+            SparStore.ApprenticeRef match = findApprentice(bond, player, targetArg);
+            if (match == null) {
+                return "§cThat player is not your apprentice.";
+            }
+            appUuid = match.uuid;
+            name = match.name == null || match.name.isBlank() ? match.uuid : match.name;
+        } else if (bond.apprenticeCount() == 1) {
+            SparStore.ApprenticeRef only = bond.apprentices.get(0);
+            appUuid = only.uuid;
+            name = only.name == null || only.name.isBlank() ? only.uuid : only.name;
+        } else {
+            return "§ePick which apprentice to release (§f"
+                    + bond.apprenticeNamesSummary()
+                    + "§e).\n§8GUI: Mentor → Release… · /spar apprentice release <player>";
+        }
+        clearBond(appUuid, player.m_20148_().toString(), true);
+        return "§7Released apprentice §f" + name + "§7. 12-hour cooldown started.";
+    }
+
+    /** Encoded dojo roster for GUI: {@code uuid\tname}. */
+    public static List<String> apprenticeCards(ServerPlayer player) {
+        List<String> out = new ArrayList<>();
+        if (player == null) {
+            return out;
+        }
+        SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
+        bond.normalizeApprentices();
+        for (SparStore.ApprenticeRef r : bond.apprentices) {
+            String uuid = r.uuid == null ? "" : r.uuid;
+            String name = r.name == null || r.name.isBlank() ? uuid : r.name;
+            name = name.replace('\t', ' ').replace('\n', ' ');
+            out.add(uuid + "\t" + name);
+        }
+        return out;
+    }
+
+    private static SparStore.ApprenticeRef findApprentice(
+            SparStore.MentorBond bond, ServerPlayer mentor, String targetArg
+    ) {
+        if (bond == null || targetArg == null || targetArg.isBlank()) {
+            return null;
+        }
+        bond.normalizeApprentices();
+        String raw = targetArg.trim();
+        String wantUuid = null;
+        String wantName = null;
+        if (raw.regionMatches(true, 0, "uuid:", 0, 5)) {
+            wantUuid = raw.substring(5).trim();
+        } else {
+            wantName = raw;
+            MinecraftServer server = mentor == null ? null : mentor.m_20194_();
+            if (server != null) {
+                ServerPlayer online = server.m_6846_().m_11255_(raw);
+                if (online != null) {
+                    wantUuid = online.m_20148_().toString();
+                }
+            }
+        }
+        for (SparStore.ApprenticeRef r : bond.apprentices) {
+            if (wantUuid != null && wantUuid.equalsIgnoreCase(r.uuid)) {
+                return r;
+            }
+            if (wantName != null && r.name != null && wantName.equalsIgnoreCase(r.name)) {
+                return r;
+            }
+        }
+        return null;
     }
 
     private static boolean isOnline(MinecraftServer server, String uuid) {
@@ -1364,15 +1492,16 @@ public final class SparringSystem {
 
     public static String bondStatus(ServerPlayer player) {
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
+        int n = bond.apprenticeCount();
+        String apps = n <= 0 ? "none" : n + "/" + MAX_APPRENTICES + " (" + bond.apprenticeNamesSummary() + ")";
         return "§6Mentor: §f" + blank(bond.mentorName, "none")
-                + " §8| §6Apprentice: §f" + blank(bond.apprenticeName, "none");
+                + " §8| §6Apprentices: §f" + apps;
     }
 
     private static void bindMentor(ServerPlayer mentor, ServerPlayer apprentice) {
         SparStore.MentorBond m = SparStore.get().bond(mentor.m_20148_());
         SparStore.MentorBond a = SparStore.get().bond(apprentice.m_20148_());
-        m.apprenticeUuid = apprentice.m_20148_().toString();
-        m.apprenticeName = apprentice.m_7755_().getString();
+        m.addApprentice(apprentice.m_20148_().toString(), apprentice.m_7755_().getString());
         a.mentorUuid = mentor.m_20148_().toString();
         a.mentorName = mentor.m_7755_().getString();
         SparStore.get().markDirty();
@@ -1390,8 +1519,8 @@ public final class SparringSystem {
             }
         }
         if (m != null) {
-            m.apprenticeUuid = "";
-            m.apprenticeName = "";
+            m.normalizeApprentices();
+            m.removeApprenticeUuid(apprenticeUuid);
             if (cooldown) {
                 m.apprenticeChangeReadyAt = ready;
             }

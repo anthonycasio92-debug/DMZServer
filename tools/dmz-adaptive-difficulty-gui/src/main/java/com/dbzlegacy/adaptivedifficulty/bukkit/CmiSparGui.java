@@ -52,6 +52,8 @@ public final class CmiSparGui {
             } else if ("pick_decline".equals(p)) {
                 openPendingPicker(player, "mentor_decline", "pending",
                         "&cDecline Invite", "&7Decline this mentor invite", false);
+            } else if ("pick_release".equals(p)) {
+                openReleasePicker(player);
             } else if ("help".equals(p)) {
                 openMain(player);
             } else if ("admin".equals(p)) {
@@ -237,11 +239,17 @@ public final class CmiSparGui {
         boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));
         String mentorName = blank(ph.get("mentor_name"), "?");
         String apprenticeName = blank(ph.get("apprentice_name"), "?");
+        int appCount = 0;
+        try {
+            appCount = Integer.parseInt(ph.getOrDefault("apprentice_count", "0"));
+        } catch (NumberFormatException ignored) {
+            appCount = 0;
+        }
         if (hasMentor) {
             gui.addButton(actionBtn(player, 24, "spar.mentor.leave", Material.RED_DYE, "&cLeave mentor",
                     "mentor_leave", "0", "mentor",
                     List.of("&7End bond with &f" + mentorName,
-                            "&87-day cooldown after leaving"),
+                            "&812-hour cooldown after leaving"),
                     Map.of("name", mentorName)));
         } else {
             String display = GuiTooltips.name("spar.mentor.leave", "&8Leave mentor",
@@ -253,11 +261,20 @@ public final class CmiSparGui {
             gui.addButton(leaveOff);
         }
         if (hasApprentice) {
-            gui.addButton(actionBtn(player, 25, "spar.mentor.release", Material.ORANGE_DYE, "&6Release apprentice",
-                    "mentor_release", "0", "mentor",
-                    List.of("&7End bond with &f" + apprenticeName,
-                            "&87-day cooldown after releasing"),
-                    Map.of("name", apprenticeName)));
+            if (appCount > 1) {
+                gui.addButton(pageBtn(player, 25, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
+                        "pick_release",
+                        "&7Dojo &f" + appCount + " &7apprentices",
+                        "&f" + apprenticeName,
+                        "&7Pick who to release",
+                        "&812-hour cooldown after releasing"));
+            } else {
+                gui.addButton(actionBtn(player, 25, "spar.mentor.release", Material.ORANGE_DYE, "&6Release apprentice",
+                        "mentor_release", "0", "mentor",
+                        List.of("&7End bond with &f" + apprenticeName,
+                                "&812-hour cooldown after releasing"),
+                        Map.of("name", apprenticeName)));
+            }
         } else {
             String display = GuiTooltips.name("spar.mentor.release", "&8Release apprentice",
                     Map.of("name", apprenticeName));
@@ -401,6 +418,57 @@ public final class CmiSparGui {
         GuiFeedback.openCmi(gui);
     }
 
+    private static void openReleasePicker(Player player) {
+        CMIGui gui = base(player, "&8Release Apprentice", 5);
+        CMIGuiButton info = new CMIGuiButton(4, Material.ORANGE_DYE, "&6&lRelease Apprentice");
+        info.lockField();
+        List<String> cards = ForgeBridge.sparApprenticeCards(player);
+        List<String> header = new ArrayList<>();
+        header.add("");
+        header.add(cards.isEmpty() ? "&7No apprentices." : "&7" + cards.size() + " in your dojo");
+        header.addAll(GuiBoardHelper.tips(player, "&8Click a head to release", "&812-hour cooldown"));
+        info.addLore(header);
+        gui.addButton(info);
+
+        int placed = 0;
+        for (String card : cards) {
+            if (placed >= GuiPlayerPicker.CONTENT_SLOTS.length) {
+                break;
+            }
+            int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
+            String[] parts = card.split("\t", 2);
+            String uuid = parts.length > 0 ? parts[0] : "";
+            String name = parts.length > 1 ? parts[1] : uuid;
+            List<String> tipLore = List.of("&cRelease &f" + name, "&812-hour cooldown");
+            ItemStack head;
+            try {
+                java.util.UUID id = java.util.UUID.fromString(uuid);
+                Player online = org.bukkit.Bukkit.getPlayer(id);
+                if (online != null) {
+                    head = GuiPlayerPicker.head(online, "&f" + name, tipLore);
+                } else {
+                    head = GuiPlayerPicker.headByUuid(id, name, "&f" + name, tipLore);
+                }
+            } catch (IllegalArgumentException e) {
+                head = GuiPlayerPicker.headByName(name, "&f" + name, tipLore);
+            }
+            CMIGuiButton btn = new CMIGuiButton(slot, head);
+            btn.lockField();
+            btn.addCommand("lmdo spar mentor_release uuid:" + uuid + " mentor");
+            gui.addButton(btn);
+        }
+        if (placed == 0) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER, "&7No apprentices");
+            empty.lockField();
+            empty.addLore(List.of("", "&7Invite apprentices from the Mentor page"));
+            gui.addButton(empty);
+        }
+        gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "mentor", "&7Mentor"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        GuiFeedback.openCmi(gui);
+    }
+
     private static void openPicker(
             Player player, String action, String backPage, String title, String tip) {
         CMIGui gui = base(player, "&8Sparring", 5);
@@ -506,6 +574,8 @@ public final class CmiSparGui {
                         + "  &7streak &f" + ph.getOrDefault("streak", "0"));
             } else if ("mentor".equalsIgnoreCase(role)) {
                 lore.add("&bMentoring &f" + blank(ph.get("apprentice_name"), "?")
+                        + " &8(" + ph.getOrDefault("apprentice_count", "?")
+                        + "/" + ph.getOrDefault("apprentice_max", "8") + ")"
                         + "  &7streak &f" + ph.getOrDefault("streak", "0"));
             } else {
                 lore.add("&bApprentice of &f" + blank(ph.get("mentor_name"), "?")

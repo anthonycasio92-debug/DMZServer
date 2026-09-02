@@ -64,13 +64,19 @@ public final class SparChatMenu {
         } else {
             send(player, Component.m_237113_("§7No active spar — trade hits within 30 blocks to start."));
         }
-        if (bond != null && bond.mentorUuid != null && !bond.mentorUuid.isBlank()
-                && bond.apprenticeUuid != null && !bond.apprenticeUuid.isBlank()) {
-            boolean mentor = player.m_20148_().toString().equals(bond.mentorUuid);
-            String other = mentor ? bond.apprenticeName : bond.mentorName;
-            send(player, Component.m_237113_("§bMentor bond §7as "
-                    + (mentor ? "mentor" : "apprentice") + " §8with §f" + other
-                    + "  §7streak §f" + bond.streakCurrent));
+        boolean hasMentor = bond != null && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
+        boolean hasApps = bond != null && bond.apprenticeCount() > 0;
+        if (hasMentor || hasApps) {
+            if (hasMentor) {
+                send(player, Component.m_237113_("§bApprentice of §f" + blank(bond.mentorName, "?")
+                        + "  §7streak §f" + bond.streakCurrent));
+            }
+            if (hasApps) {
+                send(player, Component.m_237113_("§bMentoring §f" + bond.apprenticeCount()
+                        + "§8/§f" + SparringSystem.MAX_APPRENTICES
+                        + " §8— §f" + bond.apprenticeNamesSummary()
+                        + "  §7streak §f" + bond.streakCurrent));
+            }
         } else {
             send(player, Component.m_237113_("§7No mentor bond. §8/spar mentor <player>"));
         }
@@ -128,18 +134,21 @@ public final class SparChatMenu {
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
         boolean hasMentor = bond != null
                 && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
-        boolean hasApprentice = bond != null
-                && bond.apprenticeUuid != null && !bond.apprenticeUuid.isBlank();
+        int appCount = bond == null ? 0 : bond.apprenticeCount();
+        boolean hasApprentice = appCount > 0;
         if (hasMentor) {
             send(player, Component.m_237113_("§7Your mentor §f" + bond.mentorName));
         }
         if (hasApprentice) {
-            send(player, Component.m_237113_("§7Your apprentice §f" + bond.apprenticeName));
+            send(player, Component.m_237113_("§7Your apprentices §f" + appCount
+                    + "§8/§f" + SparringSystem.MAX_APPRENTICES + " §8— §f" + bond.apprenticeNamesSummary()));
         }
         if (hasMentor || hasApprentice) {
             send(player, Component.m_237113_("§7Streak §f" + bond.streakCurrent + " §8best §f" + bond.streakBest));
         } else {
             send(player, Component.m_237113_("§7Invite: §e/spar mentor <player> §8or §e/spar apprentice <player>"));
+            send(player, Component.m_237113_("§8Dojo up to §f" + SparringSystem.MAX_APPRENTICES
+                    + " §8apprentices · one master · 12h cooldown"));
         }
         MutableComponent row = Component.m_237113_("§7")
                 .m_7220_(btn("§a[Accept]", "/spar do mentor accept mentor", "Accept invite"))
@@ -168,7 +177,7 @@ public final class SparChatMenu {
         send(player, Component.m_237113_("§6§l/spar §8— Sparring TP"));
         send(player, Component.m_237113_("§e/spar stats|end|top [category]"));
         send(player, Component.m_237113_("§e/spar mentor <player>|accept|decline|leave"));
-        send(player, Component.m_237113_("§e/spar apprentice <player>|remove"));
+        send(player, Component.m_237113_("§e/spar apprentice <player>|release [name]"));
         send(player, btn("§7« Back", "/spar do page main", "Main"));
     }
 
@@ -176,6 +185,10 @@ public final class SparChatMenu {
         return Component.m_237113_(label).m_6270_(Style.f_131099_
                 .m_131142_(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
                 .m_131144_(new HoverEvent(HoverEvent.Action.f_130831_, Component.m_237113_(hover))));
+    }
+
+    private static String blank(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
     }
 
     private static void send(ServerPlayer player, Component text) {

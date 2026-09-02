@@ -72,9 +72,24 @@ public final class SparCommands {
                                         StringArgumentType.getString(ctx, "player")))))
                 .then(Commands.m_82127_("apprentice")
                         .executes(ctx -> mentorStatus(ctx.getSource()))
-                        .then(Commands.m_82127_("remove").executes(ctx -> apprenticeRemove(ctx.getSource())))
-                        .then(Commands.m_82127_("release").executes(ctx -> apprenticeRemove(ctx.getSource())))
-                        .then(Commands.m_82127_("clear").executes(ctx -> apprenticeRemove(ctx.getSource())))
+                        .then(Commands.m_82127_("remove")
+                                .executes(ctx -> apprenticeRemove(ctx.getSource(), null))
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .executes(ctx -> apprenticeRemove(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player")))))
+                        .then(Commands.m_82127_("release")
+                                .executes(ctx -> apprenticeRemove(ctx.getSource(), null))
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .executes(ctx -> apprenticeRemove(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player")))))
+                        .then(Commands.m_82127_("clear")
+                                .executes(ctx -> apprenticeRemove(ctx.getSource(), null))
+                                .then(Commands.m_82129_("player", StringArgumentType.word())
+                                        .executes(ctx -> apprenticeRemove(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "player")))))
                         .then(Commands.m_82129_("player", StringArgumentType.word())
                                 .executes(ctx -> apprenticeInvite(
                                         ctx.getSource(),
@@ -260,12 +275,12 @@ public final class SparCommands {
         return 1;
     }
 
-    private static int apprenticeRemove(CommandSourceStack source) {
+    private static int apprenticeRemove(CommandSourceStack source, String name) {
         ServerPlayer player = playerOrNull(source);
         if (player == null || !enabled(player)) {
             return 0;
         }
-        DmzRewards.msg(player, SparringSystem.removeApprentice(player));
+        DmzRewards.msg(player, SparringSystem.removeApprentice(player, name));
         return 1;
     }
 

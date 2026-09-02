@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed concept audit for LegacyMechanics 2.3.143.
+"""Fail-closed concept audit for LegacyMechanics 2.3.144.
 
 Encodes the player's stated balance intent:
   1. Buy tiers 1–7 feel progressively harder (stock 21→200%).
@@ -234,7 +234,7 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 2.3.143", 'VERSION = "2.3.143"' in mod)
+    check("VERSION 2.3.144", 'VERSION = "2.3.144"' in mod)
 
     check("RaceSkillSync present", (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/bridge/RaceSkillSync.java").is_file())
     check("formula revision 40", "mix(h, 40L)" in profile)

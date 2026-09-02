@@ -1,3 +1,9 @@
+## Mentor dojo multi-apprentice (2.3.144)
+
+Mentor/apprentice change cooldown is **12 hours** (was 7 days). Mentors may train up to
+**8 apprentices** (dojo roster); each player still has at most one master. Mentor TP share
+is diluted by roster size (`15%/N`) so total take maxes at the former one-apprentice rate.
+
 ## Spar active TP + ki-charge hold (2.3.143)
 
 Release-control drip TP no longer treats ki-charge / soft-clash holds as combat hits.

@@ -136,16 +136,21 @@ public final class PlayerDataClear {
         // Break reverse mentor/apprentice pointers
         int reverse = 0;
         if (bond != null) {
+            bond.normalizeApprentices();
             if (bond.mentorUuid != null && !bond.mentorUuid.isBlank()) {
                 SparStore.MentorBond mentor = store.bondsByPlayer.get(bond.mentorUuid);
-                if (mentor != null && uuid.equalsIgnoreCase(mentor.apprenticeUuid)) {
-                    mentor.apprenticeUuid = "";
-                    mentor.apprenticeName = "";
-                    reverse++;
+                if (mentor != null) {
+                    mentor.normalizeApprentices();
+                    if (mentor.removeApprenticeUuid(uuid)) {
+                        reverse++;
+                    }
                 }
             }
-            if (bond.apprenticeUuid != null && !bond.apprenticeUuid.isBlank()) {
-                SparStore.MentorBond app = store.bondsByPlayer.get(bond.apprenticeUuid);
+            for (SparStore.ApprenticeRef appRef : new ArrayList<>(bond.apprentices)) {
+                if (appRef == null || appRef.uuid == null || appRef.uuid.isBlank()) {
+                    continue;
+                }
+                SparStore.MentorBond app = store.bondsByPlayer.get(appRef.uuid);
                 if (app != null && uuid.equalsIgnoreCase(app.mentorUuid)) {
                     app.mentorUuid = "";
                     app.mentorName = "";

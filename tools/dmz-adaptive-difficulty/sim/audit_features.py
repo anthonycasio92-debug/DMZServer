@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.143", 'VERSION = "2.3.143"' in mod)
+    check("VERSION 2.3.144", 'VERSION = "2.3.144"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -534,7 +534,7 @@ def main() -> int:
           'SlotAction.page("hof")' in rival and 'SlotAction.page("journal")' in rival
           and "records" in rival)
 
-    print("\n=== Rival relationship semantics (2.3.143) ===")
+    print("\n=== Rival relationship semantics (2.3.144) ===")
     rival_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.java")
     rival_st = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalStatus.java")
     rival_link = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalLink.java")
@@ -751,7 +751,20 @@ def main() -> int:
     check("no public Bukkit /spar tpmsg",
           'ForgeBridge.sparHandleDo(player, "tpmsg"' not in bukkit_plugin)
 
-    print("\n=== Spar active TP + ki-charge hold (2.3.143) ===")
+    
+    print("\n=== Mentor dojo multi-apprentice (2.3.144) ===")
+    spar_store144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")
+    spar_sys144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
+    spar_combat144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparCombat.java")
+    check("12h mentor cooldown", "12L * 60L * 60L * 1000L" in spar_sys144)
+    check("MAX_APPRENTICES 8", "MAX_APPRENTICES = 8" in spar_sys144)
+    check("apprentices list field", "List<ApprenticeRef> apprentices" in spar_store144)
+    check("normalizeApprentices migration", "normalizeApprentices" in spar_store144)
+    check("share diluted by roster", "MENTOR_SHARE_PCT / (float) roster" in spar_sys144)
+    check("apprenticeCards API", "apprenticeCards" in spar_sys144)
+    check("MENTOR_SHARE_PCT 0.15", "MENTOR_SHARE_PCT = 0.15f" in spar_combat144)
+
+    print("\n=== Spar active TP + ki-charge hold (2.3.144) ===")
     spar_rt = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparPlayerRuntime.java")
     spar_sys143 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
     events143 = read(SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")

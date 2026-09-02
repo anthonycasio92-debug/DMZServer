@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.sparring.SparCombat;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparPlayerRuntime;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparStore;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparringSystem;
@@ -54,22 +55,26 @@ public final class SparGuiApi {
 
         boolean hasMentor = bond != null
                 && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
-        boolean hasApprentice = bond != null
-                && bond.apprenticeUuid != null && !bond.apprenticeUuid.isBlank();
+        int appCount = bond == null ? 0 : bond.apprenticeCount();
+        boolean hasApprentice = appCount > 0;
         boolean bonded = hasMentor || hasApprentice;
         out.put("has_mentor", hasMentor ? "true" : "false");
         out.put("has_apprentice", hasApprentice ? "true" : "false");
+        out.put("apprentice_count", String.valueOf(appCount));
+        out.put("apprentice_max", String.valueOf(SparringSystem.MAX_APPRENTICES));
         out.put("mentor_bonded", bonded ? "true" : "false");
         out.put("mentor_name", hasMentor && bond.mentorName != null ? bond.mentorName : "");
-        out.put("apprentice_name", hasApprentice && bond.apprenticeName != null ? bond.apprenticeName : "");
+        String appSummary = hasApprentice ? bond.apprenticeNamesSummary() : "";
+        out.put("apprentice_name", appSummary);
+        out.put("apprentices", appSummary);
         if (hasMentor && hasApprentice) {
             out.put("mentor_role", "both");
-            out.put("mentor", blank(bond.mentorName, "?") + " / " + blank(bond.apprenticeName, "?"));
+            out.put("mentor", blank(bond.mentorName, "?") + " / " + blank(appSummary, "?"));
             out.put("streak", String.valueOf(bond.streakCurrent));
             out.put("streak_best", String.valueOf(bond.streakBest));
         } else if (hasApprentice) {
             out.put("mentor_role", "mentor");
-            out.put("mentor", bond.apprenticeName == null ? "" : bond.apprenticeName);
+            out.put("mentor", appSummary);
             out.put("streak", String.valueOf(bond.streakCurrent));
             out.put("streak_best", String.valueOf(bond.streakBest));
         } else if (hasMentor) {
@@ -113,18 +118,23 @@ public final class SparGuiApi {
         SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
         boolean hasMentor = bond != null
                 && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
-        boolean hasApprentice = bond != null
-                && bond.apprenticeUuid != null && !bond.apprenticeUuid.isBlank();
+        int appCount = bond == null ? 0 : bond.apprenticeCount();
+        boolean hasApprentice = appCount > 0;
         if (hasMentor || hasApprentice) {
             if (hasMentor) {
                 lines.add("§7Your mentor §f" + blank(bond.mentorName, "?"));
             }
             if (hasApprentice) {
-                lines.add("§7Your apprentice §f" + blank(bond.apprenticeName, "?"));
+                lines.add("§7Your apprentices §f" + appCount + "§8/§f" + SparringSystem.MAX_APPRENTICES);
+                lines.add("§8  §f" + bond.apprenticeNamesSummary());
+                float sharePct = SparCombat.MENTOR_SHARE_PCT * 100.0f / Math.max(1, appCount);
+                lines.add("§7Mentor share §f" + String.format(java.util.Locale.ROOT, "%.1f", sharePct)
+                        + "% §8each (dojo split)");
             }
             lines.add("§7Streak §f" + bond.streakCurrent + " §8best §f" + bond.streakBest);
         } else {
-            lines.add("§7Invite apprentice or ask a mentor below");
+            lines.add("§7Invite apprentices or ask a mentor below");
+            lines.add("§8Dojo: up to §f" + SparringSystem.MAX_APPRENTICES + " §8apprentices · one master");
             lines.add(SparringSystem.bondStatus(player));
         }
         int pending = SparringSystem.pendingMentorInviteCount(player);
@@ -150,6 +160,14 @@ public final class SparGuiApi {
             return List.of();
         }
         return SparringSystem.pendingIncomingMentorArgs(player);
+    }
+
+    /** Mentor's dojo roster cards ({@code uuid\tname}) for Release pickers. */
+    public static List<String> apprenticeCards(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of();
+        }
+        return SparringSystem.apprenticeCards(player);
     }
 
     public static List<String> pendingMentorLines(ServerPlayer player) {
@@ -313,11 +331,10 @@ public final class SparGuiApi {
                 SparStore.MentorBond bond = SparStore.get().bond(player.m_20148_());
                 boolean hasMentor = bond != null
                         && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
-                boolean hasApprentice = bond != null
-                        && bond.apprenticeUuid != null && !bond.apprenticeUuid.isBlank();
+                boolean hasApprentice = bond != null && bond.apprenticeCount() > 0;
                 if (hasMentor && hasApprentice) {
                     return "§eChoose: §fLeave mentor §8or §fRelease apprentice"
-                            + "\n§8GUI: Mentor → Leave / Release · Commands: /spar mentor remove · /spar apprentice remove";
+                            + "\n§8GUI: Mentor → Leave / Release · Commands: /spar mentor remove · /spar apprentice remove [name]";
                 }
                 return SparringSystem.removeBond(player);
             }
@@ -326,8 +343,27 @@ public final class SparGuiApi {
                 return SparringSystem.removeMentor(player);
             }
             if (sub.equals("release") || sub.equals("releaseapprentice") || sub.equals("release_apprentice")
-                    || sub.equals("remove_apprentice") || sub.equals("removeapprentice")) {
-                return SparringSystem.removeApprentice(player);
+                    || sub.equals("remove_apprentice") || sub.equals("removeapprentice")
+                    || sub.startsWith("release ") || sub.startsWith("release:")) {
+                String who = "";
+                if (sub.startsWith("release ") || sub.startsWith("release:")) {
+                    who = a.length() > 7 ? a.substring(7).trim() : "";
+                    if (who.startsWith(":")) {
+                        who = who.substring(1).trim();
+                    }
+                } else if (!a.isBlank() && a.contains(" ")) {
+                    // "release uuid:…" already handled above; leftover arg after release
+                    who = "";
+                }
+                // Prefer explicit arg after the subcommand token when present in `a`
+                if (who.isBlank() && a.toLowerCase(Locale.ROOT).startsWith("release")) {
+                    String rest = a.length() > 7 ? a.substring(7).trim() : "";
+                    if (rest.startsWith(":")) {
+                        rest = rest.substring(1).trim();
+                    }
+                    who = rest;
+                }
+                return SparringSystem.removeApprentice(player, who.isBlank() ? null : who);
             }
             return "§cUsage: spar do mentor accept|decline|cancel|leave|release [player]";
         }
@@ -336,7 +372,7 @@ public final class SparGuiApi {
         }
         if ("mentor_release".equals(act) || "mentorrelease".equals(act)
                 || "release_apprentice".equals(act) || "apprentice_remove".equals(act)) {
-            return SparringSystem.removeApprentice(player);
+            return SparringSystem.removeApprentice(player, a.isBlank() ? null : a);
         }
         if ("mentor_accept".equals(act) || "mentoraccept".equals(act)) {
             return SparringSystem.mentorAccept(player, a.isBlank() ? null : a);

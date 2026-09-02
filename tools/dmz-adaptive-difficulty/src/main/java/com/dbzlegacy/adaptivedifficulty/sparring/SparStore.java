@@ -72,6 +72,11 @@ public final class SparStore {
                 if (blob != null) {
                     if (blob.bondsByPlayer != null) {
                         bondsByPlayer.putAll(blob.bondsByPlayer);
+                        for (MentorBond bond : bondsByPlayer.values()) {
+                            if (bond != null) {
+                                bond.normalizeApprentices();
+                            }
+                        }
                     }
                     if (blob.leaderboard != null) {
                         leaderboard.putAll(blob.leaderboard);
@@ -136,7 +141,9 @@ public final class SparStore {
         if (uuid == null) {
             return null;
         }
-        return bondsByPlayer.computeIfAbsent(uuid.toString(), k -> new MentorBond());
+        MentorBond bond = bondsByPlayer.computeIfAbsent(uuid.toString(), k -> new MentorBond());
+        bond.normalizeApprentices();
+        return bond;
     }
 
     /** Default ON when unset — players see spar TP chat while fighting. */
@@ -207,16 +214,129 @@ public final class SparStore {
         return out;
     }
 
+    public static final class ApprenticeRef {
+        public String uuid = "";
+        public String name = "";
+    }
+
     public static final class MentorBond {
         public String mentorUuid = "";
         public String mentorName = "";
+        /** Legacy primary apprentice — kept in sync with {@link #apprentices}[0] for older saves/GUI. */
         public String apprenticeUuid = "";
         public String apprenticeName = "";
+        /** Dojo roster: one mentor may train many apprentices; each apprentice still has one master. */
+        public List<ApprenticeRef> apprentices = new ArrayList<>();
         public long mentorChangeReadyAt;
         public long apprenticeChangeReadyAt;
         public int streakCurrent;
         public int streakBest;
         public long streakLastDay = -999999L;
+
+        /** Migrate legacy single apprentice fields into the roster and keep primary fields synced. */
+        public void normalizeApprentices() {
+            if (apprentices == null) {
+                apprentices = new ArrayList<>();
+            }
+            apprentices.removeIf(r -> r == null || r.uuid == null || r.uuid.isBlank());
+            if (apprentices.isEmpty()
+                    && apprenticeUuid != null && !apprenticeUuid.isBlank()) {
+                ApprenticeRef legacy = new ApprenticeRef();
+                legacy.uuid = apprenticeUuid;
+                legacy.name = apprenticeName == null ? "" : apprenticeName;
+                apprentices.add(legacy);
+            }
+            // Dedupe by uuid (case-insensitive), keep first name.
+            Map<String, ApprenticeRef> uniq = new java.util.LinkedHashMap<>();
+            for (ApprenticeRef r : apprentices) {
+                String key = r.uuid.toLowerCase(java.util.Locale.ROOT);
+                uniq.putIfAbsent(key, r);
+                if (r.name == null) {
+                    r.name = "";
+                }
+            }
+            apprentices = new ArrayList<>(uniq.values());
+            syncPrimaryApprentice();
+        }
+
+        public void syncPrimaryApprentice() {
+            if (apprentices == null || apprentices.isEmpty()) {
+                apprenticeUuid = "";
+                apprenticeName = "";
+                return;
+            }
+            ApprenticeRef first = apprentices.get(0);
+            apprenticeUuid = first.uuid == null ? "" : first.uuid;
+            apprenticeName = first.name == null ? "" : first.name;
+        }
+
+        public int apprenticeCount() {
+            normalizeApprentices();
+            return apprentices.size();
+        }
+
+        public boolean isMentoringUuid(String uuid) {
+            if (uuid == null || uuid.isBlank()) {
+                return false;
+            }
+            normalizeApprentices();
+            for (ApprenticeRef r : apprentices) {
+                if (uuid.equalsIgnoreCase(r.uuid)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public boolean addApprentice(String uuid, String name) {
+            if (uuid == null || uuid.isBlank()) {
+                return false;
+            }
+            normalizeApprentices();
+            if (isMentoringUuid(uuid)) {
+                // Refresh display name.
+                for (ApprenticeRef r : apprentices) {
+                    if (uuid.equalsIgnoreCase(r.uuid)) {
+                        if (name != null && !name.isBlank()) {
+                            r.name = name;
+                        }
+                        syncPrimaryApprentice();
+                        return true;
+                    }
+                }
+            }
+            ApprenticeRef r = new ApprenticeRef();
+            r.uuid = uuid;
+            r.name = name == null ? "" : name;
+            apprentices.add(r);
+            syncPrimaryApprentice();
+            return true;
+        }
+
+        public boolean removeApprenticeUuid(String uuid) {
+            if (uuid == null || uuid.isBlank()) {
+                return false;
+            }
+            normalizeApprentices();
+            boolean removed = apprentices.removeIf(r -> uuid.equalsIgnoreCase(r.uuid));
+            syncPrimaryApprentice();
+            return removed;
+        }
+
+        public String apprenticeNamesSummary() {
+            normalizeApprentices();
+            if (apprentices.isEmpty()) {
+                return "";
+            }
+            StringBuilder sb = new StringBuilder();
+            for (ApprenticeRef r : apprentices) {
+                if (sb.length() > 0) {
+                    sb.append(", ");
+                }
+                sb.append(r.name == null || r.name.isBlank() ? r.uuid : r.name);
+            }
+            return sb.toString();
+        }
     }
 
     public static final class BondInvite {

@@ -884,14 +884,14 @@
         "name": "&cLeave mentor",
         "lore": [
           "&7End bond with &f{name}",
-          "&87-day cooldown"
+          "&812-hour cooldown"
         ]
       },
       "release": {
         "name": "&6Release apprentice",
         "lore": [
           "&7End bond with &f{name}",
-          "&87-day cooldown"
+          "&812-hour cooldown"
         ]
       }
     },
