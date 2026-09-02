@@ -242,8 +242,8 @@ public final class CmiSparGui {
                 pendingCount > 0 ? "&aClick to Accept / Decline" : "&8No pending invites"));
         boolean hasMentor = "true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"));
         boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));
-        String mentorName = blank(ph.get("mentor_name"), "?");
-        String apprenticeName = blank(ph.get("apprentice_name"), "?");
+        String mentorName = blank(ph.get("mentor_name"), "your mentor");
+        String apprenticeName = blank(ph.get("apprentice_name"), "your dojo");
         int appCount = 0;
         try {
             appCount = Integer.parseInt(ph.getOrDefault("apprentice_count", "0"));
@@ -251,6 +251,9 @@ public final class CmiSparGui {
             appCount = 0;
         }
         String appMax = blank(ph.get("apprentice_max"), "8");
+        String dojoLabel = appCount > 0
+                ? appCount + "/" + appMax + " · " + apprenticeName
+                : apprenticeName;
         if (hasMentor) {
             gui.addButton(actionBtn(player, 23, "spar.mentor.leave", Material.RED_DYE, "&cLeave mentor",
                     "mentor_leave", "0", "mentor",
@@ -258,39 +261,39 @@ public final class CmiSparGui {
                             "&812-hour cooldown after leaving"),
                     Map.of("name", mentorName)));
         } else {
-            String display = GuiTooltips.name("spar.mentor.leave", "&8Leave mentor",
-                    Map.of("name", mentorName));
+            String display = GuiTooltips.name("spar.mentor.leave_none", "&8Leave mentor");
             CMIGuiButton leaveOff = new CMIGuiButton(23, Material.GRAY_DYE, display);
             leaveOff.lockField();
-            leaveOff.addLore(GuiTooltips.buttonLore("spar.mentor.leave", List.of("&7You have no mentor"),
-                    Map.of("name", mentorName), null));
+            leaveOff.addLore(GuiTooltips.buttonLore("spar.mentor.leave_none",
+                    List.of("&7You have no mentor")));
             gui.addButton(leaveOff);
         }
         if (hasApprentice) {
             gui.addButton(pageBtn(player, 24, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
                     "pick_release",
-                    "&7Dojo &f" + appCount + "&7/&f" + appMax,
-                    "&f" + apprenticeName,
+                    Map.of("name", dojoLabel),
+                    "&7Dojo &f" + dojoLabel,
                     "&7Pick who to release",
                     "&812-hour cooldown after releasing"));
             gui.addButton(pageBtn(player, 25, "spar.mentor.dojo", Material.BOOKSHELF, "&bDojo",
                     "dojo",
+                    Map.of("name", dojoLabel),
                     "&7View your apprentices",
                     "&f" + appCount + "&7/&f" + appMax,
                     "&8" + apprenticeName));
         } else {
-            String display = GuiTooltips.name("spar.mentor.release", "&8Release…",
-                    Map.of("name", apprenticeName));
+            String display = GuiTooltips.name("spar.mentor.release_none", "&8Release…");
             CMIGuiButton releaseOff = new CMIGuiButton(24, Material.GRAY_DYE, display);
             releaseOff.lockField();
-            releaseOff.addLore(GuiTooltips.buttonLore("spar.mentor.release",
-                    List.of("&7You have no apprentices"), Map.of("name", apprenticeName), null));
+            releaseOff.addLore(GuiTooltips.buttonLore("spar.mentor.release_none",
+                    List.of("&7You have no apprentices")));
             gui.addButton(releaseOff);
-            String dojoName = GuiTooltips.name("spar.mentor.dojo", "&8Dojo");
+            String dojoName = GuiTooltips.name("spar.mentor.dojo", "&8Dojo", Map.of("name", ""));
             CMIGuiButton dojoOff = new CMIGuiButton(25, Material.GRAY_DYE, dojoName);
             dojoOff.lockField();
             dojoOff.addLore(GuiTooltips.buttonLore("spar.mentor.dojo",
-                    List.of("&7Invite apprentices to fill your dojo", "&8Max &f" + appMax)));
+                    List.of("&7Invite apprentices to fill your dojo", "&8Max &f" + appMax),
+                    Map.of("name", ""), null));
             gui.addButton(dojoOff);
         }
 
@@ -797,11 +800,18 @@ public final class CmiSparGui {
     }
 
     private static CMIGuiButton pageBtn(Player player, int slot, Material mat, String name, String page, String... tips) {
-        return pageBtn(player, slot, null, mat, name, page, tips);
+        return pageBtn(player, slot, null, mat, name, page, null, tips);
     }
 
     private static CMIGuiButton pageBtn(
             Player player, int slot, String key, Material mat, String name, String page, String... tips
+    ) {
+        return pageBtn(player, slot, key, mat, name, page, null, tips);
+    }
+
+    private static CMIGuiButton pageBtn(
+            Player player, int slot, String key, Material mat, String name, String page,
+            Map<String, String> vars, String... tips
     ) {
         List<String> defaults = new ArrayList<>();
         if (tips != null) {
@@ -811,12 +821,12 @@ public final class CmiSparGui {
                 }
             }
         }
-        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name);
+        String display = key == null || key.isBlank() ? name : GuiTooltips.name(key, name, vars);
         CMIGuiButton btn = new CMIGuiButton(slot, mat, display);
         btn.lockField();
         btn.addLore(key == null || key.isBlank()
                 ? withBlank(defaults)
-                : GuiTooltips.buttonLore(key, defaults));
+                : GuiTooltips.buttonLore(key, defaults, vars, null));
         btn.addCommand("lmdo spar page " + page);
         return btn;
     }

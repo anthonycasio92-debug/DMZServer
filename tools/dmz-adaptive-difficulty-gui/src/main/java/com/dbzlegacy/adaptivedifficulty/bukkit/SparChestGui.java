@@ -275,8 +275,8 @@ public final class SparChestGui implements Listener {
                 SlotAction.page("pending"));
         boolean hasMentor = "true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"));
         boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));
-        String mentorName = blank(ph.get("mentor_name"), "?");
-        String apprenticeName = blank(ph.get("apprentice_name"), "?");
+        String mentorName = blank(ph.get("mentor_name"), "your mentor");
+        String apprenticeName = blank(ph.get("apprentice_name"), "your dojo");
         int appCount = 0;
         try {
             appCount = Integer.parseInt(ph.getOrDefault("apprentice_count", "0"));
@@ -284,6 +284,9 @@ public final class SparChestGui implements Listener {
             appCount = 0;
         }
         String appMax = blank(ph.get("apprentice_max"), "8");
+        String dojoLabel = appCount > 0
+                ? appCount + "/" + appMax + " · " + apprenticeName
+                : apprenticeName;
         if (hasMentor) {
             put(holder, inv, 23, tipBtn(viewer, "spar.mentor.leave", Material.RED_DYE, "&cLeave mentor",
                     List.of("&7End bond with &f" + mentorName,
@@ -291,28 +294,29 @@ public final class SparChestGui implements Listener {
                     Map.of("name", mentorName)),
                     SlotAction.act("mentor_leave", "0", "mentor"));
         } else {
-            put(holder, inv, 23, tipBtn(viewer, "spar.mentor.leave", Material.GRAY_DYE, "&8Leave mentor",
-                    List.of("&7You have no mentor"), Map.of("name", mentorName)));
+            put(holder, inv, 23, tipBtn(viewer, "spar.mentor.leave_none", Material.GRAY_DYE, "&8Leave mentor",
+                    List.of("&7You have no mentor")));
         }
         if (hasApprentice) {
             put(holder, inv, 24, tipBtn(viewer, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
-                    List.of("&7Dojo &f" + appCount + "&7/&f" + appMax,
-                            "&f" + apprenticeName,
+                    List.of("&7Dojo &f" + dojoLabel,
                             "&7Pick who to release",
                             "&812-hour cooldown after releasing"),
-                    Map.of("name", apprenticeName)),
+                    Map.of("name", dojoLabel)),
                     SlotAction.page("pick_release"));
             put(holder, inv, 25, tipBtn(viewer, "spar.mentor.dojo", Material.BOOKSHELF, "&bDojo",
                     List.of("&7View your apprentices",
                             "&f" + appCount + "&7/&f" + appMax,
-                            "&8" + apprenticeName)),
+                            "&8" + apprenticeName),
+                    Map.of("name", dojoLabel)),
                     SlotAction.page("dojo"));
         } else {
-            put(holder, inv, 24, tipBtn(viewer, "spar.mentor.release", Material.GRAY_DYE, "&8Release…",
-                    List.of("&7You have no apprentices"), Map.of("name", apprenticeName)));
+            put(holder, inv, 24, tipBtn(viewer, "spar.mentor.release_none", Material.GRAY_DYE, "&8Release…",
+                    List.of("&7You have no apprentices")));
             put(holder, inv, 25, tipBtn(viewer, "spar.mentor.dojo", Material.GRAY_DYE, "&8Dojo",
                     List.of("&7Invite apprentices to fill your dojo",
-                            "&8Max &f" + appMax)));
+                            "&8Max &f" + appMax),
+                    Map.of("name", "")));
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));

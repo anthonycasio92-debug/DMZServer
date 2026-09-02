@@ -890,17 +890,31 @@
           "&812-hour cooldown after leaving"
         ]
       },
+      "leave_none": {
+        "name": "&8Leave mentor",
+        "lore": [
+          "&7You have no mentor"
+        ]
+      },
       "release": {
         "name": "&6Release…",
         "lore": [
-          "&7Pick an apprentice to release",
+          "&7Dojo &f{name}",
+          "&7Pick who to release",
           "&812-hour cooldown after releasing"
+        ]
+      },
+      "release_none": {
+        "name": "&8Release…",
+        "lore": [
+          "&7You have no apprentices"
         ]
       },
       "dojo": {
         "name": "&bDojo",
         "lore": [
-          "&7View your apprentices"
+          "&7View your apprentices",
+          "&8{name}"
         ]
       }
     },

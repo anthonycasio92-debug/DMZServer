@@ -1,3 +1,13 @@
+## Mentor Actions tip placeholders (2.3.151)
+
+Leave/Release tips no longer show **End bond with ?** (gray Leave used the active tip
+with empty `{name}`) or literal **`{name}`** on multi-apprentice Release (CMI page tips
+skipped var substitution; on-disk lore still said End bond with `{name}`).
+
+- Separate `leave_none` / `release_none` tip keys for inactive buttons
+- CMI page buttons pass `{name}` vars (dojo roster summary)
+- Jar force-refreshes mentor leave/release/dojo tip keys on `/lm admin reload`
+
 ## Mentor Actions cooldown tooltip (2.3.150)
 
 On-disk `plugins/LegacyMechanicsGUI/gui-tooltips.json` was still showing **7-day** Leave/Release

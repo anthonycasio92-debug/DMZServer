@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.150", 'VERSION = "2.3.150"' in mod)
+    check("VERSION 2.3.151", 'VERSION = "2.3.151"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -829,6 +829,16 @@ def main() -> int:
     check("stale 7-day → 12-hour rewrite", '"&87-day cooldown"' in gui_tips and '"&812-hour cooldown"' in gui_tips)
     check("jar leave lore is 12-hour", '"&812-hour cooldown after leaving"' in tips_json)
     check("jar leave lore not 7-day", '"&87-day cooldown"' not in tips_json)
+
+    print("\n=== Mentor tip placeholders (2.3.151) ===")
+    chest = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/SparChestGui.java")
+    cmi = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/CmiSparGui.java")
+    check("leave_none tip key", "spar.mentor.leave_none" in chest and "spar.mentor.leave_none" in cmi)
+    check("release_none tip key", "spar.mentor.release_none" in chest and "spar.mentor.release_none" in cmi)
+    check("FORCE_JAR_LORE_KEYS mentor tips", "FORCE_JAR_LORE_KEYS" in gui_tips and "forceJarLoreKeysToDisk" in gui_tips)
+    check("jar leave_none present", '"leave_none"' in tips_json and "You have no mentor" in tips_json)
+    check("jar release uses {name} dojo", '"&7Dojo &f{name}"' in tips_json)
+    check("CMI pageBtn accepts vars", "Map<String, String> vars, String... tips" in cmi)
 
     print("\n=== Mentor dojo multi-apprentice (2.3.144) ===")
     spar_store144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")

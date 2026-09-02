@@ -63,13 +63,30 @@ public final class SparGuiApi {
         out.put("apprentice_count", String.valueOf(appCount));
         out.put("apprentice_max", String.valueOf(SparringSystem.MAX_APPRENTICES));
         out.put("mentor_bonded", bonded ? "true" : "false");
-        out.put("mentor_name", hasMentor && bond.mentorName != null ? bond.mentorName : "");
+        String mentorDisplay = "";
+        if (hasMentor) {
+            mentorDisplay = bond.mentorName == null ? "" : bond.mentorName.trim();
+            if (mentorDisplay.isBlank() && bond.mentorUuid != null && !bond.mentorUuid.isBlank()
+                    && player.m_20194_() != null) {
+                try {
+                    java.util.UUID mu = java.util.UUID.fromString(bond.mentorUuid.trim());
+                    ServerPlayer onlineMentor = player.m_20194_().m_6846_().m_11259_(mu);
+                    if (onlineMentor != null) {
+                        mentorDisplay = onlineMentor.m_7755_().getString();
+                        bond.mentorName = mentorDisplay;
+                        SparStore.get().markDirty();
+                    }
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+        }
+        out.put("mentor_name", mentorDisplay);
         String appSummary = hasApprentice ? bond.apprenticeNamesSummary() : "";
         out.put("apprentice_name", appSummary);
         out.put("apprentices", appSummary);
         if (hasMentor && hasApprentice) {
             out.put("mentor_role", "both");
-            out.put("mentor", blank(bond.mentorName, "?") + " / " + blank(appSummary, "?"));
+            out.put("mentor", blank(mentorDisplay, "?") + " / " + blank(appSummary, "?"));
             out.put("streak", String.valueOf(bond.streakCurrent));
             out.put("streak_best", String.valueOf(bond.streakBest));
         } else if (hasApprentice) {
@@ -79,7 +96,7 @@ public final class SparGuiApi {
             out.put("streak_best", String.valueOf(bond.streakBest));
         } else if (hasMentor) {
             out.put("mentor_role", "apprentice");
-            out.put("mentor", bond.mentorName == null ? "" : bond.mentorName);
+            out.put("mentor", mentorDisplay);
             out.put("streak", String.valueOf(bond.streakCurrent));
             out.put("streak_best", String.valueOf(bond.streakBest));
         } else {

@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -71,6 +72,18 @@ final class GuiTooltips {
             {"7d cooldown", "12h cooldown"},
     };
 
+    /**
+     * Mentor tip keys whose jar lore must win over stale on-disk copy
+     * (disk otherwise keeps old {@code End bond with \{name\}} / missing vars).
+     */
+    private static final String[] FORCE_JAR_LORE_KEYS = {
+            "spar.mentor.leave",
+            "spar.mentor.leave_none",
+            "spar.mentor.release",
+            "spar.mentor.release_none",
+            "spar.mentor.dojo",
+    };
+
     static String reload() {
         Map<String, Entry> jarEntries = new LinkedHashMap<>();
         String jarJson = null;
@@ -88,6 +101,7 @@ final class GuiTooltips {
         int fromDisk = 0;
         int merged = 0;
         int staleFixed = 0;
+        int forced = 0;
         if (path != null && Files.isRegularFile(path)) {
             try {
                 String diskJson = Files.readString(path, StandardCharsets.UTF_8);
@@ -106,8 +120,22 @@ final class GuiTooltips {
                 // Preserve edits, but fill any new jar keys into the on-disk file for editing.
                 if (jarJson != null) {
                     merged = mergeMissingKeysToDisk(path, jarJson, diskJson, jarEntries.keySet(), disk.keySet());
+                    // Re-read after merge so FORCE overwrite sees latest disk tree.
+                    if (merged > 0 && Files.isRegularFile(path)) {
+                        diskJson = Files.readString(path, StandardCharsets.UTF_8);
+                        disk.clear();
+                        fromDisk = parseInto(diskJson, disk);
+                    }
+                    forced = forceJarLoreKeysToDisk(path, jarJson, jarEntries, disk);
                 }
                 next.putAll(disk);
+                // Jar lore for force-keys wins even after disk putAll.
+                for (String key : FORCE_JAR_LORE_KEYS) {
+                    Entry jar = jarEntries.get(normalize(key));
+                    if (jar != null) {
+                        next.put(normalize(key), jar);
+                    }
+                }
             } catch (Throwable t) {
                 String err = "gui-tooltips reload failed: " + t.getMessage();
                 if (log != null) {
@@ -127,13 +155,88 @@ final class GuiTooltips {
         String msg = "§aGUI tooltips loaded §f" + ENTRIES.size() + " §akeys"
                 + (fromDisk > 0 ? " §8(" + fromDisk + " from gui-tooltips.json)" : "")
                 + (merged > 0 ? " §a(+ " + merged + " new keys merged into file)" : "")
-                + (staleFixed > 0 ? " §a(+ " + staleFixed + " stale 7d→12h fixes)" : "");
+                + (staleFixed > 0 ? " §a(+ " + staleFixed + " stale 7d→12h fixes)" : "")
+                + (forced > 0 ? " §a(+ " + forced + " mentor tips refreshed from jar)" : "");
         if (log != null) {
             log.info("GUI tooltips: " + ENTRIES.size() + " keys"
                     + (merged > 0 ? " (merged " + merged + " new)" : "")
-                    + (staleFixed > 0 ? " (fixed " + staleFixed + " stale)" : ""));
+                    + (staleFixed > 0 ? " (fixed " + staleFixed + " stale)" : "")
+                    + (forced > 0 ? " (forced " + forced + " mentor tips)" : ""));
         }
         return msg;
+    }
+
+    /**
+     * Overwrite known mentor tip keys on disk with jar content so Leave/Release
+     * stop showing {@code ?} / literal {@code {name}} from old lore.
+     */
+    private static int forceJarLoreKeysToDisk(
+            Path path, String jarJson, Map<String, Entry> jarEntries, Map<String, Entry> disk
+    ) {
+        if (path == null || jarJson == null || jarEntries == null || disk == null) {
+            return 0;
+        }
+        int changed = 0;
+        try {
+            JsonObject jarRoot = JsonParser.parseString(jarJson).getAsJsonObject();
+            String diskJson = Files.readString(path, StandardCharsets.UTF_8);
+            JsonObject diskRoot = JsonParser.parseString(diskJson).getAsJsonObject();
+            boolean dirty = false;
+            for (String key : FORCE_JAR_LORE_KEYS) {
+                Entry jar = jarEntries.get(normalize(key));
+                if (jar == null) {
+                    continue;
+                }
+                Entry cur = disk.get(normalize(key));
+                boolean same = cur != null
+                        && Objects.equals(cur.name, jar.name)
+                        && Objects.equals(cur.lore, jar.lore);
+                if (same) {
+                    continue;
+                }
+                if (overwritePath(jarRoot, diskRoot, key.split("\\."))) {
+                    disk.put(normalize(key), jar);
+                    changed++;
+                    dirty = true;
+                }
+            }
+            if (dirty) {
+                Files.writeString(path, GSON.toJson(diskRoot) + "\n", StandardCharsets.UTF_8);
+            }
+        } catch (Throwable t) {
+            if (log != null) {
+                log.warning("Could not force mentor tip keys from jar: " + t.getMessage());
+            }
+            return 0;
+        }
+        return changed;
+    }
+
+    /** Like {@link #copyPath} but replaces an existing leaf. */
+    private static boolean overwritePath(JsonObject from, JsonObject to, String[] parts) {
+        if (parts == null || parts.length == 0) {
+            return false;
+        }
+        JsonObject src = from;
+        JsonObject dst = to;
+        for (int i = 0; i < parts.length - 1; i++) {
+            String p = parts[i];
+            if (!src.has(p) || !src.get(p).isJsonObject()) {
+                return false;
+            }
+            JsonObject srcChild = src.getAsJsonObject(p);
+            if (!dst.has(p) || !dst.get(p).isJsonObject()) {
+                dst.add(p, new JsonObject());
+            }
+            src = srcChild;
+            dst = dst.getAsJsonObject(p);
+        }
+        String leaf = parts[parts.length - 1];
+        if (!src.has(leaf)) {
+            return false;
+        }
+        dst.add(leaf, src.get(leaf).deepCopy());
+        return true;
     }
 
     private static String sanitizeStaleCopy(String json) {
