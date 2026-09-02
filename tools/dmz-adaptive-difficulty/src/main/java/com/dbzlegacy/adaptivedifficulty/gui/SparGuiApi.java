@@ -197,6 +197,17 @@ public final class SparGuiApi {
         return SparringSystem.apprenticeCards(player);
     }
 
+    /**
+     * Membership dojo cards ({@code role\tuuid\tname}) — mentor first, then apprentices.
+     * Roles: {@code mentor}, {@code you}, {@code apprentice}.
+     */
+    public static List<String> membershipDojoCards(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of();
+        }
+        return SparringSystem.membershipDojoCards(player);
+    }
+
     public static List<String> pendingMentorLines(ServerPlayer player) {
         List<String> cards = pendingMentorInviteCards(player);
         List<String> lines = new ArrayList<>();

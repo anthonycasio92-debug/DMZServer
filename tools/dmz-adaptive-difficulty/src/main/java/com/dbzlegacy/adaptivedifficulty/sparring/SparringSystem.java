@@ -1424,6 +1424,65 @@ public final class SparringSystem {
         return out;
     }
 
+    /**
+     * Membership dojo for GUI: mentor first, then every apprentice in that dojo.
+     * Encoded as {@code role\tuuid\tname} where role is {@code mentor}, {@code you}, or {@code apprentice}.
+     */
+    public static List<String> membershipDojoCards(ServerPlayer player) {
+        List<String> out = new ArrayList<>();
+        if (player == null) {
+            return out;
+        }
+        SparStore.MentorBond mine = SparStore.get().bond(player.m_20148_());
+        if (mine.mentorUuid == null || mine.mentorUuid.isBlank()) {
+            return out;
+        }
+        String mentorUuid = mine.mentorUuid.trim();
+        String mentorName = mine.mentorName == null ? "" : mine.mentorName.trim();
+        MinecraftServer server = player.m_20194_();
+        if (mentorName.isBlank() && server != null) {
+            try {
+                ServerPlayer onlineMentor = server.m_6846_().m_11259_(UUID.fromString(mentorUuid));
+                if (onlineMentor != null) {
+                    mentorName = onlineMentor.m_7755_().getString();
+                    mine.mentorName = mentorName;
+                    SparStore.get().markDirty();
+                }
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        if (mentorName.isBlank()) {
+            mentorName = "Mentor";
+        }
+        mentorName = mentorName.replace('\t', ' ').replace('\n', ' ');
+        out.add("mentor\t" + mentorUuid + "\t" + mentorName);
+
+        SparStore.MentorBond mentorBond = SparStore.get().bondsByPlayer.get(mentorUuid);
+        String selfUuid = player.m_20148_().toString();
+        boolean listedSelf = false;
+        if (mentorBond != null) {
+            mentorBond.normalizeApprentices();
+            for (SparStore.ApprenticeRef r : mentorBond.apprentices) {
+                String uuid = r.uuid == null ? "" : r.uuid;
+                if (uuid.isBlank()) {
+                    continue;
+                }
+                String name = r.name == null || r.name.isBlank() ? uuid : r.name;
+                name = name.replace('\t', ' ').replace('\n', ' ');
+                boolean you = selfUuid.equalsIgnoreCase(uuid);
+                if (you) {
+                    listedSelf = true;
+                }
+                out.add((you ? "you" : "apprentice") + "\t" + uuid + "\t" + name);
+            }
+        }
+        if (!listedSelf) {
+            String selfName = player.m_7755_().getString().replace('\t', ' ').replace('\n', ' ');
+            out.add("you\t" + selfUuid + "\t" + selfName);
+        }
+        return out;
+    }
+
     private static SparStore.ApprenticeRef findApprentice(
             SparStore.MentorBond bond, ServerPlayer mentor, String targetArg
     ) {

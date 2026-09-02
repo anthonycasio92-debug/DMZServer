@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.151", 'VERSION = "2.3.151"' in mod)
+    check("VERSION 2.3.152", 'VERSION = "2.3.152"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -830,7 +830,7 @@ def main() -> int:
     check("jar leave lore is 12-hour", '"&812-hour cooldown after leaving"' in tips_json)
     check("jar leave lore not 7-day", '"&87-day cooldown"' not in tips_json)
 
-    print("\n=== Mentor tip placeholders (2.3.151) ===")
+    print("\n=== Mentor tip placeholders (2.3.152) ===")
     chest = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/SparChestGui.java")
     cmi = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/CmiSparGui.java")
     check("leave_none tip key", "spar.mentor.leave_none" in chest and "spar.mentor.leave_none" in cmi)
@@ -839,6 +839,20 @@ def main() -> int:
     check("jar leave_none present", '"leave_none"' in tips_json and "You have no mentor" in tips_json)
     check("jar release uses {name} dojo", '"&7Dojo &f{name}"' in tips_json)
     check("CMI pageBtn accepts vars", "Map<String, String> vars, String... tips" in cmi)
+
+
+    print("\n=== Dojo membership roster (2.3.152) ===")
+    spar_sys152 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
+    spar_api152 = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.java")
+    chest152 = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/SparChestGui.java")
+    cmi152 = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/CmiSparGui.java")
+    bridge152 = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/ForgeBridge.java")
+    check("membershipDojoCards system", "membershipDojoCards" in spar_sys152)
+    check("membershipDojoCards SparGuiApi", "membershipDojoCards" in spar_api152)
+    check("ForgeBridge membershipDojoCards", "sparMembershipDojoCards" in bridge152)
+    check("Chest dojo_member/dojo_mine", "dojo_member" in chest152 and "dojo_mine" in chest152)
+    check("CMI dojo_member/dojo_mine", "dojo_member" in cmi152 and "dojo_mine" in cmi152)
+    check("Dojo opens for apprentices", 'hasMentor || hasApprentice' in chest152 and 'hasMentor || hasApprentice' in cmi152)
 
     print("\n=== Mentor dojo multi-apprentice (2.3.144) ===")
     spar_store144 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")

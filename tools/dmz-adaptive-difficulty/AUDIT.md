@@ -1,3 +1,9 @@
+## Dojo membership roster (2.3.152)
+
+Dojo menu shows the **mentor at the top** plus every apprentice in that dojo when you
+are a member. If you also mentor others, **My Dojo** / **Their Dojo** switches between
+your own apprentices and your master's roster. Dojo opens for apprentices (not only mentors).
+
 ## Mentor Actions tip placeholders (2.3.151)
 
 Leave/Release tips no longer show **End bond with ?** (gray Leave used the active tip

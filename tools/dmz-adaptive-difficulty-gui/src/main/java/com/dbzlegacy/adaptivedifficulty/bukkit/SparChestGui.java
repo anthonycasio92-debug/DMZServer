@@ -57,8 +57,9 @@ public final class SparChestGui implements Listener {
             inv = mentor(viewer, subject);
         } else if ("pending".equals(p) || "invites".equals(p) || "pendinginvites".equals(p)) {
             inv = pending(viewer, subject);
-        } else if ("dojo".equals(p) || "roster".equals(p) || "apprentices".equals(p)) {
-            inv = dojo(viewer, subject);
+        } else if ("dojo".equals(p) || "roster".equals(p) || "apprentices".equals(p)
+                || "dojo_member".equals(p) || "dojo_mine".equals(p) || "dojo_own".equals(p)) {
+            inv = dojo(viewer, subject, p);
         } else if ("pick_apprentice".equals(p)) {
             inv = picker(viewer, subject, "mentor_invite", "mentor",
                     "&aInvite Apprentice", "&7Ask them to be your apprentice");
@@ -304,17 +305,29 @@ public final class SparChestGui implements Listener {
                             "&812-hour cooldown after releasing"),
                     Map.of("name", dojoLabel)),
                     SlotAction.page("pick_release"));
-            put(holder, inv, 25, tipBtn(viewer, "spar.mentor.dojo", Material.BOOKSHELF, "&bDojo",
-                    List.of("&7View your apprentices",
-                            "&f" + appCount + "&7/&f" + appMax,
-                            "&8" + apprenticeName),
-                    Map.of("name", dojoLabel)),
-                    SlotAction.page("dojo"));
         } else {
             put(holder, inv, 24, tipBtn(viewer, "spar.mentor.release_none", Material.GRAY_DYE, "&8Release…",
                     List.of("&7You have no apprentices")));
+        }
+        if (hasMentor || hasApprentice) {
+            List<String> dojoTip = new ArrayList<>();
+            if (hasMentor) {
+                dojoTip.add("&7Master &f" + mentorName);
+                dojoTip.add("&7See mentor + apprentices");
+            }
+            if (hasApprentice) {
+                dojoTip.add("&7Your dojo &f" + appCount + "&7/&f" + appMax);
+                dojoTip.add("&8" + apprenticeName);
+            }
+            if (hasMentor && hasApprentice) {
+                dojoTip.add("&eSwitch views inside Dojo");
+            }
+            put(holder, inv, 25, tipBtn(viewer, "spar.mentor.dojo", Material.BOOKSHELF, "&bDojo",
+                    dojoTip, Map.of("name", dojoLabel)),
+                    SlotAction.page("dojo"));
+        } else {
             put(holder, inv, 25, tipBtn(viewer, "spar.mentor.dojo", Material.GRAY_DYE, "&8Dojo",
-                    List.of("&7Invite apprentices to fill your dojo",
+                    List.of("&7Invite apprentices or ask a mentor",
                             "&8Max &f" + appMax),
                     Map.of("name", "")));
         }
@@ -431,24 +444,103 @@ public final class SparChestGui implements Listener {
         return null;
     }
 
-    /** Read-only dojo roster (Rival List twin). */
-    private Inventory dojo(Player viewer, Player subject) {
-        Holder holder = new Holder("dojo");
-        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Dojo Roster"));
+    /**
+     * Dojo roster — membership view (mentor + peers) and/or your own apprentices.
+     * Pages: {@code dojo} (default), {@code dojo_member}, {@code dojo_mine}.
+     */
+    private Inventory dojo(Player viewer, Player subject, String page) {
+        Map<String, String> ph = ForgeBridge.sparPlaceholders(subject);
+        boolean hasMentor = "true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"));
+        boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));
+        String raw = page == null ? "dojo" : page.trim().toLowerCase(Locale.ROOT);
+        boolean forceMine = "dojo_mine".equals(raw) || "dojo_own".equals(raw) || "apprentices".equals(raw);
+        boolean forceMember = "dojo_member".equals(raw);
+        boolean showMine = forceMine || (!forceMember && !hasMentor && hasApprentice);
+        if (!forceMine && !forceMember) {
+            // Default: membership dojo when you have a master; else your own.
+            showMine = !hasMentor && hasApprentice;
+        }
+        if (showMine && !hasApprentice && hasMentor) {
+            showMine = false;
+        }
+        if (!showMine && !hasMentor && hasApprentice) {
+            showMine = true;
+        }
+
+        Holder holder = new Holder(showMine ? "dojo_mine" : "dojo_member");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject,
+                showMine ? "&8My Dojo" : "&8Dojo Roster"));
         holder.bind(inv);
         frame(inv, 45);
-        Map<String, String> ph = ForgeBridge.sparPlaceholders(subject);
+
+        if (showMine) {
+            fillOwnDojo(holder, inv, viewer, subject, ph, hasMentor);
+        } else {
+            fillMemberDojo(holder, inv, viewer, subject, ph, hasApprentice);
+        }
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Mentor"),
+                SlotAction.page("mentor"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private void fillMemberDojo(
+            Holder holder, Inventory inv, Player viewer, Player subject,
+            Map<String, String> ph, boolean hasOwnDojo
+    ) {
+        List<String> cards = ForgeBridge.sparMembershipDojoCards(subject);
+        String mentorName = blank(ph.get("mentor_name"), "Mentor");
+        int peerCount = Math.max(0, cards.size() - 1);
+        List<String> header = new ArrayList<>();
+        header.add("");
+        header.add("&7Master &f" + mentorName);
+        header.add(peerCount <= 0 ? "&7No apprentices listed yet" : "&7" + peerCount + " apprentice"
+                + (peerCount == 1 ? "" : "s"));
+        header.addAll(GuiBoardHelper.tips(viewer, "&8Mentor on top · apprentices below"));
+        put(holder, inv, 4, item(Material.BOOKSHELF, "&b&lDojo", header));
+
+        String mentorCard = null;
+        List<String> peers = new ArrayList<>();
+        for (String card : cards) {
+            String[] p = card.split("\t", 3);
+            String role = p.length > 0 ? p[0] : "";
+            if ("mentor".equalsIgnoreCase(role)) {
+                mentorCard = card;
+            } else {
+                peers.add(card);
+            }
+        }
+        if (mentorCard != null) {
+            put(holder, inv, 13, dojoRoleHead(mentorCard));
+        }
+        if (peers.isEmpty() && mentorCard == null) {
+            put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_apprentice", Material.BARRIER, "&7Not in a dojo",
+                    List.of("&7Ask a mentor from Mentor Actions")));
+        } else if (!peers.isEmpty()) {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(peers.size(), 21));
+            for (int i = 0; i < slots.length && i < peers.size(); i++) {
+                put(holder, inv, slots[i], dojoRoleHead(peers.get(i)));
+            }
+        }
+        if (hasOwnDojo) {
+            put(holder, inv, 39, pageBtn(viewer, "spar.mentor.dojo", Material.LIME_DYE, "&aMy Dojo",
+                    "&7View apprentices you mentor"), SlotAction.page("dojo_mine"));
+        }
+    }
+
+    private void fillOwnDojo(
+            Holder holder, Inventory inv, Player viewer, Player subject,
+            Map<String, String> ph, boolean hasMentor
+    ) {
         List<String> cards = ForgeBridge.sparApprenticeCards(subject);
         int appCount = cards.size();
         String appMax = blank(ph.get("apprentice_max"), "8");
         List<String> header = new ArrayList<>();
         header.add("");
         header.add(appCount <= 0 ? "&7No apprentices yet." : "&7" + appCount + "/" + appMax + " apprentices");
-        if ("true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"))) {
-            header.add("&7Your master &f" + blank(ph.get("mentor_name"), "?"));
-        }
+        header.add("&7You are the master of this dojo");
         header.addAll(GuiBoardHelper.tips(viewer, "&8Release from Mentor Actions"));
-        put(holder, inv, 4, item(Material.BOOKSHELF, "&b&lDojo", header));
+        put(holder, inv, 4, item(Material.BOOKSHELF, "&b&lMy Dojo", header));
         if (cards.isEmpty()) {
             put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_apprentice", Material.BARRIER, "&7Empty dojo",
                     List.of("&7Invite apprentices from Mentor Actions")));
@@ -463,22 +555,46 @@ public final class SparChestGui implements Listener {
                 try {
                     head = GuiPlayerPicker.headByUuid(
                             java.util.UUID.fromString(uuid), name, "&f" + name,
-                            List.of("&7Apprentice", "&8Release via Mentor → Release…"));
+                            List.of("&7Your apprentice", "&8Release via Mentor → Release…"));
                 } catch (IllegalArgumentException ex) {
                     head = GuiPlayerPicker.headByName(name, "&f" + name,
-                            List.of("&7Apprentice", "&8Release via Mentor → Release…"));
+                            List.of("&7Your apprentice", "&8Release via Mentor → Release…"));
                 }
                 put(holder, inv, slots[i], head);
             }
         }
         if (appCount > 0) {
-            put(holder, inv, 39, pageBtn(viewer, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
+            put(holder, inv, 40, pageBtn(viewer, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
                     "&7Pick an apprentice to release"), SlotAction.page("pick_release"));
         }
-        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Mentor"),
-                SlotAction.page("mentor"));
-        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
-        return inv;
+        if (hasMentor) {
+            put(holder, inv, 39, pageBtn(viewer, "spar.mentor.dojo", Material.EMERALD, "&bTheir Dojo",
+                    "&7View your mentor's roster"), SlotAction.page("dojo_member"));
+        }
+    }
+
+    private static ItemStack dojoRoleHead(String card) {
+        String[] p = card.split("\t", 3);
+        String role = p.length > 0 ? p[0] : "apprentice";
+        String uuid = p.length > 1 ? p[1] : "";
+        String name = p.length > 2 ? p[2] : uuid;
+        List<String> lore = new ArrayList<>();
+        String title;
+        if ("mentor".equalsIgnoreCase(role)) {
+            title = "&6&lMentor &f" + name;
+            lore.add("&6Dojo master");
+        } else if ("you".equalsIgnoreCase(role)) {
+            title = "&a&lYou &f" + name;
+            lore.add("&aApprentice (you)");
+        } else {
+            title = "&f" + name;
+            lore.add("&7Apprentice");
+        }
+        try {
+            return GuiPlayerPicker.headByUuid(java.util.UUID.fromString(uuid), name, title, lore);
+        } catch (IllegalArgumentException ex) {
+            return GuiPlayerPicker.headByName(name, title, lore);
+        }
     }
 
     /** Accept/decline picker — only incoming mentor invites. */

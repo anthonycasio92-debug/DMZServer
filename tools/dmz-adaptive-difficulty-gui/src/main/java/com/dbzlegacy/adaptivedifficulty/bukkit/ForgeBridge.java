@@ -74,6 +74,7 @@ public final class ForgeBridge {
     private static Method sparPendingMentorInviteCardsMethod;
     private static Method sparPendingIncomingMentorArgsMethod;
     private static Method sparApprenticeCardsMethod;
+    private static Method sparMembershipDojoCardsMethod;
     private static Method hubChatMenuOpen;
     private static Method hubPlaceholdersMethod;
     private static Method hubLinesMethod;
@@ -1144,6 +1145,11 @@ public final class ForgeBridge {
         return invokeSparStringList(player, "apprenticeCards");
     }
 
+    /** Membership dojo cards ({@code role\tuuid\tname}) — mentor + peers. */
+    public static List<String> sparMembershipDojoCards(Player player) {
+        return invokeSparStringList(player, "membershipDojoCards");
+    }
+
     private static List<String> invokeSparStringList(Player player, String methodName) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
@@ -1155,6 +1161,7 @@ public final class ForgeBridge {
                 case "pendingMentorInviteCards" -> sparPendingMentorInviteCardsMethod;
                 case "pendingIncomingMentorArgs" -> sparPendingIncomingMentorArgsMethod;
                 case "apprenticeCards" -> sparApprenticeCardsMethod;
+                case "membershipDojoCards" -> sparMembershipDojoCardsMethod;
                 default -> null;
             };
             if (m == null) {
@@ -1995,6 +2002,13 @@ public final class ForgeBridge {
                     sparApprenticeCardsMethod = api.getMethod("apprenticeCards", sp);
                 } catch (Throwable ignored) {
                     sparApprenticeCardsMethod = null;
+                }
+            }
+            if (sparMembershipDojoCardsMethod == null) {
+                try {
+                    sparMembershipDojoCardsMethod = api.getMethod("membershipDojoCards", sp);
+                } catch (Throwable ignored) {
+                    sparMembershipDojoCardsMethod = null;
                 }
             }
         } catch (Throwable ignored) {

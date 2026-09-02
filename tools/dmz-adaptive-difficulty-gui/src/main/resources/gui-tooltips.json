@@ -913,7 +913,8 @@
       "dojo": {
         "name": "&bDojo",
         "lore": [
-          "&7View your apprentices",
+          "&7Mentor + apprentices",
+          "&8Switch to My Dojo if you mentor others",
           "&8{name}"
         ]
       }

@@ -42,8 +42,9 @@ public final class CmiSparGui {
                 openMentor(player);
             } else if ("pending".equals(p) || "invites".equals(p) || "pendinginvites".equals(p)) {
                 openPending(player);
-            } else if ("dojo".equals(p) || "roster".equals(p) || "apprentices".equals(p)) {
-                openDojo(player);
+            } else if ("dojo".equals(p) || "roster".equals(p) || "apprentices".equals(p)
+                    || "dojo_member".equals(p) || "dojo_mine".equals(p) || "dojo_own".equals(p)) {
+                openDojo(player, p);
             } else if ("pick_apprentice".equals(p)) {
                 openPicker(player, "mentor_invite", "mentor",
                         "&aInvite Apprentice", "&7Ask them to be your apprentice");
@@ -275,12 +276,6 @@ public final class CmiSparGui {
                     "&7Dojo &f" + dojoLabel,
                     "&7Pick who to release",
                     "&812-hour cooldown after releasing"));
-            gui.addButton(pageBtn(player, 25, "spar.mentor.dojo", Material.BOOKSHELF, "&bDojo",
-                    "dojo",
-                    Map.of("name", dojoLabel),
-                    "&7View your apprentices",
-                    "&f" + appCount + "&7/&f" + appMax,
-                    "&8" + apprenticeName));
         } else {
             String display = GuiTooltips.name("spar.mentor.release_none", "&8Release…");
             CMIGuiButton releaseOff = new CMIGuiButton(24, Material.GRAY_DYE, display);
@@ -288,11 +283,30 @@ public final class CmiSparGui {
             releaseOff.addLore(GuiTooltips.buttonLore("spar.mentor.release_none",
                     List.of("&7You have no apprentices")));
             gui.addButton(releaseOff);
+        }
+        if (hasMentor || hasApprentice) {
+            List<String> dojoTip = new ArrayList<>();
+            if (hasMentor) {
+                dojoTip.add("&7Master &f" + mentorName);
+                dojoTip.add("&7See mentor + apprentices");
+            }
+            if (hasApprentice) {
+                dojoTip.add("&7Your dojo &f" + appCount + "&7/&f" + appMax);
+                dojoTip.add("&8" + apprenticeName);
+            }
+            if (hasMentor && hasApprentice) {
+                dojoTip.add("&eSwitch views inside Dojo");
+            }
+            gui.addButton(pageBtn(player, 25, "spar.mentor.dojo", Material.BOOKSHELF, "&bDojo",
+                    "dojo",
+                    Map.of("name", dojoLabel),
+                    dojoTip.toArray(new String[0])));
+        } else {
             String dojoName = GuiTooltips.name("spar.mentor.dojo", "&8Dojo", Map.of("name", ""));
             CMIGuiButton dojoOff = new CMIGuiButton(25, Material.GRAY_DYE, dojoName);
             dojoOff.lockField();
             dojoOff.addLore(GuiTooltips.buttonLore("spar.mentor.dojo",
-                    List.of("&7Invite apprentices to fill your dojo", "&8Max &f" + appMax),
+                    List.of("&7Invite apprentices or ask a mentor", "&8Max &f" + appMax),
                     Map.of("name", ""), null));
             gui.addButton(dojoOff);
         }
@@ -424,21 +438,106 @@ public final class CmiSparGui {
         return null;
     }
 
-    /** Read-only dojo roster (Rival List twin). */
-    private static void openDojo(Player player) {
-        CMIGui gui = base(player, "&8Dojo Roster", 5);
+    /**
+     * Dojo roster — membership view (mentor + peers) and/or your own apprentices.
+     * Pages: {@code dojo} (default), {@code dojo_member}, {@code dojo_mine}.
+     */
+    private static void openDojo(Player player, String page) {
         Map<String, String> ph = ForgeBridge.sparPlaceholders(player);
-        List<String> cards = ForgeBridge.sparApprenticeCards(player);
-        int appCount = cards.size();
-        String appMax = blank(ph.get("apprentice_max"), "8");
+        boolean hasMentor = "true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"));
+        boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));
+        String raw = page == null ? "dojo" : page.trim().toLowerCase(Locale.ROOT);
+        boolean forceMine = "dojo_mine".equals(raw) || "dojo_own".equals(raw) || "apprentices".equals(raw);
+        boolean forceMember = "dojo_member".equals(raw);
+        boolean showMine = forceMine || (!forceMember && !hasMentor && hasApprentice);
+        if (!forceMine && !forceMember) {
+            showMine = !hasMentor && hasApprentice;
+        }
+        if (showMine && !hasApprentice && hasMentor) {
+            showMine = false;
+        }
+        if (!showMine && !hasMentor && hasApprentice) {
+            showMine = true;
+        }
+
+        CMIGui gui = base(player, showMine ? "&8My Dojo" : "&8Dojo Roster", 5);
+        if (showMine) {
+            fillOwnDojoCmi(gui, player, ph, hasMentor);
+        } else {
+            fillMemberDojoCmi(gui, player, ph, hasApprentice);
+        }
+        gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "mentor", "&7Mentor"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        GuiFeedback.openCmi(gui);
+    }
+
+    private static void fillMemberDojoCmi(
+            CMIGui gui, Player player, Map<String, String> ph, boolean hasOwnDojo
+    ) {
+        List<String> cards = ForgeBridge.sparMembershipDojoCards(player);
+        String mentorName = blank(ph.get("mentor_name"), "Mentor");
+        int peerCount = Math.max(0, cards.size() - 1);
         CMIGuiButton info = new CMIGuiButton(4, Material.BOOKSHELF, "&b&lDojo");
         info.lockField();
         List<String> header = new ArrayList<>();
         header.add("");
-        header.add(appCount <= 0 ? "&7No apprentices yet." : "&7" + appCount + "/" + appMax + " apprentices");
-        if ("true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"))) {
-            header.add("&7Your master &f" + blank(ph.get("mentor_name"), "?"));
+        header.add("&7Master &f" + mentorName);
+        header.add(peerCount <= 0 ? "&7No apprentices listed yet" : "&7" + peerCount + " apprentice"
+                + (peerCount == 1 ? "" : "s"));
+        header.addAll(GuiBoardHelper.tips(player, "&8Mentor on top · apprentices below"));
+        info.addLore(header);
+        gui.addButton(info);
+
+        String mentorCard = null;
+        List<String> peers = new ArrayList<>();
+        for (String card : cards) {
+            String[] p = card.split("\t", 3);
+            String role = p.length > 0 ? p[0] : "";
+            if ("mentor".equalsIgnoreCase(role)) {
+                mentorCard = card;
+            } else {
+                peers.add(card);
+            }
         }
+        if (mentorCard != null) {
+            CMIGuiButton mentorBtn = new CMIGuiButton(13, dojoRoleHead(mentorCard));
+            mentorBtn.lockField();
+            gui.addButton(mentorBtn);
+        }
+        if (peers.isEmpty() && mentorCard == null) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER,
+                    GuiTooltips.name("spar.empty.no_apprentice", "&7Not in a dojo"));
+            empty.lockField();
+            empty.addLore(GuiTooltips.buttonLore("spar.empty.no_apprentice",
+                    GuiBoardHelper.tipsList(player, List.of("&7Ask a mentor from Mentor Actions"))));
+            gui.addButton(empty);
+        } else if (!peers.isEmpty()) {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(peers.size(), 21));
+            for (int i = 0; i < slots.length && i < peers.size(); i++) {
+                CMIGuiButton btn = new CMIGuiButton(slots[i], dojoRoleHead(peers.get(i)));
+                btn.lockField();
+                gui.addButton(btn);
+            }
+        }
+        if (hasOwnDojo) {
+            gui.addButton(pageBtn(player, 39, "spar.mentor.dojo", Material.LIME_DYE, "&aMy Dojo",
+                    "dojo_mine", "&7View apprentices you mentor"));
+        }
+    }
+
+    private static void fillOwnDojoCmi(
+            CMIGui gui, Player player, Map<String, String> ph, boolean hasMentor
+    ) {
+        List<String> cards = ForgeBridge.sparApprenticeCards(player);
+        int appCount = cards.size();
+        String appMax = blank(ph.get("apprentice_max"), "8");
+        CMIGuiButton info = new CMIGuiButton(4, Material.BOOKSHELF, "&b&lMy Dojo");
+        info.lockField();
+        List<String> header = new ArrayList<>();
+        header.add("");
+        header.add(appCount <= 0 ? "&7No apprentices yet." : "&7" + appCount + "/" + appMax + " apprentices");
+        header.add("&7You are the master of this dojo");
         header.addAll(GuiBoardHelper.tips(player, "&8Release from Mentor Actions"));
         info.addLore(header);
         gui.addButton(info);
@@ -461,10 +560,10 @@ public final class CmiSparGui {
                 try {
                     head = GuiPlayerPicker.headByUuid(
                             java.util.UUID.fromString(uuid), name, "&f" + name,
-                            List.of("&7Apprentice", "&8Release via Mentor → Release…"));
+                            List.of("&7Your apprentice", "&8Release via Mentor → Release…"));
                 } catch (IllegalArgumentException ex) {
                     head = GuiPlayerPicker.headByName(name, "&f" + name,
-                            List.of("&7Apprentice", "&8Release via Mentor → Release…"));
+                            List.of("&7Your apprentice", "&8Release via Mentor → Release…"));
                 }
                 CMIGuiButton btn = new CMIGuiButton(slots[i], head);
                 btn.lockField();
@@ -472,13 +571,37 @@ public final class CmiSparGui {
             }
         }
         if (appCount > 0) {
-            gui.addButton(pageBtn(player, 39, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
+            gui.addButton(pageBtn(player, 40, "spar.mentor.release", Material.ORANGE_DYE, "&6Release…",
                     "pick_release", "&7Pick an apprentice to release"));
         }
-        gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "mentor", "&7Mentor"));
-        gui.addButton(closeBtn(44));
-        fillEmpty(gui, 5);
-        GuiFeedback.openCmi(gui);
+        if (hasMentor) {
+            gui.addButton(pageBtn(player, 39, "spar.mentor.dojo", Material.EMERALD, "&bTheir Dojo",
+                    "dojo_member", "&7View your mentor's roster"));
+        }
+    }
+
+    private static ItemStack dojoRoleHead(String card) {
+        String[] p = card.split("\t", 3);
+        String role = p.length > 0 ? p[0] : "apprentice";
+        String uuid = p.length > 1 ? p[1] : "";
+        String name = p.length > 2 ? p[2] : uuid;
+        List<String> lore = new ArrayList<>();
+        String title;
+        if ("mentor".equalsIgnoreCase(role)) {
+            title = "&6&lMentor &f" + name;
+            lore.add("&6Dojo master");
+        } else if ("you".equalsIgnoreCase(role)) {
+            title = "&a&lYou &f" + name;
+            lore.add("&aApprentice (you)");
+        } else {
+            title = "&f" + name;
+            lore.add("&7Apprentice");
+        }
+        try {
+            return GuiPlayerPicker.headByUuid(java.util.UUID.fromString(uuid), name, title, lore);
+        } catch (IllegalArgumentException ex) {
+            return GuiPlayerPicker.headByName(name, title, lore);
+        }
     }
 
     private static void openPendingPicker(
