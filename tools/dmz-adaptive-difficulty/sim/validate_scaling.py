@@ -306,7 +306,7 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
     mob_hp = max(10.0, min(base_hp_mob, hard) * MOB_HP_SCALE * hp_overlay)
 
     hit_frac = dmg_capped / max(1.0, live_hp)
-    land_frac = {1: 0.13, 2: 0.16, 3: 0.30, 4: 0.40, 5: 0.50, 6: 0.54, 7: 0.58}[tier]
+    land_frac = {1: 0.13, 2: 0.16, 3: 0.30, 4: 0.44, 5: 0.50, 6: 0.57, 7: 0.58}[tier]
     if form_boost > 1.12:
         t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
         bump = 0.06 if tier <= 2 else 0.12

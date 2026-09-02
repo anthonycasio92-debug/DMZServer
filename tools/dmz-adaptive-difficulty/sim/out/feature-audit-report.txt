@@ -1,5 +1,14 @@
 === Version ===
-  OK  VERSION 1.0.14
+  OK  VERSION 2.3.133
+  OK  meditation hints use ScreenNotify subtitle
+  OK  meditation full-ki hint only while charging
+  OK  meditation no chat tellCondition
+  OK  End Dragon AD profile paint
+  OK  player dragon skips End DEF sponge
+  OK  applySummonerAdStats uses MobScaling AD paint
+  OK  RaceSkillSync discovers DMZ races
+  OK  RaceSkillSync grants Fabled skill
+  OK  RaceSkillSync skips race-lock purchase gates
 
 === Stock ladder / form / HP scale ===
   OK  default unlockTier1EnemyMult — got 0.21
@@ -11,22 +20,26 @@
   OK  default unlockTier7EnemyMult — got 2.00
   OK  default transformScaleWeight — got 0.65
   OK  default transformScaleExponent — got 0.75
-  OK  default mobHealthScale — got 1.15
+  OK  default mobHealthScale — got 0.75
   OK  default tankDamageDefenseRatio — got 0.45
-  OK  default tankDamageHealthRatio — got 0.10
+  OK  default tankDamageHealthRatio — got 0.28
   OK  default maxScaledMobsPerPlayer — got 5
   OK  default eliteMinUnlockTier — got 4
   OK  default mutationMinUnlockTier — got 5
   OK  default adaptiveAiMinUnlockTier — got 1
   OK  default enemyEvolutionMinUnlockTier — got 1
   OK  default bossMechanicsMinUnlockTier — got 6
-  OK  default ancientCoinUpgradeChance — got 0.02
+  OK  default ancientCoinDropChance — got 0.05
+  OK  default ancientCoinUpgradeChance — got 0.005
   OK  default eliteChancePercent — got 2.25
   OK  default mutationChancePercent — got 3.75
   OK  default eliteStatMultiplier — got 1.50
   OK  default deathResetsActiveDifficulty — got true
   OK  default enableClassCounters — got true
   OK  default enableStrongStatCounters — got true
+  OK  default tierCostLevelDivisor — got 50_000.0
+  OK  default tierCostLevelAnchor — got 150_000.0
+  OK  default tierCostT7TargetCopper — got 10_000_000L
 
 === Unlock gate / revoke ===
   OK  prestige OR level eligibility
@@ -41,13 +54,25 @@
   OK  class counters enabled in damage path
   OK  strong-stat top-2 combine
   OK  VIT hit cap kept
-  OK  raised hit-cap budgets (1.0.14)
+  OK  raised hit-cap budgets (1.0.28)
+  OK  live-bag landing ladder
+  OK  T3 god-form pierce
+  OK  telemetryFeelMigratedV1
+  OK  DMZ raw-damage tag clear after AD landing
+  OK  event incoming soft-cap
   OK  VIT/RES damage floors live
+  OK  VIT floor uses raised early-tier strength
+  OK  vitDumpPressureMigratedV1 present
   OK  reads kiprotection / ki_infusion / potentialunlock
   OK  skill sponge on mob HP
   OK  live-bag hit-cap
   OK  live-offense transform pressure
   OK  KP is post-mitigation advantage
+  OK  reads getFlatMitigation
+  OK  DEF-cancel pierce floor
+  OK  landing safety net method
+  OK  LivingDamageEvent receiveCanceled
+  OK  isAdPainted helper
   OK  CombatSanity clamps
   OK  live offense poll includes PWR/ENE
 
@@ -79,7 +104,19 @@
   OK  teams WIP
   OK  GUI ABI package stable
 
-=== Live challenge knobs (1.0.14) ===
+=== Balance telemetry ===
+  OK  BalanceTelemetry class
+  OK  shouldLog when telemetry enabled
+  OK  JSONL hits path
+  OK  admin telemetry commands
+  OK  logs before/with safety net
+  OK  default telemetry off
+  OK  writeTestProbe
+  OK  Bukkit telemetry subcommand
+  OK  Bukkit ForgeBridge telemetry API
+  OK  telemetry not whitelist-gated
+
+=== Live challenge knobs (1.0.17) ===
   OK  Forge admin sets tankDamageDefenseRatio
   OK  Forge admin sets tankDamageHealthRatio
   OK  Forge admin sets mobHealthScale
@@ -94,11 +131,534 @@
   OK  Adaptive AI speed from Enhanced+
   OK  tier move bump on paint
 
+=== Combat gravity cleanup (1.0.21) ===
+  OK  removeSource API
+  OK  zero-crossing always applies
+  OK  death clears Enderman/Warden gravity
+  OK  README sticky-gravity fix
+
+=== Personal OFF on boot (1.0.22) ===
+  OK  personal default false
+  OK  NBT missing personal → false
+  OK  boot reset set cleared on starting
+  OK  first login forces personal OFF
+  OK  README personal OFF on restart
+
+=== Post-pierce soft-cap clamp (1.0.25) ===
+  OK  incomingSoftCapFrac helper
+  OK  post-pierce bagCap clamp
+  OK  formula revision 40
+  OK  README pierce clamp
+
+=== Telemetry retune (1.0.28) ===
+  OK  T1 threat floor 0.52
+  OK  T6 form nudge 1.90
+  OK  T6 liveShare 0.80
+  OK  README 1.0.28 retune
+
+=== Mob HP trim (1.0.29 / 1.0.30) ===
+  OK  stock mobHealthScale 0.75
+  OK  mobHpTrimMigratedV1
+  OK  mobHpTrimMigratedV2
+  OK  README 1.0.30 HP trim
+
+=== Telemetry retune (1.0.24) ===
+  OK  formula revision 40
+  OK  T1 landCap 0.18
+  OK  T1 landFrac 0.13
+  OK  T6 landFrac 0.57
+  OK  T4 landFrac 0.44
+  OK  T5 landFrac 0.50
+  OK  KP landing 1.5%/lvl
+  OK  fill-to-landing floor
+  OK  progressive soft-caps
+  OK  README 1.0.25 balance
+  OK  README 2.3.61 tier costs
+  OK  README 2.3.62 gui level pull
+  OK  README 2.3.63 death drop guard
+  OK  scheduleLevelPull on login race
+  OK  Character-null not transformed
+  OK  guiDisplayDmzLevel for Buy GUI
+  OK  recompute level when getLevel placeholder
+  OK  form paint clears AreaDifficulty
+  OK  Rival form surge uses form mult
+  OK  CR releasedStatPower
+  OK  CombatRating DISPLAY_ABS_CAP
+  OK  polluted highestDmzLevel<=1 ignored
+  OK  prepareDifficultyGui bridge
+  OK  DeathDropGuard registered
+  OK  DeathDropGuard uncancels when dead
+  OK  refresh samples DMZ level
+  OK  tierCostDivisorMigratedV1
+  OK  tierCostCurveMigratedV2
+  OK  tierCostLevelMultiplier
+  OK  UnlockTier.requirementTip
+  OK  GUI shows DMZ or Prestige req
+  OK  README unlock req UX
+
+=== Ghost scaling fix (1.0.23) ===
+  OK  isAdPainted ignores bare TAG_SCALED
+  OK  landing safety net requires participates
+  OK  README ghost-scaling fix
+
 === README alignment ===
   OK  README stock percents
   OK  README PWR/ENE + top-2
-  OK  README version 1.0.14
+  OK  README version 2.3.63
+
+=== Ghast aim fix (1.0.31) ===
+  OK  large blast cast 0
+  OK  large blast launchToward
+  OK  laser/beam launchToward
+  OK  faceTarget public
+  OK  ghastTick faceTarget
+  OK  README ghast aim
   OK  README skill-aware / sponge
 
+=== Soft-cap ladder (1.0.33) ===
+  OK  T3 soft-cap 0.44
+  OK  T4 soft-cap 0.50
+  OK  T1 soft-cap 0.34
+  OK  T2 soft-cap 0.36
+  OK  README soft-cap ladder
+
+=== Ladder retune (1.0.35) ===
+  OK  T4 form nudge 1.58
+  OK  T5 form nudge 1.78
+  OK  T7 form nudge 1.62
+  OK  T4 liveShare 0.60
+  OK  T5 liveShare 0.74
+  OK  T4 landCap 0.50
+  OK  T5 landCap 0.52
+  OK  T3 landFrac 0.30
+  OK  T7 landFrac 0.58
+  OK  README 1.0.35 retune
+
+=== Level clamp + mount guard (1.0.35) ===
+  OK  clampDmzLevel helper
+  OK  dmzLevel uses clamp
+  OK  HostileMobs.isMountPair
+  OK  hurt cancels mount pair
+  OK  skeleton rejects mount target
+  OK  README level clamp
+  OK  README skeleton mount
+
+=== Coin drop chances (2.3.54) ===
+  OK  drop chance gate in rollKillLoot
+  OK  dual upgrade band uses same roll
+  OK  coinDropChanceMigratedV1
+  OK  admin set drop chance
+  OK  README 5% / 0.5%
+
+=== Mohist CMI /lmdo routing (2.3.54) ===
+  OK  CmiDifficultyGui.java exists
+  OK  CmiDifficultyGui.java no addCommand("difficulty do
+  OK  CmiDifficultyGui.java no addCommand("lm do
+  OK  CmiDifficultyGui.java no addCommand("progression do
+  OK  CmiDifficultyGui.java no addCommand("prestige do
+  OK  CmiDifficultyGui.java no addCommand("skills do
+  OK  CmiDifficultyGui.java no addCommand("skillcheck do
+  OK  CmiDifficultyGui.java no addCommand("rival do
+  OK  CmiDifficultyGui.java no addCommand("spar do
+  OK  CmiDifficultyGui.java uses lmdo
+  OK  CmiHubGui.java exists
+  OK  CmiHubGui.java no addCommand("difficulty do
+  OK  CmiHubGui.java no addCommand("lm do
+  OK  CmiHubGui.java no addCommand("progression do
+  OK  CmiHubGui.java no addCommand("prestige do
+  OK  CmiHubGui.java no addCommand("skills do
+  OK  CmiHubGui.java no addCommand("skillcheck do
+  OK  CmiHubGui.java no addCommand("rival do
+  OK  CmiHubGui.java no addCommand("spar do
+  OK  CmiHubGui.java uses lmdo
+  OK  CmiProgressionGui.java exists
+  OK  CmiProgressionGui.java no addCommand("difficulty do
+  OK  CmiProgressionGui.java no addCommand("lm do
+  OK  CmiProgressionGui.java no addCommand("progression do
+  OK  CmiProgressionGui.java no addCommand("prestige do
+  OK  CmiProgressionGui.java no addCommand("skills do
+  OK  CmiProgressionGui.java no addCommand("skillcheck do
+  OK  CmiProgressionGui.java no addCommand("rival do
+  OK  CmiProgressionGui.java no addCommand("spar do
+  OK  CmiProgressionGui.java uses lmdo
+  OK  CmiPrestigeGui.java exists
+  OK  CmiPrestigeGui.java no addCommand("difficulty do
+  OK  CmiPrestigeGui.java no addCommand("lm do
+  OK  CmiPrestigeGui.java no addCommand("progression do
+  OK  CmiPrestigeGui.java no addCommand("prestige do
+  OK  CmiPrestigeGui.java no addCommand("skills do
+  OK  CmiPrestigeGui.java no addCommand("skillcheck do
+  OK  CmiPrestigeGui.java no addCommand("rival do
+  OK  CmiPrestigeGui.java no addCommand("spar do
+  OK  CmiPrestigeGui.java uses lmdo
+  OK  CmiSkillsGui.java exists
+  OK  CmiSkillsGui.java no addCommand("difficulty do
+  OK  CmiSkillsGui.java no addCommand("lm do
+  OK  CmiSkillsGui.java no addCommand("progression do
+  OK  CmiSkillsGui.java no addCommand("prestige do
+  OK  CmiSkillsGui.java no addCommand("skills do
+  OK  CmiSkillsGui.java no addCommand("skillcheck do
+  OK  CmiSkillsGui.java no addCommand("rival do
+  OK  CmiSkillsGui.java no addCommand("spar do
+  OK  CmiSkillsGui.java uses lmdo
+  OK  CmiRivalGui.java exists
+  OK  CmiRivalGui.java no addCommand("difficulty do
+  OK  CmiRivalGui.java no addCommand("lm do
+  OK  CmiRivalGui.java no addCommand("progression do
+  OK  CmiRivalGui.java no addCommand("prestige do
+  OK  CmiRivalGui.java no addCommand("skills do
+  OK  CmiRivalGui.java no addCommand("skillcheck do
+  OK  CmiRivalGui.java no addCommand("rival do
+  OK  CmiRivalGui.java no addCommand("spar do
+  OK  CmiRivalGui.java uses lmdo
+  OK  CmiSparGui.java exists
+  OK  CmiSparGui.java no addCommand("difficulty do
+  OK  CmiSparGui.java no addCommand("lm do
+  OK  CmiSparGui.java no addCommand("progression do
+  OK  CmiSparGui.java no addCommand("prestige do
+  OK  CmiSparGui.java no addCommand("skills do
+  OK  CmiSparGui.java no addCommand("skillcheck do
+  OK  CmiSparGui.java no addCommand("rival do
+  OK  CmiSparGui.java no addCommand("spar do
+  OK  CmiSparGui.java uses lmdo
+  OK  DifficultyChestGui no performCommand difficulty do
+  OK  DifficultyChestGui uses handleActionResult
+  OK  Bukkit difficulty admin syslog
+  OK  Bukkit difficulty admin resynclevel
+  OK  ForgeBridge.syslogCommand
+  OK  ForgeBridge.resyncLevel
+  OK  DifficultyCommands.resyncLevel public
+  OK  SkillsChestGui progression via lmdo
+  OK  SkillsChestGui no lm do open
+
+=== CNPC migrate safety (2.3.54) ===
+  OK  resolveWorldBlob present
+  OK  fromScriptControllerCompound
+  OK  pickRichestBlob
+  OK  enrichRivalRawFromBackupKeys
+  OK  force aborts without usable data
+  OK  NBTJsonUtil LoadFile
+  OK  cnpcLevelScriptsDir LevelResource
+  OK  fromBackupDir present
+  OK  fromWorldDataFile present
+  OK  clear only after import
+  OK  no fake empty marker
+  OK  force uses runWorldMigrate
+  OK  honest zero-import message
+  OK  richer-CNPC replace
+
+=== Staff clear player (2.3.54) ===
+  OK  PlayerDataClear.clear API
+  OK  scopes rival/spar/difficulty/progression
+  OK  Forge /lm admin clear
+  OK  Bukkit handleLmAdmin clear
+  OK  ForgeBridge.clearPlayerData
+  OK  RivalProgression.clearPlayer
+
+=== Spar recent sessions (2.3.54) ===
+  OK  RECENT_SESSION_LIMIT 3
+  OK  recentSessions map
+  OK  recordRecentSession on end
+  OK  statsLines individual reports
+  OK  statsLines no live TP this session
+
+=== Skill Check perm gate (2.3.54) ===
+  OK  hasSkillCheck no staff auto-grant
+  OK  hasSkillCheck uses skillCheckPermission
+  OK  plugin.yml skillcheck permission
+  OK  HubChestGui gates on hasSkillCheck
+
+=== Skill Check icons (2.3.54) ===
+  OK  skillIcon never defaults PAPER
+  OK  Flight uses ELYTRA
+  OK  Skill Check header EXPERIENCE_BOTTLE
+  OK  Hub Skill Check EXPERIENCE_BOTTLE
+
+=== GUI coherence (2.3.54) ===
+  OK  Difficulty unavailable close @35
+  OK  Difficulty Lower header IRON_INGOT
+  OK  Difficulty Clear Title not BARRIER
+  OK  Prestige wallet GOLD_INGOT
+  OK  Prestige Progression BREWING_STAND
+  OK  Rival Progress tiles BOOK/WRITABLE_BOOK/MAP
+  OK  Spar Stats button BOOK
+  OK  Skills admin header BOOK
+
+=== Android convert + remove (2.3.54) ===
+  OK  AndroidConversion.remove
+  OK  AndroidConversion two-click confirm
+  OK  AndroidConversion restore superforms
+  OK  Android blocks bioandroid only
+  OK  Android gate via androidforms TP costs
+  OK  Android eligibleRaceHint
+  OK  Android isAndroidUpgraded helper
+  OK  Android deny message not humans-only
+  OK  GUI lists all Android-capable races
+  OK  telemetry logs android upgrade flag
+  OK  stock human androidforms.json
+  OK  stock human androidforms TP costs
+  OK  stock saiyan androidforms.json
+  OK  stock saiyan androidforms TP costs
+  OK  stock frostdemon androidforms.json
+  OK  stock frostdemon androidforms TP costs
+  OK  stock viltrumite androidforms.json
+  OK  stock viltrumite androidforms TP costs
+  OK  bioandroid has no androidforms upgrade group
+  OK  Chest android_panel
+  OK  Chest android_remove picker
+  OK  CMI android_panel
+  OK  CMI android_remove
+  OK  Cmd android remove
+  OK  ForgeBridge.androidRemove
+  OK  GuiApi androidRemove
+  OK  GuiApi player self-remove only
+  OK  Hub Remove Android button
+  OK  CMI Hub Remove Android
+  OK  openSystem android_remove for players
+
+=== Player Prestige access (2.3.54) ===
+  OK  PrestigeMenu no staff gate
+  OK  PrestigeSystem.open no staff gate
+  OK  Forge /prestige slash staff-only
+  OK  Prestige chat uses lmdo not /prestige
+  OK  Hub Prestige for everyone
+  OK  handlePrestige redirects players to /lm
+
+=== Player command whitelist (2.3.54) ===
+  OK  non-staff commandHelp has meditation
+  OK  non-staff commandHelp no android slash
+  OK  non-staff commandHelp points to /lm
+  OK  player bare progression lists /lm /skillcheck
+  OK  Forge helpOrGui no android slash
+  OK  Forge android remove hints GUI for players
+
+=== End ki purge silent (2.3.54) ===
+  OK  purgeEndKi uses collectEndKiEntities
+  OK  purgeEndKi no console kill ki_laser
+  OK  purgeEndKi no console kill ki_blast
+  OK  clearEndCrystals no empty kill spam
+
+=== Dragon ki launch fix (2.3.55) ===
+  OK  spawnAndFireKi never aborts on failed add
+  OK  spawnAndFireKi always fireHability
+  OK  dragon ki explicit launchToward
+  OK  dragon blast uses mob setupKiLargeBlast first
+  OK  dragon beam prefers setupKiLaser cast 0
+  OK  dragon blast unparks controllable
+
+=== End exit podium repair (2.3.56) ===
+  OK  repairEndExitPodium present
+  OK  cmdRepairPodium present
+  OK  enddragon repair subcommand
+  OK  egg clear uses dragon_egg SRG f_50260_
+  OK  end portal uses SRG f_50257_
+  OK  EndPortalGuard end_portal f_50257_
+  OK  EndPortalGuard end_gateway f_50446_
+  OK  EndPortalGuard no end_stone as portal fast-path
+
+=== Skill Check real max levels (2.3.54) ===
+  OK  appendSagaSkill uses skillMax
+  OK  appendSagaSkill no hardcoded max param alone
+  OK  appendStrengthLine uses skillMax without Math.min(10
+
+=== Spar TP message toggle (2.3.54) ===
+  OK  SparStore tpMessages prefs
+  OK  SparCombat tickTpMessages
+  OK  flushTpMessage respects prefs
+  OK  SparringSystem.setTpMsg
+  OK  SparGuiApi tpmsg action
+  OK  Spar GUI TP Msg toggle
+  OK  CMI Spar TP Msg toggle
+  OK  no public Forge /spar tpmsg
+  OK  no public Bukkit /spar tpmsg
+
+=== Global TP boost stacking (2.3.54) ===
+  OK  stack keeps max multiplier
+  OK  stack always adds duration
+  OK  highest wins messaging
+
+=== Global TP boost persistence (2.3.60) ===
+  OK  globalTpBoostPath
+  OK  GlobalTpBoost.load
+  OK  GlobalTpBoost.save
+  OK  persist on activate
+  OK  login strips leftover when inactive
+  OK  server starting loads boost
+  OK  server stopping saves boost
+  OK  SCRIPT-AUDIT notes persistence
+
+=== Console TP boost (2.3.60) ===
+  OK  console androidify leaf
+  OK  console boost example
+  OK  GuiApi console default purchaser
+  OK  GuiApi console usage hint
+  OK  ForgeBridge boost null actor
+  OK  brigadier minutes purchaser
+
+=== GUI action feedback (2.3.54) ===
+  OK  GuiFeedback class
+  OK  sendResult prefers GUI
+  OK  chest open paints feedback
+  OK  CMI open paints feedback
+  OK  prestige confirm returns String
+  OK  prestige prefers GUI feedback
+
+=== Rival title bonuses (2.3.54) ===
+  OK  RpTier has tpMult + perk
+  OK  Mythic Rival 2.00 title mult
+  OK  titleLines shows Perk
+  OK  titleLines shows TP Gain
+  OK  RivalTpCurve applies title mult
+
+=== Spar individual reports (2.3.54) ===
+  OK  Spar Report # title
+  OK  appendRecentReport helper
+  OK  recent stores melee/ki
+
+=== Script parity fixes (2.3.54) ===
+  OK  mentor invite 2 minutes
+  OK  invite not 24h
+  OK  manual meditation 30 min
+  OK  auto meditation 15 min
+
+=== CNPC GUI open no-perm (2.3.54) ===
+  OK  CnpcGuiOpener class
+  OK  CnpcGuiOpener opens rival/spar/hub
+  OK  no soft contains(rival)
+  OK  events call tryOpenFromNpc
+  OK  CnpcGuiOpener tryOpenFromNpc uses tags or names
+  OK  Skill Check NPC skips canUse
+  OK  End hitcap not undone by raw minFrac
+  OK  egg clear not end_portal
+
+=== GUI + command audit (2.3.54) ===
+  OK  GUI-COMMAND-AUDIT.md present
+  OK  no bare SlotAction.cmd(lm)
+  OK  hub buttons use lmdo lm open hub
+  OK  CMI hub buttons use lmdo
+  OK  no Prestige SlotAction.open
+  OK  inspect android_remove case
+  OK  lmdo skills staff gate
+  OK  lmdo skillcheck donator gate
+  OK  lmdo skillcheck allows NPC session
+  OK  CMI skillcheck page uses lmdo skillcheck
+  OK  CNPC editor tool skip
+  OK  npcscripter id listed
+  OK  android_remove inventory force
+  OK  enddragon uses StaffAccess
+  OK  skillcheck no level-2 grant
+  OK  progression helpOrGui
+  OK  DifficultyCommands StaffAccess
+  OK  chat hub prestige + android_remove
+  OK  rival/spar chat hub lmdo
+  OK  difficulty chat hub button
+  OK  ProgressionMenu allows android_remove
+  OK  MechanicsCommands android_remove opens GUI
+
+=== Script parity deep check (2.3.54) ===
+  OK  Yardrat uses kimanipulation
+  OK  Yardrat uses kicontrol
+  OK  Yardrat no underscore ki ids
+  OK  RaceLock clearStuckSagaDifficulty
+  OK  RaceLock maybeAutoUnlockStuckDifficulty
+  OK  RaceLock requestDifficultyReselect
+  OK  ShadowDummy legacy CD key
+  OK  GlobalTpBoost END_LOCK_MS 5s
+  OK  SCRIPT-AUDIT documents 2.3.54
+
+=== Conversation commitments (2.3.54) ===
+  OK  CONVERSATION-CHECKLIST.md present
+  OK  conv: mentor 2 min locked
+  OK  conv: spar 3 cards locked
+  OK  conv: CNPC-free locked
+  OK  conv: player prestige+android locked
+  OK  conv: enddragon StaffAccess locked
+  OK  conv code: no soft hay.contains(rival)
+  OK  conv code: inspect android_remove case
+  OK  conv code: lmdo hub everywhere chest
+  OK  conv code: chat hub android+prestige
+
+=== Prestige points shop (2.3.81) ===
+  OK  potentialunlock 2 levels per point
+  OK  tier point cost ladder
+  OK  prestige wallet GUI
+  OK  turnIn triangular pack bonus
+  OK  turnIn amounts 1/2/3/6/9
+  OK  takePrestigeLevels API
+  OK  addPrestigeLevels API
+  OK  turnIn uses Fabled API take
+  OK  PrestigeFactionSync forceSync
+  OK  PrestigeAdmin present
+  OK  requiredLevel uses personal cap
+  OK  prestige need floor
+  OK  completed never from Fabled-only
+  OK  prestige admin command registered
+  OK  breakthrough mentions prestige Need scale
+  OK  handlePrestigeAdmin API
+  OK  Bukkit prestige admin via ForgeBridge
+  OK  form XOR majin/mutant
+  OK  silent mutant ensure (no grant chat spam)
+  OK  silent majin ensure (no dmzeffect give chat)
+  OK  LM onboarding tips class
+  OK  LM tips use action bar
+  OK  LM tips LP frequent groups
+  OK  LM tips wired on login+pulse
+  OK  LM tips config flag
+  OK  breakthrough costs 15..35
+  OK  MAX_BREAKTHROUGHS 5
+  OK  StatsDataMixin personal cap
+  OK  StatsDataMixin remap false
+  OK  StatsDataMixin clamps down to personal
+  OK  StatsDataMixin gated on prestige flag
+  OK  MANIFEST MixinConfigs for Mohist
+  OK  mixins.json registers StatsDataMixin
+  OK  AD referenceMaxLevel 150k
+  OK  DMZ maxValue 150000 for client UI
+  OK  TP soft-lock at personal cap
+  OK  TP soft-lock silent (no chat spam)
+  OK  Stat soft-lock at personal*6
+  OK  Stat soft-lock uses ScreenNotify
+  OK  Chest lore maxValue 150000 soft-lock
+  OK  CMI lore maxValue 150000 soft-lock
+  OK  grant staff-gated
+  OK  spend ungated for NPC
+  OK  configuredMaxLevel helper
+  OK  skillMax prefers skills.json
+  OK  prestige shop Skill Check skills only
+  OK  skillCheckSkillIds excludes ultimate
+  OK  resolveOffer rejects non-SkillCheck
+  OK  Chest skill shop tip Skill Check only
+  OK  CMI skill shop tip Skill Check only
+  OK  kiboost fallback max 4
+  OK  kicontrol fallback max 1
+  OK  Chest pages turnin/shop/forms/cap
+  OK  CMI pages turnin/shop/forms/cap
+  OK  CMI uses lmdo prestige
+  OK  Hub Prestige tip mentions points shop
+  OK  Papi prestige_points bridge
+
+=== End Dragon AD summon (2.3.65) ===
+  OK  cmdPlayerSummon present
+  OK  summoner NBT stamp
+  OK  owner-only damage gate
+  OK  AD scaled power
+  OK  despawnOwnedDragon
+  OK  summoner live AD retarget
+  OK  summoner form apply
+  OK  orphan despawn pulse
+  OK  DifficultyActions summon_end_dragon
+  OK  ForgeBridge allows summon_end_dragon
+  OK  Chest GUI summon button
+  OK  CMI GUI summon button
+  OK  natural spawn default off
+  OK  reject unauthorized dragon join
+  OK  hasAliveSummonedDragon
+  OK  RaceLockConfig file
+  OK  RaceLock uses config
+  OK  dragon phase steer
+  OK  AD off during dragon
+  OK  natural spawn forced off sanitize
+  OK  3 netherite cost constant
+
 === Summary ===
-PASS — intended features intact (78 checks, 0 warning(s))
+PASS — intended features intact (556 checks, 0 warning(s))

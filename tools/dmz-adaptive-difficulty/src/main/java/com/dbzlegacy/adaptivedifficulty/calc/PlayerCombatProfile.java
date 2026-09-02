@@ -659,8 +659,9 @@ public final class PlayerCombatProfile {
     /**
      * Post-mitigation HP restored when DMZ hard-cancels a hit.
      * <p>
-     * 2.3.129 (hits-2026-08-31..09-01): lift T4 landFrac (ease T4→T5 cliff) and T6
-     * landFrac (T5/T6 were identical on landing path). Soft-caps unchanged / monotonic.
+     * 2.3.133 (hits-2026-08-31..09-02, post-129 window): KP8+ gods still flat on
+     * T3→T4 and T5→T6 landing (JarebearT 0.284→0.311; Rogerio 0.471→0.500). Lift T4
+     * and T6 landFrac further; soft-caps unchanged / monotonic.
      * Pierce cannot clear wouldCancel while soft-cap &lt; mit/thr.
      */
     public double targetLandingDamage(DifficultyConfig cfg) {
@@ -673,9 +674,9 @@ public final class PlayerCombatProfile {
             case 1 -> 0.13;
             case 2 -> 0.16;
             case 3 -> 0.30;
-            case 4 -> 0.40; // was 0.37 — close T4→T5 cliff (god 0.359→0.501)
+            case 4 -> 0.44; // was 0.40 — KP10 T4 still ~0.31 (T3→T4 flat)
             case 5 -> 0.50;
-            case 6 -> 0.54; // was 0.50 — T5/T6 landing was flat (god +0.014)
+            case 6 -> 0.57; // was 0.54 — KP10 T5→T6 only +0.029
             default -> 0.58;
         };
         if (formBoost > 1.12) {
@@ -1166,7 +1167,7 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
         // Formula revision: Aug 29–30 early soft-cap + landing ease (2.3.57).
-        h = mix(h, 39L); // 2.3.129 live telemetry cal (T4/T6 land + T6 liveShare)
+        h = mix(h, 40L); // 2.3.133 live telemetry cal (T4/T6 landFrac KP10 climb)
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

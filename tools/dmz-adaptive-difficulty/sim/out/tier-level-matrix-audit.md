@@ -11,7 +11,7 @@ Fail-closed checks for unlock tiers T1–T7 across the DMZ level cap.
 
 ## 2) Buy-cost ladder T1<T2<…<T7 at every level
 
-- ✅ cost T-ladder mono across 150000 levels — 0.86s
+- ✅ cost T-ladder mono across 150000 levels — 0.85s
 - ✅ cost non-decreasing with level (≤150k) — ok
 - ✅ past-anchor clamp T7 200k==150k — 10000000 vs 10000000
 - ✅ past-anchor clamp T1 200k==150k — 6700 vs 6700
@@ -66,7 +66,7 @@ Fail-closed checks for unlock tiers T1–T7 across the DMZ level cap.
 - ✅ stock tier% 21→200%
 - ✅ god T5 ≥28% bag — 0.520
 - ✅ god T7 ≥40% bag — 0.620
-- ✅ god land T5 < T6 — 0.499<0.539
+- ✅ god land T5 < T6 — 0.499<0.569
 | 1 | OK | OK | OK | OK |
 - ✅ lvl 1: eligible tiers match gates — T[1]
 - ✅ lvl 1: cost mono — T1=1× Copper, T2=5× Copper, T3=15× Copper, T4=5× Iron, T5=15× Iron, T6=5× Gold, T7=15× Gold
@@ -135,3 +135,4 @@ Each form checked at mastery 0% + 100% (Base once). Soft-cap + no zero dmg.
 - ✅ bioandroid has no androidforms upgrade group — android-named=0
 
 **Result:** PASS — 72 ok, 0 error(s).
+

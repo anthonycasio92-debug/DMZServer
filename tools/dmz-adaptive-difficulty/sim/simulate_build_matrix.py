@@ -277,7 +277,7 @@ def simulate(
     dmg = min(dmg, max(20.0, live_hp) * soft_cap_frac)
     would_cancel = live_flat >= dmg * cancel_thr
     # Live-bag landing ladder (1.0.25) — cancel path IS the early-tier ladder.
-    land_frac = {1: 0.13, 2: 0.16, 3: 0.30, 4: 0.40, 5: 0.50, 6: 0.54, 7: 0.58}[tier]
+    land_frac = {1: 0.13, 2: 0.16, 3: 0.30, 4: 0.44, 5: 0.50, 6: 0.57, 7: 0.58}[tier]
     if form_boost > 1.12:
         t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
         bump = 0.06 if tier <= 2 else 0.12

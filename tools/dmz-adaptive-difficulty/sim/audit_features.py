@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.132", 'VERSION = "2.3.132"' in mod)
+    check("VERSION 2.3.133", 'VERSION = "2.3.133"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -270,7 +270,7 @@ def main() -> int:
     print("\n=== Post-pierce soft-cap clamp (1.0.25) ===")
     check("incomingSoftCapFrac helper", "incomingSoftCapFrac" in profile)
     check("post-pierce bagCap clamp", "bagCap" in profile and "incomingSoftCapFrac()" in profile)
-    check("formula revision 39", "mix(h, 39L)" in profile)
+    check("formula revision 40", "mix(h, 40L)" in profile)
     check("README pierce clamp", "Post-pierce" in readme or "post-pierce" in readme)
 
     print("\n=== Telemetry retune (1.0.28) ===")
@@ -286,11 +286,11 @@ def main() -> int:
     check("README 1.0.30 HP trim", "1.0.30" in readme and "0.75" in readme)
 
     print("\n=== Telemetry retune (1.0.24) ===")
-    check("formula revision 39", "mix(h, 39L)" in profile)
+    check("formula revision 40", "mix(h, 40L)" in profile)
     check("T1 landCap 0.18", "case 1 -> 0.18" in profile)
     check("T1 landFrac 0.13", "case 1 -> 0.13" in profile)
-    check("T6 landFrac 0.54", "case 6 -> 0.54" in profile)
-    check("T4 landFrac 0.40", "case 4 -> 0.40" in profile)
+    check("T6 landFrac 0.57", "case 6 -> 0.57" in profile)
+    check("T4 landFrac 0.44", "case 4 -> 0.44" in profile)
     check("T5 landFrac 0.50", "case 5 -> 0.50" in profile)
     check("KP landing 1.5%/lvl", "kiProtectionLevel * 0.015" in profile)
     check("fill-to-landing floor", "preAmount < land)" in events and "land * 0.45" not in events)

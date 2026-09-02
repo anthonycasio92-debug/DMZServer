@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed concept audit for LegacyMechanics 2.3.132.
+"""Fail-closed concept audit for LegacyMechanics 2.3.133.
 
 Encodes the player's stated balance intent:
   1. Buy tiers 1–7 feel progressively harder (stock 21→200%).
@@ -234,10 +234,10 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 2.3.132", 'VERSION = "2.3.132"' in mod)
+    check("VERSION 2.3.133", 'VERSION = "2.3.133"' in mod)
 
     check("RaceSkillSync present", (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/bridge/RaceSkillSync.java").is_file())
-    check("formula revision 39", "mix(h, 39L)" in profile)
+    check("formula revision 40", "mix(h, 40L)" in profile)
     check("hpFloorStrength present", "hpFloorStrength" in profile)
     check("T1–T3 god-form floors raised", "case 1 -> 0.52" in profile and "case 3 -> 0.80" in profile)
     events = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java").read_text(
@@ -250,12 +250,12 @@ def main() -> int:
     check("T4 soft-cap ≤ T5", "case 4 -> 0.50" in events and "case 5 -> 0.52" in events)
     check("T5 soft-cap ≤ T6", "case 5 -> 0.52" in events and "case 6 -> 0.58" in events)
     check("T6 soft-cap ≤ T7", "case 6 -> 0.58" in events and "case 7 -> 0.62" in events)
-    # Source landFrac must stay strictly progressive (2.3.131 live cal — buys matter).
+    # Source landFrac must stay strictly progressive (2.3.133 live cal — buys matter).
     check(
         "landFrac ladder progressive T4<T5<T6<T7",
-        "case 4 -> 0.40" in profile
+        "case 4 -> 0.44" in profile
         and "case 5 -> 0.50" in profile
-        and "case 6 -> 0.54" in profile
+        and "case 6 -> 0.57" in profile
         and "default -> 0.58" in profile,
     )
     # Sim: god soft-cap-bound hitFrac must rise T3→T4→T5→T6→T7.

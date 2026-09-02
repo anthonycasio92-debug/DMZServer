@@ -1,3 +1,29 @@
+## Live telemetry retune (2.3.133)
+
+Pulled production hits to `uploads/live-telemetry-2026-09-02/` (**40302** hit lines;
+Aug 9, 29–31, Sep 1–2). Post-2.3.129 window = **Aug 31 + Sep 1 + Sep 2** (**23671** hits;
+Sep 2 still thin at 352). Soft-caps unchanged (fingerprint was 39).
+
+God-form Sep 1 same-player ladders (wouldCancel-dominated / landing path):
+
+| player | ladder |
+|--------|--------|
+| Ch4osDoom64 (KP~1) | T3 0.426 → T4 0.482 → T5 0.515 |
+| JarebearT (KP10) | T3 0.284 → T4 0.311 → T5 0.420 |
+| RogerioTorio (KP10) | T5 0.471 → T6 0.500 |
+
+Signals after 2.3.129:
+- KP0–2 gods soft-cap-pin as designed; soft-cap ladder healthy
+- **KP8+ T3→T4 still flat** (landFrac 0.40 → ~0.31 after KP/bag)
+- **KP8+ T5→T6 still flat** (+0.029 only; T6 landFrac 0.54 under KP10)
+
+Changes (fingerprint **40**):
+- T4 landFrac **0.40→0.44** (still ≤ soft 0.50 / landCap 0.50)
+- T6 landFrac **0.54→0.57** (still ≤ soft 0.58 / landCap 0.58)
+- Soft-caps / liveShare / form nudges unchanged
+
+Expected KP10 god landing climb: T4 ~0.31→~0.34+, T6 ~0.50→~0.53+; KP0 path stays soft-cap bound.
+
 ## Prestige turn-in ladder (2.3.132)
 
 Turn-in packs are **1 / 2 / 3 / 6 / 9** only (removed 5 and Turn In All).
