@@ -1079,6 +1079,12 @@ public final class ForgeBridge {
         return invokeRivalStringList(player, "pendingInviteCards");
     }
 
+    /** True when Accept is waiting for a Mutual slot replace pick. */
+    public static boolean rivalNeedsMutualReplace(Player player) {
+        Map<String, String> ph = rivalPlaceholders(player);
+        return "true".equalsIgnoreCase(ph.getOrDefault("needs_mutual_replace", "false"));
+    }
+
     /** Current-rival picker args for remove (uuid: preferred). */
     public static List<String> rivalCurrentArgs(Player player) {
         return invokeRivalStringList(player, "currentRivalArgs");

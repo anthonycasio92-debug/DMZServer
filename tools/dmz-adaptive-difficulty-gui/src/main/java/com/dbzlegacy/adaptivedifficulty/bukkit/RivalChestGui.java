@@ -67,6 +67,7 @@ public final class RivalChestGui implements Listener {
                     "&cDecline Declare", "&7Click to decline their declare", false);
             case "pick_remove" -> currentRivalPicker(viewer, subject, "remove", "actions",
                     "&cRemove Rival", "&7Click to remove this rivalry");
+            case "pick_replace_mutual", "replace_mutual" -> mutualReplacePicker(viewer, subject);
             case "pick_challenge" -> challengeTargetPicker(viewer, subject);
             case "pick_spectate" -> picker(viewer, subject, "spectate", "challenge",
                     "&bSpectate", "&7Watch their active challenge");
@@ -762,6 +763,61 @@ public final class RivalChestGui implements Listener {
         return inv;
     }
 
+    /** At Mutual cap — pick which Mutual to demote so Accept can complete. */
+    private Inventory mutualReplacePicker(Player viewer, Player subject) {
+        Holder holder = new Holder("pick_replace_mutual");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Replace Mutual"));
+        holder.bind(inv);
+        frame(inv, 45);
+        Map<String, String> ph = ForgeBridge.rivalPlaceholders(subject);
+        String pendingName = ph.getOrDefault("pending_mutual_accept_name", "");
+        if (pendingName == null || pendingName.isBlank()) {
+            pendingName = "new rival";
+        }
+        List<String> header = new ArrayList<>();
+        header.add("");
+        header.add("&7Accepting &f" + pendingName);
+        header.add("&7Mutual slots full — pick who to replace");
+        header.addAll(GuiBoardHelper.tips(viewer, "&8They become Declared · you get the new Mutual"));
+        put(holder, inv, 4, item(Material.GOLDEN_SWORD, "&e&lReplace Mutual Slot", header));
+
+        List<GuiBoardHelper.RivalCard> cards = GuiBoardHelper.parseRivalCards(
+                ForgeBridge.rivalCurrentCards(subject));
+        List<GuiBoardHelper.RivalCard> mutuals = new ArrayList<>();
+        for (GuiBoardHelper.RivalCard card : cards) {
+            String st = card.status == null ? "" : card.status.trim();
+            if ("Mutual".equalsIgnoreCase(st) || "Nemesis".equalsIgnoreCase(st)) {
+                mutuals.add(card);
+            }
+        }
+        if (mutuals.isEmpty()) {
+            put(holder, inv, 22, tipBtn(viewer, "rival.empty.no_mutual", Material.BARRIER, "&cNo Mutuals",
+                    List.of("&7You have no Mutual rivals to replace")));
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(mutuals.size(), 21));
+            for (int i = 0; i < slots.length && i < mutuals.size(); i++) {
+                GuiBoardHelper.RivalCard card = mutuals.get(i);
+                ItemStack head = GuiBoardHelper.rivalHead(card);
+                ItemMeta meta = head.getItemMeta();
+                if (meta != null) {
+                    List<String> lore = meta.hasLore() && meta.getLore() != null
+                            ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+                    lore.add(color(""));
+                    lore.add(color("&eClick to replace with &f" + pendingName));
+                    lore.add(color("&8" + card.name + " becomes Declared"));
+                    meta.setLore(lore);
+                    head.setItemMeta(meta);
+                }
+                put(holder, inv, slots[i], head,
+                        SlotAction.act("accept_replace", card.pickerArg(), "list"));
+            }
+        }
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Pending"),
+                SlotAction.page("pending"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
     /** Accept/decline picker — Accept includes Declared; Decline is invite-only. */
     private Inventory pendingPicker(
             Player viewer, Player subject, String action, String backPage, String title, String tip,
@@ -937,7 +993,14 @@ public final class RivalChestGui implements Listener {
             if (msg != null && !msg.isBlank()) {
                 GuiChat.sendResult(player, msg);
             }
-            open(player, ret);
+            String reopen = ret;
+            if (("accept".equalsIgnoreCase(action) || "accept_replace".equalsIgnoreCase(action))
+                    && ForgeBridge.rivalNeedsMutualReplace(subject)) {
+                reopen = "pick_replace_mutual";
+            } else if ("accept_replace".equalsIgnoreCase(action)) {
+                reopen = "list";
+            }
+            open(player, reopen);
         });
     }
 

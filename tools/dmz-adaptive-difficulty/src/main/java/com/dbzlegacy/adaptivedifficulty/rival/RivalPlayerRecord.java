@@ -32,6 +32,11 @@ public final class RivalPlayerRecord {
     public int declarationsAccepted;
     public int declarationsDeclined;
     public int rivalsRemoved;
+    /**
+     * When Accept would exceed {@link RivalConstants#MAX_MUTUAL_RIVALS}, stores the
+     * uuid of the new Mutual until the player picks which existing Mutual to replace.
+     */
+    public String pendingMutualAcceptUuid = "";
     public boolean tpMessages = true;
     /** Rival Instinct alerts (per-player). */
     public boolean instinctEnabled = true;

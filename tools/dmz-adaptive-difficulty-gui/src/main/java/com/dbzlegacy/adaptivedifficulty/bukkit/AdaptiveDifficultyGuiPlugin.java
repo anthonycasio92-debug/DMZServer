@@ -839,6 +839,13 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             if (msg != null && !msg.isBlank()) {
                 GuiChat.sendResult(player, msg);
             }
+            if (("rival".equals(system) || "rivals".equals(system))
+                    && ("accept".equalsIgnoreCase(action)
+                    || "accept_replace".equalsIgnoreCase(action)
+                    || "acceptreplace".equalsIgnoreCase(action))
+                    && ForgeBridge.rivalNeedsMutualReplace(subject)) {
+                reopen = "pick_replace_mutual";
+            }
             if (!switch (system) {
                 case "rival", "rivals", "spar", "sparring",
                      "difficulty", "diff", "ad",
@@ -1544,7 +1551,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                  "journal", "title", "titles", "challenge", "help", "progress",
                  "actions", "history", "pending", "invites",
                  "pick_declare", "pick_accept", "pick_decline", "pick_remove", "pick_challenge",
-                 "pick_spectate", "pick_silent" -> true;
+                 "pick_spectate", "pick_silent", "pick_replace_mutual", "replace_mutual" -> true;
             default -> false;
         }) {
             String page = "titles".equals(sub) ? "title" : sub;

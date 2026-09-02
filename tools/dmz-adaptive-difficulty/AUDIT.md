@@ -1,3 +1,8 @@
+## Mutual slot replace picker (2.3.141)
+
+At max Mutuals (2), Accept opens a picker to choose which Mutual to replace
+(demoted to Declared) instead of auto-dropping the oldest.
+
 ## Dual Silent Mutual confirm (2.3.140)
 
 Both Silent → Declared on both lists + Pending Mutual confirm for both.

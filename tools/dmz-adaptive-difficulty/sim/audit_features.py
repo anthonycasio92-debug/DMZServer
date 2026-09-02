@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.140", 'VERSION = "2.3.140"' in mod)
+    check("VERSION 2.3.141", 'VERSION = "2.3.141"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -534,7 +534,7 @@ def main() -> int:
           'SlotAction.page("hof")' in rival and 'SlotAction.page("journal")' in rival
           and "records" in rival)
 
-    print("\n=== Rival relationship semantics (2.3.140) ===")
+    print("\n=== Rival relationship semantics (2.3.141) ===")
     rival_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.java")
     rival_st = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalStatus.java")
     rival_link = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalLink.java")
@@ -562,6 +562,11 @@ def main() -> int:
           "inviteReceived = true" in rival_sys and "Both must Accept" in rival_sys)
     check("accept waits for other Mutual confirm",
           "Waiting for them to Accept" in rival_sys or "waiting for them to Accept" in rival_sys)
+    check("acceptReplace Mutual slot pick",
+          "acceptReplace" in rival_sys and "needsMutualReplacePick" in rival_sys
+          and "pendingMutualAcceptUuid" in read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalPlayerRecord.java"))
+    check("GUI pick_replace_mutual page",
+          "pick_replace_mutual" in rival_chest and "pick_replace_mutual" in cmi_rival)
     check("Actions is Declare Pending Remove Silent",
           'page("pick_declare")' in rival_chest
           and 'page("pending")' in rival_chest

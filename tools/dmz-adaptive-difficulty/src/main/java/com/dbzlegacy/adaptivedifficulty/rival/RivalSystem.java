@@ -279,47 +279,30 @@ public final class RivalSystem {
         // Declared (both Silent) → each side Accepts Mutual confirm (both required).
         if (myLink != null && isReciprocatedSilent(myLink) && !myLink.mutual) {
             RivalLink theirLink = them.getOrCreateLink(me.uuid, me.name, now);
-            if (myLink.acceptedMutualOffer) {
+            if (!myLink.acceptedMutualOffer) {
+                myLink.acceptedMutualOffer = true;
+                myLink.inviteReceived = false;
+                myLink.pendingExpireAt = 0L;
+                me.declarationsAccepted++;
+                if (!theirLink.acceptedMutualOffer) {
+                    store.markDirty();
+                    ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
+                    if (online != null) {
+                        DmzRewards.msg(online, LmChat.tagged("Rival",
+                                "§e" + me.name + " §7accepted Mutual — your turn (Pending)."));
+                    }
+                    return "§aAccepted Mutual with §f" + them.name
+                            + "§a. §8Waiting for them to Accept too (Pending).";
+                }
+            } else if (!theirLink.acceptedMutualOffer) {
                 return "§eYou already Accepted — waiting for §f" + them.name + " §eto Accept Mutual.";
             }
-            myLink.acceptedMutualOffer = true;
-            myLink.inviteReceived = false;
-            myLink.pendingExpireAt = 0L;
-            me.declarationsAccepted++;
-            if (theirLink.acceptedMutualOffer) {
-                myLink.declaredByMe = true;
-                myLink.declaredByThem = true;
-                theirLink.declaredByMe = true;
-                theirLink.declaredByThem = true;
-                myLink.acceptedMutualOffer = false;
-                theirLink.acceptedMutualOffer = false;
-                promoteMutual(me, them, myLink, theirLink, now);
-                store.markDirty();
-                ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
-                if (online != null) {
-                    DmzRewards.msg(online, LmChat.card(
-                            "Rival Mutual",
-                            "/rival",
-                            null,
-                            "§a" + me.name + " accepted — Declared → Mutual!",
-                            "§8Both accepted. Full rivalry benefits."));
-                }
-                DmzRewards.msg(player, LmChat.card(
-                        "Rival Mutual",
-                        "/rival",
-                        null,
-                        "§aAccepted §f" + them.name + " §a— Declared → Mutual!",
-                        "§8Both accepted. Full rivalry benefits."));
-                return "§aAccepted §f" + them.name + " §a— Declared → Mutual!";
-            }
-            store.markDirty();
-            ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
-            if (online != null) {
-                DmzRewards.msg(online, LmChat.tagged("Rival",
-                        "§e" + me.name + " §7accepted Mutual — your turn (Pending)."));
-            }
-            return "§aAccepted Mutual with §f" + them.name
-                    + "§a. §8Waiting for them to Accept too (Pending).";
+            // Both accepted — promote (may need Mutual slot replace).
+            myLink.declaredByMe = true;
+            myLink.declaredByThem = true;
+            theirLink.declaredByMe = true;
+            theirLink.declaredByThem = true;
+            return completeMutualAccept(player, me, them, myLink, theirLink, now, true);
         }
 
         if (myLink == null || !myLink.inviteReceived) {
@@ -332,26 +315,171 @@ public final class RivalSystem {
         theirLink.declaredByThem = true;
         store.clearInviteFlags(them.uuid, me.uuid);
         store.declareRequests.remove(them.uuid + ">" + me.uuid);
-        promoteMutual(me, them, myLink, theirLink, now);
         me.declarationsAccepted++;
-        store.markDirty();
+        return completeMutualAccept(player, me, them, myLink, theirLink, now, false);
+    }
 
+    /**
+     * Finish Accept after the player picks which Mutual to replace when at the slot cap.
+     * {@code replaceArg} is {@code uuid:…} or a rival name.
+     */
+    public static String acceptReplace(ServerPlayer player, String replaceArg) {
+        RivalStore store = RivalStore.get();
+        RivalPlayerRecord me = store.ensurePlayer(player);
+        String pendingUuid = me.pendingMutualAcceptUuid == null ? "" : me.pendingMutualAcceptUuid.trim();
+        if (pendingUuid.isBlank()) {
+            return "§cNo Mutual accept waiting for a slot replace.";
+        }
+        RivalPlayerRecord them = store.get(pendingUuid);
+        if (them == null) {
+            me.pendingMutualAcceptUuid = "";
+            store.markDirty();
+            return "§cThat pending Accept expired.";
+        }
+        RivalPlayerRecord drop = findByName(store, replaceArg);
+        if (drop == null) {
+            return "§cPick one of your Mutual rivals to replace.";
+        }
+        if (drop.uuid.equals(them.uuid)) {
+            return "§cPick a different Mutual to replace.";
+        }
+        RivalLink dropLink = me.rivals.get(drop.uuid);
+        if (dropLink == null || !dropLink.mutual) {
+            return "§cThat player is not one of your Mutual rivals.";
+        }
+        demoteMutualPair(me, drop);
+        notifyReplacedMutual(player, drop);
+        RivalLink myLink = me.getOrCreateLink(them.uuid, them.name, System.currentTimeMillis());
+        RivalLink theirLink = them.getOrCreateLink(me.uuid, me.name, System.currentTimeMillis());
+        long now = System.currentTimeMillis();
+        myLink.declaredByMe = true;
+        myLink.declaredByThem = true;
+        theirLink.declaredByMe = true;
+        theirLink.declaredByThem = true;
+        me.pendingMutualAcceptUuid = "";
+        promoteMutual(me, them, myLink, theirLink, now);
+        store.markDirty();
+        notifyMutualAccepted(player, me, them, true);
+        return "§aAccepted §f" + them.name + " §a— Mutual!"
+                + " §8Replaced Mutual with §f" + drop.name + "§8.";
+    }
+
+    /** True when this player must pick a Mutual to replace before Accept completes. */
+    public static boolean needsMutualReplacePick(ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
+        return me != null && me.pendingMutualAcceptUuid != null && !me.pendingMutualAcceptUuid.isBlank();
+    }
+
+    public static String pendingMutualAcceptName(ServerPlayer player) {
+        if (player == null) {
+            return "";
+        }
+        RivalPlayerRecord me = RivalStore.get().ensurePlayer(player);
+        if (me == null || me.pendingMutualAcceptUuid == null || me.pendingMutualAcceptUuid.isBlank()) {
+            return "";
+        }
+        RivalPlayerRecord them = RivalStore.get().get(me.pendingMutualAcceptUuid.trim());
+        if (them != null && them.name != null && !them.name.isBlank()) {
+            return them.name;
+        }
+        return me.pendingMutualAcceptUuid.trim();
+    }
+
+    private static String completeMutualAccept(
+            ServerPlayer player,
+            RivalPlayerRecord me,
+            RivalPlayerRecord them,
+            RivalLink myLink,
+            RivalLink theirLink,
+            long now,
+            boolean dualSilent
+    ) {
+        RivalStore store = RivalStore.get();
+        if (needsMutualSlot(me, them.uuid)) {
+            me.pendingMutualAcceptUuid = them.uuid;
+            store.markDirty();
+            return "§eMutual slots full (§f" + RivalConstants.MAX_MUTUAL_RIVALS
+                    + "§e). Pick which Mutual to replace for §f" + them.name + "§e.";
+        }
+        me.pendingMutualAcceptUuid = "";
+        promoteMutual(me, them, myLink, theirLink, now);
+        store.markDirty();
+        notifyMutualAccepted(player, me, them, dualSilent);
+        return dualSilent
+                ? "§aAccepted §f" + them.name + " §a— Declared → Mutual!"
+                : "§aAccepted rivalry with §f" + them.name + " §a— Mutual!";
+    }
+
+    private static void notifyMutualAccepted(
+            ServerPlayer player, RivalPlayerRecord me, RivalPlayerRecord them, boolean dualSilent
+    ) {
         ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
         if (online != null) {
             DmzRewards.msg(online, LmChat.card(
                     "Rival Mutual",
                     "/rival",
                     null,
-                    "§a" + me.name + " accepted your rivalry — Mutual!",
-                    "§8Both declared. Benefits work both ways."));
+                    dualSilent
+                            ? "§a" + me.name + " accepted — Declared → Mutual!"
+                            : "§a" + me.name + " accepted your rivalry — Mutual!",
+                    "§8Both ways. Full rivalry benefits."));
         }
         DmzRewards.msg(player, LmChat.card(
                 "Rival Mutual",
                 "/rival",
                 null,
-                "§aAccepted rivalry with §f" + them.name + " §a— Mutual!",
-                "§8Both declared. Benefits work both ways."));
-        return "§aAccepted rivalry with §f" + them.name + " §a— Mutual!";
+                dualSilent
+                        ? "§aAccepted §f" + them.name + " §a— Declared → Mutual!"
+                        : "§aAccepted rivalry with §f" + them.name + " §a— Mutual!",
+                "§8Both ways. Full rivalry benefits."));
+    }
+
+    private static boolean needsMutualSlot(RivalPlayerRecord record, String newUuid) {
+        if (record == null) {
+            return false;
+        }
+        RivalLink existing = record.rivals.get(newUuid);
+        if (existing != null && existing.mutual) {
+            return false;
+        }
+        return record.countMutual() >= RivalConstants.MAX_MUTUAL_RIVALS;
+    }
+
+    private static void demoteMutualPair(RivalPlayerRecord me, RivalPlayerRecord other) {
+        if (me == null || other == null) {
+            return;
+        }
+        RivalLink myLink = me.rivals.get(other.uuid);
+        if (myLink != null) {
+            myLink.mutual = false;
+            myLink.isNemesis = false;
+        }
+        RivalLink theirLink = other.rivals.get(me.uuid);
+        if (theirLink != null) {
+            theirLink.mutual = false;
+            theirLink.isNemesis = false;
+        }
+        if (other.uuid.equals(me.nemesisUuid)) {
+            me.nemesisUuid = "";
+        }
+        if (me.uuid.equals(other.nemesisUuid)) {
+            other.nemesisUuid = "";
+        }
+    }
+
+    private static void notifyReplacedMutual(ServerPlayer actor, RivalPlayerRecord other) {
+        if (actor == null || other == null) {
+            return;
+        }
+        ServerPlayer otherOnline = onlineByUuid(actor.m_20194_(), other.uuid);
+        if (otherOnline != null) {
+            DmzRewards.msg(otherOnline, LmChat.tagged("Rival",
+                    "§e" + actor.m_7755_().getString()
+                            + " §7replaced your Mutual slot — now Declared."));
+        }
     }
 
     public static String decline(ServerPlayer player, String otherName) {
@@ -1008,7 +1136,7 @@ public final class RivalSystem {
             RivalLink theirLink,
             long now
     ) {
-        ensureMutualRoom(me, them.uuid);
+        // Accepter already has a free slot (or just replaced one). Other side may auto-drop oldest.
         ensureMutualRoom(them, me.uuid);
         myLink.mutual = true;
         theirLink.mutual = true;

@@ -77,6 +77,10 @@ public final class RivalGuiApi {
         }
         out.put("pending_invites", String.valueOf(pendingCount));
         out.put("pendingInvites", String.valueOf(pendingCount));
+        out.put("pending_mutual_accept",
+                me.pendingMutualAcceptUuid == null ? "" : me.pendingMutualAcceptUuid.trim());
+        out.put("pending_mutual_accept_name", RivalSystem.pendingMutualAcceptName(player));
+        out.put("needs_mutual_replace", RivalSystem.needsMutualReplacePick(player) ? "true" : "false");
         return out;
     }
 
@@ -101,6 +105,11 @@ public final class RivalGuiApi {
             return List.of();
         }
         return RivalSystem.pastRivalCards(player);
+    }
+
+    /** True when Accept is waiting for the player to pick which Mutual to replace. */
+    public static boolean needsMutualReplacePick(ServerPlayer player) {
+        return RivalSystem.needsMutualReplacePick(player);
     }
 
     /** Encoded pending declare invites (incoming + outgoing). */
@@ -544,6 +553,12 @@ public final class RivalGuiApi {
             }
             // Pass uuid: args through — name-only lookup misses offline declarers.
             return RivalSystem.accept(player, a);
+        }
+        if ("accept_replace".equals(act) || "acceptreplace".equals(act) || "replacemutual".equals(act)) {
+            if (a.isBlank()) {
+                return "§cPick which Mutual to replace.";
+            }
+            return RivalSystem.acceptReplace(player, a);
         }
         if ("decline".equals(act) || "deny".equals(act)) {
             if (a.isBlank()) {

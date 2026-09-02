@@ -53,6 +53,7 @@ public final class CmiRivalGui {
                         "&cDecline Declare", "&7Click to decline their declare", false);
                 case "pick_remove" -> openCurrentRivalPicker(player, "remove", "actions",
                         "&cRemove Rival", "&7Click to remove this rivalry");
+                case "pick_replace_mutual", "replace_mutual" -> openMutualReplacePicker(player);
                 case "pick_challenge" -> openChallengeTargetPicker(player);
                 case "pick_spectate" -> openPicker(player, "spectate", "challenge",
                         "&bSpectate", "&7Watch their active challenge");
@@ -826,6 +827,66 @@ public final class CmiRivalGui {
         }
 
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", backPage, "&7Return"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        GuiFeedback.openCmi(gui);
+    }
+
+    private static void openMutualReplacePicker(Player player) {
+        CMIGui gui = base(player, "&8Replace Mutual", 5);
+        Map<String, String> ph = ForgeBridge.rivalPlaceholders(player);
+        String pendingName = ph.getOrDefault("pending_mutual_accept_name", "");
+        if (pendingName == null || pendingName.isBlank()) {
+            pendingName = "new rival";
+        }
+        CMIGuiButton info = new CMIGuiButton(4, Material.GOLDEN_SWORD, "&e&lReplace Mutual Slot");
+        info.lockField();
+        List<String> header = new ArrayList<>();
+        header.add("");
+        header.add("&7Accepting &f" + pendingName);
+        header.add("&7Mutual slots full — pick who to replace");
+        header.addAll(GuiBoardHelper.tips(player, "&8They become Declared · you get the new Mutual"));
+        info.addLore(header);
+        gui.addButton(info);
+
+        List<GuiBoardHelper.RivalCard> cards = GuiBoardHelper.parseRivalCards(
+                ForgeBridge.rivalCurrentCards(player));
+        List<GuiBoardHelper.RivalCard> mutuals = new ArrayList<>();
+        for (GuiBoardHelper.RivalCard card : cards) {
+            String st = card.status == null ? "" : card.status.trim();
+            if ("Mutual".equalsIgnoreCase(st) || "Nemesis".equalsIgnoreCase(st)) {
+                mutuals.add(card);
+            }
+        }
+        if (mutuals.isEmpty()) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER,
+                    GuiTooltips.name("rival.empty.no_mutual", "&cNo Mutuals"));
+            empty.lockField();
+            empty.addLore(GuiTooltips.buttonLore("rival.empty.no_mutual",
+                    GuiBoardHelper.tipsList(player, List.of("&7You have no Mutual rivals to replace"))));
+            gui.addButton(empty);
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(mutuals.size(), 21));
+            for (int i = 0; i < slots.length && i < mutuals.size(); i++) {
+                GuiBoardHelper.RivalCard card = mutuals.get(i);
+                ItemStack head = GuiBoardHelper.rivalHead(card);
+                org.bukkit.inventory.meta.ItemMeta meta = head.getItemMeta();
+                if (meta != null) {
+                    List<String> lore = meta.hasLore() && meta.getLore() != null
+                            ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+                    lore.add(color(""));
+                    lore.add(color("&eClick to replace with &f" + pendingName));
+                    lore.add(color("&8" + card.name + " becomes Declared"));
+                    meta.setLore(lore);
+                    head.setItemMeta(meta);
+                }
+                CMIGuiButton btn = new CMIGuiButton(slots[i], head);
+                btn.lockField();
+                btn.addCommand("lmdo rival accept_replace " + card.pickerArg() + " list");
+                gui.addButton(btn);
+            }
+        }
+        gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "pending", "&7Pending"));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
