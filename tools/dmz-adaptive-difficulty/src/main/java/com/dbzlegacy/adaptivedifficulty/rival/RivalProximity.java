@@ -4,6 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparringSystem;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -148,7 +149,7 @@ public final class RivalProximity {
                         scaled,
                         "Near " + st.id() + " " + n.link.name,
                         record.tpMessages,
-                        "§6[Rival] "
+                        "Rival");
                 )) {
                     SystemTelemetry.log("rival", "presence_tp", player, n.rival,
                             SystemTelemetry.fields("tp", scaled, "status", st.id()));
@@ -186,7 +187,7 @@ public final class RivalProximity {
                 double victimReleased = DmzRewards.releasedBattlePower((ServerPlayer) victim);
                 if (victimReleased > killerReleased) {
                     float tp = RivalTpCurve.scale(killer, RivalConstants.UNDERDOG_WIN_TP, "burst");
-                    DmzRewards.awardTp(killer, tp, "Underdog victory vs " + direct.name, true, "§6[Rival] ");
+                    DmzRewards.awardTp(killer, tp, "Underdog victory vs " + direct.name, true, "Rival");
                     SystemTelemetry.log("rival", "underdog_win", killer, (ServerPlayer) victim,
                             SystemTelemetry.fields("tp", tp, "status", direct.status().id()));
                 }
@@ -234,7 +235,7 @@ public final class RivalProximity {
             }
             float scaled = RivalTpCurve.scale(killer, tp, "burst");
             DmzRewards.awardTp(killer, scaled, "Near " + st.id() + " " + near.link.name,
-                    record.tpMessages, "§6[Rival] ");
+                    record.tpMessages, "Rival");
             SystemTelemetry.log("rival", "kill_near_tp", killer, near.rival,
                     SystemTelemetry.fields("tp", scaled, "status", st.id()));
             store.markDirty();
@@ -250,7 +251,7 @@ public final class RivalProximity {
             double rivalReleased = DmzRewards.releasedBattlePower(near.rival);
             if (killerReleased > 0 && rivalReleased <= killerReleased * RivalConstants.ANTIGANK_RATIO) {
                 float witness = RivalTpCurve.scale(killer, RivalConstants.ANTIGANK_WITNESS_KILL_TP, "burst");
-                DmzRewards.awardTp(killer, witness, "Rivals watching", record.tpMessages, "§6[Rival] ");
+                DmzRewards.awardTp(killer, witness, "Rivals watching", record.tpMessages, "Rival");
                 SystemTelemetry.log("rival", "antigank_witness", killer, near.rival,
                         SystemTelemetry.fields("tp", witness));
             }
@@ -285,7 +286,7 @@ public final class RivalProximity {
         }
         LAST_UNDERDOG_ENGAGE.put(key, now);
         float tp = RivalTpCurve.scale(underdog, RivalConstants.UNDERDOG_ENGAGE_TP, "drip");
-        DmzRewards.awardTp(underdog, tp, "Engaging rival", record.tpMessages, "§6[Rival] ");
+        DmzRewards.awardTp(underdog, tp, "Engaging rival", record.tpMessages, "Rival");
         SystemTelemetry.log("rival", "underdog_engage", underdog, stronger,
                 SystemTelemetry.fields("tp", tp, "status", link.status().id()));
     }
@@ -354,7 +355,7 @@ public final class RivalProximity {
                 continue;
             }
             float tp = RivalTpCurve.scale(rival, RivalConstants.ANTIGANK_HIT_TP, "drip");
-            DmzRewards.awardTp(rival, tp, "Rival under fire", rivalRecord.tpMessages, "§6[Rival] ");
+            DmzRewards.awardTp(rival, tp, "Rival under fire", rivalRecord.tpMessages, "Rival");
             SystemTelemetry.log("rival", "antigank_hit", rival, victim,
                     SystemTelemetry.fields("tp", tp));
             awarded = true;
@@ -407,7 +408,7 @@ public final class RivalProximity {
             return;
         }
         float tp = RivalTpCurve.scale(player, RivalConstants.SURPASS_TP, "burst");
-        if (DmzRewards.awardTp(player, tp, "Surpassed " + link.name, true, "§6[Rival] ")) {
+        if (DmzRewards.awardTp(player, tp, "Surpassed " + link.name, true, "Rival")) {
             record.surpassAwards++;
             record.lastSurpassAt = now;
             link.lastSurpassAt = now;
@@ -416,7 +417,8 @@ public final class RivalProximity {
             RivalStore.get().markDirty();
             SystemTelemetry.log("rival", "surpass", player, null,
                     SystemTelemetry.fields("tp", tp, "rival", link.name));
-            DmzRewards.msg(player, "§8[Rival] Surpass cooldown: 6h for " + link.name + ", 1h global.");
+            DmzRewards.msg(player, LmChat.info("Rival",
+                    "Surpass cooldown: 6h for " + link.name + ", 1h global."));
         }
     }
 

@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.rival;
 
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -308,12 +309,13 @@ public final class ProvingGrounds {
             out.created = true;
             out.pg = pg;
             if (loserPlayer != null) {
-                DmzRewards.msg(loserPlayer, "§c[Proving Grounds] §7Defeat marked §e" + displayName(pg) + "§7.");
-                DmzRewards.msg(loserPlayer, "§8Return here to face " + winnerRecord.name + " for greater rewards.");
+                DmzRewards.msg(loserPlayer, LmChat.fail("Proving", "Defeat marked §e" + displayName(pg) + "§7."));
+                DmzRewards.msg(loserPlayer, LmChat.info("Proving",
+                        "Return here to face " + winnerRecord.name + " for greater rewards."));
             }
             if (winnerPlayer != null) {
-                DmzRewards.msg(winnerPlayer, "§6[Proving Grounds] §7You claimed §e" + displayName(pg) + "§7.");
-                DmzRewards.msg(winnerPlayer, "§8Tier I - " + tierName(1) + ". Defend your claim.");
+                DmzRewards.msg(winnerPlayer, LmChat.info("Proving", "You claimed §e" + displayName(pg) + "§7."));
+                DmzRewards.msg(winnerPlayer, LmChat.info("Proving", "Tier I — " + tierName(1) + ". Defend your claim."));
             }
             RivalStore.get().markDirty();
             return out;
@@ -345,14 +347,14 @@ public final class ProvingGrounds {
             pg.tier = 1;
             syncPair(wLink, lLink, pg);
             if (winnerPlayer != null) {
-                DmzRewards.msg(winnerPlayer, "§a[Proving Grounds] §eYou have reclaimed your honor.");
-                DmzRewards.msg(winnerPlayer, "§7" + displayName(pg) + " §8is yours again.");
+                DmzRewards.msg(winnerPlayer, LmChat.ok("Proving", "You have reclaimed your honor."));
+                DmzRewards.msg(winnerPlayer, LmChat.info("Proving", displayName(pg) + " §8is yours again."));
                 float reclaimTp = RivalTpCurve.scale(winnerPlayer, RECLAIM_TP, "burst");
-                DmzRewards.awardTp(winnerPlayer, reclaimTp, "PG Reclaim", true, "§6[Proving Grounds] ");
+                DmzRewards.awardTp(winnerPlayer, reclaimTp, "PG Reclaim", true, "Proving");
             }
             if (loserPlayer != null) {
-                DmzRewards.msg(loserPlayer, "§c[Proving Grounds] §7" + winnerRecord.name
-                        + " reclaimed these grounds from you.");
+                DmzRewards.msg(loserPlayer, LmChat.fail("Proving", "§f" + winnerRecord.name
+                        + " §7reclaimed these grounds from you."));
             }
             RivalStore.get().markDirty();
             return out;
@@ -365,15 +367,15 @@ public final class ProvingGrounds {
         out.tierUp = pg.tier > oldTier;
         syncPair(wLink, lLink, pg);
         if (winnerPlayer != null) {
-            DmzRewards.msg(winnerPlayer, "§6[Proving Grounds] §7Your claim grows stronger. §e"
-                    + tierName(pg.tier) + " §8(" + pg.championWins + " wins here)");
+            DmzRewards.msg(winnerPlayer, LmChat.info("Proving", "Your claim grows stronger. §e"
+                    + tierName(pg.tier) + " §8(" + pg.championWins + " wins here)"));
             if (out.tierUp) {
-                DmzRewards.msg(winnerPlayer, "§aTier up! §e" + tierName(pg.tier));
+                DmzRewards.msg(winnerPlayer, LmChat.ok("Proving", "Tier up! §e" + tierName(pg.tier)));
             }
         }
         if (loserPlayer != null) {
-            DmzRewards.msg(loserPlayer,
-                    "§c[Proving Grounds] §7Your rival's dominance over these grounds grows stronger.");
+            DmzRewards.msg(loserPlayer, LmChat.fail("Proving",
+                    "Your rival's dominance over these grounds grows stronger."));
         }
         RivalStore.get().markDirty();
         return out;
@@ -421,10 +423,10 @@ public final class ProvingGrounds {
             return;
         }
         if (myUuid != null && myUuid.equals(pg.championUuid)) {
-            DmzRewards.msg(player, "§6[Proving Grounds] §7Your rival awaits where your last battle ended.");
+            DmzRewards.msg(player, LmChat.info("Proving", "Your rival awaits where your last battle ended."));
         } else {
-            DmzRewards.msg(player, "§6[Proving Grounds] §7Your rival awaits on §e" + shortPlace(pg) + "§7.");
-            DmzRewards.msg(player, "§8Underdog bonus active. Reclaim your honor.");
+            DmzRewards.msg(player, LmChat.info("Proving", "Your rival awaits on §e" + shortPlace(pg) + "§7."));
+            DmzRewards.msg(player, LmChat.info("Proving", "Underdog bonus active. Reclaim your honor."));
         }
     }
 

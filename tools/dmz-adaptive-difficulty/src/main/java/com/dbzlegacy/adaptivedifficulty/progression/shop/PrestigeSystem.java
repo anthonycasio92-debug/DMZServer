@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dragonminez.common.stats.StatsData;
 import java.util.Map;
@@ -170,12 +171,12 @@ public final class PrestigeSystem {
                 + " §8(cap §f" + DmzRewards.formatWhole(PrestigePointsSystem.effectiveMaxLevel(player)) + "§8).";
         if (!preferGuiFeedback()) {
             send(player, "");
-            send(player, "§8--------------------------------");
+            send(player, LmChat.DIVIDER);
             send(player, "§aPrestige Level §f" + newCompleted + " §aComplete!");
             send(player, "§7Required level was §f" + DmzRewards.formatWhole(required));
             send(player, "§7Held Prestige Levels: §6" + newHeld + "§7/§f" + MAX_HELD);
             send(player, "§7Next Prestige requires §e" + DmzRewards.formatWhole(nextRequired) + " §7DMZ levels.");
-            send(player, "§8--------------------------------");
+            send(player, LmChat.DIVIDER);
         }
         SystemTelemetry.log("prestige", "purchase", player, null, Map.of(
                 "completed", newCompleted,
@@ -220,7 +221,7 @@ public final class PrestigeSystem {
                 + "§7Held after: §6" + (held + 1) + "§7/§f" + MAX_HELD;
         if (!preferGuiFeedback()) {
             send(player, "");
-            send(player, "§8--------------------------------");
+            send(player, LmChat.DIVIDER);
             send(player, "§eConfirm Prestige Level §f" + next + "§e?");
             send(player, "§7This resets DMZ stats and awards one held Prestige Level.");
             send(player, "§7Your level §f" + DmzRewards.formatWhole(level)
@@ -232,7 +233,7 @@ public final class PrestigeSystem {
                     .m_7220_(Component.m_237113_("  "))
                     .m_7220_(btn("§c[Cancel]", "/lmdo lm open prestige", "Cancel"));
             send(player, row);
-            send(player, "§8--------------------------------");
+            send(player, LmChat.DIVIDER);
         }
         return summary;
     }
@@ -243,11 +244,11 @@ public final class PrestigeSystem {
                 + "§eUse one before prestiging again.";
         if (!preferGuiFeedback()) {
             send(player, "");
-            send(player, "§8--------------------------------");
+            send(player, LmChat.DIVIDER);
             send(player, "§cMaximum Prestige Levels Reached");
             send(player, "§7Available Prestige Levels: §6" + held + "§7/§f" + MAX_HELD);
             send(player, "§eUse one before prestiging again.");
-            send(player, "§8--------------------------------");
+            send(player, LmChat.DIVIDER);
         }
         return summary;
     }
@@ -260,12 +261,12 @@ public final class PrestigeSystem {
                 + " §7DMZ levels (have §f" + DmzRewards.formatWhole(level) + "§7).";
         if (!preferGuiFeedback()) {
             send(player, "");
-            send(player, "§8--------------------------------");
+            send(player, LmChat.DIVIDER);
             send(player, "§cNot Ready for Prestige Level §f" + next);
             send(player, "§7Need §e" + DmzRewards.formatWhole(required)
                     + " §7DMZ levels (have §f" + DmzRewards.formatWhole(level) + "§7).");
             send(player, "§7Completed prestiges: §f" + completed);
-            send(player, "§8--------------------------------");
+            send(player, LmChat.DIVIDER);
         }
         return summary;
     }
@@ -559,7 +560,11 @@ public final class PrestigeSystem {
     }
 
     private static void send(ServerPlayer player, String text) {
-        player.m_213846_(Component.m_237113_(text));
+        if (text == null || text.isEmpty()) {
+            player.m_213846_(Component.m_237113_(""));
+            return;
+        }
+        LmChat.send(player, text);
     }
 
     private static void send(ServerPlayer player, Component text) {

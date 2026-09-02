@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dragonminez.common.config.ConfigManager;
 import com.dragonminez.common.config.RaceCharacterConfig;
 import com.dragonminez.common.stats.StatsData;
@@ -173,8 +174,8 @@ public final class AndroidConversion {
             } catch (Throwable ignored) {
             }
             DmzSkillUtil.sync(player);
-            DmzRewards.msg(player, "§a[Android] §fConversion complete. §7Android forms unlocked for §f"
-                    + prettyRace(raceName) + "§7.");
+            DmzRewards.msg(player, LmChat.ok("Android", "Conversion complete. §7Android forms unlocked for §f"
+                    + prettyRace(raceName) + "§7."));
             SystemTelemetry.log("progression", "android_conversion", player, null,
                     Map.of("race", raceName, "android", "true"));
             return "§a[Android] Conversion complete for §f" + player.m_7755_().getString()
@@ -291,8 +292,8 @@ public final class AndroidConversion {
         }
         DmzSkillUtil.sync(player);
 
-        DmzRewards.msg(player, "§a[Android] §fUpgrade removed. §7You are no longer an upgraded Android.");
-        DmzRewards.msg(player, "§7Race, stats, skills, and progression were preserved.");
+        DmzRewards.msg(player, LmChat.ok("Android", "Upgrade removed. §7You are no longer an upgraded Android."));
+        DmzRewards.msg(player, LmChat.info("Android", "Race, stats, skills, and progression were preserved."));
         SystemTelemetry.log("progression", "android_remove", player, null,
                 Map.of("race", race == null ? "" : race));
         return "§a[Android] Upgrade removed for §f" + player.m_7755_().getString() + "§a.";

@@ -244,10 +244,12 @@ public final class SparringSystem {
             aRt.graceUntil = 0L;
             if (now >= vRt.messageNext) {
                 vRt.messageNext = now + 4000L;
-                DmzRewards.msg(attacker, "§6[Sparring] §aFriendly Fist §7knockdown — healed §f"
-                        + victim.m_7755_().getString() + "§7.");
-                DmzRewards.msg(victim, "§6[Sparring] §aFriendly Fist §7heal from §f"
-                        + attacker.m_7755_().getString() + "§7.");
+                DmzRewards.msg(attacker, LmChat.ok("Spar",
+                        "Friendly Fist §7knockdown — healed §f"
+                                + victim.m_7755_().getString() + "§7."));
+                DmzRewards.msg(victim, LmChat.ok("Spar",
+                        "Friendly Fist §7heal from §f"
+                                + attacker.m_7755_().getString() + "§7."));
             }
         } catch (Throwable ignored) {
         }
@@ -395,12 +397,12 @@ public final class SparringSystem {
             String reason
     ) {
         String who = partner == null ? "?" : partner.m_7755_().getString();
-        DmzRewards.msg(player, "§6[Sparring] §7Session ended with §f" + who
-                + " §8(" + reason + ", " + (durationMs / 1000L) + "s)");
-        DmzRewards.msg(player, "§7TP §a+" + DmzRewards.formatWhole(rt.sessionTp)
+        DmzRewards.msg(player, LmChat.info("Spar", "Session ended with §f" + who
+                + " §8(" + reason + ", " + (durationMs / 1000L) + "s)"));
+        DmzRewards.msg(player, LmChat.note("Spar", "§7TP §a+" + DmzRewards.formatWhole(rt.sessionTp)
                 + " §8| melee §f" + (int) rt.sessionMelee
                 + " §8| ki §f" + (int) rt.sessionKi
-                + " §8| combo §f" + rt.sessionMaxCombo);
+                + " §8| combo §f" + rt.sessionMaxCombo));
     }
 
     private static void updateLeaderboard(ServerPlayer player, SparPlayerRuntime rt, long durationMs) {
@@ -460,7 +462,7 @@ public final class SparringSystem {
             }
             bond.streakLastDay = today;
             bond.streakBest = Math.max(bond.streakBest, bond.streakCurrent);
-            DmzRewards.msg(player, "§6[Sparring] §aDaily training secured! §eStreak "
+            DmzRewards.msg(player, LmChat.ok("Spar", "Daily training secured! §eStreak "
                     + bond.streakCurrent + " day" + (bond.streakCurrent == 1 ? "" : "s"));
         }
     }
@@ -716,7 +718,7 @@ public final class SparringSystem {
             return;
         }
         rt.messageNext = now + SparCombat.PERFECT_ACTIONBAR_MS;
-        DmzRewards.msg(player, "§6§lPERFECT TRAINING ACTIVE");
+        DmzRewards.msg(player, LmChat.tagged("Spar", "§6§lPerfect Training active"));
     }
 
     /**
@@ -792,7 +794,7 @@ public final class SparringSystem {
                 pRt.graceWarned = true;
             }
             long left = Math.max(1L, (rt.graceUntil - now + 999L) / 1000L);
-            String msg = "§6[Sparring] §eRecover within " + left + "s§8 - " + reason;
+            String msg = LmChat.note("Spar", "§eRecover within " + left + "s §8— " + reason);
             DmzRewards.msg(player, msg);
             if (partner != null) {
                 DmzRewards.msg(partner, msg);
@@ -841,7 +843,7 @@ public final class SparringSystem {
             long now = System.currentTimeMillis();
             if (now >= rt.messageNext) {
                 rt.messageNext = now + 1500L;
-                DmzRewards.msg(player, "§c[Sparring] Combo broken (" + reason + ").");
+                DmzRewards.msg(player, LmChat.fail("Spar", "Combo broken (" + reason + ")."));
             }
         }
         rt.combo = 0;
@@ -921,7 +923,7 @@ public final class SparringSystem {
                     ? ("Mentor share from " + apprentice.m_7755_().getString()
                     + (roster > 1 ? " §8(dojo " + roster + ")" : ""))
                     : "apprentice";
-            DmzRewards.awardTp(mentor, share, reason, true, "§6[Mentor] ");
+            DmzRewards.awardTp(mentor, share, reason, true, "Mentor");
         } catch (Throwable ignored) {
         }
     }
@@ -1120,9 +1122,9 @@ public final class SparringSystem {
         invite.expiresAt = now + MENTOR_INVITE_MS;
         SparStore.get().invites.put(target.m_20148_().toString(), invite);
         SparStore.get().markDirty();
-        DmzRewards.msg(target, "§6[Mentor Bond] §f" + invite.fromName
-                + " §ewants you as their Apprentice.");
-        DmzRewards.msg(target, "§8Open §e/spar §8→ Mentor → Pending to Accept or Decline");
+        DmzRewards.msg(target, LmChat.note("Mentor", "§f" + invite.fromName
+                + " §ewants you as their Apprentice."));
+        DmzRewards.msg(target, LmChat.tip("/spar", "→ Mentor → Pending to Accept or Decline"));
         return "§aInvite sent to §f" + target.m_7755_().getString() + "§a.";
     }
 
@@ -1153,9 +1155,9 @@ public final class SparringSystem {
         invite.expiresAt = now + MENTOR_INVITE_MS;
         SparStore.get().invites.put(target.m_20148_().toString(), invite);
         SparStore.get().markDirty();
-        DmzRewards.msg(target, "§6[Mentor Bond] §f" + invite.fromName
-                + " §ewants you as their Mentor.");
-        DmzRewards.msg(target, "§8Open §e/spar §8→ Mentor → Pending to Accept or Decline");
+        DmzRewards.msg(target, LmChat.note("Mentor", "§f" + invite.fromName
+                + " §ewants you as their Mentor."));
+        DmzRewards.msg(target, LmChat.tip("/spar", "→ Mentor → Pending to Accept or Decline"));
         return "§aInvite sent to §f" + target.m_7755_().getString() + "§a.";
     }
 
@@ -1275,9 +1277,9 @@ public final class SparringSystem {
         bindMentor(mentor, apprentice);
         SparStore.get().invites.remove(player.m_20148_().toString());
         SparStore.get().markDirty();
-        DmzRewards.msg(mentor, "§6[Mentor Bond] §aYou are now mentoring §f" + apprentice.m_7755_().getString()
-                + " §8(" + mentorBond.apprenticeCount() + "/" + MAX_APPRENTICES + ")");
-        DmzRewards.msg(apprentice, "§6[Mentor Bond] §aYour mentor is now §f" + mentor.m_7755_().getString());
+        DmzRewards.msg(mentor, LmChat.ok("Mentor", "You are now mentoring §f" + apprentice.m_7755_().getString()
+                + " §8(" + mentorBond.apprenticeCount() + "/" + MAX_APPRENTICES + ")"));
+        DmzRewards.msg(apprentice, LmChat.ok("Mentor", "Your mentor is now §f" + mentor.m_7755_().getString()));
         return "§aMentor bond created.";
     }
 
@@ -1299,8 +1301,8 @@ public final class SparringSystem {
             try {
                 ServerPlayer other = server.m_6846_().m_11259_(UUID.fromString(invite.fromUuid));
                 if (other != null) {
-                    DmzRewards.msg(other, "§6[Mentor Bond] §f" + player.m_7755_().getString()
-                            + " §cdenied your invite.");
+                    DmzRewards.msg(other, LmChat.fail("Mentor", "§f" + player.m_7755_().getString()
+                            + " §cdenied your invite."));
                 }
             } catch (IllegalArgumentException ignored) {
             }
@@ -1334,8 +1336,8 @@ public final class SparringSystem {
             try {
                 ServerPlayer other = server.m_6846_().m_11259_(UUID.fromString(targetKey));
                 if (other != null) {
-                    DmzRewards.msg(other, "§6[Mentor Bond] §f" + player.m_7755_().getString()
-                            + " §7cancelled their invite.");
+                    DmzRewards.msg(other, LmChat.info("Mentor", "§f" + player.m_7755_().getString()
+                            + " §7cancelled their invite."));
                 }
             } catch (IllegalArgumentException ignored) {
             }

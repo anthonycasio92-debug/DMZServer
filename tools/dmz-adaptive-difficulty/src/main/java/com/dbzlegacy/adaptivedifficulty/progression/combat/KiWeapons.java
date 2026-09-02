@@ -131,7 +131,7 @@ public final class KiWeapons {
                 double baseTp = Math.min(amount, Math.max(1.0, maxHealth * 0.2));
                 float bonusTp = (float) Math.floor(baseTp * tpBonus);
                 if (bonusTp > 0.0f) {
-                    DmzRewards.awardTp(attacker, bonusTp, "ki-weapon", false, "§6[Ki] ");
+                    DmzRewards.awardTp(attacker, bonusTp, "ki-weapon", false, "Ki");
                 }
             }
         }
@@ -163,7 +163,7 @@ public final class KiWeapons {
         LAST_TP.put(tpKey, now);
         float bonusTp = (float) Math.floor(amount * tpBonus);
         if (bonusTp > 0.0f) {
-            DmzRewards.awardTp(victim, bonusTp, "taken", false, "§6[Ki] ");
+            DmzRewards.awardTp(victim, bonusTp, "taken", false, "Ki");
         }
     }
 

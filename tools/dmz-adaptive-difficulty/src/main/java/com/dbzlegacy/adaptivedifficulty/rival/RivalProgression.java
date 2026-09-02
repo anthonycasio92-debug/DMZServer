@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.rival;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.ConfigPaths;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.Reader;
@@ -384,7 +385,7 @@ public final class RivalProgression {
             if (item.progress >= item.goal && !item.claimed) {
                 item.claimed = true;
                 data.season.leaderboard.merge(player.m_20148_().toString(), (double) item.rp, Double::sum);
-                DmzRewards.msg(player, "§a[Rival Quest] §e" + item.name + " §7complete §a+" + item.rp + " season RP");
+                DmzRewards.msg(player, LmChat.ok("Rival", "§e" + item.name + " §7complete §a+" + item.rp + " season RP"));
             }
         }
     }
@@ -414,7 +415,7 @@ public final class RivalProgression {
         }
         map.put(ach, true);
         String label = "nemesis".equals(ach) ? "Vendetta Rank" : ach.replace('_', ' ');
-        DmzRewards.msg(player, "§6[Rival Achievement] §e" + label);
+        DmzRewards.msg(player, LmChat.note("Rival", "§eAchievement: " + label));
         if ("legend_killer".equals(ach)) {
             data.specialTitles.put(id, "legend_killer");
         }

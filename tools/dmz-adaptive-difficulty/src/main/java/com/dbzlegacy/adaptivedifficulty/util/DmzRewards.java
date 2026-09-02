@@ -49,9 +49,7 @@ public final class DmzRewards {
                 );
             }
             if (showMessage) {
-                String pfx = prefix == null || prefix.isBlank() ? "§6[TP] " : prefix;
-                String why = reason == null || reason.isBlank() ? "" : (" §8(" + reason + ")");
-                msg(player, pfx + "§a+" + formatWhole(amount) + " TP" + why);
+                msg(player, LmChat.tp(resolveTpSystem(prefix), formatWhole(amount), reason));
             }
             return true;
         } catch (Throwable t) {
@@ -146,6 +144,22 @@ public final class DmzRewards {
 
     public static void msg(ServerPlayer player, String text) {
         LmChat.send(player, text);
+    }
+
+    /** Legacy {@code §6[Tag]} prefix or short system name → canonical TP tag label. */
+    static String resolveTpSystem(String systemOrPrefix) {
+        if (systemOrPrefix == null || systemOrPrefix.isBlank()) {
+            return "TP";
+        }
+        String s = systemOrPrefix.trim();
+        if (s.startsWith("§6[") && s.contains("]")) {
+            int open = s.indexOf('[');
+            int close = s.indexOf(']', open + 1);
+            if (close > open) {
+                s = s.substring(open + 1, close).trim();
+            }
+        }
+        return LmChat.systemName(s);
     }
 
     public static String formatWhole(double value) {

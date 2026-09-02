@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.rival;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
@@ -122,9 +123,9 @@ public final class RivalChallengeManager {
         req.expiresAt = now + RivalConstants.CH_REQUEST_EXPIRE_MS;
         req.durationMs = mins * 60_000L;
         requests.put(req.id, req);
-        DmzRewards.msg(to, "§6[Rival Challenge] §e" + req.fromName
-                + " §7challenged you for §f" + mins + "§7 min!");
-        DmzRewards.msg(to, "§8Open §e/rival §8→ Challenge → Accept  §7or  §8Decline");
+        DmzRewards.msg(to, LmChat.note("Challenge", "§e" + req.fromName
+                + " §7challenged you for §f" + mins + "§7 min!"));
+        DmzRewards.msg(to, LmChat.tip("/rival", "→ Challenge → Accept or Decline"));
         return "§aChallenge sent to §f" + req.toName + "§a (" + mins + " min).";
     }
 
@@ -168,7 +169,7 @@ public final class RivalChallengeManager {
         activeByPlayer.put(ch.b, ch.id);
         broadcast(server, "§e" + ch.nameA + " §7vs §e" + ch.nameB
                 + " §8— challenge starts in 5s!");
-        DmzRewards.msg(challenger, "§aChallenge accepted! Countdown started.");
+        DmzRewards.msg(challenger, LmChat.ok("Challenge", "Challenge accepted! Countdown started."));
         return "§aChallenge accepted! Countdown started.";
     }
 
@@ -181,7 +182,8 @@ public final class RivalChallengeManager {
         MinecraftServer server = player.m_20194_();
         ServerPlayer from = server == null ? null : server.m_6846_().m_11259_(req.from);
         if (from != null) {
-            DmzRewards.msg(from, "§c" + player.m_7755_().getString() + " declined your challenge.");
+            DmzRewards.msg(from, LmChat.fail("Challenge", "§f" + player.m_7755_().getString()
+                    + " §cdeclined your challenge."));
         }
         return "§eDeclined challenge from " + req.fromName + ".";
     }
@@ -275,8 +277,8 @@ public final class RivalChallengeManager {
                     // Script: warn only — fight continues (do not force-end as draw).
                     if (now - ch.lastBroadcastAt >= 3_000L) {
                         ch.lastBroadcastAt = now;
-                        DmzRewards.msg(a, "§cToo far apart! Return within range!");
-                        DmzRewards.msg(b, "§cToo far apart! Return within range!");
+                        DmzRewards.msg(a, LmChat.fail("Challenge", "Too far apart! Return within range!"));
+                        DmzRewards.msg(b, LmChat.fail("Challenge", "Too far apart! Return within range!"));
                     }
                 }
                 if (now >= ch.endsAt) {
@@ -375,11 +377,11 @@ public final class RivalChallengeManager {
         if ("draw".equals(reason) || "distance".equals(reason) || winner == null) {
             if (pA != null) {
                 float tp = RivalTpCurve.scale(pA, RivalConstants.CH_DRAW_TP, "burst");
-                DmzRewards.awardTp(pA, tp, "Rival Draw", true, "§6[Rival Challenge] ");
+                DmzRewards.awardTp(pA, tp, "Rival Draw", true, "Challenge");
             }
             if (pB != null) {
                 float tp = RivalTpCurve.scale(pB, RivalConstants.CH_DRAW_TP, "burst");
-                DmzRewards.awardTp(pB, tp, "Rival Draw", true, "§6[Rival Challenge] ");
+                DmzRewards.awardTp(pB, tp, "Rival Draw", true, "Challenge");
             }
             if (related && recA != null && recB != null) {
                 awardDrawRp(recA, recB, ch);
@@ -398,7 +400,7 @@ public final class RivalChallengeManager {
             float baseWin = related ? RivalConstants.CH_WIN_TP : RivalConstants.CH_NON_RIVAL_WIN_TP;
             float winTp = RivalTpCurve.scale(winP, baseWin, "burst");
             if (winP != null) {
-                DmzRewards.awardTp(winP, winTp, "Rival Forfeit Win", true, "§6[Rival Challenge] ");
+                DmzRewards.awardTp(winP, winTp, "Rival Forfeit Win", true, "Challenge");
             }
             // Script: no participation TP to the forfeit/disconnect loser.
             if (related) {
@@ -433,10 +435,10 @@ public final class RivalChallengeManager {
             float loseTp = RivalTpCurve.scale(loseP, loseBase, "burst");
             if (winP != null) {
                 DmzRewards.awardTp(winP, winTp, knockout ? "Rival KO Win" : "Rival Win", true,
-                        "§6[Rival Challenge] ");
+                        "Challenge");
             }
             if (loseP != null) {
-                DmzRewards.awardTp(loseP, loseTp, "Rival Loss", true, "§6[Rival Challenge] ");
+                DmzRewards.awardTp(loseP, loseTp, "Rival Loss", true, "Challenge");
             }
             if (related && winRec != null && loseRec != null) {
                 RivalChallenge.Combat wC = ch.combatOf(winner);
@@ -464,61 +466,59 @@ public final class RivalChallengeManager {
             UUID loser,
             boolean draw
     ) {
-        java.util.List<String> report = buildReport(ch, winner, loser, draw);
+        String report = buildReport(ch, winner, loser, draw);
         ServerPlayer pA = server == null || ch.a == null ? null : server.m_6846_().m_11259_(ch.a);
         ServerPlayer pB = server == null || ch.b == null ? null : server.m_6846_().m_11259_(ch.b);
-        for (String line : report) {
-            if (pA != null) {
-                DmzRewards.msg(pA, line);
-            }
-            if (pB != null) {
-                DmzRewards.msg(pB, line);
-            }
+        if (pA != null) {
+            DmzRewards.msg(pA, report);
+        }
+        if (pB != null) {
+            DmzRewards.msg(pB, report);
         }
         if (!draw) {
             if (pA != null) {
-                DmzRewards.msg(pA, pA.m_20148_().equals(winner) ? "§a[Rival] Victory!" : "§c[Rival] Defeat!");
+                DmzRewards.msg(pA, pA.m_20148_().equals(winner)
+                        ? LmChat.ok("Challenge", "Victory!")
+                        : LmChat.fail("Challenge", "Defeat!"));
             }
             if (pB != null) {
-                DmzRewards.msg(pB, pB.m_20148_().equals(winner) ? "§a[Rival] Victory!" : "§c[Rival] Defeat!");
+                DmzRewards.msg(pB, pB.m_20148_().equals(winner)
+                        ? LmChat.ok("Challenge", "Victory!")
+                        : LmChat.fail("Challenge", "Defeat!"));
             }
         }
     }
 
-    private static java.util.List<String> buildReport(
+    private static String buildReport(
             RivalChallenge ch,
             UUID winner,
             UUID loser,
             boolean draw
     ) {
-        java.util.List<String> lines = new java.util.ArrayList<>();
-        lines.add("§8--------------------------------");
-        lines.add("§6§l RIVAL BATTLE REPORT");
-        lines.add("§8--------------------------------");
+        java.util.List<String> body = new java.util.ArrayList<>();
         if (draw) {
-            lines.add("§8Result  §eDraw");
+            body.add("§8Result  §eDraw");
         } else {
-            lines.add("§8Winner  §a" + nameOf(ch, winner));
-            lines.add("§8Runner  §c" + nameOf(ch, loser));
+            body.add("§8Winner  §a" + nameOf(ch, winner));
+            body.add("§8Runner  §c" + nameOf(ch, loser));
         }
         long elapsed = Math.max(0L, System.currentTimeMillis() - ch.startAt);
-        lines.add("§8Time    §f" + formatMs(elapsed) + " §8  via  §7" + ch.endReason);
+        body.add("§8Time    §f" + formatMs(elapsed) + " §8  via  §7" + ch.endReason);
         for (UUID id : new UUID[]{ch.a, ch.b}) {
             if (id == null) {
                 continue;
             }
             RivalChallenge.Combat combat = ch.combatOf(id);
             String name = nameOf(ch, id);
-            lines.add(" ");
-            lines.add("§e" + name);
-            lines.add("§8  Damage  §f" + (int) combat.damage
+            body.add("");
+            body.add("§e" + name);
+            body.add("§8  Damage  §f" + (int) combat.damage
                     + " §8(Phy " + (int) combat.physical + " / Ki " + (int) combat.ki + ")");
-            lines.add("§8  Hits  §f" + combat.hits
+            body.add("§8  Hits  §f" + combat.hits
                     + " §8  Best  §f" + (int) combat.biggestHit
                     + " §8  Combo  §f" + combat.longestCombo);
         }
-        lines.add("§8--------------------------------");
-        return lines;
+        return LmChat.card("Rival Battle Report", null, null, body.toArray(new String[0]));
     }
 
     private void applyWinLoss(
@@ -697,8 +697,8 @@ public final class RivalChallengeManager {
     }
 
     private static String scoreLine(RivalChallenge ch) {
-        return "§8[Challenge] §f" + ch.nameA + " §e" + (int) ch.damageA
-                + " §7- §e" + (int) ch.damageB + " §f" + ch.nameB;
+        return LmChat.tagged("Challenge", "§f" + ch.nameA + " §e" + (int) ch.damageA
+                + " §7- §e" + (int) ch.damageB + " §f" + ch.nameB);
     }
 
     private static String nameOf(RivalChallenge ch, UUID id) {
@@ -719,7 +719,7 @@ public final class RivalChallengeManager {
             return;
         }
         for (ServerPlayer p : server.m_6846_().m_11314_()) {
-            DmzRewards.msg(p, "§6[Rival] " + text);
+            DmzRewards.msg(p, LmChat.tagged("Rival", text));
         }
     }
 

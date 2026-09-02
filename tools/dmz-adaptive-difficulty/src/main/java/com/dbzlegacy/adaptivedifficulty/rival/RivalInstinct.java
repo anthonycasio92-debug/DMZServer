@@ -4,6 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Status;
 import java.util.Map;
@@ -121,15 +122,15 @@ public final class RivalInstinct {
             String tag = st == RivalStatus.NEMESIS ? "Nemesis" : "Mutual";
 
             if (!wasNear) {
-                String arrive = "§6[Rival Instinct] §e" + link.name
-                        + " §7arrived (" + (int) dist + "m)";
-                arrive += " §7- feels " + relative(myReleased, theirReleased);
+                String arrive = LmChat.note("Instinct", "§e" + link.name
+                        + " §7arrived (" + (int) dist + "m)");
+                arrive += " §7— feels " + relative(myReleased, theirReleased);
                 arrive += " §8[" + tag + "]";
                 alert(nearKey + ":arrive", arrive, player, now, RivalConstants.INSTINCT_ARRIVE_CD_MS);
             } else {
                 alert(nearKey + ":bp",
-                        "§b[Rival Instinct] §e" + link.name
-                                + " §7still nearby - released BP ~ §f" + DmzRewards.formatWhole(theirReleased),
+                        LmChat.info("Instinct", "§e" + link.name
+                                + " §7still nearby — released BP ~ §f" + DmzRewards.formatWhole(theirReleased)),
                         player, now, RivalConstants.INSTINCT_STATUS_CD_MS);
             }
 
@@ -139,19 +140,19 @@ public final class RivalInstinct {
                 if (status != null) {
                     if (status.isChargingKi() || status.isActionCharging()) {
                         alert(nearKey + ":charge",
-                                "§c[Rival Instinct] §e" + link.name + " §cis charging ki!",
+                                LmChat.fail("Instinct", "§e" + link.name + " §cis charging ki!"),
                                 player, now, RivalConstants.INSTINCT_EVENT_CD_MS);
                     }
                     if (status.isAuraActive()) {
                         alert(nearKey + ":aura",
-                                "§d[Rival Instinct] §e" + link.name + " §dtransformation / aura surge!",
+                                LmChat.note("Instinct", "§e" + link.name + " §dtransformation / aura surge!"),
                                 player, now, RivalConstants.INSTINCT_EVENT_CD_MS);
                     }
                     if (status.getFusionPartnerUUID() != null || status.isFusionLeader()) {
                         String fname = status.getFusionName();
                         alert(nearKey + ":fusion",
-                                "§5[Rival Instinct] §e" + link.name + " §5is fused"
-                                        + (fname == null || fname.isBlank() ? "!" : " (" + fname + ")!"),
+                                LmChat.note("Instinct", "§e" + link.name + " §5is fused"
+                                        + (fname == null || fname.isBlank() ? "!" : " (" + fname + ")!")),
                                 player, now, RivalConstants.INSTINCT_EVENT_CD_MS);
                     }
                 }
@@ -161,7 +162,7 @@ public final class RivalInstinct {
                 // Inf BP and released-stat CR cannot false-trigger or miss surges.
                 if (prev != null && formMult > prev * 1.15 && formMult > 1.12) {
                     alert(nearKey + ":form",
-                            "§d[Rival Instinct] §e" + link.name + " §dpower surged!",
+                            LmChat.note("Instinct", "§e" + link.name + " §dpower surged!"),
                             player, now, RivalConstants.INSTINCT_EVENT_CD_MS);
                 }
             } catch (Throwable ignored) {

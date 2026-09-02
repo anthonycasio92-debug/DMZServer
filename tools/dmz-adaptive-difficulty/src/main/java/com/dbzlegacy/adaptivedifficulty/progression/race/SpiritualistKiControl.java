@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Character;
 import com.dragonminez.common.stats.skills.Skills;
@@ -75,13 +76,13 @@ public final class SpiritualistKiControl {
         }
         DmzSkillUtil.setLevel(skills, KI_CONTROL, 1);
         if (DmzSkillUtil.level(skills, KI_CONTROL) != 1) {
-            DmzRewards.msg(player, "§c[Spiritualist] DMZ rejected the Ki Control unlock.");
+            DmzRewards.msg(player, LmChat.fail("Spirit", "DMZ rejected the Ki Control unlock."));
             return false;
         }
         ProgressionData.storedPutBool(player, KEY_GRANTED, true);
         DmzSkillUtil.sync(player);
-        DmzRewards.msg(player, "§b§lSpiritualist Ability Unlocked!");
-        DmzRewards.msg(player, "§7Your natural connection to Ki has unlocked §bKi Control§7.");
+        DmzRewards.msg(player, LmChat.card("Spiritualist Ability Unlocked", null, null,
+                "§7Your natural connection to Ki has unlocked §bKi Control§7."));
         return true;
     }
 
@@ -97,8 +98,8 @@ public final class SpiritualistKiControl {
         }
         ProgressionData.storedRemove(player, KEY_GRANTED);
         DmzSkillUtil.sync(player);
-        DmzRewards.msg(player,
-                "§7Ki Control was removed because your chosen class is not Spiritualist.");
+        DmzRewards.msg(player, LmChat.info("Spirit",
+                "Ki Control was removed because your chosen class is not Spiritualist."));
         return true;
     }
 

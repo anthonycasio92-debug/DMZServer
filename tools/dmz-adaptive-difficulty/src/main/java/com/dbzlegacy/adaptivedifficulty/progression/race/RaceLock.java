@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dbzlegacy.adaptivedifficulty.util.ScreenNotify;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.ProgressionSyncS2C;
@@ -188,7 +189,7 @@ public final class RaceLock {
                 quest.setDifficultyChosen(false);
             } catch (Throwable setErr) {
                 if (notify) {
-                    DmzRewards.msg(player, "§c[Race Lock] Could not clear difficultyChosen.");
+                    DmzRewards.msg(player, LmChat.fail("Race", "Could not clear difficultyChosen."));
                 }
                 return false;
             }
@@ -205,14 +206,15 @@ public final class RaceLock {
         }
         if (notify) {
             if (!stillChosen) {
-                DmzRewards.msg(player, "§5[Race Lock] §aSaga difficulty unlocked.");
-                DmzRewards.msg(player,
-                        "§7Close and reopen the Saga / Quest Tree, then choose Easy, Normal, or Hard.");
+                DmzRewards.msg(player, LmChat.ok("Race", "Saga difficulty unlocked."));
+                DmzRewards.msg(player, LmChat.info("Race",
+                        "Close and reopen the Saga / Quest Tree, then choose Easy, Normal, or Hard."));
             } else {
-                DmzRewards.msg(player, "§c[Race Lock] Unlock ran but difficultyChosen is still true.");
+                DmzRewards.msg(player, LmChat.fail("Race", "Unlock ran but difficultyChosen is still true."));
             }
             if (wasInParty && !wasLeader) {
-                DmzRewards.msg(player, "§e[Race Lock] Left DMZ party so difficulty selection is allowed.");
+                DmzRewards.msg(player, LmChat.note("Race",
+                        "Left DMZ party so difficulty selection is allowed."));
             }
         }
         return !stillChosen;

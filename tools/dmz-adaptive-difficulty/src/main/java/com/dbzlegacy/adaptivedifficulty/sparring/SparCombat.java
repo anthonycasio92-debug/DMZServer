@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.sparring;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Status;
@@ -745,7 +746,7 @@ public final class SparCombat {
             return;
         }
         String label = burstLabel(rt, pendingMelee, pendingKi, pendingClash);
-        String base = "§6[Sparring] §a+" + DmzRewards.formatWhole(pending) + " TP §8(" + label + ")";
+        String base = LmChat.tp("Spar", DmzRewards.formatWhole(pending), label);
         // Players: clean +TP (label). Staff: bonus tags + stack + session.
         if (!StaffAccess.isStaff(player)) {
             DmzRewards.msg(player, base);
@@ -789,8 +790,8 @@ public final class SparCombat {
         rt.sessionMaxMom = Math.max(rt.sessionMaxMom, tier);
         if (SHOW_MOMENTUM_MESSAGES && player != null && tier > oldTier && tier > 0) {
             float mult = MOMENTUM_MULTIPLIERS[Math.min(tier, MOMENTUM_MULTIPLIERS.length) - 1];
-            DmzRewards.msg(player, "§6[Sparring] §eMomentum " + tier
-                    + " §8(§fx" + formatMult(mult) + " §8TP)");
+            DmzRewards.msg(player, LmChat.note("Spar", "§eMomentum " + tier
+                    + " §8(§fx" + formatMult(mult) + " §8TP)"));
         }
     }
 

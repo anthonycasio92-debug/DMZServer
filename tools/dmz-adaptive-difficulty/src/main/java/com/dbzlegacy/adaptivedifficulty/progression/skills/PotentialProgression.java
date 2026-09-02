@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import com.dragonminez.common.init.entities.ki.AbstractKiProjectile;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Status;
@@ -148,18 +149,20 @@ public final class PotentialProgression {
         DmzSkillUtil.setLevel(skills, SKILL, next);
         int confirmed = DmzSkillUtil.level(skills, SKILL);
         if (confirmed < next) {
-            DmzRewards.msg(player, "§c[Potential Unlock] Level-up failed.");
-            DmzRewards.msg(player, "§7DMZ still reports Potential level §f" + confirmed + "§7.");
-            DmzRewards.msg(player, "§7Progress remains at §f" + required + "/" + required + "§7.");
+            DmzRewards.msg(player, LmChat.fail("Potential", "Level-up failed."));
+            DmzRewards.msg(player, LmChat.info("Potential",
+                    "DMZ still reports Potential level §f" + confirmed + "§7."));
+            DmzRewards.msg(player, LmChat.info("Potential",
+                    "Progress remains at §f" + required + "/" + required + "§7."));
             return;
         }
         ProgressionData.storedPut(player, "potentialunlock_last_known_level", confirmed);
         DmzSkillUtil.sync(player);
-        DmzRewards.msg(player, "§5[Potential Unlock] Increased to level " + confirmed + ".");
+        DmzRewards.msg(player, LmChat.note("Potential", "Increased to level " + confirmed + "."));
         giveMentorLevelUpTp(player, playerData, other, otherData);
         if (confirmed == NATURAL_CAP) {
-            DmzRewards.msg(player, "§6[Potential Unlock] §eYou have reached level 10.");
-            DmzRewards.msg(player, "§eSpeak to Guru to unlock your hidden potential further.");
+            DmzRewards.msg(player, LmChat.note("Potential", "§eYou have reached level 10."));
+            DmzRewards.msg(player, LmChat.tip("/lm", "Speak to Guru to unlock hidden potential further."));
         }
         SystemTelemetry.log("progression", "potential_level", player, other,
                 Map.of("level", confirmed, "method", method));
@@ -179,8 +182,8 @@ public final class PotentialProgression {
             ProgressionData.storedRemove(player, "potential_last_move_z");
             ProgressionData.storedRemove(player, "potential_movement_valid_until");
             ProgressionData.storedPut(player, "potentialunlock_last_known_level", current);
-            DmzRewards.msg(player,
-                    "§6[Potential Unlock] §eProgress requirements were reset because your Potential level was lowered.");
+            DmzRewards.msg(player, LmChat.note("Potential",
+                    "§eProgress requirements were reset because your Potential level was lowered."));
             return;
         }
         if (current > last || !hasKey) {
@@ -225,9 +228,9 @@ public final class PotentialProgression {
             return;
         }
         ProgressionData.tempPut(player, "potential_move_warning_cooldown", now + MOVE_WARN_CD_MS);
-        DmzRewards.msg(player,
-                "§6[Potential Unlock] §eMove at least §f" + (int) MIN_MOVE
-                        + " blocks§e to keep gaining Potential progress.");
+        DmzRewards.msg(player, LmChat.note("Potential",
+                "§eMove at least §f" + (int) MIN_MOVE
+                        + " blocks§e to keep gaining Potential progress."));
     }
 
     /**
@@ -239,8 +242,8 @@ public final class PotentialProgression {
         int streak = (int) ProgressionData.storedGetLong(player, "potentialunlock_same_method_streak", 0L);
         if (method != null && method.equals(last)) {
             if (streak >= MAX_SAME_STREAK) {
-                DmzRewards.msg(player,
-                        "§6[Potential Unlock] §eSwitch training methods to continue progressing.");
+                DmzRewards.msg(player, LmChat.note("Potential",
+                        "§eSwitch training methods to continue progressing."));
                 return false;
             }
             streak++;
@@ -317,13 +320,13 @@ public final class PotentialProgression {
             if (otherLevel <= playerLevel) {
                 return;
             }
-            DmzRewards.awardTp(other, MENTOR_TP, "potential mentor", false, "§6[Potential Mentor] ");
+            DmzRewards.awardTp(other, MENTOR_TP, "potential mentor", false, "Mentor");
             long now = System.currentTimeMillis();
             long next = ProgressionData.tempGetLong(other, "potential_mentor_tp_message_cooldown", 0L);
             if (now >= next) {
                 ProgressionData.tempPut(other, "potential_mentor_tp_message_cooldown", now + MENTOR_TP_MSG_CD_MS);
-                DmzRewards.msg(other,
-                        "§6[Potential Mentor] §eYou are gaining TP for helping train a lower-level player.");
+                DmzRewards.msg(other, LmChat.note("Potential",
+                        "§eYou are gaining TP for helping train a lower-level player."));
             }
         } catch (Throwable ignored) {
         }
@@ -342,7 +345,7 @@ public final class PotentialProgression {
             if (tp > 0) {
                 // Script: "Gained X TP for helping unlock…" — showMessage true with that wording.
                 DmzRewards.awardTp(other, tp, "helping unlock a lower-level player's potential",
-                        true, "§6[Potential Mentor] ");
+                        true, "Potential");
             }
         } catch (Throwable ignored) {
         }
@@ -355,7 +358,7 @@ public final class PotentialProgression {
             return;
         }
         ProgressionData.tempPut(player, "potential_guru_message_cooldown", now + GURU_MSG_CD_MS);
-        DmzRewards.msg(player, "§6[Potential Unlock] §eYou have reached level 10.");
-        DmzRewards.msg(player, "§eSpeak to Guru to unlock your hidden potential further.");
+        DmzRewards.msg(player, LmChat.note("Potential", "§eYou have reached level 10."));
+        DmzRewards.msg(player, LmChat.tip("/lm", "Speak to Guru to unlock hidden potential further."));
     }
 }

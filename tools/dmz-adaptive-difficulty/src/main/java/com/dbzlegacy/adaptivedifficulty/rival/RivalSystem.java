@@ -131,10 +131,10 @@ public final class RivalSystem {
         if (vLink.deathLosses >= RivalConstants.NEMESIS_DEATH_LOSSES) {
             vLink.isNemesis = true;
             vRec.nemesisUuid = kRec.uuid;
-            DmzRewards.msg(victim, "§c[Rival] " + killer.m_7755_().getString()
-                    + " is now your Nemesis (" + vLink.deathLosses + " challenge deaths).");
-            DmzRewards.msg(killer, "§6[Rival] You became Nemesis to "
-                    + victim.m_7755_().getString() + " (3 challenge deaths).");
+            DmzRewards.msg(victim, LmChat.fail("Rival", "§f" + killer.m_7755_().getString()
+                    + " §cis now your Nemesis (" + vLink.deathLosses + " challenge deaths)."));
+            DmzRewards.msg(killer, LmChat.note("Rival", "§eYou became Nemesis to §f"
+                    + victim.m_7755_().getString() + " §7(3 challenge deaths)."));
         }
         store.markDirty();
     }
@@ -540,8 +540,8 @@ public final class RivalSystem {
         store.markDirty();
         ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
         if (online != null) {
-            DmzRewards.msg(online, "§c[Rival] " + me.name + " declined your declare.");
-            DmzRewards.msg(online, "§8They stay on your list as Declared.");
+            DmzRewards.msg(online, LmChat.fail("Rival", "§f" + me.name + " §cdeclined your declare."));
+            DmzRewards.msg(online, LmChat.info("Rival", "They stay on your list as Declared."));
         }
         return "§eDeclined rivalry from " + them.name + ".";
     }
@@ -625,11 +625,11 @@ public final class RivalSystem {
             ServerPlayer online = onlineByUuid(player.m_20194_(), them.uuid);
             if (online != null) {
                 if (wasShared) {
-                    DmzRewards.msg(online, "§c[Rival] " + me.name + " ended Mutual rivalry with you.");
-                    DmzRewards.msg(online, "§8You still have them as Declared.");
+                    DmzRewards.msg(online, LmChat.fail("Rival", "§f" + me.name + " §7ended Mutual rivalry with you."));
+                    DmzRewards.msg(online, LmChat.info("Rival", "You still have them as Declared."));
                 } else if (wasDeclared) {
-                    DmzRewards.msg(online, "§e[Rival] " + me.name + " ended Declared rivalry with you.");
-                    DmzRewards.msg(online, "§8You still have them as Declared.");
+                    DmzRewards.msg(online, LmChat.note("Rival", "§f" + me.name + " §7ended Declared rivalry with you."));
+                    DmzRewards.msg(online, LmChat.info("Rival", "You still have them as Declared."));
                 }
             }
         }
