@@ -42,6 +42,29 @@ final class GuiBoardHelper {
     }
 
     /**
+     * Pending invite rows: each invite uses 3 interior slots — head, Accept, Decline.
+     * Packed left-to-right across rows 10–16, 19–25, 28–34 (max 7 invites).
+     * Outgoing invites still reserve the Accept/Decline slots (caller leaves them empty).
+     */
+    static int[][] pendingInviteActionSlots(int count) {
+        int n = Math.max(0, Math.min(count, (ROW_STARTS.length * ROW_WIDTH) / 3));
+        int[] flat = new int[ROW_STARTS.length * ROW_WIDTH];
+        int fi = 0;
+        for (int start : ROW_STARTS) {
+            for (int c = 0; c < ROW_WIDTH; c++) {
+                flat[fi++] = start + c;
+            }
+        }
+        int[][] rows = new int[n][3];
+        for (int i = 0; i < n; i++) {
+            rows[i][0] = flat[i * 3];
+            rows[i][1] = flat[i * 3 + 1];
+            rows[i][2] = flat[i * 3 + 2];
+        }
+        return rows;
+    }
+
+    /**
      * Place up to {@code count} items centered across interior rows (10–16, 19–25, 28–34).
      * ≤7 items → single centered middle row. More → fill top→bottom, each row centered.
      */
@@ -343,7 +366,7 @@ final class GuiBoardHelper {
             if (inv.incoming) {
                 lore.add("&aIncoming mentor invite");
                 lore.add("&7They want you as their &f" + role);
-                lore.addAll(tips(player, "&eClick to Accept · use Decline… to refuse"));
+                lore.addAll(tips(player, "&aAccept &7/ &cDecline &7on this row"));
             } else {
                 lore.add("&6Outgoing mentor invite");
                 lore.add("&7Waiting — they would be your &f" + role);
@@ -352,7 +375,7 @@ final class GuiBoardHelper {
         } else if (inv.incoming) {
             lore.add("&aIncoming declare");
             lore.add("&7They Declared you");
-            lore.addAll(tips(player, "&eClick to Accept · Decline… to refuse"));
+            lore.add("&aAccept &7or &cDecline &7on this row");
         } else {
             lore.add("&6Outgoing declare");
             lore.add("&7On your list as Declared");

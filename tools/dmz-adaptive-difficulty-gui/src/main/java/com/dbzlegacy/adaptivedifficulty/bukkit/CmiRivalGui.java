@@ -393,7 +393,7 @@ public final class CmiRivalGui {
         pendingHeader.add("");
         pendingHeader.add(invites.isEmpty() ? "&7No pending declares." : "&7" + invites.size() + " pending");
         pendingHeader.addAll(GuiBoardHelper.tips(player,
-                "&a◀ Incoming &7= they Declared you",
+                "&a◀ Incoming &7= Accept / Decline on that row",
                 "&6▶ Outgoing &7= waiting on them"));
         info.addLore(pendingHeader);
         gui.addButton(info);
@@ -407,23 +407,26 @@ public final class CmiRivalGui {
                     "&7Incoming shows when they Declare you"))));
             gui.addButton(empty);
         } else {
-            int[] slots = GuiBoardHelper.centeredSlots(Math.min(invites.size(), 21));
-            for (int i = 0; i < slots.length && i < invites.size(); i++) {
+            int[][] rows = GuiBoardHelper.pendingInviteActionSlots(invites.size());
+            for (int i = 0; i < rows.length && i < invites.size(); i++) {
                 GuiBoardHelper.PendingInvite invite = invites.get(i);
                 ItemStack head = GuiBoardHelper.pendingInviteHead(player, invite);
-                CMIGuiButton btn = new CMIGuiButton(slots[i], head);
-                btn.lockField();
+                CMIGuiButton headBtn = new CMIGuiButton(rows[i][0], head);
+                headBtn.lockField();
+                gui.addButton(headBtn);
                 if (invite.incoming) {
-                    btn.addCommand("lmdo rival accept " + invite.pickerArg() + " pending");
+                    gui.addButton(actionBtn(player, rows[i][1], "rival.pending.accept", Material.LIME_DYE, "&aAccept",
+                            "accept", invite.pickerArg(), "pending",
+                            List.of("&7Accept " + invite.name + "'s declare",
+                                    "&8→ Mutual rivalry")));
+                    gui.addButton(actionBtn(player, rows[i][2], "rival.pending.decline", Material.ORANGE_DYE, "&cDecline",
+                            "decline", invite.pickerArg(), "pending",
+                            List.of("&7Decline " + invite.name + "'s declare",
+                                    "&8They stay Declared on their list")));
                 }
-                gui.addButton(btn);
             }
         }
 
-        gui.addButton(pageBtn(player, 37, "rival.pending.accept_pick", Material.YELLOW_DYE, "&eAccept…",
-                "pick_accept", "&7Accept incoming / Declared"));
-        gui.addButton(pageBtn(player, 38, "rival.pending.decline_pick", Material.ORANGE_DYE, "&6Decline…",
-                "pick_decline", "&7Decline an incoming declare"));
         gui.addButton(pageBtn(player, 39, "rival.pending.nav_actions", Material.EMERALD, "&aActions", "actions",
                 "&7Full actions menu"));
         gui.addButton(pageBtn(player, 36, "rival.pending.back", Material.ARROW, "&7Back", "actions", "&7Actions"));
@@ -452,16 +455,14 @@ public final class CmiRivalGui {
         gui.addButton(pageBtn(player, 20, "rival.actions.pending", Material.CLOCK,
                 pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
                 "pending",
-                "&7View incoming + outgoing invites",
+                "&7Incoming: Accept / Decline on each request",
                 pendingCount > 0 ? "&aYou have pending invites" : "&8No pending invites"));
-        gui.addButton(pageBtn(player, 21, "rival.actions.accept", Material.YELLOW_DYE, "&eAccept…", "pick_accept",
-                "&7Pending declares, or Declared → Mutual",
-                "&8Both Silent → Declared shows here"));
-        gui.addButton(pageBtn(player, 22, "rival.actions.decline", Material.ORANGE_DYE, "&6Decline…", "pick_decline",
-                "&7Decline a pending declare"));
-        gui.addButton(pageBtn(player, 23, "rival.actions.remove", Material.RED_DYE, "&cRemove…", "pick_remove",
+        gui.addButton(pageBtn(player, 21, "rival.actions.accept", Material.YELLOW_DYE, "&eAccept Declared…", "pick_accept",
+                "&7Both Silent Declared → Mutual",
+                "&8Pending accepts are on each Pending row"));
+        gui.addButton(pageBtn(player, 22, "rival.actions.remove", Material.RED_DYE, "&cRemove…", "pick_remove",
                 "&7Pick one of your rivals to remove"));
-        gui.addButton(pageBtn(player, 25, "rival.actions.silent", Material.GRAY_DYE, "&8Silent…", "pick_silent",
+        gui.addButton(pageBtn(player, 23, "rival.actions.silent", Material.GRAY_DYE, "&8Silent…", "pick_silent",
                 "&7One-sided Silent (they are not told)",
                 "&8Both Silent → Declared → Accept for Mutual"));
 

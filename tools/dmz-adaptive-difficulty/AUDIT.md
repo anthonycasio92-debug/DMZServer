@@ -1,3 +1,9 @@
+## Pending Accept/Decline on each invite row (2.3.138)
+
+Pending Invites shows Accept and Decline beside each incoming request
+(chest + CMI). Removed separate Accept…/Decline… menus from Pending.
+Actions keeps **Accept Declared…** for both-Silent Declared → Mutual only.
+
 ## Declared stays on list after decline/ignore (2.3.137)
 
 Visible Declare sets `visibleDeclare` so the declarer keeps a **Declared** entry on

@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.137", 'VERSION = "2.3.137"' in mod)
+    check("VERSION 2.3.138", 'VERSION = "2.3.138"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -534,7 +534,7 @@ def main() -> int:
           'SlotAction.page("hof")' in rival and 'SlotAction.page("journal")' in rival
           and "records" in rival)
 
-    print("\n=== Rival relationship semantics (2.3.137) ===")
+    print("\n=== Rival relationship semantics (2.3.138) ===")
     rival_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalSystem.java")
     rival_st = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalStatus.java")
     rival_link = read(SRC / "com/dbzlegacy/adaptivedifficulty/rival/RivalLink.java")
@@ -547,6 +547,23 @@ def main() -> int:
     check("accept/decline resolve uuid", 'regionMatches(true, 0, "uuid:"' in rival_sys)
     check("nemesis only from challenge death KO", "challengeKo" in rival_sys and "Phase.ACTIVE" in rival_sys)
     check("dual silent → Declared", "promoteDeclared" in rival_sys)
+    rival_chest = read(gui_root / "RivalChestGui.java")
+    cmi_rival = read(gui_root / "CmiRivalGui.java")
+    board = read(gui_root / "GuiBoardHelper.java")
+    check("pendingInviteActionSlots helper", "pendingInviteActionSlots" in board)
+    check("chest pending Accept/Decline on row",
+          'SlotAction.act("accept"' in rival_chest
+          and 'SlotAction.act("decline"' in rival_chest
+          and "pendingInviteActionSlots" in rival_chest)
+    check("chest pending no Accept…/Decline… menus",
+          'page("pick_accept")' not in rival_chest.split("private Inventory pending")[1].split("private Inventory actions")[0]
+          if "private Inventory pending" in rival_chest else False)
+    check("CMI pending Accept/Decline on row",
+          "pendingInviteActionSlots" in cmi_rival
+          and '"accept"' in cmi_rival
+          and '"decline"' in cmi_rival)
+    check("Actions keeps Accept Declared for silent path",
+          "Accept Declared" in rival_chest and "Accept Declared" in cmi_rival)
     check("Spar Stats button BOOK",
           'Material.BOOK, "&eStats"' in spar)
     check("Skills admin header BOOK",
