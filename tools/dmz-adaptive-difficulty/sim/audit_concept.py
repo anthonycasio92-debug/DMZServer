@@ -10,6 +10,7 @@ Encodes the player's stated balance intent:
   6. GUI ABI + version handshake stay intact.
   7. Soft-cap + landing ladders stay monotonic; each mid/high buy matters
      (T4&lt;T5&lt;T6&lt;T7 landing; soft-cap T3→T7 rises — 2.3.131 live cal).
+  8. DMZ passthrough NBT clear applies to all tiers (2.3.164 — not gated on intervened).
 
 Writes:
   /opt/cursor/artifacts/ad-concept-audit.md
@@ -338,6 +339,32 @@ def main() -> int:
         "god-form landing T7>T1×2.5",
         land_t7.get("landingFrac", 0) > land_t1.get("landingFrac", 0) * 2.5,
         f"T1={land_t1.get('landingFrac', 0):.3f} T7={land_t7.get('landingFrac', 0):.3f}",
+    )
+
+    lines += ["", "## 7) DMZ passthrough NBT clear (all tiers)", ""]
+    check(
+        "NBT clear unconditional on AD mob hits (2.3.164)",
+        "clearDmzRawDamageOverride(player);" in events
+        and "if (intervened) {\n            clearDmzRawDamageOverride" not in events,
+    )
+    on_done = events[events.find("public void onDamageDone") : events.find("private static void clearDmzRawDamageOverride")]
+    check(
+        "onDamageDone has no activeTier gate before NBT clear",
+        "activeTier" not in on_done[on_done.find("clearDmzRawDamageOverride") - 400 : on_done.find("clearDmzRawDamageOverride")],
+    )
+    # wouldCancel + post-mit dmg ≥ landing×0.45 → AD passthrough (no fill). Pre-2.3.164 DMZ
+    # re-zeroed these hits after telemetry; fix is tier-agnostic (same handler for T1–T7).
+    passthrough_tiers: list[int] = []
+    for tier in range(1, 8):
+        hit = simulate(pts("even"), st["scale"], fmap, "warrior", tier, SKILL_LOADOUTS["kp10"])
+        dmg = hit.get("mobDmgAfterKp", hit["mobDmg"])
+        land = hit.get("landing", 0.0)
+        if hit.get("wouldCancel") and dmg >= land * 0.45:
+            passthrough_tiers.append(tier)
+    check(
+        "god-form KP10: T1–T7 can hit DMZ cancel passthrough",
+        passthrough_tiers == list(range(1, 8)),
+        f"tiers={passthrough_tiers}",
     )
 
     lines += ["", "## Sample numbers (saiyan warrior)", ""]

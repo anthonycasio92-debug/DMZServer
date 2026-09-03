@@ -57,7 +57,7 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 2.3.163
+- ✅ VERSION 2.3.164
 - ✅ RaceSkillSync present
 - ✅ formula revision 45
 - ✅ KP hit-cap relief wired
@@ -89,6 +89,12 @@ Fail-closed checks against the player's stated balance concept.
 - ✅ god-form landing T7≥30% — landingFrac=0.440
 - ✅ god-form landing T7>T1×2.5 — T1=0.034 T7=0.440
 
+## 7) DMZ passthrough NBT clear (all tiers)
+
+- ✅ NBT clear unconditional on AD mob hits (2.3.164)
+- ✅ onDamageDone has no activeTier gate before NBT clear
+- ✅ god-form KP10: T1–T7 can hit DMZ cancel passthrough — tiers=[1, 2, 3, 4, 5, 6, 7]
+
 ## Sample numbers (saiyan warrior)
 
 | Build | T1 | T5 | T5 post-DEF | T7 | vs even T5 |
@@ -104,4 +110,4 @@ Fail-closed checks against the player's stated balance concept.
 |------|--------:|---------:|---------:|
 | androidforms.ssdroid4 | 0.414 | 0.145 | 0.79 |
 
-**Result:** PASS — 69 ok, 0 error(s).
+**Result:** PASS — 72 ok, 0 error(s).
