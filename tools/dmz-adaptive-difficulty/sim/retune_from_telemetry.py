@@ -17,7 +17,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from scaling_constants import (
     CONCEPT_EVEN_HITFRAC_MIN,
-    FORM_BAND_MEGA,
+    FORM_BAND_AWAKENED,
+    FORM_BAND_DIVINE,
+    FORM_BAND_ENHANCEMENT,
+    FORM_BAND_SUPER,
+    FORM_BAND_ULTRA,
+    FORM_BAND_EXAMPLES,
     LAND_FRAC,
     SOFT_CAP,
     band_form,
@@ -116,9 +121,10 @@ def main() -> int:
     ]
 
     all_agg = agg_by_tier(rows)
-    transformed_agg = agg_by_tier(rows, form_band="transformed")
-    mega_agg = agg_by_tier(rows, form_band="mega")
-    god_agg = agg_by_tier(rows, form_band="god")
+    ultra_agg = agg_by_tier(rows, form_band="ultra")
+    divine_agg = agg_by_tier(rows, form_band="divine")
+    enhancement_agg = agg_by_tier(rows, form_band="enhancement")
+    apex_agg = agg_by_tier(rows, form_band="apex")
     sim = sim_even_bands(5500)
     sim_100k = sim_even_bands(100000)
 
@@ -147,20 +153,35 @@ def main() -> int:
                 prev = avg
         return out
 
-    lines += band_section("Transformed band (formBoost 25–50)", transformed_agg)
-    lines += band_section("Mega band (formBoost 50–80)", mega_agg)
-    lines += band_section(f"God band (formBoost ≥ {FORM_BAND_MEGA:.0f})", god_agg)
+    lines += band_section(
+        f"Ultra band (formBoost {FORM_BAND_SUPER:.0f}–{FORM_BAND_ULTRA:.0f}) — {FORM_BAND_EXAMPLES['ultra']}",
+        ultra_agg,
+    )
+    lines += band_section(
+        f"Divine band (formBoost {FORM_BAND_ULTRA:.0f}–{FORM_BAND_DIVINE:.0f}) — {FORM_BAND_EXAMPLES['divine']}",
+        divine_agg,
+    )
+    lines += band_section(
+        f"Enhancement band (formBoost {FORM_BAND_DIVINE:.0f}–{FORM_BAND_ENHANCEMENT:.0f}) — {FORM_BAND_EXAMPLES['enhancement']}",
+        enhancement_agg,
+    )
+    lines += band_section(
+        f"Apex band (formBoost ≥ {FORM_BAND_ENHANCEMENT:.0f}) — {FORM_BAND_EXAMPLES['apex']}",
+        apex_agg,
+    )
 
     lines += [
         "",
-        "## Sim vs live god band (formBoost ≥ 80)",
+        "## Sim vs live divine+ apex (formBoost ≥ 22)",
         "",
-        "| Tier | Live god avg | Sim 5.5k | Sim 100k | Concept min |",
-        "|-----:|-------------:|---------:|---------:|------------:|",
+        "| Tier | Live divine+ avg | Sim 5.5k | Sim 100k | Concept min |",
+        "|-----:|-----------------:|---------:|---------:|------------:|",
     ]
     for t in (1, 3, 5, 7):
-        a = god_agg.get(t, {"n": 0, "hit_post": 0})
-        live = a["hit_post"] / a["n"] if a["n"] else 0
+        d = divine_agg.get(t, {"n": 0, "hit_post": 0})
+        a = apex_agg.get(t, {"n": 0, "hit_post": 0})
+        n = d["n"] + a["n"]
+        live = (d["hit_post"] + a["hit_post"]) / n if n else 0
         concept = CONCEPT_EVEN_HITFRAC_MIN.get(t, "—")
         lines.append(
             f"| T{t} | {live:.3f} | {sim.get(t, 0):.3f} | {sim_100k.get(t, 0):.3f} | {concept} |"
@@ -172,7 +193,7 @@ def main() -> int:
         f"Rows: {len(recent_rows)} (last {args.recent_days} day file(s))",
         "",
     ]
-    for band_name in ("transformed", "mega", "god"):
+    for band_name in ("ultra", "divine", "enhancement", "apex"):
         recent_band = agg_by_tier(recent_rows, form_band=band_name)
         for t in (3, 5, 7):
             a = recent_band.get(t, {"n": 0, "hit_post": 0})
@@ -187,9 +208,9 @@ def main() -> int:
         "",
         "- **Live** still reflects **2.3.160** inflated constants until 2.3.161 deploys.",
         "- Target sim bands (rollback): even T5≈0.45, T7≈0.58 at gate; veterans at 100k get paintEase relief.",
-        "- God band = formBoost ≥ 80 (mega target). Transformed 25–50 is normal stack play.",
-        "- God-band live avg should climb monotonically T1→T7 and stay ≤ soft-cap +2%.",
-        "- If live transformed≫strong step, check stack-form paint — not the old god≥25 bucket.",
+        f"- Bands: base≤{FORM_BAND_AWAKENED} awakened | super | ultra(~22) | divine(~50) | enhancement(~80) | apex",
+        "- Divine+ (≥22) is true god-line pressure; ultra (~15–22) is SSJ4 / race cap.",
+        "- Ultra-band avg should climb T1→T7; divine is endgame retune target.",
         "",
         f"landFrac ladder: {' < '.join(f'T{t}={LAND_FRAC[t]:.2f}' for t in range(4, 8))}",
     ]

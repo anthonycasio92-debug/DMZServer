@@ -130,19 +130,20 @@ def main() -> int:
         lines.append("")
 
     section("All hits", all_rows)
-    section("Transformed band (fb 25–50)", [r for r in all_rows if band_form(float(r.get("formBoost") or 1)) == "transformed"])
-    section("Mega band (fb 50–80)", [r for r in all_rows if band_form(float(r.get("formBoost") or 1)) == "mega"])
-    section("God band (fb ≥ 80)", [r for r in all_rows if band_form(float(r.get("formBoost") or 1)) == "god"])
+    section("Ultra band (fb 15–22)", [r for r in all_rows if band_form(float(r.get("formBoost") or 1)) == "ultra"])
+    section("Divine band (fb 22–50)", [r for r in all_rows if band_form(float(r.get("formBoost") or 1)) == "divine"])
+    section("Enhancement band (fb 50–80)", [r for r in all_rows if band_form(float(r.get("formBoost") or 1)) == "enhancement"])
+    section("Apex band (fb ≥ 80)", [r for r in all_rows if band_form(float(r.get("formBoost") or 1)) == "apex"])
     section("Base-form band only", [r for r in all_rows if band_form(float(r.get("formBoost") or 1)) == "base"])
     if recent_rows:
         section(f"Recent since {recent_cut}", recent_rows)
 
     # Concept comparison for god band (true god forms ≥80)
-    lines.append("## God band (formBoost ≥ 80) vs concept soft-cap")
+    lines.append("## Divine band (formBoost 22–50) vs concept soft-cap")
     lines.append("")
     lines.append("| tier | live avg | soft-cap | delta | sim even |")
     lines.append("|-----:|---------:|---------:|------:|---------:|")
-    god = tier_stats(all_rows, form_band="god")
+    god = tier_stats(all_rows, form_band="divine")
     for t in sorted(god):
         n = god[t]["n"]
         if n < 50:

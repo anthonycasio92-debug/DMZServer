@@ -1480,7 +1480,7 @@ public final class PlayerCombatProfile {
 
     /**
      * Telemetry / report label for {@link #formBoost}.
-     * Aligns with sim {@code scaling_constants.band_form} (god ≥ 80, not ≥ 25).
+     * Thresholds from pack form JSON peaks — see {@code scaling_constants.FORM_BAND_*}.
      */
     public static String formBandLabel(double formBoost) {
         double v = Math.max(1.0, formBoost);
@@ -1490,16 +1490,19 @@ public final class PlayerCombatProfile {
         if (v < MEGA_FORM_START) {
             return "awakened";
         }
-        if (v < 25.0) {
-            return "strong";
+        if (v < 15.0) {
+            return "super";
+        }
+        if (v < 22.0) {
+            return "ultra";
         }
         if (v < 50.0) {
-            return "transformed";
+            return "divine";
         }
         if (v < MEGA_FORM_TARGET) {
-            return "mega";
+            return "enhancement";
         }
-        return "god";
+        return "apex";
     }
 
     /**

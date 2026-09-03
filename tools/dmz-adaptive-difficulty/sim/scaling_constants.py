@@ -131,14 +131,40 @@ CONCEPT_TIER_RISE_MIN: dict[tuple[int, int], float] = {(1, 5): 1.4, (5, 7): 1.10
 
 FORMULA_REVISION = 45
 
-# Telemetry form bands — align with PlayerCombatProfile mega anchors (×6 → ×80, cap ~100).
-# Old telemetry used "god" at ≥25 which mislabeled ~97% of T5 hits (median fb≈35).
-FORM_BAND_BASE = 1.12
-FORM_BAND_AWAKENED = 6.0       # MEGA_FORM_START
-FORM_BAND_STRONG = 25.0
-FORM_BAND_TRANSFORMED = 50.0
-FORM_BAND_MEGA = 80.0          # MEGA_FORM_TARGET
-FORM_BAND_ORDER = ("base", "awakened", "strong", "transformed", "mega", "god")
+# Telemetry form bands — thresholds from pack form JSON peaks (see sim/out/form-band-reference.md).
+# formBoost = max live form mult across STR/SKP/PWR/ENE/VIT/RES (cap ~100).
+#
+# Saiyan ladder (@m100): base → awakened(~5) → super(~9–15) → ultra(~22) → divine(~24–40)
+# → enhancement(~54) → apex(≥80). Most races cap in ultra (~21.8×).
+FORM_BAND_BASE = 1.12          # AD "not transformed" gate
+FORM_BAND_AWAKENED = 6.0       # SSJ1 / oozaru / semi-perfect cluster
+FORM_BAND_SUPER = 15.0         # SSJ2, perfect cell, aspect viltrumite
+FORM_BAND_ULTRA = 22.0         # SSJ3/4, ultra perfect — default ceiling for most races
+FORM_BAND_DIVINE = 50.0        # SSG, SSB, beyond god, transcendent lines
+FORM_BAND_ENHANCEMENT = 80.0   # Android overclock, metal overdrive (MEGA_FORM_TARGET)
+FORM_BAND_APEX = 80.0          # Rare cap / primal apex (same cut as enhancement top)
+FORM_BAND_ORDER = (
+    "base", "awakened", "super", "ultra", "divine", "enhancement", "apex",
+)
+FORM_BAND_LABELS: dict[str, str] = {
+    "base": "Base",
+    "awakened": "Awakened",
+    "super": "Super",
+    "ultra": "Ultra",
+    "divine": "Divine",
+    "enhancement": "Enhancement",
+    "apex": "Apex",
+}
+# Example anchors per band (saiyan unless noted)
+FORM_BAND_EXAMPLES: dict[str, str] = {
+    "base": "No transform (×1)",
+    "awakened": "SSJ1, Oozaru, Semi-Perfect (~2–6×)",
+    "super": "SSJ2, SSJ3, Perfect Cell (~6–15×)",
+    "ultra": "SSJ4, Ultra Perfect, Super Namek (~15–22×)",
+    "divine": "SSG, SSB, Beyond God (~22–50×)",
+    "enhancement": "Overclock, SSDroid4, Metal Overdrive (~50–80×)",
+    "apex": "Primal God / cap forms (≥80×)",
+}
 
 
 def band_form(fb: float) -> str:
@@ -148,17 +174,23 @@ def band_form(fb: float) -> str:
         return "base"
     if v < FORM_BAND_AWAKENED:
         return "awakened"
-    if v < FORM_BAND_STRONG:
-        return "strong"
-    if v < FORM_BAND_TRANSFORMED:
-        return "transformed"
-    if v < FORM_BAND_MEGA:
-        return "mega"
-    return "god"
+    if v < FORM_BAND_SUPER:
+        return "super"
+    if v < FORM_BAND_ULTRA:
+        return "ultra"
+    if v < FORM_BAND_DIVINE:
+        return "divine"
+    if v < FORM_BAND_ENHANCEMENT:
+        return "enhancement"
+    return "apex"
+
+
+def band_form_label(fb: float) -> str:
+    return FORM_BAND_LABELS.get(band_form(fb), band_form(fb))
 
 
 def band_form_legacy(fb: float) -> str:
-    """Pre-2.3.171 bands (base / mid / high / god≥25) — for historical comparison."""
+    """Pre-2.3.171 bands (base / mid / high / god≥25) — historical comparison."""
     v = max(1.0, fb)
     if v <= 1.12:
         return "base"
