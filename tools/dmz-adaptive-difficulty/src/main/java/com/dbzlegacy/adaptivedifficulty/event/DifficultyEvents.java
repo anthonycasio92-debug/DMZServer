@@ -991,12 +991,12 @@ public final class DifficultyEvents {
             event.setAmount(softCap);
             intervened = true;
         }
-        // 2.3.130: when AD finalizes incoming, strip DMZ raw-damage NBT so same-priority
-        // CombatEvent cannot re-zero Androids / high-DEF gods after our restore.
-        // Painted packs already went through pierce + soft-cap paint — DMZ's second pass
-        // from dmz_raw_damage was wiping the landing floor (telemetry looked fine, HP didn't).
+        // 2.3.130 / 2.3.164: strip DMZ raw-damage NBT once AD has chosen the final amount.
+        // DMZ CombatEvent also runs at LOWEST and re-applies applyFullNegation from these tags
+        // even on passthrough hits (preAmount already above landing floor) — telemetry logged
+        // the bite but HP stayed full (T3 god-pierce >> cancel threshold on 22k veterans).
+        clearDmzRawDamageOverride(player);
         if (intervened) {
-            clearDmzRawDamageOverride(player);
             event.setCanceled(false);
         }
         // Whitelist telemetry — log pre/post so cancelled zeros stay visible.

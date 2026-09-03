@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.163", 'VERSION = "2.3.163"' in mod)
+    check("VERSION 2.3.164", 'VERSION = "2.3.164"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -164,7 +164,13 @@ def main() -> int:
     check("live-bag landing ladder", "liveMaxHealth" in profile and "landFrac" in profile)
     check("T3 god-form pierce", "activeTier >= 3 && formBoost >= 6.0" in profile or "formBoost >= 6.0" in profile)
     check("telemetryFeelMigratedV1", "telemetryFeelMigratedV1" in cfg)
-    check("DMZ raw-damage tag clear after AD landing", "clearDmzRawDamageOverride" in events and "dmz_raw_damage" in events)
+    check(
+        "DMZ raw-damage tag clear on all AD mob hits (incl. passthrough)",
+        "clearDmzRawDamageOverride" in events
+        and "dmz_raw_damage" in events
+        and events.count("clearDmzRawDamageOverride(player);") >= 1
+        and "if (intervened) {\n            clearDmzRawDamageOverride" not in events,
+    )
     check("event incoming soft-cap", "softCap" in events or "maxFrac" in events)
     check("VIT/RES damage floors live", has(profile, "tankDamageDefenseRatio", "tankDamageHealthRatio", "defFloor", "hpFloor"))
     check("VIT floor uses raised early-tier strength", "hpFloorStrength" in profile)
