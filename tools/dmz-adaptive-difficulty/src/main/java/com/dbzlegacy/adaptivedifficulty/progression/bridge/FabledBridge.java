@@ -70,6 +70,7 @@ public final class FabledBridge {
             EnergyManaSync.sync(player);
             StatScreenSync.sync(player);
             TpSpMirror.sync(player);
+            ClassSkillSync.ensureClassSkills();
             RaceSkillSync.ensureRaceSkills();
             RaceClassSync.sync(player);
             PrestigeSkillSync.sync(player);
@@ -135,6 +136,9 @@ public final class FabledBridge {
                     RaceClassSync.sync(player);
                 }
                 if (cfg.enableClassPermissionSync && tick % 20 == 0) {
+                    if (tick % 200 == 0) {
+                        ClassSkillSync.ensureClassSkills();
+                    }
                     ClassPermissionSync.sync(player);
                 }
                 // Energy last: Fabled updatePlayerStat (from race/class ticks) resets maxMana.
@@ -264,7 +268,7 @@ public final class FabledBridge {
         }
     }
 
-    static Method findUnaryStatic(Class<?> type, String name) {
+    public static Method findUnaryStatic(Class<?> type, String name) {
         if (type == null || name == null) {
             return null;
         }
@@ -276,7 +280,7 @@ public final class FabledBridge {
         return null;
     }
 
-    static Method findNoArg(Class<?> type, String name) {
+    public static Method findNoArg(Class<?> type, String name) {
         if (type == null || name == null) {
             return null;
         }

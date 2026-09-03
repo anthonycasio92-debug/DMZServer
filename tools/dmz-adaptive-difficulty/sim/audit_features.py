@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.164", 'VERSION = "2.3.164"' in mod)
+    check("VERSION 2.3.165", 'VERSION = "2.3.165"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -104,6 +104,15 @@ def main() -> int:
     check("RaceSkillSync discovers DMZ races", "discoverDmzRaceIds" in race_skill)
     check("RaceSkillSync grants Fabled skill", "addSkillExternally" in race_skill and "race_skill" in race_skill)
     check("RaceSkillSync skips race-lock purchase gates", "isPurchaseGatedSkill" in race_skill)
+
+    class_skill = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/ClassSkillSync.java")
+    class_catalog = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/classdef/FightingClassCatalog.java")
+    class_perm = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/ClassPermissionSync.java")
+    check("FightingClassCatalog scans stats.json classes", "discoverDmzClassIds" in class_catalog and "\"classes\"" in class_catalog)
+    check("FightingClassCatalog class-fabled.json", "class-fabled.json" in class_catalog)
+    check("ClassSkillSync ensures Fabled class skills", "ensureClassSkills" in class_skill and "needs-permission': 'true'" in class_skill)
+    check("ClassSkillSync prestige marker stubs", "Prestige" in class_skill and "prestige" in class_skill)
+    check("ClassPermissionSync uses catalog not hardcoded map", "FightingClassCatalog.skillNameFor" in class_perm and "hardcodedSkillName" not in class_perm)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {

@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.bridge;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
+import com.dbzlegacy.adaptivedifficulty.progression.classdef.FightingClassCatalog;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -21,7 +22,7 @@ public final class ClassPermissionSync {
     private static final String PRESTIGE_SUFFIX = " Prestige";
     private static final String PERM_ROOT = "fabled.skill.";
     private static final long CLASS_CONFIRM_MS = 5000L;
-    private static final String SYNC_VERSION = "3.3.0";
+    private static final String SYNC_VERSION = "3.4.0";
 
     private static final String MANAGED_KEY = "dmz_fabled_class_permissions_v3_managed";
     private static final String LOCKED_KEY = "dmz_fabled_class_permissions_v3_prestige_locked";
@@ -40,6 +41,7 @@ public final class ClassPermissionSync {
         if (player == null || !DifficultyConfig.get().enableClassPermissionSync) {
             return;
         }
+        ClassSkillSync.ensureClassSkills();
         ensureSyncVersion(player);
 
         String dmzClass = DmzProgression.fightingClass(player);
@@ -160,19 +162,6 @@ public final class ClassPermissionSync {
         return now - since >= CLASS_CONFIRM_MS;
     }
 
-    private static String hardcodedSkillName(String dmzClass) {
-        return switch (normalize(dmzClass)) {
-            case "warrior" -> "Warrior";
-            case "martialartist" -> "Martial Artist";
-            case "spiritualist" -> "Spiritualist";
-            case "berserker" -> "Berserker";
-            case "cleric" -> "Cleric";
-            case "paladin" -> "Paladin";
-            case "tank" -> "Tank";
-            default -> "";
-        };
-    }
-
     private static String resolveSkillName(String dmzClass, List<Object> skills) {
         Object found = findBaseSkill(skills, dmzClass);
         if (found != null) {
@@ -184,7 +173,7 @@ public final class ClassPermissionSync {
             } catch (Throwable ignored) {
             }
         }
-        return hardcodedSkillName(dmzClass);
+        return FightingClassCatalog.skillNameFor(dmzClass);
     }
 
     private static String skillPermission(String skillName) {

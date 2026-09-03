@@ -1665,6 +1665,7 @@ public final class DifficultyConfig {
         boolean ok = load();
         try {
             com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig.reload();
+            com.dbzlegacy.adaptivedifficulty.progression.classdef.FightingClassCatalog.reload();
         } catch (Throwable ignored) {
         }
         com.dbzlegacy.adaptivedifficulty.tier.DifficultyTier.invalidateThresholdCache();
