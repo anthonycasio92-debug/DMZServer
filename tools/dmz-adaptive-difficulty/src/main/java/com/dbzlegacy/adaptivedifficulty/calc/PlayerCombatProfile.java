@@ -105,10 +105,10 @@ public final class PlayerCombatProfile {
     /** Stable fingerprint for mob re-scale cache invalidation. */
     public final long signature;
     /**
-     * T3 level ramp (0.70–1.0): fresh T3 buys ease toward full pressure as DMZ level
-     * climbs toward {@link DifficultyConfig#unlockTier3Max}. Other tiers use 1.0.
+     * Paint attenuation (0.40–1.0): eases fresh tier buys within the DMZ level band and
+     * falls off when level exceeds the next tier gate (e.g. T3 @ 100k DMZ).
      */
-    public final double tierLevelRamp;
+    public final double paintEase;
 
     private PlayerCombatProfile(
             int activeTier,
@@ -135,7 +135,7 @@ public final class PlayerCombatProfile {
             boolean kiInfusionActive,
             int potentialUnlockLevel,
             long signature,
-            double tierLevelRamp
+            double paintEase
     ) {
         this.activeTier = activeTier;
         this.tierPercent = tierPercent;
@@ -161,7 +161,7 @@ public final class PlayerCombatProfile {
         this.kiInfusionActive = kiInfusionActive;
         this.potentialUnlockLevel = Math.max(0, Math.min(30, potentialUnlockLevel));
         this.signature = signature;
-        this.tierLevelRamp = Math.max(0.50, Math.min(1.0, tierLevelRamp));
+        this.paintEase = Math.max(0.35, Math.min(1.0, paintEase));
     }
 
     public static PlayerCombatProfile of(ServerPlayer player) {
@@ -375,7 +375,7 @@ public final class PlayerCombatProfile {
         boolean infusionOn = DmzProgression.skillActive(player, "ki_infusion");
         int potential = DmzProgression.skillLevel(player, "potentialunlock");
         int dmzLevel = DmzProgression.dmzLevelForProgression(player);
-        double levelRamp = tierLevelRamp(cfg, tier, dmzLevel);
+        double levelEase = paintEase(cfg, tier, dmzLevel);
         long sig = fingerprint(
                 tier, pct, melee, strike, ki, def, hp, release,
                 balance.weakest, balance.imbalance, balance.topStats,
@@ -388,13 +388,13 @@ public final class PlayerCombatProfile {
         sig = mix(sig, kiInfusion);
         sig = mix(sig, infusionOn ? 1L : 0L);
         sig = mix(sig, potential);
-        sig = mix(sig, Math.round(levelRamp * 1000.0));
+        sig = mix(sig, Math.round(levelEase * 1000.0));
         return new PlayerCombatProfile(
                 tier, pct, melee, strike, ki, def, hp, offense,
                 liveOffense, liveMaxHealth, liveFlatMitigation, formBoost, release,
                 balance.weakest, balance.imbalance, balance.topStats,
                 fightingClass, race, style,
-                kiProtect, kiInfusion, infusionOn, potential, sig, levelRamp
+                kiProtect, kiInfusion, infusionOn, potential, sig, levelEase
         );
     }
 
@@ -408,27 +408,43 @@ public final class PlayerCombatProfile {
     }
 
     /**
-     * T3-only: ease extra pressure for fresh buys (~level 1k) and ramp to full by
-     * {@link DifficultyConfig#unlockTier3Max}. Other tiers return 1.0.
+     * DMZ-level paint ease: ramp within tier band (78%→100% to next tier gate), then
+     * sqrt falloff when level exceeds that gate so veterans are not shredded.
      */
-    private static double tierLevelRamp(DifficultyConfig cfg, int tier, int dmzLevel) {
-        if (tier != 3 || cfg == null) {
+    private static double paintEase(DifficultyConfig cfg, int tier, int dmzLevel) {
+        if (tier <= 0 || cfg == null) {
             return 1.0;
         }
-        long min = Math.max(1L, cfg.unlockTier3Level);
-        long max = Math.max(min + 1L, cfg.unlockTier3Max);
-        long clamped = Math.max(min, Math.min(max, Math.max(1, dmzLevel)));
-        double t = (clamped - min) / (double) (max - min);
-        // Fresh T3: 70% of god/tank/live floors; near T4 gate: full.
-        return 0.70 + 0.30 * Math.max(0.0, Math.min(1.0, t));
+        long min = cfg.tierRequiredLevel(tier);
+        long nextGate = tier < 7 ? cfg.tierRequiredLevel(tier + 1) : Math.max(min + 1L, min * 2L);
+        if (nextGate <= min) {
+            nextGate = min + 1L;
+        }
+        long level = Math.max(1L, dmzLevel);
+        long clamped = Math.max(min, Math.min(nextGate, level));
+        double bandT = (clamped - min) / (double) (nextGate - min);
+        double bandEase = 0.78 + 0.22 * Math.max(0.0, Math.min(1.0, bandT));
+        double overEase = 1.0;
+        if (level > nextGate) {
+            overEase = Math.sqrt(nextGate / (double) level);
+            overEase = Math.max(0.40, Math.min(1.0, overEase));
+        }
+        double ease = bandEase * overEase;
+        // T4+ veterans (50k+ DMZ): extra relief — telemetry retunes overshot mid/high tiers.
+        if (tier >= 4 && level >= 50_000L) {
+            double vet = Math.pow(50_000.0 / level, 0.25);
+            vet = Math.max(0.70, Math.min(1.0, vet));
+            ease *= vet;
+        }
+        return Math.max(0.35, Math.min(1.0, ease));
     }
 
-    /** Blend a floor toward {@code base} when {@link #tierLevelRamp} &lt; 1 (T3 ramp). */
+    /** Blend a floor toward {@code base} when {@link #paintEase} &lt; 1. */
     private double easedFloor(double base, double floor) {
-        if (floor <= base + 1e-6 || tierLevelRamp >= 0.999) {
+        if (floor <= base + 1e-6 || paintEase >= 0.999) {
             return Math.max(base, floor);
         }
-        return base + (floor - base) * tierLevelRamp;
+        return base + (floor - base) * paintEase;
     }
 
     public boolean active() {
@@ -575,19 +591,17 @@ public final class PlayerCombatProfile {
         double defFloor = defense * tierPercent * defRatio * floorStrength;
         // Floor against the live-aware bag so high-VIT / tank class still get pressed.
         // HP floor uses a higher early-tier floorStrength floor so T1–T2 dumps aren't free.
-        // 1.0.19: 0.65→0.80 — telemetry tanks plateaued T3→T5 at ~14–17% bag.
-        double hpFloorStrength = Math.max(0.80, floorStrength);
+        // 1.0.19: 0.65→0.80 was too harsh — veterans at 100k+ were 2-shot at T3+.
+        double hpFloorStrength = Math.max(0.60, floorStrength);
         double hpFloor = hitCapHealth() * tierPercent * hpRatio * hpFloorStrength;
         base = easedFloor(base, Math.max(defFloor, hpFloor));
 
-        // T1–T3 + transformed: raise soft floors so god forms stop tapping at early buys.
-        // 1.0.28 (hits-2026-08-05): T1 high-form packs still ~11–15% bag — bump early threat.
+        // T1–T3 + transformed: pre-telemetry god floors (1.0.12) — Aug retunes overshot.
         if (activeTier >= 1 && activeTier <= 3 && formBoost > 1.12) {
-            // 2.3.57 (hits-2026-08-29..30): ease T2 god painted overshoot before soft-cap.
             double threatPct = switch (activeTier) {
-                case 1 -> 0.52;
-                case 2 -> 0.60;
-                case 3 -> 0.70; // was 0.80 — T3 cliff wiped fresh buys regardless of level
+                case 1 -> 0.35;
+                case 2 -> 0.42;
+                case 3 -> 0.48;
                 default -> 0.0;
             };
             double softFloor = offense * threatPct;
@@ -600,13 +614,13 @@ public final class PlayerCombatProfile {
             base = easedFloor(base, softFloor);
         }
 
-        // T4–T7 form nudges — 2.3.129: lift T6 nudge so buy pressure progresses vs T5.
+        // T4–T7 form nudges — restore 1.0.12 ladder (telemetry 2.3.129 overshot).
         if (activeTier >= 4 && formBoost > 1.12) {
             double nudge = switch (activeTier) {
-                case 4 -> 1.58;
-                case 5 -> 1.78;
-                case 6 -> 1.90; // was 1.82 — T5/T6 painted bite was nearly flat
-                default -> 1.62; // T7 — was soft-capped rarely; raise painted bite
+                case 4 -> 1.06;
+                case 5 -> 1.10;
+                case 6 -> 1.14;
+                default -> 1.18;
             };
             base = Math.max(base, offenseShare * nudge);
         }
@@ -616,13 +630,13 @@ public final class PlayerCombatProfile {
         if (formBoost > 1.12 && liveOffense > offense * 1.05) {
             // 2.3.129: T6 liveShare above T5 so god packs climb after T6 buy.
             double liveShare = switch (activeTier) {
-                case 1 -> 0.28;
-                case 2 -> 0.34;
-                case 3 -> 0.46; // was 0.52 — pair with eased T3 god threat
-                case 4 -> 0.60;
-                case 5 -> 0.74;
-                case 6 -> 0.80; // was 0.74 — match T5→T6 soft-cap gap
-                default -> 0.80; // T7 keep pace with T6 live slice
+                case 1 -> 0.22;
+                case 2 -> 0.28;
+                case 3 -> 0.34;
+                case 4 -> 0.42;
+                case 5 -> 0.50;
+                case 6 -> 0.55;
+                default -> 0.58;
             };
             // Mega forms: more of the live slice (still hit-capped after).
             double megaBoost = formBoost >= 6.0
@@ -672,22 +686,25 @@ public final class PlayerCombatProfile {
         if (base > bagCap) {
             base = bagCap;
         }
+        // DMZ level ease — veterans above tier gate should not be 2-shot.
+        if (paintEase < 0.999) {
+            double rawShare = offense * tierPercent;
+            base = rawShare + (base - rawShare) * paintEase;
+        }
         return Math.max(1.0, base);
     }
 
     /** Same progressive ceilings as {@code DifficultyEvents.onDamageDone}. */
     public double incomingSoftCapFrac() {
-        // 2.3.57 (hits-2026-08-29..30): ease T1–T3 ceilings — T2 gods were soft-cap
-        // pinned at 43% bag. T4+ buy pressure. Still monotonic.
-        // 2.3.148: T6 0.58→0.60 so KP8+ T5→T6 landing/soft climb (fp41).
+        // 2.3.161: roll back Aug telemetry inflation — T5/T7 were 2-hit deaths.
         return switch (activeTier) {
-            case 7 -> 0.62;
-            case 6 -> 0.60;
-            case 5 -> 0.52;
-            case 4 -> 0.50;
-            case 3 -> 0.44;
-            case 2 -> 0.36;
-            default -> 0.34; // T1
+            case 7 -> 0.52;
+            case 6 -> 0.48;
+            case 5 -> 0.44;
+            case 4 -> 0.40;
+            case 3 -> 0.36;
+            case 2 -> 0.32;
+            default -> 0.30; // T1
         };
     }
 
@@ -708,11 +725,11 @@ public final class PlayerCombatProfile {
         double landFrac = switch (activeTier) {
             case 1 -> 0.13;
             case 2 -> 0.16;
-            case 3 -> 0.26; // was 0.30 — T3 landing overshot fresh buys
-            case 4 -> 0.48; // was 0.44 — KP10 T4 still ~0.31 after fp40
-            case 5 -> 0.50;
-            case 6 -> 0.58; // was 0.57 — pair with T6 soft/landCap 0.60
-            default -> 0.60; // T7 — keep > T6 landFrac
+            case 3 -> 0.20;
+            case 4 -> 0.28;
+            case 5 -> 0.33;
+            case 6 -> 0.38;
+            default -> 0.42;
         };
         if (formBoost > 1.12) {
             double t = Math.min(1.0, Math.log(Math.max(1.12, formBoost)) / Math.log(80.0));
@@ -732,14 +749,17 @@ public final class PlayerCombatProfile {
         // Early-tier caps tight; mid/high climb with buys.
         double landCap = switch (activeTier) {
             case 1 -> 0.18;
-            case 2 -> 0.23;
-            case 3 -> 0.32; // was 0.38 — pair with eased T3 landFrac
-            case 4 -> 0.50; // align with soft-cap so lifted landFrac can land
-            case 5 -> 0.52;
-            case 6 -> 0.60; // was 0.58 — match soft-cap lift (fp41)
-            default -> 0.62;
+            case 2 -> 0.22;
+            case 3 -> 0.26;
+            case 4 -> 0.32;
+            case 5 -> 0.36;
+            case 6 -> 0.40;
+            default -> 0.44;
         };
         land = Math.min(land, liveBag * landCap);
+        if (paintEase < 0.999) {
+            land *= paintEase;
+        }
         return Math.max(1.0, land);
     }
 
@@ -789,13 +809,13 @@ public final class PlayerCombatProfile {
     private double kiProtectionHitFrac() {
         // 1.0.28 telemetry: T1 bite up; T6 budget clears T5 soft-cap glue.
         double tierFrac = switch (activeTier) {
-            case 1 -> 0.30;
-            case 2 -> 0.37;
-            case 3 -> 0.45;
-            case 4 -> 0.56;
-            case 5 -> 0.60;
-            case 6 -> 0.68;
-            default -> 0.74;
+            case 1 -> 0.22;
+            case 2 -> 0.28;
+            case 3 -> 0.34;
+            case 4 -> 0.40;
+            case 5 -> 0.44;
+            case 6 -> 0.48;
+            default -> 0.52;
         };
         double formFactor;
         if (formBoost <= 1.12) {
@@ -1203,7 +1223,7 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
         // Formula revision: Aug 29–30 early soft-cap + landing ease (2.3.57).
-        h = mix(h, 42L); // 2.3.160 T3 level ramp + counter delay + god-floor ease
+        h = mix(h, 43L); // 2.3.161 rollback telemetry inflation + DMZ level paintEase
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

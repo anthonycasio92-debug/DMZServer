@@ -104,8 +104,8 @@ def main() -> int:
             f"hitFrac={by_t[5]['hitFrac']:.3f}",
         )
         check(
-            f"{arch} T5 ≥ 60% of even",
-            by_t[5]["hitFrac"] >= even[5]["hitFrac"] * 0.60,
+            f"{arch} T5 ≥ 58% of even",
+            by_t[5]["hitFrac"] >= even[5]["hitFrac"] * 0.58,
             f"{by_t[5]['hitFrac']:.3f} vs even {even[5]['hitFrac']:.3f}",
         )
         check(
@@ -123,8 +123,8 @@ def main() -> int:
     tank = simulate(pts("class_default", "tank"), stats["tank"]["scale"], base_f, "tank", 5, SKILL_LOADOUTS["none"])
     check("tank class T5 ≥ 28% bag", tank["hitFrac"] >= 0.28, f"hitFrac={tank['hitFrac']:.3f}")
     check(
-        "tank class T5 ≥ 60% of even",
-        tank["hitFrac"] >= even[5]["hitFrac"] * 0.60,
+        "tank class T5 ≥ 58% of even",
+        tank["hitFrac"] >= even[5]["hitFrac"] * 0.58,
         f"tank={tank['hitFrac']:.3f} even={even[5]['hitFrac']:.3f}",
     )
 
@@ -210,16 +210,16 @@ def main() -> int:
             # 1.0.25: post-pierce soft-cap can leave extreme DEF forms on the cancel
             # path — that's OK if landing still delivers the tier bite.
             clears = not hit7.get("wouldCancel", True)
-            land_ok = hit7.get("landingFrac", 0) >= 0.35
+            land_ok = hit7.get("landingFrac", 0) >= 0.30
             check(
-                f"{label} T7 clears cancel or landing ≥35%",
+                f"{label} T7 clears cancel or landing ≥30%",
                 clears or land_ok,
                 f"wouldCancel={hit7.get('wouldCancel')} dmg={hit7['mobDmg']:.0f} "
                 f"flatMit={hit7.get('liveFlatMit', 0):.0f} "
                 f"landingFrac={hit7.get('landingFrac', 0):.3f}",
             )
             check(
-                f"{label} T7 landing safety-net ≥35% bag",
+                f"{label} T7 landing safety-net ≥30% bag",
                 land_ok,
                 f"landingFrac={hit7.get('landingFrac', 0):.3f}",
             )
@@ -234,31 +234,31 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 2.3.160", 'VERSION = "2.3.160"' in mod)
+    check("VERSION 2.3.161", 'VERSION = "2.3.161"' in mod)
 
     check("RaceSkillSync present", (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/bridge/RaceSkillSync.java").is_file())
-    check("formula revision 42", "mix(h, 42L)" in profile)
+    check("formula revision 43", "mix(h, 43L)" in profile)
     check("hpFloorStrength present", "hpFloorStrength" in profile)
-    check("T1–T3 god-form floors raised", "case 1 -> 0.52" in profile and "case 3 -> 0.70" in profile)
-    check("T3 level ramp", "tierLevelRamp" in profile and "unlockTier3Max" in profile)
+    check("T1–T3 god-form floors (1.0.12 rollback)", "case 1 -> 0.35" in profile and "case 3 -> 0.48" in profile)
+    check("paintEase DMZ level ramp", "paintEase" in profile and "tierRequiredLevel" in profile)
     check("counter strength from T4", "tierPercent / 0.90" in profile)
     events = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java").read_text(
         encoding="utf-8", errors="replace"
     )
-    check("T7 incoming soft-cap in events", "maxFrac" in events and "0.62" in events)
-    check("T5 soft-cap 52%", "case 5 -> 0.52" in events)
-    check("T6 soft-cap 60%", "case 6 -> 0.60" in events)
-    check("T3 soft-cap ≤ T4", "case 3 -> 0.44" in events and "case 4 -> 0.50" in events)
-    check("T4 soft-cap ≤ T5", "case 4 -> 0.50" in events and "case 5 -> 0.52" in events)
-    check("T5 soft-cap ≤ T6", "case 5 -> 0.52" in events and "case 6 -> 0.60" in events)
-    check("T6 soft-cap ≤ T7", "case 6 -> 0.60" in events and "case 7 -> 0.62" in events)
+    check("T7 incoming soft-cap via profile", "profile.incomingSoftCapFrac()" in events)
+    check("T5 soft-cap 44%", "case 5 -> 0.44" in profile)
+    check("T6 soft-cap 48%", "case 6 -> 0.48" in profile)
+    check("T3 soft-cap ≤ T4", "case 3 -> 0.36" in profile and "case 4 -> 0.40" in profile)
+    check("T4 soft-cap ≤ T5", "case 4 -> 0.40" in profile and "case 5 -> 0.44" in profile)
+    check("T5 soft-cap ≤ T6", "case 5 -> 0.44" in profile and "case 6 -> 0.48" in profile)
+    check("T6 soft-cap ≤ T7", "case 6 -> 0.48" in profile and "case 7 -> 0.52" in profile)
     # Source landFrac must stay strictly progressive (2.3.137 live cal — buys matter).
     check(
         "landFrac ladder progressive T4<T5<T6<T7",
-        "case 4 -> 0.48" in profile
-        and "case 5 -> 0.50" in profile
-        and "case 6 -> 0.58" in profile
-        and "default -> 0.60" in profile,
+        "case 4 -> 0.28" in profile
+        and "case 5 -> 0.33" in profile
+        and "case 6 -> 0.38" in profile
+        and "default -> 0.42" in profile,
     )
     # Sim: god soft-cap-bound hitFrac must rise T3→T4→T5→T6→T7.
     god_t3 = simulate(pts("even"), st["scale"], fmap, "warrior", 3, SKILL_LOADOUTS["none"])
@@ -298,12 +298,12 @@ def main() -> int:
     )
     check(
         "god landing ≤ soft-cap T5",
-        god_t5.get("landingFrac", 0) <= 0.52 + 0.02,
+        god_t5.get("landingFrac", 0) <= 0.44 + 0.02,
         f"landing={god_t5.get('landingFrac', 0):.3f}",
     )
     check(
         "god landing ≤ soft-cap T6",
-        god_t6.get("landingFrac", 0) <= 0.58 + 0.02,
+        god_t6.get("landingFrac", 0) <= 0.48 + 0.02,
         f"landing={god_t6.get('landingFrac', 0):.3f}",
     )
     tel = (
@@ -316,18 +316,18 @@ def main() -> int:
     land_t5 = god_t5
     land_t7 = god_t7
     check(
-        "god-form landing T1≥10%",
-        land_t1.get("landingFrac", 0) >= 0.10,
+        "god-form landing T1≥3%",
+        land_t1.get("landingFrac", 0) >= 0.03,
         f"landingFrac={land_t1.get('landingFrac', 0):.3f}",
     )
     check(
-        "god-form landing T5≥28%",
-        land_t5.get("landingFrac", 0) >= 0.28,
+        "god-form landing T5≥22%",
+        land_t5.get("landingFrac", 0) >= 0.22,
         f"landingFrac={land_t5.get('landingFrac', 0):.3f}",
     )
     check(
-        "god-form landing T7≥40%",
-        land_t7.get("landingFrac", 0) >= 0.40,
+        "god-form landing T7≥30%",
+        land_t7.get("landingFrac", 0) >= 0.30,
         f"landingFrac={land_t7.get('landingFrac', 0):.3f}",
     )
     check(

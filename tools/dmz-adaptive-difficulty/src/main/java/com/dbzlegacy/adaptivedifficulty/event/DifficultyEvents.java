@@ -978,26 +978,14 @@ public final class DifficultyEvents {
             event.setCanceled(false);
             event.setAmount((float) Math.max(1.0, land));
             intervened = true;
-        } else if (preAmount < land) {
-            // 1.0.24: always fill up to the landing floor when short.
-            // Old 0.45× gate left T4 tanks below T3 (Got2takeitez 0.17 vs 0.24).
+        } else if (preAmount < land * 0.45f) {
+            // Partial shrug only — always filling to landing shredded tanks (1.0.24 regression).
             event.setAmount((float) Math.max(preAmount, land));
             intervened = true;
         }
-        // Soft-cap crushing hits — monotonic buy ladder.
-        // 2.3.57 (hits-2026-08-29..30): ease T1–T3 — T2 gods were pinned at 43% bag.
-        // 2.3.148: T6 0.58→0.60 (KP8+ T5→T6 climb; fingerprint 41).
-        // Ladder: T1 0.34 · T2 0.36 · T3 0.44 · T4 0.50 · T5 0.52 · T6 0.60 · T7 0.62.
+        // Soft-cap crushing hits — monotonic buy ladder (2.3.161 rollback).
         double bag = Math.max(20.0, profile.liveMaxHealth);
-        double maxFrac = switch (profile.activeTier) {
-            case 7 -> 0.62;
-            case 6 -> 0.60;
-            case 5 -> 0.52;
-            case 4 -> 0.50;
-            case 3 -> 0.44;
-            case 2 -> 0.36;
-            default -> 0.34; // T1
-        };
+        double maxFrac = profile.incomingSoftCapFrac();
         float softCap = (float) Math.min((double) Float.MAX_VALUE, bag * maxFrac);
         if (event.getAmount() > softCap) {
             event.setAmount(softCap);

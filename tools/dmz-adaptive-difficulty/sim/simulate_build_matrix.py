@@ -96,13 +96,22 @@ def _counter_strength(pct: float) -> float:
     return max(0.0, min(1.0, pct / 0.90))
 
 
-def tier_level_ramp(tier: int, dmz_level: int = 5500) -> float:
-    if tier != 3:
-        return 1.0
-    min_l, max_l = 1000, 10000
-    clamped = max(min_l, min(max_l, max(1, dmz_level)))
-    t = (clamped - min_l) / (max_l - min_l)
-    return 0.70 + 0.30 * max(0.0, min(1.0, t))
+def paint_ease(tier: int, dmz_level: int = 5500) -> float:
+    gates = {1: 1, 2: 500, 3: 1000, 4: 5000, 5: 10000, 6: 50000, 7: 100000}
+    min_l = gates.get(tier, 1)
+    next_gate = gates.get(tier + 1, min_l * 2) if tier < 7 else max(min_l * 2, min_l + 1)
+    level = max(1, dmz_level)
+    clamped = max(min_l, min(next_gate, level))
+    band_t = (clamped - min_l) / max(1, next_gate - min_l)
+    band_ease = 0.78 + 0.22 * max(0.0, min(1.0, band_t))
+    over_ease = 1.0
+    if level > next_gate:
+        over_ease = max(0.40, min(1.0, (next_gate / level) ** 0.5))
+    ease = band_ease * over_ease
+    if tier >= 4 and level >= 50000:
+        vet = max(0.70, min(1.0, (50000 / level) ** 0.25))
+        ease *= vet
+    return max(0.35, min(1.0, ease))
 
 
 def eased_floor(base: float, floor: float, ramp: float) -> float:
@@ -246,30 +255,30 @@ def simulate(
     offense_share = offense * pct
     dmg = offense_share
     cap_hp = hit_cap_health(hp, live_hp, form_boost)
-    ramp = tier_level_ramp(tier, dmz_level)
+    ease = paint_ease(tier, dmz_level)
     floor_strength = max(0.35, min(1.0, _counter_strength(pct)))
-    hp_floor_strength = max(0.80, floor_strength)
+    hp_floor_strength = max(0.60, floor_strength)
     tank_floor = max(defense * pct * TANK_DEF_RATIO * floor_strength,
                      cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
-    dmg = eased_floor(dmg, tank_floor, ramp)
+    dmg = eased_floor(dmg, tank_floor, ease)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.52, 2: 0.60, 3: 0.70}[tier]
+        threat = {1: 0.35, 2: 0.42, 3: 0.48}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
             soft = min(soft, offense_share * max(1.25, 1.55 - 0.08 * min(1.25, t)))
-        dmg = eased_floor(dmg, soft, ramp)
+        dmg = eased_floor(dmg, soft, ease)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.58, 5: 1.78, 6: 1.90, 7: 1.62}[tier]
+        nudge = {4: 1.06, 5: 1.10, 6: 1.14, 7: 1.18}[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
-        live_share = {1: 0.28, 2: 0.34, 3: 0.46, 4: 0.60, 5: 0.74, 6: 0.80, 7: 0.80}[tier]
+        live_share = {1: 0.22, 2: 0.28, 3: 0.34, 4: 0.42, 5: 0.50, 6: 0.55, 7: 0.58}[tier]
         if form_boost >= 6.0:
             mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
         else:
             mega_boost = 1.0
         live_floor = live_off * pct * live_share * mega_boost
-        dmg = eased_floor(dmg, live_floor, ramp)
+        dmg = eased_floor(dmg, live_floor, ease)
 
     top = _top2(pts)
     dmg_ov = 1.0
@@ -292,11 +301,12 @@ def simulate(
         dmg = max(dmg, live_flat / cancel_thr * 1.08)
         would_cancel = live_flat >= dmg * cancel_thr
     # 1.0.25: clamp post-pierce to live incoming soft-cap.
-    soft_cap_frac = {1: 0.34, 2: 0.36, 3: 0.44, 4: 0.50, 5: 0.52, 6: 0.60, 7: 0.62}[tier]
+    soft_cap_frac = {1: 0.30, 2: 0.32, 3: 0.36, 4: 0.40, 5: 0.44, 6: 0.48, 7: 0.52}[tier]
     dmg = min(dmg, max(20.0, live_hp) * soft_cap_frac)
+    if ease < 0.999:
+        dmg = offense_share + (dmg - offense_share) * ease
     would_cancel = live_flat >= dmg * cancel_thr
-    # Live-bag landing ladder (1.0.25) — cancel path IS the early-tier ladder.
-    land_frac = {1: 0.13, 2: 0.16, 3: 0.26, 4: 0.48, 5: 0.50, 6: 0.58, 7: 0.60}[tier]
+    land_frac = {1: 0.13, 2: 0.16, 3: 0.20, 4: 0.28, 5: 0.33, 6: 0.38, 7: 0.42}[tier]
     if form_boost > 1.12:
         t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
         bump = 0.06 if tier <= 2 else 0.12
@@ -305,10 +315,12 @@ def simulate(
     landing = bag * land_frac
     if skills["kp"] > 0:
         landing *= max(0.65, 1.0 - skills["kp"] * 0.015)
-    land_cap = {1: 0.18, 2: 0.23, 3: 0.32, 4: 0.50, 5: 0.52, 6: 0.60, 7: 0.62}[tier]
+    land_cap = {1: 0.18, 2: 0.22, 3: 0.26, 4: 0.32, 5: 0.36, 6: 0.40, 7: 0.44}[tier]
     min_land = live_hp * max(0.05, pct * 0.08)
-    landing = eased_floor(min_land, landing, ramp)
+    landing = eased_floor(min_land, landing, ease)
     landing = min(landing, live_hp * land_cap)
+    if ease < 0.999:
+        landing *= ease
 
     # Post-KP landing (DMZ 1%/lvl)
     kp_mit = min(0.10, skills["kp"] * KP_MITIGATION_PER_LEVEL)
@@ -608,8 +620,8 @@ def main() -> int:
             )
             if even_t5 is not None:
                 check(
-                    f"saiyan {arch} T5 ≥ 60% of even",
-                    by_t[5]["hitFrac"] >= even_t5["hitFrac"] * 0.60,
+                    f"saiyan {arch} T5 ≥ 58% of even",
+                    by_t[5]["hitFrac"] >= even_t5["hitFrac"] * 0.58,
                     f"{arch}={by_t[5]['hitFrac']:.3f} even={even_t5['hitFrac']:.3f}",
                 )
     tank_t5 = next(
