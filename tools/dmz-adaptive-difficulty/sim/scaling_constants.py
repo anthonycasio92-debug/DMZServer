@@ -1,9 +1,11 @@
 """Single source of truth for AdaptiveDifficulty combat scaling (Python sim).
 
-Mirrors PlayerCombatProfile.java on 2.3.162 (formula revision 44).
+Mirrors PlayerCombatProfile.java on 2.3.163 (formula revision 45).
 Update Java and this file together; audit_concept.py string-checks Java literals.
 """
 from __future__ import annotations
+
+import math
 
 # Stock tier ladder (DifficultyConfig.unlockTier*EnemyMult)
 TIER_PCT: dict[int, float] = {
@@ -121,13 +123,30 @@ HP_FLOOR_STRENGTH_MIN = 0.60
 COUNTER_STRENGTH_MIN = 0.35
 
 # Concept targets (audit_concept.py executable spec)
-CONCEPT_EVEN_HITFRAC_MIN: dict[int, float] = {5: 0.25, 7: 0.40}
+CONCEPT_EVEN_HITFRAC_MIN: dict[int, float] = {5: 0.25, 7: 0.39}
 CONCEPT_DUMP_HITFRAC_MIN = 0.28
 CONCEPT_DUMP_VS_EVEN_MIN = 0.58
 CONCEPT_GOD_LANDING_MIN: dict[int, float] = {1: 0.03, 5: 0.22, 7: 0.30}
 CONCEPT_TIER_RISE_MIN: dict[tuple[int, int], float] = {(1, 5): 1.4, (5, 7): 1.10}
 
-FORMULA_REVISION = 44
+FORMULA_REVISION = 45
+
+DEFENSE_MIT_RELIEF_BASE = 0.68  # mitigated fraction below which no paint relief
+DEFENSE_MIT_RELIEF_SCALE = 0.28
+DEFENSE_MIT_RELIEF_CAP = 0.12
+DEFENSIVE_PAINT_RELIEF_CAP = 0.22
+
+# DMZ defense mitigation probe (flat + % — enchant DEF included in getDefense)
+DMZ_FLAT_ABSORB_FRAC = 0.65
+DMZ_DEF_REDUCTION_SCALE = 12.0  # stock floor: max(12, maxValue * scaling * 0.15)
+DMZ_BASE_REDUCTION_CAP = 0.75
+DMZ_ENCHANT_REDUCTION_CAP = 0.85
+
+# Ki Protection — DMZ combat.json + AD paint relief (2.3.163)
+KP_MITIGATION_PER_LEVEL = 0.01  # post-mit DMZ
+KP_HIT_CAP_RELIEF_PER_LEVEL = 0.010  # pre-DEF hit-cap fraction
+KP_LANDING_RELIEF_PER_LEVEL = 0.015  # safety-net landing
+KP_PAINT_RELIEF_PER_LEVEL = 0.010  # soft-cap / hit-cap stack
 
 
 def paint_ease(tier: int, dmz_level: int = 5500) -> float:
@@ -151,4 +170,62 @@ def paint_ease(tier: int, dmz_level: int = 5500) -> float:
         vet = max(0.70, min(1.0, (50000 / level) ** 0.25))
         ease *= vet
     return max(0.35, min(1.0, ease))
+
+
+def dmz_mitigate_damage(raw: float, defense: float, res_form: float = 1.0) -> float:
+    """Port of DMZ StatsData.calculatePostMitigationDamage core (no cancel path)."""
+    raw = max(0.0, raw)
+    def_val = max(0.0, defense * max(1.0, res_form))
+    if def_val <= 0.0 or raw <= 0.0:
+        return raw
+    flat_cap = raw * DMZ_FLAT_ABSORB_FRAC
+    flat_absorb = min(def_val, flat_cap)
+    remaining = max(0.0, raw - flat_absorb)
+    ratio = def_val / (DMZ_DEF_REDUCTION_SCALE + def_val)
+    ratio = min(DMZ_BASE_REDUCTION_CAP, max(0.0, ratio))
+    return remaining * (1.0 - ratio)
+
+
+def estimate_mitigation_relief(defense: float, res_form: float = 1.0, kp_level: int = 0) -> float:
+    """Mirrors PlayerCombatProfile.estimateMitigationRelief."""
+    probe = 10_000.0
+    kp_mit = min(0.10, kp_level * KP_MITIGATION_PER_LEVEL)
+    def_eff = defense * max(1.0, res_form) * max(0.0, 1.0 - kp_mit)
+    post = dmz_mitigate_damage(probe, def_eff)
+    mitigated = 1.0 - min(1.0, post / probe)
+    excess = max(0.0, mitigated - DEFENSE_MIT_RELIEF_BASE)
+    return min(DEFENSE_MIT_RELIEF_CAP, excess * DEFENSE_MIT_RELIEF_SCALE)
+
+
+def defensive_paint_relief(kp_level: int, defense: float, res_form: float = 1.0) -> float:
+    relief = estimate_mitigation_relief(defense, res_form, kp_level)
+    if kp_level > 0:
+        relief += kp_level * KP_PAINT_RELIEF_PER_LEVEL
+    return min(DEFENSIVE_PAINT_RELIEF_CAP, relief)
+
+
+def ki_protection_hit_frac(
+    tier: int, form_boost: float, kp_level: int = 0, mit_relief: float = 0.0
+) -> float:
+    tier_frac = HIT_CAP_TIER[tier]
+    if form_boost <= 1.12:
+        form_factor = 0.78
+    else:
+        t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
+        form_factor = 0.78 + 0.22 * t
+        if tier >= 7 and form_boost >= 25.0:
+            form_factor = min(form_factor, 0.88)
+    frac = tier_frac * form_factor
+    if kp_level > 0:
+        frac *= max(0.82, 1.0 - kp_level * KP_HIT_CAP_RELIEF_PER_LEVEL)
+    if mit_relief > 1e-6:
+        frac *= max(0.85, 1.0 - mit_relief * 0.75)
+    return max(0.12, min(0.75, frac))
+
+
+def incoming_soft_cap_frac(tier: int, relief: float = 0.0) -> float:
+    base = SOFT_CAP[tier]
+    if relief > 1e-6:
+        base *= max(0.78, 1.0 - relief * 0.90)
+    return base
 

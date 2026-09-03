@@ -17,9 +17,9 @@ Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).
 - ✅ namekian even T5→T7 hitFrac rises
 - ✅ namekian even T4+ unprotected ≥25% bag
 - ✅ namekian god-form T5 post-DEF ≥12% live
-- ✅ ancient_saiyan KP10 reduces landing dmg at T5
-- ✅ bioandroid KP10 reduces landing dmg at T5
-- ✅ frostdemon KP10 reduces landing dmg at T5
+- ✅ ancient_saiyan KP10 reduces pressure at T5
+- ✅ bioandroid KP10 reduces pressure at T5
+- ✅ frostdemon KP10 reduces pressure at T5
 - ✅ ancient_saiyan infusion sponges more HP at T5
 - ✅ bioandroid infusion sponges more HP at T5
 - ✅ frostdemon infusion sponges more HP at T5
@@ -46,17 +46,17 @@ Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).
 | Tier | HitFrac | After KP0 | SoftHits | MobDmg | MobHp |
 |-----:|--------:|----------:|---------:|-------:|------:|
 | T1 | 0.129 | 0.129 | 1.27 | 96 | 121 |
-| T3 | 0.253 | 0.253 | 1.33 | 189 | 391 |
-| T5 | 0.343 | 0.343 | 1.36 | 257 | 834 |
-| T7 | 0.406 | 0.406 | 1.36 | 304 | 1236 |
+| T3 | 0.249 | 0.249 | 1.33 | 187 | 391 |
+| T5 | 0.338 | 0.338 | 1.36 | 253 | 834 |
+| T7 | 0.399 | 0.399 | 1.36 | 299 | 1236 |
 
 ## Sample: skills at T5 saiyan warrior even (base)
 
 | Skills | HitFrac | AfterKP | MobHp | KP save |
 |--------|--------:|--------:|------:|--------:|
-| none | 0.343 | 0.343 | 834 | 0 |
-| kp10 | 0.343 | 0.309 | 834 | 26 |
-| inf10 | 0.343 | 0.343 | 1068 | 0 |
-| full | 0.343 | 0.309 | 1068 | 26 |
+| none | 0.338 | 0.338 | 834 | 0 |
+| kp10 | 0.304 | 0.274 | 834 | 23 |
+| inf10 | 0.338 | 0.338 | 1068 | 0 |
+| full | 0.304 | 0.274 | 1068 | 23 |
 
 Rows: 9792. Races: ancient_saiyan, bioandroid, frostdemon, human, majin, monkey, namekian, saiyan, sento_saiyan, viltrumite.

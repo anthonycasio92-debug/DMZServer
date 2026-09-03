@@ -111,6 +111,12 @@ public final class PlayerCombatProfile {
     public final double paintEase;
     /** DMZ level used for {@link #paintEase} (progression / unlock gates). */
     public final int progressionDmzLevel;
+    /**
+     * Paint relief from live DMZ mitigation (DEF + enchantments via
+     * {@code calculatePostMitigationDamage}). High-defense builds get slightly
+     * lower painted mob damage so enchants/DEF counter scaling.
+     */
+    public final double defenseMitigationRelief;
 
     private PlayerCombatProfile(
             int activeTier,
@@ -138,7 +144,8 @@ public final class PlayerCombatProfile {
             int potentialUnlockLevel,
             long signature,
             double paintEase,
-            int progressionDmzLevel
+            int progressionDmzLevel,
+            double defenseMitigationRelief
     ) {
         this.activeTier = activeTier;
         this.tierPercent = tierPercent;
@@ -166,6 +173,7 @@ public final class PlayerCombatProfile {
         this.signature = signature;
         this.paintEase = Math.max(0.35, Math.min(1.0, paintEase));
         this.progressionDmzLevel = Math.max(0, progressionDmzLevel);
+        this.defenseMitigationRelief = Math.max(0.0, Math.min(0.12, defenseMitigationRelief));
     }
 
     public static PlayerCombatProfile of(ServerPlayer player) {
@@ -380,6 +388,7 @@ public final class PlayerCombatProfile {
         int potential = DmzProgression.skillLevel(player, "potentialunlock");
         int dmzLevel = DmzProgression.dmzLevelForProgression(player);
         double levelEase = paintEase(cfg, tier, dmzLevel);
+        double mitRelief = estimateMitigationRelief(data, kiProtect);
         long sig = fingerprint(
                 tier, pct, melee, strike, ki, def, hp, release,
                 balance.weakest, balance.imbalance, balance.topStats,
@@ -393,12 +402,14 @@ public final class PlayerCombatProfile {
         sig = mix(sig, infusionOn ? 1L : 0L);
         sig = mix(sig, potential);
         sig = mix(sig, Math.round(levelEase * 1000.0));
+        sig = mix(sig, Math.round(mitRelief * 10000.0));
         return new PlayerCombatProfile(
                 tier, pct, melee, strike, ki, def, hp, offense,
                 liveOffense, liveMaxHealth, liveFlatMitigation, formBoost, release,
                 balance.weakest, balance.imbalance, balance.topStats,
                 fightingClass, race, style,
-                kiProtect, kiInfusion, infusionOn, potential, sig, levelEase, dmzLevel
+                kiProtect, kiInfusion, infusionOn, potential, sig, levelEase, dmzLevel,
+                mitRelief
         );
     }
 
@@ -418,7 +429,7 @@ public final class PlayerCombatProfile {
                 0, 0.0, 1.0, 1.0, 1.0, 1.0, 20.0, 1.0,
                 1.0, 20.0, 1.0, 1.0, 100.0,
                 WeakStat.NONE, 0.0, NO_TOP, "", "", FightingStyle.HYBRID,
-                0, 0, false, 0, 0L, 1.0, 0
+                0, 0, false, 0, 0L, 1.0, 0, 0.0
         );
     }
 
@@ -722,7 +733,7 @@ public final class PlayerCombatProfile {
     /** Same progressive ceilings as {@code DifficultyEvents.onDamageDone}. */
     public double incomingSoftCapFrac() {
         // 2.3.161: roll back Aug telemetry inflation — T5/T7 were 2-hit deaths.
-        return switch (activeTier) {
+        double base = switch (activeTier) {
             case 7 -> 0.52;
             case 6 -> 0.48;
             case 5 -> 0.44;
@@ -731,6 +742,11 @@ public final class PlayerCombatProfile {
             case 2 -> 0.32;
             default -> 0.30; // T1
         };
+        double relief = defensivePaintRelief();
+        if (relief > 1e-6) {
+            base *= Math.max(0.78, 1.0 - relief * 0.90);
+        }
+        return base;
     }
 
     /**
@@ -854,7 +870,67 @@ public final class PlayerCombatProfile {
                 formFactor = Math.min(formFactor, 0.88);
             }
         }
-        return Math.max(0.12, Math.min(0.75, tierFrac * formFactor));
+        double frac = tierFrac * formFactor;
+        // KP trained: lower pre-DEF hit budget (stacks with landing + post-mit KP).
+        if (kiProtectionLevel > 0) {
+            frac *= Math.max(0.85, 1.0 - kiProtectionLevel * 0.010);
+        }
+        if (defenseMitigationRelief > 1e-6) {
+            frac *= Math.max(0.85, 1.0 - defenseMitigationRelief * 0.75);
+        }
+        return Math.max(0.12, Math.min(0.75, frac));
+    }
+
+    /**
+     * Combined paint relief from Ki Protection + live DMZ mitigation (DEF/enchants).
+     * Capped so unprotected builds still feel tier pressure.
+     */
+    private double defensivePaintRelief() {
+        double relief = defenseMitigationRelief;
+        if (kiProtectionLevel > 0) {
+            relief += kiProtectionLevel * 0.010;
+        }
+        return Math.min(0.22, relief);
+    }
+
+    /**
+     * Probe DMZ post-mitigation to reward defense/enchant investments at paint time.
+     * Uses {@code calculatePostMitigationDamage} so enchant DEF is included.
+     */
+    private static double estimateMitigationRelief(StatsData data, int kpLevel) {
+        if (data == null) {
+            return 0.0;
+        }
+        try {
+            double probe = 10_000.0;
+            double kpMit = Math.max(0.0, Math.min(0.10, kpLevel * kiProtectionMitigationPerLevel()));
+            double post = data.calculatePostMitigationDamage(probe, false, kpMit);
+            if (!(post >= 0.0) || Double.isNaN(post) || Double.isInfinite(post)) {
+                return 0.0;
+            }
+            double mitigated = 1.0 - Math.min(1.0, post / probe);
+            // Even builds ~45–55% mit; reward excess above that band.
+            double excess = Math.max(0.0, mitigated - 0.68);
+            return Math.min(0.12, excess * 0.28);
+        } catch (Throwable ignored) {
+            return 0.0;
+        }
+    }
+
+    /** Stock DMZ {@code kiProtectionMitigationPerLevel} (0.01). */
+    private static double kiProtectionMitigationPerLevel() {
+        try {
+            var combat = com.dragonminez.common.config.ConfigManager.getCombatConfig();
+            if (combat != null) {
+                double v = combat.getKiProtectionMitigationPerLevel();
+                if (v > 0.0 && v < 0.05 && !Double.isNaN(v) && !Double.isInfinite(v)) {
+                    return v;
+                }
+            }
+        } catch (Throwable ignored) {
+            // fall through
+        }
+        return 0.01;
     }
 
     /** Vanilla-ish armor contribution derived from player defense share. */
@@ -1248,7 +1324,7 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
         // Formula revision: Aug 29–30 early soft-cap + landing ease (2.3.57).
-        h = mix(h, 44L); // 2.3.162 paintEase cap-path fix + unified scaling constants
+        h = mix(h, 45L); // 2.3.163 KP hit-cap + DEF/enchant paint relief
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

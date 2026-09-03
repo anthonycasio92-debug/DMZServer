@@ -21,6 +21,7 @@ from pathlib import Path
 
 # Reuse formulas from the race/form simulator.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from scaling_constants import ki_protection_hit_frac  # noqa: E402
 from simulate_race_forms import (  # noqa: E402
     ENERGY_OFFENSE_FACTOR,
     INVEST,
@@ -33,7 +34,6 @@ from simulate_race_forms import (  # noqa: E402
     channel_damage,
     channel_hp,
     hit_cap_health,
-    ki_protection_hit_frac,
     load_forms,
     load_stats,
     mega_bulk_exp,

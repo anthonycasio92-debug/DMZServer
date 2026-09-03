@@ -23,19 +23,25 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from scaling_constants import (  # noqa: E402
+    DEFENSIVE_PAINT_RELIEF_CAP,
     FORM_NUDGE,
     GOD_THREAT,
     GLASS_HITS,
     HP_FLOOR_STRENGTH_MIN,
+    KP_LANDING_RELIEF_PER_LEVEL,
+    KP_MITIGATION_PER_LEVEL,
     LAND_CAP,
     LAND_FRAC,
     LIVE_SHARE,
-    SOFT_CAP,
     SPONGE_HITS,
     COUNTER_PCT_DIVISOR,
     COUNTER_STRENGTH_MIN,
     TIER_DMZ_BAND_TOP,
     TIER_DMZ_GATE,
+    defensive_paint_relief,
+    estimate_mitigation_relief,
+    incoming_soft_cap_frac,
+    ki_protection_hit_frac,
 )
 from simulate_race_forms import (  # noqa: E402
     CLASS_DMG_MULT,
@@ -59,7 +65,6 @@ from simulate_race_forms import (  # noqa: E402
     channel_damage,
     channel_hp,
     hit_cap_health,
-    ki_protection_hit_frac,
     load_forms,
     load_stats,
     mega_bulk_exp,
@@ -103,8 +108,7 @@ SKILL_LOADOUTS = {
     "full": dict(kp=10, inf=10, inf_on=True, pu=30),
 }
 
-# DMZ combat.json
-KP_MITIGATION_PER_LEVEL = 0.01
+# DMZ combat.json — post-mit KP also in scaling_constants
 INFUSION_DMG_PER_LEVEL = 0.025
 
 
@@ -285,7 +289,9 @@ def simulate(
     dmg_ov = max(1.0, min(OVERLAY_CAP, dmg_ov))
     dmg = max(1.0, dmg * dmg_ov)
 
-    cap_frac = ki_protection_hit_frac(tier, form_boost)
+    mit_relief = estimate_mitigation_relief(live_def, res_f, skills["kp"])
+    paint_relief = min(DEFENSIVE_PAINT_RELIEF_CAP, defensive_paint_relief(skills["kp"], live_def, res_f))
+    cap_frac = ki_protection_hit_frac(tier, form_boost, skills["kp"], mit_relief)
     hit_cap = cap_hp * cap_frac
     dmg = min(dmg, hit_cap)
 
@@ -299,13 +305,15 @@ def simulate(
         dmg = max(dmg, live_flat / cancel_thr * 1.08)
         would_cancel = live_flat >= dmg * cancel_thr
     # 1.0.25: clamp post-pierce to live incoming soft-cap.
-    soft_cap_frac = SOFT_CAP[tier]
+    soft_cap_frac = incoming_soft_cap_frac(tier, paint_relief)
     dmg = min(dmg, max(20.0, live_hp) * soft_cap_frac)
     if ease < 0.999:
         if dmg > offense_share + 1e-6:
             dmg = offense_share + (dmg - offense_share) * ease
         elif dmz_level > (TIER_DMZ_GATE.get(tier + 1, TIER_DMZ_BAND_TOP.get(7, 150000)) if tier < 7 else TIER_DMZ_BAND_TOP.get(7, 150000)):
             dmg = max(1.0, dmg * ease)
+    if paint_relief > 1e-6:
+        pass  # relief applied via hit-cap + soft-cap only
     would_cancel = live_flat >= dmg * cancel_thr
     land_frac = LAND_FRAC[tier]
     if form_boost > 1.12:
@@ -315,7 +323,7 @@ def simulate(
     bag = max(cap_hp, live_hp * 0.90)
     landing = bag * land_frac
     if skills["kp"] > 0:
-        landing *= max(0.65, 1.0 - skills["kp"] * 0.015)
+        landing *= max(0.65, 1.0 - skills["kp"] * KP_LANDING_RELIEF_PER_LEVEL)
     land_cap = LAND_CAP[tier]
     min_land = live_hp * max(0.05, pct * 0.08)
     landing = eased_floor(min_land, landing, ease)
@@ -542,9 +550,9 @@ def main() -> int:
         )
         if none and kp:
             check(
-                f"{race} KP10 reduces landing dmg at T5",
+                f"{race} KP10 reduces pressure at T5",
                 kp["hitFracAfterKp"] <= none["hitFrac"] * 0.91 + 1e-6
-                and abs(kp["hitFrac"] - none["hitFrac"]) < 1e-6,
+                and kp["hitFrac"] <= none["hitFrac"] * 0.97 + 1e-6,
                 f"none={none['hitFrac']:.3f} kpPre={kp['hitFrac']:.3f} kpAfter={kp['hitFracAfterKp']:.3f}",
             )
 

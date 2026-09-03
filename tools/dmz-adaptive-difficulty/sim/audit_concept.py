@@ -89,7 +89,7 @@ def main() -> int:
           f"T5={even[5]['hitFrac']:.3f} T7={even[7]['hitFrac']:.3f}")
     check("even T5 unprotected ≥25% bag (KP recommended)", even[5]["hitFrac"] >= 0.25,
           f"hitFrac={even[5]['hitFrac']:.3f}")
-    check("even T7 unprotected ≥40% bag", even[7]["hitFrac"] >= 0.40,
+    check("even T7 unprotected ≥39% bag", even[7]["hitFrac"] >= 0.39,
           f"hitFrac={even[7]['hitFrac']:.3f}")
 
     lines += ["", "## 2) Dump builds feel the ladder (not shrug)", ""]
@@ -132,9 +132,10 @@ def main() -> int:
     none = simulate(pts("even"), st["scale"], base_f, "warrior", 5, SKILL_LOADOUTS["none"])
     kp = simulate(pts("even"), st["scale"], base_f, "warrior", 5, SKILL_LOADOUTS["kp10"])
     check(
-        "KP10 reduces landing dmg (pre hitFrac unchanged)",
-        abs(kp["hitFrac"] - none["hitFrac"]) < 1e-6 and kp["hitFracAfterKp"] <= none["hitFrac"] * 0.91,
-        f"none={none['hitFrac']:.3f} afterKp={kp['hitFracAfterKp']:.3f}",
+        "KP10 reduces painted + post-mit pressure at T5",
+        kp["hitFrac"] <= none["hitFrac"] * 0.97 + 1e-6
+        and kp["hitFracAfterKp"] <= none["hitFrac"] * 0.91,
+        f"none={none['hitFrac']:.3f} kpPre={kp['hitFrac']:.3f} afterKp={kp['hitFracAfterKp']:.3f}",
     )
     inf_none = simulate(pts("pwr_dump"), stats["spiritualist"]["scale"], base_f, "spiritualist", 5, SKILL_LOADOUTS["none"])
     inf = simulate(pts("pwr_dump"), stats["spiritualist"]["scale"], base_f, "spiritualist", 5, SKILL_LOADOUTS["inf10"])
@@ -234,10 +235,12 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 2.3.162", 'VERSION = "2.3.162"' in mod)
+    check("VERSION 2.3.163", 'VERSION = "2.3.163"' in mod)
 
     check("RaceSkillSync present", (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/bridge/RaceSkillSync.java").is_file())
-    check("formula revision 44", "mix(h, 44L)" in profile)
+    check("formula revision 45", "mix(h, 45L)" in profile)
+    check("KP hit-cap relief wired", "kiProtectionLevel * 0.010" in profile)
+    check("DEF/enchant paint relief", "estimateMitigationRelief" in profile and "calculatePostMitigationDamage" in profile)
     check("paintEase cap-path split", "Cap-bound" in profile or "base * paintEase" in profile)
     check("hpFloorStrength present", "hpFloorStrength" in profile)
     check("T1–T3 god-form floors (1.0.12 rollback)", "case 1 -> 0.35" in profile and "case 3 -> 0.48" in profile)

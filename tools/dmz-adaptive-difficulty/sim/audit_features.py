@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.162", 'VERSION = "2.3.162"' in mod)
+    check("VERSION 2.3.163", 'VERSION = "2.3.163"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -173,7 +173,9 @@ def main() -> int:
     check("skill sponge on mob HP", has(profile, "kiInfusionLevel", "potentialUnlockLevel", "skillHp"))
     check("live-bag hit-cap", "hitCapHealth" in profile)
     check("live-offense transform pressure", "liveOffense" in profile and "liveShare" in profile or "liveFloor" in profile)
-    check("KP is post-mitigation advantage", "kiProtectionLevel" in profile and "formFactor = 0.78" in profile)
+    check("KP hit-cap + landing relief", "kiProtectionLevel * 0.010" in profile and "kiProtectionLevel * 0.015" in profile)
+    check("DEF/enchant paint relief via DMZ mit probe", "estimateMitigationRelief" in profile and "calculatePostMitigationDamage" in profile)
+    check("defensivePaintRelief capped", "defensivePaintRelief" in profile and "defenseMitigationRelief" in profile)
     check("reads getFlatMitigation", "getFlatMitigation" in profile)
     check("DEF-cancel pierce floor", "dmzCancelMitigationThreshold" in profile and "pierce" in profile)
     check("landing safety net method", "targetLandingDamage" in profile)
@@ -270,7 +272,7 @@ def main() -> int:
     print("\n=== Post-pierce soft-cap clamp (1.0.25) ===")
     check("incomingSoftCapFrac helper", "incomingSoftCapFrac" in profile)
     check("post-pierce bagCap clamp", "bagCap" in profile and "incomingSoftCapFrac()" in profile)
-    check("formula revision 44", "mix(h, 44L)" in profile)
+    check("formula revision 45", "mix(h, 45L)" in profile)
     check("README pierce clamp", "Post-pierce" in readme or "post-pierce" in readme)
 
     print("\n=== Telemetry rollback (2.3.161) ===")
@@ -287,7 +289,7 @@ def main() -> int:
     check("README 1.0.30 HP trim", "1.0.30" in readme and "0.75" in readme)
 
     print("\n=== Telemetry retune (1.0.24) ===")
-    check("formula revision 44", "mix(h, 44L)" in profile)
+    check("formula revision 45", "mix(h, 45L)" in profile)
     check("T1 landCap 0.18", "case 1 -> 0.18" in profile)
     check("T1 landFrac 0.13", "case 1 -> 0.13" in profile)
     check("T6 landFrac 0.38", "case 6 -> 0.38" in profile)

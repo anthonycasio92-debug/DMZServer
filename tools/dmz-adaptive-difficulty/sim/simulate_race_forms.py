@@ -26,11 +26,13 @@ REPO_OUT.mkdir(parents=True, exist_ok=True)
 from scaling_constants import (  # noqa: E402
     COUNTER_PCT_DIVISOR,
     COUNTER_STRENGTH_MIN,
+    DEFENSIVE_PAINT_RELIEF_CAP,
     FORM_NUDGE,
     GOD_THREAT,
     GLASS_HITS,
     HIT_CAP_TIER,
     HP_FLOOR_STRENGTH_MIN,
+    KP_LANDING_RELIEF_PER_LEVEL,
     LAND_CAP,
     LAND_FRAC,
     LIVE_SHARE,
@@ -39,6 +41,11 @@ from scaling_constants import (  # noqa: E402
     TANK_DEF_RATIO,
     TANK_HP_RATIO,
     TIER_PCT,
+    defensive_paint_relief,
+    estimate_mitigation_relief,
+    incoming_soft_cap_frac,
+    ki_protection_hit_frac,
+    paint_ease,
 )
 
 TW_BASE = 0.65
@@ -198,26 +205,12 @@ def hit_cap_health(soft_hp: float, live_hp: float, form_boost: float) -> float:
     return soft + (live - soft) * blend
 
 
-def ki_protection_hit_frac(tier: int, form_boost: float, kp_level: int = 0) -> float:
-    # 1.0.19 — raise T1–T6 bite; soft-cap T7 (live telemetry one-shots).
-    del kp_level
-    tier_frac = HIT_CAP_TIER[tier]
-    if form_boost <= 1.12:
-        form_factor = 0.78
-    else:
-        t = min(1.0, math.log(max(1.12, form_boost)) / math.log(80.0))
-        form_factor = 0.78 + 0.22 * t
-        if tier >= 7 and form_boost >= 25.0:
-            form_factor = min(form_factor, 0.88)
-    return max(0.12, min(0.75, tier_frac * form_factor))
-
-
 def _counter_strength(pct: float) -> float:
     return max(0.0, min(1.0, pct / COUNTER_PCT_DIVISOR))
 
 
-# DMZ tier unlock gates + paintEase — see scaling_constants.paint_ease
-from scaling_constants import paint_ease  # noqa: E402
+# DMZ tier unlock gates + paintEase — imported from scaling_constants
+
 
 def eased_floor(base: float, floor: float, ramp: float) -> float:
     if floor <= base + 1e-6 or ramp >= 0.999:
@@ -312,6 +305,7 @@ def simulate_ad(
     invested: dict[str, float] | None = None,
     fighting_class: str = "warrior",
     live_def: float | None = None,
+    kp_level: int = 0,
 ):
     pct = TIER_PCT[tier]
     form_boost = min(MAX_FORM, max(str_form, skp_form, pwr_form, ene_form, vit_form, res_form, 1.0))
@@ -390,7 +384,10 @@ def simulate_ad(
     dmg_ov = max(1.0, min(OVERLAY_CAP, dmg_ov))
     dmg = max(1.0, dmg * dmg_ov)
 
-    hit_cap = cap_hp * ki_protection_hit_frac(tier, form_boost)
+    mit_relief = estimate_mitigation_relief(live_def, res_form, kp_level)
+    paint_relief = min(DEFENSIVE_PAINT_RELIEF_CAP, defensive_paint_relief(kp_level, live_def, res_form))
+    cap_frac = ki_protection_hit_frac(tier, form_boost, kp_level, mit_relief)
+    hit_cap = cap_hp * cap_frac
     dmg = min(dmg, hit_cap)
 
     # DMZ DEF-cancel pierce — T4+ always; T3 god-forms (1.0.20).
@@ -399,7 +396,7 @@ def simulate_ad(
     allow_pierce = tier >= 4 or (tier >= 3 and form_boost >= 6.0)
     if live_flat > 1.0 and dmg * cancel_thr <= live_flat and allow_pierce:
         dmg = max(dmg, live_flat / cancel_thr * 1.08)
-    soft_cap_frac = SOFT_CAP[tier]
+    soft_cap_frac = incoming_soft_cap_frac(tier, paint_relief)
     dmg = min(dmg, max(20.0, live_hp) * soft_cap_frac)
     if ease < 0.999:
         if dmg > offense_share + 1e-6:
@@ -409,6 +406,8 @@ def simulate_ad(
             band_top = TIER_DMZ_GATE.get(tier + 1, 150000) if tier < 7 else TIER_DMZ_BAND_TOP.get(7, 150000)
             if dmz_level > band_top:
                 dmg = max(1.0, dmg * ease)
+    if paint_relief > 1e-6:
+        pass  # relief applied via hit-cap + soft-cap only
 
     hp_ov = 1.0
     hp_ov *= _blend_counter(_combine_top2(_hp_stat_bias, top), pct)
@@ -450,7 +449,10 @@ def simulate_ad(
         mobHp=round(mob_hp, 1),
         hitsToKill=round(mob_hp / max(1.0, player_punch), 2),
         hitFracPlayer=round(dmg / max(1.0, live_hp), 3),
-        hitCapFrac=round(ki_protection_hit_frac(tier, form_boost), 3),
+        hitCapFrac=round(cap_frac, 3),
+        mitRelief=round(mit_relief, 4),
+        paintRelief=round(paint_relief, 4),
+        kpLevel=kp_level,
         hitCapHp=round(cap_hp, 1),
         softHp=round(hp, 1),
         liveHp=round(live_hp, 1),
@@ -642,6 +644,101 @@ def main() -> None:
                 )
     hard.extend(soft_over)
     hard.extend(zero_dmg)
+
+    # Ki Protection + defense relief — every race peak form @ T5 must benefit from KP10.
+    kp_fails = []
+    android_kp_fails = []
+    def_fails = []
+    ANDROID_RACES = ("human", "saiyan", "frostdemon", "viltrumite")
+    for race in races:
+        stats = load_stats(race)
+        forms = load_forms(race)
+        if not forms:
+            continue
+        st = stats.get("warrior") or stats.get("berserker") or next(iter(stats.values()))
+        inv = INVEST.get("warrior")
+        pts = {k: st["base"].get(k, 0) + inv.get(k, 0) for k in ("STR", "SKP", "RES", "VIT", "PWR", "ENE")}
+        best = max(
+            forms,
+            key=lambda f: max(
+                apply_mastery(f["str"], f["maxMastery"], f["maxStats"], 1.0),
+                apply_mastery(f["skp"], f["maxMastery"], f["maxStats"], 1.0),
+                apply_mastery(f["pwr"], f["maxMastery"], f["maxStats"], 1.0),
+                apply_mastery(f.get("ene", 1), f["maxMastery"], f["maxStats"], 1.0),
+                apply_mastery(f["vit"], f["maxMastery"], f["maxStats"], 1.0),
+                apply_mastery(f["def"], f["maxMastery"], f["maxStats"], 1.0),
+            ),
+        )
+        str_f = min(MAX_FORM, apply_mastery(best["str"], best["maxMastery"], best["maxStats"], 1.0))
+        skp_f = min(MAX_FORM, apply_mastery(best["skp"], best["maxMastery"], best["maxStats"], 1.0))
+        pwr_f = min(MAX_FORM, apply_mastery(best["pwr"], best["maxMastery"], best["maxStats"], 1.0))
+        ene_f = min(MAX_FORM, apply_mastery(best.get("ene", 1), best["maxMastery"], best["maxStats"], 1.0))
+        vit_f = min(MAX_FORM, apply_mastery(best["vit"], best["maxMastery"], best["maxStats"], 1.0))
+        res_f = min(MAX_FORM, apply_mastery(best["def"], best["maxMastery"], best["maxStats"], 1.0))
+        live_melee = channel_damage(pts["STR"], st["scale"]["STR"], str_f)
+        live_strike = channel_damage(pts["SKP"], st["scale"]["SKP"], skp_f)
+        live_ki = channel_damage(pts["PWR"], st["scale"].get("PWR", 1), pwr_f)
+        live_energy = channel_damage(pts["ENE"], st["scale"].get("ENE", 1), ene_f)
+        live_def = channel_damage(pts["RES"], st["scale"].get("RES", 1), res_f)
+        live_hp = channel_hp(pts["VIT"], st["scale"]["VIT"], vit_f)
+        none = simulate_ad(
+            live_melee, live_strike, live_ki, live_energy, live_hp,
+            str_f, skp_f, pwr_f, ene_f, vit_f, res_f, 5,
+            invested=pts, fighting_class="warrior", live_def=live_def, kp_level=0,
+        )
+        kp = simulate_ad(
+            live_melee, live_strike, live_ki, live_energy, live_hp,
+            str_f, skp_f, pwr_f, ene_f, vit_f, res_f, 5,
+            invested=pts, fighting_class="warrior", live_def=live_def, kp_level=10,
+        )
+        if kp["hitFracPlayer"] > none["hitFracPlayer"] * 0.97 + 1e-6:
+            kp_fails.append(
+                f"- **{race}** `{best['group']}.{best['name']}`: KP10 pre-cap "
+                f"{kp['hitFracPlayer']:.3f} vs none {none['hitFracPlayer']:.3f}"
+            )
+        # Android upgrade forms (high-DEF) — same KP relief path.
+        if race in ANDROID_RACES:
+            android_forms = [f for f in forms if "android" in (f.get("group") or "").lower()]
+            if android_forms:
+                af = max(android_forms, key=lambda f: apply_mastery(f["def"], f["maxMastery"], f["maxStats"], 1.0))
+                ar = min(MAX_FORM, apply_mastery(af["def"], af["maxMastery"], af["maxStats"], 1.0))
+                av = min(MAX_FORM, apply_mastery(af["vit"], af["maxMastery"], af["maxStats"], 1.0))
+                ad_none = simulate_ad(
+                    live_melee, live_strike, live_ki, live_energy,
+                    channel_hp(pts["VIT"], st["scale"]["VIT"], av),
+                    str_f, skp_f, pwr_f, ene_f, av, ar, 5,
+                    invested=pts, fighting_class="warrior",
+                    live_def=channel_damage(pts["RES"], st["scale"].get("RES", 1), ar),
+                    kp_level=0,
+                )
+                ad_kp = simulate_ad(
+                    live_melee, live_strike, live_ki, live_energy,
+                    channel_hp(pts["VIT"], st["scale"]["VIT"], av),
+                    str_f, skp_f, pwr_f, ene_f, av, ar, 5,
+                    invested=pts, fighting_class="warrior",
+                    live_def=channel_damage(pts["RES"], st["scale"].get("RES", 1), ar),
+                    kp_level=10,
+                )
+                if ad_kp["hitFracPlayer"] >= ad_none["hitFracPlayer"] * 0.98:
+                    android_kp_fails.append(
+                        f"- **{race}** android `{af['group']}.{af['name']}`: "
+                        f"KP10 {ad_kp['hitFracPlayer']:.3f} vs none {ad_none['hitFracPlayer']:.3f}"
+                    )
+        # RES dump should get defense mitigation relief vs even build.
+        res_pts = {k: st["base"].get(k, 0) + INVEST["res_dump"].get(k, 0) for k in pts}
+        res_def = channel_damage(res_pts["RES"], st["scale"].get("RES", 1), 1.0)
+        even_def = channel_damage(pts["RES"], st["scale"].get("RES", 1), 1.0)
+        if res_def > even_def * 1.5:
+            res_relief = estimate_mitigation_relief(res_def, 1.0, 0)
+            even_relief = estimate_mitigation_relief(even_def, 1.0, 0)
+            if res_relief <= even_relief + 1e-6:
+                def_fails.append(
+                    f"- **{race}** res_dump relief {res_relief:.4f} vs even {even_relief:.4f}"
+                )
+
+    hard.extend(kp_fails)
+    hard.extend(android_kp_fails)
+    hard.extend(def_fails)
 
     md += ["", "## Hard flags (--check)", ""]
     md.extend(hard or ["None."])
