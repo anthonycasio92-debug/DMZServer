@@ -125,7 +125,7 @@ public final class SkillsChestGui implements Listener {
                     }
                 }
                 lore.add("");
-                lore.add(skillUnlocked(skill) ? "&aUnlocked" : "&cLocked / in progress");
+                lore.add(GuiLoreChunks.skillStatusFooter(skill));
                 put(holder, inv, slot, item(icon, name, lore));
             }
             if (placed == 0) {
@@ -148,28 +148,6 @@ public final class SkillsChestGui implements Listener {
         }
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
         return inv;
-    }
-
-    private static boolean skillUnlocked(List<String> skillLore) {
-        if (skillLore == null || skillLore.isEmpty()) {
-            return false;
-        }
-        String first = skillLore.get(0);
-        if (first.contains("MAX")) {
-            return true;
-        }
-        String plain = first.replace('§', '&');
-        int slash = plain.lastIndexOf('/');
-        if (slash > 0) {
-            try {
-                String before = plain.substring(Math.max(0, slash - 4), slash).replaceAll("[^0-9]", "");
-                if (!before.isEmpty() && Integer.parseInt(before) > 0) {
-                    return true;
-                }
-            } catch (Exception ignored) {
-            }
-        }
-        return false;
     }
 
     private static List<String> unavailableLore(boolean bridgeOk) {

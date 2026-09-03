@@ -170,6 +170,58 @@ final class GuiLoreChunks {
         return Material.LIME_DYE;
     }
 
+    /** Footer status for skill tiles: Maxed / In progress / Locked. */
+    static String skillStatusFooter(List<String> skillLore) {
+        if (skillLore == null || skillLore.isEmpty()) {
+            return "&cLocked";
+        }
+        String first = skillLore.get(0);
+        if (first.contains("MAX")) {
+            return "&6Maxed";
+        }
+        int current = parseSkillCurrentLevel(first);
+        if (current > 0) {
+            return "&eIn progress";
+        }
+        return "&cLocked";
+    }
+
+    /** Parse current level from a "Name: 3/5" or "Name: MAX (5/5)" line. */
+    static int parseSkillCurrentLevel(String levelLine) {
+        if (levelLine == null || levelLine.isBlank()) {
+            return 0;
+        }
+        String plain = stripColor(levelLine);
+        int colon = plain.indexOf(':');
+        if (colon < 0) {
+            return 0;
+        }
+        String rest = plain.substring(colon + 1).trim();
+        if (rest.startsWith("MAX")) {
+            int open = rest.indexOf('(');
+            int slash = rest.indexOf('/', open >= 0 ? open : 0);
+            if (slash > 0) {
+                String before = rest.substring(Math.max(open >= 0 ? open + 1 : 0, 0), slash).trim();
+                try {
+                    return Integer.parseInt(before.replaceAll("[^0-9]", ""));
+                } catch (NumberFormatException ignored) {
+                    return 5;
+                }
+            }
+            return 5;
+        }
+        int slash = rest.indexOf('/');
+        if (slash <= 0) {
+            return 0;
+        }
+        String before = rest.substring(0, slash).trim();
+        try {
+            return Integer.parseInt(before.replaceAll("[^0-9]", ""));
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
+    }
+
     private static int indexOfLevelSep(String line) {
         if (line == null) {
             return -1;

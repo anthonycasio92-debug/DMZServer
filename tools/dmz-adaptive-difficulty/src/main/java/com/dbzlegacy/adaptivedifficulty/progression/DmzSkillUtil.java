@@ -7,6 +7,7 @@ import com.dragonminez.common.config.SkillsConfig;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
+import com.dragonminez.common.stats.skills.Skill;
 import com.dragonminez.common.stats.skills.Skills;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,15 +46,74 @@ public final class DmzSkillUtil {
         }
     }
 
+    /**
+     * Repair aliases + refresh max levels from skills.json before Skill Check reads.
+     */
+    public static void prepareForRead(Skills skills) {
+        if (skills == null) {
+            return;
+        }
+        try {
+            skills.repairSkillNames();
+        } catch (Throwable ignored) {
+        }
+        refreshMaxes(skills);
+    }
+
     public static int level(Skills skills, String id) {
-        if (skills == null || id == null) {
+        if (skills == null || id == null || id.isBlank()) {
             return 0;
         }
+        prepareForRead(skills);
+        int direct = safeGetSkillLevel(skills, id);
+        if (direct > 0) {
+            return direct;
+        }
+        try {
+            Skill skill = skills.getSkill(id);
+            if (skill != null) {
+                int lv = Math.max(0, skill.getLevel());
+                if (lv > 0) {
+                    return lv;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        String want = normalizeSkillKey(id);
+        try {
+            var all = skills.getAllSkills();
+            if (all != null) {
+                for (var entry : all.entrySet()) {
+                    if (entry == null || entry.getKey() == null) {
+                        continue;
+                    }
+                    if (!normalizeSkillKey(entry.getKey()).equals(want)) {
+                        continue;
+                    }
+                    Skill skill = entry.getValue();
+                    if (skill != null && skill.getLevel() > 0) {
+                        return skill.getLevel();
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return 0;
+    }
+
+    private static int safeGetSkillLevel(Skills skills, String id) {
         try {
             return Math.max(0, skills.getSkillLevel(id));
         } catch (Throwable ignored) {
             return 0;
         }
+    }
+
+    private static String normalizeSkillKey(String id) {
+        if (id == null) {
+            return "";
+        }
+        return id.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
     }
 
     /**
@@ -238,12 +298,16 @@ public final class DmzSkillUtil {
         if (id == null) {
             return Math.max(0, fallbackCap);
         }
-        refreshMaxes(skills);
+        prepareForRead(skills);
         try {
             if (skills != null) {
-                int max = skills.getMaxSkillLevel(id);
-                if (max > 0) {
-                    return max;
+                int live = skills.getMaxSkillLevel(id);
+                if (live > 0) {
+                    return live;
+                }
+                int dmz = dmzCalculateMaxLevel(skills, id);
+                if (dmz > 0) {
+                    return dmz;
                 }
             }
         } catch (Throwable ignored) {
@@ -253,6 +317,23 @@ public final class DmzSkillUtil {
             return cfg;
         }
         return Math.max(0, fallbackCap);
+    }
+
+    /** Same path DMZ {@code Skills#calculateMaxLevel} uses (private on DMZ jar). */
+    private static int dmzCalculateMaxLevel(Skills skills, String id) {
+        if (skills == null || id == null || id.isBlank()) {
+            return 0;
+        }
+        try {
+            var method = skills.getClass().getDeclaredMethod("calculateMaxLevel", String.class);
+            method.setAccessible(true);
+            Object v = method.invoke(skills, id);
+            if (v instanceof Number n) {
+                return Math.max(0, n.intValue());
+            }
+        } catch (Throwable ignored) {
+        }
+        return 0;
     }
 
     public static void refreshMaxes(Skills skills) {

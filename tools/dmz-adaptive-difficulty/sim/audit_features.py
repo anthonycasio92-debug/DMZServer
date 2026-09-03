@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.165", 'VERSION = "2.3.165"' in mod)
+    check("VERSION 2.3.166", 'VERSION = "2.3.166"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -771,8 +771,15 @@ def main() -> int:
     check("appendSagaSkill no hardcoded max param alone",
           "int max = skillMax" in saga_fn)
     check("appendStrengthLine uses skillMax without Math.min(10",
-          "Math.min(10, skillMax" not in skill_unlock.split("private static void appendStrengthLine")[1].split("private static void how")[0]
+          "Math.min(10, skillMax" not in skill_unlock.split("private static void appendStrengthLine")[1].split("private static int strengthRequirement")[0]
           if "private static void appendStrengthLine" in skill_unlock else False)
+    check("Skill Check uses DmzSkillUtil.level", "DmzSkillUtil.level(skills, id)" in skill_unlock)
+    check("Skill Check prepareForRead before read", "DmzSkillUtil.prepareForRead(skills)" in skill_unlock)
+    check("Skill Check prestige floor fallback", "effectiveSkillLevel" in skill_unlock
+          and "PrestigePointsSystem.getPurchasedSkillLevels" in skill_unlock)
+    check("saga tips tiered locked/training/maxed", "sagaUnlock" in skill_unlock
+          and "sagaTraining" in skill_unlock and "sagaMastered" in skill_unlock)
+    check("GUI skill status footer helper", "skillStatusFooter" in read(gui_root / "GuiLoreChunks.java"))
 
     print("\n=== Spar TP message toggle (2.3.54) ===")
     spar_store = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")
@@ -1260,8 +1267,10 @@ def main() -> int:
           if '"spend"' in gui_api_pp else False)
     check("configuredMaxLevel helper", "configuredMaxLevel" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzSkillUtil.java"))
-    check("skillMax prefers skills.json", "configuredMaxLevel(id)" in
-          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java"))
+    check("skillMax prefers skills.json", "DmzSkillUtil.maxLevel(skills, id, fallback)" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/SkillUnlockService.java")
+          and "configuredMaxLevel(id)" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzSkillUtil.java"))
     check("prestige shop Skill Check skills only",
           "skillOffers()" in pp and "skillCheckSkillIds" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzSkillUtil.java"))

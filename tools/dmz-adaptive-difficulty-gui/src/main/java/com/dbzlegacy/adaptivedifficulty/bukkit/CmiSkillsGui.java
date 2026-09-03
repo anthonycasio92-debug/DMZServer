@@ -117,9 +117,8 @@ public final class CmiSkillsGui {
                         lore.add(skill.get(i));
                     }
                 }
-                boolean unlocked = skillUnlocked(skill);
                 lore.add("");
-                lore.add(unlocked ? "&aUnlocked" : "&cLocked / in progress");
+                lore.add(GuiLoreChunks.skillStatusFooter(skill));
                 btn.addLore(lore);
                 gui.addButton(btn);
             }
@@ -144,35 +143,6 @@ public final class CmiSkillsGui {
         gui.addButton(closeBtn(53));
         fillEmpty(gui, 6);
         GuiFeedback.openCmi(gui);
-    }
-
-    private static boolean skillUnlocked(List<String> skillLore) {
-        if (skillLore == null || skillLore.isEmpty()) {
-            return false;
-        }
-        String first = skillLore.get(0);
-        if (first.contains("MAX")) {
-            return true;
-        }
-        // level X/Y with X>0
-        String plain = first.replace('§', '&');
-        int idx = plain.lastIndexOf('/');
-        if (idx > 0) {
-            try {
-                int slash = plain.lastIndexOf('/');
-                int start = slash;
-                while (start > 0 && Character.isDigit(plain.charAt(start - 1))) {
-                    start--;
-                }
-                // find digits before /
-                String before = plain.substring(Math.max(0, slash - 4), slash).replaceAll("[^0-9]", "");
-                if (!before.isEmpty() && Integer.parseInt(before) > 0) {
-                    return true;
-                }
-            } catch (Exception ignored) {
-            }
-        }
-        return false;
     }
 
     private static List<String> prependBlank(List<String> tip) {

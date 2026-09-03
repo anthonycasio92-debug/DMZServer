@@ -100,8 +100,8 @@ public final class SkillUnlockService {
             out.add("§c[Skill Progress] ERROR: No DMZ skill data found.");
             return out;
         }
-        // Keep live max levels aligned with skills.json before we read them.
-        DmzSkillUtil.refreshMaxes(skills);
+        // Repair aliases + align max levels with skills.json before we read them.
+        DmzSkillUtil.prepareForRead(skills);
         int level = safeLevel(data);
         double kiDamage = safeKi(data);
         double maxEnergy = safeEnergy(data);
@@ -114,7 +114,7 @@ public final class SkillUnlockService {
                 + " §8· §7STR §f" + totalStr + " §8(§f" + investedStr + "§8 invested)");
         out.add("§8----------------------------");
         switch (page.toLowerCase(Locale.ROOT)) {
-            case "saga", "advanced", "dmz" -> appendSaga(out, skills);
+            case "saga", "advanced", "dmz" -> appendSaga(out, player, skills);
             default -> appendNatural(out, player, skills, investedStr);
         }
         return out;
@@ -240,39 +240,39 @@ public final class SkillUnlockService {
         tip(out, "Sit and charge Ki in the trial biome (/progression meditation).");
     }
 
-    private static void appendSaga(List<String> out, Skills skills) {
+    private static void appendSaga(List<String> out, ServerPlayer player, Skills skills) {
         out.add("§6§lSaga Skills§r");
         out.add("§8Train with masters — unlock and raise these in the skills saga.");
-        appendSagaSkill(out, skills, "kicontrol", "Ki Control", "§3", 1);
-        appendSagaSkill(out, skills, "kimanipulation", "Ki Manipulation", "§9", 10);
-        appendSagaSkill(out, skills, "kisense", "Ki Sense", "§5", 10);
-        appendSagaSkill(out, skills, "defense_penetration", "Defense Penetration", "§c", 10);
-        appendSagaSkill(out, skills, "healing_reduction", "Healing Reduction", "§4", 10);
-        appendSagaSkill(out, skills, "instant_transmission", "Instant Transmission", "§d", 10);
-        appendSagaSkill(out, skills, "ki_infusion", "Ki Infusion", "§b", 10);
-        appendSagaSkill(out, skills, "kiboost", "Ki Boost", "§3", 4);
-        appendSagaSkill(out, skills, "kiprotection", "Ki Protection", "§9", 10);
-        appendSagaSkill(out, skills, "kaioken", "Kaioken", "§c", 5);
-        appendSagaSkill(out, skills, "fusion", "Fusion", "§d", 5);
+        appendSagaSkill(out, player, skills, "kicontrol", "Ki Control", "§3", 1);
+        appendSagaSkill(out, player, skills, "kimanipulation", "Ki Manipulation", "§9", 10);
+        appendSagaSkill(out, player, skills, "kisense", "Ki Sense", "§5", 10);
+        appendSagaSkill(out, player, skills, "defense_penetration", "Defense Penetration", "§c", 10);
+        appendSagaSkill(out, player, skills, "healing_reduction", "Healing Reduction", "§4", 10);
+        appendSagaSkill(out, player, skills, "instant_transmission", "Instant Transmission", "§d", 10);
+        appendSagaSkill(out, player, skills, "ki_infusion", "Ki Infusion", "§b", 10);
+        appendSagaSkill(out, player, skills, "kiboost", "Ki Boost", "§3", 4);
+        appendSagaSkill(out, player, skills, "kiprotection", "Ki Protection", "§9", 10);
+        appendSagaSkill(out, player, skills, "kaioken", "Kaioken", "§c", 5);
+        appendSagaSkill(out, player, skills, "fusion", "Fusion", "§d", 5);
     }
 
     private static void appendSagaSkill(
-            List<String> out, Skills skills, String id, String name, String color, int fallbackMax
+            List<String> out, ServerPlayer player, Skills skills, String id, String name,
+            String color, int fallbackMax
     ) {
-        int level = skillLevel(skills, id);
+        int level = effectiveSkillLevel(player, skills, id);
         int max = skillMax(skills, id, fallbackMax);
-        String human = sagaHow(id);
         if (level < 1) {
             out.add(color + name + "§7: §f0/" + max);
-            tip(out, "Locked — " + human);
+            tip(out, sagaUnlock(id));
             return;
         }
         if (level >= max) {
             out.add(color + name + "§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-            tip(out, human);
+            tip(out, sagaMastered(id));
         } else {
             out.add(color + name + "§7: §f" + level + "/" + max);
-            tip(out, human);
+            tip(out, sagaTraining(id));
         }
     }
 
@@ -315,21 +315,80 @@ public final class SkillUnlockService {
         return "Invest Strength to raise " + skill + ".";
     }
 
-    private static String sagaHow(String id) {
+    private static String sagaUnlock(String id) {
         return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
-            case "kicontrol" -> "Train Ki Control with skills-saga masters.";
-            case "kimanipulation" -> "Shape Ki through skills-saga master training.";
-            case "kisense" -> "Sharpen Ki Sense in the skills saga.";
-            case "defense_penetration" -> "Earn this through skills-saga challenges.";
-            case "healing_reduction" -> "Unlock and train this in the skills saga.";
-            case "instant_transmission" -> "Learn Instant Transmission from saga masters.";
-            case "ki_infusion" -> "Unlock Ki Infusion in the skills saga.";
-            case "kiboost" -> "Raise Ki Boost with skills-saga masters.";
-            case "kiprotection" -> "Build Ki Protection through saga training.";
-            case "kaioken" -> "Unlock Kaioken in the skills saga, then train ranks.";
-            case "fusion" -> "Unlock Fusion via the skills-saga master path.";
-            default -> "Train with skills-saga masters to unlock and raise this.";
+            case "kicontrol" -> "Not unlocked — train Ki Control with skills-saga masters.";
+            case "kimanipulation" -> "Not unlocked — shape Ki through skills-saga master training.";
+            case "kisense" -> "Not unlocked — sharpen Ki Sense in the skills saga.";
+            case "defense_penetration" -> "Not unlocked — earn this through skills-saga challenges.";
+            case "healing_reduction" -> "Not unlocked — unlock and train this in the skills saga.";
+            case "instant_transmission" -> "Not unlocked — learn Instant Transmission from saga masters.";
+            case "ki_infusion" -> "Not unlocked — unlock Ki Infusion in the skills saga.";
+            case "kiboost" -> "Not unlocked — raise Ki Boost with skills-saga masters.";
+            case "kiprotection" -> "Not unlocked — build Ki Protection through saga training.";
+            case "kaioken" -> "Not unlocked — unlock Kaioken in the skills saga, then train ranks.";
+            case "fusion" -> "Not unlocked — unlock Fusion via the skills-saga master path.";
+            default -> "Not unlocked — train with skills-saga masters to unlock this.";
         };
+    }
+
+    private static String sagaTraining(String id) {
+        return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
+            case "kicontrol" -> "Keep training Ki Control with skills-saga masters.";
+            case "kimanipulation" -> "Keep shaping Ki through saga master training.";
+            case "kisense" -> "Keep sharpening Ki Sense in the skills saga.";
+            case "defense_penetration" -> "Keep pushing through skills-saga challenges.";
+            case "healing_reduction" -> "Keep training this skill in the skills saga.";
+            case "instant_transmission" -> "Keep practicing Instant Transmission with saga masters.";
+            case "ki_infusion" -> "Keep building Ki Infusion in the skills saga.";
+            case "kiboost" -> "Keep raising Ki Boost with skills-saga masters.";
+            case "kiprotection" -> "Keep building Ki Protection through saga training.";
+            case "kaioken" -> "Keep using Kaioken in combat to raise this level.";
+            case "fusion" -> "Keep practicing fusion to raise this level.";
+            default -> "Keep using this skill in combat to raise the level.";
+        };
+    }
+
+    private static String sagaMastered(String id) {
+        return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
+            case "kicontrol" -> "Fully trained — Ki Control is at max level.";
+            case "kimanipulation" -> "Fully trained — Ki Manipulation is at max level.";
+            case "kisense" -> "Fully trained — Ki Sense is at max level.";
+            case "defense_penetration" -> "Fully trained — Defense Penetration is at max level.";
+            case "healing_reduction" -> "Fully trained — Healing Reduction is at max level.";
+            case "instant_transmission" -> "Fully trained — Instant Transmission is at max level.";
+            case "ki_infusion" -> "Fully trained — Ki Infusion is at max level.";
+            case "kiboost" -> "Fully trained — Ki Boost is at max level.";
+            case "kiprotection" -> "Fully trained — Ki Protection is at max level.";
+            case "kaioken" -> "Fully trained — Kaioken is at max level.";
+            case "fusion" -> "Fully trained — Fusion is at max level.";
+            default -> "Fully trained — this skill is at max level.";
+        };
+    }
+
+    /**
+     * Live DMZ level with alias repair, plus prestige-shop floor when live reads 0
+     * but the player already invested points (common after prestige reset lag).
+     */
+    private static int effectiveSkillLevel(ServerPlayer player, Skills skills, String id) {
+        int live = skillLevel(skills, id);
+        if (live > 0 || player == null || id == null || id.isBlank()) {
+            return live;
+        }
+        int purchased = PrestigePointsSystem.getPurchasedSkillLevels(player, id);
+        if (purchased <= 0) {
+            return live;
+        }
+        int max = skillMax(skills, id, purchased);
+        return Math.min(max, Math.max(live, purchased));
+    }
+
+    private static int skillLevel(Skills skills, String id) {
+        return DmzSkillUtil.level(skills, id);
+    }
+
+    private static int skillMax(Skills skills, String id, int fallback) {
+        return DmzSkillUtil.maxLevel(skills, id, fallback);
     }
 
     private static int strengthRequirement(int next) {
@@ -360,32 +419,6 @@ public final class SkillUnlockService {
             return m + "m " + r + "s";
         }
         return r + "s";
-    }
-
-    private static int skillLevel(Skills skills, String id) {
-        try {
-            return Math.max(0, skills.getSkillLevel(id));
-        } catch (Throwable t) {
-            return 0;
-        }
-    }
-
-    private static int skillMax(Skills skills, String id, int fallback) {
-        // skills.json cost-ladder length is authoritative (kiboost=4, kicontrol=1, …).
-        int cfg = DmzSkillUtil.configuredMaxLevel(id);
-        if (cfg > 0) {
-            return cfg;
-        }
-        try {
-            if (skills != null) {
-                int max = skills.getMaxSkillLevel(id);
-                if (max > 0) {
-                    return max;
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-        return fallback;
     }
 
     private static int safeLevel(StatsData data) {
