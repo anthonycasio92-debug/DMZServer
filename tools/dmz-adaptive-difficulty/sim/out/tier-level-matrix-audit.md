@@ -61,12 +61,12 @@ Fail-closed checks for unlock tiers T1–T7 across the DMZ level cap.
 |-----:|-----------:|-----------:|:-----------:|:-------------:|
 - ✅ even T1→T5 ≥1.4× (level-invariant combat) — 0.135→0.468
 - ✅ even T5→T7 ≥1.10× — 0.468→0.577
-- ✅ god hitFrac mono T3→T7 — T3=0.440 / T4=0.500 / T5=0.520 / T6=0.580 / T7=0.620
+- ✅ god hitFrac mono T3→T7 — T3=0.440 / T4=0.500 / T5=0.520 / T6=0.600 / T7=0.620
 - ✅ god landing ≤ soft-cap all tiers
 - ✅ stock tier% 21→200%
 - ✅ god T5 ≥28% bag — 0.520
 - ✅ god T7 ≥40% bag — 0.620
-- ✅ god land T5 < T6 — 0.499<0.569
+- ✅ god land T5 < T6 — 0.499<0.579
 | 1 | OK | OK | OK | OK |
 - ✅ lvl 1: eligible tiers match gates — T[1]
 - ✅ lvl 1: cost mono — T1=1× Copper, T2=5× Copper, T3=15× Copper, T4=5× Iron, T5=15× Iron, T6=5× Gold, T7=15× Gold

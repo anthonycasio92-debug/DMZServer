@@ -6,7 +6,7 @@ Fail-closed checks against the player's stated balance concept.
 
 - ✅ stock percents 21→200%
 - ✅ stock tankDamageHealthRatio 0.28 — got 0.28
-- ✅ even T1→T5 hitFrac rises ≥1.4× — T1=0.135 T5=0.468
+- ✅ even T1→T5 hitFrac rises ≥1.4× — T1=0.131 T5=0.468
 - ✅ even T5→T7 hitFrac rises ≥1.10× — T5=0.468 T7=0.577
 - ✅ even T5 unprotected ≥25% bag (KP recommended) — hitFrac=0.468
 - ✅ even T7 unprotected ≥40% bag — hitFrac=0.577
@@ -15,11 +15,11 @@ Fail-closed checks against the player's stated balance concept.
 
 - ✅ vit_dump T5 ≥ 28% bag — hitFrac=0.441
 - ✅ vit_dump T5 ≥ 60% of even — 0.441 vs even 0.468
-- ✅ vit_dump T7 > T1 ×1.8 — T1=0.050 T7=0.577
+- ✅ vit_dump T7 > T1 ×1.8 — T1=0.049 T7=0.577
 - ✅ vit_dump T5 post-DEF ≥ 10% live — postDef~=0.154
 - ✅ res_dump T5 ≥ 28% bag — hitFrac=0.468
 - ✅ res_dump T5 ≥ 60% of even — 0.468 vs even 0.468
-- ✅ res_dump T7 > T1 ×1.8 — T1=0.068 T7=0.577
+- ✅ res_dump T7 > T1 ×1.8 — T1=0.066 T7=0.577
 - ✅ res_dump T5 post-DEF ≥ 10% live — postDef~=0.164
 - ✅ str_dump T5 ≥ 28% bag — hitFrac=0.468
 - ✅ str_dump T5 ≥ 60% of even — 0.468 vs even 0.468
@@ -27,7 +27,7 @@ Fail-closed checks against the player's stated balance concept.
 - ✅ str_dump T5 post-DEF ≥ 10% live — postDef~=0.164
 - ✅ pwr_dump T5 ≥ 28% bag — hitFrac=0.468
 - ✅ pwr_dump T5 ≥ 60% of even — 0.468 vs even 0.468
-- ✅ pwr_dump T7 > T1 ×1.8 — T1=0.206 T7=0.577
+- ✅ pwr_dump T7 > T1 ×1.8 — T1=0.201 T7=0.577
 - ✅ pwr_dump T5 post-DEF ≥ 10% live — postDef~=0.164
 - ✅ tank class T5 ≥ 28% bag — hitFrac=0.445
 - ✅ tank class T5 ≥ 60% of even — tank=0.445 even=0.468
@@ -76,10 +76,10 @@ Fail-closed checks against the player's stated balance concept.
 - ✅ god soft-cap ladder T4≤T5 — T4=0.500 T5=0.520
 - ✅ god soft-cap ladder T5≤T6 — T5=0.520 T6=0.600
 - ✅ god soft-cap ladder T6≤T7 — T6=0.600 T7=0.620
-- ✅ god landing T5 < T6 (buy matters) — T5=0.520 T6=0.580
+- ✅ god landing T5 < T6 (buy matters) — T5=0.520 T6=0.600
 - ✅ god landing T4 < T5 — T4=0.500 T5=0.520
 - ✅ god landing ≤ soft-cap T5 — landing=0.520
-- ✅ god landing ≤ soft-cap T6 — landing=0.580
+- ✅ god landing ≤ soft-cap T6 — landing=0.600
 - ✅ combat telemetry present
 - ✅ god-form landing T1≥10% — landingFrac=0.137
 - ✅ god-form landing T5≥28% — landingFrac=0.520
@@ -90,11 +90,11 @@ Fail-closed checks against the player's stated balance concept.
 
 | Build | T1 | T5 | T5 post-DEF | T7 | vs even T5 |
 |-------|---:|---:|------------:|---:|-----------:|
-| even | 0.135 | 0.468 | 0.164 | 0.577 | 1.00× |
-| vit_dump | 0.050 | 0.441 | 0.154 | 0.577 | 0.94× |
-| res_dump | 0.068 | 0.468 | 0.164 | 0.577 | 1.00× |
+| even | 0.131 | 0.468 | 0.164 | 0.577 | 1.00× |
+| vit_dump | 0.049 | 0.441 | 0.154 | 0.577 | 0.94× |
+| res_dump | 0.066 | 0.468 | 0.164 | 0.577 | 1.00× |
 | str_dump | 0.234 | 0.468 | 0.164 | 0.577 | 1.00× |
-| pwr_dump | 0.206 | 0.468 | 0.164 | 0.577 | 1.00× |
+| pwr_dump | 0.201 | 0.468 | 0.164 | 0.577 | 1.00× |
 | tank class | — | 0.445 | 0.156 | — | 0.95× |
 
 | Form | hitFrac | post-DEF | softHits |

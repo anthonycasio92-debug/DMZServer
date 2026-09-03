@@ -198,7 +198,24 @@ def ki_protection_hit_frac(tier: int, form_boost: float, kp_level: int = 0) -> f
 
 
 def _counter_strength(pct: float) -> float:
-    return max(0.0, min(1.0, pct / 0.50))
+    # Full counters from T4 (90% tier%) — mirrors PlayerCombatProfile 2.3.160.
+    return max(0.0, min(1.0, pct / 0.90))
+
+
+def tier_level_ramp(tier: int, dmz_level: int = 5500) -> float:
+    """T3-only: 70%→100% between unlock 1k and max 10k."""
+    if tier != 3:
+        return 1.0
+    min_l, max_l = 1000, 10000
+    clamped = max(min_l, min(max_l, max(1, dmz_level)))
+    t = (clamped - min_l) / (max_l - min_l)
+    return 0.70 + 0.30 * max(0.0, min(1.0, t))
+
+
+def eased_floor(base: float, floor: float, ramp: float) -> float:
+    if floor <= base + 1e-6 or ramp >= 0.999:
+        return max(base, floor)
+    return base + (floor - base) * ramp
 
 
 def _blend_counter(bias: float, pct: float) -> float:
@@ -336,7 +353,7 @@ def simulate_ad(
     dmg = max(dmg, defense * pct * TANK_DEF_RATIO * floor_strength)
     dmg = max(dmg, cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.52, 2: 0.60, 3: 0.80}[tier]
+        threat = {1: 0.52, 2: 0.60, 3: 0.70}[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
@@ -346,7 +363,7 @@ def simulate_ad(
         nudge = {4: 1.58, 5: 1.78, 6: 1.90, 7: 1.62}[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
-        live_share = {1: 0.28, 2: 0.34, 3: 0.52, 4: 0.60, 5: 0.74, 6: 0.80, 7: 0.80}[tier]
+        live_share = {1: 0.28, 2: 0.34, 3: 0.46, 4: 0.60, 5: 0.74, 6: 0.80, 7: 0.80}[tier]
         if form_boost >= 6.0:
             mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
         else:
