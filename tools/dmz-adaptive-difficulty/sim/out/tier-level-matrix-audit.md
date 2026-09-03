@@ -11,7 +11,7 @@ Fail-closed checks for unlock tiers T1–T7 across the DMZ level cap.
 
 ## 2) Buy-cost ladder T1<T2<…<T7 at every level
 
-- ✅ cost T-ladder mono across 150000 levels — 0.84s
+- ✅ cost T-ladder mono across 150000 levels — 0.85s
 - ✅ cost non-decreasing with level (≤150k) — ok
 - ✅ past-anchor clamp T7 200k==150k — 10000000 vs 10000000
 - ✅ past-anchor clamp T1 200k==150k — 6700 vs 6700
@@ -59,14 +59,14 @@ Fail-closed checks for unlock tiers T1–T7 across the DMZ level cap.
 
 | band | even T1→T5 | even T5→T7 | god T3≤…≤T7 | god land≤soft |
 |-----:|-----------:|-----------:|:-----------:|:-------------:|
-- ✅ even T1→T5 ≥1.4× (level-invariant combat) — 0.135→0.468
-- ✅ even T5→T7 ≥1.10× — 0.468→0.577
-- ✅ god hitFrac mono T3→T7 — T3=0.440 / T4=0.500 / T5=0.520 / T6=0.600 / T7=0.620
+- ✅ even T1→T5 ≥1.4× (level-invariant combat) — 0.129→0.338
+- ✅ even T5→T7 ≥1.10× — 0.338→0.399
+- ✅ god hitFrac mono T3→T7 — T3=0.323 / T4=0.377 / T5=0.414 / T6=0.452 / T7=0.490
 - ✅ god landing ≤ soft-cap all tiers
 - ✅ stock tier% 21→200%
-- ✅ god T5 ≥28% bag — 0.520
-- ✅ god T7 ≥40% bag — 0.620
-- ✅ god land T5 < T6 — 0.499<0.579
+- ✅ god T5 ≥28% bag — 0.414
+- ✅ god T7 ≥40% bag — 0.490
+- ✅ god land T5 < T6 — 0.329<0.379
 | 1 | OK | OK | OK | OK |
 - ✅ lvl 1: eligible tiers match gates — T[1]
 - ✅ lvl 1: cost mono — T1=1× Copper, T2=5× Copper, T3=15× Copper, T4=5× Iron, T5=15× Iron, T6=5× Gold, T7=15× Gold
@@ -115,16 +115,16 @@ Each form checked at mastery 0% + 100% (Base once). Soft-cap + no zero dmg.
 | ancient_saiyan | 3 | 49 | OK | OK | OK | OK |
 | bioandroid | 11 | 161 | OK | OK | OK | OK |
 | frostdemon | 14 | 203 | OK | OK | OK | OK |
-| human | 14 | 203 | OK | OK | OK | OK |
+| human | 14 | 203 | OK | OK | FAIL | OK |
 | majin | 9 | 133 | OK | OK | OK | OK |
 | monkey | 6 | 91 | OK | OK | OK | OK |
 | namekian | 8 | 119 | OK | OK | OK | OK |
 | saiyan | 22 | 315 | OK | OK | OK | OK |
 | sento_saiyan | 11 | 161 | OK | OK | OK | OK |
 | viltrumite | 8 | 119 | OK | OK | OK | OK |
-- ✅ race/form soft-cap all cells (1554) — 0.04s
+- ✅ race/form soft-cap all cells (1554) — 0.05s
 - ✅ race/form mobDmg > 0 all cells — ok
-- ✅ race peak form ladders / floors — 10 peaks ok
+- ❌ race peak form ladders / floors: human peak android_enhancement.overclock@m0: hitFrac T3=0.312 / T4=0.385 / T5=0.423 / T6=0.462 / T7=0.451
 
 ### Android forms coverage
 
@@ -134,4 +134,4 @@ Each form checked at mastery 0% + 100% (Base once). Soft-cap + no zero dmg.
 - ✅ viltrumite has android form entries — 4 forms
 - ✅ bioandroid has no androidforms upgrade group — android-named=0
 
-**Result:** PASS — 72 ok, 0 error(s).
+**Result:** FAIL — 71 ok, 1 error(s).
