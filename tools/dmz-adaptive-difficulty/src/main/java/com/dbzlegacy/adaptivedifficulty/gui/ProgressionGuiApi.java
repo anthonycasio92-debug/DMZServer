@@ -1280,7 +1280,7 @@ public final class ProgressionGuiApi {
             case "help" -> List.of(
                     "§6§l/skills §8— Skill Progress (staff)",
                     "§e/skills §7— Natural progression",
-                    "§e/skills do page saga §7— Unlock and level up via the skills saga",
+                    "§e/skills do page saga §7— Saga skills from the skill saga",
                     "§e/skillcheck §7— Donator Skill Check"
             );
             default -> SkillUnlockService.coreLines(player);

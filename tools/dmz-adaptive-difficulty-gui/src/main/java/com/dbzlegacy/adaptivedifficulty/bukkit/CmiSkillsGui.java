@@ -134,7 +134,7 @@ public final class CmiSkillsGui {
         gui.addButton(pageBtn(player, 45, "skills.main.natural", Material.FEATHER, "&aNatural", "core", skillCheckUi,
                 "&7Potential · Flight · Meditation · Jump · Sprint"));
         gui.addButton(pageBtn(player, 46, "skills.main.saga", Material.AMETHYST_SHARD, "&dSaga", "saga", skillCheckUi,
-                "&7Unlock and level up via the skills saga."));
+                "&7Unlocked in the skill saga — some level there, some level naturally after."));
 
         gui.addButton(hubBtn(49));
         if (staffAdmin) {

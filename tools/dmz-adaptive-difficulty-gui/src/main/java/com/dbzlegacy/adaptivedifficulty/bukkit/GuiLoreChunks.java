@@ -75,6 +75,8 @@ final class GuiLoreChunks {
                         || plain.equalsIgnoreCase("DragonMineZ 2.1 Skills")
                         || plain.equalsIgnoreCase("Saga Skills")
                         || plain.toLowerCase(Locale.ROOT).startsWith("levels from play")
+                        || plain.toLowerCase(Locale.ROOT).startsWith("level these by playing")
+                        || plain.toLowerCase(Locale.ROOT).startsWith("unlock in the skill saga")
                         || plain.toLowerCase(Locale.ROOT).startsWith("unlocked / trained")
                         || plain.toLowerCase(Locale.ROOT).startsWith("unlocked by completing")) {
                     pastHeader = true;

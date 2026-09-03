@@ -141,7 +141,7 @@ public final class SkillUnlockService {
                         cmdRoot + " do page core", "Natural progression"))
                 .m_7220_(Component.m_237113_(" "))
                 .m_7220_(btn(pageEquals(page, "saga") ? "§e[Saga]" : "§7[Saga]",
-                        cmdRoot + " do page saga", "Train with masters in the skills saga."));
+                        cmdRoot + " do page saga", "Saga skills — unlock and track them here."));
         send(player, nav);
         send(player, "§8────────────────");
     }
@@ -154,7 +154,7 @@ public final class SkillUnlockService {
             List<String> out, ServerPlayer player, Skills skills, int investedStr
     ) {
         out.add("§6§lNatural Progression§r");
-        out.add("§8Levels from play — not saga skill purchases.");
+        out.add("§8Level these by playing — not through the prestige shop.");
         appendPotential(out, player, skills);
         appendFlight(out, player, skills);
         appendMeditation(out, player, skills);
@@ -167,13 +167,13 @@ public final class SkillUnlockService {
         boolean piccolo = PotentialProgression.hasPiccoloUnlock(player);
         if (level >= HARD_MAX_POTENTIAL) {
             out.add("§dPotential Unlock§7: §6§lMAX§r §7(" + level + "/" + HARD_MAX_POTENTIAL + ")");
-            tip(out, "Potential is fully unlocked.");
+            tip(out, "You're fully unlocked — Potential can't go any higher.");
             return;
         }
         if (level >= 10 && !piccolo) {
             out.add("§dPotential Unlock§7: §f" + level + "/" + HARD_MAX_POTENTIAL
                     + " §8· §eSOFT CAP");
-            tip(out, "Beat Piccolo in the skill saga to open the path to 30.");
+            tip(out, "You've hit the soft cap. Beat Piccolo in the skill saga to push toward 30.");
             return;
         }
         int next = level + 1;
@@ -186,9 +186,9 @@ public final class SkillUnlockService {
         out.add("§dPotential Unlock§7: §f" + level + "/" + HARD_MAX_POTENTIAL
                 + status + " §8· §f" + progress + "/" + required);
         if (level < 10) {
-            tip(out, "Spar with players — soft caps at 10 until Piccolo.");
+            tip(out, "Spar with other players — you'll soft-cap at 10 until Piccolo.");
         } else {
-            tip(out, "Keep sparring to climb toward 30.");
+            tip(out, "Keep sparring to work your way up to 30.");
         }
     }
 
@@ -197,7 +197,7 @@ public final class SkillUnlockService {
         int max = skillMax(skills, "fly", 10);
         if (level >= max && max > 0) {
             out.add("§bFlight§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-            tip(out, "Flight is fully trained.");
+            tip(out, "You've mastered flight.");
             return;
         }
         int next = level + 1;
@@ -214,7 +214,7 @@ public final class SkillUnlockService {
             progressNote = " §8· §f" + formatTime(progress) + "/" + formatTime(needSec);
         }
         out.add("§bFlight§7: §f" + level + "/" + max + progressNote);
-        tip(out, "Stay airborne while flying to raise Flight.");
+        tip(out, "Spend more time in the air while flying.");
     }
 
     private static void appendMeditation(List<String> out, ServerPlayer player, Skills skills) {
@@ -222,7 +222,7 @@ public final class SkillUnlockService {
         int max = skillMax(skills, "meditation", 10);
         if (level >= max && max > 0) {
             out.add("§aMeditation§7: §6§lMAX§r §7(" + level + "/" + max + ")");
-            tip(out, "Meditation is fully refined.");
+            tip(out, "You've maxed out meditation.");
             return;
         }
         int next = level + 1;
@@ -237,12 +237,12 @@ public final class SkillUnlockService {
             progressNote = " §8· §f" + formatTime(progress) + "/" + formatTime(needSec);
         }
         out.add("§aMeditation§7: §f" + level + "/" + max + progressNote);
-        tip(out, "Sit and charge Ki in the trial biome (/progression meditation).");
+        tip(out, "Charge Ki in the meditation trial — try /progression meditation.");
     }
 
     private static void appendSaga(List<String> out, ServerPlayer player, Skills skills) {
         out.add("§6§lSaga Skills§r");
-        out.add("§8Train with masters — unlock and raise these in the skills saga.");
+        out.add("§8Unlock in the skill saga — some level there, others level naturally after.");
         appendSagaSkill(out, player, skills, "kicontrol", "Ki Control", "§3", 1);
         appendSagaSkill(out, player, skills, "kimanipulation", "Ki Manipulation", "§9", 10);
         appendSagaSkill(out, player, skills, "kisense", "Ki Sense", "§5", 10);
@@ -307,62 +307,72 @@ public final class SkillUnlockService {
     private static String strengthHow(String id, boolean maxed, int investedStr, int required) {
         String skill = "jump".equals(id) ? "Jump" : "Sprint";
         if (maxed) {
-            return skill + " is fully unlocked.";
+            return "You've maxed out " + skill + ".";
         }
         if (investedStr >= required) {
-            return "Enough Strength invested — keep training for the next " + skill + " rank.";
+            return "You've invested enough Strength — keep using " + skill + " to progress.";
         }
-        return "Invest Strength to raise " + skill + ".";
+        return "Invest more Strength to unlock the next " + skill + " level.";
     }
 
     private static String sagaUnlock(String id) {
         return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
-            case "kicontrol" -> "Not unlocked — train Ki Control with skills-saga masters.";
-            case "kimanipulation" -> "Not unlocked — shape Ki through skills-saga master training.";
-            case "kisense" -> "Not unlocked — sharpen Ki Sense in the skills saga.";
-            case "defense_penetration" -> "Not unlocked — earn this through skills-saga challenges.";
-            case "healing_reduction" -> "Not unlocked — unlock and train this in the skills saga.";
-            case "instant_transmission" -> "Not unlocked — learn Instant Transmission from saga masters.";
-            case "ki_infusion" -> "Not unlocked — unlock Ki Infusion in the skills saga.";
-            case "kiboost" -> "Not unlocked — raise Ki Boost with skills-saga masters.";
-            case "kiprotection" -> "Not unlocked — build Ki Protection through saga training.";
-            case "kaioken" -> "Not unlocked — unlock Kaioken in the skills saga, then train ranks.";
-            case "fusion" -> "Not unlocked — unlock Fusion via the skills-saga master path.";
-            default -> "Not unlocked — train with skills-saga masters to unlock this.";
+            case "kicontrol" -> "You haven't unlocked this yet — keep going in the skill saga.";
+            case "kimanipulation" -> "You haven't unlocked this yet — keep going in the skill saga.";
+            case "kisense" -> "You haven't unlocked this yet — keep going in the skill saga.";
+            case "defense_penetration" -> "You haven't unlocked this yet — keep going in the skill saga.";
+            case "healing_reduction" -> "You haven't unlocked this yet — keep going in the skill saga.";
+            case "instant_transmission" -> "You haven't unlocked this yet — keep going in the skill saga.";
+            case "ki_infusion" -> "You haven't unlocked this yet — keep going in the skill saga.";
+            case "kiboost" -> "You haven't unlocked this yet — keep going in the skill saga.";
+            case "kiprotection" -> "You haven't unlocked this yet — keep going in the skill saga.";
+            case "kaioken" -> "Unlock Kaioken in the skill saga first — then level it in combat.";
+            case "fusion" -> "Unlock Fusion in the skill saga first — then level it by practicing fusion.";
+            default -> "You haven't unlocked this yet — keep going in the skill saga.";
         };
     }
 
     private static String sagaTraining(String id) {
-        return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
-            case "kicontrol" -> "Keep training Ki Control with skills-saga masters.";
-            case "kimanipulation" -> "Keep shaping Ki through saga master training.";
-            case "kisense" -> "Keep sharpening Ki Sense in the skills saga.";
-            case "defense_penetration" -> "Keep pushing through skills-saga challenges.";
-            case "healing_reduction" -> "Keep training this skill in the skills saga.";
-            case "instant_transmission" -> "Keep practicing Instant Transmission with saga masters.";
-            case "ki_infusion" -> "Keep building Ki Infusion in the skills saga.";
-            case "kiboost" -> "Keep raising Ki Boost with skills-saga masters.";
-            case "kiprotection" -> "Keep building Ki Protection through saga training.";
-            case "kaioken" -> "Keep using Kaioken in combat to raise this level.";
-            case "fusion" -> "Keep practicing fusion to raise this level.";
-            default -> "Keep using this skill in combat to raise the level.";
-        };
+        if (levelsNaturallyAfterSaga(id)) {
+            return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
+                case "kaioken" -> "Use Kaioken in combat to level it up.";
+                case "fusion" -> "Practice fusion to level it up.";
+                default -> "Keep using this in combat to level it up.";
+            };
+        }
+        return "Keep going through the skill saga to raise this.";
     }
 
     private static String sagaMastered(String id) {
+        String name = sagaDisplayName(id);
+        return "You've maxed out " + name + ".";
+    }
+
+    private static String sagaDisplayName(String id) {
         return switch (id == null ? "" : id.toLowerCase(Locale.ROOT)) {
-            case "kicontrol" -> "Fully trained — Ki Control is at max level.";
-            case "kimanipulation" -> "Fully trained — Ki Manipulation is at max level.";
-            case "kisense" -> "Fully trained — Ki Sense is at max level.";
-            case "defense_penetration" -> "Fully trained — Defense Penetration is at max level.";
-            case "healing_reduction" -> "Fully trained — Healing Reduction is at max level.";
-            case "instant_transmission" -> "Fully trained — Instant Transmission is at max level.";
-            case "ki_infusion" -> "Fully trained — Ki Infusion is at max level.";
-            case "kiboost" -> "Fully trained — Ki Boost is at max level.";
-            case "kiprotection" -> "Fully trained — Ki Protection is at max level.";
-            case "kaioken" -> "Fully trained — Kaioken is at max level.";
-            case "fusion" -> "Fully trained — Fusion is at max level.";
-            default -> "Fully trained — this skill is at max level.";
+            case "kicontrol" -> "Ki Control";
+            case "kimanipulation" -> "Ki Manipulation";
+            case "kisense" -> "Ki Sense";
+            case "defense_penetration" -> "Defense Penetration";
+            case "healing_reduction" -> "Healing Reduction";
+            case "instant_transmission" -> "Instant Transmission";
+            case "ki_infusion" -> "Ki Infusion";
+            case "kiboost" -> "Ki Boost";
+            case "kiprotection" -> "Ki Protection";
+            case "kaioken" -> "Kaioken";
+            case "fusion" -> "Fusion";
+            default -> "this skill";
+        };
+    }
+
+    /** Saga unlock, then levels through natural play (combat / practice) — not more saga steps. */
+    private static boolean levelsNaturallyAfterSaga(String id) {
+        if (id == null) {
+            return false;
+        }
+        return switch (id.toLowerCase(Locale.ROOT)) {
+            case "kaioken", "fusion" -> true;
+            default -> false;
         };
     }
 

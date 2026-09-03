@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.166", 'VERSION = "2.3.166"' in mod)
+    check("VERSION 2.3.167", 'VERSION = "2.3.167"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -778,7 +778,8 @@ def main() -> int:
     check("Skill Check prestige floor fallback", "effectiveSkillLevel" in skill_unlock
           and "PrestigePointsSystem.getPurchasedSkillLevels" in skill_unlock)
     check("saga tips tiered locked/training/maxed", "sagaUnlock" in skill_unlock
-          and "sagaTraining" in skill_unlock and "sagaMastered" in skill_unlock)
+          and "sagaTraining" in skill_unlock and "sagaMastered" in skill_unlock
+          and "levelsNaturallyAfterSaga" in skill_unlock)
     check("GUI skill status footer helper", "skillStatusFooter" in read(gui_root / "GuiLoreChunks.java"))
 
     print("\n=== Spar TP message toggle (2.3.54) ===")
