@@ -535,6 +535,32 @@ public final class DmzProgression {
     }
 
     /**
+     * Authoritative DMZ level for tier scaling: {@code paintEase}, buy costs, tier
+     * menus, combat rating, and title unlocks.
+     * <p>
+     * Takes the higher of form-stable {@link #dmzLevelForProgression} and
+     * {@link #guiDisplayDmzLevel} so placeholder-1 / stale-cache reads cannot
+     * freeze scaling while still refusing to let a transient form spike lower
+     * prices mid-fight.
+     */
+    public static int tierScalingDmzLevel(Player player) {
+        return tierScalingDmzLevel(player, 0L);
+    }
+
+    /**
+     * @param fallbackWhenTransformed passed to {@link #dmzLevelForProgression} when
+     *        transformed with no base-form sample (e.g. {@code highestDmzLevel})
+     */
+    public static int tierScalingDmzLevel(Player player, long fallbackWhenTransformed) {
+        if (player == null) {
+            return 1;
+        }
+        int stable = dmzLevelForProgression(player, fallbackWhenTransformed);
+        int display = guiDisplayDmzLevel(player);
+        return Math.max(1, Math.max(stable, display));
+    }
+
+    /**
      * Persist a base-form DMZ sample only when Character is attached.
      * Skips login-race writes and refuses to overwrite a good sample with placeholder 1.
      */

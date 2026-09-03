@@ -386,7 +386,7 @@ public final class PlayerCombatProfile {
         int kiInfusion = DmzProgression.skillLevel(player, "ki_infusion");
         boolean infusionOn = DmzProgression.skillActive(player, "ki_infusion");
         int potential = DmzProgression.skillLevel(player, "potentialunlock");
-        int dmzLevel = DmzProgression.guiDisplayDmzLevel(player);
+        int dmzLevel = DmzProgression.tierScalingDmzLevel(player);
         double levelEase = paintEase(cfg, tier, dmzLevel);
         double mitRelief = estimateMitigationRelief(data, kiProtect);
         long sig = fingerprint(

@@ -15,28 +15,11 @@ public final class DifficultyCalculator {
     public static DifficultySnapshot snapshot(ServerPlayer player, PlayerDifficultyData data) {
         UnlockSystem.syncUnlocks(player, data);
 
-        // Buy GUI reads snap.dmzLevel. Always prefer live DMZ readout for paint so
-        // transformed / late-attach players are not stuck on a stale gate while
-        // base-form players update immediately. Tier costs still use
-        // dmzLevelForProgression via AncientCoinEconomy (base-form freeze).
-        int display = DmzProgression.guiDisplayDmzLevel(player);
-        long hw = data.getHighestDmzLevel();
-        // High CR comes from form battle power even when getLevel() is still
-        // placeholder 1 — fall back to a real high-water so the menu is not stuck.
-        if (display <= 1 && hw > 1L) {
-            display = (int) Math.min(Integer.MAX_VALUE, hw);
-        }
+        // Buy GUI reads snap.dmzLevel — tierScalingDmzLevel heals placeholder/stale reads.
+        int level = DmzProgression.tierScalingDmzLevel(player, data.getHighestDmzLevel());
         long gate = UnlockSystem.gateLevelForEligibility(player);
-        int level;
-        if (display > 1) {
-            level = display;
-        } else if (gate > 1L) {
+        if (level <= 1 && gate > 1L) {
             level = (int) Math.min(Integer.MAX_VALUE, gate);
-        } else if (gate > 0L) {
-            level = (int) Math.min(Integer.MAX_VALUE, gate);
-        } else {
-            level = Math.max(1, DmzProgression.dmzLevelForProgression(
-                    player, data.getHighestDmzLevel()));
         }
         int prestige = DmzProgression.prestige(player);
         double transform = DmzProgression.transformationPower(player);

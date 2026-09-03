@@ -173,15 +173,15 @@ public final class ForgeBridge {
             long combatRating = longField(snap, "combatRating");
             long ancientCopper = longField(snap, "ancientCopper");
             int level = intField(snap, "dmzLevel");
-            // Prefer Forge guiDisplayDmzLevel when present — snap can still carry a
-            // polluted gate of 1 from highestDmzLevel until the next reliable sample.
+            // Prefer Forge tierScalingDmzLevel — snap can still carry a polluted gate
+            // of 1 from highestDmzLevel until the next reliable sample.
             try {
                 ClassLoader cl = nms.getClass().getClassLoader();
                 Class<?> dmz = Class.forName(
                         "com.dbzlegacy.adaptivedifficulty.calc.DmzProgression", true, cl);
                 Class<?> playerCls = Class.forName(
                         "net.minecraft.world.entity.player.Player", true, cl);
-                Object shown = dmz.getMethod("guiDisplayDmzLevel", playerCls).invoke(null, nms);
+                Object shown = dmz.getMethod("tierScalingDmzLevel", playerCls).invoke(null, nms);
                 if (shown instanceof Number n && n.intValue() > 1) {
                     level = n.intValue();
                 }

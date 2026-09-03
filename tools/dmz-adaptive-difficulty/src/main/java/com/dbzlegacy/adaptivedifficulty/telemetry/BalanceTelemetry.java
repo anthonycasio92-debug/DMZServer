@@ -114,6 +114,8 @@ public final class BalanceTelemetry {
                             com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion
                                     .isAndroidUpgraded(player))
                     .append(",\"tier\":").append(profile.activeTier)
+                    .append(",\"dmzLevel\":").append(profile.progressionDmzLevel)
+                    .append(",\"paintEase\":").append(round3(profile.paintEase))
                     .append(",\"formBoost\":").append(round3(profile.formBoost))
                     .append(",\"kp\":").append(profile.kiProtectionLevel)
                     .append(",\"inf\":").append(profile.kiInfusionLevel)

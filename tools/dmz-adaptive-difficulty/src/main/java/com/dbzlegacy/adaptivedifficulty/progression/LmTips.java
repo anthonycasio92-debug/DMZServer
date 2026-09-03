@@ -132,7 +132,7 @@ public final class LmTips {
         // LP missing / user not loaded — fall back to low level so tips still help newcomers.
         try {
             int level = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression
-                    .dmzLevelForProgression(player);
+                    .tierScalingDmzLevel(player);
             return level < Math.max(1, DifficultyConfig.get().lmTipNewPlayerMaxLevel);
         } catch (Throwable ignored) {
             return false;

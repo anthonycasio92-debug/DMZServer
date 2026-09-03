@@ -36,7 +36,7 @@ public final class RivalTpCurve {
         int level = 1;
         try {
             if (player != null) {
-                level = Math.max(1, DmzProgression.dmzLevelForProgression(player));
+                level = Math.max(1, DmzProgression.tierScalingDmzLevel(player));
             }
         } catch (Throwable ignored) {
             level = 1;

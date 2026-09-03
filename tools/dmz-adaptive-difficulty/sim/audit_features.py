@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.169", 'VERSION = "2.3.169"' in mod)
+    check("VERSION 2.3.170", 'VERSION = "2.3.170"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -396,11 +396,18 @@ def main() -> int:
           and "int live = dmzLevel(player)" in prog.split("dmzLevelForUnlockGate")[1].split("hasReliableUnlockGateSample")[0])
     check("reliable gate rejects placeholder while BP high", "transformationPower(player) >= 25.0" in prog
           and "dmzLevel(player)" in prog.split("hasReliableUnlockGateSample")[1].split("clearBaseFormLevel")[0])
-    check("paintEase uses guiDisplayDmzLevel", "guiDisplayDmzLevel(player)" in profile
+    check("paintEase uses tierScalingDmzLevel", "tierScalingDmzLevel(player)" in profile
           and "paintEase(cfg, tier, dmzLevel)" in profile)
     coins = read(SRC / "com/dbzlegacy/adaptivedifficulty/currency/AncientCoinEconomy.java")
-    check("tier buy cost heals display level", "guiDisplayDmzLevel(player)" in coins
+    check("tier buy cost uses tierScalingDmzLevel", "tierScalingDmzLevel(player" in coins
           and "activationCostForLevel(level)" in coins)
+    check("tierScalingDmzLevel centralizes display+stable",
+          "tierScalingDmzLevel(Player player, long fallbackWhenTransformed)" in prog
+          and "int display = guiDisplayDmzLevel(player)" in prog
+          and "dmzLevelForProgression(player, fallbackWhenTransformed)" in prog)
+    tel = read(SRC / "com/dbzlegacy/adaptivedifficulty/telemetry/BalanceTelemetry.java")
+    check("telemetry logs dmzLevel + paintEase", "dmzLevel" in tel and "paintEase" in tel
+          and "progressionDmzLevel" in tel)
     check("reliable gate rejects placeholder while BP high", "transformationPower(player) >= 25.0" in prog
           and "dmzLevel(player)" in prog.split("hasReliableUnlockGateSample")[1].split("clearBaseFormLevel")[0])
     check("HostileMobs.isMountPair", "isMountPair" in host and "m_20202_" in host)

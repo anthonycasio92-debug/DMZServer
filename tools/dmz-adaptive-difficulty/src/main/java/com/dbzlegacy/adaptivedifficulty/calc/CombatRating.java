@@ -79,7 +79,7 @@ public final class CombatRating {
 
     public static long of(ServerPlayer player, PlayerDifficultyData data) {
         DifficultyConfig cfg = DifficultyConfig.get();
-        int level = DmzProgression.dmzLevelForProgression(player);
+        int level = DmzProgression.tierScalingDmzLevel(player);
         int prestige = DmzProgression.prestige(player);
         long active = data == null ? 0L : data.getActiveDifficultyLevel();
         double transform = DmzProgression.transformationPower(player);
