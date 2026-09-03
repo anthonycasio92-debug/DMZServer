@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.159", 'VERSION = "2.3.159"' in mod)
+    check("VERSION 2.3.160", 'VERSION = "2.3.160"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -270,7 +270,7 @@ def main() -> int:
     print("\n=== Post-pierce soft-cap clamp (1.0.25) ===")
     check("incomingSoftCapFrac helper", "incomingSoftCapFrac" in profile)
     check("post-pierce bagCap clamp", "bagCap" in profile and "incomingSoftCapFrac()" in profile)
-    check("formula revision 41", "mix(h, 41L)" in profile)
+    check("formula revision 42", "mix(h, 42L)" in profile)
     check("README pierce clamp", "Post-pierce" in readme or "post-pierce" in readme)
 
     print("\n=== Telemetry retune (1.0.28) ===")
@@ -286,7 +286,7 @@ def main() -> int:
     check("README 1.0.30 HP trim", "1.0.30" in readme and "0.75" in readme)
 
     print("\n=== Telemetry retune (1.0.24) ===")
-    check("formula revision 41", "mix(h, 41L)" in profile)
+    check("formula revision 42", "mix(h, 42L)" in profile)
     check("T1 landCap 0.18", "case 1 -> 0.18" in profile)
     check("T1 landFrac 0.13", "case 1 -> 0.13" in profile)
     check("T6 landFrac 0.58", "case 6 -> 0.58" in profile)
@@ -365,7 +365,7 @@ def main() -> int:
     check("T5 liveShare 0.74", "case 5 -> 0.74" in profile)
     check("T4 landCap 0.50", "case 4 -> 0.50" in profile)
     check("T5 landCap 0.52", "case 5 -> 0.52" in profile)
-    check("T3 landFrac 0.30", "case 3 -> 0.30" in profile)
+    check("T3 landFrac 0.26", "case 3 -> 0.26" in profile)
     check("T7 landFrac 0.60", "default -> 0.60" in profile)
     check("README 1.0.35 retune", "1.0.35" in readme and "hits-2026-08-06" in readme)
 

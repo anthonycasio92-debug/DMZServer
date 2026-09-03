@@ -57,11 +57,13 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 2.3.159
+- ✅ VERSION 2.3.160
 - ✅ RaceSkillSync present
-- ✅ formula revision 41
+- ✅ formula revision 42
 - ✅ hpFloorStrength present
 - ✅ T1–T3 god-form floors raised
+- ✅ T3 level ramp
+- ✅ counter strength from T4
 - ✅ T7 incoming soft-cap in events
 - ✅ T5 soft-cap 52%
 - ✅ T6 soft-cap 60%
@@ -99,4 +101,4 @@ Fail-closed checks against the player's stated balance concept.
 |------|--------:|---------:|---------:|
 | androidforms.ssdroid4 | 0.520 | 0.182 | 0.79 |
 
-**Result:** PASS — 64 ok, 0 error(s).
+**Result:** PASS — 66 ok, 0 error(s).

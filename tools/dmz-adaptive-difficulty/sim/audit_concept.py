@@ -234,12 +234,14 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 2.3.159", 'VERSION = "2.3.159"' in mod)
+    check("VERSION 2.3.160", 'VERSION = "2.3.160"' in mod)
 
     check("RaceSkillSync present", (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/bridge/RaceSkillSync.java").is_file())
-    check("formula revision 41", "mix(h, 41L)" in profile)
+    check("formula revision 42", "mix(h, 42L)" in profile)
     check("hpFloorStrength present", "hpFloorStrength" in profile)
-    check("T1–T3 god-form floors raised", "case 1 -> 0.52" in profile and "case 3 -> 0.80" in profile)
+    check("T1–T3 god-form floors raised", "case 1 -> 0.52" in profile and "case 3 -> 0.70" in profile)
+    check("T3 level ramp", "tierLevelRamp" in profile and "unlockTier3Max" in profile)
+    check("counter strength from T4", "tierPercent / 0.90" in profile)
     events = (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java").read_text(
         encoding="utf-8", errors="replace"
     )
