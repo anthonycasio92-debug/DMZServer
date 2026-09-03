@@ -117,6 +117,7 @@ public final class BalanceTelemetry {
                     .append(",\"dmzLevel\":").append(profile.progressionDmzLevel)
                     .append(",\"paintEase\":").append(round3(profile.paintEase))
                     .append(",\"formBoost\":").append(round3(profile.formBoost))
+                    .append(",\"formBand\":\"").append(escape(PlayerCombatProfile.formBandLabel(profile.formBoost))).append('"')
                     .append(",\"kp\":").append(profile.kiProtectionLevel)
                     .append(",\"inf\":").append(profile.kiInfusionLevel)
                     .append(",\"pu\":").append(profile.potentialUnlockLevel)

@@ -15,22 +15,18 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from scaling_constants import CONCEPT_EVEN_HITFRAC_MIN, SOFT_CAP, LAND_FRAC
+from scaling_constants import (
+    CONCEPT_EVEN_HITFRAC_MIN,
+    FORM_BAND_MEGA,
+    LAND_FRAC,
+    SOFT_CAP,
+    band_form,
+)
 from simulate_build_matrix import ARCHETYPES, SKILL_LOADOUTS, simulate
 from simulate_race_forms import load_stats
 
 OUT = Path(__file__).resolve().parent / "out"
 OUT.mkdir(parents=True, exist_ok=True)
-
-
-def band_form(fb: float) -> str:
-    if fb <= 1.12:
-        return "base"
-    if fb < 6:
-        return "mid"
-    if fb < 25:
-        return "high"
-    return "god"
 
 
 def load_rows(paths: list[Path]) -> list[dict]:
@@ -120,6 +116,8 @@ def main() -> int:
     ]
 
     all_agg = agg_by_tier(rows)
+    transformed_agg = agg_by_tier(rows, form_band="transformed")
+    mega_agg = agg_by_tier(rows, form_band="mega")
     god_agg = agg_by_tier(rows, form_band="god")
     sim = sim_even_bands(5500)
     sim_100k = sim_even_bands(100000)
@@ -135,26 +133,27 @@ def main() -> int:
             f"| T{t} | {n} | {avg:.3f} | {pre:.3f} | {above:.1f}% | {SOFT_CAP[t]:.2f} | {concept} |"
         )
 
-    lines += [
-        "",
-        "## God-form band (formBoost ≥ 25)",
-        "",
-        "| Tier | N | Avg post | soft-cap | step vs prev |",
-        "|-----:|--:|---------:|---------:|-------------:|",
-    ]
-    prev = None
-    for t in range(1, 8):
-        a = god_agg.get(t, {"n": 0, "hit_post": 0})
-        n = a["n"]
-        avg = a["hit_post"] / n if n else 0
-        step = f"{avg / prev:.2f}×" if prev and prev > 0 and n else "—"
-        lines.append(f"| T{t} | {n} | {avg:.3f} | {SOFT_CAP[t]:.2f} | {step} |")
-        if n and avg > 0:
-            prev = avg
+    def band_section(title: str, agg: dict[int, dict]) -> list[str]:
+        out = ["", f"## {title}", "", "| Tier | N | Avg post | soft-cap | step vs prev |",
+               "|-----:|--:|---------:|---------:|-------------:|"]
+        prev = None
+        for t in range(1, 8):
+            a = agg.get(t, {"n": 0, "hit_post": 0})
+            n = a["n"]
+            avg = a["hit_post"] / n if n else 0
+            step = f"{avg / prev:.2f}×" if prev and prev > 0 and n else "—"
+            out.append(f"| T{t} | {n} | {avg:.3f} | {SOFT_CAP[t]:.2f} | {step} |")
+            if n and avg > 0:
+                prev = avg
+        return out
+
+    lines += band_section("Transformed band (formBoost 25–50)", transformed_agg)
+    lines += band_section("Mega band (formBoost 50–80)", mega_agg)
+    lines += band_section(f"God band (formBoost ≥ {FORM_BAND_MEGA:.0f})", god_agg)
 
     lines += [
         "",
-        "## 2.3.161 sim (saiyan even, no skills) vs live god band",
+        "## Sim vs live god band (formBoost ≥ 80)",
         "",
         "| Tier | Live god avg | Sim 5.5k | Sim 100k | Concept min |",
         "|-----:|-------------:|---------:|---------:|------------:|",
@@ -173,11 +172,14 @@ def main() -> int:
         f"Rows: {len(recent_rows)} (last {args.recent_days} day file(s))",
         "",
     ]
-    recent_god = agg_by_tier(recent_rows, form_band="god")
-    for t in (3, 5, 7):
-        a = recent_god.get(t, {"n": 0, "hit_post": 0})
-        if a["n"]:
-            lines.append(f"- T{t} god recent avg post: **{a['hit_post']/a['n']:.3f}** (n={a['n']})")
+    for band_name in ("transformed", "mega", "god"):
+        recent_band = agg_by_tier(recent_rows, form_band=band_name)
+        for t in (3, 5, 7):
+            a = recent_band.get(t, {"n": 0, "hit_post": 0})
+            if a["n"]:
+                lines.append(
+                    f"- T{t} {band_name} recent avg post: **{a['hit_post']/a['n']:.3f}** (n={a['n']})"
+                )
 
     lines += [
         "",
@@ -185,8 +187,9 @@ def main() -> int:
         "",
         "- **Live** still reflects **2.3.160** inflated constants until 2.3.161 deploys.",
         "- Target sim bands (rollback): even T5≈0.45, T7≈0.58 at gate; veterans at 100k get paintEase relief.",
+        "- God band = formBoost ≥ 80 (mega target). Transformed 25–50 is normal stack play.",
         "- God-band live avg should climb monotonically T1→T7 and stay ≤ soft-cap +2%.",
-        "- If live god T3≫T2 step after deploy, check paintEase DMZ gates (not difficulty slider max).",
+        "- If live transformed≫strong step, check stack-form paint — not the old god≥25 bucket.",
         "",
         f"landFrac ladder: {' < '.join(f'T{t}={LAND_FRAC[t]:.2f}' for t in range(4, 8))}",
     ]

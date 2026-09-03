@@ -1479,6 +1479,30 @@ public final class PlayerCombatProfile {
     private static final double MEGA_FORM_TARGET = 80.0;
 
     /**
+     * Telemetry / report label for {@link #formBoost}.
+     * Aligns with sim {@code scaling_constants.band_form} (god ≥ 80, not ≥ 25).
+     */
+    public static String formBandLabel(double formBoost) {
+        double v = Math.max(1.0, formBoost);
+        if (v <= 1.12) {
+            return "base";
+        }
+        if (v < MEGA_FORM_START) {
+            return "awakened";
+        }
+        if (v < 25.0) {
+            return "strong";
+        }
+        if (v < 50.0) {
+            return "transformed";
+        }
+        if (v < MEGA_FORM_TARGET) {
+            return "mega";
+        }
+        return "god";
+    }
+
+    /**
      * 0 at {@link #MEGA_FORM_START}, 1 at {@link #MEGA_FORM_TARGET}, can exceed 1 past ×80.
      */
     private static double megaFormT(double formBoost) {

@@ -131,6 +131,44 @@ CONCEPT_TIER_RISE_MIN: dict[tuple[int, int], float] = {(1, 5): 1.4, (5, 7): 1.10
 
 FORMULA_REVISION = 45
 
+# Telemetry form bands — align with PlayerCombatProfile mega anchors (×6 → ×80, cap ~100).
+# Old telemetry used "god" at ≥25 which mislabeled ~97% of T5 hits (median fb≈35).
+FORM_BAND_BASE = 1.12
+FORM_BAND_AWAKENED = 6.0       # MEGA_FORM_START
+FORM_BAND_STRONG = 25.0
+FORM_BAND_TRANSFORMED = 50.0
+FORM_BAND_MEGA = 80.0          # MEGA_FORM_TARGET
+FORM_BAND_ORDER = ("base", "awakened", "strong", "transformed", "mega", "god")
+
+
+def band_form(fb: float) -> str:
+    """Classify live formBoost for telemetry (not combat math)."""
+    v = max(1.0, fb)
+    if v <= FORM_BAND_BASE:
+        return "base"
+    if v < FORM_BAND_AWAKENED:
+        return "awakened"
+    if v < FORM_BAND_STRONG:
+        return "strong"
+    if v < FORM_BAND_TRANSFORMED:
+        return "transformed"
+    if v < FORM_BAND_MEGA:
+        return "mega"
+    return "god"
+
+
+def band_form_legacy(fb: float) -> str:
+    """Pre-2.3.171 bands (base / mid / high / god≥25) — for historical comparison."""
+    v = max(1.0, fb)
+    if v <= 1.12:
+        return "base"
+    if v < 6:
+        return "mid"
+    if v < 25:
+        return "high"
+    return "god"
+
+
 DEFENSE_MIT_RELIEF_BASE = 0.68  # mitigated fraction below which no paint relief
 DEFENSE_MIT_RELIEF_SCALE = 0.28
 DEFENSE_MIT_RELIEF_CAP = 0.12

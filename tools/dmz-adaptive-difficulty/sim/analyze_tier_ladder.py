@@ -16,20 +16,10 @@ from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
 
-from scaling_constants import LAND_FRAC, SOFT_CAP
+from scaling_constants import LAND_FRAC, SOFT_CAP, band_form
 
 # Expected even-build hitFrac bands from sim (saiyan warrior, no skills, 2.3.161)
 SIM_EVEN = {1: 0.129, 3: 0.353, 5: 0.447, 7: 0.583}
-
-
-def band_form(fb: float) -> str:
-    if fb <= 1.12:
-        return "base"
-    if fb < 6:
-        return "mid"
-    if fb < 25:
-        return "high"
-    return "god"
 
 
 def load_rows(paths: list[Path]) -> list[dict]:
@@ -140,13 +130,15 @@ def main() -> int:
         lines.append("")
 
     section("All hits", all_rows)
-    section("God-form band only", [r for r in all_rows if band_form(float(r.get("formBoost") or 1)) == "god"])
+    section("Transformed band (fb 25–50)", [r for r in all_rows if band_form(float(r.get("formBoost") or 1)) == "transformed"])
+    section("Mega band (fb 50–80)", [r for r in all_rows if band_form(float(r.get("formBoost") or 1)) == "mega"])
+    section("God band (fb ≥ 80)", [r for r in all_rows if band_form(float(r.get("formBoost") or 1)) == "god"])
     section("Base-form band only", [r for r in all_rows if band_form(float(r.get("formBoost") or 1)) == "base"])
     if recent_rows:
         section(f"Recent since {recent_cut}", recent_rows)
 
-    # Concept comparison for god band
-    lines.append("## God-form vs concept soft-cap")
+    # Concept comparison for god band (true god forms ≥80)
+    lines.append("## God band (formBoost ≥ 80) vs concept soft-cap")
     lines.append("")
     lines.append("| tier | live avg | soft-cap | delta | sim even |")
     lines.append("|-----:|---------:|---------:|------:|---------:|")

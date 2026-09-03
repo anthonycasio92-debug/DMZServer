@@ -34,17 +34,7 @@ def load_rows(paths: list[Path]) -> list[dict]:
     return rows
 
 
-def band_form(fb: float) -> str:
-    if fb <= 1.12:
-        return "base"
-    if fb < 6:
-        return "mid"
-    if fb < 25:
-        return "high"
-    return "god"
-
-
-def main() -> int:
+from scaling_constants import FORM_BAND_ORDER, band_form
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("files", nargs="*", type=Path, help="JSONL hit logs")
     ap.add_argument("--dir", type=Path, help="Directory of hits-*.jsonl files")
