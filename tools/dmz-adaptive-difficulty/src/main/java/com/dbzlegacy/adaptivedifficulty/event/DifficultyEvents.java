@@ -607,7 +607,7 @@ public final class DifficultyEvents {
             TitleSense.pulse(player);
         }
         DifficultySnapshot before = DifficultyCache.get(player);
-        int level = DmzProgression.dmzLevelForProgression(player);
+        int level = DmzProgression.guiDisplayDmzLevel(player);
         int prestige = DmzProgression.prestige(player);
         double transform = DmzProgression.transformationPower(player);
         double formMult = PlayerCombatProfile.liveFormMultiplier(player);

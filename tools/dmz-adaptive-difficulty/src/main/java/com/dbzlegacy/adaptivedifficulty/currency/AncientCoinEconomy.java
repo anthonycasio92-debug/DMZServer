@@ -604,6 +604,11 @@ public final class AncientCoinEconomy {
         }
         int level = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression
                 .dmzLevelForProgression(player, fallback);
+        int display = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression
+                .guiDisplayDmzLevel(player);
+        if (display > level) {
+            level = display;
+        }
         return normalizeCost(tier.activationCostForLevel(level));
     }
 

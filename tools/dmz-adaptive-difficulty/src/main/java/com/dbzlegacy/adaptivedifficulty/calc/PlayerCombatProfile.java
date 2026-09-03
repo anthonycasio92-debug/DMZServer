@@ -109,7 +109,7 @@ public final class PlayerCombatProfile {
      * falls off when level exceeds the next tier gate (e.g. T3 @ 100k DMZ).
      */
     public final double paintEase;
-    /** DMZ level used for {@link #paintEase} (progression / unlock gates). */
+    /** DMZ level used for {@link #paintEase} (live progression read). */
     public final int progressionDmzLevel;
     /**
      * Paint relief from live DMZ mitigation (DEF + enchantments via
@@ -386,7 +386,7 @@ public final class PlayerCombatProfile {
         int kiInfusion = DmzProgression.skillLevel(player, "ki_infusion");
         boolean infusionOn = DmzProgression.skillActive(player, "ki_infusion");
         int potential = DmzProgression.skillLevel(player, "potentialunlock");
-        int dmzLevel = DmzProgression.dmzLevelForProgression(player);
+        int dmzLevel = DmzProgression.guiDisplayDmzLevel(player);
         double levelEase = paintEase(cfg, tier, dmzLevel);
         double mitRelief = estimateMitigationRelief(data, kiProtect);
         long sig = fingerprint(

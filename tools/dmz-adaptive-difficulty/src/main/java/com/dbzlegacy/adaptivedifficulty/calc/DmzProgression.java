@@ -321,7 +321,16 @@ public final class DmzProgression {
         }
         Integer cached = BASE_FORM_LEVEL.get(id);
         if (cached != null) {
-            return clampDmzLevel(cached, stats(player), player);
+            int resolved = clampDmzLevel(cached, stats(player), player);
+            StatsData data = stats(player);
+            double peak = data != null ? formMultiplierPeak(data) : 1.0;
+            // Heal stale/polluted cache (same rules as Buy GUI sample).
+            if (peak <= 2.0 && ((resolved <= 1 && live >= 25) || live > resolved + 500)) {
+                rememberBaseFormLevel(id, player, live);
+                Integer healed = BASE_FORM_LEVEL.get(id);
+                return healed != null ? healed : Math.max(1, live);
+            }
+            return resolved;
         }
         if (fallbackWhenTransformed > 0L) {
             long capped = Math.min(fallbackWhenTransformed, configuredMaxDmzLevel(player));
@@ -354,12 +363,7 @@ public final class DmzProgression {
             return cached != null ? Math.max(1, cached) : 1;
         }
         if (!isTransformed(player)) {
-            int live;
-            try {
-                live = clampDmzLevel(data.getLevel(), data, player);
-            } catch (Throwable ignored) {
-                return 1;
-            }
+            int live = dmzLevel(player);
             rememberBaseFormLevel(id, player, live);
             return live;
         }
@@ -393,6 +397,15 @@ public final class DmzProgression {
             return false;
         }
         if (!isTransformed(player)) {
+            int live = dmzLevel(player);
+            // Stats/BP loaded but getLevel() still placeholder 1 — keep pulling.
+            if (live <= 1 && transformationPower(player) >= 25.0) {
+                return false;
+            }
+            Integer cached = BASE_FORM_LEVEL.get(player.m_20148_());
+            if (cached != null && cached <= 1 && live >= 25) {
+                BASE_FORM_LEVEL.remove(player.m_20148_());
+            }
             return true;
         }
         Integer cached = BASE_FORM_LEVEL.get(player.m_20148_());
@@ -400,15 +413,11 @@ public final class DmzProgression {
             return false;
         }
         // Reject early-login pollution: BASE_FORM_LEVEL=1 written before StatsData
-        // attached, while the live (possibly form-inflated) level is far above 1.
+        // attached, while the authoritative level is far above 1.
         if (cached <= 1) {
-            try {
-                int live = clampDmzLevel(data.getLevel(), data, player);
-                if (live >= 25) {
-                    BASE_FORM_LEVEL.remove(player.m_20148_());
-                    return false;
-                }
-            } catch (Throwable ignored) {
+            int live = dmzLevel(player);
+            if (live >= 25) {
+                BASE_FORM_LEVEL.remove(player.m_20148_());
                 return false;
             }
         }
