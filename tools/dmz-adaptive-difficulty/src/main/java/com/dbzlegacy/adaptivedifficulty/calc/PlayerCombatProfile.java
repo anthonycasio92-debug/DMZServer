@@ -109,6 +109,8 @@ public final class PlayerCombatProfile {
      * falls off when level exceeds the next tier gate (e.g. T3 @ 100k DMZ).
      */
     public final double paintEase;
+    /** DMZ level used for {@link #paintEase} (progression / unlock gates). */
+    public final int progressionDmzLevel;
 
     private PlayerCombatProfile(
             int activeTier,
@@ -135,7 +137,8 @@ public final class PlayerCombatProfile {
             boolean kiInfusionActive,
             int potentialUnlockLevel,
             long signature,
-            double paintEase
+            double paintEase,
+            int progressionDmzLevel
     ) {
         this.activeTier = activeTier;
         this.tierPercent = tierPercent;
@@ -162,6 +165,7 @@ public final class PlayerCombatProfile {
         this.potentialUnlockLevel = Math.max(0, Math.min(30, potentialUnlockLevel));
         this.signature = signature;
         this.paintEase = Math.max(0.35, Math.min(1.0, paintEase));
+        this.progressionDmzLevel = Math.max(0, progressionDmzLevel);
     }
 
     public static PlayerCombatProfile of(ServerPlayer player) {
@@ -394,8 +398,19 @@ public final class PlayerCombatProfile {
                 liveOffense, liveMaxHealth, liveFlatMitigation, formBoost, release,
                 balance.weakest, balance.imbalance, balance.topStats,
                 fightingClass, race, style,
-                kiProtect, kiInfusion, infusionOn, potential, sig, levelEase
+                kiProtect, kiInfusion, infusionOn, potential, sig, levelEase, dmzLevel
         );
+    }
+
+    private static long tierBandTop(DifficultyConfig cfg, int tier) {
+        if (cfg == null || tier <= 0) {
+            return Long.MAX_VALUE / 4L;
+        }
+        long min = cfg.tierRequiredLevel(tier);
+        if (tier < 7) {
+            return cfg.tierRequiredLevel(tier + 1);
+        }
+        return Math.max(min + 1L, (long) cfg.tierCostLevelAnchor);
     }
 
     private static PlayerCombatProfile inactive() {
@@ -403,7 +418,7 @@ public final class PlayerCombatProfile {
                 0, 0.0, 1.0, 1.0, 1.0, 1.0, 20.0, 1.0,
                 1.0, 20.0, 1.0, 1.0, 100.0,
                 WeakStat.NONE, 0.0, NO_TOP, "", "", FightingStyle.HYBRID,
-                0, 0, false, 0, 0L, 1.0
+                0, 0, false, 0, 0L, 1.0, 0
         );
     }
 
@@ -416,11 +431,15 @@ public final class PlayerCombatProfile {
             return 1.0;
         }
         long min = cfg.tierRequiredLevel(tier);
-        long nextGate = tier < 7 ? cfg.tierRequiredLevel(tier + 1) : Math.max(min + 1L, min * 2L);
+        long nextGate = tier < 7 ? cfg.tierRequiredLevel(tier + 1)
+                : Math.max(min + 1L, (long) cfg.tierCostLevelAnchor);
         if (nextGate <= min) {
             nextGate = min + 1L;
         }
         long level = Math.max(1L, dmzLevel);
+        if (level < min) {
+            return 1.0;
+        }
         long clamped = Math.max(min, Math.min(nextGate, level));
         double bandT = (clamped - min) / (double) (nextGate - min);
         double bandEase = 0.78 + 0.22 * Math.max(0.0, Math.min(1.0, bandT));
@@ -689,7 +708,13 @@ public final class PlayerCombatProfile {
         // DMZ level ease — veterans above tier gate should not be 2-shot.
         if (paintEase < 0.999) {
             double rawShare = offense * tierPercent;
-            base = rawShare + (base - rawShare) * paintEase;
+            if (base > rawShare + 1e-6) {
+                // Floor-bound: blend tank/god floors down toward offense share.
+                base = rawShare + (base - rawShare) * paintEase;
+            } else if (progressionDmzLevel > tierBandTop(cfg, activeTier)) {
+                // Cap-bound veteran (past tier band top): scale capped damage down.
+                base = Math.max(1.0, base * paintEase);
+            }
         }
         return Math.max(1.0, base);
     }
@@ -1223,7 +1248,7 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
         // Formula revision: Aug 29–30 early soft-cap + landing ease (2.3.57).
-        h = mix(h, 43L); // 2.3.161 rollback telemetry inflation + DMZ level paintEase
+        h = mix(h, 44L); // 2.3.162 paintEase cap-path fix + unified scaling constants
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }

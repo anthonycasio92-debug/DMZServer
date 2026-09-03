@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.161", 'VERSION = "2.3.161"' in mod)
+    check("VERSION 2.3.162", 'VERSION = "2.3.162"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -270,7 +270,7 @@ def main() -> int:
     print("\n=== Post-pierce soft-cap clamp (1.0.25) ===")
     check("incomingSoftCapFrac helper", "incomingSoftCapFrac" in profile)
     check("post-pierce bagCap clamp", "bagCap" in profile and "incomingSoftCapFrac()" in profile)
-    check("formula revision 43", "mix(h, 43L)" in profile)
+    check("formula revision 44", "mix(h, 44L)" in profile)
     check("README pierce clamp", "Post-pierce" in readme or "post-pierce" in readme)
 
     print("\n=== Telemetry rollback (2.3.161) ===")
@@ -278,7 +278,7 @@ def main() -> int:
     check("T3 threat floor 0.48", "case 3 -> 0.48" in profile)
     check("T6 form nudge 1.14", "case 6 -> 1.14" in profile)
     check("T6 liveShare 0.55", "case 6 -> 0.55" in profile)
-    check("paintEase veteran relief", "50_000L" in profile and "0.25" in profile)
+    check("scaling_constants SSOT", (Path(__file__).resolve().parent / "scaling_constants.py").is_file())
 
     print("\n=== Mob HP trim (1.0.29 / 1.0.30) ===")
     check("stock mobHealthScale 0.75", field_default(cfg, "mobHealthScale") == "0.75")
@@ -287,7 +287,7 @@ def main() -> int:
     check("README 1.0.30 HP trim", "1.0.30" in readme and "0.75" in readme)
 
     print("\n=== Telemetry retune (1.0.24) ===")
-    check("formula revision 43", "mix(h, 43L)" in profile)
+    check("formula revision 44", "mix(h, 44L)" in profile)
     check("T1 landCap 0.18", "case 1 -> 0.18" in profile)
     check("T1 landFrac 0.13", "case 1 -> 0.13" in profile)
     check("T6 landFrac 0.38", "case 6 -> 0.38" in profile)

@@ -23,12 +23,27 @@ OUT.mkdir(parents=True, exist_ok=True)
 REPO_OUT = Path(__file__).resolve().parent / "out"
 REPO_OUT.mkdir(parents=True, exist_ok=True)
 
-TIER_PCT = {1: 0.21, 2: 0.42, 3: 0.65, 4: 0.90, 5: 1.35, 6: 1.60, 7: 2.00}
+from scaling_constants import (  # noqa: E402
+    COUNTER_PCT_DIVISOR,
+    COUNTER_STRENGTH_MIN,
+    FORM_NUDGE,
+    GOD_THREAT,
+    GLASS_HITS,
+    HIT_CAP_TIER,
+    HP_FLOOR_STRENGTH_MIN,
+    LAND_CAP,
+    LAND_FRAC,
+    LIVE_SHARE,
+    SOFT_CAP,
+    SPONGE_HITS,
+    TANK_DEF_RATIO,
+    TANK_HP_RATIO,
+    TIER_PCT,
+)
+
 TW_BASE = 0.65
 TW_EXP = 0.75
 MOB_HP_SCALE = 0.75
-TANK_DEF_RATIO = 0.45
-TANK_HP_RATIO = 0.28
 MEGA_START, MEGA_TARGET = 6.0, 80.0
 MAX_FORM = 100.0
 RELEASE = 1.0
@@ -186,7 +201,7 @@ def hit_cap_health(soft_hp: float, live_hp: float, form_boost: float) -> float:
 def ki_protection_hit_frac(tier: int, form_boost: float, kp_level: int = 0) -> float:
     # 1.0.19 — raise T1–T6 bite; soft-cap T7 (live telemetry one-shots).
     del kp_level
-    tier_frac = {1: 0.22, 2: 0.28, 3: 0.34, 4: 0.40, 5: 0.44, 6: 0.48, 7: 0.52}[tier]
+    tier_frac = HIT_CAP_TIER[tier]
     if form_boost <= 1.12:
         form_factor = 0.78
     else:
@@ -198,32 +213,11 @@ def ki_protection_hit_frac(tier: int, form_boost: float, kp_level: int = 0) -> f
 
 
 def _counter_strength(pct: float) -> float:
-    # Full counters from T4 (90% tier%) — mirrors PlayerCombatProfile 2.3.160.
-    return max(0.0, min(1.0, pct / 0.90))
+    return max(0.0, min(1.0, pct / COUNTER_PCT_DIVISOR))
 
 
-def tier_level_ramp(tier: int, dmz_level: int = 5500) -> float:
-    """Deprecated — use paint_ease from simulate_build_matrix."""
-    return paint_ease(tier, dmz_level)
-
-
-def paint_ease(tier: int, dmz_level: int = 5500) -> float:
-    gates = {1: 1, 2: 500, 3: 1000, 4: 5000, 5: 10000, 6: 50000, 7: 100000}
-    min_l = gates.get(tier, 1)
-    next_gate = gates.get(tier + 1, min_l * 2) if tier < 7 else 150000
-    level = max(1, dmz_level)
-    clamped = max(min_l, min(next_gate, level))
-    band_t = (clamped - min_l) / max(1, next_gate - min_l)
-    band_ease = 0.78 + 0.22 * max(0.0, min(1.0, band_t))
-    over_ease = 1.0
-    if level > next_gate:
-        over_ease = max(0.40, min(1.0, (next_gate / level) ** 0.5))
-    ease = band_ease * over_ease
-    if tier >= 4 and level >= 50000:
-        vet = max(0.70, min(1.0, (50000 / level) ** 0.25))
-        ease *= vet
-    return max(0.35, min(1.0, ease))
-
+# DMZ tier unlock gates + paintEase — see scaling_constants.paint_ease
+from scaling_constants import paint_ease  # noqa: E402
 
 def eased_floor(base: float, floor: float, ramp: float) -> float:
     if floor <= base + 1e-6 or ramp >= 0.999:
@@ -361,24 +355,25 @@ def simulate_ad(
     dmg = offense_share
     cap_hp = hit_cap_health(hp, live_hp, form_boost)
     # Live VIT/RES floors — tank dumps / god forms must feel the ladder.
-    floor_strength = max(0.35, min(1.0, _counter_strength(pct)))
-    hp_floor_strength = max(0.60, floor_strength)
+    floor_strength = max(COUNTER_STRENGTH_MIN, min(1.0, _counter_strength(pct)))
+    hp_floor_strength = max(HP_FLOOR_STRENGTH_MIN, floor_strength)
     ease = paint_ease(tier, 5500)
+    dmz_level = 5500
     tank_floor = max(defense * pct * TANK_DEF_RATIO * floor_strength,
                      cap_hp * pct * TANK_HP_RATIO * hp_floor_strength)
     dmg = eased_floor(dmg, tank_floor, ease)
     if 1 <= tier <= 3 and form_boost > 1.12:
-        threat = {1: 0.35, 2: 0.42, 3: 0.48}[tier]
+        threat = GOD_THREAT[tier]
         soft = offense * threat
         if form_boost >= 6.0:
             t = mega_t(form_boost)
             soft = min(soft, offense_share * max(1.25, 1.55 - 0.08 * min(1.25, t)))
         dmg = eased_floor(dmg, soft, ease)
     if tier >= 4 and form_boost > 1.12:
-        nudge = {4: 1.06, 5: 1.10, 6: 1.14, 7: 1.18}[tier]
+        nudge = FORM_NUDGE[tier]
         dmg = max(dmg, offense_share * nudge)
     if form_boost > 1.12 and live_off > offense * 1.05:
-        live_share = {1: 0.22, 2: 0.28, 3: 0.34, 4: 0.42, 5: 0.50, 6: 0.55, 7: 0.58}[tier]
+        live_share = LIVE_SHARE[tier]
         if form_boost >= 6.0:
             mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
         else:
@@ -404,10 +399,16 @@ def simulate_ad(
     allow_pierce = tier >= 4 or (tier >= 3 and form_boost >= 6.0)
     if live_flat > 1.0 and dmg * cancel_thr <= live_flat and allow_pierce:
         dmg = max(dmg, live_flat / cancel_thr * 1.08)
-    soft_cap_frac = {1: 0.30, 2: 0.32, 3: 0.36, 4: 0.40, 5: 0.44, 6: 0.48, 7: 0.52}[tier]
+    soft_cap_frac = SOFT_CAP[tier]
     dmg = min(dmg, max(20.0, live_hp) * soft_cap_frac)
     if ease < 0.999:
-        dmg = offense_share + (dmg - offense_share) * ease
+        if dmg > offense_share + 1e-6:
+            dmg = offense_share + (dmg - offense_share) * ease
+        else:
+            from scaling_constants import TIER_DMZ_BAND_TOP, TIER_DMZ_GATE
+            band_top = TIER_DMZ_GATE.get(tier + 1, 150000) if tier < 7 else TIER_DMZ_BAND_TOP.get(7, 150000)
+            if dmz_level > band_top:
+                dmg = max(1.0, dmg * ease)
 
     hp_ov = 1.0
     hp_ov *= _blend_counter(_combine_top2(_hp_stat_bias, top), pct)
@@ -419,7 +420,7 @@ def simulate_ad(
     if 1 <= tier <= 2 and form_boost > 1.12:
         base_hp_mob = max(base_hp_mob, hp * (0.20 if tier == 1 else 0.28))
     if offense > hp * 0.30:
-        hits = {1: 1.00, 2: 0.90, 3: 0.78, 4: 0.68, 5: 0.58, 6: 0.52, 7: 0.48}[tier]
+        hits = SPONGE_HITS[tier]
         durability = offense * pct * hits
         offense_vit = offense / max(1.0, hp)
         vit_cap_mul = 3.2
@@ -431,7 +432,7 @@ def simulate_ad(
         form_pad = 1.0 + 0.40 * min(1.0, math.log(form_boost) / math.log(80.0))
     hard = hp * max(pct, 0.20) * form_pad * 1.55
     if offense > hp * 1.15:
-        glass_hits = {1: 0.82, 2: 0.72, 3: 0.62, 4: 0.54, 5: 0.48, 6: 0.44, 7: 0.40}[tier]
+        glass_hits = GLASS_HITS[tier]
         glass_hard = offense * pct * glass_hits
         hard = max(hard, min(glass_hard, vit_share * 8.0))
     mob_hp = min(base_hp_mob, hard) * MOB_HP_SCALE * hp_ov
@@ -598,7 +599,7 @@ def main() -> None:
         )
 
     # Soft-cap table (mirrors DifficultyEvents maxFrac / PlayerCombatProfile).
-    SOFT = {1: 0.30, 2: 0.32, 3: 0.36, 4: 0.40, 5: 0.44, 6: 0.48, 7: 0.52}
+    SOFT = SOFT_CAP
 
     # Informational notes (glass packs vs mega forms are intentional — RES counters STR).
     notes = []

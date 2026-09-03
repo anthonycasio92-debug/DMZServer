@@ -234,10 +234,11 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 2.3.161", 'VERSION = "2.3.161"' in mod)
+    check("VERSION 2.3.162", 'VERSION = "2.3.162"' in mod)
 
     check("RaceSkillSync present", (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/bridge/RaceSkillSync.java").is_file())
-    check("formula revision 43", "mix(h, 43L)" in profile)
+    check("formula revision 44", "mix(h, 44L)" in profile)
+    check("paintEase cap-path split", "Cap-bound" in profile or "base * paintEase" in profile)
     check("hpFloorStrength present", "hpFloorStrength" in profile)
     check("T1–T3 god-form floors (1.0.12 rollback)", "case 1 -> 0.35" in profile and "case 3 -> 0.48" in profile)
     check("paintEase DMZ level ramp", "paintEase" in profile and "tierRequiredLevel" in profile)

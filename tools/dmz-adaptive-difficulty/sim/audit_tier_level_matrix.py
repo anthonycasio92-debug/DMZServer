@@ -58,7 +58,7 @@ try:
 except OSError:
     ART = None
 
-SOFT = {1: 0.30, 2: 0.32, 3: 0.36, 4: 0.40, 5: 0.44, 6: 0.48, 7: 0.52}
+from scaling_constants import SOFT_CAP as SOFT
 
 # Combat pressure does not take DMZ level directly — stats do. We still re-check
 # the tier ladder at several level *bands* so buy/unlock context stays covered.

@@ -16,14 +16,10 @@ from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
 
-# Concept soft-cap ceilings (incomingSoftCapFrac)
-SOFT_CAP = {1: 0.34, 2: 0.36, 3: 0.44, 4: 0.50, 5: 0.52, 6: 0.60, 7: 0.62}
+from scaling_constants import LAND_FRAC, SOFT_CAP
 
-# Concept landing fractions (targetLandingDamage landFrac)
-LAND_FRAC = {1: 0.13, 2: 0.16, 3: 0.26, 4: 0.48, 5: 0.50, 6: 0.58, 7: 0.60}
-
-# Expected even-build hitFrac bands from sim (saiyan warrior, no skills)
-SIM_EVEN = {1: 0.135, 3: None, 5: 0.468, 7: 0.577}
+# Expected even-build hitFrac bands from sim (saiyan warrior, no skills, 2.3.161)
+SIM_EVEN = {1: 0.129, 3: 0.353, 5: 0.447, 7: 0.583}
 
 
 def band_form(fb: float) -> str:

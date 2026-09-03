@@ -46,17 +46,17 @@ Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).
 | Tier | HitFrac | After KP0 | SoftHits | MobDmg | MobHp |
 |-----:|--------:|----------:|---------:|-------:|------:|
 | T1 | 0.129 | 0.129 | 1.27 | 96 | 121 |
-| T3 | 0.271 | 0.271 | 1.33 | 203 | 391 |
-| T5 | 0.447 | 0.447 | 1.36 | 335 | 834 |
-| T7 | 0.583 | 0.583 | 1.36 | 436 | 1236 |
+| T3 | 0.253 | 0.253 | 1.33 | 189 | 391 |
+| T5 | 0.343 | 0.343 | 1.36 | 257 | 834 |
+| T7 | 0.406 | 0.406 | 1.36 | 304 | 1236 |
 
 ## Sample: skills at T5 saiyan warrior even (base)
 
 | Skills | HitFrac | AfterKP | MobHp | KP save |
 |--------|--------:|--------:|------:|--------:|
-| none | 0.447 | 0.447 | 834 | 0 |
-| kp10 | 0.447 | 0.403 | 834 | 34 |
-| inf10 | 0.447 | 0.447 | 1068 | 0 |
-| full | 0.447 | 0.403 | 1068 | 34 |
+| none | 0.343 | 0.343 | 834 | 0 |
+| kp10 | 0.343 | 0.309 | 834 | 26 |
+| inf10 | 0.343 | 0.343 | 1068 | 0 |
+| full | 0.343 | 0.309 | 1068 | 26 |
 
 Rows: 9792. Races: ancient_saiyan, bioandroid, frostdemon, human, majin, monkey, namekian, saiyan, sento_saiyan, viltrumite.
