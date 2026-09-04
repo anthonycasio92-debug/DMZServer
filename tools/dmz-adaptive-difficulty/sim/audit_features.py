@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.174", 'VERSION = "2.3.174"' in mod)
+    check("VERSION 2.3.177", 'VERSION = "2.3.177"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -227,7 +227,7 @@ def main() -> int:
 
     print("\n=== Titles / teams stub / GUI ===")
     check("title equip action", has(actions, "equipTitle", "ACT_EQUIP_TITLE") or "equip_title" in actions)
-    check("teams WIP", "work in progress" in actions.lower() or "WIP" in actions)
+    check("rival team mode action", "setTeamMode" in actions or "mutual rivals" in actions.lower())
     check("GUI ABI package stable", "com.dbzlegacy.adaptivedifficulty" in bridge and "DifficultyCache" in bridge)
 
     print("\n=== Balance telemetry ===")

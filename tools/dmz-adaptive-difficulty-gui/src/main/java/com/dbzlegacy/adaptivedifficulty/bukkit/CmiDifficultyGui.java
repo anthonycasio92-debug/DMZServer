@@ -12,7 +12,7 @@ import org.bukkit.entity.Player;
 
 /**
  * CMILib inventory GUI — tier-centric Adaptive Difficulty.
- * Pages: Hub · Tiers (buy / lower / reset) · Titles · Teams (WIP).
+ * Pages: Hub · Tiers · Titles · Rival Teams.
  * Details is staff/ops only.
  */
 public final class CmiDifficultyGui {
@@ -47,7 +47,7 @@ public final class CmiDifficultyGui {
                 case "tiers", "tier", "buy", "purchase", "unlock",
                      "adjust", "change", "set", "lower" -> openTiers(player);
                 case "titles", "title" -> openTitles(player);
-                case "team", "teams" -> openTeamsWip(player);
+                case "team", "teams" -> openTeams(player);
                 case "stats", "statistics", "details" -> {
                     if (ForgeBridge.isStaff(player)) {
                         openStats(player);
@@ -93,6 +93,9 @@ public final class CmiDifficultyGui {
         gui.addButton(status);
 
         // Primary actions — Tiers (buy/lower/reset) + Titles
+        gui.addButton(pageBtn(player, 19, "difficulty.main.teams", Material.SHIELD, "&bRival Teams", "team",
+                "&7Mutual rivals extend your tier ceiling",
+                "&8Opt-in · online · nearby for full bonus"));
         gui.addButton(pageBtn(player, 21, "difficulty.main.tiers", Material.GOLD_INGOT, "&eTiers", "tiers",
                 "&7Buy higher · lower unlocked · reset",
                 "&8Ancient Coins · pay-up OK · change returned"));
@@ -361,21 +364,64 @@ public final class CmiDifficultyGui {
         GuiFeedback.openCmi(gui);
     }
 
-    private static void openTeamsWip(Player player) {
-        CMIGui gui = base(player, "&8Teams (WIP)", 3);
-        CMIGuiButton info = new CMIGuiButton(13, Material.COMPASS, "&8&lTeams — Work in Progress");
-        info.lockField();
-        info.addLore(List.of(
-                "",
-                "&7Team difficulty is not available yet.",
-                "&eDifficulty is personal / individual only.",
-                "",
-                "&8No team actions can be taken from this menu."
-        ));
-        gui.addButton(info);
-        gui.addButton(pageBtn(player, 18, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
-        gui.addButton(closeBtn(26));
-        fillEmpty(gui, 3);
+    private static void openTeams(Player player) {
+        Map<String, String> ph = ForgeBridge.placeholders(player);
+        CMIGui gui = base(player, "&8Rival Teams", 5);
+        CMIGuiButton header = new CMIGuiButton(4, Material.SHIELD,
+                GuiTooltips.name("difficulty.team.header", "&b&lRival Teams"));
+        header.lockField();
+        List<String> headerLore = new ArrayList<>();
+        headerLore.add("");
+        for (String line : ForgeBridge.diffTeamLines(player)) {
+            headerLore.add(line == null ? "" : line.replace('§', '&'));
+        }
+        header.addLore(headerLore);
+        gui.addButton(header);
+
+        String mode = ph.getOrDefault("team_mode", "personal_only");
+        gui.addButton(actionBtn(player, 20, "difficulty.team.mode_personal", Material.GRAY_DYE, "&7Personal",
+                "team", "personal", "team",
+                List.of("&7Only your tier ceiling",
+                        mode.equals("personal_only") ? "&aCurrent mode" : "&eClick to select")));
+        gui.addButton(actionBtn(player, 22, "difficulty.team.mode_threshold", Material.LIME_DYE, "&aThreshold",
+                "team", "threshold", "team",
+                List.of("&7+" + ph.getOrDefault("bonus_percent", "10") + "% max per opted-in rival online",
+                        mode.equals("threshold_bonus_only") ? "&aCurrent mode" : "&eClick to select")));
+        gui.addButton(actionBtn(player, 24, "difficulty.team.mode_full", Material.EMERALD, "&2Full",
+                "team", "full", "team",
+                List.of("&7Threshold + nearby spare tier room",
+                        "&8Within " + ph.getOrDefault("proximity_blocks", "48") + " blocks",
+                        mode.equals("full_team_scaling") ? "&aCurrent mode" : "&eClick to select")));
+
+        List<GuiBoardHelper.TeamRivalCard> cards =
+                GuiBoardHelper.parseTeamRivalCards(ForgeBridge.diffTeamMutualCards(player));
+        int[] slots = GuiBoardHelper.centeredSlots(cards.size());
+        for (int i = 0; i < cards.size() && i < slots.length; i++) {
+            CMIGuiButton head = new CMIGuiButton(slots[i], GuiBoardHelper.teamRivalHead(cards.get(i)));
+            head.lockField();
+            gui.addButton(head);
+        }
+        if (cards.isEmpty()) {
+            CMIGuiButton empty = new CMIGuiButton(28, Material.BARRIER, "&7No mutual rivals");
+            empty.lockField();
+            empty.addLore(List.of("", "&7Use /rival to declare and accept",
+                    "&8Both players must accept for Mutual"));
+            gui.addButton(empty);
+        }
+
+        CMIGuiButton rival = new CMIGuiButton(31, Material.DIAMOND_SWORD,
+                GuiTooltips.name("difficulty.team.open_rival", "&6Open Rival"));
+        rival.lockField();
+        rival.addLore(GuiTooltips.buttonLore("difficulty.team.open_rival",
+                List.of("&7Manage declares and mutual slots")));
+        rival.addCommand("lmdo lm open rival");
+        rival.setCloseInv(true);
+        gui.addButton(rival);
+
+        gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
     }
 

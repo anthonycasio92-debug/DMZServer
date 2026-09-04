@@ -370,6 +370,49 @@
           "&7Staff breakdown of your scaling",
           "&8Combat rating, prestige, and kit gates"
         ]
+      },
+      "teams": {
+        "name": "&bRival Teams",
+        "lore": [
+          "&7Mutual rivals extend your tier ceiling",
+          "&8Opt-in · both must enable team mode",
+          "&eClick to open"
+        ]
+      }
+    },
+    "team": {
+      "header": {
+        "name": "&b&lRival Teams",
+        "lore": [
+          "&7Share difficulty with mutual rivals",
+          "&8Max 2 mutual slots · online only"
+        ]
+      },
+      "mode_personal": {
+        "name": "&7Personal",
+        "lore": [
+          "&7Only your tier ceiling applies"
+        ]
+      },
+      "mode_threshold": {
+        "name": "&aThreshold",
+        "lore": [
+          "&7Bonus max per opted-in rival online",
+          "&8Uses teamBonusPercent from config"
+        ]
+      },
+      "mode_full": {
+        "name": "&2Full",
+        "lore": [
+          "&7Threshold + nearby spare tier room",
+          "&8Rivals must also use Full mode"
+        ]
+      },
+      "open_rival": {
+        "name": "&6Open Rival",
+        "lore": [
+          "&7Declare · accept · manage mutual slots"
+        ]
       }
     },
     "tiers": {

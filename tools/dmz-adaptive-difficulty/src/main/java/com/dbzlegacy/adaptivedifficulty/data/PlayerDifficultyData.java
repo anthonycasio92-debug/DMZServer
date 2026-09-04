@@ -198,13 +198,13 @@ public final class PlayerDifficultyData {
         }
     }
 
-    /** Teams are WIP — always personal-only until that feature ships. */
+    /** Persisted team scaling mode (rival mutual teammates). */
     public TeamMode getTeamMode() {
-        return TeamMode.PERSONAL_ONLY;
+        return teamMode == null ? TeamMode.PERSONAL_ONLY : teamMode;
     }
 
     public void setTeamMode(TeamMode teamMode) {
-        this.teamMode = TeamMode.PERSONAL_ONLY;
+        this.teamMode = teamMode == null ? TeamMode.PERSONAL_ONLY : teamMode;
     }
 
     public List<String> getTitles() {

@@ -60,7 +60,7 @@ public final class DifficultyChatMenu {
         } else if ("titles".equalsIgnoreCase(page) || "title".equalsIgnoreCase(page)) {
             titles(player);
         } else if ("team".equalsIgnoreCase(page) || "teams".equalsIgnoreCase(page)) {
-            teamsWip(player);
+            teams(player);
         } else if ("stats".equalsIgnoreCase(page) || "statistics".equalsIgnoreCase(page)
                 || "details".equalsIgnoreCase(page)) {
             if (isStaff(player)) {
@@ -221,11 +221,17 @@ public final class DifficultyChatMenu {
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 
-    private static void teamsWip(ServerPlayer player) {
+    private static void teams(ServerPlayer player) {
         send(player, Component.m_237113_(""));
-        send(player, Component.m_237113_("§8──────── §7Teams (WIP) §8────────"));
-        send(player, Component.m_237113_("§7Team difficulty is not available yet."));
-        send(player, Component.m_237113_("§eDifficulty is personal / individual only for now."));
+        send(player, Component.m_237113_("§8──────── §bRival Teams §8────────"));
+        for (String line : com.dbzlegacy.adaptivedifficulty.gui.DifficultyTeamGuiApi.linesForPage(player, "team")) {
+            send(player, Component.m_237113_(line));
+        }
+        send(player, Component.m_237113_(""));
+        send(player, btn("§7Personal", "/difficulty do team personal team", "Solo ceiling only"));
+        send(player, btn("§aThreshold", "/difficulty do team threshold team", "Bonus per opted-in rival online"));
+        send(player, btn("§2Full", "/difficulty do team full team", "Threshold + nearby spare room"));
+        send(player, btn("§6Open Rival", "/lmdo lm open rival", "Manage mutual rivals"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));
     }
 
