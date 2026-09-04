@@ -671,9 +671,9 @@ def main() -> int:
         "telemetry logs android upgrade flag",
         '\\"android\\"' in tel and "isAndroidUpgraded" in tel,
     )
-    races_root = Path("/workspace/config/dragonminez/races")
+    races_root = ROOT / "config" / "dragonminez" / "races"
     if not races_root.is_dir():
-        races_root = ROOT.parents[1] / "config" / "dragonminez" / "races"
+        races_root = Path("/workspace/config/dragonminez/races")
     for race in ("human", "saiyan", "frostdemon", "viltrumite"):
         check(
             f"stock {race} androidforms.json",
