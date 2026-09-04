@@ -408,8 +408,8 @@
         "name": "&2Full",
         "lore": [
           "&7Threshold bonus plus nearby spare room",
-          "&7Rivals need Full mode and must be close",
-          "&7Best elite, mutant, and boss spawn boost",
+          "&7Best spawn boost when rivals are close",
+          "&8Rivals must use Full mode and be nearby",
           "&eClick to select"
         ]
       },

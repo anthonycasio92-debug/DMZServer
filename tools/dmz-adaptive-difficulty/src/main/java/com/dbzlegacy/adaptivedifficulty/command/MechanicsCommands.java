@@ -277,15 +277,15 @@ public final class MechanicsCommands {
         switch (m) {
             case "on", "true", "enable" -> {
                 SystemTelemetry.setEnabled(true);
-                source.m_288197_(() -> Component.m_237113_("§aSystem telemetry ON"), true);
+                source.m_288197_(() -> Component.m_237113_("§aEvent log ON"), true);
             }
             case "off", "false", "disable" -> {
                 SystemTelemetry.setEnabled(false);
-                source.m_288197_(() -> Component.m_237113_("§eSystem telemetry OFF"), true);
+                source.m_288197_(() -> Component.m_237113_("§eEvent log OFF"), true);
             }
             case "flush" -> {
                 SystemTelemetry.flushAndClose();
-                source.m_288197_(() -> Component.m_237113_("§aSyslog flushed."), true);
+                source.m_288197_(() -> Component.m_237113_("§aLogs flushed."), true);
             }
             default -> source.m_288197_(() -> Component.m_237113_("§7" + SystemTelemetry.statusLine()), false);
         }

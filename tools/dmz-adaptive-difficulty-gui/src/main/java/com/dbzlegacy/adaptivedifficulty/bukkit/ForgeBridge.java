@@ -2651,13 +2651,13 @@ public final class ForgeBridge {
             loadClass("com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
                     .getMethod("setEnabled", boolean.class).invoke(null, on);
             Path dir = telemetryDir();
-            return (on ? "§aBalance telemetry ON" : "§eBalance telemetry OFF")
+            return (on ? "§aCombat hit log ON" : "§eCombat hit log OFF")
                     + "\n§7Logs AD hits for §fall players§7 using the difficulty system"
                     + " §8(rate-limited)."
                     + "\n§8" + dir;
         } catch (Throwable t) {
             resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
-            return "§cFailed to toggle telemetry: " + t.getMessage()
+            return "§cFailed to toggle hit log: " + t.getMessage()
                     + "\n§8Install matching LegacyMechanics jar.";
         }
     }
@@ -2667,12 +2667,12 @@ public final class ForgeBridge {
             Object line = loadClass(
                     "com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
                     .getMethod("statusLine").invoke(null);
-            return "§6Balance telemetry\n§7" + line
+            return "§6Combat hit log\n§7" + line
                     + "\n§8Samples all AD players when ON (not whitelist-gated)."
                     + "\n§8/difficulty admin telemetry on|off|flush|test";
         } catch (Throwable t) {
             resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
-            return "§cTelemetry unavailable: " + t.getMessage()
+            return "§cHit log unavailable: " + t.getMessage()
                     + "\n§8Need LegacyMechanics with BalanceTelemetry.";
         }
     }
@@ -2681,10 +2681,10 @@ public final class ForgeBridge {
         try {
             loadClass("com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
                     .getMethod("flushAndClose").invoke(null);
-            return "§aTelemetry flushed.\n§8" + telemetryDir();
+            return "§aLogs flushed.\n§8" + telemetryDir();
         } catch (Throwable t) {
             resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
-            return "§cTelemetry flush failed: " + t.getMessage();
+            return "§cHit log flush failed: " + t.getMessage();
         }
     }
 
@@ -2700,22 +2700,22 @@ public final class ForgeBridge {
             return switch (m) {
                 case "on", "true", "enable" -> {
                     tel.getMethod("setEnabled", boolean.class).invoke(null, true);
-                    yield "§aSystem telemetry ON\n§8" + tel.getMethod("telemetryDir").invoke(null);
+                    yield "§aEvent log ON\n§8" + tel.getMethod("telemetryDir").invoke(null);
                 }
                 case "off", "false", "disable" -> {
                     tel.getMethod("setEnabled", boolean.class).invoke(null, false);
-                    yield "§eSystem telemetry OFF";
+                    yield "§eEvent log OFF";
                 }
                 case "flush" -> {
                     tel.getMethod("flushAndClose").invoke(null);
-                    yield "§aSyslog flushed.\n§8" + tel.getMethod("telemetryDir").invoke(null);
+                    yield "§aLogs flushed.\n§8" + tel.getMethod("telemetryDir").invoke(null);
                 }
                 case "status", "0", "" -> "§7" + tel.getMethod("statusLine").invoke(null);
                 default -> "§cUsage: syslog on|off|status|flush";
             };
         } catch (Throwable t) {
             resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
-            return "§cSyslog unavailable: " + t.getMessage()
+            return "§cEvent log unavailable: " + t.getMessage()
                     + "\n§8Need LegacyMechanics with SystemTelemetry.";
         }
     }

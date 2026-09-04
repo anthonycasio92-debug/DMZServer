@@ -381,7 +381,7 @@ public final class CmiDifficultyGui {
         String mode = ph.getOrDefault("team_mode", "personal_only");
         gui.addButton(actionBtn(player, 20, "difficulty.team.mode_personal", Material.GRAY_DYE, "&7Personal",
                 "team", "personal", "team",
-                List.of("&7Only your tier ceiling",
+                List.of("&7Only your own tier ceiling counts",
                         mode.equals("personal_only") ? "&aCurrent mode" : "&eClick to select")));
         gui.addButton(actionBtn(player, 22, "difficulty.team.mode_threshold", Material.LIME_DYE, "&aThreshold",
                 "team", "threshold", "team",
@@ -416,7 +416,7 @@ public final class CmiDifficultyGui {
                 GuiTooltips.name("difficulty.team.open_rival", "&6Open Rival"));
         rival.lockField();
         rival.addLore(GuiTooltips.buttonLore("difficulty.team.open_rival",
-                List.of("&7Manage declares and mutual slots")));
+                List.of("&7Declare, accept, or manage mutual slots")));
         rival.addCommand("lmdo lm open rival");
         rival.setCloseInv(true);
         gui.addButton(rival);

@@ -55,7 +55,7 @@ public final class MechanicsGuiApi {
                 List<String> lines = new ArrayList<>();
                 lines.add("§7Event log §f" + (on ? "ON" : "OFF"));
                 lines.add("§8" + SystemTelemetry.statusLine());
-                lines.add("§7Dir §f" + SystemTelemetry.telemetryDir());
+                lines.add("§7Folder §f" + SystemTelemetry.telemetryDir());
                 lines.add("§8Buttons: on · off · flush");
                 lines.add("§8/lm admin syslog on|off|status|flush");
                 yield lines;

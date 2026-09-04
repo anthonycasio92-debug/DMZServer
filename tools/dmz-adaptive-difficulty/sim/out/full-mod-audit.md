@@ -1,6 +1,6 @@
-# Full mod audit — LegacyMechanics 2.3.179
+# Full mod audit — LegacyMechanics 2.3.180
 
-Generated: 2026-09-04T14:31Z
+Generated: 2026-09-04T14:35Z
 
 ## Suite summary
 
@@ -41,7 +41,7 @@ Fail-closed checks for unlock tiers T1–T7 across the DMZ level cap.
 
 ## 2) Buy-cost ladder T1<T2<…<T7 at every level
 
-- ✅ cost T-ladder mono across 150000 levels — 0.84s
+- ✅ cost T-ladder mono across 150000 levels — 0.85s
 - ✅ cost non-decreasing with level (≤150k) — ok
 - ✅ past-anchor clamp T7 200k==150k — 10000000 vs 10000000
 - ✅ past-anchor clamp T1 200k==150k — 6700 vs 6700

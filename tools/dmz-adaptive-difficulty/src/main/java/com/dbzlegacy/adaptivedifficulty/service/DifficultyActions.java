@@ -343,16 +343,15 @@ public final class DifficultyActions {
     }
 
     private static String teamModeMessage(TeamMode mode) {
-        int bonus = (int) DifficultyConfig.get().teamBonusPercent;
         int contrib = (int) DifficultyConfig.get().contributionPercent;
         return switch (mode) {
             case PERSONAL_ONLY -> "Team mode: Personal — only your tier ceiling applies.";
             case THRESHOLD_BONUS_ONLY ->
-                    "Team mode: Threshold — +" + bonus + "% max per online rival also using teams."
-                            + " Higher elite, mutant, and boss spawn rates.";
+                    "Team mode: Threshold — higher tier ceiling when rivals are online and using a team mode."
+                            + " More elites, mutants, and bosses.";
             case FULL_TEAM_SCALING ->
                     "Team mode: Full — threshold bonus plus " + contrib + "% of nearby rivals' spare tier room."
-                            + " Best spawn boost when rivals are close.";
+                            + " Best elite, mutant, and boss spawn boost when rivals are close.";
         };
     }
 

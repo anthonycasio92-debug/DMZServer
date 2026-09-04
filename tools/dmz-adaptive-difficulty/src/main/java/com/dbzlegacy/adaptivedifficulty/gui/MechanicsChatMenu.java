@@ -96,7 +96,7 @@ public final class MechanicsChatMenu {
                 .m_7220_(Component.m_237113_("  "))
                 .m_7220_(btn("§e[Flush]", "/lmdo lm syslog flush logs", "Write buffered logs to disk"));
         send(player, toggles);
-        send(player, btn("§7« Back", "/lmdo lm page main", "Hub"));
+        send(player, btn("§7« Back", "/lmdo lm page main", "Main menu"));
         send(player, Component.m_237113_("§8────────────────"));
     }
 

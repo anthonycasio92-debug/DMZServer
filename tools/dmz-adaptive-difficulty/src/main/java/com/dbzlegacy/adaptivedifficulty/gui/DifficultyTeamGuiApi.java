@@ -159,12 +159,12 @@ public final class DifficultyTeamGuiApi {
             int contribPct = (int) DifficultyConfig.get().contributionPercent;
             int prox = (int) TeamScaling.contributionProximityBlocks();
             lines.add("§7Extra max §f+" + snap.teamThresholdBonus
-                    + " §8(+" + bonusPct + "% per online rival using teams)");
+                    + " §8(" + bonusPct + "% more max per online rival on a team mode)");
             if (mode == TeamMode.FULL_TEAM_SCALING) {
-                lines.add("§7Nearby bonus §f+" + snap.teamContribution
-                        + " §8(" + contribPct + "% spare within " + prox + " blocks)");
+                lines.add("§7Nearby spare §f+" + snap.teamContribution
+                        + " §8(" + contribPct + "% of spare within " + prox + " blocks)");
             } else {
-                lines.add("§8Full mode also shares spare tier room when close.");
+                lines.add("§8Full mode also shares spare tier room when rivals are close.");
             }
             lines.add("§7Your max §f" + snap.availableMax + " §8(base §f" + snap.personalMax + "§8)");
             double eliteBonus = TeamScaling.rarityBonusPercent(player, TeamScaling.RarityBonus.ELITE);
