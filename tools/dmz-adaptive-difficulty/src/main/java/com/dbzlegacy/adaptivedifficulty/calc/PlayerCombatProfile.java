@@ -648,9 +648,9 @@ public final class PlayerCombatProfile {
         if (activeTier >= 4 && formBoost > 1.12) {
             double nudge = switch (activeTier) {
                 case 4 -> 1.06;
-                case 5 -> 1.10;
+                case 5 -> 1.12;
                 case 6 -> 1.14;
-                default -> 1.18;
+                default -> 1.21;
             };
             base = Math.max(base, offenseShare * nudge);
         }
@@ -666,7 +666,7 @@ public final class PlayerCombatProfile {
                 case 4 -> 0.42;
                 case 5 -> 0.50;
                 case 6 -> 0.55;
-                default -> 0.58;
+                default -> 0.60;
             };
             // Mega forms: more of the live slice (still hit-capped after).
             double megaBoost = formBoost >= 6.0
@@ -674,7 +674,7 @@ public final class PlayerCombatProfile {
                     : 1.0;
             // T7: damp mega live-slice so ×50 forms aren't free one-shots before hit-cap.
             if (activeTier >= 7 && formBoost >= 6.0) {
-                megaBoost = 1.0 + 0.18 * Math.min(1.0, megaFormT(formBoost));
+                megaBoost = 1.0 + 0.24 * Math.min(1.0, megaFormT(formBoost));
             }
             double liveFloor = liveOffense * tierPercent * liveShare * megaBoost;
             base = easedFloor(base, liveFloor);
@@ -734,7 +734,7 @@ public final class PlayerCombatProfile {
     public double incomingSoftCapFrac() {
         // 2.3.161: roll back Aug telemetry inflation — T5/T7 were 2-hit deaths.
         double base = switch (activeTier) {
-            case 7 -> 0.52;
+            case 7 -> 0.60;
             case 6 -> 0.48;
             case 5 -> 0.44;
             case 4 -> 0.40;
@@ -854,9 +854,9 @@ public final class PlayerCombatProfile {
             case 2 -> 0.28;
             case 3 -> 0.34;
             case 4 -> 0.40;
-            case 5 -> 0.44;
+            case 5 -> 0.46;
             case 6 -> 0.48;
-            default -> 0.52;
+            default -> 0.56;
         };
         double formFactor;
         if (formBoost <= 1.12) {

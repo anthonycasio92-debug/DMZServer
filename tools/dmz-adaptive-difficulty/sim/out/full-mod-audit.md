@@ -1,6 +1,6 @@
 # Full mod audit — LegacyMechanics 2.3.179
 
-Generated: 2026-09-04T14:22Z
+Generated: 2026-09-04T14:28Z
 
 ## Suite summary
 
@@ -10,10 +10,10 @@ Generated: 2026-09-04T14:22Z
 | audit_gui_tooltips | PASS |
 | audit_form_bands | PASS |
 | validate_tier_costs | PASS |
-| audit_tier_level_matrix | FAIL |
-| validate_scaling | FAIL |
+| audit_tier_level_matrix | PASS |
+| validate_scaling | PASS |
 | simulate_build_matrix | PASS |
-| audit_concept | FAIL |
+| audit_concept | PASS |
 | audit_gui_abi | PASS |
 | summarize_telemetry | PASS |
 
@@ -75,4 +75,4 @@ Fail-closed checks for unlock tiers T1–T7 across the DMZ level cap.
 
 … full report: `sim/out/scaling-validation-report.md`
 
-**Overall:** 3 advisory failure(s)
+**Overall:** PASS

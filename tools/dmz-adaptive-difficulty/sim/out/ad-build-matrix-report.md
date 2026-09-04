@@ -47,16 +47,16 @@ Skills: kiprotection / ki_infusion / potentialunlock (DMZ combat.json rates).
 |-----:|--------:|----------:|---------:|-------:|------:|
 | T1 | 0.129 | 0.129 | 1.27 | 96 | 121 |
 | T3 | 0.249 | 0.249 | 1.33 | 187 | 391 |
-| T5 | 0.338 | 0.338 | 1.36 | 253 | 834 |
-| T7 | 0.399 | 0.399 | 1.36 | 299 | 1236 |
+| T5 | 0.353 | 0.353 | 1.36 | 265 | 834 |
+| T7 | 0.430 | 0.430 | 1.36 | 322 | 1236 |
 
 ## Sample: skills at T5 saiyan warrior even (base)
 
 | Skills | HitFrac | AfterKP | MobHp | KP save |
 |--------|--------:|--------:|------:|--------:|
-| none | 0.338 | 0.338 | 834 | 0 |
-| kp10 | 0.304 | 0.274 | 834 | 23 |
-| inf10 | 0.338 | 0.338 | 1068 | 0 |
-| full | 0.304 | 0.274 | 1068 | 23 |
+| none | 0.353 | 0.353 | 834 | 0 |
+| kp10 | 0.318 | 0.286 | 834 | 24 |
+| inf10 | 0.353 | 0.353 | 1068 | 0 |
+| full | 0.318 | 0.286 | 1068 | 24 |
 
 Rows: 9792. Races: ancient_saiyan, bioandroid, frostdemon, human, majin, monkey, namekian, saiyan, sento_saiyan, viltrumite.

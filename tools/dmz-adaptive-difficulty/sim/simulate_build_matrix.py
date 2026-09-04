@@ -276,7 +276,7 @@ def simulate(
     if form_boost > 1.12 and live_off > offense * 1.05:
         live_share = LIVE_SHARE[tier]
         if form_boost >= 6.0:
-            mega_boost = 1.0 + (0.18 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
+            mega_boost = 1.0 + (0.24 if tier >= 7 else 0.35) * min(1.0, mega_t(form_boost))
         else:
             mega_boost = 1.0
         live_floor = live_off * pct * live_share * mega_boost
@@ -306,7 +306,8 @@ def simulate(
         would_cancel = live_flat >= dmg * cancel_thr
     # 1.0.25: clamp post-pierce to live incoming soft-cap.
     soft_cap_frac = incoming_soft_cap_frac(tier, paint_relief)
-    dmg = min(dmg, max(20.0, live_hp) * soft_cap_frac)
+    bag_cap = max(20.0, live_hp) * soft_cap_frac
+    dmg = min(dmg, bag_cap)
     if ease < 0.999:
         if dmg > offense_share + 1e-6:
             dmg = offense_share + (dmg - offense_share) * ease
@@ -379,12 +380,16 @@ def simulate(
         formBoost=form_boost,
         top2=">".join(top),
         offense=offense,
+        offenseShare=offense_share,
         mobDmg=dmg,
         mobDmgAfterKp=dmg_after_kp,
         mobHp=mob_hp,
         hitFrac=dmg / max(1.0, live_hp),
         hitFracAfterKp=dmg_after_kp / max(1.0, live_hp),
         capFrac=cap_frac,
+        kiHitCap=hit_cap,
+        bagCap=bag_cap,
+        dmgOverlay=dmg_ov,
         softHits=soft_hits,
         liveHits=live_hits,
         kpSave=dmg - dmg_after_kp,
