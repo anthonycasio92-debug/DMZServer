@@ -34,7 +34,14 @@ def load_rows(paths: list[Path]) -> list[dict]:
     return rows
 
 
-from scaling_constants import FORM_BAND_ORDER, band_form
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from scaling_constants import band_form
+
+
+def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("files", nargs="*", type=Path, help="JSONL hit logs")
     ap.add_argument("--dir", type=Path, help="Directory of hits-*.jsonl files")
