@@ -43,11 +43,11 @@ Fail-closed checks against the player's stated balance concept.
 
 - ✅ god-form T5 post-DEF ≥12% (androidforms.ssdroid4) — pre=0.414 postDef~=0.145 ×54.0
 - ✅ SSJG T5 post-DEF ≥12% live — pre=0.414 postDef~=0.145
-- ✅ SSJG T7 clears cancel or landing ≥30% — wouldCancel=True dmg=367 flatMit=2442 landingFrac=0.440
-- ✅ SSJG T7 landing safety-net ≥30% bag — landingFrac=0.440
+- ✅ SSJG T7 clears cancel or landing ≥30% — wouldCancel=True dmg=367 flatMit=2442 landingFrac=0.460
+- ✅ SSJG T7 landing safety-net ≥30% bag — landingFrac=0.460
 - ✅ SSJB T5 post-DEF ≥12% live — pre=0.414 postDef~=0.145
-- ✅ SSJB T7 clears cancel or landing ≥30% — wouldCancel=True dmg=367 flatMit=4775 landingFrac=0.440
-- ✅ SSJB T7 landing safety-net ≥30% bag — landingFrac=0.440
+- ✅ SSJB T7 clears cancel or landing ≥30% — wouldCancel=True dmg=367 flatMit=4775 landingFrac=0.460
+- ✅ SSJB T7 landing safety-net ≥30% bag — landingFrac=0.460
 
 ## 5) Melee AD parity (feature gates)
 
@@ -57,9 +57,9 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 2.3.174
+- ✅ VERSION 2.3.175
 - ✅ RaceSkillSync present
-- ✅ formula revision 45
+- ✅ formula revision 46
 - ✅ KP hit-cap relief wired
 - ✅ DEF/enchant paint relief
 - ✅ paintEase cap-path split
@@ -79,15 +79,15 @@ Fail-closed checks against the player's stated balance concept.
 - ✅ god soft-cap ladder T4≤T5 — T4=0.377 T5=0.414
 - ✅ god soft-cap ladder T5≤T6 — T5=0.414 T6=0.452
 - ✅ god soft-cap ladder T6≤T7 — T6=0.452 T7=0.490
-- ✅ god landing T5 < T6 (buy matters) — T5=0.360 T6=0.400
-- ✅ god landing T4 < T5 — T4=0.211 T5=0.360
-- ✅ god landing ≤ soft-cap T5 — landing=0.360
-- ✅ god landing ≤ soft-cap T6 — landing=0.400
+- ✅ god landing T5 < T6 (buy matters) — T5=0.380 T6=0.420
+- ✅ god landing T4 < T5 — T4=0.247 T5=0.380
+- ✅ god landing ≤ soft-cap T5 — landing=0.380
+- ✅ god landing ≤ soft-cap T6 — landing=0.420
 - ✅ combat telemetry present
-- ✅ god-form landing T1≥3% — landingFrac=0.034
-- ✅ god-form landing T5≥22% — landingFrac=0.360
-- ✅ god-form landing T7≥30% — landingFrac=0.440
-- ✅ god-form landing T7>T1×2.5 — T1=0.034 T7=0.440
+- ✅ god-form landing T1≥3% — landingFrac=0.070
+- ✅ god-form landing T5≥22% — landingFrac=0.380
+- ✅ god-form landing T7≥30% — landingFrac=0.460
+- ✅ god-form landing T7>T1×2.5 — T1=0.070 T7=0.460
 
 ## 7) DMZ passthrough NBT clear (all tiers)
 

@@ -463,7 +463,7 @@ public final class PlayerCombatProfile {
         // T4+ veterans (50k+ DMZ): extra relief — telemetry retunes overshot mid/high tiers.
         if (tier >= 4 && level >= 50_000L) {
             double vet = Math.pow(50_000.0 / level, 0.25);
-            vet = Math.max(0.70, Math.min(1.0, vet));
+            vet = Math.max(0.78, Math.min(1.0, vet));
             ease *= vet;
         }
         return Math.max(0.35, Math.min(1.0, ease));
@@ -648,9 +648,9 @@ public final class PlayerCombatProfile {
         if (activeTier >= 4 && formBoost > 1.12) {
             double nudge = switch (activeTier) {
                 case 4 -> 1.06;
-                case 5 -> 1.10;
-                case 6 -> 1.14;
-                default -> 1.18;
+                case 5 -> 1.11;
+                case 6 -> 1.16;
+                default -> 1.20;
             };
             base = Math.max(base, offenseShare * nudge);
         }
@@ -664,9 +664,9 @@ public final class PlayerCombatProfile {
                 case 2 -> 0.28;
                 case 3 -> 0.34;
                 case 4 -> 0.42;
-                case 5 -> 0.50;
-                case 6 -> 0.55;
-                default -> 0.58;
+                case 5 -> 0.53;
+                case 6 -> 0.58;
+                default -> 0.62;
             };
             // Mega forms: more of the live slice (still hit-capped after).
             double megaBoost = formBoost >= 6.0
@@ -674,7 +674,7 @@ public final class PlayerCombatProfile {
                     : 1.0;
             // T7: damp mega live-slice so ×50 forms aren't free one-shots before hit-cap.
             if (activeTier >= 7 && formBoost >= 6.0) {
-                megaBoost = 1.0 + 0.18 * Math.min(1.0, megaFormT(formBoost));
+                megaBoost = 1.0 + 0.28 * Math.min(1.0, megaFormT(formBoost));
             }
             double liveFloor = liveOffense * tierPercent * liveShare * megaBoost;
             base = easedFloor(base, liveFloor);
@@ -768,9 +768,9 @@ public final class PlayerCombatProfile {
             case 2 -> 0.16;
             case 3 -> 0.20;
             case 4 -> 0.28;
-            case 5 -> 0.33;
-            case 6 -> 0.38;
-            default -> 0.42;
+            case 5 -> 0.35;
+            case 6 -> 0.40;
+            default -> 0.44;
         };
         if (formBoost > 1.12) {
             double t = Math.min(1.0, Math.log(Math.max(1.12, formBoost)) / Math.log(80.0));
@@ -793,13 +793,13 @@ public final class PlayerCombatProfile {
             case 2 -> 0.22;
             case 3 -> 0.26;
             case 4 -> 0.32;
-            case 5 -> 0.36;
-            case 6 -> 0.40;
-            default -> 0.44;
+            case 5 -> 0.38;
+            case 6 -> 0.42;
+            default -> 0.46;
         };
         land = Math.min(land, liveBag * landCap);
         if (paintEase < 0.999) {
-            land *= paintEase;
+            land *= 0.70 + 0.30 * paintEase;
         }
         return Math.max(1.0, land);
     }
@@ -1324,7 +1324,7 @@ public final class PlayerCombatProfile {
         h = mix(h, liveCfg.enableStrongStatCounters ? 1L : 0L);
         h = mix(h, liveCfg.paintEpoch());
         // Formula revision: Aug 29–30 early soft-cap + landing ease (2.3.57).
-        h = mix(h, 45L); // 2.3.163 KP hit-cap + DEF/enchant paint relief
+        h = mix(h, 46L); // 2.3.175 telemetry retune — lift god T5–T7 toward concept
         h = mix(h, Math.round(CombatSanity.maxFormBoost() * 10.0));
         return h;
     }
