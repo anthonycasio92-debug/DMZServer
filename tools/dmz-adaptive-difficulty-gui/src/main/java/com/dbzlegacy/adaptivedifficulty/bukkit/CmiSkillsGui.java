@@ -126,7 +126,7 @@ public final class CmiSkillsGui {
                 CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER,
                         GuiTooltips.name("skills.empty", "&cNo skills listed"));
                 empty.lockField();
-                empty.addLore(GuiTooltips.buttonLore("skills.empty", List.of("&7Bridge returned no skill rows")));
+                empty.addLore(GuiTooltips.buttonLore("skills.empty", List.of("&7Nothing to show right now")));
                 gui.addButton(empty);
             }
         }

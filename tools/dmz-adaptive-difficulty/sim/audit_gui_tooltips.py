@@ -20,10 +20,11 @@ GUI_SRC = ROOT / "tools" / "dmz-adaptive-difficulty-gui" / "src" / "main" / "jav
 BANNED = [
     r"Legacy deep-link",
     r"deep-link",
-    r"resetcd",
+    r"mentor resetcd",
     r"sparring\.json",
     r"progression-v\d",
     r"androidforms\.",
+    r"androidforms",
     r"superforms",
     r"legendaryforms",
     r"Bridge returned",
@@ -32,11 +33,32 @@ BANNED = [
     r"\bSYSLOG\b",
     r"telemetry",
     r"Legacy Mechanics hub",
+    r"CNPC script",
+    r"Flush log writers",
+    r"Logging ON",
+    r"Logging OFF",
 ]
 
 KEY_RE = re.compile(
     r'"(?:spar|rival|hub|prestige|progression|difficulty|skills|common)\.[a-z0-9_.]+"',
 )
+
+def scan_java_banned(java_path: Path, text: str) -> list[str]:
+    """Flag banned jargon only in player-facing string literals (& / § lore)."""
+    hits: list[str] = []
+    rel = java_path.relative_to(ROOT)
+    for m in re.finditer(r'"([&§][^"]*)"', text):
+        literal = m.group(1)
+        if not re.match(r"[&§][0-9a-fklmnor]", literal, re.I):
+            continue
+        # Staff slash-command hints are allowed to mirror real command names.
+        if literal.startswith("&8/") or literal.startswith("§8/"):
+            continue
+        for pat in BANNED:
+            if re.search(pat, literal, re.I):
+                hits.append(f"BANNED JAVA [{rel}]: /{pat}/ → {literal[:72]}")
+                break
+    return hits
 
 
 def flatten_keys(obj: dict, prefix: str = "") -> dict[str, dict]:
@@ -93,6 +115,13 @@ def main() -> int:
         plain = " ".join(lines)
         for pat in BANNED:
             if re.search(pat, plain, re.I):
+                # Staff slash-command hints in lore are allowed.
+                if all(
+                        ln.strip().startswith("&8/") or ln.strip().startswith("§8/")
+                        for ln in lines
+                        if re.search(pat, ln, re.I)
+                ):
+                    continue
                 errors.append(f"BANNED [{key}]: matches /{pat}/ → {plain[:80]}")
         if key in used and entry.get("name") and len(lines) == 0:
             warns.append(f"WARN [{key}]: name only, no lore")
@@ -100,6 +129,17 @@ def main() -> int:
             content = [ln.strip() for ln in lines if ln.strip() and ln.strip() != ""]
             if entry.get("name") and not content:
                 warns.append(f"WARN [{key}]: empty lore")
+
+    for java in GUI_SRC.rglob("*.java"):
+        if java.name in (
+                "ForgeBridge.java",
+                "GuiTooltips.java",
+                "GuiChat.java",
+                "AdaptiveDifficultyGuiPlugin.java",
+        ):
+            continue
+        text = java.read_text(encoding="utf-8", errors="replace")
+        errors.extend(scan_java_banned(java, text))
 
     print(f"# GUI tooltip audit — {len(catalog)} keys, {len(used)} referenced from Java\n")
     for w in warns:

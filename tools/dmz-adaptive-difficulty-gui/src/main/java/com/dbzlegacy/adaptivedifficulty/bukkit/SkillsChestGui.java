@@ -130,7 +130,7 @@ public final class SkillsChestGui implements Listener {
             }
             if (placed == 0) {
                 put(holder, inv, 22, tipBtn(viewer, "skills.empty", Material.BARRIER, "&cNo skills listed",
-                        List.of("&7Bridge returned no skill rows")));
+                        List.of("&7Nothing to show right now")));
             }
         }
 

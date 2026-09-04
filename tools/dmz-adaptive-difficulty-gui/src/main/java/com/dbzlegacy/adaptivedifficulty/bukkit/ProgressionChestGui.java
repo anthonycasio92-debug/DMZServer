@@ -390,20 +390,22 @@ public final class ProgressionChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Android Tools"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.IRON_INGOT, "&b&lAndroid Tools",
-                List.of("", "&7Dr. Gero upgrade path",
-                        "&7Convert · remove Android upgrade",
-                        "&8Race / stats / progression preserved on remove")));
-        put(holder, inv, 20, tipBtn("progression.android.convert", Material.NETHERITE_INGOT, "&aConvert to Android",
-                List.of("&7Gero upgrade — keeps race, unlocks androidforms",
+        put(holder, inv, 4, item(Material.IRON_INGOT,
+                GuiTooltips.name("progression.android.panel_header", "&b&lAndroid Tools"),
+                GuiTooltips.buttonLore("progression.android.panel_header", List.of(
+                        "&7Dr. Gero upgrade path",
+                        "&7Convert or remove the Android upgrade",
+                        "&8Race and stats stay on remove"))));
+        put(holder, inv, 20, tipBtn("progression.android.convert_entry", Material.NETHERITE_INGOT, "&aConvert to Android",
+                List.of("&7Gero upgrade — keeps your race",
+                        "&7Unlocks the Android form path",
                         "&8Human · Saiyan · Frost Demon · Viltrumite",
-                        "", "&eClick to open")),
+                        "", "&eClick · choose player")),
                 SlotAction.page("android_convert"));
-        put(holder, inv, 24, tipBtn("progression.android.remove", Material.REDSTONE, "&cRemove Android",
-                List.of("&7Pick a player to remove upgrade",
-                        "&8Restores superforms / legendaryforms",
-                        "&8Two-click confirm within 10s",
-                        "", "&eClick to open")),
+        put(holder, inv, 24, tipBtn("progression.android.remove_entry", Material.REDSTONE, "&cRemove Android",
+                List.of("&7Restore normal form skills",
+                        "&8Confirm within 10s by clicking again",
+                        "", "&eClick · choose player")),
                 SlotAction.page("android_remove"));
         put(holder, inv, 36, pageBtn("progression.android.back", Material.ARROW, "&7Back", "&7Race section"),
                 SlotAction.page("race"));
@@ -418,13 +420,15 @@ public final class ProgressionChestGui implements Listener {
         holder.bind(inv);
         frame(inv, 45);
         boolean staff = ForgeBridge.isStaff(viewer);
-        put(holder, inv, 4, item(Material.REDSTONE, "&c&lRemove Android",
-                List.of("", "&7Removes Android upgrade",
+        put(holder, inv, 4, item(Material.REDSTONE,
+                GuiTooltips.name("progression.android.remove_header", "&c&lRemove Android"),
+                GuiTooltips.buttonLore("progression.android.remove_header", List.of(
+                        "&7Removes the Android upgrade",
                         "&7Restores normal form skills",
                         "&8Click twice within 10s to confirm",
                         staff
                                 ? "&8/progression android remove [player]"
-                                : "&8/progression android remove")));
+                                : "&8/progression android remove"))));
         // Self remove — available to everyone (subject when inspecting, else viewer).
         Player selfTarget = subject != null ? subject : viewer;
         put(holder, inv, staff ? 8 : 22, tipBtn("progression.android.remove_self", Material.NETHERITE_SCRAP,
@@ -455,7 +459,7 @@ public final class ProgressionChestGui implements Listener {
                     "&7Android tools"), SlotAction.page("android_panel"));
         } else {
             put(holder, inv, 36, pageBtn("progression.android.remove_back_hub", Material.ARROW, "&7Back",
-                    "&7Legacy Mechanics hub"), SlotAction.cmd("lmdo lm open hub"));
+                    "&7Return to the main menu"), SlotAction.cmd("lmdo lm open hub"));
         }
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -467,10 +471,13 @@ public final class ProgressionChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Android Convert"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.IRON_INGOT, "&b&lAndroid Convert",
-                List.of("", "&7Gero upgrade — keeps race, unlocks androidforms",
+        put(holder, inv, 4, item(Material.IRON_INGOT,
+                GuiTooltips.name("progression.android.convert_header", "&b&lAndroid Convert"),
+                GuiTooltips.buttonLore("progression.android.convert_header", List.of(
+                        "&7Gero upgrade — keeps your race",
+                        "&7Unlocks the Android form path",
                         "&8Human · Saiyan · Frost Demon · Viltrumite",
-                        "&8/progression android [player]")));
+                        "&8/progression android [player]"))));
         put(holder, inv, 8, tipBtn("progression.android.convert_self", Material.NETHERITE_INGOT,
                 "&aConvert Yourself",
                 List.of("&7Apply conversion to you", "", "&eClick to convert")),
@@ -655,7 +662,7 @@ public final class ProgressionChestGui implements Listener {
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.COMPASS, "&7« Hub", List.of("", "&7Legacy Mechanics hub"));
+        return item(Material.COMPASS, "&7« Hub", List.of("", "&7Return to the main menu"));
     }
 
     private static ItemStack closeBtn() {

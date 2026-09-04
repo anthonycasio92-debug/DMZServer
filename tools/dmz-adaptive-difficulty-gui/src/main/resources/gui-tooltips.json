@@ -1026,25 +1026,33 @@
       }
     },
     "admin": {
+      "header": {
+        "name": "&c&lSpar Admin",
+        "lore": [
+          "&7Staff-only tools",
+          "&8Save · status · mentor cooldown reset",
+          "&8Player menus stay on the main Spar GUI"
+        ]
+      },
       "save": {
         "name": "&aSave",
         "lore": [
-          "&7Save sparring data now",
-          "&8Staff only"
+          "&7Save sparring data to disk",
+          "&8/spar admin save"
         ]
       },
       "status": {
         "name": "&bStatus",
         "lore": [
-          "&7Check if sparring is enabled",
-          "&8Staff only"
+          "&7Enabled + path summary",
+          "&8/spar admin status"
         ]
       },
       "resetcd": {
         "name": "&eReset Mentor Cooldown",
         "lore": [
           "&7Clear your mentor change cooldown",
-          "&8Staff only"
+          "&8/spar admin mentor resetcd"
         ]
       },
       "back": {
@@ -1282,6 +1290,49 @@
       }
     },
     "android": {
+      "panel_header": {
+        "name": "&b&lAndroid Tools",
+        "lore": [
+          "&7Dr. Gero upgrade path",
+          "&7Convert or remove the Android upgrade",
+          "&8Race and stats stay on remove"
+        ]
+      },
+      "convert_entry": {
+        "name": "&aConvert to Android",
+        "lore": [
+          "&7Gero upgrade — keeps your race",
+          "&7Unlocks the Android form path",
+          "&8Human · Saiyan · Frost Demon · Viltrumite",
+          "",
+          "&eClick · choose player"
+        ]
+      },
+      "remove_entry": {
+        "name": "&cRemove Android",
+        "lore": [
+          "&7Restore normal form skills",
+          "&8Confirm within 10s by clicking again",
+          "",
+          "&eClick · choose player"
+        ]
+      },
+      "convert_header": {
+        "name": "&b&lAndroid Convert",
+        "lore": [
+          "&7Gero upgrade — keeps your race",
+          "&7Unlocks the Android form path",
+          "&8Human · Saiyan · Frost Demon · Viltrumite"
+        ]
+      },
+      "remove_header": {
+        "name": "&c&lRemove Android",
+        "lore": [
+          "&7Removes the Android upgrade",
+          "&7Restores normal form skills",
+          "&8Click twice within 10s to confirm"
+        ]
+      },
       "convert": {
         "name": "&aConvert to Android",
         "lore": [
@@ -1313,7 +1364,7 @@
         "name": "&cRemove Android Upgrade",
         "lore": [
           "&7Remove the Android upgrade",
-          "&7Lose your android status start with no forms will need to redo sagas",
+          "&7Race, stats, and progression stay",
           "",
           "&eClick · confirm within 10s"
         ]

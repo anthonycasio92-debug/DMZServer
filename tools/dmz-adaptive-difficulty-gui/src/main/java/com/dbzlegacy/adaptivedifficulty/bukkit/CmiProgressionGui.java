@@ -337,20 +337,23 @@ public final class CmiProgressionGui {
 
     private static void openAndroidPanel(Player player) {
         CMIGui gui = base(player, "&8Android Tools", 5);
-        CMIGuiButton header = new CMIGuiButton(4, Material.IRON_INGOT, "&b&lAndroid Tools");
+        CMIGuiButton header = new CMIGuiButton(4, Material.IRON_INGOT,
+                GuiTooltips.name("progression.android.panel_header", "&b&lAndroid Tools"));
         header.lockField();
-        header.addLore(List.of("", "&7Dr. Gero upgrade path",
-                "&7Convert · remove Android upgrade",
-                "&8/progression android · android remove"));
+        header.addLore(GuiTooltips.buttonLore("progression.android.panel_header", List.of(
+                "&7Dr. Gero upgrade path",
+                "&7Convert or remove the Android upgrade",
+                "&8Race and stats stay on remove")));
         gui.addButton(header);
-        gui.addButton(pageBtn(20, "progression.android.convert", Material.NETHERITE_INGOT, "&aConvert to Android",
+        gui.addButton(pageBtn(20, "progression.android.convert_entry", Material.NETHERITE_INGOT, "&aConvert to Android",
                 "android_convert",
-                "&7Gero upgrade — keeps race, unlocks androidforms",
+                "&7Gero upgrade — keeps your race",
+                "&7Unlocks the Android form path",
                 "&8Human · Saiyan · Frost Demon · Viltrumite",
                 "", "&eClick · choose player"));
-        gui.addButton(pageBtn(24, "progression.android.remove", Material.REDSTONE, "&cRemove Android",
+        gui.addButton(pageBtn(24, "progression.android.remove_entry", Material.REDSTONE, "&cRemove Android",
                 "android_remove",
-                "&7Restore normal forms (CNPC script parity)",
+                "&7Restore normal form skills",
                 "&8Confirm within 10s by clicking again",
                 "", "&eClick · choose player"));
         gui.addButton(pageBtn(36, "progression.android.back", Material.ARROW, "&7Back", "race", "&7Race section"));
@@ -363,14 +366,18 @@ public final class CmiProgressionGui {
     private static void openAndroidRemove(Player player) {
         boolean staff = ForgeBridge.isStaff(player);
         CMIGui gui = base(player, "&8Remove Android", 5);
-        CMIGuiButton header = new CMIGuiButton(4, Material.REDSTONE, "&c&lRemove Android");
+        CMIGuiButton header = new CMIGuiButton(4, Material.REDSTONE,
+                GuiTooltips.name("progression.android.remove_header", "&c&lRemove Android"));
         header.lockField();
-        header.addLore(List.of("", "&7Removes Android upgrade",
-                "&7Restores superforms / legendaryforms at 0",
-                "&8Confirm within 10s",
-                staff
+        header.addLore(GuiTooltips.buttonLore("progression.android.remove_header",
+                List.of(
+                        "&7Removes the Android upgrade",
+                        "&7Restores normal form skills",
+                        "&8Click twice within 10s to confirm"),
+                null,
+                List.of(staff
                         ? "&8/progression android remove [player]"
-                        : "&8/progression android remove"));
+                        : "&8/progression android remove")));
         gui.addButton(header);
         gui.addButton(actionBtn(staff ? 8 : 22, "progression.android.remove_self", Material.NETHERITE_SCRAP,
                 "&cRemove Android Upgrade",
@@ -407,7 +414,7 @@ public final class CmiProgressionGui {
                     GuiTooltips.name("progression.android.remove_back_hub", "&7Back"));
             hub.lockField();
             hub.addLore(GuiTooltips.buttonLore("progression.android.remove_back_hub",
-                    List.of("&7Legacy Mechanics hub")));
+                    List.of("&7Return to the main menu")));
             hub.addCommand("lmdo lm open hub");
             hub.setCloseInv(true);
             gui.addButton(hub);
@@ -420,11 +427,14 @@ public final class CmiProgressionGui {
 
     private static void openAndroidConvert(Player player) {
         CMIGui gui = base(player, "&8Android Convert", 5);
-        CMIGuiButton header = new CMIGuiButton(4, Material.IRON_INGOT, "&b&lAndroid Convert");
+        CMIGuiButton header = new CMIGuiButton(4, Material.IRON_INGOT,
+                GuiTooltips.name("progression.android.convert_header", "&b&lAndroid Convert"));
         header.lockField();
-        header.addLore(List.of("", "&7Gero upgrade — keeps race, unlocks androidforms",
+        header.addLore(GuiTooltips.buttonLore("progression.android.convert_header", List.of(
+                "&7Gero upgrade — keeps your race",
+                "&7Unlocks the Android form path",
                 "&8Human · Saiyan · Frost Demon · Viltrumite",
-                "&8/progression android [player]"));
+                "&8/progression android [player]")));
         gui.addButton(header);
         gui.addButton(actionBtn(8, "progression.android.convert_self", Material.NETHERITE_INGOT,
                 "&aConvert Yourself",
@@ -654,7 +664,7 @@ public final class CmiProgressionGui {
     private static CMIGuiButton hubBtn(int slot) {
         CMIGuiButton btn = new CMIGuiButton(slot, Material.COMPASS, "&7« Hub");
         btn.lockField();
-        btn.addLore(List.of("", "&7Legacy Mechanics hub"));
+        btn.addLore(List.of("", "&7Return to the main menu"));
         btn.addCommand("lmdo lm open hub");
         btn.setCloseInv(true);
         return btn;

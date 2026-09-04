@@ -151,12 +151,12 @@ public final class CmiHubGui {
             placed++;
         }
 
-        gui.addButton(actionBtn(player, 29, "hub.logs.syslog_on", Material.LIME_DYE, "&aLogging ON",
-                "syslog", "on", "logs", List.of("&7Turn server event logging on")));
-        gui.addButton(actionBtn(player, 31, "hub.logs.syslog_off", Material.GRAY_DYE, "&cLogging OFF",
-                "syslog", "off", "logs", List.of("&7Turn server event logging off")));
-        gui.addButton(actionBtn(player, 33, "hub.logs.flush", Material.HOPPER, "&eFlush",
-                "syslog", "flush", "logs", List.of("&7Flush log writers")));
+        gui.addButton(actionBtn(player, 29, "hub.logs.syslog_on", Material.LIME_DYE, "&aEvent Log ON",
+                "syslog", "on", "logs", List.of("&7Server event logging is on", "&8Staff only")));
+        gui.addButton(actionBtn(player, 31, "hub.logs.syslog_off", Material.GRAY_DYE, "&cEvent Log OFF",
+                "syslog", "off", "logs", List.of("&7Turn server event logging back on", "&8Staff only")));
+        gui.addButton(actionBtn(player, 33, "hub.logs.flush", Material.HOPPER, "&eFlush Logs",
+                "syslog", "flush", "logs", List.of("&7Write buffered logs to disk", "&8Staff only")));
 
         gui.addButton(pageBtn(player, 36, "hub.logs.back", Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(closeBtn(44));

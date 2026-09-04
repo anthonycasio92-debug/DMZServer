@@ -146,7 +146,7 @@ public final class CmiSparGui {
         gui.addButton(closeBtn(44));
         if (ForgeBridge.isStaff(player)) {
             gui.addButton(pageBtn(player, 37, "spar.main.admin", Material.COMMAND_BLOCK, "&cAdmin", "admin",
-                    "&7Save · status · mentor resetcd"));
+                    "&7Save data, check status, reset cooldowns", "&8Staff only"));
         }
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -384,21 +384,23 @@ public final class CmiSparGui {
 
     private static void openAdmin(Player player) {
         CMIGui gui = base(player, "&8Spar Admin", 5);
-        CMIGuiButton info = new CMIGuiButton(4, Material.COMMAND_BLOCK, "&c&lSpar Admin");
+        CMIGuiButton info = new CMIGuiButton(4, Material.COMMAND_BLOCK,
+                GuiTooltips.name("spar.admin.header", "&c&lSpar Admin"));
         info.lockField();
-        info.addLore(List.of("", "&7Staff-only tools",
-                "&8Save · status · mentor resetcd",
-                "&8Player menus stay on the main Spar GUI"));
+        info.addLore(GuiTooltips.buttonLore("spar.admin.header", List.of(
+                "&7Staff-only tools",
+                "&8Save · status · mentor cooldown reset",
+                "&8Player menus stay on the main Spar GUI")));
         gui.addButton(info);
         gui.addButton(actionBtn(player, 20, "spar.admin.save", Material.WRITABLE_BOOK, "&aSave",
                 "admin", "save", "admin",
-                List.of("&7Write sparring.json", "&8/spar admin save")));
+                List.of("&7Save sparring data to disk", "&8/spar admin save")));
         gui.addButton(actionBtn(player, 22, "spar.admin.status", Material.SPYGLASS, "&bStatus",
                 "admin", "status", "admin",
-                List.of("&7Enabled + path", "&8/spar admin status")));
-        gui.addButton(actionBtn(player, 24, "spar.admin.resetcd", Material.EMERALD, "&eReset Mentor CD",
+                List.of("&7Enabled + path summary", "&8/spar admin status")));
+        gui.addButton(actionBtn(player, 24, "spar.admin.resetcd", Material.EMERALD, "&eReset Mentor Cooldown",
                 "admin", "resetcd", "admin",
-                List.of("&7Clear your mentor cooldown", "&8/spar admin mentor resetcd")));
+                List.of("&7Clear your mentor change cooldown", "&8/spar admin mentor resetcd")));
         gui.addButton(pageBtn(player, 36, "spar.admin.back", Material.ARROW, "&7Back", "main",
                 "&7Player Spar menu"));
         gui.addButton(hubBtn(40));
