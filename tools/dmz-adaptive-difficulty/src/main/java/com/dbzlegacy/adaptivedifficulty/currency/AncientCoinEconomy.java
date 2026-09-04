@@ -53,7 +53,13 @@ public final class AncientCoinEconomy {
      */
     public static final int MAX_COINS_PER_TYPE = 128;
 
-    /** Netherite kill/grant type — HEROBRINE letter H only (all letters share equal value). */
+    /**
+     * Netherite ancient coin drop/grant type.
+     * <p>
+     * Item: {@code lightmanscurrency:coin_ancient}<br>
+     * NBT: {@code {CoinType:"NETHERITE_H"}} via {@link AncientCoinType#asItem()}<br>
+     * Matches Lightman's {@code misc/ancient_netherite_coins} loot table first entry (HEROBRINE-H).
+     */
     private static final AncientCoinType NETHERITE_DROP_TYPE = AncientCoinType.NETHERITE_H;
 
     public enum CoinKind {

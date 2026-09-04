@@ -425,6 +425,21 @@ def main() -> int:
     check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.63" in readme)
     check("netherite drops use H variant only", "NETHERITE_DROP_TYPE" in coins and "NETHERITE_H" in coins
           and "NETHERITE_VARIANTS" not in coins)
+    # Cross-check Lightman's built-in netherite loot table (first entry = H).
+    lc_jar = ROOT / "libraries/lightmanscurrency-1.20.1-2.3.0.5.jar"
+    if not lc_jar.is_file():
+        lc_jar = ROOT / "mods/lightmanscurrency-1.20.1-2.3.0.5.jar"
+    if lc_jar.is_file():
+        import json
+        import zipfile
+        with zipfile.ZipFile(lc_jar) as zf:
+            loot = json.loads(zf.read(
+                "data/lightmanscurrency/loot_tables/misc/ancient_netherite_coins.json"
+            ))
+        first_coin = loot["pools"][0]["entries"][0]["coin"]
+        check("netherite drop matches LC loot table first entry",
+              first_coin == "NETHERITE_H",
+              f"loot={first_coin}")
 
     print("\n=== Mohist CMI /lmdo routing (2.3.54) ===")
     gui_root = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit"
