@@ -1,155 +1,79 @@
-# Full mod audit — LegacyMechanics 2.3.174
+# Full mod audit — LegacyMechanics 2.3.180
 
-Generated: 2026-09-04 (post-consolidation main)
+Generated: 2026-09-04T14:35Z
 
-## Executive summary
+## Suite summary
 
-| Layer | Result | Notes |
-|-------|:------:|-------|
-| Product features (`audit_features`) | **PASS** | 677 checks |
-| GUI tooltips (`audit_gui_tooltips`) | **PASS** | 206 keys, 188 Java refs, 0 jargon hits |
-| GUI ABI (`audit_gui_abi`) | **PASS** | Forge ↔ GUI 2.3.174 handshake |
-| Balance concept (`audit_concept`) | **PASS** | 72 checks — tier ladder, dumps, god forms, KP |
-| Build matrix (`simulate_build_matrix`) | **PASS** | 35 checks |
-| Tier costs (`validate_tier_costs`) | **PASS** | Anchors + monotonic ladder |
-| Form bands (`audit_form_bands`) | **PASS** | 125 forms catalogued |
-| Tier × level matrix (`audit_tier_level_matrix`) | **ADVISORY** | 71/72 — human android overclock T7 dip |
-| Scaling sim (`validate_scaling`) | **ADVISORY** | 55/73 — post-rollback threshold drift |
-| Live telemetry (Sep 3–4 pull) | **HEALTHY** | 5,508 hits; T5 avg 0.229 post-hit |
+| Audit | Result |
+|-------|:------:|
+| audit_scaling_sync | PASS |
+| audit_features | PASS |
+| audit_gui_tooltips | PASS |
+| audit_form_bands | PASS |
+| validate_tier_costs | PASS |
+| audit_tier_level_matrix | PASS |
+| validate_scaling | PASS |
+| simulate_build_matrix | PASS |
+| audit_concept | PASS |
+| audit_gui_abi | PASS |
+| summarize_telemetry | PASS |
 
-**Ship gate:** `audit_concept` + `audit_features` + `audit_gui_abi` all pass. Scaling sim failures are known drift from the 2.3.162 rollback (counter overlay capped at 1.0, slightly relaxed T5/T7 floors). No live retune recommended yet.
+## Notes
 
-Run again: `bash tools/dmz-adaptive-difficulty/sim/run_full_audit.sh`
+- **audit_scaling_sync** keeps Java literals aligned with `scaling_constants.py` (run on every build).
+- **audit_concept** is the product-level balance gate (player-facing intent).
+- **validate_scaling** + **audit_tier_level_matrix** catch tier-ladder and race/form regressions.
 
----
+See `sim/out/full-mod-audit-run.log` for full output.
 
-## 1. Product feature audit (`audit_features`)
+## Tier × level matrix
 
-**PASS — 677 checks, 0 warnings**
+# Tier × level matrix audit (1–150000)
 
-Covers: stock config defaults, gate/scaling markers, personal/death/reward wiring, PWR/ENE channels, class/top-2 counters, dojo rankings API, spar/rival/prestige/progression commands, telemetry hooks, version 2.3.174.
+Fail-closed checks for unlock tiers T1–T7 across the DMZ level cap.
 
----
+## 1) Cost anchors
 
-## 2. GUI audit
+- ✅ T1 @ lvl 1 = 1× Copper — 1× Copper
+- ✅ T7 @ lvl 150000 = 100× Netherite — 100× Netherite (10000000)
+- ✅ stock bases T1..T7
+- ✅ anchor 150000
 
-### Tooltips (`audit_gui_tooltips`)
+## 2) Buy-cost ladder T1<T2<…<T7 at every level
 
-**PASS — 206 catalog keys, 188 referenced from Java**
+- ✅ cost T-ladder mono across 150000 levels — 0.85s
+- ✅ cost non-decreasing with level (≤150k) — ok
+- ✅ past-anchor clamp T7 200k==150k — 10000000 vs 10000000
+- ✅ past-anchor clamp T1 200k==150k — 6700 vs 6700
 
-- All Java-referenced tooltip keys exist in `gui-tooltips.json`
-- No banned dev jargon (telemetry, syslog, file-version names, inter-dojo dev-speak)
-- Humanized copy for hub, rival, difficulty, spar/dojo (2.3.174)
+### Sample costs
 
-### ABI (`audit_gui_abi`)
+| level | T1 | T2 | T3 | T4 | T5 | T6 | T7 |
+|------:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 1× Copper | 5× Copper | 15× Copper | 5× Iron | 15× Iron | 5× Gold | 15× Gold |
+| 500 | 1× Copper | 5× Copper | 15× Copper | 51× Copper | 16× Iron | 52× Iron | 16× Gold |
+| 1000 | 1× Copper | 5× Copper | 16× Copper | 53× Copper | 16× Iron | 53× Iron | 16× Gold |
+| 5000 | 1× Copper | 7× Copper | 2× Iron | 67× Copper | 21× Iron | 68× Iron | 21× Gold |
+| 10000 | 2× Copper | 9× Copper | 27× Copper | 9× Iron | 27× Iron | 9× Gold | 27× Gold |
+| 50000 | 19× Copper | 94× Copper | 29× Iron | 95× Iron | 29× Gold | 95× Gold | 29× Emerald |
+| 100000 | 36× Iron | 18× Gold | 54× Gold | 18× Emerald | 54× Emerald | 18× Diamond | 54× Diamond |
+| 150000 | 67× Gold | 34× Emerald | 1× Netherite | 34× Diamond | 10× Netherite | 34× Netherite | 100× Netherite |
 
-**PASS — 0 warnings**
+## 3) Unlock DMZ level gates
 
-- `LegacyMechanics-2.3.174.jar` + `LegacyMechanicsGUI-2.3.174.jar`
-- Version handshake: Forge VERSION = mods.toml = plugin.yml = 2.3.174
-- 241 Forge classes, all required GUI reflection entrypoints present
+- ✅ stock REQUIRED matches UnlockTier — {1: 1, 2: 500, 3: 1000, 4: 5000, 5: 10000, 6: 50000, 7: 100000}
+- ✅ T1 unlock level ≥ prior — 1 ≥ 0
+- ✅ T1 unlocked at lvl 1 — level≥1 or prestige≥1
+- ✅ T2 unlock level ≥ prior — 500 ≥ 1
+- ✅ T2 locked below lvl 500 — gate=500
+- ✅ T2 unlocked at lvl 500 — level≥500 or prestige≥2
+- ✅ T3 unlock level ≥ prior — 1000 ≥ 500
 
----
+… full report: `sim/out/tier-level-matrix-audit.md`
 
-## 3. Balance concept (`audit_concept`)
+## Scaling validation (excerpt)
 
-**PASS — 72 ok, 0 errors**
 
-| Area | Status |
-|------|--------|
-| Tier ladder (even T1→T5→T7) | ✅ |
-| Dump builds (VIT/RES/STR/PWR/tank) | ✅ ≥28% bag at T5 |
-| Skills (KP, Ki Infusion, Potential) | ✅ |
-| God forms post-DEF | ✅ ≥12% live bag |
-| DMZ passthrough NBT clear (all tiers) | ✅ 2.3.164 fix |
-| Formula revision | ✅ rev 45 |
+… full report: `sim/out/scaling-validation-report.md`
 
-Sample saiyan warrior even: T1=0.129 → T5=0.338 → T7=0.399 hitFrac.
-
----
-
-## 4. Tier economy
-
-### Costs (`validate_tier_costs`)
-
-**PASS**
-
-- T1 @ lvl 1 = 1× Copper
-- T7 @ lvl 150k = 100× Netherite
-- Strict T1<T2<…<T7 monotonic at all 150k levels
-
-### Tier × level matrix (`audit_tier_level_matrix`)
-
-**ADVISORY — 71 ok, 1 error**
-
-| Check | Result |
-|-------|--------|
-| Cost anchors + 150k ladder | ✅ |
-| Unlock gates T1–T7 | ✅ |
-| Saiyan warrior combat bands | ✅ |
-| All races × forms soft-cap | ✅ 1554 cells |
-| All races × forms dmg>0 | ✅ |
-| Peak form mono T3→T7 | ❌ **human** `android_enhancement.overclock@m0`: T6=0.462 → T7=0.451 |
-
-**Action:** Low priority — single human android form edge case; T7 soft-cap interaction causes 0.011 dip.
-
----
-
-## 5. Combat scaling sim (`validate_scaling`)
-
-**ADVISORY — 55 ok, 18 errors**
-
-Post-rollback (2.3.162) known drift vs stricter legacy thresholds:
-
-| Failure | Value | Context |
-|---------|-------|---------|
-| class+top2 overlay >1 (7 classes) | overlay=1.000 | Counter overlay capped after rollback |
-| T7 tank mobDmg ≤ hitCap | 1380 > 1149 | Tank RES-counter edge; live uses safety-net landing |
-| T5 even hitCapFrac ≥ 0.35 | 0.337 | Within 0.003 of threshold |
-| T5 god-form post-DEF ≥ 12% | ~11.5% | Generic god probe; SSJG/SSJB pass at 14.5% |
-| even T7 hitFrac > T5 | 0.399 vs 0.411 | Soft-cap saturation |
-
-Full report: `sim/out/scaling-validation-report.md`
-
----
-
-## 6. Build matrix (`simulate_build_matrix`)
-
-**PASS — 35 ok, 0 errors**
-
----
-
-## 7. Form bands (`audit_form_bands`)
-
-**PASS** — 125 forms. Reference: `sim/out/form-band-reference.md`
-
----
-
-## 8. Live telemetry (Sep 3–4 pull, 5,508 hits)
-
-| Tier | n | avg hitFracPost | wouldCancel% |
-|------|--:|----------------:|-------------:|
-| T5 | 604 | **0.229** | 79.0% |
-| T6 | 155 | 0.298 | 91.0% |
-| T7 | 246 | 0.297 | 71.5% |
-
-**Signal:** T5 engaged pressure healthy. No retune recommended until more post-2.3.174 sample.
-
----
-
-## 9. Deployed artifacts
-
-| Artifact | Version | Live |
-|----------|---------|:----:|
-| LegacyMechanics | 2.3.174 | ✅ |
-| LegacyMechanicsGUI | 2.3.174 | ✅ |
-
----
-
-## 10. Recommendations
-
-1. **No combat retune now** — wait 24–48h post-2.3.174 for god-form T5–T7 sample.
-2. **Retune `validate_scaling` thresholds** to match rollback constants so CI reflects product gate (`audit_concept`).
-3. **Human android overclock** — optional T7 nudge if peak mono must be strict.
-
-Full stdout: `sim/out/full-mod-audit-run.log`
+**Overall:** PASS

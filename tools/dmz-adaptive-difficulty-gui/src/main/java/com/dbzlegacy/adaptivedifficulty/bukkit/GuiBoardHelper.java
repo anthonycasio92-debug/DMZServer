@@ -251,6 +251,78 @@ final class GuiBoardHelper {
         return out;
     }
 
+    /** uuid, name, status, online, optedIn, near, spare (tab-separated). */
+    static final class TeamRivalCard {
+        final String uuid;
+        final String name;
+        final String status;
+        final boolean online;
+        final boolean optedIn;
+        final boolean near;
+        final long spare;
+
+        TeamRivalCard(String uuid, String name, String status,
+                boolean online, boolean optedIn, boolean near, long spare) {
+            this.uuid = uuid == null ? "" : uuid;
+            this.name = name == null || name.isBlank() ? "?" : name;
+            this.status = status == null || status.isBlank() ? "?" : status;
+            this.online = online;
+            this.optedIn = optedIn;
+            this.near = near;
+            this.spare = Math.max(0L, spare);
+        }
+    }
+
+    static List<TeamRivalCard> parseTeamRivalCards(List<String> encoded) {
+        List<TeamRivalCard> out = new ArrayList<>();
+        if (encoded == null) {
+            return out;
+        }
+        for (String raw : encoded) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            String[] p = raw.split("\t", -1);
+            if (p.length < 3) {
+                continue;
+            }
+            out.add(new TeamRivalCard(
+                    p[0],
+                    p[1],
+                    p.length > 2 ? p[2] : "?",
+                    "1".equals(p.length > 3 ? p[3] : "0"),
+                    "1".equals(p.length > 4 ? p[4] : "0"),
+                    "1".equals(p.length > 5 ? p[5] : "0"),
+                    parseLongSafe(p.length > 6 ? p[6] : "0")
+            ));
+        }
+        return out;
+    }
+
+    static ItemStack teamRivalHead(TeamRivalCard card) {
+        List<String> lore = new ArrayList<>();
+        lore.add("&7Status &f" + card.status);
+        lore.add(card.online ? "&aOnline" : "&8Offline");
+        lore.add(card.optedIn ? "&aUsing team mode" : "&8Personal only");
+        if (card.online && card.optedIn) {
+            lore.add(card.near ? "&aNearby — shares spare room" : "&8Too far to share spare room");
+            if (card.spare > 0) {
+                lore.add("&7Spare tier room &f" + card.spare);
+            }
+        }
+        java.util.UUID id = null;
+        try {
+            if (!card.uuid.isBlank()) {
+                id = java.util.UUID.fromString(card.uuid);
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+        if (id != null) {
+            return GuiPlayerPicker.headByUuid(id, card.name, "&f" + card.name, lore);
+        }
+        return GuiPlayerPicker.headByName(card.name, "&f" + card.name, lore);
+    }
+
     static ItemStack rivalHead(RivalCard card) {
         List<String> lore = new ArrayList<>();
         if (card.past) {

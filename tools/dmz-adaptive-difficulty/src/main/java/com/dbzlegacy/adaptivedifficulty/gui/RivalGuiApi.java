@@ -644,7 +644,7 @@ public final class RivalGuiApi {
                     + "§8" + RivalProgression.path();
         }
         return "§6§l/rival admin\n"
-                + "§e/rival admin save §7— write rivalry-v4 + progression-v4\n"
+                + "§e/rival admin save §7— save rivalry and progress data to disk\n"
                 + "§e/rival admin refresh|reload §7— reload stores from disk\n"
                 + "§e/rival admin status §7— enabled + path summary\n"
                 + "§e/rival admin open [page] §7— open rival GUI\n"

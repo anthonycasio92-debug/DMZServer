@@ -7,6 +7,8 @@ import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
+import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
+import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
 import com.dbzlegacy.adaptivedifficulty.gui.DifficultyMenu;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
@@ -251,8 +253,7 @@ public final class DifficultyActions {
             return characterReset(player, page);
         }
         if (ACT_TEAM.equals(act)) {
-            openGui(player, page == null || page.isBlank() ? "main" : page);
-            return Result.fail("Team scaling is a work in progress — difficulty is personal only for now.");
+            return setTeamMode(player, arg, page);
         }
         if (ACT_TOGGLE_PERSONAL.equals(act) || "personal".equals(act)
                 || "toggle_difficulty".equals(act) || "difficulty_toggle".equals(act)) {
@@ -296,6 +297,61 @@ public final class DifficultyActions {
             case ACT_LOWER_TIER -> lowerTier(player, (int) amount, page);
             case ACT_RESET, "zero", "clear" -> resetActive(player, page);
             default -> Result.fail("Unknown action.");
+        };
+    }
+
+    private static Result setTeamMode(ServerPlayer player, String arg, String page) {
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        if (!data.isPersonalEnabled()) {
+            openGui(player, page == null || page.isBlank() ? "team" : page);
+            return Result.fail("Turn personal difficulty ON before using rival teams.");
+        }
+        TeamMode next = resolveTeamModeArg(data.getTeamMode(), arg);
+        if (next != TeamMode.PERSONAL_ONLY) {
+            if (!DifficultyConfig.get().enableRivalSystem) {
+                openGui(player, page == null || page.isBlank() ? "team" : page);
+                return Result.fail("Rival system is disabled — teams need mutual rivals.");
+            }
+            if (TeamScaling.mutualRivalCount(player) < 1) {
+                openGui(player, page == null || page.isBlank() ? "team" : page);
+                return Result.fail("No mutual rivals yet — use /rival to declare and accept first.");
+            }
+        }
+        data.setTeamMode(next);
+        DifficultyCache.save(player);
+        DifficultyCache.refresh(player);
+        String returnPage = page == null || page.isBlank() ? "team" : page;
+        openGui(player, returnPage);
+        return Result.ok(teamModeMessage(next));
+    }
+
+    private static TeamMode resolveTeamModeArg(TeamMode current, String arg) {
+        if (arg == null || arg.isBlank() || "cycle".equalsIgnoreCase(arg.trim())) {
+            return cycleTeamMode(current);
+        }
+        return TeamMode.fromString(arg);
+    }
+
+    private static TeamMode cycleTeamMode(TeamMode current) {
+        if (current == null || current == TeamMode.PERSONAL_ONLY) {
+            return TeamMode.THRESHOLD_BONUS_ONLY;
+        }
+        if (current == TeamMode.THRESHOLD_BONUS_ONLY) {
+            return TeamMode.FULL_TEAM_SCALING;
+        }
+        return TeamMode.PERSONAL_ONLY;
+    }
+
+    private static String teamModeMessage(TeamMode mode) {
+        int contrib = (int) DifficultyConfig.get().contributionPercent;
+        return switch (mode) {
+            case PERSONAL_ONLY -> "Team mode: Personal — only your tier ceiling applies.";
+            case THRESHOLD_BONUS_ONLY ->
+                    "Team mode: Threshold — higher tier ceiling when rivals are online and using a team mode."
+                            + " More elites, mutants, and bosses.";
+            case FULL_TEAM_SCALING ->
+                    "Team mode: Full — threshold bonus plus " + contrib + "% of nearby rivals' spare tier room."
+                            + " Best elite, mutant, and boss spawn boost when rivals are close.";
         };
     }
 

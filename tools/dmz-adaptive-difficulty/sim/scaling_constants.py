@@ -1,7 +1,7 @@
 """Single source of truth for AdaptiveDifficulty combat scaling (Python sim).
 
-Mirrors PlayerCombatProfile.java on 2.3.163 (formula revision 45).
-Update Java and this file together; audit_concept.py string-checks Java literals.
+Mirrors PlayerCombatProfile.java on 2.3.163+ (formula revision 45).
+Update Java and this file together; audit_scaling_sync.py fails the build on drift.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ SOFT_CAP: dict[int, float] = {
     4: 0.40,
     5: 0.44,
     6: 0.48,
-    7: 0.52,
+    7: 0.60,
 }
 
 # Ki-protection hit-cap tier fractions (kiProtectionHitFrac, pre-DEF)
@@ -35,16 +35,16 @@ HIT_CAP_TIER: dict[int, float] = {
     2: 0.28,
     3: 0.34,
     4: 0.40,
-    5: 0.44,
+    5: 0.46,
     6: 0.48,
-    7: 0.52,
+    7: 0.56,
 }
 
 # God-form threat floors T1–T3 (formBoost > 1.12)
 GOD_THREAT: dict[int, float] = {1: 0.35, 2: 0.42, 3: 0.48}
 
 # Form nudges T4–T7
-FORM_NUDGE: dict[int, float] = {4: 1.06, 5: 1.10, 6: 1.14, 7: 1.18}
+FORM_NUDGE: dict[int, float] = {4: 1.06, 5: 1.12, 6: 1.14, 7: 1.21}
 
 # Live-offense share (liveShare)
 LIVE_SHARE: dict[int, float] = {
@@ -54,7 +54,7 @@ LIVE_SHARE: dict[int, float] = {
     4: 0.42,
     5: 0.50,
     6: 0.55,
-    7: 0.58,
+    7: 0.60,
 }
 
 # Landing safety-net fractions (targetLandingDamage landFrac)

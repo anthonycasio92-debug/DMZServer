@@ -57,7 +57,7 @@ public final class DifficultyChestGui implements Listener {
             case "tiers", "tier", "buy", "purchase", "unlock",
                  "adjust", "change", "set", "lower" -> tiers(viewer, subject);
             case "titles", "title" -> titles(viewer, subject);
-            case "team", "teams" -> teamsWip(viewer, subject);
+            case "team", "teams" -> teams(viewer, subject);
             case "stats", "statistics", "details" ->
                     ForgeBridge.isStaff(viewer) ? stats(viewer, subject) : main(viewer, subject);
             default -> main(viewer, subject);
@@ -123,7 +123,11 @@ public final class DifficultyChestGui implements Listener {
         put(holder, inv, 13, item(Material.BEACON,
                 personalOn ? "&a&lAdaptive Difficulty" : "&c&lDIFFICULTY OFF",
                 status));
-        // Primary actions — Tiers (buy/lower/reset) + Titles
+        // Primary actions — Tiers · Teams · Titles
+        put(holder, inv, 19, tipBtn(viewer, "difficulty.main.teams", Material.SHIELD, "&bRival Teams",
+                List.of("&7Mutual rivals can raise your tier ceiling",
+                        "&7Team modes boost elite, mutant, and boss spawns")),
+                SlotAction.page("team"));
         put(holder, inv, 21, tipBtn(viewer, "difficulty.main.tiers", Material.GOLD_INGOT, "&eTiers",
                 List.of("&7Buy higher · lower unlocked · reset", "&8Ancient Coins · pay-up OK · change returned")),
                 SlotAction.page("tiers"));
@@ -381,20 +385,57 @@ public final class DifficultyChestGui implements Listener {
         }
     }
 
-    private Inventory teamsWip(Player viewer, Player subject) {
+    private Inventory teams(Player viewer, Player subject) {
+        Map<String, String> ph = ForgeBridge.placeholders(subject);
         Holder holder = holderFor(viewer, subject, "team");
-        Inventory inv = Bukkit.createInventory(holder, 27, titleFor(viewer, subject, "Teams (WIP)"));
+        Inventory inv = Bukkit.createInventory(holder, 45, titleFor(viewer, subject, "Rival Teams"));
         holder.bind(inv);
-        frame(inv, 27);
-        put(holder, inv, 13, item(Material.COMPASS, "&8&lTeams — Work in Progress", List.of(
-                "",
-                "&7Team difficulty is not available yet.",
-                "&eDifficulty is personal / individual only.",
-                "",
-                "&8No team actions can be taken from this menu."
-        )));
-        put(holder, inv, 18, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
-        put(holder, inv, 26, closeBtn(), SlotAction.dismiss());
+        frame(inv, 45);
+
+        List<String> header = new ArrayList<>();
+        header.add("");
+        header.addAll(toAmp(ForgeBridge.diffTeamLines(subject)));
+        put(holder, inv, 4, item(Material.SHIELD,
+                GuiTooltips.name("difficulty.team.header", "&b&lRival Teams"),
+                header));
+
+        String mode = ph.getOrDefault("team_mode", "personal_only");
+        put(holder, inv, 20, tipBtn(viewer, "difficulty.team.mode_personal", Material.GRAY_DYE, "&7Personal",
+                List.of("&7Only your own tier ceiling counts",
+                        mode.equals("personal_only") ? "&aCurrent mode" : "&eClick to select")),
+                SlotAction.act("team", "personal", "team"));
+        put(holder, inv, 22, tipBtn(viewer, "difficulty.team.mode_threshold", Material.LIME_DYE, "&aThreshold",
+                List.of("&7Extra max when rivals are online",
+                        "&7They must also use a team mode",
+                        "&7More elites, mutants, and bosses",
+                        mode.equals("threshold_bonus_only") ? "&aCurrent mode" : "&eClick to select")),
+                SlotAction.act("team", "threshold", "team"));
+        put(holder, inv, 24, tipBtn(viewer, "difficulty.team.mode_full", Material.EMERALD, "&2Full",
+                List.of("&7Threshold bonus plus nearby spare room",
+                        "&7Best spawn boost when rivals are close",
+                        "&8Within " + ph.getOrDefault("proximity_blocks", "48") + " blocks",
+                        mode.equals("full_team_scaling") ? "&aCurrent mode" : "&eClick to select")),
+                SlotAction.act("team", "full", "team"));
+
+        List<GuiBoardHelper.TeamRivalCard> cards =
+                GuiBoardHelper.parseTeamRivalCards(ForgeBridge.diffTeamMutualCards(subject));
+        int[] slots = GuiBoardHelper.centeredSlots(cards.size());
+        for (int i = 0; i < cards.size() && i < slots.length; i++) {
+            put(holder, inv, slots[i], GuiBoardHelper.teamRivalHead(cards.get(i)));
+        }
+        if (cards.isEmpty()) {
+            put(holder, inv, 28, item(Material.BARRIER, "&7No mutual rivals",
+                    List.of("", "&7Use /rival to declare and accept",
+                            "&8Both players must accept for Mutual")));
+        }
+
+        put(holder, inv, 31, tipBtn(viewer, "difficulty.team.open_rival", Material.DIAMOND_SWORD, "&6Open Rival",
+                List.of("&7Declare, accept, or manage mutual slots")),
+                SlotAction.cmd("lmdo lm open rival"));
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
+                SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
 
@@ -805,6 +846,17 @@ public final class DifficultyChestGui implements Listener {
 
     private static String color(String input) {
         return input == null ? "" : input.replace('&', '§');
+    }
+
+    private static List<String> toAmp(List<String> lines) {
+        List<String> out = new ArrayList<>();
+        if (lines == null) {
+            return out;
+        }
+        for (String line : lines) {
+            out.add(line == null ? "" : line.replace('§', '&'));
+        }
+        return out;
     }
 
     private static final class SlotAction {

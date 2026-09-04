@@ -13,6 +13,7 @@ public enum TeamMode {
         return switch (key) {
             case "THRESHOLD", "THRESHOLD_BONUS", "THRESHOLD_BONUS_ONLY", "BONUS" -> THRESHOLD_BONUS_ONLY;
             case "FULL", "FULL_TEAM", "FULL_TEAM_SCALING", "TEAM" -> FULL_TEAM_SCALING;
+            case "PERSONAL", "PERSONAL_ONLY", "OFF", "NONE" -> PERSONAL_ONLY;
             default -> PERSONAL_ONLY;
         };
     }

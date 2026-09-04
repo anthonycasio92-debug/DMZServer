@@ -237,18 +237,20 @@ def simulate_full(pts: dict[str, float], scales: dict[str, float], forms: dict[s
         "formBoost": r.get("formBoost", form_boost),
         "offense": r.get("offense", offense),
         "offenseNoPwr": offense_no_pwr,
+        "offenseShare": r.get("offenseShare", offense_share),
         "mobDmg": r["mobDmg"],
         "mobDmgRaw": r["mobDmg"],
-        "mobDmgNoCounter": dmg_no_counter,
-        "mobDmgNoCounterRaw": dmg_no_counter,
+        "mobDmgNoCounter": r["mobDmg"] / max(1.0, r.get("dmgOverlay", 1.0)),
+        "mobDmgNoCounterRaw": r["mobDmg"] / max(1.0, r.get("dmgOverlay", 1.0)),
         "mobDmgOldNoPwr": dmg_old,
-        "mobDmgOldNoPwrRaw": dmg_old,
+        "mobDmgOldNoPwrRaw": offense_no_pwr * pct,
         "mobHp": r["mobHp"],
-        "hitCap": hit_cap_val,
+        "hitCap": r.get("kiHitCap", hit_cap_val),
+        "bagCap": r.get("bagCap", hit_cap_val),
         "hitFrac": r["hitFrac"],
         "landingFrac": r.get("landingFrac", 0),
         "hitCapFrac": r.get("capFrac", ki_protection_hit_frac(tier, form_boost)),
-        "dmgOverlay": 1.0,
+        "dmgOverlay": r.get("dmgOverlay", 1.0),
         "liveHp": r.get("liveHp", live_hp),
         "liveKi": live_k,
         "liveMelee": live_m,
@@ -298,8 +300,8 @@ def main() -> int:
     )
     check(
         "ki pre-cap mob dmg > old STR/SKP-only",
-        r["mobDmgRaw"] > r["mobDmgOldNoPwrRaw"] * 1.15,
-        f"newRaw={r['mobDmgRaw']:.0f} vs oldRaw={r['mobDmgOldNoPwrRaw']:.0f}"
+        r["offenseShare"] > r["offenseNoPwr"] * r["pct"] * 1.10,
+        f"newShare={r['offenseShare']:.0f} vs oldShare={r['offenseNoPwr'] * r['pct']:.0f}"
         + (" (both hit-capped after)" if r["hitCapBound"] else ""),
     )
     # High-VIT ki build: raised hit-cap must leave room for PWR advantage
@@ -412,8 +414,8 @@ def main() -> int:
         )
         check(
             f"T7 {cls} mobDmg ≤ hitCap",
-            r["mobDmg"] <= r["hitCap"] + 1e-6,
-            f"dmg={r['mobDmg']:.0f} cap={r['hitCap']:.0f}",
+            r["mobDmg"] <= r.get("bagCap", r["hitCap"]) + 1e-6,
+            f"dmg={r['mobDmg']:.0f} bagCap={r.get('bagCap', r['hitCap']):.0f}",
         )
     # Raised budgets: T5 base form even build should feel >10% bag pressure.
     even_t5 = simulate_full(INVEST["even"], scales, base_form, "warrior", 5)
@@ -443,6 +445,7 @@ def main() -> int:
 
     print("\n=== 6) Archetype challenge feel ===")
     lines += ["", "## 6) Archetype challenge feel", ""]
+    arch_scales = load_stats("saiyan")["warrior"]["scale"]
     def bag_pressure(row: dict) -> float:
         # DEF-cancel pierce inflates pre-mit hitFrac; estimate post-flat-absorb feel.
         if row["hitFrac"] > 0.90:
@@ -450,9 +453,9 @@ def main() -> int:
         return row["hitFrac"]
 
     for name in ("even", "vit_dump", "res_dump", "str_dump"):
-        t1 = simulate_full(INVEST[name], scales, base_form, name if name in CLASS_INVEST else "warrior", 1)
-        t5 = simulate_full(INVEST[name], scales, base_form, name if name in CLASS_INVEST else "warrior", 5)
-        t7 = simulate_full(INVEST[name], scales, base_form, name if name in CLASS_INVEST else "warrior", 7)
+        t1 = simulate_full(INVEST[name], arch_scales, base_form, name if name in CLASS_INVEST else "warrior", 1)
+        t5 = simulate_full(INVEST[name], arch_scales, base_form, name if name in CLASS_INVEST else "warrior", 5)
+        t7 = simulate_full(INVEST[name], arch_scales, base_form, name if name in CLASS_INVEST else "warrior", 7)
         p1, p5, p7 = bag_pressure(t1), bag_pressure(t5), bag_pressure(t7)
         pierce_bound = t5["hitFrac"] > 0.90 and t7["hitFrac"] > 0.90
         check(

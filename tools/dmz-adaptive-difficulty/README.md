@@ -38,7 +38,7 @@ Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fi
 | Death | Clears active tier + level whenever the system allows the player (personal OFF cannot skip). Unlocks / prestige / coins kept. Disconnect / logout keeps the purchased tier |
 | Nearby scaling | Hostiles scale to soft-blended **STR/SKP/PWR** (+ mild **ENE** pool) × tier % for damage and soft **VIT** for HP (max 5/player). **VIT/RES damage floors** press tank dumps; **Ki Infusion / Potential Unlock** raise pack sponge; **class counters** + **top-2 combat stats** (STR/SKP/RES/VIT/PWR/ENE) ramp with tier%. Mob damage is VIT-capped (raised budgets) so higher tiers pressure **ki protection** without one-punch bag dumps; stronger durability sponge keeps STR/PWR dumps from vaporizing packs. Form soft-curve on STR/SKP/PWR/ENE. Leave range / personal off / logout reverts stats **and** strips elite/mutation/boss nameplates. |
 | Combat Rating | Rewards / display / area readouts (not mob HP) |
-| Teams | WIP stub — personal difficulty only |
+| Teams | Mutual rivals extend tier ceiling (opt-in, capped) |
 | Titles | Restored; equip from GUI |
 | Kill rewards | Personal ON: **5%** chance per eligible kill — pre-T1 Copper; with tier, normal ladder |
 | Upgrade drop | **0.5%** dual drop: original coin + next-higher (e.g. Copper + Iron) |

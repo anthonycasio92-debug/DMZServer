@@ -461,7 +461,7 @@ public final class DifficultyCommands {
         }
         com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.setEnabled(on);
         source.m_288197_(() -> Component.m_237113_(
-                (on ? "§aBalance telemetry ON" : "§eBalance telemetry OFF")
+                (on ? "§aCombat hit log ON" : "§eCombat hit log OFF")
                         + "\n§7Logs AD hits for §fall players§7 using the difficulty system"
                         + " §8(rate-limited)."
                         + "\n§8" + com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.telemetryDir()
@@ -474,7 +474,7 @@ public final class DifficultyCommands {
             return 0;
         }
         source.m_288197_(() -> Component.m_237113_(
-                "§6Balance telemetry\n§7"
+                "§6Combat hit log\n§7"
                         + com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.statusLine()
                         + "\n§8Samples all AD players when ON (not whitelist-gated)."
                         + "\n§8/difficulty admin telemetry on|off|flush|test"
@@ -488,7 +488,7 @@ public final class DifficultyCommands {
         }
         com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.flushAndClose();
         source.m_288197_(() -> Component.m_237113_(
-                "§aTelemetry flushed.\n§8"
+                "§aLogs flushed.\n§8"
                         + com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.telemetryDir()
         ), true);
         return 1;
@@ -506,11 +506,11 @@ public final class DifficultyCommands {
         }
         String path = com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.writeTestProbe(name);
         if (path == null || path.isBlank()) {
-            source.m_81352_(Component.m_237113_("§cTelemetry probe failed — check server log."));
+            source.m_81352_(Component.m_237113_("§cHit log probe failed — check server log."));
             return 0;
         }
         source.m_288197_(() -> Component.m_237113_(
-                "§aTelemetry probe written.\n§7File: §f" + path
+                "§aHit log probe written.\n§7File: §f" + path
                         + "\n§7Remember: live hits only log for §fwhitelisted§7 players."
         ), true);
         return 1;
@@ -522,8 +522,8 @@ public final class DifficultyCommands {
         }
         com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.setEnabled(on);
         source.m_288197_(() -> Component.m_237113_(
-                (on ? "§aSystem telemetry ON" : "§eSystem telemetry OFF")
-                        + "\n§7Logs difficulty/rival/sparring events for all players (rate-limited)."
+                (on ? "§aEvent log ON" : "§eEvent log OFF")
+                        + "\n§7Logs difficulty, rival, and sparring events for all players (rate-limited)."
                         + "\n§8" + com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.telemetryDir()
         ), true);
         return 1;
@@ -534,7 +534,7 @@ public final class DifficultyCommands {
             return 0;
         }
         source.m_288197_(() -> Component.m_237113_(
-                "§6System telemetry\n§7"
+                "§6Event log\n§7"
                         + com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.statusLine()
         ), false);
         return 1;
@@ -546,7 +546,7 @@ public final class DifficultyCommands {
         }
         com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.flushAndClose();
         com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry.flushAndClose();
-        source.m_288197_(() -> Component.m_237113_("§aFlushed system + balance telemetry writers."), true);
+        source.m_288197_(() -> Component.m_237113_("§aFlushed event and hit logs."), true);
         return 1;
     }
 
@@ -708,7 +708,7 @@ public final class DifficultyCommands {
                         + "§e/difficulty admin syslog on|off|status|flush §7— unified system event log\n"
                         + "§e/difficulty admin gui|inspect <player> [page] §7— open their GUI (edit/see their state)\n"
                         + "§e/difficulty admin resynclevel [player] §7— clear stuck DMZ level sample + refresh GUI level\n"
-                        + "§e/lm §7— Legacy Mechanics hub (Difficulty / Rival / Sparring)\n"
+                        + "§e/lm §7— open Legacy Mechanics menu (Difficulty / Rival / Sparring)\n"
                         + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased|characterreset\n"
                         + "§e/difficulty admin set <key> <value>\n"
                         + "§8Master keys: enabled · whitelistEnabled · balanceTelemetryEnabled · enableSystemTelemetry\n"
@@ -894,6 +894,16 @@ public final class DifficultyCommands {
                 case "levelmultiplier" -> cfg.levelMultiplier = Double.parseDouble(value);
                 case "teambonus", "teambonuspercent" -> cfg.teamBonusPercent = Double.parseDouble(value);
                 case "contribution", "contributionpercent" -> cfg.contributionPercent = Double.parseDouble(value);
+                case "teamelitechance", "teamelitechancebonus", "teamelitechancebonuspercent" ->
+                        cfg.teamEliteChanceBonusPercent = Math.max(0.0, Math.min(10.0, Double.parseDouble(value)));
+                case "teammutationchance", "teammutationchancebonus", "teammutationchancebonuspercent" ->
+                        cfg.teamMutationChanceBonusPercent = Math.max(0.0, Math.min(10.0, Double.parseDouble(value)));
+                case "teambossthreshold", "teambossthresholdbonus", "teambossthresholdbonuspercent" ->
+                        cfg.teamBossThresholdBonusPercent = Math.max(0.0, Math.min(50.0, Double.parseDouble(value)));
+                case "teambosspromotion", "teambosspromotionchance", "teambosspromotionchancepercent" ->
+                        cfg.teamBossPromotionChancePercent = Math.max(0.0, Math.min(5.0, Double.parseDouble(value)));
+                case "teamthresholdrarity", "teamthresholdraritymult" ->
+                        cfg.teamThresholdRarityMult = Math.max(0.0, Math.min(1.0, Double.parseDouble(value)));
                 case "rewardscaling" -> cfg.rewardScaling = Math.max(1.0, Double.parseDouble(value));
                 case "combatcurveexponent", "combatcurve", "offensecurve" ->
                         cfg.combatCurveExponent = Math.max(0.05, Math.min(1.0, Double.parseDouble(value)));

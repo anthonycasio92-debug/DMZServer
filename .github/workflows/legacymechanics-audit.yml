@@ -1,0 +1,43 @@
+name: LegacyMechanics audits
+
+on:
+  pull_request:
+    paths:
+      - "tools/dmz-adaptive-difficulty/**"
+      - "tools/dmz-adaptive-difficulty-gui/**"
+      - "config/dragonminez/**"
+      - ".github/workflows/legacymechanics-audit.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "tools/dmz-adaptive-difficulty/**"
+      - "tools/dmz-adaptive-difficulty-gui/**"
+      - "config/dragonminez/**"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Scaling sync + sim audits
+        working-directory: tools/dmz-adaptive-difficulty
+        run: |
+          python3 sim/audit_scaling_sync.py
+          python3 sim/validate_scaling.py
+          python3 sim/audit_tier_level_matrix.py
+          python3 sim/simulate_build_matrix.py --check
+          python3 sim/audit_concept.py
+          python3 sim/audit_form_bands.py
+          python3 sim/validate_tier_costs.py
+
+      - name: Feature + tooltip audits
+        working-directory: tools/dmz-adaptive-difficulty
+        run: |
+          python3 sim/audit_features.py
+          python3 sim/audit_gui_tooltips.py

@@ -16,7 +16,7 @@ if [[ ! -f "$FTB" ]]; then
   curl -fsSL -o "$FTB" \
     "https://maven.ftb.dev/releases/dev/ftb/mods/ftb-teams-forge/2001.3.1/ftb-teams-forge-2001.3.1.jar"
 fi
-VERSION="2.3.174"
+VERSION="2.3.180"
 NAME="LegacyMechanics"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
@@ -65,9 +65,12 @@ jar tf "$JAR"
 
 # Fail-closed audits: product features, combat scaling sim, GUI ABI.
 HERE_SIM="$(cd "$(dirname "$0")" && pwd)/sim"
+python3 "$HERE_SIM/audit_scaling_sync.py"
 python3 "$HERE_SIM/audit_features.py"
 python3 "$HERE_SIM/audit_gui_tooltips.py"
+python3 "$HERE_SIM/audit_form_bands.py"
 python3 "$HERE_SIM/validate_tier_costs.py"
+python3 "$HERE_SIM/audit_tier_level_matrix.py"
 python3 "$HERE_SIM/validate_scaling.py"
 python3 "$HERE_SIM/simulate_build_matrix.py" --check
 python3 "$HERE_SIM/audit_concept.py"

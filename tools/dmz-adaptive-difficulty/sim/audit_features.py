@@ -11,6 +11,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from audit_lib import mod_version  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[3]
 SRC = ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "java"
 GUI_SRC = ROOT / "tools" / "dmz-adaptive-difficulty-gui" / "src" / "main" / "java"
@@ -87,7 +90,8 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.174", 'VERSION = "2.3.174"' in mod)
+    ver = mod_version()
+    check(f"VERSION {ver}", f'VERSION = "{ver}"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -168,7 +172,7 @@ def main() -> int:
     check("VIT hit cap kept", has(profile, "kiProtectionHitFrac", "targetMobDamage", "hitCap"))
     check(
         "raised hit-cap budgets (1.0.28)",
-        "case 1 -> 0.22" in profile and "default -> 0.52" in profile and "formFactor = 0.78" in profile,
+        "case 1 -> 0.22" in profile and "default -> 0.56" in profile and "formFactor = 0.78" in profile,
     )
     check("live-bag landing ladder", "liveMaxHealth" in profile and "landFrac" in profile)
     check("T3 god-form pierce", "activeTier >= 3 && formBoost >= 6.0" in profile or "formBoost >= 6.0" in profile)
@@ -227,7 +231,7 @@ def main() -> int:
 
     print("\n=== Titles / teams stub / GUI ===")
     check("title equip action", has(actions, "equipTitle", "ACT_EQUIP_TITLE") or "equip_title" in actions)
-    check("teams WIP", "work in progress" in actions.lower() or "WIP" in actions)
+    check("rival team mode action", "setTeamMode" in actions or "mutual rivals" in actions.lower())
     check("GUI ABI package stable", "com.dbzlegacy.adaptivedifficulty" in bridge and "DifficultyCache" in bridge)
 
     print("\n=== Balance telemetry ===")
@@ -312,7 +316,7 @@ def main() -> int:
     check("T5 landFrac 0.33", "case 5 -> 0.33" in profile)
     check("KP landing 1.5%/lvl", "kiProtectionLevel * 0.015" in profile)
     check("partial landing fill", "preAmount < land * 0.45" in events)
-    check("progressive soft-caps", "case 5 -> 0.44" in profile and "case 6 -> 0.48" in profile and "case 7 -> 0.52" in profile)
+    check("progressive soft-caps", "case 5 -> 0.44" in profile and "case 6 -> 0.48" in profile and "case 7 -> 0.60" in profile)
     check("README 1.0.25 balance", "1.0.25" in readme and "T4 tank" in readme)
     check("README 2.3.61 tier costs", "2.3.61" in readme and "tierCostLevelAnchor" in readme and "100× Netherite" in readme)
     check("README 2.3.62 gui level pull", "2.3.62" in readme and "prepareGui" in actions)
@@ -377,8 +381,8 @@ def main() -> int:
 
     print("\n=== Ladder retune (1.0.35 rollback) ===")
     check("T4 form nudge 1.06", "case 4 -> 1.06" in profile)
-    check("T5 form nudge 1.10", "case 5 -> 1.10" in profile)
-    check("T7 form nudge 1.18", "default -> 1.18" in profile)
+    check("T5 form nudge 1.12", "case 5 -> 1.12" in profile)
+    check("T7 form nudge 1.21", "default -> 1.21" in profile)
     check("T4 liveShare 0.42", "case 4 -> 0.42" in profile)
     check("T5 liveShare 0.50", "case 5 -> 0.50" in profile)
     check("T4 landCap 0.32", "case 4 -> 0.32" in profile)
@@ -667,9 +671,9 @@ def main() -> int:
         "telemetry logs android upgrade flag",
         '\\"android\\"' in tel and "isAndroidUpgraded" in tel,
     )
-    races_root = Path("/workspace/config/dragonminez/races")
+    races_root = ROOT / "config" / "dragonminez" / "races"
     if not races_root.is_dir():
-        races_root = ROOT.parents[1] / "config" / "dragonminez" / "races"
+        races_root = Path("/workspace/config/dragonminez/races")
     for race in ("human", "saiyan", "frostdemon", "viltrumite"):
         check(
             f"stock {race} androidforms.json",

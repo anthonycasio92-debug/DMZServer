@@ -29,6 +29,15 @@ public final class EliteSystem {
      *                 gating is done by the caller via {@code eliteMinUnlockTier}.
      */
     public static void maybePromote(LivingEntity entity, long rollSeed) {
+        maybePromote(entity, rollSeed, 0.0);
+    }
+
+    /**
+     * @param rollSeed claim-owner unlock seed ({@code unlockTier * 10_000}). Unlock-tier
+     *                 gating is done by the caller via {@code eliteMinUnlockTier}.
+     * @param bonusPercentPoints extra roll % from team scaling (added to {@code eliteChancePercent})
+     */
+    public static void maybePromote(LivingEntity entity, long rollSeed, double bonusPercentPoints) {
         DifficultyConfig cfg = DifficultyConfig.get();
         if (!cfg.enableElites || entity == null || rollSeed <= 0L) {
             return;
@@ -39,9 +48,8 @@ public final class EliteSystem {
                 || tag.m_128471_("dmz_ad_boss")) {
             return;
         }
-        // Flat config % only. Old builds added rollSeed/100000 (capped +15%), which with
-        // unlockTier*10000 seeds always maxed out and made elites ~18% of claims.
-        double chance = Math.max(0.0, Math.min(1.0, cfg.eliteChancePercent / 100.0));
+        double chance = Math.max(0.0, Math.min(1.0,
+                (cfg.eliteChancePercent + Math.max(0.0, bonusPercentPoints)) / 100.0));
         if (chance <= 0.0 || ThreadLocalRandom.current().nextDouble() >= chance) {
             return;
         }

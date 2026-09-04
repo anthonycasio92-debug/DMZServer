@@ -14,7 +14,7 @@ import org.bukkit.entity.Player;
 
 /**
  * Reflects into the Forge mod for live values / actions (Mohist shared JVM).
- * Surface: hub status, Tiers (UnlockTier 1–7 buy/lower/reset), Team (WIP), character_reset.
+ * Surface: hub status, Tiers (UnlockTier 1–7 buy/lower/reset), Rival Teams, character_reset.
  */
 public final class ForgeBridge {
     private static final long PLACEHOLDER_TTL_MS = 200L;
@@ -77,6 +77,8 @@ public final class ForgeBridge {
     private static Method sparMembershipDojoCardsMethod;
     private static Method sparRivalDojoCardsMethod;
     private static Method sparDojoMemberCardsMethod;
+    private static Method diffTeamLinesMethod;
+    private static Method diffTeamMutualCardsMethod;
     private static Method hubChatMenuOpen;
     private static Method hubPlaceholdersMethod;
     private static Method hubLinesMethod;
@@ -208,16 +210,21 @@ public final class ForgeBridge {
             out.put("level", String.valueOf(level));
             out.put("dmz_level", String.valueOf(level));
             out.put("prestige", String.valueOf(prestige));
-            out.put("team_mode", "WIP");
+            if (teamMode != null) {
+                String modeKey = String.valueOf(teamMode).toLowerCase(Locale.ROOT);
+                out.put("team_mode", modeKey);
+                out.put("team_mode_label", teamModeLabel(modeKey));
+            } else {
+                out.put("team_mode", "personal_only");
+                out.put("team_mode_label", "Personal");
+            }
             out.put("combat_rating", String.valueOf(combatRating > 0 ? combatRating : calculated));
             out.put("active_tier", String.valueOf(activeTier));
             out.put("highest_unlocked", String.valueOf(highestUnlocked));
             out.put("active_tier_name", activeTierName == null ? "None" : String.valueOf(activeTierName));
             out.put("tier", activeTierName == null ? "None" : String.valueOf(activeTierName));
 
-            out.put("team_name", "WIP");
-            out.put("team_source", "personal");
-            out.put("team_size", "0");
+            putTeamScalingPlaceholders(out, nms);
 
             long liveBalance = ancientCopper > 0 ? ancientCopper : purchased;
             if (economyBalance != null) {
@@ -1132,6 +1139,59 @@ public final class ForgeBridge {
         return List.of();
     }
 
+    /** Encoded mutual-rival team cards (tab-separated). */
+    public static List<String> diffTeamMutualCards(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of();
+        }
+        try {
+            ensureDiffTeamResolved(nms.getClass().getClassLoader());
+            if (diffTeamMutualCardsMethod == null) {
+                return List.of();
+            }
+            Object raw = diffTeamMutualCardsMethod.invoke(null, nms);
+            if (raw instanceof List<?> list) {
+                List<String> out = new ArrayList<>();
+                for (Object o : list) {
+                    if (o != null) {
+                        String s = String.valueOf(o);
+                        if (!s.isBlank()) {
+                            out.add(s);
+                        }
+                    }
+                }
+                return out;
+            }
+        } catch (Throwable ignored) {
+        }
+        return List.of();
+    }
+
+    public static List<String> diffTeamLines(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        try {
+            ensureDiffTeamResolved(nms.getClass().getClassLoader());
+            if (diffTeamLinesMethod == null) {
+                return List.of("§cTeams API missing — update LegacyMechanics jar.");
+            }
+            Object raw = diffTeamLinesMethod.invoke(null, nms, "team");
+            if (raw instanceof List<?> list) {
+                List<String> out = new ArrayList<>();
+                for (Object o : list) {
+                    out.add(o == null ? "" : String.valueOf(o));
+                }
+                return out;
+            }
+        } catch (Throwable t) {
+            return List.of("§cTeams lines failed: " + t.getMessage());
+        }
+        return List.of();
+    }
+
     /** Encoded pending mentor invites (incoming + outgoing). */
     public static List<String> sparPendingMentorInviteCards(Player player) {
         return invokeSparStringList(player, "pendingMentorInviteCards");
@@ -1901,6 +1961,67 @@ public final class ForgeBridge {
         }
     }
 
+    private static synchronized void ensureDiffTeamResolved(ClassLoader preferred) throws Exception {
+        if (diffTeamLinesMethod != null && diffTeamMutualCardsMethod != null) {
+            return;
+        }
+        Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.DifficultyTeamGuiApi", preferred);
+        Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+        diffTeamLinesMethod = api.getMethod("linesForPage", sp, String.class);
+        diffTeamMutualCardsMethod = api.getMethod("mutualRivalCards", sp);
+    }
+
+    private static void putTeamScalingPlaceholders(Map<String, String> out, Object nms) {
+        out.put("team_name", "none");
+        out.put("team_source", "Rival Mutual");
+        out.put("team_size", "0");
+        out.put("mutual_total", "0");
+        out.put("mutual_online", "0");
+        if (nms == null) {
+            return;
+        }
+        try {
+            ClassLoader cl = nms.getClass().getClassLoader();
+            Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", cl);
+            Class<?> ts = loadClass("com.dbzlegacy.adaptivedifficulty.team.TeamScaling", cl);
+            Object name = ts.getMethod("teamName", sp).invoke(null, nms);
+            Object source = ts.getMethod("teamSourceLabel").invoke(null);
+            Object mates = ts.getMethod("teammates", sp).invoke(null, nms);
+            Object mutual = ts.getMethod("mutualRivalCount", sp).invoke(null, nms);
+            Object prox = ts.getMethod("contributionProximityBlocks").invoke(null);
+            int online = mates instanceof List<?> list ? list.size() : 0;
+            out.put("team_name", name == null ? "none" : String.valueOf(name));
+            out.put("team_source", source == null ? "Rival Mutual" : String.valueOf(source));
+            out.put("team_size", String.valueOf(online));
+            out.put("mutual_total", mutual == null ? "0" : String.valueOf(mutual));
+            out.put("mutual_online", String.valueOf(online));
+            out.put("proximity_blocks", prox == null ? "48" : String.valueOf((int) Math.round(((Number) prox).doubleValue())));
+            try {
+                Class<?> cfg = loadClass("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig", cl);
+                Object cfgInst = cfg.getMethod("get").invoke(null);
+                Object bonus = cfg.getField("teamBonusPercent").get(cfgInst);
+                Object contrib = cfg.getField("contributionPercent").get(cfgInst);
+                out.put("bonus_percent", bonus == null ? "10" : String.valueOf((int) Math.round(((Number) bonus).doubleValue())));
+                out.put("contrib_percent", contrib == null ? "25" : String.valueOf((int) Math.round(((Number) contrib).doubleValue())));
+            } catch (Throwable ignoredCfg) {
+                out.put("bonus_percent", "10");
+                out.put("contrib_percent", "25");
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static String teamModeLabel(String modeKey) {
+        if (modeKey == null) {
+            return "Personal";
+        }
+        return switch (modeKey.toLowerCase(Locale.ROOT)) {
+            case "threshold_bonus_only" -> "Threshold";
+            case "full_team_scaling" -> "Full";
+            default -> "Personal";
+        };
+    }
+
     private static synchronized void ensureRivalResolved(ClassLoader preferred) throws Exception {
         if (rivalPlaceholdersMethod != null && rivalLinesMethod != null && rivalHandleDoMethod != null) {
             resolveOptionalRivalMethods(preferred);
@@ -2530,13 +2651,13 @@ public final class ForgeBridge {
             loadClass("com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
                     .getMethod("setEnabled", boolean.class).invoke(null, on);
             Path dir = telemetryDir();
-            return (on ? "§aBalance telemetry ON" : "§eBalance telemetry OFF")
+            return (on ? "§aCombat hit log ON" : "§eCombat hit log OFF")
                     + "\n§7Logs AD hits for §fall players§7 using the difficulty system"
                     + " §8(rate-limited)."
                     + "\n§8" + dir;
         } catch (Throwable t) {
             resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
-            return "§cFailed to toggle telemetry: " + t.getMessage()
+            return "§cFailed to toggle hit log: " + t.getMessage()
                     + "\n§8Install matching LegacyMechanics jar.";
         }
     }
@@ -2546,12 +2667,12 @@ public final class ForgeBridge {
             Object line = loadClass(
                     "com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
                     .getMethod("statusLine").invoke(null);
-            return "§6Balance telemetry\n§7" + line
+            return "§6Combat hit log\n§7" + line
                     + "\n§8Samples all AD players when ON (not whitelist-gated)."
                     + "\n§8/difficulty admin telemetry on|off|flush|test";
         } catch (Throwable t) {
             resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
-            return "§cTelemetry unavailable: " + t.getMessage()
+            return "§cHit log unavailable: " + t.getMessage()
                     + "\n§8Need LegacyMechanics with BalanceTelemetry.";
         }
     }
@@ -2560,10 +2681,10 @@ public final class ForgeBridge {
         try {
             loadClass("com.dbzlegacy.adaptivedifficulty.telemetry.BalanceTelemetry", preferredLoader())
                     .getMethod("flushAndClose").invoke(null);
-            return "§aTelemetry flushed.\n§8" + telemetryDir();
+            return "§aLogs flushed.\n§8" + telemetryDir();
         } catch (Throwable t) {
             resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
-            return "§cTelemetry flush failed: " + t.getMessage();
+            return "§cHit log flush failed: " + t.getMessage();
         }
     }
 
@@ -2579,22 +2700,22 @@ public final class ForgeBridge {
             return switch (m) {
                 case "on", "true", "enable" -> {
                     tel.getMethod("setEnabled", boolean.class).invoke(null, true);
-                    yield "§aSystem telemetry ON\n§8" + tel.getMethod("telemetryDir").invoke(null);
+                    yield "§aEvent log ON\n§8" + tel.getMethod("telemetryDir").invoke(null);
                 }
                 case "off", "false", "disable" -> {
                     tel.getMethod("setEnabled", boolean.class).invoke(null, false);
-                    yield "§eSystem telemetry OFF";
+                    yield "§eEvent log OFF";
                 }
                 case "flush" -> {
                     tel.getMethod("flushAndClose").invoke(null);
-                    yield "§aSyslog flushed.\n§8" + tel.getMethod("telemetryDir").invoke(null);
+                    yield "§aLogs flushed.\n§8" + tel.getMethod("telemetryDir").invoke(null);
                 }
                 case "status", "0", "" -> "§7" + tel.getMethod("statusLine").invoke(null);
                 default -> "§cUsage: syslog on|off|status|flush";
             };
         } catch (Throwable t) {
             resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
-            return "§cSyslog unavailable: " + t.getMessage()
+            return "§cEvent log unavailable: " + t.getMessage()
                     + "\n§8Need LegacyMechanics with SystemTelemetry.";
         }
     }

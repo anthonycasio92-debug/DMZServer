@@ -4,11 +4,12 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
+import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Unlock tiers, activation ceilings, combat rating (rewards/display). Teams are WIP. */
+/** Unlock tiers, activation ceilings, combat rating (rewards/display). Rival mutual teams. */
 public final class DifficultyCalculator {
     private DifficultyCalculator() {}
 
@@ -35,12 +36,21 @@ public final class DifficultyCalculator {
         UnlockTier tier = UnlockTier.byId(activeTier);
         long tierMax = tier == null ? 0L : tier.maxDifficulty();
 
-        // Teams remain a WIP stub — personal difficulty only.
-        TeamMode mode = TeamMode.PERSONAL_ONLY;
+        // Rival mutual team scaling (opt-in per player).
+        TeamMode mode = data.getTeamMode();
+        if (!data.isPersonalEnabled() || !DifficultyConfig.get().enableRivalSystem) {
+            mode = TeamMode.PERSONAL_ONLY;
+        }
         long personalMax = tierMax;
         long thresholdBonus = 0L;
         long contribution = 0L;
-        long availableMax = clampNonNegative(personalMax);
+        if (mode != TeamMode.PERSONAL_ONLY && personalMax > 0L) {
+            thresholdBonus = TeamScaling.thresholdBonus(player, personalMax);
+            if (mode == TeamMode.FULL_TEAM_SCALING) {
+                contribution = TeamScaling.contributionBonus(player, personalMax + thresholdBonus);
+            }
+        }
+        long availableMax = clampNonNegative(personalMax + thresholdBonus + contribution);
 
         long active = Math.min(data.getActiveDifficultyLevel(), availableMax);
         if (tier == null) {

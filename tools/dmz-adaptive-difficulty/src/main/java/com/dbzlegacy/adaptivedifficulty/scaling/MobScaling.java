@@ -392,7 +392,7 @@ public final class MobScaling {
                 return;
             }
             // One-shot elite / mutation / boss roll from the claim owner's unlock tier.
-            rollRarityForClaim(entity, tag, profile.activeTier, cfg);
+            rollRarityForClaim(entity, tag, profile.activeTier, cfg, player);
             if (tag.m_128441_(TAG_PROFILE_SIG) && tag.m_128454_(TAG_PROFILE_SIG) == profile.signature) {
                 APPLIED_PROFILE.put(entity.m_20148_(), profile.signature);
                 return;
@@ -648,26 +648,44 @@ public final class MobScaling {
      * gates get one chance (so T1 first-claim cannot permanently lock out T4+ rarity).
      */
     private static void rollRarityForClaim(
-            LivingEntity entity, CompoundTag tag, int ownerUnlockTier, DifficultyConfig cfg) {
+            LivingEntity entity,
+            CompoundTag tag,
+            int ownerUnlockTier,
+            DifficultyConfig cfg,
+            ServerPlayer owner) {
         if (entity == null || tag == null || !PersistentDataAccess.isWritable(tag) || cfg == null) {
             return;
         }
         int unlock = Math.max(0, ownerUnlockTier);
         tag.m_128405_("dmz_ad_unlock_tier", unlock);
         long rollSeed = Math.max(1L, unlock) * 10_000L;
+        double eliteBonus = owner == null ? 0.0
+                : com.dbzlegacy.adaptivedifficulty.team.TeamScaling.rarityBonusPercent(
+                owner, com.dbzlegacy.adaptivedifficulty.team.TeamScaling.RarityBonus.ELITE);
+        double mutationBonus = owner == null ? 0.0
+                : com.dbzlegacy.adaptivedifficulty.team.TeamScaling.rarityBonusPercent(
+                owner, com.dbzlegacy.adaptivedifficulty.team.TeamScaling.RarityBonus.MUTATION);
+        double bossThresholdBonus = owner == null ? 0.0
+                : com.dbzlegacy.adaptivedifficulty.team.TeamScaling.rarityBonusPercent(
+                owner, com.dbzlegacy.adaptivedifficulty.team.TeamScaling.RarityBonus.BOSS_THRESHOLD);
+        double bossPromotionBonus = owner == null ? 0.0
+                : com.dbzlegacy.adaptivedifficulty.team.TeamScaling.rarityBonusPercent(
+                owner, com.dbzlegacy.adaptivedifficulty.team.TeamScaling.RarityBonus.BOSS_PROMOTION);
+        double bossHpThreshold = com.dbzlegacy.adaptivedifficulty.team.TeamScaling
+                .effectiveBossHealthThreshold(cfg, bossThresholdBonus);
         int rolledAt = tag.m_128441_("dmz_ad_rarity_unlock")
                 ? Math.max(0, tag.m_128451_("dmz_ad_rarity_unlock"))
                 : 0;
         // Leave-area wipe clears AD boss paint; natural bosses need it restored on reclaim
         // even when elite/mutation already rolled once for this mob.
         if (tag.m_128471_("dmz_ad_rarity_rolled")) {
-            restoreNaturalBossPaint(entity, tag, unlock, rollSeed, cfg);
+            restoreNaturalBossPaint(entity, tag, unlock, rollSeed, cfg, bossHpThreshold);
             if (unlock > rolledAt) {
                 if (unlock >= cfg.eliteMinUnlockTier && rolledAt < cfg.eliteMinUnlockTier) {
-                    EliteSystem.maybePromote(entity, rollSeed);
+                    EliteSystem.maybePromote(entity, rollSeed, eliteBonus);
                 }
                 if (unlock >= cfg.mutationMinUnlockTier && rolledAt < cfg.mutationMinUnlockTier) {
-                    MutationSystem.maybeMutate(entity, rollSeed);
+                    MutationSystem.maybeMutate(entity, rollSeed, mutationBonus);
                 }
                 tag.m_128405_("dmz_ad_rarity_unlock", unlock);
             }
@@ -675,23 +693,28 @@ public final class MobScaling {
         }
         tag.m_128379_("dmz_ad_rarity_rolled", true);
         tag.m_128405_("dmz_ad_rarity_unlock", unlock);
-        if (isNaturalBossCandidate(entity, tag, cfg) && unlock >= cfg.bossMechanicsMinUnlockTier) {
-            BossScaling.markBoss(entity, rollSeed);
+        if (unlock >= cfg.bossMechanicsMinUnlockTier) {
+            if (isNaturalBossCandidate(entity, tag, cfg, bossHpThreshold)) {
+                BossScaling.markBoss(entity, rollSeed);
+            } else if (bossPromotionBonus > 0.0) {
+                BossScaling.maybePromote(entity, rollSeed, bossPromotionBonus);
+            }
         }
         if (unlock >= cfg.eliteMinUnlockTier) {
-            EliteSystem.maybePromote(entity, rollSeed);
+            EliteSystem.maybePromote(entity, rollSeed, eliteBonus);
         }
         if (unlock >= cfg.mutationMinUnlockTier) {
-            MutationSystem.maybeMutate(entity, rollSeed);
+            MutationSystem.maybeMutate(entity, rollSeed, mutationBonus);
         }
     }
 
     private static void restoreNaturalBossPaint(
-            LivingEntity entity, CompoundTag tag, int unlock, long rollSeed, DifficultyConfig cfg) {
+            LivingEntity entity, CompoundTag tag, int unlock, long rollSeed, DifficultyConfig cfg,
+            double bossHpThreshold) {
         if (unlock < cfg.bossMechanicsMinUnlockTier || tag.m_128471_(BossScaling.TAG_BOSS)) {
             return;
         }
-        if (isNaturalBossCandidate(entity, tag, cfg)) {
+        if (isNaturalBossCandidate(entity, tag, cfg, bossHpThreshold)) {
             BossScaling.markBoss(entity, rollSeed);
         }
     }
@@ -699,11 +722,16 @@ public final class MobScaling {
     /** Natural boss check that does not treat a leftover {@code dmz_ad_boss} flag as proof. */
     private static boolean isNaturalBossCandidate(
             LivingEntity entity, CompoundTag tag, DifficultyConfig cfg) {
+        return isNaturalBossCandidate(entity, tag, cfg, cfg.bossHealthThreshold);
+    }
+
+    private static boolean isNaturalBossCandidate(
+            LivingEntity entity, CompoundTag tag, DifficultyConfig cfg, double healthThreshold) {
         if (tag.m_128471_("dmz_ad_natural_boss")) {
             return true;
         }
         if (tag.m_128441_(TAG_BASE_HEALTH)
-                && tag.m_128459_(TAG_BASE_HEALTH) >= cfg.bossHealthThreshold) {
+                && tag.m_128459_(TAG_BASE_HEALTH) >= healthThreshold) {
             return true;
         }
         // Temporarily ignore AD boss flag so leave-area wipe does not self-qualify.

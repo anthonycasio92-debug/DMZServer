@@ -370,6 +370,55 @@
           "&7Staff breakdown of your scaling",
           "&8Combat rating, prestige, and kit gates"
         ]
+      },
+      "teams": {
+        "name": "&bRival Teams",
+        "lore": [
+          "&7Mutual rivals can raise your tier ceiling",
+          "&7Team modes also boost elite, mutant, and boss spawns",
+          "&eClick to open"
+        ]
+      }
+    },
+    "team": {
+      "header": {
+        "name": "&b&lRival Teams",
+        "lore": [
+          "&7Team up with mutual rivals for a higher ceiling",
+          "&8Up to 2 rivals · must be online"
+        ]
+      },
+      "mode_personal": {
+        "name": "&7Personal",
+        "lore": [
+          "&7Only your own tier ceiling counts",
+          "&eClick to select"
+        ]
+      },
+      "mode_threshold": {
+        "name": "&aThreshold",
+        "lore": [
+          "&7Extra max when rivals are online",
+          "&7They must also use a team mode",
+          "&7More elites, mutants, and bosses",
+          "&eClick to select"
+        ]
+      },
+      "mode_full": {
+        "name": "&2Full",
+        "lore": [
+          "&7Threshold bonus plus nearby spare room",
+          "&7Best spawn boost when rivals are close",
+          "&8Rivals must use Full mode and be nearby",
+          "&eClick to select"
+        ]
+      },
+      "open_rival": {
+        "name": "&6Open Rival",
+        "lore": [
+          "&7Declare, accept, or manage mutual slots",
+          "&eClick to open"
+        ]
       }
     },
     "tiers": {
@@ -1026,25 +1075,33 @@
       }
     },
     "admin": {
+      "header": {
+        "name": "&c&lSpar Admin",
+        "lore": [
+          "&7Staff-only tools",
+          "&8Save · status · mentor cooldown reset",
+          "&8Player menus stay on the main Spar GUI"
+        ]
+      },
       "save": {
         "name": "&aSave",
         "lore": [
-          "&7Save sparring data now",
-          "&8Staff only"
+          "&7Save sparring data to disk",
+          "&8/spar admin save"
         ]
       },
       "status": {
         "name": "&bStatus",
         "lore": [
-          "&7Check if sparring is enabled",
-          "&8Staff only"
+          "&7Enabled + path summary",
+          "&8/spar admin status"
         ]
       },
       "resetcd": {
         "name": "&eReset Mentor Cooldown",
         "lore": [
           "&7Clear your mentor change cooldown",
-          "&8Staff only"
+          "&8/spar admin mentor resetcd"
         ]
       },
       "back": {
@@ -1282,6 +1339,49 @@
       }
     },
     "android": {
+      "panel_header": {
+        "name": "&b&lAndroid Tools",
+        "lore": [
+          "&7Dr. Gero upgrade path",
+          "&7Convert or remove the Android upgrade",
+          "&8Race and stats stay on remove"
+        ]
+      },
+      "convert_entry": {
+        "name": "&aConvert to Android",
+        "lore": [
+          "&7Gero upgrade — keeps your race",
+          "&7Unlocks the Android form path",
+          "&8Human · Saiyan · Frost Demon · Viltrumite",
+          "",
+          "&eClick · choose player"
+        ]
+      },
+      "remove_entry": {
+        "name": "&cRemove Android",
+        "lore": [
+          "&7Restore normal form skills",
+          "&8Confirm within 10s by clicking again",
+          "",
+          "&eClick · choose player"
+        ]
+      },
+      "convert_header": {
+        "name": "&b&lAndroid Convert",
+        "lore": [
+          "&7Gero upgrade — keeps your race",
+          "&7Unlocks the Android form path",
+          "&8Human · Saiyan · Frost Demon · Viltrumite"
+        ]
+      },
+      "remove_header": {
+        "name": "&c&lRemove Android",
+        "lore": [
+          "&7Removes the Android upgrade",
+          "&7Restores normal form skills",
+          "&8Click twice within 10s to confirm"
+        ]
+      },
       "convert": {
         "name": "&aConvert to Android",
         "lore": [
@@ -1313,7 +1413,7 @@
         "name": "&cRemove Android Upgrade",
         "lore": [
           "&7Remove the Android upgrade",
-          "&7Lose your android status start with no forms will need to redo sagas",
+          "&7Race, stats, and progression stay",
           "",
           "&eClick · confirm within 10s"
         ]
