@@ -1,11 +1,12 @@
 # Full mod audit — LegacyMechanics 2.3.179
 
-Generated: 2026-09-04T14:28Z
+Generated: 2026-09-04T14:31Z
 
 ## Suite summary
 
 | Audit | Result |
 |-------|:------:|
+| audit_scaling_sync | PASS |
 | audit_features | PASS |
 | audit_gui_tooltips | PASS |
 | audit_form_bands | PASS |
@@ -19,9 +20,9 @@ Generated: 2026-09-04T14:28Z
 
 ## Notes
 
+- **audit_scaling_sync** keeps Java literals aligned with `scaling_constants.py` (run on every build).
 - **audit_concept** is the product-level balance gate (player-facing intent).
-- **validate_scaling** uses stricter legacy sim thresholds; some failures are expected after the 2.3.162 rollback until thresholds are retuned.
-- **audit_tier_level_matrix** scans all races/forms × T1–T7; one human android overclock edge case may fail monotonicity at T7.
+- **validate_scaling** + **audit_tier_level_matrix** catch tier-ladder and race/form regressions.
 
 See `sim/out/full-mod-audit-run.log` for full output.
 

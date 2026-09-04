@@ -1,7 +1,7 @@
 """Single source of truth for AdaptiveDifficulty combat scaling (Python sim).
 
-Mirrors PlayerCombatProfile.java on 2.3.163 (formula revision 45).
-Update Java and this file together; audit_concept.py string-checks Java literals.
+Mirrors PlayerCombatProfile.java on 2.3.163+ (formula revision 45).
+Update Java and this file together; audit_scaling_sync.py fails the build on drift.
 """
 from __future__ import annotations
 

@@ -11,6 +11,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from audit_lib import mod_version  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[3]
 SRC = ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "java"
 GUI_SRC = ROOT / "tools" / "dmz-adaptive-difficulty-gui" / "src" / "main" / "java"
@@ -87,7 +90,8 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.179", 'VERSION = "2.3.179"' in mod)
+    ver = mod_version()
+    check(f"VERSION {ver}", f'VERSION = "{ver}"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
