@@ -78,7 +78,7 @@ public final class SparChestGui implements Listener {
             inv = picker(viewer, subject, "apprentice_invite", "mentor",
                     "&bAsk Mentor", "&7Ask them to be your mentor");
         } else if ("pick_accept".equals(p)) {
-            // Legacy deep-link — prefer pending_decide from Pending board.
+            // Prefer pending_decide from Pending board for accept/decline picks.
             inv = pendingPicker(viewer, subject, "mentor_accept", "pending",
                     "&aAccept Invite", "&7Accept this mentor invite", true);
         } else if ("pick_decline".equals(p)) {
@@ -153,7 +153,8 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         if (ForgeBridge.isStaff(viewer)) {
             put(holder, inv, 37, tipBtn(viewer, "spar.main.admin", Material.COMMAND_BLOCK, "&cAdmin",
-                    List.of("&7Save · status · mentor resetcd")), SlotAction.page("admin"));
+                    List.of("&7Save data, check status, reset cooldowns", "&8Staff only")),
+                    SlotAction.page("admin"));
         }
         return inv;
     }
@@ -432,18 +433,20 @@ public final class SparChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Spar Admin"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.COMMAND_BLOCK, "&c&lSpar Admin",
-                List.of("", "&7Staff-only tools",
-                        "&8Save · status · mentor resetcd",
-                        "&8Player menus stay on the main Spar GUI")));
+        put(holder, inv, 4, item(Material.COMMAND_BLOCK,
+                GuiTooltips.name("spar.admin.header", "&c&lSpar Admin"),
+                GuiTooltips.buttonLore("spar.admin.header", List.of(
+                        "&7Staff-only tools",
+                        "&8Save · status · mentor cooldown reset",
+                        "&8Player menus stay on the main Spar GUI"))));
         put(holder, inv, 20, tipBtn(viewer, "spar.admin.save", Material.WRITABLE_BOOK, "&aSave",
-                List.of("&7Write sparring.json", "&8/spar admin save")),
+                List.of("&7Save sparring data to disk", "&8/spar admin save")),
                 SlotAction.act("admin", "save", "admin"));
         put(holder, inv, 22, tipBtn(viewer, "spar.admin.status", Material.SPYGLASS, "&bStatus",
-                List.of("&7Enabled + path", "&8/spar admin status")),
+                List.of("&7Enabled + path summary", "&8/spar admin status")),
                 SlotAction.act("admin", "status", "admin"));
-        put(holder, inv, 24, tipBtn(viewer, "spar.admin.resetcd", Material.EMERALD, "&eReset Mentor CD",
-                List.of("&7Clear your mentor cooldown", "&8/spar admin mentor resetcd")),
+        put(holder, inv, 24, tipBtn(viewer, "spar.admin.resetcd", Material.EMERALD, "&eReset Mentor Cooldown",
+                List.of("&7Clear your mentor change cooldown", "&8/spar admin mentor resetcd")),
                 SlotAction.act("admin", "resetcd", "admin"));
         put(holder, inv, 36, pageBtn(viewer, "spar.admin.back", Material.ARROW, "&7Back", "&7Player Spar menu"),
                 SlotAction.page("main"));

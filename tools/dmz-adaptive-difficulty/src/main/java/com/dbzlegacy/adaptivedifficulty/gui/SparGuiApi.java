@@ -610,9 +610,10 @@ public final class SparGuiApi {
             return SparringSystem.resetMentorCd(player, target);
         }
         return "§6§l/spar admin\n"
-                + "§e/spar admin save §7— write sparring.json\n"
+                + "§e/spar admin save §7— save sparring data to disk\n"
                 + "§e/spar admin status §7— enabled + path\n"
-                + "§e/spar admin mentor resetcd [player] §7— clear mentor cooldown\n"
+                + "§7Clear mentor cooldown\n"
+                + "§8/spar admin mentor resetcd [player]\n"
                 + "§8GUI buttons call these directly (no Forge perm-level gate).";
     }
 

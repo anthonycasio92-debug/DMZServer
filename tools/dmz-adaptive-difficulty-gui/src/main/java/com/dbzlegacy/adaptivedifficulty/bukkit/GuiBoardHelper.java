@@ -303,9 +303,9 @@ final class GuiBoardHelper {
         List<String> lore = new ArrayList<>();
         lore.add("&7Status &f" + card.status);
         lore.add(card.online ? "&aOnline" : "&8Offline");
-        lore.add(card.optedIn ? "&aTeam scaling ON" : "&8Team scaling OFF");
+        lore.add(card.optedIn ? "&aUsing team mode" : "&8Personal only");
         if (card.online && card.optedIn) {
-            lore.add(card.near ? "&aNearby — can share spare" : "&8Too far for contribution");
+            lore.add(card.near ? "&aNearby — shares spare room" : "&8Too far to share spare room");
             if (card.spare > 0) {
                 lore.add("&7Spare tier room &f" + card.spare);
             }

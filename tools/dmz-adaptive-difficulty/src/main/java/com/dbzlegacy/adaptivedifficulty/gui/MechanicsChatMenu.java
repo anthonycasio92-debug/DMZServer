@@ -77,7 +77,7 @@ public final class MechanicsChatMenu {
                     .m_7220_(Component.m_237113_("  "))
                     .m_7220_(btn("§c[Admin]", "/lm admin help", "Admin commands"))
                     .m_7220_(Component.m_237113_("  "))
-                    .m_7220_(btn("§8[Logs]", "/lmdo lm page logs", "System telemetry"));
+                    .m_7220_(btn("§8[Logs]", "/lmdo lm page logs", "Server event logs"));
             send(player, row3);
         }
         send(player, Component.m_237113_("§8────────────────"));
@@ -87,14 +87,14 @@ public final class MechanicsChatMenu {
         send(player, Component.m_237113_(""));
         send(player, Component.m_237113_("§8── §fLegacy Mechanics · Logs §8──"));
         boolean on = DifficultyConfig.get().enableSystemTelemetry;
-        send(player, Component.m_237113_("§7System telemetry §f" + (on ? "ON" : "OFF")));
+        send(player, Component.m_237113_("§7Event log §f" + (on ? "ON" : "OFF")));
         send(player, Component.m_237113_("§8" + com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.statusLine()));
         MutableComponent toggles = Component.m_237113_("§7")
-                .m_7220_(btn(on ? "§c[Syslog OFF]" : "§a[Syslog ON]",
+                .m_7220_(btn(on ? "§c[Event Log OFF]" : "§a[Event Log ON]",
                         "/lmdo lm syslog " + (on ? "off" : "on") + " logs",
-                        "Toggle system telemetry"))
+                        "Toggle server event logging"))
                 .m_7220_(Component.m_237113_("  "))
-                .m_7220_(btn("§e[Flush]", "/lmdo lm syslog flush logs", "Flush log writers"));
+                .m_7220_(btn("§e[Flush]", "/lmdo lm syslog flush logs", "Write buffered logs to disk"));
         send(player, toggles);
         send(player, btn("§7« Back", "/lmdo lm page main", "Hub"));
         send(player, Component.m_237113_("§8────────────────"));

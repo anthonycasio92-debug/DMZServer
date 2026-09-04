@@ -125,8 +125,8 @@ public final class DifficultyChestGui implements Listener {
                 status));
         // Primary actions — Tiers · Teams · Titles
         put(holder, inv, 19, tipBtn(viewer, "difficulty.main.teams", Material.SHIELD, "&bRival Teams",
-                List.of("&7Mutual rivals extend your tier ceiling",
-                        "&8Opt-in · online · nearby for full bonus")),
+                List.of("&7Mutual rivals can raise your tier ceiling",
+                        "&8Both choose a team mode · rivals must be online")),
                 SlotAction.page("team"));
         put(holder, inv, 21, tipBtn(viewer, "difficulty.main.tiers", Material.GOLD_INGOT, "&eTiers",
                 List.of("&7Buy higher · lower unlocked · reset", "&8Ancient Coins · pay-up OK · change returned")),
@@ -401,15 +401,16 @@ public final class DifficultyChestGui implements Listener {
 
         String mode = ph.getOrDefault("team_mode", "personal_only");
         put(holder, inv, 20, tipBtn(viewer, "difficulty.team.mode_personal", Material.GRAY_DYE, "&7Personal",
-                List.of("&7Only your tier ceiling",
+                List.of("&7Only your own tier ceiling counts",
                         mode.equals("personal_only") ? "&aCurrent mode" : "&eClick to select")),
                 SlotAction.act("team", "personal", "team"));
         put(holder, inv, 22, tipBtn(viewer, "difficulty.team.mode_threshold", Material.LIME_DYE, "&aThreshold",
-                List.of("&7+" + ph.getOrDefault("bonus_percent", "10") + "% max per opted-in rival online",
+                List.of("&7Extra max when rivals are online",
+                        "&7They must also use a team mode",
                         mode.equals("threshold_bonus_only") ? "&aCurrent mode" : "&eClick to select")),
                 SlotAction.act("team", "threshold", "team"));
         put(holder, inv, 24, tipBtn(viewer, "difficulty.team.mode_full", Material.EMERALD, "&2Full",
-                List.of("&7Threshold + nearby spare tier room",
+                List.of("&7Threshold bonus plus nearby spare room",
                         "&8Within " + ph.getOrDefault("proximity_blocks", "48") + " blocks",
                         mode.equals("full_team_scaling") ? "&aCurrent mode" : "&eClick to select")),
                 SlotAction.act("team", "full", "team"));
@@ -427,7 +428,7 @@ public final class DifficultyChestGui implements Listener {
         }
 
         put(holder, inv, 31, tipBtn(viewer, "difficulty.team.open_rival", Material.DIAMOND_SWORD, "&6Open Rival",
-                List.of("&7Manage declares and mutual slots")),
+                List.of("&7Declare, accept, or manage mutual slots")),
                 SlotAction.cmd("lmdo lm open rival"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));

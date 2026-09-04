@@ -229,7 +229,7 @@ public final class DifficultyChatMenu {
         }
         send(player, Component.m_237113_(""));
         send(player, btn("§7Personal", "/difficulty do team personal team", "Solo ceiling only"));
-        send(player, btn("§aThreshold", "/difficulty do team threshold team", "Bonus per opted-in rival online"));
+        send(player, btn("§aThreshold", "/difficulty do team threshold team", "Extra max when rivals are online"));
         send(player, btn("§2Full", "/difficulty do team full team", "Threshold + nearby spare room"));
         send(player, btn("§6Open Rival", "/lmdo lm open rival", "Manage mutual rivals"));
         send(player, btn("§7« Back", "/difficulty do page main", "Return"));

@@ -45,7 +45,7 @@ public final class MechanicsGuiApi {
         boolean skillCheck = player != null && SkillCheckService.canUse(player);
         return switch (p) {
             case "help" -> List.of(
-                    "§e/lm §7— open Legacy Mechanics hub"
+                    "§e/lm §7— open Legacy Mechanics menu"
             );
             case "logs", "syslog" -> {
                 if (player == null || !StaffAccess.isStaff(player)) {
@@ -53,11 +53,11 @@ public final class MechanicsGuiApi {
                 }
                 boolean on = DifficultyConfig.get().enableSystemTelemetry;
                 List<String> lines = new ArrayList<>();
-                lines.add("§7System telemetry §f" + (on ? "ON" : "OFF"));
+                lines.add("§7Event log §f" + (on ? "ON" : "OFF"));
                 lines.add("§8" + SystemTelemetry.statusLine());
                 lines.add("§7Dir §f" + SystemTelemetry.telemetryDir());
                 lines.add("§8Buttons: on · off · flush");
-                lines.add("§8Or: /lm admin syslog on|off|status|flush");
+                lines.add("§8/lm admin syslog on|off|status|flush");
                 yield lines;
             }
             default -> {
@@ -103,18 +103,19 @@ public final class MechanicsGuiApi {
             return switch (sub) {
                 case "on", "true", "enable" -> {
                     SystemTelemetry.setEnabled(true);
-                    yield "§aSystem telemetry ON";
+                    yield "§aEvent log ON";
                 }
                 case "off", "false", "disable" -> {
                     SystemTelemetry.setEnabled(false);
-                    yield "§eSystem telemetry OFF";
+                    yield "§eEvent log OFF";
                 }
                 case "flush" -> {
                     SystemTelemetry.flushAndClose();
-                    yield "§aSyslog flushed.";
+                    yield "§aLogs flushed.";
                 }
                 case "status", "0", "" -> "§7" + SystemTelemetry.statusLine();
-                default -> "§cUsage: lm do syslog on|off|status|flush";
+                default -> "§cUnknown option."
+                        + "\n§8/lm do syslog on|off|status|flush";
             };
         }
         if ("migrate-cnpc".equals(act) || "migratecnpc".equals(act) || "cnpcmigrate".equals(act)) {

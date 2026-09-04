@@ -423,9 +423,10 @@ public final class SparCommands {
     private static int sparAdminHelp(CommandSourceStack source) {
         source.m_288197_(() -> Component.m_237113_(
                 "§6§l/spar admin\n"
-                        + "§e/spar admin save §7— write sparring.json\n"
+                        + "§e/spar admin save §7— save sparring data to disk\n"
                         + "§e/spar admin status §7— enabled + path\n"
-                        + "§e/spar admin mentor resetcd [player] §7— clear mentor cooldown"
+                        + "§7Clear mentor cooldown\n"
+                        + "§8/spar admin mentor resetcd [player]"
         ), false);
         return 1;
     }

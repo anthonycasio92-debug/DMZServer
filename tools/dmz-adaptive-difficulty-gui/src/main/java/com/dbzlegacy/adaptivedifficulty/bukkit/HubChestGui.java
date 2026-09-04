@@ -154,14 +154,14 @@ public final class HubChestGui implements Listener {
                     prependBlank(part)));
             placed++;
         }
-        put(holder, inv, 29, tipBtn(player, "hub.logs.syslog_on", Material.LIME_DYE, "&aLogging ON",
-                List.of("&7Turn server event logging on")),
+        put(holder, inv, 29, tipBtn(player, "hub.logs.syslog_on", Material.LIME_DYE, "&aEvent Log ON",
+                List.of("&7Server event logging is on", "&8Staff only")),
                 SlotAction.act("syslog", "on", "logs"));
-        put(holder, inv, 31, tipBtn(player, "hub.logs.syslog_off", Material.GRAY_DYE, "&cLogging OFF",
-                List.of("&7Turn server event logging off")),
+        put(holder, inv, 31, tipBtn(player, "hub.logs.syslog_off", Material.GRAY_DYE, "&cEvent Log OFF",
+                List.of("&7Turn server event logging back on", "&8Staff only")),
                 SlotAction.act("syslog", "off", "logs"));
-        put(holder, inv, 33, tipBtn(player, "hub.logs.flush", Material.HOPPER, "&eFlush",
-                List.of("&7Flush log writers")),
+        put(holder, inv, 33, tipBtn(player, "hub.logs.flush", Material.HOPPER, "&eFlush Logs",
+                List.of("&7Write buffered logs to disk", "&8Staff only")),
                 SlotAction.act("syslog", "flush", "logs"));
         put(holder, inv, 36, pageBtn(player, "hub.logs.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));

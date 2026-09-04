@@ -94,8 +94,8 @@ public final class CmiDifficultyGui {
 
         // Primary actions — Tiers (buy/lower/reset) + Titles
         gui.addButton(pageBtn(player, 19, "difficulty.main.teams", Material.SHIELD, "&bRival Teams", "team",
-                "&7Mutual rivals extend your tier ceiling",
-                "&8Opt-in · online · nearby for full bonus"));
+                "&7Mutual rivals can raise your tier ceiling",
+                "&8Both choose a team mode · rivals must be online"));
         gui.addButton(pageBtn(player, 21, "difficulty.main.tiers", Material.GOLD_INGOT, "&eTiers", "tiers",
                 "&7Buy higher · lower unlocked · reset",
                 "&8Ancient Coins · pay-up OK · change returned"));
@@ -385,11 +385,12 @@ public final class CmiDifficultyGui {
                         mode.equals("personal_only") ? "&aCurrent mode" : "&eClick to select")));
         gui.addButton(actionBtn(player, 22, "difficulty.team.mode_threshold", Material.LIME_DYE, "&aThreshold",
                 "team", "threshold", "team",
-                List.of("&7+" + ph.getOrDefault("bonus_percent", "10") + "% max per opted-in rival online",
+                List.of("&7Extra max when rivals are online",
+                        "&7They must also use a team mode",
                         mode.equals("threshold_bonus_only") ? "&aCurrent mode" : "&eClick to select")));
         gui.addButton(actionBtn(player, 24, "difficulty.team.mode_full", Material.EMERALD, "&2Full",
                 "team", "full", "team",
-                List.of("&7Threshold + nearby spare tier room",
+                List.of("&7Threshold bonus plus nearby spare room",
                         "&8Within " + ph.getOrDefault("proximity_blocks", "48") + " blocks",
                         mode.equals("full_team_scaling") ? "&aCurrent mode" : "&eClick to select")));
 

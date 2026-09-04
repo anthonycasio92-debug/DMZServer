@@ -57,7 +57,7 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 2.3.174
+- ❌ VERSION 2.3.177: failed
 - ✅ RaceSkillSync present
 - ✅ formula revision 45
 - ✅ KP hit-cap relief wired
@@ -110,4 +110,4 @@ Fail-closed checks against the player's stated balance concept.
 |------|--------:|---------:|---------:|
 | androidforms.ssdroid4 | 0.414 | 0.145 | 0.79 |
 
-**Result:** PASS — 72 ok, 0 error(s).
+**Result:** FAIL — 71 ok, 1 error(s).

@@ -139,20 +139,21 @@ public final class DifficultyTeamGuiApi {
         if (mode == TeamMode.PERSONAL_ONLY) {
             lines.add("§7Personal ceiling only — no rival bonus.");
         } else {
-            lines.add("§7Threshold bonus §f+" + snap.teamThresholdBonus
-                    + " §8(" + (int) DifficultyConfig.get().teamBonusPercent + "% per opted-in rival online)");
+            int bonusPct = (int) DifficultyConfig.get().teamBonusPercent;
+            int contribPct = (int) DifficultyConfig.get().contributionPercent;
+            int prox = (int) TeamScaling.contributionProximityBlocks();
+            lines.add("§7Extra max §f+" + snap.teamThresholdBonus
+                    + " §8(+" + bonusPct + "% per online rival using teams)");
             if (mode == TeamMode.FULL_TEAM_SCALING) {
-                lines.add("§7Contribution §f+" + snap.teamContribution
-                        + " §8(" + (int) DifficultyConfig.get().contributionPercent
-                        + "% spare within " + (int) TeamScaling.contributionProximityBlocks() + " blocks)");
+                lines.add("§7Nearby bonus §f+" + snap.teamContribution
+                        + " §8(" + contribPct + "% spare within " + prox + " blocks)");
             } else {
-                lines.add("§8Full scaling shares spare tier room when nearby.");
+                lines.add("§8Full mode also shares spare tier room when close.");
             }
-            lines.add("§7Available max §f" + snap.availableMax + " §8(personal §f"
-                    + snap.personalMax + "§8)");
+            lines.add("§7Your max §f" + snap.availableMax + " §8(base §f" + snap.personalMax + "§8)");
         }
-        lines.add("§8Only mutual rivals who also opt in count.");
-        lines.add("§8Use /rival to declare · accept · manage slots.");
+        lines.add("§8Only mutual rivals who also use a team mode count.");
+        lines.add("§8/rival — declare, accept, manage slots.");
         return lines;
     }
 

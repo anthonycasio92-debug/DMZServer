@@ -14,7 +14,7 @@ import org.bukkit.entity.Player;
 
 /**
  * Reflects into the Forge mod for live values / actions (Mohist shared JVM).
- * Surface: hub status, Tiers (UnlockTier 1–7 buy/lower/reset), Team (WIP), character_reset.
+ * Surface: hub status, Tiers (UnlockTier 1–7 buy/lower/reset), Rival Teams, character_reset.
  */
 public final class ForgeBridge {
     private static final long PLACEHOLDER_TTL_MS = 200L;
