@@ -37,6 +37,10 @@ public final class SparStore {
     public DojoSeason dojoSeason;
     /** Pending/active dojo war challenges keyed by target mentor UUID. */
     public final Map<String, DojoChallenge> dojoChallenges = new ConcurrentHashMap<>();
+    /** Persistent dojo identity (display name, banner) keyed by mentor UUID. */
+    public final Map<String, DojoProfile> dojoProfiles = new ConcurrentHashMap<>();
+    /** Past season champions — newest first. */
+    public final List<DojoSeasonRecord> dojoHallOfFame = new ArrayList<>();
     private final AtomicBoolean dirty = new AtomicBoolean(false);
     private long lastSaveAt;
 
@@ -65,6 +69,8 @@ public final class SparStore {
                 tpMessages.clear();
                 dojoSeason = null;
                 dojoChallenges.clear();
+                dojoProfiles.clear();
+                dojoHallOfFame.clear();
                 dirty.set(false);
                 return;
             }
@@ -105,6 +111,12 @@ public final class SparStore {
                     if (blob.dojoChallenges != null) {
                         dojoChallenges.putAll(blob.dojoChallenges);
                     }
+                    if (blob.dojoProfiles != null) {
+                        dojoProfiles.putAll(blob.dojoProfiles);
+                    }
+                    if (blob.dojoHallOfFame != null) {
+                        dojoHallOfFame.addAll(blob.dojoHallOfFame);
+                    }
                 }
                 dirty.set(false);
                 AdaptiveDifficultyMod.LOGGER.info(
@@ -132,6 +144,8 @@ public final class SparStore {
             blob.tpMessages = new ConcurrentHashMap<>(tpMessages);
             blob.dojoSeason = dojoSeason;
             blob.dojoChallenges = new ConcurrentHashMap<>(dojoChallenges);
+            blob.dojoProfiles = new ConcurrentHashMap<>(dojoProfiles);
+            blob.dojoHallOfFame = new ArrayList<>(dojoHallOfFame);
             try (Writer writer = Files.newBufferedWriter(file)) {
                 GSON.toJson(blob, writer);
             }
@@ -400,6 +414,40 @@ public final class SparStore {
         public int sessions;
         public int rosterSize;
         public long updatedAt;
+        /** Per-member inter-dojo contribution this season (uuid → stats). */
+        public Map<String, DojoMemberStats> members = new ConcurrentHashMap<>();
+    }
+
+    public static final class DojoMemberStats {
+        public String uuid = "";
+        public String name = "";
+        public double rpContributed;
+        public int wins;
+        public int losses;
+        public int draws;
+        public double tp;
+        public int sessions;
+    }
+
+    /** Persistent dojo branding — survives season rollovers. */
+    public static final class DojoProfile {
+        public String displayName = "";
+        /** Bukkit material name for GUI banner icon (e.g. WHITE_BANNER). */
+        public String bannerMaterial = "WHITE_BANNER";
+        public long updatedAt;
+    }
+
+    /** Archived season result for Hall of Fame. */
+    public static final class DojoSeasonRecord {
+        public int seasonId;
+        public long endedAt;
+        public String championUuid = "";
+        public String championName = "";
+        public int championRp;
+        public String secondName = "";
+        public int secondRp;
+        public String thirdName = "";
+        public int thirdRp;
     }
 
     public static final class DojoSeason {
@@ -427,5 +475,7 @@ public final class SparStore {
         Map<String, Boolean> tpMessages;
         DojoSeason dojoSeason;
         Map<String, DojoChallenge> dojoChallenges;
+        Map<String, DojoProfile> dojoProfiles;
+        List<DojoSeasonRecord> dojoHallOfFame;
     }
 }

@@ -1092,6 +1092,26 @@ public final class SparringSystem {
         return DojoRankings.rivalDojoCards(player);
     }
 
+    public static List<String> dojoHallOfFameLines() {
+        return DojoRankings.hallOfFameLines();
+    }
+
+    public static List<String> dojoMemberLines(ServerPlayer player) {
+        return DojoRankings.memberLines(player);
+    }
+
+    public static List<String> dojoMemberCards(ServerPlayer player) {
+        return DojoRankings.memberContributionCards(player);
+    }
+
+    public static String dojoSetName(ServerPlayer player, String name) {
+        return DojoRankings.setDojoName(player, name);
+    }
+
+    public static String dojoSetBanner(ServerPlayer player, String material) {
+        return DojoRankings.setDojoBanner(player, material);
+    }
+
     public static String endCommand(ServerPlayer player) {
         SparPlayerRuntime rt = runtime(player.m_20148_());
         if (!rt.active) {

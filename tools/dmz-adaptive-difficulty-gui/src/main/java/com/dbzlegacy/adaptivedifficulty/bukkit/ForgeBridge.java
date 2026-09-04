@@ -76,6 +76,7 @@ public final class ForgeBridge {
     private static Method sparApprenticeCardsMethod;
     private static Method sparMembershipDojoCardsMethod;
     private static Method sparRivalDojoCardsMethod;
+    private static Method sparDojoMemberCardsMethod;
     private static Method hubChatMenuOpen;
     private static Method hubPlaceholdersMethod;
     private static Method hubLinesMethod;
@@ -1156,6 +1157,10 @@ public final class ForgeBridge {
         return invokeSparStringList(player, "rivalDojoCards");
     }
 
+    public static List<String> sparDojoMemberCards(Player player) {
+        return invokeSparStringList(player, "dojoMemberCards");
+    }
+
     private static List<String> invokeSparStringList(Player player, String methodName) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
@@ -1169,6 +1174,7 @@ public final class ForgeBridge {
                 case "apprenticeCards" -> sparApprenticeCardsMethod;
                 case "membershipDojoCards" -> sparMembershipDojoCardsMethod;
                 case "rivalDojoCards" -> sparRivalDojoCardsMethod;
+                case "dojoMemberCards" -> sparDojoMemberCardsMethod;
                 default -> null;
             };
             if (m == null) {
@@ -2023,6 +2029,13 @@ public final class ForgeBridge {
                     sparRivalDojoCardsMethod = api.getMethod("rivalDojoCards", sp);
                 } catch (Throwable ignored) {
                     sparRivalDojoCardsMethod = null;
+                }
+            }
+            if (sparDojoMemberCardsMethod == null) {
+                try {
+                    sparDojoMemberCardsMethod = api.getMethod("dojoMemberCards", sp);
+                } catch (Throwable ignored) {
+                    sparDojoMemberCardsMethod = null;
                 }
             }
         } catch (Throwable ignored) {

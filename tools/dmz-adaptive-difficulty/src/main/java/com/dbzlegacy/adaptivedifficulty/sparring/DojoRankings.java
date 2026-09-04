@@ -14,20 +14,27 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Dojo-vs-dojo rankings keyed by mentor UUID (the dojo master).
- * <p>Apprentices compete for their master's dojo. Inter-dojo spars award season RP;
- * active dojo challenges double RP for matching rival dojos.
+ * <p>Supports custom dojo names, banner icons, per-member contributions, and Hall of Fame.
  */
 public final class DojoRankings {
     private DojoRankings() {}
 
-    /** Align with rival seasons (~75 days). */
     public static final long SEASON_MS = 75L * 24L * 60L * 60L * 1000L;
     public static final long CHALLENGE_TTL_MS = 24L * 60L * 60L * 1000L;
     public static final double BASE_RP_PER_WIN = 12.0;
     public static final double CHALLENGE_RP_MULT = 2.0;
     public static final double DRAW_RP = 4.0;
+    public static final int MAX_HOF_SEASONS = 24;
+    public static final int MIN_NAME_LEN = 3;
+    public static final int MAX_NAME_LEN = 20;
 
-    /** Home dojo for rankings: mentor's uuid if apprenticed, else own uuid if mentoring. */
+    public static final List<String> BANNER_OPTIONS = List.of(
+            "WHITE_BANNER", "ORANGE_BANNER", "MAGENTA_BANNER", "LIGHT_BLUE_BANNER",
+            "YELLOW_BANNER", "LIME_BANNER", "PINK_BANNER", "GRAY_BANNER",
+            "LIGHT_GRAY_BANNER", "CYAN_BANNER", "PURPLE_BANNER", "BLUE_BANNER",
+            "BROWN_BANNER", "GREEN_BANNER", "RED_BANNER", "BLACK_BANNER"
+    );
+
     public static String homeDojoKey(ServerPlayer player) {
         if (player == null) {
             return null;
@@ -45,7 +52,6 @@ public final class DojoRankings {
         return null;
     }
 
-    /** True when this player is the dojo master (has apprentices). */
     public static boolean isDojoMaster(ServerPlayer player) {
         if (player == null) {
             return false;
@@ -57,19 +63,35 @@ public final class DojoRankings {
         if (dojoKey == null || dojoKey.isBlank()) {
             return "?";
         }
+        SparStore.DojoProfile profile = profile(dojoKey);
+        if (profile != null && profile.displayName != null && !profile.displayName.isBlank()) {
+            return profile.displayName;
+        }
         SparStore.DojoEntry e = entry(dojoKey);
         if (e != null && e.mentorName != null && !e.mentorName.isBlank()) {
             return e.mentorName;
         }
-        SparStore.MentorBond bond = SparStore.get().bondsByPlayer.get(dojoKey);
-        if (bond != null && bond.apprenticeCount() > 0) {
-            // Master bond — name may be in leaderboard from spar data.
-            SparStore.LeaderboardEntry lb = SparStore.get().leaderboard.get(dojoKey);
-            if (lb != null && lb.name != null && !lb.name.isBlank()) {
-                return lb.name;
-            }
+        return resolveMentorName(dojoKey, null);
+    }
+
+    public static String dojoBannerMaterial(String dojoKey) {
+        SparStore.DojoProfile profile = profile(dojoKey);
+        if (profile != null && profile.bannerMaterial != null && !profile.bannerMaterial.isBlank()) {
+            return profile.bannerMaterial.toUpperCase(Locale.ROOT);
         }
-        return "Dojo";
+        return "WHITE_BANNER";
+    }
+
+    private static SparStore.DojoProfile profile(String dojoKey) {
+        if (dojoKey == null || dojoKey.isBlank()) {
+            return null;
+        }
+        return SparStore.get().dojoProfiles.get(dojoKey.toLowerCase(Locale.ROOT));
+    }
+
+    private static SparStore.DojoProfile profileOrCreate(String dojoKey) {
+        return SparStore.get().dojoProfiles.computeIfAbsent(
+                dojoKey.toLowerCase(Locale.ROOT), k -> new SparStore.DojoProfile());
     }
 
     public static void ensureSeason() {
@@ -115,15 +137,38 @@ public final class DojoRankings {
         if (top.isEmpty()) {
             return;
         }
+        SparStore.DojoSeasonRecord rec = new SparStore.DojoSeasonRecord();
+        rec.seasonId = season.seasonId;
+        rec.endedAt = System.currentTimeMillis();
+        Map.Entry<String, SparStore.DojoEntry> first = top.get(0);
+        SparStore.DojoEntry d1 = first.getValue();
+        rec.championUuid = first.getKey();
+        rec.championName = d1 == null ? "?" : dojoDisplayName(first.getKey());
+        rec.championRp = d1 == null ? 0 : (int) d1.seasonRp;
+        if (top.size() > 1) {
+            SparStore.DojoEntry d2 = top.get(1).getValue();
+            rec.secondName = d2 == null ? "?" : dojoDisplayName(top.get(1).getKey());
+            rec.secondRp = d2 == null ? 0 : (int) d2.seasonRp;
+        }
+        if (top.size() > 2) {
+            SparStore.DojoEntry d3 = top.get(2).getValue();
+            rec.thirdName = d3 == null ? "?" : dojoDisplayName(top.get(2).getKey());
+            rec.thirdRp = d3 == null ? 0 : (int) d3.seasonRp;
+        }
+        SparStore.get().dojoHallOfFame.add(0, rec);
+        while (SparStore.get().dojoHallOfFame.size() > MAX_HOF_SEASONS) {
+            SparStore.get().dojoHallOfFame.remove(SparStore.get().dojoHallOfFame.size() - 1);
+        }
+        SparStore.get().markDirty();
+
         StringBuilder sb = new StringBuilder();
         sb.append("§6§lDojo season §f#").append(season.seasonId).append(" §6ended!");
-        int rank = 1;
-        for (Map.Entry<String, SparStore.DojoEntry> e : top) {
-            SparStore.DojoEntry d = e.getValue();
-            sb.append("\n§e#").append(rank).append(" §f")
-                    .append(d == null ? "?" : blank(d.mentorName, "?"))
-                    .append(" §7").append(d == null ? 0 : (int) d.seasonRp).append(" RP");
-            rank++;
+        sb.append("\n§e#1 §f").append(rec.championName).append(" §7").append(rec.championRp).append(" RP");
+        if (rec.secondName != null && !rec.secondName.isBlank()) {
+            sb.append("\n§e#2 §f").append(rec.secondName).append(" §7").append(rec.secondRp).append(" RP");
+        }
+        if (rec.thirdName != null && !rec.thirdName.isBlank()) {
+            sb.append("\n§e#3 §f").append(rec.thirdName).append(" §7").append(rec.thirdRp).append(" RP");
         }
         broadcast(sb.toString());
     }
@@ -138,9 +183,6 @@ public final class DojoRankings {
         }
     }
 
-    /**
-     * Called after both fighters' leaderboards are updated.
-     */
     public static void onInterDojoSession(
             ServerPlayer a,
             SparPlayerRuntime aRt,
@@ -162,6 +204,8 @@ public final class DojoRankings {
         ensureSeason();
         bumpActivity(keyA, a, aRt.sessionTp, durationMs);
         bumpActivity(keyB, b, bRt.sessionTp, durationMs);
+        bumpMemberSession(keyA, a, aRt.sessionTp);
+        bumpMemberSession(keyB, b, bRt.sessionTp);
 
         double tpA = aRt.sessionTp;
         double tpB = bRt.sessionTp;
@@ -169,9 +213,12 @@ public final class DojoRankings {
         double mult = challenge ? CHALLENGE_RP_MULT : 1.0;
 
         if (Math.abs(tpA - tpB) < 0.5) {
-            awardRp(keyA, DRAW_RP * mult, true, false, false);
-            awardRp(keyB, DRAW_RP * mult, true, false, false);
-            notifyDojo(a, b, keyA, keyB, "§7Draw", (int) (DRAW_RP * mult), challenge);
+            double rp = DRAW_RP * mult;
+            awardRp(keyA, rp, true, false, false);
+            awardRp(keyB, rp, true, false, false);
+            bumpMemberDraw(keyA, a, rp);
+            bumpMemberDraw(keyB, b, rp);
+            notifyDojo(a, b, keyA, keyB, "§7Draw", (int) rp, challenge);
             return;
         }
         boolean aWins = tpA > tpB;
@@ -182,6 +229,8 @@ public final class DojoRankings {
         double rp = BASE_RP_PER_WIN * mult;
         awardRp(winKey, rp, false, true, false);
         awardRp(loseKey, 0, false, false, true);
+        bumpMemberWin(winKey, winner, rp);
+        bumpMemberLoss(loseKey, loser);
         notifyDojo(winner, loser, winKey, loseKey,
                 "§a" + winner.m_7755_().getString() + " §7won", (int) rp, challenge);
     }
@@ -194,6 +243,47 @@ public final class DojoRankings {
         e.rosterSize = rosterSize(dojoKey);
         e.updatedAt = System.currentTimeMillis();
         SparStore.get().markDirty();
+    }
+
+    private static void bumpMemberSession(String dojoKey, ServerPlayer fighter, double tp) {
+        SparStore.DojoMemberStats m = memberOrCreate(dojoKey, fighter);
+        m.tp += tp;
+        m.sessions++;
+        SparStore.get().markDirty();
+    }
+
+    private static void bumpMemberWin(String dojoKey, ServerPlayer fighter, double rp) {
+        SparStore.DojoMemberStats m = memberOrCreate(dojoKey, fighter);
+        m.wins++;
+        m.rpContributed += rp;
+        SparStore.get().markDirty();
+    }
+
+    private static void bumpMemberLoss(String dojoKey, ServerPlayer fighter) {
+        SparStore.DojoMemberStats m = memberOrCreate(dojoKey, fighter);
+        m.losses++;
+        SparStore.get().markDirty();
+    }
+
+    private static void bumpMemberDraw(String dojoKey, ServerPlayer fighter, double rp) {
+        SparStore.DojoMemberStats m = memberOrCreate(dojoKey, fighter);
+        m.draws++;
+        m.rpContributed += rp;
+        SparStore.get().markDirty();
+    }
+
+    private static SparStore.DojoMemberStats memberOrCreate(String dojoKey, ServerPlayer fighter) {
+        SparStore.DojoEntry e = entryOrCreate(dojoKey, fighter);
+        if (e.members == null) {
+            e.members = new ConcurrentHashMap<>();
+        }
+        String id = fighter.m_20148_().toString().toLowerCase(Locale.ROOT);
+        return e.members.computeIfAbsent(id, k -> {
+            SparStore.DojoMemberStats s = new SparStore.DojoMemberStats();
+            s.uuid = id;
+            s.name = fighter.m_7755_().getString();
+            return s;
+        });
     }
 
     private static void awardRp(String dojoKey, double rp, boolean draw, boolean win, boolean loss) {
@@ -218,6 +308,7 @@ public final class DojoRankings {
             d.mentorUuid = dojoKey;
             d.mentorName = resolveMentorName(dojoKey, nameSource);
             d.rosterSize = rosterSize(dojoKey);
+            d.members = new ConcurrentHashMap<>();
             return d;
         });
     }
@@ -329,7 +420,7 @@ public final class DojoRankings {
                 continue;
             }
             String value = formatValue(d, cat);
-            lines.add("§e#" + i + " §f" + blank(d.mentorName, "?")
+            lines.add("§e#" + i + " §f" + dojoDisplayName(e.getKey())
                     + " §7" + value
                     + " §8(" + d.rosterSize + " fighters)");
             i++;
@@ -338,6 +429,93 @@ public final class DojoRankings {
             lines.add("§7No dojo rankings yet — spar across dojos!");
         }
         return lines;
+    }
+
+    public static List<String> hallOfFameLines() {
+        List<String> lines = new ArrayList<>();
+        lines.add("§6§lDojo Hall of Fame");
+        List<SparStore.DojoSeasonRecord> hof = SparStore.get().dojoHallOfFame;
+        if (hof == null || hof.isEmpty()) {
+            lines.add("§7No past seasons yet.");
+            return lines;
+        }
+        int shown = 0;
+        for (SparStore.DojoSeasonRecord rec : hof) {
+            if (rec == null || shown >= 12) {
+                break;
+            }
+            lines.add("§eS#" + rec.seasonId + " §f" + blank(rec.championName, "?")
+                    + " §7" + rec.championRp + " RP");
+            if (rec.secondName != null && !rec.secondName.isBlank()) {
+                lines.add("§8  #2 §7" + rec.secondName + " §8" + rec.secondRp);
+            }
+            if (rec.thirdName != null && !rec.thirdName.isBlank()) {
+                lines.add("§8  #3 §7" + rec.thirdName + " §8" + rec.thirdRp);
+            }
+            shown++;
+        }
+        return lines;
+    }
+
+    public static List<String> memberLines(ServerPlayer player) {
+        List<String> lines = new ArrayList<>();
+        lines.add("§8── §6Dojo Members §8──");
+        String key = homeDojoKey(player);
+        if (key == null) {
+            lines.add("§7Join a dojo to see contributions.");
+            return lines;
+        }
+        lines.add("§7Dojo §f" + dojoDisplayName(key));
+        SparStore.DojoEntry e = entry(key);
+        if (e == null || e.members == null || e.members.isEmpty()) {
+            lines.add("§7No inter-dojo spars logged this season.");
+            return lines;
+        }
+        List<SparStore.DojoMemberStats> sorted = new ArrayList<>(e.members.values());
+        sorted.sort(Comparator.comparingDouble((SparStore.DojoMemberStats m) -> m.rpContributed).reversed());
+        int rank = 1;
+        for (SparStore.DojoMemberStats m : sorted) {
+            if (m == null) {
+                continue;
+            }
+            lines.add("§e#" + rank + " §f" + blank(m.name, "?")
+                    + " §7" + (int) m.rpContributed + " RP"
+                    + " §8· §a" + m.wins + "W §c" + m.losses + "L"
+                    + " §8· §f" + DmzRewards.formatWhole(m.tp) + " TP");
+            rank++;
+            if (rank > 10) {
+                break;
+            }
+        }
+        return lines;
+    }
+
+    /** Encoded member cards: {@code uuid\tname\trp\twins\ttp}. */
+    public static List<String> memberContributionCards(String dojoKey) {
+        List<String> out = new ArrayList<>();
+        SparStore.DojoEntry e = entry(dojoKey);
+        if (e == null || e.members == null || e.members.isEmpty()) {
+            return out;
+        }
+        List<SparStore.DojoMemberStats> sorted = new ArrayList<>(e.members.values());
+        sorted.sort(Comparator.comparingDouble((SparStore.DojoMemberStats m) -> m.rpContributed).reversed());
+        for (SparStore.DojoMemberStats m : sorted) {
+            if (m == null) {
+                continue;
+            }
+            String name = blank(m.name, m.uuid).replace('\t', ' ').replace('\n', ' ');
+            out.add(m.uuid + "\t" + name + "\t" + (int) m.rpContributed + "\t" + m.wins
+                    + "\t" + (int) m.tp);
+            if (out.size() >= 21) {
+                break;
+            }
+        }
+        return out;
+    }
+
+    public static List<String> memberContributionCards(ServerPlayer player) {
+        String key = homeDojoKey(player);
+        return key == null ? List.of() : memberContributionCards(key);
     }
 
     public static List<String> infoLines(ServerPlayer player) {
@@ -355,15 +533,31 @@ public final class DojoRankings {
             lines.add("§8Invite apprentices or ask a mentor.");
             return lines;
         }
+        SparStore.DojoProfile prof = profile(key);
+        String custom = prof != null && prof.displayName != null && !prof.displayName.isBlank()
+                ? prof.displayName : null;
+        if (custom != null) {
+            lines.add("§7Dojo §f" + custom + " §8(" + resolveMentorName(key, null) + ")");
+        } else {
+            lines.add("§7Dojo §f" + dojoDisplayName(key));
+        }
         SparStore.DojoEntry e = entry(key);
-        lines.add("§7Your dojo §f" + dojoDisplayName(key));
         if (e != null) {
             lines.add("§7Season RP §f" + (int) e.seasonRp
                     + " §8· §a" + e.wins + "W §c" + e.losses + "L §7" + e.draws + "D");
             lines.add("§7Spar TP §f" + DmzRewards.formatWhole(e.totalTp)
                     + " §8· §7" + e.sessions + " inter-dojo spars");
         }
-        SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(player.m_20148_().toString());
+        int rank = dojoRank(key, "rp");
+        if (rank > 0) {
+            lines.add("§7Ladder rank §f#" + rank);
+        }
+        if (isDojoMaster(player)) {
+            lines.add("§8Rename: §7/spar dojo name <name>");
+            lines.add("§8Banner: §7Dojo Rankings → Banner");
+        }
+        SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(
+                player.m_20148_().toString().toLowerCase(Locale.ROOT));
         if (pending != null && pending.expiresAt > System.currentTimeMillis() && !pending.active) {
             lines.add("§eChallenge from §f" + blank(pending.fromDojoName, "?")
                     + " §8— accept in Dojo War");
@@ -379,6 +573,65 @@ public final class DojoRankings {
         return lines;
     }
 
+    public static String setDojoName(ServerPlayer master, String rawName) {
+        if (master == null) {
+            return "§cPlayers only.";
+        }
+        if (!isDojoMaster(master)) {
+            return "§cOnly dojo masters can rename their dojo.";
+        }
+        String name = sanitizeName(rawName);
+        if (name == null) {
+            return "§cName must be " + MIN_NAME_LEN + "–" + MAX_NAME_LEN
+                    + " letters, numbers, or spaces.";
+        }
+        String key = master.m_20148_().toString().toLowerCase(Locale.ROOT);
+        SparStore.DojoProfile prof = profileOrCreate(key);
+        prof.displayName = name;
+        prof.updatedAt = System.currentTimeMillis();
+        SparStore.get().markDirty();
+        return "§aDojo renamed to §f" + name + "§a.";
+    }
+
+    public static String setDojoBanner(ServerPlayer master, String material) {
+        if (master == null) {
+            return "§cPlayers only.";
+        }
+        if (!isDojoMaster(master)) {
+            return "§cOnly dojo masters can set a dojo banner.";
+        }
+        if (material == null || material.isBlank()) {
+            return "§cPick a banner color.";
+        }
+        String mat = material.trim().toUpperCase(Locale.ROOT);
+        if (!mat.endsWith("_BANNER")) {
+            mat = mat + "_BANNER";
+        }
+        if (!BANNER_OPTIONS.contains(mat)) {
+            return "§cInvalid banner. Pick from the Banner menu.";
+        }
+        String key = master.m_20148_().toString().toLowerCase(Locale.ROOT);
+        SparStore.DojoProfile prof = profileOrCreate(key);
+        prof.bannerMaterial = mat;
+        prof.updatedAt = System.currentTimeMillis();
+        SparStore.get().markDirty();
+        return "§aDojo banner set to §f" + mat.replace('_', ' ') + "§a.";
+    }
+
+    private static String sanitizeName(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String s = raw.trim().replaceAll("§.", "");
+        if (s.length() < MIN_NAME_LEN || s.length() > MAX_NAME_LEN) {
+            return null;
+        }
+        if (!s.matches("[\\p{L}\\p{N} ][\\p{L}\\p{N} ]*")) {
+            return null;
+        }
+        return s;
+    }
+
     private static SparStore.DojoChallenge activeChallengeFor(String dojoKey) {
         long now = System.currentTimeMillis();
         for (SparStore.DojoChallenge c : SparStore.get().dojoChallenges.values()) {
@@ -392,7 +645,6 @@ public final class DojoRankings {
         return null;
     }
 
-    /** Encoded rival dojo cards for challenge picker: {@code uuid\tname\trp}. */
     public static List<String> rivalDojoCards(ServerPlayer player) {
         List<String> out = new ArrayList<>();
         if (player == null || !isDojoMaster(player)) {
@@ -414,7 +666,7 @@ public final class DojoRankings {
             if (d == null) {
                 continue;
             }
-            String name = blank(d.mentorName, "?").replace('\t', ' ').replace('\n', ' ');
+            String name = dojoDisplayName(e.getKey()).replace('\t', ' ').replace('\n', ' ');
             out.add(e.getKey() + "\t" + name + "\t" + (int) d.seasonRp);
         }
         return out;
@@ -444,9 +696,9 @@ public final class DojoRankings {
         long now = System.currentTimeMillis();
         SparStore.DojoChallenge c = new SparStore.DojoChallenge();
         c.fromDojoUuid = fromKey;
-        c.fromDojoName = challenger.m_7755_().getString();
+        c.fromDojoName = dojoDisplayName(fromKey);
         c.toDojoUuid = toKey;
-        c.toDojoName = target.m_7755_().getString();
+        c.toDojoName = dojoDisplayName(toKey);
         c.fromMentorUuid = fromKey;
         c.expiresAt = now + CHALLENGE_TTL_MS;
         c.active = false;

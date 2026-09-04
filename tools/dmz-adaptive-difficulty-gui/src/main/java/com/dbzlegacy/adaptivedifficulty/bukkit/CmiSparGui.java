@@ -47,6 +47,12 @@ public final class CmiSparGui {
                 openDojoRank(player, p);
             } else if ("pick_dojo_challenge".equals(p)) {
                 openDojoChallengePicker(player);
+            } else if ("dojo_hof".equals(p) || "dojo_hall".equals(p)) {
+                openDetail(player, "dojo_hof", "&6Dojo Hall of Fame", Material.GOLD_BLOCK);
+            } else if ("dojo_members".equals(p) || "dojo_contributions".equals(p)) {
+                openDojoMembers(player);
+            } else if ("pick_dojo_banner".equals(p)) {
+                openDojoBannerPicker(player);
             } else if ("dojo".equals(p) || "roster".equals(p) || "apprentices".equals(p)
                     || "dojo_member".equals(p) || "dojo_mine".equals(p) || "dojo_own".equals(p)) {
                 openDojo(player, p);
@@ -242,7 +248,13 @@ public final class CmiSparGui {
                     "dojo_accept", "0", "dojo_rank", List.of("&7Accept pending dojo war")));
             gui.addButton(actionBtn(player, 23, "spar.dojo.decline", Material.RED_DYE, "&cDecline War",
                     "dojo_decline", "0", "dojo_rank", List.of("&7Decline pending challenge")));
+            gui.addButton(pageBtn(player, 28, "spar.dojo.banner", Material.WHITE_BANNER, "&fBanner…",
+                    "pick_dojo_banner", "&7Pick dojo banner color"));
         }
+        gui.addButton(pageBtn(player, 30, "spar.dojo.members", Material.PLAYER_HEAD, "&bMembers",
+                "dojo_members", "&7Season contributions"));
+        gui.addButton(pageBtn(player, 32, "spar.dojo.hof", Material.GOLD_BLOCK, "&6Hall of Fame",
+                "dojo_hof", "&7Past season champions"));
         gui.addButton(pageBtn(player, 29, "spar.dojo.rp", Material.GOLD_INGOT, "&eSeason RP", "dojo_top_rp",
                 "&7Rank by RP"));
         gui.addButton(pageBtn(player, 31, "spar.dojo.wins", Material.IRON_SWORD, "&aWins", "dojo_top_wins",
@@ -292,6 +304,77 @@ public final class CmiSparGui {
                 btn.addCommand("lmdo spar do dojo_challenge uuid:" + uuid + " dojo_rank");
                 gui.addButton(btn);
             }
+        }
+        gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "dojo_rank", "&7Dojo Rankings"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        GuiFeedback.openCmi(gui);
+    }
+
+    private static void openDojoMembers(Player player) {
+        CMIGui gui = base(player, "&8Dojo Members", 5);
+        List<String> cards = ForgeBridge.sparDojoMemberCards(player);
+        List<String> headerLore = toAmp(ForgeBridge.sparLines(player, "dojo_members"));
+        CMIGuiButton header = new CMIGuiButton(4, Material.PLAYER_HEAD, "&b&lDojo Members");
+        header.lockField();
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        lore.addAll(headerLore.isEmpty() ? List.of("&7Season inter-dojo contributions") : headerLore);
+        header.addLore(lore);
+        gui.addButton(header);
+        if (cards.isEmpty()) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER,
+                    GuiTooltips.name("spar.empty.no_dojo_members", "&7No data yet"));
+            empty.lockField();
+            gui.addButton(empty);
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
+            for (int i = 0; i < slots.length && i < cards.size(); i++) {
+                String[] parts = cards.get(i).split("\t", -1);
+                String uuid = parts.length > 0 ? parts[0] : "";
+                String name = parts.length > 1 ? parts[1] : uuid;
+                String rp = parts.length > 2 ? parts[2] : "0";
+                ItemStack head;
+                try {
+                    head = GuiPlayerPicker.headByUuid(
+                            java.util.UUID.fromString(uuid), name, "&f" + name,
+                            List.of("&7" + rp + " RP contributed"));
+                } catch (IllegalArgumentException ex) {
+                    head = GuiPlayerPicker.headByName(name, "&f" + name,
+                            List.of("&7" + rp + " RP contributed"));
+                }
+                CMIGuiButton btn = new CMIGuiButton(slots[i], head);
+                btn.lockField();
+                gui.addButton(btn);
+            }
+        }
+        gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "dojo_rank", "&7Dojo Rankings"));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        GuiFeedback.openCmi(gui);
+    }
+
+    private static void openDojoBannerPicker(Player player) {
+        CMIGui gui = base(player, "&8Dojo Banner", 5);
+        CMIGuiButton header = new CMIGuiButton(4, Material.WHITE_BANNER, "&f&lDojo Banner");
+        header.lockField();
+        header.addLore(List.of("", "&7Pick your dojo banner color", "&8Shows on rankings"));
+        gui.addButton(header);
+        String[] banners = {
+                "WHITE_BANNER", "ORANGE_BANNER", "MAGENTA_BANNER", "LIGHT_BLUE_BANNER",
+                "YELLOW_BANNER", "LIME_BANNER", "PINK_BANNER", "GRAY_BANNER",
+                "LIGHT_GRAY_BANNER", "CYAN_BANNER", "PURPLE_BANNER", "BLUE_BANNER",
+                "BROWN_BANNER", "GREEN_BANNER", "RED_BANNER", "BLACK_BANNER"
+        };
+        int[] slots = GuiBoardHelper.centeredSlots(banners.length);
+        for (int i = 0; i < slots.length && i < banners.length; i++) {
+            Material mat = Material.matchMaterial(banners[i]);
+            if (mat == null) {
+                mat = Material.WHITE_BANNER;
+            }
+            gui.addButton(actionBtn(player, slots[i], "spar.dojo.banner_pick", mat,
+                    "&f" + banners[i].replace('_', ' '), "dojo_banner", banners[i], "dojo_rank",
+                    List.of("&7Set dojo banner")));
         }
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "dojo_rank", "&7Dojo Rankings"));
         gui.addButton(closeBtn(44));

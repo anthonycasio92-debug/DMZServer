@@ -122,6 +122,8 @@ public final class SparGuiApi {
                 : SparStore.get().dojoSeason.leaderboard.get(dojoKey.toLowerCase(java.util.Locale.ROOT));
         out.put("dojo_rp", dojoEntry == null ? "0" : String.valueOf((int) dojoEntry.seasonRp));
         out.put("dojo_wins", dojoEntry == null ? "0" : String.valueOf(dojoEntry.wins));
+        out.put("dojo_display_name", dojoKey == null ? "" : DojoRankings.dojoDisplayName(dojoKey));
+        out.put("dojo_banner", dojoKey == null ? "WHITE_BANNER" : DojoRankings.dojoBannerMaterial(dojoKey));
         return out;
     }
 
@@ -158,6 +160,27 @@ public final class SparGuiApi {
             return List.of();
         }
         return SparringSystem.rivalDojoCards(player);
+    }
+
+    public static List<String> dojoHallOfFameLines(ServerPlayer player) {
+        if (!DifficultyConfig.get().enableSparringSystem) {
+            return List.of("§cSparring system is disabled.");
+        }
+        return SparringSystem.dojoHallOfFameLines();
+    }
+
+    public static List<String> dojoMemberLines(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of("§cSparring system is disabled.");
+        }
+        return SparringSystem.dojoMemberLines(player);
+    }
+
+    public static List<String> dojoMemberCards(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of();
+        }
+        return SparringSystem.dojoMemberCards(player);
     }
 
     public static List<String> mentorLines(ServerPlayer player) {
@@ -306,6 +329,8 @@ public final class SparGuiApi {
                 merged.addAll(dojoTopLines(player, "rp"));
                 yield merged;
             }
+            case "dojo_hof", "dojo_hall", "dojo_hall_of_fame" -> dojoHallOfFameLines(player);
+            case "dojo_members", "dojo_contributions" -> dojoMemberLines(player);
             case "mentor", "actions", "dojo", "roster", "apprentices" -> mentorLines(player);
             case "pending", "invites", "pendinginvites" -> pendingMentorLines(player);
             case "help" -> List.of(
@@ -530,6 +555,18 @@ public final class SparGuiApi {
         }
         if ("dojo_decline".equals(act) || "dojo_war_decline".equals(act)) {
             return SparringSystem.dojoDeclineWar(player);
+        }
+        if ("dojo_name".equals(act) || "dojo_rename".equals(act)) {
+            if (a.isBlank()) {
+                return "§cUsage: /spar dojo name <name>";
+            }
+            return SparringSystem.dojoSetName(player, a);
+        }
+        if ("dojo_banner".equals(act) || "dojo_set_banner".equals(act)) {
+            if (a.isBlank()) {
+                return "§cPick a banner from the Banner menu.";
+            }
+            return SparringSystem.dojoSetBanner(player, a);
         }
         return "§cUnknown spar action: " + act;
     }

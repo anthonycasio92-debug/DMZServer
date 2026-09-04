@@ -869,6 +869,24 @@
         "lore": [
           "&7Decline pending challenge"
         ]
+      },
+      "members": {
+        "name": "&bMembers",
+        "lore": [
+          "&7Season contributions"
+        ]
+      },
+      "hof": {
+        "name": "&6Hall of Fame",
+        "lore": [
+          "&7Past season champions"
+        ]
+      },
+      "banner": {
+        "name": "&fBanner…",
+        "lore": [
+          "&7Pick dojo banner color"
+        ]
       }
     },
     "mentor": {
@@ -1039,6 +1057,9 @@
       ],
       "no_dojo_rival": [
         "&7Other dojos need inter-dojo spars first"
+      ],
+      "no_dojo_members": [
+        "&7Spar other dojos to log contributions"
       ]
     }
   },

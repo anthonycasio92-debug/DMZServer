@@ -55,6 +55,18 @@ public final class SparCommands {
                                                 StringArgumentType.getString(ctx, "category")))))
                         .then(Commands.m_82127_("accept").executes(ctx -> dojoAccept(ctx.getSource())))
                         .then(Commands.m_82127_("decline").executes(ctx -> dojoDecline(ctx.getSource())))
+                        .then(Commands.m_82127_("hof").executes(ctx -> dojoHof(ctx.getSource())))
+                        .then(Commands.m_82127_("members").executes(ctx -> dojoMembers(ctx.getSource())))
+                        .then(Commands.m_82127_("name")
+                                .then(Commands.m_82129_("display", StringArgumentType.greedyString())
+                                        .executes(ctx -> dojoName(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "display")))))
+                        .then(Commands.m_82127_("banner")
+                                .then(Commands.m_82129_("material", StringArgumentType.word())
+                                        .executes(ctx -> dojoBanner(
+                                                ctx.getSource(),
+                                                StringArgumentType.getString(ctx, "material")))))
                         .then(Commands.m_82127_("challenge")
                                 .then(Commands.m_82129_("player", StringArgumentType.word())
                                         .executes(ctx -> dojoChallenge(
@@ -249,6 +261,46 @@ public final class SparCommands {
             return 0;
         }
         DmzRewards.msg(player, SparringSystem.dojoDeclineWar(player));
+        return 1;
+    }
+
+    private static int dojoHof(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        for (String line : SparringSystem.dojoHallOfFameLines()) {
+            DmzRewards.msg(player, line);
+        }
+        return 1;
+    }
+
+    private static int dojoMembers(CommandSourceStack source) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        for (String line : SparringSystem.dojoMemberLines(player)) {
+            DmzRewards.msg(player, line);
+        }
+        return 1;
+    }
+
+    private static int dojoName(CommandSourceStack source, String name) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        DmzRewards.msg(player, SparringSystem.dojoSetName(player, name));
+        return 1;
+    }
+
+    private static int dojoBanner(CommandSourceStack source, String material) {
+        ServerPlayer player = playerOrNull(source);
+        if (player == null || !enabled(player)) {
+            return 0;
+        }
+        DmzRewards.msg(player, SparringSystem.dojoSetBanner(player, material));
         return 1;
     }
 

@@ -62,6 +62,12 @@ public final class SparChestGui implements Listener {
             inv = dojoRank(viewer, subject, p);
         } else if ("pick_dojo_challenge".equals(p)) {
             inv = dojoChallengePicker(viewer, subject);
+        } else if ("dojo_hof".equals(p) || "dojo_hall".equals(p)) {
+            inv = detailBoard(viewer, subject, "dojo_hof", "&6Dojo Hall of Fame", Material.GOLD_BLOCK);
+        } else if ("dojo_members".equals(p) || "dojo_contributions".equals(p)) {
+            inv = dojoMembers(viewer, subject);
+        } else if ("pick_dojo_banner".equals(p)) {
+            inv = dojoBannerPicker(viewer, subject);
         } else if ("dojo".equals(p) || "roster".equals(p) || "apprentices".equals(p)
                 || "dojo_member".equals(p) || "dojo_mine".equals(p) || "dojo_own".equals(p)) {
             inv = dojo(viewer, subject, p);
@@ -243,7 +249,14 @@ public final class SparChestGui implements Listener {
             put(holder, inv, 23, tipBtn(viewer, "spar.dojo.decline", Material.RED_DYE, "&cDecline War",
                     List.of("&7Decline pending challenge")),
                     SlotAction.act("dojo_decline", "0", "dojo_rank"));
+            put(holder, inv, 28, pageBtn(viewer, "spar.dojo.banner", Material.WHITE_BANNER, "&fBanner…",
+                    "&7Pick dojo banner color"),
+                    SlotAction.page("pick_dojo_banner"));
         }
+        put(holder, inv, 30, pageBtn(viewer, "spar.dojo.members", Material.PLAYER_HEAD, "&bMembers",
+                "&7Season contributions"), SlotAction.page("dojo_members"));
+        put(holder, inv, 32, pageBtn(viewer, "spar.dojo.hof", Material.GOLD_BLOCK, "&6Hall of Fame",
+                "&7Past season champions"), SlotAction.page("dojo_hof"));
         put(holder, inv, 29, pageBtn(viewer, "spar.dojo.rp", Material.GOLD_INGOT, "&eSeason RP", "&7Rank by RP"),
                 SlotAction.page("dojo_top_rp"));
         put(holder, inv, 31, pageBtn(viewer, "spar.dojo.wins", Material.IRON_SWORD, "&aWins", "&7Rank by wins"),
@@ -290,6 +303,80 @@ public final class SparChestGui implements Listener {
                 put(holder, inv, slots[i], head,
                         SlotAction.act("dojo_challenge", "uuid:" + uuid, "dojo_rank"));
             }
+        }
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo Rankings"),
+                SlotAction.page("dojo_rank"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory dojoMembers(Player viewer, Player subject) {
+        Holder holder = new Holder("dojo_members");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Dojo Members"));
+        holder.bind(inv);
+        frame(inv, 45);
+        List<String> cards = ForgeBridge.sparDojoMemberCards(subject);
+        List<String> header = toAmp(ForgeBridge.sparLines(subject, "dojo_members"));
+        List<String> topHeader = new ArrayList<>();
+        topHeader.add("");
+        topHeader.addAll(header.isEmpty() ? List.of("&7Season inter-dojo contributions") : header);
+        put(holder, inv, 4, item(Material.PLAYER_HEAD, "&b&lDojo Members", topHeader));
+        if (cards.isEmpty()) {
+            put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_dojo_members", Material.BARRIER, "&7No data yet",
+                    List.of("&7Spar other dojos to log contributions")));
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
+            for (int i = 0; i < slots.length && i < cards.size(); i++) {
+                String[] parts = cards.get(i).split("\t", -1);
+                String uuid = parts.length > 0 ? parts[0] : "";
+                String name = parts.length > 1 ? parts[1] : uuid;
+                String rp = parts.length > 2 ? parts[2] : "0";
+                String wins = parts.length > 3 ? parts[3] : "0";
+                String tp = parts.length > 4 ? parts[4] : "0";
+                ItemStack head;
+                try {
+                    head = GuiPlayerPicker.headByUuid(
+                            java.util.UUID.fromString(uuid), name, "&f" + name,
+                            List.of("&7" + rp + " RP contributed", "&a" + wins + " wins",
+                                    "&7" + tp + " TP"));
+                } catch (IllegalArgumentException ex) {
+                    head = GuiPlayerPicker.headByName(name, "&f" + name,
+                            List.of("&7" + rp + " RP contributed"));
+                }
+                put(holder, inv, slots[i], head, SlotAction.page("dojo_members"));
+            }
+        }
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo Rankings"),
+                SlotAction.page("dojo_rank"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory dojoBannerPicker(Player viewer, Player subject) {
+        Holder holder = new Holder("pick_dojo_banner");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Dojo Banner"));
+        holder.bind(inv);
+        frame(inv, 45);
+        List<String> header = new ArrayList<>();
+        header.add("");
+        header.addAll(GuiBoardHelper.tips(viewer, "&7Pick your dojo banner color", "&8Shows on rankings"));
+        put(holder, inv, 4, item(Material.WHITE_BANNER, "&f&lDojo Banner", header));
+        String[] banners = {
+                "WHITE_BANNER", "ORANGE_BANNER", "MAGENTA_BANNER", "LIGHT_BLUE_BANNER",
+                "YELLOW_BANNER", "LIME_BANNER", "PINK_BANNER", "GRAY_BANNER",
+                "LIGHT_GRAY_BANNER", "CYAN_BANNER", "PURPLE_BANNER", "BLUE_BANNER",
+                "BROWN_BANNER", "GREEN_BANNER", "RED_BANNER", "BLACK_BANNER"
+        };
+        int[] slots = GuiBoardHelper.centeredSlots(banners.length);
+        for (int i = 0; i < slots.length && i < banners.length; i++) {
+            Material mat = Material.matchMaterial(banners[i]);
+            if (mat == null) {
+                mat = Material.WHITE_BANNER;
+            }
+            String label = banners[i].replace('_', ' ');
+            put(holder, inv, slots[i], item(mat, "&f" + label,
+                    List.of("&7Set dojo banner", "&eClick to apply")),
+                    SlotAction.act("dojo_banner", banners[i], "dojo_rank"));
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo Rankings"),
                 SlotAction.page("dojo_rank"));
