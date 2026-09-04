@@ -767,6 +767,13 @@
           "&7Leaderboard"
         ]
       },
+      "dojo_rank": {
+        "name": "&6Dojo Rankings",
+        "lore": [
+          "&7Season ladder · dojo wars",
+          "&8Inter-dojo spars earn RP"
+        ]
+      },
       "mentor": {
         "name": "&bMentor",
         "lore": [
@@ -823,6 +830,44 @@
         "name": "&bPerfect",
         "lore": [
           "&7Perfect spars"
+        ]
+      }
+    },
+    "dojo": {
+      "rp": {
+        "name": "&eSeason RP",
+        "lore": [
+          "&7Rank by RP"
+        ]
+      },
+      "wins": {
+        "name": "&aWins",
+        "lore": [
+          "&7Rank by wins"
+        ]
+      },
+      "tp": {
+        "name": "&bSpar TP",
+        "lore": [
+          "&7Rank by inter-dojo TP"
+        ]
+      },
+      "challenge": {
+        "name": "&cDeclare War…",
+        "lore": [
+          "&7Challenge another dojo master"
+        ]
+      },
+      "accept": {
+        "name": "&aAccept War",
+        "lore": [
+          "&7Accept pending dojo war"
+        ]
+      },
+      "decline": {
+        "name": "&cDecline War",
+        "lore": [
+          "&7Decline pending challenge"
         ]
       }
     },
@@ -987,6 +1032,13 @@
       ],
       "no_online": [
         "&7Other players must be online"
+      ],
+      "no_dojo_rank": [
+        "&7Join a dojo and spar rivals",
+        "&8from other dojos"
+      ],
+      "no_dojo_rival": [
+        "&7Other dojos need inter-dojo spars first"
       ]
     }
   },

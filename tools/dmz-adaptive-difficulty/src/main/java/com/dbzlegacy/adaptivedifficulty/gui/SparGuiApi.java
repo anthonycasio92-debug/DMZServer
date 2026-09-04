@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.sparring.DojoRankings;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparCombat;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparPlayerRuntime;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparStore;
@@ -108,6 +109,19 @@ public final class SparGuiApi {
         int pending = SparringSystem.pendingMentorInviteCount(player);
         out.put("pending_invites", String.valueOf(pending));
         out.put("pendingInvites", out.get("pending_invites"));
+        DojoRankings.ensureSeason();
+        String dojoKey = DojoRankings.homeDojoKey(player);
+        out.put("dojo_key", dojoKey == null ? "" : dojoKey);
+        out.put("dojo_name", dojoKey == null ? "" : DojoRankings.dojoDisplayName(dojoKey));
+        out.put("dojo_master", DojoRankings.isDojoMaster(player) ? "true" : "false");
+        int dojoRank = dojoKey == null ? 0 : DojoRankings.dojoRank(dojoKey, "rp");
+        out.put("dojo_rank", dojoRank <= 0 ? "—" : String.valueOf(dojoRank));
+        SparStore.DojoEntry dojoEntry = dojoKey == null ? null : SparStore.get().dojoSeason == null
+                || SparStore.get().dojoSeason.leaderboard == null
+                ? null
+                : SparStore.get().dojoSeason.leaderboard.get(dojoKey.toLowerCase(java.util.Locale.ROOT));
+        out.put("dojo_rp", dojoEntry == null ? "0" : String.valueOf((int) dojoEntry.seasonRp));
+        out.put("dojo_wins", dojoEntry == null ? "0" : String.valueOf(dojoEntry.wins));
         return out;
     }
 
@@ -123,6 +137,27 @@ public final class SparGuiApi {
             return List.of("§cSparring system is disabled.");
         }
         return SparringSystem.topLines(category, 10);
+    }
+
+    public static List<String> dojoTopLines(ServerPlayer player, String category) {
+        if (!DifficultyConfig.get().enableSparringSystem) {
+            return List.of("§cSparring system is disabled.");
+        }
+        return SparringSystem.dojoTopLines(category, 10);
+    }
+
+    public static List<String> dojoInfoLines(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of("§cSparring system is disabled.");
+        }
+        return SparringSystem.dojoInfoLines(player);
+    }
+
+    public static List<String> rivalDojoCards(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of();
+        }
+        return SparringSystem.rivalDojoCards(player);
     }
 
     public static List<String> mentorLines(ServerPlayer player) {
@@ -252,9 +287,25 @@ public final class SparGuiApi {
             }
             return topLines(player, cat);
         }
+        if (lower.startsWith("dojo_top_") || lower.startsWith("dojo_top ")) {
+            String cat = lower.startsWith("dojo_top_")
+                    ? lower.substring(9).trim()
+                    : lower.substring(9).trim();
+            if (cat.isBlank()) {
+                cat = "rp";
+            }
+            return dojoTopLines(player, cat);
+        }
         return switch (lower) {
             case "stats", "statistics" -> statsLines(player);
             case "top", "leaderboard" -> topLines(player, "tp");
+            case "dojo_top", "dojo_rank", "dojo_rankings", "dojo_leaderboard" -> dojoTopLines(player, "rp");
+            case "dojo_info", "dojo_war" -> {
+                List<String> merged = new ArrayList<>(dojoInfoLines(player));
+                merged.add("");
+                merged.addAll(dojoTopLines(player, "rp"));
+                yield merged;
+            }
             case "mentor", "actions", "dojo", "roster", "apprentices" -> mentorLines(player);
             case "pending", "invites", "pendinginvites" -> pendingMentorLines(player);
             case "help" -> List.of(
@@ -439,6 +490,46 @@ public final class SparGuiApi {
                 return "§cPlayer not online: " + a;
             }
             return SparringSystem.apprenticeInvite(player, target);
+        }
+        if ("dojo".equals(act)) {
+            String sub = a.toLowerCase(Locale.ROOT).trim();
+            if (sub.equals("accept") || sub.equals("accept_war") || sub.equals("war_accept")) {
+                return SparringSystem.dojoAcceptWar(player);
+            }
+            if (sub.equals("decline") || sub.equals("decline_war") || sub.equals("war_decline")) {
+                return SparringSystem.dojoDeclineWar(player);
+            }
+            if (sub.startsWith("challenge ") || sub.startsWith("challenge:")) {
+                String who = a.length() > 9 ? a.substring(9).trim() : "";
+                if (who.startsWith(":")) {
+                    who = who.substring(1).trim();
+                }
+                if (who.isBlank()) {
+                    return "§cPick a rival dojo master.";
+                }
+                ServerPlayer target = resolveOnline(player, who);
+                if (target == null) {
+                    return "§cPlayer not online: " + who;
+                }
+                return SparringSystem.dojoChallenge(player, target);
+            }
+            return "§cUsage: spar do dojo accept|decline|challenge <master>";
+        }
+        if ("dojo_challenge".equals(act) || "dojo_war".equals(act)) {
+            if (a.isBlank()) {
+                return "§cPick a rival dojo master.";
+            }
+            ServerPlayer target = resolveOnline(player, a);
+            if (target == null) {
+                return "§cPlayer not online: " + a;
+            }
+            return SparringSystem.dojoChallenge(player, target);
+        }
+        if ("dojo_accept".equals(act) || "dojo_war_accept".equals(act)) {
+            return SparringSystem.dojoAcceptWar(player);
+        }
+        if ("dojo_decline".equals(act) || "dojo_war_decline".equals(act)) {
+            return SparringSystem.dojoDeclineWar(player);
         }
         return "§cUnknown spar action: " + act;
     }

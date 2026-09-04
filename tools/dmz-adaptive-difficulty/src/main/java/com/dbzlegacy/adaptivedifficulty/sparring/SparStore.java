@@ -33,6 +33,10 @@ public final class SparStore {
     public final Map<String, List<RecentSession>> recentSessions = new ConcurrentHashMap<>();
     /** uuid → spar combat TP chat messages (missing = default ON). */
     public final Map<String, Boolean> tpMessages = new ConcurrentHashMap<>();
+    /** Active dojo season leaderboard keyed by mentor UUID. */
+    public DojoSeason dojoSeason;
+    /** Pending/active dojo war challenges keyed by target mentor UUID. */
+    public final Map<String, DojoChallenge> dojoChallenges = new ConcurrentHashMap<>();
     private final AtomicBoolean dirty = new AtomicBoolean(false);
     private long lastSaveAt;
 
@@ -59,6 +63,8 @@ public final class SparStore {
                 invites.clear();
                 recentSessions.clear();
                 tpMessages.clear();
+                dojoSeason = null;
+                dojoChallenges.clear();
                 dirty.set(false);
                 return;
             }
@@ -95,6 +101,10 @@ public final class SparStore {
                     if (blob.tpMessages != null) {
                         tpMessages.putAll(blob.tpMessages);
                     }
+                    dojoSeason = blob.dojoSeason;
+                    if (blob.dojoChallenges != null) {
+                        dojoChallenges.putAll(blob.dojoChallenges);
+                    }
                 }
                 dirty.set(false);
                 AdaptiveDifficultyMod.LOGGER.info(
@@ -120,6 +130,8 @@ public final class SparStore {
                 blob.recentSessions.put(e.getKey(), new ArrayList<>(e.getValue()));
             }
             blob.tpMessages = new ConcurrentHashMap<>(tpMessages);
+            blob.dojoSeason = dojoSeason;
+            blob.dojoChallenges = new ConcurrentHashMap<>(dojoChallenges);
             try (Writer writer = Files.newBufferedWriter(file)) {
                 GSON.toJson(blob, writer);
             }
@@ -375,11 +387,45 @@ public final class SparStore {
         public double ki;
     }
 
+    /** One dojo on the season ladder (key = mentor UUID). */
+    public static final class DojoEntry {
+        public String mentorUuid = "";
+        public String mentorName = "";
+        public double seasonRp;
+        public int wins;
+        public int losses;
+        public int draws;
+        public double totalTp;
+        public long totalTimeMs;
+        public int sessions;
+        public int rosterSize;
+        public long updatedAt;
+    }
+
+    public static final class DojoSeason {
+        public int seasonId;
+        public long startedAt;
+        public Map<String, DojoEntry> leaderboard = new ConcurrentHashMap<>();
+    }
+
+    /** Dojo war challenge between two mentor-led dojos. */
+    public static final class DojoChallenge {
+        public String fromDojoUuid = "";
+        public String fromDojoName = "";
+        public String fromMentorUuid = "";
+        public String toDojoUuid = "";
+        public String toDojoName = "";
+        public long expiresAt;
+        public boolean active;
+    }
+
     private static final class Persist {
         Map<String, MentorBond> bondsByPlayer;
         Map<String, LeaderboardEntry> leaderboard;
         Map<String, BondInvite> invites;
         Map<String, List<RecentSession>> recentSessions;
         Map<String, Boolean> tpMessages;
+        DojoSeason dojoSeason;
+        Map<String, DojoChallenge> dojoChallenges;
     }
 }

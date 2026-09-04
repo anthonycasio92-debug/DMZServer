@@ -112,6 +112,10 @@ public final class DifficultyEvents {
         RivalStore.get().load();
         SparStore.get().load();
         try {
+            com.dbzlegacy.adaptivedifficulty.sparring.DojoRankings.ensureSeason();
+        } catch (Throwable ignored) {
+        }
+        try {
             com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost.load();
         } catch (Throwable ignored) {
         }

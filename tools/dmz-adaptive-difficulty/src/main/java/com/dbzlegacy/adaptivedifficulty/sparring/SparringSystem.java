@@ -375,6 +375,7 @@ public final class SparringSystem {
             updateLeaderboard(partner, bRt, duration);
             updateStreak(partner, bRt, duration);
             recordRecentSession(partner, bRt, player, duration, reason);
+            DojoRankings.onInterDojoSession(player, aRt, partner, bRt, duration);
             bRt.resetSession();
             bRt.restartCooldownUntil = now + PAIR_RESTART_COOLDOWN_MS;
         }
@@ -1065,6 +1066,30 @@ public final class SparringSystem {
             lines.add("§7No sparring data yet.");
         }
         return lines;
+    }
+
+    public static List<String> dojoTopLines(String category, int limit) {
+        return DojoRankings.topLines(category, limit);
+    }
+
+    public static List<String> dojoInfoLines(ServerPlayer player) {
+        return DojoRankings.infoLines(player);
+    }
+
+    public static String dojoChallenge(ServerPlayer player, ServerPlayer target) {
+        return DojoRankings.challengeDojo(player, target);
+    }
+
+    public static String dojoAcceptWar(ServerPlayer player) {
+        return DojoRankings.acceptChallenge(player);
+    }
+
+    public static String dojoDeclineWar(ServerPlayer player) {
+        return DojoRankings.declineChallenge(player);
+    }
+
+    public static List<String> rivalDojoCards(ServerPlayer player) {
+        return DojoRankings.rivalDojoCards(player);
     }
 
     public static String endCommand(ServerPlayer player) {
