@@ -2,7 +2,7 @@
 """Analyze live telemetry tier ladder vs concept expectations.
 
 Checks:
-  - Monotonic avg hitFracPost T1→T7 (even/god bands)
+  - Monotonic avg hitFracPost T1→T7 (per form band)
   - Per-tier vs concept soft-cap ceilings
   - Tier-to-tier step ratios
   - T3 anomaly vs neighbors
@@ -16,7 +16,7 @@ from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
 
-from scaling_constants import LAND_FRAC, SOFT_CAP, band_form
+from scaling_constants import FORM_BAND_ORDER, SOFT_CAP, band_form
 
 # Expected even-build hitFrac bands from sim (saiyan warrior, no skills, 2.3.161)
 SIM_EVEN = {1: 0.129, 3: 0.353, 5: 0.447, 7: 0.583}
@@ -138,63 +138,64 @@ def main() -> int:
     if recent_rows:
         section(f"Recent since {recent_cut}", recent_rows)
 
-    # Concept comparison for god band (true god forms ≥80)
+    # Concept comparison for divine band (formBoost 22–50)
     lines.append("## Divine band (formBoost 22–50) vs concept soft-cap")
     lines.append("")
     lines.append("| tier | live avg | soft-cap | delta | sim even |")
     lines.append("|-----:|---------:|---------:|------:|---------:|")
-    god = tier_stats(all_rows, form_band="divine")
-    for t in sorted(god):
-        n = god[t]["n"]
+    divine = tier_stats(all_rows, form_band="divine")
+    for t in sorted(divine):
+        n = divine[t]["n"]
         if n < 50:
             continue
-        avg = god[t]["hit_post"] / n
+        avg = divine[t]["hit_post"] / n
         cap = SOFT_CAP.get(t, 0)
         sim = SIM_EVEN.get(t, "—")
         delta = avg - cap
         flag = " ⚠" if delta > 0.05 else ""
         lines.append(f"| T{t} | {avg:.3f} | {cap:.2f} | {delta:+.3f}{flag} | {sim} |")
         if t == 3 and avg > 0.38:
-            errors.append(f"T3 god avg {avg:.3f} high vs cap {cap} — cliff risk")
-    prev_g_avg = None
-    prev_g_t = None
-    for t in sorted(god):
-        n = god[t]["n"]
+            errors.append(f"T3 divine avg {avg:.3f} high vs cap {cap} — cliff risk")
+    prev_d_avg = None
+    prev_d_t = None
+    for t in sorted(divine):
+        n = divine[t]["n"]
         if n < 50:
             continue
-        avg = god[t]["hit_post"] / n
-        if prev_g_avg is not None and avg < prev_g_avg - 0.02:
-            errors.append(f"God T{t} avg {avg:.3f} dropped below T{prev_g_t} {prev_g_avg:.3f}")
-        prev_g_avg = avg
-        prev_g_t = t
+        avg = divine[t]["hit_post"] / n
+        if prev_d_avg is not None and avg < prev_d_avg - 0.02:
+            errors.append(f"Divine T{t} avg {avg:.3f} dropped below T{prev_d_t} {prev_d_avg:.3f}")
+        prev_d_avg = avg
+        prev_d_t = t
     lines.append("")
 
-    # Tier step ratios (god)
-    lines.append("## God-form tier step ratios")
+    # Tier step ratios (divine)
+    lines.append("## Divine band tier step ratios")
     lines.append("")
-    tiers_sorted = sorted(t for t in god if god[t]["n"] >= 100)
+    tiers_sorted = sorted(t for t in divine if divine[t]["n"] >= 100)
     for i in range(1, len(tiers_sorted)):
         a, b = tiers_sorted[i - 1], tiers_sorted[i]
-        av = god[a]["hit_post"] / god[a]["n"]
-        bv = god[b]["hit_post"] / god[b]["n"]
+        av = divine[a]["hit_post"] / divine[a]["n"]
+        bv = divine[b]["hit_post"] / divine[b]["n"]
         ratio = bv / av if av > 0 else 0
         note = ""
         if ratio < 1.0:
             note = " ⚠ REGRESSION"
-            errors.append(f"God T{a}→T{b} ratio {ratio:.2f} < 1.0")
+            errors.append(f"Divine T{a}→T{b} ratio {ratio:.2f} < 1.0")
         elif b - a > 1 and ratio > 1.35:
             note = " ⚠ BIG JUMP"
         lines.append(f"- T{a}→T{b}: {av:.3f} → {bv:.3f} ({ratio:.2f}×){note}")
     lines.append("")
 
-  # Per-tier by form for T1-T7 ladder visual
+    # Per-tier by form for T1-T7 ladder visual
     lines.append("## Hit pressure matrix (avg hitFracPost)")
     lines.append("")
-    lines.append("| tier | base | mid | high | god | all |")
-    lines.append("|-----:|-----:|----:|-----:|----:|----:|")
+    band_hdr = " | ".join(FORM_BAND_ORDER)
+    lines.append(f"| tier | {band_hdr} | all |")
+    lines.append("|-----:|" + "|".join(["-----:" for _ in FORM_BAND_ORDER]) + "|-----:|")
     for t in range(1, 8):
         cells = []
-        for band in ("base", "mid", "high", "god"):
+        for band in FORM_BAND_ORDER:
             sub = [r for r in all_rows if int(r.get("tier") or 0) == t and band_form(float(r.get("formBoost") or 1)) == band]
             cells.append(f"{sum(float(r.get('hitFracPost') or 0) for r in sub)/len(sub):.3f}" if sub else "—")
         all_t = [r for r in all_rows if int(r.get("tier") or 0) == t]
