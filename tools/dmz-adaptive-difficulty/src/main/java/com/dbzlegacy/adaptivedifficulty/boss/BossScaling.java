@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.tier.UnlockAbilityCaps;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.util.EntityDisplayNames;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
+import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -108,6 +109,27 @@ public final class BossScaling {
         String typeName = EntityDisplayNames.of(entity);
         entity.m_6593_(Component.m_237113_("§c☠ Boss §4" + typeName + " §7[" + band + "]"));
         entity.m_20340_(true);
+    }
+
+    /**
+     * Rare team-scaling promotion when a mob is not already a natural boss candidate.
+     *
+     * @param bonusPercentPoints flat roll % from {@link com.dbzlegacy.adaptivedifficulty.team.TeamScaling}
+     */
+    public static void maybePromote(LivingEntity entity, long rollSeed, double bonusPercentPoints) {
+        DifficultyConfig cfg = DifficultyConfig.get();
+        if (!cfg.enableBossScaling || entity == null || rollSeed <= 0L || bonusPercentPoints <= 0.0) {
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(entity);
+        if (!PersistentDataAccess.isWritable(tag) || tag.m_128471_(TAG_BOSS)) {
+            return;
+        }
+        double chance = Math.max(0.0, Math.min(1.0, bonusPercentPoints / 100.0));
+        if (chance <= 0.0 || ThreadLocalRandom.current().nextDouble() >= chance) {
+            return;
+        }
+        markBoss(entity, rollSeed);
     }
 
     /** Advance combat phases at HP thresholds (concept warden-style). */

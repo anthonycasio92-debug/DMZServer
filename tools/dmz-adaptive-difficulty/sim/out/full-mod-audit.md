@@ -1,6 +1,6 @@
-# Full mod audit — LegacyMechanics 2.3.178
+# Full mod audit — LegacyMechanics 2.3.179
 
-Generated: 2026-09-04T14:16Z
+Generated: 2026-09-04T14:22Z
 
 ## Suite summary
 
@@ -19,8 +19,6 @@ Generated: 2026-09-04T14:16Z
 
 ## Notes
 
-- **audit_gui_tooltips** now scans Bukkit GUI Java and Forge `gui/*.java` for banned dev jargon (`opted-in`, `teamBonusPercent`, `sparring.json`, etc.).
-- **GUI humanization (2.3.178):** rival teams tooltips, hub logs ("Event log"), spar/rival admin help, progression android panels, and team rival head lore.
 - **audit_concept** is the product-level balance gate (player-facing intent).
 - **validate_scaling** uses stricter legacy sim thresholds; some failures are expected after the 2.3.162 rollback until thresholds are retuned.
 - **audit_tier_level_matrix** scans all races/forms × T1–T7; one human android overclock edge case may fail monotonicity at T7.
@@ -42,7 +40,7 @@ Fail-closed checks for unlock tiers T1–T7 across the DMZ level cap.
 
 ## 2) Buy-cost ladder T1<T2<…<T7 at every level
 
-- ✅ cost T-ladder mono across 150000 levels — 0.85s
+- ✅ cost T-ladder mono across 150000 levels — 0.84s
 - ✅ cost non-decreasing with level (≤150k) — ok
 - ✅ past-anchor clamp T7 200k==150k — 10000000 vs 10000000
 - ✅ past-anchor clamp T1 200k==150k — 6700 vs 6700

@@ -52,7 +52,23 @@ public final class DifficultyTeamGuiApi {
         out.put("bonus_percent", String.valueOf((int) cfg.teamBonusPercent));
         out.put("contrib_percent", String.valueOf((int) cfg.contributionPercent));
         out.put("proximity_blocks", String.valueOf((int) TeamScaling.contributionProximityBlocks()));
+        out.put("spawn_elite_bonus", formatBonus(TeamScaling.rarityBonusPercent(
+                player, TeamScaling.RarityBonus.ELITE)));
+        out.put("spawn_mutant_bonus", formatBonus(TeamScaling.rarityBonusPercent(
+                player, TeamScaling.RarityBonus.MUTATION)));
+        out.put("spawn_boss_bonus", formatBonus(TeamScaling.rarityBonusPercent(
+                player, TeamScaling.RarityBonus.BOSS_PROMOTION)));
         return out;
+    }
+
+    private static String formatBonus(double points) {
+        if (points <= 0.0) {
+            return "0";
+        }
+        if (points < 1.0) {
+            return String.format(Locale.ROOT, "%.2f", points);
+        }
+        return String.format(Locale.ROOT, "%.1f", points);
     }
 
     public static List<String> linesForPage(ServerPlayer player, String page) {
@@ -151,6 +167,14 @@ public final class DifficultyTeamGuiApi {
                 lines.add("§8Full mode also shares spare tier room when close.");
             }
             lines.add("§7Your max §f" + snap.availableMax + " §8(base §f" + snap.personalMax + "§8)");
+            double eliteBonus = TeamScaling.rarityBonusPercent(player, TeamScaling.RarityBonus.ELITE);
+            double mutantBonus = TeamScaling.rarityBonusPercent(player, TeamScaling.RarityBonus.MUTATION);
+            double bossBonus = TeamScaling.rarityBonusPercent(player, TeamScaling.RarityBonus.BOSS_PROMOTION);
+            if (eliteBonus > 0.0 || mutantBonus > 0.0 || bossBonus > 0.0) {
+                lines.add("§7Spawn boost §fElite +" + formatBonus(eliteBonus)
+                        + " §8· Mutant +" + formatBonus(mutantBonus)
+                        + " §8· Boss +" + formatBonus(bossBonus) + "%");
+            }
         }
         lines.add("§8Only mutual rivals who also use a team mode count.");
         lines.add("§8/rival — declare, accept, manage slots.");

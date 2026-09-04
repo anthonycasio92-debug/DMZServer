@@ -348,9 +348,11 @@ public final class DifficultyActions {
         return switch (mode) {
             case PERSONAL_ONLY -> "Team mode: Personal — only your tier ceiling applies.";
             case THRESHOLD_BONUS_ONLY ->
-                    "Team mode: Threshold — +" + bonus + "% max per online rival also using teams.";
+                    "Team mode: Threshold — +" + bonus + "% max per online rival also using teams."
+                            + " Higher elite, mutant, and boss spawn rates.";
             case FULL_TEAM_SCALING ->
-                    "Team mode: Full — threshold bonus plus " + contrib + "% of nearby rivals' spare tier room.";
+                    "Team mode: Full — threshold bonus plus " + contrib + "% of nearby rivals' spare tier room."
+                            + " Best spawn boost when rivals are close.";
         };
     }
 

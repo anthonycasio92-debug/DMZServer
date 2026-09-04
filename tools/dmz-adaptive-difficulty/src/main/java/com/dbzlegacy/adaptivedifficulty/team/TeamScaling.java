@@ -183,6 +183,69 @@ public final class TeamScaling {
         return Math.max(0L, Math.round(spareTotal * (cfg.contributionPercent / 100.0)));
     }
 
+    public enum RarityBonus {
+        ELITE,
+        MUTATION,
+        BOSS_THRESHOLD,
+        BOSS_PROMOTION
+    }
+
+    /**
+     * Weighted online rival count for team rarity bonuses.
+     * Threshold counts all online opted-in rivals; Full only counts nearby rivals.
+     */
+    public static double weightedTeammateFactor(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableRivalSystem || !isOptedIntoTeams(player)) {
+            return 0.0;
+        }
+        PlayerDifficultyData data = DifficultyCache.data(player);
+        TeamMode mode = data.getTeamMode();
+        if (mode == TeamMode.PERSONAL_ONLY) {
+            return 0.0;
+        }
+        double weighted = 0.0;
+        for (ServerPlayer mate : teammates(player)) {
+            if (mode == TeamMode.FULL_TEAM_SCALING && !withinContributionRange(player, mate)) {
+                continue;
+            }
+            weighted += nemesisWeight(linkBetween(player, mate));
+        }
+        if (weighted <= 0.0) {
+            return 0.0;
+        }
+        if (mode == TeamMode.THRESHOLD_BONUS_ONLY) {
+            weighted *= DifficultyConfig.get().teamThresholdRarityMult;
+        }
+        return weighted;
+    }
+
+    /** Bonus percentage points added to elite/mutation rolls or boss threshold/promotion. */
+    public static double rarityBonusPercent(ServerPlayer player, RarityBonus kind) {
+        double factor = weightedTeammateFactor(player);
+        if (factor <= 0.0 || kind == null) {
+            return 0.0;
+        }
+        DifficultyConfig cfg = DifficultyConfig.get();
+        double perRival = switch (kind) {
+            case ELITE -> cfg.teamEliteChanceBonusPercent;
+            case MUTATION -> cfg.teamMutationChanceBonusPercent;
+            case BOSS_THRESHOLD -> cfg.teamBossThresholdBonusPercent;
+            case BOSS_PROMOTION -> cfg.teamBossPromotionChancePercent;
+        };
+        if (perRival <= 0.0) {
+            return 0.0;
+        }
+        return perRival * factor;
+    }
+
+    public static double effectiveBossHealthThreshold(DifficultyConfig cfg, double thresholdReductionPercent) {
+        if (cfg == null) {
+            return 300.0;
+        }
+        double reduction = Math.max(0.0, Math.min(50.0, thresholdReductionPercent));
+        return cfg.bossHealthThreshold * (1.0 - reduction / 100.0);
+    }
+
     private static boolean isMutualTeamLink(RivalLink link) {
         if (link == null || !link.mutual) {
             return false;

@@ -375,7 +375,7 @@
         "name": "&bRival Teams",
         "lore": [
           "&7Mutual rivals can raise your tier ceiling",
-          "&8Both of you choose a team mode",
+          "&7Team modes also boost elite, mutant, and boss spawns",
           "&eClick to open"
         ]
       }
@@ -400,6 +400,7 @@
         "lore": [
           "&7Extra max when rivals are online",
           "&7They must also use a team mode",
+          "&7More elites, mutants, and bosses",
           "&eClick to select"
         ]
       },
@@ -408,6 +409,7 @@
         "lore": [
           "&7Threshold bonus plus nearby spare room",
           "&7Rivals need Full mode and must be close",
+          "&7Best elite, mutant, and boss spawn boost",
           "&eClick to select"
         ]
       },

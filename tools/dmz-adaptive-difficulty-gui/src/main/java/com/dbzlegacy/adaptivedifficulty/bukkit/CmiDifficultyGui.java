@@ -95,7 +95,7 @@ public final class CmiDifficultyGui {
         // Primary actions — Tiers (buy/lower/reset) + Titles
         gui.addButton(pageBtn(player, 19, "difficulty.main.teams", Material.SHIELD, "&bRival Teams", "team",
                 "&7Mutual rivals can raise your tier ceiling",
-                "&8Both choose a team mode · rivals must be online"));
+                "&7Team modes boost elite, mutant, and boss spawns"));
         gui.addButton(pageBtn(player, 21, "difficulty.main.tiers", Material.GOLD_INGOT, "&eTiers", "tiers",
                 "&7Buy higher · lower unlocked · reset",
                 "&8Ancient Coins · pay-up OK · change returned"));
@@ -387,10 +387,12 @@ public final class CmiDifficultyGui {
                 "team", "threshold", "team",
                 List.of("&7Extra max when rivals are online",
                         "&7They must also use a team mode",
+                        "&7More elites, mutants, and bosses",
                         mode.equals("threshold_bonus_only") ? "&aCurrent mode" : "&eClick to select")));
         gui.addButton(actionBtn(player, 24, "difficulty.team.mode_full", Material.EMERALD, "&2Full",
                 "team", "full", "team",
                 List.of("&7Threshold bonus plus nearby spare room",
+                        "&7Best spawn boost when rivals are close",
                         "&8Within " + ph.getOrDefault("proximity_blocks", "48") + " blocks",
                         mode.equals("full_team_scaling") ? "&aCurrent mode" : "&eClick to select")));
 

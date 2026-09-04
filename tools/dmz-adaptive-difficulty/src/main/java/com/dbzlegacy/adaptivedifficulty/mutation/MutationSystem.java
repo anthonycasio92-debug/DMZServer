@@ -27,6 +27,13 @@ public final class MutationSystem {
      *                 gating is done by the caller via {@code mutationMinUnlockTier}.
      */
     public static void maybeMutate(LivingEntity entity, long rollSeed) {
+        maybeMutate(entity, rollSeed, 0.0);
+    }
+
+    /**
+     * @param bonusPercentPoints extra roll % from team scaling (added before elite bump)
+     */
+    public static void maybeMutate(LivingEntity entity, long rollSeed, double bonusPercentPoints) {
         DifficultyConfig cfg = DifficultyConfig.get();
         if (!cfg.enableMutations || entity == null || rollSeed <= 0L) {
             return;
@@ -36,8 +43,8 @@ public final class MutationSystem {
                 || (tag.m_128441_(TAG_MUTATION) && !tag.m_128461_(TAG_MUTATION).isEmpty())) {
             return;
         }
-        // Flat config %; elites get a small bump (not double — that felt common in packs).
-        double chance = Math.max(0.0, Math.min(1.0, cfg.mutationChancePercent / 100.0));
+        double chance = Math.max(0.0, Math.min(1.0,
+                (cfg.mutationChancePercent + Math.max(0.0, bonusPercentPoints)) / 100.0));
         if (EliteSystem.isElite(entity)) {
             chance = Math.min(1.0, chance * 1.35);
         }
