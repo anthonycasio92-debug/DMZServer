@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.174", 'VERSION = "2.3.174"' in mod)
+    check("VERSION 2.3.175", 'VERSION = "2.3.175"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -113,6 +113,13 @@ def main() -> int:
     check("ClassSkillSync ensures Fabled class skills", "ensureClassSkills" in class_skill and "needs-permission': 'true'" in class_skill)
     check("ClassSkillSync prestige marker stubs", "Prestige" in class_skill and "prestige" in class_skill)
     check("ClassPermissionSync uses catalog not hardcoded map", "FightingClassCatalog.skillNameFor" in class_perm and "hardcodedSkillName" not in class_perm)
+
+    energy_mana = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/EnergyManaSync.java")
+    level_guard = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/FabledLevelGuard.java")
+    attrib_guard = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/FabledAttribGuard.java")
+    check("EnergyManaSync skips Fabled stat wipe spend", "isFabledManaWipe" in energy_mana and "energy_wipe_skip" in energy_mana)
+    check("FabledLevelGuard restores ki on level change", "levelSignature" in level_guard and "EnergyManaSync.sync" in level_guard)
+    check("FabledAttribGuard clamps negative AP", "ap_clamp" in attrib_guard and "getAttribPoints" in attrib_guard)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {

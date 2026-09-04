@@ -118,9 +118,11 @@ public final class FabledBridge {
                 }
                 if (cfg.enableAttrMultiBonus && tick % 20 == 0) {
                     AttrMultiBonus.sync(player);
+                    FabledAttribGuard.sync(player);
                 }
                 if (cfg.enablePrestigeSkillSync && tick % 20 == 0) {
                     PrestigeSkillSync.sync(player);
+                    FabledLevelGuard.sync(player);
                 }
                 if (cfg.enablePrestigeFactionSync && tick % 100 == 0) {
                     PrestigeFactionSync.sync(player);
