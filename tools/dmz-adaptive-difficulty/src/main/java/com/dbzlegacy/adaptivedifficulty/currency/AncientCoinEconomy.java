@@ -31,7 +31,7 @@ import net.minecraftforge.fml.ModList;
  * Ancient Coin economy — real Lightman's {@code coin_ancient} items only.
  * <p>
  * Ladder (cheap → expensive): Copper → Iron → Gold → Emerald → Diamond →
- * Netherite (all 9 letter variants share one value). Lapis and Ender Pearl
+ * Netherite (HEROBRINE-H letter only on drops/grants; other letters still count in balance).
  * ancient coins are ignored (never spent, counted, granted, or dropped).
  * <p>
  * Spendable balances come from <b>player inventory + equipped wallet</b>.
@@ -53,18 +53,8 @@ public final class AncientCoinEconomy {
      */
     public static final int MAX_COINS_PER_TYPE = 128;
 
-    /** All Lightman's Netherite letter ancients (HEROBRINE) — equal value. */
-    private static final AncientCoinType[] NETHERITE_VARIANTS = {
-            AncientCoinType.NETHERITE_H,
-            AncientCoinType.NETHERITE_E1,
-            AncientCoinType.NETHERITE_R1,
-            AncientCoinType.NETHERITE_O,
-            AncientCoinType.NETHERITE_B,
-            AncientCoinType.NETHERITE_R2,
-            AncientCoinType.NETHERITE_I,
-            AncientCoinType.NETHERITE_N,
-            AncientCoinType.NETHERITE_E2
-    };
+    /** Netherite kill/grant type — HEROBRINE letter H only (all letters share equal value). */
+    private static final AncientCoinType NETHERITE_DROP_TYPE = AncientCoinType.NETHERITE_H;
 
     public enum CoinKind {
         COPPER(1L, "Copper", AncientCoinType.COPPER),
@@ -425,23 +415,12 @@ public final class AncientCoinEconomy {
         double z = at.m_20189_();
         // Clamp runaway counts — kill rewards are tiny (1–5); never spawn thousands.
         long left = Math.min(MAX_KILL_DROP_COUNT, drop.count());
-        // Netherite kill drops: one random HEROBRINE letter per coin.
-        if (drop.kind() == CoinKind.NETHERITE) {
-            while (left > 0L) {
-                AncientCoinType variant = NETHERITE_VARIANTS[
-                        ThreadLocalRandom.current().nextInt(NETHERITE_VARIANTS.length)];
-                ItemStack stack = variant.asItem(1);
-                if (stack == null || stack.m_41619_()) {
-                    break;
-                }
-                spawnDropEntity(server, x, y, z, stack, ownerId);
-                left -= 1L;
-            }
-            return;
-        }
         while (left > 0L) {
             int chunk = (int) Math.min(64L, left);
-            ItemStack stack = drop.kind().ancientType.asItem(chunk);
+            AncientCoinType type = drop.kind() == CoinKind.NETHERITE
+                    ? NETHERITE_DROP_TYPE
+                    : drop.kind().ancientType;
+            ItemStack stack = type.asItem(chunk);
             if (stack == null || stack.m_41619_()) {
                 break;
             }
@@ -687,9 +666,7 @@ public final class AncientCoinEconomy {
         long given = 0L;
         while (left > 0L) {
             int chunk = (int) Math.min(64L, left);
-            AncientCoinType type = kind == CoinKind.NETHERITE
-                    ? NETHERITE_VARIANTS[ThreadLocalRandom.current().nextInt(NETHERITE_VARIANTS.length)]
-                    : kind.ancientType;
+            AncientCoinType type = kind == CoinKind.NETHERITE ? NETHERITE_DROP_TYPE : kind.ancientType;
             ItemStack stack = type.asItem(chunk);
             if (stack == null || stack.m_41619_()) {
                 break;
@@ -1137,10 +1114,7 @@ public final class AncientCoinEconomy {
         long left = count;
         while (left > 0L) {
             int chunk = (int) Math.min(64L, left);
-            // Netherite has 9 letter variants — pick one at random per stack.
-            AncientCoinType type = kind == CoinKind.NETHERITE
-                    ? NETHERITE_VARIANTS[ThreadLocalRandom.current().nextInt(NETHERITE_VARIANTS.length)]
-                    : kind.ancientType;
+            AncientCoinType type = kind == CoinKind.NETHERITE ? NETHERITE_DROP_TYPE : kind.ancientType;
             dropOrAdd(player, type.asItem(chunk));
             left -= chunk;
         }

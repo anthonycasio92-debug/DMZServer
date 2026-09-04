@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.174", 'VERSION = "2.3.174"' in mod)
+    check("VERSION 2.3.175", 'VERSION = "2.3.175"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -423,6 +423,8 @@ def main() -> int:
     check("coinDropChanceMigratedV1", "coinDropChanceMigratedV1" in cfg)
     check("admin set drop chance", "ancientcoindropchance" in cmds or "coindropchance" in cmds)
     check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.63" in readme)
+    check("netherite drops use H variant only", "NETHERITE_DROP_TYPE" in coins and "NETHERITE_H" in coins
+          and "NETHERITE_VARIANTS" not in coins)
 
     print("\n=== Mohist CMI /lmdo routing (2.3.54) ===")
     gui_root = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit"
