@@ -115,7 +115,7 @@ public final class CmiSparGui {
         gui.addButton(pageBtn(player, 19, "spar.main.stats", Material.BOOK, "&eStats", "stats",
                 "&7Last 3 spar reports", "&8One item per spar"));
         gui.addButton(pageBtn(player, 20, "spar.main.dojo_rank", Material.BOOKSHELF, "&6Dojo Rankings",
-                "dojo_rank", "&7Season ladder · dojo wars", "&8Inter-dojo spars earn RP"));
+                "dojo_rank", "&7Season ladder · dojo wars", "&8Spar rival dojos to earn ranking points"));
         gui.addButton(pageBtn(player, 21, "spar.main.top", Material.GOLDEN_HELMET, "&fTop", "top",
                 "&7Leaderboard"));
         gui.addButton(pageBtn(player, 23, "spar.main.mentor", Material.EMERALD, "&bMentor", "mentor",
@@ -222,7 +222,7 @@ public final class CmiSparGui {
         header.lockField();
         List<String> headerLore = new ArrayList<>(info);
         headerLore.add("");
-        headerLore.addAll(GuiBoardHelper.tips(player, "&7Dojo season ladder", "&8Inter-dojo spars score RP"));
+        headerLore.addAll(GuiBoardHelper.tips(player, "&7Dojo season ladder", "&8Spar rival dojos to earn ranking points"));
         header.addLore(headerLore);
         gui.addButton(header);
         if (entries.isEmpty()) {
@@ -260,7 +260,7 @@ public final class CmiSparGui {
         gui.addButton(pageBtn(player, 31, "spar.dojo.wins", Material.IRON_SWORD, "&aWins", "dojo_top_wins",
                 "&7Rank by wins"));
         gui.addButton(pageBtn(player, 33, "spar.dojo.tp", Material.EXPERIENCE_BOTTLE, "&bSpar TP", "dojo_top_tp",
-                "&7Rank by inter-dojo TP"));
+                "&7Rank by TP earned vs other dojos"));
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
@@ -319,7 +319,7 @@ public final class CmiSparGui {
         header.lockField();
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.addAll(headerLore.isEmpty() ? List.of("&7Season inter-dojo contributions") : headerLore);
+        lore.addAll(headerLore.isEmpty() ? List.of("&7Season contributions from your dojo") : headerLore);
         header.addLore(lore);
         gui.addButton(header);
         if (cards.isEmpty()) {

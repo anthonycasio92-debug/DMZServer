@@ -114,10 +114,10 @@ public final class HubChestGui implements Listener {
                     List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")),
                     SlotAction.open("progression"));
             put(holder, inv, 40, tipBtn(player, "hub.main.admin", Material.COMMAND_BLOCK, "&cAdmin",
-                    List.of("&7Reload · syslog · open systems", "&8/lm admin")),
+                    List.of("&7Reload configs and open staff tools", "&8/lm admin")),
                     SlotAction.open("admin"));
             put(holder, inv, 42, tipBtn(player, "hub.main.logs", Material.CLOCK, "&8Logs",
-                    List.of("&7System telemetry", "&eClick to open")),
+                    List.of("&7Server event logs", "&eClick to open")),
                     SlotAction.page("logs"));
         }
 
@@ -135,7 +135,7 @@ public final class HubChestGui implements Listener {
         String statusLine = ph.getOrDefault("syslog_status", "unknown");
         List<String> logsHeader = new ArrayList<>();
         logsHeader.add("");
-        logsHeader.add("&7System telemetry &f" + (on ? "ON" : "OFF"));
+        logsHeader.add("&7Server event logs &f" + (on ? "ON" : "OFF"));
         logsHeader.add("&8" + statusLine.replace('§', '&'));
         logsHeader.add("");
         logsHeader.addAll(GuiTooltips.lore("hub.logs.header",
@@ -154,11 +154,11 @@ public final class HubChestGui implements Listener {
                     prependBlank(part)));
             placed++;
         }
-        put(holder, inv, 29, tipBtn(player, "hub.logs.syslog_on", Material.LIME_DYE, "&aSyslog ON",
-                List.of("&7Enable system telemetry")),
+        put(holder, inv, 29, tipBtn(player, "hub.logs.syslog_on", Material.LIME_DYE, "&aLogging ON",
+                List.of("&7Turn server event logging on")),
                 SlotAction.act("syslog", "on", "logs"));
-        put(holder, inv, 31, tipBtn(player, "hub.logs.syslog_off", Material.GRAY_DYE, "&cSyslog OFF",
-                List.of("&7Disable system telemetry")),
+        put(holder, inv, 31, tipBtn(player, "hub.logs.syslog_off", Material.GRAY_DYE, "&cLogging OFF",
+                List.of("&7Turn server event logging off")),
                 SlotAction.act("syslog", "off", "logs"));
         put(holder, inv, 33, tipBtn(player, "hub.logs.flush", Material.HOPPER, "&eFlush",
                 List.of("&7Flush log writers")),

@@ -120,8 +120,8 @@ public final class SparChestGui implements Listener {
                         List.of("&7Last 3 spar reports", "&8One item per spar")),
                 SlotAction.page("stats"));
         put(holder, inv, 20, tipBtn(viewer, "spar.main.dojo_rank", Material.BOOKSHELF, "&6Dojo Rankings",
-                List.of("&7Season ladder · dojo wars",
-                        "&8Inter-dojo spars earn RP")),
+                List.of("&7See how dojos rank this season",
+                        "&7Spar rival dojos to climb the ladder")),
                 SlotAction.page("dojo_rank"));
         put(holder, inv, 21, tipBtn(viewer, "spar.main.top", Material.GOLDEN_HELMET, "&fTop",
                 List.of("&7Leaderboard")),
@@ -226,7 +226,7 @@ public final class SparChestGui implements Listener {
         List<String> header = new ArrayList<>(info);
         header.add("");
         header.addAll(GuiBoardHelper.tips(viewer,
-                "&7Dojo season ladder", "&8Inter-dojo spars score RP"));
+                "&7Dojo season ladder", "&8Spar rival dojos to earn ranking points"));
         put(holder, inv, 4, item(Material.BOOKSHELF, "&6&lDojo Rankings — " + cat, header));
         if (entries.isEmpty()) {
             put(holder, inv, 13, tipBtn(viewer, "spar.empty.no_dojo_rank", Material.BARRIER,
@@ -262,7 +262,7 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 31, pageBtn(viewer, "spar.dojo.wins", Material.IRON_SWORD, "&aWins", "&7Rank by wins"),
                 SlotAction.page("dojo_top_wins"));
         put(holder, inv, 33, pageBtn(viewer, "spar.dojo.tp", Material.EXPERIENCE_BOTTLE, "&bSpar TP",
-                "&7Rank by inter-dojo TP"), SlotAction.page("dojo_top_tp"));
+                "&7Rank by TP earned vs other dojos"), SlotAction.page("dojo_top_tp"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
@@ -279,11 +279,15 @@ public final class SparChestGui implements Listener {
         List<String> header = new ArrayList<>();
         header.add("");
         header.add(cards.isEmpty() ? "&7No rival dojos ranked yet." : "&7" + cards.size() + " rival dojos");
-        header.addAll(GuiBoardHelper.tips(viewer, "&8Click to challenge", "&7Active wars earn 2× RP"));
+        header.addAll(GuiBoardHelper.tips(viewer, "&8Click a rival to challenge", "&7Wars double ranking points"));
+        header.addAll(toAmp(GuiTooltips.lore("spar.dojo.war_header", List.of(
+                "&7Pick a rival dojo to challenge",
+                "&8Active wars earn double points"))));
         put(holder, inv, 4, item(Material.DIAMOND_SWORD, "&c&lDeclare War", header));
         if (cards.isEmpty()) {
             put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_dojo_rival", Material.BARRIER, "&7No rivals yet",
-                    List.of("&7Other dojos need inter-dojo spars first")));
+                    List.of("&7No rival dojos on the board yet",
+                            "&8Other dojos need a few ranked spars first")));
         } else {
             int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
             for (int i = 0; i < slots.length && i < cards.size(); i++) {
@@ -295,7 +299,7 @@ public final class SparChestGui implements Listener {
                 try {
                     head = GuiPlayerPicker.headByUuid(
                             java.util.UUID.fromString(uuid), name, "&f" + name,
-                            List.of("&7Season RP &f" + rp, "&cChallenge to war", "&82× RP on inter-dojo spars"));
+                            List.of("&7Season RP &f" + rp, "&cChallenge to war", "&82× points during active wars"));
                 } catch (IllegalArgumentException ex) {
                     head = GuiPlayerPicker.headByName(name, "&f" + name,
                             List.of("&7Season RP &f" + rp, "&cChallenge to war"));
@@ -319,11 +323,14 @@ public final class SparChestGui implements Listener {
         List<String> header = toAmp(ForgeBridge.sparLines(subject, "dojo_members"));
         List<String> topHeader = new ArrayList<>();
         topHeader.add("");
-        topHeader.addAll(header.isEmpty() ? List.of("&7Season inter-dojo contributions") : header);
-        put(holder, inv, 4, item(Material.PLAYER_HEAD, "&b&lDojo Members", topHeader));
+        topHeader.addAll(header.isEmpty() ? List.of("&7Season contributions from your dojo") : header);
+        put(holder, inv, 4, item(Material.PLAYER_HEAD, "&b&lDojo Members",
+                prependBlank(toAmp(GuiTooltips.lore("spar.dojo.members_header", List.of(
+                        "&7Fighters ranked by season contribution"))))));
         if (cards.isEmpty()) {
             put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_dojo_members", Material.BARRIER, "&7No data yet",
-                    List.of("&7Spar other dojos to log contributions")));
+                    List.of("&7No contributions logged yet",
+                            "&8Spar someone from another dojo to appear here")));
         } else {
             int[] slots = GuiBoardHelper.centeredSlots(Math.min(cards.size(), 21));
             for (int i = 0; i < slots.length && i < cards.size(); i++) {
@@ -337,11 +344,11 @@ public final class SparChestGui implements Listener {
                 try {
                     head = GuiPlayerPicker.headByUuid(
                             java.util.UUID.fromString(uuid), name, "&f" + name,
-                            List.of("&7" + rp + " RP contributed", "&a" + wins + " wins",
-                                    "&7" + tp + " TP"));
+                            List.of("&7" + rp + " ranking points", "&a" + wins + " wins",
+                                    "&7" + tp + " training TP"));
                 } catch (IllegalArgumentException ex) {
                     head = GuiPlayerPicker.headByName(name, "&f" + name,
-                            List.of("&7" + rp + " RP contributed"));
+                            List.of("&7" + rp + " ranking points contributed"));
                 }
                 put(holder, inv, slots[i], head, SlotAction.page("dojo_members"));
             }
@@ -359,7 +366,7 @@ public final class SparChestGui implements Listener {
         frame(inv, 45);
         List<String> header = new ArrayList<>();
         header.add("");
-        header.addAll(GuiBoardHelper.tips(viewer, "&7Pick your dojo banner color", "&8Shows on rankings"));
+        header.addAll(GuiBoardHelper.tips(viewer, "&7Pick a color for your dojo banner", "&8Shows on the rankings board"));
         put(holder, inv, 4, item(Material.WHITE_BANNER, "&f&lDojo Banner", header));
         String[] banners = {
                 "WHITE_BANNER", "ORANGE_BANNER", "MAGENTA_BANNER", "LIGHT_BLUE_BANNER",
@@ -375,7 +382,9 @@ public final class SparChestGui implements Listener {
             }
             String label = banners[i].replace('_', ' ');
             put(holder, inv, slots[i], item(mat, "&f" + label,
-                    List.of("&7Set dojo banner", "&eClick to apply")),
+                    GuiTooltips.buttonLore("spar.dojo.banner_pick",
+                            List.of("&7Use this banner for your dojo", "", "&eClick to apply"),
+                            Map.of("name", label), null)),
                     SlotAction.act("dojo_banner", banners[i], "dojo_rank"));
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo Rankings"),

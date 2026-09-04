@@ -468,7 +468,7 @@ public final class DojoRankings {
         lines.add("§7Dojo §f" + dojoDisplayName(key));
         SparStore.DojoEntry e = entry(key);
         if (e == null || e.members == null || e.members.isEmpty()) {
-            lines.add("§7No inter-dojo spars logged this season.");
+            lines.add("§7No rival-dojo spars logged this season.");
             return lines;
         }
         List<SparStore.DojoMemberStats> sorted = new ArrayList<>(e.members.values());
@@ -525,7 +525,7 @@ public final class DojoRankings {
         SparStore.DojoSeason season = SparStore.get().dojoSeason;
         if (season != null) {
             long left = Math.max(0L, SEASON_MS - (System.currentTimeMillis() - season.startedAt));
-            lines.add("§7Season §f#" + season.seasonId + " §8· §7" + (left / 86_400_000L) + "d left");
+            lines.add("§7Season §f#" + season.seasonId + " §8· §7" + (left / 86_400_000L) + " days left");
         }
         String key = homeDojoKey(player);
         if (key == null) {
@@ -546,14 +546,14 @@ public final class DojoRankings {
             lines.add("§7Season RP §f" + (int) e.seasonRp
                     + " §8· §a" + e.wins + "W §c" + e.losses + "L §7" + e.draws + "D");
             lines.add("§7Spar TP §f" + DmzRewards.formatWhole(e.totalTp)
-                    + " §8· §7" + e.sessions + " inter-dojo spars");
+                    + " §8· §7" + e.sessions + " rival-dojo spars");
         }
         int rank = dojoRank(key, "rp");
         if (rank > 0) {
             lines.add("§7Ladder rank §f#" + rank);
         }
         if (isDojoMaster(player)) {
-            lines.add("§8Rename: §7/spar dojo name <name>");
+            lines.add("§8Rename: §7/spar dojo name <your name>");
             lines.add("§8Banner: §7Dojo Rankings → Banner");
         }
         SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(
@@ -726,8 +726,8 @@ public final class DojoRankings {
         c.expiresAt = System.currentTimeMillis() + CHALLENGE_TTL_MS;
         SparStore.get().markDirty();
         broadcast(LmChat.ok("Dojo", "§6§lDOJO WAR §f" + c.fromDojoName
-                + " §7vs §f" + c.toDojoName + " §8— inter-dojo spars earn 2× RP!"));
-        return "§aDojo war accepted! §7Inter-dojo spars vs §f" + c.fromDojoName + " §aearn 2× RP.";
+                + " §7vs §f" + c.toDojoName + " §8— spars vs that dojo earn 2× ranking points!"));
+        return "§aDojo war accepted! §7Spars vs §f" + c.fromDojoName + " §anow earn double ranking points.";
     }
 
     public static String declineChallenge(ServerPlayer master) {

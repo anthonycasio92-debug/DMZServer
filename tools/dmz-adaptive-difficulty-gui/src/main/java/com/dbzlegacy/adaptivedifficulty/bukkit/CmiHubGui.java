@@ -103,9 +103,9 @@ public final class CmiHubGui {
             gui.addButton(openBtn(player, 38, "hub.main.progression", Material.BREWING_STAND, "&dProgression", "progression",
                     "&7Skills · TP · Race · Combat flags", "&eClick to open"));
             gui.addButton(openBtn(player, 40, "hub.main.admin", Material.COMMAND_BLOCK, "&cAdmin", "admin",
-                    "&7Reload · syslog · open systems", "&8/lm admin"));
+                    "&7Reload configs and open staff tools", "&8/lm admin"));
             gui.addButton(pageBtn(player, 42, "hub.main.logs", Material.CLOCK, "&8Logs", "logs",
-                    "&7System telemetry", "&eClick to open"));
+                    "&7Server event logs", "&eClick to open"));
         }
 
         gui.addButton(closeBtn(53));
@@ -124,7 +124,7 @@ public final class CmiHubGui {
         header.lockField();
         List<String> logsHeader = new ArrayList<>();
         logsHeader.add("");
-        logsHeader.add("&7System telemetry &f" + (on ? "ON" : "OFF"));
+        logsHeader.add("&7Server event logs &f" + (on ? "ON" : "OFF"));
         logsHeader.add("&8" + statusLine.replace('§', '&'));
         logsHeader.add("");
         logsHeader.addAll(GuiTooltips.lore("hub.logs.header",
@@ -151,10 +151,10 @@ public final class CmiHubGui {
             placed++;
         }
 
-        gui.addButton(actionBtn(player, 29, "hub.logs.syslog_on", Material.LIME_DYE, "&aSyslog ON",
-                "syslog", "on", "logs", List.of("&7Enable system telemetry")));
-        gui.addButton(actionBtn(player, 31, "hub.logs.syslog_off", Material.GRAY_DYE, "&cSyslog OFF",
-                "syslog", "off", "logs", List.of("&7Disable system telemetry")));
+        gui.addButton(actionBtn(player, 29, "hub.logs.syslog_on", Material.LIME_DYE, "&aLogging ON",
+                "syslog", "on", "logs", List.of("&7Turn server event logging on")));
+        gui.addButton(actionBtn(player, 31, "hub.logs.syslog_off", Material.GRAY_DYE, "&cLogging OFF",
+                "syslog", "off", "logs", List.of("&7Turn server event logging off")));
         gui.addButton(actionBtn(player, 33, "hub.logs.flush", Material.HOPPER, "&eFlush",
                 "syslog", "flush", "logs", List.of("&7Flush log writers")));
 

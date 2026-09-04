@@ -43,8 +43,8 @@
       "skills": {
         "name": "&eSkills",
         "lore": [
-          "&7Skill check ADMIN",
-          "&eClick to open"
+          "&7Staff tools for skill checks",
+          "&8Admins only"
         ]
       },
       "prestige": {
@@ -72,14 +72,14 @@
       "admin": {
         "name": "&cAdmin",
         "lore": [
-          "&7Reload · syslog · open systems",
+          "&7Reload configs and open staff tools",
           "&8/lm admin"
         ]
       },
       "logs": {
         "name": "&8Logs",
         "lore": [
-          "&7System telemetry",
+          "&7Server event logs",
           "&eClick to open"
         ]
       }
@@ -88,7 +88,8 @@
       "header": {
         "name": "&8&lLogs",
         "lore": [
-          "&7Use buttons below to toggle / flush"
+          "&7Toggle or flush server logs",
+          "&8Staff only"
         ]
       },
       "back": {
@@ -98,21 +99,24 @@
         ]
       },
       "syslog_on": {
-        "name": "&aSyslog ON",
+        "name": "&aEvent Log ON",
         "lore": [
-          "&7Enable system telemetry"
+          "&7Server event logging is on",
+          "&8Staff only"
         ]
       },
       "syslog_off": {
-        "name": "&cSyslog OFF",
+        "name": "&cEvent Log OFF",
         "lore": [
-          "&7Disable system telemetry"
+          "&7Turn server event logging back on",
+          "&8Staff only"
         ]
       },
       "flush": {
-        "name": "&eFlush",
+        "name": "&eFlush Logs",
         "lore": [
-          "&7Flush log writers"
+          "&7Write buffered logs to disk",
+          "&8Staff only"
         ]
       }
     }
@@ -304,8 +308,8 @@
       "tiers": {
         "name": "&eTiers",
         "lore": [
-          "&7Buy higher · lower unlocked · reset",
-          "&8Ancient Coins · pay-up OK · change returned"
+          "&7Buy higher tiers or step down for free",
+          "&8Unlocks stay — you only pay the difference"
         ]
       },
       "titles": {
@@ -363,8 +367,8 @@
       "details": {
         "name": "&8Details",
         "lore": [
-          "&7Staff breakdown",
-          "&8CR · prestige · kit gates"
+          "&7Staff breakdown of your scaling",
+          "&8Combat rating, prestige, and kit gates"
         ]
       }
     },
@@ -385,7 +389,13 @@
           "&8Always free"
         ]
       },
-      "tier": {}
+      "tier": {
+        "name": "{name}",
+        "lore": [
+          "&7Difficulty tier &f{tier}",
+          "&7Unlock with DMZ level or Prestige"
+        ]
+      }
     },
     "titles": {
       "header": {
@@ -472,7 +482,8 @@
       "progress": {
         "name": "&bProgress",
         "lore": [
-          "&7Season · quests · achs · HOF · journal · title"
+          "&7Season track, quests, achievements,",
+          "&7hall of fame, journal, and title"
         ]
       },
       "tpmsg_on": {
@@ -611,7 +622,7 @@
       "save": {
         "name": "&aSave",
         "lore": [
-          "&7Write rivalry-v4 + progression-v4",
+          "&7Save rivalry and progress data to disk",
           "&8/rival admin save"
         ]
       },
@@ -640,43 +651,49 @@
       "stats": {
         "name": "&eStats",
         "lore": [
-          "&eClick to open"
+          "&7Wins, RP, and rival counts"
         ]
       },
       "season": {
         "name": "&aSeason",
         "lore": [
-          "&eClick to open"
+          "&7Season RP and top rivals"
         ]
       },
       "quests": {
         "name": "&bQuests",
         "lore": [
-          "&eClick to open"
+          "&7Weekly rivalry goals"
         ]
       },
       "achs": {
-        "name": "&dAchs",
+        "name": "&dAchievements",
         "lore": [
-          "&eClick to open"
+          "&7Unlocked rivalry achievements"
         ]
       },
       "hof": {
-        "name": "&6HOF",
+        "name": "&6Hall of Fame",
         "lore": [
-          "&eClick to open"
+          "&7Season champions and legends"
         ]
       },
       "journal": {
         "name": "&fJournal",
         "lore": [
-          "&eClick to open"
+          "&7Recent battles and rival history"
         ]
       },
       "title": {
         "name": "&eTitle",
         "lore": [
-          "&eClick to open"
+          "&7Your rival title and perks"
+        ]
+      },
+      "more": {
+        "name": "&6More",
+        "lore": [
+          "&7Title, achievements, hall of fame, journal"
         ]
       }
     },
@@ -718,6 +735,30 @@
         "lore": [
           "&7Actions"
         ]
+      },
+      "decide_info": {
+        "name": "&e&lRespond",
+        "lore": [
+          "&7Accept or decline this rivalry invite"
+        ]
+      },
+      "accept": {
+        "name": "&aAccept",
+        "lore": [
+          "&7Accept and become mutual rivals"
+        ]
+      },
+      "decline": {
+        "name": "&cDecline",
+        "lore": [
+          "&7Decline this rivalry invite"
+        ]
+      },
+      "decide_back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Pending invites"
+        ]
       }
     },
     "history": {
@@ -744,7 +785,14 @@
       ],
       "no_top": [
         "&7Challenge rivals to earn RP"
-      ]
+      ],
+      "no_mutual": {
+        "name": "&cNo Mutual Rivals",
+        "lore": [
+          "&7You need at least one mutual rival",
+          "&7to replace someone on your list"
+        ]
+      }
     },
     "picker": {
       "tip": [
@@ -770,46 +818,44 @@
       "dojo_rank": {
         "name": "&6Dojo Rankings",
         "lore": [
-          "&7Season ladder · dojo wars",
-          "&8Inter-dojo spars earn RP"
+          "&7See how dojos rank this season",
+          "&7Spar rival dojos to climb the ladder"
         ]
       },
       "mentor": {
         "name": "&bMentor",
         "lore": [
-          "&7Invite · Pending · Dojo · Leave / Release"
+          "&7Invite apprentices, find a mentor,",
+          "&7or manage your dojo roster"
         ]
       },
       "tpmsg_on": {
-        "name": "&aTP Msg ON",
+        "name": "&aTP Messages ON",
         "lore": [
-          "&7Click to mute spar TP chat",
-          "&8Players: +TP (style)",
-          "&8Staff: full bonus / stack detail",
+          "&7You see spar TP gains in chat",
           "",
-          "&eClick to toggle"
+          "&eClick to mute"
         ]
       },
       "tpmsg_off": {
-        "name": "&8TP Msg OFF",
+        "name": "&8TP Messages OFF",
         "lore": [
-          "&7Click to show spar TP chat while fighting",
-          "&8Players: +TP (style)",
-          "&8Staff: full bonus / stack detail",
+          "&7Spar TP chat is hidden",
           "",
-          "&eClick to toggle"
+          "&eClick to show again"
         ]
       },
       "end_session": {
         "name": "&cEnd Session",
         "lore": [
-          "&7End your active spar session"
+          "&7Stop your current spar"
         ]
       },
       "admin": {
         "name": "&cAdmin",
         "lore": [
-          "&7Save · status · mentor resetcd"
+          "&7Save data, check status, reset cooldowns",
+          "&8Staff only"
         ]
       }
     },
@@ -835,45 +881,46 @@
     },
     "dojo": {
       "rp": {
-        "name": "&eSeason RP",
+        "name": "&eSeason Points",
         "lore": [
-          "&7Rank by RP"
+          "&7Sort by ranking points this season"
         ]
       },
       "wins": {
         "name": "&aWins",
         "lore": [
-          "&7Rank by wins"
+          "&7Sort by dojo wins this season"
         ]
       },
       "tp": {
-        "name": "&bSpar TP",
+        "name": "&bTraining TP",
         "lore": [
-          "&7Rank by inter-dojo TP"
+          "&7Sort by TP earned against other dojos"
         ]
       },
       "challenge": {
         "name": "&cDeclare War…",
         "lore": [
-          "&7Challenge another dojo master"
+          "&7Challenge another dojo master",
+          "&8Wars double ranking points for 24 hours"
         ]
       },
       "accept": {
         "name": "&aAccept War",
         "lore": [
-          "&7Accept pending dojo war"
+          "&7Accept a pending war challenge"
         ]
       },
       "decline": {
         "name": "&cDecline War",
         "lore": [
-          "&7Decline pending challenge"
+          "&7Turn down a war challenge"
         ]
       },
       "members": {
         "name": "&bMembers",
         "lore": [
-          "&7Season contributions"
+          "&7See who contributed most this season"
         ]
       },
       "hof": {
@@ -885,7 +932,28 @@
       "banner": {
         "name": "&fBanner…",
         "lore": [
-          "&7Pick dojo banner color"
+          "&7Pick a color for your dojo banner"
+        ]
+      },
+      "banner_pick": {
+        "name": "&f{name}",
+        "lore": [
+          "&7Use this banner for your dojo",
+          "",
+          "&eClick to apply"
+        ]
+      },
+      "war_header": {
+        "name": "&c&lDeclare War",
+        "lore": [
+          "&7Pick a rival dojo to challenge",
+          "&8Active wars earn double points"
+        ]
+      },
+      "members_header": {
+        "name": "&b&lDojo Members",
+        "lore": [
+          "&7Fighters ranked by season contribution"
         ]
       }
     },
@@ -912,13 +980,13 @@
       "accept": {
         "name": "&eAccept…",
         "lore": [
-          "&7Legacy deep-link — use Pending"
+          "&7Use the Pending menu instead"
         ]
       },
       "decline": {
         "name": "&6Decline…",
         "lore": [
-          "&7Legacy deep-link — use Pending"
+          "&7Use the Pending menu instead"
         ]
       },
       "leave": {
@@ -951,8 +1019,8 @@
       "dojo": {
         "name": "&bDojo",
         "lore": [
-          "&7Mentor + apprentices",
-          "&8Switch to My Dojo if you mentor others",
+          "&7Your mentor and training partners",
+          "&8Switch views if you also mentor others",
           "&8{name}"
         ]
       }
@@ -961,22 +1029,22 @@
       "save": {
         "name": "&aSave",
         "lore": [
-          "&7Write sparring.json",
-          "&8/spar admin save"
+          "&7Save sparring data now",
+          "&8Staff only"
         ]
       },
       "status": {
         "name": "&bStatus",
         "lore": [
-          "&7Enabled + path",
-          "&8/spar admin status"
+          "&7Check if sparring is enabled",
+          "&8Staff only"
         ]
       },
       "resetcd": {
-        "name": "&eReset Mentor CD",
+        "name": "&eReset Mentor Cooldown",
         "lore": [
-          "&7Clear your mentor cooldown",
-          "&8/spar admin mentor resetcd"
+          "&7Clear your mentor change cooldown",
+          "&8Staff only"
         ]
       },
       "back": {
@@ -990,13 +1058,13 @@
       "accept_pick": {
         "name": "&eAccept…",
         "lore": [
-          "&7Legacy deep-link — use Pending"
+          "&7Use the Pending menu instead"
         ]
       },
       "decline_pick": {
         "name": "&6Decline…",
         "lore": [
-          "&7Legacy deep-link — use Pending"
+          "&7Use the Pending menu instead"
         ]
       },
       "decide_info": {
@@ -1052,14 +1120,16 @@
         "&7Other players must be online"
       ],
       "no_dojo_rank": [
-        "&7Join a dojo and spar rivals",
-        "&8from other dojos"
+        "&7Join a dojo and spar rival fighters",
+        "&8Ranking points come from cross-dojo spars"
       ],
       "no_dojo_rival": [
-        "&7Other dojos need inter-dojo spars first"
+        "&7No rival dojos on the board yet",
+        "&8Other dojos need a few ranked spars first"
       ],
       "no_dojo_members": [
-        "&7Spar other dojos to log contributions"
+        "&7No contributions logged yet",
+        "&8Spar someone from another dojo to appear here"
       ]
     }
   },
@@ -1108,7 +1178,7 @@
       "fabled": {
         "name": "&dFabled",
         "lore": [
-          "&7Soft Fabled bridges",
+          "&7Fabled race and form options",
           "",
           "&eClick to open"
         ]
@@ -1216,7 +1286,7 @@
         "name": "&aConvert to Android",
         "lore": [
           "&7Pick a player to convert",
-          "&8Human → androidforms.androidbase",
+          "&8Applies the Android transformation",
           "",
           "&eClick to open"
         ]
@@ -1224,8 +1294,8 @@
       "remove": {
         "name": "&cRemove Android",
         "lore": [
-          "&7Pick a player to remove upgrade",
-          "&8Restores superforms / legendaryforms",
+          "&7Pick a player to remove the upgrade",
+          "&8Restores their previous form path",
           "&8Two-click confirm within 10s",
           "",
           "&eClick to open"
@@ -1269,7 +1339,7 @@
       "remove_back_hub": {
         "name": "&7Back",
         "lore": [
-          "&7Legacy Mechanics hub"
+          "&7Return to the main menu"
         ]
       }
     },
@@ -1338,9 +1408,9 @@
       }
     },
     "empty": {
-      "name": "&cNo skills listed",
+      "name": "&7No skills listed",
       "lore": [
-        "&7No skills to show"
+        "&7Nothing to show right now"
       ]
     },
     "list": {

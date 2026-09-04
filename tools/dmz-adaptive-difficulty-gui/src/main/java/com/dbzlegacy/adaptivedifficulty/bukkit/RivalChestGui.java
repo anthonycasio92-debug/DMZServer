@@ -289,7 +289,7 @@ public final class RivalChestGui implements Listener {
                         "&8Save · refresh · status",
                         "&8Player menus stay on the main Rival GUI")));
         put(holder, inv, 20, tipBtn(viewer, "rival.admin.save", Material.WRITABLE_BOOK, "&aSave",
-                List.of("&7Write rivalry-v4 + progression-v4", "&8/rival admin save")),
+                List.of("&7Save rivalry and progress data to disk", "&8/rival admin save")),
                 SlotAction.act("admin", "save", "admin"));
         put(holder, inv, 22, tipBtn(viewer, "rival.admin.refresh", Material.CLOCK, "&eRefresh",
                 List.of("&7Reload stores from disk", "&8/rival admin refresh")),

@@ -294,7 +294,7 @@ public final class CmiRivalGui {
         gui.addButton(info);
         gui.addButton(actionBtn(player, 20, "rival.admin.save", Material.WRITABLE_BOOK, "&aSave",
                 "admin", "save", "admin",
-                List.of("&7Write rivalry-v4 + progression-v4", "&8/rival admin save")));
+                List.of("&7Save rivalry and progress data to disk", "&8/rival admin save")));
         gui.addButton(actionBtn(player, 22, "rival.admin.refresh", Material.CLOCK, "&eRefresh",
                 "admin", "refresh", "admin",
                 List.of("&7Reload stores from disk", "&8/rival admin refresh")));
