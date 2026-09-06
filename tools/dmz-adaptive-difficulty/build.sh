@@ -11,11 +11,20 @@ if [[ ! -f "$LIGHTMANS" ]]; then
   LIGHTMANS="$ROOT/mods/lightmanscurrency-1.20.1-2.3.0.5.jar"
 fi
 FTB="$ROOT/libraries/ftb-teams-forge-2001.3.1.jar"
+FTB_CHUNKS="$ROOT/libraries/ftb-chunks-forge-2001.3.8.jar"
+FTB_LIBRARY="$ROOT/libraries/ftb-library-forge-2001.2.13.jar"
+ARCHITECTURY="$ROOT/libraries/architectury-9.2.14-forge.jar"
 if [[ ! -f "$FTB" ]]; then
   echo "Downloading FTB Teams for compile..."
   curl -fsSL -o "$FTB" \
     "https://maven.ftb.dev/releases/dev/ftb/mods/ftb-teams-forge/2001.3.1/ftb-teams-forge-2001.3.1.jar"
 fi
+for dep in "$FTB_CHUNKS" "$FTB_LIBRARY" "$ARCHITECTURY"; do
+  if [[ ! -f "$dep" ]]; then
+    echo "Missing $dep — copy from live mods/ or libraries/" >&2
+    exit 1
+  fi
+done
 VERSION="2.3.180"
 NAME="LegacyMechanics"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
@@ -30,7 +39,7 @@ rm -f "$ROOT"/mods/LegacyMechanics-*.jar \
       "$ROOT"/AdaptiveDifficulty-*.jar \
       "$ROOT"/dmz_adaptive_difficulty-*.jar
 
-CP="$SRG:$FORGE_S:$FORGE_U:$GSON:$LIGHTMANS:$FTB:\
+CP="$SRG:$FORGE_S:$FORGE_U:$GSON:$LIGHTMANS:$FTB:$FTB_CHUNKS:$FTB_LIBRARY:$ARCHITECTURY:\
 $ROOT/libraries/net/minecraftforge/fmlcore/1.20.1-47.4.10/fmlcore-1.20.1-47.4.10.jar:\
 $ROOT/libraries/net/minecraftforge/fmlloader/1.20.1-47.4.10/fmlloader-1.20.1-47.4.10.jar:\
 $ROOT/libraries/net/minecraftforge/forgespi/7.0.1/forgespi-7.0.1.jar:\
@@ -58,7 +67,8 @@ javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
     -C "$RES" META-INF/mods.toml \
     -C "$RES" pack.mcmeta \
     -C "$RES" legacymechanics.mixins.json \
-    -C "$RES" legacymechanics.refmap.json
+    -C "$RES" legacymechanics.refmap.json \
+    -C "$RES" assets
 )
 echo "Built $JAR"
 jar tf "$JAR"

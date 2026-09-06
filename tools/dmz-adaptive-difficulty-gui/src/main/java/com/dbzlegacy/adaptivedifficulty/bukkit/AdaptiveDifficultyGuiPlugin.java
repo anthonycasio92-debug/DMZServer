@@ -44,6 +44,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(prestigeChestGui, this);
         getServer().getPluginManager().registerEvents(skillsChestGui, this);
         getServer().getPluginManager().registerEvents(new DeathDropGuard(), this);
+        getServer().getPluginManager().registerEvents(new ClaimOverlapGuard(this), this);
         GuiTooltips.init(this);
 
         var progCmd = getCommand("progression");
