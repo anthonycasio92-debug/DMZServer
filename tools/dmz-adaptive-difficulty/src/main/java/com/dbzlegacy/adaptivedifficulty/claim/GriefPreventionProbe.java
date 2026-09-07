@@ -22,7 +22,6 @@ final class GriefPreventionProbe {
     private static Class<?> locationClass;
     private static Constructor<?> locationCtor;
     private static Method getWorlds;
-    private static Method getHandle;
     private static Method levelDimensionMethod;
     private static Method getHighestBlockYAt;
     private static Method getMinHeight;
@@ -89,7 +88,7 @@ final class GriefPreventionProbe {
                 if (world == null) {
                     continue;
                 }
-                Object handle = getHandle.invoke(world);
+                Object handle = world.getClass().getMethod("getHandle").invoke(world);
                 Object dim = levelDimensionMethod.invoke(handle);
                 if (dimension.equals(dim)) {
                     return world;
@@ -107,7 +106,7 @@ final class GriefPreventionProbe {
                 if (world == null) {
                     continue;
                 }
-                Object handle = getHandle.invoke(world);
+                Object handle = world.getClass().getMethod("getHandle").invoke(world);
                 if (handle == level) {
                     return world;
                 }
@@ -161,10 +160,27 @@ final class GriefPreventionProbe {
             );
             Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
             getWorlds = bukkit.getMethod("getWorlds");
-            getHandle = worldClass.getMethod("getHandle");
             levelDimensionMethod = Class.forName("net.minecraft.server.level.ServerLevel").getMethod("dimension");
-            available = true;
-            AdaptiveDifficultyMod.LOGGER.info("[{}] GriefPrevention overlap guard ready", AdaptiveDifficultyMod.MOD_ID);
+            // Mohist: getHandle lives on CraftWorld, not org.bukkit.World.
+            Iterable<?> worlds = (Iterable<?>) getWorlds.invoke(null);
+            for (Object world : worlds) {
+                if (world == null) {
+                    continue;
+                }
+                Method handleMethod = world.getClass().getMethod("getHandle");
+                handleMethod.invoke(world);
+                available = true;
+                AdaptiveDifficultyMod.LOGGER.info(
+                        "[{}] GriefPrevention overlap guard ready ({})",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        world.getClass().getName());
+                return true;
+            }
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] GriefPrevention overlap guard: no CraftWorld handle yet",
+                    AdaptiveDifficultyMod.MOD_ID);
+            resolved = false;
+            return false;
         } catch (ReflectiveOperationException e) {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] GriefPrevention overlap guard unavailable: {}",

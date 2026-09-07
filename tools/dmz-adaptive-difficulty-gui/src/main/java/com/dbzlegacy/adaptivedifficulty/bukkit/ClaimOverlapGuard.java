@@ -100,8 +100,9 @@ public final class ClaimOverlapGuard implements Listener {
         private Object manager;
         private Method getChunk;
         private Constructor<?> chunkDimPosCtor;
-        private Method getHandle;
         private Method levelDimensionMethod;
+        private Method worldHandleMethod;
+        private Class<?> worldHandleClass;
 
         private Method getTeamData;
         private Method isTeamMember;
@@ -127,7 +128,10 @@ public final class ClaimOverlapGuard implements Listener {
 
         private boolean isForeignFtChunk(World world, int chunkX, int chunkZ, UUID actorId) {
             try {
-                Object dim = levelDimensionMethod.invoke(getHandle.invoke(world));
+                Object dim = dimensionKey(world, chunkX, chunkZ);
+                if (dim == null) {
+                    return false;
+                }
                 Object pos = chunkDimPosCtor.newInstance(dim, chunkX, chunkZ);
                 Object claimed = getChunk.invoke(manager, pos);
                 if (claimed == null) {
@@ -147,9 +151,48 @@ public final class ClaimOverlapGuard implements Listener {
             }
         }
 
+        private Object dimensionKey(World world, int chunkX, int chunkZ) throws ReflectiveOperationException {
+            if (world == null) {
+                return null;
+            }
+            try {
+                Object level = serverLevel(world);
+                if (level != null) {
+                    return levelDimensionMethod.invoke(level);
+                }
+            } catch (ReflectiveOperationException ignored) {
+            }
+            // Mohist/Paper: CraftChunk → LevelChunk → ServerLevel
+            Chunk chunk = world.getChunkAt(chunkX, chunkZ);
+            if (chunk == null) {
+                return null;
+            }
+            Object handle = chunk.getClass().getMethod("getHandle").invoke(chunk);
+            Object level = handle.getClass().getMethod("getLevel").invoke(handle);
+            return levelDimensionMethod.invoke(level);
+        }
+
+        private Object serverLevel(World world) throws ReflectiveOperationException {
+            Method handleMethod = worldHandleMethod(world);
+            return handleMethod.invoke(world);
+        }
+
+        private Method worldHandleMethod(World world) throws ReflectiveOperationException {
+            Class<?> craft = world.getClass();
+            if (worldHandleClass != null && worldHandleClass.isAssignableFrom(craft)) {
+                return worldHandleMethod;
+            }
+            worldHandleMethod = craft.getMethod("getHandle");
+            worldHandleClass = craft;
+            return worldHandleMethod;
+        }
+
         private boolean resolve() {
+            if (available) {
+                return true;
+            }
             if (resolved) {
-                return available;
+                return false;
             }
             resolved = true;
             try {
@@ -167,11 +210,22 @@ public final class ClaimOverlapGuard implements Listener {
                 getTeamData = claimedChunkCls.getMethod("getTeamData");
                 Class<?> teamDataCls = Class.forName("dev.ftb.mods.ftbchunks.api.ChunkTeamData");
                 isTeamMember = teamDataCls.getMethod("isTeamMember", UUID.class);
-                Class<?> worldCls = Class.forName("org.bukkit.World");
-                getHandle = worldCls.getMethod("getHandle");
                 levelDimensionMethod = Class.forName("net.minecraft.server.level.ServerLevel").getMethod("dimension");
-                available = true;
-                log.info("[ClaimOverlap] FTB Chunks probe ready");
+                // Warm CraftWorld/CraftChunk handle path (Mohist: getHandle is not on org.bukkit.World).
+                for (World world : org.bukkit.Bukkit.getWorlds()) {
+                    if (world == null) {
+                        continue;
+                    }
+                    try {
+                        worldHandleMethod(world);
+                        available = true;
+                        log.info("[ClaimOverlap] FTB Chunks probe ready (" + world.getClass().getName() + ")");
+                        return true;
+                    } catch (ReflectiveOperationException ignored) {
+                    }
+                }
+                log.warning("[ClaimOverlap] FTB Chunks probe: no CraftWorld handle yet; will retry on claim");
+                resolved = false;
             } catch (ReflectiveOperationException e) {
                 log.warning("[ClaimOverlap] FTB Chunks probe unavailable: " + e.toString());
                 available = false;
