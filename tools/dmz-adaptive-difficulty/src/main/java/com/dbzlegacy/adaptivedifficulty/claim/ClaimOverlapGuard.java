@@ -47,9 +47,17 @@ public final class ClaimOverlapGuard {
             }
         }
         ChunkDimPos pos = chunk.getPos();
-        if (pos == null || !GriefPreventionProbe.overlapsGriefPrevention(pos)) {
+        if (pos == null) {
             return CompoundEventResult.pass();
         }
+        if (!GriefPreventionProbe.overlapsGriefPrevention(pos)) {
+            return CompoundEventResult.pass();
+        }
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] Blocked FTB Chunks claim at {} — overlaps GriefPrevention",
+                AdaptiveDifficultyMod.MOD_ID,
+                pos
+        );
         return CompoundEventResult.interruptFalse(ClaimResult.customProblem(DENY_KEY));
     }
 
