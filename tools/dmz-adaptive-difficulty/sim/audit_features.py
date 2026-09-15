@@ -941,11 +941,11 @@ def main() -> int:
     check("Chest dojo rank uses banner cards",
           "sparDojoTopCards" in chest and "dojoTopBanner" in chest)
 
-    print("\n=== GUI tooltip catalog humanize (2.3.184) ===")
-    tips184 = read(ROOT / "tools/dmz-adaptive-difficulty-gui/src/main/resources/gui-tooltips.json")
+    print("\n=== GUI tooltip catalog humanize (2.3.185) ===")
+    tips185 = read(ROOT / "tools/dmz-adaptive-difficulty-gui/src/main/resources/gui-tooltips.json")
     gui_tt = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/GuiTooltips.java")
-    check("gui-tooltips catalog revision", '"_catalogRevision": 184' in tips184)
-    check("GuiTooltips CATALOG_REVISION 184", "CATALOG_REVISION = 184" in gui_tt)
+    check("gui-tooltips catalog revision", '"_catalogRevision": 185' in tips185)
+    check("GuiTooltips CATALOG_REVISION 185", "CATALOG_REVISION = 185" in gui_tt)
     check("catalog upgrade on reload", "catalogRevision" in gui_tt and "catalogUpgraded" in gui_tt)
     check("humanize_gui_tooltips script", (ROOT / "tools/dmz-adaptive-difficulty/sim/humanize_gui_tooltips.py").is_file())
 
@@ -957,6 +957,11 @@ def main() -> int:
     check("lmdo spar do unwrap", '"do".equalsIgnoreCase(args[1])' in plugin
           and "action = args[2]" in plugin)
 
+    print("\n=== Rival Teams GUI layout (2.3.186) ===")
+    chest_diff = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/DifficultyChestGui.java")
+    check("teamMutualRivalSlots avoids mode row", "teamMutualRivalSlots" in board
+          and "teamMutualRivalSlots" in chest_diff and "teamMutualRivalSlots" in cmi_gui)
+    check("resolveReturnPage team", 'case "team" -> "team"' in bridge)
 
     print("\n=== Dojo membership roster (2.3.154) ===")
     spar_sys152 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")

@@ -120,7 +120,8 @@ KEY_OVERRIDES: dict[str, dict] = {
     },
 }
 
-CATALOG_REVISION = 184
+# Keep in sync with GuiTooltips.CATALOG_REVISION (bukkit/GuiTooltips.java)
+CATALOG_REVISION = 185
 
 
 def walk_replace(obj):
