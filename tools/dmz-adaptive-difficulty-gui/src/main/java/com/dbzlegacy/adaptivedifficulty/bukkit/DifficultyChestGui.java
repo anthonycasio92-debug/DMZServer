@@ -404,20 +404,21 @@ public final class DifficultyChestGui implements Listener {
         String mode = ph.getOrDefault("team_mode", "personal_only");
         boolean personalMode = mode.equals("personal_only");
         put(holder, inv, 20, tipBtn(viewer, "difficulty.team.mode_personal",
-                personalMode ? Material.LIME_DYE : Material.GRAY_DYE,
-                personalMode ? "&aPersonal" : "&7Personal",
+                personalMode ? Material.RED_DYE : Material.GRAY_DYE,
+                personalMode ? "&c&lPersonal" : "&7Personal",
                 List.of("&7Only your own tier ceiling counts",
-                        personalMode ? "&a&lYour current mode" : "&eClick to select8Select this option")),
+                        "&8Rivals on Personal do not boost you",
+                        personalMode ? "&c&lYour current mode" : "&eClick to select")),
                 SlotAction.act("team", "personal", "team"));
         boolean thresholdMode = mode.equals("threshold_bonus_only");
         boolean fullMode = mode.equals("full_team_scaling");
         put(holder, inv, 22, tipBtn(viewer, "difficulty.team.mode_threshold",
-                thresholdMode ? Material.LIGHT_BLUE_DYE : Material.LIME_DYE,
-                thresholdMode ? "&b&lThreshold" : "&aThreshold",
+                thresholdMode ? Material.LIME_DYE : Material.GRAY_DYE,
+                thresholdMode ? "&a&lThreshold" : "&7Threshold",
                 List.of("&7Extra max when rivals are online",
                         "&7They must also use a team mode",
                         "&7More elites, mutants, and bosses",
-                        thresholdMode ? "&b&lYour current mode" : "&eClick to select8Select this option")),
+                        thresholdMode ? "&a&lYour current mode" : "&eClick to select")),
                 SlotAction.act("team", "threshold", "team"));
         put(holder, inv, 24, tipBtn(viewer, "difficulty.team.mode_full",
                 fullMode ? Material.GOLD_INGOT : Material.EMERALD,
@@ -425,7 +426,7 @@ public final class DifficultyChestGui implements Listener {
                 List.of("&7Threshold bonus plus nearby spare room",
                         "&7Best spawn boost when rivals are close",
                         "&8Within " + ph.getOrDefault("proximity_blocks", "48") + " blocks",
-                        fullMode ? "&6&lYour current mode" : "&eClick to select8Select this option")),
+                        fullMode ? "&6&lYour current mode" : "&eClick to select")),
                 SlotAction.act("team", "full", "team"));
 
         List<GuiBoardHelper.TeamRivalCard> cards =

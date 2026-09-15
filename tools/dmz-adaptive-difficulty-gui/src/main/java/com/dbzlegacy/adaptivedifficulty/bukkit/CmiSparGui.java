@@ -498,7 +498,7 @@ public final class CmiSparGui {
                             List.of("&7Season RP &f" + rp, "&cChallenge to war"));
                 }
                 CMIGuiButton btn = new CMIGuiButton(slots[i], head);
-                btn.addCommand("lmdo spar dojo_challenge uuid:" + uuid + " dojo_war");
+                btn.addCommand("lmdo spar dojo_challenge uuid:" + uuid + " dojo_war_pending");
                 gui.addButton(btn);
             }
         }

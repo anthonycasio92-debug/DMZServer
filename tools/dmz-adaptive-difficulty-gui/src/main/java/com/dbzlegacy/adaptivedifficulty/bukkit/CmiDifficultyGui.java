@@ -385,19 +385,20 @@ public final class CmiDifficultyGui {
         boolean thresholdMode = mode.equals("threshold_bonus_only");
         boolean fullMode = mode.equals("full_team_scaling");
         gui.addButton(actionBtn(player, 20, "difficulty.team.mode_personal",
-                personalMode ? Material.LIME_DYE : Material.GRAY_DYE,
-                personalMode ? "&aPersonal" : "&7Personal",
+                personalMode ? Material.RED_DYE : Material.GRAY_DYE,
+                personalMode ? "&c&lPersonal" : "&7Personal",
                 "team", "personal", "team",
                 List.of("&7Only your own tier ceiling counts",
-                        personalMode ? "&a&lYour current mode" : "&eClick to select8Select this option")));
+                        "&8Rivals on Personal do not boost you",
+                        personalMode ? "&c&lYour current mode" : "&eClick to select")));
         gui.addButton(actionBtn(player, 22, "difficulty.team.mode_threshold",
-                thresholdMode ? Material.LIGHT_BLUE_DYE : Material.LIME_DYE,
-                thresholdMode ? "&b&lThreshold" : "&aThreshold",
+                thresholdMode ? Material.LIME_DYE : Material.GRAY_DYE,
+                thresholdMode ? "&a&lThreshold" : "&7Threshold",
                 "team", "threshold", "team",
                 List.of("&7Extra max when rivals are online",
                         "&7They must also use a team mode",
                         "&7More elites, mutants, and bosses",
-                        thresholdMode ? "&b&lYour current mode" : "&eClick to select8Select this option")));
+                        thresholdMode ? "&a&lYour current mode" : "&eClick to select")));
         gui.addButton(actionBtn(player, 24, "difficulty.team.mode_full",
                 fullMode ? Material.GOLD_INGOT : Material.EMERALD,
                 fullMode ? "&6&lFull" : "&2Full",
@@ -405,7 +406,7 @@ public final class CmiDifficultyGui {
                 List.of("&7Threshold bonus plus nearby spare room",
                         "&7Best spawn boost when rivals are close",
                         "&8Within " + ph.getOrDefault("proximity_blocks", "48") + " blocks",
-                        fullMode ? "&6&lYour current mode" : "&eClick to select8Select this option")));
+                        fullMode ? "&6&lYour current mode" : "&eClick to select")));
 
         List<GuiBoardHelper.TeamRivalCard> cards =
                 GuiBoardHelper.parseTeamRivalCards(ForgeBridge.diffTeamMutualCards(player));

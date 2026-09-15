@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -116,7 +117,12 @@ public final class SparStore {
                     }
                     dojoSeason = blob.dojoSeason;
                     if (blob.dojoChallenges != null) {
-                        dojoChallenges.putAll(blob.dojoChallenges);
+                        for (Map.Entry<String, DojoChallenge> e : blob.dojoChallenges.entrySet()) {
+                            DojoChallenge norm = normalizeDojoChallenge(e.getKey(), e.getValue());
+                            if (norm != null) {
+                                dojoChallenges.put(norm.toDojoUuid, norm);
+                            }
+                        }
                     }
                     if (blob.dojoProfiles != null) {
                         dojoProfiles.putAll(blob.dojoProfiles);
@@ -212,6 +218,36 @@ public final class SparStore {
         }
         mentorTpMessages.put(uuid.toString(), on);
         markDirty();
+    }
+
+    static DojoChallenge normalizeDojoChallenge(String mapKey, DojoChallenge c) {
+        if (c == null) {
+            return null;
+        }
+        String to = canonicalDojoKey(c.toDojoUuid);
+        if (to.isEmpty()) {
+            to = canonicalDojoKey(mapKey);
+        }
+        if (to.isEmpty()) {
+            return null;
+        }
+        String from = canonicalDojoKey(c.fromDojoUuid);
+        if (from.isEmpty()) {
+            from = canonicalDojoKey(c.fromMentorUuid);
+        }
+        c.toDojoUuid = to;
+        if (!from.isEmpty()) {
+            c.fromDojoUuid = from;
+            c.fromMentorUuid = from;
+        }
+        return c;
+    }
+
+    static String canonicalDojoKey(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "";
+        }
+        return raw.trim().toLowerCase(Locale.ROOT);
     }
 
     /** Newest-first snapshot of finished spars for Stats (never null). */

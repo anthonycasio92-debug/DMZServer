@@ -362,12 +362,39 @@ public final class DojoRankings {
             if (c == null) {
                 continue;
             }
-            if ((keyA.equalsIgnoreCase(c.fromDojoUuid) && keyB.equalsIgnoreCase(c.toDojoUuid))
-                    || (keyB.equalsIgnoreCase(c.fromDojoUuid) && keyA.equalsIgnoreCase(c.toDojoUuid))) {
+            String from = challengerUuid(c);
+            String to = targetUuid(c, "");
+            if (from.isBlank() || to.isBlank()) {
+                continue;
+            }
+            if ((keyA.equalsIgnoreCase(from) && keyB.equalsIgnoreCase(to))
+                    || (keyB.equalsIgnoreCase(from) && keyA.equalsIgnoreCase(to))) {
                 return c;
             }
         }
         return null;
+    }
+
+    private static String challengerUuid(SparStore.DojoChallenge c) {
+        if (c == null) {
+            return "";
+        }
+        String from = SparStore.canonicalDojoKey(c.fromDojoUuid);
+        if (from.isEmpty()) {
+            from = SparStore.canonicalDojoKey(c.fromMentorUuid);
+        }
+        return from;
+    }
+
+    private static String targetUuid(SparStore.DojoChallenge c, String mapKey) {
+        if (c == null) {
+            return "";
+        }
+        String to = SparStore.canonicalDojoKey(c.toDojoUuid);
+        if (to.isEmpty()) {
+            to = SparStore.canonicalDojoKey(mapKey);
+        }
+        return to;
     }
 
     private static void notifyDojo(
@@ -789,7 +816,8 @@ public final class DojoRankings {
         c.fromMentorUuid = fromKey;
         c.expiresAt = now + CHALLENGE_TTL_MS;
         c.active = false;
-        SparStore.get().dojoChallenges.put(toKey, c);
+        c = SparStore.normalizeDojoChallenge(toKey, c);
+        SparStore.get().dojoChallenges.put(c.toDojoUuid, c);
         SparStore.get().markDirty();
         DmzRewards.msg(target, LmChat.note("Dojo", "§f" + c.fromDojoName
                 + " §e challenged your dojo to war!"));
@@ -842,27 +870,27 @@ public final class DojoRankings {
         String key = player.m_20148_().toString().toLowerCase(Locale.ROOT);
         MinecraftServer server = player.m_20194_();
 
-        SparStore.DojoChallenge incoming = SparStore.get().dojoChallenges.get(key);
-        if (incoming != null && !incoming.active && incoming.expiresAt > now) {
-            String fromUuid = blank(incoming.fromDojoUuid, "");
-            String name = blank(incoming.fromDojoName, "?").replace('\t', ' ');
-            boolean online = isOnline(server, fromUuid);
-            out.add(fromUuid + "\t" + name + "\tIN\t" + incoming.expiresAt + "\t"
-                    + (online ? "1" : "0") + "\twar");
-        }
-
         for (Map.Entry<String, SparStore.DojoChallenge> e : SparStore.get().dojoChallenges.entrySet()) {
             SparStore.DojoChallenge c = e.getValue();
             if (c == null || c.active || c.expiresAt <= now) {
                 continue;
             }
-            if (!key.equalsIgnoreCase(c.fromDojoUuid)) {
+            String toUuid = targetUuid(c, e.getKey());
+            String fromUuid = challengerUuid(c);
+            if (toUuid.isEmpty() || fromUuid.isEmpty()) {
                 continue;
             }
-            String toUuid = blank(c.toDojoUuid, e.getKey() == null ? "" : e.getKey());
-            String name = blank(c.toDojoName, "?").replace('\t', ' ').replace('\n', ' ');
-            boolean online = isOnline(server, toUuid);
-            out.add(toUuid + "\t" + name + "\tOUT\t" + c.expiresAt + "\t" + (online ? "1" : "0") + "\twar");
+            if (key.equalsIgnoreCase(toUuid)) {
+                String name = blank(c.fromDojoName, "?").replace('\t', ' ').replace('\n', ' ');
+                boolean online = isOnline(server, fromUuid);
+                out.add(fromUuid + "\t" + name + "\tIN\t" + c.expiresAt + "\t"
+                        + (online ? "1" : "0") + "\twar");
+            } else if (key.equalsIgnoreCase(fromUuid)) {
+                String name = blank(c.toDojoName, "?").replace('\t', ' ').replace('\n', ' ');
+                boolean online = isOnline(server, toUuid);
+                out.add(toUuid + "\t" + name + "\tOUT\t" + c.expiresAt + "\t"
+                        + (online ? "1" : "0") + "\twar");
+            }
         }
         return out;
     }
@@ -889,10 +917,10 @@ public final class DojoRankings {
             if (c == null || c.active || c.expiresAt <= now) {
                 continue;
             }
-            if (!fromKey.equalsIgnoreCase(c.fromDojoUuid)) {
+            if (!fromKey.equalsIgnoreCase(challengerUuid(c))) {
                 continue;
             }
-            String toKey = blank(c.toDojoUuid, e.getKey()).toLowerCase(Locale.ROOT);
+            String toKey = targetUuid(c, e.getKey());
             if (targetKey != null && !targetKey.isBlank()
                     && !targetKey.equalsIgnoreCase(toKey)
                     && !targetKey.equalsIgnoreCase(e.getKey())) {

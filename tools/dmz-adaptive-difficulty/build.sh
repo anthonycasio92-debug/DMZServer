@@ -25,7 +25,7 @@ for dep in "$FTB_CHUNKS" "$FTB_LIBRARY" "$ARCHITECTURY"; do
     exit 1
   fi
 done
-VERSION="2.4.1"
+VERSION="2.4.2"
 NAME="LegacyMechanics"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"

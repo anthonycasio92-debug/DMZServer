@@ -491,7 +491,7 @@ public final class SparChestGui implements Listener {
                             List.of("&7Season RP &f" + rp, "&cChallenge to war"));
                 }
                 put(holder, inv, slots[i], head,
-                        SlotAction.act("dojo_challenge", "uuid:" + uuid, "dojo_war"));
+                        SlotAction.act("dojo_challenge", "uuid:" + uuid, "dojo_war_pending"));
             }
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo War"),

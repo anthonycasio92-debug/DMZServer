@@ -441,49 +441,53 @@ final class GuiBoardHelper {
 
     static List<String> teamRivalLegendLines() {
         return List.of(
-                "&8Rival name colors:",
-                "&a Green &8= Personal mode",
-                "&b Aqua &8= Threshold mode",
-                "&6 Gold &8= Full team mode",
-                "&c Red &8= AD personal off",
-                "&8 Gray &8= offline");
+                "&7Head title color = their team mode:",
+                "&c&l[Personal] &8— no bonus from them",
+                "&a&l[Threshold] &8— counts when online",
+                "&6&l[Full] &8— bonus + nearby spare",
+                "&8[Offline] &8— gray, no live data");
     }
 
     static ItemStack teamRivalHead(TeamRivalCard card) {
         List<String> lore = new ArrayList<>();
         String title;
         if (!card.online) {
-            title = "&8● &7" + card.name;
-            lore.add("&8Offline");
+            title = "&8[Offline] &7" + card.name;
+            lore.add("&8Offline — no team data");
         } else {
             switch (card.teamMode) {
                 case "threshold_bonus_only" -> {
-                    title = "&b● &f" + card.name;
-                    lore.add("&b&lThreshold mode");
-                    lore.add("&aOnline — counts for team bonus");
+                    title = "&a[Threshold] &f" + card.name;
+                    lore.add("&a&lCounts for YOUR team bonus");
+                    lore.add("&7Extra max when they stay online");
                 }
                 case "full_team_scaling" -> {
-                    title = "&6● &f" + card.name;
-                    lore.add("&6&lFull mode");
-                    lore.add("&aOnline — bonus + nearby spare");
+                    title = "&6[Full] &f" + card.name;
+                    lore.add("&6&lCounts for bonus + nearby spare");
+                    lore.add("&7Best when you fight close together");
                 }
                 case "ad_off" -> {
-                    title = "&c● &f" + card.name;
-                    lore.add("&c&lPersonal AD off");
-                    lore.add("&8No team bonus until they enable AD");
+                    title = "&c[No AD] &f" + card.name;
+                    lore.add("&c&lPersonal difficulty is OFF");
+                    lore.add("&8Cannot share team bonus");
                 }
                 default -> {
-                    title = "&a● &f" + card.name;
-                    lore.add("&a&lPersonal mode");
-                    lore.add("&8Online — not sharing team bonus");
+                    title = "&c[Personal] &f" + card.name;
+                    lore.add("&c&lDoes NOT count for team bonus");
+                    lore.add("&7They need Threshold or Full mode");
                 }
             }
         }
-        lore.add("&7Rival status &f" + card.status);
-        if (card.online && card.optedIn) {
-            lore.add(card.near ? "&aNearby — shares spare room" : "&8Too far to share spare room");
-            if (card.spare > 0) {
-                lore.add("&7Spare tier room &f" + card.spare);
+        lore.add("&7Rival bond &f" + card.status);
+        if (card.online) {
+            if (card.optedIn) {
+                lore.add("&a✓ Included in your team scaling");
+                lore.add(card.near ? "&aNearby — can share spare room" : "&8Too far for spare room share");
+                if (card.spare > 0) {
+                    lore.add("&7Their spare tier room &f" + card.spare);
+                }
+            } else {
+                lore.add("&c✗ Not included in your bonus");
             }
         }
         java.util.UUID id = null;
@@ -619,12 +623,13 @@ final class GuiBoardHelper {
         List<String> lore = new ArrayList<>();
         if (inv.isDojoWar()) {
             if (inv.incoming) {
-                lore.add("&cIncoming war challenge");
+                lore.add("&c&l◀ INCOMING WAR");
                 lore.add("&7From dojo &f" + inv.name);
                 lore.addAll(tips(player, "&eClick to Accept / Decline"));
             } else {
-                lore.add("&6Outgoing war challenge");
+                lore.add("&6&l▶ OUTGOING — YOU SENT THIS");
                 lore.add("&7To dojo &f" + inv.name);
+                lore.add("&7Waiting for their master to accept");
                 lore.addAll(tips(player, "&eClick to Revoke challenge"));
             }
         } else if (inv.isMentorBond()) {
@@ -661,7 +666,9 @@ final class GuiBoardHelper {
         }
         lore.add("");
         lore.add(inv.online ? "&aOnline" : "&8Offline");
-        String title = (inv.incoming ? "&a◀ " : "&6▶ ") + "&f" + inv.name;
+        String title = inv.isDojoWar()
+                ? (inv.incoming ? "&c◀ War: &f" + inv.name : "&6▶ Sent: &f" + inv.name)
+                : (inv.incoming ? "&a◀ " : "&6▶ ") + "&f" + inv.name;
         if (!inv.uuid.isBlank()) {
             try {
                 java.util.UUID id = java.util.UUID.fromString(inv.uuid);
