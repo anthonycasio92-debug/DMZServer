@@ -229,6 +229,18 @@ def main() -> int:
     for e in errors:
         print(e)
 
+    gui_tooltips_java = GUI_SRC / "com" / "dbzlegacy" / "adaptivedifficulty" / "bukkit" / "GuiTooltips.java"
+    if gui_tooltips_java.is_file():
+        jtxt = gui_tooltips_java.read_text(encoding="utf-8", errors="replace")
+        rev_m = re.search(r"CATALOG_REVISION\s*=\s*(\d+)", jtxt)
+        jar_rev = data.get("_catalogRevision")
+        if rev_m and jar_rev is not None:
+            java_rev = int(rev_m.group(1))
+            if int(jar_rev) != java_rev:
+                errors.append(
+                    f"CATALOG_REVISION mismatch: json={jar_rev} GuiTooltips.java={java_rev}"
+                )
+
     if errors:
         print(f"\nFAIL — {len(errors)} issue(s), {len(warns)} warning(s)")
         return 1

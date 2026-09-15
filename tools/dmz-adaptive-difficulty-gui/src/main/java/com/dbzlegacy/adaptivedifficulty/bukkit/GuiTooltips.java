@@ -26,6 +26,9 @@ import org.bukkit.plugin.java.JavaPlugin;
  * the hard-coded defaults in Java. Reload with {@code /lm admin reload}.
  */
 final class GuiTooltips {
+    /** Bump when the in-jar tooltip catalog is humanized; older on-disk files are replaced on reload. */
+    private static final int CATALOG_REVISION = 184;
+
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static final Map<String, Entry> ENTRIES = new ConcurrentHashMap<>();
     private static volatile Path filePath;
@@ -103,9 +106,20 @@ final class GuiTooltips {
         int merged = 0;
         int staleFixed = 0;
         int forced = 0;
+        int catalogUpgraded = 0;
         if (path != null && Files.isRegularFile(path)) {
             try {
                 String diskJson = Files.readString(path, StandardCharsets.UTF_8);
+                int jarRev = jarJson != null ? catalogRevision(jarJson) : CATALOG_REVISION;
+                int diskRev = catalogRevision(diskJson);
+                if (jarJson != null && jarRev > 0 && diskRev < jarRev) {
+                    Files.writeString(path, jarJson, StandardCharsets.UTF_8);
+                    diskJson = jarJson;
+                    catalogUpgraded = jarRev;
+                    if (log != null) {
+                        log.info("GUI tooltips: upgraded on-disk catalog rev " + diskRev + " → " + jarRev);
+                    }
+                }
                 String sanitized = sanitizeStaleCopy(diskJson);
                 if (!sanitized.equals(diskJson)) {
                     Files.writeString(path, sanitized, StandardCharsets.UTF_8);
@@ -157,14 +171,30 @@ final class GuiTooltips {
                 + (fromDisk > 0 ? " §8(" + fromDisk + " from gui-tooltips.json)" : "")
                 + (merged > 0 ? " §a(+ " + merged + " new keys merged into file)" : "")
                 + (staleFixed > 0 ? " §a(+ " + staleFixed + " stale 7d→12h fixes)" : "")
-                + (forced > 0 ? " §a(+ " + forced + " mentor tips refreshed from jar)" : "");
+                + (forced > 0 ? " §a(+ " + forced + " mentor tips refreshed from jar)" : "")
+                + (catalogUpgraded > 0 ? " §a(catalog rev " + catalogUpgraded + " from jar)" : "");
         if (log != null) {
             log.info("GUI tooltips: " + ENTRIES.size() + " keys"
                     + (merged > 0 ? " (merged " + merged + " new)" : "")
                     + (staleFixed > 0 ? " (fixed " + staleFixed + " stale)" : "")
-                    + (forced > 0 ? " (forced " + forced + " mentor tips)" : ""));
+                    + (forced > 0 ? " (forced " + forced + " mentor tips)" : "")
+                    + (catalogUpgraded > 0 ? " (catalog → rev " + catalogUpgraded + ")" : ""));
         }
         return msg;
+    }
+
+    private static int catalogRevision(String json) {
+        if (json == null || json.isBlank()) {
+            return 0;
+        }
+        try {
+            JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+            if (root.has("_catalogRevision") && root.get("_catalogRevision").isJsonPrimitive()) {
+                return root.get("_catalogRevision").getAsInt();
+            }
+        } catch (Throwable ignored) {
+        }
+        return 0;
     }
 
     /**

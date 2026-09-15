@@ -76,13 +76,13 @@ public final class HubChestGui implements Listener {
         put(holder, inv, 20, tipBtn(player, "hub.main.difficulty", Material.BEACON, "&aDifficulty",
                 List.of("&7Unlock tiers & world scaling",
                         "&cWarning: &7Scaled mobs can attack other players as well",
-                        "&eClick to open")),
+                        "&eClick to open8Opens this menu")),
                 SlotAction.open("difficulty"));
         put(holder, inv, 22, tipBtn(player, "hub.main.rival", Material.NAME_TAG, "&6Rival",
-                List.of("&7Rivalry, challenges & RP", "&eClick to open")),
+                List.of("&7Rivalry, challenges & RP", "&eClick to open8Opens this menu")),
                 SlotAction.open("rival"));
         put(holder, inv, 24, tipBtn(player, "hub.main.spar", Material.GOLDEN_SWORD, "&bSpar",
-                List.of("&7Sparring TP & mentor bonds", "&eClick to open")),
+                List.of("&7Sparring TP & mentor bonds", "&eClick to open8Opens this menu")),
                 SlotAction.open("spar"));
 
         boolean staff = ForgeBridge.isStaff(player);
@@ -91,33 +91,33 @@ public final class HubChestGui implements Listener {
         // Row 3 — Skill Check (donator) / Skills (staff) · Prestige (everyone)
         if (skillCheck) {
             put(holder, inv, 21, tipBtn(player, "hub.main.skillcheck", Material.EXPERIENCE_BOTTLE, "&eSkill Check",
-                    List.of("&7Natural · Saga progress", "&eClick to open")),
+                    List.of("&7Natural · Saga progress", "&eClick to open8Opens this menu")),
                     SlotAction.open("skillcheck"));
         } else if (staff) {
             put(holder, inv, 21, tipBtn(player, "hub.main.skills", Material.BOOK, "&eSkills",
-                    List.of("&7Skill unlock admin browser", "&8No Skill Check perm", "&eClick to open")),
+                    List.of("&7Skill unlock admin browser", "&8No Skill Check perm", "&eClick to open8Opens this menu")),
                     SlotAction.open("skills"));
         }
         put(holder, inv, 23, tipBtn(player, "hub.main.prestige", Material.GOLDEN_APPLE, "&6Prestige",
                 List.of("&7Turn in prestiges · skill/forms shop · level-cap",
-                        "&eClick to open")),
+                        "&eClick to open8Opens this menu")),
                 SlotAction.open("prestige"));
 
         // Row 4 — player Android remove + staff tools
         put(holder, inv, 31, tipBtn(player, "hub.main.android_remove", Material.REDSTONE, "&cRemove Android",
                 List.of("&7Remove your Android upgrade",
                         "&8Two-click confirm · forms restored",
-                        "&eClick to open")),
+                        "&eClick to open8Opens this menu")),
                 SlotAction.open("android_remove"));
         if (staff) {
             put(holder, inv, 38, tipBtn(player, "hub.main.progression", Material.BREWING_STAND, "&dProgression",
-                    List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")),
+                    List.of("&7Skills · TP · Race · Combat flags", "&eClick to open8Opens this menu")),
                     SlotAction.open("progression"));
             put(holder, inv, 40, tipBtn(player, "hub.main.admin", Material.COMMAND_BLOCK, "&cAdmin",
                     List.of("&7Reload configs and open staff tools", "&8/lm admin")),
                     SlotAction.open("admin"));
             put(holder, inv, 42, tipBtn(player, "hub.main.logs", Material.CLOCK, "&8Logs",
-                    List.of("&7Server event logs", "&eClick to open")),
+                    List.of("&7Server event logs", "&eClick to open8Opens this menu")),
                     SlotAction.page("logs"));
         }
 

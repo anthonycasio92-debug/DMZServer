@@ -1,43 +1,44 @@
 {
-  "_comment": "FULL LegacyMechanics GUI tooltip catalog. Edit name and/or lore, then /lm admin reload. Omit lore on a key to keep the live Java tip (name-only override). Placeholders like {points},{cost},{tier},{name},{status} are filled when supported. After a mod update, /lm admin reload merges any NEW jar keys into this file without wiping edits.",
+  "_comment": "FULL LegacyMechanics GUI tooltip catalog. Edit name and/or lore, then /lm admin reload. Omit lore on a key to keep the live Java tip (name-only override). Placeholders like {points},{cost},{tier},{name},{status} are filled when supported. After a mod update, /lm admin reload merges any NEW jar keys into this file without wiping edits. _catalogRevision bumps on humanize passes; /lm admin reload upgrades older on-disk files from the jar.",
   "hub": {
     "main": {
       "header": {
         "name": "&f&lLegacy Mechanics",
         "lore": [
           "&7Choose a system",
-          "&8/lm"
+          "&8Open with &f/lm"
         ]
       },
-        "difficulty": {
+      "difficulty": {
         "name": "&aDifficulty",
         "lore": [
-          "&7Gain and spend ancient coins- tiers are lost on death",
-          "&7Challenge yourself to custom scaled mobs",
-          "&cWarning: &7Scaled mobs can attack other players as well",
-          "&eClick to open"
+          "&7Earn Ancient Coins from scaled mobs and spend them on tiers",
+          "&7Tiers reset when you die — higher tiers mean tougher fights",
+          "&cNote: &7Scaled mobs can hurt other players nearby",
+          "&8Opens this menu"
         ]
       },
       "rival": {
         "name": "&6Rival",
         "lore": [
-          "&7Use the rival system for more TP",
-          "&7Rivalry, challenges & RP",
-          "&eClick to open"
+          "&7Rivalries earn bonus training TP and ranking points",
+          "&7Declare rivals, run challenges, and track seasons",
+          "&8Opens this menu"
         ]
       },
       "spar": {
         "name": "&bSpar",
         "lore": [
-          "&7Sparring TP & mentor bonds",
-          "&eClick to open"
+          "&7Spar for training TP and mentor bonds",
+          "&7Dojo seasons, apprentices, and rankings",
+          "&8Opens this menu"
         ]
       },
       "skillcheck": {
         "name": "&eSkill Check",
         "lore": [
           "&7Natural · Saga progress",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       },
       "skills": {
@@ -51,7 +52,7 @@
         "name": "&6Prestige",
         "lore": [
           "&7Prestiges · Prestige shop",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       },
       "android_remove": {
@@ -59,28 +60,28 @@
         "lore": [
           "&7Remove your Android upgrade",
           "&8Double-click to confirm",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       },
       "progression": {
         "name": "&dProgression",
         "lore": [
           "&7Skills · TP · Race · Combat flags",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       },
       "admin": {
         "name": "&cAdmin",
         "lore": [
           "&7Reload configs and open staff tools",
-          "&8/lm admin"
+          "&8Open with &f/lm admin"
         ]
       },
       "logs": {
         "name": "&8Logs",
         "lore": [
           "&7Server event logs",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       }
     },
@@ -180,7 +181,7 @@
         "name": "&dProgression",
         "lore": [
           "&7Skills · TP · Race · Combat flags",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       }
     },
@@ -240,7 +241,7 @@
         ]
       },
       "majin_owned": {
-        "name": "&a You are a Permanent Majin",
+        "name": "&aYou are a Permanent Majin",
         "lore": [
           "&aOwned",
           "&aPermanent purchase &8· only one at a time"
@@ -376,7 +377,7 @@
         "lore": [
           "&7Mutual rivals can raise your tier ceiling",
           "&7Team modes also boost elite, mutant, and boss spawns",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       }
     },
@@ -391,8 +392,8 @@
       "mode_personal": {
         "name": "&7Personal",
         "lore": [
-          "&7Only your own tier ceiling counts",
-          "&eClick to select"
+          "&7Only your tier counts toward the team ceiling",
+          "&8Select this option"
         ]
       },
       "mode_threshold": {
@@ -401,7 +402,7 @@
           "&7Extra max when rivals are online",
           "&7They must also use a team mode",
           "&7More elites, mutants, and bosses",
-          "&eClick to select"
+          "&8Select this option"
         ]
       },
       "mode_full": {
@@ -410,14 +411,14 @@
           "&7Threshold bonus plus nearby spare room",
           "&7Best spawn boost when rivals are close",
           "&8Rivals must use Full mode and be nearby",
-          "&eClick to select"
+          "&8Select this option"
         ]
       },
       "open_rival": {
         "name": "&6Open Rival",
         "lore": [
           "&7Declare, accept, or manage mutual slots",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       }
     },
@@ -458,14 +459,14 @@
         "name": "&aTitle Sense ON",
         "lore": [
           "&7Elite / Boss recognition chat",
-          "&8Click to toggle"
+          "&8Click to switch"
         ]
       },
       "sense_off": {
         "name": "&8Title Sense OFF",
         "lore": [
           "&7Elite / Boss recognition chat",
-          "&8Click to toggle"
+          "&8Click to switch"
         ]
       },
       "clear": {
@@ -505,7 +506,7 @@
       "actions": {
         "name": "&aActions",
         "lore": [
-          "&7Declare · accept · decline · remove",
+          "&7Declare, accept, decline, or remove rivals",
           "{pending}"
         ]
       },
@@ -574,7 +575,7 @@
       "declare": {
         "name": "&aDeclare…",
         "lore": [
-          "&7Visible declare → they Accept → Mutual"
+          "&7Send a public declare — they accept to become mutual"
         ]
       },
       "pending": {
@@ -586,8 +587,8 @@
       "accept": {
         "name": "&eAccept…",
         "lore": [
-          "&7Pending declares, or Declared → Mutual",
-          "&8Both Silent → Declared shows here"
+          "&7Accept a pending declare or upgrade to mutual",
+          "&8Silent declares from both sides appear here too"
         ]
       },
       "decline": {
@@ -663,7 +664,7 @@
         "name": "&e{minutes} minute(s)",
         "lore": [
           "&7Choose fight length",
-          "&8Click to send"
+          "&8Send with this duration"
         ]
       }
     },
@@ -678,14 +679,14 @@
       "refresh": {
         "name": "&eRefresh",
         "lore": [
-          "&7Reload stores from disk",
+          "&7Reload rivalry data from disk",
           "&8/rival admin refresh"
         ]
       },
       "status": {
         "name": "&bStatus",
         "lore": [
-          "&7Enabled + path summary",
+          "&7Shows whether spar is on and where data is stored",
           "&8/rival admin status"
         ]
       },
@@ -820,7 +821,7 @@
     },
     "empty": {
       "no_rivals": [
-        "&7Use Actions → Declare to start"
+        "&7Use Actions → Declare to add a rival"
       ],
       "no_pending": [
         "&7Declare someone to send an invite",
@@ -861,14 +862,14 @@
       "top": {
         "name": "&fTop",
         "lore": [
-          "&7Leaderboard"
+          "&7Who has the most sparring TP"
         ]
       },
       "dojo_rank": {
         "name": "&6Dojo Rankings",
         "lore": [
-          "&7See how dojos rank this season",
-          "&7Spar rival dojos to climb the ladder"
+          "&7Season ladder for every dojo",
+          "&7Spar outside your dojo to earn points"
         ]
       },
       "mentor": {
@@ -883,7 +884,7 @@
         "lore": [
           "&7You see spar TP gains in chat",
           "",
-          "&eClick to mute"
+          "&8Click to hide in chat"
         ]
       },
       "tpmsg_off": {
@@ -891,7 +892,7 @@
         "lore": [
           "&7Spar TP chat is hidden",
           "",
-          "&eClick to show again"
+          "&8Click to show in chat again"
         ]
       },
       "end_session": {
@@ -903,7 +904,7 @@
       "admin": {
         "name": "&cAdmin",
         "lore": [
-          "&7Save data, check status, reset cooldowns",
+          "&7Save data, view status, or clear mentor cooldown",
           "&8Staff only"
         ]
       }
@@ -912,19 +913,19 @@
       "tp": {
         "name": "&eTP",
         "lore": [
-          "&7Total TP"
+          "&7Ranked by total training TP"
         ]
       },
       "sessions": {
         "name": "&aSessions",
         "lore": [
-          "&7Sessions"
+          "&7Ranked by spar session count"
         ]
       },
       "perfect": {
         "name": "&bPerfect",
         "lore": [
-          "&7Perfect spars"
+          "&7Ranked by perfect spar wins"
         ]
       }
     },
@@ -932,7 +933,7 @@
       "rp": {
         "name": "&eSeason Points",
         "lore": [
-          "&7Sort by ranking points this season"
+          "&7Sort dojos by season ranking points"
         ]
       },
       "wins": {
@@ -944,7 +945,7 @@
       "tp": {
         "name": "&bTraining TP",
         "lore": [
-          "&7Sort by TP earned against other dojos"
+          "&7Sort by TP earned vs other dojos"
         ]
       },
       "challenge": {
@@ -989,7 +990,7 @@
         "lore": [
           "&7Use this banner for your dojo",
           "",
-          "&eClick to apply"
+          "&8Set as your dojo banner"
         ]
       },
       "war_header": {
@@ -1016,26 +1017,26 @@
       "ask": {
         "name": "&bAsk mentor…",
         "lore": [
-          "&7Pick a player to ask as your master"
+          "&7Pick someone to request as your mentor"
         ]
       },
       "pending": {
         "name": "&ePending",
         "lore": [
-          "&7Incoming + outgoing invites",
-          "&aClick a head to Accept / Decline"
+          "&7Incoming and outgoing mentor invites",
+          "&8Use Accept / Decline on each invite"
         ]
       },
       "accept": {
         "name": "&eAccept…",
         "lore": [
-          "&7Use the Pending menu instead"
+          "&7Open Pending from Mentor Actions"
         ]
       },
       "decline": {
         "name": "&6Decline…",
         "lore": [
-          "&7Use the Pending menu instead"
+          "&7Open Pending from Mentor Actions"
         ]
       },
       "leave": {
@@ -1069,8 +1070,8 @@
         "name": "&bDojo",
         "lore": [
           "&7Your mentor and training partners",
-          "&8Switch views if you also mentor others",
-          "&8{name}"
+          "&7Switch view if you also mentor others",
+          "&7Roster: &f{name}"
         ]
       }
     },
@@ -1093,7 +1094,7 @@
       "status": {
         "name": "&bStatus",
         "lore": [
-          "&7Enabled + path summary",
+          "&7Shows whether spar is on and where data is stored",
           "&8/spar admin status"
         ]
       },
@@ -1115,13 +1116,13 @@
       "accept_pick": {
         "name": "&eAccept…",
         "lore": [
-          "&7Use the Pending menu instead"
+          "&7Open Pending from Mentor Actions"
         ]
       },
       "decline_pick": {
         "name": "&6Decline…",
         "lore": [
-          "&7Use the Pending menu instead"
+          "&7Open Pending from Mentor Actions"
         ]
       },
       "decide_info": {
@@ -1178,7 +1179,7 @@
       ],
       "no_dojo_rank": [
         "&7Join a dojo and spar rival fighters",
-        "&8Ranking points come from cross-dojo spars"
+        "&8Points come from spars against other dojos"
       ],
       "no_dojo_rival": [
         "&7No rival dojos on the board yet",
@@ -1197,7 +1198,7 @@
         "lore": [
           "&7Flight · Sprint · Meditation · Potential",
           "",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       },
       "tp": {
@@ -1205,23 +1206,23 @@
         "lore": [
           "&7Farming · Building · Boost · Bio",
           "",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       },
       "race": {
         "name": "&bRace & Form",
         "lore": [
-          "&7Race lock · Yardrat · Spiritualist · Android",
+          "&7Race lock, Yardrat, Spiritualist, and Android",
           "",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       },
       "combat": {
         "name": "&cCombat",
         "lore": [
-          "&7Ki weapons · Piercing · DoT · Apothic",
+          "&7Ki weapons, piercing, damage over time, and Apothic tweaks",
           "",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       },
       "end": {
@@ -1229,15 +1230,15 @@
         "lore": [
           "&7End strength · Portal guard",
           "",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       },
       "fabled": {
         "name": "&dFabled",
         "lore": [
-          "&7Fabled race and form options",
+          "&7Fabled race and transformation options",
           "",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       },
       "utility": {
@@ -1245,7 +1246,7 @@
         "lore": [
           "&7Shadow dummy · Stat checker",
           "",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       },
       "admin": {
@@ -1259,7 +1260,7 @@
       "subflags": {
         "name": "&dFabled Subflags",
         "lore": [
-          "&7Energy, TP/SP, race class, etc."
+          "&7Energy, TP/SP, race class, and related toggles"
         ]
       },
       "back": {
@@ -1282,7 +1283,7 @@
         "lore": [
           "&7Start 1.25x for 30 minutes",
           "",
-          "&eClick to start"
+          "&8Start this boost"
         ]
       },
       "n15_30": {
@@ -1290,7 +1291,7 @@
         "lore": [
           "&7Start 1.5x for 30 minutes",
           "",
-          "&eClick to start"
+          "&8Start this boost"
         ]
       },
       "n2_30": {
@@ -1298,7 +1299,7 @@
         "lore": [
           "&7Start 2x for 30 minutes",
           "",
-          "&eClick to start"
+          "&8Start this boost"
         ]
       },
       "n2_60": {
@@ -1306,7 +1307,7 @@
         "lore": [
           "&7Start 2x for 60 minutes",
           "",
-          "&eClick to start"
+          "&8Start this boost"
         ]
       },
       "n3_30": {
@@ -1314,7 +1315,7 @@
         "lore": [
           "&7Start 3x for 30 minutes",
           "",
-          "&eClick to start"
+          "&8Start this boost"
         ]
       },
       "end": {
@@ -1322,7 +1323,7 @@
         "lore": [
           "&7Stop the active global TP boost",
           "",
-          "&eClick to end"
+          "&8Stop the active boost"
         ]
       },
       "refresh": {
@@ -1354,7 +1355,7 @@
           "&7Unlocks the Android form path",
           "&8Human · Saiyan · Frost Demon · Viltrumite",
           "",
-          "&eClick · choose player"
+          "&8Pick a player next"
         ]
       },
       "remove_entry": {
@@ -1363,7 +1364,7 @@
           "&7Restore normal form skills",
           "&8Confirm within 10s by clicking again",
           "",
-          "&eClick · choose player"
+          "&8Pick a player next"
         ]
       },
       "convert_header": {
@@ -1388,7 +1389,7 @@
           "&7Pick a player to convert",
           "&8Applies the Android transformation",
           "",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       },
       "remove": {
@@ -1398,7 +1399,7 @@
           "&8Restores their previous form path",
           "&8Two-click confirm within 10s",
           "",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       },
       "convert_self": {
@@ -1406,7 +1407,7 @@
         "lore": [
           "&7Apply conversion to you",
           "",
-          "&eClick to convert"
+          "&8Convert now"
         ]
       },
       "remove_self": {
@@ -1415,7 +1416,7 @@
           "&7Remove the Android upgrade",
           "&7Race, stats, and progression stay",
           "",
-          "&eClick · confirm within 10s"
+          "&8Confirm again within 10 seconds"
         ]
       },
       "back": {
@@ -1449,7 +1450,7 @@
         "lore": [
           "&7Convert or remove Android upgrade (Gero path).",
           "",
-          "&eClick · Convert / Remove"
+          "&8Opens convert or remove tools"
         ]
       }
     },
@@ -1459,7 +1460,7 @@
         "lore": [
           "&7Timed global TP multiplier",
           "",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       }
     },
@@ -1496,14 +1497,14 @@
       "saga": {
         "name": "&dSaga",
         "lore": [
-          "&7Unlocked in the skill saga — some level there, some level naturally after."
+          "&7Saga skills — some unlock in the saga, others level naturally over time."
         ]
       },
       "progression": {
         "name": "&dProgression",
         "lore": [
           "&7Skills · TP · Race · Combat flags",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       }
     },
@@ -1526,8 +1527,9 @@
     "back": {
       "name": "&7Back",
       "lore": [
-        "&7Return"
+        "&7Go back to the previous screen"
       ]
     }
-  }
+  },
+  "_catalogRevision": 184
 }

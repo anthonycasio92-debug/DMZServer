@@ -132,7 +132,7 @@ public final class CmiSparGui {
                         "&8Players: +TP (style)",
                         "&8Staff: full bonus / stack detail",
                         "",
-                        "&eClick to toggle"
+                        "&eClick to toggle8Click to switch"
                 )));
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
@@ -389,7 +389,7 @@ public final class CmiSparGui {
             String label = banners[i].replace('_', ' ');
             gui.addButton(actionBtn(player, slots[i], "spar.dojo.banner_pick", mat,
                     "&f" + label, "dojo_banner", banners[i], "dojo_rank",
-                    List.of("&7Use this banner for your dojo", "", "&eClick to apply"),
+                    List.of("&7Use this banner for your dojo", "", "&eClick to apply8Set as your dojo banner"),
                     Map.of("name", label)));
         }
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "dojo_rank", "&7Dojo Rankings"));

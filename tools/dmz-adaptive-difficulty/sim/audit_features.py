@@ -941,6 +941,14 @@ def main() -> int:
     check("Chest dojo rank uses banner cards",
           "sparDojoTopCards" in chest and "dojoTopBanner" in chest)
 
+    print("\n=== GUI tooltip catalog humanize (2.3.184) ===")
+    tips184 = read(ROOT / "tools/dmz-adaptive-difficulty-gui/src/main/resources/gui-tooltips.json")
+    gui_tt = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/GuiTooltips.java")
+    check("gui-tooltips catalog revision", '"_catalogRevision": 184' in tips184)
+    check("GuiTooltips CATALOG_REVISION 184", "CATALOG_REVISION = 184" in gui_tt)
+    check("catalog upgrade on reload", "catalogRevision" in gui_tt and "catalogUpgraded" in gui_tt)
+    check("humanize_gui_tooltips script", (ROOT / "tools/dmz-adaptive-difficulty/sim/humanize_gui_tooltips.py").is_file())
+
     print("\n=== Dojo rankings menu layout (2.3.183) ===")
     plugin = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/AdaptiveDifficultyGuiPlugin.java")
     check("dojoRankLadderSlots avoids control row", "dojoRankLadderSlots" in board)

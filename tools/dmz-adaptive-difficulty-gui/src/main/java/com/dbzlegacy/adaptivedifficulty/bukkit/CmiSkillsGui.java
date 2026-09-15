@@ -231,7 +231,7 @@ public final class CmiSkillsGui {
                 GuiTooltips.name("skills.main.progression", "&dProgression"));
         btn.lockField();
         btn.addLore(GuiTooltips.buttonLore("skills.main.progression",
-                GuiBoardHelper.tipsList(player, List.of("&7Skills · TP · Race · Combat flags", "&eClick to open"))));
+                GuiBoardHelper.tipsList(player, List.of("&7Skills · TP · Race · Combat flags", "&eClick to open8Opens this menu"))));
         btn.addCommand("lmdo lm open progression");
         btn.setCloseInv(true);
         return btn;

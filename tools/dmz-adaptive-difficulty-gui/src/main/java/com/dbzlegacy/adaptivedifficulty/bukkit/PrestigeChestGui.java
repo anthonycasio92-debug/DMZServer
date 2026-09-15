@@ -76,7 +76,7 @@ public final class PrestigeChestGui implements Listener {
             if (ForgeBridge.isStaff(viewer)) {
                 put(holder, inv, 38, tipBtn(viewer, "prestige.main.progression", Material.BREWING_STAND,
                         "&dProgression",
-                        List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")),
+                        List.of("&7Skills · TP · Race · Combat flags", "&eClick to open8Opens this menu")),
                         SlotAction.cmd("lmdo lm open progression"));
             }
             put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -87,7 +87,7 @@ public final class PrestigeChestGui implements Listener {
 
         boolean ready = "true".equalsIgnoreCase(ph.getOrDefault("ready", "false"));
         List<String> confirmDefaults = List.of(
-                "&7Click to prestige (confirm within 10s)",
+                "&7Click to prestige (confirm within 10s)8Prestige — confirm again within 10 seconds",
                 "&8Resets DMZ stats · awards held Prestige");
         put(holder, inv, 20, item(
                 ready ? Material.LIME_CONCRETE : Material.ORANGE_CONCRETE,
@@ -126,7 +126,7 @@ public final class PrestigeChestGui implements Listener {
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         if (ForgeBridge.isStaff(viewer)) {
             put(holder, inv, 38, tipBtn(viewer, "prestige.main.progression", Material.BREWING_STAND, "&dProgression",
-                    List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")),
+                    List.of("&7Skills · TP · Race · Combat flags", "&eClick to open8Opens this menu")),
                     SlotAction.cmd("lmdo lm open progression"));
         }
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
