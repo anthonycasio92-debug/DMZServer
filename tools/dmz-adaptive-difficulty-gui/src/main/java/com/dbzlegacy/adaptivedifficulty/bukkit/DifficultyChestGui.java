@@ -395,26 +395,37 @@ public final class DifficultyChestGui implements Listener {
         List<String> header = new ArrayList<>();
         header.add("");
         header.addAll(toAmp(ForgeBridge.diffTeamLines(subject)));
+        header.add("");
+        header.addAll(GuiBoardHelper.teamRivalLegendLines());
         put(holder, inv, 4, item(Material.SHIELD,
                 GuiTooltips.name("difficulty.team.header", "&b&lRival Teams"),
                 header));
 
         String mode = ph.getOrDefault("team_mode", "personal_only");
-        put(holder, inv, 20, tipBtn(viewer, "difficulty.team.mode_personal", Material.GRAY_DYE, "&7Personal",
+        boolean personalMode = mode.equals("personal_only");
+        put(holder, inv, 20, tipBtn(viewer, "difficulty.team.mode_personal",
+                personalMode ? Material.LIME_DYE : Material.GRAY_DYE,
+                personalMode ? "&aPersonal" : "&7Personal",
                 List.of("&7Only your own tier ceiling counts",
-                        mode.equals("personal_only") ? "&aCurrent mode" : "&eClick to select8Select this option")),
+                        personalMode ? "&a&lYour current mode" : "&eClick to select8Select this option")),
                 SlotAction.act("team", "personal", "team"));
-        put(holder, inv, 22, tipBtn(viewer, "difficulty.team.mode_threshold", Material.LIME_DYE, "&aThreshold",
+        boolean thresholdMode = mode.equals("threshold_bonus_only");
+        boolean fullMode = mode.equals("full_team_scaling");
+        put(holder, inv, 22, tipBtn(viewer, "difficulty.team.mode_threshold",
+                thresholdMode ? Material.LIGHT_BLUE_DYE : Material.LIME_DYE,
+                thresholdMode ? "&b&lThreshold" : "&aThreshold",
                 List.of("&7Extra max when rivals are online",
                         "&7They must also use a team mode",
                         "&7More elites, mutants, and bosses",
-                        mode.equals("threshold_bonus_only") ? "&aCurrent mode" : "&eClick to select8Select this option")),
+                        thresholdMode ? "&b&lYour current mode" : "&eClick to select8Select this option")),
                 SlotAction.act("team", "threshold", "team"));
-        put(holder, inv, 24, tipBtn(viewer, "difficulty.team.mode_full", Material.EMERALD, "&2Full",
+        put(holder, inv, 24, tipBtn(viewer, "difficulty.team.mode_full",
+                fullMode ? Material.GOLD_INGOT : Material.EMERALD,
+                fullMode ? "&6&lFull" : "&2Full",
                 List.of("&7Threshold bonus plus nearby spare room",
                         "&7Best spawn boost when rivals are close",
                         "&8Within " + ph.getOrDefault("proximity_blocks", "48") + " blocks",
-                        mode.equals("full_team_scaling") ? "&aCurrent mode" : "&eClick to select8Select this option")),
+                        fullMode ? "&6&lYour current mode" : "&eClick to select8Select this option")),
                 SlotAction.act("team", "full", "team"));
 
         List<GuiBoardHelper.TeamRivalCard> cards =
