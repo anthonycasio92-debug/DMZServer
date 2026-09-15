@@ -217,15 +217,22 @@ public final class CmiSparGui {
         CMIGui gui = base(player, "&8Dojo Rankings", 5);
         List<String> info = toAmp(ForgeBridge.sparLines(player, "dojo_info"));
         List<String> raw = toAmp(ForgeBridge.sparLines(player, "dojo_top_" + cat));
-        List<GuiBoardHelper.TopEntry> entries = GuiBoardHelper.parseTopEntries(raw);
-        CMIGuiButton header = new CMIGuiButton(4, Material.BOOKSHELF, "&6&lDojo Rankings — " + cat);
+        List<GuiBoardHelper.DojoTopCard> dojoCards = GuiBoardHelper.parseDojoTopCards(
+                ForgeBridge.sparDojoTopCards(player, cat));
+        List<GuiBoardHelper.TopEntry> entries = dojoCards.isEmpty()
+                ? GuiBoardHelper.parseTopEntries(raw) : List.of();
+        String sortLabel = dojoSortLabel(cat);
+        CMIGuiButton header = new CMIGuiButton(4, Material.BOOKSHELF, "&6&lDojo Rankings — " + sortLabel);
         header.lockField();
         List<String> headerLore = new ArrayList<>(info);
         headerLore.add("");
-        headerLore.addAll(GuiBoardHelper.tips(player, "&7Dojo season ladder", "&8Spar rival dojos to earn ranking points"));
+        headerLore.addAll(GuiBoardHelper.tips(player,
+                "&7Dojo season ladder · &f" + sortLabel,
+                "&8Banners show each dojo · bottom row changes sort"));
         header.addLore(headerLore);
         gui.addButton(header);
-        if (entries.isEmpty()) {
+        int rowCount = !dojoCards.isEmpty() ? dojoCards.size() : entries.size();
+        if (rowCount == 0) {
             CMIGuiButton empty = new CMIGuiButton(13, Material.BARRIER,
                     GuiTooltips.name("spar.empty.no_dojo_rank", "&7No dojo data yet"));
             empty.lockField();
@@ -233,9 +240,12 @@ public final class CmiSparGui {
                     List.of("&7Join a dojo and spar rivals")));
             gui.addButton(empty);
         } else {
-            int[] slots = GuiBoardHelper.centeredSlots(Math.min(entries.size(), 14));
-            for (int i = 0; i < slots.length && i < entries.size(); i++) {
-                CMIGuiButton btn = new CMIGuiButton(slots[i], GuiBoardHelper.topHead(entries.get(i)));
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(rowCount, 14));
+            for (int i = 0; i < slots.length && i < rowCount; i++) {
+                ItemStack icon = !dojoCards.isEmpty()
+                        ? GuiBoardHelper.dojoTopBanner(dojoCards.get(i))
+                        : GuiBoardHelper.topHead(entries.get(i));
+                CMIGuiButton btn = new CMIGuiButton(slots[i], icon);
                 btn.lockField();
                 gui.addButton(btn);
             }
@@ -255,11 +265,14 @@ public final class CmiSparGui {
                 "dojo_members", "&7Season contributions"));
         gui.addButton(pageBtn(player, 32, "spar.dojo.hof", Material.GOLD_BLOCK, "&6Hall of Fame",
                 "dojo_hof", "&7Past season champions"));
-        gui.addButton(pageBtn(player, 29, "spar.dojo.rp", Material.GOLD_INGOT, "&eSeason RP", "dojo_top_rp",
-                "&7Rank by RP"));
-        gui.addButton(pageBtn(player, 31, "spar.dojo.wins", Material.IRON_SWORD, "&aWins", "dojo_top_wins",
+        Material rpMat = "rp".equals(cat) ? Material.GOLD_BLOCK : Material.GOLD_INGOT;
+        Material winsMat = "wins".equals(cat) || "win".equals(cat) ? Material.DIAMOND_SWORD : Material.IRON_SWORD;
+        Material tpMat = "tp".equals(cat) ? Material.EXPERIENCE_BOTTLE : Material.GLASS_BOTTLE;
+        gui.addButton(pageBtn(player, 29, "spar.dojo.rp", rpMat, "&eSeason Points", "dojo_top_rp",
+                "&7Rank by season RP"));
+        gui.addButton(pageBtn(player, 31, "spar.dojo.wins", winsMat, "&aWins", "dojo_top_wins",
                 "&7Rank by wins"));
-        gui.addButton(pageBtn(player, 33, "spar.dojo.tp", Material.EXPERIENCE_BOTTLE, "&bSpar TP", "dojo_top_tp",
+        gui.addButton(pageBtn(player, 33, "spar.dojo.tp", tpMat, "&bSpar TP", "dojo_top_tp",
                 "&7Rank by TP earned vs other dojos"));
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(hubBtn(40));
@@ -1063,6 +1076,17 @@ public final class CmiSparGui {
 
     private static String blank(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private static String dojoSortLabel(String cat) {
+        if (cat == null) {
+            return "Season RP";
+        }
+        return switch (cat.toLowerCase(Locale.ROOT)) {
+            case "wins", "win" -> "Wins";
+            case "tp" -> "Spar TP";
+            default -> "Season RP";
+        };
     }
 
     private static List<String> toAmp(List<String> lines) {

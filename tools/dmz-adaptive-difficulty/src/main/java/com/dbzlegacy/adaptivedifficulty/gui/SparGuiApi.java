@@ -148,6 +148,15 @@ public final class SparGuiApi {
         return SparringSystem.dojoTopLines(category, 10);
     }
 
+    /** Dojo ladder cards for GUI banners ({@code rank\tkey\tname\tbanner\tvalue\troster}). */
+    public static List<String> dojoTopCards(ServerPlayer player, String category) {
+        if (!DifficultyConfig.get().enableSparringSystem) {
+            return List.of();
+        }
+        String cat = category == null || category.isBlank() ? "rp" : category.trim();
+        return SparringSystem.dojoTopCards(cat, 14);
+    }
+
     public static List<String> dojoInfoLines(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
             return List.of("§cSparring system is disabled.");

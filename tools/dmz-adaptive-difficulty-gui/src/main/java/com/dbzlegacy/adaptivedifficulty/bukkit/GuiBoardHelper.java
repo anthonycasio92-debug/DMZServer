@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 /** Shared inventory layout helpers — centered rows, top boards with heads, detail tiles. */
 final class GuiBoardHelper {
@@ -149,6 +150,83 @@ final class GuiBoardHelper {
             }
         }
         return out;
+    }
+
+    /** Dojo season ladder row from Forge {@code rank\tkey\tname\tbanner\tvalue\troster}. */
+    static final class DojoTopCard {
+        final int rank;
+        final String dojoKey;
+        final String name;
+        final String bannerMaterial;
+        final String value;
+        final int rosterSize;
+
+        DojoTopCard(int rank, String dojoKey, String name, String bannerMaterial, String value, int rosterSize) {
+            this.rank = rank;
+            this.dojoKey = dojoKey == null ? "" : dojoKey;
+            this.name = name == null || name.isBlank() ? "?" : name;
+            this.bannerMaterial = bannerMaterial == null || bannerMaterial.isBlank()
+                    ? "WHITE_BANNER" : bannerMaterial;
+            this.value = value == null ? "" : value;
+            this.rosterSize = Math.max(0, rosterSize);
+        }
+    }
+
+    static List<DojoTopCard> parseDojoTopCards(List<String> encoded) {
+        List<DojoTopCard> out = new ArrayList<>();
+        if (encoded == null) {
+            return out;
+        }
+        for (String raw : encoded) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            String[] p = raw.split("\t", -1);
+            if (p.length < 5) {
+                continue;
+            }
+            try {
+                int rank = Integer.parseInt(p[0].trim());
+                String key = p[1];
+                String name = p[2];
+                String banner = p[3];
+                String value = p[4];
+                int roster = 0;
+                if (p.length > 5 && !p[5].isBlank()) {
+                    roster = Integer.parseInt(p[5].trim());
+                }
+                out.add(new DojoTopCard(rank, key, name, banner, value, roster));
+            } catch (NumberFormatException ignored) {
+                // skip malformed row
+            }
+        }
+        return out;
+    }
+
+    /** Banner stack for a dojo ladder row (display-only). */
+    static ItemStack dojoTopBanner(DojoTopCard card) {
+        if (card == null) {
+            return new ItemStack(Material.WHITE_BANNER);
+        }
+        Material mat = Material.matchMaterial(card.bannerMaterial);
+        if (mat == null || !mat.name().endsWith("_BANNER")) {
+            mat = Material.WHITE_BANNER;
+        }
+        ItemStack stack = new ItemStack(mat);
+        ItemMeta meta = stack.getItemMeta();
+        meta.setDisplayName(amp("&e#" + card.rank + " &f" + card.name));
+        List<String> lore = new ArrayList<>();
+        if (!card.value.isBlank()) {
+            lore.add(amp("&7" + card.value));
+        }
+        if (card.rosterSize > 0) {
+            lore.add(amp("&8" + card.rosterSize + " fighter" + (card.rosterSize == 1 ? "" : "s")));
+        }
+        lore.add("");
+        lore.add(amp("&8Season leaderboard"));
+        meta.setLore(lore);
+        stack.setItemMeta(meta);
+        return stack;
     }
 
     /** Build a player-head stack for a leaderboard entry. */

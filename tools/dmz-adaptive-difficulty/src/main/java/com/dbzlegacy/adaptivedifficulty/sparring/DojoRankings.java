@@ -431,6 +431,33 @@ public final class DojoRankings {
         return lines;
     }
 
+    /**
+     * GUI leaderboard cards: {@code rank\tdojoKey\tdisplayName\tbannerMaterial\tvalue\trosterSize}.
+     */
+    public static List<String> topCards(String category, int limit) {
+        ensureSeason();
+        String cat = category == null || category.isBlank() ? "rp" : category.trim().toLowerCase(Locale.ROOT);
+        SparStore.DojoSeason season = SparStore.get().dojoSeason;
+        Map<String, SparStore.DojoEntry> board = season == null || season.leaderboard == null
+                ? Map.of()
+                : season.leaderboard;
+        List<Map.Entry<String, SparStore.DojoEntry>> sorted = sortedEntries(board, cat, limit);
+        List<String> out = new ArrayList<>();
+        int i = 1;
+        for (Map.Entry<String, SparStore.DojoEntry> e : sorted) {
+            SparStore.DojoEntry d = e.getValue();
+            if (d == null) {
+                continue;
+            }
+            String name = dojoDisplayName(e.getKey()).replace('\t', ' ').replace('\n', ' ');
+            String value = formatValue(d, cat);
+            out.add(i + "\t" + e.getKey() + "\t" + name + "\t" + dojoBannerMaterial(e.getKey())
+                    + "\t" + value + "\t" + d.rosterSize);
+            i++;
+        }
+        return out;
+    }
+
     public static List<String> hallOfFameLines() {
         List<String> lines = new ArrayList<>();
         lines.add("§6§lDojo Hall of Fame");

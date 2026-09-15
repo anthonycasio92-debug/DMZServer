@@ -77,6 +77,7 @@ public final class ForgeBridge {
     private static Method sparMembershipDojoCardsMethod;
     private static Method sparRivalDojoCardsMethod;
     private static Method sparDojoMemberCardsMethod;
+    private static Method sparDojoTopCardsMethod;
     private static Method diffTeamLinesMethod;
     private static Method diffTeamMutualCardsMethod;
     private static Method hubChatMenuOpen;
@@ -1221,6 +1222,37 @@ public final class ForgeBridge {
         return invokeSparStringList(player, "dojoMemberCards");
     }
 
+    /** Dojo ladder banner cards ({@code rank\tkey\tname\tbanner\tvalue\troster}). */
+    public static List<String> sparDojoTopCards(Player player, String category) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of();
+        }
+        try {
+            ensureSparResolved(nms.getClass().getClassLoader());
+            if (sparDojoTopCardsMethod == null) {
+                return List.of();
+            }
+            Object raw = sparDojoTopCardsMethod.invoke(
+                    null, nms, category == null || category.isBlank() ? "rp" : category);
+            if (raw instanceof List<?> list) {
+                List<String> out = new ArrayList<>();
+                for (Object o : list) {
+                    if (o != null) {
+                        String s = String.valueOf(o);
+                        if (!s.isBlank()) {
+                            out.add(s);
+                        }
+                    }
+                }
+                return out;
+            }
+        } catch (Throwable ignored) {
+            // Optional API — empty when missing.
+        }
+        return List.of();
+    }
+
     private static List<String> invokeSparStringList(Player player, String methodName) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
@@ -2157,6 +2189,13 @@ public final class ForgeBridge {
                     sparDojoMemberCardsMethod = api.getMethod("dojoMemberCards", sp);
                 } catch (Throwable ignored) {
                     sparDojoMemberCardsMethod = null;
+                }
+            }
+            if (sparDojoTopCardsMethod == null) {
+                try {
+                    sparDojoTopCardsMethod = api.getMethod("dojoTopCards", sp, String.class);
+                } catch (Throwable ignored) {
+                    sparDojoTopCardsMethod = null;
                 }
             }
         } catch (Throwable ignored) {

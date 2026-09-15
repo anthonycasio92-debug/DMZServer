@@ -223,20 +223,29 @@ public final class SparChestGui implements Listener {
         Map<String, String> ph = ForgeBridge.sparPlaceholders(subject);
         List<String> info = toAmp(ForgeBridge.sparLines(subject, "dojo_info"));
         List<String> raw = toAmp(ForgeBridge.sparLines(subject, "dojo_top_" + cat));
-        List<GuiBoardHelper.TopEntry> entries = GuiBoardHelper.parseTopEntries(raw);
+        List<GuiBoardHelper.DojoTopCard> dojoCards = GuiBoardHelper.parseDojoTopCards(
+                ForgeBridge.sparDojoTopCards(subject, cat));
+        List<GuiBoardHelper.TopEntry> entries = dojoCards.isEmpty()
+                ? GuiBoardHelper.parseTopEntries(raw) : List.of();
+        String sortLabel = dojoSortLabel(cat);
         List<String> header = new ArrayList<>(info);
         header.add("");
         header.addAll(GuiBoardHelper.tips(viewer,
-                "&7Dojo season ladder", "&8Spar rival dojos to earn ranking points"));
-        put(holder, inv, 4, item(Material.BOOKSHELF, "&6&lDojo Rankings — " + cat, header));
-        if (entries.isEmpty()) {
+                "&7Dojo season ladder · &f" + sortLabel,
+                "&8Banners show each dojo · use bottom row to change sort"));
+        put(holder, inv, 4, item(Material.BOOKSHELF, "&6&lDojo Rankings — " + sortLabel, header));
+        int rowCount = !dojoCards.isEmpty() ? dojoCards.size() : entries.size();
+        if (rowCount == 0) {
             put(holder, inv, 13, tipBtn(viewer, "spar.empty.no_dojo_rank", Material.BARRIER,
                     "&7No dojo data yet",
                     List.of("&7Join a dojo and spar rivals", "&8from other dojos")));
         } else {
-            int[] slots = GuiBoardHelper.centeredSlots(Math.min(entries.size(), 14));
-            for (int i = 0; i < slots.length && i < entries.size(); i++) {
-                put(holder, inv, slots[i], GuiBoardHelper.topHead(entries.get(i)));
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(rowCount, 14));
+            for (int i = 0; i < slots.length && i < rowCount; i++) {
+                ItemStack icon = !dojoCards.isEmpty()
+                        ? GuiBoardHelper.dojoTopBanner(dojoCards.get(i))
+                        : GuiBoardHelper.topHead(entries.get(i));
+                put(holder, inv, slots[i], icon);
             }
         }
         boolean isMaster = "true".equalsIgnoreCase(ph.getOrDefault("dojo_master", "false"));
@@ -258,11 +267,14 @@ public final class SparChestGui implements Listener {
                 "&7Season contributions"), SlotAction.page("dojo_members"));
         put(holder, inv, 32, pageBtn(viewer, "spar.dojo.hof", Material.GOLD_BLOCK, "&6Hall of Fame",
                 "&7Past season champions"), SlotAction.page("dojo_hof"));
-        put(holder, inv, 29, pageBtn(viewer, "spar.dojo.rp", Material.GOLD_INGOT, "&eSeason RP", "&7Rank by RP"),
+        Material rpMat = "rp".equals(cat) ? Material.GOLD_BLOCK : Material.GOLD_INGOT;
+        Material winsMat = "wins".equals(cat) || "win".equals(cat) ? Material.DIAMOND_SWORD : Material.IRON_SWORD;
+        Material tpMat = "tp".equals(cat) ? Material.EXPERIENCE_BOTTLE : Material.GLASS_BOTTLE;
+        put(holder, inv, 29, pageBtn(viewer, "spar.dojo.rp", rpMat, "&eSeason Points", "&7Rank by season RP"),
                 SlotAction.page("dojo_top_rp"));
-        put(holder, inv, 31, pageBtn(viewer, "spar.dojo.wins", Material.IRON_SWORD, "&aWins", "&7Rank by wins"),
+        put(holder, inv, 31, pageBtn(viewer, "spar.dojo.wins", winsMat, "&aWins", "&7Rank by wins"),
                 SlotAction.page("dojo_top_wins"));
-        put(holder, inv, 33, pageBtn(viewer, "spar.dojo.tp", Material.EXPERIENCE_BOTTLE, "&bSpar TP",
+        put(holder, inv, 33, pageBtn(viewer, "spar.dojo.tp", tpMat, "&bSpar TP",
                 "&7Rank by TP earned vs other dojos"), SlotAction.page("dojo_top_tp"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
@@ -1163,6 +1175,17 @@ public final class SparChestGui implements Listener {
 
     private static String color(String input) {
         return input == null ? "" : input.replace('&', '§');
+    }
+
+    private static String dojoSortLabel(String cat) {
+        if (cat == null) {
+            return "Season RP";
+        }
+        return switch (cat.toLowerCase(Locale.ROOT)) {
+            case "wins", "win" -> "Wins";
+            case "tp" -> "Spar TP";
+            default -> "Season RP";
+        };
     }
 
     private static final class SlotAction {

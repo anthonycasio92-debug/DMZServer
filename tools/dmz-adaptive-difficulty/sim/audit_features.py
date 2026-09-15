@@ -927,6 +927,20 @@ def main() -> int:
     check("Chest banner_pick uses GuiTooltips.name with vars",
           "spar.dojo.banner_pick" in chest_banner and "bannerVars" in chest_banner)
 
+    print("\n=== Dojo season ladder banners (2.3.182) ===")
+    dojo_rank = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.java")
+    spar_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.java")
+    board = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/GuiBoardHelper.java")
+    bridge = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/ForgeBridge.java")
+    check("DojoRankings.topCards", "topCards(String category, int limit)" in dojo_rank)
+    check("SparGuiApi.dojoTopCards", "dojoTopCards(ServerPlayer player, String category)" in spar_api)
+    check("GuiBoardHelper dojoTopBanner", "dojoTopBanner" in board and "parseDojoTopCards" in board)
+    check("ForgeBridge sparDojoTopCards", "sparDojoTopCards" in bridge)
+    check("CMI dojo rank uses banner cards",
+          "sparDojoTopCards" in cmi and "dojoTopBanner" in cmi)
+    check("Chest dojo rank uses banner cards",
+          "sparDojoTopCards" in chest and "dojoTopBanner" in chest)
+
 
     print("\n=== Dojo membership roster (2.3.154) ===")
     spar_sys152 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")
