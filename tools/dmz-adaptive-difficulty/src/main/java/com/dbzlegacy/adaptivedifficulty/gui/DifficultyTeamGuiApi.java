@@ -9,6 +9,7 @@ import com.dbzlegacy.adaptivedifficulty.rival.RivalConstants;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalLink;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalPlayerRecord;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalStatus;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalOnlinePlayers;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalStore;
 import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
 import java.util.ArrayList;
@@ -44,11 +45,12 @@ public final class DifficultyTeamGuiApi {
         out.put("personal_max", String.valueOf(snap.personalMax));
         out.put("available_max", String.valueOf(snap.availableMax));
         out.put("mutual_total", String.valueOf(TeamScaling.mutualRivalCount(player)));
-        out.put("mutual_online", String.valueOf(TeamScaling.teammates(player).size()));
+        out.put("mutual_online", String.valueOf(TeamScaling.onlineMutualRivalCount(player)));
+        out.put("mutual_teaming", String.valueOf(TeamScaling.teammates(player).size()));
         out.put("mutual_max", String.valueOf(RivalConstants.MAX_MUTUAL_RIVALS));
         out.put("team_source", TeamScaling.teamSourceLabel());
         out.put("team_name", TeamScaling.teamName(player));
-        out.put("team_size", out.get("mutual_online"));
+        out.put("team_size", out.get("mutual_teaming"));
         out.put("bonus_percent", String.valueOf((int) cfg.teamBonusPercent));
         out.put("contrib_percent", String.valueOf((int) cfg.contributionPercent));
         out.put("proximity_blocks", String.valueOf((int) TeamScaling.contributionProximityBlocks()));
@@ -110,7 +112,7 @@ public final class DifficultyTeamGuiApi {
             if (st != RivalStatus.MUTUAL && st != RivalStatus.NEMESIS) {
                 continue;
             }
-            ServerPlayer other = resolveOnline(server, e.getKey());
+            ServerPlayer other = RivalOnlinePlayers.find(server, e.getKey());
             boolean online = other != null;
             boolean optedIn = online && TeamScaling.isOptedIntoTeams(other);
             boolean near = online && TeamScaling.withinContributionRange(player, other);
@@ -149,9 +151,14 @@ public final class DifficultyTeamGuiApi {
         DifficultySnapshot snap = DifficultyCache.get(player);
         TeamMode mode = data.getTeamMode();
         lines.add("§7Mode §f" + modeLabel(mode));
+        int onlineMutual = TeamScaling.onlineMutualRivalCount(player);
+        int teaming = TeamScaling.teammates(player).size();
         lines.add("§7Mutual rivals §f" + TeamScaling.mutualRivalCount(player)
                 + "§8/§f" + RivalConstants.MAX_MUTUAL_RIVALS
-                + "  §7online §f" + TeamScaling.teammates(player).size());
+                + "  §7online §f" + onlineMutual);
+        if (onlineMutual > 0 && teaming < onlineMutual) {
+            lines.add("§8" + teaming + " online rival(s) also use a team mode for bonuses.");
+        }
         if (mode == TeamMode.PERSONAL_ONLY) {
             lines.add("§7Personal ceiling only — no rival bonus.");
         } else {
@@ -192,15 +199,4 @@ public final class DifficultyTeamGuiApi {
         };
     }
 
-    private static ServerPlayer resolveOnline(MinecraftServer server, String uuid) {
-        if (server == null || uuid == null || uuid.isBlank()) {
-            return null;
-        }
-        for (ServerPlayer p : server.m_6846_().m_11314_()) {
-            if (p != null && uuid.equals(p.m_20148_().toString())) {
-                return p;
-            }
-        }
-        return null;
-    }
 }
