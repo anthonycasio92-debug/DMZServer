@@ -957,6 +957,10 @@ def main() -> int:
     check("lmdo spar do unwrap", '"do".equalsIgnoreCase(args[1])' in plugin
           and "action = args[2]" in plugin)
 
+    print("\n=== Dojo rankings banner colors (2.3.187) ===")
+    check("dojoTopBanner uses itemColor", "itemColor" in board and "dojoTopBanner" in board
+          and "itemColor(\"&e#" in board)
+
     print("\n=== Rival Teams GUI layout (2.3.186) ===")
     chest_diff = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/DifficultyChestGui.java")
     check("teamMutualRivalSlots avoids mode row", "teamMutualRivalSlots" in board

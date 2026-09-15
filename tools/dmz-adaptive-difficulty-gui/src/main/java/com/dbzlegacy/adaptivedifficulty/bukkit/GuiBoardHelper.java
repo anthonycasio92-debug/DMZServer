@@ -7,6 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.ChatColor;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -272,16 +273,16 @@ final class GuiBoardHelper {
         }
         ItemStack stack = new ItemStack(mat);
         ItemMeta meta = stack.getItemMeta();
-        meta.setDisplayName(amp("&e#" + card.rank + " &f" + card.name));
+        meta.setDisplayName(itemColor("&e#" + card.rank + " &f" + card.name));
         List<String> lore = new ArrayList<>();
         if (!card.value.isBlank()) {
-            lore.add(amp("&7" + card.value));
+            lore.add(itemColor("&7" + card.value));
         }
         if (card.rosterSize > 0) {
-            lore.add(amp("&8" + card.rosterSize + " fighter" + (card.rosterSize == 1 ? "" : "s")));
+            lore.add(itemColor("&8" + card.rosterSize + " fighter" + (card.rosterSize == 1 ? "" : "s")));
         }
         lore.add("");
-        lore.add(amp("&8Season leaderboard"));
+        lore.add(itemColor("&8Season leaderboard"));
         meta.setLore(lore);
         stack.setItemMeta(meta);
         return stack;
@@ -776,5 +777,13 @@ final class GuiBoardHelper {
 
     static String amp(String s) {
         return s == null ? "" : s.replace('§', '&');
+    }
+
+    /** Bukkit item display: normalize §→& then translate & codes for ItemMeta. */
+    static String itemColor(String s) {
+        if (s == null) {
+            return "";
+        }
+        return ChatColor.translateAlternateColorCodes('&', s.replace('§', '&'));
     }
 }
