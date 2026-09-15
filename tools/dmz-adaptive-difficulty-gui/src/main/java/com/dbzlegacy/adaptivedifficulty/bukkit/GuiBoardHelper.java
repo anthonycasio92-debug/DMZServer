@@ -103,6 +103,36 @@ final class GuiBoardHelper {
      * Never uses row 3 (28–34) where sort / Members / HoF / war controls live.
      * When {@code reserveWarRow}, leaves 19/21/23 open for Declare / Accept / Decline.
      */
+    /**
+     * Rival Teams page — mutual rival heads only on rows that do not overlap mode controls
+     * (slots 20, 22, 24) or Open Rival (31).
+     */
+    static int[] teamMutualRivalSlots(int count) {
+        int n = Math.max(0, count);
+        if (n == 0) {
+            return new int[0];
+        }
+        if (n <= ROW_WIDTH) {
+            int start = 10 + (ROW_WIDTH - n) / 2;
+            int[] out = new int[n];
+            for (int i = 0; i < n; i++) {
+                out[i] = start + i;
+            }
+            return out;
+        }
+        int[] pool = {
+                10, 11, 12, 13, 14, 15, 16,
+                19, 21, 23, 25, 26,
+                28, 29, 30, 32, 33, 34
+        };
+        n = Math.min(n, pool.length);
+        int[] out = new int[n];
+        for (int i = 0; i < n; i++) {
+            out[i] = pool[i];
+        }
+        return out;
+    }
+
     static int[] dojoRankLadderSlots(int count, boolean reserveWarRow) {
         List<Integer> pool = new ArrayList<>();
         for (int s = 10; s <= 16; s++) {

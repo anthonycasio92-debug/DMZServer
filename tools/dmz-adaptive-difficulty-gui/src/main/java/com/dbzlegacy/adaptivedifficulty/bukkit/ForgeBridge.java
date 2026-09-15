@@ -2358,6 +2358,7 @@ public final class ForgeBridge {
             case "down", "reset", "zero", "clear", "set", "lower_tier",
                  "buy", "activate", "purchase_tier" -> "tiers";
             case "equip_title", "clear_title", "equip", "unequip_title" -> "titles";
+            case "team" -> "team";
             case "toggle_personal", "personal", "toggle_difficulty", "difficulty_toggle",
                  "toggle_coin_chat", "coin_chat", "toggle_chat", "chat_drops" -> "main";
             default -> "main";
