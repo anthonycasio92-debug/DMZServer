@@ -234,13 +234,14 @@ public final class SparChestGui implements Listener {
                 "&7Dojo season ladder · &f" + sortLabel,
                 "&8Banners show each dojo · use bottom row to change sort"));
         put(holder, inv, 4, item(Material.BOOKSHELF, "&6&lDojo Rankings — " + sortLabel, header));
+        boolean isMaster = "true".equalsIgnoreCase(ph.getOrDefault("dojo_master", "false"));
         int rowCount = !dojoCards.isEmpty() ? dojoCards.size() : entries.size();
         if (rowCount == 0) {
             put(holder, inv, 13, tipBtn(viewer, "spar.empty.no_dojo_rank", Material.BARRIER,
                     "&7No dojo data yet",
                     List.of("&7Join a dojo and spar rivals", "&8from other dojos")));
         } else {
-            int[] slots = GuiBoardHelper.centeredSlots(Math.min(rowCount, 14));
+            int[] slots = GuiBoardHelper.dojoRankLadderSlots(rowCount, isMaster);
             for (int i = 0; i < slots.length && i < rowCount; i++) {
                 ItemStack icon = !dojoCards.isEmpty()
                         ? GuiBoardHelper.dojoTopBanner(dojoCards.get(i))
@@ -248,7 +249,6 @@ public final class SparChestGui implements Listener {
                 put(holder, inv, slots[i], icon);
             }
         }
-        boolean isMaster = "true".equalsIgnoreCase(ph.getOrDefault("dojo_master", "false"));
         if (isMaster) {
             put(holder, inv, 19, pageBtn(viewer, "spar.dojo.challenge", Material.DIAMOND_SWORD, "&cDeclare War…",
                     "&7Challenge another dojo master"),
@@ -363,7 +363,7 @@ public final class SparChestGui implements Listener {
                     head = GuiPlayerPicker.headByName(name, "&f" + name,
                             List.of("&7" + rp + " ranking points contributed"));
                 }
-                put(holder, inv, slots[i], head, SlotAction.page("dojo_members"));
+                put(holder, inv, slots[i], head);
             }
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo Rankings"),

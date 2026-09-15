@@ -762,9 +762,31 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return true;
         }
         String system = args[0].toLowerCase(Locale.ROOT);
-        String action = args[1];
-        String arg = args.length > 2 ? args[2] : "";
-        String returnPage = args.length > 3 ? args[3] : "main";
+        String action;
+        String arg;
+        String returnPage;
+        if (("spar".equals(system) || "sparring".equals(system)) && args.length >= 3
+                && "do".equalsIgnoreCase(args[1])) {
+            action = args[2];
+            if (args.length == 3) {
+                arg = "";
+                returnPage = "main";
+            } else if (args.length == 4) {
+                arg = args[3];
+                returnPage = "main";
+            } else {
+                returnPage = args[args.length - 1];
+                StringBuilder mid = new StringBuilder(args[3]);
+                for (int i = 4; i < args.length - 1; i++) {
+                    mid.append(' ').append(args[i]);
+                }
+                arg = mid.toString();
+            }
+        } else {
+            action = args[1];
+            arg = args.length > 2 ? args[2] : "";
+            returnPage = args.length > 3 ? args[3] : "main";
+        }
         // For page/refresh, the page name may contain ':' (challenge_time:uuid:…).
         // When only 3 tokens: lmdo rival page challenge_time:uuid:x — arg is the page.
         if (("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action))

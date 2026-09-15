@@ -941,6 +941,14 @@ def main() -> int:
     check("Chest dojo rank uses banner cards",
           "sparDojoTopCards" in chest and "dojoTopBanner" in chest)
 
+    print("\n=== Dojo rankings menu layout (2.3.183) ===")
+    plugin = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/AdaptiveDifficultyGuiPlugin.java")
+    check("dojoRankLadderSlots avoids control row", "dojoRankLadderSlots" in board)
+    check("CMI war challenge lmdo (no bare do)", "dojo_challenge uuid:" in cmi
+          and "lmdo spar do dojo_challenge" not in cmi)
+    check("lmdo spar do unwrap", '"do".equalsIgnoreCase(args[1])' in plugin
+          and "action = args[2]" in plugin)
+
 
     print("\n=== Dojo membership roster (2.3.154) ===")
     spar_sys152 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")

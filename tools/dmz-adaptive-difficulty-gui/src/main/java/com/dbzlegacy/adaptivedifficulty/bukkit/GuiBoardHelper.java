@@ -98,6 +98,34 @@ final class GuiBoardHelper {
         return out;
     }
 
+    /**
+     * Dojo rankings ladder — interior rows 1–2 only (slots 10–16, 19–25).
+     * Never uses row 3 (28–34) where sort / Members / HoF / war controls live.
+     * When {@code reserveWarRow}, leaves 19/21/23 open for Declare / Accept / Decline.
+     */
+    static int[] dojoRankLadderSlots(int count, boolean reserveWarRow) {
+        List<Integer> pool = new ArrayList<>();
+        for (int s = 10; s <= 16; s++) {
+            pool.add(s);
+        }
+        for (int s = 19; s <= 25; s++) {
+            if (reserveWarRow && (s == 19 || s == 21 || s == 23)) {
+                continue;
+            }
+            pool.add(s);
+        }
+        int n = Math.min(Math.max(0, count), pool.size());
+        if (n == 0) {
+            return new int[0];
+        }
+        int start = (pool.size() - n) / 2;
+        int[] out = new int[n];
+        for (int i = 0; i < n; i++) {
+            out[i] = pool.get(start + i);
+        }
+        return out;
+    }
+
     /** Single centered row (middle) for small button groups. */
     static int[] centeredRow(int count) {
         int n = Math.max(0, Math.min(count, ROW_WIDTH));
