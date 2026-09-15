@@ -10,7 +10,7 @@ All new work in this repo targets the **test server** only.
 - Do **not** `sftp`/`scp`/`rsync` jars, plugins, kubejs, Fabled configs, or scripts to live.
 - Do **not** move files into live `mods/`, `plugins/`, or `kubejs/` from this agent/repo workflow.
 - Read-only pulls from live (logs, telemetry snapshots) are allowed only when explicitly requested.
-- Live stays at whatever was last deployed before this policy. No further live pushes unless the owner explicitly overrides this doc in writing.
+- Live stays at whatever was last deployed before this policy. **Owner may override** and request a live push; use `scripts/deploy-lm-live.sh` with `LIVE_SFTP_*` credentials (host is **not** stored in git).
 
 ## Test server — default deploy target
 

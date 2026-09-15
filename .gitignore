@@ -34,4 +34,5 @@ tools/dmz-adaptive-difficulty/build/
 /dmz_adaptive_difficulty-*.jar
 tools/dmz-adaptive-difficulty/sim/__pycache__/
 test-sftp.env
+live-sftp.env
 hits-*.jsonl
