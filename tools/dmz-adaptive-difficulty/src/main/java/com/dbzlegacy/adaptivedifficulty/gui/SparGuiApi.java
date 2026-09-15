@@ -124,6 +124,9 @@ public final class SparGuiApi {
         out.put("dojo_wins", dojoEntry == null ? "0" : String.valueOf(dojoEntry.wins));
         out.put("dojo_display_name", dojoKey == null ? "" : DojoRankings.dojoDisplayName(dojoKey));
         out.put("dojo_banner", dojoKey == null ? "WHITE_BANNER" : DojoRankings.dojoBannerMaterial(dojoKey));
+        boolean warIncoming = DojoRankings.hasIncomingWarChallenge(player);
+        out.put("dojo_war_incoming", warIncoming ? "true" : "false");
+        out.put("dojo_war_from", warIncoming ? DojoRankings.incomingWarFromName(player) : "");
         return out;
     }
 
@@ -162,6 +165,13 @@ public final class SparGuiApi {
             return List.of("§cSparring system is disabled.");
         }
         return SparringSystem.dojoInfoLines(player);
+    }
+
+    public static List<String> dojoWarLines(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of("§cSparring system is disabled.");
+        }
+        return DojoRankings.warInfoLines(player);
     }
 
     public static List<String> rivalDojoCards(ServerPlayer player) {
@@ -332,12 +342,13 @@ public final class SparGuiApi {
             case "stats", "statistics" -> statsLines(player);
             case "top", "leaderboard" -> topLines(player, "tp");
             case "dojo_top", "dojo_rank", "dojo_rankings", "dojo_leaderboard" -> dojoTopLines(player, "rp");
-            case "dojo_info", "dojo_war" -> {
+            case "dojo_info" -> {
                 List<String> merged = new ArrayList<>(dojoInfoLines(player));
                 merged.add("");
                 merged.addAll(dojoTopLines(player, "rp"));
                 yield merged;
             }
+            case "dojo_war" -> dojoWarLines(player);
             case "dojo_hof", "dojo_hall", "dojo_hall_of_fame" -> dojoHallOfFameLines(player);
             case "dojo_members", "dojo_contributions" -> dojoMemberLines(player);
             case "mentor", "actions", "dojo", "roster", "apprentices" -> mentorLines(player);

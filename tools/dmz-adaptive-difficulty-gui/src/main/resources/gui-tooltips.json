@@ -944,6 +944,37 @@
           "&7Sort by TP earned vs other dojos"
         ]
       },
+      "war": {
+        "name": "&cDojo War",
+        "lore": [
+          "&7Declare, accept, and manage dojo wars",
+          "&8Same hub style as Mentor Actions"
+        ]
+      },
+      "war_rankings": {
+        "name": "&6Rankings",
+        "lore": [
+          "&7Back to the season ladder"
+        ]
+      },
+      "war_master_only": {
+        "name": "&8Declare War…",
+        "lore": [
+          "&7Only dojo masters manage wars"
+        ]
+      },
+      "accept_none": {
+        "name": "&8Accept War",
+        "lore": [
+          "&7No pending challenge"
+        ]
+      },
+      "decline_none": {
+        "name": "&8Decline War",
+        "lore": [
+          "&7No pending challenge"
+        ]
+      },
       "challenge": {
         "name": "&cDeclare War…",
         "lore": [
@@ -1527,5 +1558,5 @@
       ]
     }
   },
-  "_catalogRevision": 185
+  "_catalogRevision": 186
 }

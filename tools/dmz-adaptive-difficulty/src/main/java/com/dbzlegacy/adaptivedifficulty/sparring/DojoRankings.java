@@ -581,7 +581,7 @@ public final class DojoRankings {
         }
         if (isDojoMaster(player)) {
             lines.add("§8Rename: §7/spar dojo name <your name>");
-            lines.add("§8Banner: §7Dojo Rankings → Banner");
+            lines.add("§8Banner & wars: §7Dojo Rankings → Dojo War");
         }
         SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(
                 player.m_20148_().toString().toLowerCase(Locale.ROOT));
@@ -598,6 +598,62 @@ public final class DojoRankings {
                     + " §8(2× RP)");
         }
         return lines;
+    }
+
+    /** Lore for the Dojo War actions hub (masters manage declare / accept / banner). */
+    public static List<String> warInfoLines(ServerPlayer player) {
+        List<String> lines = new ArrayList<>();
+        lines.add("§8── §cDojo War §8──");
+        if (player == null) {
+            lines.add("§cUnavailable.");
+            return lines;
+        }
+        if (!isDojoMaster(player)) {
+            lines.add("§7Only dojo masters manage wars.");
+            lines.add("§8Your mentor master accepts challenges.");
+            return lines;
+        }
+        String key = homeDojoKey(player);
+        lines.add("§7Challenge rival dojos for §f2× season RP§7.");
+        lines.add("§8Wars run 24 hours once accepted.");
+        SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(
+                player.m_20148_().toString().toLowerCase(Locale.ROOT));
+        if (pending != null && pending.expiresAt > System.currentTimeMillis() && !pending.active) {
+            lines.add("§eIncoming challenge §f" + blank(pending.fromDojoName, "?"));
+            lines.add("§8Accept or decline below");
+        }
+        if (key != null) {
+            SparStore.DojoChallenge active = activeChallengeFor(key);
+            if (active != null) {
+                String rival = key.equalsIgnoreCase(active.fromDojoUuid)
+                        ? active.toDojoName
+                        : active.fromDojoName;
+                lines.add("§6§lActive war §fvs " + blank(rival, "?"));
+            }
+        }
+        return lines;
+    }
+
+    public static boolean hasIncomingWarChallenge(ServerPlayer player) {
+        if (player == null || !isDojoMaster(player)) {
+            return false;
+        }
+        SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(
+                player.m_20148_().toString().toLowerCase(Locale.ROOT));
+        return pending != null && !pending.active
+                && pending.expiresAt > System.currentTimeMillis();
+    }
+
+    public static String incomingWarFromName(ServerPlayer player) {
+        if (player == null) {
+            return "";
+        }
+        SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(
+                player.m_20148_().toString().toLowerCase(Locale.ROOT));
+        if (pending == null) {
+            return "";
+        }
+        return blank(pending.fromDojoName, "?");
     }
 
     public static String setDojoName(ServerPlayer master, String rawName) {

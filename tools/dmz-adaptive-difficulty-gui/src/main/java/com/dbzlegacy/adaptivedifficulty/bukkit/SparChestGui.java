@@ -57,8 +57,10 @@ public final class SparChestGui implements Listener {
             inv = mentor(viewer, subject);
         } else if ("pending".equals(p) || "invites".equals(p) || "pendinginvites".equals(p)) {
             inv = pending(viewer, subject);
+        } else if ("dojo_war".equals(p)) {
+            inv = dojoWar(viewer, subject);
         } else if (p.startsWith("dojo_top_") || p.startsWith("dojo_top ") || "dojo_top".equals(p)
-                || "dojo_rank".equals(p) || "dojo_rankings".equals(p) || "dojo_war".equals(p)) {
+                || "dojo_rank".equals(p) || "dojo_rankings".equals(p)) {
             inv = dojoRank(viewer, subject, p);
         } else if ("pick_dojo_challenge".equals(p)) {
             inv = dojoChallengePicker(viewer, subject);
@@ -250,18 +252,10 @@ public final class SparChestGui implements Listener {
             }
         }
         if (isMaster) {
-            put(holder, inv, 19, pageBtn(viewer, "spar.dojo.challenge", Material.DIAMOND_SWORD, "&cDeclare War…",
-                    "&7Challenge another dojo master"),
-                    SlotAction.page("pick_dojo_challenge"));
-            put(holder, inv, 21, tipBtn(viewer, "spar.dojo.accept", Material.LIME_DYE, "&aAccept War",
-                    List.of("&7Accept pending dojo war")),
-                    SlotAction.act("dojo_accept", "0", "dojo_rank"));
-            put(holder, inv, 23, tipBtn(viewer, "spar.dojo.decline", Material.RED_DYE, "&cDecline War",
-                    List.of("&7Decline pending challenge")),
-                    SlotAction.act("dojo_decline", "0", "dojo_rank"));
-            put(holder, inv, 28, pageBtn(viewer, "spar.dojo.banner", Material.WHITE_BANNER, "&fBanner…",
-                    "&7Pick dojo banner color"),
-                    SlotAction.page("pick_dojo_banner"));
+            put(holder, inv, 19, pageBtn(viewer, "spar.dojo.war", Material.DIAMOND_SWORD, "&cDojo War",
+                    "&7Declare · accept · banner",
+                    "&8Same layout as Mentor Actions"),
+                    SlotAction.page("dojo_war"));
         }
         put(holder, inv, 30, pageBtn(viewer, "spar.dojo.members", Material.PLAYER_HEAD, "&bMembers",
                 "&7Season contributions"), SlotAction.page("dojo_members"));
@@ -279,6 +273,69 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    /**
+     * Dojo War hub — mirrors Mentor Actions:
+     * Declare · Accept · Decline · Banner · Rankings.
+     */
+    private Inventory dojoWar(Player viewer, Player subject) {
+        Holder holder = new Holder("dojo_war");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Dojo War"));
+        holder.bind(inv);
+        frame(inv, 45);
+        Map<String, String> ph = ForgeBridge.sparPlaceholders(subject);
+        boolean isMaster = "true".equalsIgnoreCase(ph.getOrDefault("dojo_master", "false"));
+        boolean incoming = "true".equalsIgnoreCase(ph.getOrDefault("dojo_war_incoming", "false"));
+        String warFrom = blank(ph.get("dojo_war_from"), "?");
+        put(holder, inv, 4, item(Material.DIAMOND_SWORD, "&c&lDojo War",
+                prependBlank(toAmp(ForgeBridge.sparLines(subject, "dojo_war")))));
+        if (isMaster) {
+            put(holder, inv, 19, pageBtn(viewer, "spar.dojo.challenge", Material.LIME_DYE, "&cDeclare War…",
+                    "&7Pick a rival dojo to challenge",
+                    "&82× RP during active wars"),
+                    SlotAction.page("pick_dojo_challenge"));
+            if (incoming) {
+                put(holder, inv, 20, tipBtn(viewer, "spar.dojo.accept", Material.LIME_DYE, "&aAccept War",
+                        List.of("&7Accept challenge from &f" + warFrom,
+                                "&8Starts a 24h war"),
+                        Map.of("name", warFrom)),
+                        SlotAction.act("dojo_accept", "0", "dojo_war"));
+                put(holder, inv, 21, tipBtn(viewer, "spar.dojo.decline", Material.RED_DYE, "&cDecline War",
+                        List.of("&7Decline challenge from &f" + warFrom),
+                        Map.of("name", warFrom)),
+                        SlotAction.act("dojo_decline", "0", "dojo_war"));
+            } else {
+                put(holder, inv, 20, tipBtn(viewer, "spar.dojo.accept_none", Material.GRAY_DYE, "&8Accept War",
+                        List.of("&7No pending challenge")));
+                put(holder, inv, 21, tipBtn(viewer, "spar.dojo.decline_none", Material.GRAY_DYE, "&8Decline War",
+                        List.of("&7No pending challenge")));
+            }
+            put(holder, inv, 22, pageBtn(viewer, "spar.dojo.banner", Material.WHITE_BANNER, "&fBanner…",
+                    "&7Pick dojo banner color",
+                    "&8Shows on rankings ladder"),
+                    SlotAction.page("pick_dojo_banner"));
+            put(holder, inv, 25, pageBtn(viewer, "spar.dojo.war_rankings", Material.BOOKSHELF, "&6Rankings",
+                    "&7Season ladder & sort",
+                    "&8Back to Dojo Rankings"),
+                    SlotAction.page("dojo_rank"));
+        } else {
+            put(holder, inv, 19, tipBtn(viewer, "spar.dojo.war_master_only", Material.GRAY_DYE, "&8Declare War…",
+                    List.of("&7Only dojo masters manage wars")));
+            put(holder, inv, 20, tipBtn(viewer, "spar.dojo.accept_none", Material.GRAY_DYE, "&8Accept War",
+                    List.of("&7Masters only")));
+            put(holder, inv, 21, tipBtn(viewer, "spar.dojo.decline_none", Material.GRAY_DYE, "&8Decline War",
+                    List.of("&7Masters only")));
+            put(holder, inv, 22, tipBtn(viewer, "spar.dojo.banner", Material.GRAY_DYE, "&8Banner…",
+                    List.of("&7Masters only")));
+            put(holder, inv, 25, pageBtn(viewer, "spar.dojo.war_rankings", Material.BOOKSHELF, "&6Rankings",
+                    "&7View season ladder"),
+                    SlotAction.page("dojo_rank"));
+        }
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo Rankings"),
+                SlotAction.page("dojo_rank"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -318,11 +375,11 @@ public final class SparChestGui implements Listener {
                             List.of("&7Season RP &f" + rp, "&cChallenge to war"));
                 }
                 put(holder, inv, slots[i], head,
-                        SlotAction.act("dojo_challenge", "uuid:" + uuid, "dojo_rank"));
+                        SlotAction.act("dojo_challenge", "uuid:" + uuid, "dojo_war"));
             }
         }
-        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo Rankings"),
-                SlotAction.page("dojo_rank"));
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo War"),
+                SlotAction.page("dojo_war"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -400,10 +457,10 @@ public final class SparChestGui implements Listener {
                     GuiTooltips.buttonLore("spar.dojo.banner_pick",
                             List.of("&7Use this banner for your dojo", "", "&eClick to apply8Set as your dojo banner"),
                             bannerVars, null)),
-                    SlotAction.act("dojo_banner", banners[i], "dojo_rank"));
+                    SlotAction.act("dojo_banner", banners[i], "dojo_war"));
         }
-        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo Rankings"),
-                SlotAction.page("dojo_rank"));
+        put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo War"),
+                SlotAction.page("dojo_war"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }

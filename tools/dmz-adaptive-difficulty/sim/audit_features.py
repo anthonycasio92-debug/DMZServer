@@ -944,8 +944,8 @@ def main() -> int:
     print("\n=== GUI tooltip catalog humanize (2.3.185) ===")
     tips185 = read(ROOT / "tools/dmz-adaptive-difficulty-gui/src/main/resources/gui-tooltips.json")
     gui_tt = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/GuiTooltips.java")
-    check("gui-tooltips catalog revision", '"_catalogRevision": 185' in tips185)
-    check("GuiTooltips CATALOG_REVISION 185", "CATALOG_REVISION = 185" in gui_tt)
+    check("gui-tooltips catalog revision", '"_catalogRevision": 186' in tips185)
+    check("GuiTooltips CATALOG_REVISION 186", "CATALOG_REVISION = 186" in gui_tt)
     check("catalog upgrade on reload", "catalogRevision" in gui_tt and "catalogUpgraded" in gui_tt)
     check("humanize_gui_tooltips script", (ROOT / "tools/dmz-adaptive-difficulty/sim/humanize_gui_tooltips.py").is_file())
 
@@ -956,6 +956,12 @@ def main() -> int:
           and "lmdo spar do dojo_challenge" not in cmi)
     check("lmdo spar do unwrap", '"do".equalsIgnoreCase(args[1])' in plugin
           and "action = args[2]" in plugin)
+
+    print("\n=== Dojo War hub (2.3.188) ===")
+    spar_chest = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/SparChestGui.java")
+    check("dojoWar hub page", "private Inventory dojoWar" in spar_chest
+          and "openDojoWar" in cmi_gui)
+    check("DojoRankings.warInfoLines", "warInfoLines" in read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.java"))
 
     print("\n=== Dojo rankings banner colors (2.3.187) ===")
     check("dojoTopBanner uses itemColor", "itemColor" in board and "dojoTopBanner" in board

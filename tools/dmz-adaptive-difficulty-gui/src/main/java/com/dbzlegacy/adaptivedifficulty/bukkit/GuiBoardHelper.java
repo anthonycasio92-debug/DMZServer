@@ -102,7 +102,7 @@ final class GuiBoardHelper {
     /**
      * Dojo rankings ladder — interior rows 1–2 only (slots 10–16, 19–25).
      * Never uses row 3 (28–34) where sort / Members / HoF / war controls live.
-     * When {@code reserveWarRow}, leaves 19/21/23 open for Declare / Accept / Decline.
+     * When {@code reserveWarRow}, leaves slot 19 open for the Dojo War hub button.
      */
     /**
      * Rival Teams page — mutual rival heads only on rows that do not overlap mode controls
@@ -140,7 +140,7 @@ final class GuiBoardHelper {
             pool.add(s);
         }
         for (int s = 19; s <= 25; s++) {
-            if (reserveWarRow && (s == 19 || s == 21 || s == 23)) {
+            if (reserveWarRow && s == 19) {
                 continue;
             }
             pool.add(s);
