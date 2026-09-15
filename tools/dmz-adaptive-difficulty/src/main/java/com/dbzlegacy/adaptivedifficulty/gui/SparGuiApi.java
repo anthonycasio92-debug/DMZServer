@@ -127,6 +127,9 @@ public final class SparGuiApi {
         boolean warIncoming = DojoRankings.hasIncomingWarChallenge(player);
         out.put("dojo_war_incoming", warIncoming ? "true" : "false");
         out.put("dojo_war_from", warIncoming ? DojoRankings.incomingWarFromName(player) : "");
+        int warPending = DojoRankings.pendingDojoWarCount(player);
+        out.put("dojo_war_pending", String.valueOf(warPending));
+        out.put("dojo_war_pending_count", out.get("dojo_war_pending"));
         return out;
     }
 
@@ -264,6 +267,14 @@ public final class SparGuiApi {
             return List.of();
         }
         return SparringSystem.pendingIncomingMentorArgs(player);
+    }
+
+    /** Pending dojo war challenges (incoming + outgoing) for GUI boards. */
+    public static List<String> pendingDojoWarCards(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of();
+        }
+        return SparringSystem.pendingDojoWarCards(player);
     }
 
     /** Mentor's dojo roster cards ({@code uuid\tname}) for Release pickers. */
@@ -575,6 +586,9 @@ public final class SparGuiApi {
         }
         if ("dojo_decline".equals(act) || "dojo_war_decline".equals(act)) {
             return SparringSystem.dojoDeclineWar(player);
+        }
+        if ("dojo_war_cancel".equals(act) || "dojo_war_revoke".equals(act) || "dojo_cancel".equals(act)) {
+            return SparringSystem.dojoRevokeWar(player, a);
         }
         if ("dojo_name".equals(act) || "dojo_rename".equals(act)) {
             if (a.isBlank()) {

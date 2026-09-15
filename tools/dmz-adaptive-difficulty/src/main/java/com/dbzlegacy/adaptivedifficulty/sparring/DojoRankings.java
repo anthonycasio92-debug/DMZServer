@@ -4,6 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -620,7 +621,10 @@ public final class DojoRankings {
                 player.m_20148_().toString().toLowerCase(Locale.ROOT));
         if (pending != null && pending.expiresAt > System.currentTimeMillis() && !pending.active) {
             lines.add("§eIncoming challenge §f" + blank(pending.fromDojoName, "?"));
-            lines.add("§8Accept or decline below");
+            lines.add("§8Open §7Pending §8to accept or decline");
+        }
+        if (pendingDojoWarCount(player) > 0) {
+            lines.add("§7Pending wars §f" + pendingDojoWarCount(player));
         }
         if (key != null) {
             SparStore.DojoChallenge active = activeChallengeFor(key);
@@ -789,7 +793,7 @@ public final class DojoRankings {
         SparStore.get().markDirty();
         DmzRewards.msg(target, LmChat.note("Dojo", "§f" + c.fromDojoName
                 + " §e challenged your dojo to war!"));
-        DmzRewards.msg(target, LmChat.tip("/spar", "→ Dojo Rankings → Accept War"));
+        DmzRewards.msg(target, LmChat.tip("/spar", "→ Dojo War → Pending to Accept or Decline"));
         return "§aWar challenge sent to §f" + target.m_7755_().getString() + "§a.";
     }
 
@@ -824,6 +828,105 @@ public final class DojoRankings {
         }
         SparStore.get().markDirty();
         return "§7Declined war challenge from §f" + blank(c.fromDojoName, "?") + "§7.";
+    }
+
+    /**
+     * Pending dojo war cards for GUI: {@code masterUuid\tdojoName\tIN|OUT\texpiresMs\tonline\twar}.
+     */
+    public static List<String> pendingDojoWarCards(ServerPlayer player) {
+        List<String> out = new ArrayList<>();
+        if (player == null || !isDojoMaster(player)) {
+            return out;
+        }
+        long now = System.currentTimeMillis();
+        String key = player.m_20148_().toString().toLowerCase(Locale.ROOT);
+        MinecraftServer server = player.m_20194_();
+
+        SparStore.DojoChallenge incoming = SparStore.get().dojoChallenges.get(key);
+        if (incoming != null && !incoming.active && incoming.expiresAt > now) {
+            String fromUuid = blank(incoming.fromDojoUuid, "");
+            String name = blank(incoming.fromDojoName, "?").replace('\t', ' ');
+            boolean online = isOnline(server, fromUuid);
+            out.add(fromUuid + "\t" + name + "\tIN\t" + incoming.expiresAt + "\t"
+                    + (online ? "1" : "0") + "\twar");
+        }
+
+        for (Map.Entry<String, SparStore.DojoChallenge> e : SparStore.get().dojoChallenges.entrySet()) {
+            SparStore.DojoChallenge c = e.getValue();
+            if (c == null || c.active || c.expiresAt <= now) {
+                continue;
+            }
+            if (!key.equalsIgnoreCase(c.fromDojoUuid)) {
+                continue;
+            }
+            String toUuid = blank(c.toDojoUuid, e.getKey() == null ? "" : e.getKey());
+            String name = blank(c.toDojoName, "?").replace('\t', ' ').replace('\n', ' ');
+            boolean online = isOnline(server, toUuid);
+            out.add(toUuid + "\t" + name + "\tOUT\t" + c.expiresAt + "\t" + (online ? "1" : "0") + "\twar");
+        }
+        return out;
+    }
+
+    public static int pendingDojoWarCount(ServerPlayer player) {
+        return pendingDojoWarCards(player).size();
+    }
+
+    public static String revokeOutgoingChallenge(ServerPlayer master, String targetMasterRaw) {
+        if (master == null) {
+            return "§cPlayers only.";
+        }
+        if (!isDojoMaster(master)) {
+            return "§cOnly dojo masters can cancel war challenges.";
+        }
+        String fromKey = master.m_20148_().toString().toLowerCase(Locale.ROOT);
+        String targetKey = normalizeMasterUuid(targetMasterRaw);
+        long now = System.currentTimeMillis();
+        Iterator<Map.Entry<String, SparStore.DojoChallenge>> it =
+                SparStore.get().dojoChallenges.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, SparStore.DojoChallenge> e = it.next();
+            SparStore.DojoChallenge c = e.getValue();
+            if (c == null || c.active || c.expiresAt <= now) {
+                continue;
+            }
+            if (!fromKey.equalsIgnoreCase(c.fromDojoUuid)) {
+                continue;
+            }
+            String toKey = blank(c.toDojoUuid, e.getKey()).toLowerCase(Locale.ROOT);
+            if (targetKey != null && !targetKey.isBlank()
+                    && !targetKey.equalsIgnoreCase(toKey)
+                    && !targetKey.equalsIgnoreCase(e.getKey())) {
+                continue;
+            }
+            String name = blank(c.toDojoName, "?");
+            it.remove();
+            SparStore.get().markDirty();
+            return "§7Cancelled war challenge to §f" + name + "§7.";
+        }
+        return "§cNo outgoing war challenge to cancel.";
+    }
+
+    private static String normalizeMasterUuid(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "";
+        }
+        String s = raw.trim();
+        if (s.regionMatches(true, 0, "uuid:", 0, 5)) {
+            s = s.substring(5).trim();
+        }
+        return s.toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean isOnline(MinecraftServer server, String uuid) {
+        if (server == null || uuid == null || uuid.isBlank()) {
+            return false;
+        }
+        for (net.minecraft.server.level.ServerPlayer p : server.m_6846_().m_11314_()) {
+            if (p != null && uuid.equalsIgnoreCase(p.m_20148_().toString())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static int dojoRank(String dojoKey, String category) {

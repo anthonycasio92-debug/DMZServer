@@ -944,8 +944,8 @@ def main() -> int:
     print("\n=== GUI tooltip catalog humanize (2.3.185) ===")
     tips185 = read(ROOT / "tools/dmz-adaptive-difficulty-gui/src/main/resources/gui-tooltips.json")
     gui_tt = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/GuiTooltips.java")
-    check("gui-tooltips catalog revision", '"_catalogRevision": 186' in tips185)
-    check("GuiTooltips CATALOG_REVISION 186", "CATALOG_REVISION = 186" in gui_tt)
+    check("gui-tooltips catalog revision", '"_catalogRevision": 187' in tips185)
+    check("GuiTooltips CATALOG_REVISION 187", "CATALOG_REVISION = 187" in gui_tt)
     check("catalog upgrade on reload", "catalogRevision" in gui_tt and "catalogUpgraded" in gui_tt)
     check("humanize_gui_tooltips script", (ROOT / "tools/dmz-adaptive-difficulty/sim/humanize_gui_tooltips.py").is_file())
 

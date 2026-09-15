@@ -73,6 +73,7 @@ public final class ForgeBridge {
     private static Method sparHandleDoMethod;
     private static Method sparPendingMentorInviteCardsMethod;
     private static Method sparPendingIncomingMentorArgsMethod;
+    private static Method sparPendingDojoWarCardsMethod;
     private static Method sparApprenticeCardsMethod;
     private static Method sparMembershipDojoCardsMethod;
     private static Method sparRivalDojoCardsMethod;
@@ -1203,6 +1204,10 @@ public final class ForgeBridge {
         return invokeSparStringList(player, "pendingIncomingMentorArgs");
     }
 
+    public static List<String> sparPendingDojoWarCards(Player player) {
+        return invokeSparStringList(player, "pendingDojoWarCards");
+    }
+
     /** Mentor dojo roster cards ({@code uuid\tname}) for Release pickers. */
     public static List<String> sparApprenticeCards(Player player) {
         return invokeSparStringList(player, "apprenticeCards");
@@ -1263,6 +1268,7 @@ public final class ForgeBridge {
             Method m = switch (methodName) {
                 case "pendingMentorInviteCards" -> sparPendingMentorInviteCardsMethod;
                 case "pendingIncomingMentorArgs" -> sparPendingIncomingMentorArgsMethod;
+                case "pendingDojoWarCards" -> sparPendingDojoWarCardsMethod;
                 case "apprenticeCards" -> sparApprenticeCardsMethod;
                 case "membershipDojoCards" -> sparMembershipDojoCardsMethod;
                 case "rivalDojoCards" -> sparRivalDojoCardsMethod;
@@ -2164,6 +2170,13 @@ public final class ForgeBridge {
                     sparPendingIncomingMentorArgsMethod = api.getMethod("pendingIncomingMentorArgs", sp);
                 } catch (Throwable ignored) {
                     sparPendingIncomingMentorArgsMethod = null;
+                }
+            }
+            if (sparPendingDojoWarCardsMethod == null) {
+                try {
+                    sparPendingDojoWarCardsMethod = api.getMethod("pendingDojoWarCards", sp);
+                } catch (Throwable ignored) {
+                    sparPendingDojoWarCardsMethod = null;
                 }
             }
             if (sparApprenticeCardsMethod == null) {

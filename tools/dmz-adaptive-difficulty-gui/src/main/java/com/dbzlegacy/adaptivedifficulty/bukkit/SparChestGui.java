@@ -59,6 +59,10 @@ public final class SparChestGui implements Listener {
             inv = pending(viewer, subject);
         } else if ("dojo_war".equals(p)) {
             inv = dojoWar(viewer, subject);
+        } else if ("dojo_war_pending".equals(p) || "dojo_war_invites".equals(p)) {
+            inv = dojoWarPending(viewer, subject);
+        } else if (p.startsWith("dojo_war_pending_decide:")) {
+            inv = dojoWarPendingDecide(viewer, subject, raw.substring("dojo_war_pending_decide:".length()).trim());
         } else if (p.startsWith("dojo_top_") || p.startsWith("dojo_top ") || "dojo_top".equals(p)
                 || "dojo_rank".equals(p) || "dojo_rankings".equals(p)) {
             inv = dojoRank(viewer, subject, p);
@@ -252,9 +256,16 @@ public final class SparChestGui implements Listener {
             }
         }
         if (isMaster) {
-            put(holder, inv, 19, pageBtn(viewer, "spar.dojo.war", Material.DIAMOND_SWORD, "&cDojo War",
-                    "&7Declare · accept · banner",
-                    "&8Same layout as Mentor Actions"),
+            int warPending = 0;
+            try {
+                warPending = Integer.parseInt(ph.getOrDefault("dojo_war_pending", "0"));
+            } catch (NumberFormatException ignored) {
+                warPending = 0;
+            }
+            put(holder, inv, 19, pageBtn(viewer, "spar.dojo.war", Material.DIAMOND_SWORD,
+                    warPending > 0 ? "&cDojo War &f(" + warPending + ")" : "&cDojo War",
+                    "&7Declare · pending · banner",
+                    warPending > 0 ? "&ePending wars — click to respond" : "&8Same layout as Mentor Actions"),
                     SlotAction.page("dojo_war"));
         }
         put(holder, inv, 30, pageBtn(viewer, "spar.dojo.members", Material.PLAYER_HEAD, "&bMembers",
@@ -288,8 +299,12 @@ public final class SparChestGui implements Listener {
         frame(inv, 45);
         Map<String, String> ph = ForgeBridge.sparPlaceholders(subject);
         boolean isMaster = "true".equalsIgnoreCase(ph.getOrDefault("dojo_master", "false"));
-        boolean incoming = "true".equalsIgnoreCase(ph.getOrDefault("dojo_war_incoming", "false"));
-        String warFrom = blank(ph.get("dojo_war_from"), "?");
+        int warPending = 0;
+        try {
+            warPending = Integer.parseInt(ph.getOrDefault("dojo_war_pending", "0"));
+        } catch (NumberFormatException ignored) {
+            warPending = 0;
+        }
         put(holder, inv, 4, item(Material.DIAMOND_SWORD, "&c&lDojo War",
                 prependBlank(toAmp(ForgeBridge.sparLines(subject, "dojo_war")))));
         if (isMaster) {
@@ -297,22 +312,11 @@ public final class SparChestGui implements Listener {
                     "&7Pick a rival dojo to challenge",
                     "&82× RP during active wars"),
                     SlotAction.page("pick_dojo_challenge"));
-            if (incoming) {
-                put(holder, inv, 20, tipBtn(viewer, "spar.dojo.accept", Material.LIME_DYE, "&aAccept War",
-                        List.of("&7Accept challenge from &f" + warFrom,
-                                "&8Starts a 24h war"),
-                        Map.of("name", warFrom)),
-                        SlotAction.act("dojo_accept", "0", "dojo_war"));
-                put(holder, inv, 21, tipBtn(viewer, "spar.dojo.decline", Material.RED_DYE, "&cDecline War",
-                        List.of("&7Decline challenge from &f" + warFrom),
-                        Map.of("name", warFrom)),
-                        SlotAction.act("dojo_decline", "0", "dojo_war"));
-            } else {
-                put(holder, inv, 20, tipBtn(viewer, "spar.dojo.accept_none", Material.GRAY_DYE, "&8Accept War",
-                        List.of("&7No pending challenge")));
-                put(holder, inv, 21, tipBtn(viewer, "spar.dojo.decline_none", Material.GRAY_DYE, "&8Decline War",
-                        List.of("&7No pending challenge")));
-            }
+            put(holder, inv, 21, pageBtn(viewer, "spar.dojo.war_pending", Material.CLOCK,
+                    warPending > 0 ? "&ePending &f(" + warPending + ")" : "&ePending",
+                    "&7Incoming + outgoing wars",
+                    warPending > 0 ? "&aAccept, decline, or revoke" : "&8No pending wars"),
+                    SlotAction.page("dojo_war_pending"));
             put(holder, inv, 22, pageBtn(viewer, "spar.dojo.banner", Material.WHITE_BANNER, "&fBanner…",
                     "&7Pick dojo banner color",
                     "&8Shows on rankings ladder"),
@@ -324,9 +328,7 @@ public final class SparChestGui implements Listener {
         } else {
             put(holder, inv, 19, tipBtn(viewer, "spar.dojo.war_master_only", Material.GRAY_DYE, "&8Declare War…",
                     List.of("&7Only dojo masters manage wars")));
-            put(holder, inv, 20, tipBtn(viewer, "spar.dojo.accept_none", Material.GRAY_DYE, "&8Accept War",
-                    List.of("&7Masters only")));
-            put(holder, inv, 21, tipBtn(viewer, "spar.dojo.decline_none", Material.GRAY_DYE, "&8Decline War",
+            put(holder, inv, 21, tipBtn(viewer, "spar.dojo.war_pending", Material.GRAY_DYE, "&8Pending",
                     List.of("&7Masters only")));
             put(holder, inv, 22, tipBtn(viewer, "spar.dojo.banner", Material.GRAY_DYE, "&8Banner…",
                     List.of("&7Masters only")));
@@ -336,8 +338,109 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo Rankings"),
                 SlotAction.page("dojo_rank"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
+    }
+
+    private Inventory dojoWarPending(Player viewer, Player subject) {
+        Holder holder = new Holder("dojo_war_pending");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Pending Dojo Wars"));
+        holder.bind(inv);
+        frame(inv, 45);
+        List<GuiBoardHelper.PendingInvite> wars = GuiBoardHelper.parsePendingInvites(
+                ForgeBridge.sparPendingDojoWarCards(subject));
+        List<String> header = new ArrayList<>();
+        header.add("");
+        header.add(wars.isEmpty() ? "&7No pending wars." : "&7" + wars.size() + " pending");
+        header.addAll(GuiBoardHelper.tips(viewer,
+                "&a◀ Incoming &7= Accept / Decline",
+                "&6▶ Outgoing &7= Revoke challenge"));
+        put(holder, inv, 4, item(Material.CLOCK, "&e&lPending Dojo Wars", header));
+        if (wars.isEmpty()) {
+            put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_dojo_war_pending", Material.BARRIER,
+                    "&7No pending wars",
+                    List.of("&7Declare war from Dojo War",
+                            "&7Incoming shows when challenged")));
+        } else {
+            int[] slots = GuiBoardHelper.centeredSlots(Math.min(wars.size(), 21));
+            for (int i = 0; i < slots.length && i < wars.size(); i++) {
+                GuiBoardHelper.PendingInvite war = wars.get(i);
+                ItemStack head = GuiBoardHelper.pendingInviteHead(viewer, war);
+                if (war.incoming) {
+                    put(holder, inv, slots[i], head,
+                            SlotAction.page("dojo_war_pending_decide:" + war.pickerArg()));
+                } else {
+                    put(holder, inv, slots[i], head,
+                            SlotAction.act("dojo_war_cancel", war.pickerArg(), "dojo_war_pending"));
+                }
+            }
+        }
+        put(holder, inv, 39, pageBtn(viewer, "spar.dojo.war_hub", Material.DIAMOND_SWORD, "&cDojo War",
+                "&7Declare · banner"), SlotAction.page("dojo_war"));
+        put(holder, inv, 36, pageBtn(viewer, "spar.dojo.war_pending_back", Material.ARROW, "&7Back",
+                "&7Dojo War"), SlotAction.page("dojo_war"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory dojoWarPendingDecide(Player viewer, Player subject, String arg) {
+        Holder holder = new Holder("dojo_war_pending_decide");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Dojo War Request"));
+        holder.bind(inv);
+        frame(inv, 45);
+        GuiBoardHelper.PendingInvite war = findDojoWarPendingInvite(subject, arg);
+        String display = war != null ? war.name : (arg == null || arg.isBlank() ? "?" : arg);
+        if (display.regionMatches(true, 0, "uuid:", 0, 5)) {
+            display = display.substring(5).trim();
+        }
+        ItemStack head = war != null
+                ? GuiBoardHelper.pendingInviteHead(viewer, war)
+                : item(Material.DIAMOND_SWORD, "&f" + display, List.of("&7Pending war challenge"));
+        put(holder, inv, 13, head);
+        put(holder, inv, 4, tipBtn(viewer, "spar.dojo.war_decide_info", Material.CLOCK, "&e&lRespond",
+                List.of("&7Challenge from dojo &f" + display,
+                        "&aAccept &7→ 24h war · &f2× RP",
+                        "&cDecline &7→ refuse challenge")));
+        put(holder, inv, 20, tipBtn(viewer, "spar.dojo.accept", Material.LIME_DYE, "&aAccept War",
+                List.of("&7Accept war with &f" + display),
+                Map.of("name", display)),
+                SlotAction.act("dojo_accept", "0", "dojo_war_pending"));
+        put(holder, inv, 24, tipBtn(viewer, "spar.dojo.decline", Material.RED_DYE, "&cDecline War",
+                List.of("&7Decline challenge from &f" + display),
+                Map.of("name", display)),
+                SlotAction.act("dojo_decline", "0", "dojo_war_pending"));
+        put(holder, inv, 36, pageBtn(viewer, "spar.dojo.war_decide_back", Material.ARROW, "&7Back",
+                "&7Pending wars"), SlotAction.page("dojo_war_pending"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private static GuiBoardHelper.PendingInvite findDojoWarPendingInvite(Player subject, String arg) {
+        if (arg == null || arg.isBlank()) {
+            return null;
+        }
+        String raw = arg.trim();
+        String uuid = "";
+        String name = raw;
+        if (raw.regionMatches(true, 0, "uuid:", 0, 5)) {
+            uuid = raw.substring(5).trim();
+            name = "";
+        }
+        for (GuiBoardHelper.PendingInvite war : GuiBoardHelper.parsePendingInvites(
+                ForgeBridge.sparPendingDojoWarCards(subject))) {
+            if (war == null || !war.incoming || !war.isDojoWar()) {
+                continue;
+            }
+            if (!uuid.isBlank() && uuid.equalsIgnoreCase(war.uuid)) {
+                return war;
+            }
+            if (!name.isBlank() && name.equalsIgnoreCase(war.name)) {
+                return war;
+            }
+        }
+        return null;
     }
 
     private Inventory dojoChallengePicker(Player viewer, Player subject) {
@@ -425,6 +528,7 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo Rankings"),
                 SlotAction.page("dojo_rank"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }

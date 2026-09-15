@@ -578,6 +578,10 @@ final class GuiBoardHelper {
             return "mutual".equalsIgnoreCase(kind);
         }
 
+        boolean isDojoWar() {
+            return "war".equalsIgnoreCase(kind);
+        }
+
         String pickerArg() {
             if (!uuid.isBlank()) {
                 return "uuid:" + uuid;
@@ -613,7 +617,17 @@ final class GuiBoardHelper {
 
     static ItemStack pendingInviteHead(Player player, PendingInvite inv) {
         List<String> lore = new ArrayList<>();
-        if (inv.isMentorBond()) {
+        if (inv.isDojoWar()) {
+            if (inv.incoming) {
+                lore.add("&cIncoming war challenge");
+                lore.add("&7From dojo &f" + inv.name);
+                lore.addAll(tips(player, "&eClick to Accept / Decline"));
+            } else {
+                lore.add("&6Outgoing war challenge");
+                lore.add("&7To dojo &f" + inv.name);
+                lore.addAll(tips(player, "&eClick to Revoke challenge"));
+            }
+        } else if (inv.isMentorBond()) {
             String role = "mentor".equalsIgnoreCase(inv.kind) ? "Mentor" : "Apprentice";
             if (inv.incoming) {
                 lore.add("&aIncoming mentor invite");
