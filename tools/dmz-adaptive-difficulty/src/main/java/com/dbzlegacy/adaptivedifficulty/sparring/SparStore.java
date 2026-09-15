@@ -33,6 +33,8 @@ public final class SparStore {
     public final Map<String, List<RecentSession>> recentSessions = new ConcurrentHashMap<>();
     /** uuid → spar combat TP chat messages (missing = default ON). */
     public final Map<String, Boolean> tpMessages = new ConcurrentHashMap<>();
+    /** uuid → mentor share TP chat messages (missing = default ON). */
+    public final Map<String, Boolean> mentorTpMessages = new ConcurrentHashMap<>();
     /** Active dojo season leaderboard keyed by mentor UUID. */
     public DojoSeason dojoSeason;
     /** Pending/active dojo war challenges keyed by target mentor UUID. */
@@ -67,6 +69,7 @@ public final class SparStore {
                 invites.clear();
                 recentSessions.clear();
                 tpMessages.clear();
+                mentorTpMessages.clear();
                 dojoSeason = null;
                 dojoChallenges.clear();
                 dojoProfiles.clear();
@@ -81,6 +84,7 @@ public final class SparStore {
                 invites.clear();
                 recentSessions.clear();
                 tpMessages.clear();
+                mentorTpMessages.clear();
                 if (blob != null) {
                     if (blob.bondsByPlayer != null) {
                         bondsByPlayer.putAll(blob.bondsByPlayer);
@@ -106,6 +110,9 @@ public final class SparStore {
                     }
                     if (blob.tpMessages != null) {
                         tpMessages.putAll(blob.tpMessages);
+                    }
+                    if (blob.mentorTpMessages != null) {
+                        mentorTpMessages.putAll(blob.mentorTpMessages);
                     }
                     dojoSeason = blob.dojoSeason;
                     if (blob.dojoChallenges != null) {
@@ -142,6 +149,7 @@ public final class SparStore {
                 blob.recentSessions.put(e.getKey(), new ArrayList<>(e.getValue()));
             }
             blob.tpMessages = new ConcurrentHashMap<>(tpMessages);
+            blob.mentorTpMessages = new ConcurrentHashMap<>(mentorTpMessages);
             blob.dojoSeason = dojoSeason;
             blob.dojoChallenges = new ConcurrentHashMap<>(dojoChallenges);
             blob.dojoProfiles = new ConcurrentHashMap<>(dojoProfiles);
@@ -186,6 +194,23 @@ public final class SparStore {
             return;
         }
         tpMessages.put(uuid.toString(), on);
+        markDirty();
+    }
+
+    /** Default ON when unset — mentors see apprentice share TP in chat. */
+    public boolean mentorTpMessagesOn(UUID uuid) {
+        if (uuid == null) {
+            return true;
+        }
+        Boolean v = mentorTpMessages.get(uuid.toString());
+        return v == null || v;
+    }
+
+    public void setMentorTpMessages(UUID uuid, boolean on) {
+        if (uuid == null) {
+            return;
+        }
+        mentorTpMessages.put(uuid.toString(), on);
         markDirty();
     }
 
@@ -473,6 +498,7 @@ public final class SparStore {
         Map<String, BondInvite> invites;
         Map<String, List<RecentSession>> recentSessions;
         Map<String, Boolean> tpMessages;
+        Map<String, Boolean> mentorTpMessages;
         DojoSeason dojoSeason;
         Map<String, DojoChallenge> dojoChallenges;
         Map<String, DojoProfile> dojoProfiles;

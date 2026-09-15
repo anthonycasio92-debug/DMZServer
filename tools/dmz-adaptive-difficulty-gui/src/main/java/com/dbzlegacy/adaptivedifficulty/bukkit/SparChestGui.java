@@ -135,6 +135,19 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 23, tipBtn(viewer, "spar.main.mentor", Material.EMERALD, "&bMentor",
                 List.of("&7Invite · Pending · Dojo · Leave / Release")), SlotAction.page("mentor"));
 
+        boolean mentorTpOn = "true".equalsIgnoreCase(ph.getOrDefault("mentorTpMsg", "true"));
+        put(holder, inv, 24, tipBtn(viewer,
+                mentorTpOn ? "spar.main.mentor_tpmsg_on" : "spar.main.mentor_tpmsg_off",
+                mentorTpOn ? Material.EMERALD : Material.GRAY_DYE,
+                mentorTpOn ? "&aMentor TP ON" : "&8Mentor TP OFF",
+                List.of(
+                        mentorTpOn ? "&7Click to mute mentor share TP chat"
+                                : "&7Click to show apprentice share TP in chat",
+                        "&8When your dojo earns TP from spars",
+                        "",
+                        "&eClick to toggle8Click to switch"
+                )), SlotAction.act("mentor_tpmsg", "toggle", "main"));
+
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "true"));
         put(holder, inv, 25, tipBtn(viewer,
                 tpOn ? "spar.main.tpmsg_on" : "spar.main.tpmsg_off",

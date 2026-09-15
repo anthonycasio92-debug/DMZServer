@@ -127,6 +127,20 @@ public final class CmiSparGui {
         gui.addButton(pageBtn(player, 23, "spar.main.mentor", Material.EMERALD, "&bMentor", "mentor",
                 "&7Invite · Pending · Dojo · Leave / Release"));
 
+        boolean mentorTpOn = "true".equalsIgnoreCase(ph.getOrDefault("mentorTpMsg", "true"));
+        gui.addButton(actionBtn(player, 24,
+                mentorTpOn ? "spar.main.mentor_tpmsg_on" : "spar.main.mentor_tpmsg_off",
+                mentorTpOn ? Material.EMERALD : Material.GRAY_DYE,
+                mentorTpOn ? "&aMentor TP ON" : "&8Mentor TP OFF",
+                "mentor_tpmsg", "toggle", "main",
+                List.of(
+                        mentorTpOn ? "&7Click to mute mentor share TP chat"
+                                : "&7Click to show apprentice share TP in chat",
+                        "&8When your dojo earns TP from spars",
+                        "",
+                        "&eClick to toggle8Click to switch"
+                )));
+
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "true"));
         gui.addButton(actionBtn(player, 25,
                 tpOn ? "spar.main.tpmsg_on" : "spar.main.tpmsg_off",

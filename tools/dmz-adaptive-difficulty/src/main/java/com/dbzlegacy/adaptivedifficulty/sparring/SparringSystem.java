@@ -924,7 +924,8 @@ public final class SparringSystem {
                     ? ("Mentor share from " + apprentice.m_7755_().getString()
                     + (roster > 1 ? " §8(dojo " + roster + ")" : ""))
                     : "apprentice";
-            DmzRewards.awardTp(mentor, share, reason, true, "Mentor");
+            DmzRewards.awardTp(mentor, share, reason,
+                    SparStore.get().mentorTpMessagesOn(mentor.m_20148_()), "Mentor");
         } catch (Throwable ignored) {
         }
     }
@@ -948,6 +949,9 @@ public final class SparringSystem {
             }
         }
         lines.add("§bMentor Bond");
+        lines.add("§8  - §7Mentor TP chat §f"
+                + (SparStore.get().mentorTpMessagesOn(player.m_20148_()) ? "ON" : "OFF")
+                + " §8(Spar → Mentor TP toggle)");
         lines.add("§8  - §7Mentor §f"
                 + (bond.mentorName == null || bond.mentorName.isBlank() ? "none" : bond.mentorName));
         int apps = bond.apprenticeCount();
@@ -1151,6 +1155,19 @@ public final class SparringSystem {
         SparStore.get().setTpMessages(player.m_20148_(), on);
         return "§aSpar TP messages §f" + (on ? "ON" : "OFF")
                 + (on ? " §7— combat TP gains show in chat" : " §7— muted");
+    }
+
+    public static String setMentorTpMsg(ServerPlayer player, Boolean on) {
+        if (player == null) {
+            return "§cPlayers only.";
+        }
+        if (on == null) {
+            boolean cur = SparStore.get().mentorTpMessagesOn(player.m_20148_());
+            return "§7Mentor TP messages: §f" + (cur ? "ON" : "OFF");
+        }
+        SparStore.get().setMentorTpMessages(player.m_20148_(), on);
+        return "§aMentor TP messages §f" + (on ? "ON" : "OFF")
+                + (on ? " §7— apprentice share TP shows in chat" : " §7— muted");
     }
 
     public static String mentorInvite(ServerPlayer player, ServerPlayer target) {

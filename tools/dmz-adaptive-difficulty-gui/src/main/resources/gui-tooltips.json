@@ -891,6 +891,22 @@
           "&8Click to show in chat again"
         ]
       },
+      "mentor_tpmsg_on": {
+        "name": "&aMentor TP ON",
+        "lore": [
+          "&7Apprentice share TP shows in chat",
+          "",
+          "&8Click to mute mentor TP chat"
+        ]
+      },
+      "mentor_tpmsg_off": {
+        "name": "&8Mentor TP OFF",
+        "lore": [
+          "&7Mentor share TP chat is hidden",
+          "",
+          "&8Click to show in chat again"
+        ]
+      },
       "end_session": {
         "name": "&cEnd Session",
         "lore": [
@@ -1597,5 +1613,5 @@
       ]
     }
   },
-  "_catalogRevision": 187
+  "_catalogRevision": 188
 }
