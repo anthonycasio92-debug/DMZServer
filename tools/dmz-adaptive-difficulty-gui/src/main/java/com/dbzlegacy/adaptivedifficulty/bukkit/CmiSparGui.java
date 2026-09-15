@@ -372,9 +372,11 @@ public final class CmiSparGui {
             if (mat == null) {
                 mat = Material.WHITE_BANNER;
             }
+            String label = banners[i].replace('_', ' ');
             gui.addButton(actionBtn(player, slots[i], "spar.dojo.banner_pick", mat,
-                    "&f" + banners[i].replace('_', ' '), "dojo_banner", banners[i], "dojo_rank",
-                    List.of("&7Set dojo banner")));
+                    "&f" + label, "dojo_banner", banners[i], "dojo_rank",
+                    List.of("&7Use this banner for your dojo", "", "&eClick to apply"),
+                    Map.of("name", label)));
         }
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "dojo_rank", "&7Dojo Rankings"));
         gui.addButton(closeBtn(44));

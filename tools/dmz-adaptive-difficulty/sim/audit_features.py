@@ -919,6 +919,14 @@ def main() -> int:
     check("My Dojo Chest release passes {name}",
           "pick_release" in chest_own and 'Map.of("name", dojoLabel)' in chest_own)
 
+    print("\n=== Dojo banner picker {name} (2.3.181) ===")
+    cmi_banner = cmi.split("private static void openDojoBannerPicker", 1)[1].split("private static void openAdmin", 1)[0]
+    chest_banner = chest.split("private Inventory dojoBannerPicker", 1)[1].split("private Inventory detailBoard", 1)[0]
+    check("CMI banner_pick passes color name var",
+          "spar.dojo.banner_pick" in cmi_banner and 'Map.of("name", label)' in cmi_banner)
+    check("Chest banner_pick uses GuiTooltips.name with vars",
+          "spar.dojo.banner_pick" in chest_banner and "bannerVars" in chest_banner)
+
 
     print("\n=== Dojo membership roster (2.3.154) ===")
     spar_sys152 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")

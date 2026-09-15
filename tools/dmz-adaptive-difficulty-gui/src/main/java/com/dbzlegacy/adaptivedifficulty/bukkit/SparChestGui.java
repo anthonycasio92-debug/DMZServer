@@ -382,10 +382,12 @@ public final class SparChestGui implements Listener {
                 mat = Material.WHITE_BANNER;
             }
             String label = banners[i].replace('_', ' ');
-            put(holder, inv, slots[i], item(mat, "&f" + label,
+            Map<String, String> bannerVars = Map.of("name", label);
+            put(holder, inv, slots[i], item(mat,
+                    GuiTooltips.name("spar.dojo.banner_pick", "&f" + label, bannerVars),
                     GuiTooltips.buttonLore("spar.dojo.banner_pick",
                             List.of("&7Use this banner for your dojo", "", "&eClick to apply"),
-                            Map.of("name", label), null)),
+                            bannerVars, null)),
                     SlotAction.act("dojo_banner", banners[i], "dojo_rank"));
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo Rankings"),
