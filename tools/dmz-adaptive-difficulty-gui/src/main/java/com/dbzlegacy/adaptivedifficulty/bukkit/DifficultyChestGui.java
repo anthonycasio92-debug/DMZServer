@@ -528,9 +528,9 @@ public final class DifficultyChestGui implements Listener {
             } else {
                 tip.add("&cLocked");
                 tip.add("&7Need &fDMZ {req_level} &7or &fPrestige {req_prestige}");
+                tip.add("&7You: &fDMZ {level} &7· &fPrestige {prestige}");
                 if (staff) {
                     tip.add("&8{req}");
-                    tip.add("&8You: DMZ {level} · Prestige {prestige}");
                     tip.add("&8CR/BP ignored — use DMZ level or Prestige");
                 }
             }

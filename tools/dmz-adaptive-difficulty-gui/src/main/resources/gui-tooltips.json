@@ -440,11 +440,7 @@
         ]
       },
       "tier": {
-        "name": "{name}",
-        "lore": [
-          "&7Difficulty tier &f{tier}",
-          "&7Unlock with DMZ level or Prestige"
-        ]
+        "name": "{name}"
       }
     },
     "titles": {
@@ -1531,5 +1527,5 @@
       ]
     }
   },
-  "_catalogRevision": 184
+  "_catalogRevision": 185
 }

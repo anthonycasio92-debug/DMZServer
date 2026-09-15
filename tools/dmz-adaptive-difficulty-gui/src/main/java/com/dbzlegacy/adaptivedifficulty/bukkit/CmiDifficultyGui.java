@@ -528,9 +528,9 @@ public final class CmiDifficultyGui {
             } else {
                 lore.add("&cLocked");
                 lore.add("&7Need &fDMZ {req_level} &7or &fPrestige {req_prestige}");
+                lore.add("&7You: &fDMZ {level} &7· &fPrestige {prestige}");
                 if (staff) {
                     lore.add("&8{req}");
-                    lore.add("&8You: DMZ {level} · Prestige {prestige}");
                     lore.add("&8CR/BP ignored — use DMZ level or Prestige");
                 }
             }
