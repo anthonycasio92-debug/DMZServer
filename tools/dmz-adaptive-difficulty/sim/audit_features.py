@@ -960,7 +960,7 @@ def main() -> int:
     print("\n=== Dojo War hub (2.3.188) ===")
     spar_chest = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/SparChestGui.java")
     check("dojoWar hub page", "private Inventory dojoWar" in spar_chest
-          and "openDojoWar" in cmi_gui)
+          and "openDojoWar" in cmi)
     check("DojoRankings.warInfoLines", "warInfoLines" in read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.java"))
 
     print("\n=== Dojo rankings banner colors (2.3.187) ===")
