@@ -23,6 +23,7 @@ All new work in this repo targets the **test server** only.
 | Password | **not stored in git** — use env `TEST_SFTP_PASS` / `SSHPASS` locally |
 
 - Build, commit, and PR as usual, then deploy to this host.
+- From repo root after building: `TEST_SFTP_PASS='…' bash scripts/deploy-lm-test.sh` (uploads latest `mods/LegacyMechanics-*.jar` + `plugins/LegacyMechanicsGUI-*.jar`).
 - Prefer moving replaced jars/plugins into `recycle_bin/` on the test server (create the folder if missing).
 - Owner restarts from the panel after jar uploads.
 
