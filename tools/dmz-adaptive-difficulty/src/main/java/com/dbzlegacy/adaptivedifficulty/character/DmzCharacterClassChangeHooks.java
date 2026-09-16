@@ -35,13 +35,36 @@ public final class DmzCharacterClassChangeHooks {
         ClassPermissionSync.syncAuthoritativeClassChange(player);
     }
 
-    /** Race change (or 0% wipe follow-up) where race + class mapping already ran on {@link StatsData}. */
-    public static void onServicesRaceClassApplied(
-            ServerPlayer player, StatsData data, boolean preserveExactPrimaries) {
+    /**
+     * Preserved-stat race change when the fighting class is known (auto-mapped or after create/pick).
+     * Mirrors {@code /dmzclass} for the class half, then DMZ race follow-up (transform limits, client sync).
+     *
+     * @param resourceSnapshotBeforeChange from {@link StatsData#snapshotMultiplierResources()} before
+     *     race/class ids change
+     */
+    public static void onServicesRaceChangeApplied(
+            ServerPlayer player,
+            StatsData data,
+            String newRaceId,
+            String classId,
+            float[] resourceSnapshotBeforeChange,
+            boolean preserveExactPrimaries) {
         if (player == null || data == null) {
             return;
         }
         clearPassiveRuntime(player);
+        String applied = classId == null ? "" : classId.trim();
+        if (applied.isBlank()) {
+            applied = DmzProgression.fightingClass(player);
+        }
+        if (newRaceId != null && !newRaceId.isBlank()) {
+            applied =
+                    RaceChangeClassMapper.commitFightingClassForRace(
+                            data, newRaceId, applied, applied);
+        }
+        if (applied != null && !applied.isBlank()) {
+            DmzClassCommandApply.applyClass(player, data, applied, resourceSnapshotBeforeChange);
+        }
         DmzFightingClassStatsSync.afterFightingClassChange(player, data, preserveExactPrimaries);
         ClassPermissionSync.syncAuthoritativeClassChange(player);
     }
@@ -60,14 +83,15 @@ public final class DmzCharacterClassChangeHooks {
         float[] snap = DmzClassChangeCapture.take(player);
         String pickedFromPacket = packetClassName == null ? "" : packetClassName.trim();
         boolean classPickSession = RaceChangeClassPickFlow.isActive(player);
+        String pickTargetRace = classPickSession ? RaceChangeClassPickFlow.targetRaceId(player) : "";
         String appliedClass = "";
         if (classPickSession) {
-            String race = RaceChangeClassPickFlow.targetRaceId(player);
             String picked =
                     pickedFromPacket.isBlank() ? DmzProgression.fightingClass(player) : pickedFromPacket;
             String prior = RaceChangeClassPickFlow.priorFightingClass(player);
             appliedClass =
-                    RaceChangeClassMapper.commitFightingClassForRace(data, race, picked, prior);
+                    RaceChangeClassMapper.commitFightingClassForRace(
+                            data, pickTargetRace, picked, prior);
             RaceChangeClassPickFlow.clear(player);
         } else if (snap != null && !pickedFromPacket.isBlank()) {
             String race = DmzProgression.race(player);
@@ -76,12 +100,15 @@ public final class DmzCharacterClassChangeHooks {
                             data, race, pickedFromPacket, pickedFromPacket);
         }
         if (classPickSession || snap != null) {
-            if (appliedClass != null && !appliedClass.isBlank()) {
-                DmzClassCommandApply.applyClass(player, data, appliedClass, snap);
-            } else if (!pickedFromPacket.isBlank()) {
-                DmzClassCommandApply.applyClass(player, data, pickedFromPacket, snap);
+            String race =
+                    classPickSession && pickTargetRace != null && !pickTargetRace.isBlank()
+                            ? pickTargetRace
+                            : DmzProgression.race(player);
+            String classToApply =
+                    appliedClass != null && !appliedClass.isBlank() ? appliedClass : pickedFromPacket;
+            if (classToApply != null && !classToApply.isBlank()) {
+                onServicesRaceChangeApplied(player, data, race, classToApply, snap, true);
             }
-            ClassPermissionSync.syncAuthoritativeClassChange(player);
         }
     }
 

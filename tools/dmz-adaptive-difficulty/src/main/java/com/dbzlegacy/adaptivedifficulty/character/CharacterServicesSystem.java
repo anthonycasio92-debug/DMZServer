@@ -347,11 +347,10 @@ public final class CharacterServicesSystem {
                 List<RaceChangeSkillPreserve.Entry> skillSnapshot =
                         keepSkills ? RaceChangeSkillPreserve.capture(data.getSkills()) : List.of();
                 if (RaceChangeClassMapper.requiresClassPicker(priorClassBeforeRaceChange, raceId)) {
+                    RaceChangeClassMapper.commitFightingClassForRace(
+                            data, raceId, "", priorClassBeforeRaceChange);
                     try {
-                        ch.setRace(raceId);
-                        String placeholder =
-                                RaceChangeClassMapper.resolveClassForRace("", raceId);
-                        ch.setCharacterClass(placeholder);
+                        data.updateTransformationSkillLimits(raceId);
                     } catch (Throwable ignored) {
                     }
                     CosmeticHeadBoneService.reapplyHeadBoneAfterRaceChange(player, priorHeadBone);
@@ -370,6 +369,7 @@ public final class CharacterServicesSystem {
                     RaceChangeClassPickFlow.openRecustomizeEditor(player);
                     openedFreeClassPicker = true;
                 } else {
+                    float[] resourceSnapshot = data.snapshotMultiplierResources();
                     String mappedClass =
                             RaceChangeClassMapper.applyRaceAndFightingClass(
                                     player, data, raceId, priorClass);
@@ -388,8 +388,8 @@ public final class CharacterServicesSystem {
                     if (target != null) {
                         applyStats(data.getStats(), target);
                     }
-                    DmzCharacterClassChangeHooks.onServicesRaceClassApplied(
-                            player, data, target != null);
+                    DmzCharacterClassChangeHooks.onServicesRaceChangeApplied(
+                            player, data, raceId, mappedClass, resourceSnapshot, target != null);
                     if (keepSkills) {
                         RaceChangeSkillPreserve.restore(data, currentRace, raceId, skillSnapshot);
                         RaceClassSync.syncRaceSkillOnly(player);

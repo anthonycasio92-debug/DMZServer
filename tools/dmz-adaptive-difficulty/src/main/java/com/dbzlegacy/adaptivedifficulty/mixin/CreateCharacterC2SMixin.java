@@ -1,5 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.character.DmzClassChangeCapture;
 import com.dbzlegacy.adaptivedifficulty.character.RaceChangeCreationFlow;
 import com.dbzlegacy.adaptivedifficulty.character.RaceChangeCreationPacketGuard;
 import com.dragonminez.common.network.C2S.CreateCharacterC2S;
@@ -28,6 +30,12 @@ public abstract class CreateCharacterC2SMixin {
                 return;
             }
             RaceChangeCreationPacketGuard.applyCreateCharacterPacket(packet, player);
+            if (RaceChangeCreationFlow.isActive(player)) {
+                StatsData data = DmzProgression.stats(player);
+                if (data != null) {
+                    DmzClassChangeCapture.store(player, data.snapshotMultiplierResources());
+                }
+            }
         } catch (Throwable ignored) {
         }
     }
