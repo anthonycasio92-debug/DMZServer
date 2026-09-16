@@ -10,8 +10,33 @@ import net.minecraft.server.level.ServerPlayer;
 public final class DmzCharacterClassChangeHooks {
     private DmzCharacterClassChangeHooks() {}
 
-    /** Paid Character Services class/race change — class already committed on {@link StatsData}. */
-    public static void onServicesClassApplied(
+    /**
+     * Paid Character Services <em>class</em> change — mirrors {@code /dmzclass} after the class id is
+     * chosen (call after optional stat preservation).
+     */
+    public static void onPaidClassChange(
+            ServerPlayer player,
+            StatsData data,
+            String classId,
+            float[] resourceSnapshotBeforeClassChange,
+            boolean preserveExactPrimaries) {
+        if (player == null || data == null) {
+            return;
+        }
+        clearPassiveRuntime(player);
+        DmzClassCommandApply.applyClass(player, data, classId, resourceSnapshotBeforeClassChange);
+        if (!preserveExactPrimaries) {
+            try {
+                data.relocateStats(player);
+            } catch (Throwable ignored) {
+            }
+            DmzClassCommandApply.pushStatsSync(player);
+        }
+        ClassPermissionSync.syncAuthoritativeClassChange(player);
+    }
+
+    /** Race change (or 0% wipe follow-up) where race + class mapping already ran on {@link StatsData}. */
+    public static void onServicesRaceClassApplied(
             ServerPlayer player, StatsData data, boolean preserveExactPrimaries) {
         if (player == null || data == null) {
             return;
@@ -32,24 +57,32 @@ public final class DmzCharacterClassChangeHooks {
             return;
         }
         clearPassiveRuntime(player);
+        float[] snap = DmzClassChangeCapture.take(player);
         String pickedFromPacket = packetClassName == null ? "" : packetClassName.trim();
-        if (RaceChangeClassPickFlow.isActive(player)) {
+        boolean classPickSession = RaceChangeClassPickFlow.isActive(player);
+        String appliedClass = "";
+        if (classPickSession) {
             String race = RaceChangeClassPickFlow.targetRaceId(player);
             String picked =
                     pickedFromPacket.isBlank() ? DmzProgression.fightingClass(player) : pickedFromPacket;
             String prior = RaceChangeClassPickFlow.priorFightingClass(player);
-            RaceChangeClassMapper.commitFightingClassForRace(data, race, picked, prior);
+            appliedClass =
+                    RaceChangeClassMapper.commitFightingClassForRace(data, race, picked, prior);
             RaceChangeClassPickFlow.clear(player);
-        } else {
+        } else if (snap != null && !pickedFromPacket.isBlank()) {
             String race = DmzProgression.race(player);
-            String picked =
-                    pickedFromPacket.isBlank() ? DmzProgression.fightingClass(player) : pickedFromPacket;
-            if (race != null && !race.isBlank() && picked != null && !picked.isBlank()) {
-                RaceChangeClassMapper.commitFightingClassForRace(data, race, picked, picked);
-            }
+            appliedClass =
+                    RaceChangeClassMapper.commitFightingClassForRace(
+                            data, race, pickedFromPacket, pickedFromPacket);
         }
-        DmzFightingClassStatsSync.afterFightingClassChange(player, data, true);
-        ClassPermissionSync.syncAuthoritativeClassChange(player);
+        if (classPickSession || snap != null) {
+            if (appliedClass != null && !appliedClass.isBlank()) {
+                DmzClassCommandApply.applyClass(player, data, appliedClass, snap);
+            } else if (!pickedFromPacket.isBlank()) {
+                DmzClassCommandApply.applyClass(player, data, pickedFromPacket, snap);
+            }
+            ClassPermissionSync.syncAuthoritativeClassChange(player);
+        }
     }
 
     private static void clearPassiveRuntime(ServerPlayer player) {

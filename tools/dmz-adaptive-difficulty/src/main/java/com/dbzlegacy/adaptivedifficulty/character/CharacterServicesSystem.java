@@ -388,7 +388,7 @@ public final class CharacterServicesSystem {
                     if (target != null) {
                         applyStats(data.getStats(), target);
                     }
-                    DmzCharacterClassChangeHooks.onServicesClassApplied(
+                    DmzCharacterClassChangeHooks.onServicesRaceClassApplied(
                             player, data, target != null);
                     if (keepSkills) {
                         RaceChangeSkillPreserve.restore(data, currentRace, raceId, skillSnapshot);
@@ -468,7 +468,7 @@ public final class CharacterServicesSystem {
         }
         String classId = normalizeId(targetClass);
         String race = DmzProgression.race(player);
-        if (classId.isEmpty() || !RaceChangeClassMapper.isClassValidForRace(race, classId)) {
+        if (classId.isEmpty()) {
             return "§cThat class is not available for your race.";
         }
         String current = DmzProgression.fightingClass(player);
@@ -492,7 +492,11 @@ public final class CharacterServicesSystem {
         if (data == null) {
             return "§cCharacter data unavailable.";
         }
+        if (!DmzClassCommandApply.isValidClass(data, classId)) {
+            return "§cThat class is not available for your race.";
+        }
         TransferableStats before = cc.preserveBaseStats ? captureStats(player) : null;
+        float[] resourceSnapshot = data.snapshotMultiplierResources();
 
         if (cost > 0L && !chargeAc(player, cost)) {
             return insufficientFunds(player, cost);
@@ -515,7 +519,8 @@ public final class CharacterServicesSystem {
             if (preservePrimaries) {
                 applyStats(data.getStats(), before);
             }
-            DmzCharacterClassChangeHooks.onServicesClassApplied(player, data, preservePrimaries);
+            DmzCharacterClassChangeHooks.onPaidClassChange(
+                    player, data, classId, resourceSnapshot, preservePrimaries);
             RaceClassSync.sync(player);
             CharacterServicesStore.get().record(player.m_20148_().toString()).lastClassChangeAt =
                     System.currentTimeMillis();

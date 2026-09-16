@@ -1,7 +1,9 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.character.DmzClassChangeCapture;
 import com.dbzlegacy.adaptivedifficulty.character.DmzCharacterClassChangeHooks;
 import com.dbzlegacy.adaptivedifficulty.character.RaceChangeClassPickFlow;
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.character.RaceChangeClassPickPacketGuard;
 import com.dbzlegacy.adaptivedifficulty.character.RaceHeadBoneSync;
 import com.dbzlegacy.adaptivedifficulty.character.ReskinSessionGuard;
@@ -34,7 +36,46 @@ public abstract class UpdateCharacterC2SMixin {
             ReskinSessionGuard.applyPacketClassLock(packet, player);
             RaceChangeClassPickPacketGuard.applyUpdateCharacterPacket(packet, player);
             RaceHeadBoneSync.applyPacketHeadBone(packet, player);
+            lm$captureClassChangeSnapshot(packet, player);
         } catch (Throwable ignored) {
+        }
+    }
+
+    private static void lm$captureClassChangeSnapshot(UpdateCharacterC2S packet, ServerPlayer player) {
+        if (packet == null || player == null) {
+            return;
+        }
+        StatsData data = DmzProgression.stats(player);
+        if (data == null) {
+            return;
+        }
+        String packetClass = "";
+        try {
+            Field classField = UpdateCharacterC2S.class.getDeclaredField("className");
+            classField.setAccessible(true);
+            Object raw = classField.get(packet);
+            if (raw instanceof String s) {
+                packetClass = s;
+            }
+        } catch (Throwable ignored) {
+        }
+        if (packetClass.isBlank()) {
+            return;
+        }
+        if (RaceChangeClassPickFlow.isActive(player)) {
+            DmzClassChangeCapture.store(player, data.snapshotMultiplierResources());
+            return;
+        }
+        String current = "";
+        try {
+            var ch = data.getCharacter();
+            if (ch != null) {
+                current = ch.getCharacterClass();
+            }
+        } catch (Throwable ignored) {
+        }
+        if (current == null || !packetClass.equalsIgnoreCase(current)) {
+            DmzClassChangeCapture.store(player, data.snapshotMultiplierResources());
         }
     }
 

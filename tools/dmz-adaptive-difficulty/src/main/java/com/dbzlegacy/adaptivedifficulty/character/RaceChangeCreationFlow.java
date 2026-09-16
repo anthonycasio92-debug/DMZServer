@@ -137,9 +137,12 @@ public final class RaceChangeCreationFlow {
         StatsData data = DmzProgression.stats(player);
         if (data != null && race != null && !race.isBlank()) {
             String picked = DmzProgression.fightingClass(player);
-            RaceChangeClassMapper.commitFightingClassForRace(
-                    data, race, picked, session.priorFightingClass);
-            DmzCharacterClassChangeHooks.onServicesClassApplied(player, data, true);
+            float[] snap = data.snapshotMultiplierResources();
+            String applied =
+                    RaceChangeClassMapper.commitFightingClassForRace(
+                            data, race, picked, session.priorFightingClass);
+            DmzCharacterClassChangeHooks.onPaidClassChange(
+                    player, data, applied, snap, true);
         } else {
             try {
                 Character ch = DmzProgression.character(player);
