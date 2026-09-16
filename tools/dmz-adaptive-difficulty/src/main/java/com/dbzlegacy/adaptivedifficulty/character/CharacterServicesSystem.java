@@ -316,14 +316,15 @@ public final class CharacterServicesSystem {
                 return "§cCharacter data unavailable.";
             }
             clearForms(ch, player);
+            String priorHeadBone = CosmeticHeadBoneService.activeBone(player);
             if (fullWipe) {
                 applyFullProgressWipe(player, data);
                 RaceChangeCreationFlow.prepareCharacterData(player, data, raceId);
-                RaceChangeCreationFlow.begin(player, raceId);
+                RaceChangeCreationFlow.begin(player, raceId, priorHeadBone);
                 RaceChangeCreationFlow.openEditor(player);
             } else {
                 ch.setRace(raceId);
-                RaceHeadBoneSync.syncCharacter(player);
+                CosmeticHeadBoneService.reapplyHeadBoneAfterRaceChange(player, priorHeadBone);
                 boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
                 List<RaceChangeSkillPreserve.Entry> skillSnapshot =
                         keepSkills ? RaceChangeSkillPreserve.capture(data.getSkills()) : List.of();
@@ -347,14 +348,19 @@ public final class CharacterServicesSystem {
             String paid = cost > 0L ? " §7Paid §f" + formatCost(cost) + "§7." : "";
             if (fullWipe) {
                 return "§aOpening character setup for §f" + titleCase(raceId)
-                        + "§a. §7Pick your class and appearance — free full wipe." + paid;
+                        + "§a. §7Pick your class and appearance — free full wipe."
+                        + " §7Purchased head parts stay unlocked."
+                        + paid;
             }
             boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
             String kept = keepSkills
                     ? " §7Ki skills, techniques, and shared form progress kept."
                     : "";
             return "§aRace changed to §f" + titleCase(raceId)
-                    + "§a. Eligible stats preserved at §f" + preservationPercent + "%§a." + kept + paid;
+                    + "§a. Eligible stats preserved at §f" + preservationPercent + "%§a."
+                    + kept
+                    + " §7Head part unlocks are kept."
+                    + paid;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.error(
                     "[{}] race change failed for {}: {}",

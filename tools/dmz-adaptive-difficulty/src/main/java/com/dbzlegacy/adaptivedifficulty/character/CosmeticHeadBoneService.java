@@ -209,6 +209,50 @@ public final class CosmeticHeadBoneService {
         return executeEquip(player, bone);
     }
 
+    /** Shop unlocks live in {@link CharacterServicesStore} and are never removed by race change. */
+    public static boolean hasPersistedUnlock(ServerPlayer player, String boneId) {
+        if (player == null || boneId == null || boneId.isBlank()) {
+            return false;
+        }
+        String bone = boneId.trim().toLowerCase(Locale.ROOT);
+        CharacterServicesStore.PlayerRecord rec =
+                CharacterServicesStore.get().record(player.m_20148_().toString());
+        if (rec.unlockedHeadBones == null) {
+            return false;
+        }
+        for (String u : rec.unlockedHeadBones) {
+            if (u != null && bone.equals(u.trim().toLowerCase(Locale.ROOT))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * After race change: keep purchased unlocks and re-apply the previous part when still valid
+     * for the new race (cross-race cosmetics stay usable).
+     */
+    public static void reapplyHeadBoneAfterRaceChange(ServerPlayer player, String priorActiveBone) {
+        if (player == null) {
+            return;
+        }
+        String prior = priorActiveBone == null ? "" : priorActiveBone.trim();
+        if (!prior.isEmpty() && isBoneAllowed(player, prior)) {
+            Character ch = DmzProgression.character(player);
+            if (ch != null) {
+                try {
+                    ch.setActiveHeadBone(prior.toLowerCase(Locale.ROOT));
+                    RaceHeadBoneSync.syncClient(player);
+                    return;
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+        if (RaceHeadBoneSync.syncCharacter(player)) {
+            RaceHeadBoneSync.syncClient(player);
+        }
+    }
+
     public static String executeEquip(ServerPlayer player, String boneId) {
         if (!canUse(player)) {
             return "§cHead bone shop is unavailable.";

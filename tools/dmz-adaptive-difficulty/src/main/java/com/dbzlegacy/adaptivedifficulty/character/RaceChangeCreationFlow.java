@@ -26,10 +26,21 @@ public final class RaceChangeCreationFlow {
     private RaceChangeCreationFlow() {}
 
     public static void begin(ServerPlayer player, String targetRaceId) {
+        begin(player, targetRaceId, null);
+    }
+
+    public static void begin(ServerPlayer player, String targetRaceId, String headBoneToRestore) {
         if (player == null || targetRaceId == null || targetRaceId.isBlank()) {
             return;
         }
-        ACTIVE.put(player.m_20148_(), new Session(targetRaceId.trim().toLowerCase(), System.currentTimeMillis()));
+        String keep = null;
+        if (headBoneToRestore != null && !headBoneToRestore.isBlank()
+                && CosmeticHeadBoneService.hasPersistedUnlock(player, headBoneToRestore)) {
+            keep = headBoneToRestore.trim().toLowerCase();
+        }
+        ACTIVE.put(
+                player.m_20148_(),
+                new Session(targetRaceId.trim().toLowerCase(), System.currentTimeMillis(), keep));
     }
 
     public static boolean isActive(ServerPlayer player) {
@@ -113,6 +124,9 @@ public final class RaceChangeCreationFlow {
         RaceSkillSync.sync(player, race);
         RaceClassSync.sync(player);
         ClassPermissionSync.sync(player);
+        if (session.keepHeadBone != null && !session.keepHeadBone.isBlank()) {
+            CosmeticHeadBoneService.reapplyHeadBoneAfterRaceChange(player, session.keepHeadBone);
+        }
         try {
             NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
         } catch (Throwable ignored) {
@@ -149,5 +163,5 @@ public final class RaceChangeCreationFlow {
         // Progression sync is sent from openEditor() after prepareCharacterData.
     }
 
-    private record Session(String targetRaceId, long startedAt) {}
+    private record Session(String targetRaceId, long startedAt, String keepHeadBone) {}
 }

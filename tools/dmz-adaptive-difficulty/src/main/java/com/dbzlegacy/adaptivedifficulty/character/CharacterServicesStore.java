@@ -146,7 +146,10 @@ public final class CharacterServicesStore {
         public long lastRaceChangeAt;
         public long lastClassChangeAt;
         public long lastReskinAt;
-        /** Permanent unlocks from the global head-bone shop (cross-race cosmetics). */
+        /**
+         * Permanent unlocks from the global head-bone shop (cross-race cosmetics).
+         * Not cleared by race change, reskin, or class change.
+         */
         public Set<String> unlockedHeadBones = new LinkedHashSet<>();
     }
 
