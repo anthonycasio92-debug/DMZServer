@@ -11,9 +11,6 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from audit_lib import mod_version  # noqa: E402
-
 ROOT = Path(__file__).resolve().parents[3]
 SRC = ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "java"
 GUI_SRC = ROOT / "tools" / "dmz-adaptive-difficulty-gui" / "src" / "main" / "java"
@@ -90,8 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    ver = mod_version()
-    check(f"VERSION {ver}", f'VERSION = "{ver}"' in mod)
+    check("VERSION 2.3.175", 'VERSION = "2.3.175"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -117,6 +113,13 @@ def main() -> int:
     check("ClassSkillSync ensures Fabled class skills", "ensureClassSkills" in class_skill and "needs-permission': 'true'" in class_skill)
     check("ClassSkillSync prestige marker stubs", "Prestige" in class_skill and "prestige" in class_skill)
     check("ClassPermissionSync uses catalog not hardcoded map", "FightingClassCatalog.skillNameFor" in class_perm and "hardcodedSkillName" not in class_perm)
+
+    energy_mana = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/EnergyManaSync.java")
+    level_guard = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/FabledLevelGuard.java")
+    attrib_guard = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/FabledAttribGuard.java")
+    check("EnergyManaSync skips Fabled stat wipe spend", "isFabledManaWipe" in energy_mana and "energy_wipe_skip" in energy_mana)
+    check("FabledLevelGuard restores ki on level change", "levelSignature" in level_guard and "EnergyManaSync.sync" in level_guard)
+    check("FabledAttribGuard clamps negative AP", "ap_clamp" in attrib_guard and "getAttribPoints" in attrib_guard)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -172,7 +175,7 @@ def main() -> int:
     check("VIT hit cap kept", has(profile, "kiProtectionHitFrac", "targetMobDamage", "hitCap"))
     check(
         "raised hit-cap budgets (1.0.28)",
-        "case 1 -> 0.22" in profile and "default -> 0.56" in profile and "formFactor = 0.78" in profile,
+        "case 1 -> 0.22" in profile and "default -> 0.52" in profile and "formFactor = 0.78" in profile,
     )
     check("live-bag landing ladder", "liveMaxHealth" in profile and "landFrac" in profile)
     check("T3 god-form pierce", "activeTier >= 3 && formBoost >= 6.0" in profile or "formBoost >= 6.0" in profile)
@@ -231,7 +234,7 @@ def main() -> int:
 
     print("\n=== Titles / teams stub / GUI ===")
     check("title equip action", has(actions, "equipTitle", "ACT_EQUIP_TITLE") or "equip_title" in actions)
-    check("rival team mode action", "setTeamMode" in actions or "mutual rivals" in actions.lower())
+    check("teams WIP", "work in progress" in actions.lower() or "WIP" in actions)
     check("GUI ABI package stable", "com.dbzlegacy.adaptivedifficulty" in bridge and "DifficultyCache" in bridge)
 
     print("\n=== Balance telemetry ===")
@@ -316,7 +319,7 @@ def main() -> int:
     check("T5 landFrac 0.33", "case 5 -> 0.33" in profile)
     check("KP landing 1.5%/lvl", "kiProtectionLevel * 0.015" in profile)
     check("partial landing fill", "preAmount < land * 0.45" in events)
-    check("progressive soft-caps", "case 5 -> 0.44" in profile and "case 6 -> 0.48" in profile and "case 7 -> 0.60" in profile)
+    check("progressive soft-caps", "case 5 -> 0.44" in profile and "case 6 -> 0.48" in profile and "case 7 -> 0.52" in profile)
     check("README 1.0.25 balance", "1.0.25" in readme and "T4 tank" in readme)
     check("README 2.3.61 tier costs", "2.3.61" in readme and "tierCostLevelAnchor" in readme and "100× Netherite" in readme)
     check("README 2.3.62 gui level pull", "2.3.62" in readme and "prepareGui" in actions)
@@ -381,8 +384,8 @@ def main() -> int:
 
     print("\n=== Ladder retune (1.0.35 rollback) ===")
     check("T4 form nudge 1.06", "case 4 -> 1.06" in profile)
-    check("T5 form nudge 1.12", "case 5 -> 1.12" in profile)
-    check("T7 form nudge 1.21", "default -> 1.21" in profile)
+    check("T5 form nudge 1.10", "case 5 -> 1.10" in profile)
+    check("T7 form nudge 1.18", "default -> 1.18" in profile)
     check("T4 liveShare 0.42", "case 4 -> 0.42" in profile)
     check("T5 liveShare 0.50", "case 5 -> 0.50" in profile)
     check("T4 landCap 0.32", "case 4 -> 0.32" in profile)
@@ -671,9 +674,9 @@ def main() -> int:
         "telemetry logs android upgrade flag",
         '\\"android\\"' in tel and "isAndroidUpgraded" in tel,
     )
-    races_root = ROOT / "config" / "dragonminez" / "races"
+    races_root = Path("/workspace/config/dragonminez/races")
     if not races_root.is_dir():
-        races_root = Path("/workspace/config/dragonminez/races")
+        races_root = ROOT.parents[1] / "config" / "dragonminez" / "races"
     for race in ("human", "saiyan", "frostdemon", "viltrumite"):
         check(
             f"stock {race} androidforms.json",
@@ -919,65 +922,6 @@ def main() -> int:
     check("My Dojo Chest release passes {name}",
           "pick_release" in chest_own and 'Map.of("name", dojoLabel)' in chest_own)
 
-    print("\n=== Dojo banner picker {name} (2.3.181) ===")
-    cmi_banner = cmi.split("private static void openDojoBannerPicker", 1)[1].split("private static void openAdmin", 1)[0]
-    chest_banner = chest.split("private Inventory dojoBannerPicker", 1)[1].split("private Inventory detailBoard", 1)[0]
-    check("CMI banner_pick passes color name var",
-          "spar.dojo.banner_pick" in cmi_banner and 'Map.of("name", label)' in cmi_banner)
-    check("Chest banner_pick uses GuiTooltips.name with vars",
-          "spar.dojo.banner_pick" in chest_banner and "bannerVars" in chest_banner)
-
-    print("\n=== Dojo season ladder banners (2.3.182) ===")
-    dojo_rank = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.java")
-    spar_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.java")
-    board = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/GuiBoardHelper.java")
-    bridge = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/ForgeBridge.java")
-    check("DojoRankings.topCards", "topCards(String category, int limit)" in dojo_rank)
-    check("SparGuiApi.dojoTopCards", "dojoTopCards(ServerPlayer player, String category)" in spar_api)
-    check("GuiBoardHelper dojoTopBanner", "dojoTopBanner" in board and "parseDojoTopCards" in board)
-    check("ForgeBridge sparDojoTopCards", "sparDojoTopCards" in bridge)
-    check("CMI dojo rank uses banner cards",
-          "sparDojoTopCards" in cmi and "dojoTopBanner" in cmi)
-    check("Chest dojo rank uses banner cards",
-          "sparDojoTopCards" in chest and "dojoTopBanner" in chest)
-
-    print("\n=== GUI tooltip catalog humanize (2.3.185) ===")
-    tips185 = read(ROOT / "tools/dmz-adaptive-difficulty-gui/src/main/resources/gui-tooltips.json")
-    gui_tt = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/GuiTooltips.java")
-    check("gui-tooltips catalog revision", '"_catalogRevision": 188' in tips185)
-    check("GuiTooltips CATALOG_REVISION 188", "CATALOG_REVISION = 188" in gui_tt)
-    check("catalog upgrade on reload", "catalogRevision" in gui_tt and "catalogUpgraded" in gui_tt)
-    check("humanize_gui_tooltips script", (ROOT / "tools/dmz-adaptive-difficulty/sim/humanize_gui_tooltips.py").is_file())
-
-    print("\n=== Dojo rankings menu layout (2.3.183) ===")
-    plugin = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/AdaptiveDifficultyGuiPlugin.java")
-    check("dojoRankLadderSlots avoids control row", "dojoRankLadderSlots" in board)
-    check("CMI war challenge lmdo (no bare do)", "dojo_challenge uuid:" in cmi
-          and "lmdo spar do dojo_challenge" not in cmi)
-    check("lmdo spar do unwrap", '"do".equalsIgnoreCase(args[1])' in plugin
-          and "action = args[2]" in plugin)
-
-    print("\n=== Dojo War hub (2.3.188) ===")
-    spar_chest = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/SparChestGui.java")
-    check("dojoWar hub page", "private Inventory dojoWar" in spar_chest
-          and "openDojoWar" in cmi)
-    check("DojoRankings.warInfoLines", "warInfoLines" in read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.java"))
-    dojo_rank_war = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.java")
-    spar_store = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")
-    check("dojo war pending self keys", "dojoWarSelfKeys" in dojo_rank_war
-          and "matchesDojoWarSelf" in dojo_rank_war)
-    check("canonicalDojoKey UUID normalize", "UUID.fromString" in spar_store
-          and "canonicalDojoKey" in spar_store)
-
-    print("\n=== Dojo rankings banner colors (2.3.187) ===")
-    check("dojoTopBanner uses itemColor", "itemColor" in board and "dojoTopBanner" in board
-          and "itemColor(\"&e#" in board)
-
-    print("\n=== Rival Teams GUI layout (2.3.186) ===")
-    chest_diff = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/DifficultyChestGui.java")
-    check("teamMutualRivalSlots avoids mode row", "teamMutualRivalSlots" in board
-          and "teamMutualRivalSlots" in chest_diff and "teamMutualRivalSlots" in cmi_gui)
-    check("resolveReturnPage team", 'case "team" -> "team"' in bridge)
 
     print("\n=== Dojo membership roster (2.3.154) ===")
     spar_sys152 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")

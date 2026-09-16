@@ -135,6 +135,8 @@ public final class PrestigeSkillSync {
             PrestigeFactionSync.forceSync(player);
         } catch (Throwable ignored) {
         }
+        EnergyManaSync.sync(player, true);
+        FabledLevelGuard.sync(player);
         FabledBridge.logSync(player, "prestige_take", "lost", lose, "level", current - lose);
         return lose;
     }
@@ -173,6 +175,8 @@ public final class PrestigeSkillSync {
                 PrestigeFactionSync.forceSync(player);
             } catch (Throwable ignored) {
             }
+            EnergyManaSync.sync(player, true);
+            FabledLevelGuard.sync(player);
             FabledBridge.logSync(player, "prestige_add", "gained", gained, "level", after);
         }
         return gained;
