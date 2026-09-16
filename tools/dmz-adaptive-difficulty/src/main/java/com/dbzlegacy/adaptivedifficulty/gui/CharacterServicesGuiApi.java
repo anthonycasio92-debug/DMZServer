@@ -143,7 +143,8 @@ public final class CharacterServicesGuiApi {
             int pct = parsePct(bits.length > 2 ? bits[2] : "0");
             String race = bits.length > 1 ? bits[1] : "?";
             lines.add("§7You are becoming §f" + title(race) + "§7.");
-            lines.add("§7Head-part unlocks carry over; class id kept when the new race has it.");
+            lines.add("§7Head-part unlocks carry over; same class kept when the new race has it.");
+            lines.add("§7If not, the editor opens so you can pick a class at no extra cost.");
             lines.add("§7Keeping §f" + pct + "% §7of eligible stats:");
             lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
             lines.add(costLine(player, CharacterServicesSystem.raceCost(player, pct)));
