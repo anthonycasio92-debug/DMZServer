@@ -95,6 +95,7 @@ public final class ForgeBridge {
     private static Method charLinesMethod;
     private static Method charHandleDoMethod;
     private static Method charRaceCardsMethod;
+    private static Method charHeadBoneCardsMethod;
     private static Method charClassCardsMethod;
     private static Method skillsPlaceholdersMethod;
     private static Method skillsLinesMethod;
@@ -1717,6 +1718,23 @@ public final class ForgeBridge {
         return invokeCharStringList(player, "classCards");
     }
 
+    public static List<String> charHeadBoneCards(Player player, int page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of();
+        }
+        try {
+            ensureCharacterServicesResolved(nms.getClass().getClassLoader());
+            if (charHeadBoneCardsMethod == null) {
+                return List.of();
+            }
+            Object raw = charHeadBoneCardsMethod.invoke(null, nms, page);
+            return listStringValues(raw);
+        } catch (Throwable ignored) {
+            return List.of();
+        }
+    }
+
     public static String charHandleDo(Player player, String action, String arg, String page) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
@@ -1757,7 +1775,8 @@ public final class ForgeBridge {
     }
 
     private static synchronized void ensureCharacterServicesResolved(ClassLoader preferred) throws Exception {
-        if (charPlaceholdersMethod != null && charLinesMethod != null && charHandleDoMethod != null) {
+        if (charPlaceholdersMethod != null && charLinesMethod != null && charHandleDoMethod != null
+                && charHeadBoneCardsMethod != null) {
             return;
         }
         Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesGuiApi", preferred);
@@ -1767,6 +1786,7 @@ public final class ForgeBridge {
         charHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
         charRaceCardsMethod = api.getMethod("raceCards", sp);
         charClassCardsMethod = api.getMethod("classCards", sp);
+        charHeadBoneCardsMethod = api.getMethod("headBoneCards", sp, int.class);
     }
 
     public static String prestigeHandleDo(Player player, String action, String arg, String page) {

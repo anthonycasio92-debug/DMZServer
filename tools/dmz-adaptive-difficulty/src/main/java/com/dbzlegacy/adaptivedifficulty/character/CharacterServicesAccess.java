@@ -25,6 +25,11 @@ public final class CharacterServicesAccess {
                 && has(player, CharacterServicesConfig.get().permissions.reskin, true);
     }
 
+    public static boolean canHeadBoneShop(ServerPlayer player) {
+        return canUseServices(player)
+                && has(player, CharacterServicesConfig.get().permissions.headBones, true);
+    }
+
     public static boolean bypassCost(ServerPlayer player) {
         return StaffAccess.isStaff(player)
                 || has(player, CharacterServicesConfig.get().permissions.bypassCost, false)

@@ -15,9 +15,8 @@ import java.util.Set;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * DMZ stores {@code activeHeadBone} on the character (ears, hair, etc.). After a paid race change
- * or reskin, clients can still send bones from a previous race — clamp to the current race's
- * {@link RaceCharacterConfig#getHeadBones()}.
+ * DMZ stores {@code activeHeadBone} on the character (ears, hair, etc.). Validates against the
+ * player's race defaults plus {@link CosmeticHeadBoneService} unlocks (global head-bone shop).
  */
 public final class RaceHeadBoneSync {
     private static final String DEFAULT_BONE = "hair";
@@ -25,7 +24,14 @@ public final class RaceHeadBoneSync {
     private RaceHeadBoneSync() {}
 
     public static String normalizeHeadBone(String raceId, String activeHeadBone) {
+        return normalizeHeadBone(null, raceId, activeHeadBone);
+    }
+
+    public static String normalizeHeadBone(ServerPlayer player, String raceId, String activeHeadBone) {
         String bone = safe(activeHeadBone);
+        if (player != null && !bone.isEmpty() && CosmeticHeadBoneService.isBoneAllowed(player, bone)) {
+            return bone.trim().toLowerCase(Locale.ROOT);
+        }
         if (raceId == null || raceId.isBlank()) {
             return bone.isEmpty() ? DEFAULT_BONE : bone;
         }
@@ -39,11 +45,21 @@ public final class RaceHeadBoneSync {
                 allowed.add(entry.toLowerCase(Locale.ROOT));
             }
         }
+        if (player != null) {
+            allowed.addAll(CosmeticHeadBoneService.allowedBoneIds(player));
+        }
         if (allowed.isEmpty()) {
             return bone.isEmpty() ? DEFAULT_BONE : bone;
         }
         if (!bone.isEmpty() && allowed.contains(bone.toLowerCase(Locale.ROOT))) {
             return bone;
+        }
+        if (player != null) {
+            for (String unlocked : CosmeticHeadBoneService.allowedBoneIds(player)) {
+                if (unlocked != null && !unlocked.isBlank()) {
+                    return unlocked.toLowerCase(Locale.ROOT);
+                }
+            }
         }
         return configured[0];
     }
@@ -63,7 +79,7 @@ public final class RaceHeadBoneSync {
         } catch (Throwable t) {
             return false;
         }
-        String normalized = normalizeHeadBone(race, safeActiveHeadBone(ch));
+        String normalized = normalizeHeadBone(player, race, safeActiveHeadBone(ch));
         String current = safeActiveHeadBone(ch);
         if (normalized.equals(current)) {
             return false;
@@ -106,7 +122,7 @@ public final class RaceHeadBoneSync {
             Field field = UpdateCharacterC2S.class.getDeclaredField("activeHeadBone");
             field.setAccessible(true);
             current = (String) field.get(packet);
-            String normalized = normalizeHeadBone(race, current);
+            String normalized = normalizeHeadBone(player, race, current);
             if (!normalized.equals(safe(current))) {
                 field.set(packet, normalized);
             }

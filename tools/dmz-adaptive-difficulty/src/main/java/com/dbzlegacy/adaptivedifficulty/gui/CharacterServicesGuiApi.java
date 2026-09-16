@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesAccess;
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig;
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem;
+import com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService;
 import com.dbzlegacy.adaptivedifficulty.character.FightingClassLabels;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
@@ -29,6 +30,8 @@ public final class CharacterServicesGuiApi {
         out.put("race_enabled", cfg.raceChange.enabled ? "true" : "false");
         out.put("class_enabled", cfg.classChange.enabled ? "true" : "false");
         out.put("reskin_enabled", cfg.reskin.enabled ? "true" : "false");
+        out.put("head_bone_shop_enabled", cfg.headBoneShop.enabled ? "true" : "false");
+        out.put("active_head_bone", CosmeticHeadBoneService.activeBone(player));
         out.put("current_race", title(DmzProgression.race(player)));
         out.put("current_class", FightingClassLabels.display(resolveFightingClassRaw(player)));
         putWalletPlaceholders(player, out);
@@ -65,6 +68,14 @@ public final class CharacterServicesGuiApi {
             lines.add("§7Your base combat stats stay — class skills and perks reset.");
             lines.add(costLine(player, CharacterServicesSystem.classCost(player)));
             lines.add(CharacterServicesSystem.cooldownLine(player, "class"));
+            return lines;
+        }
+        if (p.startsWith("bones:") || "bones".equals(p)) {
+            int bonePage = parseBonePage(p);
+            lines.add("§7Unlock head parts from §fany race §7for your model.");
+            lines.add("§7Your race's parts are free; cross-race parts cost Ancient Coins.");
+            lines.add("§7Page §f" + (bonePage + 1) + "§7/§f" + CosmeticHeadBoneService.pageCount());
+            lines.add("§8Equipped: §f" + titleBone(CosmeticHeadBoneService.activeBone(player)));
             return lines;
         }
         if ("reskin".equals(p)) {
@@ -121,6 +132,10 @@ public final class CharacterServicesGuiApi {
         return CharacterServicesSystem.classCards(player);
     }
 
+    public static List<String> headBoneCards(ServerPlayer player, int page) {
+        return CosmeticHeadBoneService.cards(player, page);
+    }
+
     public static String handleDo(ServerPlayer player, String action, String arg, String page) {
         if (player == null) {
             return "§cPlayers only.";
@@ -146,6 +161,12 @@ public final class CharacterServicesGuiApi {
         if ("reskin_confirm".equals(act)) {
             return CharacterServicesSystem.executeReskin(player);
         }
+        if ("bone_unlock".equals(act)) {
+            return CosmeticHeadBoneService.executeUnlock(player, a);
+        }
+        if ("bone_equip".equals(act)) {
+            return CosmeticHeadBoneService.executeEquip(player, a);
+        }
         return "§cUnknown character action: " + act;
     }
 
@@ -168,6 +189,28 @@ public final class CharacterServicesGuiApi {
             return "§7Cost §afree §8(staff bypass)";
         }
         return "§7Cost §f" + CharacterServicesSystem.formatCost(copperCost) + " §7Ancient Coins";
+    }
+
+    private static int parseBonePage(String page) {
+        if (page == null || page.isBlank() || "bones".equals(page)) {
+            return 0;
+        }
+        if (page.startsWith("bones:")) {
+            try {
+                return Integer.parseInt(page.substring("bones:".length()).trim());
+            } catch (NumberFormatException ignored) {
+                return 0;
+            }
+        }
+        return 0;
+    }
+
+    private static String titleBone(String id) {
+        if (id == null || id.isBlank()) {
+            return "none";
+        }
+        var entry = com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneCatalog.get(id);
+        return entry == null ? id : entry.displayName();
     }
 
     private static int parsePct(String raw) {

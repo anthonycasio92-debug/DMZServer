@@ -44,7 +44,13 @@ public final class CharacterServicesChestGui implements Listener {
                 case "race" -> raceList(viewer, subject);
                 case "class" -> classList(viewer, subject);
                 case "reskin" -> reskin(viewer, subject);
-                default -> main(viewer, subject);
+                case "bones" -> boneShop(viewer, subject, 0);
+                default -> {
+                    if (p.startsWith("bones:")) {
+                        yield boneShop(viewer, subject, parseBonePage(p));
+                    }
+                    yield main(viewer, subject);
+                }
             };
         }
         GuiFeedback.openChest(viewer, inv);
@@ -91,6 +97,14 @@ public final class CharacterServicesChestGui implements Listener {
                 List.of("&7Pick a new race and how much progress to keep",
                         "&8{race_cooldown}", "&eClick to continue"), vars),
                 SlotAction.page("race"));
+        if ("true".equalsIgnoreCase(ph.getOrDefault("head_bone_shop_enabled", "false"))) {
+            put(holder, inv, 21, tipBtn("character.main.bones", Material.PLAYER_HEAD, "&6Head Parts Shop",
+                    List.of("&7Unlock ears, horns, and other parts",
+                            "&7from any race for your model",
+                            "&7Equipped &f" + ph.getOrDefault("active_head_bone", "?"),
+                            "&eClick to browse"), vars),
+                    SlotAction.page("bones"));
+        }
         put(holder, inv, 22, tipBtn("character.main.class", Material.ENCHANTED_BOOK, "&bChange Class",
                 List.of("&7Swap fighting class — base stats stay",
                         "&7Cost &f{class_cost}",
@@ -265,6 +279,86 @@ public final class CharacterServicesChestGui implements Listener {
                 SlotAction.page("class"));
         footer45(holder, inv, "character.class_confirm.back", SlotAction.page("class"));
         return inv;
+    }
+
+    private Inventory boneShop(Player viewer, Player subject, int page) {
+        Holder holder = new Holder("bones");
+        Inventory inv = Bukkit.createInventory(holder, 54, invTitle(viewer, subject, "&8Head Parts"));
+        holder.bind(inv);
+        frame(inv, 54);
+        String pageKey = "bones:" + page;
+        put(holder, inv, 4, item(Material.PLAYER_HEAD,
+                GuiTooltips.name("character.bones.header", "&6&lHead Parts Shop"),
+                prependBlank(toAmp(ForgeBridge.charLines(subject, pageKey)))));
+        List<String> cards = ForgeBridge.charHeadBoneCards(subject, page);
+        int[] slots = centered(Math.min(cards.size(), 28));
+        for (int i = 0; i < slots.length && i < cards.size(); i++) {
+            String[] p = cards.get(i).split("\t", -1);
+            String id = p.length > 0 ? p[0] : "";
+            String name = p.length > 1 ? p[1] : id;
+            String state = p.length > 2 ? p[2] : "L";
+            String cost = p.length > 3 ? p[3] : "";
+            Material mat;
+            String title;
+            List<String> lore = new ArrayList<>();
+            SlotAction action;
+            switch (state) {
+                case "E" -> {
+                    mat = Material.LIME_CONCRETE;
+                    title = "&a&l" + name + " &8(equipped)";
+                    lore.add("&7Currently on your character");
+                    action = SlotAction.actNoReopen("bone_equip", id);
+                }
+                case "U", "N" -> {
+                    mat = Material.LIGHT_BLUE_CONCRETE;
+                    title = "&f" + name;
+                    lore.add(state.equals("N") ? "&7Included with your race" : "&7Unlocked");
+                    lore.add("&eClick to equip");
+                    action = SlotAction.act("bone_equip", id, pageKey);
+                }
+                default -> {
+                    mat = Material.GOLD_INGOT;
+                    title = "&e" + name;
+                    lore.add("&7Unlock for &f" + (cost.isBlank() ? "?" : cost));
+                    lore.add("&eClick to unlock & equip");
+                    action = SlotAction.act("bone_unlock", id, pageKey);
+                }
+            }
+            put(holder, inv, slots[i], item(mat, title, lore), action);
+        }
+        int pages = 1;
+        for (int p = 0; p < 64; p++) {
+            List<String> slice = ForgeBridge.charHeadBoneCards(subject, p);
+            if (slice == null || slice.isEmpty()) {
+                pages = Math.max(1, p);
+                break;
+            }
+            pages = p + 1;
+        }
+        if (page > 0) {
+            put(holder, inv, 45, pageBtn("character.bones.prev", Material.ARROW, "&7« Page " + page,
+                    null), SlotAction.page("bones:" + (page - 1)));
+        }
+        if (page + 1 < pages) {
+            put(holder, inv, 53, pageBtn("character.bones.next", Material.ARROW, "&7Page " + (page + 2) + " »",
+                    null), SlotAction.page("bones:" + (page + 1)));
+        }
+        footer54(holder, inv, "character.bones.back", SlotAction.page("main"));
+        return inv;
+    }
+
+    private static int parseBonePage(String page) {
+        if (page == null || page.isBlank() || "bones".equals(page)) {
+            return 0;
+        }
+        if (page.startsWith("bones:")) {
+            try {
+                return Integer.parseInt(page.substring("bones:".length()).trim());
+            } catch (NumberFormatException ignored) {
+                return 0;
+            }
+        }
+        return 0;
     }
 
     private Inventory reskin(Player viewer, Player subject) {

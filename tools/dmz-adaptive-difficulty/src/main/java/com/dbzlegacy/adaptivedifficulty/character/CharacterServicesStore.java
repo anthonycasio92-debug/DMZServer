@@ -9,9 +9,11 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -144,6 +146,8 @@ public final class CharacterServicesStore {
         public long lastRaceChangeAt;
         public long lastClassChangeAt;
         public long lastReskinAt;
+        /** Permanent unlocks from the global head-bone shop (cross-race cosmetics). */
+        public Set<String> unlockedHeadBones = new LinkedHashSet<>();
     }
 
     private static final class Persist {

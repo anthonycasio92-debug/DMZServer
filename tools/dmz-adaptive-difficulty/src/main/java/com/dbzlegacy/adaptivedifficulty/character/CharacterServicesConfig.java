@@ -28,6 +28,7 @@ public final class CharacterServicesConfig {
     public RaceChange raceChange = new RaceChange();
     public ClassChange classChange = new ClassChange();
     public Reskin reskin = new Reskin();
+    public HeadBoneShop headBoneShop = new HeadBoneShop();
 
     public static CharacterServicesConfig get() {
         return INSTANCE;
@@ -47,6 +48,8 @@ public final class CharacterServicesConfig {
             try (Reader reader = Files.newBufferedReader(file)) {
                 CharacterServicesConfig parsed = GSON.fromJson(reader, CharacterServicesConfig.class);
                 INSTANCE = sanitize(parsed == null ? defaults() : parsed);
+                CosmeticHeadBoneCatalog.invalidate();
+                CosmeticHeadBoneCatalog.refreshIfStale();
             }
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(
@@ -104,6 +107,18 @@ public final class CharacterServicesConfig {
         if (c.reskin == null) {
             c.reskin = new Reskin();
         }
+        if (c.headBoneShop == null) {
+            c.headBoneShop = new HeadBoneShop();
+        }
+        if (c.headBoneShop.boneCosts == null) {
+            c.headBoneShop.boneCosts = new LinkedHashMap<>();
+        }
+        if (c.headBoneShop.displayNames == null) {
+            c.headBoneShop.displayNames = new LinkedHashMap<>();
+        }
+        if (c.headBoneShop.excludeBones == null) {
+            c.headBoneShop.excludeBones = Collections.emptyList();
+        }
         if (c.raceChange.preservationCostCopper == null || c.raceChange.preservationCostCopper.isEmpty()) {
             c.raceChange.preservationCostCopper = defaultPreservationCosts();
         } else {
@@ -145,6 +160,7 @@ public final class CharacterServicesConfig {
         public String bypassCost = "legacymechanics.character.bypass.cost";
         public String bypassCooldown = "legacymechanics.character.bypass.cooldown";
         public String admin = "legacymechanics.character.admin";
+        public String headBones = "legacymechanics.character.headbones";
     }
 
     public static final class Restrictions {
@@ -181,5 +197,30 @@ public final class CharacterServicesConfig {
         public boolean openDmzRecustomizeOnly = true;
         /** DMZ recustomize UI includes a class tab — server locks class while reskin session is active. */
         public boolean lockClassDuringEditor = true;
+    }
+
+    /** Global catalog shop — unlock head parts from any race for cross-race cosmetics. */
+    public static final class HeadBoneShop {
+        public boolean enabled = true;
+        public long defaultUnlockCostCopper = 100_000L;
+        public boolean levelCostMultiplier = true;
+        /** Parts listed on the player's current race config do not require a shop unlock. */
+        public boolean nativeRaceBonesFree = true;
+        public Map<String, Long> boneCosts = new LinkedHashMap<>();
+        public Map<String, String> displayNames = new LinkedHashMap<>();
+        public java.util.List<String> excludeBones = Collections.emptyList();
+
+        public boolean isExcluded(String boneId) {
+            if (boneId == null || excludeBones == null) {
+                return false;
+            }
+            String want = boneId.trim().toLowerCase(Locale.ROOT);
+            for (String e : excludeBones) {
+                if (e != null && want.equals(e.trim().toLowerCase(Locale.ROOT))) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }
