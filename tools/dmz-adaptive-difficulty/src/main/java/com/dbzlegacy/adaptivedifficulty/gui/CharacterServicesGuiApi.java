@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesAccess;
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig;
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem;
+import com.dbzlegacy.adaptivedifficulty.character.FightingClassLabels;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ public final class CharacterServicesGuiApi {
         out.put("class_enabled", cfg.classChange.enabled ? "true" : "false");
         out.put("reskin_enabled", cfg.reskin.enabled ? "true" : "false");
         out.put("current_race", title(DmzProgression.race(player)));
-        out.put("current_class", title(DmzProgression.fightingClass(player)));
+        out.put("current_class", FightingClassLabels.display(resolveFightingClassRaw(player)));
         putWalletPlaceholders(player, out);
         boolean bypassCost = CharacterServicesAccess.bypassCost(player);
         out.put("bypass_cost", bypassCost ? "true" : "false");
@@ -181,20 +182,25 @@ public final class CharacterServicesGuiApi {
         if (id == null || id.isBlank()) {
             return "?";
         }
-        String[] parts = id.replace('_', ' ').split(" ");
-        StringBuilder sb = new StringBuilder();
-        for (String p : parts) {
-            if (p.isEmpty()) {
-                continue;
-            }
-            if (sb.length() > 0) {
-                sb.append(' ');
-            }
-            sb.append(java.lang.Character.toUpperCase(p.charAt(0)));
-            if (p.length() > 1) {
-                sb.append(p.substring(1));
-            }
+        String labeled = FightingClassLabels.display(id);
+        return "Not set".equals(labeled) ? "?" : labeled;
+    }
+
+    private static String resolveFightingClassRaw(ServerPlayer player) {
+        String cls = DmzProgression.fightingClass(player);
+        if (cls != null && !cls.isBlank()) {
+            return cls;
         }
-        return sb.toString();
+        try {
+            var ch = DmzProgression.character(player);
+            if (ch != null) {
+                String raw = ch.getCharacterClass();
+                if (raw != null && !raw.isBlank()) {
+                    return raw;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return "";
     }
 }

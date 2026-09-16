@@ -50,14 +50,9 @@ public final class RaceChangeCreationFlow {
         Character ch = data.getCharacter();
         if (ch != null) {
             ch.setRace(targetRaceId);
-            try {
-                ch.setCharacterClass("");
-            } catch (Throwable ignored) {
-                try {
-                    ch.setCharacterClass(Character.CLASS_WARRIOR);
-                } catch (Throwable ignored2) {
-                }
-            }
+            // Do not set class to "" — DMZ client builds lang keys as class.dragonminez.<id>
+            // and an empty id shows as the broken literal "class.dragonminez".
+            // CreateCharacterC2S applies the player's new class after setup.
         }
         try {
             Status status = data.getStatus();
