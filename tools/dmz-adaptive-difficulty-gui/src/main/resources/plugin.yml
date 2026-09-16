@@ -1,5 +1,5 @@
 name: LegacyMechanicsGUI
-version: '2.4.27'
+version: '2.4.28'
 main: com.dbzlegacy.adaptivedifficulty.bukkit.AdaptiveDifficultyGuiPlugin
 api-version: '1.20'
 author: DBZ Legacy Reborn
@@ -58,7 +58,7 @@ permissions:
     description: Open Skill Check UI (donator)
     default: false
   legacymechanics.character.services:
-    description: Open Character Services (race / class / reskin) from /lm
+    description: Open Character Services (race / class / reskin / head parts) from /lm
     default: true
   legacymechanics.character.racechange:
     description: Use race change
@@ -68,6 +68,9 @@ permissions:
     default: true
   legacymechanics.character.reskin:
     description: Use reskin (DMZ recustomize)
+    default: true
+  legacymechanics.character.headbones:
+    description: Use Head Parts Shop (cross-race cosmetic head bones under Reskin)
     default: true
   legacymechanics.character.bypass.cost:
     description: Skip Ancient Coin charges for character services

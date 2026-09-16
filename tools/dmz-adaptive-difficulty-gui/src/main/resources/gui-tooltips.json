@@ -57,7 +57,7 @@
       "character": {
         "name": "&dCharacter Services",
         "lore": [
-          "&7Change race, class, or looks",
+          "&7Race, class, reskin, head parts",
           "&7without wiping your whole build",
           "&8Paid with Ancient Coins",
           "&eClick to open"
@@ -162,7 +162,7 @@
       "reskin": {
         "name": "&dReskin",
         "lore": [
-          "&7New look only — no stat changes",
+          "&7Cosmetics & head parts — no stat changes",
           "&7Cost &f{reskin_cost}",
           "&8{reskin_cooldown}",
           "&eClick to continue"
@@ -319,10 +319,54 @@
           "&eClick to pay and open"
         ]
       },
+      "bones": {
+        "name": "&6&lHead Parts Shop",
+        "lore": [
+          "&7Unlock & equip cross-race ears, horns, etc.",
+          "&7Equipped &f{active_head_bone}",
+          "&eClick to browse"
+        ]
+      },
       "back": {
         "name": "&7« Back",
         "lore": [
           "&7Return to Character Services"
+        ]
+      }
+    },
+    "bones": {
+      "header": {
+        "name": "&6&lHead Parts Shop",
+        "lore": []
+      },
+      "race_default": {
+        "name": "&eRace default",
+        "lore": [
+          "&7Equip this race's default head part",
+          "&8From DMZ character.json",
+          "&eClick"
+        ]
+      },
+      "unequip": {
+        "name": "&7Unequip / clear",
+        "lore": [
+          "&7Remove cross-race parts",
+          "&7Uses &fhair &7when your race has it",
+          "&eClick"
+        ]
+      },
+      "prev": {
+        "name": "&7« Page",
+        "lore": []
+      },
+      "next": {
+        "name": "&7Page »",
+        "lore": []
+      },
+      "back": {
+        "name": "&7« Back",
+        "lore": [
+          "&7Return to Reskin"
         ]
       }
     }

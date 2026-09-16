@@ -103,7 +103,7 @@ public final class HubChestGui implements Listener {
                         "&eClick to open")),
                 SlotAction.open("prestige"));
         put(holder, inv, 30, tipBtn(player, "hub.main.character", Material.PLAYER_HEAD, "&dCharacter Services",
-                List.of("&7Change race, class, or looks",
+                List.of("&7Race, class, reskin, head parts",
                         "&7without wiping your whole build",
                         "&8Paid with Ancient Coins",
                         "&eClick to open")),

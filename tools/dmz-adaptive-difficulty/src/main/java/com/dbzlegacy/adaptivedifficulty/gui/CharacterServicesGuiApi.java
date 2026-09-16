@@ -44,6 +44,10 @@ public final class CharacterServicesGuiApi {
         out.put("class_cooldown", CharacterServicesSystem.cooldownLine(player, "class"));
         out.put("reskin_cooldown", CharacterServicesSystem.cooldownLine(player, "reskin"));
         out.put("can_services", CharacterServicesAccess.canUseServices(player) ? "true" : "false");
+        out.put("can_race_change", CharacterServicesAccess.canRaceChange(player) ? "true" : "false");
+        out.put("can_class_change", CharacterServicesAccess.canClassChange(player) ? "true" : "false");
+        out.put("can_reskin", CharacterServicesAccess.canReskin(player) ? "true" : "false");
+        out.put("can_head_bones", CharacterServicesAccess.canHeadBoneShop(player) ? "true" : "false");
         return out;
     }
 
@@ -55,17 +59,31 @@ public final class CharacterServicesGuiApi {
             return lines;
         }
         if ("race".equals(p)) {
+            if (!CharacterServicesConfig.get().raceChange.enabled) {
+                lines.add("§cRace change is turned off on this server.");
+                return lines;
+            }
+            if (!CharacterServicesAccess.canRaceChange(player)) {
+                lines.add("§cYou do not have permission for race change.");
+                return lines;
+            }
             lines.add("§7Choose the race you want to become.");
             lines.add("§7Use §f0% §7for a free full wipe (new race, nothing carried over).");
             lines.add("§8Prestige races need their Fabled unlock skill.");
             lines.add("§7You keep ki skills, techniques, and shared form progress.");
-            lines.add("§7Purchased head parts stay unlocked across race changes.");
-            lines.add("§7Your fighting class id is kept when the new race has it (new race class stats).");
             lines.add("§8Race-only form ladders reset when the new race does not use them.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "race"));
             return lines;
         }
         if ("class".equals(p)) {
+            if (!CharacterServicesConfig.get().classChange.enabled) {
+                lines.add("§cClass change is turned off on this server.");
+                return lines;
+            }
+            if (!CharacterServicesAccess.canClassChange(player)) {
+                lines.add("§cYou do not have permission for class change.");
+                return lines;
+            }
             lines.add("§7Pick a new fighting class for your §fcurrent race§7.");
             lines.add("§7Only classes from your race's DMZ stats are listed.");
             lines.add("§7Your base combat stats stay — class skills and perks reset.");
@@ -74,6 +92,14 @@ public final class CharacterServicesGuiApi {
             return lines;
         }
         if (p.startsWith("bones:") || "bones".equals(p)) {
+            if (!CharacterServicesConfig.get().headBoneShop.enabled) {
+                lines.add("§cHead Parts Shop is turned off on this server.");
+                return lines;
+            }
+            if (!CharacterServicesAccess.canHeadBoneShop(player)) {
+                lines.add("§cYou do not have permission for the Head Parts Shop.");
+                return lines;
+            }
             int bonePage = parseBonePage(p);
             lines.add("§7Unlock head parts from §fany race §7for your model.");
             lines.add("§7Your race's parts are free; cross-race parts cost Ancient Coins.");
@@ -83,6 +109,14 @@ public final class CharacterServicesGuiApi {
             return lines;
         }
         if ("reskin".equals(p)) {
+            if (!CharacterServicesConfig.get().reskin.enabled) {
+                lines.add("§cReskin is turned off on this server.");
+                return lines;
+            }
+            if (!CharacterServicesAccess.canReskin(player)) {
+                lines.add("§cYou do not have permission for reskin.");
+                return lines;
+            }
             lines.add("§7Change hair, colors, and other cosmetics.");
             lines.add("§7Use §fHead Parts Shop §7here for cross-race ears, horns, and more.");
             lines.add("§7Fighting class cannot be changed during a reskin.");
@@ -109,6 +143,7 @@ public final class CharacterServicesGuiApi {
             int pct = parsePct(bits.length > 2 ? bits[2] : "0");
             String race = bits.length > 1 ? bits[1] : "?";
             lines.add("§7You are becoming §f" + title(race) + "§7.");
+            lines.add("§7Head-part unlocks carry over; class id kept when the new race has it.");
             lines.add("§7Keeping §f" + pct + "% §7of eligible stats:");
             lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
             lines.add(costLine(player, CharacterServicesSystem.raceCost(player, pct)));
@@ -118,14 +153,14 @@ public final class CharacterServicesGuiApi {
         }
         if (p.startsWith("class_confirm:")) {
             String cls = p.substring("class_confirm:".length());
-            lines.add("§7New class: §f" + title(cls));
+            lines.add("§7New class: §f" + FightingClassLabels.display(cls));
             lines.add(costLine(player, CharacterServicesSystem.classCost(player)));
             lines.add("§8Pay-up OK · change returned");
             lines.add("§8Class progression and class skills will reset.");
             return lines;
         }
         lines.add("§7Rebuild your character without starting from zero.");
-        lines.add("§7Race change, class change, or cosmetic reskin.");
+        lines.add("§7Race · class · reskin · head parts (under Reskin).");
         return lines;
     }
 

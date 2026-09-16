@@ -96,7 +96,7 @@ public final class CmiHubGui {
 
         // Row 4 — Character Services · Android remove + staff tools
         gui.addButton(openBtn(player, 30, "hub.main.character", Material.PLAYER_HEAD, "&dCharacter Services", "character",
-                "&7Change race, class, or looks",
+                "&7Race, class, reskin, head parts",
                 "&7without wiping your whole build",
                 "&8Paid with Ancient Coins",
                 "&eClick to open"));

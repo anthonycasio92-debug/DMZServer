@@ -44,10 +44,10 @@ public final class CharacterServicesChestGui implements Listener {
                 case "race" -> raceList(viewer, subject);
                 case "class" -> classList(viewer, subject);
                 case "reskin" -> reskin(viewer, subject);
-                case "bones" -> boneShop(viewer, subject, 0, "reskin");
+                case "bones" -> boneShopOrReskin(viewer, subject, 0);
                 default -> {
                     if (p.startsWith("bones:")) {
-                        yield boneShop(viewer, subject, parseBonePage(p), "reskin");
+                        yield boneShopOrReskin(viewer, subject, parseBonePage(p));
                     }
                     yield main(viewer, subject);
                 }
@@ -93,20 +93,20 @@ public final class CharacterServicesChestGui implements Listener {
         putProfile(holder, inv, GuiTooltips.name("character.main.wallet", "&d&lCharacter Services", vars),
                 profileLore(subject, vars));
 
-        put(holder, inv, 20, tipBtn("character.main.race", Material.NETHER_STAR, "&eChange Race",
+        putServiceEntry(holder, inv, 20, "character.main.race", Material.NETHER_STAR, "&eChange Race",
                 List.of("&7Pick a new race and how much progress to keep",
-                        "&8{race_cooldown}", "&eClick to continue"), vars),
-                SlotAction.page("race"));
-        put(holder, inv, 22, tipBtn("character.main.class", Material.ENCHANTED_BOOK, "&bChange Class",
+                        "&8{race_cooldown}", "&eClick to continue"),
+                vars, ph, "race_enabled", "can_race_change", "race");
+        putServiceEntry(holder, inv, 22, "character.main.class", Material.ENCHANTED_BOOK, "&bChange Class",
                 List.of("&7Swap fighting class — base stats stay",
                         "&7Cost &f{class_cost}",
-                        "&8{class_cooldown}", "&eClick to continue"), vars),
-                SlotAction.page("class"));
-        put(holder, inv, 24, tipBtn("character.main.reskin", Material.AMETHYST_CLUSTER, "&dReskin",
-                List.of("&7Cosmetic look only",
+                        "&8{class_cooldown}", "&eClick to continue"),
+                vars, ph, "class_enabled", "can_class_change", "class");
+        putServiceEntry(holder, inv, 24, "character.main.reskin", Material.AMETHYST_CLUSTER, "&dReskin",
+                List.of("&7Cosmetic look & head parts",
                         "&7Cost &f{reskin_cost}",
-                        "&8{reskin_cooldown}", "&eClick to continue"), vars),
-                SlotAction.page("reskin"));
+                        "&8{reskin_cooldown}", "&eClick to continue"),
+                vars, ph, "reskin_enabled", "can_reskin", "reskin");
 
         footer45(holder, inv, "character.main.back_hub", SlotAction.cmd("lmdo lm open hub"));
         return inv;
@@ -145,6 +145,13 @@ public final class CharacterServicesChestGui implements Listener {
         put(holder, inv, 4, item(Material.NETHER_STAR,
                 GuiTooltips.name("character.race.header", "&e&lChoose a Race"),
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "race")))));
+        Map<String, String> ph = ForgeBridge.charPlaceholders(subject);
+        if (!serviceAllowed(ph, "race_enabled", "can_race_change")) {
+            put(holder, inv, 22, item(Material.BARRIER, "&cRace change unavailable",
+                    List.of("", "&7Turned off or no permission", "&7Return with Back")));
+            footer54(holder, inv, "character.race.back", SlotAction.page("main"));
+            return inv;
+        }
         List<String> cards = ForgeBridge.charRaceCards(subject);
         int[] slots = centered(Math.min(cards.size(), 28));
         for (int i = 0; i < slots.length && i < cards.size(); i++) {
@@ -238,6 +245,13 @@ public final class CharacterServicesChestGui implements Listener {
         put(holder, inv, 4, item(Material.ENCHANTED_BOOK,
                 GuiTooltips.name("character.class.header", "&b&lChoose a Class"),
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "class")))));
+        Map<String, String> ph = ForgeBridge.charPlaceholders(subject);
+        if (!serviceAllowed(ph, "class_enabled", "can_class_change")) {
+            put(holder, inv, 22, item(Material.BARRIER, "&cClass change unavailable",
+                    List.of("", "&7Turned off or no permission", "&7Return with Back")));
+            footer54(holder, inv, "character.class.back", SlotAction.page("main"));
+            return inv;
+        }
         List<String> cards = ForgeBridge.charClassCards(subject);
         int[] slots = centered(Math.min(cards.size(), 28));
         for (int i = 0; i < slots.length && i < cards.size(); i++) {
@@ -271,6 +285,14 @@ public final class CharacterServicesChestGui implements Listener {
                 SlotAction.page("class"));
         footer45(holder, inv, "character.class_confirm.back", SlotAction.page("class"));
         return inv;
+    }
+
+    private Inventory boneShopOrReskin(Player viewer, Player subject, int page) {
+        Map<String, String> ph = ForgeBridge.charPlaceholders(subject);
+        if (!headBoneShopAllowed(ph)) {
+            return reskin(viewer, subject);
+        }
+        return boneShop(viewer, subject, page, "reskin");
     }
 
     private Inventory boneShop(Player viewer, Player subject, int page, String returnPage) {
@@ -372,11 +394,16 @@ public final class CharacterServicesChestGui implements Listener {
         put(holder, inv, 4, item(Material.PAINTING,
                 GuiTooltips.name("character.reskin.header", "&d&lReskin"),
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "reskin")))));
-        put(holder, inv, 20, tipBtn("character.reskin.open", Material.LIME_CONCRETE, "&a&lPay & Open Appearance",
-                List.of("&7Cost &f{reskin_cost}", "&7Opens the in-game look editor",
-                        "&8Pay-up OK · change returned", "&eClick to pay and open"), vars),
-                SlotAction.actNoReopen("reskin_confirm", "0"));
-        if ("true".equalsIgnoreCase(ph.getOrDefault("head_bone_shop_enabled", "false"))) {
+        if (serviceAllowed(ph, "reskin_enabled", "can_reskin")) {
+            put(holder, inv, 20, tipBtn("character.reskin.open", Material.LIME_CONCRETE, "&a&lPay & Open Appearance",
+                    List.of("&7Cost &f{reskin_cost}", "&7Opens the in-game look editor",
+                            "&8Pay-up OK · change returned", "&eClick to pay and open"), vars),
+                    SlotAction.actNoReopen("reskin_confirm", "0"));
+        } else {
+            put(holder, inv, 20, item(Material.GRAY_CONCRETE, "&7Reskin unavailable",
+                    List.of("", "&7Turned off or no permission")));
+        }
+        if (headBoneShopAllowed(ph)) {
             put(holder, inv, 24, tipBtn("character.reskin.bones", Material.PLAYER_HEAD, "&6&lHead Parts Shop",
                     List.of("&7Unlock & equip cross-race ears, horns, etc.",
                             "&7Equipped &f" + ph.getOrDefault("active_head_bone", "?"),
@@ -385,6 +412,50 @@ public final class CharacterServicesChestGui implements Listener {
         }
         footer45(holder, inv, "character.reskin.back", SlotAction.page("main"));
         return inv;
+    }
+
+    private static boolean serviceAllowed(Map<String, String> ph, String configKey, String permKey) {
+        if (ph == null) {
+            return false;
+        }
+        return "true".equalsIgnoreCase(ph.getOrDefault(configKey, "false"))
+                && "true".equalsIgnoreCase(ph.getOrDefault(permKey, "false"));
+    }
+
+    private static boolean headBoneShopAllowed(Map<String, String> ph) {
+        return serviceAllowed(ph, "head_bone_shop_enabled", "can_head_bones");
+    }
+
+    private static void putServiceEntry(
+            Holder holder,
+            Inventory inv,
+            int slot,
+            String key,
+            Material mat,
+            String name,
+            List<String> lore,
+            Map<String, String> vars,
+            Map<String, String> ph,
+            String configKey,
+            String permKey,
+            String page
+    ) {
+        if (serviceAllowed(ph, configKey, permKey)) {
+            put(holder, inv, slot, tipBtn(key, mat, name, lore, vars), SlotAction.page(page));
+            return;
+        }
+        boolean configOff = !"true".equalsIgnoreCase(ph.getOrDefault(configKey, "false"));
+        List<String> blocked = new ArrayList<>(lore);
+        blocked.add("");
+        blocked.add(configOff ? "&cTurned off on this server" : "&cNo permission");
+        put(holder, inv, slot, item(Material.GRAY_CONCRETE, "&8" + stripColor(name), blocked), null);
+    }
+
+    private static String stripColor(String s) {
+        if (s == null) {
+            return "";
+        }
+        return s.replaceAll("(?i)&[0-9a-fk-or]", "").replaceAll("§[0-9a-fk-or]", "");
     }
 
     private static void putProfile(Holder holder, Inventory inv, String title, List<String> lore) {
