@@ -91,6 +91,11 @@ public final class ForgeBridge {
     private static Method prestigeLinesMethod;
     private static Method prestigeHandleDoMethod;
     private static Method prestigeAdminMethod;
+    private static Method charPlaceholdersMethod;
+    private static Method charLinesMethod;
+    private static Method charHandleDoMethod;
+    private static Method charRaceCardsMethod;
+    private static Method charClassCardsMethod;
     private static Method skillsPlaceholdersMethod;
     private static Method skillsLinesMethod;
     private static Method skillsHandleDoMethod;
@@ -1665,6 +1670,103 @@ public final class ForgeBridge {
         } catch (Throwable t) {
             return List.of("§cPrestige lines failed: " + t.getMessage());
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> charPlaceholders(Player player) {
+        Map<String, String> fail = new HashMap<>();
+        fail.put("bridge_ok", "false");
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return fail;
+        }
+        try {
+            ensureCharacterServicesResolved(nms.getClass().getClassLoader());
+            if (charPlaceholdersMethod == null) {
+                return fail;
+            }
+            Object raw = charPlaceholdersMethod.invoke(null, nms);
+            return mapStringValues(raw, fail);
+        } catch (Throwable ignored) {
+        }
+        return fail;
+    }
+
+    public static List<String> charLines(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        try {
+            ensureCharacterServicesResolved(nms.getClass().getClassLoader());
+            if (charLinesMethod == null) {
+                return List.of("§cCharacter Services API missing — update LegacyMechanics jar.");
+            }
+            Object raw = charLinesMethod.invoke(null, nms, page == null ? "main" : page);
+            return listStringValues(raw);
+        } catch (Throwable t) {
+            return List.of("§cCharacter lines failed: " + t.getMessage());
+        }
+    }
+
+    public static List<String> charRaceCards(Player player) {
+        return invokeCharStringList(player, "raceCards");
+    }
+
+    public static List<String> charClassCards(Player player) {
+        return invokeCharStringList(player, "classCards");
+    }
+
+    public static String charHandleDo(Player player, String action, String arg, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureCharacterServicesResolved(nms.getClass().getClassLoader());
+            if (charHandleDoMethod == null) {
+                return "§cCharacter Services API missing — update LegacyMechanics jar.";
+            }
+            Object msg = charHandleDoMethod.invoke(
+                    null, nms, action == null ? "" : action, arg == null ? "" : arg,
+                    page == null ? "main" : page);
+            return msg == null ? "" : String.valueOf(msg);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cCharacter action failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    private static List<String> invokeCharStringList(Player player, String methodName) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of();
+        }
+        try {
+            ensureCharacterServicesResolved(nms.getClass().getClassLoader());
+            Method m = "raceCards".equals(methodName) ? charRaceCardsMethod : charClassCardsMethod;
+            if (m == null) {
+                return List.of();
+            }
+            Object raw = m.invoke(null, nms);
+            return listStringValues(raw);
+        } catch (Throwable ignored) {
+            return List.of();
+        }
+    }
+
+    private static synchronized void ensureCharacterServicesResolved(ClassLoader preferred) throws Exception {
+        if (charPlaceholdersMethod != null && charLinesMethod != null && charHandleDoMethod != null) {
+            return;
+        }
+        Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesGuiApi", preferred);
+        Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+        charPlaceholdersMethod = api.getMethod("placeholders", sp);
+        charLinesMethod = api.getMethod("linesForPage", sp, String.class);
+        charHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
+        charRaceCardsMethod = api.getMethod("raceCards", sp);
+        charClassCardsMethod = api.getMethod("classCards", sp);
     }
 
     public static String prestigeHandleDo(Player player, String action, String arg, String page) {

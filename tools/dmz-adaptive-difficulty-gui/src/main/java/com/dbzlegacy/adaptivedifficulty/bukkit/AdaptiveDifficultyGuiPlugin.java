@@ -23,6 +23,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     private HubChestGui hubChestGui;
     private ProgressionChestGui progressionChestGui;
     private PrestigeChestGui prestigeChestGui;
+    private CharacterServicesChestGui characterServicesChestGui;
     private SkillsChestGui skillsChestGui;
     private ProgressionCommandTree progressionCommandTree;
 
@@ -34,6 +35,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         hubChestGui = new HubChestGui(this);
         progressionChestGui = new ProgressionChestGui(this);
         prestigeChestGui = new PrestigeChestGui(this);
+        characterServicesChestGui = new CharacterServicesChestGui(this);
         skillsChestGui = new SkillsChestGui(this);
         progressionCommandTree = new ProgressionCommandTree(this);
         getServer().getPluginManager().registerEvents(chestGui, this);
@@ -42,6 +44,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(hubChestGui, this);
         getServer().getPluginManager().registerEvents(progressionChestGui, this);
         getServer().getPluginManager().registerEvents(prestigeChestGui, this);
+        getServer().getPluginManager().registerEvents(characterServicesChestGui, this);
         getServer().getPluginManager().registerEvents(skillsChestGui, this);
         getServer().getPluginManager().registerEvents(new DeathDropGuard(), this);
         GuiTooltips.init(this);
@@ -630,6 +633,46 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         openPrestigeInventory(player, page);
     }
 
+    // ── Character Services ─────────────────────────────────────────────
+
+    public void openCharacterServicesMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        openCharacterServicesInventory(player, page);
+    }
+
+    public void openCharacterServicesMenuForUuid(UUID playerId, String page) {
+        runForUuid(playerId, page, "main", this::openCharacterServicesInventory, "openCharacterServicesMenuForUuid");
+    }
+
+    public void openCharacterServicesChestMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        characterServicesChestGui.open(player, page);
+    }
+
+    public void openCharacterServicesChestMenuForUuid(UUID playerId, String page) {
+        runForUuid(playerId, page, "main", characterServicesChestGui::open, null);
+    }
+
+    private void openCharacterServicesInventory(Player player, String page) {
+        characterServicesChestGui.open(player, page);
+    }
+
+    private void openCharacterServicesRespectingConfig(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        String backend = ForgeBridge.guiBackend();
+        if ("chest".equals(backend)) {
+            characterServicesChestGui.open(player, page);
+            return;
+        }
+        openCharacterServicesInventory(player, page);
+    }
+
     // ── Skills ─────────────────────────────────────────────────────────
 
     public void openSkillsMenu(Player player, String page) {
@@ -1043,6 +1086,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 openSkillsRespectingConfig(player, "core".equals(p) || "main".equals(p) ? "core" : p);
             }
             case "prestige" -> openPrestigeRespectingConfig(player, p);
+            case "character", "characterservices", "charservices", "char" ->
+                    openCharacterServicesRespectingConfig(player, p);
             case "android_remove", "androidremove", "remove_android", "deandroid" ->
                     openProgressionRespectingConfig(player, "android_remove");
             case "progression", "prog" -> {

@@ -94,7 +94,11 @@ public final class CmiHubGui {
                 "&7Turn in prestiges · skill/forms shop · level-cap",
                 "&eClick to open"));
 
-        // Row 4 — player Android remove + staff tools
+        // Row 4 — Character Services · Android remove + staff tools
+        gui.addButton(openBtn(player, 30, "hub.main.character", Material.PLAYER_HEAD, "&dCharacter Services", "character",
+                "&7Race · Class · Reskin",
+                "&8Ancient Coins · level-scaled costs",
+                "&eClick to open"));
         gui.addButton(openBtn(player, 31, "hub.main.android_remove", Material.REDSTONE, "&cRemove Android", "android_remove",
                 "&7Remove your Android upgrade",
                 "&8Two-click confirm · forms restored",

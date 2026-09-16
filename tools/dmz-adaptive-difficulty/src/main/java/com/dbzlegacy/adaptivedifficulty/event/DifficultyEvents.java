@@ -99,6 +99,8 @@ public final class DifficultyEvents {
         DifficultyConfig.load();
         try {
             com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig.load();
+            com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig.load();
+            com.dbzlegacy.adaptivedifficulty.character.CharacterServicesStore.get().load();
         } catch (Throwable ignored) {
         }
         DifficultyCache.invalidateAll();

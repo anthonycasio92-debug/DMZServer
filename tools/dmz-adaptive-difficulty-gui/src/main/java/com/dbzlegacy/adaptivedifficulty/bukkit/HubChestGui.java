@@ -102,6 +102,11 @@ public final class HubChestGui implements Listener {
                 List.of("&7Turn in prestiges · skill/forms shop · level-cap",
                         "&eClick to open")),
                 SlotAction.open("prestige"));
+        put(holder, inv, 30, tipBtn(player, "hub.main.character", Material.PLAYER_HEAD, "&dCharacter Services",
+                List.of("&7Race · Class · Reskin",
+                        "&8Ancient Coins · level-scaled costs",
+                        "&eClick to open")),
+                SlotAction.open("character"));
 
         // Row 4 — player Android remove + staff tools
         put(holder, inv, 31, tipBtn(player, "hub.main.android_remove", Material.REDSTONE, "&cRemove Android",

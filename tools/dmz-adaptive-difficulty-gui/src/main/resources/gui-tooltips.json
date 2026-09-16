@@ -54,6 +54,14 @@
           "&eClick to open"
         ]
       },
+      "character": {
+        "name": "&dCharacter Services",
+        "lore": [
+          "&7Race · Class · Reskin",
+          "&8Ancient Coins · level-scaled costs",
+          "&eClick to open"
+        ]
+      },
       "android_remove": {
         "name": "&cRemove Android",
         "lore": [

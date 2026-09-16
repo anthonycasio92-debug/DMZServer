@@ -1,0 +1,52 @@
+{
+  "enabled": true,
+  "permissions": {
+    "services": "legacymechanics.character.services",
+    "race": "legacymechanics.character.racechange",
+    "class": "legacymechanics.character.classchange",
+    "reskin": "legacymechanics.character.reskin",
+    "bypassCost": "legacymechanics.character.bypass.cost",
+    "bypassCooldown": "legacymechanics.character.bypass.cooldown",
+    "admin": "legacymechanics.character.admin"
+  },
+  "restrictions": {
+    "blockWhileDead": true,
+    "blockWhileTransformed": true,
+    "blockWhileInCombat": false,
+    "blockWhileSparring": true
+  },
+  "raceChange": {
+    "enabled": true,
+    "cooldownMs": 604800000,
+    "keepSkillsOnRaceChange": false,
+    "preservationCostCopper": {
+      "10": 100000,
+      "20": 200000,
+      "30": 300000,
+      "40": 400000,
+      "50": 500000,
+      "60": 600000,
+      "70": 700000,
+      "80": 800000,
+      "90": 900000,
+      "100": 1000000
+    },
+    "levelCostMultiplier": true,
+    "blockedRaces": []
+  },
+  "classChange": {
+    "enabled": true,
+    "cooldownMs": 259200000,
+    "baseCostCopper": 250000,
+    "levelCostMultiplier": true,
+    "preserveBaseStats": true,
+    "resetClassProgression": true
+  },
+  "reskin": {
+    "enabled": true,
+    "cooldownMs": 86400000,
+    "baseCostCopper": 50000,
+    "levelCostMultiplier": true,
+    "openDmzRecustomizeOnly": true
+  }
+}

@@ -61,6 +61,15 @@ public final class CmiGuiBridge {
         return openNamed(player, page, "openPrestigeMenuForUuid", "openPrestigeMenu", "CMI Prestige");
     }
 
+    public static boolean openCharacterServices(ServerPlayer player, String page) {
+        return openNamed(
+                player,
+                page,
+                "openCharacterServicesMenuForUuid",
+                "openCharacterServicesMenu",
+                "CMI CharacterServices");
+    }
+
     /** Opens Skills CMI/inventory GUI via companion plugin. */
     public static boolean openSkills(ServerPlayer player, String page) {
         return openNamed(player, page, "openSkillsMenuForUuid", "openSkillsMenu", "CMI Skills");

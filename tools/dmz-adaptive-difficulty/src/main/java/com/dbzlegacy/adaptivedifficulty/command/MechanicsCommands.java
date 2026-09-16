@@ -155,6 +155,10 @@ public final class MechanicsCommands {
                 com.dbzlegacy.adaptivedifficulty.gui.PrestigeMenu.open(player, "main");
                 yield 1;
             }
+            case "character", "characterservices", "charservices", "char" -> {
+                com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesMenu.open(player, "main");
+                yield 1;
+            }
             case "android_remove", "androidremove", "removeandroid" -> {
                 // Open the confirm GUI (matches Bukkit hub /lmdo lm open android_remove).
                 if (!com.dbzlegacy.adaptivedifficulty.gui.BukkitGuiBridge.openProgression(player, "android_remove")
