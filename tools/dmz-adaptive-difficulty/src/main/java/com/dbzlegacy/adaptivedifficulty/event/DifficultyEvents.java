@@ -346,6 +346,7 @@ public final class DifficultyEvents {
             LAST_RACE.remove(player.m_20148_());
             LAST_FORM_KEY.remove(player.m_20148_());
             AncientCoinEconomy.clearMigrateFlag(player.m_20148_());
+            com.dbzlegacy.adaptivedifficulty.character.ReskinSessionGuard.clear(player);
             AreaDifficulty.clearCache();
             RivalSystem.onLogout(player);
             SparringSystem.onLogout(player);

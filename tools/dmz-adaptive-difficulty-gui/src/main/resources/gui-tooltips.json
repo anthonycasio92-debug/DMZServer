@@ -312,7 +312,8 @@
         "name": "&a&lPay & Open Appearance",
         "lore": [
           "&7Opens the DragonMineZ look editor",
-          "&7Your level, stats, and skills stay the same",
+          "&7Cosmetics only — &cclass cannot change",
+          "&7Level, stats, and race stay the same",
           "&eClick to pay and open"
         ]
       },

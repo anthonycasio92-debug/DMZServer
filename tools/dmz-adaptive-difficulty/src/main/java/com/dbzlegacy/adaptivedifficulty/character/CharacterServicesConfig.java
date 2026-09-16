@@ -173,5 +173,7 @@ public final class CharacterServicesConfig {
         public long baseCostCopper = 50_000L;
         public boolean levelCostMultiplier = true;
         public boolean openDmzRecustomizeOnly = true;
+        /** DMZ recustomize UI includes a class tab — server locks class while reskin session is active. */
+        public boolean lockClassDuringEditor = true;
     }
 }

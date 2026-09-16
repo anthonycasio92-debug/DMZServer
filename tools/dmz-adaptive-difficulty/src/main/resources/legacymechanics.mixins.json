@@ -5,7 +5,8 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "legacymechanics.refmap.json",
   "mixins": [
-    "StatsDataMixin"
+    "StatsDataMixin",
+    "UpdateCharacterC2SMixin"
   ],
   "injectors": {
     "defaultRequire": 1

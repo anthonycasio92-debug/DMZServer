@@ -47,6 +47,7 @@
     "cooldownMs": 86400000,
     "baseCostCopper": 50000,
     "levelCostMultiplier": true,
-    "openDmzRecustomizeOnly": true
+    "openDmzRecustomizeOnly": true,
+    "lockClassDuringEditor": true
   }
 }

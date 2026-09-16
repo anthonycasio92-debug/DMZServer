@@ -403,6 +403,7 @@ public final class CharacterServicesSystem {
             return "§cPayment failed. No changes were made.";
         }
         try {
+            ReskinSessionGuard.begin(player);
             var server = player.m_20194_();
             Runnable openEditor = () -> NetworkHandler.sendToPlayer(new OpenRecustomizeS2C(), player);
             if (server != null) {
