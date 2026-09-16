@@ -253,6 +253,72 @@ public final class CosmeticHeadBoneService {
         }
     }
 
+    /** First head bone in this race's config (DMZ default for that race). */
+    public static String raceDefaultHeadBoneId(ServerPlayer player) {
+        String race = DmzProgression.race(player);
+        List<String> bones = DmzContentDiscovery.headBonesForRaceOrdered(race);
+        if (bones.isEmpty()) {
+            return "hair";
+        }
+        return bones.get(0);
+    }
+
+    /**
+     * Minimal look: {@code hair} when the race supports it, otherwise clear extra head bone
+     * (empty — DMZ uses base head without add-on parts).
+     */
+    public static String unequipHeadBoneId(ServerPlayer player) {
+        String race = DmzProgression.race(player);
+        List<String> bones = DmzContentDiscovery.headBonesForRaceOrdered(race);
+        for (String bone : bones) {
+            if ("hair".equals(bone)) {
+                return "hair";
+            }
+        }
+        return "";
+    }
+
+    public static String executeRaceDefaultHeadBone(ServerPlayer player) {
+        if (!canUse(player)) {
+            return "§cHead bone shop is unavailable.";
+        }
+        String bone = raceDefaultHeadBoneId(player);
+        return applyHeadBoneDirect(player, bone, "§aSet race default head part §f");
+    }
+
+    public static String executeUnequipHeadBone(ServerPlayer player) {
+        if (!canUse(player)) {
+            return "§cHead bone shop is unavailable.";
+        }
+        String bone = unequipHeadBoneId(player);
+        if (bone.isEmpty()) {
+            return applyHeadBoneDirect(player, "", "§aUnequipped extra head parts.");
+        }
+        return applyHeadBoneDirect(player, bone, "§aUnequipped to §f");
+    }
+
+    private static String applyHeadBoneDirect(ServerPlayer player, String bone, String prefix) {
+        Character ch = DmzProgression.character(player);
+        if (ch == null) {
+            return "§cCharacter data unavailable.";
+        }
+        try {
+            ch.setActiveHeadBone(bone == null ? "" : bone.trim().toLowerCase(Locale.ROOT));
+            RaceHeadBoneSync.syncClient(player);
+            if (prefix.contains("Unequipped extra")) {
+                return prefix;
+            }
+            CosmeticHeadBoneCatalog.Entry entry = CosmeticHeadBoneCatalog.get(bone);
+            String label = entry == null ? CosmeticHeadBoneCatalog.prettyId(bone) : entry.displayName();
+            if (label.isBlank()) {
+                label = bone.isBlank() ? "none" : bone;
+            }
+            return prefix + label + "§a.";
+        } catch (Throwable t) {
+            return "§cCould not update head part.";
+        }
+    }
+
     public static String executeEquip(ServerPlayer player, String boneId) {
         if (!canUse(player)) {
             return "§cHead bone shop is unavailable.";

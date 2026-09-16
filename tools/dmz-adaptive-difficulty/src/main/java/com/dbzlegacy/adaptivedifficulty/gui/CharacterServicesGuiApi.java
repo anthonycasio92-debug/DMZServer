@@ -79,6 +79,7 @@ public final class CharacterServicesGuiApi {
             lines.add("§7Your race's parts are free; cross-race parts cost Ancient Coins.");
             lines.add("§7Page §f" + (bonePage + 1) + "§7/§f" + CosmeticHeadBoneService.pageCount());
             lines.add("§8Equipped: §f" + titleBone(CosmeticHeadBoneService.activeBone(player)));
+            lines.add("§7Use §fRace default §7or §fUnequip §7to clear cross-race parts.");
             return lines;
         }
         if ("reskin".equals(p)) {
@@ -170,6 +171,12 @@ public final class CharacterServicesGuiApi {
         }
         if ("bone_equip".equals(act)) {
             return CosmeticHeadBoneService.executeEquip(player, a);
+        }
+        if ("bone_race_default".equals(act)) {
+            return CosmeticHeadBoneService.executeRaceDefaultHeadBone(player);
+        }
+        if ("bone_unequip".equals(act)) {
+            return CosmeticHeadBoneService.executeUnequipHeadBone(player);
         }
         return "§cUnknown character action: " + act;
     }

@@ -101,27 +101,41 @@ public final class DmzContentDiscovery {
 
     /** Union of DMZ {@link RaceCharacterConfig} and on-disk {@code character.json}. */
     public static List<String> headBonesForRace(String raceId) {
+        return List.copyOf(new LinkedHashSet<>(headBonesForRaceOrdered(raceId)));
+    }
+
+    /** Preserves {@code character.json} headBones order, then appends any from runtime config. */
+    public static List<String> headBonesForRaceOrdered(String raceId) {
         if (raceId == null || raceId.isBlank()) {
             return List.of();
         }
         String race = raceId.trim().toLowerCase(Locale.ROOT);
-        LinkedHashSet<String> out = new LinkedHashSet<>();
+        LinkedHashSet<String> seen = new LinkedHashSet<>();
+        List<String> ordered = new ArrayList<>();
+        for (String bone : readHeadBonesFromCharacterFileOrdered(race)) {
+            if (seen.add(bone)) {
+                ordered.add(bone);
+            }
+        }
         try {
             RaceCharacterConfig cfg = ConfigManager.getRaceCharacter(race);
             if (cfg != null) {
                 String[] bones = cfg.getHeadBones();
                 if (bones != null) {
                     for (String bone : bones) {
-                        if (bone != null && !bone.isBlank()) {
-                            out.add(bone.trim().toLowerCase(Locale.ROOT));
+                        if (bone == null || bone.isBlank()) {
+                            continue;
+                        }
+                        String id = bone.trim().toLowerCase(Locale.ROOT);
+                        if (seen.add(id)) {
+                            ordered.add(id);
                         }
                     }
                 }
             }
         } catch (Throwable ignored) {
         }
-        out.addAll(readHeadBonesFromCharacterFile(race));
-        return List.copyOf(out);
+        return ordered;
     }
 
     private static boolean hasRaceDefinition(Path raceDir) {
@@ -154,8 +168,8 @@ public final class DmzContentDiscovery {
         return out;
     }
 
-    private static Set<String> readHeadBonesFromCharacterFile(String raceId) {
-        LinkedHashSet<String> out = new LinkedHashSet<>();
+    private static List<String> readHeadBonesFromCharacterFileOrdered(String raceId) {
+        List<String> out = new ArrayList<>();
         Path file = racesRoot().resolve(raceId).resolve("character.json");
         if (!Files.isRegularFile(file)) {
             return out;
