@@ -328,10 +328,10 @@ public final class CharacterServicesChestGui implements Listener {
             pages = p + 1;
         }
         put(holder, inv, 48, tipBtn("character.bones.race_default", Material.TOTEM_OF_UNDYING, "&eRace default",
-                List.of("&7Equip this race's default head part", "&8From DMZ character.json", "&eClick")),
+                List.of("&7Equip this race's default head part", "&8From DMZ character.json", "&eClick"), null),
                 SlotAction.act("bone_race_default", "0", pageKey));
         put(holder, inv, 49, tipBtn("character.bones.unequip", Material.BARRIER, "&7Unequip / clear",
-                List.of("&7Remove cross-race parts", "&7Uses &fhair &7when your race has it", "&eClick")),
+                List.of("&7Remove cross-race parts", "&7Uses &fhair &7when your race has it", "&eClick"), null),
                 SlotAction.act("bone_unequip", "0", pageKey));
         if (page > 0) {
             put(holder, inv, 45, pageBtn("character.bones.prev", Material.ARROW, "&7« Page " + page,
