@@ -3,6 +3,8 @@ package com.dbzlegacy.adaptivedifficulty.progression.classdef;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.ConfigPaths;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.FabledBridge;
+import com.dragonminez.common.config.ConfigManager;
+import com.dragonminez.common.config.RaceStatsConfig;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -46,6 +48,77 @@ public final class FightingClassCatalog {
 
     public static Set<String> allClassIds() {
         return Collections.unmodifiableSet(new LinkedHashSet<>(BLOB.classIds));
+    }
+
+    /** Fighting classes defined in {@code config/dragonminez/races/<race>/stats.json}. */
+    public static List<String> classIdsForRace(String raceId) {
+        if (raceId == null || raceId.isBlank()) {
+            return List.of();
+        }
+        String race = raceId.trim().toLowerCase(Locale.ROOT);
+        LinkedHashSet<String> out = new LinkedHashSet<>();
+        try {
+            RaceStatsConfig stats = ConfigManager.getRaceStats(race);
+            if (stats != null) {
+                java.util.Collection<String> classes = stats.getAllClasses();
+                if (classes != null) {
+                    for (String id : classes) {
+                        if (id != null && !id.isBlank()) {
+                            out.add(normalizeId(id));
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        if (out.isEmpty()) {
+            out.addAll(readClassIdsFromRaceStatsFile(race));
+        }
+        return out.isEmpty() ? List.of() : List.copyOf(out);
+    }
+
+    public static boolean isClassValidForRace(String raceId, String classId) {
+        if (classId == null || classId.isBlank()) {
+            return false;
+        }
+        String id = normalizeId(classId);
+        for (String allowed : classIdsForRace(raceId)) {
+            if (id.equals(allowed)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Set<String> readClassIdsFromRaceStatsFile(String raceId) {
+        Set<String> out = new LinkedHashSet<>();
+        Path stats = FMLPaths.GAMEDIR.get()
+                .resolve("config")
+                .resolve("dragonminez")
+                .resolve("races")
+                .resolve(raceId)
+                .resolve("stats.json");
+        if (!Files.isRegularFile(stats)) {
+            return out;
+        }
+        try {
+            String raw = Files.readString(stats, StandardCharsets.UTF_8);
+            JsonElement root = JsonParser.parseString(raw);
+            if (!root.isJsonObject()) {
+                return out;
+            }
+            JsonObject classes = root.getAsJsonObject().getAsJsonObject("classes");
+            if (classes == null) {
+                return out;
+            }
+            for (String key : classes.keySet()) {
+                if (key != null && !key.isBlank()) {
+                    out.add(normalizeId(key));
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return out;
     }
 
     public static List<ClassEntry> entries() {

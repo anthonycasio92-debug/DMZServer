@@ -65,7 +65,8 @@ public final class CharacterServicesGuiApi {
             return lines;
         }
         if ("class".equals(p)) {
-            lines.add("§7Pick a new fighting class.");
+            lines.add("§7Pick a new fighting class for your §fcurrent race§7.");
+            lines.add("§7Only classes from your race's DMZ stats are listed.");
             lines.add("§7Your base combat stats stay — class skills and perks reset.");
             lines.add(costLine(player, CharacterServicesSystem.classCost(player)));
             lines.add(CharacterServicesSystem.cooldownLine(player, "class"));

@@ -132,12 +132,24 @@ public final class CharacterServicesSystem {
         if (player == null) {
             return out;
         }
+        String race = DmzProgression.race(player);
         String current = DmzProgression.fightingClass(player);
-        for (String id : FightingClassCatalog.allClassIds()) {
+        List<String> raceClasses = FightingClassCatalog.classIdsForRace(race);
+        if (raceClasses.isEmpty()) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] no DMZ classes for race {} in character services GUI",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    race);
+            return out;
+        }
+        for (String id : raceClasses) {
             if (id == null || id.isBlank()) {
                 continue;
             }
-            String name = FightingClassCatalog.skillNameFor(id);
+            String name = FightingClassLabels.display(id);
+            if (name == null || name.isBlank() || "Not set".equals(name)) {
+                name = FightingClassCatalog.skillNameFor(id);
+            }
             if (name == null || name.isBlank()) {
                 name = titleCase(id);
             }
@@ -386,8 +398,9 @@ public final class CharacterServicesSystem {
             return "§cClass change is disabled.";
         }
         String classId = normalizeId(targetClass);
-        if (classId.isEmpty() || !FightingClassCatalog.allClassIds().contains(classId)) {
-            return "§cThat class is unavailable.";
+        String race = DmzProgression.race(player);
+        if (classId.isEmpty() || !FightingClassCatalog.isClassValidForRace(race, classId)) {
+            return "§cThat class is not available for your race.";
         }
         String current = DmzProgression.fightingClass(player);
         if (classId.equalsIgnoreCase(current)) {
@@ -434,7 +447,11 @@ public final class CharacterServicesSystem {
             CharacterServicesStore.get().markDirty();
             audit(player, "Class Change", current, classId, 100, cost, true);
             String paid = cost > 0L ? " §7Paid §f" + formatCost(cost) + "§7." : "";
-            return "§aClass changed to §f" + titleCase(classId) + "§a." + paid;
+            String label = FightingClassLabels.display(classId);
+            if (label == null || label.isBlank() || "Not set".equals(label)) {
+                label = titleCase(classId);
+            }
+            return "§aClass changed to §f" + label + "§a." + paid;
         } catch (Throwable t) {
             refund(player, cost);
             audit(player, "Class Change", current, classId, 100, cost, false);
