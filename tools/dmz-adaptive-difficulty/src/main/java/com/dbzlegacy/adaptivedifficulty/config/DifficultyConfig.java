@@ -45,6 +45,13 @@ public final class DifficultyConfig {
      * Toggle: {@code /difficulty admin telemetry on|off}.
      */
     public boolean balanceTelemetryEnabled = false;
+    /**
+     * When {@code true}, staff ({@link com.dbzlegacy.adaptivedifficulty.util.StaffAccess})
+     * pay no Ancient Coins for LM paid features (tier purchases, Character Services, End dragon summon, …).
+     * Default {@code false} — ops/admins pay like everyone unless this is on or they hold a bypass permission.
+     * Toggle: {@code /difficulty admin stafffree on|off}.
+     */
+    public boolean staffFreeAncientCoinCosts = false;
     /** Max telemetry hit lines per player per second (spam guard). */
     public int balanceTelemetryMaxPerSecond = 8;
     /**

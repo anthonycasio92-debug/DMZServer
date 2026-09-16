@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
+import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
@@ -165,6 +166,7 @@ public final class DifficultyChatMenu {
         send(player, btn("§c[Reset to None]", "/difficulty do lower_tier 0 tiers", "Clear active tier"));
         for (UnlockTier tier : UnlockTier.values()) {
             long cost = AncientCoinEconomy.activationCost(tier, player);
+            boolean freeCost = PaidFeatureAccess.bypassAncientCoinCost(player);
             boolean unlocked = data.hasUnlockedTier(tier.id);
             boolean activeHere = active == tier.id;
             boolean canLower = unlocked && tier.id < active;
@@ -178,9 +180,12 @@ public final class DifficultyChatMenu {
                         .m_7220_(btn("§f[LOWER]", "/difficulty do activate " + tier.id + " tiers",
                                 "Lower to Tier " + tier.id + " (free)"));
             } else if (unlocked) {
-                line = line.m_7220_(Component.m_237113_(" §6" + AncientCoinEconomy.formatExactCost(cost) + " "))
+                String costLabel = freeCost ? "§afree (staff)" : ("§6" + AncientCoinEconomy.formatExactCost(cost));
+                line = line.m_7220_(Component.m_237113_(" " + costLabel + " "))
                         .m_7220_(btn("§a[BUY]", "/difficulty do activate " + tier.id + " tiers",
-                                "Pay Ancient Coins for Tier " + tier.id + " (pay-up OK, change returned)"));
+                                freeCost
+                                        ? "Activate Tier " + tier.id + " (staff — no coin charge)"
+                                        : "Pay Ancient Coins for Tier " + tier.id + " (pay-up OK, change returned)"));
             } else {
                 line = line.m_7220_(Component.m_237113_(
                         " §cLOCKED §8(" + tier.requirementTip() + ")"));

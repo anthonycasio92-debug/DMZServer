@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.character;
 
+import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -31,9 +32,7 @@ public final class CharacterServicesAccess {
     }
 
     public static boolean bypassCost(ServerPlayer player) {
-        return StaffAccess.isStaff(player)
-                || has(player, CharacterServicesConfig.get().permissions.bypassCost, false)
-                || has(player, CharacterServicesConfig.get().permissions.admin, false);
+        return PaidFeatureAccess.bypassAncientCoinCost(player);
     }
 
     public static boolean bypassCooldown(ServerPlayer player) {

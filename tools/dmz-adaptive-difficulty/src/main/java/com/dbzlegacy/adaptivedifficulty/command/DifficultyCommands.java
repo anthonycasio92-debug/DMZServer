@@ -97,6 +97,8 @@ public final class DifficultyCommands {
                         .then(whitelistRoot("wl"))
                         .then(telemetryRoot("telemetry"))
                         .then(telemetryRoot("tel"))
+                        .then(staffFreeRoot("stafffree"))
+                        .then(staffFreeRoot("staffcoins"))
                         .then(syslogRoot("syslog"))
                         .then(syslogRoot("systemlog"))
                         .then(Commands.m_82127_("gamedifficulty")
@@ -206,6 +208,21 @@ public final class DifficultyCommands {
                         .executes(ctx -> telemetryFlush(ctx.getSource())))
                 .then(Commands.m_82127_("test")
                         .executes(ctx -> telemetryTest(ctx.getSource())));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> staffFreeRoot(String name) {
+        return Commands.m_82127_(name)
+                .executes(ctx -> staffFreeStatus(ctx.getSource()))
+                .then(Commands.m_82127_("on")
+                        .executes(ctx -> setStaffFreeAncientCoins(ctx.getSource(), true)))
+                .then(Commands.m_82127_("off")
+                        .executes(ctx -> setStaffFreeAncientCoins(ctx.getSource(), false)))
+                .then(Commands.m_82127_("toggle")
+                        .executes(ctx -> setStaffFreeAncientCoins(
+                                ctx.getSource(),
+                                !DifficultyConfig.get().staffFreeAncientCoinCosts)))
+                .then(Commands.m_82127_("status")
+                        .executes(ctx -> staffFreeStatus(ctx.getSource())));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> syslogRoot(String name) {
@@ -320,12 +337,16 @@ public final class DifficultyCommands {
         }
         boolean on = DifficultyConfig.isEnabled();
         boolean wl = DifficultyConfig.isWhitelistEnabled();
+        boolean staffFree = DifficultyConfig.get().staffFreeAncientCoinCosts;
         int n = DifficultyConfig.whitelistEntries().size();
         source.m_288197_(() -> Component.m_237113_(
                 (on ? "§aSystem ENABLED" : "§cSystem DISABLED")
                         + " §8· "
                         + (wl ? "§eWhitelist ON §7(" + n + " entries)" : "§7Whitelist OFF")
+                        + " §8· "
+                        + (staffFree ? "§aStaff coin bypass ON" : "§7Staff coin bypass OFF")
                         + "\n§8/difficulty admin whitelist on|off|add|remove|list"
+                        + "\n§8/difficulty admin stafffree on|off"
         ), false);
         return 1;
     }
@@ -513,6 +534,38 @@ public final class DifficultyCommands {
                 "§aHit log probe written.\n§7File: §f" + path
                         + "\n§7Remember: live hits only log for §fwhitelisted§7 players."
         ), true);
+        return 1;
+    }
+
+    private static int setStaffFreeAncientCoins(CommandSourceStack source, boolean on) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        DifficultyConfig cfg = DifficultyConfig.get();
+        cfg.staffFreeAncientCoinCosts = on;
+        DifficultyConfig.save();
+        source.m_288197_(() -> Component.m_237113_(
+                (on ? "§aStaff free Ancient Coin costs ON" : "§eStaff free Ancient Coin costs OFF")
+                        + "\n§7Tier buys, Character Services, End dragon summon, etc."
+                        + (on
+                        ? "\n§7Staff/OP pay §fno coins§7 (bypass permission nodes still work when OFF)."
+                        : "\n§7Staff/OP pay like everyone unless they have a bypass permission.")
+                        + "\n§8/difficulty admin stafffree on|off|toggle|status"
+        ), true);
+        return 1;
+    }
+
+    private static int staffFreeStatus(CommandSourceStack source) {
+        if (denyAdmin(source) == 0) {
+            return 0;
+        }
+        boolean on = DifficultyConfig.get().staffFreeAncientCoinCosts;
+        source.m_288197_(() -> Component.m_237113_(
+                "§6Staff free Ancient Coin costs: " + (on ? "§aON" : "§eOFF")
+                        + "\n§7When ON, ops/staff skip coin charges on LM paid features."
+                        + "\n§8/difficulty admin stafffree on|off|toggle"
+                        + "\n§8Config key: staffFreeAncientCoinCosts"
+        ), false);
         return 1;
     }
 
@@ -705,13 +758,14 @@ public final class DifficultyCommands {
                         + "§e/difficulty admin off|on|toggle|status §7— master system switch\n"
                         + "§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist\n"
                         + "§e/difficulty admin telemetry on|off|status|flush|test §7— log AD combat hits (all players)\n"
+                        + "§e/difficulty admin stafffree on|off|toggle|status §7— staff skip Ancient Coin charges (default off)\n"
                         + "§e/difficulty admin syslog on|off|status|flush §7— unified system event log\n"
                         + "§e/difficulty admin gui|inspect <player> [page] §7— open their GUI (edit/see their state)\n"
                         + "§e/difficulty admin resynclevel [player] §7— clear stuck DMZ level sample + refresh GUI level\n"
                         + "§e/lm §7— open Legacy Mechanics menu (Difficulty / Rival / Sparring)\n"
                         + "§e/difficulty admin reload|settings|area|gamedifficulty|resetpurchased|characterreset\n"
                         + "§e/difficulty admin set <key> <value>\n"
-                        + "§8Master keys: enabled · whitelistEnabled · balanceTelemetryEnabled · enableSystemTelemetry\n"
+                        + "§8Master keys: enabled · whitelistEnabled · staffFreeAncientCoinCosts · balanceTelemetryEnabled · enableSystemTelemetry\n"
                         + "§8Tier keys: unlockTier1Level…7 / Cost…7 / tier1statpercent…7 (0.15–2.0)\n"
                         + "§8Counters: enableClassCounters · enableStrongStatCounters\n"
                         + "§8classCounter*Mult · strongStatCounterMult · maxCounterOverlayMult\n"
@@ -884,6 +938,18 @@ public final class DifficultyCommands {
                     } else {
                         source.m_81352_(Component.m_237113_(
                                 "Use true/false, or: /difficulty admin telemetry on|off"
+                        ));
+                        return 0;
+                    }
+                }
+                case "stafffreeancientcoincosts", "stafffreecoins", "stafffree" -> {
+                    if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)
+                            || "on".equalsIgnoreCase(value) || "off".equalsIgnoreCase(value)) {
+                        cfg.staffFreeAncientCoinCosts =
+                                "true".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value);
+                    } else {
+                        source.m_81352_(Component.m_237113_(
+                                "Use true/false, or: /difficulty admin stafffree on|off"
                         ));
                         return 0;
                     }

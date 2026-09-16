@@ -33,6 +33,7 @@ public final class ForgeBridge {
     private static Method economyFormat;
     private static Method economyFormatExactCost;
     private static Method economyActivationCostPlayer;
+    private static Method paidFeatureBypassCost;
     private static Method economyCountOf;
     private static Method economyBalance;
     private static Class<?> coinKindCls;
@@ -287,6 +288,9 @@ public final class ForgeBridge {
             out.put("personal_enabled", personalOn ? "true" : "false");
             out.put("personal_status", personalOn ? "ON" : "OFF");
             out.put("coin_drop_chat", coinChatOn ? "true" : "false");
+            boolean bypassAncient = bypassAncientCoinCost(nms);
+            out.put("bypass_ancient_cost", bypassAncient ? "true" : "false");
+            out.put("staff_free_ancient_coin_costs", staffFreeAncientCoinCosts() ? "true" : "false");
             putCounterPlaceholders(out, nms);
 
             // Prestige points shop — for NPC scripts / PlaceholderAPI.
@@ -320,9 +324,14 @@ public final class ForgeBridge {
                         out.put("tier_" + id + "_name", "T" + id + " " + (display == null ? "" : display));
                         long cost = resolveTierCost(ut, nms, level);
                         // Never show resolve failures as "free" (formatExactCost(0)).
-                        String costText = cost <= 0L
-                                ? "?"
-                                : String.valueOf(economyFormatExactCost.invoke(null, cost));
+                        String costText;
+                        if (bypassAncientCoinCost(nms)) {
+                            costText = "free";
+                        } else if (cost <= 0L) {
+                            costText = "?";
+                        } else {
+                            costText = String.valueOf(economyFormatExactCost.invoke(null, cost));
+                        }
                         out.put("unlock_tier_" + id + "_cost", costText);
                         out.put("tier_" + id + "_cost", costText);
                         out.put("tier_" + id + "_cost_raw", String.valueOf(Math.max(0L, cost)));
@@ -2539,6 +2548,32 @@ public final class ForgeBridge {
         return player.isOp() || player.hasPermission(adminPermission());
     }
 
+    private static boolean bypassAncientCoinCost(Object nmsPlayer) {
+        if (nmsPlayer == null) {
+            return false;
+        }
+        try {
+            ensureResolved();
+            if (paidFeatureBypassCost != null) {
+                Object ok = paidFeatureBypassCost.invoke(null, nmsPlayer);
+                return ok instanceof Boolean b && b;
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
+    }
+
+    private static boolean staffFreeAncientCoinCosts() {
+        try {
+            Object cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
+                    .getMethod("get").invoke(null);
+            Object raw = cfg.getClass().getField("staffFreeAncientCoinCosts").get(cfg);
+            return raw instanceof Boolean b && b;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     /**
      * Donator Skill Check: {@code legacymechanics.skillcheck} (config). Staff are not
      * auto-granted — without the node they use {@code /skills} and do not see Skill Check in hub.
@@ -3380,6 +3415,14 @@ public final class ForgeBridge {
                     } catch (Throwable ignored) {
                         economyActivationCostPlayer = null;
                     }
+                    try {
+                        Class<?> paidCls = loadClass(
+                                "com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess", preferred);
+                        paidFeatureBypassCost = paidCls.getMethod(
+                                "bypassAncientCoinCost", serverPlayerCls);
+                    } catch (Throwable ignored) {
+                        paidFeatureBypassCost = null;
+                    }
                 } catch (Throwable missing) {
                     economyBalanceText = null;
                     economyFormat = null;
@@ -3387,6 +3430,7 @@ public final class ForgeBridge {
                     economyBalance = null;
                     economyCountOf = null;
                     economyActivationCostPlayer = null;
+                    paidFeatureBypassCost = null;
                     coinKindCls = null;
                 }
                 try {

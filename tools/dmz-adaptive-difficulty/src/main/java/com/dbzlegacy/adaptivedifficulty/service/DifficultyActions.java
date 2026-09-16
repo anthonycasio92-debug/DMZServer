@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
+import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
 import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
@@ -495,18 +496,20 @@ public final class DifficultyActions {
         }
 
         long cost = AncientCoinEconomy.activationCost(tier, player);
-        String costText = AncientCoinEconomy.formatExactCost(cost);
+        boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
+        long charge = free ? 0L : cost;
+        String costText = free ? "free (staff)" : AncientCoinEconomy.formatExactCost(cost);
         if (!canPersist(player)) {
             openGui(player, returnPage);
             return Result.fail("Could not save difficulty data — purchase cancelled (try relogging).");
         }
-        if (!AncientCoinEconomy.canAfford(player, cost)) {
+        if (charge > 0L && !AncientCoinEconomy.canAfford(player, charge)) {
             openGui(player, returnPage);
-            return Result.fail(AncientCoinEconomy.missingText(player, cost));
+            return Result.fail(AncientCoinEconomy.missingText(player, charge));
         }
-        if (!AncientCoinEconomy.charge(player, cost)) {
+        if (charge > 0L && !AncientCoinEconomy.charge(player, charge)) {
             openGui(player, returnPage);
-            return Result.fail(AncientCoinEconomy.missingText(player, cost));
+            return Result.fail(AncientCoinEconomy.missingText(player, charge));
         }
         applyTier(data, player, tier);
         TitleSystem.syncTierTitles(player, true);
