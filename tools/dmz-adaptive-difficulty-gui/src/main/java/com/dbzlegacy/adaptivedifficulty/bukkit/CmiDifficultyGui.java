@@ -375,26 +375,37 @@ public final class CmiDifficultyGui {
         for (String line : ForgeBridge.diffTeamLines(player)) {
             headerLore.add(line == null ? "" : line.replace('§', '&'));
         }
+        headerLore.add("");
+        headerLore.addAll(GuiBoardHelper.teamRivalLegendLines());
         header.addLore(headerLore);
         gui.addButton(header);
 
         String mode = ph.getOrDefault("team_mode", "personal_only");
-        gui.addButton(actionBtn(player, 20, "difficulty.team.mode_personal", Material.GRAY_DYE, "&7Personal",
+        boolean personalMode = mode.equals("personal_only");
+        boolean thresholdMode = mode.equals("threshold_bonus_only");
+        boolean fullMode = mode.equals("full_team_scaling");
+        gui.addButton(actionBtn(player, 20, "difficulty.team.mode_personal",
+                personalMode ? Material.LIME_DYE : Material.GRAY_DYE,
+                personalMode ? "&aPersonal" : "&7Personal",
                 "team", "personal", "team",
                 List.of("&7Only your own tier ceiling counts",
-                        mode.equals("personal_only") ? "&aCurrent mode" : "&eClick to select8Select this option")));
-        gui.addButton(actionBtn(player, 22, "difficulty.team.mode_threshold", Material.LIME_DYE, "&aThreshold",
+                        personalMode ? "&a&lYour current mode" : "&eClick to select8Select this option")));
+        gui.addButton(actionBtn(player, 22, "difficulty.team.mode_threshold",
+                thresholdMode ? Material.LIGHT_BLUE_DYE : Material.LIME_DYE,
+                thresholdMode ? "&b&lThreshold" : "&aThreshold",
                 "team", "threshold", "team",
                 List.of("&7Extra max when rivals are online",
                         "&7They must also use a team mode",
                         "&7More elites, mutants, and bosses",
-                        mode.equals("threshold_bonus_only") ? "&aCurrent mode" : "&eClick to select8Select this option")));
-        gui.addButton(actionBtn(player, 24, "difficulty.team.mode_full", Material.EMERALD, "&2Full",
+                        thresholdMode ? "&b&lYour current mode" : "&eClick to select8Select this option")));
+        gui.addButton(actionBtn(player, 24, "difficulty.team.mode_full",
+                fullMode ? Material.GOLD_INGOT : Material.EMERALD,
+                fullMode ? "&6&lFull" : "&2Full",
                 "team", "full", "team",
                 List.of("&7Threshold bonus plus nearby spare room",
                         "&7Best spawn boost when rivals are close",
                         "&8Within " + ph.getOrDefault("proximity_blocks", "48") + " blocks",
-                        mode.equals("full_team_scaling") ? "&aCurrent mode" : "&eClick to select8Select this option")));
+                        fullMode ? "&6&lYour current mode" : "&eClick to select8Select this option")));
 
         List<GuiBoardHelper.TeamRivalCard> cards =
                 GuiBoardHelper.parseTeamRivalCards(ForgeBridge.diffTeamMutualCards(player));

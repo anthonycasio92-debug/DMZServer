@@ -91,7 +91,7 @@ public final class DifficultyTeamGuiApi {
 
     /**
      * Tab-separated rival cards for GUI heads:
-     * uuid, name, status, online(0/1), optedIn(0/1), near(0/1), spare
+     * uuid, name, status, online(0/1), optedIn(0/1), near(0/1), spare, team_mode
      */
     public static List<String> mutualRivalCards(ServerPlayer player) {
         List<String> cards = new ArrayList<>();
@@ -117,6 +117,7 @@ public final class DifficultyTeamGuiApi {
             boolean optedIn = online && TeamScaling.isOptedIntoTeams(other);
             boolean near = online && TeamScaling.withinContributionRange(player, other);
             long spare = online ? TeamScaling.spareHeadroom(other) : 0L;
+            String teamMode = rivalTeamModeKey(other);
             String name = link.name == null || link.name.isBlank()
                     ? (online ? other.m_7755_().getString() : e.getKey())
                     : link.name;
@@ -127,9 +128,22 @@ public final class DifficultyTeamGuiApi {
                     online ? "1" : "0",
                     optedIn ? "1" : "0",
                     near ? "1" : "0",
-                    String.valueOf(spare)));
+                    String.valueOf(spare),
+                    teamMode));
         }
         return cards;
+    }
+
+    /** personal_only | threshold_bonus_only | full_team_scaling | ad_off | offline */
+    private static String rivalTeamModeKey(ServerPlayer other) {
+        if (other == null) {
+            return "offline";
+        }
+        PlayerDifficultyData data = DifficultyCache.data(other);
+        if (!data.isPersonalEnabled()) {
+            return "ad_off";
+        }
+        return data.getTeamMode().name().toLowerCase(Locale.ROOT);
     }
 
     public static String handleDo(ServerPlayer player, String action, String arg, String page) {

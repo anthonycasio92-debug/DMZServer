@@ -418,7 +418,7 @@ final class GuiBoardHelper {
         return out;
     }
 
-    /** uuid, name, status, online, optedIn, near, spare (tab-separated). */
+    /** uuid, name, status, online, optedIn, near, spare, teamMode (tab-separated). */
     static final class TeamRivalCard {
         final String uuid;
         final String name;
@@ -427,9 +427,10 @@ final class GuiBoardHelper {
         final boolean optedIn;
         final boolean near;
         final long spare;
+        final String teamMode;
 
         TeamRivalCard(String uuid, String name, String status,
-                boolean online, boolean optedIn, boolean near, long spare) {
+                boolean online, boolean optedIn, boolean near, long spare, String teamMode) {
             this.uuid = uuid == null ? "" : uuid;
             this.name = name == null || name.isBlank() ? "?" : name;
             this.status = status == null || status.isBlank() ? "?" : status;
@@ -437,6 +438,7 @@ final class GuiBoardHelper {
             this.optedIn = optedIn;
             this.near = near;
             this.spare = Math.max(0L, spare);
+            this.teamMode = teamMode == null || teamMode.isBlank() ? "offline" : teamMode;
         }
     }
 
@@ -460,17 +462,54 @@ final class GuiBoardHelper {
                     "1".equals(p.length > 3 ? p[3] : "0"),
                     "1".equals(p.length > 4 ? p[4] : "0"),
                     "1".equals(p.length > 5 ? p[5] : "0"),
-                    parseLongSafe(p.length > 6 ? p[6] : "0")
+                    parseLongSafe(p.length > 6 ? p[6] : "0"),
+                    p.length > 7 ? p[7] : "offline"
             ));
         }
         return out;
     }
 
+    static List<String> teamRivalLegendLines() {
+        return List.of(
+                "&8Rival name colors:",
+                "&a Green &8= Personal mode",
+                "&b Aqua &8= Threshold mode",
+                "&6 Gold &8= Full team mode",
+                "&c Red &8= AD personal off",
+                "&8 Gray &8= offline");
+    }
+
     static ItemStack teamRivalHead(TeamRivalCard card) {
         List<String> lore = new ArrayList<>();
-        lore.add("&7Status &f" + card.status);
-        lore.add(card.online ? "&aOnline" : "&8Offline");
-        lore.add(card.optedIn ? "&aUsing team mode" : "&8Personal only");
+        String title;
+        if (!card.online) {
+            title = "&8● &7" + card.name;
+            lore.add("&8Offline");
+        } else {
+            switch (card.teamMode) {
+                case "threshold_bonus_only" -> {
+                    title = "&b● &f" + card.name;
+                    lore.add("&b&lThreshold mode");
+                    lore.add("&aOnline — counts for team bonus");
+                }
+                case "full_team_scaling" -> {
+                    title = "&6● &f" + card.name;
+                    lore.add("&6&lFull mode");
+                    lore.add("&aOnline — bonus + nearby spare");
+                }
+                case "ad_off" -> {
+                    title = "&c● &f" + card.name;
+                    lore.add("&c&lPersonal AD off");
+                    lore.add("&8No team bonus until they enable AD");
+                }
+                default -> {
+                    title = "&a● &f" + card.name;
+                    lore.add("&a&lPersonal mode");
+                    lore.add("&8Online — not sharing team bonus");
+                }
+            }
+        }
+        lore.add("&7Rival status &f" + card.status);
         if (card.online && card.optedIn) {
             lore.add(card.near ? "&aNearby — shares spare room" : "&8Too far to share spare room");
             if (card.spare > 0) {
@@ -485,9 +524,9 @@ final class GuiBoardHelper {
         } catch (IllegalArgumentException ignored) {
         }
         if (id != null) {
-            return GuiPlayerPicker.headByUuid(id, card.name, "&f" + card.name, lore);
+            return GuiPlayerPicker.headByUuid(id, card.name, title, lore);
         }
-        return GuiPlayerPicker.headByName(card.name, "&f" + card.name, lore);
+        return GuiPlayerPicker.headByName(card.name, title, lore);
     }
 
     static ItemStack rivalHead(RivalCard card) {
