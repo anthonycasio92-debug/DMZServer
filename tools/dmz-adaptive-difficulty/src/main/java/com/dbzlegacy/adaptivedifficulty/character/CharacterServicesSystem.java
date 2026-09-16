@@ -18,6 +18,7 @@ import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Character;
 import com.dragonminez.common.stats.character.Stats;
 import com.dragonminez.common.stats.character.Status;
+import com.dragonminez.common.stats.skills.Skills;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -301,11 +302,16 @@ public final class CharacterServicesSystem {
         if (data == null) {
             return "§cCharacter data unavailable.";
         }
-        TransferableStats before = captureStats(player);
-        if (before == null) {
-            return "§cCould not read your stats.";
+        boolean fullWipe = preservationPercent <= 0;
+        TransferableStats before = null;
+        TransferableStats target = null;
+        if (!fullWipe) {
+            before = captureStats(player);
+            if (before == null) {
+                return "§cCould not read your stats.";
+            }
+            target = before.scaled(preservationPercent);
         }
-        TransferableStats target = before.scaled(preservationPercent);
 
         if (cost > 0L && !chargeAc(player, cost)) {
             return insufficientFunds(player, cost);
@@ -317,18 +323,24 @@ public final class CharacterServicesSystem {
                 refund(player, cost);
                 return "§cCharacter data unavailable.";
             }
-            boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
-            List<RaceChangeSkillPreserve.Entry> skillSnapshot =
-                    keepSkills ? RaceChangeSkillPreserve.capture(data.getSkills()) : List.of();
             clearForms(ch, player);
             ch.setRace(raceId);
-            applyStats(data.getStats(), target);
-            if (keepSkills) {
-                RaceChangeSkillPreserve.restore(data, currentRace, raceId, skillSnapshot);
-                RaceClassSync.syncRaceSkillOnly(player);
-            } else {
+            if (fullWipe) {
+                applyFullProgressWipe(player, data, raceId);
                 RaceSkillSync.sync(player, raceId);
                 RaceClassSync.sync(player);
+            } else {
+                boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
+                List<RaceChangeSkillPreserve.Entry> skillSnapshot =
+                        keepSkills ? RaceChangeSkillPreserve.capture(data.getSkills()) : List.of();
+                applyStats(data.getStats(), target);
+                if (keepSkills) {
+                    RaceChangeSkillPreserve.restore(data, currentRace, raceId, skillSnapshot);
+                    RaceClassSync.syncRaceSkillOnly(player);
+                } else {
+                    RaceSkillSync.sync(player, raceId);
+                    RaceClassSync.sync(player);
+                }
             }
             ClassPermissionSync.sync(player);
             syncClient(player);
@@ -337,13 +349,16 @@ public final class CharacterServicesSystem {
             CharacterServicesStore.get().markDirty();
             audit(player, "Race Change", currentRace, raceId, preservationPercent, cost, true);
             String paid = cost > 0L ? " §7Paid §f" + formatCost(cost) + "§7." : "";
+            if (fullWipe) {
+                return "§aRace changed to §f" + titleCase(raceId)
+                        + "§a. §7Full wipe — stats, skills, techniques, and forms reset." + paid;
+            }
+            boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
             String kept = keepSkills
                     ? " §7Ki skills, techniques, and shared form progress kept."
                     : "";
-            String statsNote = preservationPercent <= 0
-                    ? " §7Core stats were reset (0% carry-over)."
-                    : " Eligible stats preserved at §f" + preservationPercent + "%§a.";
-            return "§aRace changed to §f" + titleCase(raceId) + "§a." + statsNote + kept + paid;
+            return "§aRace changed to §f" + titleCase(raceId)
+                    + "§a. Eligible stats preserved at §f" + preservationPercent + "%§a." + kept + paid;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.error(
                     "[{}] race change failed for {}: {}",
@@ -484,6 +499,40 @@ public final class CharacterServicesSystem {
     private static void syncClient(ServerPlayer player) {
         try {
             NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * Same core wipe as {@code dmzstats reset <player> 0 false} — keeps the race already set on
+     * {@link Character}, clears skills, techniques, resources, quest progress, etc.
+     */
+    private static void applyFullProgressWipe(ServerPlayer player, StatsData data, String raceId) {
+        if (player == null || data == null) {
+            return;
+        }
+        try {
+            data.resetPlayerProgress(player, 0, false, false);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] full race-change wipe failed for {}: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    player.m_6302_(),
+                    t.toString());
+            Skills skills = data.getSkills();
+            if (skills != null) {
+                try {
+                    skills.removeAllSkills();
+                } catch (Throwable ignored) {
+                }
+            }
+            Stats stats = data.getStats();
+            if (stats != null) {
+                applyStats(stats, new TransferableStats(0, 0, 0, 0, 0, 0));
+            }
+        }
+        try {
+            data.updateTransformationSkillLimits(raceId);
         } catch (Throwable ignored) {
         }
     }

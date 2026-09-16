@@ -187,7 +187,7 @@ public final class CharacterServicesChestGui implements Listener {
             Material mat = selected ? Material.LIME_CONCRETE : Material.GRAY_CONCRETE;
             String title = pct == 0 ? (selected ? "&a&l0% — Free" : "&e&l0% — Free") : (selected ? "&a" : "&f") + pct + "%";
             List<String> btnLore = pct == 0
-                    ? List.of("&7Fresh race swap — no stats kept", "&aFree for everyone", "&eClick to review")
+                    ? List.of("&7Full wipe — stats, skills, techniques", "&aFree for everyone", "&eClick to review")
                     : List.of("&7Keep " + pct + "% of core stats", "&eClick to review");
             put(holder, inv, slots[i], item(mat, title,
                     GuiTooltips.buttonLore("character.race_pct.pct", btnLore, pctVars, null)),

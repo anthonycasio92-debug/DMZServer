@@ -52,7 +52,7 @@ public final class CharacterServicesGuiApi {
         }
         if ("race".equals(p)) {
             lines.add("§7Choose the race you want to become.");
-            lines.add("§7Use §f0% §7for a free swap with no stats kept, or pay to keep progress.");
+            lines.add("§7Use §f0% §7for a free full wipe (new race, nothing carried over).");
             lines.add("§8Prestige races need their Fabled unlock skill.");
             lines.add("§7You keep ki skills, techniques, and shared form progress.");
             lines.add("§8Race-only form ladders reset when the new race does not use them.");
@@ -83,7 +83,7 @@ public final class CharacterServicesGuiApi {
             if (pct > 0) {
                 lines.add("§8Scales with your DMZ level");
             } else {
-                lines.add("§8Free — core stats reset to 0");
+                lines.add("§8Free — full wipe (stats, skills, techniques, forms)");
             }
             return lines;
         }
