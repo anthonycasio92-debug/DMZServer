@@ -2089,14 +2089,17 @@ public final class ForgeBridge {
             Object name = ts.getMethod("teamName", sp).invoke(null, nms);
             Object source = ts.getMethod("teamSourceLabel").invoke(null);
             Object mates = ts.getMethod("teammates", sp).invoke(null, nms);
+            Object onlineMutual = ts.getMethod("onlineMutualRivalCount", sp).invoke(null, nms);
             Object mutual = ts.getMethod("mutualRivalCount", sp).invoke(null, nms);
             Object prox = ts.getMethod("contributionProximityBlocks").invoke(null);
-            int online = mates instanceof List<?> list ? list.size() : 0;
+            int teaming = mates instanceof List<?> list ? list.size() : 0;
+            int online = onlineMutual instanceof Number n ? n.intValue() : 0;
             out.put("team_name", name == null ? "none" : String.valueOf(name));
             out.put("team_source", source == null ? "Rival Mutual" : String.valueOf(source));
-            out.put("team_size", String.valueOf(online));
+            out.put("team_size", String.valueOf(teaming));
             out.put("mutual_total", mutual == null ? "0" : String.valueOf(mutual));
             out.put("mutual_online", String.valueOf(online));
+            out.put("mutual_teaming", String.valueOf(teaming));
             out.put("proximity_blocks", prox == null ? "48" : String.valueOf((int) Math.round(((Number) prox).doubleValue())));
             try {
                 Class<?> cfg = loadClass("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig", cl);

@@ -398,7 +398,7 @@ public final class CmiDifficultyGui {
 
         List<GuiBoardHelper.TeamRivalCard> cards =
                 GuiBoardHelper.parseTeamRivalCards(ForgeBridge.diffTeamMutualCards(player));
-        int[] slots = GuiBoardHelper.centeredSlots(cards.size());
+        int[] slots = GuiBoardHelper.teamMutualRivalSlots(cards.size());
         for (int i = 0; i < cards.size() && i < slots.length; i++) {
             CMIGuiButton head = new CMIGuiButton(slots[i], GuiBoardHelper.teamRivalHead(cards.get(i)));
             head.lockField();

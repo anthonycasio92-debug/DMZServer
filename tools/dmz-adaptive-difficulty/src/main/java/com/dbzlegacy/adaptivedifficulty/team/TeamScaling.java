@@ -8,6 +8,7 @@ import com.dbzlegacy.adaptivedifficulty.rival.RivalConstants;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalLink;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalPlayerRecord;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalStatus;
+import com.dbzlegacy.adaptivedifficulty.rival.RivalOnlinePlayers;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalStore;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import java.util.ArrayList;
@@ -48,7 +49,7 @@ public final class TeamScaling {
         if (mutual <= 0) {
             return "none";
         }
-        int online = teammates(player).size();
+        int online = onlineMutualRivalCount(player);
         if (online <= 0) {
             return mutual + " mutual (offline)";
         }
@@ -85,6 +86,38 @@ public final class TeamScaling {
         return data.isPersonalEnabled() && data.getTeamMode() != TeamMode.PERSONAL_ONLY;
     }
 
+    /** Online mutual / nemesis rivals (any team mode). */
+    public static int onlineMutualRivalCount(ServerPlayer player) {
+        return onlineMutualRivals(player).size();
+    }
+
+    public static List<ServerPlayer> onlineMutualRivals(ServerPlayer player) {
+        List<ServerPlayer> out = new ArrayList<>();
+        if (player == null || !DifficultyConfig.get().enableRivalSystem) {
+            return out;
+        }
+        MinecraftServer server = player.m_20194_();
+        if (server == null) {
+            return out;
+        }
+        RivalPlayerRecord me = RivalStore.get().get(player.m_20148_().toString());
+        if (me == null || me.rivals == null) {
+            return out;
+        }
+        for (Map.Entry<String, RivalLink> e : me.rivals.entrySet()) {
+            RivalLink link = e.getValue();
+            if (!isMutualTeamLink(link)) {
+                continue;
+            }
+            ServerPlayer other = RivalOnlinePlayers.find(server, e.getKey());
+            if (other == null || other.m_20148_().equals(player.m_20148_())) {
+                continue;
+            }
+            out.add(other);
+        }
+        return out;
+    }
+
     /** Online mutual rivals who opted into team scaling. */
     public static List<ServerPlayer> teammates(ServerPlayer player) {
         List<ServerPlayer> out = new ArrayList<>();
@@ -104,7 +137,7 @@ public final class TeamScaling {
             if (!isMutualTeamLink(link)) {
                 continue;
             }
-            ServerPlayer other = resolveOnline(server, e.getKey());
+            ServerPlayer other = RivalOnlinePlayers.find(server, e.getKey());
             if (other == null || other.m_20148_().equals(player.m_20148_())) {
                 continue;
             }
@@ -268,15 +301,4 @@ public final class TeamScaling {
         return RivalStore.get().getLink(self.m_20148_().toString(), other.m_20148_().toString());
     }
 
-    private static ServerPlayer resolveOnline(MinecraftServer server, String uuid) {
-        if (server == null || uuid == null || uuid.isBlank()) {
-            return null;
-        }
-        for (ServerPlayer p : server.m_6846_().m_11314_()) {
-            if (p != null && uuid.equalsIgnoreCase(p.m_20148_().toString())) {
-                return p;
-            }
-        }
-        return null;
-    }
 }
