@@ -4,43 +4,104 @@ import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dragonminez.common.config.ConfigManager;
 import com.dragonminez.common.config.RaceStatsConfig;
+import com.dragonminez.common.network.NetworkHandler;
+import com.dragonminez.common.network.S2C.ProgressionSyncS2C;
 import com.dragonminez.common.stats.StatsData;
+import com.dragonminez.common.stats.character.Resources;
 import com.dragonminez.common.stats.character.Stats;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Re-apply DMZ per-race {@code stats.json} class scaling/passives after fighting-class changes. */
+/**
+ * DMZ fighting-class changes: {@link StatsData#relocateStats} resets primaries to the new
+ * class template and redistributes invested points — only use when the player is not keeping
+ * exact stat totals (Character Services {@code preserveBaseStats}).
+ */
 public final class DmzFightingClassStatsSync {
     private DmzFightingClassStatsSync() {}
 
-    public static void afterFightingClassChange(ServerPlayer player, StatsData data) {
+    /**
+     * @param preserveExactPrimaries when true, do not call {@code relocateStats} (it would wipe
+     *     restored STR/VIT/etc.); only refresh class-scoped limits and push sync packets.
+     */
+    public static void afterFightingClassChange(
+            ServerPlayer player, StatsData data, boolean preserveExactPrimaries) {
         if (player == null || data == null) {
             return;
         }
-        String race = DmzProgression.race(player);
-        if (race != null && !race.isBlank()) {
+        updateTransformationLimits(player, data);
+        if (!preserveExactPrimaries) {
             try {
-                data.updateTransformationSkillLimits(race.trim().toLowerCase());
+                data.relocateStats(player);
             } catch (Throwable t) {
-                AdaptiveDifficultyMod.LOGGER.debug(
-                        "[{}] updateTransformationSkillLimits after class change: {}",
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] relocateStats after class change for {}: {}",
                         AdaptiveDifficultyMod.MOD_ID,
+                        player.m_6302_(),
                         t.toString());
             }
         }
+        clampResourcesToDerivedMax(player, data);
+        pushDmzSync(player);
+    }
+
+    private static void updateTransformationLimits(ServerPlayer player, StatsData data) {
+        String race = DmzProgression.race(player);
+        if (race == null || race.isBlank()) {
+            return;
+        }
         try {
-            data.relocateStats(player);
+            data.updateTransformationSkillLimits(race.trim().toLowerCase());
         } catch (Throwable t) {
-            AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] relocateStats after class change for {}: {}",
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] updateTransformationSkillLimits after class change: {}",
                     AdaptiveDifficultyMod.MOD_ID,
-                    player.m_6302_(),
                     t.toString());
         }
     }
 
+    /** Keep current energy/stamina within new class-derived caps after a class swap. */
+    private static void clampResourcesToDerivedMax(ServerPlayer player, StatsData data) {
+        if (data == null) {
+            return;
+        }
+        Resources res = data.getResources();
+        if (res == null) {
+            return;
+        }
+        try {
+            float maxEnergy = data.getMaxEnergy();
+            float maxStamina = data.getMaxStamina();
+            if (res.getCurrentEnergy() > maxEnergy) {
+                res.setCurrentEnergy(maxEnergy);
+            }
+            if (res.getCurrentStamina() > maxStamina) {
+                res.setCurrentStamina(maxStamina);
+            }
+            float maxHp = data.getMaxHealth();
+            if (player != null && player.m_21223_() > maxHp) {
+                player.m_21153_(maxHp);
+            }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.debug(
+                    "[{}] resource clamp after class change: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    t.toString());
+        }
+    }
+
+    private static void pushDmzSync(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        try {
+            NetworkHandler.sendToPlayer(new ProgressionSyncS2C(player), player);
+        } catch (Throwable ignored) {
+        }
+    }
+
     /**
-     * When {@code preserveBaseStats} is false, apply this race+class {@code baseStats} block from
-     * {@code config/dragonminez/races/<race>/stats.json}.
+     * When {@code preserveBaseStats} is false, {@link StatsData#relocateStats} applies the new
+     * class template; this helper is only for explicit template-only resets.
      */
     public static void applyClassBaseStats(ServerPlayer player, String raceId, String classId) {
         if (player == null || raceId == null || raceId.isBlank() || classId == null || classId.isBlank()) {
