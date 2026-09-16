@@ -15,9 +15,13 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 /** Character Services — race / class / reskin (Ancient Coins). */
 public final class CharacterServicesChestGui implements Listener {
+    private static final Material FILL = Material.BLACK_STAINED_GLASS_PANE;
+    private static final Material ACCENT = Material.GRAY_STAINED_GLASS_PANE;
+
     private final AdaptiveDifficultyGuiPlugin plugin;
 
     public CharacterServicesChestGui(AdaptiveDifficultyGuiPlugin plugin) {
@@ -25,42 +29,62 @@ public final class CharacterServicesChestGui implements Listener {
     }
 
     public void open(Player player, String page) {
-        Player subject = AdminInspectSessions.resolveSubject(player);
+        Player viewer = player;
+        Player subject = AdminInspectSessions.resolveSubject(viewer);
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         Inventory inv;
         if (p.startsWith("race_confirm:")) {
-            inv = raceConfirm(player, subject, p.substring("race_confirm:".length()));
+            inv = raceConfirm(viewer, subject, p.substring("race_confirm:".length()));
         } else if (p.startsWith("race_pct:")) {
-            inv = racePct(player, subject, p.substring("race_pct:".length()));
+            inv = racePct(viewer, subject, p.substring("race_pct:".length()));
         } else if (p.startsWith("class_confirm:")) {
-            inv = classConfirm(player, subject, p.substring("class_confirm:".length()));
+            inv = classConfirm(viewer, subject, p.substring("class_confirm:".length()));
         } else {
             inv = switch (p) {
-                case "race" -> raceList(player, subject);
-                case "class" -> classList(player, subject);
-                case "reskin" -> reskin(player, subject);
-                default -> main(player, subject);
+                case "race" -> raceList(viewer, subject);
+                case "class" -> classList(viewer, subject);
+                case "reskin" -> reskin(viewer, subject);
+                default -> main(viewer, subject);
             };
         }
-        GuiFeedback.openChest(player, inv);
+        GuiFeedback.openChest(viewer, inv);
+    }
+
+    private static boolean inspecting(Player viewer, Player subject) {
+        return viewer != null && subject != null
+                && !viewer.getUniqueId().equals(subject.getUniqueId());
+    }
+
+    private static String invTitle(Player viewer, Player subject, String base) {
+        if (inspecting(viewer, subject)) {
+            return color(base + " · &c" + subject.getName());
+        }
+        return color(base);
     }
 
     private Inventory main(Player viewer, Player subject) {
         Map<String, String> ph = ForgeBridge.charPlaceholders(subject);
         Map<String, String> vars = charCooldownVars(ph);
+        vars.put("coins", ph.getOrDefault("ancient_coins", "0"));
+        vars.put("race", ph.getOrDefault("current_race", "?"));
+        vars.put("class", ph.getOrDefault("current_class", "?"));
+
         Holder holder = new Holder("main");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Character Services"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Character Services"));
         holder.bind(inv);
         frame(inv, 45);
-        List<String> header = new ArrayList<>();
-        header.add("");
-        header.addAll(toAmp(ForgeBridge.charLines(subject, "main")));
-        header.add("");
-        header.add("&7Race &f" + ph.getOrDefault("current_race", "?")
-                + " &8· &7Class &f" + ph.getOrDefault("current_class", "?"));
-        header.add("&7Ancient Coins &f" + ph.getOrDefault("ancient_coins", "0"));
-        put(holder, inv, 4, item(Material.PLAYER_HEAD,
-                GuiTooltips.name("character.main.header", "&f&lCharacter Services"), header));
+
+        boolean bridgeOk = "true".equalsIgnoreCase(ph.getOrDefault("bridge_ok", "false"));
+        boolean enabled = bridgeOk && "true".equalsIgnoreCase(ph.getOrDefault("enabled", "false"));
+        if (!bridgeOk || !enabled) {
+            putProfile(holder, inv, "&c&lUNAVAILABLE",
+                    List.of("", bridgeOk ? "&cCharacter Services are turned off" : "&cLegacyMechanics mod unreachable"));
+            footer45(holder, inv, "character.main.back_hub", SlotAction.cmd("lmdo lm open hub"));
+            return inv;
+        }
+
+        putProfile(holder, inv, GuiTooltips.name("character.main.wallet", "&d&lCharacter Services", vars),
+                profileLore(subject, vars));
 
         put(holder, inv, 20, tipBtn("character.main.race", Material.NETHER_STAR, "&eChange Race",
                 List.of("&7Pick a new race and how much progress to keep",
@@ -70,21 +94,27 @@ public final class CharacterServicesChestGui implements Listener {
                 List.of("&7Swap fighting class — base stats stay",
                         "&8{class_cooldown}", "&eClick to continue"), vars),
                 SlotAction.page("class"));
-        put(holder, inv, 24, tipBtn("character.main.reskin", Material.PAINTING, "&dReskin",
+        put(holder, inv, 24, tipBtn("character.main.reskin", Material.AMETHYST_CLUSTER, "&dReskin",
                 List.of("&7Cosmetic look only",
                         "&8{reskin_cooldown}", "&eClick to continue"), vars),
                 SlotAction.page("reskin"));
 
-        put(holder, inv, 36, pageBtn("character.main.back_hub", Material.ARROW, "&7Back", "&7Return to hub"),
-                SlotAction.cmd("lmdo lm open hub"));
-        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
-        put(holder, inv, 44, closeBtn("character.main.close"), SlotAction.dismiss());
+        footer45(holder, inv, "character.main.back_hub", SlotAction.cmd("lmdo lm open hub"));
         return inv;
+    }
+
+    private List<String> profileLore(Player subject, Map<String, String> vars) {
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        lore.addAll(GuiTooltips.lore("character.main.wallet",
+                List.of("&6Ancient Coins: &e{coins}", "&7Race &f{race} &8· &7Class &f{class}"), vars));
+        lore.addAll(toAmp(ForgeBridge.charLines(subject, "main")));
+        return lore;
     }
 
     private Inventory raceList(Player viewer, Player subject) {
         Holder holder = new Holder("race");
-        Inventory inv = Bukkit.createInventory(holder, 54, color("&8Change Race"));
+        Inventory inv = Bukkit.createInventory(holder, 54, invTitle(viewer, subject, "&8Change Race"));
         holder.bind(inv);
         frame(inv, 54);
         put(holder, inv, 4, item(Material.NETHER_STAR,
@@ -97,14 +127,13 @@ public final class CharacterServicesChestGui implements Listener {
             String id = p.length > 0 ? p[0] : "";
             String name = p.length > 1 ? p[1] : id;
             boolean current = "1".equals(p.length > 2 ? p[2] : "0");
-            Material mat = current ? Material.LIME_DYE : Material.PAPER;
+            Material mat = current ? Material.LIME_CONCRETE : Material.WHITE_CONCRETE;
             String cardKey = current ? "character.race.card_current" : "character.race.card_pick";
             put(holder, inv, slots[i], item(mat, (current ? "&a" : "&f") + name,
                     GuiTooltips.buttonLore(cardKey, List.of(), null, null)),
                     SlotAction.page("race_pct:" + id + ":100"));
         }
-        put(holder, inv, 49, pageBtn("character.race.back", Material.ARROW, "&7Back", "&7Character Services"),
-                SlotAction.page("main"));
+        footer54(holder, inv, "character.race.back", SlotAction.page("main"));
         return inv;
     }
 
@@ -121,7 +150,7 @@ public final class CharacterServicesChestGui implements Listener {
             }
         }
         Holder holder = new Holder("race_pct");
-        Inventory inv = Bukkit.createInventory(holder, 54, color("&8Preservation %"));
+        Inventory inv = Bukkit.createInventory(holder, 54, invTitle(viewer, subject, "&8Stat Preservation"));
         holder.bind(inv);
         frame(inv, 54);
         List<String> lore = new ArrayList<>();
@@ -134,16 +163,16 @@ public final class CharacterServicesChestGui implements Listener {
         int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30};
         for (int i = 0; i < pcts.length && i < slots.length; i++) {
             int pct = pcts[i];
+            boolean selected = pct == defaultPct;
             Map<String, String> pctVars = Map.of("pct", String.valueOf(pct));
             put(holder, inv, slots[i], item(
-                    pct == defaultPct ? Material.LIME_DYE : Material.GRAY_DYE,
-                    "&f" + pct + "%",
+                    selected ? Material.LIME_CONCRETE : Material.GRAY_CONCRETE,
+                    (selected ? "&a" : "&f") + pct + "%",
                     GuiTooltips.buttonLore("character.race_pct.pct",
                             List.of("&7Keep " + pct + "% of core stats", "&eClick to review"), pctVars, null)),
                     SlotAction.page("race_confirm:" + race + ":" + pct));
         }
-        put(holder, inv, 49, pageBtn("character.race_pct.back", Material.ARROW, "&7Back", "&7Race list"),
-                SlotAction.page("race"));
+        footer54(holder, inv, "character.race_pct.back", SlotAction.page("race"));
         return inv;
     }
 
@@ -152,26 +181,25 @@ public final class CharacterServicesChestGui implements Listener {
         String race = bits.length > 0 ? bits[0] : "";
         String pct = bits.length > 1 ? bits[1] : "100";
         Holder holder = new Holder("race_confirm");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Confirm Race Change"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Confirm Race"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.ORANGE_STAINED_GLASS,
-                GuiTooltips.name("character.race_confirm.header", "&c&lLast Chance"),
-                prependBlank(toAmp(ForgeBridge.charLines(subject, "race_confirm:" + race + ":" + pct)))));
-        put(holder, inv, 20, tipBtn("character.race_confirm.confirm", Material.LIME_DYE, "&a&lConfirm Race Change",
+        List<String> summary = prependBlank(toAmp(ForgeBridge.charLines(subject, "race_confirm:" + race + ":" + pct)));
+        put(holder, inv, 4, item(Material.ORANGE_CONCRETE,
+                GuiTooltips.name("character.race_confirm.header", "&c&lLast Chance"), summary));
+        put(holder, inv, 20, tipBtn("character.race_confirm.confirm", Material.LIME_CONCRETE, "&a&lConfirm Race Change",
                 List.of("&7Pay and switch races", "&eClick to confirm"), null),
                 SlotAction.act("race_confirm", race + ":" + pct, "main"));
-        put(holder, inv, 24, tipBtn("character.race_confirm.cancel", Material.RED_DYE, "&cCancel",
+        put(holder, inv, 24, tipBtn("character.race_confirm.cancel", Material.RED_CONCRETE, "&cCancel",
                 List.of("&7Go back without paying"), null),
                 SlotAction.page("race_pct:" + race + ":" + pct));
-        put(holder, inv, 36, pageBtn("character.race_confirm.back", Material.ARROW, "&7Back", "&7Preservation"),
-                SlotAction.page("race_pct:" + race + ":" + pct));
+        footer45(holder, inv, "character.race_confirm.back", SlotAction.page("race_pct:" + race + ":" + pct));
         return inv;
     }
 
     private Inventory classList(Player viewer, Player subject) {
         Holder holder = new Holder("class");
-        Inventory inv = Bukkit.createInventory(holder, 54, color("&8Change Class"));
+        Inventory inv = Bukkit.createInventory(holder, 54, invTitle(viewer, subject, "&8Change Class"));
         holder.bind(inv);
         frame(inv, 54);
         put(holder, inv, 4, item(Material.ENCHANTED_BOOK,
@@ -184,49 +212,63 @@ public final class CharacterServicesChestGui implements Listener {
             String id = p.length > 0 ? p[0] : "";
             String name = p.length > 1 ? p[1] : id;
             boolean current = "1".equals(p.length > 2 ? p[2] : "0");
+            Material mat = current ? Material.LIME_CONCRETE : Material.LIGHT_BLUE_CONCRETE;
             String cardKey = current ? "character.class.card_current" : "character.class.card_pick";
-            put(holder, inv, slots[i], item(current ? Material.LIME_DYE : Material.BOOK, "&f" + name,
+            put(holder, inv, slots[i], item(mat, (current ? "&a" : "&f") + name,
                     GuiTooltips.buttonLore(cardKey, List.of(), null, null)),
                     SlotAction.page("class_confirm:" + id));
         }
-        put(holder, inv, 49, pageBtn("character.class.back", Material.ARROW, "&7Back", "&7Character Services"),
-                SlotAction.page("main"));
+        footer54(holder, inv, "character.class.back", SlotAction.page("main"));
         return inv;
     }
 
     private Inventory classConfirm(Player viewer, Player subject, String classId) {
         Holder holder = new Holder("class_confirm");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Confirm Class"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Confirm Class"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.ORANGE_STAINED_GLASS,
+        put(holder, inv, 4, item(Material.ORANGE_CONCRETE,
                 GuiTooltips.name("character.class_confirm.header", "&c&lConfirm Class Change"),
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "class_confirm:" + classId)))));
-        put(holder, inv, 20, tipBtn("character.class_confirm.confirm", Material.LIME_DYE, "&a&lConfirm",
+        put(holder, inv, 20, tipBtn("character.class_confirm.confirm", Material.LIME_CONCRETE, "&a&lConfirm",
                 List.of("&7Pay and switch class", "&eClick to confirm"), null),
                 SlotAction.act("class_confirm", classId, "main"));
-        put(holder, inv, 24, tipBtn("character.class_confirm.cancel", Material.RED_DYE, "&cCancel",
+        put(holder, inv, 24, tipBtn("character.class_confirm.cancel", Material.RED_CONCRETE, "&cCancel",
                 List.of("&7Go back without paying"), null),
                 SlotAction.page("class"));
-        put(holder, inv, 36, pageBtn("character.class_confirm.back", Material.ARROW, "&7Back", "&7Class list"),
-                SlotAction.page("class"));
+        footer45(holder, inv, "character.class_confirm.back", SlotAction.page("class"));
         return inv;
     }
 
     private Inventory reskin(Player viewer, Player subject) {
         Holder holder = new Holder("reskin");
-        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Reskin"));
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Reskin"));
         holder.bind(inv);
         frame(inv, 45);
         put(holder, inv, 4, item(Material.PAINTING,
                 GuiTooltips.name("character.reskin.header", "&d&lReskin"),
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "reskin")))));
-        put(holder, inv, 22, tipBtn("character.reskin.open", Material.LIME_DYE, "&a&lPay & Open Appearance",
+        put(holder, inv, 22, tipBtn("character.reskin.open", Material.LIME_CONCRETE, "&a&lPay & Open Appearance",
                 List.of("&7Opens the in-game look editor", "&eClick to pay and open"), null),
                 SlotAction.actNoReopen("reskin_confirm", "0"));
-        put(holder, inv, 36, pageBtn("character.reskin.back", Material.ARROW, "&7Back", "&7Character Services"),
-                SlotAction.page("main"));
+        footer45(holder, inv, "character.reskin.back", SlotAction.page("main"));
         return inv;
+    }
+
+    private static void putProfile(Holder holder, Inventory inv, String title, List<String> lore) {
+        put(holder, inv, 4, item(Material.GOLD_INGOT, title, lore));
+    }
+
+    private void footer45(Holder holder, Inventory inv, String backKey, SlotAction backAction) {
+        put(holder, inv, 36, pageBtn(backKey, Material.ARROW, "&7« Back", null), backAction);
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 44, closeBtn("character.main.close"), SlotAction.dismiss());
+    }
+
+    private void footer54(Holder holder, Inventory inv, String backKey, SlotAction backAction) {
+        put(holder, inv, 45, pageBtn(backKey, Material.ARROW, "&7« Back", null), backAction);
+        put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 53, closeBtn("character.main.close"), SlotAction.dismiss());
     }
 
     @EventHandler
@@ -285,7 +327,6 @@ public final class CharacterServicesChestGui implements Listener {
                 }
             };
             if (closeFirst) {
-                // Let the client drop the chest GUI before DMZ opens recustomize.
                 Bukkit.getScheduler().runTaskLater(plugin, work, 2L);
             } else {
                 work.run();
@@ -298,10 +339,6 @@ public final class CharacterServicesChestGui implements Listener {
         if (event.getInventory().getHolder() instanceof Holder) {
             event.setCancelled(true);
         }
-    }
-
-    private static String strip(String s) {
-        return s == null ? "" : s.replace('§', '&');
     }
 
     private static List<String> prependBlank(List<String> lines) {
@@ -329,11 +366,9 @@ public final class CharacterServicesChestGui implements Listener {
     }
 
     private static void frame(Inventory inv, int size) {
-        ItemStack pane = item(Material.GRAY_STAINED_GLASS_PANE, " ", List.of(" "));
         for (int i = 0; i < size; i++) {
-            if (inv.getItem(i) == null) {
-                inv.setItem(i, pane);
-            }
+            boolean edge = i < 9 || i >= size - 9 || i % 9 == 0 || i % 9 == 8;
+            inv.setItem(i, item(edge ? ACCENT : FILL, " ", List.of()));
         }
     }
 
@@ -350,11 +385,15 @@ public final class CharacterServicesChestGui implements Listener {
 
     private static ItemStack item(Material mat, String name, List<String> lore) {
         ItemStack stack = new ItemStack(mat);
-        var meta = stack.getItemMeta();
+        ItemMeta meta = stack.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(color(name));
             if (lore != null) {
-                meta.setLore(lore.stream().map(CharacterServicesChestGui::color).toList());
+                List<String> colored = new ArrayList<>();
+                for (String line : lore) {
+                    colored.add(color(line));
+                }
+                meta.setLore(colored);
             }
             stack.setItemMeta(meta);
         }
@@ -413,7 +452,7 @@ public final class CharacterServicesChestGui implements Listener {
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.NETHER_STAR, "&fHub", List.of("", "&7Back to &f/lm"));
+        return item(Material.COMPASS, "&7« Hub", List.of());
     }
 
     private static ItemStack closeBtn(String key) {
@@ -422,10 +461,7 @@ public final class CharacterServicesChestGui implements Listener {
     }
 
     private static String color(String input) {
-        if (input == null) {
-            return "";
-        }
-        return org.bukkit.ChatColor.translateAlternateColorCodes('&', input);
+        return input == null ? "" : input.replace('&', '§');
     }
 
     private static final class Holder implements InventoryHolder {

@@ -132,6 +132,13 @@
   },
   "character": {
     "main": {
+      "wallet": {
+        "name": "&d&lCharacter Services",
+        "lore": [
+          "&6Ancient Coins: &e{coins}",
+          "&7Race &f{race} &8· &7Class &f{class}"
+        ]
+      },
       "header": {
         "name": "&f&lCharacter Services",
         "lore": []
@@ -163,7 +170,7 @@
         ]
       },
       "back_hub": {
-        "name": "&7Back",
+        "name": "&7« Back",
         "lore": [
           "&7Return to &f/lm"
         ]
@@ -194,7 +201,7 @@
         ]
       },
       "back": {
-        "name": "&7Back",
+        "name": "&7« Back",
         "lore": [
           "&7Return to Character Services"
         ]
@@ -214,7 +221,7 @@
         ]
       },
       "back": {
-        "name": "&7Back",
+        "name": "&7« Back",
         "lore": [
           "&7Pick a different race"
         ]
@@ -240,7 +247,7 @@
         ]
       },
       "back": {
-        "name": "&7Back",
+        "name": "&7« Back",
         "lore": [
           "&7Change preservation %"
         ]
@@ -265,7 +272,7 @@
         ]
       },
       "back": {
-        "name": "&7Back",
+        "name": "&7« Back",
         "lore": [
           "&7Return to Character Services"
         ]
@@ -290,7 +297,7 @@
         ]
       },
       "back": {
-        "name": "&7Back",
+        "name": "&7« Back",
         "lore": [
           "&7Pick a different class"
         ]
@@ -310,7 +317,7 @@
         ]
       },
       "back": {
-        "name": "&7Back",
+        "name": "&7« Back",
         "lore": [
           "&7Return to Character Services"
         ]
