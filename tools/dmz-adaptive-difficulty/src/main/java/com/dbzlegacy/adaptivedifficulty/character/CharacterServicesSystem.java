@@ -359,8 +359,7 @@ public final class CharacterServicesSystem {
                 }
             }
             if (!fullWipe) {
-                ClassPermissionSync.sync(player);
-                syncClient(player);
+                ClassPermissionSync.syncAuthoritativeClassChange(player);
             }
             CharacterServicesStore.get().record(player.m_20148_().toString()).lastRaceChangeAt =
                     System.currentTimeMillis();
@@ -462,9 +461,8 @@ public final class CharacterServicesSystem {
                 applyStats(data.getStats(), before);
             }
             DmzFightingClassStatsSync.afterFightingClassChange(player, data, preservePrimaries);
-            ClassPermissionSync.sync(player);
+            ClassPermissionSync.syncAuthoritativeClassChange(player);
             RaceClassSync.sync(player);
-            syncClient(player);
             CharacterServicesStore.get().record(player.m_20148_().toString()).lastClassChangeAt =
                     System.currentTimeMillis();
             CharacterServicesStore.get().markDirty();
