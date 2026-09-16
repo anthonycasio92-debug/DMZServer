@@ -345,8 +345,8 @@ public final class CharacterServicesSystem {
             }
             if (!fullWipe) {
                 ClassPermissionSync.sync(player);
+                syncClient(player);
             }
-            syncClient(player);
             CharacterServicesStore.get().record(player.m_20148_().toString()).lastRaceChangeAt =
                     System.currentTimeMillis();
             CharacterServicesStore.get().markDirty();

@@ -5,7 +5,6 @@ import com.dbzlegacy.adaptivedifficulty.progression.bridge.ClassPermissionSync;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceClassSync;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceSkillSync;
 import com.dragonminez.common.network.NetworkHandler;
-import com.dragonminez.common.network.S2C.OpenRecustomizeS2C;
 import com.dragonminez.common.network.S2C.ProgressionSyncS2C;
 import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.quest.PlayerQuestData;
@@ -74,6 +73,11 @@ public final class RaceChangeCreationFlow {
         clearSagaDifficultyGate(player, data);
     }
 
+    /**
+     * Push saga + stats to the client once. With {@code hasCreatedCharacter=false}, DMZ opens the
+     * full create-character UI (class + appearance). Do not also send {@code OpenRecustomizeS2C} —
+     * that is for reskin-only and causes players to run setup twice.
+     */
     public static void openEditor(ServerPlayer player) {
         if (player == null) {
             return;
@@ -83,7 +87,6 @@ public final class RaceChangeCreationFlow {
             try {
                 NetworkHandler.sendToPlayer(new ProgressionSyncS2C(player), player);
                 NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
-                NetworkHandler.sendToPlayer(new OpenRecustomizeS2C(), player);
             } catch (Throwable ignored) {
             }
         };
@@ -148,10 +151,7 @@ public final class RaceChangeCreationFlow {
             }
         } catch (Throwable ignored) {
         }
-        try {
-            NetworkHandler.sendToPlayer(new ProgressionSyncS2C(player), player);
-        } catch (Throwable ignored) {
-        }
+        // Progression sync is sent from openEditor() after prepareCharacterData.
     }
 
     private record Session(String targetRaceId, long startedAt) {}
