@@ -5,7 +5,6 @@ import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig;
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
-import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +30,12 @@ public final class CharacterServicesGuiApi {
         out.put("reskin_enabled", cfg.reskin.enabled ? "true" : "false");
         out.put("current_race", title(DmzProgression.race(player)));
         out.put("current_class", title(DmzProgression.fightingClass(player)));
-        out.put("ancient_coins", String.valueOf(AncientCoinEconomy.balance(player)));
+        putWalletPlaceholders(player, out);
+        boolean bypassCost = CharacterServicesAccess.bypassCost(player);
+        out.put("bypass_cost", bypassCost ? "true" : "false");
+        out.put("reskin_cost", bypassCost ? "free" : CharacterServicesSystem.formatCost(CharacterServicesSystem.reskinCost(player)));
+        out.put("class_cost", bypassCost ? "free" : CharacterServicesSystem.formatCost(CharacterServicesSystem.classCost(player)));
+        out.put("race_cost_100", bypassCost ? "free" : CharacterServicesSystem.formatCost(CharacterServicesSystem.raceCost(player, 100)));
         out.put("race_cooldown", CharacterServicesSystem.cooldownLine(player, "race"));
         out.put("class_cooldown", CharacterServicesSystem.cooldownLine(player, "class"));
         out.put("reskin_cooldown", CharacterServicesSystem.cooldownLine(player, "reskin"));
@@ -56,6 +60,7 @@ public final class CharacterServicesGuiApi {
         if ("class".equals(p)) {
             lines.add("§7Pick a new fighting class.");
             lines.add("§7Your base combat stats stay — class skills and perks reset.");
+            lines.add(costLine(player, CharacterServicesSystem.classCost(player)));
             lines.add(CharacterServicesSystem.cooldownLine(player, "class"));
             return lines;
         }
@@ -63,6 +68,8 @@ public final class CharacterServicesGuiApi {
             lines.add("§7Change hair, colors, and other cosmetics.");
             lines.add("§7Fighting class cannot be changed during a reskin.");
             lines.add("§7Level, stats, and race are unchanged.");
+            lines.add(costLine(player, CharacterServicesSystem.reskinCost(player)));
+            lines.add("§8Pay-up OK · change returned");
             lines.add(CharacterServicesSystem.cooldownLine(player, "reskin"));
             return lines;
         }
@@ -70,9 +77,8 @@ public final class CharacterServicesGuiApi {
             String[] bits = p.split(":", 3);
             int pct = parsePct(bits.length > 2 ? bits[2] : "100");
             lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
-            long cost = CharacterServicesSystem.raceCost(player, pct);
-            lines.add("§7Price §f" + DmzRewards.formatWhole(cost)
-                    + " §7Ancient Coins §8(scales with your level)");
+            lines.add(costLine(player, CharacterServicesSystem.raceCost(player, pct)));
+            lines.add("§8Scales with your DMZ level");
             return lines;
         }
         if (p.startsWith("race_confirm:")) {
@@ -82,16 +88,16 @@ public final class CharacterServicesGuiApi {
             lines.add("§7You are becoming §f" + title(race) + "§7.");
             lines.add("§7Keeping §f" + pct + "% §7of eligible stats:");
             lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
-            long cost = CharacterServicesSystem.raceCost(player, pct);
-            lines.add("§7Total cost §f" + DmzRewards.formatWhole(cost) + " §7Ancient Coins");
+            lines.add(costLine(player, CharacterServicesSystem.raceCost(player, pct)));
+            lines.add("§8Pay-up OK · change returned");
             lines.add("§cStaff cannot auto-revert this for you.");
             return lines;
         }
         if (p.startsWith("class_confirm:")) {
             String cls = p.substring("class_confirm:".length());
             lines.add("§7New class: §f" + title(cls));
-            lines.add("§7Cost §f" + DmzRewards.formatWhole(CharacterServicesSystem.classCost(player))
-                    + " §7Ancient Coins");
+            lines.add(costLine(player, CharacterServicesSystem.classCost(player)));
+            lines.add("§8Pay-up OK · change returned");
             lines.add("§8Class progression and class skills will reset.");
             return lines;
         }
@@ -134,6 +140,24 @@ public final class CharacterServicesGuiApi {
             return CharacterServicesSystem.executeReskin(player);
         }
         return "§cUnknown character action: " + act;
+    }
+
+    private static void putWalletPlaceholders(ServerPlayer player, Map<String, String> out) {
+        AncientCoinEconomy.migrateWalletToItems(player);
+        out.put("ancient_coins", String.valueOf(AncientCoinEconomy.balance(player)));
+        out.put("coins_copper", String.valueOf(AncientCoinEconomy.countOf(player, AncientCoinEconomy.CoinKind.COPPER)));
+        out.put("coins_iron", String.valueOf(AncientCoinEconomy.countOf(player, AncientCoinEconomy.CoinKind.IRON)));
+        out.put("coins_gold", String.valueOf(AncientCoinEconomy.countOf(player, AncientCoinEconomy.CoinKind.GOLD)));
+        out.put("coins_emerald", String.valueOf(AncientCoinEconomy.countOf(player, AncientCoinEconomy.CoinKind.EMERALD)));
+        out.put("coins_diamond", String.valueOf(AncientCoinEconomy.countOf(player, AncientCoinEconomy.CoinKind.DIAMOND)));
+        out.put("coins_netherite", String.valueOf(AncientCoinEconomy.countOf(player, AncientCoinEconomy.CoinKind.NETHERITE)));
+    }
+
+    private static String costLine(ServerPlayer player, long copperCost) {
+        if (CharacterServicesAccess.bypassCost(player) || copperCost <= 0L) {
+            return "§7Cost §afree §8(staff bypass)";
+        }
+        return "§7Cost §f" + CharacterServicesSystem.formatCost(copperCost) + " §7Ancient Coins";
     }
 
     private static int parsePct(String raw) {

@@ -65,9 +65,10 @@ public final class CharacterServicesChestGui implements Listener {
     private Inventory main(Player viewer, Player subject) {
         Map<String, String> ph = ForgeBridge.charPlaceholders(subject);
         Map<String, String> vars = charCooldownVars(ph);
-        vars.put("coins", ph.getOrDefault("ancient_coins", "0"));
         vars.put("race", ph.getOrDefault("current_race", "?"));
         vars.put("class", ph.getOrDefault("current_class", "?"));
+        vars.put("reskin_cost", ph.getOrDefault("reskin_cost", "?"));
+        vars.put("class_cost", ph.getOrDefault("class_cost", "?"));
 
         Holder holder = new Holder("main");
         Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Character Services"));
@@ -92,10 +93,12 @@ public final class CharacterServicesChestGui implements Listener {
                 SlotAction.page("race"));
         put(holder, inv, 22, tipBtn("character.main.class", Material.ENCHANTED_BOOK, "&bChange Class",
                 List.of("&7Swap fighting class — base stats stay",
+                        "&7Cost &f{class_cost}",
                         "&8{class_cooldown}", "&eClick to continue"), vars),
                 SlotAction.page("class"));
         put(holder, inv, 24, tipBtn("character.main.reskin", Material.AMETHYST_CLUSTER, "&dReskin",
                 List.of("&7Cosmetic look only",
+                        "&7Cost &f{reskin_cost}",
                         "&8{reskin_cooldown}", "&eClick to continue"), vars),
                 SlotAction.page("reskin"));
 
@@ -104,12 +107,28 @@ public final class CharacterServicesChestGui implements Listener {
     }
 
     private List<String> profileLore(Player subject, Map<String, String> vars) {
+        Map<String, String> ph = ForgeBridge.charPlaceholders(subject);
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.addAll(GuiTooltips.lore("character.main.wallet",
-                List.of("&6Ancient Coins: &e{coins}", "&7Race &f{race} &8· &7Class &f{class}"), vars));
+        lore.addAll(coinLore(ph));
+        lore.add("&7Race &f" + vars.getOrDefault("race", "?")
+                + " &8· &7Class &f" + vars.getOrDefault("class", "?"));
+        lore.add("&8Pay-up OK · change returned");
         lore.addAll(toAmp(ForgeBridge.charLines(subject, "main")));
         return lore;
+    }
+
+    private static List<String> coinLore(Map<String, String> ph) {
+        return List.of(
+                "&6Ancient Coins",
+                "&eCopper &f" + ph.getOrDefault("coins_copper", "0")
+                        + "  &eIron &f" + ph.getOrDefault("coins_iron", "0")
+                        + "  &eGold &f" + ph.getOrDefault("coins_gold", "0"),
+                "&eEmerald &f" + ph.getOrDefault("coins_emerald", "0")
+                        + "  &eDiamond &f" + ph.getOrDefault("coins_diamond", "0")
+                        + "  &eNetherite &f" + ph.getOrDefault("coins_netherite", "0"),
+                "&6Total &f" + ph.getOrDefault("ancient_coins", "0") + " &7AC copper-value"
+        );
     }
 
     private Inventory raceList(Player viewer, Player subject) {
@@ -241,6 +260,10 @@ public final class CharacterServicesChestGui implements Listener {
     }
 
     private Inventory reskin(Player viewer, Player subject) {
+        Map<String, String> ph = ForgeBridge.charPlaceholders(subject);
+        Map<String, String> vars = charCooldownVars(ph);
+        vars.put("reskin_cost", ph.getOrDefault("reskin_cost", "?"));
+
         Holder holder = new Holder("reskin");
         Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Reskin"));
         holder.bind(inv);
@@ -249,7 +272,8 @@ public final class CharacterServicesChestGui implements Listener {
                 GuiTooltips.name("character.reskin.header", "&d&lReskin"),
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "reskin")))));
         put(holder, inv, 22, tipBtn("character.reskin.open", Material.LIME_CONCRETE, "&a&lPay & Open Appearance",
-                List.of("&7Opens the in-game look editor", "&eClick to pay and open"), null),
+                List.of("&7Cost &f{reskin_cost}", "&7Opens the in-game look editor",
+                        "&8Pay-up OK · change returned", "&eClick to pay and open"), vars),
                 SlotAction.actNoReopen("reskin_confirm", "0"));
         footer45(holder, inv, "character.reskin.back", SlotAction.page("main"));
         return inv;

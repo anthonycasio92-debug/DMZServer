@@ -179,17 +179,38 @@ public final class CharacterServicesSystem {
 
     public static long raceCost(ServerPlayer player, int preservationPercent) {
         long base = CharacterServicesConfig.get().raceCostCopper(preservationPercent);
-        return scaledCost(player, base, CharacterServicesConfig.get().raceChange.levelCostMultiplier);
+        return payableCost(player, base, CharacterServicesConfig.get().raceChange.levelCostMultiplier);
     }
 
     public static long classCost(ServerPlayer player) {
         CharacterServicesConfig.ClassChange cc = CharacterServicesConfig.get().classChange;
-        return scaledCost(player, cc.baseCostCopper, cc.levelCostMultiplier);
+        return payableCost(player, cc.baseCostCopper, cc.levelCostMultiplier);
     }
 
     public static long reskinCost(ServerPlayer player) {
         CharacterServicesConfig.Reskin rs = CharacterServicesConfig.get().reskin;
-        return scaledCost(player, rs.baseCostCopper, rs.levelCostMultiplier);
+        return payableCost(player, rs.baseCostCopper, rs.levelCostMultiplier);
+    }
+
+    /** Level-scaled copper, snapped to payable Ancient Coin denominations (same as AD tier buys). */
+    public static long payableCost(ServerPlayer player, long baseCopper, boolean useLevelMult) {
+        return AncientCoinEconomy.normalizeCost(scaledCost(player, baseCopper, useLevelMult));
+    }
+
+    public static String formatCost(long copperCost) {
+        return AncientCoinEconomy.formatExactCost(copperCost);
+    }
+
+    private static boolean chargeAc(ServerPlayer player, long cost) {
+        if (cost <= 0L) {
+            return true;
+        }
+        AncientCoinEconomy.migrateWalletToItems(player);
+        return AncientCoinEconomy.charge(player, cost);
+    }
+
+    private static String insufficientFunds(ServerPlayer player, long cost) {
+        return "§c" + AncientCoinEconomy.missingText(player, cost);
     }
 
     public static String cooldownLine(ServerPlayer player, String kind) {
@@ -259,8 +280,9 @@ public final class CharacterServicesSystem {
             }
         }
         long cost = CharacterServicesAccess.bypassCost(player) ? 0L : raceCost(player, preservationPercent);
+        AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !AncientCoinEconomy.canAfford(player, cost)) {
-            return "§cYou do not have enough Ancient Coins.";
+            return insufficientFunds(player, cost);
         }
 
         StatsData data = DmzProgression.stats(player);
@@ -273,8 +295,8 @@ public final class CharacterServicesSystem {
         }
         TransferableStats target = before.scaled(preservationPercent);
 
-        if (cost > 0L && !AncientCoinEconomy.charge(player, cost)) {
-            return "§cPayment failed. No changes were made.";
+        if (cost > 0L && !chargeAc(player, cost)) {
+            return insufficientFunds(player, cost);
         }
 
         try {
@@ -294,8 +316,9 @@ public final class CharacterServicesSystem {
                     System.currentTimeMillis();
             CharacterServicesStore.get().markDirty();
             audit(player, "Race Change", currentRace, raceId, preservationPercent, cost, true);
+            String paid = cost > 0L ? " §7Paid §f" + formatCost(cost) + "§7." : "";
             return "§aRace changed to §f" + titleCase(raceId)
-                    + "§a. Eligible stats preserved at §f" + preservationPercent + "%§a.";
+                    + "§a. Eligible stats preserved at §f" + preservationPercent + "%§a." + paid;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.error(
                     "[{}] race change failed for {}: {}",
@@ -335,8 +358,9 @@ public final class CharacterServicesSystem {
             }
         }
         long cost = CharacterServicesAccess.bypassCost(player) ? 0L : classCost(player);
+        AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !AncientCoinEconomy.canAfford(player, cost)) {
-            return "§cYou do not have enough Ancient Coins.";
+            return insufficientFunds(player, cost);
         }
 
         StatsData data = DmzProgression.stats(player);
@@ -345,8 +369,8 @@ public final class CharacterServicesSystem {
         }
         TransferableStats before = cc.preserveBaseStats ? captureStats(player) : null;
 
-        if (cost > 0L && !AncientCoinEconomy.charge(player, cost)) {
-            return "§cPayment failed. No changes were made.";
+        if (cost > 0L && !chargeAc(player, cost)) {
+            return insufficientFunds(player, cost);
         }
 
         try {
@@ -366,7 +390,8 @@ public final class CharacterServicesSystem {
                     System.currentTimeMillis();
             CharacterServicesStore.get().markDirty();
             audit(player, "Class Change", current, classId, 100, cost, true);
-            return "§aClass changed to §f" + titleCase(classId) + "§a.";
+            String paid = cost > 0L ? " §7Paid §f" + formatCost(cost) + "§7." : "";
+            return "§aClass changed to §f" + titleCase(classId) + "§a." + paid;
         } catch (Throwable t) {
             refund(player, cost);
             audit(player, "Class Change", current, classId, 100, cost, false);
@@ -396,11 +421,12 @@ public final class CharacterServicesSystem {
             }
         }
         long cost = CharacterServicesAccess.bypassCost(player) ? 0L : reskinCost(player);
+        AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !AncientCoinEconomy.canAfford(player, cost)) {
-            return "§cYou do not have enough Ancient Coins.";
+            return insufficientFunds(player, cost);
         }
-        if (cost > 0L && !AncientCoinEconomy.charge(player, cost)) {
-            return "§cPayment failed. No changes were made.";
+        if (cost > 0L && !chargeAc(player, cost)) {
+            return insufficientFunds(player, cost);
         }
         try {
             ReskinSessionGuard.begin(player);
@@ -415,7 +441,8 @@ public final class CharacterServicesSystem {
                     System.currentTimeMillis();
             CharacterServicesStore.get().markDirty();
             audit(player, "Reskin", "", "", 0, cost, true);
-            return "§aOpening the appearance editor. §7Your stats and progression are unchanged.";
+            String paid = cost > 0L ? "§7Paid §f" + formatCost(cost) + "§7. " : "";
+            return "§a" + paid + "Opening the appearance editor. §7Your stats and progression are unchanged.";
         } catch (Throwable t) {
             refund(player, cost);
             audit(player, "Reskin", "", "", 0, cost, false);

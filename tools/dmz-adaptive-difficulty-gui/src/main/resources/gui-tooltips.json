@@ -134,10 +134,7 @@
     "main": {
       "wallet": {
         "name": "&d&lCharacter Services",
-        "lore": [
-          "&6Ancient Coins: &e{coins}",
-          "&7Race &f{race} &8· &7Class &f{class}"
-        ]
+        "lore": []
       },
       "header": {
         "name": "&f&lCharacter Services",
@@ -157,6 +154,7 @@
         "lore": [
           "&7Swap your fighting class",
           "&7Your base stats stay — class skills reset",
+          "&7Cost &f{class_cost}",
           "&8{class_cooldown}",
           "&eClick to continue"
         ]
@@ -165,6 +163,7 @@
         "name": "&dReskin",
         "lore": [
           "&7New look only — no stat changes",
+          "&7Cost &f{reskin_cost}",
           "&8{reskin_cooldown}",
           "&eClick to continue"
         ]
@@ -311,9 +310,11 @@
       "open": {
         "name": "&a&lPay & Open Appearance",
         "lore": [
+          "&7Cost &f{reskin_cost}",
           "&7Opens the DragonMineZ look editor",
           "&7Cosmetics only — &cclass cannot change",
           "&7Level, stats, and race stay the same",
+          "&8Pay-up OK · change returned",
           "&eClick to pay and open"
         ]
       },
