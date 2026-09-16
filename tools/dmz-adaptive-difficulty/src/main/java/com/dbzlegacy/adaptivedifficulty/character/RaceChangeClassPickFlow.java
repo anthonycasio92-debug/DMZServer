@@ -18,13 +18,30 @@ public final class RaceChangeClassPickFlow {
     private RaceChangeClassPickFlow() {}
 
     public static void begin(ServerPlayer player, String targetRaceId, String priorFightingClass) {
+        begin(player, targetRaceId, priorFightingClass, null);
+    }
+
+    /**
+     * @param resourceSnapshotBeforeRaceChange from {@link com.dragonminez.common.stats.StatsData
+     *     #snapshotMultiplierResources()} before the race placeholder is applied (fallback if packet
+     *     capture is missing)
+     */
+    public static void begin(
+            ServerPlayer player,
+            String targetRaceId,
+            String priorFightingClass,
+            float[] resourceSnapshotBeforeRaceChange) {
         if (player == null || targetRaceId == null || targetRaceId.isBlank()) {
             return;
         }
         String prior = priorFightingClass == null ? "" : priorFightingClass.trim().toLowerCase();
+        float[] snap = null;
+        if (resourceSnapshotBeforeRaceChange != null && resourceSnapshotBeforeRaceChange.length >= 3) {
+            snap = resourceSnapshotBeforeRaceChange.clone();
+        }
         ACTIVE.put(
                 player.m_20148_(),
-                new Session(targetRaceId.trim().toLowerCase(), System.currentTimeMillis(), prior));
+                new Session(targetRaceId.trim().toLowerCase(), System.currentTimeMillis(), prior, snap));
     }
 
     public static boolean isActive(ServerPlayer player) {
@@ -45,6 +62,15 @@ public final class RaceChangeClassPickFlow {
         if (player != null) {
             ACTIVE.remove(player.m_20148_());
         }
+    }
+
+    /** Fallback resource snapshot from when the race-change picker session started. */
+    public static float[] resourceSnapshotBackup(ServerPlayer player) {
+        Session session = session(player);
+        if (session == null || session.resourceSnapshot == null) {
+            return null;
+        }
+        return session.resourceSnapshot.clone();
     }
 
     public static void openRecustomizeEditor(ServerPlayer player) {
@@ -80,5 +106,6 @@ public final class RaceChangeClassPickFlow {
         return s;
     }
 
-    private record Session(String targetRaceId, long startedAt, String priorFightingClass) {}
+    private record Session(
+            String targetRaceId, long startedAt, String priorFightingClass, float[] resourceSnapshot) {}
 }

@@ -347,12 +347,14 @@ public final class CharacterServicesSystem {
                 List<RaceChangeSkillPreserve.Entry> skillSnapshot =
                         keepSkills ? RaceChangeSkillPreserve.capture(data.getSkills()) : List.of();
                 if (RaceChangeClassMapper.requiresClassPicker(priorClassBeforeRaceChange, raceId)) {
+                    float[] pickerResourceSnapshot = data.snapshotMultiplierResources();
                     RaceChangeClassMapper.commitFightingClassForRace(
                             data, raceId, "", priorClassBeforeRaceChange);
                     try {
                         data.updateTransformationSkillLimits(raceId);
                     } catch (Throwable ignored) {
                     }
+                    DmzClassCommandApply.pushStatsSync(player);
                     CosmeticHeadBoneService.reapplyHeadBoneAfterRaceChange(player, priorHeadBone);
                     if (target != null) {
                         applyStats(data.getStats(), target);
@@ -365,7 +367,8 @@ public final class CharacterServicesSystem {
                         RaceSkillSync.sync(player, raceId);
                         RaceClassSync.sync(player);
                     }
-                    RaceChangeClassPickFlow.begin(player, raceId, priorClassBeforeRaceChange);
+                    RaceChangeClassPickFlow.begin(
+                            player, raceId, priorClassBeforeRaceChange, pickerResourceSnapshot);
                     RaceChangeClassPickFlow.openRecustomizeEditor(player);
                     openedFreeClassPicker = true;
                 } else {

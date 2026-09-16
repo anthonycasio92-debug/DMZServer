@@ -139,7 +139,7 @@ public final class RaceChangeCreationFlow {
             String picked = DmzProgression.fightingClass(player);
             float[] snap = DmzClassChangeCapture.take(player);
             DmzCharacterClassChangeHooks.onServicesRaceChangeApplied(
-                    player, data, race, picked, snap, true);
+                    player, data, race, picked, snap, true, session.priorFightingClass);
         } else {
             try {
                 Character ch = DmzProgression.character(player);

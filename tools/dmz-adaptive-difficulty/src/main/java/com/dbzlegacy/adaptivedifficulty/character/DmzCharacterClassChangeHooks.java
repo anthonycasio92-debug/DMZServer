@@ -49,18 +49,35 @@ public final class DmzCharacterClassChangeHooks {
             String classId,
             float[] resourceSnapshotBeforeChange,
             boolean preserveExactPrimaries) {
+        onServicesRaceChangeApplied(
+                player, data, newRaceId, classId, resourceSnapshotBeforeChange, preserveExactPrimaries, classId);
+    }
+
+    public static void onServicesRaceChangeApplied(
+            ServerPlayer player,
+            StatsData data,
+            String newRaceId,
+            String classId,
+            float[] resourceSnapshotBeforeChange,
+            boolean preserveExactPrimaries,
+            String fallbackPriorClassId) {
         if (player == null || data == null) {
             return;
         }
         clearPassiveRuntime(player);
-        String applied = classId == null ? "" : classId.trim();
-        if (applied.isBlank()) {
-            applied = DmzProgression.fightingClass(player);
+        String preferred = classId == null ? "" : classId.trim();
+        if (preferred.isBlank()) {
+            preferred = DmzProgression.fightingClass(player);
         }
+        String fallback =
+                fallbackPriorClassId == null || fallbackPriorClassId.isBlank()
+                        ? preferred
+                        : fallbackPriorClassId.trim();
+        String applied = preferred;
         if (newRaceId != null && !newRaceId.isBlank()) {
             applied =
                     RaceChangeClassMapper.commitFightingClassForRace(
-                            data, newRaceId, applied, applied);
+                            data, newRaceId, preferred, fallback);
         }
         if (applied != null && !applied.isBlank()) {
             DmzClassCommandApply.applyClass(player, data, applied, resourceSnapshotBeforeChange);
@@ -83,32 +100,25 @@ public final class DmzCharacterClassChangeHooks {
         float[] snap = DmzClassChangeCapture.take(player);
         String pickedFromPacket = packetClassName == null ? "" : packetClassName.trim();
         boolean classPickSession = RaceChangeClassPickFlow.isActive(player);
-        String pickTargetRace = classPickSession ? RaceChangeClassPickFlow.targetRaceId(player) : "";
-        String appliedClass = "";
         if (classPickSession) {
+            String pickTargetRace = RaceChangeClassPickFlow.targetRaceId(player);
+            String prior = RaceChangeClassPickFlow.priorFightingClass(player);
+            if (snap == null) {
+                snap = RaceChangeClassPickFlow.resourceSnapshotBackup(player);
+            }
             String picked =
                     pickedFromPacket.isBlank() ? DmzProgression.fightingClass(player) : pickedFromPacket;
-            String prior = RaceChangeClassPickFlow.priorFightingClass(player);
-            appliedClass =
-                    RaceChangeClassMapper.commitFightingClassForRace(
-                            data, pickTargetRace, picked, prior);
             RaceChangeClassPickFlow.clear(player);
-        } else if (snap != null && !pickedFromPacket.isBlank()) {
-            String race = DmzProgression.race(player);
-            appliedClass =
-                    RaceChangeClassMapper.commitFightingClassForRace(
-                            data, race, pickedFromPacket, pickedFromPacket);
-        }
-        if (classPickSession || snap != null) {
-            String race =
-                    classPickSession && pickTargetRace != null && !pickTargetRace.isBlank()
-                            ? pickTargetRace
-                            : DmzProgression.race(player);
-            String classToApply =
-                    appliedClass != null && !appliedClass.isBlank() ? appliedClass : pickedFromPacket;
-            if (classToApply != null && !classToApply.isBlank()) {
-                onServicesRaceChangeApplied(player, data, race, classToApply, snap, true);
+            if (picked != null && !picked.isBlank()) {
+                onServicesRaceChangeApplied(
+                        player, data, pickTargetRace, picked, snap, true, prior);
             }
+            return;
+        }
+        if (snap != null && !pickedFromPacket.isBlank()) {
+            String race = DmzProgression.race(player);
+            onServicesRaceChangeApplied(
+                    player, data, race, pickedFromPacket, snap, true, pickedFromPacket);
         }
     }
 

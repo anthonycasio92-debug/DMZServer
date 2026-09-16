@@ -77,9 +77,11 @@ public final class DmzClassCommandApply {
             return;
         }
         ch.setCharacterClass(lowered);
-        try {
-            data.restoreMultiplierGains(player, resourceSnapshot);
-        } catch (Throwable ignored) {
+        if (resourceSnapshot != null && resourceSnapshot.length >= 3) {
+            try {
+                data.restoreMultiplierGains(player, resourceSnapshot);
+            } catch (Throwable ignored) {
+            }
         }
         pushStatsSync(player);
     }
