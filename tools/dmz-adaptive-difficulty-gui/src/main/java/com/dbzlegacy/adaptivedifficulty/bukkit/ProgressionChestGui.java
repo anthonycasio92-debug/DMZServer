@@ -163,7 +163,7 @@ public final class ProgressionChestGui implements Listener {
         };
         for (int i = 0; i < pages.length && i < slots.length; i++) {
             put(holder, inv, slots[i], tipBtn("progression.main." + pages[i], mats[i], titles[i],
-                    List.of(tips[i], "", "&eClick to open8Opens this menu")),
+                    List.of(tips[i], "", "&eOpen")),
                     SlotAction.page(pages[i]));
         }
 
@@ -244,7 +244,7 @@ public final class ProgressionChestGui implements Listener {
             }
             if (staff) {
                 lore.add("");
-                lore.add("&eClick to toggle8Click to switch");
+                lore.add("&eSelect to switch");
             }
             String flagTitle = (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF");
             Map<String, String> flagVars = Map.of(
@@ -358,22 +358,22 @@ public final class ProgressionChestGui implements Listener {
                         "&8/progression boost end")));
         // Presets: mult:minutes
         put(holder, inv, 19, tipBtn("progression.boost.n125_30", Material.GOLD_NUGGET, "&e1.25x · 30m",
-                List.of("&7Start 1.25x for 30 minutes", "", "&eClick to start8Start this boost")),
+                List.of("&7Start 1.25x for 30 minutes", "", "&eStart")),
                 SlotAction.act("boost", "1.25:30", "boost_panel"));
         put(holder, inv, 20, tipBtn("progression.boost.n15_30", Material.GOLD_INGOT, "&e1.5x · 30m",
-                List.of("&7Start 1.5x for 30 minutes", "", "&eClick to start8Start this boost")),
+                List.of("&7Start 1.5x for 30 minutes", "", "&eStart")),
                 SlotAction.act("boost", "1.5:30", "boost_panel"));
         put(holder, inv, 21, tipBtn("progression.boost.n2_30", Material.GOLD_BLOCK, "&62x · 30m",
-                List.of("&7Start 2x for 30 minutes", "", "&eClick to start8Start this boost")),
+                List.of("&7Start 2x for 30 minutes", "", "&eStart")),
                 SlotAction.act("boost", "2:30", "boost_panel"));
         put(holder, inv, 22, tipBtn("progression.boost.n2_60", Material.GOLD_BLOCK, "&62x · 60m",
-                List.of("&7Start 2x for 60 minutes", "", "&eClick to start8Start this boost")),
+                List.of("&7Start 2x for 60 minutes", "", "&eStart")),
                 SlotAction.act("boost", "2:60", "boost_panel"));
         put(holder, inv, 23, tipBtn("progression.boost.n3_30", Material.CLOCK, "&e3x · 30m",
-                List.of("&7Start 3x for 30 minutes", "", "&eClick to start8Start this boost")),
+                List.of("&7Start 3x for 30 minutes", "", "&eStart")),
                 SlotAction.act("boost", "3:30", "boost_panel"));
         put(holder, inv, 25, tipBtn("progression.boost.end", Material.BARRIER, "&cEnd Boost",
-                List.of("&7Stop the active global TP boost", "", "&eClick to end8Stop the active boost")),
+                List.of("&7Stop the active global TP boost", "", "&eEnd boost")),
                 SlotAction.act("boost", "end", "boost_panel"));
         put(holder, inv, 31, tipBtn("progression.boost.refresh", Material.CLOCK, "&7Refresh Status",
                 List.of("&7Reload this panel", "", "&eClick")),
@@ -480,7 +480,7 @@ public final class ProgressionChestGui implements Listener {
                         "&8/progression android [player]"))));
         put(holder, inv, 8, tipBtn("progression.android.convert_self", Material.NETHERITE_INGOT,
                 "&aConvert Yourself",
-                List.of("&7Apply conversion to you", "", "&eClick to convert8Convert now")),
+                List.of("&7Apply conversion to you", "", "&eConvert")),
                 SlotAction.act("android", subject.getName(), "android_convert"));
         List<Player> online = GuiPlayerPicker.onlineExcept(subject);
         int placed = 0;
@@ -491,7 +491,7 @@ public final class ProgressionChestGui implements Listener {
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
             put(holder, inv, slot,
                     GuiPlayerPicker.head(other, "&f" + other.getName(),
-                            List.of("&7Convert to Android", "", "&eClick to convert8Convert now")),
+                            List.of("&7Convert to Android", "", "&eConvert")),
                     SlotAction.act("android", other.getName(), "android_convert"));
         }
         if (online.isEmpty()) {

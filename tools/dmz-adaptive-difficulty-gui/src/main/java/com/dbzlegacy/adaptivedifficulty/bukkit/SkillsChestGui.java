@@ -143,7 +143,7 @@ public final class SkillsChestGui implements Listener {
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         if (staffAdmin) {
             put(holder, inv, 51, tipBtn(viewer, "skills.main.progression", Material.BREWING_STAND, "&dProgression",
-                    List.of("&7Skills · TP · Race · Combat flags", "&eClick to open8Opens this menu")),
+                    List.of("&7Skills · TP · Race · Combat flags", "&eOpen")),
                     SlotAction.cmd("lmdo lm open progression"));
         }
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());

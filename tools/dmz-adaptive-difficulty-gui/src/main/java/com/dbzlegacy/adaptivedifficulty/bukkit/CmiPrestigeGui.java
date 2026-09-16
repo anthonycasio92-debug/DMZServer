@@ -606,7 +606,7 @@ public final class CmiPrestigeGui {
                 GuiTooltips.name("prestige.main.progression", "&dProgression"));
         btn.lockField();
         btn.addLore(GuiTooltips.buttonLore("prestige.main.progression",
-                List.of("&7Skills · TP · Race · Combat flags", "&eClick to open8Opens this menu")));
+                List.of("&7Skills · TP · Race · Combat flags", "&eOpen")));
         btn.addCommand("lmdo lm open progression");
         btn.setCloseInv(true);
         return btn;

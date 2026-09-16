@@ -76,7 +76,7 @@ public final class PrestigeChestGui implements Listener {
             if (ForgeBridge.isStaff(viewer)) {
                 put(holder, inv, 38, tipBtn(viewer, "prestige.main.progression", Material.BREWING_STAND,
                         "&dProgression",
-                        List.of("&7Skills · TP · Race · Combat flags", "&eClick to open8Opens this menu")),
+                        List.of("&7Skills · TP · Race · Combat flags", "&eOpen")),
                         SlotAction.cmd("lmdo lm open progression"));
             }
             put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -126,7 +126,7 @@ public final class PrestigeChestGui implements Listener {
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         if (ForgeBridge.isStaff(viewer)) {
             put(holder, inv, 38, tipBtn(viewer, "prestige.main.progression", Material.BREWING_STAND, "&dProgression",
-                    List.of("&7Skills · TP · Race · Combat flags", "&eClick to open8Opens this menu")),
+                    List.of("&7Skills · TP · Race · Combat flags", "&eOpen")),
                     SlotAction.cmd("lmdo lm open progression"));
         }
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());

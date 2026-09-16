@@ -138,7 +138,7 @@ public final class CmiSparGui {
                                 : "&7Click to show apprentice share TP in chat",
                         "&8When your dojo earns TP from spars",
                         "",
-                        "&eClick to toggle8Click to switch"
+                        "&eSelect to switch"
                 )));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "true"));
@@ -152,7 +152,7 @@ public final class CmiSparGui {
                         "&8Players: +TP (style)",
                         "&8Staff: full bonus / stack detail",
                         "",
-                        "&eClick to toggle8Click to switch"
+                        "&eSelect to switch"
                 )));
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
@@ -572,7 +572,7 @@ public final class CmiSparGui {
             String label = banners[i].replace('_', ' ');
             gui.addButton(actionBtn(player, slots[i], "spar.dojo.banner_pick", mat,
                     "&f" + label, "dojo_banner", banners[i], "dojo_war",
-                    List.of("&7Use this banner for your dojo", "", "&eClick to apply8Set as your dojo banner"),
+                    List.of("&7Use this banner for your dojo", "", "&eUse this banner"),
                     Map.of("name", label)));
         }
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "dojo_war", "&7Dojo War"));

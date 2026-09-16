@@ -145,7 +145,7 @@ public final class SparChestGui implements Listener {
                                 : "&7Click to show apprentice share TP in chat",
                         "&8When your dojo earns TP from spars",
                         "",
-                        "&eClick to toggle8Click to switch"
+                        "&eSelect to switch"
                 )), SlotAction.act("mentor_tpmsg", "toggle", "main"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "true"));
@@ -158,7 +158,7 @@ public final class SparChestGui implements Listener {
                         "&8Players: +TP (style)",
                         "&8Staff: full bonus / stack detail",
                         "",
-                        "&eClick to toggle8Click to switch"
+                        "&eSelect to switch"
                 )), SlotAction.act("tpmsg", "toggle", "main"));
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
@@ -572,7 +572,7 @@ public final class SparChestGui implements Listener {
             put(holder, inv, slots[i], item(mat,
                     GuiTooltips.name("spar.dojo.banner_pick", "&f" + label, bannerVars),
                     GuiTooltips.buttonLore("spar.dojo.banner_pick",
-                            List.of("&7Use this banner for your dojo", "", "&eClick to apply8Set as your dojo banner"),
+                            List.of("&7Use this banner for your dojo", "", "&eUse this banner"),
                             bannerVars, null)),
                     SlotAction.act("dojo_banner", banners[i], "dojo_war"));
         }

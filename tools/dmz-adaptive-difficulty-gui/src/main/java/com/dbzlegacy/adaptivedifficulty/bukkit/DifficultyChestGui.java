@@ -172,8 +172,8 @@ public final class DifficultyChestGui implements Listener {
                 personalOn ? "&aDifficulty ON" : "&cDifficulty OFF",
                 List.of(
                         personalOn
-                                ? "&7Click to turn OFF for you only8Turns scaling off for you only"
-                                : "&7Click to turn ON for you only8Turns scaling on for you only",
+                                ? "&7Turn off just for you"
+                                : "&7Turn back on for you",
                         personalOn
                                 ? "&8OFF disables scaling, kill coins,"
                                 : "&8ON restores scaling, kill coins,",
@@ -188,8 +188,8 @@ public final class DifficultyChestGui implements Listener {
                 coinChatOn ? "&aCoin Chat ON" : "&8Coin Chat OFF",
                 List.of(
                         coinChatOn
-                                ? "&7Click to mute drop messages8Hides Ancient Coin drop chat"
-                                : "&7Click to show drop messages8Shows Ancient Coin drop chat again",
+                                ? "&7Hide coin drop messages"
+                                : "&7Show coin drop messages again",
                         "&8Only affects Ancient Coin kill chat"
                 )), SlotAction.act("toggle_coin_chat", "0", "main"));
         if (ForgeBridge.isStaff(viewer)) {
