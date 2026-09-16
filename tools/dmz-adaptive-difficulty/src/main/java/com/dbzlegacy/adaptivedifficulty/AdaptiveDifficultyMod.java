@@ -53,6 +53,7 @@ public final class AdaptiveDifficultyMod {
         // Vanilla max_health 1024 / armor 30 / attack-damage 2048 would silently hard-cap scaling.
         AttributeLimits.uncapOffenseAttributes();
         MinecraftForge.EVENT_BUS.register(new DifficultyEvents());
+        com.dbzlegacy.adaptivedifficulty.claim.ClaimOverlapGuard.register();
         DifficultyCommands.register();
         RivalCommands.register();
         SparCommands.register();
