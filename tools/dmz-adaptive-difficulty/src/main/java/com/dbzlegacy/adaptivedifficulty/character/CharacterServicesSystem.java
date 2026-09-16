@@ -342,12 +342,14 @@ public final class CharacterServicesSystem {
                     }
                 }
                 RaceChangeClassMapper.applyRaceAndFightingClass(player, data, raceId, priorClass);
-                DmzFightingClassStatsSync.afterFightingClassChange(player, data);
                 CosmeticHeadBoneService.reapplyHeadBoneAfterRaceChange(player, priorHeadBone);
                 boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
                 List<RaceChangeSkillPreserve.Entry> skillSnapshot =
                         keepSkills ? RaceChangeSkillPreserve.capture(data.getSkills()) : List.of();
-                applyStats(data.getStats(), target);
+                if (target != null) {
+                    applyStats(data.getStats(), target);
+                }
+                DmzFightingClassStatsSync.afterFightingClassChange(player, data, target != null);
                 if (keepSkills) {
                     RaceChangeSkillPreserve.restore(data, currentRace, raceId, skillSnapshot);
                     RaceClassSync.syncRaceSkillOnly(player);
@@ -455,12 +457,11 @@ public final class CharacterServicesSystem {
                 return "§cCharacter data unavailable.";
             }
             ch.setCharacterClass(classId);
-            if (before != null) {
+            boolean preservePrimaries = before != null;
+            if (preservePrimaries) {
                 applyStats(data.getStats(), before);
-            } else {
-                DmzFightingClassStatsSync.applyClassBaseStats(player, race, classId);
             }
-            DmzFightingClassStatsSync.afterFightingClassChange(player, data);
+            DmzFightingClassStatsSync.afterFightingClassChange(player, data, preservePrimaries);
             ClassPermissionSync.sync(player);
             RaceClassSync.sync(player);
             syncClient(player);
