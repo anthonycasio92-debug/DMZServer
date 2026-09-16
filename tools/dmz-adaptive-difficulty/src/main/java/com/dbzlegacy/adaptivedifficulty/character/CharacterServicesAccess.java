@@ -37,6 +37,12 @@ public final class CharacterServicesAccess {
                 || has(player, CharacterServicesConfig.get().permissions.admin, false);
     }
 
+    /** Staff / character admin — ignore prestige race-lock gates in Character Services. */
+    public static boolean bypassRaceLock(ServerPlayer player) {
+        return StaffAccess.isStaff(player)
+                || has(player, CharacterServicesConfig.get().permissions.admin, false);
+    }
+
     private static boolean has(ServerPlayer player, String node, boolean defaultWhenBlank) {
         if (player == null) {
             return false;

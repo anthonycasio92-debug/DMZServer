@@ -215,6 +215,7 @@
         "name": "",
         "lore": [
           "&7Keep &f{pct}% &7of eligible combat stats",
+          "&80% is free — no stats carried over",
           "&8Higher % costs more Ancient Coins",
           "&eClick to review and confirm"
         ]

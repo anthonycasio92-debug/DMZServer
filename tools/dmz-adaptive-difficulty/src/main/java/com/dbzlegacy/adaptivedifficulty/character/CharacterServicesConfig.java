@@ -85,7 +85,7 @@ public final class CharacterServicesConfig {
     }
 
     public static int[] preservationSteps() {
-        return new int[] {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+        return new int[] {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
     }
 
     private static CharacterServicesConfig sanitize(CharacterServicesConfig c) {
@@ -106,6 +106,8 @@ public final class CharacterServicesConfig {
         }
         if (c.raceChange.preservationCostCopper == null || c.raceChange.preservationCostCopper.isEmpty()) {
             c.raceChange.preservationCostCopper = defaultPreservationCosts();
+        } else {
+            c.raceChange.preservationCostCopper.putIfAbsent("0", 0L);
         }
         if (c.raceChange.blockedRaces == null) {
             c.raceChange.blockedRaces = Collections.emptyList();
@@ -114,6 +116,9 @@ public final class CharacterServicesConfig {
     }
 
     public long raceCostCopper(int preservationPercent) {
+        if (preservationPercent <= 0) {
+            return 0L;
+        }
         String key = String.valueOf(preservationPercent);
         Long v = raceChange.preservationCostCopper.get(key);
         if (v == null || v < 0L) {

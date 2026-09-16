@@ -52,7 +52,8 @@ public final class CharacterServicesGuiApi {
         }
         if ("race".equals(p)) {
             lines.add("§7Choose the race you want to become.");
-            lines.add("§7Next you pick how much of your §fcore stats §7carry over.");
+            lines.add("§7Use §f0% §7for a free swap with no stats kept, or pay to keep progress.");
+            lines.add("§8Prestige races need their Fabled unlock skill.");
             lines.add("§7You keep ki skills, techniques, and shared form progress.");
             lines.add("§8Race-only form ladders reset when the new race does not use them.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "race"));
@@ -76,15 +77,19 @@ public final class CharacterServicesGuiApi {
         }
         if (p.startsWith("race_pct:")) {
             String[] bits = p.split(":", 3);
-            int pct = parsePct(bits.length > 2 ? bits[2] : "100");
+            int pct = parsePct(bits.length > 2 ? bits[2] : "0");
             lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
             lines.add(costLine(player, CharacterServicesSystem.raceCost(player, pct)));
-            lines.add("§8Scales with your DMZ level");
+            if (pct > 0) {
+                lines.add("§8Scales with your DMZ level");
+            } else {
+                lines.add("§8Free — core stats reset to 0");
+            }
             return lines;
         }
         if (p.startsWith("race_confirm:")) {
             String[] bits = p.split(":", 3);
-            int pct = parsePct(bits.length > 2 ? bits[2] : "100");
+            int pct = parsePct(bits.length > 2 ? bits[2] : "0");
             String race = bits.length > 1 ? bits[1] : "?";
             lines.add("§7You are becoming §f" + title(race) + "§7.");
             lines.add("§7Keeping §f" + pct + "% §7of eligible stats:");
@@ -155,7 +160,10 @@ public final class CharacterServicesGuiApi {
     }
 
     private static String costLine(ServerPlayer player, long copperCost) {
-        if (CharacterServicesAccess.bypassCost(player) || copperCost <= 0L) {
+        if (copperCost <= 0L) {
+            return "§7Cost §afree";
+        }
+        if (CharacterServicesAccess.bypassCost(player)) {
             return "§7Cost §afree §8(staff bypass)";
         }
         return "§7Cost §f" + CharacterServicesSystem.formatCost(copperCost) + " §7Ancient Coins";
@@ -163,9 +171,9 @@ public final class CharacterServicesGuiApi {
 
     private static int parsePct(String raw) {
         try {
-            return Integer.parseInt(raw == null ? "100" : raw.trim());
+            return Integer.parseInt(raw == null ? "0" : raw.trim());
         } catch (NumberFormatException e) {
-            return 100;
+            return 0;
         }
     }
 

@@ -150,7 +150,7 @@ public final class CharacterServicesChestGui implements Listener {
             String cardKey = current ? "character.race.card_current" : "character.race.card_pick";
             put(holder, inv, slots[i], item(mat, (current ? "&a" : "&f") + name,
                     GuiTooltips.buttonLore(cardKey, List.of(), null, null)),
-                    SlotAction.page("race_pct:" + id + ":100"));
+                    SlotAction.page("race_pct:" + id + ":0"));
         }
         footer54(holder, inv, "character.race.back", SlotAction.page("main"));
         return inv;
@@ -158,14 +158,14 @@ public final class CharacterServicesChestGui implements Listener {
 
     private Inventory racePct(Player viewer, Player subject, String raceAndPct) {
         String race = raceAndPct;
-        int defaultPct = 100;
+        int defaultPct = 0;
         int colon = raceAndPct.lastIndexOf(':');
         if (colon > 0) {
             race = raceAndPct.substring(0, colon);
             try {
                 defaultPct = Integer.parseInt(raceAndPct.substring(colon + 1));
             } catch (NumberFormatException ignored) {
-                defaultPct = 100;
+                defaultPct = 0;
             }
         }
         Holder holder = new Holder("race_pct");
@@ -178,17 +178,19 @@ public final class CharacterServicesChestGui implements Listener {
         lore.addAll(toAmp(ForgeBridge.charLines(subject, "race_pct:" + race + ":" + defaultPct)));
         put(holder, inv, 4, item(Material.EXPERIENCE_BOTTLE,
                 GuiTooltips.name("character.race_pct.header", "&e&lHow Much to Keep?"), lore));
-        int[] pcts = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
-        int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30};
+        int[] pcts = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+        int[] slots = {10, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30};
         for (int i = 0; i < pcts.length && i < slots.length; i++) {
             int pct = pcts[i];
             boolean selected = pct == defaultPct;
             Map<String, String> pctVars = Map.of("pct", String.valueOf(pct));
-            put(holder, inv, slots[i], item(
-                    selected ? Material.LIME_CONCRETE : Material.GRAY_CONCRETE,
-                    (selected ? "&a" : "&f") + pct + "%",
-                    GuiTooltips.buttonLore("character.race_pct.pct",
-                            List.of("&7Keep " + pct + "% of core stats", "&eClick to review"), pctVars, null)),
+            Material mat = selected ? Material.LIME_CONCRETE : Material.GRAY_CONCRETE;
+            String title = pct == 0 ? (selected ? "&a&l0% — Free" : "&e&l0% — Free") : (selected ? "&a" : "&f") + pct + "%";
+            List<String> btnLore = pct == 0
+                    ? List.of("&7Fresh race swap — no stats kept", "&aFree for everyone", "&eClick to review")
+                    : List.of("&7Keep " + pct + "% of core stats", "&eClick to review");
+            put(holder, inv, slots[i], item(mat, title,
+                    GuiTooltips.buttonLore("character.race_pct.pct", btnLore, pctVars, null)),
                     SlotAction.page("race_confirm:" + race + ":" + pct));
         }
         footer54(holder, inv, "character.race_pct.back", SlotAction.page("race"));
@@ -198,7 +200,7 @@ public final class CharacterServicesChestGui implements Listener {
     private Inventory raceConfirm(Player viewer, Player subject, String raceAndPct) {
         String[] bits = raceAndPct.split(":", 2);
         String race = bits.length > 0 ? bits[0] : "";
-        String pct = bits.length > 1 ? bits[1] : "100";
+        String pct = bits.length > 1 ? bits[1] : "0";
         Holder holder = new Holder("race_confirm");
         Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Confirm Race"));
         holder.bind(inv);

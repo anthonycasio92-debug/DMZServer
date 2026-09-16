@@ -33,6 +33,38 @@ public final class RaceLock {
 
     private RaceLock() {}
 
+    /**
+     * Whether the player may select this DMZ race (prestige / race-lock Fabled unlock).
+     * Returns {@code null} when allowed; otherwise a short player-facing denial.
+     */
+    public static String selectBlockReason(ServerPlayer player, String raceId) {
+        if (player == null || raceId == null || raceId.isBlank()) {
+            return "§cInvalid race.";
+        }
+        if (!ProgressionConfig.raceLock()) {
+            return null;
+        }
+        RaceLockConfig.RestrictedRace gate = RaceLockConfig.findByRaceId(raceId);
+        if (gate == null) {
+            return null;
+        }
+        String required = gate.fabledSkill;
+        if (required == null || required.isBlank()) {
+            return null;
+        }
+        if (FabledSkills.skillLevel(player, required) >= 1) {
+            return null;
+        }
+        String display = gate.displayName == null || gate.displayName.isBlank()
+                ? required
+                : gate.displayName;
+        return "§cYou need the Fabled skill §f" + required + " §cto become §f" + display + "§c.";
+    }
+
+    public static boolean maySelectRace(ServerPlayer player, String raceId) {
+        return selectBlockReason(player, raceId) == null;
+    }
+
     public static void pulse(ServerPlayer player, long nowMs) {
         if (!ProgressionConfig.raceLock() || player == null) {
             return;

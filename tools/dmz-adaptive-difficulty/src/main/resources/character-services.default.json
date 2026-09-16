@@ -20,6 +20,7 @@
     "cooldownMs": 604800000,
     "keepSkillsOnRaceChange": true,
     "preservationCostCopper": {
+      "0": 0,
       "10": 100000,
       "20": 200000,
       "30": 300000,

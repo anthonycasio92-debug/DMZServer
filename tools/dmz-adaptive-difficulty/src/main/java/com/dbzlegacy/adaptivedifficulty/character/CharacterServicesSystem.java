@@ -7,6 +7,7 @@ import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.ClassPermissionSync;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceClassSync;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceSkillSync;
+import com.dbzlegacy.adaptivedifficulty.progression.race.RaceLock;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.progression.classdef.FightingClassCatalog;
 import com.dragonminez.common.config.ConfigManager;
@@ -117,6 +118,11 @@ public final class CharacterServicesSystem {
                 String id = race.trim().toLowerCase(Locale.ROOT);
                 if (blocked.contains(id)) {
                     continue;
+                }
+                if (!CharacterServicesAccess.bypassRaceLock(player)) {
+                    if (RaceLock.selectBlockReason(player, id) != null) {
+                        continue;
+                    }
                 }
                 String name = titleCase(id);
                 boolean selected = id.equalsIgnoreCase(current);
@@ -273,6 +279,12 @@ public final class CharacterServicesSystem {
         if (raceId.equalsIgnoreCase(currentRace)) {
             return "§cYou are already that race.";
         }
+        if (!CharacterServicesAccess.bypassRaceLock(player)) {
+            String lock = RaceLock.selectBlockReason(player, raceId);
+            if (lock != null && !lock.isBlank()) {
+                return lock;
+            }
+        }
         if (!CharacterServicesAccess.bypassCooldown(player)) {
             long left = cooldownRemaining(player, "race");
             if (left > 0L) {
@@ -328,8 +340,10 @@ public final class CharacterServicesSystem {
             String kept = keepSkills
                     ? " §7Ki skills, techniques, and shared form progress kept."
                     : "";
-            return "§aRace changed to §f" + titleCase(raceId)
-                    + "§a. Eligible stats preserved at §f" + preservationPercent + "%§a." + kept + paid;
+            String statsNote = preservationPercent <= 0
+                    ? " §7Core stats were reset (0% carry-over)."
+                    : " Eligible stats preserved at §f" + preservationPercent + "%§a.";
+            return "§aRace changed to §f" + titleCase(raceId) + "§a." + statsNote + kept + paid;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.error(
                     "[{}] race change failed for {}: {}",
