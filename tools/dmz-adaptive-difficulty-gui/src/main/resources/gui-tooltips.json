@@ -1141,6 +1141,22 @@
           "&8Click to show in chat again"
         ]
       },
+      "mentor_tpmsg_on": {
+        "name": "&aMentor TP ON",
+        "lore": [
+          "&7Apprentice share TP shows in chat",
+          "",
+          "&8Click to mute mentor TP chat"
+        ]
+      },
+      "mentor_tpmsg_off": {
+        "name": "&8Mentor TP OFF",
+        "lore": [
+          "&7Mentor share TP chat is hidden",
+          "",
+          "&8Click to show in chat again"
+        ]
+      },
       "end_session": {
         "name": "&cEnd Session",
         "lore": [
@@ -1197,8 +1213,40 @@
       "war": {
         "name": "&cDojo War",
         "lore": [
-          "&7Declare, accept, and manage dojo wars",
+          "&7Declare war, manage pending challenges, and set your banner",
           "&8Same hub style as Mentor Actions"
+        ]
+      },
+      "war_pending": {
+        "name": "&ePending",
+        "lore": [
+          "&7Incoming and outgoing war challenges",
+          "&7Accept, decline, or revoke from one list"
+        ]
+      },
+      "war_pending_back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Return to Dojo War"
+        ]
+      },
+      "war_hub": {
+        "name": "&cDojo War",
+        "lore": [
+          "&7Declare war and banner settings"
+        ]
+      },
+      "war_decide_info": {
+        "name": "&e&lRespond",
+        "lore": [
+          "&7Review this war challenge",
+          "&aAccept &7starts a 24h war with &f2× RP"
+        ]
+      },
+      "war_decide_back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Return to pending wars"
         ]
       },
       "war_rankings": {
@@ -1465,7 +1513,14 @@
       "no_dojo_members": [
         "&7No contributions logged yet",
         "&8Spar someone from another dojo to appear here"
-      ]
+      ],
+      "no_dojo_war_pending": {
+        "name": "&7No pending wars",
+        "lore": [
+          "&7Declare war from Dojo War",
+          "&7Incoming shows when another dojo challenges you"
+        ]
+      }
     }
   },
   "progression": {
@@ -1808,5 +1863,5 @@
       ]
     }
   },
-  "_catalogRevision": 186
+  "_catalogRevision": 188
 }

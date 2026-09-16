@@ -82,6 +82,7 @@ public final class SparChatMenu {
         }
         send(player, Component.m_237113_(""));
         boolean tpOn = SparStore.get().tpMessagesOn(player.m_20148_());
+        boolean mentorTpOn = SparStore.get().mentorTpMessagesOn(player.m_20148_());
         MutableComponent row = Component.m_237113_("§7")
                 .m_7220_(btn("§e[Stats]", "/spar do page stats", "Last 3 spar reports"))
                 .m_7220_(Component.m_237113_("  "))
@@ -92,6 +93,10 @@ public final class SparChatMenu {
                 .m_7220_(btn(tpOn ? "§a[TP Msg ON]" : "§8[TP Msg OFF]",
                         "/spar do tpmsg toggle main",
                         tpOn ? "Mute spar TP chat while fighting" : "Show spar TP chat while fighting"));
+        row.m_7220_(Component.m_237113_("  "))
+                .m_7220_(btn(mentorTpOn ? "§a[Mentor TP ON]" : "§8[Mentor TP OFF]",
+                        "/spar do mentor_tpmsg toggle main",
+                        mentorTpOn ? "Mute mentor share TP chat" : "Show mentor share TP in chat"));
         if (rt != null && rt.active) {
             row.m_7220_(Component.m_237113_("  "))
                     .m_7220_(btn("§c[End]", "/spar do end main", "End spar session"));

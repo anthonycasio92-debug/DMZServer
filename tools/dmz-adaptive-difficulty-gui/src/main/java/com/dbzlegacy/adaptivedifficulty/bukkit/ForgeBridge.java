@@ -73,6 +73,7 @@ public final class ForgeBridge {
     private static Method sparHandleDoMethod;
     private static Method sparPendingMentorInviteCardsMethod;
     private static Method sparPendingIncomingMentorArgsMethod;
+    private static Method sparPendingDojoWarCardsMethod;
     private static Method sparApprenticeCardsMethod;
     private static Method sparMembershipDojoCardsMethod;
     private static Method sparRivalDojoCardsMethod;
@@ -1209,6 +1210,10 @@ public final class ForgeBridge {
         return invokeSparStringList(player, "pendingIncomingMentorArgs");
     }
 
+    public static List<String> sparPendingDojoWarCards(Player player) {
+        return invokeSparStringList(player, "pendingDojoWarCards");
+    }
+
     /** Mentor dojo roster cards ({@code uuid\tname}) for Release pickers. */
     public static List<String> sparApprenticeCards(Player player) {
         return invokeSparStringList(player, "apprenticeCards");
@@ -1260,6 +1265,10 @@ public final class ForgeBridge {
     }
 
     private static List<String> invokeSparStringList(Player player, String methodName) {
+        return invokeSparStringList(player, methodName, false);
+    }
+
+    private static List<String> invokeSparStringList(Player player, String methodName, boolean retried) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
             return List.of();
@@ -1269,6 +1278,7 @@ public final class ForgeBridge {
             Method m = switch (methodName) {
                 case "pendingMentorInviteCards" -> sparPendingMentorInviteCardsMethod;
                 case "pendingIncomingMentorArgs" -> sparPendingIncomingMentorArgsMethod;
+                case "pendingDojoWarCards" -> sparPendingDojoWarCardsMethod;
                 case "apprenticeCards" -> sparApprenticeCardsMethod;
                 case "membershipDojoCards" -> sparMembershipDojoCardsMethod;
                 case "rivalDojoCards" -> sparRivalDojoCardsMethod;
@@ -1276,6 +1286,10 @@ public final class ForgeBridge {
                 default -> null;
             };
             if (m == null) {
+                if (!retried && "pendingDojoWarCards".equals(methodName)) {
+                    sparPendingDojoWarCardsMethod = null;
+                    return invokeSparStringList(player, methodName, true);
+                }
                 return List.of();
             }
             Object raw = m.invoke(null, nms);
@@ -1292,7 +1306,10 @@ public final class ForgeBridge {
                 return out;
             }
         } catch (Throwable ignored) {
-            // Optional API — empty when missing.
+            if (!retried && "pendingDojoWarCards".equals(methodName)) {
+                sparPendingDojoWarCardsMethod = null;
+                return invokeSparStringList(player, methodName, true);
+            }
         }
         return List.of();
     }
@@ -2286,6 +2303,13 @@ public final class ForgeBridge {
                     sparPendingIncomingMentorArgsMethod = api.getMethod("pendingIncomingMentorArgs", sp);
                 } catch (Throwable ignored) {
                     sparPendingIncomingMentorArgsMethod = null;
+                }
+            }
+            if (sparPendingDojoWarCardsMethod == null) {
+                try {
+                    sparPendingDojoWarCardsMethod = api.getMethod("pendingDojoWarCards", sp);
+                } catch (Throwable ignored) {
+                    sparPendingDojoWarCardsMethod = null;
                 }
             }
             if (sparApprenticeCardsMethod == null) {
