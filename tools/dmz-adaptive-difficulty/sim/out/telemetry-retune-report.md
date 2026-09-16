@@ -1,4 +1,4 @@
-# Telemetry retune report — 46182 hits (8 files)
+# Telemetry retune report — 46184 hits (8 files)
 
 ## Live aggregate (all hits) — avg hitFracPost by tier
 
@@ -10,7 +10,7 @@
 | T4 | 6050 | 0.305 | 0.228 | 22.6% | 0.40 | — |
 | T5 | 19670 | 0.485 | 0.382 | 73.1% | 0.44 | 0.25 |
 | T6 | 4916 | 0.496 | 0.340 | 41.1% | 0.48 | — |
-| T7 | 2122 | 0.523 | 0.304 | 48.7% | 0.52 | 0.39 |
+| T7 | 2124 | 0.523 | 0.304 | 48.6% | 0.52 | 0.39 |
 
 ## Ultra band (formBoost 15–22) — SSJ4, Ultra Perfect, Super Namek (~15–22×)
 
@@ -22,7 +22,7 @@
 | T4 | 759 | 0.340 | 0.40 | 1.21× |
 | T5 | 136 | 0.382 | 0.44 | 1.12× |
 | T6 | 259 | 0.502 | 0.48 | 1.31× |
-| T7 | 98 | 0.561 | 0.52 | 1.12× |
+| T7 | 100 | 0.558 | 0.52 | 1.11× |
 
 ## Divine band (formBoost 22–50) — SSG, SSB, Beyond God (~22–50×)
 
@@ -70,17 +70,18 @@
 | T7 | 0.523 | 0.399 | 0.399 | 0.39 |
 
 ## Recent window
-Rows: 5506 (last 2 day file(s))
+Rows: 15303 (last 4 day file(s))
 
-- T3 ultra recent avg post: **0.067** (n=2)
+- T3 ultra recent avg post: **0.274** (n=253)
 - T5 ultra recent avg post: **0.261** (n=53)
-- T7 ultra recent avg post: **0.383** (n=24)
-- T3 divine recent avg post: **0.064** (n=904)
-- T5 divine recent avg post: **0.239** (n=388)
+- T7 ultra recent avg post: **0.387** (n=26)
+- T3 divine recent avg post: **0.213** (n=2135)
+- T5 divine recent avg post: **0.447** (n=3447)
 - T7 divine recent avg post: **0.264** (n=183)
+- T3 enhancement recent avg post: **0.283** (n=164)
 - T5 enhancement recent avg post: **0.226** (n=51)
 - T7 enhancement recent avg post: **0.422** (n=4)
-- T3 apex recent avg post: **0.284** (n=14)
+- T3 apex recent avg post: **0.290** (n=617)
 - T5 apex recent avg post: **0.226** (n=36)
 - T7 apex recent avg post: **0.400** (n=1)
 

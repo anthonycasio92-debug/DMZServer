@@ -53,6 +53,8 @@ public final class SparGuiApi {
         out.put("perfect", sessionActive && rt.sessionPerfect ? "true" : "false");
         out.put("tpMsg", SparStore.get().tpMessagesOn(player.m_20148_()) ? "true" : "false");
         out.put("tp_msg", out.get("tpMsg"));
+        out.put("mentorTpMsg", SparStore.get().mentorTpMessagesOn(player.m_20148_()) ? "true" : "false");
+        out.put("mentor_tp_msg", out.get("mentorTpMsg"));
 
         boolean hasMentor = bond != null
                 && bond.mentorUuid != null && !bond.mentorUuid.isBlank();
@@ -124,6 +126,12 @@ public final class SparGuiApi {
         out.put("dojo_wins", dojoEntry == null ? "0" : String.valueOf(dojoEntry.wins));
         out.put("dojo_display_name", dojoKey == null ? "" : DojoRankings.dojoDisplayName(dojoKey));
         out.put("dojo_banner", dojoKey == null ? "WHITE_BANNER" : DojoRankings.dojoBannerMaterial(dojoKey));
+        boolean warIncoming = DojoRankings.hasIncomingWarChallenge(player);
+        out.put("dojo_war_incoming", warIncoming ? "true" : "false");
+        out.put("dojo_war_from", warIncoming ? DojoRankings.incomingWarFromName(player) : "");
+        int warPending = DojoRankings.pendingDojoWarCount(player);
+        out.put("dojo_war_pending", String.valueOf(warPending));
+        out.put("dojo_war_pending_count", out.get("dojo_war_pending"));
         return out;
     }
 
@@ -148,11 +156,27 @@ public final class SparGuiApi {
         return SparringSystem.dojoTopLines(category, 10);
     }
 
+    /** Dojo ladder cards for GUI banners ({@code rank\tkey\tname\tbanner\tvalue\troster}). */
+    public static List<String> dojoTopCards(ServerPlayer player, String category) {
+        if (!DifficultyConfig.get().enableSparringSystem) {
+            return List.of();
+        }
+        String cat = category == null || category.isBlank() ? "rp" : category.trim();
+        return SparringSystem.dojoTopCards(cat, 14);
+    }
+
     public static List<String> dojoInfoLines(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
             return List.of("§cSparring system is disabled.");
         }
         return SparringSystem.dojoInfoLines(player);
+    }
+
+    public static List<String> dojoWarLines(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of("§cSparring system is disabled.");
+        }
+        return DojoRankings.warInfoLines(player);
     }
 
     public static List<String> rivalDojoCards(ServerPlayer player) {
@@ -247,6 +271,14 @@ public final class SparGuiApi {
         return SparringSystem.pendingIncomingMentorArgs(player);
     }
 
+    /** Pending dojo war challenges (incoming + outgoing) for GUI boards. */
+    public static List<String> pendingDojoWarCards(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableSparringSystem) {
+            return List.of();
+        }
+        return SparringSystem.pendingDojoWarCards(player);
+    }
+
     /** Mentor's dojo roster cards ({@code uuid\tname}) for Release pickers. */
     public static List<String> apprenticeCards(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableSparringSystem) {
@@ -323,12 +355,13 @@ public final class SparGuiApi {
             case "stats", "statistics" -> statsLines(player);
             case "top", "leaderboard" -> topLines(player, "tp");
             case "dojo_top", "dojo_rank", "dojo_rankings", "dojo_leaderboard" -> dojoTopLines(player, "rp");
-            case "dojo_info", "dojo_war" -> {
+            case "dojo_info" -> {
                 List<String> merged = new ArrayList<>(dojoInfoLines(player));
                 merged.add("");
                 merged.addAll(dojoTopLines(player, "rp"));
                 yield merged;
             }
+            case "dojo_war" -> dojoWarLines(player);
             case "dojo_hof", "dojo_hall", "dojo_hall_of_fame" -> dojoHallOfFameLines(player);
             case "dojo_members", "dojo_contributions" -> dojoMemberLines(player);
             case "mentor", "actions", "dojo", "roster", "apprentices" -> mentorLines(player);
@@ -409,6 +442,19 @@ public final class SparGuiApi {
                 return SparringSystem.setTpMsg(player, false);
             }
             return "§cUsage: spar do tpmsg toggle|on|off";
+        }
+        if ("mentor_tpmsg".equals(act) || "mentor_tp_msg".equals(act) || "mentortpmsg".equals(act)) {
+            if ("toggle".equalsIgnoreCase(a) || a.isBlank()) {
+                boolean next = !SparStore.get().mentorTpMessagesOn(player.m_20148_());
+                return SparringSystem.setMentorTpMsg(player, next);
+            }
+            if ("on".equalsIgnoreCase(a) || "true".equalsIgnoreCase(a)) {
+                return SparringSystem.setMentorTpMsg(player, true);
+            }
+            if ("off".equalsIgnoreCase(a) || "false".equalsIgnoreCase(a)) {
+                return SparringSystem.setMentorTpMsg(player, false);
+            }
+            return "§cUsage: spar do mentor_tpmsg toggle|on|off";
         }
         if ("mentor".equals(act)) {
             String sub = a.toLowerCase(Locale.ROOT).trim();
@@ -555,6 +601,9 @@ public final class SparGuiApi {
         }
         if ("dojo_decline".equals(act) || "dojo_war_decline".equals(act)) {
             return SparringSystem.dojoDeclineWar(player);
+        }
+        if ("dojo_war_cancel".equals(act) || "dojo_war_revoke".equals(act) || "dojo_cancel".equals(act)) {
+            return SparringSystem.dojoRevokeWar(player, a);
         }
         if ("dojo_name".equals(act) || "dojo_rename".equals(act)) {
             if (a.isBlank()) {

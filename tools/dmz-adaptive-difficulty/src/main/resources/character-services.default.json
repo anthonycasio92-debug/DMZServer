@@ -1,0 +1,78 @@
+{
+  "enabled": true,
+  "permissions": {
+    "services": "legacymechanics.character.services",
+    "race": "legacymechanics.character.racechange",
+    "class": "legacymechanics.character.classchange",
+    "reskin": "legacymechanics.character.reskin",
+    "bypassCost": "legacymechanics.character.bypass.cost",
+    "bypassCooldown": "legacymechanics.character.bypass.cooldown",
+    "admin": "legacymechanics.character.admin",
+    "headBones": "legacymechanics.character.headbones"
+  },
+  "restrictions": {
+    "blockWhileDead": true,
+    "blockWhileTransformed": false,
+    "blockWhileInCombat": false,
+    "blockWhileSparring": true
+  },
+  "raceChange": {
+    "enabled": true,
+    "cooldownMs": 43200000,
+    "keepSkillsOnRaceChange": true,
+    "preservationCostCopper": {
+      "0": 0,
+      "10": 100000,
+      "20": 200000,
+      "30": 300000,
+      "40": 400000,
+      "50": 500000,
+      "60": 600000,
+      "70": 700000,
+      "80": 800000,
+      "90": 900000,
+      "100": 1000000
+    },
+    "levelCostMultiplier": true,
+    "blockedRaces": []
+  },
+  "classChange": {
+    "enabled": true,
+    "cooldownMs": 43200000,
+    "baseCostCopper": 250000,
+    "levelCostMultiplier": true,
+    "preserveBaseStats": true,
+    "resetClassProgression": true
+  },
+  "reskin": {
+    "enabled": true,
+    "cooldownMs": 43200000,
+    "baseCostCopper": 50000,
+    "levelCostMultiplier": true,
+    "openDmzRecustomizeOnly": true,
+    "lockClassDuringEditor": true
+  },
+  "headBoneShop": {
+    "enabled": true,
+    "defaultUnlockCostCopper": 100000,
+    "levelCostMultiplier": true,
+    "nativeRaceBonesFree": true,
+    "boneCosts": {
+      "hair": 0
+    },
+    "displayNames": {
+      "ears1": "Namekian Ears (style 1)",
+      "ears2": "Namekian Ears (style 2)",
+      "ears3": "Namekian Ears (style 3)",
+      "horns1": "Frost Demon Horns (style 1)",
+      "horns2": "Frost Demon Horns (style 2)",
+      "horns3": "Frost Demon Horns (style 3)",
+      "horns4": "Frost Demon Horns (style 4)",
+      "horns5": "Frost Demon Horns (style 5)",
+      "majin1": "Majin Head (style 1)",
+      "majin2": "Majin Head (style 2)",
+      "majin3": "Majin Head (style 3)"
+    },
+    "excludeBones": []
+  }
+}

@@ -73,11 +73,11 @@ public final class CmiHubGui {
         gui.addButton(openBtn(player, 20, "hub.main.difficulty", Material.BEACON, "&aDifficulty", "difficulty",
                 "&7Unlock tiers & world scaling",
                 "&cWarning: &7Scaled mobs can attack other players as well",
-                "&eClick to open"));
+                "&eClick to open8Opens this menu"));
         gui.addButton(openBtn(player, 22, "hub.main.rival", Material.NAME_TAG, "&6Rival", "rival",
-                "&7Rivalry, challenges & RP", "&eClick to open"));
+                "&7Rivalry, challenges & RP", "&eClick to open8Opens this menu"));
         gui.addButton(openBtn(player, 24, "hub.main.spar", Material.GOLDEN_SWORD, "&bSpar", "spar",
-                "&7Sparring TP & mentor bonds", "&eClick to open"));
+                "&7Sparring TP & mentor bonds", "&eClick to open8Opens this menu"));
 
         boolean staff = ForgeBridge.isStaff(player);
         boolean skillCheck = ForgeBridge.hasSkillCheck(player);
@@ -85,27 +85,32 @@ public final class CmiHubGui {
         // Row 3 — Skill Check (donator) / Skills (staff) · Prestige (everyone)
         if (skillCheck) {
             gui.addButton(openBtn(player, 21, "hub.main.skillcheck", Material.EXPERIENCE_BOTTLE, "&eSkill Check", "skillcheck",
-                    "&7Natural · Saga progress", "&eClick to open"));
+                    "&7Natural · Saga progress", "&eClick to open8Opens this menu"));
         } else if (staff) {
             gui.addButton(openBtn(player, 21, "hub.main.skills", Material.BOOK, "&eSkills", "skills",
-                    "&7Skill unlock admin browser", "&8No Skill Check perm", "&eClick to open"));
+                    "&7Skill unlock admin browser", "&8No Skill Check perm", "&eClick to open8Opens this menu"));
         }
         gui.addButton(openBtn(player, 23, "hub.main.prestige", Material.GOLDEN_APPLE, "&6Prestige", "prestige",
                 "&7Turn in prestiges · skill/forms shop · level-cap",
-                "&eClick to open"));
+                "&eClick to open8Opens this menu"));
 
-        // Row 4 — player Android remove + staff tools
+        // Row 4 — Character Services · Android remove + staff tools
+        gui.addButton(openBtn(player, 30, "hub.main.character", Material.PLAYER_HEAD, "&dCharacter Services", "character",
+                "&7Race, class, reskin, head parts",
+                "&7without wiping your whole build",
+                "&8Paid with Ancient Coins",
+                "&eClick to open"));
         gui.addButton(openBtn(player, 31, "hub.main.android_remove", Material.REDSTONE, "&cRemove Android", "android_remove",
                 "&7Remove your Android upgrade",
                 "&8Two-click confirm · forms restored",
-                "&eClick to open"));
+                "&eClick to open8Opens this menu"));
         if (staff) {
             gui.addButton(openBtn(player, 38, "hub.main.progression", Material.BREWING_STAND, "&dProgression", "progression",
-                    "&7Skills · TP · Race · Combat flags", "&eClick to open"));
+                    "&7Skills · TP · Race · Combat flags", "&eClick to open8Opens this menu"));
             gui.addButton(openBtn(player, 40, "hub.main.admin", Material.COMMAND_BLOCK, "&cAdmin", "admin",
                     "&7Reload configs and open staff tools", "&8/lm admin"));
             gui.addButton(pageBtn(player, 42, "hub.main.logs", Material.CLOCK, "&8Logs", "logs",
-                    "&7Server event logs", "&eClick to open"));
+                    "&7Server event logs", "&eClick to open8Opens this menu"));
         }
 
         gui.addButton(closeBtn(53));

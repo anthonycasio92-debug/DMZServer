@@ -73,10 +73,12 @@ public final class ForgeBridge {
     private static Method sparHandleDoMethod;
     private static Method sparPendingMentorInviteCardsMethod;
     private static Method sparPendingIncomingMentorArgsMethod;
+    private static Method sparPendingDojoWarCardsMethod;
     private static Method sparApprenticeCardsMethod;
     private static Method sparMembershipDojoCardsMethod;
     private static Method sparRivalDojoCardsMethod;
     private static Method sparDojoMemberCardsMethod;
+    private static Method sparDojoTopCardsMethod;
     private static Method diffTeamLinesMethod;
     private static Method diffTeamMutualCardsMethod;
     private static Method hubChatMenuOpen;
@@ -91,6 +93,12 @@ public final class ForgeBridge {
     private static Method prestigeLinesMethod;
     private static Method prestigeHandleDoMethod;
     private static Method prestigeAdminMethod;
+    private static Method charPlaceholdersMethod;
+    private static Method charLinesMethod;
+    private static Method charHandleDoMethod;
+    private static Method charRaceCardsMethod;
+    private static Method charHeadBoneCardsMethod;
+    private static Method charClassCardsMethod;
     private static Method skillsPlaceholdersMethod;
     private static Method skillsLinesMethod;
     private static Method skillsHandleDoMethod;
@@ -1202,6 +1210,10 @@ public final class ForgeBridge {
         return invokeSparStringList(player, "pendingIncomingMentorArgs");
     }
 
+    public static List<String> sparPendingDojoWarCards(Player player) {
+        return invokeSparStringList(player, "pendingDojoWarCards");
+    }
+
     /** Mentor dojo roster cards ({@code uuid\tname}) for Release pickers. */
     public static List<String> sparApprenticeCards(Player player) {
         return invokeSparStringList(player, "apprenticeCards");
@@ -1221,7 +1233,42 @@ public final class ForgeBridge {
         return invokeSparStringList(player, "dojoMemberCards");
     }
 
+    /** Dojo ladder banner cards ({@code rank\tkey\tname\tbanner\tvalue\troster}). */
+    public static List<String> sparDojoTopCards(Player player, String category) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of();
+        }
+        try {
+            ensureSparResolved(nms.getClass().getClassLoader());
+            if (sparDojoTopCardsMethod == null) {
+                return List.of();
+            }
+            Object raw = sparDojoTopCardsMethod.invoke(
+                    null, nms, category == null || category.isBlank() ? "rp" : category);
+            if (raw instanceof List<?> list) {
+                List<String> out = new ArrayList<>();
+                for (Object o : list) {
+                    if (o != null) {
+                        String s = String.valueOf(o);
+                        if (!s.isBlank()) {
+                            out.add(s);
+                        }
+                    }
+                }
+                return out;
+            }
+        } catch (Throwable ignored) {
+            // Optional API — empty when missing.
+        }
+        return List.of();
+    }
+
     private static List<String> invokeSparStringList(Player player, String methodName) {
+        return invokeSparStringList(player, methodName, false);
+    }
+
+    private static List<String> invokeSparStringList(Player player, String methodName, boolean retried) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
             return List.of();
@@ -1231,6 +1278,7 @@ public final class ForgeBridge {
             Method m = switch (methodName) {
                 case "pendingMentorInviteCards" -> sparPendingMentorInviteCardsMethod;
                 case "pendingIncomingMentorArgs" -> sparPendingIncomingMentorArgsMethod;
+                case "pendingDojoWarCards" -> sparPendingDojoWarCardsMethod;
                 case "apprenticeCards" -> sparApprenticeCardsMethod;
                 case "membershipDojoCards" -> sparMembershipDojoCardsMethod;
                 case "rivalDojoCards" -> sparRivalDojoCardsMethod;
@@ -1238,6 +1286,10 @@ public final class ForgeBridge {
                 default -> null;
             };
             if (m == null) {
+                if (!retried && "pendingDojoWarCards".equals(methodName)) {
+                    sparPendingDojoWarCardsMethod = null;
+                    return invokeSparStringList(player, methodName, true);
+                }
                 return List.of();
             }
             Object raw = m.invoke(null, nms);
@@ -1254,7 +1306,10 @@ public final class ForgeBridge {
                 return out;
             }
         } catch (Throwable ignored) {
-            // Optional API — empty when missing.
+            if (!retried && "pendingDojoWarCards".equals(methodName)) {
+                sparPendingDojoWarCardsMethod = null;
+                return invokeSparStringList(player, methodName, true);
+            }
         }
         return List.of();
     }
@@ -1667,6 +1722,122 @@ public final class ForgeBridge {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> charPlaceholders(Player player) {
+        Map<String, String> fail = new HashMap<>();
+        fail.put("bridge_ok", "false");
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return fail;
+        }
+        try {
+            ensureCharacterServicesResolved(nms.getClass().getClassLoader());
+            if (charPlaceholdersMethod == null) {
+                return fail;
+            }
+            Object raw = charPlaceholdersMethod.invoke(null, nms);
+            return mapStringValues(raw, fail);
+        } catch (Throwable ignored) {
+        }
+        return fail;
+    }
+
+    public static List<String> charLines(Player player, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of("§cLegacyMechanics mod unreachable.");
+        }
+        try {
+            ensureCharacterServicesResolved(nms.getClass().getClassLoader());
+            if (charLinesMethod == null) {
+                return List.of("§cCharacter Services API missing — update LegacyMechanics jar.");
+            }
+            Object raw = charLinesMethod.invoke(null, nms, page == null ? "main" : page);
+            return listStringValues(raw);
+        } catch (Throwable t) {
+            return List.of("§cCharacter lines failed: " + t.getMessage());
+        }
+    }
+
+    public static List<String> charRaceCards(Player player) {
+        return invokeCharStringList(player, "raceCards");
+    }
+
+    public static List<String> charClassCards(Player player) {
+        return invokeCharStringList(player, "classCards");
+    }
+
+    public static List<String> charHeadBoneCards(Player player, int page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of();
+        }
+        try {
+            ensureCharacterServicesResolved(nms.getClass().getClassLoader());
+            if (charHeadBoneCardsMethod == null) {
+                return List.of();
+            }
+            Object raw = charHeadBoneCardsMethod.invoke(null, nms, page);
+            return listStringValues(raw);
+        } catch (Throwable ignored) {
+            return List.of();
+        }
+    }
+
+    public static String charHandleDo(Player player, String action, String arg, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return "§cCould not reach LegacyMechanics mod.";
+        }
+        try {
+            ensureCharacterServicesResolved(nms.getClass().getClassLoader());
+            if (charHandleDoMethod == null) {
+                return "§cCharacter Services API missing — update LegacyMechanics jar.";
+            }
+            Object msg = charHandleDoMethod.invoke(
+                    null, nms, action == null ? "" : action, arg == null ? "" : arg,
+                    page == null ? "main" : page);
+            return msg == null ? "" : String.valueOf(msg);
+        } catch (Throwable t) {
+            Throwable root = t.getCause() == null ? t : t.getCause();
+            return "§cCharacter action failed: " + root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : " — " + root.getMessage());
+        }
+    }
+
+    private static List<String> invokeCharStringList(Player player, String methodName) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            return List.of();
+        }
+        try {
+            ensureCharacterServicesResolved(nms.getClass().getClassLoader());
+            Method m = "raceCards".equals(methodName) ? charRaceCardsMethod : charClassCardsMethod;
+            if (m == null) {
+                return List.of();
+            }
+            Object raw = m.invoke(null, nms);
+            return listStringValues(raw);
+        } catch (Throwable ignored) {
+            return List.of();
+        }
+    }
+
+    private static synchronized void ensureCharacterServicesResolved(ClassLoader preferred) throws Exception {
+        if (charPlaceholdersMethod != null && charLinesMethod != null && charHandleDoMethod != null
+                && charHeadBoneCardsMethod != null) {
+            return;
+        }
+        Class<?> api = loadClass("com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesGuiApi", preferred);
+        Class<?> sp = loadClass("net.minecraft.server.level.ServerPlayer", preferred);
+        charPlaceholdersMethod = api.getMethod("placeholders", sp);
+        charLinesMethod = api.getMethod("linesForPage", sp, String.class);
+        charHandleDoMethod = api.getMethod("handleDo", sp, String.class, String.class, String.class);
+        charRaceCardsMethod = api.getMethod("raceCards", sp);
+        charClassCardsMethod = api.getMethod("classCards", sp);
+        charHeadBoneCardsMethod = api.getMethod("headBoneCards", sp, int.class);
+    }
+
     public static String prestigeHandleDo(Player player, String action, String arg, String page) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
@@ -1987,14 +2158,17 @@ public final class ForgeBridge {
             Object name = ts.getMethod("teamName", sp).invoke(null, nms);
             Object source = ts.getMethod("teamSourceLabel").invoke(null);
             Object mates = ts.getMethod("teammates", sp).invoke(null, nms);
+            Object onlineMutual = ts.getMethod("onlineMutualRivalCount", sp).invoke(null, nms);
             Object mutual = ts.getMethod("mutualRivalCount", sp).invoke(null, nms);
             Object prox = ts.getMethod("contributionProximityBlocks").invoke(null);
-            int online = mates instanceof List<?> list ? list.size() : 0;
+            int teaming = mates instanceof List<?> list ? list.size() : 0;
+            int online = onlineMutual instanceof Number n ? n.intValue() : 0;
             out.put("team_name", name == null ? "none" : String.valueOf(name));
             out.put("team_source", source == null ? "Rival Mutual" : String.valueOf(source));
-            out.put("team_size", String.valueOf(online));
+            out.put("team_size", String.valueOf(teaming));
             out.put("mutual_total", mutual == null ? "0" : String.valueOf(mutual));
             out.put("mutual_online", String.valueOf(online));
+            out.put("mutual_teaming", String.valueOf(teaming));
             out.put("proximity_blocks", prox == null ? "48" : String.valueOf((int) Math.round(((Number) prox).doubleValue())));
             try {
                 Class<?> cfg = loadClass("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig", cl);
@@ -2131,6 +2305,13 @@ public final class ForgeBridge {
                     sparPendingIncomingMentorArgsMethod = null;
                 }
             }
+            if (sparPendingDojoWarCardsMethod == null) {
+                try {
+                    sparPendingDojoWarCardsMethod = api.getMethod("pendingDojoWarCards", sp);
+                } catch (Throwable ignored) {
+                    sparPendingDojoWarCardsMethod = null;
+                }
+            }
             if (sparApprenticeCardsMethod == null) {
                 try {
                     sparApprenticeCardsMethod = api.getMethod("apprenticeCards", sp);
@@ -2157,6 +2338,13 @@ public final class ForgeBridge {
                     sparDojoMemberCardsMethod = api.getMethod("dojoMemberCards", sp);
                 } catch (Throwable ignored) {
                     sparDojoMemberCardsMethod = null;
+                }
+            }
+            if (sparDojoTopCardsMethod == null) {
+                try {
+                    sparDojoTopCardsMethod = api.getMethod("dojoTopCards", sp, String.class);
+                } catch (Throwable ignored) {
+                    sparDojoTopCardsMethod = null;
                 }
             }
         } catch (Throwable ignored) {
@@ -2319,6 +2507,7 @@ public final class ForgeBridge {
             case "down", "reset", "zero", "clear", "set", "lower_tier",
                  "buy", "activate", "purchase_tier" -> "tiers";
             case "equip_title", "clear_title", "equip", "unequip_title" -> "titles";
+            case "team" -> "team";
             case "toggle_personal", "personal", "toggle_difficulty", "difficulty_toggle",
                  "toggle_coin_chat", "coin_chat", "toggle_chat", "chat_drops" -> "main";
             default -> "main";
@@ -2913,6 +3102,55 @@ public final class ForgeBridge {
             resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
             return "§cClear failed: " + resolveError;
         }
+    }
+
+    /**
+     * Staff reset of character service cooldowns
+     * ({@code /lm admin character cooldown clear <player> [race|class|reskin|all]}).
+     */
+    public static String clearCharacterServiceCooldowns(String playerArg, String kind) {
+        try {
+            Class<?> clearer = Class.forName(
+                    "com.dbzlegacy.adaptivedifficulty.data.PlayerDataClear");
+            Object server = minecraftServerOrNull();
+            if (server == null) {
+                return "§cNo MinecraftServer — is the world loaded?";
+            }
+            Object msg = clearer.getMethod(
+                            "clearCharacterCooldowns",
+                            Class.forName("net.minecraft.server.MinecraftServer"),
+                            String.class,
+                            String.class)
+                    .invoke(null, server, playerArg, kind == null ? "all" : kind);
+            return msg == null ? "§eCooldown clear returned empty." : String.valueOf(msg);
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cCharacter cooldown clear failed: " + resolveError;
+        }
+    }
+
+    private static Object minecraftServerOrNull() {
+        try {
+            Class<?> serverLifecycle = Class.forName(
+                    "net.minecraftforge.server.ServerLifecycleHooks");
+            Object server = serverLifecycle.getMethod("getCurrentServer").invoke(null);
+            if (server != null) {
+                return server;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
+            Object bServer = bukkit.getMethod("getServer").invoke(null);
+            if (bServer != null) {
+                try {
+                    return bServer.getClass().getMethod("getServer").invoke(bServer);
+                } catch (Throwable ignored) {
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
     }
 
     /**

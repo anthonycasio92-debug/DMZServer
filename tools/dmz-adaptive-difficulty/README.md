@@ -1,4 +1,4 @@
-# LegacyMechanics (v2.3.63)
+# LegacyMechanics (2.4.x)
 
 **Server-side only** Forge mod for Mohist/Forge 1.20.1.  
 Clients do **not** need this jar to join.
@@ -23,7 +23,9 @@ python3 tools/dmz-adaptive-difficulty/sim/audit_tier_level_matrix.py  # T1–T7 
 
 Latest consolidated run: `sim/out/full-mod-audit.md`.
 
-Keep Forge `AdaptiveDifficultyMod.VERSION` = GUI `plugin.yml` version (both jars same).  
+Ship **2.4.x** only: bump the **same** patch on Forge and GUI together (`2.4.1`, `2.4.2`, …).  
+Do not return to `2.3.x` patch numbers — they sort above `2.4.0` in file lists and confuse deploys.  
+Keep Forge `AdaptiveDifficultyMod.VERSION` = GUI `plugin.yml` version (both jars identical).  
 Do not rename the package, `DifficultyCache` / `DifficultyActions` / snapshot fields, or Bukkit `openMenu*` / `openChestMenu*` entrypoints.
 
 ## Model

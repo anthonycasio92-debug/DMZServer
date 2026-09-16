@@ -77,7 +77,10 @@ public final class RivalPlayerRecord {
     }
 
     public RivalLink getOrCreateLink(String otherUuid, String otherName, long now) {
-        String key = otherUuid == null ? "" : otherUuid;
+        String key = otherUuid == null ? "" : RivalUuid.canonical(otherUuid);
+        if (key == null) {
+            key = "";
+        }
         RivalLink link = rivals.get(key);
         if (link == null) {
             link = new RivalLink();

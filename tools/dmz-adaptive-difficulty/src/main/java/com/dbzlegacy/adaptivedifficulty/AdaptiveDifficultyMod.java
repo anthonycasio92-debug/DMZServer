@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty;
 
+import com.dbzlegacy.adaptivedifficulty.command.CharacterCommands;
 import com.dbzlegacy.adaptivedifficulty.command.DifficultyCommands;
 import com.dbzlegacy.adaptivedifficulty.command.RivalCommands;
 import com.dbzlegacy.adaptivedifficulty.command.MechanicsCommands;
@@ -30,7 +31,7 @@ public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
     public static final String MOD_ID = "legacymechanics";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "2.3.180";
+    public static final String VERSION = "2.4.31";
     public static final String DISPLAY_NAME = "LegacyMechanics";
     public static final Logger LOGGER = LogManager.getLogger(DISPLAY_NAME);
 
@@ -46,14 +47,18 @@ public final class AdaptiveDifficultyMod {
 
         DifficultyConfig.load();
         com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig.load();
+        com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig.load();
+        com.dbzlegacy.adaptivedifficulty.character.CharacterServicesStore.get().load();
         com.dbzlegacy.adaptivedifficulty.progression.classdef.FightingClassCatalog.load();
         // Vanilla max_health 1024 / armor 30 / attack-damage 2048 would silently hard-cap scaling.
         AttributeLimits.uncapOffenseAttributes();
         MinecraftForge.EVENT_BUS.register(new DifficultyEvents());
+        com.dbzlegacy.adaptivedifficulty.claim.ClaimOverlapGuard.register();
         DifficultyCommands.register();
         RivalCommands.register();
         SparCommands.register();
         MechanicsCommands.register();
+        CharacterCommands.register();
         ProgressionCommands.register();
         LOGGER.info(
                 "[{}] v{} server-only: Lightman's={}, FTB Teams={}, CMI={}, ChestGUI={}, Progression={}",

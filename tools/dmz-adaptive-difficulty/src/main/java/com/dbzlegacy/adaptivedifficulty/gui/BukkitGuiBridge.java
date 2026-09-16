@@ -93,6 +93,19 @@ public final class BukkitGuiBridge {
         );
     }
 
+    /** Chest-only Character Services open for {@code guiBackend=chest}. */
+    public static boolean openCharacterServices(ServerPlayer player, String page) {
+        return openNamed(
+                player,
+                page,
+                "openCharacterServicesChestMenuForUuid",
+                "openCharacterServicesMenuForUuid",
+                "openCharacterServicesChestMenu",
+                "openCharacterServicesMenu",
+                "CharacterServices"
+        );
+    }
+
     /** Chest-only Skills open for {@code guiBackend=chest}. */
     public static boolean openSkills(ServerPlayer player, String page) {
         return openNamed(

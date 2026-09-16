@@ -11,13 +11,23 @@
 
 var CHANNEL = "dmz_race_locks";
 var SYNC_INTERVAL_TICKS = 40;
-var CONFIG_PATH = "config/legacymechanics/race-lock.json";
 var CONFIG_RELOAD_MS = 15000;
 
 var DEFAULT_RESTRICTED = [
   { id: "ancient_saiyan", skill: "Ancient Saiyan", prestigeLevel: 10 },
   { id: "sento_saiyan", skill: "Sento Saiyan", prestigeLevel: 1 },
 ];
+
+var RaceLockConfig = null;
+try {
+  RaceLockConfig = Java.loadClass(
+    "com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig"
+  );
+} catch (initErr) {
+  console.warn(
+    "[RaceLockGUI] RaceLockConfig unavailable at init, using defaults: " + initErr
+  );
+}
 
 var cachedRestricted = DEFAULT_RESTRICTED.slice();
 var cachedAt = 0;
@@ -68,26 +78,22 @@ function loadRestrictedFromConfig() {
   }
   cachedAt = now;
   try {
-    var Files = Java.loadClass("java.nio.file.Files");
-    var Paths = Java.loadClass("java.nio.file.Paths");
-    var path = Paths.get(CONFIG_PATH);
-    if (!Files.exists(path)) {
+    if (RaceLockConfig == null) {
       cachedRestricted = DEFAULT_RESTRICTED.slice();
       return cachedRestricted;
     }
-    var raw = String(Files.readString(path));
-    var parsed = JSON.parse(raw);
-    var list = parsed && parsed.restricted ? parsed.restricted : null;
-    if (!list || !list.length) {
+    var list = RaceLockConfig.restricted();
+    if (!list || list.isEmpty()) {
       cachedRestricted = DEFAULT_RESTRICTED.slice();
       return cachedRestricted;
     }
     var out = [];
-    for (var i = 0; i < list.length; i++) {
-      var e = list[i];
+    var size = list.size();
+    for (var i = 0; i < size; i++) {
+      var e = list.get(i);
       if (!e || !e.id) continue;
-      var skill = e.fabledSkill || e.skill || e.displayName || String(e.id);
-      var tip = Number(e.prestigeTooltip != null ? e.prestigeTooltip : e.prestigeLevel);
+      var skill = e.fabledSkill || e.displayName || String(e.id);
+      var tip = Number(e.prestigeTooltip);
       if (!isFinite(tip) || tip < 0) tip = 1;
       out.push({
         id: String(e.id).toLowerCase(),
@@ -132,6 +138,11 @@ function syncPlayer(player) {
   }
 }
 
+ServerEvents.loaded(function (event) {
+  cachedAt = 0;
+  loadRestrictedFromConfig();
+});
+
 PlayerEvents.loggedIn(function (event) {
   syncPlayer(event.player);
 });
@@ -155,4 +166,9 @@ PlayerEvents.tick(function (event) {
   } catch (err) {}
 });
 
-console.info("[RaceLockGUI] server sync ready (" + CHANNEL + ") — config " + CONFIG_PATH);
+loadRestrictedFromConfig();
+console.info(
+  "[RaceLockGUI] server sync ready (" +
+    CHANNEL +
+    ") — config via RaceLockConfig"
+);

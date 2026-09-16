@@ -11,14 +11,15 @@ EXAM_API="$ROOT/libraries/examination-api-1.3.0.jar"
 EXAM_STR="$ROOT/libraries/examination-string-1.3.0.jar"
 BUNGEE="$ROOT/libraries/bungeecord-chat-1.20-R0.2.jar"
 GSON="$ROOT/libraries/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar"
-VERSION="2.3.180"
+GP="$ROOT/libraries/GriefPrevention.jar"
+VERSION="2.4.31"
 NAME="LegacyMechanicsGUI"
 SRC="$HERE/src/main/java"
 RES="$HERE/src/main/resources"
 OUT="$HERE/build/classes"
 JAR="$ROOT/plugins/${NAME}-${VERSION}.jar"
 
-for f in "$PAPER" "$PAPI" "$CMILIB" "$ADV_API" "$ADV_KEY" "$EXAM_API" "$EXAM_STR" "$BUNGEE" "$GSON"; do
+for f in "$PAPER" "$PAPI" "$CMILIB" "$ADV_API" "$ADV_KEY" "$EXAM_API" "$EXAM_STR" "$BUNGEE" "$GSON" "$GP"; do
   if [[ ! -f "$f" ]]; then
     echo "Missing $f" >&2
     exit 1
@@ -34,7 +35,7 @@ rm -rf "$OUT"
 mkdir -p "$OUT"
 
 mapfile -t SOURCES < <(find "$SRC" -name '*.java' | sort)
-CP="$PAPER:$PAPI:$CMILIB:$ADV_API:$ADV_KEY:$EXAM_API:$EXAM_STR:$BUNGEE:$GSON"
+CP="$PAPER:$PAPI:$CMILIB:$ADV_API:$ADV_KEY:$EXAM_API:$EXAM_STR:$BUNGEE:$GSON:$GP"
 javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
 
 # Shade Gson into the plugin jar (Paper may not expose it to plugins).

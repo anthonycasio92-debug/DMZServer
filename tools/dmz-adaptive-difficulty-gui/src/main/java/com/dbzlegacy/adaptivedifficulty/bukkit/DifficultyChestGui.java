@@ -172,8 +172,8 @@ public final class DifficultyChestGui implements Listener {
                 personalOn ? "&aDifficulty ON" : "&cDifficulty OFF",
                 List.of(
                         personalOn
-                                ? "&7Click to turn OFF for you only"
-                                : "&7Click to turn ON for you only",
+                                ? "&7Click to turn OFF for you only8Turns scaling off for you only"
+                                : "&7Click to turn ON for you only8Turns scaling on for you only",
                         personalOn
                                 ? "&8OFF disables scaling, kill coins,"
                                 : "&8ON restores scaling, kill coins,",
@@ -188,8 +188,8 @@ public final class DifficultyChestGui implements Listener {
                 coinChatOn ? "&aCoin Chat ON" : "&8Coin Chat OFF",
                 List.of(
                         coinChatOn
-                                ? "&7Click to mute drop messages"
-                                : "&7Click to show drop messages",
+                                ? "&7Click to mute drop messages8Hides Ancient Coin drop chat"
+                                : "&7Click to show drop messages8Shows Ancient Coin drop chat again",
                         "&8Only affects Ancient Coin kill chat"
                 )), SlotAction.act("toggle_coin_chat", "0", "main"));
         if (ForgeBridge.isStaff(viewer)) {
@@ -395,31 +395,43 @@ public final class DifficultyChestGui implements Listener {
         List<String> header = new ArrayList<>();
         header.add("");
         header.addAll(toAmp(ForgeBridge.diffTeamLines(subject)));
+        header.add("");
+        header.addAll(GuiBoardHelper.teamRivalLegendLines());
         put(holder, inv, 4, item(Material.SHIELD,
                 GuiTooltips.name("difficulty.team.header", "&b&lRival Teams"),
                 header));
 
         String mode = ph.getOrDefault("team_mode", "personal_only");
-        put(holder, inv, 20, tipBtn(viewer, "difficulty.team.mode_personal", Material.GRAY_DYE, "&7Personal",
+        boolean personalMode = mode.equals("personal_only");
+        put(holder, inv, 20, tipBtn(viewer, "difficulty.team.mode_personal",
+                personalMode ? Material.RED_DYE : Material.GRAY_DYE,
+                personalMode ? "&c&lPersonal" : "&7Personal",
                 List.of("&7Only your own tier ceiling counts",
-                        mode.equals("personal_only") ? "&aCurrent mode" : "&eClick to select")),
+                        "&8Rivals on Personal do not boost you",
+                        personalMode ? "&c&lYour current mode" : "&eClick to select")),
                 SlotAction.act("team", "personal", "team"));
-        put(holder, inv, 22, tipBtn(viewer, "difficulty.team.mode_threshold", Material.LIME_DYE, "&aThreshold",
+        boolean thresholdMode = mode.equals("threshold_bonus_only");
+        boolean fullMode = mode.equals("full_team_scaling");
+        put(holder, inv, 22, tipBtn(viewer, "difficulty.team.mode_threshold",
+                thresholdMode ? Material.LIME_DYE : Material.GRAY_DYE,
+                thresholdMode ? "&a&lThreshold" : "&7Threshold",
                 List.of("&7Extra max when rivals are online",
                         "&7They must also use a team mode",
                         "&7More elites, mutants, and bosses",
-                        mode.equals("threshold_bonus_only") ? "&aCurrent mode" : "&eClick to select")),
+                        thresholdMode ? "&a&lYour current mode" : "&eClick to select")),
                 SlotAction.act("team", "threshold", "team"));
-        put(holder, inv, 24, tipBtn(viewer, "difficulty.team.mode_full", Material.EMERALD, "&2Full",
+        put(holder, inv, 24, tipBtn(viewer, "difficulty.team.mode_full",
+                fullMode ? Material.GOLD_INGOT : Material.EMERALD,
+                fullMode ? "&6&lFull" : "&2Full",
                 List.of("&7Threshold bonus plus nearby spare room",
                         "&7Best spawn boost when rivals are close",
                         "&8Within " + ph.getOrDefault("proximity_blocks", "48") + " blocks",
-                        mode.equals("full_team_scaling") ? "&aCurrent mode" : "&eClick to select")),
+                        fullMode ? "&6&lYour current mode" : "&eClick to select")),
                 SlotAction.act("team", "full", "team"));
 
         List<GuiBoardHelper.TeamRivalCard> cards =
                 GuiBoardHelper.parseTeamRivalCards(ForgeBridge.diffTeamMutualCards(subject));
-        int[] slots = GuiBoardHelper.centeredSlots(cards.size());
+        int[] slots = GuiBoardHelper.teamMutualRivalSlots(cards.size());
         for (int i = 0; i < cards.size() && i < slots.length; i++) {
             put(holder, inv, slots[i], GuiBoardHelper.teamRivalHead(cards.get(i)));
         }
@@ -528,9 +540,9 @@ public final class DifficultyChestGui implements Listener {
             } else {
                 tip.add("&cLocked");
                 tip.add("&7Need &fDMZ {req_level} &7or &fPrestige {req_prestige}");
+                tip.add("&7You: &fDMZ {level} &7· &fPrestige {prestige}");
                 if (staff) {
                     tip.add("&8{req}");
-                    tip.add("&8You: DMZ {level} · Prestige {prestige}");
                     tip.add("&8CR/BP ignored — use DMZ level or Prestige");
                 }
             }

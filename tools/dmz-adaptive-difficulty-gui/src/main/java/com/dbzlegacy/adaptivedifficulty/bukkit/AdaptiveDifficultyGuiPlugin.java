@@ -23,6 +23,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
     private HubChestGui hubChestGui;
     private ProgressionChestGui progressionChestGui;
     private PrestigeChestGui prestigeChestGui;
+    private CharacterServicesChestGui characterServicesChestGui;
     private SkillsChestGui skillsChestGui;
     private ProgressionCommandTree progressionCommandTree;
 
@@ -34,6 +35,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         hubChestGui = new HubChestGui(this);
         progressionChestGui = new ProgressionChestGui(this);
         prestigeChestGui = new PrestigeChestGui(this);
+        characterServicesChestGui = new CharacterServicesChestGui(this);
         skillsChestGui = new SkillsChestGui(this);
         progressionCommandTree = new ProgressionCommandTree(this);
         getServer().getPluginManager().registerEvents(chestGui, this);
@@ -42,8 +44,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(hubChestGui, this);
         getServer().getPluginManager().registerEvents(progressionChestGui, this);
         getServer().getPluginManager().registerEvents(prestigeChestGui, this);
+        getServer().getPluginManager().registerEvents(characterServicesChestGui, this);
         getServer().getPluginManager().registerEvents(skillsChestGui, this);
         getServer().getPluginManager().registerEvents(new DeathDropGuard(), this);
+        getServer().getPluginManager().registerEvents(new ClaimOverlapGuard(this), this);
         GuiTooltips.init(this);
 
         var progCmd = getCommand("progression");
@@ -221,12 +225,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             case "skills", "skill" -> skillsChestGui.open(admin, p.equals("main") ? "core" : p);
             case "prestige" -> prestigeChestGui.open(admin, p);
+            case "character", "characterservices", "charservices", "char" ->
+                    characterServicesChestGui.open(admin, p);
             case "progression", "prog" -> progressionChestGui.open(admin, p);
             case "android_remove", "androidremove", "remove_android", "deandroid" ->
                     progressionChestGui.open(admin, "android_remove");
             default -> {
                 admin.sendMessage("§cUnknown system: §f" + s
-                        + " §8(hub|difficulty|rival|spar|skillcheck|prestige|progression|skills|android_remove)");
+                        + " §8(hub|difficulty|rival|spar|skillcheck|prestige|character|progression|skills|android_remove)");
                 hubChestGui.open(admin, "main");
             }
         }
@@ -630,6 +636,46 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         openPrestigeInventory(player, page);
     }
 
+    // ── Character Services ─────────────────────────────────────────────
+
+    public void openCharacterServicesMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        openCharacterServicesInventory(player, page);
+    }
+
+    public void openCharacterServicesMenuForUuid(UUID playerId, String page) {
+        runForUuid(playerId, page, "main", this::openCharacterServicesInventory, "openCharacterServicesMenuForUuid");
+    }
+
+    public void openCharacterServicesChestMenu(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        characterServicesChestGui.open(player, page);
+    }
+
+    public void openCharacterServicesChestMenuForUuid(UUID playerId, String page) {
+        runForUuid(playerId, page, "main", characterServicesChestGui::open, null);
+    }
+
+    private void openCharacterServicesInventory(Player player, String page) {
+        characterServicesChestGui.open(player, page);
+    }
+
+    private void openCharacterServicesRespectingConfig(Player player, String page) {
+        if (player == null) {
+            return;
+        }
+        String backend = ForgeBridge.guiBackend();
+        if ("chest".equals(backend)) {
+            characterServicesChestGui.open(player, page);
+            return;
+        }
+        openCharacterServicesInventory(player, page);
+    }
+
     // ── Skills ─────────────────────────────────────────────────────────
 
     public void openSkillsMenu(Player player, String page) {
@@ -761,9 +807,31 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return true;
         }
         String system = args[0].toLowerCase(Locale.ROOT);
-        String action = args[1];
-        String arg = args.length > 2 ? args[2] : "";
-        String returnPage = args.length > 3 ? args[3] : "main";
+        String action;
+        String arg;
+        String returnPage;
+        if (("spar".equals(system) || "sparring".equals(system)) && args.length >= 3
+                && "do".equalsIgnoreCase(args[1])) {
+            action = args[2];
+            if (args.length == 3) {
+                arg = "";
+                returnPage = "main";
+            } else if (args.length == 4) {
+                arg = args[3];
+                returnPage = "main";
+            } else {
+                returnPage = args[args.length - 1];
+                StringBuilder mid = new StringBuilder(args[3]);
+                for (int i = 4; i < args.length - 1; i++) {
+                    mid.append(' ').append(args[i]);
+                }
+                arg = mid.toString();
+            }
+        } else {
+            action = args[1];
+            arg = args.length > 2 ? args[2] : "";
+            returnPage = args.length > 3 ? args[3] : "main";
+        }
         // For page/refresh, the page name may contain ':' (challenge_time:uuid:…).
         // When only 3 tokens: lmdo rival page challenge_time:uuid:x — arg is the page.
         if (("page".equalsIgnoreCase(action) || "refresh".equalsIgnoreCase(action))
@@ -1043,6 +1111,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 openSkillsRespectingConfig(player, "core".equals(p) || "main".equals(p) ? "core" : p);
             }
             case "prestige" -> openPrestigeRespectingConfig(player, p);
+            case "character", "characterservices", "charservices", "char" ->
+                    openCharacterServicesRespectingConfig(player, p);
             case "android_remove", "androidremove", "remove_android", "deandroid" ->
                     openProgressionRespectingConfig(player, "android_remove");
             case "progression", "prog" -> {
@@ -1070,7 +1140,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             case "help", "hub", "lm" -> openHubInventory(player, "main");
             default -> {
                 player.sendMessage("§cUnknown system: " + s
-                        + " §8(difficulty|rival|spar|skillcheck|prestige|progression)");
+                        + " §8(difficulty|rival|spar|skillcheck|prestige|character|progression)");
                 openHubInventory(player, "main");
             }
         }
@@ -1106,6 +1176,45 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 String msg = ForgeBridge.migrateCnpc(force);
                 if (msg == null || msg.isBlank()) {
                     sender.sendMessage("§cCNPC migrate failed (is LegacyMechanics Forge mod loaded?).");
+                } else {
+                    for (String line : msg.split("\n")) {
+                        if (line != null && !line.isBlank()) {
+                            sender.sendMessage(line);
+                        }
+                    }
+                }
+            }
+            case "character", "charservices", "characterservices", "char" -> {
+                if (args.length < 5
+                        || !"cooldown".equalsIgnoreCase(args[2])
+                        || !"clear".equalsIgnoreCase(args[3])) {
+                    sender.sendMessage(
+                            "§cUsage: /lm admin character cooldown clear <player> [race|class|reskin|all]");
+                    return true;
+                }
+                String playerArg = args[4];
+                String kind = args.length > 5 ? args[5] : "all";
+                if (args.length > 6) {
+                    String maybeKind = args[args.length - 1];
+                    if (isCharacterCooldownKind(maybeKind)) {
+                        kind = maybeKind;
+                        StringBuilder sb = new StringBuilder(args[4]);
+                        for (int i = 5; i < args.length - 1; i++) {
+                            sb.append(' ').append(args[i]);
+                        }
+                        playerArg = sb.toString();
+                    } else {
+                        StringBuilder sb = new StringBuilder(args[4]);
+                        for (int i = 5; i < args.length; i++) {
+                            sb.append(' ').append(args[i]);
+                        }
+                        playerArg = sb.toString();
+                        kind = "all";
+                    }
+                }
+                String msg = ForgeBridge.clearCharacterServiceCooldowns(playerArg, kind);
+                if (msg == null || msg.isBlank()) {
+                    sender.sendMessage("§cCharacter cooldown clear failed (is LegacyMechanics loaded?).");
                 } else {
                     for (String line : msg.split("\n")) {
                         if (line != null && !line.isBlank()) {
@@ -1236,6 +1345,16 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         return true;
     }
 
+    private static boolean isCharacterCooldownKind(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return false;
+        }
+        return switch (raw.toLowerCase(Locale.ROOT).trim()) {
+            case "all", "race", "racechange", "class", "classchange", "reskin", "skin" -> true;
+            default -> false;
+        };
+    }
+
     private static boolean isClearScope(String raw) {
         if (raw == null || raw.isBlank()) {
             return false;
@@ -1262,6 +1381,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     "skillcheck", "skill_check",
                     "skills", "skill",
                     "prestige",
+                    "character", "characterservices", "charservices", "char",
                     "android_remove", "androidremove", "remove_android", "deandroid",
                     "progression", "prog",
                     "admin", "logs", "syslog", "help" -> true;
@@ -1277,10 +1397,11 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§e/lm admin migrate-cnpc force §7— wipe LM Rival/Spar + re-import from those sources");
         sender.sendMessage("§8If CNPC was wiped: put world_data.json in config/legacymechanics/cnpc-import-backup/ then force");
         sender.sendMessage("§e/lm admin clear <player> [all|rival|spar|difficulty|progression]");
+        sender.sendMessage("§e/lm admin character cooldown clear <player> [race|class|reskin|all]");
         sender.sendMessage("§8Offline OK for rival/spar; difficulty + progression NBT need the player online");
         sender.sendMessage("§e/lm admin syslog on|off|status|flush");
-        sender.sendMessage("§e/lm admin open <difficulty|rival|spar|progression|prestige|skills|hub>");
-        sender.sendMessage("§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|prestige|progression|skills]");
+        sender.sendMessage("§e/lm admin open <difficulty|rival|spar|character|progression|prestige|skills|hub>");
+        sender.sendMessage("§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|character|prestige|progression|skills]");
         sender.sendMessage("§e/lm admin inspect clear §7— stop inspecting");
         sender.sendMessage("§e/padmin points <player> add|remove|set <n> §7— wallet for all prestige shops");
         sender.sendMessage("§e/padmin addpoints|removepoints <player> <n>");

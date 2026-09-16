@@ -20,6 +20,21 @@ public final class RaceClassSync {
 
     private RaceClassSync() {}
 
+    /**
+     * Paid race change — grant/remove the managed race Fabled skill only. Does not call
+     * {@code setClass}, so fighting-class techniques and externals stay intact.
+     */
+    public static void syncRaceSkillOnly(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableRaceClassSync) {
+            return;
+        }
+        String dmzRace = resolveRaceName(player);
+        if (dmzRace == null || dmzRace.isBlank()) {
+            return;
+        }
+        RaceSkillSync.sync(player, dmzRace);
+    }
+
     public static void sync(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableRaceClassSync) {
             return;

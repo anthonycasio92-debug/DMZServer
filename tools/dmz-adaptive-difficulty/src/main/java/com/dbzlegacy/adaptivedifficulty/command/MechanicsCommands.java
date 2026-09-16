@@ -89,6 +89,19 @@ public final class MechanicsCommands {
                                                         ctx.getSource(),
                                                         StringArgumentType.getString(ctx, "player"),
                                                         StringArgumentType.getString(ctx, "scope"))))))
+                        .then(Commands.m_82127_("character")
+                                .then(Commands.m_82127_("cooldown")
+                                        .then(Commands.m_82127_("clear")
+                                                .then(Commands.m_82129_("player", StringArgumentType.string())
+                                                        .executes(ctx -> adminCharacterCooldownClear(
+                                                                ctx.getSource(),
+                                                                StringArgumentType.getString(ctx, "player"),
+                                                                "all"))
+                                                        .then(Commands.m_82129_("kind", StringArgumentType.word())
+                                                                .executes(ctx -> adminCharacterCooldownClear(
+                                                                        ctx.getSource(),
+                                                                        StringArgumentType.getString(ctx, "player"),
+                                                                        StringArgumentType.getString(ctx, "kind"))))))))
                         .then(Commands.m_82127_("syslog")
                                 .executes(ctx -> adminSyslog(ctx.getSource(), "status"))
                                 .then(Commands.m_82129_("mode", StringArgumentType.word())
@@ -155,6 +168,10 @@ public final class MechanicsCommands {
                 com.dbzlegacy.adaptivedifficulty.gui.PrestigeMenu.open(player, "main");
                 yield 1;
             }
+            case "character", "characterservices", "charservices", "char" -> {
+                com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesMenu.open(player, "main");
+                yield 1;
+            }
             case "android_remove", "androidremove", "removeandroid" -> {
                 // Open the confirm GUI (matches Bukkit hub /lmdo lm open android_remove).
                 if (!com.dbzlegacy.adaptivedifficulty.gui.BukkitGuiBridge.openProgression(player, "android_remove")
@@ -196,6 +213,7 @@ public final class MechanicsCommands {
                         + "§e/lm admin migrate-cnpc force §7— wipe LM stores + re-import from those sources\n"
                         + "§8If CNPC wiped: drop world_data.json into config/legacymechanics/cnpc-import-backup/\n"
                         + "§e/lm admin clear <player> [all|rival|spar|difficulty|progression]\n"
+                        + "§e/lm admin character cooldown clear <player> [race|class|reskin|all]\n"
                         + "§e/lm admin syslog on|off|status|flush\n"
                         + "§e/lm admin open <difficulty|rival|spar|progression|prestige|skills|hub>\n"
                         + "§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|…]\n"
@@ -261,6 +279,13 @@ public final class MechanicsCommands {
     private static int adminClear(CommandSourceStack source, String player, String scope) {
         String msg = com.dbzlegacy.adaptivedifficulty.data.PlayerDataClear.clear(
                 source.m_81377_(), player, scope);
+        source.m_288197_(() -> Component.m_237113_(msg), true);
+        return 1;
+    }
+
+    private static int adminCharacterCooldownClear(CommandSourceStack source, String player, String kind) {
+        String msg = com.dbzlegacy.adaptivedifficulty.data.PlayerDataClear.clearCharacterCooldowns(
+                source.m_81377_(), player, kind);
         source.m_288197_(() -> Component.m_237113_(msg), true);
         return 1;
     }

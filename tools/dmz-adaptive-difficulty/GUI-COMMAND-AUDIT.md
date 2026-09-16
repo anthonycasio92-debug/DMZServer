@@ -1,13 +1,16 @@
-# GUI + command-tree audit (2.3.51)
+# GUI + command-tree audit (2.4.28)
 
 Complete pass over LegacyMechanics Forge + LegacyMechanicsGUI: every GUI surface,
 command tree, `/lmdo` bridge, inspect routing, and former CNPC script parity.
 
 ## Verdict
 
-**Ship 2.3.51 (+ script parity 2.3.54).** Critical/HIGH navigation and permission bugs found in the audit
-are fixed. Script-owned systems remain Java-owned (CNPC-free). Remaining notes
-are MEDIUM/intentional. See `SCRIPT-AUDIT.md` for 2.3.54 Yardrat/RaceLock/ShadowDummy/TP-boost fixes.
+**Ship 2.4.28.** Critical/HIGH navigation and permission bugs from the 2.3.51 audit
+remain fixed. Character Services (2.4.x) adds hub slot 30 → chest GUI: race / class /
+reskin (head parts shop under reskin). Config flags (`raceChange`, `classChange`,
+`reskin`, `headBoneShop`) and LuckPerms nodes gate GUI tiles and pages; see
+`plugin.yml` `legacymechanics.character.*`. Script-owned systems remain Java-owned
+(CNPC-free). Remaining notes are MEDIUM/intentional.
 
 ---
 
@@ -23,6 +26,7 @@ are MEDIUM/intentional. See `SCRIPT-AUDIT.md` for 2.3.54 Yardrat/RaceLock/Shadow
 | Skill Check | `/skillcheck` | SkillsChest / CmiSkills / SkillsMenu | `lm_skillcheck` | donator | — |
 | Skills admin | `/skills` | same Skills GUIs | hub | staff | unlock admin |
 | Progression | `/progression`, `/prog` | ProgressionChest / CmiProg / ProgChat | hub staff | meditation + android remove | flags / boost / convert |
+| Character | `/lmdo lm open character` | CharacterServicesChest | hub slot 30 | services perm | cooldown clear admin |
 | End dragon | `/enddragon clear|repair`, `/cleardragons`, `/killdragons` (`/spawndragon` denied) | — | — | staff (`StaffAccess`) | clear/repair only |
 | Bridge | `/lmdo …` | — | CMI clicks | internal | — |
 
@@ -97,8 +101,8 @@ CMI inventory clicks → `/lmdo <system> <action> …` → `ForgeBridge.*HandleD
 
 ## Ops verify checklist
 
-1. Install matching `LegacyMechanics-2.3.51.jar` + `LegacyMechanicsGUI-2.3.51.jar`.
-2. `/lm` → Difficulty / Rival / Spar / Prestige / Remove Android all open.
+1. Install matching `LegacyMechanics-2.4.28.jar` + `LegacyMechanicsGUI-2.4.28.jar`.
+2. `/lm` → Difficulty / Rival / Spar / Prestige / Character Services / Remove Android all open.
 3. Hub ← from each system returns to hub (inspect session preserved for staff).
 4. Non-staff: `/progression` help text; `/progression meditation`; `/progression android remove`.
 5. Staff: `/progression gui`; `/enddragon` with Bukkit OP (no Forge level-2 required).

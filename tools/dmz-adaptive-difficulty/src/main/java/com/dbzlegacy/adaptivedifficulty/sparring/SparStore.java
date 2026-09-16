@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +34,8 @@ public final class SparStore {
     public final Map<String, List<RecentSession>> recentSessions = new ConcurrentHashMap<>();
     /** uuid → spar combat TP chat messages (missing = default ON). */
     public final Map<String, Boolean> tpMessages = new ConcurrentHashMap<>();
+    /** uuid → mentor share TP chat messages (missing = default ON). */
+    public final Map<String, Boolean> mentorTpMessages = new ConcurrentHashMap<>();
     /** Active dojo season leaderboard keyed by mentor UUID. */
     public DojoSeason dojoSeason;
     /** Pending/active dojo war challenges keyed by target mentor UUID. */
@@ -67,6 +70,7 @@ public final class SparStore {
                 invites.clear();
                 recentSessions.clear();
                 tpMessages.clear();
+                mentorTpMessages.clear();
                 dojoSeason = null;
                 dojoChallenges.clear();
                 dojoProfiles.clear();
@@ -81,6 +85,7 @@ public final class SparStore {
                 invites.clear();
                 recentSessions.clear();
                 tpMessages.clear();
+                mentorTpMessages.clear();
                 if (blob != null) {
                     if (blob.bondsByPlayer != null) {
                         bondsByPlayer.putAll(blob.bondsByPlayer);
@@ -107,9 +112,17 @@ public final class SparStore {
                     if (blob.tpMessages != null) {
                         tpMessages.putAll(blob.tpMessages);
                     }
+                    if (blob.mentorTpMessages != null) {
+                        mentorTpMessages.putAll(blob.mentorTpMessages);
+                    }
                     dojoSeason = blob.dojoSeason;
                     if (blob.dojoChallenges != null) {
-                        dojoChallenges.putAll(blob.dojoChallenges);
+                        for (Map.Entry<String, DojoChallenge> e : blob.dojoChallenges.entrySet()) {
+                            DojoChallenge norm = normalizeDojoChallenge(e.getKey(), e.getValue());
+                            if (norm != null) {
+                                dojoChallenges.put(norm.toDojoUuid, norm);
+                            }
+                        }
                     }
                     if (blob.dojoProfiles != null) {
                         dojoProfiles.putAll(blob.dojoProfiles);
@@ -142,6 +155,7 @@ public final class SparStore {
                 blob.recentSessions.put(e.getKey(), new ArrayList<>(e.getValue()));
             }
             blob.tpMessages = new ConcurrentHashMap<>(tpMessages);
+            blob.mentorTpMessages = new ConcurrentHashMap<>(mentorTpMessages);
             blob.dojoSeason = dojoSeason;
             blob.dojoChallenges = new ConcurrentHashMap<>(dojoChallenges);
             blob.dojoProfiles = new ConcurrentHashMap<>(dojoProfiles);
@@ -187,6 +201,78 @@ public final class SparStore {
         }
         tpMessages.put(uuid.toString(), on);
         markDirty();
+    }
+
+    /** Default ON when unset — mentors see apprentice share TP in chat. */
+    public boolean mentorTpMessagesOn(UUID uuid) {
+        if (uuid == null) {
+            return true;
+        }
+        Boolean v = mentorTpMessages.get(uuid.toString());
+        return v == null || v;
+    }
+
+    public void setMentorTpMessages(UUID uuid, boolean on) {
+        if (uuid == null) {
+            return;
+        }
+        mentorTpMessages.put(uuid.toString(), on);
+        markDirty();
+    }
+
+    static DojoChallenge normalizeDojoChallenge(String mapKey, DojoChallenge c) {
+        if (c == null) {
+            return null;
+        }
+        String to = canonicalDojoKey(c.toDojoUuid);
+        if (to.isEmpty()) {
+            to = canonicalDojoKey(mapKey);
+        }
+        if (to.isEmpty()) {
+            return null;
+        }
+        String from = canonicalDojoKey(c.fromDojoUuid);
+        if (from.isEmpty()) {
+            from = canonicalDojoKey(c.fromMentorUuid);
+        }
+        c.toDojoUuid = to;
+        if (!from.isEmpty()) {
+            c.fromDojoUuid = from;
+            c.fromMentorUuid = from;
+        }
+        long now = System.currentTimeMillis();
+        if (!c.active && c.expiresAt <= 0L) {
+            c.expiresAt = now + 24L * 60L * 60L * 1000L;
+        }
+        return c;
+    }
+
+    /**
+     * Canonical mentor/dojo UUID for map keys and war matching (dashed, lower case).
+     */
+    static String canonicalDojoKey(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "";
+        }
+        String s = raw.trim();
+        try {
+            UUID id;
+            if (s.contains("-")) {
+                id = UUID.fromString(s);
+            } else if (s.length() == 32) {
+                id = UUID.fromString(
+                        s.substring(0, 8) + "-"
+                                + s.substring(8, 12) + "-"
+                                + s.substring(12, 16) + "-"
+                                + s.substring(16, 20) + "-"
+                                + s.substring(20, 32));
+            } else {
+                return s.toLowerCase(Locale.ROOT);
+            }
+            return id.toString().toLowerCase(Locale.ROOT);
+        } catch (IllegalArgumentException ignored) {
+            return s.toLowerCase(Locale.ROOT);
+        }
     }
 
     /** Newest-first snapshot of finished spars for Stats (never null). */
@@ -473,6 +559,7 @@ public final class SparStore {
         Map<String, BondInvite> invites;
         Map<String, List<RecentSession>> recentSessions;
         Map<String, Boolean> tpMessages;
+        Map<String, Boolean> mentorTpMessages;
         DojoSeason dojoSeason;
         Map<String, DojoChallenge> dojoChallenges;
         Map<String, DojoProfile> dojoProfiles;

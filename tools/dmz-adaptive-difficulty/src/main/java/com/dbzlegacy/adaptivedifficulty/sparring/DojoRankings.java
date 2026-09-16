@@ -4,6 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -57,6 +58,44 @@ public final class DojoRankings {
             return false;
         }
         return SparStore.get().bond(player.m_20148_()).apprenticeCount() > 0;
+    }
+
+    /** UUID keys that represent this player as a dojo master in war pending lists. */
+    private static List<String> dojoWarSelfKeys(ServerPlayer player) {
+        List<String> keys = new ArrayList<>();
+        if (player == null) {
+            return keys;
+        }
+        String self = SparStore.canonicalDojoKey(player.m_20148_().toString());
+        if (!self.isEmpty()) {
+            keys.add(self);
+        }
+        if (isDojoMaster(player)) {
+            String home = homeDojoKey(player);
+            if (home != null && !home.isBlank()) {
+                String canon = SparStore.canonicalDojoKey(home);
+                if (!canon.isEmpty() && keys.stream().noneMatch(k -> k.equalsIgnoreCase(canon))) {
+                    keys.add(canon);
+                }
+            }
+        }
+        return keys;
+    }
+
+    private static boolean matchesDojoWarSelf(ServerPlayer player, String dojoUuid) {
+        if (dojoUuid == null || dojoUuid.isBlank()) {
+            return false;
+        }
+        String canon = SparStore.canonicalDojoKey(dojoUuid);
+        if (canon.isEmpty()) {
+            return false;
+        }
+        for (String self : dojoWarSelfKeys(player)) {
+            if (canon.equalsIgnoreCase(self)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static String dojoDisplayName(String dojoKey) {
@@ -361,12 +400,39 @@ public final class DojoRankings {
             if (c == null) {
                 continue;
             }
-            if ((keyA.equalsIgnoreCase(c.fromDojoUuid) && keyB.equalsIgnoreCase(c.toDojoUuid))
-                    || (keyB.equalsIgnoreCase(c.fromDojoUuid) && keyA.equalsIgnoreCase(c.toDojoUuid))) {
+            String from = challengerUuid(c);
+            String to = targetUuid(c, "");
+            if (from.isBlank() || to.isBlank()) {
+                continue;
+            }
+            if ((keyA.equalsIgnoreCase(from) && keyB.equalsIgnoreCase(to))
+                    || (keyB.equalsIgnoreCase(from) && keyA.equalsIgnoreCase(to))) {
                 return c;
             }
         }
         return null;
+    }
+
+    private static String challengerUuid(SparStore.DojoChallenge c) {
+        if (c == null) {
+            return "";
+        }
+        String from = SparStore.canonicalDojoKey(c.fromDojoUuid);
+        if (from.isEmpty()) {
+            from = SparStore.canonicalDojoKey(c.fromMentorUuid);
+        }
+        return from;
+    }
+
+    private static String targetUuid(SparStore.DojoChallenge c, String mapKey) {
+        if (c == null) {
+            return "";
+        }
+        String to = SparStore.canonicalDojoKey(c.toDojoUuid);
+        if (to.isEmpty()) {
+            to = SparStore.canonicalDojoKey(mapKey);
+        }
+        return to;
     }
 
     private static void notifyDojo(
@@ -429,6 +495,33 @@ public final class DojoRankings {
             lines.add("§7No dojo rankings yet — spar across dojos!");
         }
         return lines;
+    }
+
+    /**
+     * GUI leaderboard cards: {@code rank\tdojoKey\tdisplayName\tbannerMaterial\tvalue\trosterSize}.
+     */
+    public static List<String> topCards(String category, int limit) {
+        ensureSeason();
+        String cat = category == null || category.isBlank() ? "rp" : category.trim().toLowerCase(Locale.ROOT);
+        SparStore.DojoSeason season = SparStore.get().dojoSeason;
+        Map<String, SparStore.DojoEntry> board = season == null || season.leaderboard == null
+                ? Map.of()
+                : season.leaderboard;
+        List<Map.Entry<String, SparStore.DojoEntry>> sorted = sortedEntries(board, cat, limit);
+        List<String> out = new ArrayList<>();
+        int i = 1;
+        for (Map.Entry<String, SparStore.DojoEntry> e : sorted) {
+            SparStore.DojoEntry d = e.getValue();
+            if (d == null) {
+                continue;
+            }
+            String name = dojoDisplayName(e.getKey()).replace('\t', ' ').replace('\n', ' ');
+            String value = formatValue(d, cat);
+            out.add(i + "\t" + e.getKey() + "\t" + name + "\t" + dojoBannerMaterial(e.getKey())
+                    + "\t" + value + "\t" + d.rosterSize);
+            i++;
+        }
+        return out;
     }
 
     public static List<String> hallOfFameLines() {
@@ -554,7 +647,7 @@ public final class DojoRankings {
         }
         if (isDojoMaster(player)) {
             lines.add("§8Rename: §7/spar dojo name <your name>");
-            lines.add("§8Banner: §7Dojo Rankings → Banner");
+            lines.add("§8Banner & wars: §7Dojo Rankings → Dojo War");
         }
         SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(
                 player.m_20148_().toString().toLowerCase(Locale.ROOT));
@@ -571,6 +664,65 @@ public final class DojoRankings {
                     + " §8(2× RP)");
         }
         return lines;
+    }
+
+    /** Lore for the Dojo War actions hub (masters manage declare / accept / banner). */
+    public static List<String> warInfoLines(ServerPlayer player) {
+        List<String> lines = new ArrayList<>();
+        lines.add("§8── §cDojo War §8──");
+        if (player == null) {
+            lines.add("§cUnavailable.");
+            return lines;
+        }
+        if (!isDojoMaster(player)) {
+            lines.add("§7Only dojo masters manage wars.");
+            lines.add("§8Your mentor master accepts challenges.");
+            return lines;
+        }
+        String key = homeDojoKey(player);
+        lines.add("§7Challenge rival dojos for §f2× season RP§7.");
+        lines.add("§8Wars run 24 hours once accepted.");
+        SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(
+                player.m_20148_().toString().toLowerCase(Locale.ROOT));
+        if (pending != null && pending.expiresAt > System.currentTimeMillis() && !pending.active) {
+            lines.add("§eIncoming challenge §f" + blank(pending.fromDojoName, "?"));
+            lines.add("§8Open §7Pending §8to accept or decline");
+        }
+        if (pendingDojoWarCount(player) > 0) {
+            lines.add("§7Pending wars §f" + pendingDojoWarCount(player));
+        }
+        if (key != null) {
+            SparStore.DojoChallenge active = activeChallengeFor(key);
+            if (active != null) {
+                String rival = key.equalsIgnoreCase(active.fromDojoUuid)
+                        ? active.toDojoName
+                        : active.fromDojoName;
+                lines.add("§6§lActive war §fvs " + blank(rival, "?"));
+            }
+        }
+        return lines;
+    }
+
+    public static boolean hasIncomingWarChallenge(ServerPlayer player) {
+        if (player == null || !isDojoMaster(player)) {
+            return false;
+        }
+        SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(
+                player.m_20148_().toString().toLowerCase(Locale.ROOT));
+        return pending != null && !pending.active
+                && pending.expiresAt > System.currentTimeMillis();
+    }
+
+    public static String incomingWarFromName(ServerPlayer player) {
+        if (player == null) {
+            return "";
+        }
+        SparStore.DojoChallenge pending = SparStore.get().dojoChallenges.get(
+                player.m_20148_().toString().toLowerCase(Locale.ROOT));
+        if (pending == null) {
+            return "";
+        }
+        return blank(pending.fromDojoName, "?");
     }
 
     public static String setDojoName(ServerPlayer master, String rawName) {
@@ -688,8 +840,8 @@ public final class DojoRankings {
         if (!isDojoMaster(target)) {
             return "§cThey are not a dojo master.";
         }
-        String fromKey = challenger.m_20148_().toString().toLowerCase(Locale.ROOT);
-        String toKey = target.m_20148_().toString().toLowerCase(Locale.ROOT);
+        String fromKey = SparStore.canonicalDojoKey(challenger.m_20148_().toString());
+        String toKey = SparStore.canonicalDojoKey(target.m_20148_().toString());
         if (findChallenge(fromKey, toKey) != null) {
             return "§cA challenge already exists between these dojos.";
         }
@@ -702,11 +854,12 @@ public final class DojoRankings {
         c.fromMentorUuid = fromKey;
         c.expiresAt = now + CHALLENGE_TTL_MS;
         c.active = false;
-        SparStore.get().dojoChallenges.put(toKey, c);
+        c = SparStore.normalizeDojoChallenge(toKey, c);
+        SparStore.get().dojoChallenges.put(c.toDojoUuid, c);
         SparStore.get().markDirty();
         DmzRewards.msg(target, LmChat.note("Dojo", "§f" + c.fromDojoName
                 + " §e challenged your dojo to war!"));
-        DmzRewards.msg(target, LmChat.tip("/spar", "→ Dojo Rankings → Accept War"));
+        DmzRewards.msg(target, LmChat.tip("/spar", "→ Dojo War → Pending to Accept or Decline"));
         return "§aWar challenge sent to §f" + target.m_7755_().getString() + "§a.";
     }
 
@@ -741,6 +894,107 @@ public final class DojoRankings {
         }
         SparStore.get().markDirty();
         return "§7Declined war challenge from §f" + blank(c.fromDojoName, "?") + "§7.";
+    }
+
+    /**
+     * Pending dojo war cards for GUI: {@code masterUuid\tdojoName\tIN|OUT\texpiresMs\tonline\twar}.
+     */
+    public static List<String> pendingDojoWarCards(ServerPlayer player) {
+        List<String> out = new ArrayList<>();
+        if (player == null || !isDojoMaster(player)) {
+            return out;
+        }
+        long now = System.currentTimeMillis();
+        MinecraftServer server = player.m_20194_();
+
+        for (Map.Entry<String, SparStore.DojoChallenge> e : SparStore.get().dojoChallenges.entrySet()) {
+            SparStore.DojoChallenge c = e.getValue();
+            if (c == null || c.active) {
+                continue;
+            }
+            if (c.expiresAt > 0L && c.expiresAt <= now) {
+                continue;
+            }
+            String toUuid = targetUuid(c, e.getKey());
+            String fromUuid = challengerUuid(c);
+            if (toUuid.isEmpty() || fromUuid.isEmpty()) {
+                continue;
+            }
+            if (matchesDojoWarSelf(player, toUuid)) {
+                String name = blank(c.fromDojoName, "?").replace('\t', ' ').replace('\n', ' ');
+                boolean online = isOnline(server, fromUuid);
+                out.add(fromUuid + "\t" + name + "\tIN\t" + c.expiresAt + "\t"
+                        + (online ? "1" : "0") + "\twar");
+            } else if (matchesDojoWarSelf(player, fromUuid)) {
+                String name = blank(c.toDojoName, "?").replace('\t', ' ').replace('\n', ' ');
+                boolean online = isOnline(server, toUuid);
+                out.add(toUuid + "\t" + name + "\tOUT\t" + c.expiresAt + "\t"
+                        + (online ? "1" : "0") + "\twar");
+            }
+        }
+        return out;
+    }
+
+    public static int pendingDojoWarCount(ServerPlayer player) {
+        return pendingDojoWarCards(player).size();
+    }
+
+    public static String revokeOutgoingChallenge(ServerPlayer master, String targetMasterRaw) {
+        if (master == null) {
+            return "§cPlayers only.";
+        }
+        if (!isDojoMaster(master)) {
+            return "§cOnly dojo masters can cancel war challenges.";
+        }
+        String fromKey = SparStore.canonicalDojoKey(master.m_20148_().toString());
+        String targetKey = SparStore.canonicalDojoKey(normalizeMasterUuid(targetMasterRaw));
+        long now = System.currentTimeMillis();
+        Iterator<Map.Entry<String, SparStore.DojoChallenge>> it =
+                SparStore.get().dojoChallenges.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, SparStore.DojoChallenge> e = it.next();
+            SparStore.DojoChallenge c = e.getValue();
+            if (c == null || c.active || c.expiresAt <= now) {
+                continue;
+            }
+            if (!fromKey.equalsIgnoreCase(challengerUuid(c))) {
+                continue;
+            }
+            String toKey = targetUuid(c, e.getKey());
+            if (targetKey != null && !targetKey.isBlank()
+                    && !targetKey.equalsIgnoreCase(toKey)
+                    && !targetKey.equalsIgnoreCase(e.getKey())) {
+                continue;
+            }
+            String name = blank(c.toDojoName, "?");
+            it.remove();
+            SparStore.get().markDirty();
+            return "§7Cancelled war challenge to §f" + name + "§7.";
+        }
+        return "§cNo outgoing war challenge to cancel.";
+    }
+
+    private static String normalizeMasterUuid(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "";
+        }
+        String s = raw.trim();
+        if (s.regionMatches(true, 0, "uuid:", 0, 5)) {
+            s = s.substring(5).trim();
+        }
+        return s.toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean isOnline(MinecraftServer server, String uuid) {
+        if (server == null || uuid == null || uuid.isBlank()) {
+            return false;
+        }
+        for (net.minecraft.server.level.ServerPlayer p : server.m_6846_().m_11314_()) {
+            if (p != null && uuid.equalsIgnoreCase(p.m_20148_().toString())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static int dojoRank(String dojoKey, String category) {

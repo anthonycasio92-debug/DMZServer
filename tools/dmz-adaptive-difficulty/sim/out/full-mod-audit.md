@@ -1,18 +1,18 @@
-# Full mod audit — LegacyMechanics 2.3.180
+# Full mod audit — LegacyMechanics 2.3.175
 
-Generated: 2026-09-04T14:35Z
+Generated: 2026-09-04T13:35Z
 
 ## Suite summary
 
 | Audit | Result |
 |-------|:------:|
-| audit_scaling_sync | PASS |
 | audit_features | PASS |
 | audit_gui_tooltips | PASS |
 | audit_form_bands | PASS |
+| audit_scaling_bands | FAIL |
 | validate_tier_costs | PASS |
-| audit_tier_level_matrix | PASS |
-| validate_scaling | PASS |
+| audit_tier_level_matrix | FAIL |
+| validate_scaling | FAIL |
 | simulate_build_matrix | PASS |
 | audit_concept | PASS |
 | audit_gui_abi | PASS |
@@ -20,9 +20,9 @@ Generated: 2026-09-04T14:35Z
 
 ## Notes
 
-- **audit_scaling_sync** keeps Java literals aligned with `scaling_constants.py` (run on every build).
-- **audit_concept** is the product-level balance gate (player-facing intent).
-- **validate_scaling** + **audit_tier_level_matrix** catch tier-ladder and race/form regressions.
+- **audit_scaling_bands** checks Java/Python band parity, sim per-band ladders, and live telemetry vs sim.
+- **validate_scaling** uses stricter legacy sim thresholds; some failures are expected after the 2.3.162 rollback until thresholds are retuned.
+- **audit_tier_level_matrix** scans all races/forms × T1–T7; one human android overclock edge case may fail monotonicity at T7.
 
 See `sim/out/full-mod-audit-run.log` for full output.
 
@@ -41,7 +41,7 @@ Fail-closed checks for unlock tiers T1–T7 across the DMZ level cap.
 
 ## 2) Buy-cost ladder T1<T2<…<T7 at every level
 
-- ✅ cost T-ladder mono across 150000 levels — 0.85s
+- ✅ cost T-ladder mono across 150000 levels — 0.84s
 - ✅ cost non-decreasing with level (≤150k) — ok
 - ✅ past-anchor clamp T7 200k==150k — 10000000 vs 10000000
 - ✅ past-anchor clamp T1 200k==150k — 6700 vs 6700
@@ -76,4 +76,4 @@ Fail-closed checks for unlock tiers T1–T7 across the DMZ level cap.
 
 … full report: `sim/out/scaling-validation-report.md`
 
-**Overall:** PASS
+**Overall:** 3 advisory failure(s)

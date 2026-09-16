@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -71,7 +72,8 @@ public final class RivalStore {
                                 if (rec.rivals == null) {
                                     // gson may leave null if type erased oddly — recreate
                                 }
-                                players.put(e.getKey(), normalize(rec));
+                                String key = RivalUuid.canonical(e.getKey());
+                                players.put(key, normalize(key, rec));
                             }
                         }
                     }
@@ -129,10 +131,14 @@ public final class RivalStore {
             return null;
         }
         long now = System.currentTimeMillis();
-        RivalPlayerRecord rec = players.get(uuid);
+        String canon = RivalUuid.canonical(uuid);
+        if (canon == null || canon.isBlank()) {
+            return null;
+        }
+        RivalPlayerRecord rec = get(canon);
         if (rec == null) {
-            rec = RivalPlayerRecord.create(uuid, name, now);
-            players.put(uuid, rec);
+            rec = RivalPlayerRecord.create(canon, name, now);
+            players.put(canon, rec);
             markDirty();
         } else {
             if (name != null && !name.isBlank() && !name.equals(rec.name)) {
@@ -145,19 +151,52 @@ public final class RivalStore {
     }
 
     public RivalPlayerRecord get(UUID uuid) {
-        return uuid == null ? null : players.get(uuid.toString());
+        return uuid == null ? null : get(uuid.toString());
     }
 
     public RivalPlayerRecord get(String uuid) {
-        return uuid == null ? null : players.get(uuid);
+        if (uuid == null || uuid.isBlank()) {
+            return null;
+        }
+        String canon = RivalUuid.canonical(uuid);
+        RivalPlayerRecord rec = canon == null ? null : players.get(canon);
+        if (rec != null) {
+            return rec;
+        }
+        rec = players.get(uuid);
+        if (rec != null) {
+            return rec;
+        }
+        for (Map.Entry<String, RivalPlayerRecord> e : players.entrySet()) {
+            if (e.getKey() != null && RivalUuid.samePlayer(e.getKey(), uuid)) {
+                return e.getValue();
+            }
+        }
+        return null;
     }
 
     public RivalLink getLink(String ownerUuid, String otherUuid) {
         RivalPlayerRecord rec = get(ownerUuid);
-        if (rec == null || otherUuid == null) {
+        if (rec == null || otherUuid == null || otherUuid.isBlank()) {
             return null;
         }
-        return rec.rivals.get(otherUuid);
+        RivalLink link = rec.rivals.get(otherUuid);
+        if (link != null) {
+            return link;
+        }
+        String canon = RivalUuid.canonical(otherUuid);
+        if (canon != null) {
+            link = rec.rivals.get(canon);
+            if (link != null) {
+                return link;
+            }
+        }
+        for (Map.Entry<String, RivalLink> e : rec.rivals.entrySet()) {
+            if (e.getKey() != null && RivalUuid.samePlayer(e.getKey(), otherUuid)) {
+                return e.getValue();
+            }
+        }
+        return null;
     }
 
     public RivalLink setLink(String ownerUuid, String otherUuid, RivalLink link) {
@@ -264,7 +303,12 @@ public final class RivalStore {
         };
     }
 
-    private static RivalPlayerRecord normalize(RivalPlayerRecord rec) {
+    private static RivalPlayerRecord normalize(String ownerKey, RivalPlayerRecord rec) {
+        if (ownerKey != null && !ownerKey.isBlank()) {
+            rec.uuid = ownerKey;
+        } else if (rec.uuid != null && !rec.uuid.isBlank()) {
+            rec.uuid = Objects.requireNonNullElse(RivalUuid.canonical(rec.uuid), rec.uuid);
+        }
         if (rec.uuid == null) {
             rec.uuid = "";
         }
@@ -275,20 +319,21 @@ public final class RivalStore {
             rec.nemesisUuid = "";
         }
         // Ensure concurrent maps after Gson
-        Map<String, RivalLink> links = new ConcurrentHashMap<>();
-        if (rec.rivals != null) {
-            for (Map.Entry<String, RivalLink> e : rec.rivals.entrySet()) {
-                if (e.getKey() != null && e.getValue() != null) {
-                    links.put(e.getKey(), e.getValue());
-                }
-            }
-        }
-        rec.rivals = links;
+        rec.rivals = canonicalizeLinkMap(rec.rivals);
         Map<String, RivalLink> past = new ConcurrentHashMap<>();
         if (rec.pastRivals != null) {
             for (Map.Entry<String, RivalLink> e : rec.pastRivals.entrySet()) {
                 if (e.getKey() != null && e.getValue() != null) {
-                    past.put(e.getKey(), e.getValue());
+                    String key = RivalUuid.canonical(e.getKey());
+                    if (key != null && !key.isBlank()) {
+                        RivalLink link = e.getValue();
+                        if (link.uuid == null || link.uuid.isBlank()) {
+                            link.uuid = key;
+                        } else {
+                            link.uuid = Objects.requireNonNullElse(RivalUuid.canonical(link.uuid), link.uuid);
+                        }
+                        past.putIfAbsent(key, link);
+                    }
                 }
             }
         }
@@ -300,6 +345,30 @@ public final class RivalStore {
         rec.surpassCooldown = cds;
         rec.recalcTotalRp();
         return rec;
+    }
+
+    private static Map<String, RivalLink> canonicalizeLinkMap(Map<String, RivalLink> in) {
+        Map<String, RivalLink> links = new ConcurrentHashMap<>();
+        if (in == null) {
+            return links;
+        }
+        for (Map.Entry<String, RivalLink> e : in.entrySet()) {
+            if (e.getKey() == null || e.getValue() == null) {
+                continue;
+            }
+            String key = RivalUuid.canonical(e.getKey());
+            if (key == null || key.isBlank()) {
+                continue;
+            }
+            RivalLink link = e.getValue();
+            if (link.uuid == null || link.uuid.isBlank()) {
+                link.uuid = key;
+            } else {
+                link.uuid = Objects.requireNonNullElse(RivalUuid.canonical(link.uuid), link.uuid);
+            }
+            links.putIfAbsent(key, link);
+        }
+        return links;
     }
 
     public static final class DeclareRequest {

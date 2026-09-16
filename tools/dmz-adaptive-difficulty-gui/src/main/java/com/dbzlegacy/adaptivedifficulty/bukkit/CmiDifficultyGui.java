@@ -139,8 +139,8 @@ public final class CmiDifficultyGui {
                 "toggle_personal", "0", "main",
                 List.of(
                         personalOn
-                                ? "&7Click to turn OFF for you only"
-                                : "&7Click to turn ON for you only",
+                                ? "&7Click to turn OFF for you only8Turns scaling off for you only"
+                                : "&7Click to turn ON for you only8Turns scaling on for you only",
                         personalOn
                                 ? "&8OFF disables scaling, kill coins,"
                                 : "&8ON restores scaling, kill coins,",
@@ -156,8 +156,8 @@ public final class CmiDifficultyGui {
                 "toggle_coin_chat", "0", "main",
                 List.of(
                         coinChatOn
-                                ? "&7Click to mute drop messages"
-                                : "&7Click to show drop messages",
+                                ? "&7Click to mute drop messages8Hides Ancient Coin drop chat"
+                                : "&7Click to show drop messages8Shows Ancient Coin drop chat again",
                         "&8Only affects Ancient Coin kill chat"
                 )));
         if (ForgeBridge.isStaff(player)) {
@@ -375,30 +375,42 @@ public final class CmiDifficultyGui {
         for (String line : ForgeBridge.diffTeamLines(player)) {
             headerLore.add(line == null ? "" : line.replace('§', '&'));
         }
+        headerLore.add("");
+        headerLore.addAll(GuiBoardHelper.teamRivalLegendLines());
         header.addLore(headerLore);
         gui.addButton(header);
 
         String mode = ph.getOrDefault("team_mode", "personal_only");
-        gui.addButton(actionBtn(player, 20, "difficulty.team.mode_personal", Material.GRAY_DYE, "&7Personal",
+        boolean personalMode = mode.equals("personal_only");
+        boolean thresholdMode = mode.equals("threshold_bonus_only");
+        boolean fullMode = mode.equals("full_team_scaling");
+        gui.addButton(actionBtn(player, 20, "difficulty.team.mode_personal",
+                personalMode ? Material.RED_DYE : Material.GRAY_DYE,
+                personalMode ? "&c&lPersonal" : "&7Personal",
                 "team", "personal", "team",
                 List.of("&7Only your own tier ceiling counts",
-                        mode.equals("personal_only") ? "&aCurrent mode" : "&eClick to select")));
-        gui.addButton(actionBtn(player, 22, "difficulty.team.mode_threshold", Material.LIME_DYE, "&aThreshold",
+                        "&8Rivals on Personal do not boost you",
+                        personalMode ? "&c&lYour current mode" : "&eClick to select")));
+        gui.addButton(actionBtn(player, 22, "difficulty.team.mode_threshold",
+                thresholdMode ? Material.LIME_DYE : Material.GRAY_DYE,
+                thresholdMode ? "&a&lThreshold" : "&7Threshold",
                 "team", "threshold", "team",
                 List.of("&7Extra max when rivals are online",
                         "&7They must also use a team mode",
                         "&7More elites, mutants, and bosses",
-                        mode.equals("threshold_bonus_only") ? "&aCurrent mode" : "&eClick to select")));
-        gui.addButton(actionBtn(player, 24, "difficulty.team.mode_full", Material.EMERALD, "&2Full",
+                        thresholdMode ? "&a&lYour current mode" : "&eClick to select")));
+        gui.addButton(actionBtn(player, 24, "difficulty.team.mode_full",
+                fullMode ? Material.GOLD_INGOT : Material.EMERALD,
+                fullMode ? "&6&lFull" : "&2Full",
                 "team", "full", "team",
                 List.of("&7Threshold bonus plus nearby spare room",
                         "&7Best spawn boost when rivals are close",
                         "&8Within " + ph.getOrDefault("proximity_blocks", "48") + " blocks",
-                        mode.equals("full_team_scaling") ? "&aCurrent mode" : "&eClick to select")));
+                        fullMode ? "&6&lYour current mode" : "&eClick to select")));
 
         List<GuiBoardHelper.TeamRivalCard> cards =
                 GuiBoardHelper.parseTeamRivalCards(ForgeBridge.diffTeamMutualCards(player));
-        int[] slots = GuiBoardHelper.centeredSlots(cards.size());
+        int[] slots = GuiBoardHelper.teamMutualRivalSlots(cards.size());
         for (int i = 0; i < cards.size() && i < slots.length; i++) {
             CMIGuiButton head = new CMIGuiButton(slots[i], GuiBoardHelper.teamRivalHead(cards.get(i)));
             head.lockField();
@@ -528,9 +540,9 @@ public final class CmiDifficultyGui {
             } else {
                 lore.add("&cLocked");
                 lore.add("&7Need &fDMZ {req_level} &7or &fPrestige {req_prestige}");
+                lore.add("&7You: &fDMZ {level} &7· &fPrestige {prestige}");
                 if (staff) {
                     lore.add("&8{req}");
-                    lore.add("&8You: DMZ {level} · Prestige {prestige}");
                     lore.add("&8CR/BP ignored — use DMZ level or Prestige");
                 }
             }

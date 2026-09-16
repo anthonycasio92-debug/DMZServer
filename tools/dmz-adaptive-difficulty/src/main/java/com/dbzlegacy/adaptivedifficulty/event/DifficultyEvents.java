@@ -99,6 +99,8 @@ public final class DifficultyEvents {
         DifficultyConfig.load();
         try {
             com.dbzlegacy.adaptivedifficulty.progression.race.RaceLockConfig.load();
+            com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig.load();
+            com.dbzlegacy.adaptivedifficulty.character.CharacterServicesStore.get().load();
         } catch (Throwable ignored) {
         }
         DifficultyCache.invalidateAll();
@@ -176,6 +178,14 @@ public final class DifficultyEvents {
             RivalSystem.onLogin(player);
             SparringSystem.onLogin(player);
             ProgressionSystem.onLogin(player);
+            var server = player.m_20194_();
+            if (server != null) {
+                server.execute(() -> {
+                    if (com.dbzlegacy.adaptivedifficulty.character.RaceHeadBoneSync.syncCharacter(player)) {
+                        com.dbzlegacy.adaptivedifficulty.character.RaceHeadBoneSync.syncClient(player);
+                    }
+                });
+            }
             // DMZ Character often attaches after this event — keep pulling level until ready.
             DifficultyActions.scheduleLevelPull(player);
         }
@@ -344,6 +354,7 @@ public final class DifficultyEvents {
             LAST_RACE.remove(player.m_20148_());
             LAST_FORM_KEY.remove(player.m_20148_());
             AncientCoinEconomy.clearMigrateFlag(player.m_20148_());
+            com.dbzlegacy.adaptivedifficulty.character.ReskinSessionGuard.clear(player);
             AreaDifficulty.clearCache();
             RivalSystem.onLogout(player);
             SparringSystem.onLogout(player);
