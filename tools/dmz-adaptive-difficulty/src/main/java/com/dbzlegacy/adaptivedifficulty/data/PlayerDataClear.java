@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.data;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesStore;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
@@ -33,6 +34,30 @@ public final class PlayerDataClear {
      * @param scope     {@code all} (default), {@code rival}, {@code spar}, {@code difficulty},
      *                  {@code progression}
      */
+    /**
+     * Staff reset of character service cooldowns
+     * ({@code /lm admin character cooldown clear <player> [race|class|reskin|all]}).
+     */
+    public static String clearCharacterCooldowns(MinecraftServer server, String playerArg, String kind) {
+        if (playerArg == null || playerArg.isBlank()) {
+            return "§cUsage: /lm admin character cooldown clear <player> [race|class|reskin|all]";
+        }
+        Resolved target = resolve(server, playerArg.trim());
+        if (target == null) {
+            return "§cPlayer not found: §f" + playerArg.trim()
+                    + "\n§8Online name, RivalStore name, or UUID.";
+        }
+        String detail = CharacterServicesStore.get().clearCooldowns(target.uuid, kind);
+        String who = target.name == null || target.name.isBlank() ? target.uuid : target.name;
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] Staff cleared character cooldowns uuid={} name={} kind={}",
+                AdaptiveDifficultyMod.MOD_ID,
+                target.uuid,
+                target.name,
+                kind == null ? "all" : kind);
+        return "§aCharacter cooldown reset for §f" + who + "\n" + detail;
+    }
+
     public static String clear(MinecraftServer server, String playerArg, String scope) {
         if (playerArg == null || playerArg.isBlank()) {
             return "§cUsage: /lm admin clear <player> [all|rival|spar|difficulty|progression]";

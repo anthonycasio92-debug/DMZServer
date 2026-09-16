@@ -3021,6 +3021,55 @@ public final class ForgeBridge {
     }
 
     /**
+     * Staff reset of character service cooldowns
+     * ({@code /lm admin character cooldown clear <player> [race|class|reskin|all]}).
+     */
+    public static String clearCharacterServiceCooldowns(String playerArg, String kind) {
+        try {
+            Class<?> clearer = Class.forName(
+                    "com.dbzlegacy.adaptivedifficulty.data.PlayerDataClear");
+            Object server = minecraftServerOrNull();
+            if (server == null) {
+                return "§cNo MinecraftServer — is the world loaded?";
+            }
+            Object msg = clearer.getMethod(
+                            "clearCharacterCooldowns",
+                            Class.forName("net.minecraft.server.MinecraftServer"),
+                            String.class,
+                            String.class)
+                    .invoke(null, server, playerArg, kind == null ? "all" : kind);
+            return msg == null ? "§eCooldown clear returned empty." : String.valueOf(msg);
+        } catch (Throwable t) {
+            resolveError = t.getClass().getSimpleName() + ": " + t.getMessage();
+            return "§cCharacter cooldown clear failed: " + resolveError;
+        }
+    }
+
+    private static Object minecraftServerOrNull() {
+        try {
+            Class<?> serverLifecycle = Class.forName(
+                    "net.minecraftforge.server.ServerLifecycleHooks");
+            Object server = serverLifecycle.getMethod("getCurrentServer").invoke(null);
+            if (server != null) {
+                return server;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
+            Object bServer = bukkit.getMethod("getServer").invoke(null);
+            if (bServer != null) {
+                try {
+                    return bServer.getClass().getMethod("getServer").invoke(bServer);
+                } catch (Throwable ignored) {
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    /**
      * Pull live DMZ level + unlock data before opening Buy / Difficulty GUI.
      * Mohist {@code /difficulty} owns the inventory open and previously skipped
      * Forge {@code DifficultyActions.openGui}, so placeholders could show a stuck

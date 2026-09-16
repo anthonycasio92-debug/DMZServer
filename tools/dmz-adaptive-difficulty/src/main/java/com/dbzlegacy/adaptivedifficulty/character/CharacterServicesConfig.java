@@ -157,7 +157,7 @@ public final class CharacterServicesConfig {
 
     public static final class RaceChange {
         public boolean enabled = true;
-        public long cooldownMs = 7L * 24L * 60L * 60L * 1000L;
+        public long cooldownMs = 12L * 60L * 60L * 1000L;
         public boolean keepSkillsOnRaceChange = true;
         public Map<String, Long> preservationCostCopper = defaultPreservationCosts();
         public boolean levelCostMultiplier = true;
@@ -166,7 +166,7 @@ public final class CharacterServicesConfig {
 
     public static final class ClassChange {
         public boolean enabled = true;
-        public long cooldownMs = 3L * 24L * 60L * 60L * 1000L;
+        public long cooldownMs = 12L * 60L * 60L * 1000L;
         public long baseCostCopper = 250_000L;
         public boolean levelCostMultiplier = true;
         public boolean preserveBaseStats = true;
@@ -175,7 +175,7 @@ public final class CharacterServicesConfig {
 
     public static final class Reskin {
         public boolean enabled = true;
-        public long cooldownMs = 24L * 60L * 60L * 1000L;
+        public long cooldownMs = 12L * 60L * 60L * 1000L;
         public long baseCostCopper = 50_000L;
         public boolean levelCostMultiplier = true;
         public boolean openDmzRecustomizeOnly = true;

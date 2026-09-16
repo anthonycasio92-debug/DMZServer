@@ -57,7 +57,7 @@ Fail-closed checks against the player's stated balance concept.
 
 ## 6) Version / formula revision
 
-- ✅ VERSION 2.4.18
+- ✅ VERSION 2.4.19
 - ✅ RaceSkillSync present
 - ✅ formula revision 45
 - ✅ KP hit-cap relief wired

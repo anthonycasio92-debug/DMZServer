@@ -1161,6 +1161,45 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     }
                 }
             }
+            case "character", "charservices", "characterservices", "char" -> {
+                if (args.length < 5
+                        || !"cooldown".equalsIgnoreCase(args[2])
+                        || !"clear".equalsIgnoreCase(args[3])) {
+                    sender.sendMessage(
+                            "§cUsage: /lm admin character cooldown clear <player> [race|class|reskin|all]");
+                    return true;
+                }
+                String playerArg = args[4];
+                String kind = args.length > 5 ? args[5] : "all";
+                if (args.length > 6) {
+                    String maybeKind = args[args.length - 1];
+                    if (isCharacterCooldownKind(maybeKind)) {
+                        kind = maybeKind;
+                        StringBuilder sb = new StringBuilder(args[4]);
+                        for (int i = 5; i < args.length - 1; i++) {
+                            sb.append(' ').append(args[i]);
+                        }
+                        playerArg = sb.toString();
+                    } else {
+                        StringBuilder sb = new StringBuilder(args[4]);
+                        for (int i = 5; i < args.length; i++) {
+                            sb.append(' ').append(args[i]);
+                        }
+                        playerArg = sb.toString();
+                        kind = "all";
+                    }
+                }
+                String msg = ForgeBridge.clearCharacterServiceCooldowns(playerArg, kind);
+                if (msg == null || msg.isBlank()) {
+                    sender.sendMessage("§cCharacter cooldown clear failed (is LegacyMechanics loaded?).");
+                } else {
+                    for (String line : msg.split("\n")) {
+                        if (line != null && !line.isBlank()) {
+                            sender.sendMessage(line);
+                        }
+                    }
+                }
+            }
             case "clear", "wipe", "resetplayer" -> {
                 if (args.length < 3) {
                     sender.sendMessage("§cUsage: /lm admin clear <player> [all|rival|spar|difficulty|progression]");
@@ -1283,6 +1322,16 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         return true;
     }
 
+    private static boolean isCharacterCooldownKind(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return false;
+        }
+        return switch (raw.toLowerCase(Locale.ROOT).trim()) {
+            case "all", "race", "racechange", "class", "classchange", "reskin", "skin" -> true;
+            default -> false;
+        };
+    }
+
     private static boolean isClearScope(String raw) {
         if (raw == null || raw.isBlank()) {
             return false;
@@ -1325,6 +1374,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§e/lm admin migrate-cnpc force §7— wipe LM Rival/Spar + re-import from those sources");
         sender.sendMessage("§8If CNPC was wiped: put world_data.json in config/legacymechanics/cnpc-import-backup/ then force");
         sender.sendMessage("§e/lm admin clear <player> [all|rival|spar|difficulty|progression]");
+        sender.sendMessage("§e/lm admin character cooldown clear <player> [race|class|reskin|all]");
         sender.sendMessage("§8Offline OK for rival/spar; difficulty + progression NBT need the player online");
         sender.sendMessage("§e/lm admin syslog on|off|status|flush");
         sender.sendMessage("§e/lm admin open <difficulty|rival|spar|character|progression|prestige|skills|hub>");

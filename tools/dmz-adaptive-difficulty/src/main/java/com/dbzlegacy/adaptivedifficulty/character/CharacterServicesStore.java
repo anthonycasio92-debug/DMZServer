@@ -8,6 +8,9 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -87,6 +90,54 @@ public final class CharacterServicesStore {
             return new PlayerRecord();
         }
         return records.computeIfAbsent(uuid.toLowerCase(), k -> new PlayerRecord());
+    }
+
+    /**
+     * Staff reset of cooldown timestamps.
+     *
+     * @param kind {@code race}, {@code class}, {@code reskin}, or {@code all}
+     * @return short summary for chat (may include § codes)
+     */
+    public synchronized String clearCooldowns(String uuid, String kind) {
+        if (uuid == null || uuid.isBlank()) {
+            return "§7Character: §eno uuid";
+        }
+        String k = kind == null || kind.isBlank() ? "all" : kind.toLowerCase(Locale.ROOT).trim();
+        PlayerRecord rec = records.get(uuid.toLowerCase(Locale.ROOT));
+        if (rec == null) {
+            return "§7Character: §eno prior usage";
+        }
+        List<String> cleared = new ArrayList<>();
+        boolean race = "all".equals(k) || "race".equals(k) || "racechange".equals(k);
+        boolean cls = "all".equals(k) || "class".equals(k) || "classchange".equals(k);
+        boolean reskin = "all".equals(k) || "reskin".equals(k) || "skin".equals(k);
+        if (!race && !cls && !reskin) {
+            return "§cUnknown kind: §f" + kind + " §8(race · class · reskin · all)";
+        }
+        if (race && rec.lastRaceChangeAt != 0L) {
+            cleared.add("race");
+        }
+        if (cls && rec.lastClassChangeAt != 0L) {
+            cleared.add("class");
+        }
+        if (reskin && rec.lastReskinAt != 0L) {
+            cleared.add("reskin");
+        }
+        if (race) {
+            rec.lastRaceChangeAt = 0L;
+        }
+        if (cls) {
+            rec.lastClassChangeAt = 0L;
+        }
+        if (reskin) {
+            rec.lastReskinAt = 0L;
+        }
+        markDirty();
+        save();
+        if (cleared.isEmpty()) {
+            return "§7Character: §enothing on cooldown §8(" + k + ")";
+        }
+        return "§7Character: §acleared §f" + String.join(", ", cleared);
     }
 
     public static final class PlayerRecord {

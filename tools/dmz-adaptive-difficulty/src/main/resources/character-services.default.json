@@ -17,7 +17,7 @@
   },
   "raceChange": {
     "enabled": true,
-    "cooldownMs": 604800000,
+    "cooldownMs": 43200000,
     "keepSkillsOnRaceChange": true,
     "preservationCostCopper": {
       "0": 0,
@@ -37,7 +37,7 @@
   },
   "classChange": {
     "enabled": true,
-    "cooldownMs": 259200000,
+    "cooldownMs": 43200000,
     "baseCostCopper": 250000,
     "levelCostMultiplier": true,
     "preserveBaseStats": true,
@@ -45,7 +45,7 @@
   },
   "reskin": {
     "enabled": true,
-    "cooldownMs": 86400000,
+    "cooldownMs": 43200000,
     "baseCostCopper": 50000,
     "levelCostMultiplier": true,
     "openDmzRecustomizeOnly": true,
