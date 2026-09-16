@@ -22,7 +22,7 @@ public final class RaceChangeClassPickPacketGuard {
             classField.setAccessible(true);
             String incoming = (String) classField.get(packet);
             String mapped =
-                    RaceChangeClassMapper.fightingClassForRace(incoming, priorClass, targetRace);
+                    RaceChangeClassMapper.canonicalPacketClass(targetRace, incoming, priorClass);
             classField.set(packet, mapped);
         } catch (Throwable ignored) {
         }

@@ -1,7 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.character;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.ClassPermissionSync;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceClassSync;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceSkillSync;
 import com.dragonminez.common.network.NetworkHandler;
@@ -140,7 +139,7 @@ public final class RaceChangeCreationFlow {
             String picked = DmzProgression.fightingClass(player);
             RaceChangeClassMapper.commitFightingClassForRace(
                     data, race, picked, session.priorFightingClass);
-            DmzFightingClassStatsSync.afterFightingClassChange(player, data, true);
+            DmzCharacterClassChangeHooks.onServicesClassApplied(player, data, true);
         } else {
             try {
                 Character ch = DmzProgression.character(player);
@@ -152,7 +151,6 @@ public final class RaceChangeCreationFlow {
         }
         RaceSkillSync.sync(player, race);
         RaceClassSync.sync(player);
-        ClassPermissionSync.syncAuthoritativeClassChange(player);
         if (session.keepHeadBone != null && !session.keepHeadBone.isBlank()) {
             CosmeticHeadBoneService.reapplyHeadBoneAfterRaceChange(player, session.keepHeadBone);
         }

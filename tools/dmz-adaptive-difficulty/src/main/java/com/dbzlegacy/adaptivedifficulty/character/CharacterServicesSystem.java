@@ -4,7 +4,6 @@ import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.ClassPermissionSync;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceClassSync;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceSkillSync;
 import com.dbzlegacy.adaptivedifficulty.progression.race.RaceLock;
@@ -359,7 +358,7 @@ public final class CharacterServicesSystem {
                     if (target != null) {
                         applyStats(data.getStats(), target);
                     }
-                    DmzFightingClassStatsSync.afterFightingClassChange(player, data, target != null);
+                    // Full class sync runs when the player finishes recustomize (packet mixin hook).
                     if (keepSkills) {
                         RaceChangeSkillPreserve.restore(data, currentRace, raceId, skillSnapshot);
                         RaceClassSync.syncRaceSkillOnly(player);
@@ -389,7 +388,8 @@ public final class CharacterServicesSystem {
                     if (target != null) {
                         applyStats(data.getStats(), target);
                     }
-                    DmzFightingClassStatsSync.afterFightingClassChange(player, data, target != null);
+                    DmzCharacterClassChangeHooks.onServicesClassApplied(
+                            player, data, target != null);
                     if (keepSkills) {
                         RaceChangeSkillPreserve.restore(data, currentRace, raceId, skillSnapshot);
                         RaceClassSync.syncRaceSkillOnly(player);
@@ -398,9 +398,6 @@ public final class CharacterServicesSystem {
                         RaceClassSync.sync(player);
                     }
                 }
-            }
-            if (!fullWipe && !openedFreeClassPicker) {
-                ClassPermissionSync.syncAuthoritativeClassChange(player);
             }
             CharacterServicesStore.get().record(player.m_20148_().toString()).lastRaceChangeAt =
                     System.currentTimeMillis();
@@ -471,7 +468,7 @@ public final class CharacterServicesSystem {
         }
         String classId = normalizeId(targetClass);
         String race = DmzProgression.race(player);
-        if (classId.isEmpty() || !FightingClassCatalog.isClassValidForRace(race, classId)) {
+        if (classId.isEmpty() || !RaceChangeClassMapper.isClassValidForRace(race, classId)) {
             return "§cThat class is not available for your race.";
         }
         String current = DmzProgression.fightingClass(player);
@@ -518,8 +515,7 @@ public final class CharacterServicesSystem {
             if (preservePrimaries) {
                 applyStats(data.getStats(), before);
             }
-            DmzFightingClassStatsSync.afterFightingClassChange(player, data, preservePrimaries);
-            ClassPermissionSync.syncAuthoritativeClassChange(player);
+            DmzCharacterClassChangeHooks.onServicesClassApplied(player, data, preservePrimaries);
             RaceClassSync.sync(player);
             CharacterServicesStore.get().record(player.m_20148_().toString()).lastClassChangeAt =
                     System.currentTimeMillis();

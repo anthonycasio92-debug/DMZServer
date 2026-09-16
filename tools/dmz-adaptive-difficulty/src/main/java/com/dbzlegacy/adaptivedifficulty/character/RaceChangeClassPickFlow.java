@@ -1,10 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.character;
 
-import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.ClassPermissionSync;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.OpenRecustomizeS2C;
-import com.dragonminez.common.stats.StatsData;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,26 +63,6 @@ public final class RaceChangeClassPickFlow {
         } else {
             open.run();
         }
-    }
-
-    /** After DMZ {@link com.dragonminez.common.network.C2S.UpdateCharacterC2S} during this session. */
-    public static void onRecustomizeComplete(ServerPlayer player) {
-        Session session = session(player);
-        if (session == null || player == null) {
-            return;
-        }
-        String race = session.targetRaceId;
-        StatsData data = DmzProgression.stats(player);
-        if (data == null) {
-            clear(player);
-            return;
-        }
-        String picked = DmzProgression.fightingClass(player);
-        RaceChangeClassMapper.commitFightingClassForRace(
-                data, race, picked, session.priorFightingClass);
-        ACTIVE.remove(player.m_20148_());
-        DmzFightingClassStatsSync.afterFightingClassChange(player, data, true);
-        ClassPermissionSync.syncAuthoritativeClassChange(player);
     }
 
     private static Session session(ServerPlayer player) {

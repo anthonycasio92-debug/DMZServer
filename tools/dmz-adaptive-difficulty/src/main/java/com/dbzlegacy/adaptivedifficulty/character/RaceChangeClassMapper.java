@@ -20,7 +20,7 @@ public final class RaceChangeClassMapper {
      */
     public static String resolveClassForRace(String priorClassId, String newRaceId) {
         String prior = normalize(priorClassId);
-        List<String> allowed = DmzContentDiscovery.classIdsForRace(newRaceId);
+        List<String> allowed = DmzRuntimeClassIds.classIdsForRace(newRaceId);
         if (allowed.isEmpty()) {
             return prior.isEmpty() ? "warrior" : prior;
         }
@@ -46,7 +46,7 @@ public final class RaceChangeClassMapper {
      */
     public static String resolveClassForRaceAfterChange(
             String currentClassOnCharacter, String priorClassId, String newRaceId) {
-        List<String> allowed = DmzContentDiscovery.classIdsForRace(newRaceId);
+        List<String> allowed = DmzRuntimeClassIds.classIdsForRace(newRaceId);
         if (allowed.isEmpty()) {
             return resolveClassForRace(priorClassId, newRaceId);
         }
@@ -62,7 +62,7 @@ public final class RaceChangeClassMapper {
      * change) instead of auto-remapping to a fallback.
      */
     public static boolean requiresClassPicker(String currentClassId, String newRaceId) {
-        List<String> allowed = DmzContentDiscovery.classIdsForRace(newRaceId);
+        List<String> allowed = DmzRuntimeClassIds.classIdsForRace(newRaceId);
         if (allowed.isEmpty()) {
             return true;
         }
@@ -77,7 +77,7 @@ public final class RaceChangeClassMapper {
         if (raceId == null || raceId.isBlank() || classId == null || classId.isBlank()) {
             return false;
         }
-        return canonicalId(classId, DmzContentDiscovery.classIdsForRace(raceId)) != null;
+        return canonicalId(classId, DmzRuntimeClassIds.classIdsForRace(raceId)) != null;
     }
 
     private static String canonicalId(String classId, List<String> allowed) {
@@ -103,6 +103,25 @@ public final class RaceChangeClassMapper {
     }
 
     /**
+     * Class name for C2S packets — canonical id when valid on the race so DMZ accepts
+     * {@code getAllClasses().contains(className)}.
+     */
+    public static String canonicalPacketClass(String raceId, String preferredClassId, String fallbackPriorClassId) {
+        if (raceId == null || raceId.isBlank()) {
+            return preferredClassId == null ? "" : preferredClassId;
+        }
+        if (preferredClassId != null && !preferredClassId.isBlank()) {
+            String direct = DmzRuntimeClassIds.canonicalId(raceId, preferredClassId);
+            if (direct != null) {
+                return direct;
+            }
+        }
+        String mapped = fightingClassForRace(preferredClassId, fallbackPriorClassId, raceId);
+        String canonical = DmzRuntimeClassIds.canonicalId(raceId, mapped);
+        return canonical != null ? canonical : mapped;
+    }
+
+    /**
      * Sets race + fighting class on DMZ character data so class passives/base stats use the
      * <em>new</em> race's {@code stats.json} entry for that class id.
      *
@@ -121,12 +140,16 @@ public final class RaceChangeClassMapper {
         }
         String race = newRaceId.trim().toLowerCase(Locale.ROOT);
         String mapped = fightingClassForRace(preferredClassId, fallbackPriorClassId, race);
+        String onCharacter = DmzRuntimeClassIds.canonicalId(race, mapped);
+        if (onCharacter == null) {
+            onCharacter = mapped;
+        }
         try {
             ch.setRace(race);
-            ch.setCharacterClass(mapped);
+            ch.setCharacterClass(onCharacter);
         } catch (Throwable ignored) {
         }
-        return mapped;
+        return onCharacter;
     }
 
     /**

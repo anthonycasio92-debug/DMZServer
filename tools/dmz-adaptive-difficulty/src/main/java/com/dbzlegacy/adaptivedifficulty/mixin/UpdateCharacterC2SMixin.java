@@ -1,11 +1,13 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.character.DmzCharacterClassChangeHooks;
 import com.dbzlegacy.adaptivedifficulty.character.RaceChangeClassPickFlow;
 import com.dbzlegacy.adaptivedifficulty.character.RaceChangeClassPickPacketGuard;
 import com.dbzlegacy.adaptivedifficulty.character.RaceHeadBoneSync;
 import com.dbzlegacy.adaptivedifficulty.character.ReskinSessionGuard;
 import com.dragonminez.common.network.C2S.UpdateCharacterC2S;
 import com.dragonminez.common.stats.StatsData;
+import java.lang.reflect.Field;
 import java.util.function.Supplier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
@@ -52,7 +54,21 @@ public abstract class UpdateCharacterC2SMixin {
             if (RaceHeadBoneSync.syncCharacter(player)) {
                 RaceHeadBoneSync.syncClient(player);
             }
-            RaceChangeClassPickFlow.onRecustomizeComplete(player);
+            if (data != null) {
+                String packetClass = "";
+                try {
+                    Field classField = UpdateCharacterC2S.class.getDeclaredField("className");
+                    classField.setAccessible(true);
+                    Object raw = classField.get(packet);
+                    if (raw instanceof String s) {
+                        packetClass = s;
+                    }
+                } catch (Throwable ignored) {
+                }
+                DmzCharacterClassChangeHooks.onDmzPacketFinished(player, data, packetClass);
+            } else {
+                RaceChangeClassPickFlow.clear(player);
+            }
         } catch (Throwable ignored) {
         }
     }
