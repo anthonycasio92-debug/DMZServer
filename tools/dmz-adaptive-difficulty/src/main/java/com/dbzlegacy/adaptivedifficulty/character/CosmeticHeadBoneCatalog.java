@@ -1,7 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.character;
 
-import com.dragonminez.common.config.ConfigManager;
-import com.dragonminez.common.config.RaceCharacterConfig;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -15,6 +14,7 @@ import java.util.TreeSet;
 public final class CosmeticHeadBoneCatalog {
     private static volatile List<Entry> CACHE = List.of();
     private static volatile long CACHE_AT;
+    private static volatile long CACHE_MTIME;
 
     private CosmeticHeadBoneCatalog() {}
 
@@ -55,38 +55,60 @@ public final class CosmeticHeadBoneCatalog {
 
     public static void refreshIfStale() {
         long now = System.currentTimeMillis();
-        if (!CACHE.isEmpty() && now - CACHE_AT < 60_000L) {
+        long mtime = latestRaceConfigMtime();
+        if (!CACHE.isEmpty()
+                && mtime == CACHE_MTIME
+                && now - CACHE_AT < 15_000L) {
             return;
         }
         CACHE = build();
         CACHE_AT = now;
+        CACHE_MTIME = mtime;
+    }
+
+    private static long latestRaceConfigMtime() {
+        long max = 0L;
+        Path root = DmzContentDiscovery.racesRoot();
+        if (!java.nio.file.Files.isDirectory(root)) {
+            return max;
+        }
+        try (var stream = java.nio.file.Files.newDirectoryStream(root)) {
+            for (Path raceDir : stream) {
+                if (!java.nio.file.Files.isDirectory(raceDir)) {
+                    continue;
+                }
+                max = Math.max(max, mtimeOf(raceDir.resolve("character.json")));
+                max = Math.max(max, mtimeOf(raceDir.resolve("stats.json")));
+            }
+        } catch (Throwable ignored) {
+        }
+        return max;
+    }
+
+    private static long mtimeOf(Path file) {
+        try {
+            if (java.nio.file.Files.isRegularFile(file)) {
+                return java.nio.file.Files.getLastModifiedTime(file).toMillis();
+            }
+        } catch (Throwable ignored) {
+        }
+        return 0L;
     }
 
     private static List<Entry> build() {
         Map<String, TreeSet<String>> byBone = new LinkedHashMap<>();
-        try {
-            for (String raceId : ConfigManager.getLoadedRaces()) {
-                if (raceId == null || raceId.isBlank()) {
-                    continue;
-                }
-                String race = raceId.trim().toLowerCase(Locale.ROOT);
-                RaceCharacterConfig cfg = ConfigManager.getRaceCharacter(race);
-                if (cfg == null) {
-                    continue;
-                }
-                String[] bones = cfg.getHeadBones();
-                if (bones == null) {
-                    continue;
-                }
-                for (String bone : bones) {
-                    if (bone == null || bone.isBlank()) {
-                        continue;
-                    }
-                    String id = bone.trim().toLowerCase(Locale.ROOT);
-                    byBone.computeIfAbsent(id, k -> new TreeSet<>()).add(race);
-                }
+        for (String raceId : DmzContentDiscovery.discoverRaceIds()) {
+            if (raceId == null || raceId.isBlank()) {
+                continue;
             }
-        } catch (Throwable ignored) {
+            String race = raceId.trim().toLowerCase(Locale.ROOT);
+            for (String bone : DmzContentDiscovery.headBonesForRace(race)) {
+                if (bone == null || bone.isBlank()) {
+                    continue;
+                }
+                String id = bone.trim().toLowerCase(Locale.ROOT);
+                byBone.computeIfAbsent(id, k -> new TreeSet<>()).add(race);
+            }
         }
         if (byBone.isEmpty()) {
             byBone.put("hair", new TreeSet<>(List.of("human")));

@@ -10,7 +10,6 @@ import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceSkillSync;
 import com.dbzlegacy.adaptivedifficulty.progression.race.RaceLock;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.progression.classdef.FightingClassCatalog;
-import com.dragonminez.common.config.ConfigManager;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.OpenRecustomizeS2C;
 import com.dragonminez.common.network.S2C.StatsSyncS2C;
@@ -103,7 +102,7 @@ public final class CharacterServicesSystem {
         String current = DmzProgression.race(player);
         Set<String> blocked = CharacterServicesConfig.get().blockedRaceSet();
         try {
-            for (String race : ConfigManager.getLoadedRaces()) {
+            for (String race : DmzContentDiscovery.discoverRaceIds()) {
                 if (race == null || race.isBlank()) {
                     continue;
                 }
@@ -641,11 +640,7 @@ public final class CharacterServicesSystem {
     }
 
     private static boolean isRaceAvailable(String raceId) {
-        try {
-            return ConfigManager.isRaceLoaded(raceId);
-        } catch (Throwable ignored) {
-            return false;
-        }
+        return DmzContentDiscovery.isKnownRace(raceId);
     }
 
     private static long cooldownRemaining(ServerPlayer player, String kind) {

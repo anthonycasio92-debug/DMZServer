@@ -1,8 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.character;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
-import com.dragonminez.common.config.ConfigManager;
-import com.dragonminez.common.config.RaceCharacterConfig;
 import com.dragonminez.common.network.C2S.UpdateCharacterC2S;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.AppearanceSyncS2C;
@@ -10,6 +8,7 @@ import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.character.Character;
 import java.lang.reflect.Field;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import net.minecraft.server.level.ServerPlayer;
@@ -131,19 +130,11 @@ public final class RaceHeadBoneSync {
     }
 
     private static String[] headBonesForRace(String raceId) {
-        try {
-            RaceCharacterConfig cfg = ConfigManager.getRaceCharacter(raceId);
-            if (cfg == null) {
-                return new String[] {DEFAULT_BONE};
-            }
-            String[] bones = cfg.getHeadBones();
-            if (bones == null || bones.length == 0) {
-                return new String[] {DEFAULT_BONE};
-            }
-            return bones;
-        } catch (Throwable ignored) {
+        List<String> bones = DmzContentDiscovery.headBonesForRace(raceId);
+        if (bones == null || bones.isEmpty()) {
             return new String[] {DEFAULT_BONE};
         }
+        return bones.toArray(String[]::new);
     }
 
     private static String safeActiveHeadBone(Character ch) {
