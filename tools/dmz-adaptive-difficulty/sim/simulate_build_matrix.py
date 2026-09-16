@@ -330,7 +330,8 @@ def simulate(
     landing = eased_floor(min_land, landing, ease)
     landing = min(landing, live_hp * land_cap)
     if ease < 0.999:
-        landing *= ease
+        from scaling_constants import LANDING_EASE_FLOOR, LANDING_EASE_SCALE
+        landing *= LANDING_EASE_FLOOR + LANDING_EASE_SCALE * ease
 
     # Post-KP landing (DMZ 1%/lvl)
     kp_mit = min(0.10, skills["kp"] * KP_MITIGATION_PER_LEVEL)

@@ -1,7 +1,7 @@
 """Single source of truth for AdaptiveDifficulty combat scaling (Python sim).
 
-Mirrors PlayerCombatProfile.java on 2.3.163+ (formula revision 45).
-Update Java and this file together; audit_scaling_sync.py fails the build on drift.
+Mirrors PlayerCombatProfile.java on 2.3.175 (formula revision 46).
+Update Java and this file together; audit_concept.py string-checks Java literals.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ SOFT_CAP: dict[int, float] = {
     4: 0.40,
     5: 0.44,
     6: 0.48,
-    7: 0.60,
+    7: 0.52,
 }
 
 # Ki-protection hit-cap tier fractions (kiProtectionHitFrac, pre-DEF)
@@ -35,16 +35,16 @@ HIT_CAP_TIER: dict[int, float] = {
     2: 0.28,
     3: 0.34,
     4: 0.40,
-    5: 0.46,
+    5: 0.44,
     6: 0.48,
-    7: 0.56,
+    7: 0.52,
 }
 
 # God-form threat floors T1–T3 (formBoost > 1.12)
 GOD_THREAT: dict[int, float] = {1: 0.35, 2: 0.42, 3: 0.48}
 
 # Form nudges T4–T7
-FORM_NUDGE: dict[int, float] = {4: 1.06, 5: 1.12, 6: 1.14, 7: 1.21}
+FORM_NUDGE: dict[int, float] = {4: 1.06, 5: 1.11, 6: 1.16, 7: 1.20}
 
 # Live-offense share (liveShare)
 LIVE_SHARE: dict[int, float] = {
@@ -52,9 +52,9 @@ LIVE_SHARE: dict[int, float] = {
     2: 0.28,
     3: 0.34,
     4: 0.42,
-    5: 0.50,
-    6: 0.55,
-    7: 0.60,
+    5: 0.53,
+    6: 0.58,
+    7: 0.62,
 }
 
 # Landing safety-net fractions (targetLandingDamage landFrac)
@@ -63,9 +63,9 @@ LAND_FRAC: dict[int, float] = {
     2: 0.16,
     3: 0.20,
     4: 0.28,
-    5: 0.33,
-    6: 0.38,
-    7: 0.42,
+    5: 0.35,
+    6: 0.40,
+    7: 0.44,
 }
 
 # Landing cap fractions (landCap)
@@ -74,9 +74,9 @@ LAND_CAP: dict[int, float] = {
     2: 0.22,
     3: 0.26,
     4: 0.32,
-    5: 0.36,
-    6: 0.40,
-    7: 0.44,
+    5: 0.38,
+    6: 0.42,
+    7: 0.46,
 }
 
 # Mob HP sponge durability hits (targetMobHealth)
@@ -129,7 +129,11 @@ CONCEPT_DUMP_VS_EVEN_MIN = 0.58
 CONCEPT_GOD_LANDING_MIN: dict[int, float] = {1: 0.03, 5: 0.22, 7: 0.30}
 CONCEPT_TIER_RISE_MIN: dict[tuple[int, int], float] = {(1, 5): 1.4, (5, 7): 1.10}
 
-FORMULA_REVISION = 45
+FORMULA_REVISION = 46
+
+# Landing paintEase blend — veterans keep relief without crushing god-form safety-net.
+LANDING_EASE_FLOOR = 0.70
+LANDING_EASE_SCALE = 0.30
 
 # Telemetry form bands — thresholds from pack form JSON peaks (see sim/out/form-band-reference.md).
 # formBoost = max live form mult across STR/SKP/PWR/ENE/VIT/RES (cap ~100).
@@ -237,7 +241,7 @@ def paint_ease(tier: int, dmz_level: int = 5500) -> float:
         over_ease = max(0.40, min(1.0, (next_gate / level) ** 0.5))
     ease = band_ease * over_ease
     if tier >= 4 and level >= 50000:
-        vet = max(0.70, min(1.0, (50000 / level) ** 0.25))
+        vet = max(0.78, min(1.0, (50000 / level) ** 0.25))
         ease *= vet
     return max(0.35, min(1.0, ease))
 
