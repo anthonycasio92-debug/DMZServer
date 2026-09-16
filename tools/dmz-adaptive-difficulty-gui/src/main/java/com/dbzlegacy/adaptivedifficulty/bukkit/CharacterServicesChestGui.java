@@ -386,6 +386,7 @@ public final class CharacterServicesChestGui implements Listener {
         Map<String, String> ph = ForgeBridge.charPlaceholders(subject);
         Map<String, String> vars = charCooldownVars(ph);
         vars.put("reskin_cost", ph.getOrDefault("reskin_cost", "?"));
+        vars.put("active_head_bone", ph.getOrDefault("active_head_bone", "none"));
 
         Holder holder = new Holder("reskin");
         Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Reskin"));
@@ -406,7 +407,7 @@ public final class CharacterServicesChestGui implements Listener {
         if (headBoneShopAllowed(ph)) {
             put(holder, inv, 24, tipBtn("character.reskin.bones", Material.PLAYER_HEAD, "&6&lHead Parts Shop",
                     List.of("&7Unlock & equip cross-race ears, horns, etc.",
-                            "&7Equipped &f" + ph.getOrDefault("active_head_bone", "?"),
+                            "&7Equipped &f{active_head_bone}",
                             "&eClick to browse"), vars),
                     SlotAction.page("bones"));
         }

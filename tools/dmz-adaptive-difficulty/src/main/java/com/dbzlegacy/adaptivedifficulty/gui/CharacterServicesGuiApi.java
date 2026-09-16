@@ -31,7 +31,7 @@ public final class CharacterServicesGuiApi {
         out.put("class_enabled", cfg.classChange.enabled ? "true" : "false");
         out.put("reskin_enabled", cfg.reskin.enabled ? "true" : "false");
         out.put("head_bone_shop_enabled", cfg.headBoneShop.enabled ? "true" : "false");
-        out.put("active_head_bone", CosmeticHeadBoneService.activeBone(player));
+        out.put("active_head_bone", titleBone(CosmeticHeadBoneService.activeBone(player)));
         out.put("current_race", title(DmzProgression.race(player)));
         out.put("current_class", FightingClassLabels.display(resolveFightingClassRaw(player)));
         putWalletPlaceholders(player, out);
