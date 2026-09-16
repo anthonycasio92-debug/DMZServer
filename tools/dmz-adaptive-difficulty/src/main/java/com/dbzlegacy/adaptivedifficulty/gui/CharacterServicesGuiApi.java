@@ -82,6 +82,7 @@ public final class CharacterServicesGuiApi {
         }
         if ("reskin".equals(p)) {
             lines.add("§7Change hair, colors, and other cosmetics.");
+            lines.add("§7Use §fHead Parts Shop §7here for cross-race ears, horns, and more.");
             lines.add("§7Fighting class cannot be changed during a reskin.");
             lines.add("§7Level, stats, and race are unchanged.");
             lines.add(costLine(player, CharacterServicesSystem.reskinCost(player)));

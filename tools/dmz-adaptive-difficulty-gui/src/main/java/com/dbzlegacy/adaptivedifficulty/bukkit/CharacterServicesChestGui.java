@@ -44,10 +44,10 @@ public final class CharacterServicesChestGui implements Listener {
                 case "race" -> raceList(viewer, subject);
                 case "class" -> classList(viewer, subject);
                 case "reskin" -> reskin(viewer, subject);
-                case "bones" -> boneShop(viewer, subject, 0);
+                case "bones" -> boneShop(viewer, subject, 0, "reskin");
                 default -> {
                     if (p.startsWith("bones:")) {
-                        yield boneShop(viewer, subject, parseBonePage(p));
+                        yield boneShop(viewer, subject, parseBonePage(p), "reskin");
                     }
                     yield main(viewer, subject);
                 }
@@ -97,14 +97,6 @@ public final class CharacterServicesChestGui implements Listener {
                 List.of("&7Pick a new race and how much progress to keep",
                         "&8{race_cooldown}", "&eClick to continue"), vars),
                 SlotAction.page("race"));
-        if ("true".equalsIgnoreCase(ph.getOrDefault("head_bone_shop_enabled", "false"))) {
-            put(holder, inv, 21, tipBtn("character.main.bones", Material.PLAYER_HEAD, "&6Head Parts Shop",
-                    List.of("&7Unlock ears, horns, and other parts",
-                            "&7from any race for your model",
-                            "&7Equipped &f" + ph.getOrDefault("active_head_bone", "?"),
-                            "&eClick to browse"), vars),
-                    SlotAction.page("bones"));
-        }
         put(holder, inv, 22, tipBtn("character.main.class", Material.ENCHANTED_BOOK, "&bChange Class",
                 List.of("&7Swap fighting class — base stats stay",
                         "&7Cost &f{class_cost}",
@@ -281,7 +273,7 @@ public final class CharacterServicesChestGui implements Listener {
         return inv;
     }
 
-    private Inventory boneShop(Player viewer, Player subject, int page) {
+    private Inventory boneShop(Player viewer, Player subject, int page, String returnPage) {
         Holder holder = new Holder("bones");
         Inventory inv = Bukkit.createInventory(holder, 54, invTitle(viewer, subject, "&8Head Parts"));
         holder.bind(inv);
@@ -343,7 +335,8 @@ public final class CharacterServicesChestGui implements Listener {
             put(holder, inv, 53, pageBtn("character.bones.next", Material.ARROW, "&7Page " + (page + 2) + " »",
                     null), SlotAction.page("bones:" + (page + 1)));
         }
-        footer54(holder, inv, "character.bones.back", SlotAction.page("main"));
+        String back = returnPage == null || returnPage.isBlank() ? "reskin" : returnPage;
+        footer54(holder, inv, "character.bones.back", SlotAction.page(back));
         return inv;
     }
 
@@ -373,10 +366,17 @@ public final class CharacterServicesChestGui implements Listener {
         put(holder, inv, 4, item(Material.PAINTING,
                 GuiTooltips.name("character.reskin.header", "&d&lReskin"),
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "reskin")))));
-        put(holder, inv, 22, tipBtn("character.reskin.open", Material.LIME_CONCRETE, "&a&lPay & Open Appearance",
+        put(holder, inv, 20, tipBtn("character.reskin.open", Material.LIME_CONCRETE, "&a&lPay & Open Appearance",
                 List.of("&7Cost &f{reskin_cost}", "&7Opens the in-game look editor",
                         "&8Pay-up OK · change returned", "&eClick to pay and open"), vars),
                 SlotAction.actNoReopen("reskin_confirm", "0"));
+        if ("true".equalsIgnoreCase(ph.getOrDefault("head_bone_shop_enabled", "false"))) {
+            put(holder, inv, 24, tipBtn("character.reskin.bones", Material.PLAYER_HEAD, "&6&lHead Parts Shop",
+                    List.of("&7Unlock & equip cross-race ears, horns, etc.",
+                            "&7Equipped &f" + ph.getOrDefault("active_head_bone", "?"),
+                            "&eClick to browse"), vars),
+                    SlotAction.page("bones"));
+        }
         footer45(holder, inv, "character.reskin.back", SlotAction.page("main"));
         return inv;
     }
