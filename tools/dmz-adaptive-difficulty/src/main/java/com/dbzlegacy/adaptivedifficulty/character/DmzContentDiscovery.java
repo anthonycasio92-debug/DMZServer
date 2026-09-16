@@ -74,12 +74,20 @@ public final class DmzContentDiscovery {
         return false;
     }
 
-    /** Union of DMZ runtime config and on-disk {@code stats.json} class keys. */
+    /**
+     * Fighting classes defined for a race — {@code stats.json} on disk is authoritative when present
+     * (per-race class list and order). Falls back to live {@link ConfigManager} only when the file
+     * is missing.
+     */
     public static List<String> classIdsForRace(String raceId) {
         if (raceId == null || raceId.isBlank()) {
             return List.of();
         }
         String race = raceId.trim().toLowerCase(Locale.ROOT);
+        List<String> fromFile = readClassIdsFromStatsFileOrdered(race);
+        if (!fromFile.isEmpty()) {
+            return fromFile;
+        }
         LinkedHashSet<String> out = new LinkedHashSet<>();
         try {
             RaceStatsConfig stats = ConfigManager.getRaceStats(race);
@@ -95,7 +103,6 @@ public final class DmzContentDiscovery {
             }
         } catch (Throwable ignored) {
         }
-        out.addAll(readClassIdsFromStatsFile(race));
         return out.isEmpty() ? List.of() : List.copyOf(out);
     }
 
@@ -143,8 +150,8 @@ public final class DmzContentDiscovery {
                 || Files.isRegularFile(raceDir.resolve("character.json"));
     }
 
-    private static Set<String> readClassIdsFromStatsFile(String raceId) {
-        LinkedHashSet<String> out = new LinkedHashSet<>();
+    private static List<String> readClassIdsFromStatsFileOrdered(String raceId) {
+        List<String> out = new ArrayList<>();
         Path stats = racesRoot().resolve(raceId).resolve("stats.json");
         if (!Files.isRegularFile(stats)) {
             return out;

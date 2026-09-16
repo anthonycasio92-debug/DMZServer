@@ -342,6 +342,7 @@ public final class CharacterServicesSystem {
                     }
                 }
                 RaceChangeClassMapper.applyRaceAndFightingClass(player, data, raceId, priorClass);
+                DmzFightingClassStatsSync.afterFightingClassChange(player, data);
                 CosmeticHeadBoneService.reapplyHeadBoneAfterRaceChange(player, priorHeadBone);
                 boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
                 List<RaceChangeSkillPreserve.Entry> skillSnapshot =
@@ -456,7 +457,10 @@ public final class CharacterServicesSystem {
             ch.setCharacterClass(classId);
             if (before != null) {
                 applyStats(data.getStats(), before);
+            } else {
+                DmzFightingClassStatsSync.applyClassBaseStats(player, race, classId);
             }
+            DmzFightingClassStatsSync.afterFightingClassChange(player, data);
             ClassPermissionSync.sync(player);
             RaceClassSync.sync(player);
             syncClient(player);
