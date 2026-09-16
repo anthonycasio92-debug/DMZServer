@@ -19,6 +19,7 @@ USER="${LIVE_SFTP_USER:-}"
 PASS="${LIVE_SFTP_PASS:-${SSHPASS:-}}"
 REMOTE_MODS="${LIVE_SFTP_MODS:-mods}"
 REMOTE_PLUGINS="${LIVE_SFTP_PLUGINS:-plugins}"
+RECYCLE="${LIVE_SFTP_RECYCLE:-recycle_bin}"
 
 if [[ -z "$HOST" || -z "$USER" || -z "$PASS" ]]; then
   echo "Live SFTP requires LIVE_SFTP_HOST, LIVE_SFTP_USER, and LIVE_SFTP_PASS" >&2
@@ -44,6 +45,29 @@ fi
 FORGE_NAME="$(basename "$FORGE_JAR")"
 GUI_NAME="$(basename "$GUI_JAR")"
 
+recycle_remote_lm_jars() {
+  local list_file
+  list_file="$(mktemp)"
+  printf 'ls -1 %s/LegacyMechanics-*.jar\nls -1 %s/LegacyMechanicsGUI-*.jar\n' "$REMOTE_MODS" "$REMOTE_PLUGINS" \
+    | "${SFTP_CMD[@]}" "$USER@$HOST" 2>/dev/null | rg -o 'LegacyMechanics[^[:space:]]+\.jar' | sort -u >"$list_file" || true
+  local cmds=""
+  while IFS= read -r name; do
+    [[ -z "$name" ]] && continue
+    if [[ "$name" == "$FORGE_NAME" || "$name" == "$GUI_NAME" ]]; then
+      continue
+    fi
+    if [[ "$name" == LegacyMechanics-*.jar ]]; then
+      cmds+="rename $REMOTE_MODS/$name $RECYCLE/$name"$'\n'
+    elif [[ "$name" == LegacyMechanicsGUI-*.jar ]]; then
+      cmds+="rename $REMOTE_PLUGINS/$name $RECYCLE/$name"$'\n'
+    fi
+  done <"$list_file"
+  rm -f "$list_file"
+  if [[ -n "$cmds" ]]; then
+    printf 'mkdir %s\n%s' "$RECYCLE" "$cmds" | "${SFTP_CMD[@]}" "$USER@$HOST"
+  fi
+}
+
 echo "LIVE deploy to $USER@$HOST:$PORT"
 echo "  $FORGE_NAME -> $REMOTE_MODS/"
 echo "  $GUI_NAME -> $REMOTE_PLUGINS/"
@@ -57,9 +81,15 @@ if [[ "${DEPLOY_LIVE_CONFIRM:-}" != "LIVE" ]]; then
 fi
 
 "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
+mkdir $RECYCLE
+mkdir $REMOTE_MODS
+mkdir $REMOTE_PLUGINS
 put $FORGE_JAR $REMOTE_MODS/$FORGE_NAME
 put $GUI_JAR $REMOTE_PLUGINS/$GUI_NAME
 bye
 EOF
 
-echo "Upload complete. Restart the live server from the panel, then /lm admin reload."
+recycle_remote_lm_jars
+
+echo "Upload complete. Older LM jars (if any) moved to $RECYCLE/ on the server."
+echo "Restart the live server from the panel, then /lm admin reload."
