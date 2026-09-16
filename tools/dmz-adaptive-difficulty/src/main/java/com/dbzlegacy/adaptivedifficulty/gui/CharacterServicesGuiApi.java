@@ -53,7 +53,8 @@ public final class CharacterServicesGuiApi {
         if ("race".equals(p)) {
             lines.add("§7Choose the race you want to become.");
             lines.add("§7Next you pick how much of your §fcore stats §7carry over.");
-            lines.add("§8Race forms and race skills will match the new race.");
+            lines.add("§7You keep ki skills, techniques, and shared form progress.");
+            lines.add("§8Race-only form ladders reset when the new race does not use them.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "race"));
             return lines;
         }

@@ -152,7 +152,7 @@ public final class CharacterServicesConfig {
     public static final class RaceChange {
         public boolean enabled = true;
         public long cooldownMs = 7L * 24L * 60L * 60L * 1000L;
-        public boolean keepSkillsOnRaceChange = false;
+        public boolean keepSkillsOnRaceChange = true;
         public Map<String, Long> preservationCostCopper = defaultPreservationCosts();
         public boolean levelCostMultiplier = true;
         public java.util.List<String> blockedRaces = Collections.emptyList();

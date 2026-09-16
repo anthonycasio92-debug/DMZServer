@@ -305,11 +305,19 @@ public final class CharacterServicesSystem {
                 refund(player, cost);
                 return "§cCharacter data unavailable.";
             }
+            boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
+            List<RaceChangeSkillPreserve.Entry> skillSnapshot =
+                    keepSkills ? RaceChangeSkillPreserve.capture(data.getSkills()) : List.of();
             clearForms(ch, player);
             ch.setRace(raceId);
             applyStats(data.getStats(), target);
-            RaceSkillSync.sync(player, raceId);
-            RaceClassSync.sync(player);
+            if (keepSkills) {
+                RaceChangeSkillPreserve.restore(data, currentRace, raceId, skillSnapshot);
+                RaceClassSync.syncRaceSkillOnly(player);
+            } else {
+                RaceSkillSync.sync(player, raceId);
+                RaceClassSync.sync(player);
+            }
             ClassPermissionSync.sync(player);
             syncClient(player);
             CharacterServicesStore.get().record(player.m_20148_().toString()).lastRaceChangeAt =
@@ -317,8 +325,11 @@ public final class CharacterServicesSystem {
             CharacterServicesStore.get().markDirty();
             audit(player, "Race Change", currentRace, raceId, preservationPercent, cost, true);
             String paid = cost > 0L ? " §7Paid §f" + formatCost(cost) + "§7." : "";
+            String kept = keepSkills
+                    ? " §7Ki skills, techniques, and shared form progress kept."
+                    : "";
             return "§aRace changed to §f" + titleCase(raceId)
-                    + "§a. Eligible stats preserved at §f" + preservationPercent + "%§a." + paid;
+                    + "§a. Eligible stats preserved at §f" + preservationPercent + "%§a." + kept + paid;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.error(
                     "[{}] race change failed for {}: {}",
