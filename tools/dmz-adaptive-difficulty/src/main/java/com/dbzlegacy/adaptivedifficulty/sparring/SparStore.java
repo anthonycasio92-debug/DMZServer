@@ -240,14 +240,39 @@ public final class SparStore {
             c.fromDojoUuid = from;
             c.fromMentorUuid = from;
         }
+        long now = System.currentTimeMillis();
+        if (!c.active && c.expiresAt <= 0L) {
+            c.expiresAt = now + 24L * 60L * 60L * 1000L;
+        }
         return c;
     }
 
+    /**
+     * Canonical mentor/dojo UUID for map keys and war matching (dashed, lower case).
+     */
     static String canonicalDojoKey(String raw) {
         if (raw == null || raw.isBlank()) {
             return "";
         }
-        return raw.trim().toLowerCase(Locale.ROOT);
+        String s = raw.trim();
+        try {
+            UUID id;
+            if (s.contains("-")) {
+                id = UUID.fromString(s);
+            } else if (s.length() == 32) {
+                id = UUID.fromString(
+                        s.substring(0, 8) + "-"
+                                + s.substring(8, 12) + "-"
+                                + s.substring(12, 16) + "-"
+                                + s.substring(16, 20) + "-"
+                                + s.substring(20, 32));
+            } else {
+                return s.toLowerCase(Locale.ROOT);
+            }
+            return id.toString().toLowerCase(Locale.ROOT);
+        } catch (IllegalArgumentException ignored) {
+            return s.toLowerCase(Locale.ROOT);
+        }
     }
 
     /** Newest-first snapshot of finished spars for Stats (never null). */

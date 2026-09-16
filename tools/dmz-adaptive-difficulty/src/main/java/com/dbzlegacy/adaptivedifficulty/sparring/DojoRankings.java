@@ -60,6 +60,44 @@ public final class DojoRankings {
         return SparStore.get().bond(player.m_20148_()).apprenticeCount() > 0;
     }
 
+    /** UUID keys that represent this player as a dojo master in war pending lists. */
+    private static List<String> dojoWarSelfKeys(ServerPlayer player) {
+        List<String> keys = new ArrayList<>();
+        if (player == null) {
+            return keys;
+        }
+        String self = SparStore.canonicalDojoKey(player.m_20148_().toString());
+        if (!self.isEmpty()) {
+            keys.add(self);
+        }
+        if (isDojoMaster(player)) {
+            String home = homeDojoKey(player);
+            if (home != null && !home.isBlank()) {
+                String canon = SparStore.canonicalDojoKey(home);
+                if (!canon.isEmpty() && keys.stream().noneMatch(k -> k.equalsIgnoreCase(canon))) {
+                    keys.add(canon);
+                }
+            }
+        }
+        return keys;
+    }
+
+    private static boolean matchesDojoWarSelf(ServerPlayer player, String dojoUuid) {
+        if (dojoUuid == null || dojoUuid.isBlank()) {
+            return false;
+        }
+        String canon = SparStore.canonicalDojoKey(dojoUuid);
+        if (canon.isEmpty()) {
+            return false;
+        }
+        for (String self : dojoWarSelfKeys(player)) {
+            if (canon.equalsIgnoreCase(self)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static String dojoDisplayName(String dojoKey) {
         if (dojoKey == null || dojoKey.isBlank()) {
             return "?";
@@ -802,8 +840,8 @@ public final class DojoRankings {
         if (!isDojoMaster(target)) {
             return "§cThey are not a dojo master.";
         }
-        String fromKey = challenger.m_20148_().toString().toLowerCase(Locale.ROOT);
-        String toKey = target.m_20148_().toString().toLowerCase(Locale.ROOT);
+        String fromKey = SparStore.canonicalDojoKey(challenger.m_20148_().toString());
+        String toKey = SparStore.canonicalDojoKey(target.m_20148_().toString());
         if (findChallenge(fromKey, toKey) != null) {
             return "§cA challenge already exists between these dojos.";
         }
@@ -867,12 +905,14 @@ public final class DojoRankings {
             return out;
         }
         long now = System.currentTimeMillis();
-        String key = player.m_20148_().toString().toLowerCase(Locale.ROOT);
         MinecraftServer server = player.m_20194_();
 
         for (Map.Entry<String, SparStore.DojoChallenge> e : SparStore.get().dojoChallenges.entrySet()) {
             SparStore.DojoChallenge c = e.getValue();
-            if (c == null || c.active || c.expiresAt <= now) {
+            if (c == null || c.active) {
+                continue;
+            }
+            if (c.expiresAt > 0L && c.expiresAt <= now) {
                 continue;
             }
             String toUuid = targetUuid(c, e.getKey());
@@ -880,12 +920,12 @@ public final class DojoRankings {
             if (toUuid.isEmpty() || fromUuid.isEmpty()) {
                 continue;
             }
-            if (key.equalsIgnoreCase(toUuid)) {
+            if (matchesDojoWarSelf(player, toUuid)) {
                 String name = blank(c.fromDojoName, "?").replace('\t', ' ').replace('\n', ' ');
                 boolean online = isOnline(server, fromUuid);
                 out.add(fromUuid + "\t" + name + "\tIN\t" + c.expiresAt + "\t"
                         + (online ? "1" : "0") + "\twar");
-            } else if (key.equalsIgnoreCase(fromUuid)) {
+            } else if (matchesDojoWarSelf(player, fromUuid)) {
                 String name = blank(c.toDojoName, "?").replace('\t', ' ').replace('\n', ' ');
                 boolean online = isOnline(server, toUuid);
                 out.add(toUuid + "\t" + name + "\tOUT\t" + c.expiresAt + "\t"
@@ -906,8 +946,8 @@ public final class DojoRankings {
         if (!isDojoMaster(master)) {
             return "§cOnly dojo masters can cancel war challenges.";
         }
-        String fromKey = master.m_20148_().toString().toLowerCase(Locale.ROOT);
-        String targetKey = normalizeMasterUuid(targetMasterRaw);
+        String fromKey = SparStore.canonicalDojoKey(master.m_20148_().toString());
+        String targetKey = SparStore.canonicalDojoKey(normalizeMasterUuid(targetMasterRaw));
         long now = System.currentTimeMillis();
         Iterator<Map.Entry<String, SparStore.DojoChallenge>> it =
                 SparStore.get().dojoChallenges.entrySet().iterator();

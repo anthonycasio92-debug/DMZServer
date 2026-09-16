@@ -1259,6 +1259,10 @@ public final class ForgeBridge {
     }
 
     private static List<String> invokeSparStringList(Player player, String methodName) {
+        return invokeSparStringList(player, methodName, false);
+    }
+
+    private static List<String> invokeSparStringList(Player player, String methodName, boolean retried) {
         Object nms = nmsPlayer(player);
         if (nms == null) {
             return List.of();
@@ -1276,6 +1280,10 @@ public final class ForgeBridge {
                 default -> null;
             };
             if (m == null) {
+                if (!retried && "pendingDojoWarCards".equals(methodName)) {
+                    sparPendingDojoWarCardsMethod = null;
+                    return invokeSparStringList(player, methodName, true);
+                }
                 return List.of();
             }
             Object raw = m.invoke(null, nms);
@@ -1292,7 +1300,10 @@ public final class ForgeBridge {
                 return out;
             }
         } catch (Throwable ignored) {
-            // Optional API — empty when missing.
+            if (!retried && "pendingDojoWarCards".equals(methodName)) {
+                sparPendingDojoWarCardsMethod = null;
+                return invokeSparStringList(player, methodName, true);
+            }
         }
         return List.of();
     }

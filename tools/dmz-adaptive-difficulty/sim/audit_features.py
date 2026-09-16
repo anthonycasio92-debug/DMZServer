@@ -962,6 +962,12 @@ def main() -> int:
     check("dojoWar hub page", "private Inventory dojoWar" in spar_chest
           and "openDojoWar" in cmi)
     check("DojoRankings.warInfoLines", "warInfoLines" in read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.java"))
+    dojo_rank_war = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.java")
+    spar_store = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparStore.java")
+    check("dojo war pending self keys", "dojoWarSelfKeys" in dojo_rank_war
+          and "matchesDojoWarSelf" in dojo_rank_war)
+    check("canonicalDojoKey UUID normalize", "UUID.fromString" in spar_store
+          and "canonicalDojoKey" in spar_store)
 
     print("\n=== Dojo rankings banner colors (2.3.187) ===")
     check("dojoTopBanner uses itemColor", "itemColor" in board and "dojoTopBanner" in board
