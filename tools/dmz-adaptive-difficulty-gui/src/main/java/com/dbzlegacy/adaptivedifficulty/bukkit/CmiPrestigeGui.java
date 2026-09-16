@@ -70,7 +70,7 @@ public final class CmiPrestigeGui {
 
         boolean ready = "true".equalsIgnoreCase(ph.getOrDefault("ready", "false"));
         List<String> confirmDefaults = List.of(
-                "&7Click to prestige (confirm within 10s)",
+                "&7Click to prestige (confirm within 10s)8Prestige — confirm again within 10 seconds",
                 "&8Resets DMZ stats · awards held Prestige");
         CMIGuiButton confirm = new CMIGuiButton(20,
                 ready ? Material.LIME_CONCRETE : Material.ORANGE_CONCRETE,
@@ -606,7 +606,7 @@ public final class CmiPrestigeGui {
                 GuiTooltips.name("prestige.main.progression", "&dProgression"));
         btn.lockField();
         btn.addLore(GuiTooltips.buttonLore("prestige.main.progression",
-                List.of("&7Skills · TP · Race · Combat flags", "&eClick to open")));
+                List.of("&7Skills · TP · Race · Combat flags", "&eClick to open8Opens this menu")));
         btn.addCommand("lmdo lm open progression");
         btn.setCloseInv(true);
         return btn;

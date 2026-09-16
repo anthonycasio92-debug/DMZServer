@@ -919,6 +919,59 @@ def main() -> int:
     check("My Dojo Chest release passes {name}",
           "pick_release" in chest_own and 'Map.of("name", dojoLabel)' in chest_own)
 
+    print("\n=== Dojo banner picker {name} (2.3.181) ===")
+    cmi_banner = cmi.split("private static void openDojoBannerPicker", 1)[1].split("private static void openAdmin", 1)[0]
+    chest_banner = chest.split("private Inventory dojoBannerPicker", 1)[1].split("private Inventory detailBoard", 1)[0]
+    check("CMI banner_pick passes color name var",
+          "spar.dojo.banner_pick" in cmi_banner and 'Map.of("name", label)' in cmi_banner)
+    check("Chest banner_pick uses GuiTooltips.name with vars",
+          "spar.dojo.banner_pick" in chest_banner and "bannerVars" in chest_banner)
+
+    print("\n=== Dojo season ladder banners (2.3.182) ===")
+    dojo_rank = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.java")
+    spar_api = read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.java")
+    board = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/GuiBoardHelper.java")
+    bridge = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/ForgeBridge.java")
+    check("DojoRankings.topCards", "topCards(String category, int limit)" in dojo_rank)
+    check("SparGuiApi.dojoTopCards", "dojoTopCards(ServerPlayer player, String category)" in spar_api)
+    check("GuiBoardHelper dojoTopBanner", "dojoTopBanner" in board and "parseDojoTopCards" in board)
+    check("ForgeBridge sparDojoTopCards", "sparDojoTopCards" in bridge)
+    check("CMI dojo rank uses banner cards",
+          "sparDojoTopCards" in cmi and "dojoTopBanner" in cmi)
+    check("Chest dojo rank uses banner cards",
+          "sparDojoTopCards" in chest and "dojoTopBanner" in chest)
+
+    print("\n=== GUI tooltip catalog humanize (2.3.185) ===")
+    tips185 = read(ROOT / "tools/dmz-adaptive-difficulty-gui/src/main/resources/gui-tooltips.json")
+    gui_tt = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/GuiTooltips.java")
+    check("gui-tooltips catalog revision", '"_catalogRevision": 186' in tips185)
+    check("GuiTooltips CATALOG_REVISION 186", "CATALOG_REVISION = 186" in gui_tt)
+    check("catalog upgrade on reload", "catalogRevision" in gui_tt and "catalogUpgraded" in gui_tt)
+    check("humanize_gui_tooltips script", (ROOT / "tools/dmz-adaptive-difficulty/sim/humanize_gui_tooltips.py").is_file())
+
+    print("\n=== Dojo rankings menu layout (2.3.183) ===")
+    plugin = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/AdaptiveDifficultyGuiPlugin.java")
+    check("dojoRankLadderSlots avoids control row", "dojoRankLadderSlots" in board)
+    check("CMI war challenge lmdo (no bare do)", "dojo_challenge uuid:" in cmi
+          and "lmdo spar do dojo_challenge" not in cmi)
+    check("lmdo spar do unwrap", '"do".equalsIgnoreCase(args[1])' in plugin
+          and "action = args[2]" in plugin)
+
+    print("\n=== Dojo War hub (2.3.188) ===")
+    spar_chest = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/SparChestGui.java")
+    check("dojoWar hub page", "private Inventory dojoWar" in spar_chest
+          and "openDojoWar" in cmi)
+    check("DojoRankings.warInfoLines", "warInfoLines" in read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/DojoRankings.java"))
+
+    print("\n=== Dojo rankings banner colors (2.3.187) ===")
+    check("dojoTopBanner uses itemColor", "itemColor" in board and "dojoTopBanner" in board
+          and "itemColor(\"&e#" in board)
+
+    print("\n=== Rival Teams GUI layout (2.3.186) ===")
+    chest_diff = read(GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit/DifficultyChestGui.java")
+    check("teamMutualRivalSlots avoids mode row", "teamMutualRivalSlots" in board
+          and "teamMutualRivalSlots" in chest_diff and "teamMutualRivalSlots" in cmi_gui)
+    check("resolveReturnPage team", 'case "team" -> "team"' in bridge)
 
     print("\n=== Dojo membership roster (2.3.154) ===")
     spar_sys152 = read(SRC / "com/dbzlegacy/adaptivedifficulty/sparring/SparringSystem.java")

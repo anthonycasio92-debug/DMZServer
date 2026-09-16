@@ -1072,6 +1072,10 @@ public final class SparringSystem {
         return DojoRankings.topLines(category, limit);
     }
 
+    public static List<String> dojoTopCards(String category, int limit) {
+        return DojoRankings.topCards(category, limit);
+    }
+
     public static List<String> dojoInfoLines(ServerPlayer player) {
         return DojoRankings.infoLines(player);
     }

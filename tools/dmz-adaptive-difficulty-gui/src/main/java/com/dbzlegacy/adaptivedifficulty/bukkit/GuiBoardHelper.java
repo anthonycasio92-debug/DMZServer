@@ -7,7 +7,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.ChatColor;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 /** Shared inventory layout helpers — centered rows, top boards with heads, detail tiles. */
 final class GuiBoardHelper {
@@ -97,6 +99,64 @@ final class GuiBoardHelper {
         return out;
     }
 
+    /**
+     * Dojo rankings ladder — interior rows 1–2 only (slots 10–16, 19–25).
+     * Never uses row 3 (28–34) where sort / Members / HoF / war controls live.
+     * When {@code reserveWarRow}, leaves slot 19 open for the Dojo War hub button.
+     */
+    /**
+     * Rival Teams page — mutual rival heads only on rows that do not overlap mode controls
+     * (slots 20, 22, 24) or Open Rival (31).
+     */
+    static int[] teamMutualRivalSlots(int count) {
+        int n = Math.max(0, count);
+        if (n == 0) {
+            return new int[0];
+        }
+        if (n <= ROW_WIDTH) {
+            int start = 10 + (ROW_WIDTH - n) / 2;
+            int[] out = new int[n];
+            for (int i = 0; i < n; i++) {
+                out[i] = start + i;
+            }
+            return out;
+        }
+        int[] pool = {
+                10, 11, 12, 13, 14, 15, 16,
+                19, 21, 23, 25, 26,
+                28, 29, 30, 32, 33, 34
+        };
+        n = Math.min(n, pool.length);
+        int[] out = new int[n];
+        for (int i = 0; i < n; i++) {
+            out[i] = pool[i];
+        }
+        return out;
+    }
+
+    static int[] dojoRankLadderSlots(int count, boolean reserveWarRow) {
+        List<Integer> pool = new ArrayList<>();
+        for (int s = 10; s <= 16; s++) {
+            pool.add(s);
+        }
+        for (int s = 19; s <= 25; s++) {
+            if (reserveWarRow && s == 19) {
+                continue;
+            }
+            pool.add(s);
+        }
+        int n = Math.min(Math.max(0, count), pool.size());
+        if (n == 0) {
+            return new int[0];
+        }
+        int start = (pool.size() - n) / 2;
+        int[] out = new int[n];
+        for (int i = 0; i < n; i++) {
+            out[i] = pool.get(start + i);
+        }
+        return out;
+    }
+
     /** Single centered row (middle) for small button groups. */
     static int[] centeredRow(int count) {
         int n = Math.max(0, Math.min(count, ROW_WIDTH));
@@ -179,6 +239,83 @@ final class GuiBoardHelper {
             }
         }
         return out;
+    }
+
+    /** Dojo season ladder row from Forge {@code rank\tkey\tname\tbanner\tvalue\troster}. */
+    static final class DojoTopCard {
+        final int rank;
+        final String dojoKey;
+        final String name;
+        final String bannerMaterial;
+        final String value;
+        final int rosterSize;
+
+        DojoTopCard(int rank, String dojoKey, String name, String bannerMaterial, String value, int rosterSize) {
+            this.rank = rank;
+            this.dojoKey = dojoKey == null ? "" : dojoKey;
+            this.name = name == null || name.isBlank() ? "?" : name;
+            this.bannerMaterial = bannerMaterial == null || bannerMaterial.isBlank()
+                    ? "WHITE_BANNER" : bannerMaterial;
+            this.value = value == null ? "" : value;
+            this.rosterSize = Math.max(0, rosterSize);
+        }
+    }
+
+    static List<DojoTopCard> parseDojoTopCards(List<String> encoded) {
+        List<DojoTopCard> out = new ArrayList<>();
+        if (encoded == null) {
+            return out;
+        }
+        for (String raw : encoded) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            String[] p = raw.split("\t", -1);
+            if (p.length < 5) {
+                continue;
+            }
+            try {
+                int rank = Integer.parseInt(p[0].trim());
+                String key = p[1];
+                String name = p[2];
+                String banner = p[3];
+                String value = p[4];
+                int roster = 0;
+                if (p.length > 5 && !p[5].isBlank()) {
+                    roster = Integer.parseInt(p[5].trim());
+                }
+                out.add(new DojoTopCard(rank, key, name, banner, value, roster));
+            } catch (NumberFormatException ignored) {
+                // skip malformed row
+            }
+        }
+        return out;
+    }
+
+    /** Banner stack for a dojo ladder row (display-only). */
+    static ItemStack dojoTopBanner(DojoTopCard card) {
+        if (card == null) {
+            return new ItemStack(Material.WHITE_BANNER);
+        }
+        Material mat = Material.matchMaterial(card.bannerMaterial);
+        if (mat == null || !mat.name().endsWith("_BANNER")) {
+            mat = Material.WHITE_BANNER;
+        }
+        ItemStack stack = new ItemStack(mat);
+        ItemMeta meta = stack.getItemMeta();
+        meta.setDisplayName(itemColor("&e#" + card.rank + " &f" + card.name));
+        List<String> lore = new ArrayList<>();
+        if (!card.value.isBlank()) {
+            lore.add(itemColor("&7" + card.value));
+        }
+        if (card.rosterSize > 0) {
+            lore.add(itemColor("&8" + card.rosterSize + " fighter" + (card.rosterSize == 1 ? "" : "s")));
+        }
+        lore.add("");
+        lore.add(itemColor("&8Season leaderboard"));
+        meta.setLore(lore);
+        stack.setItemMeta(meta);
+        return stack;
     }
 
     /** Build a player-head stack for a leaderboard entry. */
@@ -670,5 +807,13 @@ final class GuiBoardHelper {
 
     static String amp(String s) {
         return s == null ? "" : s.replace('§', '&');
+    }
+
+    /** Bukkit item display: normalize §→& then translate & codes for ItemMeta. */
+    static String itemColor(String s) {
+        if (s == null) {
+            return "";
+        }
+        return ChatColor.translateAlternateColorCodes('&', s.replace('§', '&'));
     }
 }

@@ -177,7 +177,7 @@ public final class CmiProgressionGui {
         };
         for (int i = 0; i < pages.length && i < slots.length; i++) {
             gui.addButton(pageBtn(slots[i], "progression.main." + pages[i], mats[i], titles[i], pages[i],
-                    tips[i], "", "&eClick to open"));
+                    tips[i], "", "&eClick to open8Opens this menu"));
         }
 
         if (ForgeBridge.isStaff(player)) {
@@ -263,7 +263,7 @@ public final class CmiProgressionGui {
             }
             if (staff) {
                 lore.add("");
-                lore.add("&eClick to toggle");
+                lore.add("&eClick to toggle8Click to switch");
             }
             String flagTitle = (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF");
             Map<String, String> flagVars = Map.of(
@@ -310,22 +310,22 @@ public final class CmiProgressionGui {
         gui.addButton(header);
         gui.addButton(actionBtn(19, "progression.boost.n125_30", Material.GOLD_NUGGET, "&e1.25x · 30m",
                 "boost", "1.25:30", "boost_panel",
-                List.of("&7Start 1.25x for 30 minutes", "", "&eClick to start")));
+                List.of("&7Start 1.25x for 30 minutes", "", "&eClick to start8Start this boost")));
         gui.addButton(actionBtn(20, "progression.boost.n15_30", Material.GOLD_INGOT, "&e1.5x · 30m",
                 "boost", "1.5:30", "boost_panel",
-                List.of("&7Start 1.5x for 30 minutes", "", "&eClick to start")));
+                List.of("&7Start 1.5x for 30 minutes", "", "&eClick to start8Start this boost")));
         gui.addButton(actionBtn(21, "progression.boost.n2_30", Material.GOLD_BLOCK, "&62x · 30m",
                 "boost", "2:30", "boost_panel",
-                List.of("&7Start 2x for 30 minutes", "", "&eClick to start")));
+                List.of("&7Start 2x for 30 minutes", "", "&eClick to start8Start this boost")));
         gui.addButton(actionBtn(22, "progression.boost.n2_60", Material.GOLD_BLOCK, "&62x · 60m",
                 "boost", "2:60", "boost_panel",
-                List.of("&7Start 2x for 60 minutes", "", "&eClick to start")));
+                List.of("&7Start 2x for 60 minutes", "", "&eClick to start8Start this boost")));
         gui.addButton(actionBtn(23, "progression.boost.n3_30", Material.CLOCK, "&e3x · 30m",
                 "boost", "3:30", "boost_panel",
-                List.of("&7Start 3x for 30 minutes", "", "&eClick to start")));
+                List.of("&7Start 3x for 30 minutes", "", "&eClick to start8Start this boost")));
         gui.addButton(actionBtn(25, "progression.boost.end", Material.BARRIER, "&cEnd Boost",
                 "boost", "end", "boost_panel",
-                List.of("&7Stop the active global TP boost", "", "&eClick to end")));
+                List.of("&7Stop the active global TP boost", "", "&eClick to end8Stop the active boost")));
         gui.addButton(pageBtn(31, "progression.boost.refresh", Material.CLOCK, "&7Refresh Status", "boost_panel",
                 "&7Reload this panel"));
         gui.addButton(pageBtn(36, "progression.boost.back", Material.ARROW, "&7Back", "tp", "&7TP Gains"));
@@ -439,7 +439,7 @@ public final class CmiProgressionGui {
         gui.addButton(actionBtn(8, "progression.android.convert_self", Material.NETHERITE_INGOT,
                 "&aConvert Yourself",
                 "android", player.getName(), "android_convert",
-                List.of("&7Apply conversion to you", "", "&eClick to convert")));
+                List.of("&7Apply conversion to you", "", "&eClick to convert8Convert now")));
         List<Player> online = GuiPlayerPicker.onlineExcept(player);
         int placed = 0;
         for (Player other : online) {
@@ -449,7 +449,7 @@ public final class CmiProgressionGui {
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
             CMIGuiButton btn = new CMIGuiButton(slot,
                     GuiPlayerPicker.head(other, "&f" + other.getName(),
-                            List.of("&7Convert to Android", "", "&eClick to convert")));
+                            List.of("&7Convert to Android", "", "&eClick to convert8Convert now")));
             btn.lockField();
             btn.addCommand("lmdo progression android " + other.getName() + " android_convert");
             gui.addButton(btn);

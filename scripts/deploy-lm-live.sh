@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Upload LegacyMechanics Forge + GUI jars to LIVE production (explicit host only).
-# Run only when the owner asks for a live upload — never from CI or by default.
+# Never defaults host/user — avoids accidental test deploy.
 #
-# Credentials: repo-root live-sftp.env (gitignored) or LIVE_SFTP_* env vars.
+# Set via environment or repo-root live-sftp.env (gitignored):
+#   LIVE_SFTP_HOST, LIVE_SFTP_PORT (default 2022), LIVE_SFTP_USER, LIVE_SFTP_PASS
+# Optional: LIVE_SFTP_MODS, LIVE_SFTP_PLUGINS (default mods / plugins)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -14,12 +16,13 @@ fi
 HOST="${LIVE_SFTP_HOST:-}"
 PORT="${LIVE_SFTP_PORT:-2022}"
 USER="${LIVE_SFTP_USER:-}"
-PASS="${LIVE_SFTP_PASS:-}"
+PASS="${LIVE_SFTP_PASS:-${SSHPASS:-}}"
 REMOTE_MODS="${LIVE_SFTP_MODS:-mods}"
 REMOTE_PLUGINS="${LIVE_SFTP_PLUGINS:-plugins}"
 
 if [[ -z "$HOST" || -z "$USER" || -z "$PASS" ]]; then
-  echo "Live SFTP requires live-sftp.env or LIVE_SFTP_HOST, LIVE_SFTP_USER, LIVE_SFTP_PASS." >&2
+  echo "Live SFTP requires LIVE_SFTP_HOST, LIVE_SFTP_USER, and LIVE_SFTP_PASS" >&2
+  echo "(or live-sftp.env in repo root — see docs/DEPLOY.md)." >&2
   exit 1
 fi
 
@@ -45,7 +48,7 @@ echo "LIVE deploy to $USER@$HOST:$PORT"
 echo "  $FORGE_NAME -> $REMOTE_MODS/"
 echo "  $GUI_NAME -> $REMOTE_PLUGINS/"
 if [[ "${DEPLOY_LIVE_CONFIRM:-}" != "LIVE" ]]; then
-  echo "Set DEPLOY_LIVE_CONFIRM=LIVE to confirm (required for non-interactive runs)." >&2
+  echo "Set DEPLOY_LIVE_CONFIRM=LIVE to skip interactive confirm (cloud agents)." >&2
   read -r -p "Type LIVE to confirm: " confirm
   if [[ "$confirm" != "LIVE" ]]; then
     echo "Aborted."
@@ -54,10 +57,9 @@ if [[ "${DEPLOY_LIVE_CONFIRM:-}" != "LIVE" ]]; then
 fi
 
 "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
-mkdir recycle_bin
 put $FORGE_JAR $REMOTE_MODS/$FORGE_NAME
 put $GUI_JAR $REMOTE_PLUGINS/$GUI_NAME
 bye
 EOF
 
-echo "Upload complete. Move older LM jars to recycle_bin/ if duplicates remain, then restart the server."
+echo "Upload complete. Restart the live server from the panel, then /lm admin reload."
