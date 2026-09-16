@@ -60,6 +60,7 @@ public final class CharacterServicesGuiApi {
             lines.add("§8Prestige races need their Fabled unlock skill.");
             lines.add("§7You keep ki skills, techniques, and shared form progress.");
             lines.add("§7Purchased head parts stay unlocked across race changes.");
+            lines.add("§7Your fighting class id is kept when the new race has it (new race class stats).");
             lines.add("§8Race-only form ladders reset when the new race does not use them.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "race"));
             return lines;

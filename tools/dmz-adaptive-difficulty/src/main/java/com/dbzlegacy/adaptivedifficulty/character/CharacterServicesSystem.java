@@ -330,11 +330,18 @@ public final class CharacterServicesSystem {
             String priorHeadBone = CosmeticHeadBoneService.activeBone(player);
             if (fullWipe) {
                 applyFullProgressWipe(player, data);
-                RaceChangeCreationFlow.prepareCharacterData(player, data, raceId);
                 RaceChangeCreationFlow.begin(player, raceId, priorHeadBone);
+                RaceChangeCreationFlow.prepareCharacterData(player, data, raceId);
                 RaceChangeCreationFlow.openEditor(player);
             } else {
-                ch.setRace(raceId);
+                String priorClass = DmzProgression.fightingClass(player);
+                if (priorClass == null || priorClass.isBlank()) {
+                    try {
+                        priorClass = ch.getCharacterClass();
+                    } catch (Throwable ignored) {
+                    }
+                }
+                RaceChangeClassMapper.applyRaceAndFightingClass(player, data, raceId, priorClass);
                 CosmeticHeadBoneService.reapplyHeadBoneAfterRaceChange(player, priorHeadBone);
                 boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
                 List<RaceChangeSkillPreserve.Entry> skillSnapshot =
@@ -367,8 +374,20 @@ public final class CharacterServicesSystem {
             String kept = keepSkills
                     ? " §7Ki skills, techniques, and shared form progress kept."
                     : "";
+            String classNote = "";
+            if (!fullWipe) {
+                String cls = DmzProgression.fightingClass(player);
+                if (cls != null && !cls.isBlank()) {
+                    String label = FightingClassLabels.display(cls);
+                    if (label == null || label.isBlank() || "Not set".equals(label)) {
+                        label = titleCase(cls);
+                    }
+                    classNote = " §7Fighting class §f" + label + " §7(" + raceId + " stats).";
+                }
+            }
             return "§aRace changed to §f" + titleCase(raceId)
                     + "§a. Eligible stats preserved at §f" + preservationPercent + "%§a."
+                    + classNote
                     + kept
                     + " §7Head part unlocks are kept."
                     + paid;

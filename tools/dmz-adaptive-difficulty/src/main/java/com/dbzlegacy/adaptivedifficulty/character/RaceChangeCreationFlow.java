@@ -38,9 +38,14 @@ public final class RaceChangeCreationFlow {
                 && CosmeticHeadBoneService.hasPersistedUnlock(player, headBoneToRestore)) {
             keep = headBoneToRestore.trim().toLowerCase();
         }
+        String priorClass = DmzProgression.fightingClass(player);
         ACTIVE.put(
                 player.m_20148_(),
-                new Session(targetRaceId.trim().toLowerCase(), System.currentTimeMillis(), keep));
+                new Session(
+                        targetRaceId.trim().toLowerCase(),
+                        System.currentTimeMillis(),
+                        keep,
+                        priorClass == null ? "" : priorClass.trim().toLowerCase()));
     }
 
     public static boolean isActive(ServerPlayer player) {
@@ -61,6 +66,13 @@ public final class RaceChangeCreationFlow {
         Character ch = data.getCharacter();
         if (ch != null) {
             ch.setRace(targetRaceId);
+            Session session = session(player);
+            String priorClass = session == null ? "" : session.priorFightingClass;
+            String mapped = RaceChangeClassMapper.resolveClassForRace(priorClass, targetRaceId);
+            try {
+                ch.setCharacterClass(mapped);
+            } catch (Throwable ignored) {
+            }
             // Do not set class to "" — DMZ client builds lang keys as class.dragonminez.<id>
             // and an empty id shows as the broken literal "class.dragonminez".
             // CreateCharacterC2S applies the player's new class after setup.
@@ -163,5 +175,5 @@ public final class RaceChangeCreationFlow {
         // Progression sync is sent from openEditor() after prepareCharacterData.
     }
 
-    private record Session(String targetRaceId, long startedAt, String keepHeadBone) {}
+    private record Session(String targetRaceId, long startedAt, String keepHeadBone, String priorFightingClass) {}
 }
