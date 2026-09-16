@@ -96,8 +96,9 @@ public final class CmiHubGui {
 
         // Row 4 — Character Services · Android remove + staff tools
         gui.addButton(openBtn(player, 30, "hub.main.character", Material.PLAYER_HEAD, "&dCharacter Services", "character",
-                "&7Race · Class · Reskin",
-                "&8Ancient Coins · level-scaled costs",
+                "&7Change race, class, or looks",
+                "&7without wiping your whole build",
+                "&8Paid with Ancient Coins",
                 "&eClick to open"));
         gui.addButton(openBtn(player, 31, "hub.main.android_remove", Material.REDSTONE, "&cRemove Android", "android_remove",
                 "&7Remove your Android upgrade",

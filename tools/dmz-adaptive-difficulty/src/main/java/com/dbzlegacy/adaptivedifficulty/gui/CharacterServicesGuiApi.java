@@ -47,20 +47,21 @@ public final class CharacterServicesGuiApi {
             return lines;
         }
         if ("race".equals(p)) {
-            lines.add("§7Pick a new race, then preservation %.");
-            lines.add("§8Race forms/skills recalculate for the new race.");
+            lines.add("§7Choose the race you want to become.");
+            lines.add("§7Next you pick how much of your §fcore stats §7carry over.");
+            lines.add("§8Race forms and race skills will match the new race.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "race"));
             return lines;
         }
         if ("class".equals(p)) {
-            lines.add("§7Change fighting class — base stats stay.");
-            lines.add("§8Class skills & progression recalculate.");
+            lines.add("§7Pick a new fighting class.");
+            lines.add("§7Your base combat stats stay — class skills and perks reset.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "class"));
             return lines;
         }
         if ("reskin".equals(p)) {
-            lines.add("§7Appearance only — §fno stat changes§7.");
-            lines.add("§8Opens DMZ customize screen.");
+            lines.add("§7Change hair, colors, and other cosmetics.");
+            lines.add("§7Nothing here changes level, stats, class, or race.");
             lines.add(CharacterServicesSystem.cooldownLine(player, "reskin"));
             return lines;
         }
@@ -69,29 +70,32 @@ public final class CharacterServicesGuiApi {
             int pct = parsePct(bits.length > 2 ? bits[2] : "100");
             lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
             long cost = CharacterServicesSystem.raceCost(player, pct);
-            lines.add("§7Cost §f" + DmzRewards.formatWhole(cost) + " §7AC §8(level-scaled)");
+            lines.add("§7Price §f" + DmzRewards.formatWhole(cost)
+                    + " §7Ancient Coins §8(scales with your level)");
             return lines;
         }
         if (p.startsWith("race_confirm:")) {
             String[] bits = p.split(":", 3);
             int pct = parsePct(bits.length > 2 ? bits[2] : "100");
             String race = bits.length > 1 ? bits[1] : "?";
-            lines.add("§7New race §f" + title(race));
-            lines.add("§7Preservation §f" + pct + "%");
+            lines.add("§7You are becoming §f" + title(race) + "§7.");
+            lines.add("§7Keeping §f" + pct + "% §7of eligible stats:");
             lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
             long cost = CharacterServicesSystem.raceCost(player, pct);
-            lines.add("§7Cost §f" + DmzRewards.formatWhole(cost) + " §7AC");
-            lines.add("§cCannot be undone automatically.");
+            lines.add("§7Total cost §f" + DmzRewards.formatWhole(cost) + " §7Ancient Coins");
+            lines.add("§cStaff cannot auto-revert this for you.");
             return lines;
         }
         if (p.startsWith("class_confirm:")) {
             String cls = p.substring("class_confirm:".length());
-            lines.add("§7New class §f" + title(cls));
-            lines.add("§7Cost §f" + DmzRewards.formatWhole(CharacterServicesSystem.classCost(player)) + " §7AC");
+            lines.add("§7New class: §f" + title(cls));
+            lines.add("§7Cost §f" + DmzRewards.formatWhole(CharacterServicesSystem.classCost(player))
+                    + " §7Ancient Coins");
+            lines.add("§8Class progression and class skills will reset.");
             return lines;
         }
-        lines.add("§7Evolve your character without a full wipe.");
-        lines.add("§8Race · Class · Reskin");
+        lines.add("§7Rebuild your character without starting from zero.");
+        lines.add("§7Race change, class change, or cosmetic reskin.");
         return lines;
     }
 

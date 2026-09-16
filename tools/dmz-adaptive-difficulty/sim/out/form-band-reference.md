@@ -13,22 +13,26 @@ Bands derived from natural gaps in pack form JSON (@100% mastery).
 | **Enhancement** (`enhancement`) | 50 – 80 | Overclock, SSDroid4, Metal Overdrive (~50–80×) |
 | **Apex** (`apex`) | ≥ 80 | Primal God / cap forms (≥80×) |
 
-Pack catalog: **125** forms.
+Pack catalog: **106** forms.
 
-## Base — 7 forms
+## Base — 16 forms
 
-- **1.0×** `ancient_saiyan/saiyan_forms_unreleased/legend`
 - **1.0×** `bioandroid/custom_forms_3/accelerated_evolution`
 - **1.0×** `bioandroid/custom_forms_3/accelerated_evolution_2`
+- **1.0×** `bioandroid/divine_evolution/cell_max`
+- **1.0×** `bioandroid/divine_evolution/cell_max_perfect`
+- **1.0×** `frostdemon/arcosian_god/black`
+- **1.0×** `frostdemon/arcosian_god/black_2`
+- **1.0×** `human/human_god_forms/god_human`
+- **1.0×** `human/human_god_forms/transcendent_human`
 - **1.0×** `majin/custom_forms/dark_oath`
 - **1.0×** `majin/custom_forms/malicious_intent`
 - **1.0×** `namekian/namek_custom_god/orange`
 - **1.0×** `namekian/namek_custom_god/transcendent_namekian`
+- _… +4 more_
 
-## Awakened — 25 forms
+## Awakened — 20 forms
 
-- **5.6×** `ancient_saiyan/primal_base_ssj/supersaiyanmastered`
-- **5.6×** `ancient_saiyan/primal_ssjgrades/supersaiyangrade2`
 - **5.6×** `bioandroid/bioevolution/semiperfect`
 - **5.6×** `human/superforms/buffed`
 - **5.6×** `majin/pureforms/kid`
@@ -39,9 +43,11 @@ Pack catalog: **125** forms.
 - **5.1×** `human/legendaryforms/shiyoken`
 - **5.1×** `majin/legendaryforms/innocencedemon`
 - **5.1×** `namekian/legendaryforms/evilnamek`
-- _… +13 more_
+- **5.1×** `saiyan/legendaryforms/ikari`
+- **5.0×** `saiyan/ssgrades/supersaiyan`
+- _… +8 more_
 
-## Super — 28 forms
+## Super — 25 forms
 
 - **14.8×** `human/superforms/overdrive`
 - **14.8×** `namekian/superforms/fullpower`
@@ -53,13 +59,12 @@ Pack catalog: **125** forms.
 - **12.8×** `frostdemon/legendaryforms/golden`
 - **12.5×** `majin/legendaryforms/giantinnocencedemon`
 - **12.5×** `saiyan/legendaryforms/ssjhybrid`
-- **12.5×** `viltrumite/legendaryforms/space_hero`
 - **11.7×** `monkey/legendaryforms/gear2`
-- _… +16 more_
+- **10.4×** `human/superforms/fullpower`
+- _… +13 more_
 
-## Ultra — 27 forms
+## Ultra — 20 forms
 
-- **21.8×** `ancient_saiyan/primal_oozaru/supersaiyan4`
 - **21.8×** `bioandroid/bioevolution/ultraperfect`
 - **21.8×** `bioandroid/legendaryforms/xenomax`
 - **21.8×** `frostdemon/androidforms/mecha`
@@ -71,35 +76,39 @@ Pack catalog: **125** forms.
 - **21.8×** `monkey/oozaru/wukongzero`
 - **21.8×** `namekian/legendaryforms/buffednamek`
 - **21.8×** `namekian/superforms/supernamekian`
-- _… +15 more_
+- **21.8×** `saiyan/androidforms/ssdroid2`
+- _… +8 more_
 
-## Divine — 33 forms
+## Divine — 16 forms
 
-- **45.0×** `sento_saiyan/ancestral_hope/brilliant_2`
-- **44.0×** `sento_saiyan/ancestral_divinity/primal_evolved`
-- **40.0×** `ancient_saiyan/primalssj/primalgod`
-- **40.0×** `frostdemon/arcosian_god/black_2`
-- **40.0×** `human/human_god_forms/transcendent_human`
-- **40.0×** `namekian/namek_god/transcendent_namekian`
-- **40.0×** `saiyan/godforms/supersaiyanblueevolved`
-- **37.5×** `sento_saiyan/ancestral_bloodline/ancestral_justice`
-- **37.5×** `sento_saiyan/darkness_incarnate/ancestral_torment`
+- **49.1×** `saiyan/godforms/supersaiyanblue`
+- **40.2×** `sento_saiyan/ancestral_divinity/primal_trancendance`
+- **40.0×** `ancient_saiyan/primalssj/primal_ssj`
 - **34.5×** `frostdemon/androidforms/metal`
 - **34.5×** `human/androidforms/fusedandroid`
 - **34.5×** `saiyan/androidforms/ssdroid3`
-- _… +21 more_
+- **34.5×** `viltrumite/androidforms/conquestfull`
+- **25.8×** `sento_saiyan/ancestral_bloodline/ancestral_truth`
+- **25.1×** `saiyan/godforms/supersaiyangod`
+- **22.6×** `viltrumite/androidforms/conquest`
+- **22.5×** `human/legendaryforms/chou_shiyoken`
+- **22.5×** `viltrumite/superforms/omniman`
+- _… +4 more_
 
-## Enhancement — 5 forms
+## Enhancement — 8 forms
 
 - **75.0×** `frostdemon/android_enhancement_a/metal_overdrive`
 - **75.0×** `frostdemon/android_enhancement_a/metal_overheat`
+- **60.0×** `ancient_saiyan/primalssj/primal_ssj2`
+- **57.0×** `sento_saiyan/ancestral_divinity/primal_evolved`
 - **54.0×** `saiyan/androidforms/ssdroid4`
 - **50.0×** `human/android_enhancement/overclock`
 - **50.0×** `human/android_enhancement/overheat`
+- **50.0×** `sento_saiyan/ancestral_bloodline/ancestral_justice`
 
-## Apex — 0 forms
+## Apex — 1 forms
 
-_(none in catalog)_
+- **80.0×** `ancient_saiyan/primalssj/primalgod`
 
 ## Saiyan ladder (reference)
 
@@ -119,10 +128,9 @@ _(none in catalog)_
 - 21.8× `androidforms/ssdroid2` → **ultra**
 - 21.8× `legendaryforms/ssjfullpower` → **ultra**
 - 21.8× `oozaru/supersaiyan4` → **ultra**
-- 22.1× `supersaiyan/supersaiyan4` → **divine**
 - 22.1× `godforms/beyond_god` → **divine**
-- 24.0× `godforms/supersaiyangod` → **divine**
-- 30.0× `godforms/supersaiyanblue` → **divine**
+- 22.1× `supersaiyan/supersaiyan4` → **divine**
+- 25.1× `godforms/supersaiyangod` → **divine**
 - 34.5× `androidforms/ssdroid3` → **divine**
-- 40.0× `godforms/supersaiyanblueevolved` → **divine**
+- 49.1× `godforms/supersaiyanblue` → **divine**
 - 54.0× `androidforms/ssdroid4` → **enhancement**

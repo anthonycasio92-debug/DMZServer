@@ -152,17 +152,17 @@ public final class CharacterServicesSystem {
         List<String> lines = new ArrayList<>();
         TransferableStats now = captureStats(player);
         if (now == null) {
-            lines.add("§7Stats unavailable.");
+            lines.add("§7We could not read your stats yet — try again in a moment.");
             return lines;
         }
         TransferableStats kept = now.scaled(preservationPercent);
-        lines.add("§7Preservation §f" + preservationPercent + "%");
-        lines.add("§7STR §f" + format(now.strength) + " §8→ §f" + format(kept.strength));
-        lines.add("§7SKP §f" + format(now.strike) + " §8→ §f" + format(kept.strike));
-        lines.add("§7RES §f" + format(now.resistance) + " §8→ §f" + format(kept.resistance));
-        lines.add("§7VIT §f" + format(now.vitality) + " §8→ §f" + format(kept.vitality));
-        lines.add("§7PWR §f" + format(now.kiPower) + " §8→ §f" + format(kept.kiPower));
-        lines.add("§7ENE §f" + format(now.energy) + " §8→ §f" + format(kept.energy));
+        lines.add("§8After change (at " + preservationPercent + "%):");
+        lines.add(statLine("Strength", now.strength, kept.strength));
+        lines.add(statLine("Strike", now.strike, kept.strike));
+        lines.add(statLine("Defense", now.resistance, kept.resistance));
+        lines.add(statLine("Vitality", now.vitality, kept.vitality));
+        lines.add(statLine("Ki Power", now.kiPower, kept.kiPower));
+        lines.add(statLine("Energy", now.energy, kept.energy));
         return lines;
     }
 
@@ -194,7 +194,7 @@ public final class CharacterServicesSystem {
 
     public static String cooldownLine(ServerPlayer player, String kind) {
         if (CharacterServicesAccess.bypassCooldown(player)) {
-            return "§aAvailable now §8(bypass)";
+            return "§aReady whenever you are §8(staff bypass)";
         }
         CharacterServicesStore.PlayerRecord rec =
                 CharacterServicesStore.get().record(player.m_20148_().toString());
@@ -220,9 +220,13 @@ public final class CharacterServicesSystem {
         }
         long left = last + cd - now;
         if (left <= 0L) {
-            return "§aAvailable now";
+            return "§aReady to use";
         }
-        return "§cAvailable in §f" + formatDuration(left);
+        return "§7On cooldown — ready in §f" + formatDuration(left);
+    }
+
+    private static String statLine(String label, int before, int after) {
+        return "§7" + label + " §f" + format(before) + " §8→ §f" + format(after);
     }
 
     public static String executeRaceChange(ServerPlayer player, String targetRace, int preservationPercent) {
@@ -410,7 +414,7 @@ public final class CharacterServicesSystem {
                     System.currentTimeMillis();
             CharacterServicesStore.get().markDirty();
             audit(player, "Reskin", "", "", 0, cost, true);
-            return "§aOpening appearance editor. §7Gameplay stats are unchanged.";
+            return "§aOpening the appearance editor. §7Your stats and progression are unchanged.";
         } catch (Throwable t) {
             refund(player, cost);
             audit(player, "Reskin", "", "", 0, cost, false);

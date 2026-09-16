@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.bukkit;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -46,6 +47,7 @@ public final class CharacterServicesChestGui implements Listener {
 
     private Inventory main(Player viewer, Player subject) {
         Map<String, String> ph = ForgeBridge.charPlaceholders(subject);
+        Map<String, String> vars = charCooldownVars(ph);
         Holder holder = new Holder("main");
         Inventory inv = Bukkit.createInventory(holder, 45, color("&8Character Services"));
         holder.bind(inv);
@@ -55,25 +57,28 @@ public final class CharacterServicesChestGui implements Listener {
         header.addAll(toAmp(ForgeBridge.charLines(subject, "main")));
         header.add("");
         header.add("&7Race &f" + ph.getOrDefault("current_race", "?")
-                + " &8| &7Class &f" + ph.getOrDefault("current_class", "?"));
-        header.add("&7Coins &f" + ph.getOrDefault("ancient_coins", "0") + " AC");
-        put(holder, inv, 4, item(Material.PLAYER_HEAD, "&f&lCharacter Services", header));
+                + " &8· &7Class &f" + ph.getOrDefault("current_class", "?"));
+        header.add("&7Ancient Coins &f" + ph.getOrDefault("ancient_coins", "0"));
+        put(holder, inv, 4, item(Material.PLAYER_HEAD,
+                GuiTooltips.name("character.main.header", "&f&lCharacter Services"), header));
 
-        put(holder, inv, 20, tipBtn(viewer, null, Material.NETHER_STAR, "&eChange Race",
-                List.of("&7New race + stat preservation", "&8" + strip(ph.get("race_cooldown")))),
+        put(holder, inv, 20, tipBtn("character.main.race", Material.NETHER_STAR, "&eChange Race",
+                List.of("&7Pick a new race and how much progress to keep",
+                        "&8{race_cooldown}", "&eClick to continue"), vars),
                 SlotAction.page("race"));
-        put(holder, inv, 22, tipBtn(viewer, null, Material.ENCHANTED_BOOK, "&bChange Class",
-                List.of("&7New fighting class", "&8" + strip(ph.get("class_cooldown")))),
+        put(holder, inv, 22, tipBtn("character.main.class", Material.ENCHANTED_BOOK, "&bChange Class",
+                List.of("&7Swap fighting class — base stats stay",
+                        "&8{class_cooldown}", "&eClick to continue"), vars),
                 SlotAction.page("class"));
-        put(holder, inv, 24, tipBtn(viewer, null, Material.PAINTING, "&dReskin",
-                List.of("&7Appearance only — no stats", "&8Opens DMZ customize",
-                        "&8" + strip(ph.get("reskin_cooldown")))),
+        put(holder, inv, 24, tipBtn("character.main.reskin", Material.PAINTING, "&dReskin",
+                List.of("&7Cosmetic look only",
+                        "&8{reskin_cooldown}", "&eClick to continue"), vars),
                 SlotAction.page("reskin"));
 
-        put(holder, inv, 36, pageBtn(viewer, null, Material.ARROW, "&7Back", "&7Hub"),
+        put(holder, inv, 36, pageBtn("character.main.back_hub", Material.ARROW, "&7Back", "&7Return to hub"),
                 SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
-        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        put(holder, inv, 44, closeBtn("character.main.close"), SlotAction.dismiss());
         return inv;
     }
 
@@ -82,7 +87,8 @@ public final class CharacterServicesChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 54, color("&8Change Race"));
         holder.bind(inv);
         frame(inv, 54);
-        put(holder, inv, 4, item(Material.NETHER_STAR, "&e&lSelect Race",
+        put(holder, inv, 4, item(Material.NETHER_STAR,
+                GuiTooltips.name("character.race.header", "&e&lChoose a Race"),
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "race")))));
         List<String> cards = ForgeBridge.charRaceCards(subject);
         int[] slots = centered(Math.min(cards.size(), 28));
@@ -92,11 +98,12 @@ public final class CharacterServicesChestGui implements Listener {
             String name = p.length > 1 ? p[1] : id;
             boolean current = "1".equals(p.length > 2 ? p[2] : "0");
             Material mat = current ? Material.LIME_DYE : Material.PAPER;
+            String cardKey = current ? "character.race.card_current" : "character.race.card_pick";
             put(holder, inv, slots[i], item(mat, (current ? "&a" : "&f") + name,
-                    List.of(current ? "&aYour current race" : "&eClick to configure")),
+                    GuiTooltips.buttonLore(cardKey, List.of(), null, null)),
                     SlotAction.page("race_pct:" + id + ":100"));
         }
-        put(holder, inv, 49, pageBtn(viewer, null, Material.ARROW, "&7Back", "&7Services"),
+        put(holder, inv, 49, pageBtn("character.race.back", Material.ARROW, "&7Back", "&7Character Services"),
                 SlotAction.page("main"));
         return inv;
     }
@@ -119,20 +126,23 @@ public final class CharacterServicesChestGui implements Listener {
         frame(inv, 54);
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.add("&7Race &f" + race);
+        lore.add("&7Becoming &f" + prettyId(race));
         lore.addAll(toAmp(ForgeBridge.charLines(subject, "race_pct:" + race + ":" + defaultPct)));
-        put(holder, inv, 4, item(Material.EXPERIENCE_BOTTLE, "&e&lStat Preservation", lore));
+        put(holder, inv, 4, item(Material.EXPERIENCE_BOTTLE,
+                GuiTooltips.name("character.race_pct.header", "&e&lHow Much to Keep?"), lore));
         int[] pcts = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
         int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30};
         for (int i = 0; i < pcts.length && i < slots.length; i++) {
             int pct = pcts[i];
+            Map<String, String> pctVars = Map.of("pct", String.valueOf(pct));
             put(holder, inv, slots[i], item(
                     pct == defaultPct ? Material.LIME_DYE : Material.GRAY_DYE,
                     "&f" + pct + "%",
-                    List.of("&7Keep " + pct + "% of eligible stats", "&eClick to preview")),
+                    GuiTooltips.buttonLore("character.race_pct.pct",
+                            List.of("&7Keep " + pct + "% of core stats", "&eClick to review"), pctVars, null)),
                     SlotAction.page("race_confirm:" + race + ":" + pct));
         }
-        put(holder, inv, 49, pageBtn(viewer, null, Material.ARROW, "&7Back", "&7Races"),
+        put(holder, inv, 49, pageBtn("character.race_pct.back", Material.ARROW, "&7Back", "&7Race list"),
                 SlotAction.page("race"));
         return inv;
     }
@@ -145,14 +155,16 @@ public final class CharacterServicesChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, color("&8Confirm Race Change"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.ORANGE_STAINED_GLASS, "&c&lConfirm?",
+        put(holder, inv, 4, item(Material.ORANGE_STAINED_GLASS,
+                GuiTooltips.name("character.race_confirm.header", "&c&lLast Chance"),
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "race_confirm:" + race + ":" + pct)))));
-        put(holder, inv, 20, tipBtn(viewer, null, Material.LIME_DYE, "&a&lCONFIRM",
-                List.of("&7Pay & confirm race change")),
+        put(holder, inv, 20, tipBtn("character.race_confirm.confirm", Material.LIME_DYE, "&a&lConfirm Race Change",
+                List.of("&7Pay and switch races", "&eClick to confirm"), null),
                 SlotAction.act("race_confirm", race + ":" + pct, "main"));
-        put(holder, inv, 24, tipBtn(viewer, null, Material.RED_DYE, "&cCancel", List.of("&7Go back")),
+        put(holder, inv, 24, tipBtn("character.race_confirm.cancel", Material.RED_DYE, "&cCancel",
+                List.of("&7Go back without paying"), null),
                 SlotAction.page("race_pct:" + race + ":" + pct));
-        put(holder, inv, 36, pageBtn(viewer, null, Material.ARROW, "&7Back", "&7Preservation"),
+        put(holder, inv, 36, pageBtn("character.race_confirm.back", Material.ARROW, "&7Back", "&7Preservation"),
                 SlotAction.page("race_pct:" + race + ":" + pct));
         return inv;
     }
@@ -162,7 +174,8 @@ public final class CharacterServicesChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 54, color("&8Change Class"));
         holder.bind(inv);
         frame(inv, 54);
-        put(holder, inv, 4, item(Material.ENCHANTED_BOOK, "&b&lSelect Class",
+        put(holder, inv, 4, item(Material.ENCHANTED_BOOK,
+                GuiTooltips.name("character.class.header", "&b&lChoose a Class"),
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "class")))));
         List<String> cards = ForgeBridge.charClassCards(subject);
         int[] slots = centered(Math.min(cards.size(), 28));
@@ -171,11 +184,12 @@ public final class CharacterServicesChestGui implements Listener {
             String id = p.length > 0 ? p[0] : "";
             String name = p.length > 1 ? p[1] : id;
             boolean current = "1".equals(p.length > 2 ? p[2] : "0");
+            String cardKey = current ? "character.class.card_current" : "character.class.card_pick";
             put(holder, inv, slots[i], item(current ? Material.LIME_DYE : Material.BOOK, "&f" + name,
-                    List.of(current ? "&aCurrent class" : "&eClick to confirm")),
+                    GuiTooltips.buttonLore(cardKey, List.of(), null, null)),
                     SlotAction.page("class_confirm:" + id));
         }
-        put(holder, inv, 49, pageBtn(viewer, null, Material.ARROW, "&7Back", "&7Services"),
+        put(holder, inv, 49, pageBtn("character.class.back", Material.ARROW, "&7Back", "&7Character Services"),
                 SlotAction.page("main"));
         return inv;
     }
@@ -185,13 +199,16 @@ public final class CharacterServicesChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, color("&8Confirm Class"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.ORANGE_STAINED_GLASS, "&c&lConfirm?",
+        put(holder, inv, 4, item(Material.ORANGE_STAINED_GLASS,
+                GuiTooltips.name("character.class_confirm.header", "&c&lConfirm Class Change"),
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "class_confirm:" + classId)))));
-        put(holder, inv, 20, tipBtn(viewer, null, Material.LIME_DYE, "&a&lCONFIRM", List.of("&7Pay & switch class")),
+        put(holder, inv, 20, tipBtn("character.class_confirm.confirm", Material.LIME_DYE, "&a&lConfirm",
+                List.of("&7Pay and switch class", "&eClick to confirm"), null),
                 SlotAction.act("class_confirm", classId, "main"));
-        put(holder, inv, 24, tipBtn(viewer, null, Material.RED_DYE, "&cCancel", List.of("&7Back")),
+        put(holder, inv, 24, tipBtn("character.class_confirm.cancel", Material.RED_DYE, "&cCancel",
+                List.of("&7Go back without paying"), null),
                 SlotAction.page("class"));
-        put(holder, inv, 36, pageBtn(viewer, null, Material.ARROW, "&7Back", "&7Classes"),
+        put(holder, inv, 36, pageBtn("character.class_confirm.back", Material.ARROW, "&7Back", "&7Class list"),
                 SlotAction.page("class"));
         return inv;
     }
@@ -201,12 +218,13 @@ public final class CharacterServicesChestGui implements Listener {
         Inventory inv = Bukkit.createInventory(holder, 45, color("&8Reskin"));
         holder.bind(inv);
         frame(inv, 45);
-        put(holder, inv, 4, item(Material.PAINTING, "&d&lReskin",
+        put(holder, inv, 4, item(Material.PAINTING,
+                GuiTooltips.name("character.reskin.header", "&d&lReskin"),
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "reskin")))));
-        put(holder, inv, 22, tipBtn(viewer, null, Material.LIME_DYE, "&a&lPay & Open Editor",
-                List.of("&7Cosmetic only", "&8DMZ recustomize screen")),
+        put(holder, inv, 22, tipBtn("character.reskin.open", Material.LIME_DYE, "&a&lPay & Open Appearance",
+                List.of("&7Opens the in-game look editor", "&eClick to pay and open"), null),
                 SlotAction.actNoReopen("reskin_confirm", "0"));
-        put(holder, inv, 36, pageBtn(viewer, null, Material.ARROW, "&7Back", "&7Services"),
+        put(holder, inv, 36, pageBtn("character.reskin.back", Material.ARROW, "&7Back", "&7Character Services"),
                 SlotAction.page("main"));
         return inv;
     }
@@ -343,25 +361,64 @@ public final class CharacterServicesChestGui implements Listener {
         return stack;
     }
 
-    private static ItemStack tipBtn(Player player, String key, Material mat, String name, List<String> tip) {
-        return item(mat, name, tip);
+    private static Map<String, String> charCooldownVars(Map<String, String> ph) {
+        Map<String, String> vars = new HashMap<>();
+        vars.put("race_cooldown", cooldownAmp(ph == null ? null : ph.get("race_cooldown")));
+        vars.put("class_cooldown", cooldownAmp(ph == null ? null : ph.get("class_cooldown")));
+        vars.put("reskin_cooldown", cooldownAmp(ph == null ? null : ph.get("reskin_cooldown")));
+        return vars;
     }
 
-    private static ItemStack pageBtn(Player player, String key, Material mat, String name, String sub) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        if (sub != null) {
-            lore.add(sub);
+    private static String cooldownAmp(String line) {
+        if (line == null || line.isBlank()) {
+            return "&aReady to use";
         }
-        return item(mat, name, lore);
+        return line.replace('§', '&');
+    }
+
+    private static String prettyId(String id) {
+        if (id == null || id.isBlank()) {
+            return "?";
+        }
+        String[] parts = id.replace('_', ' ').split(" ");
+        StringBuilder sb = new StringBuilder();
+        for (String p : parts) {
+            if (p.isEmpty()) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append(' ');
+            }
+            sb.append(Character.toUpperCase(p.charAt(0)));
+            if (p.length() > 1) {
+                sb.append(p.substring(1).toLowerCase(Locale.ROOT));
+            }
+        }
+        return sb.toString();
+    }
+
+    private static ItemStack tipBtn(
+            String key, Material mat, String name, List<String> defaults, Map<String, String> vars
+    ) {
+        return item(mat, GuiTooltips.name(key, name, vars),
+                GuiTooltips.buttonLore(key, defaults, vars, null));
+    }
+
+    private static ItemStack pageBtn(String key, Material mat, String name, String sub) {
+        List<String> defaults = new ArrayList<>();
+        if (sub != null) {
+            defaults.add(sub);
+        }
+        return item(mat, GuiTooltips.name(key, name), GuiTooltips.buttonLore(key, defaults, null, null));
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.NETHER_STAR, "&fHub", List.of("&7Back to &f/lm"));
+        return item(Material.NETHER_STAR, "&fHub", List.of("", "&7Back to &f/lm"));
     }
 
-    private static ItemStack closeBtn() {
-        return item(Material.BARRIER, "&cClose", List.of());
+    private static ItemStack closeBtn(String key) {
+        return item(Material.BARRIER, GuiTooltips.name(key, "&cClose"),
+                GuiTooltips.buttonLore(key, List.of("&7Close this menu"), null, null));
     }
 
     private static String color(String input) {
