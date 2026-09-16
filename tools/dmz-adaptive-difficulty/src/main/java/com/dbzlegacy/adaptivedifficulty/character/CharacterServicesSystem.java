@@ -56,6 +56,11 @@ public final class CharacterServicesSystem {
     }
 
     public static String blockReason(ServerPlayer player) {
+        return blockReason(player, false);
+    }
+
+    /** @param cosmetic when true (reskin), skip transform lock — appearance-only */
+    public static String blockReason(ServerPlayer player, boolean cosmetic) {
         CharacterServicesConfig cfg = CharacterServicesConfig.get();
         if (!cfg.enabled) {
             return "§cCharacter services are disabled.";
@@ -72,7 +77,7 @@ public final class CharacterServicesSystem {
             return "§cYou cannot modify your character while dead.";
         }
         Character ch = data.getCharacter();
-        if (cfg.restrictions.blockWhileTransformed && ch != null) {
+        if (!cosmetic && cfg.restrictions.blockWhileTransformed && ch != null) {
             try {
                 if (ch.hasActiveForm() || ch.hasActiveStackForm()) {
                     return "§cYou cannot modify your character while transformed.";
@@ -369,7 +374,7 @@ public final class CharacterServicesSystem {
      * Charges Ancient Coins (level-scaled), then opens DMZ recustomize UI only — no full mod menu.
      */
     public static String executeReskin(ServerPlayer player) {
-        String block = blockReason(player);
+        String block = blockReason(player, true);
         if (!block.isEmpty()) {
             return block;
         }
@@ -394,7 +399,13 @@ public final class CharacterServicesSystem {
             return "§cPayment failed. No changes were made.";
         }
         try {
-            NetworkHandler.sendToPlayer(new OpenRecustomizeS2C(), player);
+            var server = player.m_20194_();
+            Runnable openEditor = () -> NetworkHandler.sendToPlayer(new OpenRecustomizeS2C(), player);
+            if (server != null) {
+                server.execute(openEditor);
+            } else {
+                openEditor.run();
+            }
             CharacterServicesStore.get().record(player.m_20148_().toString()).lastReskinAt =
                     System.currentTimeMillis();
             CharacterServicesStore.get().markDirty();

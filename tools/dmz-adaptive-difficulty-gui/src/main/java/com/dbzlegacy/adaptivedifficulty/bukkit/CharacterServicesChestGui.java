@@ -205,7 +205,7 @@ public final class CharacterServicesChestGui implements Listener {
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "reskin")))));
         put(holder, inv, 22, tipBtn(viewer, null, Material.LIME_DYE, "&a&lPay & Open Editor",
                 List.of("&7Cosmetic only", "&8DMZ recustomize screen")),
-                SlotAction.act("reskin_confirm", "0", "main"));
+                SlotAction.actNoReopen("reskin_confirm", "0"));
         put(holder, inv, 36, pageBtn(viewer, null, Material.ARROW, "&7Back", "&7Services"),
                 SlotAction.page("main"));
         return inv;
@@ -250,13 +250,28 @@ public final class CharacterServicesChestGui implements Listener {
         String ret = slot.returnPage == null ? "main" : slot.returnPage;
         String action = slot.action;
         String arg = slot.arg == null ? "0" : slot.arg;
+        boolean reopen = slot.reopenAfterAct;
+        boolean closeFirst = slot.closeBeforeAct;
         Player subject = AdminInspectSessions.resolveSubject(player);
         Bukkit.getScheduler().runTask(plugin, () -> {
-            String msg = ForgeBridge.charHandleDo(subject, action, arg, ret);
-            if (msg != null && !msg.isBlank()) {
-                GuiChat.sendResult(player, msg);
+            if (closeFirst) {
+                player.closeInventory();
             }
-            open(player, ret);
+            Runnable work = () -> {
+                String msg = ForgeBridge.charHandleDo(subject, action, arg, ret);
+                if (msg != null && !msg.isBlank()) {
+                    GuiChat.sendResult(player, msg);
+                }
+                if (reopen) {
+                    open(player, ret);
+                }
+            };
+            if (closeFirst) {
+                // Let the client drop the chest GUI before DMZ opens recustomize.
+                Bukkit.getScheduler().runTaskLater(plugin, work, 2L);
+            } else {
+                work.run();
+            }
         });
     }
 
@@ -390,30 +405,47 @@ public final class CharacterServicesChestGui implements Listener {
         final String page;
         final String rawCommand;
         final boolean shouldClose;
+        final boolean reopenAfterAct;
+        final boolean closeBeforeAct;
 
-        SlotAction(String action, String arg, String returnPage, String page, String rawCommand, boolean shouldClose) {
+        SlotAction(
+                String action,
+                String arg,
+                String returnPage,
+                String page,
+                String rawCommand,
+                boolean shouldClose,
+                boolean reopenAfterAct,
+                boolean closeBeforeAct
+        ) {
             this.action = action;
             this.arg = arg;
             this.returnPage = returnPage;
             this.page = page;
             this.rawCommand = rawCommand;
             this.shouldClose = shouldClose;
+            this.reopenAfterAct = reopenAfterAct;
+            this.closeBeforeAct = closeBeforeAct;
         }
 
         static SlotAction page(String page) {
-            return new SlotAction(null, null, null, page, null, false);
+            return new SlotAction(null, null, null, page, null, false, false, false);
         }
 
         static SlotAction act(String action, String arg, String returnPage) {
-            return new SlotAction(action, arg, returnPage, null, null, false);
+            return new SlotAction(action, arg, returnPage, null, null, false, true, false);
+        }
+
+        static SlotAction actNoReopen(String action, String arg) {
+            return new SlotAction(action, arg, null, null, null, false, false, true);
         }
 
         static SlotAction cmd(String command) {
-            return new SlotAction(null, null, null, null, command, false);
+            return new SlotAction(null, null, null, null, command, false, false, false);
         }
 
         static SlotAction dismiss() {
-            return new SlotAction(null, null, null, null, null, true);
+            return new SlotAction(null, null, null, null, null, true, false, false);
         }
     }
 }
