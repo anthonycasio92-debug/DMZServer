@@ -11,7 +11,7 @@
   },
   "restrictions": {
     "blockWhileDead": true,
-    "blockWhileTransformed": true,
+    "blockWhileTransformed": false,
     "blockWhileInCombat": false,
     "blockWhileSparring": true
   },

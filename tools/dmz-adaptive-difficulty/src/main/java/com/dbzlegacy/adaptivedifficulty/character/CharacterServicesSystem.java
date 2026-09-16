@@ -78,15 +78,6 @@ public final class CharacterServicesSystem {
         if (cfg.restrictions.blockWhileDead && status != null && !status.isAlive()) {
             return "§cYou cannot modify your character while dead.";
         }
-        Character ch = data.getCharacter();
-        if (!cosmetic && cfg.restrictions.blockWhileTransformed && ch != null) {
-            try {
-                if (ch.hasActiveForm() || ch.hasActiveStackForm()) {
-                    return "§cYou cannot modify your character while transformed.";
-                }
-            } catch (Throwable ignored) {
-            }
-        }
         if (cfg.restrictions.blockWhileSparring && inActiveSpar(player)) {
             return "§cYou cannot modify your character during an active spar.";
         }
@@ -292,6 +283,7 @@ public final class CharacterServicesSystem {
                 return "§cYou must wait §f" + formatDuration(left) + " §cbefore another race change.";
             }
         }
+        releaseTransformation(player);
         long cost = CharacterServicesAccess.bypassCost(player) ? 0L : raceCost(player, preservationPercent);
         AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !AncientCoinEconomy.canAfford(player, cost)) {
@@ -400,6 +392,7 @@ public final class CharacterServicesSystem {
                 return "§cYou must wait §f" + formatDuration(left) + " §cbefore another class change.";
             }
         }
+        releaseTransformation(player);
         long cost = CharacterServicesAccess.bypassCost(player) ? 0L : classCost(player);
         AncientCoinEconomy.migrateWalletToItems(player);
         if (cost > 0L && !AncientCoinEconomy.canAfford(player, cost)) {
@@ -534,6 +527,31 @@ public final class CharacterServicesSystem {
                 applyStats(stats, new TransferableStats(0, 0, 0, 0, 0, 0));
             }
         }
+    }
+
+    /** Drop active form / stack form so race & class edits apply safely while transformed. */
+    private static void releaseTransformation(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        StatsData data = DmzProgression.stats(player);
+        if (data == null) {
+            return;
+        }
+        Character ch = data.getCharacter();
+        if (ch == null) {
+            return;
+        }
+        boolean hadForm = false;
+        try {
+            hadForm = ch.hasActiveForm() || ch.hasActiveStackForm();
+        } catch (Throwable ignored) {
+        }
+        if (!hadForm) {
+            return;
+        }
+        clearForms(ch, player);
+        syncClient(player);
     }
 
     private static void clearForms(Character ch, ServerPlayer player) {

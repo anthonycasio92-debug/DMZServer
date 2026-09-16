@@ -149,7 +149,8 @@ public final class CharacterServicesConfig {
 
     public static final class Restrictions {
         public boolean blockWhileDead = true;
-        public boolean blockWhileTransformed = true;
+        /** When true, legacy strict mode (unused — services auto-detransform instead). */
+        public boolean blockWhileTransformed = false;
         public boolean blockWhileInCombat = false;
         public boolean blockWhileSparring = true;
     }
