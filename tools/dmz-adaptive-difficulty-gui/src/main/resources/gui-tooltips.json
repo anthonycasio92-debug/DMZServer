@@ -9,7 +9,7 @@
           "&8/lm"
         ]
       },
-        "difficulty": {
+      "difficulty": {
         "name": "&aDifficulty",
         "lore": [
           "&7Gain and spend ancient coins- tiers are lost on death",
@@ -51,6 +51,15 @@
         "name": "&6Prestige",
         "lore": [
           "&7Prestiges · Prestige shop",
+          "&eClick to open"
+        ]
+      },
+      "character": {
+        "name": "&dCharacter Services",
+        "lore": [
+          "&7Race, class, reskin, head parts",
+          "&7without wiping your whole build",
+          "&8Paid with Ancient Coins",
           "&eClick to open"
         ]
       },
@@ -117,6 +126,247 @@
         "lore": [
           "&7Write buffered logs to disk",
           "&8Staff only"
+        ]
+      }
+    }
+  },
+  "character": {
+    "main": {
+      "wallet": {
+        "name": "&d&lCharacter Services",
+        "lore": []
+      },
+      "header": {
+        "name": "&f&lCharacter Services",
+        "lore": []
+      },
+      "race": {
+        "name": "&eChange Race",
+        "lore": [
+          "&7Pick a new race and choose how much",
+          "&7of your core stats carry over",
+          "&8{race_cooldown}",
+          "&eClick to continue"
+        ]
+      },
+      "class": {
+        "name": "&bChange Class",
+        "lore": [
+          "&7Swap your fighting class",
+          "&7Your base stats stay — class skills reset",
+          "&7Cost &f{class_cost}",
+          "&8{class_cooldown}",
+          "&eClick to continue"
+        ]
+      },
+      "reskin": {
+        "name": "&dReskin",
+        "lore": [
+          "&7Cosmetics & head parts — no stat changes",
+          "&7Cost &f{reskin_cost}",
+          "&8{reskin_cooldown}",
+          "&eClick to continue"
+        ]
+      },
+      "back_hub": {
+        "name": "&7« Back",
+        "lore": [
+          "&7Return to &f/lm"
+        ]
+      },
+      "close": {
+        "name": "&cClose",
+        "lore": [
+          "&7Close this menu"
+        ]
+      }
+    },
+    "race": {
+      "header": {
+        "name": "&e&lChoose a Race",
+        "lore": []
+      },
+      "card_current": {
+        "name": "",
+        "lore": [
+          "&aThis is your current race"
+        ]
+      },
+      "card_pick": {
+        "name": "",
+        "lore": [
+          "&7See preservation options and cost",
+          "&eClick to continue"
+        ]
+      },
+      "back": {
+        "name": "&7« Back",
+        "lore": [
+          "&7Return to Character Services"
+        ]
+      }
+    },
+    "race_pct": {
+      "header": {
+        "name": "&e&lHow Much Progress to Keep?",
+        "lore": []
+      },
+      "pct": {
+        "name": "",
+        "lore": [
+          "&7Keep &f{pct}% &7of eligible combat stats",
+          "&80% is free — full character wipe",
+          "&8Higher % costs more Ancient Coins",
+          "&eClick to review and confirm"
+        ]
+      },
+      "back": {
+        "name": "&7« Back",
+        "lore": [
+          "&7Pick a different race"
+        ]
+      }
+    },
+    "race_confirm": {
+      "header": {
+        "name": "&c&lLast Chance",
+        "lore": []
+      },
+      "confirm": {
+        "name": "&a&lConfirm Race Change",
+        "lore": [
+          "&7Pay the shown cost and switch races",
+          "&8This cannot be undone automatically",
+          "&eClick to confirm"
+        ]
+      },
+      "cancel": {
+        "name": "&cCancel",
+        "lore": [
+          "&7Go back without paying"
+        ]
+      },
+      "back": {
+        "name": "&7« Back",
+        "lore": [
+          "&7Change preservation %"
+        ]
+      }
+    },
+    "class": {
+      "header": {
+        "name": "&b&lChoose a Class",
+        "lore": []
+      },
+      "card_current": {
+        "name": "",
+        "lore": [
+          "&aThis is your current class"
+        ]
+      },
+      "card_pick": {
+        "name": "",
+        "lore": [
+          "&7Review cost before you pay",
+          "&eClick to continue"
+        ]
+      },
+      "back": {
+        "name": "&7« Back",
+        "lore": [
+          "&7Return to Character Services"
+        ]
+      }
+    },
+    "class_confirm": {
+      "header": {
+        "name": "&c&lConfirm Class Change",
+        "lore": []
+      },
+      "confirm": {
+        "name": "&a&lConfirm",
+        "lore": [
+          "&7Pay and switch fighting class",
+          "&eClick to confirm"
+        ]
+      },
+      "cancel": {
+        "name": "&cCancel",
+        "lore": [
+          "&7Go back without paying"
+        ]
+      },
+      "back": {
+        "name": "&7« Back",
+        "lore": [
+          "&7Pick a different class"
+        ]
+      }
+    },
+    "reskin": {
+      "header": {
+        "name": "&d&lReskin",
+        "lore": []
+      },
+      "open": {
+        "name": "&a&lPay & Open Appearance",
+        "lore": [
+          "&7Cost &f{reskin_cost}",
+          "&7Opens the DragonMineZ look editor",
+          "&7Cosmetics only — &cclass cannot change",
+          "&7Level, stats, and race stay the same",
+          "&8Pay-up OK · change returned",
+          "&eClick to pay and open"
+        ]
+      },
+      "bones": {
+        "name": "&6&lHead Parts Shop",
+        "lore": [
+          "&7Unlock & equip cross-race ears, horns, etc.",
+          "&7Equipped &f{active_head_bone}",
+          "&eClick to browse"
+        ]
+      },
+      "back": {
+        "name": "&7« Back",
+        "lore": [
+          "&7Return to Character Services"
+        ]
+      }
+    },
+    "bones": {
+      "header": {
+        "name": "&6&lHead Parts Shop",
+        "lore": []
+      },
+      "race_default": {
+        "name": "&eRace default",
+        "lore": [
+          "&7Equip this race's default head part",
+          "&8From DMZ character.json",
+          "&eClick"
+        ]
+      },
+      "unequip": {
+        "name": "&7Unequip / clear",
+        "lore": [
+          "&7Remove cross-race parts",
+          "&7Uses &fhair &7when your race has it",
+          "&eClick"
+        ]
+      },
+      "prev": {
+        "name": "&7« Page",
+        "lore": []
+      },
+      "next": {
+        "name": "&7Page »",
+        "lore": []
+      },
+      "back": {
+        "name": "&7« Back",
+        "lore": [
+          "&7Return to Reskin"
         ]
       }
     }
@@ -369,6 +619,55 @@
         "lore": [
           "&7Staff breakdown of your scaling",
           "&8Combat rating, prestige, and kit gates"
+        ]
+      },
+      "teams": {
+        "name": "&bRival Teams",
+        "lore": [
+          "&7Mutual rivals can raise your tier ceiling",
+          "&7Team modes also boost elite, mutant, and boss spawns",
+          "&eClick to open"
+        ]
+      }
+    },
+    "team": {
+      "header": {
+        "name": "&b&lRival Teams",
+        "lore": [
+          "&7Team up with mutual rivals for a higher ceiling",
+          "&8Up to 2 rivals · must be online"
+        ]
+      },
+      "mode_personal": {
+        "name": "&7Personal",
+        "lore": [
+          "&7Only your own tier ceiling counts",
+          "&eClick to select"
+        ]
+      },
+      "mode_threshold": {
+        "name": "&aThreshold",
+        "lore": [
+          "&7Extra max when rivals are online",
+          "&7They must also use a team mode",
+          "&7More elites, mutants, and bosses",
+          "&eClick to select"
+        ]
+      },
+      "mode_full": {
+        "name": "&2Full",
+        "lore": [
+          "&7Threshold bonus plus nearby spare room",
+          "&7Best spawn boost when rivals are close",
+          "&8Rivals must use Full mode and be nearby",
+          "&eClick to select"
+        ]
+      },
+      "open_rival": {
+        "name": "&6Open Rival",
+        "lore": [
+          "&7Declare, accept, or manage mutual slots",
+          "&eClick to open"
         ]
       }
     },
@@ -845,6 +1144,22 @@
           "&eClick to show again"
         ]
       },
+      "mentor_tpmsg_on": {
+        "name": "&aMentor TP ON",
+        "lore": [
+          "&7Apprentice share TP shows in chat",
+          "",
+          "&8Click to mute mentor TP chat"
+        ]
+      },
+      "mentor_tpmsg_off": {
+        "name": "&8Mentor TP OFF",
+        "lore": [
+          "&7Mentor share TP chat is hidden",
+          "",
+          "&8Click to show in chat again"
+        ]
+      },
       "end_session": {
         "name": "&cEnd Session",
         "lore": [
@@ -883,7 +1198,7 @@
       "rp": {
         "name": "&eSeason Points",
         "lore": [
-          "&7Sort by ranking points this season"
+          "&7Sort dojos by season ranking points"
         ]
       },
       "wins": {
@@ -895,7 +1210,70 @@
       "tp": {
         "name": "&bTraining TP",
         "lore": [
-          "&7Sort by TP earned against other dojos"
+          "&7Sort by TP earned vs other dojos"
+        ]
+      },
+      "war": {
+        "name": "&cDojo War",
+        "lore": [
+          "&7Declare war, manage pending challenges, and set your banner",
+          "&8Same hub style as Mentor Actions"
+        ]
+      },
+      "war_pending": {
+        "name": "&ePending",
+        "lore": [
+          "&7Incoming and outgoing war challenges",
+          "&7Accept, decline, or revoke from one list"
+        ]
+      },
+      "war_pending_back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Return to Dojo War"
+        ]
+      },
+      "war_hub": {
+        "name": "&cDojo War",
+        "lore": [
+          "&7Declare war and banner settings"
+        ]
+      },
+      "war_decide_info": {
+        "name": "&e&lRespond",
+        "lore": [
+          "&7Review this war challenge",
+          "&aAccept &7starts a 24h war with &f2× RP"
+        ]
+      },
+      "war_decide_back": {
+        "name": "&7Back",
+        "lore": [
+          "&7Return to pending wars"
+        ]
+      },
+      "war_rankings": {
+        "name": "&6Rankings",
+        "lore": [
+          "&7Back to the season ladder"
+        ]
+      },
+      "war_master_only": {
+        "name": "&8Declare War…",
+        "lore": [
+          "&7Only dojo masters manage wars"
+        ]
+      },
+      "accept_none": {
+        "name": "&8Accept War",
+        "lore": [
+          "&7No pending challenge"
+        ]
+      },
+      "decline_none": {
+        "name": "&8Decline War",
+        "lore": [
+          "&7No pending challenge"
         ]
       },
       "challenge": {
@@ -940,7 +1318,7 @@
         "lore": [
           "&7Use this banner for your dojo",
           "",
-          "&eClick to apply"
+          "&8Set as your dojo banner"
         ]
       },
       "war_header": {
@@ -1129,7 +1507,7 @@
       ],
       "no_dojo_rank": [
         "&7Join a dojo and spar rival fighters",
-        "&8Ranking points come from cross-dojo spars"
+        "&8Points come from spars against other dojos"
       ],
       "no_dojo_rival": [
         "&7No rival dojos on the board yet",
@@ -1138,7 +1516,14 @@
       "no_dojo_members": [
         "&7No contributions logged yet",
         "&8Spar someone from another dojo to appear here"
-      ]
+      ],
+      "no_dojo_war_pending": {
+        "name": "&7No pending wars",
+        "lore": [
+          "&7Declare war from Dojo War",
+          "&7Incoming shows when another dojo challenges you"
+        ]
+      }
     }
   },
   "progression": {

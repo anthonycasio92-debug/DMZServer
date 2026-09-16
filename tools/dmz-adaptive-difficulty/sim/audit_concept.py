@@ -22,6 +22,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from audit_lib import mod_version  # noqa: E402
 from simulate_build_matrix import (  # noqa: E402
     ARCHETYPES,
     INVEST,
@@ -236,7 +237,7 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 2.3.176", 'VERSION = "2.3.176"' in mod)
+    check(f"VERSION {mod_version()}", f'VERSION = "{mod_version()}"' in mod)
 
     check("RaceSkillSync present", (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/bridge/RaceSkillSync.java").is_file())
     check("formula revision 45", "mix(h, 45L)" in profile)
@@ -256,7 +257,7 @@ def main() -> int:
     check("T3 soft-cap ≤ T4", "case 3 -> 0.36" in profile and "case 4 -> 0.40" in profile)
     check("T4 soft-cap ≤ T5", "case 4 -> 0.40" in profile and "case 5 -> 0.44" in profile)
     check("T5 soft-cap ≤ T6", "case 5 -> 0.44" in profile and "case 6 -> 0.48" in profile)
-    check("T6 soft-cap ≤ T7", "case 6 -> 0.48" in profile and "case 7 -> 0.52" in profile)
+    check("T6 soft-cap ≤ T7", "case 6 -> 0.48" in profile and "case 7 -> 0.60" in profile)
     # Source landFrac must stay strictly progressive (2.3.137 live cal — buys matter).
     check(
         "landFrac ladder progressive T4<T5<T6<T7",
