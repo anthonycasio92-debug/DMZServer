@@ -6,7 +6,8 @@
   "refmap": "legacymechanics.refmap.json",
   "mixins": [
     "StatsDataMixin",
-    "UpdateCharacterC2SMixin"
+    "UpdateCharacterC2SMixin",
+    "CreateCharacterC2SMixin"
   ],
   "injectors": {
     "defaultRequire": 1

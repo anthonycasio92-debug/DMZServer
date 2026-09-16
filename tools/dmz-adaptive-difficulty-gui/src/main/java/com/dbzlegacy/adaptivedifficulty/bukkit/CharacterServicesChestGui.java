@@ -187,7 +187,7 @@ public final class CharacterServicesChestGui implements Listener {
             Material mat = selected ? Material.LIME_CONCRETE : Material.GRAY_CONCRETE;
             String title = pct == 0 ? (selected ? "&a&l0% — Free" : "&e&l0% — Free") : (selected ? "&a" : "&f") + pct + "%";
             List<String> btnLore = pct == 0
-                    ? List.of("&7Full wipe — stats, skills, techniques", "&aFree for everyone", "&eClick to review")
+                    ? List.of("&7Full wipe, then pick class & look", "&aFree for everyone", "&eClick to review")
                     : List.of("&7Keep " + pct + "% of core stats", "&eClick to review");
             put(holder, inv, slots[i], item(mat, title,
                     GuiTooltips.buttonLore("character.race_pct.pct", btnLore, pctVars, null)),
@@ -208,9 +208,15 @@ public final class CharacterServicesChestGui implements Listener {
         List<String> summary = prependBlank(toAmp(ForgeBridge.charLines(subject, "race_confirm:" + race + ":" + pct)));
         put(holder, inv, 4, item(Material.ORANGE_CONCRETE,
                 GuiTooltips.name("character.race_confirm.header", "&c&lLast Chance"), summary));
+        boolean freeWipe = "0".equals(pct.trim());
+        List<String> confirmLore = freeWipe
+                ? List.of("&7Free full wipe + class & look setup", "&eClick to continue")
+                : List.of("&7Pay and switch races", "&eClick to confirm");
+        SlotAction confirmAction = freeWipe
+                ? SlotAction.actNoReopen("race_confirm", race + ":" + pct)
+                : SlotAction.act("race_confirm", race + ":" + pct, "main");
         put(holder, inv, 20, tipBtn("character.race_confirm.confirm", Material.LIME_CONCRETE, "&a&lConfirm Race Change",
-                List.of("&7Pay and switch races", "&eClick to confirm"), null),
-                SlotAction.act("race_confirm", race + ":" + pct, "main"));
+                confirmLore, null), confirmAction);
         put(holder, inv, 24, tipBtn("character.race_confirm.cancel", Material.RED_CONCRETE, "&cCancel",
                 List.of("&7Go back without paying"), null),
                 SlotAction.page("race_pct:" + race + ":" + pct));

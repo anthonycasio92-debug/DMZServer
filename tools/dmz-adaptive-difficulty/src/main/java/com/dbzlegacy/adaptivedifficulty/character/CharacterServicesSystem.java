@@ -324,12 +324,13 @@ public final class CharacterServicesSystem {
                 return "§cCharacter data unavailable.";
             }
             clearForms(ch, player);
-            ch.setRace(raceId);
             if (fullWipe) {
-                applyFullProgressWipe(player, data, raceId);
-                RaceSkillSync.sync(player, raceId);
-                RaceClassSync.sync(player);
+                applyFullProgressWipe(player, data);
+                RaceChangeCreationFlow.prepareCharacterData(player, data, raceId);
+                RaceChangeCreationFlow.begin(player, raceId);
+                RaceChangeCreationFlow.openEditor(player);
             } else {
+                ch.setRace(raceId);
                 boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
                 List<RaceChangeSkillPreserve.Entry> skillSnapshot =
                         keepSkills ? RaceChangeSkillPreserve.capture(data.getSkills()) : List.of();
@@ -342,7 +343,9 @@ public final class CharacterServicesSystem {
                     RaceClassSync.sync(player);
                 }
             }
-            ClassPermissionSync.sync(player);
+            if (!fullWipe) {
+                ClassPermissionSync.sync(player);
+            }
             syncClient(player);
             CharacterServicesStore.get().record(player.m_20148_().toString()).lastRaceChangeAt =
                     System.currentTimeMillis();
@@ -350,8 +353,8 @@ public final class CharacterServicesSystem {
             audit(player, "Race Change", currentRace, raceId, preservationPercent, cost, true);
             String paid = cost > 0L ? " §7Paid §f" + formatCost(cost) + "§7." : "";
             if (fullWipe) {
-                return "§aRace changed to §f" + titleCase(raceId)
-                        + "§a. §7Full wipe — stats, skills, techniques, and forms reset." + paid;
+                return "§aOpening character setup for §f" + titleCase(raceId)
+                        + "§a. §7Pick your class and appearance — free full wipe." + paid;
             }
             boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
             String kept = keepSkills
@@ -507,7 +510,7 @@ public final class CharacterServicesSystem {
      * Same core wipe as {@code dmzstats reset <player> 0 false} — keeps the race already set on
      * {@link Character}, clears skills, techniques, resources, quest progress, etc.
      */
-    private static void applyFullProgressWipe(ServerPlayer player, StatsData data, String raceId) {
+    private static void applyFullProgressWipe(ServerPlayer player, StatsData data) {
         if (player == null || data == null) {
             return;
         }
@@ -530,10 +533,6 @@ public final class CharacterServicesSystem {
             if (stats != null) {
                 applyStats(stats, new TransferableStats(0, 0, 0, 0, 0, 0));
             }
-        }
-        try {
-            data.updateTransformationSkillLimits(raceId);
-        } catch (Throwable ignored) {
         }
     }
 

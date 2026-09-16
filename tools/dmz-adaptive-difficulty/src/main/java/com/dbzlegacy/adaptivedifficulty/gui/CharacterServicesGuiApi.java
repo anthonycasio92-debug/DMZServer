@@ -83,7 +83,7 @@ public final class CharacterServicesGuiApi {
             if (pct > 0) {
                 lines.add("§8Scales with your DMZ level");
             } else {
-                lines.add("§8Free — full wipe (stats, skills, techniques, forms)");
+                lines.add("§8Free — full wipe, then DMZ class & look setup");
             }
             return lines;
         }
