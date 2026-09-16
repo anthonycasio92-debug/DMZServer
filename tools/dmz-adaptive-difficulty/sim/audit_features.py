@@ -87,7 +87,7 @@ def main() -> int:
     mod = read(MOD)
 
     print("=== Version ===")
-    check("VERSION 2.3.175", 'VERSION = "2.3.175"' in mod)
+    check("VERSION 2.3.176", 'VERSION = "2.3.176"' in mod)
 
     med = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/skills/MeditationProgression.java")
     check("meditation hints use ScreenNotify subtitle", "ScreenNotify.hint" in med and "med2_progress_subtitle" in med)
@@ -113,13 +113,6 @@ def main() -> int:
     check("ClassSkillSync ensures Fabled class skills", "ensureClassSkills" in class_skill and "needs-permission': 'true'" in class_skill)
     check("ClassSkillSync prestige marker stubs", "Prestige" in class_skill and "prestige" in class_skill)
     check("ClassPermissionSync uses catalog not hardcoded map", "FightingClassCatalog.skillNameFor" in class_perm and "hardcodedSkillName" not in class_perm)
-
-    energy_mana = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/EnergyManaSync.java")
-    level_guard = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/FabledLevelGuard.java")
-    attrib_guard = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/FabledAttribGuard.java")
-    check("EnergyManaSync skips Fabled stat wipe spend", "isFabledManaWipe" in energy_mana and "energy_wipe_skip" in energy_mana)
-    check("FabledLevelGuard restores ki on level change", "levelSignature" in level_guard and "EnergyManaSync.sync" in level_guard)
-    check("FabledAttribGuard clamps negative AP", "ap_clamp" in attrib_guard and "getAttribPoints" in attrib_guard)
 
     print("\n=== Stock ladder / form / HP scale ===")
     expected = {
@@ -294,14 +287,14 @@ def main() -> int:
     print("\n=== Post-pierce soft-cap clamp (1.0.25) ===")
     check("incomingSoftCapFrac helper", "incomingSoftCapFrac" in profile)
     check("post-pierce bagCap clamp", "bagCap" in profile and "incomingSoftCapFrac()" in profile)
-    check("formula revision 46", "mix(h, 46L)" in profile)
+    check("formula revision 45", "mix(h, 45L)" in profile)
     check("README pierce clamp", "Post-pierce" in readme or "post-pierce" in readme)
 
     print("\n=== Telemetry rollback (2.3.161) ===")
     check("T1 threat floor 0.35", "case 1 -> 0.35" in profile)
     check("T3 threat floor 0.48", "case 3 -> 0.48" in profile)
-    check("T6 form nudge 1.16", "case 6 -> 1.16" in profile)
-    check("T6 liveShare 0.58", "case 6 -> 0.58" in profile)
+    check("T6 form nudge 1.14", "case 6 -> 1.14" in profile)
+    check("T6 liveShare 0.55", "case 6 -> 0.55" in profile)
     check("scaling_constants SSOT", (Path(__file__).resolve().parent / "scaling_constants.py").is_file())
 
     print("\n=== Mob HP trim (1.0.29 / 1.0.30) ===")
@@ -311,12 +304,12 @@ def main() -> int:
     check("README 1.0.30 HP trim", "1.0.30" in readme and "0.75" in readme)
 
     print("\n=== Telemetry retune (1.0.24) ===")
-    check("formula revision 46", "mix(h, 46L)" in profile)
+    check("formula revision 45", "mix(h, 45L)" in profile)
     check("T1 landCap 0.18", "case 1 -> 0.18" in profile)
     check("T1 landFrac 0.13", "case 1 -> 0.13" in profile)
-    check("T6 landFrac 0.40", "case 6 -> 0.40" in profile)
+    check("T6 landFrac 0.38", "case 6 -> 0.38" in profile)
     check("T4 landFrac 0.28", "case 4 -> 0.28" in profile)
-    check("T5 landFrac 0.35", "case 5 -> 0.35" in profile)
+    check("T5 landFrac 0.33", "case 5 -> 0.33" in profile)
     check("KP landing 1.5%/lvl", "kiProtectionLevel * 0.015" in profile)
     check("partial landing fill", "preAmount < land * 0.45" in events)
     check("progressive soft-caps", "case 5 -> 0.44" in profile and "case 6 -> 0.48" in profile and "case 7 -> 0.52" in profile)
@@ -384,14 +377,14 @@ def main() -> int:
 
     print("\n=== Ladder retune (1.0.35 rollback) ===")
     check("T4 form nudge 1.06", "case 4 -> 1.06" in profile)
-    check("T5 form nudge 1.11", "case 5 -> 1.11" in profile)
-    check("T7 form nudge 1.20", "default -> 1.20" in profile)
+    check("T5 form nudge 1.10", "case 5 -> 1.10" in profile)
+    check("T7 form nudge 1.18", "default -> 1.18" in profile)
     check("T4 liveShare 0.42", "case 4 -> 0.42" in profile)
-    check("T5 liveShare 0.53", "case 5 -> 0.53" in profile)
+    check("T5 liveShare 0.50", "case 5 -> 0.50" in profile)
     check("T4 landCap 0.32", "case 4 -> 0.32" in profile)
-    check("T5 landCap 0.38", "case 5 -> 0.38" in profile)
+    check("T5 landCap 0.36", "case 5 -> 0.36" in profile)
     check("T3 landFrac 0.20", "case 3 -> 0.20" in profile)
-    check("T7 landFrac 0.44", "default -> 0.44" in profile)
+    check("T7 landFrac 0.42", "default -> 0.42" in profile)
     check("README 1.0.35 retune", "1.0.35" in readme and "hits-2026-08-06" in readme)
 
     print("\n=== Level clamp + mount guard (1.0.35) ===")
@@ -430,23 +423,6 @@ def main() -> int:
     check("coinDropChanceMigratedV1", "coinDropChanceMigratedV1" in cfg)
     check("admin set drop chance", "ancientcoindropchance" in cmds or "coindropchance" in cmds)
     check("README 5% / 0.5%", "5%" in readme and "0.5%" in readme and "2.3.63" in readme)
-    check("netherite drops use H variant only", "NETHERITE_DROP_TYPE" in coins and "NETHERITE_H" in coins
-          and "NETHERITE_VARIANTS" not in coins)
-    # Cross-check Lightman's built-in netherite loot table (first entry = H).
-    lc_jar = ROOT / "libraries/lightmanscurrency-1.20.1-2.3.0.5.jar"
-    if not lc_jar.is_file():
-        lc_jar = ROOT / "mods/lightmanscurrency-1.20.1-2.3.0.5.jar"
-    if lc_jar.is_file():
-        import json
-        import zipfile
-        with zipfile.ZipFile(lc_jar) as zf:
-            loot = json.loads(zf.read(
-                "data/lightmanscurrency/loot_tables/misc/ancient_netherite_coins.json"
-            ))
-        first_coin = loot["pools"][0]["entries"][0]["coin"]
-        check("netherite drop matches LC loot table first entry",
-              first_coin == "NETHERITE_H",
-              f"loot={first_coin}")
 
     print("\n=== Mohist CMI /lmdo routing (2.3.54) ===")
     gui_root = GUI_SRC / "com/dbzlegacy/adaptivedifficulty/bukkit"

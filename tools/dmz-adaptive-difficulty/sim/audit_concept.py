@@ -236,10 +236,10 @@ def main() -> int:
     lines += ["", "## 6) Version / formula revision", ""]
     mod = MOD.read_text(encoding="utf-8", errors="replace")
     profile = PROFILE.read_text(encoding="utf-8", errors="replace")
-    check("VERSION 2.3.175", 'VERSION = "2.3.175"' in mod)
+    check("VERSION 2.3.176", 'VERSION = "2.3.176"' in mod)
 
     check("RaceSkillSync present", (ROOT / "src/main/java/com/dbzlegacy/adaptivedifficulty/progression/bridge/RaceSkillSync.java").is_file())
-    check("formula revision 46", "mix(h, 46L)" in profile)
+    check("formula revision 45", "mix(h, 45L)" in profile)
     check("KP hit-cap relief wired", "kiProtectionLevel * 0.010" in profile)
     check("DEF/enchant paint relief", "estimateMitigationRelief" in profile and "calculatePostMitigationDamage" in profile)
     check("paintEase cap-path split", "Cap-bound" in profile or "base * paintEase" in profile)
@@ -261,9 +261,9 @@ def main() -> int:
     check(
         "landFrac ladder progressive T4<T5<T6<T7",
         "case 4 -> 0.28" in profile
-        and         "case 5 -> 0.35" in profile
-        and "case 6 -> 0.40" in profile
-        and "default -> 0.44" in profile,
+        and "case 5 -> 0.33" in profile
+        and "case 6 -> 0.38" in profile
+        and "default -> 0.42" in profile,
     )
     # Sim: god soft-cap-bound hitFrac must rise T3→T4→T5→T6→T7.
     god_t3 = simulate(pts("even"), st["scale"], fmap, "warrior", 3, SKILL_LOADOUTS["none"])

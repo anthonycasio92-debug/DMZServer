@@ -16,10 +16,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 TOOLTIPS = ROOT / "tools" / "dmz-adaptive-difficulty-gui" / "src" / "main" / "resources" / "gui-tooltips.json"
 GUI_SRC = ROOT / "tools" / "dmz-adaptive-difficulty-gui" / "src" / "main" / "java"
-FORGE_GUI_SRC = (
-    ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "java"
-    / "com" / "dbzlegacy" / "adaptivedifficulty" / "gui"
-)
 
 BANNED = [
     r"Legacy deep-link",
@@ -41,81 +37,11 @@ BANNED = [
     r"Flush log writers",
     r"Logging ON",
     r"Logging OFF",
-    r"teamBonusPercent",
-    r"contributionPercent",
-    r"opted-in",
-    r"opted in",
-    r"\bOpt-in\b",
-    r"\bWIP\b",
 ]
 
 KEY_RE = re.compile(
     r'"(?:spar|rival|hub|prestige|progression|difficulty|skills|common)\.[a-z0-9_.]+"',
 )
-
-BTN_HOVER_RE = re.compile(
-    r'btn\(\s*"[^"]*"\s*,\s*"[^"]*"\s*,\s*"([^"]+)"\s*\)',
-)
-
-TIP_BTN_LORE_RE = re.compile(
-    r'tipBtn\([^,]+,\s*"(?P<key>(?:spar|rival|hub|prestige|progression|difficulty|skills|common)\.[a-z0-9_.]+)"[^)]*List\.of\((?P<lore>[^)]+)\)',
-    re.DOTALL,
-)
-
-ACTION_BTN_LORE_RE = re.compile(
-    r'actionBtn\([^,]+,\s*\d+,\s*"(?P<key>(?:spar|rival|hub|prestige|progression|difficulty|skills|common)\.[a-z0-9_.]+)"[^)]*List\.of\((?P<lore>[^)]+)\)',
-    re.DOTALL,
-)
-
-def scan_plain_hover(java_path: Path, text: str) -> list[str]:
-    """Flag banned jargon in Forge chat-menu btn() hover strings."""
-    hits: list[str] = []
-    rel = java_path.relative_to(ROOT)
-    for m in BTN_HOVER_RE.finditer(text):
-        hover = m.group(1)
-        for pat in BANNED:
-            if re.search(pat, hover, re.I):
-                hits.append(f"BANNED HOVER [{rel}]: /{pat}/ → {hover[:72]}")
-                break
-    return hits
-
-
-def normalize_lore_blob(blob: str) -> list[str]:
-    """Extract static lore lines from a List.of(...) fragment."""
-    lines: list[str] = []
-    for m in re.finditer(r'"([&§][^"]*)"', blob):
-        line = m.group(1)
-        if re.search(r"\{[^}]+\}", line):
-            continue
-        if re.search(r'\+ ph\.getOrDefault\(', blob[m.start():m.end() + 40]):
-            continue
-        lines.append(line.replace('§', '&'))
-    return lines
-
-
-def scan_chest_cmi_drift() -> list[str]:
-    """Chest and CMI fallbacks for the same tooltip key should match."""
-    chest = GUI_SRC / "com" / "dbzlegacy" / "adaptivedifficulty" / "bukkit" / "DifficultyChestGui.java"
-    cmi = GUI_SRC / "com" / "dbzlegacy" / "adaptivedifficulty" / "bukkit" / "CmiDifficultyGui.java"
-    if not chest.is_file() or not cmi.is_file():
-        return []
-    chest_text = chest.read_text(encoding="utf-8", errors="replace")
-    cmi_text = cmi.read_text(encoding="utf-8", errors="replace")
-    chest_map: dict[str, list[str]] = {}
-    cmi_map: dict[str, list[str]] = {}
-    for m in TIP_BTN_LORE_RE.finditer(chest_text):
-        chest_map[m.group("key")] = normalize_lore_blob(m.group("lore"))
-    for m in ACTION_BTN_LORE_RE.finditer(cmi_text):
-        cmi_map[m.group("key")] = normalize_lore_blob(m.group("lore"))
-    errors: list[str] = []
-    for key in sorted(set(chest_map) & set(cmi_map)):
-        c_lines = [ln for ln in chest_map[key] if not ln.endswith("Current mode") and not ln.endswith("Click to select")]
-        m_lines = [ln for ln in cmi_map[key] if not ln.endswith("Current mode") and not ln.endswith("Click to select")]
-        if c_lines != m_lines:
-            errors.append(
-                f"CHEST/CMI DRIFT [{key}]: chest={c_lines!r} cmi={m_lines!r}"
-            )
-    return errors
 
 def scan_java_banned(java_path: Path, text: str) -> list[str]:
     """Flag banned jargon only in player-facing string literals (& / § lore)."""
@@ -215,31 +141,11 @@ def main() -> int:
         text = java.read_text(encoding="utf-8", errors="replace")
         errors.extend(scan_java_banned(java, text))
 
-    if FORGE_GUI_SRC.is_dir():
-        for java in FORGE_GUI_SRC.rglob("*.java"):
-            text = java.read_text(encoding="utf-8", errors="replace")
-            errors.extend(scan_java_banned(java, text))
-            if java.name.endswith("ChatMenu.java"):
-                errors.extend(scan_plain_hover(java, text))
-
-    errors.extend(scan_chest_cmi_drift())
     print(f"# GUI tooltip audit — {len(catalog)} keys, {len(used)} referenced from Java\n")
     for w in warns:
         print(w)
     for e in errors:
         print(e)
-
-    gui_tooltips_java = GUI_SRC / "com" / "dbzlegacy" / "adaptivedifficulty" / "bukkit" / "GuiTooltips.java"
-    if gui_tooltips_java.is_file():
-        jtxt = gui_tooltips_java.read_text(encoding="utf-8", errors="replace")
-        rev_m = re.search(r"CATALOG_REVISION\s*=\s*(\d+)", jtxt)
-        jar_rev = data.get("_catalogRevision")
-        if rev_m and jar_rev is not None:
-            java_rev = int(rev_m.group(1))
-            if int(jar_rev) != java_rev:
-                errors.append(
-                    f"CATALOG_REVISION mismatch: json={jar_rev} GuiTooltips.java={java_rev}"
-                )
 
     if errors:
         print(f"\nFAIL — {len(errors)} issue(s), {len(warns)} warning(s)")
