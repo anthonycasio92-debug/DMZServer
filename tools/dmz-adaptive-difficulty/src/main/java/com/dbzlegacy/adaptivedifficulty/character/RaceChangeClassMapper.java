@@ -94,6 +94,42 @@ public final class RaceChangeClassMapper {
     }
 
     /**
+     * Canonical fighting class id for {@code raceId}, preferring {@code preferredClassId} when it
+     * exists on that race, otherwise mapping from {@code fallbackPriorClassId}.
+     */
+    public static String fightingClassForRace(
+            String preferredClassId, String fallbackPriorClassId, String raceId) {
+        return resolveClassForRaceAfterChange(preferredClassId, fallbackPriorClassId, raceId);
+    }
+
+    /**
+     * Sets race + fighting class on DMZ character data so class passives/base stats use the
+     * <em>new</em> race's {@code stats.json} entry for that class id.
+     *
+     * @param preferredClassId class to keep when valid on {@code newRaceId} (often current pick)
+     * @param fallbackPriorClassId used only when {@code preferredClassId} is invalid on the race
+     * @return the class id now on the character
+     */
+    public static String commitFightingClassForRace(
+            StatsData data, String newRaceId, String preferredClassId, String fallbackPriorClassId) {
+        if (data == null || newRaceId == null || newRaceId.isBlank()) {
+            return preferredClassId == null ? "" : preferredClassId;
+        }
+        Character ch = data.getCharacter();
+        if (ch == null) {
+            return preferredClassId == null ? "" : preferredClassId;
+        }
+        String race = newRaceId.trim().toLowerCase(Locale.ROOT);
+        String mapped = fightingClassForRace(preferredClassId, fallbackPriorClassId, race);
+        try {
+            ch.setRace(race);
+            ch.setCharacterClass(mapped);
+        } catch (Throwable ignored) {
+        }
+        return mapped;
+    }
+
+    /**
      * Sets race + fighting class on DMZ character data so class passives/base stats use the
      * <em>new</em> race's {@code stats.json} entry for that class id.
      *
@@ -108,7 +144,6 @@ public final class RaceChangeClassMapper {
         if (ch == null) {
             return priorClassId == null ? "" : priorClassId;
         }
-        String race = newRaceId.trim().toLowerCase(Locale.ROOT);
         String prior = priorClassId;
         if (prior == null || prior.isBlank()) {
             try {
@@ -125,13 +160,7 @@ public final class RaceChangeClassMapper {
         } catch (Throwable t) {
             currentOnCharacter = prior;
         }
-        String mapped = resolveClassForRaceAfterChange(currentOnCharacter, prior, race);
-        try {
-            ch.setRace(race);
-            ch.setCharacterClass(mapped);
-        } catch (Throwable ignored) {
-        }
-        return mapped;
+        return commitFightingClassForRace(data, newRaceId, currentOnCharacter, prior);
     }
 
     private static String normalize(String raw) {

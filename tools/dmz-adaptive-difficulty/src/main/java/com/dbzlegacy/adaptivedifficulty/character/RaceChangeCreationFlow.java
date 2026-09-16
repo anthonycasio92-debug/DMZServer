@@ -137,8 +137,9 @@ public final class RaceChangeCreationFlow {
         String race = session.targetRaceId;
         StatsData data = DmzProgression.stats(player);
         if (data != null && race != null && !race.isBlank()) {
-            RaceChangeClassMapper.applyRaceAndFightingClass(
-                    player, data, race, session.priorFightingClass);
+            String picked = DmzProgression.fightingClass(player);
+            RaceChangeClassMapper.commitFightingClassForRace(
+                    data, race, picked, session.priorFightingClass);
             DmzFightingClassStatsSync.afterFightingClassChange(player, data, true);
         } else {
             try {

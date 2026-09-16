@@ -507,7 +507,13 @@ public final class CharacterServicesSystem {
                 refund(player, cost);
                 return "§cCharacter data unavailable.";
             }
-            ch.setCharacterClass(classId);
+            String committed =
+                    RaceChangeClassMapper.commitFightingClassForRace(data, race, classId, current);
+            if (committed != null && !committed.isBlank()) {
+                classId = committed;
+            } else {
+                ch.setCharacterClass(classId);
+            }
             boolean preservePrimaries = before != null;
             if (preservePrimaries) {
                 applyStats(data.getStats(), before);

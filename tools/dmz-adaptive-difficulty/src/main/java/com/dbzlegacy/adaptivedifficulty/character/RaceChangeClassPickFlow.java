@@ -34,6 +34,16 @@ public final class RaceChangeClassPickFlow {
         return session(player) != null;
     }
 
+    public static String targetRaceId(ServerPlayer player) {
+        Session session = session(player);
+        return session == null ? "" : session.targetRaceId;
+    }
+
+    public static String priorFightingClass(ServerPlayer player) {
+        Session session = session(player);
+        return session == null ? "" : session.priorFightingClass;
+    }
+
     public static void clear(ServerPlayer player) {
         if (player != null) {
             ACTIVE.remove(player.m_20148_());
@@ -71,18 +81,8 @@ public final class RaceChangeClassPickFlow {
             return;
         }
         String picked = DmzProgression.fightingClass(player);
-        if (!RaceChangeClassMapper.isClassValidForRace(race, picked)) {
-            String mapped =
-                    RaceChangeClassMapper.resolveClassForRaceAfterChange(
-                            picked, session.priorFightingClass, race);
-            try {
-                var ch = data.getCharacter();
-                if (ch != null) {
-                    ch.setCharacterClass(mapped);
-                }
-            } catch (Throwable ignored) {
-            }
-        }
+        RaceChangeClassMapper.commitFightingClassForRace(
+                data, race, picked, session.priorFightingClass);
         ACTIVE.remove(player.m_20148_());
         DmzFightingClassStatsSync.afterFightingClassChange(player, data, true);
         ClassPermissionSync.syncAuthoritativeClassChange(player);

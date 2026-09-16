@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.mixin;
 import com.dbzlegacy.adaptivedifficulty.character.RaceChangeCreationFlow;
 import com.dbzlegacy.adaptivedifficulty.character.RaceChangeCreationPacketGuard;
 import com.dragonminez.common.network.C2S.CreateCharacterC2S;
+import com.dragonminez.common.stats.StatsData;
 import java.util.function.Supplier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
@@ -31,25 +32,19 @@ public abstract class CreateCharacterC2SMixin {
         }
     }
 
-    @Inject(method = "handle", at = @At("RETURN"), remap = false)
-    private static void lm$afterRaceChangeCreation(
+    /** After DMZ applies {@code CreateCharacterC2S} (enqueueWork), not at {@code handle} return. */
+    @Inject(method = "lambda$handle$0", at = @At("RETURN"), remap = false)
+    private static void lm$afterRaceChangeCreationApplied(
             CreateCharacterC2S packet,
-            Supplier<NetworkEvent.Context> ctxSupplier,
+            ServerPlayer player,
+            StatsData data,
             CallbackInfo ci
     ) {
         try {
-            NetworkEvent.Context ctx = ctxSupplier == null ? null : ctxSupplier.get();
-            ServerPlayer player = ctx == null ? null : ctx.getSender();
             if (player == null || !RaceChangeCreationFlow.isActive(player)) {
                 return;
             }
-            var server = player.m_20194_();
-            Runnable work = () -> RaceChangeCreationFlow.onCharacterCreated(player);
-            if (server != null) {
-                server.execute(work);
-            } else {
-                work.run();
-            }
+            RaceChangeCreationFlow.onCharacterCreated(player);
         } catch (Throwable ignored) {
         }
     }

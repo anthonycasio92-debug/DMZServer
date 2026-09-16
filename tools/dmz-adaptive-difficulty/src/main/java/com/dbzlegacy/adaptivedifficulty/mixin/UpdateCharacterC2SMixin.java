@@ -1,9 +1,11 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.character.RaceChangeClassPickFlow;
+import com.dbzlegacy.adaptivedifficulty.character.RaceChangeClassPickPacketGuard;
 import com.dbzlegacy.adaptivedifficulty.character.RaceHeadBoneSync;
 import com.dbzlegacy.adaptivedifficulty.character.ReskinSessionGuard;
 import com.dragonminez.common.network.C2S.UpdateCharacterC2S;
+import com.dragonminez.common.stats.StatsData;
 import java.util.function.Supplier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
@@ -28,20 +30,21 @@ public abstract class UpdateCharacterC2SMixin {
                 return;
             }
             ReskinSessionGuard.applyPacketClassLock(packet, player);
+            RaceChangeClassPickPacketGuard.applyUpdateCharacterPacket(packet, player);
             RaceHeadBoneSync.applyPacketHeadBone(packet, player);
         } catch (Throwable ignored) {
         }
     }
 
-    @Inject(method = "handle", at = @At("RETURN"), remap = false)
-    private static void lm$reskinEnforceClassAfterPacket(
+    /** After DMZ applies {@code UpdateCharacterC2S} (enqueueWork), not at {@code handle} return. */
+    @Inject(method = "lambda$handle$0", at = @At("RETURN"), remap = false)
+    private static void lm$afterUpdateCharacterApplied(
             UpdateCharacterC2S packet,
-            Supplier<NetworkEvent.Context> ctxSupplier,
+            ServerPlayer player,
+            StatsData data,
             CallbackInfo ci
     ) {
         try {
-            NetworkEvent.Context ctx = ctxSupplier == null ? null : ctxSupplier.get();
-            ServerPlayer player = ctx == null ? null : ctx.getSender();
             if (player == null) {
                 return;
             }
