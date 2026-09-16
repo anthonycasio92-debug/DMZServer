@@ -328,6 +328,7 @@ public final class CharacterServicesSystem {
             }
             clearForms(ch, player);
             String priorHeadBone = CosmeticHeadBoneService.activeBone(player);
+            String priorClassBeforeRaceChange = "";
             if (fullWipe) {
                 applyFullProgressWipe(player, data);
                 RaceChangeCreationFlow.begin(player, raceId, priorHeadBone);
@@ -341,7 +342,21 @@ public final class CharacterServicesSystem {
                     } catch (Throwable ignored) {
                     }
                 }
-                RaceChangeClassMapper.applyRaceAndFightingClass(player, data, raceId, priorClass);
+                priorClassBeforeRaceChange = priorClass == null ? "" : priorClass;
+                String mappedClass =
+                        RaceChangeClassMapper.applyRaceAndFightingClass(
+                                player, data, raceId, priorClass);
+                if (mappedClass != null
+                        && !mappedClass.isBlank()
+                        && !priorClassBeforeRaceChange.isBlank()
+                        && !mappedClass.equalsIgnoreCase(priorClassBeforeRaceChange)) {
+                    AdaptiveDifficultyMod.LOGGER.info(
+                            "[{}] race change remapped fighting class {} → {} for race {}",
+                            AdaptiveDifficultyMod.MOD_ID,
+                            priorClassBeforeRaceChange,
+                            mappedClass,
+                            raceId);
+                }
                 CosmeticHeadBoneService.reapplyHeadBoneAfterRaceChange(player, priorHeadBone);
                 boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
                 List<RaceChangeSkillPreserve.Entry> skillSnapshot =
@@ -385,6 +400,10 @@ public final class CharacterServicesSystem {
                         label = titleCase(cls);
                     }
                     classNote = " §7Fighting class §f" + label + " §7(" + raceId + " stats).";
+                    if (!priorClassBeforeRaceChange.isBlank()
+                            && !cls.equalsIgnoreCase(priorClassBeforeRaceChange)) {
+                        classNote += " §7(Remapped from §f" + titleCase(priorClassBeforeRaceChange) + "§7.)";
+                    }
                 }
             }
             return "§aRace changed to §f" + titleCase(raceId)
