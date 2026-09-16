@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.character.RaceChangeClassPickFlow;
 import com.dbzlegacy.adaptivedifficulty.character.RaceHeadBoneSync;
 import com.dbzlegacy.adaptivedifficulty.character.ReskinSessionGuard;
 import com.dragonminez.common.network.C2S.UpdateCharacterC2S;
@@ -48,6 +49,7 @@ public abstract class UpdateCharacterC2SMixin {
             if (RaceHeadBoneSync.syncCharacter(player)) {
                 RaceHeadBoneSync.syncClient(player);
             }
+            RaceChangeClassPickFlow.onRecustomizeComplete(player);
         } catch (Throwable ignored) {
         }
     }

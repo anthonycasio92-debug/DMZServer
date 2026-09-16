@@ -57,6 +57,21 @@ public final class RaceChangeClassMapper {
         return resolveClassForRace(priorClassId, newRaceId);
     }
 
+    /**
+     * Target race does not offer the player's current class — they must pick one (free with race
+     * change) instead of auto-remapping to a fallback.
+     */
+    public static boolean requiresClassPicker(String currentClassId, String newRaceId) {
+        List<String> allowed = DmzContentDiscovery.classIdsForRace(newRaceId);
+        if (allowed.isEmpty()) {
+            return true;
+        }
+        if (currentClassId == null || currentClassId.isBlank()) {
+            return true;
+        }
+        return canonicalId(currentClassId, allowed) == null;
+    }
+
     /** True when {@code classId} is defined on that race's {@code stats.json}. */
     public static boolean isClassValidForRace(String raceId, String classId) {
         if (raceId == null || raceId.isBlank() || classId == null || classId.isBlank()) {
