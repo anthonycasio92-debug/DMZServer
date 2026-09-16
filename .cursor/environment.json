@@ -1,0 +1,5 @@
+{
+  "name": "DMZServer",
+  "install": "bash scripts/ensure-live-sftp-env.sh",
+  "start": "bash scripts/ensure-live-sftp-env.sh"
+}
