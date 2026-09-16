@@ -224,12 +224,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             case "skills", "skill" -> skillsChestGui.open(admin, p.equals("main") ? "core" : p);
             case "prestige" -> prestigeChestGui.open(admin, p);
+            case "character", "characterservices", "charservices", "char" ->
+                    characterServicesChestGui.open(admin, p);
             case "progression", "prog" -> progressionChestGui.open(admin, p);
             case "android_remove", "androidremove", "remove_android", "deandroid" ->
                     progressionChestGui.open(admin, "android_remove");
             default -> {
                 admin.sendMessage("§cUnknown system: §f" + s
-                        + " §8(hub|difficulty|rival|spar|skillcheck|prestige|progression|skills|android_remove)");
+                        + " §8(hub|difficulty|rival|spar|skillcheck|prestige|character|progression|skills|android_remove)");
                 hubChestGui.open(admin, "main");
             }
         }
@@ -1115,7 +1117,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             case "help", "hub", "lm" -> openHubInventory(player, "main");
             default -> {
                 player.sendMessage("§cUnknown system: " + s
-                        + " §8(difficulty|rival|spar|skillcheck|prestige|progression)");
+                        + " §8(difficulty|rival|spar|skillcheck|prestige|character|progression)");
                 openHubInventory(player, "main");
             }
         }
@@ -1307,6 +1309,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     "skillcheck", "skill_check",
                     "skills", "skill",
                     "prestige",
+                    "character", "characterservices", "charservices", "char",
                     "android_remove", "androidremove", "remove_android", "deandroid",
                     "progression", "prog",
                     "admin", "logs", "syslog", "help" -> true;
@@ -1324,8 +1327,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§e/lm admin clear <player> [all|rival|spar|difficulty|progression]");
         sender.sendMessage("§8Offline OK for rival/spar; difficulty + progression NBT need the player online");
         sender.sendMessage("§e/lm admin syslog on|off|status|flush");
-        sender.sendMessage("§e/lm admin open <difficulty|rival|spar|progression|prestige|skills|hub>");
-        sender.sendMessage("§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|prestige|progression|skills]");
+        sender.sendMessage("§e/lm admin open <difficulty|rival|spar|character|progression|prestige|skills|hub>");
+        sender.sendMessage("§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|character|prestige|progression|skills]");
         sender.sendMessage("§e/lm admin inspect clear §7— stop inspecting");
         sender.sendMessage("§e/padmin points <player> add|remove|set <n> §7— wallet for all prestige shops");
         sender.sendMessage("§e/padmin addpoints|removepoints <player> <n>");
