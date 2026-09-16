@@ -323,6 +323,7 @@ public final class CharacterServicesSystem {
                 RaceChangeCreationFlow.openEditor(player);
             } else {
                 ch.setRace(raceId);
+                RaceHeadBoneSync.syncCharacter(player);
                 boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
                 List<RaceChangeSkillPreserve.Entry> skillSnapshot =
                         keepSkills ? RaceChangeSkillPreserve.capture(data.getSkills()) : List.of();
@@ -466,6 +467,9 @@ public final class CharacterServicesSystem {
         }
         try {
             ReskinSessionGuard.begin(player);
+            if (RaceHeadBoneSync.syncCharacter(player)) {
+                RaceHeadBoneSync.syncClient(player);
+            }
             var server = player.m_20194_();
             Runnable openEditor = () -> NetworkHandler.sendToPlayer(new OpenRecustomizeS2C(), player);
             if (server != null) {

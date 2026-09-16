@@ -178,6 +178,14 @@ public final class DifficultyEvents {
             RivalSystem.onLogin(player);
             SparringSystem.onLogin(player);
             ProgressionSystem.onLogin(player);
+            var server = player.m_20194_();
+            if (server != null) {
+                server.execute(() -> {
+                    if (com.dbzlegacy.adaptivedifficulty.character.RaceHeadBoneSync.syncCharacter(player)) {
+                        com.dbzlegacy.adaptivedifficulty.character.RaceHeadBoneSync.syncClient(player);
+                    }
+                });
+            }
             // DMZ Character often attaches after this event — keep pulling level until ready.
             DifficultyActions.scheduleLevelPull(player);
         }

@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.character.RaceHeadBoneSync;
 import com.dbzlegacy.adaptivedifficulty.character.ReskinSessionGuard;
 import com.dragonminez.common.network.C2S.UpdateCharacterC2S;
 import java.util.function.Supplier;
@@ -26,6 +27,7 @@ public abstract class UpdateCharacterC2SMixin {
                 return;
             }
             ReskinSessionGuard.applyPacketClassLock(packet, player);
+            RaceHeadBoneSync.applyPacketHeadBone(packet, player);
         } catch (Throwable ignored) {
         }
     }
@@ -43,6 +45,9 @@ public abstract class UpdateCharacterC2SMixin {
                 return;
             }
             ReskinSessionGuard.enforceOnCharacter(player);
+            if (RaceHeadBoneSync.syncCharacter(player)) {
+                RaceHeadBoneSync.syncClient(player);
+            }
         } catch (Throwable ignored) {
         }
     }
