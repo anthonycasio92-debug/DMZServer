@@ -27,7 +27,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 final class GuiTooltips {
     /** Bump when the in-jar tooltip catalog is humanized; older on-disk files are replaced on reload. */
-    private static final int CATALOG_REVISION = 191;
+    private static final int CATALOG_REVISION = 192;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static final Map<String, Entry> ENTRIES = new ConcurrentHashMap<>();
@@ -87,6 +87,7 @@ final class GuiTooltips {
             "spar.mentor.dojo",
             "skills.main.header",
             "progression.economy.staff_free",
+            "difficulty.tiers.tier",
     };
 
     static String reload() {

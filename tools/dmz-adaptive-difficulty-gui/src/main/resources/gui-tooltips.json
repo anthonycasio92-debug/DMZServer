@@ -690,11 +690,7 @@
         ]
       },
       "tier": {
-        "name": "{name}",
-        "lore": [
-          "&7Difficulty tier &f{tier}",
-          "&7Unlock with character level or Prestige"
-        ]
+        "name": "{name}"
       }
     },
     "titles": {
@@ -1888,5 +1884,5 @@
       ]
     }
   },
-  "_catalogRevision": 191
+  "_catalogRevision": 192
 }
