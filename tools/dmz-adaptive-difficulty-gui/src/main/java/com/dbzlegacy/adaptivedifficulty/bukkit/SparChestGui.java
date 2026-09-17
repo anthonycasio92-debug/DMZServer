@@ -1251,11 +1251,15 @@ public final class SparChestGui implements Listener {
                 ? "main" : slotAction.returnPage;
         final String action = slotAction.action;
         final String arg = slotAction.arg == null || slotAction.arg.isBlank() ? "0" : slotAction.arg;
-        final Player subject = AdminInspectSessions.resolveSubject(player);
+        final Player actor = AdminInspectSessions.resolveActor(player, action);
         Bukkit.getScheduler().runTask(plugin, () -> {
-            String msg = ForgeBridge.sparHandleDo(subject, action, arg, ret);
+            String msg = ForgeBridge.sparHandleDo(actor, action, arg, ret);
             if (msg != null && !msg.isBlank()) {
-                GuiChat.sendResult(player, msg);
+                if ("admin".equalsIgnoreCase(action)) {
+                    GuiChat.sendChatResult(player, msg);
+                } else {
+                    GuiChat.sendResult(player, msg);
+                }
             }
             open(player, ret);
         });

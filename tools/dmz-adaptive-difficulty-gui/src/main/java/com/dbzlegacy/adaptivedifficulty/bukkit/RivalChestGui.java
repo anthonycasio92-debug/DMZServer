@@ -987,12 +987,17 @@ public final class RivalChestGui implements Listener {
                 ? "main" : slotAction.returnPage;
         final String action = slotAction.action;
         final String arg = slotAction.arg == null || slotAction.arg.isBlank() ? "0" : slotAction.arg;
-        final Player subject = AdminInspectSessions.resolveSubject(player);
+        final Player actor = AdminInspectSessions.resolveActor(player, action);
         Bukkit.getScheduler().runTask(plugin, () -> {
-            String msg = ForgeBridge.rivalHandleDo(subject, action, arg, ret);
+            String msg = ForgeBridge.rivalHandleDo(actor, action, arg, ret);
             if (msg != null && !msg.isBlank()) {
-                GuiChat.sendResult(player, msg);
+                if ("admin".equalsIgnoreCase(action)) {
+                    GuiChat.sendChatResult(player, msg);
+                } else {
+                    GuiChat.sendResult(player, msg);
+                }
             }
+            final Player subject = AdminInspectSessions.resolveSubject(player);
             String reopen = ret;
             if (("accept".equalsIgnoreCase(action) || "accept_replace".equalsIgnoreCase(action))
                     && ForgeBridge.rivalNeedsMutualReplace(subject)) {

@@ -888,9 +888,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             reopen = arg == null || arg.isBlank() ? "main" : arg;
         } else {
             reopen = returnPage == null || returnPage.isBlank() ? "main" : returnPage;
+            Player actor = AdminInspectSessions.resolveActor(player, action);
             String msg = switch (system) {
-                case "rival", "rivals" -> ForgeBridge.rivalHandleDo(subject, action, arg, reopen);
-                case "spar", "sparring" -> ForgeBridge.sparHandleDo(subject, action, arg, reopen);
+                case "rival", "rivals" -> ForgeBridge.rivalHandleDo(actor, action, arg, reopen);
+                case "spar", "sparring" -> ForgeBridge.sparHandleDo(actor, action, arg, reopen);
                 case "difficulty", "diff", "ad" -> {
                     ForgeBridge.ActionResult r = ForgeBridge.handleActionResult(subject, action, arg, reopen);
                     yield r.message();
@@ -905,7 +906,11 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 }
             };
             if (msg != null && !msg.isBlank()) {
-                GuiChat.sendResult(player, msg);
+                if ("admin".equalsIgnoreCase(action)) {
+                    GuiChat.sendChatResult(player, msg);
+                } else {
+                    GuiChat.sendResult(player, msg);
+                }
             }
             if (("rival".equals(system) || "rivals".equals(system))
                     && ("accept".equalsIgnoreCase(action)
