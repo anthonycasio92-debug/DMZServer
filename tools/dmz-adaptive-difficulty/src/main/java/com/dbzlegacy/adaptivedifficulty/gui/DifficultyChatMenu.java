@@ -279,15 +279,8 @@ public final class DifficultyChatMenu {
                         ? "§eWhitelist ON §7(" + DifficultyConfig.whitelistEntries().size() + ")"
                         : "§7Whitelist OFF")));
         send(player, Component.m_237113_("§8/difficulty admin off|on · whitelist on|off|add|remove|list"));
-        boolean staffFree = cfg.staffFreeAncientCoinCosts;
         send(player, Component.m_237113_(
-                "§7Staff free coin costs §f" + (staffFree ? "ON" : "OFF")
-                        + " §8— tiers, Character Services, End dragon"));
-        send(player, btn(
-                staffFree ? "§e[Turn staff free coins OFF]" : "§a[Turn staff free coins ON]",
-                "/difficulty do toggle_staff_free_coins 0 settings",
-                "Server-wide: staff/OP skip Ancient Coin charges when ON"));
-        send(player, Component.m_237113_("§8/difficulty admin stafffree on|off"));
+                "§7Staff Ancient Coin pricing §8→ §f/lm §7→ Progression → Ancient Coins"));
         send(player, Component.m_237113_("§7Tier cost anchor §f" + (long) cfg.tierCostLevelAnchor
                 + " §8· T7 target §f" + cfg.tierCostT7TargetCopper
                 + " copper §8(stock 150000 → 100× Netherite)"));

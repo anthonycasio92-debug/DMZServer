@@ -110,6 +110,13 @@ public final class CmiProgressionGui {
                         new String[]{"shadow", "statchecker"});
                 case "status" -> openSection(player, "status", "&eStatus", Material.WRITABLE_BOOK,
                         new String[]{"flight", "sprint", "meditation", "potential", "farming", "building"});
+                case "economy", "ancient_coins", "coins" -> {
+                    if (ForgeBridge.isStaff(player)) {
+                        openEconomy(player);
+                    } else {
+                        openMain(player);
+                    }
+                }
                 case "admin", "flags", "disable" -> {
                     if (ForgeBridge.isStaff(player)) {
                         openFlags(player);
@@ -181,7 +188,9 @@ public final class CmiProgressionGui {
         }
 
         if (ForgeBridge.isStaff(player)) {
-            gui.addButton(pageBtn(40, "progression.main.admin", Material.REPEATER, "&cAll Flags", "admin",
+            gui.addButton(pageBtn(40, "progression.main.economy", Material.GOLD_INGOT, "&6Ancient Coins", "economy",
+                    "&7Staff pricing for all LM Ancient Coin features", "", "&eOpen"));
+            gui.addButton(pageBtn(41, "progression.main.admin", Material.REPEATER, "&cAll Flags", "admin",
                     "&7Full flag board"));
         }
 
@@ -291,6 +300,37 @@ public final class CmiProgressionGui {
         }
 
         gui.addButton(pageBtn(36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
+        gui.addButton(closeBtn(44));
+        fillEmpty(gui, 5);
+        GuiFeedback.openCmi(gui);
+    }
+
+    private static void openEconomy(Player player) {
+        Map<String, String> ph = ForgeBridge.progressionPlaceholders(player);
+        boolean staffFree = "true".equalsIgnoreCase(ph.getOrDefault("staff_free_ancient_coin_costs", "false"));
+        CMIGui gui = base(player, "&8Ancient Coins", 5);
+        CMIGuiButton header = new CMIGuiButton(4, Material.GOLD_INGOT, "&6&lAncient Coin Economy");
+        header.lockField();
+        header.addLore(List.of("",
+                "&7Server-wide staff pricing for LM features",
+                "&7that charge Ancient Coins.",
+                "",
+                "&8Tiers · Character Services · End dragon ·",
+                "&8head bones · future paid LM features.",
+                "",
+                staffFree ? "&aStaff free costs: ON" : "&7Staff free costs: OFF"));
+        gui.addButton(header);
+        gui.addButton(actionBtn(22, "progression.economy.staff_free",
+                staffFree ? Material.LIME_DYE : Material.GRAY_DYE,
+                staffFree ? "&aStaff free coins ON" : "&7Staff free coins OFF",
+                "toggle_staff_free_coins", staffFree ? "off" : "on", "economy",
+                List.of(
+                        "&7When ON, staff/OP pay no Ancient Coins",
+                        "&7on LM paid features.",
+                        "",
+                        staffFree ? "&eClick to turn OFF" : "&aClick to turn ON")));
+        gui.addButton(pageBtn(36, "common.back", Material.ARROW, "&7Back", "main", "&7Progression hub"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);

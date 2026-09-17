@@ -6,8 +6,9 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
+import com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi;
+import com.dbzlegacy.adaptivedifficulty.gui.ProgressionMenu;
 import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
-import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
 import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
@@ -272,7 +273,7 @@ public final class DifficultyActions {
         }
         if (ACT_TOGGLE_STAFF_FREE_COINS.equals(act) || "staff_free_coins".equals(act)
                 || "stafffree".equals(act) || "staff_free".equals(act)) {
-            return toggleStaffFreeCoins(player, page);
+            return toggleStaffFreeCoins(player, arg, page);
         }
         if (ACT_SUMMON_END_DRAGON.equals(act) || ACT_END_DRAGON.equals(act)
                 || "summon_dragon".equals(act) || "dragon_summon".equals(act)) {
@@ -406,18 +407,17 @@ public final class DifficultyActions {
                 : "Title Sense OFF — recognition chat muted.");
     }
 
-    private static Result toggleStaffFreeCoins(ServerPlayer player, String page) {
-        if (!StaffAccess.isStaff(player)) {
-            return Result.fail("Staff only.");
+    private static Result toggleStaffFreeCoins(ServerPlayer player, String arg, String page) {
+        String toggleArg = arg;
+        if (toggleArg == null || toggleArg.isBlank() || "0".equals(toggleArg.trim())) {
+            toggleArg = "";
         }
-        DifficultyConfig cfg = DifficultyConfig.get();
-        cfg.staffFreeAncientCoinCosts = !cfg.staffFreeAncientCoinCosts;
-        DifficultyConfig.save();
-        String returnPage = page == null || page.isBlank() ? "stats" : page;
-        openGui(player, returnPage);
-        return Result.ok(cfg.staffFreeAncientCoinCosts
-                ? "Staff free Ancient Coin costs ON — staff/OP skip coin charges on paid LM features."
-                : "Staff free Ancient Coin costs OFF — staff/OP pay normal prices.");
+        String msg = ProgressionGuiApi.toggleStaffFreeAncientCoinCosts(player, toggleArg);
+        if (msg.startsWith("§c")) {
+            return Result.fail(msg.replace("§c", ""));
+        }
+        ProgressionMenu.open(player, "economy");
+        return Result.ok(msg.replaceAll("§.", ""));
     }
 
     private static Result summonEndDragon(ServerPlayer player, String page) {

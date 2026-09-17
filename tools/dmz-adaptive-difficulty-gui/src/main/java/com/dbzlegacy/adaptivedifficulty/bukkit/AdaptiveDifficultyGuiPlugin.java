@@ -1412,7 +1412,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§8Offline OK for rival/spar; difficulty + progression NBT need the player online");
         sender.sendMessage("§e/lm admin syslog on|off|status|flush");
         sender.sendMessage("§e/lm admin stafffree on|off|toggle|status §7— staff skip Ancient Coin charges");
-        sender.sendMessage("§8GUI: /lm → Difficulty → Details (staff) — dye toggle");
+        sender.sendMessage("§8GUI: /lm → Progression → Ancient Coins — dye toggle");
         sender.sendMessage("§e/lm admin open <difficulty|rival|spar|character|progression|prestige|skills|hub>");
         sender.sendMessage("§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|character|prestige|progression|skills]");
         sender.sendMessage("§e/lm admin inspect clear §7— stop inspecting");

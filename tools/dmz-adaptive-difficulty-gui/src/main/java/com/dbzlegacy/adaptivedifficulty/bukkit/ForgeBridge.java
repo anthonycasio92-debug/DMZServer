@@ -2782,7 +2782,7 @@ public final class ForgeBridge {
                     + (on
                     ? "\n§7Staff/OP pay §fno coins§7 when this is on."
                     : "\n§7Staff/OP pay §fnormal prices§7 unless they hold a non-op bypass permission.")
-                    + "\n§8GUI: Difficulty → Details (staff) · /difficulty admin stafffree on|off";
+                    + "\n§8GUI: /lm → Progression → Ancient Coins · /difficulty admin stafffree on|off";
         } catch (Throwable t) {
             return "§cFailed to toggle staff free coins: " + t.getMessage();
         }
@@ -2793,7 +2793,7 @@ public final class ForgeBridge {
         return "§6Staff free Ancient Coin costs: " + (on ? "§aON" : "§eOFF")
                 + "\n§7When ON, ops/staff skip coin charges on LM paid features."
                 + "\n§8/difficulty admin stafffree on|off|toggle"
-                + "\n§8Difficulty GUI → Details (staff) — click the dye toggle";
+                + "\n§8/lm → Progression → Ancient Coins — click the dye toggle";
     }
 
     public static String whitelistStatusText() {

@@ -12,6 +12,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillUnlockService;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dragonminez.common.stats.StatsData;
 import java.util.ArrayList;
@@ -79,7 +80,8 @@ public final class ProgressionGuiApi {
                 "§e/progression boost start <encoded> [name]",
                 "§e/progression boost end",
                 "§e/progression do <action> [arg] [page] §8— GUI actions",
-                "§8Pages: main · skills · tp · race · combat · end · fabled · utility · admin · help",
+                "§8Pages: main · skills · tp · race · combat · end · fabled · utility · economy · admin · help",
+                "§8Economy: staff free Ancient Coin costs — §f/lm §7→ Progression → Ancient Coins",
                 "§8Flags: flight sprint meditation potential farming building boost bio",
                 "§8       racelock yardrat spiritualist android kiweapons piercing dot apothic",
                 "§8       end endportal shadow statchecker fabled …");
@@ -431,6 +433,8 @@ public final class ProgressionGuiApi {
         out.put("prestige_enabled", c.enablePrestigeSystem ? "true" : "false");
         out.put("skills_enabled", c.enableSkillUnlockService ? "true" : "false");
         out.put("fabled_enabled", c.enableFabledBridge ? "true" : "false");
+        out.put("staff_free_ancient_coin_costs", c.staffFreeAncientCoinCosts ? "true" : "false");
+        out.put("bypass_ancient_cost", PaidFeatureAccess.bypassAncientCoinCost(player) ? "true" : "false");
         if (!enabled) {
             return out;
         }
@@ -560,6 +564,25 @@ public final class ProgressionGuiApi {
                     ph,
                     flagLine("Shadow Dummy Limiter", "flag_shadow"),
                     flagLine("Player Stat Checker", "flag_statchecker"));
+            case "economy", "ancient_coins", "coins" -> {
+                if (player == null || !StaffAccess.isStaff(player)) {
+                    yield List.of("§cStaff only.");
+                }
+                boolean staffFree = "true".equalsIgnoreCase(ph.getOrDefault("staff_free_ancient_coin_costs", "false"));
+                List<String> lore = new ArrayList<>();
+                lore.add("§6§lAncient Coin economy");
+                lore.add("§7Server-wide staff pricing for any LM");
+                lore.add("§7feature that charges Ancient Coins.");
+                lore.add("");
+                lore.add("§7Staff free costs §f" + (staffFree ? "ON" : "OFF"));
+                lore.add("");
+                lore.add("§8Today: AD tiers · Character Services ·");
+                lore.add("§8End dragon summon · head bone shop");
+                lore.add("§8Future paid LM features use the same gate.");
+                lore.add("");
+                lore.add("§8/lm §7→ Progression → Ancient Coins");
+                yield lore;
+            }
             case "admin", "flags", "disable" -> {
                 if (player == null || !StaffAccess.isStaff(player)) {
                     yield List.of("§cStaff only.");
@@ -751,7 +774,37 @@ public final class ProgressionGuiApi {
         if ("boost".equals(act) || "tpboost".equals(act) || "globaltpboost".equals(act)) {
             return boost(player, a);
         }
+        if ("toggle_staff_free_coins".equals(act) || "staff_free_coins".equals(act)
+                || "stafffree".equals(act) || "staff_free".equals(act)) {
+            return toggleStaffFreeAncientCoinCosts(player, a);
+        }
         return "§cUnknown progression action: " + act;
+    }
+
+    /**
+     * Server-wide: staff/OP skip Ancient Coin charges on LM paid features when enabled.
+     *
+     * @param arg blank toggles; {@code on}/{@code off} forces state
+     */
+    public static String toggleStaffFreeAncientCoinCosts(ServerPlayer player, String arg) {
+        if (!StaffAccess.isStaff(player)) {
+            return "§cStaff only.";
+        }
+        DifficultyConfig cfg = DifficultyConfig.get();
+        String a = arg == null ? "" : arg.trim().toLowerCase(Locale.ROOT);
+        boolean on;
+        if ("on".equals(a) || "true".equals(a) || "1".equals(a)) {
+            on = true;
+        } else if ("off".equals(a) || "false".equals(a) || "0".equals(a)) {
+            on = false;
+        } else {
+            on = !cfg.staffFreeAncientCoinCosts;
+        }
+        cfg.staffFreeAncientCoinCosts = on;
+        DifficultyConfig.save();
+        return on
+                ? "§aStaff free Ancient Coin costs ON — staff/OP skip coin charges (tiers, Character Services, End dragon, …)."
+                : "§eStaff free Ancient Coin costs OFF — staff/OP pay normal prices.";
     }
 
     // ── Prestige ───────────────────────────────────────────────────────

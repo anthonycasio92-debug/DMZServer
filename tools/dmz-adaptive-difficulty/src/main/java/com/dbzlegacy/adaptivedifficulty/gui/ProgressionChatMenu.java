@@ -31,6 +31,7 @@ public final class ProgressionChatMenu {
             case "main" -> main(player);
             case "skills", "tp", "race", "combat", "end", "shop", "fabled", "utility", "status", "help" ->
                     category(player, p);
+            case "economy", "ancient_coins", "coins" -> economy(player);
             case "admin", "flags", "disable", "flags_fabled", "fabled_flags" -> admin(player);
             default -> main(player);
         }
@@ -62,6 +63,8 @@ public final class ProgressionChatMenu {
                 .m_7220_(btn("§f[Help]", "/prog do page help", "Commands")));
         if (StaffAccess.isStaff(player)) {
             send(player, Component.m_237113_("§7")
+                    .m_7220_(btn("§6[Ancient Coins]", "/prog do page economy", "Staff free coin costs (all LM paid features)"))
+                    .m_7220_(Component.m_237113_(" "))
                     .m_7220_(btn("§c[Flags]", "/prog do page admin", "Toggle features")));
         }
         send(player, Component.m_237113_("§8────────────────"));
@@ -93,6 +96,24 @@ public final class ProgressionChatMenu {
                     .m_7220_(Component.m_237113_("  "))
                     .m_7220_(btn("§f[Open Skills]", "/skills", "Skills GUI")));
         }
+        send(player, btn("§7« Back", "/prog do page main", "Main"));
+        send(player, Component.m_237113_("§8────────────────"));
+    }
+
+    private static void economy(ServerPlayer player) {
+        send(player, Component.m_237113_(""));
+        send(player, Component.m_237113_("§8── §fProgression · Ancient Coins §8──"));
+        for (String line : ProgressionGuiApi.linesForPage(player, "economy")) {
+            if (line != null && !line.isBlank()) {
+                send(player, Component.m_237113_(line));
+            }
+        }
+        boolean on = DifficultyConfig.get().staffFreeAncientCoinCosts;
+        send(player, Component.m_237113_(""));
+        send(player, btn(
+                on ? "§e[Turn staff free coins OFF]" : "§a[Turn staff free coins ON]",
+                "/prog do toggle_staff_free_coins " + (on ? "off" : "on") + " economy",
+                "Applies to all LM Ancient Coin charges"));
         send(player, btn("§7« Back", "/prog do page main", "Main"));
         send(player, Component.m_237113_("§8────────────────"));
     }

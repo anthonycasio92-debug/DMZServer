@@ -488,21 +488,6 @@ public final class DifficultyChestGui implements Listener {
         coins.add("");
         coins.add("&8Tier purchases: pay-up OK, change returned");
         put(holder, inv, 15, item(Material.GOLD_INGOT, "&f&lAncient Coins", coins));
-        boolean staffFree = "true".equalsIgnoreCase(ph.getOrDefault("staff_free_ancient_coin_costs", "false"));
-        boolean viewerStaff = ForgeBridge.isStaff(viewer);
-        if (viewerStaff && !inspecting(viewer, subject)) {
-            put(holder, inv, 22, tipBtn(viewer,
-                    staffFree ? "difficulty.stats.staff_coins_on" : "difficulty.stats.staff_coins_off",
-                    staffFree ? Material.LIME_DYE : Material.GRAY_DYE,
-                    staffFree ? "&aStaff free coins ON" : "&7Staff free coins OFF",
-                    List.of(
-                            "&7Server-wide: staff/OP skip Ancient Coin",
-                            "&7charges on tiers, Character Services,",
-                            "&7End dragon summon, etc.",
-                            "",
-                            staffFree ? "&eClick to turn OFF" : "&aClick to turn ON")),
-                    SlotAction.act("toggle_staff_free_coins", "0", "stats"));
-        }
         put(holder, inv, 27, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
         return inv;

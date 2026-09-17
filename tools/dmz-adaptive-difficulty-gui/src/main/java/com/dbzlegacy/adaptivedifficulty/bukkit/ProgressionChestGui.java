@@ -114,6 +114,8 @@ public final class ProgressionChestGui implements Listener {
                     new String[]{"shadow", "statchecker"});
             case "status" -> sectionFlags(viewer, subject, "status", "&eStatus", Material.WRITABLE_BOOK,
                     new String[]{"flight", "sprint", "meditation", "potential", "farming", "building"});
+            case "economy", "ancient_coins", "coins" ->
+                    ForgeBridge.isStaff(viewer) ? economy(viewer, subject) : main(viewer, subject);
             case "admin", "flags", "disable" -> ForgeBridge.isStaff(viewer) ? flags(viewer, subject) : main(viewer, subject);
             case "flags_fabled", "fabled_flags" -> ForgeBridge.isStaff(viewer) ? fabledFlags(viewer, subject) : main(viewer, subject);
             default -> main(viewer, subject);
@@ -168,7 +170,12 @@ public final class ProgressionChestGui implements Listener {
         }
 
         if (ForgeBridge.isStaff(viewer)) {
-            put(holder, inv, 40, tipBtn("progression.main.admin", Material.REPEATER, "&cAll Flags",
+            put(holder, inv, 40, tipBtn("progression.main.economy", Material.GOLD_INGOT, "&6Ancient Coins",
+                    List.of("&7Staff pricing for all LM paid features",
+                            "&8Tiers · Character Services · End dragon · …",
+                            "&eOpen")),
+                    SlotAction.page("economy"));
+            put(holder, inv, 41, tipBtn("progression.main.admin", Material.REPEATER, "&cAll Flags",
                     List.of("&7Full flag board")), SlotAction.page("admin"));
         }
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
@@ -260,6 +267,38 @@ public final class ProgressionChestGui implements Listener {
                 put(holder, inv, slots[i], stack);
             }
         }
+        put(holder, inv, 36, pageBtn("common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory economy(Player viewer, Player subject) {
+        Map<String, String> ph = ForgeBridge.progressionPlaceholders(subject);
+        boolean staffFree = "true".equalsIgnoreCase(ph.getOrDefault("staff_free_ancient_coin_costs", "false"));
+        Holder holder = new Holder("economy");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Ancient Coins"));
+        holder.bind(inv);
+        frame(inv, 45);
+        put(holder, inv, 4, item(Material.GOLD_INGOT, "&6&lAncient Coin Economy",
+                List.of("",
+                        "&7Server-wide staff pricing for anything",
+                        "&7that charges Ancient Coins in LM.",
+                        "",
+                        "&8Includes: AD tiers, Character Services,",
+                        "&8End dragon summon, cosmetic head bones,",
+                        "&8and future paid LM features.",
+                        "",
+                        staffFree ? "&aStaff free costs: ON" : "&7Staff free costs: OFF")));
+        put(holder, inv, 22, tipBtn("progression.economy.staff_free",
+                staffFree ? Material.LIME_DYE : Material.GRAY_DYE,
+                staffFree ? "&aStaff free coins ON" : "&7Staff free coins OFF",
+                List.of(
+                        "&7When ON, staff/OP pay no Ancient Coins",
+                        "&7on LM paid features.",
+                        "",
+                        staffFree ? "&eClick to turn OFF" : "&aClick to turn ON")),
+                SlotAction.act("toggle_staff_free_coins", staffFree ? "off" : "on", "economy"));
         put(holder, inv, 36, pageBtn("common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
