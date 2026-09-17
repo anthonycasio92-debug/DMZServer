@@ -103,7 +103,7 @@ public final class DifficultyChestGui implements Listener {
         if (!bridgeOk || !systemOn || !allowed) {
             String title = !bridgeOk ? "&c&lUNAVAILABLE"
                     : !systemOn ? "&c&lSYSTEM DISABLED" : "&e&lWHITELIST ONLY";
-            put(holder, inv, 13, item(Material.BEACON, title, unavailableLore(viewer, subject, systemOn, bridgeOk)));
+            put(holder, inv, 4, item(Material.BEACON, title, unavailableLore(viewer, subject, systemOn, bridgeOk)));
             put(holder, inv, 27, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
             put(holder, inv, 35, closeBtn(), SlotAction.dismiss());
             return inv;
@@ -117,7 +117,7 @@ public final class DifficultyChestGui implements Listener {
             withBanner.addAll(status);
             status = withBanner;
         }
-        put(holder, inv, 13, item(Material.BEACON,
+        put(holder, inv, 4, item(Material.BEACON,
                 personalOn ? "&a&lAdaptive Difficulty" : "&c&lDIFFICULTY OFF",
                 status));
         // Primary actions — Tiers · Teams · Titles

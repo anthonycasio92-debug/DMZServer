@@ -73,7 +73,7 @@ public final class CmiDifficultyGui {
         boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
         boolean personalOn = "true".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "false"));
         String stateColor = personalOn ? ph.getOrDefault("state_color", "f") : "c";
-        CMIGuiButton status = new CMIGuiButton(13, Material.BEACON,
+        CMIGuiButton status = new CMIGuiButton(4, Material.BEACON,
                 !bridgeOk ? "&c&lUNAVAILABLE"
                         : !systemOn ? "&c&lSYSTEM DISABLED"
                         : !allowed ? "&e&lWHITELIST ONLY"
