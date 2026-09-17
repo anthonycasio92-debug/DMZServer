@@ -1,36 +1,37 @@
 {
-  "_comment": "LegacyMechanics GUI button names and lore. Edit freely, then /lm admin reload. Placeholders like {cost} fill in at runtime. New keys from the mod merge in on reload.",
+  "_comment": "LegacyMechanics GUI button names and lore. Edit freely, then /lm admin reload. Placeholders like {cost} fill in at runtime. New keys from the mod merge in on reload. _catalogRevision bumps on humanize passes; /lm admin reload upgrades older on-disk files from the jar.",
   "hub": {
     "main": {
       "header": {
         "name": "&f&lLegacy Mechanics",
         "lore": [
           "&7Pick what you want to do",
-          "&8/lm"
+          "&8Open with &f/lm"
         ]
       },
       "difficulty": {
         "name": "&aDifficulty",
         "lore": [
-          "&7Earn Ancient Coins from tougher fights — you lose tier progress on death",
-          "&7Fight mobs scaled to your difficulty",
-          "&cHeads up: &7scaled mobs can hit other players too",
-          "&eOpen"
+          "&7Earn Ancient Coins from scaled mobs and spend them on tiers",
+          "&7Tiers reset when you die — higher tiers mean tougher fights",
+          "&cNote: &7Scaled mobs can hurt other players nearby",
+          "&8Opens this menu"
         ]
       },
       "rival": {
         "name": "&6Rival",
         "lore": [
-          "&7Rivals help you earn more TP",
-          "&7Rivalry, challenges & RP",
-          "&eOpen"
+          "&7Rivalries earn bonus training TP and ranking points",
+          "&7Declare rivals, run challenges, and track seasons",
+          "&8Opens this menu"
         ]
       },
       "spar": {
         "name": "&bSpar",
         "lore": [
-          "&7Spar for TP and mentor bonds",
-          "&eOpen"
+          "&7Spar for training TP and mentor bonds",
+          "&7Dojo seasons, apprentices, and rankings",
+          "&8Opens this menu"
         ]
       },
       "skillcheck": {
@@ -82,7 +83,7 @@
         "name": "&cAdmin",
         "lore": [
           "&7Reload configs and staff tools",
-          "&8/lm admin"
+          "&8Open with &f/lm admin"
         ]
       },
       "logs": {
@@ -97,7 +98,7 @@
       "header": {
         "name": "&8&lLogs",
         "lore": [
-          "&7Turn logging on/off or save logs to disk",
+          "&7Event log off or on · save buffered entries to disk",
           "&8For staff"
         ]
       },
@@ -490,7 +491,7 @@
         ]
       },
       "majin_owned": {
-        "name": "&a You are a Permanent Majin",
+        "name": "&aYou are a Permanent Majin",
         "lore": [
           "&aOwned",
           "&aPermanent purchase &8· only one at a time"
@@ -641,7 +642,7 @@
       "mode_personal": {
         "name": "&7Personal",
         "lore": [
-          "&7Only your own tier ceiling counts",
+          "&7Only your tier counts toward the team ceiling",
           "&eSelect this option"
         ]
       },
@@ -755,7 +756,7 @@
       "actions": {
         "name": "&aActions",
         "lore": [
-          "&7Declare · accept · decline · remove",
+          "&7Declare, accept, decline, or remove rivals",
           "{pending}"
         ]
       },
@@ -824,7 +825,7 @@
       "declare": {
         "name": "&aDeclare…",
         "lore": [
-          "&7Visible declare → they Accept → Mutual"
+          "&7Send a public declare — they accept to become mutual"
         ]
       },
       "pending": {
@@ -836,8 +837,8 @@
       "accept": {
         "name": "&eAccept…",
         "lore": [
-          "&7Pending declares, or Declared → Mutual",
-          "&8Both Silent → Declared shows here"
+          "&7Accept a pending declare or upgrade to mutual",
+          "&8Silent declares from both sides appear here too"
         ]
       },
       "decline": {
@@ -856,7 +857,7 @@
         "name": "&8Silent…",
         "lore": [
           "&7One-sided Unknown (they are not told)",
-          "&8Both Silent → Declared (both notified)"
+          "&8If you both used Silent, this becomes Declared"
         ]
       },
       "nav_list": {
@@ -928,14 +929,14 @@
       "refresh": {
         "name": "&eRefresh",
         "lore": [
-          "&7Reload stores from disk",
+          "&7Reload rivalry data from disk",
           "&8/rival admin refresh"
         ]
       },
       "status": {
         "name": "&bStatus",
         "lore": [
-          "&7Enabled + path summary",
+          "&7Shows whether spar is on and where data is stored",
           "&8/rival admin status"
         ]
       },
@@ -1111,14 +1112,14 @@
       "top": {
         "name": "&fTop",
         "lore": [
-          "&7Leaderboard"
+          "&7Who has the most sparring TP"
         ]
       },
       "dojo_rank": {
         "name": "&6Dojo Rankings",
         "lore": [
-          "&7See how dojos rank this season",
-          "&7Spar rival dojos to climb the ladder"
+          "&7Season ladder for every dojo",
+          "&7Spar outside your dojo to earn points"
         ]
       },
       "mentor": {
@@ -1169,7 +1170,7 @@
       "admin": {
         "name": "&cAdmin",
         "lore": [
-          "&7Save data, check status, reset cooldowns",
+          "&7Save data, view status, or clear mentor cooldown",
           "&8For staff"
         ]
       }
@@ -1178,19 +1179,19 @@
       "tp": {
         "name": "&eTP",
         "lore": [
-          "&7Total TP"
+          "&7Ranked by total training TP"
         ]
       },
       "sessions": {
         "name": "&aSessions",
         "lore": [
-          "&7Sessions"
+          "&7Ranked by spar session count"
         ]
       },
       "perfect": {
         "name": "&bPerfect",
         "lore": [
-          "&7Perfect spars"
+          "&7Ranked by perfect spar wins"
         ]
       }
     },
@@ -1345,14 +1346,14 @@
       "ask": {
         "name": "&bAsk mentor…",
         "lore": [
-          "&7Pick a player to ask as your master"
+          "&7Pick someone to request as your mentor"
         ]
       },
       "pending": {
         "name": "&ePending",
         "lore": [
-          "&7Incoming + outgoing invites",
-          "&aClick a player to accept or decline"
+          "&7Incoming and outgoing mentor invites",
+          "&8Use Accept / Decline on each invite"
         ]
       },
       "accept": {
@@ -1398,8 +1399,8 @@
         "name": "&bDojo",
         "lore": [
           "&7Your mentor and training partners",
-          "&8Switch views if you also mentor others",
-          "&8{name}"
+          "&7Switch view if you also mentor others",
+          "&7Roster: &f{name}"
         ]
       }
     },
@@ -1422,7 +1423,7 @@
       "status": {
         "name": "&bStatus",
         "lore": [
-          "&7Enabled + path summary",
+          "&7Shows whether spar is on and where data is stored",
           "&8/spar admin status"
         ]
       },
@@ -1547,7 +1548,7 @@
       "race": {
         "name": "&bRace & Form",
         "lore": [
-          "&7Race lock · Yardrat · Spiritualist · Android",
+          "&7Race lock, Yardrat, Spiritualist, and Android",
           "",
           "&eOpen"
         ]
@@ -1555,7 +1556,7 @@
       "combat": {
         "name": "&cCombat",
         "lore": [
-          "&7Ki weapons · Piercing · DoT · Apothic",
+          "&7Ki weapons, piercing, damage over time, and Apothic tweaks",
           "",
           "&eOpen"
         ]
@@ -1571,7 +1572,7 @@
       "fabled": {
         "name": "&dFabled",
         "lore": [
-          "&7Fabled race and form options",
+          "&7Fabled race and transformation options",
           "",
           "&eOpen"
         ]
@@ -1587,7 +1588,29 @@
       "admin": {
         "name": "&cAll Flags",
         "lore": [
-          "&7Full flag board"
+          "&7Full flag board",
+          "",
+          "&8Opens this menu"
+        ]
+      },
+      "economy": {
+        "name": "&6Ancient Coins",
+        "lore": [
+          "&7Staff pricing for anything that charges Ancient Coins",
+          "&8Tiers · Character Services · End dragon · more",
+          "",
+          "&8Opens this menu"
+        ]
+      }
+    },
+    "economy": {
+      "staff_free": {
+        "name": "{name}",
+        "lore": [
+          "&7When ON, staff and OP pay no Ancient Coins",
+          "&7on any LM paid feature.",
+          "",
+          "{action}"
         ]
       }
     },
@@ -1595,7 +1618,7 @@
       "subflags": {
         "name": "&dFabled Subflags",
         "lore": [
-          "&7Energy, TP/SP, race class, etc."
+          "&7Energy, TP/SP, race class, and related toggles"
         ]
       },
       "back": {
@@ -1862,9 +1885,9 @@
     "back": {
       "name": "&7Back",
       "lore": [
-        "&7Return"
+        "&7Go back to the previous screen"
       ]
     }
   },
-  "_catalogRevision": 189
+  "_catalogRevision": 190
 }

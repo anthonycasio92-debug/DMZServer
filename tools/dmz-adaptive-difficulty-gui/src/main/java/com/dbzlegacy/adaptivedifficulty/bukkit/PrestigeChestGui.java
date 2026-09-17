@@ -87,7 +87,7 @@ public final class PrestigeChestGui implements Listener {
 
         boolean ready = "true".equalsIgnoreCase(ph.getOrDefault("ready", "false"));
         List<String> confirmDefaults = List.of(
-                "&7Click to prestige (confirm within 10s)8Prestige — confirm again within 10 seconds",
+                "&8Prestige — confirm again within 10 seconds",
                 "&8Resets DMZ stats · awards held Prestige");
         put(holder, inv, 20, item(
                 ready ? Material.LIME_CONCRETE : Material.ORANGE_CONCRETE,

@@ -134,8 +134,8 @@ public final class CmiSparGui {
                 mentorTpOn ? "&aMentor TP ON" : "&8Mentor TP OFF",
                 "mentor_tpmsg", "toggle", "main",
                 List.of(
-                        mentorTpOn ? "&7Click to mute mentor share TP chat"
-                                : "&7Click to show apprentice share TP in chat",
+                        mentorTpOn ? "&8Hides mentor share TP in chat"
+                                : "&8Shows apprentice share TP in chat again",
                         "&8When your dojo earns TP from spars",
                         "",
                         "&eSelect to switch"
@@ -148,7 +148,7 @@ public final class CmiSparGui {
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 "tpmsg", "toggle", "main",
                 List.of(
-                        tpOn ? "&7Click to mute spar TP chat" : "&7Click to show spar TP chat while fighting",
+                        tpOn ? "&8Hides spar TP in chat" : "&8Shows spar TP in chat while fighting",
                         "&8Players: +TP (style)",
                         "&8Staff: full bonus / stack detail",
                         "",
@@ -634,7 +634,7 @@ public final class CmiSparGui {
                 pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
                 "pending",
                 "&7Incoming + outgoing invites",
-                pendingCount > 0 ? "&aClick to Accept / Decline" : "&8No pending invites"));
+                pendingCount > 0 ? "&8Tap to accept or decline" : "&8No pending invites"));
         boolean hasMentor = "true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"));
         boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));
         String mentorName = blank(ph.get("mentor_name"), "your mentor");
@@ -722,8 +722,8 @@ public final class CmiSparGui {
         pendingHeader.add("");
         pendingHeader.add(invites.isEmpty() ? "&7No pending invites." : "&7" + invites.size() + " pending");
         pendingHeader.addAll(GuiBoardHelper.tips(player,
-                "&a◀ Incoming &7= click to Accept / Decline",
-                "&6▶ Outgoing &7= click to cancel"));
+                "&a◀ Incoming &7— tap to accept or decline",
+                "&6▶ Outgoing &7— tap to cancel"));
         info.addLore(pendingHeader);
         gui.addButton(info);
 

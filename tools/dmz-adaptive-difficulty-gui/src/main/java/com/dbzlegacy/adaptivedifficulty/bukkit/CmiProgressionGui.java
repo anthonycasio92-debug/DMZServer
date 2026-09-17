@@ -326,10 +326,10 @@ public final class CmiProgressionGui {
                 staffFree ? "&aStaff free coins ON" : "&7Staff free coins OFF",
                 "toggle_staff_free_coins", staffFree ? "off" : "on", "economy",
                 List.of(
-                        "&7When ON, staff/OP pay no Ancient Coins",
-                        "&7on LM paid features.",
+                        "&7When ON, staff and OP pay no Ancient Coins",
+                        "&7on any LM paid feature.",
                         "",
-                        staffFree ? "&eClick to turn OFF" : "&aClick to turn ON")));
+                        staffFree ? "&8Tap to turn OFF" : "&8Tap to turn ON")));
         gui.addButton(pageBtn(36, "common.back", Material.ARROW, "&7Back", "main", "&7Progression hub"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));

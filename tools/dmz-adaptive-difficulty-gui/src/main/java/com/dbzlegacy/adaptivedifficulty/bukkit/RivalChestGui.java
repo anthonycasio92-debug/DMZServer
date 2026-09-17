@@ -142,7 +142,7 @@ public final class RivalChestGui implements Listener {
                 tpOn ? Material.BELL : Material.GRAY_DYE,
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 List.of(
-                        tpOn ? "&7Click to mute rival TP messages8Hides rival TP chat messages" : "&7Click to show rival TP messages8Shows rival TP chat messages again",
+                        tpOn ? "&8Hides rival TP chat messages" : "&8Shows rival TP chat messages again",
                         "&8Only affects rivalry TP chat"
                 )), SlotAction.act("tpmsg", "toggle", "main"));
 
@@ -154,7 +154,7 @@ public final class RivalChestGui implements Listener {
                     instinctOn ? Material.LIME_DYE : Material.GRAY_DYE,
                     instinctOn ? "&aInstinct ON" : "&8Instinct OFF",
                     List.of(
-                            instinctOn ? "&7Click to disable Rival Instinct8Turns rival proximity alerts off" : "&7Click to enable Rival Instinct8Turns rival proximity alerts on",
+                            instinctOn ? "&8Turns rival proximity alerts off" : "&8Turns rival proximity alerts on",
                             "&8Alerts for mutual / nemesis rivals"
                     )), SlotAction.act("instinct", "toggle", "main"));
         }
@@ -385,7 +385,7 @@ public final class RivalChestGui implements Listener {
         pendingHeader.add("");
         pendingHeader.add(invites.isEmpty() ? "&7No pending declares." : "&7" + invites.size() + " pending");
         pendingHeader.addAll(GuiBoardHelper.tips(viewer,
-                "&a◀ Incoming &7= click to Accept / Decline",
+                "&a◀ Incoming &7— tap to accept or decline",
                 "&6▶ Outgoing &7= waiting on them"));
         put(holder, inv, 4, item(Material.YELLOW_DYE, "&e&lPending Invites", pendingHeader));
         if (invites.isEmpty()) {

@@ -141,8 +141,8 @@ public final class SparChestGui implements Listener {
                 mentorTpOn ? Material.EMERALD : Material.GRAY_DYE,
                 mentorTpOn ? "&aMentor TP ON" : "&8Mentor TP OFF",
                 List.of(
-                        mentorTpOn ? "&7Click to mute mentor share TP chat"
-                                : "&7Click to show apprentice share TP in chat",
+                        mentorTpOn ? "&8Hides mentor share TP in chat"
+                                : "&8Shows apprentice share TP in chat again",
                         "&8When your dojo earns TP from spars",
                         "",
                         "&eSelect to switch"
@@ -154,7 +154,7 @@ public final class SparChestGui implements Listener {
                 tpOn ? Material.BELL : Material.GRAY_DYE,
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 List.of(
-                        tpOn ? "&7Click to mute spar TP chat" : "&7Click to show spar TP chat while fighting",
+                        tpOn ? "&8Hides spar TP in chat" : "&8Shows spar TP in chat while fighting",
                         "&8Players: +TP (style)",
                         "&8Staff: full bonus / stack detail",
                         "",
@@ -668,7 +668,7 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 21, pageBtn(viewer, "spar.mentor.pending", Material.CLOCK,
                 pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
                 "&7Incoming + outgoing invites",
-                pendingCount > 0 ? "&aClick to Accept / Decline" : "&8No pending invites"),
+                pendingCount > 0 ? "&8Tap to accept or decline" : "&8No pending invites"),
                 SlotAction.page("pending"));
         boolean hasMentor = "true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"));
         boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));
@@ -744,8 +744,8 @@ public final class SparChestGui implements Listener {
         pendingHeader.add("");
         pendingHeader.add(invites.isEmpty() ? "&7No pending invites." : "&7" + invites.size() + " pending");
         pendingHeader.addAll(GuiBoardHelper.tips(viewer,
-                "&a◀ Incoming &7= click to Accept / Decline",
-                "&6▶ Outgoing &7= click to cancel"));
+                "&a◀ Incoming &7— tap to accept or decline",
+                "&6▶ Outgoing &7— tap to cancel"));
         put(holder, inv, 4, item(Material.YELLOW_DYE, "&e&lPending Invites", pendingHeader));
         if (invites.isEmpty()) {
             put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_pending", Material.BARRIER, "&7No pending invites",

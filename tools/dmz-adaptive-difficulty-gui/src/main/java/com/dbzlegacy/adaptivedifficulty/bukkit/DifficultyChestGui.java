@@ -148,7 +148,7 @@ public final class DifficultyChestGui implements Listener {
         } else if (activeTier < 4 || activeTier > 7) {
             dragonStatus = "&cNeed active T4–T7 (you: T" + activeTier + ")";
         } else {
-            dragonStatus = "&aReady · click to summon";
+            dragonStatus = "&aReady — tap to summon";
         }
         Map<String, String> dragonVars = Map.of("status", dragonStatus, "active_tier", String.valueOf(activeTier));
         List<String> dragonDefaults = List.of(

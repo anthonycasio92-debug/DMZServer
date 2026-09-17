@@ -118,10 +118,33 @@ KEY_OVERRIDES: dict[str, dict] = {
     "common.back": {
         "lore": ["&7Go back to the previous screen"],
     },
+    "progression.main.economy": {
+        "name": "&6Ancient Coins",
+        "lore": [
+            "&7Staff pricing for anything that charges Ancient Coins",
+            "&8Tiers · Character Services · End dragon · more",
+            "",
+            "&8Opens this menu",
+        ],
+    },
+    "progression.economy.staff_free": {
+        "lore": [
+            "&7When ON, staff and OP pay no Ancient Coins",
+            "&7on any LM paid feature.",
+            "",
+            "{action}",
+        ],
+    },
+    "hub.logs.header": {
+        "lore": [
+            "&7Event log off or on · save buffered entries to disk",
+            "&8For staff",
+        ],
+    },
 }
 
 # Keep in sync with GuiTooltips.CATALOG_REVISION (bukkit/GuiTooltips.java)
-CATALOG_REVISION = 185
+CATALOG_REVISION = 190
 
 
 def walk_replace(obj):

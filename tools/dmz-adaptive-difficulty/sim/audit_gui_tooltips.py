@@ -50,8 +50,13 @@ BANNED = [
 ]
 
 KEY_RE = re.compile(
-    r'"(?:spar|rival|hub|prestige|progression|difficulty|skills|common)\.[a-z0-9_.]+"',
+    r'"(?:spar|rival|hub|prestige|progression|difficulty|skills|common|character)\.[a-z0-9_.]+"',
 )
+
+# Missing newline between lore lines (humanize bug): "...10s)8Prestige" or "messages8Hides"
+LORE_CORRUPT_RE = re.compile(r'(?:\d\)|[a-z])8(?=[A-Z&])')
+
+ROBOTIC_CLICK_RE = re.compile(r"&[0-7][^\"]*\bClick to\b", re.I)
 
 BTN_HOVER_RE = re.compile(
     r'btn\(\s*"[^"]*"\s*,\s*"[^"]*"\s*,\s*"([^"]+)"\s*\)',
@@ -157,6 +162,28 @@ def lore_lines(entry: dict) -> list[str]:
     return [str(raw)]
 
 
+def scan_corruption(java_path: Path, text: str) -> list[str]:
+    rel = java_path.relative_to(ROOT)
+    hits: list[str] = []
+    for m in re.finditer(r'"([&§][^"]*)"', text):
+        literal = m.group(1)
+        if LORE_CORRUPT_RE.search(literal):
+            hits.append(f"CORRUPT LORE [{rel}]: {literal[:90]}")
+    return hits
+
+
+def scan_robotic_click(java_path: Path, text: str) -> list[str]:
+    rel = java_path.relative_to(ROOT)
+    hits: list[str] = []
+    for m in re.finditer(r'"([&§][^"]*)"', text):
+        literal = m.group(1)
+        if literal.startswith("&8") or literal.startswith("§8"):
+            continue
+        if ROBOTIC_CLICK_RE.search(literal):
+            hits.append(f"ROBOTIC [{rel}]: {literal[:90]}")
+    return hits
+
+
 def main() -> int:
     if not TOOLTIPS.is_file():
         print(f"MISSING {TOOLTIPS}", file=sys.stderr)
@@ -214,6 +241,7 @@ def main() -> int:
             continue
         text = java.read_text(encoding="utf-8", errors="replace")
         errors.extend(scan_java_banned(java, text))
+        errors.extend(scan_corruption(java, text))
 
     if FORGE_GUI_SRC.is_dir():
         for java in FORGE_GUI_SRC.rglob("*.java"):
@@ -223,16 +251,78 @@ def main() -> int:
                 errors.extend(scan_plain_hover(java, text))
 
     errors.extend(scan_chest_cmi_drift())
+
+    robotic: list[str] = []
+    for java in GUI_SRC.rglob("*.java"):
+        if java.name in ("ForgeBridge.java", "GuiTooltips.java"):
+            continue
+        text = java.read_text(encoding="utf-8", errors="replace")
+        robotic.extend(scan_robotic_click(java, text))
+
+    out_md = ROOT / "tools" / "dmz-adaptive-difficulty" / "sim" / "out" / "gui-humanization-audit.md"
+    out_md.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# GUI humanization audit",
+        "",
+        f"- Catalog keys: **{len(catalog)}** · Referenced from Java: **{len(used)}**",
+        f"- GuiTooltips catalog revision: see `GuiTooltips.CATALOG_REVISION` / `gui-tooltips.json` `_catalogRevision`",
+        "",
+        "## Summary",
+        "",
+    ]
+    if errors:
+        lines.append(f"- **{len(errors)} blocking issue(s)** (missing keys, banned jargon, corrupt lore)")
+    else:
+        lines.append("- No blocking issues")
+    lines.append(f"- **{len(robotic)}** Java fallback lines still use robotic \"Click to…\" (use `&8Tap…` or catalog keys)")
+    lines.append(f"- **{len(warns)}** catalog warnings")
+    lines.append("")
+    lines.append("## Icons (materials)")
+    lines.append("")
+    lines.append("| Pattern | Use |")
+    lines.append("|---------|-----|")
+    lines.append("| `LIME_DYE` / `GRAY_DYE` | Personal toggles ON/OFF, staff flags, coin bypass |")
+    lines.append("| `GOLD_INGOT` | Ancient Coins / economy |")
+    lines.append("| `BELL` | Chat message toggles ON |")
+    lines.append("| `DRAGON_EGG` / `GRAY_DYE` | End dragon summon ready / locked |")
+    lines.append("| `REPEATER` | Staff admin / flag boards |")
+    lines.append("| Tier mats `COPPER`→`NETHER_STAR` | Difficulty tiers T1–T7 |")
+    lines.append("")
+    if errors:
+        lines.append("## Blocking issues")
+        lines.append("")
+        for e in errors:
+            lines.append(f"- {e}")
+        lines.append("")
+    if robotic:
+        lines.append("## Robotic fallback lore (sample)")
+        lines.append("")
+        for r in robotic[:40]:
+            lines.append(f"- {r}")
+        if len(robotic) > 40:
+            lines.append(f"- … and {len(robotic) - 40} more")
+        lines.append("")
+    lines.append("## Maintenance")
+    lines.append("")
+    lines.append("- Edit `gui-tooltips.json` then `/lm admin reload`")
+    lines.append("- Run `python3 tools/dmz-adaptive-difficulty/sim/humanize_gui_tooltips.py` for batch phrase polish")
+    lines.append("- Run `python3 tools/dmz-adaptive-difficulty/sim/audit_gui_tooltips.py` before ship")
+    lines.append("")
+    out_md.write_text("\n".join(lines), encoding="utf-8")
+
     print(f"# GUI tooltip audit — {len(catalog)} keys, {len(used)} referenced from Java\n")
+    print(f"Wrote {out_md.relative_to(ROOT)}\n")
     for w in warns:
         print(w)
     for e in errors:
         print(e)
+    if robotic:
+        print(f"\nROBOTIC CLICK ({len(robotic)} lines) — see audit markdown")
 
     if errors:
         print(f"\nFAIL — {len(errors)} issue(s), {len(warns)} warning(s)")
         return 1
-    print(f"\nPASS — {len(warns)} warning(s)")
+    print(f"\nPASS — {len(warns)} warning(s), {len(robotic)} robotic fallback(s)")
     return 0
 
 

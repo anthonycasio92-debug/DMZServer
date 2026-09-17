@@ -115,7 +115,7 @@ public final class CmiDifficultyGui {
         } else if (activeTier < 4 || activeTier > 7) {
             dragonStatus = "&cNeed active T4–T7 (you: T" + activeTier + ")";
         } else {
-            dragonStatus = "&aReady · click to summon";
+            dragonStatus = "&aReady — tap to summon";
         }
         List<String> dragonDefaults = List.of(
                 "&7Summon the End Dragon scaled to",
