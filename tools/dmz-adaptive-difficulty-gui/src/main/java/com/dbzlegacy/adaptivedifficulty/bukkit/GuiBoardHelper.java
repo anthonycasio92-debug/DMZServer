@@ -168,24 +168,34 @@ final class GuiBoardHelper {
     }
 
     static int[] dojoRankLadderSlots(int count, boolean reserveWarRow) {
-        List<Integer> pool = new ArrayList<>();
-        for (int s = 10; s <= 16; s++) {
-            pool.add(s);
-        }
-        for (int s = 19; s <= 25; s++) {
-            if (reserveWarRow && s == 19) {
-                continue;
-            }
-            pool.add(s);
-        }
-        int n = Math.min(Math.max(0, count), pool.size());
+        int upperStart = 10;
+        int upperWidth = ROW_WIDTH;
+        int lowerStart = reserveWarRow ? 20 : 19;
+        int lowerEnd = 25;
+        int lowerWidth = lowerEnd - lowerStart + 1;
+        int max = upperWidth + lowerWidth;
+        int n = Math.min(Math.max(0, count), max);
         if (n == 0) {
             return new int[0];
         }
-        int start = (pool.size() - n) / 2;
-        int[] out = new int[n];
-        for (int i = 0; i < n; i++) {
-            out[i] = pool.get(start + i);
+        int row1 = Math.min(n, upperWidth);
+        int row2 = n - row1;
+        List<Integer> slots = new ArrayList<>();
+        if (row1 > 0) {
+            int start = upperStart + (upperWidth - row1) / 2;
+            for (int i = 0; i < row1; i++) {
+                slots.add(start + i);
+            }
+        }
+        if (row2 > 0) {
+            int start = lowerStart + (lowerWidth - row2) / 2;
+            for (int i = 0; i < row2; i++) {
+                slots.add(start + i);
+            }
+        }
+        int[] out = new int[slots.size()];
+        for (int i = 0; i < slots.size(); i++) {
+            out[i] = slots.get(i);
         }
         return out;
     }

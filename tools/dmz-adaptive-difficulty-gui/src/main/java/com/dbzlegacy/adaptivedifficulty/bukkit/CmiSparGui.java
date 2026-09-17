@@ -252,7 +252,25 @@ public final class CmiSparGui {
         header.addLore(headerLore);
         gui.addButton(header);
         boolean isMaster = "true".equalsIgnoreCase(ph.getOrDefault("dojo_master", "false"));
-        // Menu buttons on row 3 (and war row 2) — register before ladder so CMI clicks hit commands.
+        int rowCount = !dojoCards.isEmpty() ? dojoCards.size() : entries.size();
+        if (rowCount == 0) {
+            CMIGuiButton empty = new CMIGuiButton(22, Material.BARRIER,
+                    GuiTooltips.name("spar.empty.no_dojo_rank", "&7No dojo data yet"));
+            empty.lockField();
+            empty.addLore(GuiTooltips.buttonLore("spar.empty.no_dojo_rank",
+                    List.of("&7Join a dojo and spar rivals", "&8from other dojos")));
+            gui.addButton(empty);
+        } else {
+            int[] slots = GuiBoardHelper.dojoRankLadderSlots(rowCount, isMaster);
+            for (int i = 0; i < slots.length && i < rowCount; i++) {
+                ItemStack icon = !dojoCards.isEmpty()
+                        ? GuiBoardHelper.dojoTopBanner(dojoCards.get(i))
+                        : GuiBoardHelper.topHead(entries.get(i));
+                CMIGuiButton btn = new CMIGuiButton(slots[i], icon);
+                btn.lockField();
+                gui.addButton(btn);
+            }
+        }
         if (isMaster) {
             int warPending = 0;
             try {
@@ -266,9 +284,9 @@ public final class CmiSparGui {
                     "&7Declare · pending · banner",
                     warPending > 0 ? "&ePending wars &8— tap to respond" : "&8Same layout as Mentor Actions"));
         }
-        gui.addButton(pageBtn(player, 30, "spar.dojo.members", Material.PLAYER_HEAD, "&bMembers",
+        gui.addButton(pageBtn(player, 28, "spar.dojo.members", Material.PLAYER_HEAD, "&bMembers",
                 "dojo_members", "&7Season contributions"));
-        gui.addButton(pageBtn(player, 32, "spar.dojo.hof", Material.GOLD_BLOCK, "&6Hall of Fame",
+        gui.addButton(pageBtn(player, 34, "spar.dojo.hof", Material.GOLD_BLOCK, "&6Hall of Fame",
                 "dojo_hof", "&7Past season champions"));
         Material rpMat = "rp".equals(cat) ? Material.GOLD_BLOCK : Material.GOLD_INGOT;
         Material winsMat = "wins".equals(cat) || "win".equals(cat) ? Material.DIAMOND_SWORD : Material.IRON_SWORD;
@@ -282,25 +300,6 @@ public final class CmiSparGui {
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
-        int rowCount = !dojoCards.isEmpty() ? dojoCards.size() : entries.size();
-        if (rowCount == 0) {
-            CMIGuiButton empty = new CMIGuiButton(13, Material.BARRIER,
-                    GuiTooltips.name("spar.empty.no_dojo_rank", "&7No dojo data yet"));
-            empty.lockField();
-            empty.addLore(GuiTooltips.buttonLore("spar.empty.no_dojo_rank",
-                    List.of("&7Join a dojo and spar rivals")));
-            gui.addButton(empty);
-        } else {
-            int[] slots = GuiBoardHelper.dojoRankLadderSlots(rowCount, isMaster);
-            for (int i = 0; i < slots.length && i < rowCount; i++) {
-                ItemStack icon = !dojoCards.isEmpty()
-                        ? GuiBoardHelper.dojoTopBanner(dojoCards.get(i))
-                        : GuiBoardHelper.topHead(entries.get(i));
-                CMIGuiButton btn = new CMIGuiButton(slots[i], icon);
-                btn.lockField();
-                gui.addButton(btn);
-            }
-        }
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
     }

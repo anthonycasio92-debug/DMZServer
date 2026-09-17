@@ -253,7 +253,7 @@ public final class SparChestGui implements Listener {
         boolean isMaster = "true".equalsIgnoreCase(ph.getOrDefault("dojo_master", "false"));
         int rowCount = !dojoCards.isEmpty() ? dojoCards.size() : entries.size();
         if (rowCount == 0) {
-            put(holder, inv, 13, tipBtn(viewer, "spar.empty.no_dojo_rank", Material.BARRIER,
+            put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_dojo_rank", Material.BARRIER,
                     "&7No dojo data yet",
                     List.of("&7Join a dojo and spar rivals", "&8from other dojos")));
         } else {
@@ -278,9 +278,9 @@ public final class SparChestGui implements Listener {
                     warPending > 0 ? "&ePending wars &8— tap to respond" : "&8Same layout as Mentor Actions"),
                     SlotAction.page("dojo_war"));
         }
-        put(holder, inv, 30, pageBtn(viewer, "spar.dojo.members", Material.PLAYER_HEAD, "&bMembers",
+        put(holder, inv, 28, pageBtn(viewer, "spar.dojo.members", Material.PLAYER_HEAD, "&bMembers",
                 "&7Season contributions"), SlotAction.page("dojo_members"));
-        put(holder, inv, 32, pageBtn(viewer, "spar.dojo.hof", Material.GOLD_BLOCK, "&6Hall of Fame",
+        put(holder, inv, 34, pageBtn(viewer, "spar.dojo.hof", Material.GOLD_BLOCK, "&6Hall of Fame",
                 "&7Past season champions"), SlotAction.page("dojo_hof"));
         Material rpMat = "rp".equals(cat) ? Material.GOLD_BLOCK : Material.GOLD_INGOT;
         Material winsMat = "wins".equals(cat) || "win".equals(cat) ? Material.DIAMOND_SWORD : Material.IRON_SWORD;
