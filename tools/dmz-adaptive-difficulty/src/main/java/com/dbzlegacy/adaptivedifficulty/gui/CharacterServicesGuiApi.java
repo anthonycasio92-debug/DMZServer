@@ -6,7 +6,9 @@ import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem;
 import com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService;
 import com.dbzlegacy.adaptivedifficulty.character.FightingClassLabels;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -233,7 +235,10 @@ public final class CharacterServicesGuiApi {
             return "§7Cost §afree";
         }
         if (CharacterServicesAccess.bypassCost(player)) {
-            return "§7Cost §afree §8(staff bypass)";
+            if (DifficultyConfig.get().staffFreeAncientCoinCosts && StaffAccess.isStaff(player)) {
+                return "§7Cost §afree §8(staff free coins ON)";
+            }
+            return "§7Cost §afree §8(bypass permission)";
         }
         return "§7Cost §f" + CharacterServicesSystem.formatCost(copperCost) + " §7Ancient Coins";
     }

@@ -1264,6 +1264,17 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 String mode = args.length > 2 ? args[2].toLowerCase(Locale.ROOT) : "status";
                 sender.sendMessage(ForgeBridge.syslogCommand(mode));
             }
+            case "stafffree", "staffcoins", "freecoins" -> {
+                String mode = args.length > 2 ? args[2].toLowerCase(Locale.ROOT) : "status";
+                switch (mode) {
+                    case "on", "enable" -> sender.sendMessage(ForgeBridge.setStaffFreeAncientCoinCosts(true));
+                    case "off", "disable" -> sender.sendMessage(ForgeBridge.setStaffFreeAncientCoinCosts(false));
+                    case "toggle" -> sender.sendMessage(ForgeBridge.setStaffFreeAncientCoinCosts(
+                            !ForgeBridge.staffFreeAncientCoinCosts()));
+                    default -> sender.sendMessage(ForgeBridge.staffFreeAncientCoinCostsStatusText());
+                }
+                return true;
+            }
             case "prestige", "padmin", "prestigeadmin" -> {
                 String raw = joinArgs(args, 2);
                 if (raw.isBlank()) {
@@ -1400,6 +1411,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§e/lm admin character cooldown clear <player> [race|class|reskin|all]");
         sender.sendMessage("§8Offline OK for rival/spar; difficulty + progression NBT need the player online");
         sender.sendMessage("§e/lm admin syslog on|off|status|flush");
+        sender.sendMessage("§e/lm admin stafffree on|off|toggle|status §7— staff skip Ancient Coin charges");
+        sender.sendMessage("§8GUI: /lm → Difficulty → Details (staff) — dye toggle");
         sender.sendMessage("§e/lm admin open <difficulty|rival|spar|character|progression|prestige|skills|hub>");
         sender.sendMessage("§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|character|prestige|progression|skills]");
         sender.sendMessage("§e/lm admin inspect clear §7— stop inspecting");
@@ -2221,7 +2234,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         return switch (sub) {
             case "off", "disable", "on", "enable", "toggle", "status",
                  "whitelist", "wl",
-                 "telemetry", "tel", "balancelog", "combatlog" -> true;
+                 "telemetry", "tel", "balancelog", "combatlog",
+                 "stafffree", "staffcoins", "staffcoinsfree", "freecoins" -> true;
             default -> false;
         };
     }
@@ -2250,8 +2264,42 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             case "telemetry", "tel", "balancelog", "combatlog" -> {
                 return handleTelemetry(sender, args);
             }
+            case "stafffree", "staffcoins", "staffcoinsfree", "freecoins" -> {
+                return handleStaffFreeCoins(sender, args);
+            }
             default -> {
                 return false;
+            }
+        }
+    }
+
+    private boolean handleStaffFreeCoins(CommandSender sender, String[] args) {
+        if (args.length == 2) {
+            sender.sendMessage(ForgeBridge.staffFreeAncientCoinCostsStatusText());
+            return true;
+        }
+        String op = args[2].toLowerCase(Locale.ROOT);
+        switch (op) {
+            case "on", "enable" -> {
+                sender.sendMessage(ForgeBridge.setStaffFreeAncientCoinCosts(true));
+                return true;
+            }
+            case "off", "disable" -> {
+                sender.sendMessage(ForgeBridge.setStaffFreeAncientCoinCosts(false));
+                return true;
+            }
+            case "toggle" -> {
+                sender.sendMessage(ForgeBridge.setStaffFreeAncientCoinCosts(
+                        !ForgeBridge.staffFreeAncientCoinCosts()));
+                return true;
+            }
+            case "status" -> {
+                sender.sendMessage(ForgeBridge.staffFreeAncientCoinCostsStatusText());
+                return true;
+            }
+            default -> {
+                sender.sendMessage("§cUsage: /difficulty admin stafffree on|off|toggle|status");
+                return true;
             }
         }
     }
@@ -2422,12 +2470,13 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§e/difficulty admin off|on|toggle|status §7— master system switch");
         sender.sendMessage("§e/difficulty admin whitelist on|off|add|remove|list|clear §7— testing whitelist");
         sender.sendMessage("§e/difficulty admin telemetry on|off|status|flush|test §7— AD hit logs (all players)");
+        sender.sendMessage("§e/difficulty admin stafffree on|off|toggle|status §7— staff skip Ancient Coin charges");
         sender.sendMessage("§e/difficulty admin syslog on|off|status|flush §7— unified system event log");
         sender.sendMessage("§e/difficulty admin resynclevel [player] §7— clear stuck DMZ level sample");
         sender.sendMessage("§e/difficulty admin gui|inspect <player> [page] §7— open their GUI (edit/see their state)");
         sender.sendMessage("§e/difficulty admin gui clear §7— stop inspecting");
         sender.sendMessage("§e/difficulty admin reload|settings|area|set §7— config tools");
         sender.sendMessage("§e/difficulty hard|normal|easy|peaceful §7— vanilla difficulty");
-        sender.sendMessage("§8Master keys: enabled · whitelistEnabled · balanceTelemetryEnabled");
+        sender.sendMessage("§8Master keys: enabled · whitelistEnabled · staffFreeAncientCoinCosts · balanceTelemetryEnabled");
     }
 }

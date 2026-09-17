@@ -2563,7 +2563,7 @@ public final class ForgeBridge {
         return false;
     }
 
-    private static boolean staffFreeAncientCoinCosts() {
+    public static boolean staffFreeAncientCoinCosts() {
         try {
             Object cfg = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")
                     .getMethod("get").invoke(null);
@@ -2666,6 +2666,14 @@ public final class ForgeBridge {
                 boolean on = "true".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value);
                 return setTelemetryEnabled(on);
             }
+            if ("stafffreeancientcoincosts".equals(k) || "stafffreecoins".equals(k) || "stafffree".equals(k)) {
+                if (!("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)
+                        || "on".equalsIgnoreCase(value) || "off".equalsIgnoreCase(value))) {
+                    return "Use true/false, or: /difficulty admin stafffree on|off";
+                }
+                boolean on = "true".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value);
+                return setStaffFreeAncientCoinCosts(on);
+            }
             Class<?> cfgCls = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig");
             Object cfg = cfgCls.getMethod("get").invoke(null);
             Field field = findConfigField(cfgCls, key);
@@ -2747,11 +2755,45 @@ public final class ForgeBridge {
     public static String systemStatusText() {
         boolean on = systemEnabled();
         boolean wl = whitelistEnabled();
+        boolean staffFree = staffFreeAncientCoinCosts();
         int n = whitelistEntries().size();
         return (on ? "§aSystem ENABLED" : "§cSystem DISABLED")
                 + " §8· "
                 + (wl ? "§eWhitelist ON §7(" + n + " entries)" : "§7Whitelist OFF")
-                + "\n§8/difficulty admin whitelist on|off|add|remove|list";
+                + " §8· "
+                + (staffFree ? "§aStaff coin bypass ON" : "§7Staff coin bypass OFF")
+                + "\n§8/difficulty admin whitelist on|off|add|remove|list"
+                + "\n§8/difficulty admin stafffree on|off";
+    }
+
+    public static boolean staffFreeAncientCoinCostsEnabled() {
+        return staffFreeAncientCoinCosts();
+    }
+
+    public static String setStaffFreeAncientCoinCosts(boolean on) {
+        try {
+            Class<?> cfgCls = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig");
+            Object cfg = cfgCls.getMethod("get").invoke(null);
+            cfg.getClass().getField("staffFreeAncientCoinCosts").set(cfg, on);
+            cfgCls.getMethod("save").invoke(null);
+            PLACEHOLDER_CACHE.clear();
+            return (on ? "§aStaff free Ancient Coin costs ON" : "§eStaff free Ancient Coin costs OFF")
+                    + "\n§7Tier buys, Character Services, End dragon summon, etc."
+                    + (on
+                    ? "\n§7Staff/OP pay §fno coins§7 when this is on."
+                    : "\n§7Staff/OP pay §fnormal prices§7 unless they hold a non-op bypass permission.")
+                    + "\n§8GUI: Difficulty → Details (staff) · /difficulty admin stafffree on|off";
+        } catch (Throwable t) {
+            return "§cFailed to toggle staff free coins: " + t.getMessage();
+        }
+    }
+
+    public static String staffFreeAncientCoinCostsStatusText() {
+        boolean on = staffFreeAncientCoinCosts();
+        return "§6Staff free Ancient Coin costs: " + (on ? "§aON" : "§eOFF")
+                + "\n§7When ON, ops/staff skip coin charges on LM paid features."
+                + "\n§8/difficulty admin stafffree on|off|toggle"
+                + "\n§8Difficulty GUI → Details (staff) — click the dye toggle";
     }
 
     public static String whitelistStatusText() {
@@ -3673,7 +3715,8 @@ public final class ForgeBridge {
             return false;
         }
         return switch (fieldName) {
-            case "enabled", "whitelistEnabled", "balanceTelemetryEnabled",
+            case "enabled", "whitelistEnabled", "staffFreeAncientCoinCosts",
+                 "balanceTelemetryEnabled",
                  "balanceTelemetryMaxPerSecond",
                  "prestigeMultiplier", "levelMultiplier", "teamBonusPercent",
                  "contributionPercent", "rewardScaling",

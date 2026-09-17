@@ -7,7 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * Ancient Coin (paid) features: staff/OP bypass is gated by
  * {@link DifficultyConfig#staffFreeAncientCoinCosts} (default off).
- * Explicit permission nodes always bypass cost.
+ * Non-op players with explicit bypass permission nodes always skip cost.
  */
 public final class PaidFeatureAccess {
     private PaidFeatureAccess() {}
@@ -16,7 +16,8 @@ public final class PaidFeatureAccess {
         if (player == null) {
             return false;
         }
-        if (hasCharacterBypassPermission(player)) {
+        if (hasExplicitBypassPermission(player, CharacterServicesConfig.get().permissions.bypassCost)
+                || hasExplicitBypassPermission(player, CharacterServicesConfig.get().permissions.admin)) {
             return true;
         }
         if (!DifficultyConfig.get().staffFreeAncientCoinCosts) {
@@ -25,28 +26,27 @@ public final class PaidFeatureAccess {
         return StaffAccess.isStaff(player);
     }
 
-    private static boolean hasCharacterBypassPermission(ServerPlayer player) {
-        return hasBukkitPermission(player, CharacterServicesConfig.get().permissions.bypassCost)
-                || hasBukkitPermission(player, CharacterServicesConfig.get().permissions.admin);
-    }
-
-    private static boolean hasBukkitPermission(ServerPlayer player, String node) {
+    /**
+     * Bukkit {@code isOp()} implies every custom permission — do not treat that as
+     * {@code legacymechanics.character.bypass.*} unless the node is explicitly granted to a non-op.
+     */
+    private static boolean hasExplicitBypassPermission(ServerPlayer player, String node) {
         if (node == null || node.isBlank()) {
             return false;
         }
         try {
             Object bukkit = player.getClass().getMethod("getBukkitEntity").invoke(player);
             if (bukkit != null) {
-                Object ok = bukkit.getClass().getMethod("hasPermission", String.class).invoke(bukkit, node);
-                if (ok instanceof Boolean b) {
-                    return b;
+                try {
+                    Object isOp = bukkit.getClass().getMethod("isOp").invoke(bukkit);
+                    if (isOp instanceof Boolean b && b) {
+                        return false;
+                    }
+                } catch (Throwable ignored) {
                 }
+                Object ok = bukkit.getClass().getMethod("hasPermission", String.class).invoke(bukkit, node);
+                return ok instanceof Boolean b && b;
             }
-        } catch (Throwable ignored) {
-        }
-        try {
-            Object ok = player.getClass().getMethod("hasPermission", String.class).invoke(player, node);
-            return ok instanceof Boolean b && b;
         } catch (Throwable ignored) {
         }
         return false;

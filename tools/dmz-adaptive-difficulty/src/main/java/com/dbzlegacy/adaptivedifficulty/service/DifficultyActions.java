@@ -7,6 +7,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
 import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
@@ -47,6 +48,7 @@ public final class DifficultyActions {
     public static final String ACT_TOGGLE_PERSONAL = "toggle_personal";
     public static final String ACT_TOGGLE_COIN_CHAT = "toggle_coin_chat";
     public static final String ACT_TOGGLE_TITLE_SENSE = "toggle_title_sense";
+    public static final String ACT_TOGGLE_STAFF_FREE_COINS = "toggle_staff_free_coins";
     public static final String ACT_SUMMON_END_DRAGON = "summon_end_dragon";
     public static final String ACT_END_DRAGON = "end_dragon";
 
@@ -268,6 +270,10 @@ public final class DifficultyActions {
                 || "toggle_sense".equals(act) || "sense_chat".equals(act)) {
             return toggleTitleSense(player, page);
         }
+        if (ACT_TOGGLE_STAFF_FREE_COINS.equals(act) || "staff_free_coins".equals(act)
+                || "stafffree".equals(act) || "staff_free".equals(act)) {
+            return toggleStaffFreeCoins(player, page);
+        }
         if (ACT_SUMMON_END_DRAGON.equals(act) || ACT_END_DRAGON.equals(act)
                 || "summon_dragon".equals(act) || "dragon_summon".equals(act)) {
             return summonEndDragon(player, page);
@@ -398,6 +404,20 @@ public final class DifficultyActions {
         return Result.ok(on
                 ? "Title Sense ON — Elite/Boss recognition chat enabled."
                 : "Title Sense OFF — recognition chat muted.");
+    }
+
+    private static Result toggleStaffFreeCoins(ServerPlayer player, String page) {
+        if (!StaffAccess.isStaff(player)) {
+            return Result.fail("Staff only.");
+        }
+        DifficultyConfig cfg = DifficultyConfig.get();
+        cfg.staffFreeAncientCoinCosts = !cfg.staffFreeAncientCoinCosts;
+        DifficultyConfig.save();
+        String returnPage = page == null || page.isBlank() ? "stats" : page;
+        openGui(player, returnPage);
+        return Result.ok(cfg.staffFreeAncientCoinCosts
+                ? "Staff free Ancient Coin costs ON — staff/OP skip coin charges on paid LM features."
+                : "Staff free Ancient Coin costs OFF — staff/OP pay normal prices.");
     }
 
     private static Result summonEndDragon(ServerPlayer player, String page) {
