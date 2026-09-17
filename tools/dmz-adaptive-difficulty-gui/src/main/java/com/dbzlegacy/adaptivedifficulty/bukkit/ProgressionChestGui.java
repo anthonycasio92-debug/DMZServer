@@ -290,8 +290,7 @@ public final class ProgressionChestGui implements Listener {
                         "&8and future paid LM features.",
                         "",
                         staffFree ? "&aStaff free costs: ON" : "&7Staff free costs: OFF")));
-        Map<String, String> econVars = Map.of(
-                "status", staffFree ? "ON" : "OFF",
+        Map<String, String> staffFreeVars = Map.of(
                 "action", staffFree ? "&8Tap to turn OFF" : "&8Tap to turn ON");
         put(holder, inv, 22, tipBtn("progression.economy.staff_free",
                 staffFree ? Material.LIME_DYE : Material.GRAY_DYE,
@@ -300,7 +299,8 @@ public final class ProgressionChestGui implements Listener {
                         "&7When ON, staff and OP pay no Ancient Coins",
                         "&7on any LM paid feature.",
                         "",
-                        econVars.get("action")), econVars),
+                        staffFreeVars.get("action")),
+                staffFreeVars),
                 SlotAction.act("toggle_staff_free_coins", staffFree ? "off" : "on", "economy"));
         put(holder, inv, 36, pageBtn("common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));

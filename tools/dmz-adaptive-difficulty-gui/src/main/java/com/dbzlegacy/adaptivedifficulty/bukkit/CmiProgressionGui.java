@@ -321,6 +321,8 @@ public final class CmiProgressionGui {
                 "",
                 staffFree ? "&aStaff free costs: ON" : "&7Staff free costs: OFF"));
         gui.addButton(header);
+        Map<String, String> staffFreeVars = Map.of(
+                "action", staffFree ? "&8Tap to turn OFF" : "&8Tap to turn ON");
         gui.addButton(actionBtn(22, "progression.economy.staff_free",
                 staffFree ? Material.LIME_DYE : Material.GRAY_DYE,
                 staffFree ? "&aStaff free coins ON" : "&7Staff free coins OFF",
@@ -329,7 +331,8 @@ public final class CmiProgressionGui {
                         "&7When ON, staff and OP pay no Ancient Coins",
                         "&7on any LM paid feature.",
                         "",
-                        staffFree ? "&8Tap to turn OFF" : "&8Tap to turn ON")));
+                        staffFreeVars.get("action")),
+                staffFreeVars));
         gui.addButton(pageBtn(36, "common.back", Material.ARROW, "&7Back", "main", "&7Progression hub"));
         gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));

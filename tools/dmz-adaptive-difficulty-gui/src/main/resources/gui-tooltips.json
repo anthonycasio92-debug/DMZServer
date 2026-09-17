@@ -1605,7 +1605,6 @@
     },
     "economy": {
       "staff_free": {
-        "name": "{name}",
         "lore": [
           "&7When ON, staff and OP pay no Ancient Coins",
           "&7on any LM paid feature.",
@@ -1889,5 +1888,5 @@
       ]
     }
   },
-  "_catalogRevision": 190
+  "_catalogRevision": 191
 }
