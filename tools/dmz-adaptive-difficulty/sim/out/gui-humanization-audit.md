@@ -7,7 +7,7 @@
 
 - No blocking issues
 - **0** Java fallback lines still use robotic "Click to…" (use `&8Tap…` or catalog keys)
-- **20** catalog warnings
+- **22** catalog warnings
 
 ## Icons (materials)
 
@@ -20,8 +20,13 @@
 | `REPEATER` | Staff admin / flag boards |
 | Tier mats `COPPER`→`NETHER_STAR` | Difficulty tiers T1–T7 |
 
+## Humanize safety
+
+- Catalog **lore** replaces Java fallback lore when present — do not add short static lore on dynamic buttons (tier cost, DMZ/Prestige gates, `{action}` toggles).
+- `JAVA_LORE_ONLY_KEYS` in `gui_tooltip_policy.py` — catalog must omit `lore` for those keys.
+- **Icons** (`Material.*`) are only changed in Java GUIs, not by humanize scripts.
+
 ## Maintenance
 
 - Edit `gui-tooltips.json` then `/lm admin reload`
-- Run `python3 tools/dmz-adaptive-difficulty/sim/humanize_gui_tooltips.py` for batch phrase polish
-- Run `python3 tools/dmz-adaptive-difficulty/sim/audit_gui_tooltips.py` before ship
+- Run `humanize_gui_tooltips.py` for phrase polish only; then `audit_gui_tooltips.py` (must PASS)

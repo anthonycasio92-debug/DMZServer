@@ -23,7 +23,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 /**
  * Editable GUI button names/lore from {@code plugins/LegacyMechanicsGUI/gui-tooltips.json}.
  * Keys are dotted paths like {@code hub.main.difficulty}. Missing keys fall back to
- * the hard-coded defaults in Java. Reload with {@code /lm admin reload}.
+ * the hard-coded defaults in Java. When a key defines {@code lore} in JSON, that
+ * replaces Java lore entirely — do not add static catalog lore on dynamic buttons
+ * (tier costs, unlock gates, {@code {action}} toggles); see
+ * {@code tools/dmz-adaptive-difficulty/sim/gui_tooltip_policy.java}.
+ * Reload with {@code /lm admin reload}.
  */
 final class GuiTooltips {
     /** Bump when the in-jar tooltip catalog is humanized; older on-disk files are replaced on reload. */

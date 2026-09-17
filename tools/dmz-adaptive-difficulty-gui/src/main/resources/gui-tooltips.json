@@ -1,5 +1,5 @@
 {
-  "_comment": "LegacyMechanics GUI button names and lore. Edit freely, then /lm admin reload. Placeholders like {cost} fill in at runtime. New keys from the mod merge in on reload. _catalogRevision bumps on humanize passes; /lm admin reload upgrades older on-disk files from the jar.",
+  "_comment": "LegacyMechanics GUI button names and lore. Edit freely, then /lm admin reload. Placeholders like {cost} fill in at runtime. WARNING: if this file defines lore for a key, it REPLACES Java fallback lore — do not add short static lore on dynamic buttons (tier costs, unlock DMZ/Prestige, toggles); see sim/gui_tooltip_policy.py JAVA_LORE_ONLY_KEYS. Icons are Material.* in Java only. _catalogRevision bumps on humanize passes; /lm admin reload upgrades older on-disk files from the jar.",
   "hub": {
     "main": {
       "header": {

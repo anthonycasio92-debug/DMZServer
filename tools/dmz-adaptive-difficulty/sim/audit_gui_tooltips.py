@@ -4,6 +4,8 @@
 Checks:
   - Keys referenced from GUI Java (tipBtn/pageBtn) exist in JSON
   - Banned developer jargon in lore
+  - Catalog does not override Java-only dynamic lore (costs, unlocks, {vars})
+  - Required placeholders preserved where catalog defines lore
   - Very short or empty lore on named buttons
 """
 from __future__ import annotations
@@ -12,6 +14,8 @@ import json
 import re
 import sys
 from pathlib import Path
+
+from gui_tooltip_policy import audit_catalog_preservation
 
 ROOT = Path(__file__).resolve().parents[3]
 TOOLTIPS = ROOT / "tools" / "dmz-adaptive-difficulty-gui" / "src" / "main" / "resources" / "gui-tooltips.json"
@@ -209,6 +213,8 @@ def main() -> int:
         if key not in catalog:
             errors.append(f"MISSING KEY: {key}")
 
+    errors.extend(audit_catalog_preservation(catalog))
+
     for key, entry in sorted(catalog.items()):
         if not isinstance(entry, dict):
             continue
@@ -302,11 +308,16 @@ def main() -> int:
         if len(robotic) > 40:
             lines.append(f"- … and {len(robotic) - 40} more")
         lines.append("")
+    lines.append("## Humanize safety")
+    lines.append("")
+    lines.append("- Catalog **lore** replaces Java fallback lore when present — do not add short static lore on dynamic buttons (tier cost, DMZ/Prestige gates, `{action}` toggles).")
+    lines.append("- `JAVA_LORE_ONLY_KEYS` in `gui_tooltip_policy.py` — catalog must omit `lore` for those keys.")
+    lines.append("- **Icons** (`Material.*`) are only changed in Java GUIs, not by humanize scripts.")
+    lines.append("")
     lines.append("## Maintenance")
     lines.append("")
     lines.append("- Edit `gui-tooltips.json` then `/lm admin reload`")
-    lines.append("- Run `python3 tools/dmz-adaptive-difficulty/sim/humanize_gui_tooltips.py` for batch phrase polish")
-    lines.append("- Run `python3 tools/dmz-adaptive-difficulty/sim/audit_gui_tooltips.py` before ship")
+    lines.append("- Run `humanize_gui_tooltips.py` for phrase polish only; then `audit_gui_tooltips.py` (must PASS)")
     lines.append("")
     out_md.write_text("\n".join(lines), encoding="utf-8")
 

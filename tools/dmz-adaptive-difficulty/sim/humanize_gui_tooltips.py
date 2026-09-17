@@ -1,11 +1,26 @@
 #!/usr/bin/env python3
-"""Apply player-facing copy polish to gui-tooltips.json (in-repo catalog)."""
+"""Apply player-facing copy polish to gui-tooltips.json (in-repo catalog).
+
+Rules (do not break gameplay copy):
+  - Phrase swaps only — never replace whole lore with shorter static text.
+  - Keys in JAVA_LORE_ONLY_KEYS must not have catalog lore (cost, unlock gates, state).
+  - Keep {placeholders} that Java fills at runtime; see gui_tooltip_policy.py.
+  - Icons/materials are set in Java — this script does not touch them.
+
+After running: python3 sim/audit_gui_tooltips.py (must PASS).
+"""
 from __future__ import annotations
 
 import json
 import re
 import sys
 from pathlib import Path
+
+from gui_tooltip_policy import (
+    JAVA_LORE_ONLY_KEYS,
+    read_catalog_revision_from_java,
+    strip_java_only_catalog_lore,
+)
 
 ROOT = Path(__file__).resolve().parents[3]
 TOOLTIPS = ROOT / "tools" / "dmz-adaptive-difficulty-gui" / "src" / "main" / "resources" / "gui-tooltips.json"
@@ -143,8 +158,9 @@ KEY_OVERRIDES: dict[str, dict] = {
     },
 }
 
-# Keep in sync with GuiTooltips.CATALOG_REVISION (bukkit/GuiTooltips.java)
-CATALOG_REVISION = 190
+def catalog_revision() -> int:
+    rev = read_catalog_revision_from_java()
+    return rev if rev > 0 else 193
 
 
 def walk_replace(obj):
@@ -176,6 +192,8 @@ def flatten_keys(obj: dict, prefix: str = "") -> dict[str, dict]:
 def apply_key_overrides(root: dict) -> None:
     flat = flatten_keys(root)
     for key, patch in KEY_OVERRIDES.items():
+        if key in JAVA_LORE_ONLY_KEYS:
+            continue
         parts = key.split(".")
         node = root
         for p in parts[:-1]:
@@ -193,7 +211,9 @@ def main() -> int:
     data = json.loads(TOOLTIPS.read_text(encoding="utf-8"))
     data = walk_replace(data)
     apply_key_overrides(data)
-    data["_catalogRevision"] = CATALOG_REVISION
+    stripped = strip_java_only_catalog_lore(data)
+    rev = catalog_revision()
+    data["_catalogRevision"] = rev
     comment = data.get("_comment", "")
     if "catalogRevision" not in comment:
         data["_comment"] = (
@@ -201,7 +221,9 @@ def main() -> int:
             + " _catalogRevision bumps on humanize passes; /lm admin reload upgrades older on-disk files from the jar."
         )
     TOOLTIPS.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"Humanized {TOOLTIPS} → catalog revision {CATALOG_REVISION}")
+    if stripped:
+        print(f"Stripped catalog lore from Java-only keys: {', '.join(stripped)}")
+    print(f"Humanized {TOOLTIPS} → catalog revision {rev}")
     return 0
 
 
