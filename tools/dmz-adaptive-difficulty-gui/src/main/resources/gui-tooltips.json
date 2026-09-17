@@ -678,6 +678,7 @@
         "lore": [
           "&7Select a higher tier you've unlocked to buy it",
           "&7Step down to a lower tier you've unlocked (free)",
+          "&8Each tier shows DMZ level or Prestige to unlock",
           "&8Unlock with DMZ level or Prestige"
         ]
       },
@@ -1884,5 +1885,5 @@
       ]
     }
   },
-  "_catalogRevision": 192
+  "_catalogRevision": 193
 }

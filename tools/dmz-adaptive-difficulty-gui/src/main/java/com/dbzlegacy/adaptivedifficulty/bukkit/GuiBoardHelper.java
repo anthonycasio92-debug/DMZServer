@@ -44,6 +44,39 @@ final class GuiBoardHelper {
     }
 
     /**
+     * Dynamic lore for /difficulty → Tiers buttons. Placeholders are filled via
+     * {@link GuiTooltips} ({@code tierVars}); catalog must not override this key.
+     */
+    static List<String> difficultyTierButtonLore(
+            boolean active, boolean canLower, boolean unlocked, boolean staff) {
+        List<String> tip = new ArrayList<>();
+        tip.add("&7{name}");
+        tip.add("&7Unlock: &fDMZ {req_level} &7or &fPrestige {req_prestige}");
+        if (active) {
+            tip.add("&aCurrently active");
+        } else if (canLower) {
+            tip.add("&aOwned &8· free to lower here");
+        } else if (unlocked) {
+            tip.add("&7Cost &e{cost}");
+            if (staff) {
+                tip.add("&8Scaled for your DMZ level");
+            }
+            tip.add(staff ? "&aUnlocked &8· click to purchase" : "&aUnlocked");
+            if (staff) {
+                tip.add("&8Pay-up OK · change returned");
+            }
+        } else {
+            tip.add("&cLocked for you");
+            tip.add("&7You have &fDMZ {level} &7· &fPrestige {prestige}");
+            if (staff) {
+                tip.add("&8{req}");
+                tip.add("&8CR/BP ignored — use DMZ level or Prestige");
+            }
+        }
+        return tip;
+    }
+
+    /**
      * Pending invite rows: each invite uses 3 interior slots — head, Accept, Decline.
      * Packed left-to-right across rows 10–16, 19–25, 28–34 (max 7 invites).
      * Outgoing invites still reserve the Accept/Decline slots (caller leaves them empty).

@@ -238,6 +238,7 @@ public final class DifficultyChestGui implements Listener {
         info.addAll(GuiTooltips.lore("difficulty.tiers.info",
                 List.of("&7Click a higher unlocked tier to buy",
                         "&7Click a lower unlocked tier to step down (free)",
+                        "&8Each tier shows DMZ level or Prestige to unlock",
                         "&8Unlock with DMZ level or Prestige"), null));
         info.addAll(GuiBoardHelper.tips(viewer,
                 "&eUnlock with DMZ level &7OR &ePrestige",
@@ -522,30 +523,7 @@ public final class DifficultyChestGui implements Listener {
                     "prestige", ph.getOrDefault("prestige", "?"),
                     "req", reqTip);
 
-            List<String> tip = new ArrayList<>();
-            tip.add("&7{name}");
-            if (active) {
-                tip.add("&aCurrently active");
-            } else if (canLower) {
-                tip.add("&aOwned &8· free to lower here");
-            } else if (unlocked) {
-                tip.add("&7Cost &e{cost}");
-                if (staff) {
-                    tip.add("&8Scaled for your DMZ level");
-                }
-                tip.add(staff ? "&aUnlocked &8· click to purchase" : "&aUnlocked");
-                if (staff) {
-                    tip.add("&8Pay-up OK · change returned");
-                }
-            } else {
-                tip.add("&cLocked");
-                tip.add("&7Need &fDMZ {req_level} &7or &fPrestige {req_prestige}");
-                tip.add("&7You: &fDMZ {level} &7· &fPrestige {prestige}");
-                if (staff) {
-                    tip.add("&8{req}");
-                    tip.add("&8CR/BP ignored — use DMZ level or Prestige");
-                }
-            }
+            List<String> tip = GuiBoardHelper.difficultyTierButtonLore(active, canLower, unlocked, staff);
 
             String title;
             if (active) {

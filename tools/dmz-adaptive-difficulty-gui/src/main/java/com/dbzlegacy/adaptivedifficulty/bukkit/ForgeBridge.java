@@ -316,7 +316,7 @@ public final class ForgeBridge {
                 } catch (Throwable ignored) {
                 }
             }
-            if (unlockTierValues != null && economyFormatExactCost != null) {
+            if (unlockTierValues != null) {
                 try {
                     for (Object ut : (Object[]) unlockTierValues.invoke(null)) {
                         int id = ((Number) field(ut, "id")).intValue();
@@ -329,8 +329,10 @@ public final class ForgeBridge {
                             costText = "free";
                         } else if (cost <= 0L) {
                             costText = "?";
-                        } else {
+                        } else if (economyFormatExactCost != null) {
                             costText = String.valueOf(economyFormatExactCost.invoke(null, cost));
+                        } else {
+                            costText = String.valueOf(cost);
                         }
                         out.put("unlock_tier_" + id + "_cost", costText);
                         out.put("tier_" + id + "_cost", costText);

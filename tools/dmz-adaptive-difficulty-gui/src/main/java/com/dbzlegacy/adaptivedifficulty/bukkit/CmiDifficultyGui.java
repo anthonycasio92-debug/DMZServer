@@ -219,6 +219,7 @@ public final class CmiDifficultyGui {
         infoLore.addAll(GuiTooltips.lore("difficulty.tiers.info",
                 List.of("&7Click a higher unlocked tier to buy",
                         "&7Click a lower unlocked tier to step down (free)",
+                        "&8Each tier shows DMZ level or Prestige to unlock",
                         "&8Unlock with DMZ level or Prestige"), null));
         infoLore.addAll(GuiBoardHelper.tips(player,
                 "&eUnlock with DMZ level &7OR &ePrestige",
@@ -522,30 +523,7 @@ public final class CmiDifficultyGui {
                     "prestige", ph.getOrDefault("prestige", "?"),
                     "req", reqTip);
 
-            List<String> lore = new ArrayList<>();
-            lore.add("&7{name}");
-            if (active) {
-                lore.add("&aCurrently active");
-            } else if (canLower) {
-                lore.add("&aOwned &8· free to lower here");
-            } else if (unlocked) {
-                lore.add("&7Cost &e{cost}");
-                if (staff) {
-                    lore.add("&8Scaled for your DMZ level");
-                }
-                lore.add(staff ? "&aUnlocked &8· click to purchase" : "&aUnlocked");
-                if (staff) {
-                    lore.add("&8Pay-up OK · change returned");
-                }
-            } else {
-                lore.add("&cLocked");
-                lore.add("&7Need &fDMZ {req_level} &7or &fPrestige {req_prestige}");
-                lore.add("&7You: &fDMZ {level} &7· &fPrestige {prestige}");
-                if (staff) {
-                    lore.add("&8{req}");
-                    lore.add("&8CR/BP ignored — use DMZ level or Prestige");
-                }
-            }
+            List<String> lore = GuiBoardHelper.difficultyTierButtonLore(active, canLower, unlocked, staff);
 
             String title;
             if (active) {
