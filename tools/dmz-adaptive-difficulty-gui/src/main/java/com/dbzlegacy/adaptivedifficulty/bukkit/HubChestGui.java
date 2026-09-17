@@ -68,7 +68,7 @@ public final class HubChestGui implements Listener {
             hubHeaderLore.add("");
         }
         hubHeaderLore.addAll(GuiTooltips.lore("hub.main.header",
-                List.of("&7Choose a system", "&8/lm")));
+                List.of("&7Pick what you want to do", "&8Open with &f/lm")));
         put(holder, inv, 4, item(Material.NETHER_STAR,
                 GuiTooltips.name("hub.main.header", "&f&lLegacy Mechanics"), hubHeaderLore));
 
@@ -319,7 +319,7 @@ public final class HubChestGui implements Listener {
     }
 
     private static ItemStack closeBtn() {
-        return item(Material.BARRIER, "&cClose", List.of());
+        return GuiNav.closeItem();
     }
 
     private static ItemStack item(Material mat, String name, List<String> lore) {

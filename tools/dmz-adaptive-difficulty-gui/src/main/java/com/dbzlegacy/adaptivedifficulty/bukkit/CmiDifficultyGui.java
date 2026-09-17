@@ -184,6 +184,7 @@ public final class CmiDifficultyGui {
             locked.addLore(unavailableLore(player, systemOn, bridgeOk));
             gui.addButton(locked);
             gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
             GuiFeedback.openCmi(gui);
@@ -201,6 +202,7 @@ public final class CmiDifficultyGui {
             ));
             gui.addButton(locked);
             gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
             GuiFeedback.openCmi(gui);
@@ -242,6 +244,7 @@ public final class CmiDifficultyGui {
 
         placeTierButtons(gui, player, ph);
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -731,17 +734,10 @@ public final class CmiDifficultyGui {
     }
 
     private static CMIGuiButton hubBtn(int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.COMPASS, "&7« Hub");
-        btn.lockField();
-        btn.addCommand("lmdo lm open hub");
-        btn.setCloseInv(true);
-        return btn;
+        return GuiNav.cmiHubButton(slot);
     }
 
     private static CMIGuiButton closeBtn(int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.BARRIER, "&cClose");
-        btn.lockField();
-        btn.setCloseInv(true);
-        return btn;
+        return GuiNav.cmiCloseButton(slot);
     }
 }

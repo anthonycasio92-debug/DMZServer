@@ -35,10 +35,7 @@ public final class RivalChestGui implements Listener {
     }
 
     private static String invTitle(Player viewer, Player subject, String base) {
-        if (inspecting(viewer, subject)) {
-            return color(base + " · &c" + subject.getName());
-        }
-        return color(base);
+        return GuiNav.inventoryTitle(viewer, subject, base);
     }
 
     public void open(Player player, String page) {
@@ -370,6 +367,7 @@ public final class RivalChestGui implements Listener {
                 "&7Previous rivals"), SlotAction.page("history"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -409,6 +407,7 @@ public final class RivalChestGui implements Listener {
                 "&7Full actions menu"), SlotAction.page("actions"));
         put(holder, inv, 36, pageBtn(viewer, "rival.pending.back", Material.ARROW, "&7Back", "&7Actions"),
                 SlotAction.page("actions"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -461,6 +460,7 @@ public final class RivalChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "rival.pending.decide_back", Material.ARROW, "&7Back",
                 "&7Pending invites"), SlotAction.page("pending"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -525,6 +525,7 @@ public final class RivalChestGui implements Listener {
                 "&7Back to current rivals"), SlotAction.page("list"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -556,6 +557,7 @@ public final class RivalChestGui implements Listener {
                 "&7Current rivals"), SlotAction.page("list"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -585,6 +587,7 @@ public final class RivalChestGui implements Listener {
                 SlotAction.act("spectate_stop", "0", "challenge"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -618,6 +621,7 @@ public final class RivalChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("challenge"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -682,6 +686,7 @@ public final class RivalChestGui implements Listener {
 
         put(holder, inv, 36, pageBtn(viewer, "rival.challenge.back_picker", Material.ARROW, "&7Back",
                 "&7Pick another player"), SlotAction.page("pick_challenge"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -714,6 +719,7 @@ public final class RivalChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page(backPage));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -759,6 +765,7 @@ public final class RivalChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page(backPage));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -814,6 +821,7 @@ public final class RivalChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Pending"),
                 SlotAction.page("pending"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -886,6 +894,7 @@ public final class RivalChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page(backPage));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -1091,11 +1100,11 @@ public final class RivalChestGui implements Listener {
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.COMPASS, "&7« Hub", List.of());
+        return GuiNav.hubItem();
     }
 
     private static ItemStack closeBtn() {
-        return item(Material.BARRIER, "&cClose", List.of());
+        return GuiNav.closeItem();
     }
 
     private static ItemStack item(Material mat, String name, List<String> lore) {

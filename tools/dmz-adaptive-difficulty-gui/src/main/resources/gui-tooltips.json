@@ -38,7 +38,7 @@
         "name": "&eSkill Check",
         "lore": [
           "&7Story progress and natural training",
-          "&eOpen"
+          "&8Opens this menu"
         ]
       },
       "skills": {
@@ -52,7 +52,7 @@
         "name": "&6Prestige",
         "lore": [
           "&7Prestige up and visit the shop",
-          "&eOpen"
+          "&8Opens this menu"
         ]
       },
       "character": {
@@ -61,22 +61,22 @@
           "&7Change race, class, look, or head parts",
           "&7without wiping your whole character",
           "&8Uses Ancient Coins",
-          "&eOpen"
+          "&8Opens this menu"
         ]
       },
       "android_remove": {
         "name": "&cRemove Android",
         "lore": [
           "&7Remove your Android upgrade",
-          "&8Click twice to confirm",
-          "&eOpen"
+          "&8Two-step confirm inside the menu",
+          "&8Opens this menu"
         ]
       },
       "progression": {
         "name": "&dProgression",
         "lore": [
           "&7Skills · TP · Race · Combat flags",
-          "&eOpen"
+          "&8Opens this menu"
         ]
       },
       "admin": {
@@ -90,7 +90,7 @@
         "name": "&8Logs",
         "lore": [
           "&7Server event logs",
-          "&eOpen"
+          "&8Opens this menu"
         ]
       }
     },
@@ -1883,7 +1883,20 @@
       "lore": [
         "&7Go back to the previous screen"
       ]
+    },
+    "hub": {
+      "name": "&7« Hub",
+      "lore": [
+        "&7Return to the main &f/lm &7menu",
+        "&8Pick any LM system from there"
+      ]
+    },
+    "close": {
+      "name": "&cClose",
+      "lore": [
+        "&7Close this menu"
+      ]
     }
   },
-  "_catalogRevision": 193
+  "_catalogRevision": 195
 }

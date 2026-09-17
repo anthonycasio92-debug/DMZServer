@@ -286,9 +286,6 @@ public final class CmiHubGui {
     }
 
     private static CMIGuiButton closeBtn(int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.BARRIER, "&cClose");
-        btn.lockField();
-        btn.setCloseInv(true);
-        return btn;
+        return GuiNav.cmiCloseButton(slot);
     }
 }

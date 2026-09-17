@@ -1,6 +1,6 @@
 # GUI humanization audit
 
-- Catalog keys: **270** · Referenced from Java: **247**
+- Catalog keys: **272** · Referenced from Java: **249**
 - GuiTooltips catalog revision: see `GuiTooltips.CATALOG_REVISION` / `gui-tooltips.json` `_catalogRevision`
 
 ## Summary

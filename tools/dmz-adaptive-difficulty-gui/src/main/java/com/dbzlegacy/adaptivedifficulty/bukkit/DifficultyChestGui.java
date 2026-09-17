@@ -71,10 +71,7 @@ public final class DifficultyChestGui implements Listener {
     }
 
     private static String titleFor(Player viewer, Player subject, String base) {
-        if (inspecting(viewer, subject)) {
-            return color("&8" + base + " · &c" + subject.getName());
-        }
-        return color("&8" + base);
+        return GuiNav.inventoryTitle(viewer, subject, base);
     }
 
     private static Holder holderFor(Player viewer, Player subject, String page) {
@@ -215,6 +212,7 @@ public final class DifficultyChestGui implements Listener {
         if (!bridgeOk || !systemOn || !allowed) {
             put(holder, inv, 4, item(Material.BARRIER, "&c&lTiers Locked", unavailableLore(viewer, subject, systemOn, bridgeOk)));
             put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+            put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
             put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
             return inv;
         }
@@ -227,6 +225,7 @@ public final class DifficultyChestGui implements Listener {
             info.add("&7Turn it ON on the main menu to change tiers.");
             put(holder, inv, 4, item(Material.BARRIER, "&c&lTiers Locked", info));
             put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+            put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
             put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
             return inv;
         }
@@ -259,6 +258,7 @@ public final class DifficultyChestGui implements Listener {
 
         placeTierItems(holder, inv, ph, viewer);
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -321,6 +321,7 @@ public final class DifficultyChestGui implements Listener {
         }, new int[]{28, 29, 30, 31, 32, 33, 37, 39, 41});
 
         put(holder, inv, 45, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -806,11 +807,11 @@ public final class DifficultyChestGui implements Listener {
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.COMPASS, "&7« Hub", List.of());
+        return GuiNav.hubItem();
     }
 
     private static ItemStack closeBtn() {
-        return item(Material.BARRIER, "&cClose", List.of());
+        return GuiNav.closeItem();
     }
 
     private static ItemStack item(Material mat, String name, List<String> lore) {

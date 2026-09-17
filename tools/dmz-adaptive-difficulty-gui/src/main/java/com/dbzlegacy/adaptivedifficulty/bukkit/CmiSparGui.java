@@ -434,6 +434,7 @@ public final class CmiSparGui {
                 List.of("&7Decline challenge from &f" + display), Map.of("name", display)));
         gui.addButton(pageBtn(player, 36, "spar.dojo.war_decide_back", Material.ARROW, "&7Back",
                 "dojo_war_pending", "&7Pending wars"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -503,6 +504,7 @@ public final class CmiSparGui {
             }
         }
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "dojo_war", "&7Dojo War"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -546,6 +548,7 @@ public final class CmiSparGui {
             }
         }
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "dojo_rank", "&7Dojo Rankings"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -576,6 +579,7 @@ public final class CmiSparGui {
                     Map.of("name", label)));
         }
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "dojo_war", "&7Dojo War"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -754,6 +758,7 @@ public final class CmiSparGui {
         gui.addButton(pageBtn(player, 39, "spar.pending.nav_mentor", Material.EMERALD, "&bMentor", "mentor",
                 "&7Mentor Actions"));
         gui.addButton(pageBtn(player, 36, "spar.pending.back", Material.ARROW, "&7Back", "mentor", "&7Mentor"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -798,6 +803,7 @@ public final class CmiSparGui {
                 List.of("&7Decline " + display + "'s invite")));
         gui.addButton(pageBtn(player, 36, "spar.pending.decide_back", Material.ARROW, "&7Back", "pending",
                 "&7Pending invites"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -861,6 +867,7 @@ public final class CmiSparGui {
             fillMemberDojoCmi(gui, player, ph, hasApprentice);
         }
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "mentor", "&7Mentor"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -1071,6 +1078,7 @@ public final class CmiSparGui {
         }
 
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", backPage, "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -1122,6 +1130,7 @@ public final class CmiSparGui {
             gui.addButton(empty);
         }
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "mentor", "&7Mentor"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -1166,6 +1175,7 @@ public final class CmiSparGui {
         }
 
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", backPage, "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -1389,17 +1399,10 @@ public final class CmiSparGui {
     }
 
     private static CMIGuiButton hubBtn(int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.COMPASS, "&7« Hub");
-        btn.lockField();
-        btn.addCommand("lmdo lm open hub");
-        btn.setCloseInv(true);
-        return btn;
+        return GuiNav.cmiHubButton(slot);
     }
 
     private static CMIGuiButton closeBtn(int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.BARRIER, "&cClose");
-        btn.lockField();
-        btn.setCloseInv(true);
-        return btn;
+        return GuiNav.cmiCloseButton(slot);
     }
 }

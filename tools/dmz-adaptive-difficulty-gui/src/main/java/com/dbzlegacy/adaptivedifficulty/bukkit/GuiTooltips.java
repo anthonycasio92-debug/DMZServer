@@ -26,12 +26,12 @@ import org.bukkit.plugin.java.JavaPlugin;
  * the hard-coded defaults in Java. When a key defines {@code lore} in JSON, that
  * replaces Java lore entirely — do not add static catalog lore on dynamic buttons
  * (tier costs, unlock gates, {@code {action}} toggles); see
- * {@code tools/dmz-adaptive-difficulty/sim/gui_tooltip_policy.java}.
+ * {@code tools/dmz-adaptive-difficulty/sim/gui_tooltip_policy.py}.
  * Reload with {@code /lm admin reload}.
  */
 final class GuiTooltips {
     /** Bump when the in-jar tooltip catalog is humanized; older on-disk files are replaced on reload. */
-    private static final int CATALOG_REVISION = 193;
+    private static final int CATALOG_REVISION = 195;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static final Map<String, Entry> ENTRIES = new ConcurrentHashMap<>();

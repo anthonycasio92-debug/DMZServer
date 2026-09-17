@@ -35,10 +35,7 @@ public final class SparChestGui implements Listener {
     }
 
     private static String invTitle(Player viewer, Player subject, String base) {
-        if (inspecting(viewer, subject)) {
-            return color(base + " · &c" + subject.getName());
-        }
-        return color(base);
+        return GuiNav.inventoryTitle(viewer, subject, base);
     }
 
     public void open(Player player, String page) {
@@ -426,6 +423,7 @@ public final class SparChestGui implements Listener {
                 SlotAction.act("dojo_decline", "0", "dojo_war_pending"));
         put(holder, inv, 36, pageBtn(viewer, "spar.dojo.war_decide_back", Material.ARROW, "&7Back",
                 "&7Pending wars"), SlotAction.page("dojo_war_pending"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -496,6 +494,7 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo War"),
                 SlotAction.page("dojo_war"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -578,6 +577,7 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo War"),
                 SlotAction.page("dojo_war"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -729,6 +729,7 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -769,6 +770,7 @@ public final class SparChestGui implements Listener {
                 "&7Mentor Actions"), SlotAction.page("mentor"));
         put(holder, inv, 36, pageBtn(viewer, "spar.pending.back", Material.ARROW, "&7Back", "&7Mentor"),
                 SlotAction.page("mentor"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -807,6 +809,7 @@ public final class SparChestGui implements Listener {
                 SlotAction.act("mentor_decline", pickerArg, "pending"));
         put(holder, inv, 36, pageBtn(viewer, "spar.pending.decide_back", Material.ARROW, "&7Back",
                 "&7Pending invites"), SlotAction.page("pending"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -876,6 +879,7 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Mentor"),
                 SlotAction.page("mentor"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -1057,6 +1061,7 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page(backPage));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -1098,6 +1103,7 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Mentor"),
                 SlotAction.page("mentor"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -1130,6 +1136,7 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page(backPage));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -1331,11 +1338,11 @@ public final class SparChestGui implements Listener {
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.COMPASS, "&7« Hub", List.of());
+        return GuiNav.hubItem();
     }
 
     private static ItemStack closeBtn() {
-        return item(Material.BARRIER, "&cClose", List.of());
+        return GuiNav.closeItem();
     }
 
     private static ItemStack item(Material mat, String name, List<String> lore) {

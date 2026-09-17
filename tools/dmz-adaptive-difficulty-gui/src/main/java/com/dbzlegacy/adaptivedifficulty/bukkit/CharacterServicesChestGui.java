@@ -62,10 +62,7 @@ public final class CharacterServicesChestGui implements Listener {
     }
 
     private static String invTitle(Player viewer, Player subject, String base) {
-        if (inspecting(viewer, subject)) {
-            return color(base + " · &c" + subject.getName());
-        }
-        return color(base);
+        return GuiNav.inventoryTitle(viewer, subject, base);
     }
 
     private Inventory main(Player viewer, Player subject) {
@@ -464,13 +461,13 @@ public final class CharacterServicesChestGui implements Listener {
     }
 
     private void footer45(Holder holder, Inventory inv, String backKey, SlotAction backAction) {
-        put(holder, inv, 36, pageBtn(backKey, Material.ARROW, "&7« Back", null), backAction);
+        put(holder, inv, 36, pageBtn("common.back", Material.ARROW, "&7Back", null), backAction);
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn("character.main.close"), SlotAction.dismiss());
     }
 
     private void footer54(Holder holder, Inventory inv, String backKey, SlotAction backAction) {
-        put(holder, inv, 45, pageBtn(backKey, Material.ARROW, "&7« Back", null), backAction);
+        put(holder, inv, 45, pageBtn("common.back", Material.ARROW, "&7Back", null), backAction);
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 53, closeBtn("character.main.close"), SlotAction.dismiss());
     }
@@ -656,7 +653,7 @@ public final class CharacterServicesChestGui implements Listener {
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.COMPASS, "&7« Hub", List.of());
+        return GuiNav.hubItem();
     }
 
     private static ItemStack closeBtn(String key) {

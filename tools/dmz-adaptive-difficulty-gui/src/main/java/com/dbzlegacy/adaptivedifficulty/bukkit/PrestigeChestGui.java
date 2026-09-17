@@ -34,10 +34,7 @@ public final class PrestigeChestGui implements Listener {
     }
 
     private static String invTitle(Player viewer, Player subject, String base) {
-        if (inspecting(viewer, subject)) {
-            return color(base + " · &c" + subject.getName());
-        }
-        return color(base);
+        return GuiNav.inventoryTitle(viewer, subject, base);
     }
 
     public void open(Player player, String page) {
@@ -667,7 +664,7 @@ public final class PrestigeChestGui implements Listener {
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.COMPASS, "&7« Hub", List.of());
+        return GuiNav.hubItem();
     }
 
     private static ItemStack backBtn() {
@@ -675,7 +672,7 @@ public final class PrestigeChestGui implements Listener {
     }
 
     private static ItemStack closeBtn() {
-        return item(Material.BARRIER, "&cClose", List.of());
+        return GuiNav.closeItem();
     }
 
     private static ItemStack item(Material mat, String name, List<String> lore) {
