@@ -61,7 +61,7 @@ final class GuiBoardHelper {
             if (staff) {
                 tip.add("&8Scaled for your DMZ level");
             }
-            tip.add(staff ? "&aUnlocked &8· click to purchase" : "&aUnlocked");
+            tip.add(staff ? "&aUnlocked &8· tap to buy" : "&aUnlocked");
             if (staff) {
                 tip.add("&8Pay-up OK · change returned");
             }

@@ -8,6 +8,7 @@ Icons/materials live in Java (Material.*) — humanize scripts only edit JSON.
 """
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -181,3 +182,69 @@ def audit_catalog_preservation(catalog: dict[str, dict]) -> list[str]:
             )
 
     return errors
+
+
+def policy_compliance_rows(catalog: dict[str, dict]) -> dict[str, object]:
+    """Structured checklist for humanization audits (non-blocking advisories included)."""
+    java_ph = java_fallback_placeholders()
+    java_lore_only: list[dict[str, str]] = []
+    for key in sorted(JAVA_LORE_ONLY_KEYS):
+        entry = catalog.get(key, {})
+        has_lore = bool(entry.get("lore"))
+        java_lore_only.append({
+            "key": key,
+            "status": "fail" if has_lore else "ok",
+            "note": "catalog lore must be omitted" if has_lore else "Java-only dynamic lore",
+        })
+
+    required_ph: list[dict[str, str]] = []
+    for key, req in sorted(REQUIRED_PLACEHOLDERS.items()):
+        entry = catalog.get(key, {})
+        lines = entry.get("lore") or []
+        cat_ph = placeholders_in_lines([str(x) for x in lines]) if lines else set()
+        missing = sorted(req - cat_ph)
+        if not lines:
+            status, note = "skip", "no catalog lore (Java fallback)"
+        elif missing:
+            status, note = "fail", f"missing placeholders {missing}"
+        else:
+            status, note = "ok", f"has {sorted(req)}"
+        required_ph.append({"key": key, "status": status, "note": note})
+
+    preservation_errors = audit_catalog_preservation(catalog)
+
+    shrink_risk: list[str] = []
+    placeholder_risk: list[str] = []
+    for key, java_vars in sorted(java_ph.items()):
+        if key in JAVA_LORE_ONLY_KEYS:
+            continue
+        entry = catalog.get(key)
+        if not entry or not entry.get("lore"):
+            continue
+        cat_lines = [str(x) for x in entry.get("lore", [])]
+        cat_ph = placeholders_in_lines(cat_lines)
+        critical = java_vars & {
+            "cost", "action", "req_level", "req_prestige", "level", "prestige", "req", "tier",
+        }
+        missing = critical - cat_ph
+        if missing:
+            placeholder_risk.append(f"{key}: missing {sorted(missing)}")
+        if len(cat_lines) <= 2 and len(java_vars) >= 3:
+            shrink_risk.append(f"{key}: {len(cat_lines)} line(s), Java vars {sorted(java_vars)}")
+
+    json_rev = 0
+    if TOOLTIPS.is_file():
+        root = json.loads(TOOLTIPS.read_text(encoding="utf-8"))
+        json_rev = int(root.get("_catalogRevision") or 0)
+    java_rev = read_catalog_revision_from_java()
+
+    return {
+        "java_lore_only": java_lore_only,
+        "required_placeholders": required_ph,
+        "preservation_error_count": len(preservation_errors),
+        "shrink_risk": shrink_risk,
+        "placeholder_risk": placeholder_risk,
+        "catalog_revision_java": java_rev,
+        "catalog_revision_json": json_rev,
+        "catalog_revision_sync": java_rev == json_rev and java_rev > 0,
+    }

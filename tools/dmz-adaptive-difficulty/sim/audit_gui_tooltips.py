@@ -15,7 +15,13 @@ import re
 import sys
 from pathlib import Path
 
-from gui_tooltip_policy import audit_catalog_preservation
+from gui_tooltip_policy import (
+    JAVA_LORE_ONLY_KEYS,
+    REQUIRED_PLACEHOLDERS,
+    audit_catalog_preservation,
+    policy_compliance_rows,
+    read_catalog_revision_from_java,
+)
 
 ROOT = Path(__file__).resolve().parents[3]
 TOOLTIPS = ROOT / "tools" / "dmz-adaptive-difficulty-gui" / "src" / "main" / "resources" / "gui-tooltips.json"
@@ -60,7 +66,11 @@ KEY_RE = re.compile(
 # Missing newline between lore lines (humanize bug): "...10s)8Prestige" or "messages8Hides"
 LORE_CORRUPT_RE = re.compile(r'(?:\d\)|[a-z])8(?=[A-Z&])')
 
-ROBOTIC_CLICK_RE = re.compile(r"&[0-7][^\"]*\bClick to\b", re.I)
+# Humanize policy: prefer &8Tap… / &8Opens… — flag visible "Click to" (not &8/§8 meta lines).
+ROBOTIC_CLICK_RE = re.compile(
+    r'(?:^|(?<=[^8]))[&§](?![8/])[0-9a-fk-or][^\"]*\bClick to\b',
+    re.I,
+)
 
 BTN_HOVER_RE = re.compile(
     r'btn\(\s*"[^"]*"\s*,\s*"[^"]*"\s*,\s*"([^"]+)"\s*\)',
@@ -183,7 +193,7 @@ def scan_robotic_click(java_path: Path, text: str) -> list[str]:
         literal = m.group(1)
         if literal.startswith("&8") or literal.startswith("§8"):
             continue
-        if ROBOTIC_CLICK_RE.search(literal):
+        if re.search(r"\bClick to\b", literal, re.I) and ROBOTIC_CLICK_RE.search(literal):
             hits.append(f"ROBOTIC [{rel}]: {literal[:90]}")
     return hits
 
@@ -258,6 +268,13 @@ def main() -> int:
 
     errors.extend(scan_chest_cmi_drift())
 
+    policy = policy_compliance_rows(catalog)
+    if not policy["catalog_revision_sync"]:
+        warns.append(
+            f"WARN catalog revision mismatch: Java={policy['catalog_revision_java']} "
+            f"json={policy['catalog_revision_json']}"
+        )
+
     robotic: list[str] = []
     for java in GUI_SRC.rglob("*.java"):
         if java.name in ("ForgeBridge.java", "GuiTooltips.java"):
@@ -267,11 +284,14 @@ def main() -> int:
 
     out_md = ROOT / "tools" / "dmz-adaptive-difficulty" / "sim" / "out" / "gui-humanization-audit.md"
     out_md.parent.mkdir(parents=True, exist_ok=True)
+    java_rev = read_catalog_revision_from_java()
+    json_rev = policy["catalog_revision_json"]
     lines = [
         "# GUI humanization audit",
         "",
         f"- Catalog keys: **{len(catalog)}** · Referenced from Java: **{len(used)}**",
-        f"- GuiTooltips catalog revision: see `GuiTooltips.CATALOG_REVISION` / `gui-tooltips.json` `_catalogRevision`",
+        f"- Catalog revision: **Java {java_rev}** · **JSON {json_rev}**"
+        + (" · synced" if policy["catalog_revision_sync"] else " · **MISMATCH**"),
         "",
         "## Summary",
         "",
@@ -293,6 +313,25 @@ def main() -> int:
     lines.append("| `DRAGON_EGG` / `GRAY_DYE` | End dragon summon ready / locked |")
     lines.append("| `REPEATER` | Staff admin / flag boards |")
     lines.append("| Tier mats `COPPER`→`NETHER_STAR` | Difficulty tiers T1–T7 |")
+    lines.append("")
+    lines.append("## Policy compliance (`gui_tooltip_policy.py`)")
+    lines.append("")
+    lines.append(
+        f"- Preservation checks (lore shrink / placeholder drop / blocked keys): "
+        f"**{policy['preservation_error_count']} blocking**"
+    )
+    lines.append(f"- `JAVA_LORE_ONLY_KEYS` ({len(JAVA_LORE_ONLY_KEYS)}): catalog must not define `lore`")
+    for row in policy["java_lore_only"]:
+        mark = "✓" if row["status"] == "ok" else "✗"
+        lines.append(f"  - {mark} `{row['key']}` — {row['note']}")
+    lines.append(f"- `REQUIRED_PLACEHOLDERS` ({len(REQUIRED_PLACEHOLDERS)}):")
+    for row in policy["required_placeholders"]:
+        mark = "✓" if row["status"] == "ok" else ("—" if row["status"] == "skip" else "✗")
+        lines.append(f"  - {mark} `{row['key']}` — {row['note']}")
+    if policy["shrink_risk"]:
+        lines.append(f"- Lore shrink advisories: **{len(policy['shrink_risk'])}** (see preservation rules)")
+    if policy["placeholder_risk"]:
+        lines.append(f"- Placeholder drop advisories: **{len(policy['placeholder_risk'])}**")
     lines.append("")
     if errors:
         lines.append("## Blocking issues")

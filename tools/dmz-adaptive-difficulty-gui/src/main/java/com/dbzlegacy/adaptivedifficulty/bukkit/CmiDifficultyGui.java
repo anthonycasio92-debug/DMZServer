@@ -344,11 +344,11 @@ public final class CmiDifficultyGui {
             }
             if (isEquipped) {
                 lore.addAll(GuiTooltips.lore("difficulty.titles.state_equipped",
-                        List.of(staff ? "&aCurrently equipped &8· click to unequip" : "&aCurrently equipped"),
+                        List.of(staff ? "&aCurrently equipped &8· tap to unequip" : "&aCurrently equipped"),
                         vars));
             } else if (earned) {
                 lore.addAll(GuiTooltips.lore("difficulty.titles.state_unlocked",
-                        List.of(staff ? "&aUnlocked &8· click to equip" : "&aUnlocked"), vars));
+                        List.of(staff ? "&aUnlocked &8· tap to equip" : "&aUnlocked"), vars));
             } else {
                 lore.addAll(GuiTooltips.lore("difficulty.titles.state_locked", List.of("&cLocked"), vars));
             }

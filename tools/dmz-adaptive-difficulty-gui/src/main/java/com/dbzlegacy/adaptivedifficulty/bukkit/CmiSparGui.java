@@ -264,7 +264,7 @@ public final class CmiSparGui {
                     warPending > 0 ? "&cDojo War &f(" + warPending + ")" : "&cDojo War",
                     "dojo_war",
                     "&7Declare · pending · banner",
-                    warPending > 0 ? "&ePending wars — click to respond" : "&8Same layout as Mentor Actions"));
+                    warPending > 0 ? "&ePending wars &8— tap to respond" : "&8Same layout as Mentor Actions"));
         }
         gui.addButton(pageBtn(player, 30, "spar.dojo.members", Material.PLAYER_HEAD, "&bMembers",
                 "dojo_members", "&7Season contributions"));

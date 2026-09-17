@@ -275,7 +275,7 @@ public final class SparChestGui implements Listener {
             put(holder, inv, 19, pageBtn(viewer, "spar.dojo.war", Material.DIAMOND_SWORD,
                     warPending > 0 ? "&cDojo War &f(" + warPending + ")" : "&cDojo War",
                     "&7Declare · pending · banner",
-                    warPending > 0 ? "&ePending wars — click to respond" : "&8Same layout as Mentor Actions"),
+                    warPending > 0 ? "&ePending wars &8— tap to respond" : "&8Same layout as Mentor Actions"),
                     SlotAction.page("dojo_war"));
         }
         put(holder, inv, 30, pageBtn(viewer, "spar.dojo.members", Material.PLAYER_HEAD, "&bMembers",
