@@ -63,7 +63,10 @@ public abstract class UpdateCharacterC2SMixin {
             return;
         }
         if (RaceChangeClassPickFlow.isActive(player)) {
-            DmzClassChangeCapture.store(player, data.snapshotMultiplierResources());
+            DmzClassChangeCapture.store(
+                    player,
+                    data.snapshotMultiplierResources(),
+                    RaceChangeClassPickFlow.priorFightingClass(player));
             return;
         }
         String current = "";
@@ -75,7 +78,7 @@ public abstract class UpdateCharacterC2SMixin {
         } catch (Throwable ignored) {
         }
         if (current == null || !packetClass.equalsIgnoreCase(current)) {
-            DmzClassChangeCapture.store(player, data.snapshotMultiplierResources());
+            DmzClassChangeCapture.store(player, data.snapshotMultiplierResources(), current);
         }
     }
 

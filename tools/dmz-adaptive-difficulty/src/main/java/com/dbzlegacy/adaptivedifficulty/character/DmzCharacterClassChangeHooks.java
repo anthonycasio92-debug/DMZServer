@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.character;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.ClassPermissionSync;
 import com.dragonminez.common.passives.PassiveRuntimeState;
@@ -96,8 +97,9 @@ public final class DmzCharacterClassChangeHooks {
         if (player == null || data == null) {
             return;
         }
-        clearPassiveRuntime(player);
-        float[] snap = DmzClassChangeCapture.take(player);
+        DmzClassChangeCapture.Pending pending = DmzClassChangeCapture.takePending(player);
+        float[] snap = pending == null ? null : pending.resources();
+        String classBeforePacket = pending == null ? "" : pending.fightingClassBefore();
         String pickedFromPacket = packetClassName == null ? "" : packetClassName.trim();
         boolean classPickSession = RaceChangeClassPickFlow.isActive(player);
         if (classPickSession) {
@@ -116,10 +118,33 @@ public final class DmzCharacterClassChangeHooks {
             return;
         }
         if (snap != null && !pickedFromPacket.isBlank()) {
+            if (fightingClassUnchangedSincePacket(player, classBeforePacket)) {
+                AdaptiveDifficultyMod.LOGGER.debug(
+                        "[{}] Skipping UpdateCharacter class follow-up for {} — fighting class still {}"
+                                + " (cosmetic / rejected packet class {})",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        player.m_7755_().getString(),
+                        classBeforePacket,
+                        pickedFromPacket);
+                return;
+            }
             String race = DmzProgression.race(player);
             onServicesRaceChangeApplied(
                     player, data, race, pickedFromPacket, snap, true, pickedFromPacket);
         }
+    }
+
+    /**
+     * DMZ may ignore {@code setCharacterClass} when the packet id is not in {@code getAllClasses()},
+     * but Legacy Mechanics used to still run {@code updateTransformationSkillLimits} — wiping forms.
+     */
+    private static boolean fightingClassUnchangedSincePacket(
+            ServerPlayer player, String classBeforePacket) {
+        if (classBeforePacket == null || classBeforePacket.isBlank()) {
+            return false;
+        }
+        String now = DmzProgression.fightingClass(player);
+        return now != null && classBeforePacket.equalsIgnoreCase(now);
     }
 
     private static void clearPassiveRuntime(ServerPlayer player) {

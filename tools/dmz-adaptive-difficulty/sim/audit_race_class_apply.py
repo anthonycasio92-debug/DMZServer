@@ -48,6 +48,11 @@ def main() -> int:
     check("Class picker stores resource backup", "pickerResourceSnapshot" in services and "resourceSnapshot" in pick, errors)
     check("Class pick finish passes prior fallback", "onServicesRaceChangeApplied" in hooks and "prior" in hooks, errors)
     check("UpdateCharacter captures snap at HEAD for pick session", "RaceChangeClassPickFlow.isActive" in update_mixin and "DmzClassChangeCapture.store" in update_mixin, errors)
+    check(
+        "UpdateCharacter skips class follow-up when fighting class unchanged",
+        "fightingClassUnchangedSincePacket" in hooks and "cosmetic" in hooks.lower(),
+        errors,
+    )
     check("CreateCharacter captures snap at HEAD when active", "DmzClassChangeCapture.store" in create_mixin and "RaceChangeCreationFlow.isActive" in create_mixin, errors)
     check("Mixin targets lambda handle not handle return", 'method = "lambda$handle$0"' in update_mixin and 'method = "lambda$handle$0"' in create_mixin, errors)
     check("0% wipe uses onServicesRaceChangeApplied on create", "onServicesRaceChangeApplied" in create, errors)
