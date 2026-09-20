@@ -7,6 +7,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.character.RaceChangeClassPickPacketGuard;
 import com.dbzlegacy.adaptivedifficulty.character.RaceHeadBoneSync;
 import com.dbzlegacy.adaptivedifficulty.character.ReskinSessionGuard;
+import com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion;
 import com.dragonminez.common.network.C2S.UpdateCharacterC2S;
 import com.dragonminez.common.stats.StatsData;
 import java.lang.reflect.Field;
@@ -110,6 +111,7 @@ public abstract class UpdateCharacterC2SMixin {
                 } catch (Throwable ignored) {
                 }
                 DmzCharacterClassChangeHooks.onDmzPacketFinished(player, data, packetClass);
+                AndroidConversion.stripIfRaceIneligible(player, DmzProgression.race(player));
             } else {
                 RaceChangeClassPickFlow.clear(player);
             }

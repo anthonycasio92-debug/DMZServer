@@ -350,6 +350,8 @@ public final class CharacterServicesSystem {
                     float[] pickerResourceSnapshot = data.snapshotMultiplierResources();
                     RaceChangeClassMapper.commitFightingClassForRace(
                             data, raceId, "", priorClassBeforeRaceChange);
+                    com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion.stripIfRaceIneligible(
+                            player, raceId);
                     try {
                         data.updateTransformationSkillLimits(raceId);
                     } catch (Throwable ignored) {

@@ -663,6 +663,9 @@ def main() -> int:
     check("Android gate via androidforms TP costs", "getFormSkillTpCosts" in android and "ANDROID_FORM_GROUP" in android)
     check("Android eligibleRaceHint", "eligibleRaceHint" in android and "configuredAndroidRaceIds" in android)
     check("Android isAndroidUpgraded helper", "public static boolean isAndroidUpgraded(" in android)
+    check("Android strip on ineligible race", "stripIfRaceIneligible(" in android)
+    race_hooks = read(SRC / "com/dbzlegacy/adaptivedifficulty/character/DmzCharacterClassChangeHooks.java")
+    check("Android strip on services race change", "stripIfRaceIneligible" in race_hooks)
     check("Android deny message not humans-only", "Only races with android forms (humans)" not in android)
     check("GUI lists all Android-capable races", "Frost Demon" in prog_chest and "Viltrumite" in prog_chest
           and "Frost Demon" in prog_cmi)

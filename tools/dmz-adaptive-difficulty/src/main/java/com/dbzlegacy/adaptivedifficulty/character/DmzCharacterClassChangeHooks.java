@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.character;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.ClassPermissionSync;
+import com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion;
 import com.dragonminez.common.passives.PassiveRuntimeState;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.server.level.ServerPlayer;
@@ -85,6 +86,7 @@ public final class DmzCharacterClassChangeHooks {
         }
         DmzFightingClassStatsSync.afterFightingClassChange(player, data, preserveExactPrimaries);
         ClassPermissionSync.syncAuthoritativeClassChange(player);
+        AndroidConversion.stripIfRaceIneligible(player, newRaceId);
     }
 
     /**

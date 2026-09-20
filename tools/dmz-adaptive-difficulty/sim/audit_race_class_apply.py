@@ -56,6 +56,12 @@ def main() -> int:
     check("CreateCharacter captures snap at HEAD when active", "DmzClassChangeCapture.store" in create_mixin and "RaceChangeCreationFlow.isActive" in create_mixin, errors)
     check("Mixin targets lambda handle not handle return", 'method = "lambda$handle$0"' in update_mixin and 'method = "lambda$handle$0"' in create_mixin, errors)
     check("0% wipe uses onServicesRaceChangeApplied on create", "onServicesRaceChangeApplied" in create, errors)
+    check(
+        "Android stripped when race ineligible",
+        "stripIfRaceIneligible" in hooks and "stripIfRaceIneligible" in create,
+        errors,
+    )
+    check("Android stripped on class-picker race commit", "stripIfRaceIneligible" in services, errors)
     check("Packet guards canonicalize class", "canonicalPacketClass" in read(CHAR / "RaceChangeClassPickPacketGuard.java"), errors)
 
     mapper = subprocess.run(

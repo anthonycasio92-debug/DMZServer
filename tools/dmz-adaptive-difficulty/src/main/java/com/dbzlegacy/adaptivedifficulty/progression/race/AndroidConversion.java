@@ -48,6 +48,36 @@ public final class AndroidConversion {
 
     private AndroidConversion() {}
 
+    /**
+     * Clears the Gero Android upgrade when the player's race no longer has {@code androidforms}
+     * configured (e.g. paid race change to Namekian). No-op when not upgraded or still eligible.
+     */
+    public static void stripIfRaceIneligible(ServerPlayer player, String raceId) {
+        if (player == null) {
+            return;
+        }
+        if (!isAndroidUpgraded(player)) {
+            return;
+        }
+        String race = raceId == null || raceId.isBlank() ? "" : raceId.trim();
+        if (race.isBlank()) {
+            try {
+                Character ch = DmzProgression.character(player);
+                race = ch == null ? "" : raceName(ch);
+            } catch (Throwable ignored) {
+                race = "";
+            }
+        }
+        if (race.isBlank() || raceAllowsAndroidForms(race)) {
+            return;
+        }
+        StatsData data = DmzProgression.stats(player);
+        if (data == null) {
+            return;
+        }
+        doRemove(player, data, true);
+    }
+
     /** True when the player has the Gero Android upgrade flag. */
     public static boolean isAndroidUpgraded(ServerPlayer player) {
         if (player == null) {
@@ -218,7 +248,7 @@ public final class AndroidConversion {
                     && pending.until > now
                     && target.m_20148_().equals(pending.target)) {
                 clearPending(actor.m_20148_());
-                return doRemove(target, data);
+                return doRemove(target, data, false);
             }
 
             PENDING_REMOVE.put(actor.m_20148_(), new PendingRemove(target.m_20148_(), now + CONFIRM_MS));
@@ -233,12 +263,14 @@ public final class AndroidConversion {
         }
     }
 
-    private static String doRemove(ServerPlayer player, StatsData data) {
+    private static String doRemove(ServerPlayer player, StatsData data, boolean automaticRaceChange) {
         Character character = data.getCharacter();
         Status status = data.getStatus();
         Skills skills = data.getSkills();
         if (character == null || status == null || skills == null) {
-            return "§c[Android] Missing character/status/skills data.";
+            return automaticRaceChange
+                    ? ""
+                    : "§c[Android] Missing character/status/skills data.";
         }
 
         status.setAndroidUpgraded(false);
@@ -292,11 +324,31 @@ public final class AndroidConversion {
         }
         DmzSkillUtil.sync(player);
 
-        DmzRewards.msg(player, LmChat.ok("Android", "Upgrade removed. §7You are no longer an upgraded Android."));
-        DmzRewards.msg(player, LmChat.info("Android", "Race, stats, skills, and progression were preserved."));
-        SystemTelemetry.log("progression", "android_remove", player, null,
-                Map.of("race", race == null ? "" : race));
-        return "§a[Android] Upgrade removed for §f" + player.m_7755_().getString() + "§a.";
+        if (automaticRaceChange) {
+            DmzRewards.msg(
+                    player,
+                    LmChat.info(
+                            "Android",
+                            "Upgrade removed — §f"
+                                    + prettyRace(race)
+                                    + " §7does not support Android forms."));
+        } else {
+            DmzRewards.msg(player, LmChat.ok("Android", "Upgrade removed. §7You are no longer an upgraded Android."));
+            DmzRewards.msg(player, LmChat.info("Android", "Race, stats, skills, and progression were preserved."));
+        }
+        SystemTelemetry.log(
+                "progression",
+                "android_remove",
+                player,
+                null,
+                Map.of(
+                        "race",
+                        race == null ? "" : race,
+                        "automatic",
+                        automaticRaceChange ? "race_change" : "manual"));
+        return automaticRaceChange
+                ? ""
+                : "§a[Android] Upgrade removed for §f" + player.m_7755_().getString() + "§a.";
     }
 
     private static void ensureSkillAtZero(Skills skills, String id) {
