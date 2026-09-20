@@ -53,18 +53,7 @@ public abstract class StatsDataMixin {
             if (personal <= 0) {
                 return;
             }
-            int overhaul = 0;
-            Integer returned = cir.getReturnValue();
-            if (returned != null) {
-                overhaul = Math.max(0, returned);
-            }
-            int cap = personal;
-            if (overhaul > personal && overhaul <= PrestigePointsSystem.ABSOLUTE_LEVEL_CAP) {
-                cap = overhaul;
-            } else if (overhaul < personal) {
-                cap = personal;
-            }
-            cir.setReturnValue(cap);
+            cir.setReturnValue(personal);
         } catch (Throwable ignored) {
             // Prestige system / NBT unavailable — keep server default.
         }

@@ -11,7 +11,7 @@
     "initialLevelCap": 100000,
     "maxPrestigeCount": 10,
     "prestigeHexStatChange": true,
-    "usePrestigeMaxAttribute": true,
+    "usePrestigeMaxAttribute": false,
     "scaleBonusPerPrestige": 0.0,
     "TPBonusPerPrestige": 0.0,
     "masteryBonusPerPrestige": 0.0,

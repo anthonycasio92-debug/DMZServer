@@ -2,10 +2,12 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.dbzlegacy.adaptivedifficulty.mixin",
+  "plugin": "com.dbzlegacy.adaptivedifficulty.mixin.LegacyMechanicsMixinPlugin",
   "compatibilityLevel": "JAVA_17",
   "refmap": "legacymechanics.refmap.json",
   "mixins": [
     "StatsDataMixin",
+    "DmzRevampPrestigeCapMixin",
     "UpdateCharacterC2SMixin",
     "CreateCharacterC2SMixin"
   ],
