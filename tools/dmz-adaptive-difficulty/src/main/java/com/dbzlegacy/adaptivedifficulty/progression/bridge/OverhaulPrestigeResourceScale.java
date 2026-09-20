@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.progression.bridge;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
@@ -34,6 +35,9 @@ public final class OverhaulPrestigeResourceScale {
         UUID id = player.m_20148_();
         Resources res = data.getResources();
         boolean changed = false;
+        if (res != null) {
+            changed |= DmzResourcePoolClamp.clamp(data);
+        }
 
         Float prevE = LAST_MAX_ENERGY.get(id);
         Float prevS = LAST_MAX_STAMINA.get(id);
@@ -43,8 +47,15 @@ public final class OverhaulPrestigeResourceScale {
         if (prevS != null) {
             changed |= scaleOnMaxIncrease(data, prevS, false);
         }
+        if (prevE != null) {
+            changed |= scaleOnMaxDecrease(data, prevE, true);
+        }
+        if (prevS != null) {
+            changed |= scaleOnMaxDecrease(data, prevS, false);
+        }
         if (res != null) {
             changed |= restoreIfStuckAtOldCap(player, data, res);
+            changed |= DmzResourcePoolClamp.clamp(data);
         }
         if (changed) {
             afterPoolsChanged(player, data);
@@ -110,6 +121,32 @@ public final class OverhaulPrestigeResourceScale {
         if (next <= cur + 0.01f) {
             return false;
         }
+        if (energy) {
+            res.setCurrentEnergy(next);
+        } else {
+            res.setCurrentStamina(next);
+        }
+        return true;
+    }
+
+    /** Max dropped (form off / prestige snapshot) — pull current down to the new cap. */
+    private static boolean scaleOnMaxDecrease(StatsData data, float maxBefore, boolean energy) {
+        if (data == null || maxBefore <= 0.5f) {
+            return false;
+        }
+        Resources res = data.getResources();
+        if (res == null) {
+            return false;
+        }
+        float maxAfter = energy ? safeMax(data.getMaxEnergy()) : safeMax(data.getMaxStamina());
+        if (maxAfter >= maxBefore - 0.5f) {
+            return false;
+        }
+        float cur = energy ? res.getCurrentEnergy() : res.getCurrentStamina();
+        if (cur <= maxAfter + 0.08f) {
+            return false;
+        }
+        float next = Math.min(cur, maxAfter);
         if (energy) {
             res.setCurrentEnergy(next);
         } else {
