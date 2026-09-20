@@ -37,6 +37,11 @@ public final class PrestigeSystem {
     private static final int FACTION_HELD_ID = 4;
 
     private static final String KEY_TOTAL = "prestige_total_completed";
+    /**
+     * When set, {@link #getCompleted} returns stored {@link #KEY_TOTAL} only — staff
+     * {@code /padmin completed set 0} is not bumped by DMZ skill or shop inference.
+     */
+    private static final String KEY_TOTAL_STAFF_OVERRIDE = "prestige_total_staff_override";
     /** Highest Need already earned — never let Need fall below this (capped at personal cap). */
     private static final String KEY_NEED_FLOOR = "prestige_need_floor";
     private static final String KEY_HELD = "lm_prestige_held";
@@ -339,6 +344,9 @@ public final class PrestigeSystem {
             return 0;
         }
         CompoundTag tag = PersistentDataAccess.get(player);
+        if (staffOverrideActive(tag)) {
+            return Math.max(0, readStoredInt(tag, KEY_TOTAL));
+        }
         boolean hasKey = PersistentDataAccess.isWritable(tag) && tag.m_128441_(KEY_TOTAL);
         int stored = readStoredInt(tag, KEY_TOTAL);
 
@@ -426,6 +434,34 @@ public final class PrestigeSystem {
         }
     }
 
+    private static boolean staffOverrideActive(CompoundTag tag) {
+        return PersistentDataAccess.isWritable(tag) && tag.m_128441_(KEY_TOTAL_STAFF_OVERRIDE)
+                && tag.m_128471_(KEY_TOTAL_STAFF_OVERRIDE);
+    }
+
+    private static void clearStaffOverride(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128473_(KEY_TOTAL_STAFF_OVERRIDE);
+        }
+    }
+
+    private static void alignNeedFloorForStaff(ServerPlayer player, int completed) {
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (!PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
+        if (completed <= 0) {
+            tag.m_128473_(KEY_NEED_FLOOR);
+            return;
+        }
+        int cap = PrestigePointsSystem.effectiveMaxLevel(player);
+        tag.m_128405_(KEY_NEED_FLOOR, requiredLevel(completed, cap));
+    }
+
     public static int getHeld(ServerPlayer player) {
         int nbt = 0;
         CompoundTag tag = PersistentDataAccess.get(player);
@@ -441,7 +477,27 @@ public final class PrestigeSystem {
     }
 
     private static void setCompleted(ServerPlayer player, int value) {
+        clearStaffOverride(player);
         setCompletedPublic(player, value);
+    }
+
+    /** Staff {@code /padmin completed …} — value sticks even when DMZ skill / shop would infer higher. */
+    public static void setCompletedStaff(ServerPlayer player, int value) {
+        if (player == null) {
+            return;
+        }
+        int clamped = Math.max(0, value);
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128359_(KEY_TOTAL, Integer.toString(clamped));
+            tag.m_128379_(KEY_TOTAL_STAFF_OVERRIDE, true);
+            alignNeedFloorForStaff(player, clamped);
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(player);
+        } catch (Throwable ignored) {
+        }
     }
 
     /** Public for staff admin tools. */

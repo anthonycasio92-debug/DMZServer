@@ -452,6 +452,7 @@ public final class DifficultyEvents {
         }
         // Prestige lifetime / held tokens stored at the persistent-data root.
         copyTagIfPresent(from, to, "prestige_total_completed");
+        copyTagIfPresent(from, to, "prestige_total_staff_override");
         copyTagIfPresent(from, to, "prestige_need_floor");
         copyTagIfPresent(from, to, "lm_prestige_held");
         copyTagIfPresent(from, to, "lm_prestige_confirm_until");

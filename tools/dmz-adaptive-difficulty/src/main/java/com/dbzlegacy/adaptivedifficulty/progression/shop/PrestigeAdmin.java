@@ -113,7 +113,7 @@ public final class PrestigeAdmin {
         if (next == null) {
             return "§cUsage: completed <player> <set|add|remove> <n>";
         }
-        PrestigeSystem.setCompletedPublic(target, next);
+        PrestigeSystem.setCompletedStaff(target, next);
         log(target, "admin_completed", mode, before, next);
         return "§aCompleted prestige §f" + before + " §7→ §f" + PrestigeSystem.getCompleted(target)
                 + " §8| next need §e" + DmzRewards.formatWhole(PrestigeSystem.requiredLevel(target))
