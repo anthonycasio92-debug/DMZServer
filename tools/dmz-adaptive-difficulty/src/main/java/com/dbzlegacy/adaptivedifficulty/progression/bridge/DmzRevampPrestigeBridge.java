@@ -17,8 +17,8 @@ import net.minecraftforge.fml.ModList;
 
 /**
  * Keeps dmzrevamp Overhaul {@link com.dmzrevamp.revamp.prestige.PrestigeSystem} prestige
- * count aligned with Legacy Mechanics held / Fabled Prestige as {@code n − 1}
- * (Fabled class starts at level 1), not lifetime completed.
+ * count aligned 1:1 with Legacy Mechanics held (not lifetime completed,
+ * not Fabled class level − 1).
  * Playable stat totals come from {@link com.dbzlegacy.adaptivedifficulty.mixin.DmzRevampPrestigeCapMixin}.
  */
 public final class DmzRevampPrestigeBridge {

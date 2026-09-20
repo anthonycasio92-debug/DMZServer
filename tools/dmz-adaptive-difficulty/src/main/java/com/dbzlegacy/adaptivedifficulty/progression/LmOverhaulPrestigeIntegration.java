@@ -5,7 +5,6 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.OverhaulPrestigeResourceScale;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dragonminez.common.stats.StatsData;
@@ -131,29 +130,20 @@ public final class LmOverhaulPrestigeIntegration {
                 lmCfg != null && lmCfg.enableOverhaulPrestigeIntegration);
     }
 
-    /**
-     * Fabled Prestige class starts at level 1. Overhaul count is 0-based, same as
-     * DMZ {@code prestige} skill and CNPC faction 4: {@code n → max(0, n − 1)}.
-     */
-    public static int toOverhaulCount(int oneBasedLevel) {
-        return Math.max(0, Math.min(OVERHAUL_MAX_PRESTIGE, oneBasedLevel - 1));
+    /** Held and Overhaul prestige are the same number (0…10). */
+    public static int toOverhaulCount(int held) {
+        return Math.max(0, Math.min(OVERHAUL_MAX_PRESTIGE, held));
     }
 
     /** Invert {@link #toOverhaulCount} for Overhaul UI → LM held. */
     public static int heldFromOverhaulCount(int overhaulCount) {
-        int n = Math.max(0, overhaulCount) + 1;
-        return Math.max(0, Math.min(PrestigeSystem.maxHeld(), n));
+        return Math.max(0, Math.min(PrestigeSystem.maxHeld(), Math.max(0, overhaulCount)));
     }
 
-    /** Held wallet vs Fabled class — both 1-based floors — then {@code n − 1} for Overhaul. */
+    /** Overhaul Statistics count = LM held (1:1). Fabled class level is not offset. */
     public static int overhaulCountFromHeld(ServerPlayer player) {
         int held = player == null ? 0 : PrestigeSystem.getHeld(player);
-        int fabled = 0;
-        try {
-            fabled = PrestigeSkillSync.fabledPrestigeLevel(player);
-        } catch (Throwable ignored) {
-        }
-        return toOverhaulCount(Math.max(held, fabled));
+        return toOverhaulCount(held);
     }
 
     /** After native {@link com.dmzrevamp.revamp.prestige.PrestigeService#tryPrestige}. */
