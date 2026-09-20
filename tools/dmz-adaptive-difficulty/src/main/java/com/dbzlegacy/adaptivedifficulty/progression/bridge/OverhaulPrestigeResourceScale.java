@@ -95,6 +95,10 @@ public final class OverhaulPrestigeResourceScale {
         if (player == null || data == null) {
             return;
         }
+        if (LmOverhaulPrestigeIntegration.overhaulPrestigeEnabled()) {
+            pulse(player);
+            return;
+        }
         boolean changed = scaleOnMaxIncrease(data, maxEnergyBefore, true);
         changed |= scaleOnMaxIncrease(data, maxStaminaBefore, false);
         if (changed) {

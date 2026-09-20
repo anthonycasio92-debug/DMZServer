@@ -15,7 +15,6 @@
     "StatsDataGetPlayerMixin",
     "StatsDataSecondaryPlayerMixin",
     "StatsDataPrestigePoolMixin",
-    "StatsDataPoolMaxHookMixin",
     "StatsDataRestoreMultiplierClampMixin",
     "ResourcesEnergyDrainGuardMixin",
     "ResourcesPoolClampMixin",
