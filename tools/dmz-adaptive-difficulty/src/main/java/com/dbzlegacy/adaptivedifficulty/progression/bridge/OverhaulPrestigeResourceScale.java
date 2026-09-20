@@ -18,6 +18,7 @@ import net.minecraft.server.level.ServerPlayer;
 public final class OverhaulPrestigeResourceScale {
     private static final Map<UUID, Float> LAST_MAX_ENERGY = new ConcurrentHashMap<>();
     private static final Map<UUID, Float> LAST_MAX_STAMINA = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> LAST_RESTORE_MS = new ConcurrentHashMap<>();
 
     private OverhaulPrestigeResourceScale() {}
 
@@ -31,14 +32,19 @@ public final class OverhaulPrestigeResourceScale {
             return;
         }
         UUID id = player.m_20148_();
+        Resources res = data.getResources();
+        boolean changed = false;
+
         Float prevE = LAST_MAX_ENERGY.get(id);
         Float prevS = LAST_MAX_STAMINA.get(id);
-        boolean changed = false;
         if (prevE != null) {
             changed |= scaleOnMaxIncrease(data, prevE, true);
         }
         if (prevS != null) {
             changed |= scaleOnMaxIncrease(data, prevS, false);
+        }
+        if (res != null) {
+            changed |= restoreIfStuckAtOldCap(player, data, res);
         }
         if (changed) {
             afterPoolsChanged(player, data);
@@ -53,6 +59,7 @@ public final class OverhaulPrestigeResourceScale {
         }
         LAST_MAX_ENERGY.remove(id);
         LAST_MAX_STAMINA.remove(id);
+        LAST_RESTORE_MS.remove(id);
     }
 
     /**
@@ -109,6 +116,54 @@ public final class OverhaulPrestigeResourceScale {
             res.setCurrentStamina(next);
         }
         return true;
+    }
+
+    /**
+     * HUD max already includes Overhaul/form (e.g. 30912) while current is still the old full
+     * bar (15465). {@link StatsData#restoreMultiplierGains} adds (newMax - oldMax).
+     */
+    private static boolean restoreIfStuckAtOldCap(ServerPlayer player, StatsData data, Resources res) {
+        float maxE = safeMax(data.getMaxEnergy());
+        float maxS = safeMax(data.getMaxStamina());
+        float curE = res.getCurrentEnergy();
+        float curS = res.getCurrentStamina();
+        boolean energyStuck = looksLikeOldFullCap(curE, maxE);
+        boolean staminaStuck = looksLikeOldFullCap(curS, maxS);
+        if (!energyStuck && !staminaStuck) {
+            return false;
+        }
+        UUID id = player.m_20148_();
+        long now = System.currentTimeMillis();
+        Long last = LAST_RESTORE_MS.get(id);
+        if (last != null && now - last < 8_000L) {
+            return false;
+        }
+        LAST_RESTORE_MS.put(id, now);
+        try {
+            float[] snap = data.snapshotMultiplierResources();
+            if (snap == null || snap.length < 3) {
+                snap = new float[] {data.getMaxHealth(), maxE, maxS};
+            }
+            if (energyStuck) {
+                snap[1] = curE;
+            }
+            if (staminaStuck) {
+                snap[2] = curS;
+            }
+            data.restoreMultiplierGains(player, snap);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static boolean looksLikeOldFullCap(float current, float max) {
+        if (current < 8f || max <= current + 8f) {
+            return false;
+        }
+        double ratio = max / current;
+        long nearest = Math.round(ratio);
+        return nearest >= 2L && Math.abs(ratio - nearest) < 0.02;
     }
 
     private static void afterPoolsChanged(ServerPlayer player, StatsData data) {

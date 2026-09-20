@@ -11,8 +11,8 @@
     "DmzRevampPrestigeCapMixin",
     "UpdateCharacterC2SMixin",
     "CreateCharacterC2SMixin",
-    "ResourcesEnergyDrainGuardMixin",
-    "ResourcesStaminaDrainGuardMixin"
+    "StatsDataGetPlayerMixin",
+    "ResourcesEnergyDrainGuardMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -2,7 +2,6 @@ package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.EnergyManaSync;
-import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -12,13 +11,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * DMZ owns ki while {@link DifficultyConfig#enableEnergyManaSync} is on. Block small drains below
- * max (Fabled mirror / flicker) so regen can climb to the scaled cap.
+ * Blocks Fabled/CNPC mirror {@code removeEnergy} while DMZ owns the ki pool.
  */
 @Mixin(value = Resources.class, remap = false)
 public abstract class ResourcesEnergyDrainGuardMixin {
-
-    private static final float SMALL_DRAIN_CAP = 64f;
 
     @Inject(method = "removeEnergy", at = @At("HEAD"), cancellable = true, remap = false)
     private void lm$blockFabledMirrorDrain(float amount, CallbackInfo ci) {
@@ -26,57 +22,18 @@ public abstract class ResourcesEnergyDrainGuardMixin {
             ci.cancel();
             return;
         }
-        Resources self = (Resources) (Object) this;
-        Player player = self.getPlayer();
-        if (!(player instanceof ServerPlayer server)) {
-            return;
-        }
         if (!DifficultyConfig.get().enableEnergyManaSync) {
             return;
         }
-        StatsData data = self.getStatsData();
-        if (data == null) {
-            return;
+        Resources self = (Resources) (Object) this;
+        Player player = self.getPlayer();
+        if (player == null && self.getStatsData() != null) {
+            player = self.getStatsData().getPlayer();
         }
-        float cur = self.getCurrentEnergy();
-        float max = data.getMaxEnergy();
-        if (max > 0.5f && cur < max - 0.15f && amount <= SMALL_DRAIN_CAP) {
-            ci.cancel();
+        if (!(player instanceof ServerPlayer server)) {
             return;
         }
         if (EnergyManaSync.shouldBlockFabledMirrorDrain(server, self, amount)) {
-            ci.cancel();
-        }
-    }
-
-    @Inject(method = "setCurrentEnergy", at = @At("HEAD"), cancellable = true, remap = false)
-    private void lm$blockDownwardMirrorSet(float value, CallbackInfo ci) {
-        if (!DifficultyConfig.get().enableEnergyManaSync) {
-            return;
-        }
-        Resources self = (Resources) (Object) this;
-        Player player = self.getPlayer();
-        if (!(player instanceof ServerPlayer server)) {
-            return;
-        }
-        float cur = self.getCurrentEnergy();
-        if (value >= cur - 0.01f) {
-            return;
-        }
-        float drain = cur - value;
-        if (drain <= 0f || drain > SMALL_DRAIN_CAP) {
-            return;
-        }
-        StatsData data = self.getStatsData();
-        if (data == null) {
-            return;
-        }
-        float max = data.getMaxEnergy();
-        if (max > 0.5f && cur < max - 0.15f) {
-            ci.cancel();
-            return;
-        }
-        if (EnergyManaSync.shouldBlockFabledMirrorDrain(server, self, drain)) {
             ci.cancel();
         }
     }
