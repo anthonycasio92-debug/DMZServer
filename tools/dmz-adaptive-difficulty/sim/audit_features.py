@@ -1320,7 +1320,12 @@ def main() -> int:
     bridge = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/DmzRevampPrestigeBridge.java")
     check("Overhaul prestige sync bridge", "syncFromLegacy" in bridge and "setCount" in bridge)
     check("Overhaul prestige count syncs from held",
-          "getHeld" in bridge and "getCompleted" not in bridge)
+          "overhaulCountFromHeld" in bridge and "getCompleted" not in bridge)
+    integration = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/LmOverhaulPrestigeIntegration.java")
+    check("Overhaul prestige is Fabled n-1",
+          "toOverhaulCount" in integration
+          and "oneBasedLevel - 1" in integration
+          and "overhaulCountFromHeld" in integration)
     check("attr multi bonus default off", "enableAttrMultiBonus = false" in read(CFG))
     dmz_lvl = read(ROOT / "config" / "dmzrevamp" / "LevelingRevamp.json")
     check("Overhaul initialLevelCap 150k", '"initialLevelCap": 150000' in dmz_lvl)

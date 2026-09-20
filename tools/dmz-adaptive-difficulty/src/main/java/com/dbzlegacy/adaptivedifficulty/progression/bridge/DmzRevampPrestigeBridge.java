@@ -17,7 +17,8 @@ import net.minecraftforge.fml.ModList;
 
 /**
  * Keeps dmzrevamp Overhaul {@link com.dmzrevamp.revamp.prestige.PrestigeSystem} prestige
- * count aligned with Legacy Mechanics <b>held</b> prestiges (wallet / scale), not lifetime completed.
+ * count aligned with Legacy Mechanics held / Fabled Prestige as {@code n − 1}
+ * (Fabled class starts at level 1), not lifetime completed.
  * Playable stat totals come from {@link com.dbzlegacy.adaptivedifficulty.mixin.DmzRevampPrestigeCapMixin}.
  */
 public final class DmzRevampPrestigeBridge {
@@ -79,9 +80,8 @@ public final class DmzRevampPrestigeBridge {
         if (data == null) {
             return;
         }
-        int held = Math.max(0, Math.min(
-                com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration.OVERHAUL_MAX_PRESTIGE,
-                PrestigeSystem.getHeld(player)));
+        int held = com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration
+                .overhaulCountFromHeld(player);
         if (!ensureMethods()) {
             return;
         }

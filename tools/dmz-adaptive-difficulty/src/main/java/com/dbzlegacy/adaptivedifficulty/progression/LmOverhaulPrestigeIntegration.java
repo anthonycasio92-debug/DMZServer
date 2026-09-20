@@ -5,6 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.OverhaulPrestigeResourceScale;
+import com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dragonminez.common.stats.StatsData;
@@ -129,6 +130,31 @@ public final class LmOverhaulPrestigeIntegration {
                 lmCfg != null && lmCfg.enableOverhaulPrestigeIntegration);
     }
 
+    /**
+     * Fabled Prestige class starts at level 1. Overhaul count is 0-based, same as
+     * DMZ {@code prestige} skill and CNPC faction 4: {@code n → max(0, n − 1)}.
+     */
+    public static int toOverhaulCount(int oneBasedLevel) {
+        return Math.max(0, Math.min(OVERHAUL_MAX_PRESTIGE, oneBasedLevel - 1));
+    }
+
+    /** Invert {@link #toOverhaulCount} for Overhaul UI → LM held. */
+    public static int heldFromOverhaulCount(int overhaulCount) {
+        int n = Math.max(0, overhaulCount) + 1;
+        return Math.max(0, Math.min(PrestigeSystem.maxHeld(), n));
+    }
+
+    /** Held wallet vs Fabled class — both 1-based floors — then {@code n − 1} for Overhaul. */
+    public static int overhaulCountFromHeld(ServerPlayer player) {
+        int held = player == null ? 0 : PrestigeSystem.getHeld(player);
+        int fabled = 0;
+        try {
+            fabled = PrestigeSkillSync.fabledPrestigeLevel(player);
+        } catch (Throwable ignored) {
+        }
+        return toOverhaulCount(Math.max(held, fabled));
+    }
+
     /** After native {@link com.dmzrevamp.revamp.prestige.PrestigeService#tryPrestige}. */
     public static void syncLmWalletFromOverhaulCount(ServerPlayer player) {
         if (player == null || !integrationActive()) {
@@ -140,13 +166,17 @@ public final class LmOverhaulPrestigeIntegration {
         }
         int overhaul = Math.max(0, Math.min(
                 OVERHAUL_MAX_PRESTIGE, DmzRevampPrestigeBridge.overhaulCount(data)));
-        int held = PrestigeSystem.getHeld(player);
-        if (overhaul <= held) {
+        int mapped = overhaulCountFromHeld(player);
+        if (overhaul <= mapped) {
             return;
         }
-        int delta = overhaul - held;
-        PrestigeSystem.setHeldPublic(player, overhaul);
-        PrestigeSystem.setCompletedPublic(player, PrestigeSystem.getCompleted(player) + delta);
+        int newHeld = heldFromOverhaulCount(overhaul);
+        int held = PrestigeSystem.getHeld(player);
+        int delta = Math.max(0, newHeld - held);
+        PrestigeSystem.setHeldPublic(player, newHeld);
+        if (delta > 0) {
+            PrestigeSystem.setCompletedPublic(player, PrestigeSystem.getCompleted(player) + delta);
+        }
         try {
             com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync.sync(player);
         } catch (Throwable ignored) {
