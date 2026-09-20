@@ -19,8 +19,7 @@
     "StatsDataRestoreMultiplierClampMixin",
     "ResourcesEnergyDrainGuardMixin",
     "ResourcesPoolClampMixin",
-    "ResourcesLoadClampMixin",
-    "ResourceSyncS2CClampMixin"
+    "ResourcesLoadClampMixin"
   ],
   "injectors": {
     "defaultRequire": 1
