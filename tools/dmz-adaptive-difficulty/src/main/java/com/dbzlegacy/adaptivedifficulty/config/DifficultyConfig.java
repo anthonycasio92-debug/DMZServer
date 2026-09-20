@@ -259,6 +259,14 @@ public final class DifficultyConfig {
     public boolean enableSkillUnlockService = true;
     public boolean enablePrestigeSystem = true;
     /**
+     * Ki/stamina max scale from lifetime LM completed prestiges ({@code 1 + count × perCompleted}).
+     * Level cap / stat totals stay LM breakthrough rules — keep {@code LevelingRevamp.json}
+     * {@code Prestige.enabled} false; do not use Overhaul rebirth.
+     */
+    public boolean enablePrestigeResourceScaling = true;
+    /** +1.0 => double ki/stamina max at 1 prestige, triple at 2, etc. (Overhaul-compatible). */
+    public double prestigeResourceScalePerCompleted = 1.0;
+    /**
      * Donator Skill Check UI ({@code /skillcheck}, CNPC interact / trigger 21).
      * Staff always have access; others need {@link #skillCheckPermission}.
      */

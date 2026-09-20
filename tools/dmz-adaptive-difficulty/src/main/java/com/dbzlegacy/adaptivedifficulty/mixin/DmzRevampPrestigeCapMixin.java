@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
+import com.dbzlegacy.adaptivedifficulty.progression.LmPrestigeResourceScale;
 import com.dragonminez.common.stats.StatsData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -39,6 +40,22 @@ public abstract class DmzRevampPrestigeCapMixin {
     private static void lm$blockOverhaulRebirth(StatsData data, CallbackInfoReturnable<Boolean> cir) {
         if (lmOwnsPrestige()) {
             cir.setReturnValue(false);
+        }
+    }
+
+    /**
+     * Overhaul {@code scaleMultiplier} is gated on {@code Prestige.enabled} in JSON (off on live).
+     * LM applies the same math from lifetime completed prestiges for fusion/revamp hooks without
+     * turning on the Overhaul prestige ladder or level-cap rules.
+     */
+    @Inject(method = "scaleMultiplier", at = @At("HEAD"), cancellable = true, remap = false)
+    private static void lm$prestigeScaleMultiplier(StatsData data, CallbackInfoReturnable<Double> cir) {
+        if (!lmOwnsPrestige() || data == null) {
+            return;
+        }
+        double mult = LmPrestigeResourceScale.multiplier(data);
+        if (mult > 1.000_001) {
+            cir.setReturnValue(mult);
         }
     }
 

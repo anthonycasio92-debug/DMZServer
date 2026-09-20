@@ -13,6 +13,7 @@
     "CreateCharacterC2SMixin",
     "StatsDataGetPlayerMixin",
     "StatsDataSecondaryPlayerMixin",
+    "StatsDataPrestigePoolMixin",
     "ResourcesEnergyDrainGuardMixin"
   ],
   "injectors": {
