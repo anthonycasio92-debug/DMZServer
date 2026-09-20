@@ -20,8 +20,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * <p>{@code remap = false} is required — DMZ methods are not obfuscated (same pattern as
  * {@code dmz_mohist_melee_fix} StatsData mixins). With remap left on, this inject never
  * applied and the personal cap stayed stuck at the server default.
+ *
+ * <p>{@code priority = 1100} runs after {@code dmzrevamp}'s {@code StatsDataLevelingRevampMixin}
+ * (default 1000), which otherwise leaves prestige-0 players at Overhaul's stock
+ * {@code initialLevelCap} of 50k instead of the normal 100k.
  */
-@Mixin(value = StatsData.class, remap = false)
+@Mixin(value = StatsData.class, remap = false, priority = 1100)
 public abstract class StatsDataMixin {
     @Shadow(remap = false)
     public abstract Player getPlayer();
@@ -35,7 +39,6 @@ public abstract class StatsDataMixin {
         } catch (Throwable t) {
             return;
         }
-        Integer serverMax = cir.getReturnValue();
         Player p;
         try {
             p = getPlayer();
@@ -50,9 +53,7 @@ public abstract class StatsDataMixin {
             if (personal <= 0) {
                 return;
             }
-            if (serverMax == null || personal != serverMax.intValue()) {
-                cir.setReturnValue(personal);
-            }
+            cir.setReturnValue(personal);
         } catch (Throwable ignored) {
             // Prestige system / NBT unavailable — keep server default.
         }

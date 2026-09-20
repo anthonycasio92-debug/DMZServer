@@ -1,0 +1,27 @@
+{
+  "levelsAndAttributes": {
+    "enabled": true,
+    "maxLevel": 500000,
+    "maxAttribute": -1,
+    "levelUpPerPoints": 6,
+    "customHexStatCurve": true
+  },
+  "Prestige": {
+    "enabled": true,
+    "initialLevelCap": 100000,
+    "maxPrestigeCount": 10,
+    "prestigeHexStatChange": true,
+    "usePrestigeMaxAttribute": true,
+    "scaleBonusPerPrestige": 0.5,
+    "TPBonusPerPrestige": 1.0,
+    "masteryBonusPerPrestige": 1.0,
+    "storyRewardBonusPerPrestige": 0.5,
+    "storyDifficultyIncreasePerPrestige": 0.75,
+    "keepSkillsOnPrestige": false,
+    "keepFormsOnPrestige": false,
+    "bonusesLostOnPrestige": true,
+    "statRevertToInitialOnPrestige": true,
+    "statPercentageLossOnPrestige": 0.95,
+    "resetQuestsOnPrestige": true
+  }
+}

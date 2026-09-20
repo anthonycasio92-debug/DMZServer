@@ -1265,10 +1265,13 @@ def main() -> int:
     check("MAX_BREAKTHROUGHS 5", "MAX_BREAKTHROUGHS = 5" in pp)
     check("StatsDataMixin personal cap", "getConfiguredMaxValue" in mixin and "effectiveMaxLevel" in mixin)
     check("StatsDataMixin remap false",
-          'remap = false' in mixin and '@Mixin(value = StatsData.class, remap = false)' in mixin)
-    check("StatsDataMixin clamps down to personal",
-          "personal != serverMax.intValue()" in mixin or "personal != serverMax" in mixin)
+          'remap = false' in mixin and "StatsData.class, remap = false" in mixin)
+    check("StatsDataMixin applies personal cap",
+          "cir.setReturnValue(personal)" in mixin)
     check("StatsDataMixin gated on prestige flag", "enablePrestigeSystem" in mixin)
+    check("StatsDataMixin beats dmzrevamp cap mixin", "priority = 1100" in mixin)
+    dmz_lvl = read(ROOT / "config" / "dmzrevamp" / "LevelingRevamp.json")
+    check("Overhaul initialLevelCap 100k", '"initialLevelCap": 100000' in dmz_lvl)
     manifest = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "resources" / "META-INF" / "MANIFEST.MF")
     check("MANIFEST MixinConfigs for Mohist",
           "MixinConfigs: legacymechanics.mixins.json" in manifest)
