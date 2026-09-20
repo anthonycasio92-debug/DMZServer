@@ -27,25 +27,30 @@ public final class PersonalLevelCapMirror {
 
     private PersonalLevelCapMirror() {}
 
+    /** Write cap + breakthrough count without re-reading (padmin set must stick). */
+    public static void overwrite(ServerPlayer player, int breakthroughs, int cap) {
+        if (player == null) {
+            return;
+        }
+        int n = Math.max(0, breakthroughs);
+        int c = Math.max(PrestigePointsSystem.BASE_LEVEL_CAP, cap);
+        UUID id = player.m_20148_();
+        CAP_BY_UUID.put(id, c);
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (!PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
+        tag.m_128405_(KEY, c);
+        tag.m_128405_(KEY_BREAKTHROUGHS, n);
+        PersistentDataAccess.putInt(player, ROOT_BREAKTHROUGHS, n);
+    }
+
     public static void publish(ServerPlayer player) {
         if (player == null) {
             return;
         }
         int breakthroughs = PrestigePointsSystem.getBreakthroughs(player);
-        int cap = PrestigePointsSystem.effectiveMaxLevel(breakthroughs);
-        UUID id = player.m_20148_();
-        CAP_BY_UUID.put(id, cap);
-        CompoundTag tag = PersistentDataAccess.get(player);
-        if (!PersistentDataAccess.isWritable(tag)) {
-            return;
-        }
-        if (tag.m_128451_(KEY) != cap) {
-            tag.m_128405_(KEY, cap);
-        }
-        if (tag.m_128451_(KEY_BREAKTHROUGHS) != breakthroughs) {
-            tag.m_128405_(KEY_BREAKTHROUGHS, breakthroughs);
-        }
-        PersistentDataAccess.putInt(player, ROOT_BREAKTHROUGHS, breakthroughs);
+        overwrite(player, breakthroughs, PrestigePointsSystem.effectiveMaxLevel(breakthroughs));
     }
 
     public static int read(Player player) {

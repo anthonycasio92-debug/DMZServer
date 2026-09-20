@@ -941,20 +941,30 @@ public final class PrestigePointsSystem {
         if (player == null) {
             return 0;
         }
-        int fromBag = (int) ProgressionData.storedGetLong(player, KEY_BREAKTHROUGHS, 0L);
+        boolean bagHas = ProgressionData.storedHas(player, KEY_BREAKTHROUGHS);
+        int fromBag = bagHas ? (int) ProgressionData.storedGetLong(player, KEY_BREAKTHROUGHS, 0L) : -1;
         int fromRoot = PersistentDataAccess.getInt(player, PersonalLevelCapMirror.ROOT_BREAKTHROUGHS, -1);
         int fromMirror = PersistentDataAccess.getInt(player, PersonalLevelCapMirror.KEY_BREAKTHROUGHS, -1);
+        // Explicit NBT wins. Inferring from lm_personal_level_cap (often 150k after Overhaul)
+        // made /padmin breakthroughs set N snap back to 5.
+        if (fromBag >= 0 || fromRoot >= 0 || fromMirror >= 0) {
+            int n = 0;
+            if (fromBag >= 0) {
+                n = Math.max(n, fromBag);
+            }
+            if (fromRoot >= 0) {
+                n = Math.max(n, fromRoot);
+            }
+            if (fromMirror >= 0) {
+                n = Math.max(n, fromMirror);
+            }
+            return Math.max(0, Math.min(MAX_BREAKTHROUGHS, n));
+        }
         int capMirror = PersonalLevelCapMirror.read(player);
         int fromCap = capMirror > BASE_LEVEL_CAP
                 ? (capMirror - BASE_LEVEL_CAP) / BREAKTHROUGH_STEP
                 : 0;
-        int n = Math.max(fromBag, Math.max(fromRoot, Math.max(fromMirror, fromCap)));
-        n = Math.max(0, Math.min(MAX_BREAKTHROUGHS, n));
-        if (n > fromBag && ProgressionData.storedWritable(player)) {
-            ProgressionData.storedPut(player, KEY_BREAKTHROUGHS, n);
-            PersistentDataAccess.putInt(player, PersonalLevelCapMirror.ROOT_BREAKTHROUGHS, n);
-        }
-        return n;
+        return Math.max(0, Math.min(MAX_BREAKTHROUGHS, fromCap));
     }
 
     public static int breakthroughCost(int nextIndex) {
@@ -972,8 +982,9 @@ public final class PrestigePointsSystem {
         int n = Math.max(0, Math.min(MAX_BREAKTHROUGHS, breakthroughs));
         ProgressionData.storedPut(player, KEY_BREAKTHROUGHS, n);
         PersistentDataAccess.putInt(player, PersonalLevelCapMirror.ROOT_BREAKTHROUGHS, n);
+        PersistentDataAccess.putInt(player, PersonalLevelCapMirror.KEY_BREAKTHROUGHS, n);
         try {
-            PersonalLevelCapMirror.publish(player);
+            PersonalLevelCapMirror.overwrite(player, n, effectiveMaxLevel(n));
         } catch (Throwable ignored) {
         }
         try {

@@ -97,28 +97,81 @@ public final class DmzResourcePoolClamp {
         if (data == null) {
             return 0f;
         }
+        float base = 0f;
         try {
             float hud = hudFormulaMax(data, energy);
             if (Float.isFinite(hud) && hud > POWER_RELEASE_FLOOR) {
-                return hud;
+                base = hud;
             }
         } catch (Throwable ignored) {
         }
-        try {
-            Stats stats = data.getStats();
-            if (stats != null) {
-                int invested = energy ? stats.getEnergy() : stats.getResistance();
-                if (invested > 0) {
-                    double scaling = resolveHudScaling(data, energy ? "ENE" : "STM");
-                    float fallback = (float) (HUD_SECONDARY_DEFAULT + invested * scaling);
-                    if (Float.isFinite(fallback) && fallback > POWER_RELEASE_FLOOR) {
-                        return fallback;
+        if (base <= POWER_RELEASE_FLOOR) {
+            try {
+                Stats stats = data.getStats();
+                if (stats != null) {
+                    int invested = energy ? stats.getEnergy() : stats.getResistance();
+                    if (invested > 0) {
+                        double scaling = resolveHudScaling(data, energy ? "ENE" : "STM");
+                        float fallback = (float) (HUD_SECONDARY_DEFAULT + invested * scaling);
+                        if (Float.isFinite(fallback) && fallback > POWER_RELEASE_FLOOR) {
+                            base = fallback;
+                        }
                     }
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        if (base <= POWER_RELEASE_FLOOR) {
+            return 0f;
+        }
+        // Fabled / Statistics follow Overhaul scaleMultiplier (ENE/STM stay out of getTotalMultiplier).
+        try {
+            double scale = LmOverhaulPrestigeIntegration.combatScaleMultiplier(data);
+            if (Double.isFinite(scale) && scale > 1.000_001d) {
+                float scaled = (float) (base * scale);
+                if (Float.isFinite(scaled) && scaled > POWER_RELEASE_FLOOR) {
+                    return scaled;
                 }
             }
         } catch (Throwable ignored) {
         }
-        return 0f;
+        return base;
+    }
+
+    /**
+     * Pull current ki/stamina down only when they exceed the Overhaul-scaled pool
+     * (not the unscaled HUD bar). Used by the Fabled bridge.
+     */
+    public static boolean clampToOverhaulPool(StatsData data) {
+        if (data == null) {
+            return false;
+        }
+        Resources res = data.getResources();
+        if (res == null) {
+            return false;
+        }
+        boolean changed = false;
+        try {
+            float maxE = displayMaxEnergy(data);
+            float curE = res.getCurrentEnergy();
+            if (Float.isFinite(maxE) && maxE > POWER_RELEASE_FLOOR
+                    && Float.isFinite(curE) && curE > maxE + 0.08f) {
+                res.setCurrentEnergy(maxE);
+                changed = true;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            float maxS = displayMaxStamina(data);
+            float curS = res.getCurrentStamina();
+            if (Float.isFinite(maxS) && maxS > POWER_RELEASE_FLOOR
+                    && Float.isFinite(curS) && curS > maxS + 0.08f) {
+                res.setCurrentStamina(maxS);
+                changed = true;
+            }
+        } catch (Throwable ignored) {
+        }
+        return changed;
     }
 
     /**

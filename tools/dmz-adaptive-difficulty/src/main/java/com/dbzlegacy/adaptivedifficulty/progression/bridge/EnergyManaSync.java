@@ -94,6 +94,7 @@ public final class EnergyManaSync {
             return;
         }
 
+        DmzResourcePoolClamp.clampToOverhaulPool(dmz);
         double currentEnergy = resources.getCurrentEnergy();
         double maxEnergy = readMaxEnergy(dmz, resources, currentEnergy);
         if (currentEnergy < 0) {

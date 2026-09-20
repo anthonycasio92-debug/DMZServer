@@ -41,7 +41,15 @@ public final class LmOverhaulScaledCombat {
     }
 
     public static double energy(StatsData data) {
-        return sane(read(data, d -> (double) d.getMaxEnergy(), 1.0d), 1.0d);
+        try {
+            float scaled = com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp
+                    .displayMaxEnergy(data);
+            if (Float.isFinite(scaled) && scaled > 1f) {
+                return sane(scaled, 1.0d);
+            }
+        } catch (Throwable ignored) {
+        }
+        return sane(read(data, d -> (double) d.getMaxEnergy(), 1.0d) * scale(data), 1.0d);
     }
 
     public static double defense(StatsData data) {

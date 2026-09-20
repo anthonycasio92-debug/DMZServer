@@ -64,8 +64,9 @@ public final class LmOverhaulPrestigeIntegration {
 
     /**
      * Overhaul {@code PrestigeSystem.scaleMultiplier} = {@code 1 + count × scaleBonusPerPrestige}.
-     * Live {@code scaleBonusPerPrestige} is 1.0, so prestige 10 is 11×. Used for combat
-     * total-multipliers (not ki/stamina pools).
+     * Live {@code scaleBonusPerPrestige} is 1.0, so prestige 10 is 11×. Combat
+     * {@code getTotalMultiplier} uses this; ki/stamina display/Fabled multiply the
+     * HUD formula by the same scale (ENE/STM stay out of getTotalMultiplier).
      */
     public static double combatScaleMultiplier(StatsData data) {
         if (data == null || !overhaulPrestigeEnabled()) {
