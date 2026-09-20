@@ -76,29 +76,6 @@ public final class EnergyManaSync {
             currentEnergy = maxEnergy;
         }
 
-        double fabledMana = FabledBridge.invokeDouble(data, "getMana");
-        double fabledMax = FabledBridge.invokeDouble(data, "getMaxMana");
-
-        // DMZ is authoritative — never drain ki to chase a stale / zeroed Fabled bar.
-        if (Math.abs(fabledMana - currentEnergy) <= ENERGY_EPS * 4) {
-            FabledBridge.setManaAndMax(data, currentEnergy, maxEnergy);
-            LAST_MANA.put(player.m_20148_(), currentEnergy);
-            ProgressionData.tempPut(player, LAST_MANA_KEY, currentEnergy);
-            if (scheduleBukkitFollowup) {
-                scheduleFollowup(player, currentEnergy, maxEnergy);
-            }
-            return;
-        }
-        if (fabledMana + ENERGY_EPS < currentEnergy) {
-            FabledBridge.setManaAndMax(data, currentEnergy, maxEnergy);
-            LAST_MANA.put(player.m_20148_(), currentEnergy);
-            ProgressionData.tempPut(player, LAST_MANA_KEY, currentEnergy);
-            if (scheduleBukkitFollowup) {
-                scheduleFollowup(player, currentEnergy, maxEnergy);
-            }
-            return;
-        }
-
         Double last = LAST_MANA.get(player.m_20148_());
         if (last == null) {
             String stored = ProgressionData.tempGet(player, LAST_MANA_KEY, null);
@@ -111,52 +88,10 @@ public final class EnergyManaSync {
             }
         }
 
-        if (last != null && fabledMana < last - ENERGY_EPS) {
-            // Stale last tracker after relog / reset — Fabled already matches DMZ.
-            if (currentEnergy + ENERGY_EPS < last
-                    && Math.abs(fabledMana - currentEnergy) <= ENERGY_EPS * 3) {
-                last = currentEnergy;
-            }
-        }
-        if (last != null && fabledMana < last - ENERGY_EPS) {
-            double spent = last - fabledMana;
-            // DMZ ki regen advanced since last sync — not a Fabled-side spend.
-            boolean dmzRegened = currentEnergy > last + ENERGY_EPS;
-            // Fabled level-up / updatePlayerStat can zero mana without a real ki spend.
-            boolean fabledStatWipe = isFabledManaWipe(last, fabledMana, fabledMax, maxEnergy, currentEnergy, spent);
-            if (dmzRegened) {
-                FabledBridge.logSync(
-                        player,
-                        "energy_regen",
-                        "dmz",
-                        currentEnergy,
-                        "last",
-                        last,
-                        "fabled",
-                        fabledMana);
-            } else if (spent > 0 && !fabledStatWipe && fabledMana < currentEnergy - ENERGY_EPS) {
-                try {
-                    resources.removeEnergy((float) spent);
-                } catch (Throwable t) {
-                    resources.setCurrentEnergy((float) Math.max(0, currentEnergy - spent));
-                }
-                currentEnergy = resources.getCurrentEnergy();
-                if (currentEnergy < 0) {
-                    currentEnergy = 0;
-                    resources.setCurrentEnergy(0);
-                }
-                FabledBridge.logSync(player, "energy_spend", "spent", spent, "energy", currentEnergy);
-            } else if (fabledStatWipe) {
-                FabledBridge.logSync(
-                        player,
-                        "energy_wipe_skip",
-                        "fabledMana",
-                        fabledMana,
-                        "last",
-                        last,
-                        "max",
-                        maxEnergy);
-            }
+        // DMZ owns ki pool + regen on this pack — mirror to Fabled for the side menu only.
+        // Do not call removeEnergy from Fabled lag/wipes (breaks regen after prestige reset).
+        if (last != null && last > currentEnergy + ENERGY_EPS) {
+            last = currentEnergy;
         }
 
         if (currentEnergy > maxEnergy) {
@@ -191,33 +126,6 @@ public final class EnergyManaSync {
             FabledBridge.setManaAndMax(again, cur, max);
             LAST_MANA.put(player.m_20148_(), cur);
         }));
-    }
-
-    /**
-     * True when Fabled dropped mana due to stat recalc (level up, class change, updatePlayerStat),
-     * not because the player actually spent ki in combat.
-     */
-    static boolean isFabledManaWipe(
-            double lastMana,
-            double fabledMana,
-            double fabledMax,
-            double dmzMaxEnergy,
-            double dmzCurrentEnergy,
-            double spent
-    ) {
-        if (spent <= 0) {
-            return false;
-        }
-        if (fabledMana <= 0.01 && lastMana > 1.0) {
-            return true;
-        }
-        if (dmzMaxEnergy > 0 && fabledMax + 0.01 < dmzMaxEnergy * 0.5) {
-            return true;
-        }
-        if (dmzCurrentEnergy > 0 && spent > dmzCurrentEnergy * 0.85) {
-            return true;
-        }
-        return false;
     }
 
     private static double readMaxEnergy(StatsData dmz, Resources resources, double currentEnergy) {

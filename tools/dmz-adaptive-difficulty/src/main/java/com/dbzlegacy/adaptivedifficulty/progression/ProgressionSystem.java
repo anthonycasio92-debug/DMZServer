@@ -166,12 +166,6 @@ public final class ProgressionSystem {
                     } catch (Throwable ignored) {
                     }
                 }
-                if (tick % 600 == 0) {
-                    try {
-                        PrestigeResourceRecovery.pulse(player);
-                    } catch (Throwable ignored) {
-                    }
-                }
             }
         }
         if (DifficultyConfig.get().enableFabledBridge) {

@@ -1,12 +1,11 @@
 package com.dbzlegacy.adaptivedifficulty.progression;
 
-import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.EnergyManaSync;
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Cooldowns;
-import com.dragonminez.common.stats.character.Resources;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.TickTask;
@@ -28,16 +27,16 @@ public final class PrestigeResourceRecovery {
             return;
         }
         final java.util.UUID id = player.m_20148_();
-        server.execute(() -> runDelayed(server, id, 1));
+        server.execute(() -> runDelayed(server, id));
         for (int delay : new int[] {5, 20, 40, 80, 160}) {
             try {
-                server.m_6937_(new TickTask(server.m_129921_() + delay, () -> runDelayed(server, id, delay)));
+                server.m_6937_(new TickTask(server.m_129921_() + delay, () -> runDelayed(server, id)));
             } catch (Throwable ignored) {
             }
         }
     }
 
-    private static void runDelayed(MinecraftServer server, java.util.UUID id, int delay) {
+    private static void runDelayed(MinecraftServer server, java.util.UUID id) {
         ServerPlayer player = server.m_6846_().m_11259_(id);
         if (player == null || !player.m_6084_()) {
             return;
@@ -65,21 +64,6 @@ public final class PrestigeResourceRecovery {
                 cds.removeCooldown(Cooldowns.DASH_ACTIVE);
                 cds.removeCooldown(Cooldowns.DRAIN);
                 cds.removeCooldown(Cooldowns.DRAIN_ACTIVE);
-                try {
-                    cds.tick();
-                } catch (Throwable ignored) {
-                }
-            }
-            Resources res = data != null ? data.getResources() : null;
-            if (data != null && res != null) {
-                float maxE = data.getMaxEnergy();
-                float maxS = data.getMaxStamina();
-                if (maxE > 0 && res.getCurrentEnergy() <= 0) {
-                    res.setCurrentEnergy(Math.min(maxE, Math.max(res.getCurrentEnergy(), maxE * 0.01f)));
-                }
-                if (maxS > 0 && res.getCurrentStamina() <= 0) {
-                    res.setCurrentStamina(Math.min(maxS, Math.max(res.getCurrentStamina(), maxS * 0.01f)));
-                }
             }
         } catch (Throwable ignored) {
         }
