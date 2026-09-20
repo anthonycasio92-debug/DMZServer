@@ -152,6 +152,10 @@ public final class ProgressionSystem {
                     SpiritualistKiControl.pulse(player, now);
                 } catch (Throwable ignored) {
                 }
+                try {
+                    StaminaRegenGuard.pulse(player);
+                } catch (Throwable ignored) {
+                }
             }
         }
         if (DifficultyConfig.get().enableFabledBridge) {
