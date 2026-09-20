@@ -1,7 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
-import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
+import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -27,7 +27,7 @@ public abstract class DmzRevampPrestigeCapMixin {
         if (!(p instanceof ServerPlayer sp)) {
             return;
         }
-        cir.setReturnValue(PrestigePointsSystem.effectiveMaxLevel(sp));
+        cir.setReturnValue(LmOverhaulCapMath.personalLevelCap(sp));
     }
 
     @Inject(method = "canPrestige", at = @At("HEAD"), cancellable = true, remap = false)

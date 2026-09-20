@@ -121,6 +121,10 @@ public final class DifficultyEvents {
             com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost.load();
         } catch (Throwable ignored) {
         }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampConfigBridge.onServerStarting();
+        } catch (Throwable ignored) {
+        }
         RivalProgression.get().load();
     }
 
@@ -273,7 +277,8 @@ public final class DifficultyEvents {
                 return;
             }
             int total = data.getStats().getTotalStats();
-            int maxTotal = personal * 6;
+            int maxTotal = com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath
+                    .maxAssignableTotal(data, personal);
             if (total <= maxTotal) {
                 return;
             }

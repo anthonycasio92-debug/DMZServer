@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.server.level.ServerPlayer;
@@ -12,50 +13,76 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Per-player DMZ level cap from prestige breakthroughs.
- * Server {@code maxValue} is 150k so clients can display/buy past 100k; this mixin
- * clamps each player's {@link StatsData#getConfiguredMaxValue()} to their personal
- * breakthrough ceiling (100k…150k) on the server.
- *
- * <p>{@code remap = false} is required — DMZ methods are not obfuscated (same pattern as
- * {@code dmz_mohist_melee_fix} StatsData mixins). With remap left on, this inject never
- * applied and the personal cap stayed stuck at the server default.
- *
- * <p>{@code priority = 1100} runs after {@code dmzrevamp}'s {@code StatsDataLevelingRevampMixin}
- * (default 1000), which otherwise leaves prestige-0 players at Overhaul's stock
- * {@code initialLevelCap} of 50k instead of the normal 100k.
+ * Overrides dmzrevamp {@code StatsDataLevelingRevampMixin} after it runs (priority 2000).
+ * Level cap, max stat total, and per-click stat buys all follow LM breakthrough caps.
  */
-@Mixin(value = StatsData.class, remap = false, priority = 1500)
+@Mixin(value = StatsData.class, remap = false, priority = 2000)
 public abstract class StatsDataMixin {
     @Shadow(remap = false)
     public abstract Player getPlayer();
 
     @Inject(method = "getConfiguredMaxValue", at = @At("RETURN"), cancellable = true, remap = false)
-    private void lm$personalBreakthroughCap(CallbackInfoReturnable<Integer> cir) {
-        try {
-            if (!DifficultyConfig.get().enablePrestigeSystem) {
-                return;
-            }
-        } catch (Throwable t) {
+    private void lm$personalMaxValue(CallbackInfoReturnable<Integer> cir) {
+        ServerPlayer sp = serverPlayer();
+        if (sp == null) {
             return;
         }
-        Player p;
-        try {
-            p = getPlayer();
-        } catch (Throwable t) {
-            return;
-        }
-        if (!(p instanceof ServerPlayer sp)) {
-            return;
-        }
-        try {
-            int personal = PrestigePointsSystem.effectiveMaxLevel(sp);
-            if (personal <= 0) {
-                return;
-            }
+        int personal = LmOverhaulCapMath.personalLevelCap(sp);
+        if (personal > 0) {
             cir.setReturnValue(personal);
+        }
+    }
+
+    @Inject(method = "getConfiguredMaxTotalStats", at = @At("RETURN"), cancellable = true, remap = false)
+    private void lm$personalMaxTotal(CallbackInfoReturnable<Integer> cir) {
+        ServerPlayer sp = serverPlayer();
+        if (sp == null) {
+            return;
+        }
+        StatsData self = (StatsData) (Object) this;
+        cir.setReturnValue(LmOverhaulCapMath.maxAssignableTotal(self, sp));
+    }
+
+    @Inject(method = "getMaxAllowedIncreaseForStat", at = @At("RETURN"), cancellable = true, remap = false)
+    private void lm$clampStatBuy(String stat, int amount, CallbackInfoReturnable<Integer> cir) {
+        ServerPlayer sp = serverPlayer();
+        if (sp == null) {
+            return;
+        }
+        StatsData self = (StatsData) (Object) this;
+        int personal = LmOverhaulCapMath.personalLevelCap(sp);
+        int maxTotal = LmOverhaulCapMath.maxAssignableTotal(self, personal);
+        int total = 0;
+        try {
+            if (self.getStats() != null) {
+                total = Math.max(0, self.getStats().getTotalStats());
+            }
         } catch (Throwable ignored) {
-            // Prestige system / NBT unavailable — keep server default.
+        }
+        int room = Math.max(0, maxTotal - total);
+        int allowed = cir.getReturnValue() != null ? Math.max(0, cir.getReturnValue()) : 0;
+        cir.setReturnValue(Math.min(allowed, room));
+    }
+
+    private ServerPlayer serverPlayer() {
+        if (!prestigeCapsActive()) {
+            return null;
+        }
+        try {
+            Player p = getPlayer();
+            if (p instanceof ServerPlayer sp) {
+                return sp;
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    private static boolean prestigeCapsActive() {
+        try {
+            return DifficultyConfig.get().enablePrestigeSystem;
+        } catch (Throwable t) {
+            return false;
         }
     }
 }

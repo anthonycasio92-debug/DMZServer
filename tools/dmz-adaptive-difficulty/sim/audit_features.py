@@ -1266,13 +1266,15 @@ def main() -> int:
     check("StatsDataMixin personal cap", "getConfiguredMaxValue" in mixin and "effectiveMaxLevel" in mixin)
     check("StatsDataMixin remap false",
           'remap = false' in mixin and "StatsData.class, remap = false" in mixin)
-    check("StatsDataMixin applies personal cap", "cir.setReturnValue(personal)" in mixin)
+    check("StatsDataMixin applies personal cap", "lm$personalMaxValue" in mixin)
     revamp_cap = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/DmzRevampPrestigeCapMixin.java")
     check("Overhaul levelCap uses LM breakthrough",
           "levelCap" in revamp_cap and "effectiveMaxLevel" in revamp_cap)
     check("Overhaul rebirth blocked", "canPrestige" in revamp_cap)
     check("StatsDataMixin gated on prestige flag", "enablePrestigeSystem" in mixin)
-    check("StatsDataMixin beats dmzrevamp cap mixin", "priority = 1500" in mixin)
+    check("StatsDataMixin beats dmzrevamp cap mixin", "priority = 2000" in mixin)
+    check("StatsDataMixin max total + stat buy", "getConfiguredMaxTotalStats" in mixin
+          and "getMaxAllowedIncreaseForStat" in mixin)
     bridge = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/DmzRevampPrestigeBridge.java")
     check("Overhaul prestige sync bridge", "syncFromLegacy" in bridge and "setCount" in bridge)
     check("attr multi bonus default off", "enableAttrMultiBonus = false" in read(CFG))

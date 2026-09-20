@@ -22,14 +22,8 @@ public final class LegacyMechanicsMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        if ("com.dbzlegacy.adaptivedifficulty.mixin.DmzRevampPrestigeCapMixin".equals(mixinClassName)) {
-            try {
-                Class.forName(REVAMP_PRESTIGE, false, LegacyMechanicsMixinPlugin.class.getClassLoader());
-                return true;
-            } catch (Throwable t) {
-                return false;
-            }
-        }
+        // Mixin config is evaluated before mod classes are visible to this classloader;
+        // never skip — dmzrevamp is required on production.
         return true;
     }
 

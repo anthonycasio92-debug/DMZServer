@@ -1,13 +1,13 @@
 {
   "levelsAndAttributes": {
     "enabled": true,
-    "maxLevel": 500000,
+    "maxLevel": 100000,
     "maxAttribute": -1,
     "levelUpPerPoints": 6,
     "customHexStatCurve": true
   },
   "Prestige": {
-    "enabled": true,
+    "enabled": false,
     "initialLevelCap": 100000,
     "maxPrestigeCount": 10,
     "prestigeHexStatChange": true,
