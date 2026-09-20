@@ -19,6 +19,7 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class EnergyManaSync {
     private static final String LAST_MANA_KEY = "dmz_fabled_last_mana";
+    private static final double ENERGY_EPS = 0.5;
     private static final Map<UUID, Double> LAST_MANA = new ConcurrentHashMap<>();
 
     private EnergyManaSync() {}
@@ -68,6 +69,8 @@ public final class EnergyManaSync {
                 }
             } catch (Throwable ignored) {
             }
+            // Character exists but caps not ready — never clamp live ki to 0 (blocks regen).
+            return;
         }
         if (currentEnergy > maxEnergy) {
             currentEnergy = maxEnergy;
@@ -87,11 +90,30 @@ public final class EnergyManaSync {
             }
         }
 
-        if (last != null && fabledMana < last) {
+        if (last != null && fabledMana < last - ENERGY_EPS) {
+            // Stale last tracker after relog / reset — Fabled already matches DMZ.
+            if (currentEnergy + ENERGY_EPS < last
+                    && Math.abs(fabledMana - currentEnergy) <= ENERGY_EPS * 3) {
+                last = currentEnergy;
+            }
+        }
+        if (last != null && fabledMana < last - ENERGY_EPS) {
             double spent = last - fabledMana;
+            // DMZ ki regen advanced since last sync — not a Fabled-side spend.
+            boolean dmzRegened = currentEnergy > last + ENERGY_EPS;
             // Fabled level-up / updatePlayerStat can zero mana without a real ki spend.
             boolean fabledStatWipe = isFabledManaWipe(last, fabledMana, fabledMax, maxEnergy, currentEnergy, spent);
-            if (spent > 0 && !fabledStatWipe) {
+            if (dmzRegened) {
+                FabledBridge.logSync(
+                        player,
+                        "energy_regen",
+                        "dmz",
+                        currentEnergy,
+                        "last",
+                        last,
+                        "fabled",
+                        fabledMana);
+            } else if (spent > 0 && !fabledStatWipe) {
                 try {
                     resources.removeEnergy((float) spent);
                 } catch (Throwable t) {
