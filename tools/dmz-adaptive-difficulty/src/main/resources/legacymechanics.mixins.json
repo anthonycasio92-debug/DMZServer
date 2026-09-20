@@ -17,6 +17,7 @@
     "StatsDataPrestigePoolMixin",
     "StatsDataRestoreMultiplierClampMixin",
     "StatsDataLoadClampMixin",
+    "StatsDataHudPoolMaxMixin",
     "ResourcesEnergyDrainGuardMixin",
     "ResourcesPoolClampMixin",
     "ResourcesLoadClampMixin"

@@ -55,8 +55,8 @@ public abstract class ResourcesPoolClampMixin {
         }
         try {
             float max = DmzResourcePoolClamp.displayMaxEnergy(data);
-            if (Float.isFinite(max) && max > 0f) {
-                return Math.min(value, max);
+            if (DmzResourcePoolClamp.shouldClampCurrent(value, max)) {
+                return max;
             }
         } catch (Throwable ignored) {
         }
@@ -74,8 +74,8 @@ public abstract class ResourcesPoolClampMixin {
         }
         try {
             float max = DmzResourcePoolClamp.displayMaxStamina(data);
-            if (Float.isFinite(max) && max > 0f) {
-                return Math.min(value, max);
+            if (DmzResourcePoolClamp.shouldClampCurrent(value, max)) {
+                return max;
             }
         } catch (Throwable ignored) {
         }

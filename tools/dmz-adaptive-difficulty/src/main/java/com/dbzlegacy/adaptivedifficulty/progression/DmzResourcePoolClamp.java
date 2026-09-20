@@ -17,12 +17,18 @@ import net.minecraftforge.registries.RegistryObject;
  *
  * {@link StatsData#getMaxEnergy()} adds Forge {@code MAX_ENERGY} (default 20). Mohist often
  * applies Potentialist / Overhaul attribute modifiers on the server that never reach the
- * client, so server max is ~4/3 of the HUD number and current looks "over max".
+ * client, so Statistics Max Ki is millions while the HUD bar is the ENE×prestige-scale
+ * number (screenshot: 2.8M vs 675k at 0% Limit Release).
+ *
+ * <p>Never clamp current energy to {@code ≤ 1} — {@code Resources#setCurrentEnergy} zeros
+ * power release at that threshold.
  */
 public final class DmzResourcePoolClamp {
     private static final float EPS = 0.08f;
     /** Vanilla DMZ secondary-attribute fallback when {@code StatsData.player} is null. */
     private static final double ATTR_DEFAULT = 20.0d;
+    /** Below this, {@code setCurrentEnergy} clears Limit Release. */
+    private static final float POWER_RELEASE_FLOOR = 1.0f;
 
     private DmzResourcePoolClamp() {}
 
@@ -48,23 +54,19 @@ public final class DmzResourcePoolClamp {
         boolean changed = false;
         try {
             float maxE = displayMaxEnergy(data);
-            if (Float.isFinite(maxE) && maxE > 0f) {
-                float curE = res.getCurrentEnergy();
-                if (Float.isFinite(curE) && curE > maxE + EPS) {
-                    res.setCurrentEnergy(maxE);
-                    changed = true;
-                }
+            float curE = res.getCurrentEnergy();
+            if (shouldClampCurrent(curE, maxE)) {
+                res.setCurrentEnergy(maxE);
+                changed = true;
             }
         } catch (Throwable ignored) {
         }
         try {
             float maxS = displayMaxStamina(data);
-            if (Float.isFinite(maxS) && maxS > 0f) {
-                float curS = res.getCurrentStamina();
-                if (Float.isFinite(curS) && curS > maxS + EPS) {
-                    res.setCurrentStamina(maxS);
-                    changed = true;
-                }
+            float curS = res.getCurrentStamina();
+            if (shouldClampCurrent(curS, maxS)) {
+                res.setCurrentStamina(maxS);
+                changed = true;
             }
         } catch (Throwable ignored) {
         }
@@ -94,20 +96,42 @@ public final class DmzResourcePoolClamp {
         }
     }
 
+    /**
+     * Strip server-only Forge secondary extras from a live {@code getMax*} return.
+     * Safe to call on an already-stripped value (live ≪ extra → unchanged).
+     */
+    public static float toHudMax(float live, StatsData data, boolean energy) {
+        if (!Float.isFinite(live) || live <= 0f) {
+            return live;
+        }
+        double attr = readSecondary(data, energy ? MainAttributes.MAX_ENERGY : MainAttributes.MAX_STAMINA);
+        double extra = attr - ATTR_DEFAULT;
+        if (extra <= 1.0d) {
+            return live;
+        }
+        if (live + 1.0d < extra) {
+            return live;
+        }
+        return (float) Math.max(ATTR_DEFAULT, live - extra);
+    }
+
+    /** True when current should be pulled down — never through the power-release-zero floor. */
+    public static boolean shouldClampCurrent(float current, float hudMax) {
+        if (!Float.isFinite(current) || !Float.isFinite(hudMax)) {
+            return false;
+        }
+        if (hudMax <= POWER_RELEASE_FLOOR && current > POWER_RELEASE_FLOOR) {
+            return false;
+        }
+        return hudMax > 0f && current > hudMax + EPS;
+    }
+
     private static float displayMax(StatsData data, boolean energy) {
         if (data == null) {
             return 0f;
         }
         float live = energy ? data.getMaxEnergy() : data.getMaxStamina();
-        if (!Float.isFinite(live) || live <= 0f) {
-            return 0f;
-        }
-        double attr = readSecondary(data, energy ? MainAttributes.MAX_ENERGY : MainAttributes.MAX_STAMINA);
-        double extra = attr - ATTR_DEFAULT;
-        if (extra > 1.0d) {
-            live = (float) Math.max(ATTR_DEFAULT, live - extra);
-        }
-        return live;
+        return toHudMax(live, data, energy);
     }
 
     private static double readSecondary(StatsData data, RegistryObject<Attribute> attr) {
