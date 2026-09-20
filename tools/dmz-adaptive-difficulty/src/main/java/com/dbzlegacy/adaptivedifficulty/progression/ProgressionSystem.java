@@ -168,6 +168,12 @@ public final class ProgressionSystem {
                                 .pulse(player);
                     } catch (Throwable ignored) {
                     }
+                    try {
+                        com.dragonminez.common.stats.StatsData data =
+                                com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.stats(player);
+                        DmzResourcePoolClamp.clampAndSync(player, data);
+                    } catch (Throwable ignored) {
+                    }
                 }
                 try {
                     StaminaRegenGuard.pulse(player);

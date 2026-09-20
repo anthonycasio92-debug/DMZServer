@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.character;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dragonminez.common.config.ConfigManager;
 import com.dragonminez.common.config.RaceStatsConfig;
 import com.dragonminez.common.network.NetworkHandler;
@@ -104,12 +105,12 @@ public final class DmzFightingClassStatsSync {
             return;
         }
         try {
-            float maxEnergy = data.getMaxEnergy();
-            float maxStamina = data.getMaxStamina();
-            if (res.getCurrentEnergy() > maxEnergy) {
+            float maxEnergy = DmzResourcePoolClamp.displayMaxEnergy(data);
+            float maxStamina = DmzResourcePoolClamp.displayMaxStamina(data);
+            if (DmzResourcePoolClamp.shouldClampCurrent(res.getCurrentEnergy(), maxEnergy)) {
                 res.setCurrentEnergy(maxEnergy);
             }
-            if (res.getCurrentStamina() > maxStamina) {
+            if (DmzResourcePoolClamp.shouldClampCurrent(res.getCurrentStamina(), maxStamina)) {
                 res.setCurrentStamina(maxStamina);
             }
             float maxHp = data.getMaxHealth();

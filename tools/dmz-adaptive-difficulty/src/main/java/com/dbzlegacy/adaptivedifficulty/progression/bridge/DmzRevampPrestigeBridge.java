@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.bridge;
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dragonminez.common.stats.StatsData;
@@ -146,16 +147,16 @@ public final class DmzRevampPrestigeBridge {
         if (res == null) {
             return;
         }
-        float maxE = data.getMaxEnergy();
-        float maxS = data.getMaxStamina();
+        float maxE = DmzResourcePoolClamp.displayMaxEnergy(data);
+        float maxS = DmzResourcePoolClamp.displayMaxStamina(data);
         float curE = res.getCurrentEnergy();
         float curS = res.getCurrentStamina();
         boolean changed = false;
-        if (maxE > 0.5f && (curE >= maxEnergyBefore * 0.97f || curE + 0.5f < maxE * 0.55f)) {
+        if (maxE > 1f && (curE >= maxEnergyBefore * 0.97f || curE + 0.5f < maxE * 0.55f)) {
             res.setCurrentEnergy(maxE);
             changed = true;
         }
-        if (maxS > 0.5f && (curS >= maxStaminaBefore * 0.97f || curS + 0.5f < maxS * 0.55f)) {
+        if (maxS > 1f && (curS >= maxStaminaBefore * 0.97f || curS + 0.5f < maxS * 0.55f)) {
             res.setCurrentStamina(maxS);
             changed = true;
         }

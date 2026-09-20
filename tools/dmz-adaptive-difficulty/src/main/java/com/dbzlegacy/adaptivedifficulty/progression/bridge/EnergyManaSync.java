@@ -176,21 +176,12 @@ public final class EnergyManaSync {
     }
 
     private static double readMaxEnergy(StatsData dmz, Resources resources, double currentEnergy) {
-        // HUD-formula cap — not StatsData#getMaxEnergy, which includes server-only extras.
+        // HUD-formula cap only. Do not fall back to getMaxEnergy / Iron mana — that is
+        // how JLDK current jumped to irons_spellbooks:max_mana 67474 after 2.4.87.
         try {
             float max = DmzResourcePoolClamp.displayMaxEnergy(dmz);
-            if (Float.isFinite(max) && max > 0) {
+            if (Float.isFinite(max) && max > 1f) {
                 return max;
-            }
-        } catch (Throwable ignored) {
-        }
-        try {
-            Object v = resources.getClass().getMethod("getMaxEnergy").invoke(resources);
-            if (v instanceof Number n) {
-                double d = n.doubleValue();
-                if (Double.isFinite(d) && d > 0) {
-                    return d;
-                }
             }
         } catch (Throwable ignored) {
         }

@@ -1,10 +1,15 @@
 package com.dbzlegacy.adaptivedifficulty.progression;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.character.DmzContentDiscovery;
+import com.dragonminez.common.config.ConfigManager;
+import com.dragonminez.common.config.RaceStatsConfig;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.ResourceSyncS2C;
 import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.BonusStats;
+import com.dragonminez.common.stats.character.Character;
 import com.dragonminez.common.stats.character.Resources;
 import com.dragonminez.common.stats.character.Stats;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,14 +22,17 @@ import net.minecraft.server.level.ServerPlayer;
  * {@code getMax*} adds Mohist / Apotheosis / Potentialist extras that never reach the client
  * bar, so a full server pool reads as over-max (HUD 159/145 vs overlay 159/190).
  *
- * <p>2.4.86 redirected {@code getSecondaryAttributeValue} to 20 and then clamped to
- * {@code getMaxEnergy()}. Live JLDK1310.dat (saved 22 min after that boot) still had
- * CurrentEnergy 11228 / CurrentStamina 76868 with {@code dragonminez:max_energy} Base 20
- * and no persistent modifiers — runtime armor extras kept {@code getMaxEnergy()} ≥ current,
- * so the clamp never fired. Do not call {@code getMax*} for the cap.
+ * <p>2.4.87 used {@code data.getStatScaling(class)} and returned 0 on any throw.
+ * Live {@code config/dragonminez/races/ancient_saiyan/stats.json} (and saiyan) only has
+ * {@code classes.race}. JLDK is {@code warrior} — {@code getStatScaling} NPEs on the missing
+ * class (or on null {@code Double} defaults from an auto-created empty ClassStats).
+ * {@code displayMax} then returned 0, {@code shouldClampCurrent} refused to clamp (power-release
+ * floor), and current stayed at Iron {@code max_mana} 67474 / 171345.5 after the 2.4.87 boot.
  *
  * <p>Cap = DMZ formula with the vanilla secondary default the HUD actually uses:
  * {@code 20 + (invested + bonusMult) × scaling × totalMult + bonusAdd × scaling}.
+ * Scaling is the fighting-class row when that id exists in the race JSON, otherwise
+ * {@code classes.race} (live 0.6 ancient / 0.8 saiyan). Never call {@code getMax*}.
  *
  * <p>Never clamp current energy to {@code ≤ 1} — {@code Resources#setCurrentEnergy} zeros
  * power release at that threshold.
@@ -83,7 +91,30 @@ public final class DmzResourcePoolClamp {
         if (player == null || data == null) {
             return;
         }
+        Resources res = data.getResources();
+        float beforeE = 0f;
+        float beforeS = 0f;
+        try {
+            if (res != null) {
+                beforeE = res.getCurrentEnergy();
+                beforeS = res.getCurrentStamina();
+            }
+        } catch (Throwable ignored) {
+        }
         if (clamp(data)) {
+            try {
+                float afterE = res != null ? res.getCurrentEnergy() : 0f;
+                float afterS = res != null ? res.getCurrentStamina() : 0f;
+                AdaptiveDifficultyMod.LOGGER.info(
+                        "[{}] HUD-clamped {} ki {}→{} stm {}→{}",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        player.m_6302_(),
+                        beforeE,
+                        afterE,
+                        beforeS,
+                        afterS);
+            } catch (Throwable ignored) {
+            }
             syncToClient(player);
         }
     }
@@ -126,8 +157,22 @@ public final class DmzResourcePoolClamp {
         }
         try {
             float hud = hudFormulaMax(data, energy);
-            if (Float.isFinite(hud) && hud > 0f) {
+            if (Float.isFinite(hud) && hud > POWER_RELEASE_FLOOR) {
                 return hud;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            Stats stats = data.getStats();
+            if (stats != null) {
+                int invested = energy ? stats.getEnergy() : stats.getResistance();
+                if (invested > 0) {
+                    double scaling = resolveHudScaling(data, energy ? "ENE" : "STM");
+                    float fallback = (float) (HUD_SECONDARY_DEFAULT + invested * scaling);
+                    if (Float.isFinite(fallback) && fallback > POWER_RELEASE_FLOOR) {
+                        return fallback;
+                    }
+                }
             }
         } catch (Throwable ignored) {
         }
@@ -136,7 +181,9 @@ public final class DmzResourcePoolClamp {
 
     /**
      * Same arithmetic as {@code StatsData.getMaxEnergy}/{@code getMaxStamina} with the
-     * secondary attribute forced to 20. Does not call those getters.
+     * secondary attribute forced to 20. Does not call those getters. Does not call
+     * {@code getStatScaling} first — that creates an empty warrior/tank row (all 1.0)
+     * when live race JSON only has {@code classes.race}.
      */
     private static float hudFormulaMax(StatsData data, boolean energy) {
         Stats stats = data.getStats();
@@ -145,7 +192,7 @@ public final class DmzResourcePoolClamp {
         }
         int invested = energy ? stats.getEnergy() : stats.getResistance();
         String key = energy ? "ENE" : "STM";
-        double scaling = sanePositive(data.getStatScaling(key), 1.0d);
+        double scaling = sanePositive(resolveHudScaling(data, key), 1.0d);
         double totalMult = 1.0d;
         try {
             totalMult = sanePositive(data.getTotalMultiplier(key), 1.0d);
@@ -168,6 +215,128 @@ public final class DmzResourcePoolClamp {
             return 0f;
         }
         return (float) Math.min(max, Float.MAX_VALUE);
+    }
+
+    /**
+     * Fighting-class scaling when that id is in the race JSON; otherwise {@code classes.race}.
+     * Never calls {@code RaceStatsConfig#getClassStats} for a missing id — that inserts an
+     * empty ClassStats with 1.0 defaults and poisons later {@code getStatScaling} reads.
+     */
+    private static double resolveHudScaling(StatsData data, String key) {
+        String race = raceId(data);
+        String cls = classId(data);
+        if (race != null && classConfigured(race, cls)) {
+            Double fromClass = scalingFromConfig(race, cls, key);
+            if (fromClass != null) {
+                return fromClass;
+            }
+        }
+        if (race != null && classConfigured(race, "race")) {
+            Double fromRace = scalingFromConfig(race, "race", key);
+            if (fromRace != null) {
+                return fromRace;
+            }
+        }
+        try {
+            double live = data.getStatScaling(key);
+            if (Double.isFinite(live) && live > 0.0d && live != 1.0d) {
+                return live;
+            }
+        } catch (Throwable ignored) {
+        }
+        return 1.0d;
+    }
+
+    private static String raceId(StatsData data) {
+        try {
+            Character ch = data.getCharacter();
+            if (ch == null) {
+                return null;
+            }
+            String race = ch.getRaceName();
+            if (race == null || race.isBlank()) {
+                race = ch.getRace();
+            }
+            if (race == null || race.isBlank()) {
+                return null;
+            }
+            return race.trim().toLowerCase();
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static String classId(StatsData data) {
+        try {
+            Character ch = data.getCharacter();
+            if (ch == null) {
+                return null;
+            }
+            String cls = ch.getCharacterClass();
+            if (cls == null || cls.isBlank()) {
+                return null;
+            }
+            return cls.trim().toLowerCase();
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static boolean classConfigured(String race, String classId) {
+        if (race == null || race.isBlank() || classId == null || classId.isBlank()) {
+            return false;
+        }
+        try {
+            for (String id : DmzContentDiscovery.classIdsForRace(race)) {
+                if (id != null && classId.equalsIgnoreCase(id.trim())) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
+    }
+
+    private static Double scalingFromConfig(String race, String classId, String key) {
+        if (race == null || classId == null || key == null) {
+            return null;
+        }
+        try {
+            RaceStatsConfig cfg = ConfigManager.getRaceStats(race);
+            if (cfg == null) {
+                return null;
+            }
+            String canonical = null;
+            try {
+                for (String id : cfg.getAllClasses()) {
+                    if (id != null && classId.equalsIgnoreCase(id.trim())) {
+                        canonical = id.trim();
+                        break;
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+            if (canonical == null) {
+                canonical = classId;
+            }
+            RaceStatsConfig.ClassStats classStats = cfg.getClassStats(canonical);
+            if (classStats == null) {
+                return null;
+            }
+            RaceStatsConfig.StatScaling scaling = classStats.getStatScaling();
+            if (scaling == null) {
+                return null;
+            }
+            Double value = "ENE".equalsIgnoreCase(key)
+                    ? scaling.getEnergyScaling()
+                    : scaling.getStaminaScaling();
+            if (value == null || !Double.isFinite(value) || value <= 0.0d) {
+                return null;
+            }
+            return value;
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     private static double sanePositive(double value, double fallback) {

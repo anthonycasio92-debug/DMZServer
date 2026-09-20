@@ -51,7 +51,7 @@ public final class StaminaRegenGuard {
         float maxSPreview = 0f;
         float curSPreview = 0f;
         try {
-            maxSPreview = data.getMaxStamina();
+            maxSPreview = DmzResourcePoolClamp.displayMaxStamina(data);
             curSPreview = res.getCurrentStamina();
         } catch (Throwable ignored) {
         }
@@ -82,7 +82,7 @@ public final class StaminaRegenGuard {
 
         UUID id = player.m_20148_();
         try {
-            float maxS = data.getMaxStamina();
+            float maxS = DmzResourcePoolClamp.displayMaxStamina(data);
             float curS = res.getCurrentStamina();
             if (maxS > 1f && curS >= 0f && curS < maxS && !dashing
                     && !cds.hasCooldown(Cooldowns.STAMINA_PAUSE)) {
