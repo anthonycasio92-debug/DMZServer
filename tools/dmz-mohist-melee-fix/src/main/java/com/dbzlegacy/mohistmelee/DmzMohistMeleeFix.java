@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.24: /sdu edit opens SDU 3.0.11 hub for Mohist staff",
+                "[{}] v2.12.25: /sdu edit sends a non-empty hub packet on Mohist",
                 MOD_ID
         );
         ReachRepairEvents.register();

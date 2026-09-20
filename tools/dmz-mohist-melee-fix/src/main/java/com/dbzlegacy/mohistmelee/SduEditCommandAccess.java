@@ -1,11 +1,15 @@
 package com.dbzlegacy.mohistmelee;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.tree.CommandNode;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Locale;
 import java.util.function.Predicate;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.TickTask;
@@ -14,25 +18,29 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.network.NetworkDirection;
+import net.minecraftforge.network.simple.SimpleChannel;
 import net.shurui.dev.sdu.network.DmzNet;
+import net.shurui.dev.sdu.network.OpenHubPacket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * SDU 3.0.11 {@code /sdu edit} is two silent no-ops on Mohist:
+ * SDU 3.0.11 {@code /sdu edit} on Mohist:
  * <ol>
  *   <li>{@code /sdu} requires Forge permission level 2.</li>
- *   <li>The edit executor only opens the hub if {@code getEntity() instanceof ServerPlayer}.
- *       Mohist sources often have a player sender and a null entity, so the command
- *       returns 0 and sends no GUI.</li>
+ *   <li>The stock executor only opens the hub if {@code getEntity() instanceof ServerPlayer}.</li>
+ *   <li>{@code OpenHubPacket.encode} writes 0 bytes. Live 2.12.24 logged
+ *       {@code opened SDU hub for JLDK1310} and the client still showed no screen —
+ *       empty custom payloads are dropped. {@link com.dbzlegacy.mohistmelee.mixin.OpenHubPacketEncodeMixin}
+ *       writes one byte; we also {@code sendTo} the connection and retry after chat closes.</li>
  * </ol>
- * Chat closing on the client can also clear a same-tick {@code OpenHubPacket}, so the
- * hub is opened two ticks later.
  */
 public final class SduEditCommandAccess {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
     private static final String REQUIRE_MARKER = "dbzlegacy$sduStaffRequires";
     private static final String COMMAND_MARKER = "dbzlegacy$sduEditOpen";
+    private static final int[] HUB_DELAY_TICKS = {10, 25};
 
     private SduEditCommandAccess() {}
 
@@ -50,7 +58,20 @@ public final class SduEditCommandAccess {
         event.getDispatcher().register(
                 Commands.m_82127_("sduedit")
                         .requires(MohistStaffAccess::canEditSdu)
-                        .executes(ctx -> openEditor(ctx.getSource()))
+                        .executes(ctx -> openEditor(ctx.getSource(), "hub"))
+                        .then(Commands.m_82129_("which", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    for (String name : new String[]{
+                                            "hub", "race", "form", "saga", "sidequest", "wish", "shrine", "options"
+                                    }) {
+                                        builder.suggest(name);
+                                    }
+                                    return builder.buildFuture();
+                                })
+                                .executes(ctx -> openEditor(
+                                        ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "which")
+                                )))
         );
         LOGGER.info("[{}] registered /sduedit fallback for SDU 3.0.11 hub", DmzMohistMeleeFix.MOD_ID);
     }
@@ -104,7 +125,7 @@ public final class SduEditCommandAccess {
             Command<CommandSourceStack> replacement = new Command<>() {
                 @Override
                 public int run(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
-                    return openEditor(ctx.getSource());
+                    return openEditor(ctx.getSource(), "hub");
                 }
 
                 @Override
@@ -119,7 +140,7 @@ public final class SduEditCommandAccess {
         }
     }
 
-    static int openEditor(CommandSourceStack source) {
+    static int openEditor(CommandSourceStack source, String which) {
         ServerPlayer player = MohistStaffAccess.resolvePlayer(source);
         if (player == null) {
             source.m_81352_(Component.m_237113_("Run /sdu edit as a player in-game."));
@@ -130,26 +151,107 @@ public final class SduEditCommandAccess {
             source.m_81352_(Component.m_237113_("No permission to open the SDU editor."));
             return 0;
         }
+        String target = which == null || which.isBlank() ? "hub" : which.trim().toLowerCase(Locale.ROOT);
         MinecraftServer server = player.m_20194_();
-        Runnable open = () -> {
-            try {
-                DmzNet.openHub(player);
-                LOGGER.info("[{}] opened SDU hub for {}", DmzMohistMeleeFix.MOD_ID, player.m_6302_());
-            } catch (Throwable t) {
-                LOGGER.warn(
-                        "[{}] DmzNet.openHub failed for {}: {}",
-                        DmzMohistMeleeFix.MOD_ID,
-                        player.m_6302_(),
-                        t.toString()
-                );
+        if ("hub".equals(target)) {
+            if (server != null) {
+                for (int delay : HUB_DELAY_TICKS) {
+                    int tick = server.m_129921_() + delay;
+                    server.m_6937_(new TickTask(tick, () -> sendHub(player)));
+                }
+            } else {
+                sendHub(player);
             }
-        };
-        if (server != null) {
-            server.m_6937_(new TickTask(server.m_129921_() + 2, open));
-        } else {
-            open.run();
+            player.m_5661_(Component.m_237113_("§eOpening SDU editor…"), false);
+            return 1;
         }
-        player.m_5661_(Component.m_237113_("§eOpening SDU editor…"), false);
-        return 1;
+        try {
+            openNamedEditor(player, target);
+            player.m_5661_(Component.m_237113_("§eOpening SDU " + target + " editor…"), false);
+            LOGGER.info("[{}] opened SDU {} editor for {}", DmzMohistMeleeFix.MOD_ID, target, player.m_6302_());
+            return 1;
+        } catch (Throwable t) {
+            source.m_81352_(Component.m_237113_("Unknown editor '" + target + "'. Use hub, race, form, saga, sidequest, wish, shrine, options."));
+            LOGGER.warn("[{}] SDU editor {} failed for {}: {}", DmzMohistMeleeFix.MOD_ID, target, player.m_6302_(), t.toString());
+            return 0;
+        }
+    }
+
+    private static void sendHub(ServerPlayer player) {
+        if (player == null || player.m_9236_() == null) {
+            return;
+        }
+        try {
+            DmzNet.openHub(player);
+        } catch (Throwable t) {
+            LOGGER.warn("[{}] DmzNet.openHub failed for {}: {}", DmzMohistMeleeFix.MOD_ID, player.m_6302_(), t.toString());
+        }
+        try {
+            sendHubOnConnection(player);
+        } catch (Throwable t) {
+            LOGGER.warn("[{}] SDU hub sendTo failed for {}: {}", DmzMohistMeleeFix.MOD_ID, player.m_6302_(), t.toString());
+        }
+        LOGGER.info("[{}] opened SDU hub for {}", DmzMohistMeleeFix.MOD_ID, player.m_6302_());
+    }
+
+    private static void sendHubOnConnection(ServerPlayer player) throws Exception {
+        Field channelField = DmzNet.class.getDeclaredField("channel");
+        channelField.setAccessible(true);
+        Object raw = channelField.get(null);
+        if (!(raw instanceof SimpleChannel channel)) {
+            return;
+        }
+        Connection connection = playerConnection(player);
+        if (connection == null) {
+            return;
+        }
+        channel.sendTo(new OpenHubPacket(), connection, NetworkDirection.PLAY_TO_CLIENT);
+    }
+
+    private static Connection playerConnection(ServerPlayer player) {
+        try {
+            Object listener = firstField(player, "connection", "f_8906_");
+            if (listener == null) {
+                return null;
+            }
+            if (listener instanceof Connection connection) {
+                return connection;
+            }
+            Object raw = firstField(listener, "connection", "f_9742_");
+            return raw instanceof Connection connection ? connection : null;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static Object firstField(Object owner, String... names) {
+        Class<?> type = owner.getClass();
+        while (type != null && type != Object.class) {
+            for (String name : names) {
+                try {
+                    Field field = type.getDeclaredField(name);
+                    field.setAccessible(true);
+                    return field.get(owner);
+                } catch (ReflectiveOperationException ignored) {
+                }
+            }
+            type = type.getSuperclass();
+        }
+        return null;
+    }
+
+    private static void openNamedEditor(ServerPlayer player, String which) throws Exception {
+        String methodName = switch (which) {
+            case "race" -> "openRaceEditor";
+            case "form" -> "openFormEditor";
+            case "saga" -> "openSagaEditor";
+            case "sidequest" -> "openSideQuestEditor";
+            case "wish" -> "openWishEditor";
+            case "shrine" -> "openShrineConfig";
+            case "options" -> "openOptions";
+            default -> throw new IllegalArgumentException(which);
+        };
+        Method method = DmzNet.class.getMethod(methodName, ServerPlayer.class);
+        method.invoke(null, player);
     }
 }

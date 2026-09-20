@@ -37,7 +37,7 @@ fi
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
-JAR="$ROOT/mods/dmz_mohist_melee_fix-2.12.24.jar"
+JAR="$ROOT/mods/dmz_mohist_melee_fix-2.12.25.jar"
 
 rm -f "$ROOT"/mods/dmz_mohist_melee_fix-*.jar
 rm -f "$ROOT"/dmz_mohist_melee_fix-*.jar
@@ -56,7 +56,8 @@ if [[ ! -f "$DMZREVAMP" ]]; then
   exit 1
 fi
 
-CP="$SRG:$FORGE_S:$FORGE_U:$ROOT/libraries/net/minecraftforge/fmlcore/1.20.1-47.4.10/fmlcore-1.20.1-47.4.10.jar:$ROOT/libraries/net/minecraftforge/fmlloader/1.20.1-47.4.10/fmlloader-1.20.1-47.4.10.jar:$ROOT/libraries/net/minecraftforge/forgespi/7.0.1/forgespi-7.0.1.jar:$ROOT/libraries/net/minecraftforge/javafmllanguage/1.20.1-47.4.10/javafmllanguage-1.20.1-47.4.10.jar:$ROOT/libraries/net/minecraftforge/eventbus/6.0.5/eventbus-6.0.5.jar:$ROOT/libraries/org/spongepowered/mixin/0.8.5/mixin-0.8.5.jar:$ROOT/libraries/org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar:$ROOT/libraries/org/ow2/asm/asm/9.6/asm-9.6.jar:$ROOT/libraries/org/apache/logging/log4j/log4j-api/2.19.0/log4j-api-2.19.0.jar:$ROOT/libraries/com/mojang/authlib/4.0.43/authlib-4.0.43.jar:$ROOT/libraries/com/mojang/brigadier/1.1.8/brigadier-1.1.8.jar:$ROOT/libraries/com/google/guava/guava/31.1-jre/guava-31.1-jre.jar:$DMZ:$DMZREVAMP"
+NETTY="$ROOT/libraries/io/netty/netty-buffer/4.1.82.Final/netty-buffer-4.1.82.Final.jar:$ROOT/libraries/io/netty/netty-common/4.1.82.Final/netty-common-4.1.82.Final.jar"
+CP="$SRG:$FORGE_S:$FORGE_U:$NETTY:$ROOT/libraries/net/minecraftforge/fmlcore/1.20.1-47.4.10/fmlcore-1.20.1-47.4.10.jar:$ROOT/libraries/net/minecraftforge/fmlloader/1.20.1-47.4.10/fmlloader-1.20.1-47.4.10.jar:$ROOT/libraries/net/minecraftforge/forgespi/7.0.1/forgespi-7.0.1.jar:$ROOT/libraries/net/minecraftforge/javafmllanguage/1.20.1-47.4.10/javafmllanguage-1.20.1-47.4.10.jar:$ROOT/libraries/net/minecraftforge/eventbus/6.0.5/eventbus-6.0.5.jar:$ROOT/libraries/org/spongepowered/mixin/0.8.5/mixin-0.8.5.jar:$ROOT/libraries/org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar:$ROOT/libraries/org/ow2/asm/asm/9.6/asm-9.6.jar:$ROOT/libraries/org/apache/logging/log4j/log4j-api/2.19.0/log4j-api-2.19.0.jar:$ROOT/libraries/com/mojang/authlib/4.0.43/authlib-4.0.43.jar:$ROOT/libraries/com/mojang/brigadier/1.1.8/brigadier-1.1.8.jar:$ROOT/libraries/com/google/guava/guava/31.1-jre/guava-31.1-jre.jar:$DMZ:$DMZREVAMP"
 if [[ -n "$SHURUI" ]]; then
   CP="$CP:$SHURUI"
   echo "Using Shurui jar for compile: $SHURUI"
@@ -87,6 +88,6 @@ echo '{}' > /tmp/dmz_mohist_melee_fix.refmap.json
     -C "$RES" pack.mcmeta
 )
 jar uf "$JAR" -C /tmp dmz_mohist_melee_fix.refmap.json
-cp -f "$JAR" "$ROOT/dmz_mohist_melee_fix-2.12.24.jar"
+cp -f "$JAR" "$ROOT/dmz_mohist_melee_fix-2.12.25.jar"
 echo "Built $JAR"
 jar tf "$JAR"
