@@ -4,7 +4,7 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.12.22"
+version = "2.12.23"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''

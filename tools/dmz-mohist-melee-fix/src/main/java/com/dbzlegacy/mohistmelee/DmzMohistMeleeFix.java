@@ -19,12 +19,13 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.22: SDU edit honors Mohist OP / staff permission",
+                "[{}] v2.12.23: /sdu edit honors Mohist OP / staff permission",
                 MOD_ID
         );
         ReachRepairEvents.register();
         PersonalSagaEvents.register();
         StatsResetCommands.register();
+        SduEditCommandAccess.register();
         MeleeFixSelfTest.registerIfEnabled();
     }
 }

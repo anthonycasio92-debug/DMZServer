@@ -6,6 +6,7 @@
   "refmap": "dmz_mohist_melee_fix.refmap.json",
   "mixins": [
     "SduBuyStackSkillPricelessMixin",
+    "SduCommandRequiresMixin",
     "SduPermsCanEditMixin"
   ],
   "client": [],
