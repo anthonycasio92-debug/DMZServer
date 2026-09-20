@@ -86,7 +86,13 @@ public final class DmzRevampPrestigeBridge {
             if (current == completed) {
                 return;
             }
+            float maxEBefore = data.getMaxEnergy();
+            float maxSBefore = data.getMaxStamina();
             setCount.invoke(null, data, completed);
+            try {
+                OverhaulPrestigeResourceScale.afterSetCount(player, data, maxEBefore, maxSBefore);
+            } catch (Throwable ignored) {
+            }
             try {
                 DmzSkillUtil.sync(player);
             } catch (Throwable ignored) {
