@@ -120,11 +120,6 @@ public final class PrestigeSystem {
         int newCompleted = completed + 1;
         setHeld(player, newHeld);
         setCompleted(player, newCompleted);
-        try {
-            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
-                    .syncFromLegacy(player);
-        } catch (Throwable ignored) {
-        }
         // Lock Need so turn-in / Fabled spend cannot snap the next gate back to 20k.
         raiseNeedFloor(player, required);
         resetPrestigeProgress(player);
@@ -168,6 +163,11 @@ public final class PrestigeSystem {
         }
         // Prestige-point skill floors + Permanent Majin/Mutant must survive dmzstats reset.
         PrestigePointsSystem.scheduleReapplyAfterPrestige(player);
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .scheduleSyncAfterStatsReset(player);
+        } catch (Throwable ignored) {
+        }
 
         int nextRequired = requiredLevel(player);
         String summary = "§aPrestige Level §f" + newCompleted + " §aComplete!\n"

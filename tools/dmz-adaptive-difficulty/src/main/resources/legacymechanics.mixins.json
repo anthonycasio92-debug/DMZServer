@@ -7,6 +7,7 @@
   "refmap": "legacymechanics.refmap.json",
   "mixins": [
     "StatsDataMixin",
+    "StatsDataResetPrestigeSyncMixin",
     "DmzRevampPrestigeCapMixin",
     "UpdateCharacterC2SMixin",
     "CreateCharacterC2SMixin"

@@ -7,6 +7,9 @@ import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dragonminez.common.stats.StatsData;
 import java.lang.reflect.Method;
+import java.util.UUID;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fml.ModList;
 
@@ -33,8 +36,39 @@ public final class DmzRevampPrestigeBridge {
     }
 
     /**
-     * Push LM lifetime completed → Overhaul prestige count on {@link StatsData}.
+     * {@code dmzstats reset} / {@link StatsData#resetPlayerProgress} clears Overhaul's
+     * prestige counter on {@link StatsData}; re-apply LM lifetime completed after rebuild.
      */
+    public static void scheduleSyncAfterStatsReset(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        syncFromLegacy(player);
+        MinecraftServer server = player.m_20194_();
+        if (server == null) {
+            return;
+        }
+        UUID id = player.m_20148_();
+        server.execute(() -> {
+            ServerPlayer p = server.m_6846_().m_11259_(id);
+            if (p != null && p.m_6084_()) {
+                syncFromLegacy(p);
+            }
+        });
+        for (int delay : new int[] {5, 20, 40, 80, 160, 300, 600}) {
+            final int ticks = delay;
+            try {
+                server.m_6937_(new TickTask(server.m_129921_() + ticks, () -> {
+                    ServerPlayer p = server.m_6846_().m_11259_(id);
+                    if (p != null && p.m_6084_()) {
+                        syncFromLegacy(p);
+                    }
+                }));
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
     public static void syncFromLegacy(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enablePrestigeSystem || !revampPresent()) {
             return;

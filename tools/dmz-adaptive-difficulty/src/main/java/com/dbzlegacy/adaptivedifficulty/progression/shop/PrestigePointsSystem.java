@@ -1099,6 +1099,11 @@ public final class PrestigePointsSystem {
             DmzSkillUtil.sync(player);
         } catch (Throwable ignored) {
         }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(player);
+        } catch (Throwable ignored) {
+        }
     }
 
     /** Called from shop pulse — drains delayed reapply markers + keeps forms/skills live. */

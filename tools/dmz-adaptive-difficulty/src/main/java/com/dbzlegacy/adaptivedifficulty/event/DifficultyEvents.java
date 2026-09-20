@@ -159,6 +159,19 @@ public final class DifficultyEvents {
     }
 
     @SubscribeEvent
+    public void onDmzPlayerDataLoad(DMZEvent.PlayerDataLoadEvent event) {
+        if (event == null || !(event.getPlayer() instanceof ServerPlayer)) {
+            return;
+        }
+        ServerPlayer player = (ServerPlayer) event.getPlayer();
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(player);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    @SubscribeEvent
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             var data = DifficultyCache.data(player);
@@ -182,6 +195,11 @@ public final class DifficultyEvents {
             RivalSystem.onLogin(player);
             SparringSystem.onLogin(player);
             ProgressionSystem.onLogin(player);
+            try {
+                com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                        .syncFromLegacy(player);
+            } catch (Throwable ignored) {
+            }
             var server = player.m_20194_();
             if (server != null) {
                 server.execute(() -> {
