@@ -209,6 +209,8 @@ public final class CharacterServicesConfig {
         public Map<String, Long> boneCosts = new LinkedHashMap<>();
         public Map<String, String> displayNames = new LinkedHashMap<>();
         public java.util.List<String> excludeBones = Collections.emptyList();
+        /** Re-apply {@link CharacterServicesStore.PlayerRecord#equippedHeadBone} after transformations. */
+        public boolean persistThroughForms = true;
 
         public boolean isExcluded(String boneId) {
             if (boneId == null || excludeBones == null) {

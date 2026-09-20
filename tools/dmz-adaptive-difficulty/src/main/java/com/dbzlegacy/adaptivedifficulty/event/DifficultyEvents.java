@@ -655,6 +655,10 @@ public final class DifficultyEvents {
                 || Math.abs(before.transformationPower - transform) > 0.5
                 || (prevRace != null && race != null && !prevRace.equals(race))) {
             com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.refreshCombatPaint(player);
+            if (formKeyChanged || formChanged) {
+                com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService
+                        .scheduleReapplyAfterFormChange(player);
+            }
         } else if (progressChanged) {
             DifficultyCache.refresh(player);
         }
@@ -688,6 +692,8 @@ public final class DifficultyEvents {
         }
         // Immediate claimed-mob repaint — don't wait for the nearby pulse.
         com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.refreshCombatPaint(player);
+        com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService.scheduleReapplyAfterFormChange(
+                player);
     }
 
     @SubscribeEvent
@@ -700,6 +706,8 @@ public final class DifficultyEvents {
             return;
         }
         com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.refreshCombatPaint(player);
+        com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService.scheduleReapplyAfterFormChange(
+                player);
     }
 
     /**

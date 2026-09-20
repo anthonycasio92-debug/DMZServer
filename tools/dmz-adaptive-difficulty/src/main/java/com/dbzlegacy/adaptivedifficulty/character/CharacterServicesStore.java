@@ -151,6 +151,11 @@ public final class CharacterServicesStore {
          * Not cleared by race change, reskin, or class change.
          */
         public Set<String> unlockedHeadBones = new LinkedHashSet<>();
+        /**
+         * Last head part the player chose to wear (shop equip / race default / unequip).
+         * Re-applied after DMZ form changes that clear {@code activeHeadBone} on the model.
+         */
+        public String equippedHeadBone = "";
     }
 
     private static final class Persist {
