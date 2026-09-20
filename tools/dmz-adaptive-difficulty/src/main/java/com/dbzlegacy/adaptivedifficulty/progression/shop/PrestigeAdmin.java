@@ -20,7 +20,8 @@ public final class PrestigeAdmin {
         return "§6§l/padmin §8(or /prestige admin)\n"
                 + "§e/padmin info [player]\n"
                 + "§e/padmin points <player> <set|add|remove> <n>\n"
-                + "§e/padmin addpoints|removepoints <player> <n>\n"
+                + "§8Also: /padmin points set <n>  ·  /padmin points <player> <n>\n"
+                + "§e/padmin addpoints|removepoints|setpoints <player> <n>\n"
                 + "§e/padmin skill <player> <skillId> <set|add|remove> <levels>\n"
                 + "§8  e.g. skill Steve potentialunlock set 10\n"
                 + "§e/padmin skills <player> §8— list invested skill floors\n"
@@ -128,7 +129,8 @@ public final class PrestigeAdmin {
         Integer next = applyMode(before, mode, amount, 0, 1_000_000);
         if (next == null) {
             return "§cUsage: points <player> <set|add|remove> <n>\n"
-                    + "§8Or: addpoints <player> <n> · removepoints <player> <n>";
+                    + "§8Or: points set <n> · points <player> <n>\n"
+                    + "§8Or: addpoints|setpoints|removepoints <player> <n>";
         }
         PrestigePointsSystem.setPoints(target, next);
         log(target, "admin_points", mode, before, next);

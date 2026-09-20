@@ -1422,7 +1422,8 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|character|prestige|progression|skills]");
         sender.sendMessage("§e/lm admin inspect clear §7— stop inspecting");
         sender.sendMessage("§e/padmin points <player> add|remove|set <n> §7— wallet for all prestige shops");
-        sender.sendMessage("§e/padmin addpoints|removepoints <player> <n>");
+        sender.sendMessage("§8Also: /padmin points set <n>  ·  /padmin points <player> <n>");
+        sender.sendMessage("§e/padmin addpoints|setpoints|removepoints <player> <n>");
         sender.sendMessage("§e/padmin info [player] §7— prestige admin (chat)");
         sender.sendMessage("§8Also: /difficulty admin gui|inspect <player>");
     }
@@ -1506,6 +1507,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 || "fabled".equals(sub) || "sync".equals(sub)
                 || "addpoints".equals(sub) || "givepoints".equals(sub) || "grantpoints".equals(sub)
                 || "removepoints".equals(sub) || "takepoints".equals(sub)
+                || "setpoints".equals(sub)
                 || "tier".equals(sub) || "tiers".equals(sub) || "difficulty".equals(sub)
                 || "skill".equals(sub) || "skills".equals(sub)
                 || "invest".equals(sub) || "invested".equals(sub);
