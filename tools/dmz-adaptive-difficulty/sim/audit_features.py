@@ -1269,8 +1269,22 @@ def main() -> int:
           'remap = false' in mixin and "StatsData.class, remap = false" in mixin)
     check("StatsDataMixin applies personal cap", "lm$personalMaxValue" in mixin)
     revamp_cap = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/DmzRevampPrestigeCapMixin.java")
-    check("Overhaul levelCap uses LM breakthrough",
-          "levelCap" in revamp_cap and "LmOverhaulCapMath.personalLevelCap" in revamp_cap)
+    check("Overhaul levelCap left native for hex scale",
+          '@Inject(method = "levelCap"' not in revamp_cap
+          and "hexStatReference" in revamp_cap)
+    check("Overhaul maxAssignableTotal uses LM breakthrough",
+          "maxAssignableTotal" in revamp_cap
+          and "LmOverhaulCapMath.maxAssignableTotal" in revamp_cap)
+    combat_scale = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataOverhaulCombatScaleMixin.java")
+    check("Overhaul combat scale uses scaleMultiplier",
+          "getTotalMultiplier" in combat_scale
+          and "combatScaleMultiplier" in combat_scale
+          and "isResourcePoolStat" in combat_scale)
+    check("mixins.json registers combat scale mixin",
+          '"StatsDataOverhaulCombatScaleMixin"' in mixins_json)
+    dmz_prog = read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/DmzProgression.java")
+    check("AD ceiling honors 150k breakthroughs",
+          "ABSOLUTE_LEVEL_CAP" in dmz_prog and "configuredMaxDmzLevel" in dmz_prog)
     check("Overhaul rebirth blocked", "canPrestige" in revamp_cap)
     check("StatsDataMixin gated on prestige flag", "enablePrestigeSystem" in mixin)
     check("StatsDataMixin beats dmzrevamp cap mixin", "priority = 2000" in mixin)

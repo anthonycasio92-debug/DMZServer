@@ -8,18 +8,20 @@ import com.dbzlegacy.adaptivedifficulty.progression.bridge.OverhaulPrestigeResou
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dragonminez.common.stats.StatsData;
+import java.lang.reflect.Method;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fml.ModList;
 
 /**
  * Use dmzrevamp Overhaul prestige (Statistics UI, scaling, saga rebirth) while Legacy Mechanics
- * overrides only {@link com.dmzrevamp.revamp.prestige.PrestigeSystem#levelCap} and stat totals.
+ * owns playable stat totals via mixins. Overhaul keeps native {@code levelCap} for hex/scale math.
  */
 public final class LmOverhaulPrestigeIntegration {
     /** Overhaul Statistics prestige count hard cap. */
     public static final int OVERHAUL_MAX_PRESTIGE = 10;
 
     private static volatile Boolean overhaulPrestigeEnabled;
+    private static volatile Method overhaulScaleMultiplier;
 
     private LmOverhaulPrestigeIntegration() {}
 
@@ -56,6 +58,46 @@ public final class LmOverhaulPrestigeIntegration {
 
     public static void clearConfigCache() {
         overhaulPrestigeEnabled = null;
+        overhaulScaleMultiplier = null;
+    }
+
+    /**
+     * Overhaul {@code PrestigeSystem.scaleMultiplier} = {@code 1 + count × scaleBonusPerPrestige}.
+     * Live {@code scaleBonusPerPrestige} is 1.0, so prestige 10 is 11×. Used for combat
+     * total-multipliers (not ki/stamina pools).
+     */
+    public static double combatScaleMultiplier(StatsData data) {
+        if (data == null || !overhaulPrestigeEnabled()) {
+            return 1.0d;
+        }
+        try {
+            Method m = overhaulScaleMultiplier;
+            if (m == null) {
+                Class<?> cls = Class.forName("com.dmzrevamp.revamp.prestige.PrestigeSystem");
+                m = cls.getMethod("scaleMultiplier", StatsData.class);
+                overhaulScaleMultiplier = m;
+            }
+            Object v = m.invoke(null, data);
+            if (v instanceof Number n) {
+                double d = n.doubleValue();
+                if (Double.isFinite(d) && d > 0.0d) {
+                    return d;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return 1.0d;
+    }
+
+    /** Ki/stamina pool keys — Overhaul scale stays off these (2.4.85). */
+    public static boolean isResourcePoolStat(String stat) {
+        if (stat == null || stat.isBlank()) {
+            return false;
+        }
+        return "ENE".equalsIgnoreCase(stat)
+                || "STM".equalsIgnoreCase(stat)
+                || "ENERGY".equalsIgnoreCase(stat)
+                || "STAMINA".equalsIgnoreCase(stat);
     }
 
     /** Log both Overhaul JSON toggles + whether native prestige is active (after {@code reload}). */

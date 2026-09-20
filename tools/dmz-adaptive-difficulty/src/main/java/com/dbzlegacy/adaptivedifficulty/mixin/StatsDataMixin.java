@@ -12,7 +12,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Overrides dmzrevamp {@code StatsDataLevelingRevampMixin} after it runs (priority 2000).
- * Level cap, max stat total, and per-click stat buys all follow LM breakthrough caps.
+ * Playable max value / max stat total / per-click stat buys follow LM breakthrough caps.
+ * Overhaul {@code PrestigeSystem.levelCap} is left native for hex/prestige scale math.
  */
 @Mixin(value = StatsData.class, remap = false, priority = 2000)
 public abstract class StatsDataMixin {

@@ -277,8 +277,13 @@ public final class DmzProgression {
                 personal = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
                         .effectiveMaxLevel(sp);
             }
-            // Allow personal headroom above the configured server maxValue.
-            int absolute = (int) Math.min(Integer.MAX_VALUE, Math.max(1L, adMax));
+            // Breakthroughs raise the personal cap toward 150k. Never clamp that
+            // below ABSOLUTE_LEVEL_CAP just because live referenceMaxLevel is stale
+            // (production JSON was still 100000 after Overhaul/DMZ moved to 150k).
+            int absolute = (int) Math.min(Integer.MAX_VALUE, Math.max(
+                    Math.max(1L, adMax),
+                    com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                            .ABSOLUTE_LEVEL_CAP));
             ceiling = Math.min(absolute, Math.max(ceiling, personal));
         } catch (Throwable ignored) {
         }

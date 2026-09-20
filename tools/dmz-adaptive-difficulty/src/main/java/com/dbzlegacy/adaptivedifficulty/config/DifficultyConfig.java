@@ -133,8 +133,8 @@ public final class DifficultyConfig {
     /**
      * Reference caps used to document the top tier (Zenith).
      * Theoretical max ≈ referenceMaxLevel × referenceMaxPrestige × prestigeMultiplier
-     * = 150000 × 10 × 10 with defaults. Server DMZ maxValue stays 100k; prestige
-     * breakthroughs raise a player's personal cap toward referenceMaxLevel.
+     * = 150000 × 10 × 10 with defaults. Server DMZ maxValue is 150k; prestige
+     * breakthroughs raise a player's personal playable cap from 100k toward 150k.
      */
     public long referenceMaxLevel = 150_000L;
     public int referenceMaxPrestige = 10;
@@ -259,8 +259,9 @@ public final class DifficultyConfig {
     public boolean enableSkillUnlockService = true;
     public boolean enablePrestigeSystem = true;
     /**
-     * Use dmzrevamp Statistics prestige UI + native scaling/rebirth. LM still overrides
-     * {@code levelCap} / max stat total via mixins ({@code enableOverhaulPrestigeIntegration}).
+     * Use dmzrevamp Statistics prestige UI + native scaling/rebirth. LM still owns
+     * playable max stat total via mixins ({@code enableOverhaulPrestigeIntegration}).
+     * Overhaul {@code levelCap} stays native so hex/prestige scale math is unchanged.
      * Requires {@code LevelingRevamp.json → Prestige.enabled: true} on the server.
      */
     public boolean enableOverhaulPrestigeIntegration = true;
@@ -522,6 +523,11 @@ public final class DifficultyConfig {
      * Without this flag, intentional 1024 caps were wiped every reload.
      */
     public Boolean legacyMaxHealthCapMigratedV1 = Boolean.FALSE;
+    /**
+     * One-time: raise stale live {@code referenceMaxLevel} 100000 → 150000 so
+     * breakthroughs to 150k are not clamped by the old AD ceiling.
+     */
+    public Boolean referenceMaxLevel150kMigratedV1 = Boolean.FALSE;
     /**
      * One-time: drop race / weak-stat / specialization stack and soften class + top-1
      * counter stock values so existing configs match the lighter 3.3.35 model.
@@ -1343,6 +1349,12 @@ public final class DifficultyConfig {
                 cfg.maxScaledHealth = 0.0;
             }
             cfg.legacyMaxHealthCapMigratedV1 = Boolean.TRUE;
+        }
+        if (!Boolean.TRUE.equals(cfg.referenceMaxLevel150kMigratedV1)) {
+            if (cfg.referenceMaxLevel == 100_000L) {
+                cfg.referenceMaxLevel = 150_000L;
+            }
+            cfg.referenceMaxLevel150kMigratedV1 = Boolean.TRUE;
         }
         if (cfg.maxDamageMultiplier < 0.0) {
             cfg.maxDamageMultiplier = 0.0;

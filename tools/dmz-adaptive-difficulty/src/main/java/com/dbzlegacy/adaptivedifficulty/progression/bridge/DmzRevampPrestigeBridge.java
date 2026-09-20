@@ -18,7 +18,7 @@ import net.minecraftforge.fml.ModList;
 /**
  * Keeps dmzrevamp Overhaul {@link com.dmzrevamp.revamp.prestige.PrestigeSystem} prestige
  * count aligned with Legacy Mechanics lifetime completed prestiges (statistics UI only).
- * Level/stat caps come from {@link com.dbzlegacy.adaptivedifficulty.mixin.DmzRevampPrestigeCapMixin}.
+ * Playable stat totals come from {@link com.dbzlegacy.adaptivedifficulty.mixin.DmzRevampPrestigeCapMixin}.
  */
 public final class DmzRevampPrestigeBridge {
     private static final String REVAMP_MOD = "dmzrevamp";
