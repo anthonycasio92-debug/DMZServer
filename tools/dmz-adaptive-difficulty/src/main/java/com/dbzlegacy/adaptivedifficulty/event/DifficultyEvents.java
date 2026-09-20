@@ -1164,6 +1164,30 @@ public final class DifficultyEvents {
     }
 
     @SubscribeEvent
+    public void onEnergyRegen(DMZEvent.EnergyRegenEvent event) {
+        if (event == null || !(event.getPlayer() instanceof ServerPlayer player)) {
+            return;
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzResourceRegenSync
+                    .afterEnergyRegen(player, event.getStatsData(), event.getAmount());
+        } catch (Throwable ignored) {
+        }
+    }
+
+    @SubscribeEvent
+    public void onStaminaRegen(DMZEvent.StaminaRegenEvent event) {
+        if (event == null || !(event.getPlayer() instanceof ServerPlayer player)) {
+            return;
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzResourceRegenSync
+                    .afterStaminaRegen(player, event.getStatsData(), event.getAmount());
+        } catch (Throwable ignored) {
+        }
+    }
+
+    @SubscribeEvent
     public void onKiCharge(DMZEvent.KiChargeEvent event) {
         if (SystemGate.isDisabled() || !(event.getPlayer() instanceof ServerPlayer player)
                 || !SystemGate.participates(player)) {

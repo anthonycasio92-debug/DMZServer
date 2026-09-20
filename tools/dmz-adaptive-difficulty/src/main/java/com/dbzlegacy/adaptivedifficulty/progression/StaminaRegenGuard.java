@@ -42,8 +42,25 @@ public final class StaminaRegenGuard {
         } catch (Throwable ignored) {
         }
 
+        Resources res = data.getResources();
+        if (res == null) {
+            return;
+        }
+
         boolean dashing = cds.hasCooldown(Cooldowns.DASH_ACTIVE);
-        if (!dashing && cds.hasCooldown(Cooldowns.STAMINA_PAUSE)) {
+        float maxSPreview = 0f;
+        float curSPreview = 0f;
+        try {
+            maxSPreview = data.getMaxStamina();
+            curSPreview = res.getCurrentStamina();
+        } catch (Throwable ignored) {
+        }
+        boolean belowMaxStamina = maxSPreview > 1f && curSPreview < maxSPreview - 0.5f;
+        if (belowMaxStamina && !dashing) {
+            cds.removeCooldown(Cooldowns.STAMINA_PAUSE);
+            cds.removeCooldown(Cooldowns.DRAIN);
+            cds.removeCooldown(Cooldowns.DRAIN_ACTIVE);
+        } else if (!dashing && cds.hasCooldown(Cooldowns.STAMINA_PAUSE)) {
             int pause = cds.getCooldown(Cooldowns.STAMINA_PAUSE);
             if (pause > STALE_PAUSE_TICKS || pause > 0) {
                 cds.removeCooldown(Cooldowns.STAMINA_PAUSE);
@@ -63,10 +80,6 @@ public final class StaminaRegenGuard {
             }
         }
 
-        Resources res = data.getResources();
-        if (res == null) {
-            return;
-        }
         UUID id = player.m_20148_();
         try {
             float maxS = data.getMaxStamina();
