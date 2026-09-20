@@ -21,6 +21,8 @@ fi
 SDU="${SDU_JAR:-}"
 if [[ -z "$SDU" ]]; then
   for candidate in \
+    "$ROOT/mods"/sdu-3.0.11.jar \
+    /tmp/sdu3011/sdu-3.0.11.jar \
     "$ROOT/mods"/sdu-3.0.5.jar \
     "$ROOT"/sdu-3.0.5.jar \
     /tmp/sdu-3.0.5.jar \
@@ -35,7 +37,7 @@ fi
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
-JAR="$ROOT/mods/dmz_mohist_melee_fix-2.12.23.jar"
+JAR="$ROOT/mods/dmz_mohist_melee_fix-2.12.24.jar"
 
 rm -f "$ROOT"/mods/dmz_mohist_melee_fix-*.jar
 rm -f "$ROOT"/dmz_mohist_melee_fix-*.jar
@@ -85,6 +87,6 @@ echo '{}' > /tmp/dmz_mohist_melee_fix.refmap.json
     -C "$RES" pack.mcmeta
 )
 jar uf "$JAR" -C /tmp dmz_mohist_melee_fix.refmap.json
-cp -f "$JAR" "$ROOT/dmz_mohist_melee_fix-2.12.23.jar"
+cp -f "$JAR" "$ROOT/dmz_mohist_melee_fix-2.12.24.jar"
 echo "Built $JAR"
 jar tf "$JAR"

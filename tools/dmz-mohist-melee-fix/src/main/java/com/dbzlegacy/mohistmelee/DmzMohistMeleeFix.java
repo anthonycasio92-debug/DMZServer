@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.23: /sdu edit honors Mohist OP / staff permission",
+                "[{}] v2.12.24: /sdu edit opens SDU 3.0.11 hub for Mohist staff",
                 MOD_ID
         );
         ReachRepairEvents.register();

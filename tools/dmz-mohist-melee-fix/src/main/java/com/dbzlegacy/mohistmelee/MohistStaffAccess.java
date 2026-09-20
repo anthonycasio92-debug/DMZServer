@@ -1,6 +1,7 @@
 package com.dbzlegacy.mohistmelee;
 
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 
@@ -36,14 +37,40 @@ public final class MohistStaffAccess {
             }
         } catch (Throwable ignored) {
         }
+        ServerPlayer player = resolvePlayer(source);
+        return player != null && canEditSdu(player);
+    }
+
+    /**
+     * SDU {@code /sdu edit} uses {@code source.getEntity() instanceof ServerPlayer}.
+     * Mohist command sources often have a Bukkit sender / getPlayer() but a null entity.
+     */
+    public static ServerPlayer resolvePlayer(CommandSourceStack source) {
+        if (source == null) {
+            return null;
+        }
         try {
             Entity entity = source.m_81373_();
-            if (entity instanceof Player player) {
-                return canEditSdu(player);
+            if (entity instanceof ServerPlayer player) {
+                return player;
             }
         } catch (Throwable ignored) {
         }
-        return false;
+        try {
+            return source.m_81375_();
+        } catch (Throwable ignored) {
+        }
+        try {
+            Object bukkit = source.getClass().getMethod("getBukkitSender").invoke(source);
+            if (bukkit != null) {
+                Object handle = bukkit.getClass().getMethod("getHandle").invoke(bukkit);
+                if (handle instanceof ServerPlayer player) {
+                    return player;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
     }
 
     static boolean bukkitIsOp(Player player) {
