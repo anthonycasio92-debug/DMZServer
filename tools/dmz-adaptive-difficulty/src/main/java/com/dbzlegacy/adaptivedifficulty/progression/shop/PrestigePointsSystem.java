@@ -942,6 +942,10 @@ public final class PrestigePointsSystem {
         int n = Math.max(0, Math.min(MAX_BREAKTHROUGHS, breakthroughs));
         ProgressionData.storedPut(player, KEY_BREAKTHROUGHS, n);
         try {
+            com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.publish(player);
+        } catch (Throwable ignored) {
+        }
+        try {
             DmzSkillUtil.sync(player);
         } catch (Throwable ignored) {
         }
@@ -976,6 +980,10 @@ public final class PrestigePointsSystem {
         }
         setPoints(player, points - cost);
         ProgressionData.storedPut(player, KEY_BREAKTHROUGHS, next);
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.publish(player);
+        } catch (Throwable ignored) {
+        }
         int newCap = effectiveMaxLevel(player);
         // Force a live DMZ read so the client/stat screen picks up the raised max.
         int liveCap = newCap;

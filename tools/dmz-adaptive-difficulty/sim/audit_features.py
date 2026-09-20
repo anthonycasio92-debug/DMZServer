@@ -1263,13 +1263,14 @@ def main() -> int:
     check("LM tips config flag", "enableLmTips" in read(CFG) and "lmTipFrequentGroups" in read(CFG))
     check("breakthrough costs 15..35", "breakthroughCost" in pp and "15" in pp and "35" in pp)
     check("MAX_BREAKTHROUGHS 5", "MAX_BREAKTHROUGHS = 5" in pp)
-    check("StatsDataMixin personal cap", "getConfiguredMaxValue" in mixin and "effectiveMaxLevel" in mixin)
+    check("StatsDataMixin personal cap",
+          "getConfiguredMaxValue" in mixin and "LmOverhaulCapMath.personalLevelCap" in mixin)
     check("StatsDataMixin remap false",
           'remap = false' in mixin and "StatsData.class, remap = false" in mixin)
     check("StatsDataMixin applies personal cap", "lm$personalMaxValue" in mixin)
     revamp_cap = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/DmzRevampPrestigeCapMixin.java")
     check("Overhaul levelCap uses LM breakthrough",
-          "levelCap" in revamp_cap and "effectiveMaxLevel" in revamp_cap)
+          "levelCap" in revamp_cap and "LmOverhaulCapMath.personalLevelCap" in revamp_cap)
     check("Overhaul rebirth blocked", "canPrestige" in revamp_cap)
     check("StatsDataMixin gated on prestige flag", "enablePrestigeSystem" in mixin)
     check("StatsDataMixin beats dmzrevamp cap mixin", "priority = 2000" in mixin)
@@ -1279,7 +1280,7 @@ def main() -> int:
     check("Overhaul prestige sync bridge", "syncFromLegacy" in bridge and "setCount" in bridge)
     check("attr multi bonus default off", "enableAttrMultiBonus = false" in read(CFG))
     dmz_lvl = read(ROOT / "config" / "dmzrevamp" / "LevelingRevamp.json")
-    check("Overhaul initialLevelCap 100k", '"initialLevelCap": 100000' in dmz_lvl)
+    check("Overhaul initialLevelCap 150k", '"initialLevelCap": 150000' in dmz_lvl)
     manifest = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "resources" / "META-INF" / "MANIFEST.MF")
     check("MANIFEST MixinConfigs for Mohist",
           "MixinConfigs: legacymechanics.mixins.json" in manifest)
@@ -1293,7 +1294,8 @@ def main() -> int:
     check("TP soft-lock silent (no chat spam)",
           "event.setTpGain(0)" in events_pp
           and "pp_cap_msg_next" not in events_pp)
-    check("Stat soft-lock at personal*6", "onStatChange" in events_pp and "personal * 6" in events_pp)
+    check("Stat soft-lock at personal cap total",
+          "onStatChange" in events_pp and "maxAssignableTotal" in events_pp)
     check("Stat soft-lock uses ScreenNotify",
           "ScreenNotify.hint" in events_pp and "pp_stat_cap_title" in events_pp)
     check("Chest lore maxValue 150000 soft-lock",

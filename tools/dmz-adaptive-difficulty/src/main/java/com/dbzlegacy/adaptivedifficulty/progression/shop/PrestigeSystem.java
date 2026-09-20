@@ -169,6 +169,10 @@ public final class PrestigeSystem {
         // Prestige-point skill floors + Permanent Majin/Mutant must survive dmzstats reset.
         PrestigePointsSystem.scheduleReapplyAfterPrestige(player);
         try {
+            com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery.afterDmzStatsReset(player);
+        } catch (Throwable ignored) {
+        }
+        try {
             com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
                     .scheduleSyncAfterStatsReset(player);
         } catch (Throwable ignored) {

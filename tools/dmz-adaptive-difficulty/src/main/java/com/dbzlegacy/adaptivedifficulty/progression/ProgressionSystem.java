@@ -59,6 +59,10 @@ public final class ProgressionSystem {
             LmTips.onLogin(player);
         } catch (Throwable ignored) {
         }
+        try {
+            PersonalLevelCapMirror.publish(player);
+        } catch (Throwable ignored) {
+        }
     }
 
     public static void onLogout(ServerPlayer player) {

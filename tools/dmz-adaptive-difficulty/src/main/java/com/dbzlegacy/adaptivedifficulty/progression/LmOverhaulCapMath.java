@@ -20,7 +20,29 @@ public final class LmOverhaulCapMath {
         if (player == null) {
             return PrestigePointsSystem.BASE_LEVEL_CAP;
         }
-        return PrestigePointsSystem.effectiveMaxLevel(player);
+        int cap = PrestigePointsSystem.effectiveMaxLevel(player);
+        PersonalLevelCapMirror.publish(player);
+        return cap;
+    }
+
+    /** Server-authoritative cap from {@link StatsData} (Mohist-safe player lookup). */
+    public static int personalLevelCap(com.dragonminez.common.stats.StatsData data) {
+        if (data == null) {
+            return PrestigePointsSystem.BASE_LEVEL_CAP;
+        }
+        net.minecraft.server.level.ServerPlayer sp = LmStatsDataAccess.serverPlayer(data);
+        if (sp != null) {
+            return personalLevelCap(sp);
+        }
+        try {
+            net.minecraft.world.entity.player.Player owner = data.getPlayer();
+            int mirrored = PersonalLevelCapMirror.read(owner);
+            if (mirrored > 0) {
+                return mirrored;
+            }
+        } catch (Throwable ignored) {
+        }
+        return PrestigePointsSystem.BASE_LEVEL_CAP;
     }
 
     public static int maxAssignableTotal(StatsData data, int levelCap) {
@@ -35,6 +57,10 @@ public final class LmOverhaulCapMath {
 
     public static int maxAssignableTotal(StatsData data, ServerPlayer player) {
         return maxAssignableTotal(data, personalLevelCap(player));
+    }
+
+    public static int maxAssignableTotal(StatsData data) {
+        return maxAssignableTotal(data, personalLevelCap(data));
     }
 
     private static int initialStatTotal(StatsData data) {

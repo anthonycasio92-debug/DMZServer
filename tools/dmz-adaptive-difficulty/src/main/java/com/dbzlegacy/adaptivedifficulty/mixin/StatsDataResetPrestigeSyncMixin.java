@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.server.level.ServerPlayer;
@@ -24,6 +25,10 @@ public abstract class StatsDataResetPrestigeSyncMixin {
     ) {
         if (player == null) {
             return;
+        }
+        try {
+            PrestigeResourceRecovery.afterDmzStatsReset(player);
+        } catch (Throwable ignored) {
         }
         try {
             DmzRevampPrestigeBridge.scheduleSyncAfterStatsReset(player);

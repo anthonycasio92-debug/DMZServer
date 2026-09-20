@@ -2,9 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
-import com.dbzlegacy.adaptivedifficulty.progression.LmStatsDataAccess;
 import com.dragonminez.common.stats.StatsData;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -23,11 +21,11 @@ public abstract class StatsDataMixin {
 
     @Inject(method = "getConfiguredMaxValue", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$personalMaxValue(CallbackInfoReturnable<Integer> cir) {
-        ServerPlayer sp = serverPlayer();
-        if (sp == null) {
+        if (!prestigeCapsActive()) {
             return;
         }
-        int personal = LmOverhaulCapMath.personalLevelCap(sp);
+        StatsData self = (StatsData) (Object) this;
+        int personal = LmOverhaulCapMath.personalLevelCap(self);
         if (personal > 0) {
             cir.setReturnValue(personal);
         }
@@ -35,22 +33,20 @@ public abstract class StatsDataMixin {
 
     @Inject(method = "getConfiguredMaxTotalStats", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$personalMaxTotal(CallbackInfoReturnable<Integer> cir) {
-        ServerPlayer sp = serverPlayer();
-        if (sp == null) {
+        if (!prestigeCapsActive()) {
             return;
         }
         StatsData self = (StatsData) (Object) this;
-        cir.setReturnValue(LmOverhaulCapMath.maxAssignableTotal(self, sp));
+        cir.setReturnValue(LmOverhaulCapMath.maxAssignableTotal(self));
     }
 
     @Inject(method = "getMaxAllowedIncreaseForStat", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$clampStatBuy(String stat, int amount, CallbackInfoReturnable<Integer> cir) {
-        ServerPlayer sp = serverPlayer();
-        if (sp == null) {
+        if (!prestigeCapsActive()) {
             return;
         }
         StatsData self = (StatsData) (Object) this;
-        int personal = LmOverhaulCapMath.personalLevelCap(sp);
+        int personal = LmOverhaulCapMath.personalLevelCap(self);
         int maxTotal = LmOverhaulCapMath.maxAssignableTotal(self, personal);
         int total = 0;
         try {
@@ -62,13 +58,6 @@ public abstract class StatsDataMixin {
         int room = Math.max(0, maxTotal - total);
         int allowed = cir.getReturnValue() != null ? Math.max(0, cir.getReturnValue()) : 0;
         cir.setReturnValue(Math.min(allowed, room));
-    }
-
-    private ServerPlayer serverPlayer() {
-        if (!prestigeCapsActive()) {
-            return null;
-        }
-        return LmStatsDataAccess.serverPlayer((StatsData) (Object) this);
     }
 
     private static boolean prestigeCapsActive() {

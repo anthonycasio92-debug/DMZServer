@@ -167,6 +167,7 @@ public final class DifficultyEvents {
         try {
             com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
                     .syncFromLegacy(player);
+            com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.publish(player);
         } catch (Throwable ignored) {
         }
     }
