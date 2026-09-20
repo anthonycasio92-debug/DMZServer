@@ -9,6 +9,7 @@
     "StatsDataMixin",
     "StatsDataResetPrestigeSyncMixin",
     "DmzRevampPrestigeCapMixin",
+    "PrestigeServiceIntegrationMixin",
     "UpdateCharacterC2SMixin",
     "CreateCharacterC2SMixin",
     "StatsDataGetPlayerMixin",

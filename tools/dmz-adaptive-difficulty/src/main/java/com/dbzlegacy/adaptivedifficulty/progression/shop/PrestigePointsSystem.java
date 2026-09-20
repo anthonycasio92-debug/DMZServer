@@ -1066,6 +1066,11 @@ public final class PrestigePointsSystem {
                     .syncFromLegacy(player);
         } catch (Throwable ignored) {
         }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration
+                    .syncLmWalletFromOverhaulCount(player);
+        } catch (Throwable ignored) {
+        }
         // Stagger reapply so DMZ / Fabled finish loading (Character attach can lag).
         ProgressionData.tempPut(player, KEY_REAPPLY_AT, System.currentTimeMillis() + 12_000L);
         reapplyAllShopPurchases(player);

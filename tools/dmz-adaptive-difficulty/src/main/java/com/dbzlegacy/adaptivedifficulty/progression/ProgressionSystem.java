@@ -362,6 +362,8 @@ public final class ProgressionSystem {
             case "prestige", "enableprestigesystem" -> cfg.enablePrestigeSystem = on;
             case "prestigescale", "prestigeresourcescale", "enableprestigeresourcescaling" ->
                     cfg.enablePrestigeResourceScaling = on;
+            case "overhaulprestige", "overhaului", "enableoverhaulprestigeintegration" ->
+                    cfg.enableOverhaulPrestigeIntegration = on;
             case "fabled", "enablefabledbridge" -> cfg.enableFabledBridge = on;
             case "energy", "energymana", "enableenergymanasync" -> cfg.enableEnergyManaSync = on;
             case "statscreen", "stats", "enablestatscreensync" -> cfg.enableStatScreenSync = on;

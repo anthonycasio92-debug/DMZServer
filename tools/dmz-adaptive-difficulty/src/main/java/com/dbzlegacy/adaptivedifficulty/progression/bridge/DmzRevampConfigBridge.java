@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.bridge;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration;
 import net.minecraftforge.fml.ModList;
 
 /**
@@ -18,8 +19,9 @@ public final class DmzRevampConfigBridge {
         try {
             Class<?> cfg = Class.forName("com.dmzrevamp.config.LevelingRevampConfig");
             cfg.getMethod("reload").invoke(null);
+            LmOverhaulPrestigeIntegration.clearConfigCache();
             AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] reloaded dmzrevamp LevelingRevamp.json for LM prestige caps",
+                    "[{}] reloaded dmzrevamp LevelingRevamp.json (LM cap overrides; Overhaul prestige UI when enabled)",
                     AdaptiveDifficultyMod.MOD_ID);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(

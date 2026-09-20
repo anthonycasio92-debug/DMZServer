@@ -16,6 +16,9 @@ public final class LmPrestigeResourceScale {
 
     /** Same formula as Overhaul {@code 1 + count × scaleBonusPerPrestige}. */
     public static double multiplier(StatsData data) {
+        if (LmOverhaulPrestigeIntegration.overhaulPrestigeEnabled()) {
+            return 1.0;
+        }
         DifficultyConfig cfg = DifficultyConfig.get();
         if (cfg == null || !cfg.enablePrestigeSystem || !cfg.enablePrestigeResourceScaling) {
             return 1.0;

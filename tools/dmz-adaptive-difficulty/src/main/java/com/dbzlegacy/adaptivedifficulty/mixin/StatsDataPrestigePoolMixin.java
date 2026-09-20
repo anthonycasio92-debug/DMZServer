@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration;
 import com.dbzlegacy.adaptivedifficulty.progression.LmPrestigeResourceScale;
 import com.dragonminez.common.stats.StatsData;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,6 +17,9 @@ public abstract class StatsDataPrestigePoolMixin {
 
     @Inject(method = "getMaxEnergy", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$prestigeScaleMaxEnergy(CallbackInfoReturnable<Float> cir) {
+        if (LmOverhaulPrestigeIntegration.overhaulPrestigeEnabled()) {
+            return;
+        }
         Float base = cir.getReturnValue();
         if (base == null || base <= 0f) {
             return;
@@ -29,6 +33,9 @@ public abstract class StatsDataPrestigePoolMixin {
 
     @Inject(method = "getMaxStamina", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$prestigeScaleMaxStamina(CallbackInfoReturnable<Float> cir) {
+        if (LmOverhaulPrestigeIntegration.overhaulPrestigeEnabled()) {
+            return;
+        }
         Float base = cir.getReturnValue();
         if (base == null || base <= 0f) {
             return;
