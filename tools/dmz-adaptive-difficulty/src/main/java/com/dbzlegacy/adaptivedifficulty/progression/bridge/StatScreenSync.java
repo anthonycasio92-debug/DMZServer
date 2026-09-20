@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.bridge;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -26,11 +27,11 @@ public final class StatScreenSync {
         try {
             put(data, "Damage", dmz.getMeleeDamage());
             put(data, "StrikeDamage", dmz.getStrikeDamage());
-            put(data, "Stamina", dmz.getMaxStamina());
+            put(data, "Stamina", DmzResourcePoolClamp.displayMaxStamina(dmz));
             put(data, "Defense", dmz.getDefense());
             put(data, "Health", dmz.getMaxHealth());
             put(data, "KiDamage", dmz.getKiDamage());
-            put(data, "MaxKi", dmz.getMaxEnergy());
+            put(data, "MaxKi", DmzResourcePoolClamp.displayMaxEnergy(dmz));
         } catch (Throwable ignored) {
         }
     }

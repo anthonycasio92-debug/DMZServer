@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.bridge;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
@@ -63,7 +64,7 @@ public final class EnergyManaSync {
         }
         float cur = resources.getCurrentEnergy();
         StatsData dmz = resources.getStatsData();
-        float max = dmz != null ? dmz.getMaxEnergy() : cur;
+        float max = dmz != null ? DmzResourcePoolClamp.displayMaxEnergy(dmz) : cur;
         // Fabled lag behind DMZ / last sync — do not pull DMZ ki back down.
         if (fMana + ENERGY_EPS < last && amount <= (float) (last - fMana) + ENERGY_EPS + 2f) {
             return true;
@@ -175,10 +176,9 @@ public final class EnergyManaSync {
     }
 
     private static double readMaxEnergy(StatsData dmz, Resources resources, double currentEnergy) {
-        // Always prefer live StatsData max (Overhaul / prestige multipliers). Resources#getMaxEnergy
-        // can lag and caused CNPC + Fabled to clamp ki to the pre-scaling cap.
+        // HUD-formula cap — not StatsData#getMaxEnergy, which includes server-only extras.
         try {
-            float max = dmz.getMaxEnergy();
+            float max = DmzResourcePoolClamp.displayMaxEnergy(dmz);
             if (Float.isFinite(max) && max > 0) {
                 return max;
             }
