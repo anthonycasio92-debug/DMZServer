@@ -53,6 +53,8 @@ public final class PrestigePointsSystem {
     public static final int SKILL_SHOP_PAGE_SIZE = 21;
 
     private static final String KEY_POINTS = "prestige_points";
+    /** Root LongTag backup — same Mohist pattern as breakthroughs ({@code lm_personal_*}). */
+    public static final String ROOT_POINTS = "lm_prestige_points";
     private static final String KEY_BREAKTHROUGHS = "pp_level_breakthroughs";
     private static final String KEY_MAJIN = "pp_perm_majin";
     private static final String KEY_MUTANT = "pp_perm_mutant";
@@ -154,14 +156,28 @@ public final class PrestigePointsSystem {
         if (player == null) {
             return 0;
         }
-        return Math.max(0, (int) ProgressionData.storedGetLong(player, KEY_POINTS, 0L));
+        int fromBag = Math.max(0, (int) ProgressionData.storedGetLong(player, KEY_POINTS, 0L));
+        long fromRoot = PersistentDataAccess.getLong(player, ROOT_POINTS, -1L);
+        int n = fromBag;
+        if (fromRoot > n) {
+            n = (int) Math.min(Integer.MAX_VALUE, fromRoot);
+        }
+        if (n != fromBag && ProgressionData.storedWritable(player)) {
+            ProgressionData.storedPut(player, KEY_POINTS, n);
+            PersistentDataAccess.putLong(player, ROOT_POINTS, n);
+        } else if (fromRoot < 0 && n > 0) {
+            PersistentDataAccess.putLong(player, ROOT_POINTS, n);
+        }
+        return n;
     }
 
     public static void setPoints(ServerPlayer player, int points) {
         if (player == null) {
             return;
         }
-        ProgressionData.storedPut(player, KEY_POINTS, Math.max(0, points));
+        int n = Math.max(0, points);
+        ProgressionData.storedPut(player, KEY_POINTS, n);
+        PersistentDataAccess.putLong(player, ROOT_POINTS, n);
     }
 
     /** True when the player can afford {@code amount} prestige points. */

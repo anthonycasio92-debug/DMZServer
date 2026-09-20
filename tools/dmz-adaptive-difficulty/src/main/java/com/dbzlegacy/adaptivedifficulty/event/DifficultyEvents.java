@@ -462,6 +462,7 @@ public final class DifficultyEvents {
         copyTagIfPresent(from, to, "prestige_total_staff_override");
         copyTagIfPresent(from, to, "prestige_need_floor");
         copyTagIfPresent(from, to, "lm_prestige_held");
+        copyTagIfPresent(from, to, "lm_prestige_points");
         copyTagIfPresent(from, to, "lm_prestige_confirm_until");
         copyTagIfPresent(from, to, "lm_cnpc_player_migrated");
         copyTagIfPresent(from, to, "lm_shadow_dummy_cd_until");
