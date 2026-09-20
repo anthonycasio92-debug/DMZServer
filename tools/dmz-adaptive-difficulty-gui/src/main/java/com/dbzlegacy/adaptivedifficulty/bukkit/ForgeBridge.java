@@ -520,6 +520,10 @@ public final class ForgeBridge {
             out.put("fighting_style", style == null ? "HYBRID" : String.valueOf(style));
             out.put("weak_stat", weak == null ? "NONE" : String.valueOf(weak));
             out.put("top_stats", topLabel == null ? "—" : String.valueOf(topLabel));
+            Class<?> scaled = loadClass(
+                    "com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat",
+                    nms.getClass().getClassLoader());
+            scaled.getMethod("putPlaceholders", Map.class, serverPlayerCls).invoke(null, out, nms);
         } catch (Throwable ignored) {
         }
     }

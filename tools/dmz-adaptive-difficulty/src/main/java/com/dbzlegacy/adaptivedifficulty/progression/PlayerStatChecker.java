@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.progression;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
@@ -90,6 +91,7 @@ public final class PlayerStatChecker {
             if (prestige != null) {
                 msg(viewer, "§ePrestiged: §f" + prestige);
             }
+            msg(viewer, "§eOverhaul scale: §f" + LmOverhaulScaledCombat.formatScale(data));
 
             try {
                 msg(viewer, "§eDMZ Level: §f" + data.getLevel());
@@ -108,24 +110,29 @@ public final class PlayerStatChecker {
             Stats stats = data.getStats();
             if (stats != null) {
                 try {
-                    msg(viewer, "§cSTR: §f" + stats.getStrength());
+                    msg(viewer, "§cSTR: §f" + format(LmOverhaulScaledCombat.effectiveInvested(data, "STR"))
+                            + " §8(" + stats.getStrength() + " invested)");
                 } catch (Throwable ignored) {
                 }
                 try {
                     // Script labeled SKP via getSpirit(); DMZ API is strike power.
-                    msg(viewer, "§bSKP: §f" + stats.getStrikePower());
+                    msg(viewer, "§bSKP: §f" + format(LmOverhaulScaledCombat.effectiveInvested(data, "SKP"))
+                            + " §8(" + stats.getStrikePower() + " invested)");
                 } catch (Throwable ignored) {
                 }
                 try {
-                    msg(viewer, "§aRES: §f" + stats.getResistance());
+                    msg(viewer, "§aRES: §f" + format(LmOverhaulScaledCombat.effectiveInvested(data, "RES"))
+                            + " §8(" + stats.getResistance() + " invested)");
                 } catch (Throwable ignored) {
                 }
                 try {
-                    msg(viewer, "§dVIT: §f" + stats.getVitality());
+                    msg(viewer, "§dVIT: §f" + format(LmOverhaulScaledCombat.effectiveInvested(data, "VIT"))
+                            + " §8(" + stats.getVitality() + " invested)");
                 } catch (Throwable ignored) {
                 }
                 try {
-                    msg(viewer, "§ePWR: §f" + stats.getKiPower());
+                    msg(viewer, "§ePWR: §f" + format(LmOverhaulScaledCombat.effectiveInvested(data, "PWR"))
+                            + " §8(" + stats.getKiPower() + " invested)");
                 } catch (Throwable ignored) {
                 }
                 try {
@@ -136,15 +143,19 @@ public final class PlayerStatChecker {
 
             msg(viewer, "§6--- Damage / Defense ---");
             try {
-                msg(viewer, "§cStrike Damage: §f" + format(data.getStrikeDamage()));
+                msg(viewer, "§cMelee Damage: §f" + format(LmOverhaulScaledCombat.melee(data)));
             } catch (Throwable ignored) {
             }
             try {
-                msg(viewer, "§bKi Damage: §f" + format(data.getKiDamage()));
+                msg(viewer, "§cStrike Damage: §f" + format(LmOverhaulScaledCombat.strike(data)));
             } catch (Throwable ignored) {
             }
             try {
-                msg(viewer, "§aDefense: §f" + format(data.getDefense()));
+                msg(viewer, "§bKi Damage: §f" + format(LmOverhaulScaledCombat.ki(data)));
+            } catch (Throwable ignored) {
+            }
+            try {
+                msg(viewer, "§aDefense: §f" + format(LmOverhaulScaledCombat.defense(data)));
             } catch (Throwable ignored) {
             }
             try {

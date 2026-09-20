@@ -703,10 +703,10 @@ public final class DifficultyEvents {
                 return 1.0;
             }
             // Peak live offense across STR/SKP/PWR (+ mild ENE pool).
-            double m = Math.max(1.0, data.getMeleeDamage());
-            double s = Math.max(1.0, data.getStrikeDamage());
-            double k = Math.max(1.0, data.getKiDamage());
-            double e = Math.max(1.0, data.getMaxEnergy() * 0.08);
+            double m = Math.max(1.0, com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat.melee(data));
+            double s = Math.max(1.0, com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat.strike(data));
+            double k = Math.max(1.0, com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat.ki(data));
+            double e = Math.max(1.0, com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat.energy(data) * 0.08);
             return Math.max(m, Math.max(s, Math.max(k, e)));
         } catch (Throwable t) {
             return 1.0;

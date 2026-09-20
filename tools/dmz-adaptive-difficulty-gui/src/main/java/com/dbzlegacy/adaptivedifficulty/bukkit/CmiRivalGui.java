@@ -999,6 +999,8 @@ public final class CmiRivalGui {
         if ("true".equalsIgnoreCase(ph.getOrDefault("challengeActive", "false"))) {
             lore.add("&eChallenge active");
         }
+        lore.add("");
+        GuiBoardHelper.addOverhaulCombat(lore, ph);
         if (ForgeBridge.isStaff(player)) {
             lore.add("");
             lore.add("&8List · Actions · Challenge · Top · Progress");

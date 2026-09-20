@@ -1282,6 +1282,29 @@ def main() -> int:
           and "isResourcePoolStat" in combat_scale)
     check("mixins.json registers combat scale mixin",
           '"StatsDataOverhaulCombatScaleMixin"' in mixins_json)
+    scaled_helper = read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/LmOverhaulScaledCombat.java")
+    check("Overhaul scaled combat helper",
+          "combatScaleMultiplier" in scaled_helper
+          and "putPlaceholders" in scaled_helper
+          and "compactLines" in scaled_helper
+          and "defense" in scaled_helper)
+    check("AD combat profile uses Overhaul scaled helper",
+          "LmOverhaulScaledCombat.melee" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/PlayerCombatProfile.java")
+          and "LmOverhaulScaledCombat.defense" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/PlayerCombatProfile.java"))
+    check("spar/rival BP uses post-scale released power",
+          "LmOverhaulScaledCombat.scaled" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/CombatRating.java")
+          and "LmOverhaulScaledCombat.scaled" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/util/DmzRewards.java"))
+    check("spar/rival/AD GUIs expose post-scale stats",
+          "LmOverhaulScaledCombat.putPlaceholders" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.java")
+          and "LmOverhaulScaledCombat.putPlaceholders" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.java")
+          and "LmOverhaulScaledCombat.putPlaceholders" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java"))
     dmz_prog = read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/DmzProgression.java")
     check("AD ceiling honors 150k breakthroughs",
           "ABSOLUTE_LEVEL_CAP" in dmz_prog and "configuredMaxDmzLevel" in dmz_prog)

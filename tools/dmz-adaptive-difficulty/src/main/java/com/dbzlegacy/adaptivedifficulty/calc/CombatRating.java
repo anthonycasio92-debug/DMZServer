@@ -121,12 +121,12 @@ public final class CombatRating {
         }
         try {
             // Live form-included channels (same sources PlayerCombatProfile paints from).
-            double melee = CombatSanity.saneLive(read(() -> data.getMeleeDamage(), 1.0), 1.0);
-            double strike = CombatSanity.saneLive(read(() -> data.getStrikeDamage(), 1.0), 1.0);
-            double ki = CombatSanity.saneLive(read(() -> data.getKiDamage(), 1.0), 1.0);
-            double energy = CombatSanity.saneLive(read(() -> data.getMaxEnergy(), 1.0), 1.0);
-            double def = CombatSanity.saneLive(read(() -> data.getDefense(), 1.0), 1.0);
-            double hp = CombatSanity.saneLive(read(() -> data.getMaxHealth(), 20.0), 20.0);
+            double melee = LmOverhaulScaledCombat.melee(data);
+            double strike = LmOverhaulScaledCombat.strike(data);
+            double ki = LmOverhaulScaledCombat.ki(data);
+            double energy = LmOverhaulScaledCombat.energy(data);
+            double def = LmOverhaulScaledCombat.defense(data);
+            double hp = LmOverhaulScaledCombat.health(data);
 
             double offense = blended(melee, strike, ki, Math.max(1.0, energy * ENERGY_OFFENSE_FACTOR));
             double bulk = blended(def, hp, def, hp);
@@ -160,6 +160,11 @@ public final class CombatRating {
         }
         try {
             StatsData data = DmzProgression.stats(player);
+            // Overhaul BP weights max melee/strike/ki (scaled) but raw defense.
+            // When prestige scale is on, use live post-scale channels for spar/rival/AD.
+            if (data != null && LmOverhaulScaledCombat.scaled(data)) {
+                return releasedStatPower(player);
+            }
             if (data != null) {
                 double exact = data.getBattlePowerExact();
                 if (Double.isFinite(exact) && exact > 0.0 && exact <= SAFE_DMZ_BATTLE_POWER_MAX) {

@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.progression.bridge;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dragonminez.common.stats.StatsData;
@@ -25,12 +26,12 @@ public final class StatScreenSync {
             return;
         }
         try {
-            put(data, "Damage", dmz.getMeleeDamage());
-            put(data, "StrikeDamage", dmz.getStrikeDamage());
+            put(data, "Damage", LmOverhaulScaledCombat.melee(dmz));
+            put(data, "StrikeDamage", LmOverhaulScaledCombat.strike(dmz));
             put(data, "Stamina", DmzResourcePoolClamp.displayMaxStamina(dmz));
-            put(data, "Defense", dmz.getDefense());
-            put(data, "Health", dmz.getMaxHealth());
-            put(data, "KiDamage", dmz.getKiDamage());
+            put(data, "Defense", LmOverhaulScaledCombat.defense(dmz));
+            put(data, "Health", LmOverhaulScaledCombat.health(dmz));
+            put(data, "KiDamage", LmOverhaulScaledCombat.ki(dmz));
             put(data, "MaxKi", DmzResourcePoolClamp.displayMaxEnergy(dmz));
         } catch (Throwable ignored) {
         }

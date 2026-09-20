@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
@@ -257,7 +258,10 @@ public final class DifficultyChatMenu {
                 + (profile.fightingClass.isBlank() ? "?" : profile.fightingClass)
                 + "  §8·  §7Style §f" + profile.style.name()));
         send(player, Component.m_237113_("§7Top stats §f" + profile.topStatsLabel()));
-        send(player, Component.m_237113_("§7Unlocked §fT" + snap.highestUnlockedTier
+        for (String line : LmOverhaulScaledCombat.compactLines(DmzProgression.stats(player))) {
+            send(player, Component.m_237113_(line));
+        }
+        send(player, Component.m_237113_("§7Unlocked §fT" + snap.highestUnlockedTier)
                 + "  §8·  §7Title §e" + TitleSystem.activeDisplay(player)));
         send(player, Component.m_237113_("§6Ancient Coins §f" + AncientCoinEconomy.inventoryBreakdown(player)));
         send(player, Component.m_237113_(

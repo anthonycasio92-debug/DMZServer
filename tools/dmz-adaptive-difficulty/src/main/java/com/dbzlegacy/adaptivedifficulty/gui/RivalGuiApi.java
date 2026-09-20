@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalConstants;
@@ -81,6 +82,7 @@ public final class RivalGuiApi {
                 me.pendingMutualAcceptUuid == null ? "" : me.pendingMutualAcceptUuid.trim());
         out.put("pending_mutual_accept_name", RivalSystem.pendingMutualAcceptName(player));
         out.put("needs_mutual_replace", RivalSystem.needsMutualReplacePick(player) ? "true" : "false");
+        LmOverhaulScaledCombat.putPlaceholders(out, player);
         return out;
     }
 

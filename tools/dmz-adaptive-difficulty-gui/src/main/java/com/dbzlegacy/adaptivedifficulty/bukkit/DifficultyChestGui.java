@@ -473,7 +473,13 @@ public final class DifficultyChestGui implements Listener {
                 "&7DMZ &f" + ph.getOrDefault("level", "?")
                         + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"),
                 "&7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"),
-                "&7Title &e" + blankAsNone(ph.getOrDefault("active_title", ""))
+                "&7Title &e" + blankAsNone(ph.getOrDefault("active_title", "")),
+                "",
+                "&7Overhaul scale &f" + ph.getOrDefault("overhaul_scale", "x1"),
+                "&7Melee &f" + ph.getOrDefault("melee_scaled", "?")
+                        + "  &7Strike &f" + ph.getOrDefault("strike_scaled", "?"),
+                "&7Ki &f" + ph.getOrDefault("ki_scaled", "?")
+                        + "  &7Defense &f" + ph.getOrDefault("defense_scaled", "?")
         )));
         put(holder, inv, 13, item(Material.IRON_SWORD, "&c&lCounters", List.of(
                 "",
@@ -609,6 +615,7 @@ public final class DifficultyChestGui implements Listener {
         }
         lore.add("");
         lore.add("&cWarning: &7Scaled mobs can attack other players as well");
+        GuiBoardHelper.addOverhaulCombat(lore, ph);
         lore.addAll(coinLore(ph));
         if (staff) {
             lore.add("");

@@ -251,12 +251,12 @@ public final class PlayerCombatProfile {
         if (data != null) {
             // Read live channels independently — one bad custom-race getter must not
             // wipe the whole profile. CombatSanity clamps NaN / absurd values.
-            double liveMelee = CombatSanity.saneLive(readStat(() -> data.getMeleeDamage(), 1.0), 1.0);
-            double liveStrike = CombatSanity.saneLive(readStat(() -> data.getStrikeDamage(), 1.0), 1.0);
-            double liveKi = CombatSanity.saneLive(readStat(() -> data.getKiDamage(), 1.0), 1.0);
-            double liveEnergy = CombatSanity.saneLive(readStat(() -> data.getMaxEnergy(), 1.0), 1.0);
-            double liveDef = CombatSanity.saneLive(readStat(() -> data.getDefense(), 1.0), 1.0);
-            double liveHp = CombatSanity.saneLive(readStat(() -> data.getMaxHealth(), 20.0), 20.0);
+            double liveMelee = LmOverhaulScaledCombat.melee(data);
+            double liveStrike = LmOverhaulScaledCombat.strike(data);
+            double liveKi = LmOverhaulScaledCombat.ki(data);
+            double liveEnergy = LmOverhaulScaledCombat.energy(data);
+            double liveDef = LmOverhaulScaledCombat.defense(data);
+            double liveHp = LmOverhaulScaledCombat.health(data);
             // Flat mit includes DEF form mult — getDefense() alone understates SSJB cancel bar.
             double liveFlat = CombatSanity.saneLive(
                     readStat(() -> data.getFlatMitigation(), liveDef), liveDef);

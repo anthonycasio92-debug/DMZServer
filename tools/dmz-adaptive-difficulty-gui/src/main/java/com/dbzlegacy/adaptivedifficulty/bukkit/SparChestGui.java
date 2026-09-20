@@ -1173,6 +1173,8 @@ public final class SparChestGui implements Listener {
             lore.add("&7No mentor bond");
             lore.addAll(GuiBoardHelper.tips(player, "&8Use Mentor page to invite"));
         }
+        lore.add("");
+        GuiBoardHelper.addOverhaulCombat(lore, ph);
         if (ForgeBridge.isStaff(player)) {
             lore.add("");
             lore.add("&8Stats · Top · Mentor");

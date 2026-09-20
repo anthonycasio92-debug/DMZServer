@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.bukkit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.bukkit.Material;
@@ -21,6 +22,18 @@ final class GuiBoardHelper {
             "^#\\s*(\\d+)\\s+(.+?)\\s{2,}(.+)$|^#\\s*(\\d+)\\s+(\\S+)\\s+(.+)$");
 
     private GuiBoardHelper() {}
+
+    /** Live combat after Overhaul {@code scaleMultiplier}. */
+    static void addOverhaulCombat(List<String> lore, Map<String, String> ph) {
+        if (lore == null || ph == null) {
+            return;
+        }
+        lore.add("&7Overhaul scale &f" + ph.getOrDefault("overhaul_scale", "x1"));
+        lore.add("&7Melee &f" + ph.getOrDefault("melee_scaled", "?")
+                + " &8· &7Strike &f" + ph.getOrDefault("strike_scaled", "?"));
+        lore.add("&7Ki &f" + ph.getOrDefault("ki_scaled", "?")
+                + " &8· &7Defense &f" + ph.getOrDefault("defense_scaled", "?"));
+    }
 
     /** Staff see full tip lines; players get no instructional lore. */
     static List<String> tips(Player player, String... staffLines) {

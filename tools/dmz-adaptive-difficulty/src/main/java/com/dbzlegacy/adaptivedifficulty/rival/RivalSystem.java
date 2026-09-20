@@ -1,5 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.rival;
 
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
 import com.dbzlegacy.adaptivedifficulty.util.LmChat;
@@ -969,6 +971,17 @@ public final class RivalSystem {
                 + " §8| hits §f" + me.careerHits);
         lines.add("§7Mutual slots §f" + me.countMutual() + "§8/§f" + RivalConstants.MAX_MUTUAL_RIVALS);
         lines.add("§7TP messages §f" + (me.tpMessages ? "ON" : "OFF") + " §8(/rival tpmsg)");
+        ServerPlayer combatSrc = viewer;
+        if (targetName != null && !targetName.isBlank() && viewer != null) {
+            ServerPlayer online = findOnline(viewer.m_20194_(), targetName);
+            if (online != null) {
+                combatSrc = online;
+            }
+        }
+        if (combatSrc != null) {
+            lines.add("§6Combat (after Overhaul)");
+            lines.addAll(LmOverhaulScaledCombat.compactLines(DmzProgression.stats(combatSrc)));
+        }
         return lines;
     }
 

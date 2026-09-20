@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
@@ -36,6 +37,7 @@ public final class MechanicsGuiApi {
         out.put("skills", c.enableSkillUnlockService ? "true" : "false");
         out.put("syslog", c.enableSystemTelemetry ? "true" : "false");
         out.put("syslog_status", SystemTelemetry.statusLine());
+        LmOverhaulScaledCombat.putPlaceholders(out, player);
         return out;
     }
 

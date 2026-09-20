@@ -2,7 +2,9 @@ package com.dbzlegacy.adaptivedifficulty.progression.end;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
+import com.dbzlegacy.adaptivedifficulty.calc.CombatRating;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
@@ -2638,22 +2640,19 @@ public final class EndDimensionStrength {
         } catch (Throwable ignored) {
         }
         try {
-            out.bp = Math.max(0.0, data.getBattlePowerExact());
-            if (!(out.bp > 0)) {
-                out.bp = Math.max(0.0, data.getBattlePower());
-            }
+            out.bp = Math.max(0.0, CombatRating.safeBattlePower(player));
         } catch (Throwable ignored) {
         }
         try {
-            out.melee = Math.max(0.0, data.getMeleeDamage());
+            out.melee = LmOverhaulScaledCombat.melee(data);
         } catch (Throwable ignored) {
         }
         try {
-            out.maxHp = Math.max(20.0, data.getMaxHealth());
+            out.maxHp = LmOverhaulScaledCombat.health(data);
         } catch (Throwable ignored) {
         }
         try {
-            out.defense = Math.max(0.0, data.getDefense());
+            out.defense = LmOverhaulScaledCombat.defense(data);
         } catch (Throwable ignored) {
         }
         return out;

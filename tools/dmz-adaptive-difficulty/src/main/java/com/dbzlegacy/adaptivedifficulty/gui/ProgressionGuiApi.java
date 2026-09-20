@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
@@ -541,6 +542,7 @@ public final class ProgressionGuiApi {
         out.put("flag_cleaner", c.enableValueCleaner ? "true" : "false");
         out.put("flag_raceclass", c.enableRaceClassSync ? "true" : "false");
         out.put("flag_classperm", c.enableClassPermissionSync ? "true" : "false");
+        LmOverhaulScaledCombat.putPlaceholders(out, DmzProgression.stats(player));
         return out;
     }
 
@@ -1466,6 +1468,7 @@ public final class ProgressionGuiApi {
         } catch (Throwable t) {
             out.put("strength", "0");
         }
+        LmOverhaulScaledCombat.putPlaceholders(out, data);
         return out;
     }
 

@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.sparring;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.rival.RivalChallengeManager;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
@@ -962,6 +963,8 @@ public final class SparringSystem {
                     + " §8— §f" + bond.apprenticeNamesSummary());
         }
         lines.add("§8  - §7Streak §f" + bond.streakCurrent + " §8(best " + bond.streakBest + ")");
+        lines.add("§6Combat (after Overhaul)");
+        lines.addAll(LmOverhaulScaledCombat.compactLines(DmzProgression.stats(player)));
         if (lb != null) {
             lines.add("§eLifetime");
             lines.add("§8  - §7Total TP §a" + DmzRewards.formatWhole(lb.totalTp));

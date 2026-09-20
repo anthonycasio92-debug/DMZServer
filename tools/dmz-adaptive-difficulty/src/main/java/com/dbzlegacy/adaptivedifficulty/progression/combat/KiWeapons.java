@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.progression.combat;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.util.ApothicAttributes;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
@@ -63,14 +64,8 @@ public final class KiWeapons {
         double meleeDamage = 0.0;
         double strikeDamage = 0.0;
         if (data != null) {
-            try {
-                meleeDamage = Math.max(0.0, data.getMeleeDamage());
-            } catch (Throwable ignored) {
-            }
-            try {
-                strikeDamage = Math.max(0.0, data.getStrikeDamage());
-            } catch (Throwable ignored) {
-            }
+            meleeDamage = Math.max(0.0, LmOverhaulScaledCombat.melee(data));
+            strikeDamage = Math.max(0.0, LmOverhaulScaledCombat.strike(data));
             if (melee) {
                 kiWeapon = isKiWeaponActive(data);
                 if (!kiWeapon) {
@@ -90,10 +85,7 @@ public final class KiWeapons {
             }
         }
         if (targetData != null) {
-            try {
-                targetDefense = Math.max(0.0, targetData.getDefense());
-            } catch (Throwable ignored) {
-            }
+            targetDefense = Math.max(0.0, LmOverhaulScaledCombat.defense(targetData));
         }
 
         double pierceBonus = Math.min(armorPierce, targetDefense);

@@ -83,6 +83,10 @@ public final class DmzRewards {
             // When DMZ BP is sane, apply power-release like Rival instinct.
             // When we already fell back to released-stat power, do not double-apply.
             StatsData data = DmzProgression.stats(player);
+            if (data != null
+                    && com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat.scaled(data)) {
+                return com.dbzlegacy.adaptivedifficulty.calc.CombatRating.releasedStatPower(player);
+            }
             if (data != null) {
                 double exact = data.getBattlePowerExact();
                 float raw = data.getBattlePower();

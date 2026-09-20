@@ -6,6 +6,7 @@ import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem;
 import com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService;
 import com.dbzlegacy.adaptivedifficulty.character.FightingClassLabels;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
@@ -50,6 +51,7 @@ public final class CharacterServicesGuiApi {
         out.put("can_class_change", CharacterServicesAccess.canClassChange(player) ? "true" : "false");
         out.put("can_reskin", CharacterServicesAccess.canReskin(player) ? "true" : "false");
         out.put("can_head_bones", CharacterServicesAccess.canHeadBoneShop(player) ? "true" : "false");
+        LmOverhaulScaledCombat.putPlaceholders(out, player);
         return out;
     }
 
