@@ -5,7 +5,8 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "dmz_mohist_melee_fix.refmap.json",
   "mixins": [
-    "SduBuyStackSkillPricelessMixin"
+    "SduBuyStackSkillPricelessMixin",
+    "SduPermsCanEditMixin"
   ],
   "client": [],
   "server": [],

@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.20: ghost party heal + saga guard (no wipe on party/death)",
+                "[{}] v2.12.22: SDU edit honors Mohist OP / staff permission",
                 MOD_ID
         );
         ReachRepairEvents.register();
