@@ -1,7 +1,11 @@
 package com.dbzlegacy.adaptivedifficulty.progression;
 
+import com.dragonminez.common.network.NetworkHandler;
+import com.dragonminez.common.network.S2C.ResourceSyncS2C;
+import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
+import net.minecraft.server.level.ServerPlayer;
 
 /** Keep live ki/stamina at or below {@link StatsData#getMaxEnergy()} / {@link StatsData#getMaxStamina()}. */
 public final class DmzResourcePoolClamp {
@@ -42,5 +46,28 @@ public final class DmzResourcePoolClamp {
         } catch (Throwable ignored) {
         }
         return changed;
+    }
+
+    public static void clampAndSync(ServerPlayer player, StatsData data) {
+        if (player == null || data == null) {
+            return;
+        }
+        if (clamp(data)) {
+            syncToClient(player);
+        }
+    }
+
+    public static void syncToClient(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        try {
+            NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            NetworkHandler.sendToTrackingEntityAndSelf(new ResourceSyncS2C(player), player);
+        } catch (Throwable ignored) {
+        }
     }
 }

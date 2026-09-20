@@ -15,8 +15,12 @@
     "StatsDataGetPlayerMixin",
     "StatsDataSecondaryPlayerMixin",
     "StatsDataPrestigePoolMixin",
+    "StatsDataPoolMaxHookMixin",
+    "StatsDataRestoreMultiplierClampMixin",
     "ResourcesEnergyDrainGuardMixin",
-    "ResourcesPoolClampMixin"
+    "ResourcesPoolClampMixin",
+    "ResourcesLoadClampMixin",
+    "ResourceSyncS2CClampMixin"
   ],
   "injectors": {
     "defaultRequire": 1

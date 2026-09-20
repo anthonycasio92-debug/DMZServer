@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.bridge;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
+import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
 import java.util.Map;
@@ -37,6 +38,14 @@ public final class OverhaulPrestigeResourceScale {
         boolean changed = false;
         if (res != null) {
             changed |= DmzResourcePoolClamp.clamp(data);
+        }
+        if (LmOverhaulPrestigeIntegration.overhaulPrestigeEnabled()) {
+            if (changed) {
+                afterPoolsChanged(player, data);
+            }
+            LAST_MAX_ENERGY.put(id, safeMax(data.getMaxEnergy()));
+            LAST_MAX_STAMINA.put(id, safeMax(data.getMaxStamina()));
+            return;
         }
 
         Float prevE = LAST_MAX_ENERGY.get(id);
@@ -223,6 +232,10 @@ public final class OverhaulPrestigeResourceScale {
         try {
             EnergyManaSync.clear(player.m_20148_());
             EnergyManaSync.sync(player, true);
+        } catch (Throwable ignored) {
+        }
+        try {
+            DmzResourcePoolClamp.syncToClient(player);
         } catch (Throwable ignored) {
         }
         try {
