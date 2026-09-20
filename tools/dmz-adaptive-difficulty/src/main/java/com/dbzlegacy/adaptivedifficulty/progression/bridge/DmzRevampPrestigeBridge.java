@@ -78,7 +78,9 @@ public final class DmzRevampPrestigeBridge {
         if (data == null) {
             return;
         }
-        int completed = Math.max(0, PrestigeSystem.getCompleted(player));
+        int completed = Math.max(0, Math.min(
+                com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration.OVERHAUL_MAX_PRESTIGE,
+                PrestigeSystem.getCompleted(player)));
         if (!ensureMethods()) {
             return;
         }

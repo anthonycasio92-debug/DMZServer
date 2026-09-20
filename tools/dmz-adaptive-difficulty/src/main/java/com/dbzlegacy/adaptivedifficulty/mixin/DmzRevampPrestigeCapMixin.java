@@ -8,6 +8,7 @@ import com.dragonminez.common.stats.StatsData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
@@ -39,9 +40,24 @@ public abstract class DmzRevampPrestigeCapMixin {
 
     @Inject(method = "canPrestige", at = @At("HEAD"), cancellable = true, remap = false)
     private static void lm$blockOverhaulRebirth(StatsData data, CallbackInfoReturnable<Boolean> cir) {
+        int count = 0;
+        try {
+            count = com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .overhaulCount(data);
+        } catch (Throwable ignored) {
+        }
+        if (count >= LmOverhaulPrestigeIntegration.OVERHAUL_MAX_PRESTIGE) {
+            cir.setReturnValue(false);
+            return;
+        }
         if (lmOwnsPrestige() && !LmOverhaulPrestigeIntegration.integrationActive()) {
             cir.setReturnValue(false);
         }
+    }
+
+    @ModifyVariable(method = "setCount", at = @At("HEAD"), argsOnly = true, remap = false)
+    private static int lm$capOverhaulPrestigeCount(int count) {
+        return Math.max(0, Math.min(LmOverhaulPrestigeIntegration.OVERHAUL_MAX_PRESTIGE, count));
     }
 
     /** Fallback pool scale only when Overhaul prestige is disabled in JSON. */

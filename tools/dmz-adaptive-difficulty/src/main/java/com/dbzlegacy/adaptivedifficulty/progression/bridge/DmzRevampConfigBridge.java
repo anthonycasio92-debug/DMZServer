@@ -19,6 +19,13 @@ public final class DmzRevampConfigBridge {
         try {
             Class<?> cfg = Class.forName("com.dmzrevamp.config.LevelingRevampConfig");
             cfg.getMethod("reload").invoke(null);
+            try {
+                Object revampCfg = cfg.getMethod("get").invoke(null);
+                Object prestige = revampCfg.getClass().getField("Prestige").get(revampCfg);
+                prestige.getClass().getField("maxPrestigeCount")
+                        .setInt(prestige, LmOverhaulPrestigeIntegration.OVERHAUL_MAX_PRESTIGE);
+            } catch (Throwable ignored) {
+            }
             LmOverhaulPrestigeIntegration.logOverhaulPrestigeState();
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(

@@ -16,6 +16,9 @@ import net.minecraftforge.fml.ModList;
  * overrides only {@link com.dmzrevamp.revamp.prestige.PrestigeSystem#levelCap} and stat totals.
  */
 public final class LmOverhaulPrestigeIntegration {
+    /** Overhaul Statistics prestige count hard cap. */
+    public static final int OVERHAUL_MAX_PRESTIGE = 10;
+
     private static volatile Boolean overhaulPrestigeEnabled;
 
     private LmOverhaulPrestigeIntegration() {}
@@ -94,7 +97,8 @@ public final class LmOverhaulPrestigeIntegration {
         if (data == null) {
             return;
         }
-        int overhaul = Math.max(0, DmzRevampPrestigeBridge.overhaulCount(data));
+        int overhaul = Math.max(0, Math.min(
+                OVERHAUL_MAX_PRESTIGE, DmzRevampPrestigeBridge.overhaulCount(data)));
         int lmCompleted = PrestigeSystem.getCompleted(player);
         if (overhaul <= lmCompleted) {
             return;
