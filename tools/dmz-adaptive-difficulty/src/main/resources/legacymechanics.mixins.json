@@ -17,7 +17,6 @@
     "StatsDataSecondaryPlayerMixin",
     "StatsDataRestoreMultiplierClampMixin",
     "StatsDataLoadClampMixin",
-    "StatsDataHudPoolMaxMixin",
     "ResourcesEnergyDrainGuardMixin",
     "ResourcesPoolClampMixin",
     "ResourcesLoadClampMixin"
