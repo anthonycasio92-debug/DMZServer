@@ -261,7 +261,7 @@ public final class DifficultyChatMenu {
         for (String line : LmOverhaulScaledCombat.compactLines(DmzProgression.stats(player))) {
             send(player, Component.m_237113_(line));
         }
-        send(player, Component.m_237113_("§7Unlocked §fT" + snap.highestUnlockedTier)
+        send(player, Component.m_237113_("§7Unlocked §fT" + snap.highestUnlockedTier
                 + "  §8·  §7Title §e" + TitleSystem.activeDisplay(player)));
         send(player, Component.m_237113_("§6Ancient Coins §f" + AncientCoinEconomy.inventoryBreakdown(player)));
         send(player, Component.m_237113_(

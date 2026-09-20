@@ -163,7 +163,9 @@ def main() -> int:
     check("buy charges Ancient Coins", has(actions, "AncientCoinEconomy", "activationCost", "charge", "setTier"))
 
     print("\n=== Combat model (STR/SKP/PWR + ENE, class + top-2) ===")
-    check("blended offense includes PWR/ENE", has(profile, "blendedOffense", "ENERGY_OFFENSE_FACTOR", "getKiDamage", "getMaxEnergy"))
+    check("blended offense includes PWR/ENE", has(profile, "blendedOffense", "ENERGY_OFFENSE_FACTOR")
+          and ("getKiDamage" in profile or "LmOverhaulScaledCombat.ki" in profile)
+          and ("getMaxEnergy" in profile or "LmOverhaulScaledCombat.energy" in profile))
     check("ENERGY WeakStat", "ENERGY," in profile or "ENERGY\n" in profile)
     check("form peak includes PWR/ENE", has(profile, '"PWR"', '"ENE"'))
     check("top-2 counters", has(profile, "top 2", "Math.min(2") or "topCount = Math.min(2" in profile)
@@ -201,7 +203,9 @@ def main() -> int:
     check("LivingDamageEvent receiveCanceled", "receiveCanceled = true" in events and "targetLandingDamage" in events)
     check("isAdPainted helper", "isAdPainted" in mob)
     check("CombatSanity clamps", has(sanity, "saneFormMult", "saneLive", "usableBaseline"))
-    check("live offense poll includes PWR/ENE", has(events, "getKiDamage", "getMaxEnergy"))
+    check("live offense poll includes PWR/ENE",
+          has(events, "LmOverhaulScaledCombat.ki", "LmOverhaulScaledCombat.energy")
+          or has(events, "getKiDamage", "getMaxEnergy"))
 
     print("\n=== Form soft-curve / peel ===")
     check("form soft curve", has(profile, "blendForm", "transformScaleWeight", "megaForm"))
