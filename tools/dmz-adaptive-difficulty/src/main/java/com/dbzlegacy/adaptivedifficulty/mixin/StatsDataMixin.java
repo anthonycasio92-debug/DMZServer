@@ -2,7 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
-import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
+import com.dbzlegacy.adaptivedifficulty.progression.LmStatsDataAccess;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -68,14 +68,7 @@ public abstract class StatsDataMixin {
         if (!prestigeCapsActive()) {
             return null;
         }
-        try {
-            Player p = getPlayer();
-            if (p instanceof ServerPlayer sp) {
-                return sp;
-            }
-        } catch (Throwable ignored) {
-        }
-        return null;
+        return LmStatsDataAccess.serverPlayer((StatsData) (Object) this);
     }
 
     private static boolean prestigeCapsActive() {

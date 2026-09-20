@@ -979,18 +979,26 @@ public final class PrestigePointsSystem {
         int newCap = effectiveMaxLevel(player);
         // Force a live DMZ read so the client/stat screen picks up the raised max.
         int liveCap = newCap;
+        int liveMaxStats = 0;
         try {
             var data = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.stats(player);
             if (data != null) {
                 liveCap = Math.max(newCap, data.getConfiguredMaxValue());
+                liveMaxStats = Math.max(0, data.getConfiguredMaxTotalStats());
                 com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil.sync(player);
             }
+        } catch (Throwable ignored) {
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(player);
         } catch (Throwable ignored) {
         }
         SystemTelemetry.log("prestige_points", "breakthrough", player, null, Map.of(
                 "breakthrough", next,
                 "cap", newCap,
                 "live_cap", liveCap,
+                "live_max_stats", liveMaxStats,
                 "cost", cost,
                 "points", getPoints(player)
         ));

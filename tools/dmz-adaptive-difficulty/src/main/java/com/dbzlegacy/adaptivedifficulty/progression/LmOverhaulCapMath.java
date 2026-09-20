@@ -2,12 +2,17 @@ package com.dbzlegacy.adaptivedifficulty.progression;
 
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dragonminez.common.stats.StatsData;
+import java.lang.reflect.Method;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.fml.ModList;
 
 /** LM personal level cap → Overhaul-compatible max stat totals (matches dmzrevamp formula). */
 public final class LmOverhaulCapMath {
     /** Stock Overhaul {@code levelUpPerPoints} when {@code LevelingRevamp.json} is default. */
     public static final int LEVEL_UP_PER_POINTS = 6;
+
+    private static volatile Method revampInitialStatTotal;
+    private static volatile Method revampPointsPerLevel;
 
     private LmOverhaulCapMath() {}
 
@@ -23,7 +28,8 @@ public final class LmOverhaulCapMath {
             return 0;
         }
         int initial = initialStatTotal(data);
-        long max = (long) initial + (long) Math.max(0, levelCap - 1) * LEVEL_UP_PER_POINTS;
+        int perLevel = statPointsPerLevel();
+        long max = (long) initial + (long) Math.max(0, levelCap - 1) * perLevel;
         return (int) Math.min(Integer.MAX_VALUE, max);
     }
 
@@ -32,20 +38,36 @@ public final class LmOverhaulCapMath {
     }
 
     private static int initialStatTotal(StatsData data) {
-        try {
-            Object v = data.getClass().getMethod("getInitialTotalStats").invoke(data);
-            if (v instanceof Number n) {
-                return Math.max(0, n.intValue());
+        if (data != null && ModList.get().isLoaded("dmzrevamp")) {
+            try {
+                if (revampInitialStatTotal == null) {
+                    Class<?> helper = Class.forName("com.dmzrevamp.revamp.DmzRevampHelper");
+                    revampInitialStatTotal = helper.getMethod("getInitialStatTotal", StatsData.class);
+                }
+                Object v = revampInitialStatTotal.invoke(null, data);
+                if (v instanceof Number n) {
+                    return Math.max(0, n.intValue());
+                }
+            } catch (Throwable ignored) {
             }
-        } catch (Throwable ignored) {
-        }
-        try {
-            var st = data.getStats();
-            if (st != null) {
-                return Math.max(0, st.getTotalStats());
-            }
-        } catch (Throwable ignored) {
         }
         return 0;
+    }
+
+    private static int statPointsPerLevel() {
+        if (ModList.get().isLoaded("dmzrevamp")) {
+            try {
+                if (revampPointsPerLevel == null) {
+                    Class<?> helper = Class.forName("com.dmzrevamp.revamp.DmzRevampHelper");
+                    revampPointsPerLevel = helper.getMethod("getConfiguredStatPointsPerLevel");
+                }
+                Object v = revampPointsPerLevel.invoke(null);
+                if (v instanceof Number n && n.intValue() > 0) {
+                    return n.intValue();
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        return LEVEL_UP_PER_POINTS;
     }
 }

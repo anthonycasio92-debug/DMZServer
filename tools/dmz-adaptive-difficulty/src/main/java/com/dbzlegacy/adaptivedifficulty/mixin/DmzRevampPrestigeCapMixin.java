@@ -2,9 +2,9 @@ package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
+import com.dbzlegacy.adaptivedifficulty.progression.LmStatsDataAccess;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -23,11 +23,23 @@ public abstract class DmzRevampPrestigeCapMixin {
         if (!lmOwnsPrestige() || data == null) {
             return;
         }
-        Player p = data.getPlayer();
-        if (!(p instanceof ServerPlayer sp)) {
+        ServerPlayer sp = LmStatsDataAccess.serverPlayer(data);
+        if (sp == null) {
             return;
         }
         cir.setReturnValue(LmOverhaulCapMath.personalLevelCap(sp));
+    }
+
+    @Inject(method = "maxAssignableTotal", at = @At("HEAD"), cancellable = true, remap = false)
+    private static void lm$maxAssignableTotal(StatsData data, CallbackInfoReturnable<Integer> cir) {
+        if (!lmOwnsPrestige() || data == null) {
+            return;
+        }
+        ServerPlayer sp = LmStatsDataAccess.serverPlayer(data);
+        if (sp == null) {
+            return;
+        }
+        cir.setReturnValue(LmOverhaulCapMath.maxAssignableTotal(data, sp));
     }
 
     @Inject(method = "canPrestige", at = @At("HEAD"), cancellable = true, remap = false)
