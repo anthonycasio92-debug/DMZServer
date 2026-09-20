@@ -84,6 +84,10 @@ public final class DmzRevampPrestigeBridge {
         try {
             int current = overhaulCount(data);
             if (current == completed) {
+                try {
+                    OverhaulPrestigeResourceScale.pulse(player);
+                } catch (Throwable ignored) {
+                }
                 return;
             }
             float maxEBefore = data.getMaxEnergy();

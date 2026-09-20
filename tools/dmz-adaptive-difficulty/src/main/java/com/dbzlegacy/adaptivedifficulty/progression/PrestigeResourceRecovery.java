@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.progression;
 
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.EnergyManaSync;
+import com.dbzlegacy.adaptivedifficulty.progression.bridge.OverhaulPrestigeResourceScale;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.StatsSyncS2C;
@@ -50,6 +51,7 @@ public final class PrestigeResourceRecovery {
         }
         try {
             EnergyManaSync.clear(player.m_20148_());
+            OverhaulPrestigeResourceScale.clear(player.m_20148_());
         } catch (Throwable ignored) {
         }
         try {
@@ -65,6 +67,10 @@ public final class PrestigeResourceRecovery {
                 cds.removeCooldown(Cooldowns.DRAIN);
                 cds.removeCooldown(Cooldowns.DRAIN_ACTIVE);
             }
+        } catch (Throwable ignored) {
+        }
+        try {
+            OverhaulPrestigeResourceScale.pulse(player);
         } catch (Throwable ignored) {
         }
         try {

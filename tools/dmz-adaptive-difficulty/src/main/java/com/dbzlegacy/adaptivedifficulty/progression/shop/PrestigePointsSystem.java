@@ -1135,6 +1135,11 @@ public final class PrestigePointsSystem {
                     .syncFromLegacy(player);
         } catch (Throwable ignored) {
         }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.OverhaulPrestigeResourceScale
+                    .pulse(player);
+        } catch (Throwable ignored) {
+        }
     }
 
     /** Called from shop pulse — drains delayed reapply markers + keeps forms/skills live. */

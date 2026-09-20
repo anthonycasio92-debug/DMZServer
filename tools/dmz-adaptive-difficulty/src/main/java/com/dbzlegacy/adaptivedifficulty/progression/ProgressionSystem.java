@@ -156,6 +156,13 @@ public final class ProgressionSystem {
                     SpiritualistKiControl.pulse(player, now);
                 } catch (Throwable ignored) {
                 }
+                if (tick % 20 == 0) {
+                    try {
+                        com.dbzlegacy.adaptivedifficulty.progression.bridge.OverhaulPrestigeResourceScale
+                                .pulse(player);
+                    } catch (Throwable ignored) {
+                    }
+                }
                 try {
                     StaminaRegenGuard.pulse(player);
                 } catch (Throwable ignored) {
