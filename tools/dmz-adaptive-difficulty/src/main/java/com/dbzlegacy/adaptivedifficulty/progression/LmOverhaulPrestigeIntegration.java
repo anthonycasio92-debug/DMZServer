@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.progression;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge;
@@ -8,6 +9,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.fml.ModList;
 
 /**
  * Use dmzrevamp Overhaul prestige (Statistics UI, scaling, saga rebirth) while Legacy Mechanics
@@ -26,8 +28,14 @@ public final class LmOverhaulPrestigeIntegration {
                 && overhaulPrestigeEnabled();
     }
 
-    /** {@link com.dmzrevamp.config.LevelingRevampConfig#prestigeEnabled()} from live JSON. */
+    /**
+     * Overhaul prestige is on only when {@code LevelingRevamp.json} has both
+     * {@code levelsAndAttributes.enabled} and {@code Prestige.enabled} (and no {@code dmzprestige} mod).
+     */
     public static boolean overhaulPrestigeEnabled() {
+        if (!ModList.get().isLoaded("dmzrevamp")) {
+            return false;
+        }
         Boolean cached = overhaulPrestigeEnabled;
         if (cached != null) {
             return cached;
@@ -45,6 +53,36 @@ public final class LmOverhaulPrestigeIntegration {
 
     public static void clearConfigCache() {
         overhaulPrestigeEnabled = null;
+    }
+
+    /** Log both Overhaul JSON toggles + whether native prestige is active (after {@code reload}). */
+    public static void logOverhaulPrestigeState() {
+        if (!ModList.get().isLoaded("dmzrevamp")) {
+            return;
+        }
+        clearConfigCache();
+        boolean levels = false;
+        boolean prestigeFlag = false;
+        try {
+            Class<?> cfgCls = Class.forName("com.dmzrevamp.config.LevelingRevampConfig");
+            Object revampCfg = cfgCls.getMethod("get").invoke(null);
+            Object levelsObj = revampCfg.getClass().getField("levelsAndAttributes").get(revampCfg);
+            levels = levelsObj.getClass().getField("enabled").getBoolean(levelsObj);
+            Object prestigeObj = revampCfg.getClass().getField("Prestige").get(revampCfg);
+            prestigeFlag = prestigeObj.getClass().getField("enabled").getBoolean(prestigeObj);
+        } catch (Throwable ignored) {
+        }
+        boolean enabled = overhaulPrestigeEnabled();
+        DifficultyConfig lmCfg = DifficultyConfig.get();
+        AdaptiveDifficultyMod.LOGGER.info(
+                "[{}] Overhaul prestige: levelsAndAttributes.enabled={} Prestige.enabled={} "
+                        + "prestigeEnabled()={} LM integration={} LM resourceScale={}",
+                AdaptiveDifficultyMod.MOD_ID,
+                levels,
+                prestigeFlag,
+                enabled,
+                lmCfg != null && lmCfg.enableOverhaulPrestigeIntegration,
+                lmCfg != null && lmCfg.enablePrestigeResourceScaling);
     }
 
     /** After native {@link com.dmzrevamp.revamp.prestige.PrestigeService#tryPrestige}. */

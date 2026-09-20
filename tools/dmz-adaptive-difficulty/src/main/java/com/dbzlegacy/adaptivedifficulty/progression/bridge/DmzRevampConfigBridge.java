@@ -19,10 +19,7 @@ public final class DmzRevampConfigBridge {
         try {
             Class<?> cfg = Class.forName("com.dmzrevamp.config.LevelingRevampConfig");
             cfg.getMethod("reload").invoke(null);
-            LmOverhaulPrestigeIntegration.clearConfigCache();
-            AdaptiveDifficultyMod.LOGGER.info(
-                    "[{}] reloaded dmzrevamp LevelingRevamp.json (LM cap overrides; Overhaul prestige UI when enabled)",
-                    AdaptiveDifficultyMod.MOD_ID);
+            LmOverhaulPrestigeIntegration.logOverhaulPrestigeState();
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(
                     "[{}] dmzrevamp config reload skipped: {}",
