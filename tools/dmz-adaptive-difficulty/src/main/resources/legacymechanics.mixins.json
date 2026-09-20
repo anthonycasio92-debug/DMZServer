@@ -14,7 +14,6 @@
     "CreateCharacterC2SMixin",
     "StatsDataGetPlayerMixin",
     "StatsDataSecondaryPlayerMixin",
-    "StatsDataPrestigePoolMixin",
     "StatsDataRestoreMultiplierClampMixin",
     "StatsDataLoadClampMixin",
     "StatsDataHudPoolMaxMixin",

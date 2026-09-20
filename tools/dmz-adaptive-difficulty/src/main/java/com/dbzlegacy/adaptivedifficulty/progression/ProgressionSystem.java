@@ -360,8 +360,6 @@ public final class ProgressionSystem {
             case "statchecker", "playerstatchecker", "enableplayerstatchecker" -> cfg.enablePlayerStatChecker = on;
             case "skills", "skillunlock", "enableskillunlockservice" -> cfg.enableSkillUnlockService = on;
             case "prestige", "enableprestigesystem" -> cfg.enablePrestigeSystem = on;
-            case "prestigescale", "prestigeresourcescale", "enableprestigeresourcescaling" ->
-                    cfg.enablePrestigeResourceScaling = on;
             case "overhaulprestige", "overhaului", "enableoverhaulprestigeintegration" ->
                     cfg.enableOverhaulPrestigeIntegration = on;
             case "fabled", "enablefabledbridge" -> cfg.enableFabledBridge = on;

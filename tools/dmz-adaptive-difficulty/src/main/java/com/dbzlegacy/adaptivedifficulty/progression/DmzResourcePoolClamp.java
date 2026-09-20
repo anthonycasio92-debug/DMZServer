@@ -17,7 +17,7 @@ import net.minecraftforge.registries.RegistryObject;
  *
  * {@link StatsData#getMaxEnergy()} adds Forge {@code MAX_ENERGY} (default 20). Mohist often
  * applies Potentialist / Overhaul attribute modifiers on the server that never reach the
- * client, so Statistics Max Ki is millions while the HUD bar is the ENE×prestige-scale
+ * client, so Statistics Max Ki is millions while the HUD bar is the ENE × form
  * number (screenshot: 2.8M vs 675k at 0% Limit Release).
  *
  * <p>Never clamp current energy to {@code ≤ 1} — {@code Resources#setCurrentEnergy} zeros

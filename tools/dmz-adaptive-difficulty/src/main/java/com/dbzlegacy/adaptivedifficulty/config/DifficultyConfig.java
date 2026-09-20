@@ -265,12 +265,6 @@ public final class DifficultyConfig {
      */
     public boolean enableOverhaulPrestigeIntegration = true;
     /**
-     * Fallback ki/stamina scale when Overhaul prestige is disabled in JSON only.
-     */
-    public boolean enablePrestigeResourceScaling = false;
-    /** +1.0 => double ki/stamina max at 1 prestige (Overhaul uses {@code scaleBonusPerPrestige}). */
-    public double prestigeResourceScalePerCompleted = 1.0;
-    /**
      * Donator Skill Check UI ({@code /skillcheck}, CNPC interact / trigger 21).
      * Staff always have access; others need {@link #skillCheckPermission}.
      */

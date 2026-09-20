@@ -3,7 +3,6 @@ package com.dbzlegacy.adaptivedifficulty.mixin;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration;
-import com.dbzlegacy.adaptivedifficulty.progression.LmPrestigeResourceScale;
 import com.dragonminez.common.stats.StatsData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -58,18 +57,6 @@ public abstract class DmzRevampPrestigeCapMixin {
     @ModifyVariable(method = "setCount", at = @At("HEAD"), argsOnly = true, remap = false)
     private static int lm$capOverhaulPrestigeCount(int count) {
         return Math.max(0, Math.min(LmOverhaulPrestigeIntegration.OVERHAUL_MAX_PRESTIGE, count));
-    }
-
-    /** Fallback pool scale only when Overhaul prestige is disabled in JSON. */
-    @Inject(method = "scaleMultiplier", at = @At("HEAD"), cancellable = true, remap = false)
-    private static void lm$prestigeScaleMultiplier(StatsData data, CallbackInfoReturnable<Double> cir) {
-        if (!lmOwnsPrestige() || data == null || LmOverhaulPrestigeIntegration.overhaulPrestigeEnabled()) {
-            return;
-        }
-        double mult = LmPrestigeResourceScale.multiplier(data);
-        if (mult > 1.000_001) {
-            cir.setReturnValue(mult);
-        }
     }
 
     private static boolean lmOwnsPrestige() {

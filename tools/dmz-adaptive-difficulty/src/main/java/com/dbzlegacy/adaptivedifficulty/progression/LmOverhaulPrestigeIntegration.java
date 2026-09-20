@@ -79,13 +79,12 @@ public final class LmOverhaulPrestigeIntegration {
         DifficultyConfig lmCfg = DifficultyConfig.get();
         AdaptiveDifficultyMod.LOGGER.info(
                 "[{}] Overhaul prestige: levelsAndAttributes.enabled={} Prestige.enabled={} "
-                        + "prestigeEnabled()={} LM integration={} LM resourceScale={}",
+                        + "prestigeEnabled()={} LM integration={}",
                 AdaptiveDifficultyMod.MOD_ID,
                 levels,
                 prestigeFlag,
                 enabled,
-                lmCfg != null && lmCfg.enableOverhaulPrestigeIntegration,
-                lmCfg != null && lmCfg.enablePrestigeResourceScaling);
+                lmCfg != null && lmCfg.enableOverhaulPrestigeIntegration);
     }
 
     /** After native {@link com.dmzrevamp.revamp.prestige.PrestigeService#tryPrestige}. */
