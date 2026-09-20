@@ -13,6 +13,8 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -161,9 +163,27 @@ public final class SduEditCommandAccess {
             return 1;
         }
         try {
-            openNamedEditor(player, target);
+            try {
+                player.m_6915_();
+            } catch (Throwable ignored) {
+            }
+            MinecraftServer server = player.m_20194_();
+            Runnable send = () -> {
+                try {
+                    openNamedEditor(player, target);
+                    LOGGER.info("[{}] opened SDU {} editor for {}", DmzMohistMeleeFix.MOD_ID, target, player.m_6302_());
+                } catch (Throwable t) {
+                    LOGGER.warn("[{}] SDU editor {} failed for {}: {}", DmzMohistMeleeFix.MOD_ID, target, player.m_6302_(), t.toString());
+                }
+            };
+            if (server != null) {
+                int now = server.m_129921_();
+                server.m_6937_(new TickTask(now + 5, send));
+                server.m_6937_(new TickTask(now + 15, send));
+            } else {
+                send.run();
+            }
             player.m_5661_(Component.m_237113_("§eOpening SDU " + target + " editor…"), false);
-            LOGGER.info("[{}] opened SDU {} editor for {}", DmzMohistMeleeFix.MOD_ID, target, player.m_6302_());
             return 1;
         } catch (Throwable t) {
             source.m_81352_(Component.m_237113_("Unknown editor '" + target + "'. Use hub, race, form, saga, sidequest, wish, shrine, options."));

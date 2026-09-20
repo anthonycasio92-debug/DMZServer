@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.26: /sdu edit opens a Mohist chest hub (no empty OpenHub packet)",
+                "[{}] v2.12.27: SDU chest closes first, then delayed fat editor packets",
                 MOD_ID
         );
         ReachRepairEvents.register();

@@ -96,6 +96,10 @@ public final class SduStaffHubMenu extends ChestMenu {
             if (slotId >= 0 && slotId < 27 && clicker instanceof ServerPlayer player) {
                 String which = SLOT_EDITORS[slotId];
                 if (which != null && player.m_20148_().equals(owner.m_20148_())) {
+                    try {
+                        player.m_6915_();
+                    } catch (Throwable ignored) {
+                    }
                     scheduleEditor(player, which);
                 }
                 m_150444_();
@@ -120,10 +124,6 @@ public final class SduStaffHubMenu extends ChestMenu {
         MinecraftServer server = player.m_20194_();
         Runnable open = () -> {
             try {
-                player.m_6915_();
-            } catch (Throwable ignored) {
-            }
-            try {
                 SduEditCommandAccess.openNamedEditor(player, which);
                 player.m_5661_(Component.m_237113_("§eOpening SDU " + which + " editor…"), false);
                 LOGGER.info("[{}] SDU chest opened {} for {}", DmzMohistMeleeFix.MOD_ID, which, player.m_6302_());
@@ -138,8 +138,12 @@ public final class SduStaffHubMenu extends ChestMenu {
                 );
             }
         };
+        // Close the chest first (caller). Delay the fat SDU packet so
+        // ClientboundContainerClosePacket cannot wipe RaceListScreen.
         if (server != null) {
-            server.m_6937_(new TickTask(server.m_129921_() + 1, open));
+            int now = server.m_129921_();
+            server.m_6937_(new TickTask(now + 5, open));
+            server.m_6937_(new TickTask(now + 15, open));
         } else {
             open.run();
         }
