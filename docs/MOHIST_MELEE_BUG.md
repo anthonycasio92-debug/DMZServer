@@ -1,5 +1,15 @@
 # Mohist M1: animation but no damage
 
+## Fix v2.12.21 — handwear + Apotheosis crash (Sep 2026)
+
+`mods/dmz_mohist_melee_fix-2.12.21.jar`
+
+Live crashes when attacking with **DMZ Revamp wristbands** (curio handwear) plus **Apotheosis affix** gear (e.g. Simply More **Blood Harvester**, other uniques) were a **recursive `LivingHurtEvent` loop**: `HandwearCombatEvents.runApotheosisHandwearAttackHooks` → `EnchantmentHelper.doPostAttack` → Thunderstruck (etc.) → hurt again → same hook → `StackOverflowError`.
+
+**Mitigation:** `HandwearApotheosisReentrancyMixin` skips nested handwear Apotheosis hooks on the same thread. Restart required after jar swap.
+
+Upstream fix still belongs in **dmzrevamp** (`HandwearCombatEvents` should not call post-attack affixes from inside `LivingHurt` without a reentrancy guard).
+
 ## Fix v2.12.19
 
 `mods/dmz_mohist_melee_fix-2.12.19.jar`

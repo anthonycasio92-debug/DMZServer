@@ -12,7 +12,7 @@ All open feature work is on **`cursor/server-fixes-consolidated-c766`** (PR #41)
 
 Those PRs are closed; their branches are deleted.
 
-**Deploy:** test server only going forward — see [`DEPLOY.md`](DEPLOY.md). Live is frozen.
+**Deploy:** live production — see [`DEPLOY.md`](DEPLOY.md). Test server retired.
 
 ## 2026-08-27 — earlier consolidation
 

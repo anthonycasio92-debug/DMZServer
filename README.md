@@ -6,7 +6,7 @@ Forge **1.20.1** server pack for **DragonMineZ 2.1.3** + your CustomNPCs script 
 
 ## Deploy policy
 
-**No uploads to the live production server.** All future changes are for the **test server** only. See [`docs/DEPLOY.md`](docs/DEPLOY.md).
+Production deploys go to the **live** server only. The former test host is no longer used. See [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## Important: hybrid runtime
 
@@ -22,27 +22,3 @@ Most uploaded scripts call `org.bukkit.Bukkit` and Fabled/CMI. They need a **hyb
 
 - CMI 9.8.9.4 (**needs CMILib** — not uploaded yet)
 - Fabled 1.0.4 (**needs CodexCore** — not uploaded yet)
-
-## Scripts
-
-| Location | Engine |
-|----------|--------|
-| `customnpcs/scripts/` | CustomNPCs Nashorn (your uploaded pack) |
-| `kubejs/` | KubeJS (starter example only) |
-
-Inventory + DMZ call patterns: [`docs/SCRIPT_INVENTORY.md`](docs/SCRIPT_INVENTORY.md)  
-Java event/API map: [`docs/DMZ_API_REFERENCE.md`](docs/DMZ_API_REFERENCE.md)
-
-## Run
-
-```bash
-./run.sh nogui   # plain Forge — CNPC/DMZ/KubeJS only
-# or your hybrid server start script for full Fabled/CMI support
-```
-
-## Still needed from you
-
-1. Hybrid server jar (if not already elsewhere)
-2. `CMILib` + `CodexCore` jars → `plugins/`
-3. Apotheosis AttributesLib if you use KiWeapons/Piercing Apoth hooks
-4. Any existing `kubejs/` scripts you still have (these uploads were CNPC-only)
