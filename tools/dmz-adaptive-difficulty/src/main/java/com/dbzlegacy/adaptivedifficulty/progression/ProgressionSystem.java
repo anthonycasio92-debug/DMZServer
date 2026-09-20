@@ -63,6 +63,12 @@ public final class ProgressionSystem {
             PersonalLevelCapMirror.publish(player);
         } catch (Throwable ignored) {
         }
+        try {
+            com.dragonminez.common.stats.StatsData data =
+                    com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.stats(player);
+            DmzResourcePoolClamp.clampAndSync(player, data);
+        } catch (Throwable ignored) {
+        }
     }
 
     public static void onLogout(ServerPlayer player) {

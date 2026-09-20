@@ -1,49 +1,43 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
-import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dragonminez.common.stats.StatsData;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
- * Statistics Max Ki/Stamina call {@link StatsData#getMaxEnergy()} / {@code getMaxStamina()},
- * which add Forge secondary attributes the client HUD never sees. Strip that extra so the
- * panel matches the bar (and so 0% Limit Release isn't sitting under a 2.8M "max").
+ * Client HUD {@code getMaxEnergy}/{@code getMaxStamina} uses Forge secondary default (20) because
+ * Mohist Potentialist / Overhaul modifiers never sync. The server was adding those extras
+ * (screenshot: HUD Ki 159/145 vs overlay 159/190, STM 188/101). Force the vanilla default so
+ * the live cap matches the bar.
  *
- * <p>Does not write current pools — {@code setCurrentEnergy(≤1)} zeros power release.
+ * <p>Does not write current pools — {@code setCurrentEnergy(≤1)} zeros Limit Release.
  */
 @Mixin(value = StatsData.class, remap = false, priority = 2100)
 public abstract class StatsDataHudPoolMaxMixin {
-    private static final ThreadLocal<Boolean> IN_HUD_CAP = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
-    @Inject(method = "getMaxEnergy", at = @At("RETURN"), cancellable = true, remap = false)
-    private void lm$hudMaxEnergy(CallbackInfoReturnable<Float> cir) {
-        applyHudCap(cir, true);
+    @Redirect(
+            method = "getMaxEnergy",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lcom/dragonminez/common/stats/StatsData;getSecondaryAttributeValue(Lnet/minecraft/world/entity/ai/attributes/Attribute;D)D"
+            ),
+            remap = false
+    )
+    private double lm$hudEnergyAttr(StatsData self, Attribute attr, double def) {
+        return def;
     }
 
-    @Inject(method = "getMaxStamina", at = @At("RETURN"), cancellable = true, remap = false)
-    private void lm$hudMaxStamina(CallbackInfoReturnable<Float> cir) {
-        applyHudCap(cir, false);
-    }
-
-    private void applyHudCap(CallbackInfoReturnable<Float> cir, boolean energy) {
-        if (Boolean.TRUE.equals(IN_HUD_CAP.get())) {
-            return;
-        }
-        Float live = cir.getReturnValue();
-        if (live == null || !Float.isFinite(live) || live <= 0f) {
-            return;
-        }
-        IN_HUD_CAP.set(Boolean.TRUE);
-        try {
-            float hud = DmzResourcePoolClamp.toHudMax(live, (StatsData) (Object) this, energy);
-            if (Float.isFinite(hud) && hud > 0f && hud + 0.5f < live) {
-                cir.setReturnValue(hud);
-            }
-        } finally {
-            IN_HUD_CAP.set(Boolean.FALSE);
-        }
+    @Redirect(
+            method = "getMaxStamina",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lcom/dragonminez/common/stats/StatsData;getSecondaryAttributeValue(Lnet/minecraft/world/entity/ai/attributes/Attribute;D)D"
+            ),
+            remap = false
+    )
+    private double lm$hudStaminaAttr(StatsData self, Attribute attr, double def) {
+        return def;
     }
 }
