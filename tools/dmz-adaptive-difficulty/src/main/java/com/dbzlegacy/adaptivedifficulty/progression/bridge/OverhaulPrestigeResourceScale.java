@@ -140,9 +140,21 @@ public final class OverhaulPrestigeResourceScale {
         }
         LAST_RESTORE_MS.put(id, now);
         try {
+            boolean changedDirect = false;
             float[] snap = data.snapshotMultiplierResources();
             if (snap == null || snap.length < 3) {
                 snap = new float[] {data.getMaxHealth(), maxE, maxS};
+            }
+            if (energyStuck) {
+                res.setCurrentEnergy(maxE);
+                changedDirect = true;
+            }
+            if (staminaStuck) {
+                res.setCurrentStamina(maxS);
+                changedDirect = true;
+            }
+            if (changedDirect) {
+                return true;
             }
             if (energyStuck) {
                 snap[1] = curE;

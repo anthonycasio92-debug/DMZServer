@@ -22,6 +22,10 @@ public final class PrestigeResourceRecovery {
         if (player == null) {
             return;
         }
+        try {
+            OverhaulPrestigeResourceScale.clear(player.m_20148_());
+        } catch (Throwable ignored) {
+        }
         pulse(player);
         MinecraftServer server = player.m_20194_();
         if (server == null) {
@@ -51,7 +55,6 @@ public final class PrestigeResourceRecovery {
         }
         try {
             EnergyManaSync.clear(player.m_20148_());
-            OverhaulPrestigeResourceScale.clear(player.m_20148_());
         } catch (Throwable ignored) {
         }
         try {
