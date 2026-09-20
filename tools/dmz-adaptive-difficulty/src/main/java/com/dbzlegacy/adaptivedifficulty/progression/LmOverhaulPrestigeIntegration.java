@@ -140,17 +140,13 @@ public final class LmOverhaulPrestigeIntegration {
         }
         int overhaul = Math.max(0, Math.min(
                 OVERHAUL_MAX_PRESTIGE, DmzRevampPrestigeBridge.overhaulCount(data)));
-        int lmCompleted = PrestigeSystem.getCompleted(player);
-        if (overhaul <= lmCompleted) {
+        int held = PrestigeSystem.getHeld(player);
+        if (overhaul <= held) {
             return;
         }
-        int delta = overhaul - lmCompleted;
-        PrestigeSystem.setCompletedPublic(player, overhaul);
-        int held = PrestigeSystem.getHeld(player);
-        int maxHeld = PrestigeSystem.maxHeld();
-        if (held < maxHeld) {
-            PrestigeSystem.setHeldPublic(player, Math.min(maxHeld, held + delta));
-        }
+        int delta = overhaul - held;
+        PrestigeSystem.setHeldPublic(player, overhaul);
+        PrestigeSystem.setCompletedPublic(player, PrestigeSystem.getCompleted(player) + delta);
         try {
             com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync.sync(player);
         } catch (Throwable ignored) {

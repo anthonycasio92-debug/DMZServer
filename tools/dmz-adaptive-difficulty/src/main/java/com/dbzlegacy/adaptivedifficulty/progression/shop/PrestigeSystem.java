@@ -541,6 +541,11 @@ public final class PrestigeSystem {
                 addFactionPoints(player, FACTION_HELD_ID, delta);
             }
         }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(player);
+        } catch (Throwable ignored) {
+        }
     }
 
     /** Live Prestige NPC.js — clear saga quests/dialogs after purchase. */

@@ -1319,6 +1319,8 @@ def main() -> int:
           and "getMaxAllowedIncreaseForStat" in mixin)
     bridge = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/DmzRevampPrestigeBridge.java")
     check("Overhaul prestige sync bridge", "syncFromLegacy" in bridge and "setCount" in bridge)
+    check("Overhaul prestige count syncs from held",
+          "getHeld" in bridge and "getCompleted" not in bridge)
     check("attr multi bonus default off", "enableAttrMultiBonus = false" in read(CFG))
     dmz_lvl = read(ROOT / "config" / "dmzrevamp" / "LevelingRevamp.json")
     check("Overhaul initialLevelCap 150k", '"initialLevelCap": 150000' in dmz_lvl)

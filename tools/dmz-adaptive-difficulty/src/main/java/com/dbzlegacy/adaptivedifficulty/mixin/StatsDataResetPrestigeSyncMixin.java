@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * {@link StatsData#resetPlayerProgress} clears dmzrevamp Overhaul prestige count on stats data.
- * Re-apply Legacy Mechanics lifetime completed after every intentional wipe.
+ * Re-apply Legacy Mechanics held prestige after every intentional wipe.
  */
 @Mixin(value = StatsData.class, remap = false)
 public abstract class StatsDataResetPrestigeSyncMixin {

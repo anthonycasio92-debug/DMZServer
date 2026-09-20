@@ -17,7 +17,7 @@ import net.minecraftforge.fml.ModList;
 
 /**
  * Keeps dmzrevamp Overhaul {@link com.dmzrevamp.revamp.prestige.PrestigeSystem} prestige
- * count aligned with Legacy Mechanics lifetime completed prestiges (statistics UI only).
+ * count aligned with Legacy Mechanics <b>held</b> prestiges (wallet / scale), not lifetime completed.
  * Playable stat totals come from {@link com.dbzlegacy.adaptivedifficulty.mixin.DmzRevampPrestigeCapMixin}.
  */
 public final class DmzRevampPrestigeBridge {
@@ -39,7 +39,7 @@ public final class DmzRevampPrestigeBridge {
 
     /**
      * {@code dmzstats reset} / {@link StatsData#resetPlayerProgress} clears Overhaul's
-     * prestige counter on {@link StatsData}; re-apply LM lifetime completed after rebuild.
+     * prestige counter on {@link StatsData}; re-apply LM held after rebuild.
      */
     public static void scheduleSyncAfterStatsReset(ServerPlayer player) {
         if (player == null) {
@@ -79,15 +79,15 @@ public final class DmzRevampPrestigeBridge {
         if (data == null) {
             return;
         }
-        int completed = Math.max(0, Math.min(
+        int held = Math.max(0, Math.min(
                 com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration.OVERHAUL_MAX_PRESTIGE,
-                PrestigeSystem.getCompleted(player)));
+                PrestigeSystem.getHeld(player)));
         if (!ensureMethods()) {
             return;
         }
         try {
             int current = overhaulCount(data);
-            if (current == completed) {
+            if (current == held) {
                 try {
                     OverhaulPrestigeResourceScale.pulse(player);
                 } catch (Throwable ignored) {
@@ -96,20 +96,20 @@ public final class DmzRevampPrestigeBridge {
             }
             float maxEBefore = data.getMaxEnergy();
             float maxSBefore = data.getMaxStamina();
-            setCount.invoke(null, data, completed);
+            setCount.invoke(null, data, held);
             try {
                 OverhaulPrestigeResourceScale.afterSetCount(player, data, maxEBefore, maxSBefore);
             } catch (Throwable ignored) {
             }
             try {
-                refillPoolsLikeOverhaulPrestige(player, data, maxEBefore, maxSBefore, completed);
+                refillPoolsLikeOverhaulPrestige(player, data, maxEBefore, maxSBefore, held);
             } catch (Throwable ignored) {
             }
             try {
                 DmzSkillUtil.sync(player);
             } catch (Throwable ignored) {
             }
-            FabledBridge.logSync(player, "overhaul_prestige_sync", "count", completed, "was", current);
+            FabledBridge.logSync(player, "overhaul_prestige_sync", "count", held, "was", current);
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
                     "[{}] overhaul prestige sync soft-fail: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
@@ -138,9 +138,9 @@ public final class DmzRevampPrestigeBridge {
             StatsData data,
             float maxEnergyBefore,
             float maxStaminaBefore,
-            int completedPrestiges
+            int prestigeCount
     ) {
-        if (player == null || data == null || completedPrestiges <= 0) {
+        if (player == null || data == null || prestigeCount <= 0) {
             return;
         }
         Resources res = data.getResources();
