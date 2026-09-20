@@ -19,7 +19,7 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.25: /sdu edit sends a non-empty hub packet on Mohist",
+                "[{}] v2.12.26: /sdu edit opens a Mohist chest hub (no empty OpenHub packet)",
                 MOD_ID
         );
         ReachRepairEvents.register();

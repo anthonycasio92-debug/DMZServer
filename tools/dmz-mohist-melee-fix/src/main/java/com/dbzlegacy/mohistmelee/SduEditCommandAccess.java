@@ -9,19 +9,16 @@ import java.util.Locale;
 import java.util.function.Predicate;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.network.Connection;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.TickTask;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.simple.SimpleChannel;
 import net.shurui.dev.sdu.network.DmzNet;
-import net.shurui.dev.sdu.network.OpenHubPacket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,17 +27,24 @@ import org.apache.logging.log4j.Logger;
  * <ol>
  *   <li>{@code /sdu} requires Forge permission level 2.</li>
  *   <li>The stock executor only opens the hub if {@code getEntity() instanceof ServerPlayer}.</li>
- *   <li>{@code OpenHubPacket.encode} writes 0 bytes. Live 2.12.24 logged
- *       {@code opened SDU hub for JLDK1310} and the client still showed no screen —
- *       empty custom payloads are dropped. {@link com.dbzlegacy.mohistmelee.mixin.OpenHubPacketEncodeMixin}
- *       writes one byte; we also {@code sendTo} the connection and retry after chat closes.</li>
+ *   <li>{@code OpenHubPacket.encode} writes 0 bytes. Live 2.12.25 logged
+ *       {@code opened SDU hub} twice and the client still showed no screen.
+ *       The hub is a vanilla chest; clicks call fat {@code DmzNet.open*} packets.</li>
  * </ol>
  */
 public final class SduEditCommandAccess {
     private static final Logger LOGGER = LogManager.getLogger(DmzMohistMeleeFix.MOD_ID);
     private static final String REQUIRE_MARKER = "dbzlegacy$sduStaffRequires";
     private static final String COMMAND_MARKER = "dbzlegacy$sduEditOpen";
-    private static final int[] HUB_DELAY_TICKS = {10, 25};
+    private static final String[][] HUB_LINKS = {
+            {"race", "§e[Race]"},
+            {"form", "§d[Form]"},
+            {"saga", "§b[Saga]"},
+            {"sidequest", "§a[Sidequest]"},
+            {"wish", "§5[Wish]"},
+            {"shrine", "§6[Shrine]"},
+            {"options", "§7[Options]"}
+    };
 
     private SduEditCommandAccess() {}
 
@@ -134,7 +138,7 @@ public final class SduEditCommandAccess {
                 }
             };
             field.set(edit, replacement);
-            LOGGER.info("[{}] replaced /sdu edit executor (Mohist player resolve + delayed hub)", DmzMohistMeleeFix.MOD_ID);
+            LOGGER.info("[{}] replaced /sdu edit executor (Mohist chest hub)", DmzMohistMeleeFix.MOD_ID);
         } catch (Throwable t) {
             LOGGER.warn("[{}] failed to replace /sdu edit executor: {}", DmzMohistMeleeFix.MOD_ID, t.toString());
         }
@@ -152,17 +156,8 @@ public final class SduEditCommandAccess {
             return 0;
         }
         String target = which == null || which.isBlank() ? "hub" : which.trim().toLowerCase(Locale.ROOT);
-        MinecraftServer server = player.m_20194_();
         if ("hub".equals(target)) {
-            if (server != null) {
-                for (int delay : HUB_DELAY_TICKS) {
-                    int tick = server.m_129921_() + delay;
-                    server.m_6937_(new TickTask(tick, () -> sendHub(player)));
-                }
-            } else {
-                sendHub(player);
-            }
-            player.m_5661_(Component.m_237113_("§eOpening SDU editor…"), false);
+            sendHub(player);
             return 1;
         }
         try {
@@ -181,66 +176,37 @@ public final class SduEditCommandAccess {
         if (player == null || player.m_9236_() == null) {
             return;
         }
+        boolean opened = false;
         try {
-            DmzNet.openHub(player);
+            opened = SduStaffHubMenu.open(player);
         } catch (Throwable t) {
-            LOGGER.warn("[{}] DmzNet.openHub failed for {}: {}", DmzMohistMeleeFix.MOD_ID, player.m_6302_(), t.toString());
+            LOGGER.warn("[{}] SDU chest hub failed for {}: {}", DmzMohistMeleeFix.MOD_ID, player.m_6302_(), t.toString());
         }
-        try {
-            sendHubOnConnection(player);
-        } catch (Throwable t) {
-            LOGGER.warn("[{}] SDU hub sendTo failed for {}: {}", DmzMohistMeleeFix.MOD_ID, player.m_6302_(), t.toString());
+        sendClickableIndex(player);
+        if (opened) {
+            player.m_5661_(Component.m_237113_("§eSDU editor menu opened. Click a slot or a chat button."), false);
+            LOGGER.info("[{}] opened SDU chest hub for {}", DmzMohistMeleeFix.MOD_ID, player.m_6302_());
+        } else {
+            player.m_5661_(Component.m_237113_("§eSDU chest failed — use the chat buttons or /sduedit <editor>."), false);
+            LOGGER.warn("[{}] SDU chest hub did not attach for {}", DmzMohistMeleeFix.MOD_ID, player.m_6302_());
         }
-        LOGGER.info("[{}] opened SDU hub for {}", DmzMohistMeleeFix.MOD_ID, player.m_6302_());
     }
 
-    private static void sendHubOnConnection(ServerPlayer player) throws Exception {
-        Field channelField = DmzNet.class.getDeclaredField("channel");
-        channelField.setAccessible(true);
-        Object raw = channelField.get(null);
-        if (!(raw instanceof SimpleChannel channel)) {
-            return;
-        }
-        Connection connection = playerConnection(player);
-        if (connection == null) {
-            return;
-        }
-        channel.sendTo(new OpenHubPacket(), connection, NetworkDirection.PLAY_TO_CLIENT);
-    }
-
-    private static Connection playerConnection(ServerPlayer player) {
-        try {
-            Object listener = firstField(player, "connection", "f_8906_");
-            if (listener == null) {
-                return null;
+    private static void sendClickableIndex(ServerPlayer player) {
+        MutableComponent line = Component.m_237113_("§6SDU editors: ");
+        for (int i = 0; i < HUB_LINKS.length; i++) {
+            if (i > 0) {
+                line.m_7220_(Component.m_237113_(" "));
             }
-            if (listener instanceof Connection connection) {
-                return connection;
-            }
-            Object raw = firstField(listener, "connection", "f_9742_");
-            return raw instanceof Connection connection ? connection : null;
-        } catch (Throwable ignored) {
-            return null;
+            String which = HUB_LINKS[i][0];
+            line.m_7220_(Component.m_237113_(HUB_LINKS[i][1]).m_130938_(style -> style
+                    .m_131142_(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/sduedit " + which))
+                    .m_131144_(new HoverEvent(HoverEvent.Action.f_130831_, Component.m_237113_("Open SDU " + which)))));
         }
+        player.m_5661_(line, false);
     }
 
-    private static Object firstField(Object owner, String... names) {
-        Class<?> type = owner.getClass();
-        while (type != null && type != Object.class) {
-            for (String name : names) {
-                try {
-                    Field field = type.getDeclaredField(name);
-                    field.setAccessible(true);
-                    return field.get(owner);
-                } catch (ReflectiveOperationException ignored) {
-                }
-            }
-            type = type.getSuperclass();
-        }
-        return null;
-    }
-
-    private static void openNamedEditor(ServerPlayer player, String which) throws Exception {
+    static void openNamedEditor(ServerPlayer player, String which) throws Exception {
         String methodName = switch (which) {
             case "race" -> "openRaceEditor";
             case "form" -> "openFormEditor";
