@@ -309,7 +309,8 @@ public final class DifficultyConfig {
     public boolean enableEnergyManaSync = true;
     public boolean enableStatScreenSync = true;
     public boolean enableTpSpMirror = true;
-    public boolean enableAttrMultiBonus = true;
+    /** Fabled attribute → DMZ “Prestige Bonus” multipliers (off by default; stacks per prestige AP). */
+    public boolean enableAttrMultiBonus = false;
     public boolean enablePrestigeSkillSync = true;
     public boolean enablePrestigeFactionSync = true;
     public boolean enableValueCleaner = true;

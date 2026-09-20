@@ -25,7 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * (default 1000), which otherwise leaves prestige-0 players at Overhaul's stock
  * {@code initialLevelCap} of 50k instead of the normal 100k.
  */
-@Mixin(value = StatsData.class, remap = false, priority = 1100)
+@Mixin(value = StatsData.class, remap = false, priority = 1500)
 public abstract class StatsDataMixin {
     @Shadow(remap = false)
     public abstract Player getPlayer();
@@ -53,7 +53,18 @@ public abstract class StatsDataMixin {
             if (personal <= 0) {
                 return;
             }
-            cir.setReturnValue(personal);
+            int overhaul = 0;
+            Integer returned = cir.getReturnValue();
+            if (returned != null) {
+                overhaul = Math.max(0, returned);
+            }
+            int cap = personal;
+            if (overhaul > personal && overhaul <= PrestigePointsSystem.ABSOLUTE_LEVEL_CAP) {
+                cap = overhaul;
+            } else if (overhaul < personal) {
+                cap = personal;
+            }
+            cir.setReturnValue(cap);
         } catch (Throwable ignored) {
             // Prestige system / NBT unavailable — keep server default.
         }

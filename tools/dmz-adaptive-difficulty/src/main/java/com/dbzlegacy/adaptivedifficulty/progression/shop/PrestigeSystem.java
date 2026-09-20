@@ -120,6 +120,11 @@ public final class PrestigeSystem {
         int newCompleted = completed + 1;
         setHeld(player, newHeld);
         setCompleted(player, newCompleted);
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(player);
+        } catch (Throwable ignored) {
+        }
         // Lock Need so turn-in / Fabled spend cannot snap the next gate back to 20k.
         raiseNeedFloor(player, required);
         resetPrestigeProgress(player);
@@ -449,6 +454,11 @@ public final class PrestigeSystem {
         if (value > 0) {
             int cap = PrestigePointsSystem.effectiveMaxLevel(player);
             raiseNeedFloor(player, requiredLevel(value, cap));
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(player);
+        } catch (Throwable ignored) {
         }
     }
 

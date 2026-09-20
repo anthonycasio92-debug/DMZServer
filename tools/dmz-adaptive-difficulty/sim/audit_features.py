@@ -1267,9 +1267,12 @@ def main() -> int:
     check("StatsDataMixin remap false",
           'remap = false' in mixin and "StatsData.class, remap = false" in mixin)
     check("StatsDataMixin applies personal cap",
-          "cir.setReturnValue(personal)" in mixin)
+          "cir.setReturnValue(cap)" in mixin and "overhaul < personal" in mixin)
     check("StatsDataMixin gated on prestige flag", "enablePrestigeSystem" in mixin)
-    check("StatsDataMixin beats dmzrevamp cap mixin", "priority = 1100" in mixin)
+    check("StatsDataMixin beats dmzrevamp cap mixin", "priority = 1500" in mixin)
+    bridge = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/DmzRevampPrestigeBridge.java")
+    check("Overhaul prestige sync bridge", "syncFromLegacy" in bridge and "setCount" in bridge)
+    check("attr multi bonus default off", "enableAttrMultiBonus = false" in read(CFG))
     dmz_lvl = read(ROOT / "config" / "dmzrevamp" / "LevelingRevamp.json")
     check("Overhaul initialLevelCap 100k", '"initialLevelCap": 100000' in dmz_lvl)
     manifest = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "resources" / "META-INF" / "MANIFEST.MF")

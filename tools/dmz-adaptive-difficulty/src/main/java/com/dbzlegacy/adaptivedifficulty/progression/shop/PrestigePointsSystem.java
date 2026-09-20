@@ -1030,6 +1030,11 @@ public final class PrestigePointsSystem {
         if (player == null) {
             return;
         }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(player);
+        } catch (Throwable ignored) {
+        }
         // Stagger reapply so DMZ / Fabled finish loading (Character attach can lag).
         ProgressionData.tempPut(player, KEY_REAPPLY_AT, System.currentTimeMillis() + 12_000L);
         reapplyAllShopPurchases(player);
