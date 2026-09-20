@@ -78,6 +78,27 @@ public final class EnergyManaSync {
 
         double fabledMana = FabledBridge.invokeDouble(data, "getMana");
         double fabledMax = FabledBridge.invokeDouble(data, "getMaxMana");
+
+        // DMZ is authoritative — never drain ki to chase a stale / zeroed Fabled bar.
+        if (Math.abs(fabledMana - currentEnergy) <= ENERGY_EPS * 4) {
+            FabledBridge.setManaAndMax(data, currentEnergy, maxEnergy);
+            LAST_MANA.put(player.m_20148_(), currentEnergy);
+            ProgressionData.tempPut(player, LAST_MANA_KEY, currentEnergy);
+            if (scheduleBukkitFollowup) {
+                scheduleFollowup(player, currentEnergy, maxEnergy);
+            }
+            return;
+        }
+        if (fabledMana + ENERGY_EPS < currentEnergy) {
+            FabledBridge.setManaAndMax(data, currentEnergy, maxEnergy);
+            LAST_MANA.put(player.m_20148_(), currentEnergy);
+            ProgressionData.tempPut(player, LAST_MANA_KEY, currentEnergy);
+            if (scheduleBukkitFollowup) {
+                scheduleFollowup(player, currentEnergy, maxEnergy);
+            }
+            return;
+        }
+
         Double last = LAST_MANA.get(player.m_20148_());
         if (last == null) {
             String stored = ProgressionData.tempGet(player, LAST_MANA_KEY, null);
@@ -113,7 +134,7 @@ public final class EnergyManaSync {
                         last,
                         "fabled",
                         fabledMana);
-            } else if (spent > 0 && !fabledStatWipe) {
+            } else if (spent > 0 && !fabledStatWipe && fabledMana < currentEnergy - ENERGY_EPS) {
                 try {
                     resources.removeEnergy((float) spent);
                 } catch (Throwable t) {
@@ -147,26 +168,29 @@ public final class EnergyManaSync {
         ProgressionData.tempPut(player, LAST_MANA_KEY, currentEnergy);
 
         if (scheduleBukkitFollowup) {
-            final double cur = currentEnergy;
-            final double max = maxEnergy;
-            FabledBridge.runOnBukkit(player, () -> {
-                Object again = FabledBridge.fabledData(player);
-                if (again == null) {
-                    return;
-                }
-                FabledBridge.setManaAndMax(again, cur, max);
-                LAST_MANA.put(player.m_20148_(), cur);
-            });
-            // Level-up stat recalc can land one tick late — second pass catches stubborn wipes.
-            FabledBridge.runOnBukkit(player, () -> FabledBridge.runOnBukkit(player, () -> {
-                Object again = FabledBridge.fabledData(player);
-                if (again == null) {
-                    return;
-                }
-                FabledBridge.setManaAndMax(again, cur, max);
-                LAST_MANA.put(player.m_20148_(), cur);
-            }));
+            scheduleFollowup(player, currentEnergy, maxEnergy);
         }
+    }
+
+    private static void scheduleFollowup(ServerPlayer player, double currentEnergy, double maxEnergy) {
+        final double cur = currentEnergy;
+        final double max = maxEnergy;
+        FabledBridge.runOnBukkit(player, () -> {
+            Object again = FabledBridge.fabledData(player);
+            if (again == null) {
+                return;
+            }
+            FabledBridge.setManaAndMax(again, cur, max);
+            LAST_MANA.put(player.m_20148_(), cur);
+        });
+        FabledBridge.runOnBukkit(player, () -> FabledBridge.runOnBukkit(player, () -> {
+            Object again = FabledBridge.fabledData(player);
+            if (again == null) {
+                return;
+            }
+            FabledBridge.setManaAndMax(again, cur, max);
+            LAST_MANA.put(player.m_20148_(), cur);
+        }));
     }
 
     /**

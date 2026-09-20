@@ -2,7 +2,9 @@ package com.dbzlegacy.adaptivedifficulty.progression.shop;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
+import com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
+import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.FabledBridge;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
@@ -923,8 +925,20 @@ public final class PrestigePointsSystem {
         if (player == null) {
             return 0;
         }
-        return Math.max(0, Math.min(MAX_BREAKTHROUGHS,
-                (int) ProgressionData.storedGetLong(player, KEY_BREAKTHROUGHS, 0L)));
+        int fromBag = (int) ProgressionData.storedGetLong(player, KEY_BREAKTHROUGHS, 0L);
+        int fromRoot = PersistentDataAccess.getInt(player, PersonalLevelCapMirror.ROOT_BREAKTHROUGHS, -1);
+        int fromMirror = PersistentDataAccess.getInt(player, PersonalLevelCapMirror.KEY_BREAKTHROUGHS, -1);
+        int capMirror = PersonalLevelCapMirror.read(player);
+        int fromCap = capMirror > BASE_LEVEL_CAP
+                ? (capMirror - BASE_LEVEL_CAP) / BREAKTHROUGH_STEP
+                : 0;
+        int n = Math.max(fromBag, Math.max(fromRoot, Math.max(fromMirror, fromCap)));
+        n = Math.max(0, Math.min(MAX_BREAKTHROUGHS, n));
+        if (n > fromBag && ProgressionData.storedWritable(player)) {
+            ProgressionData.storedPut(player, KEY_BREAKTHROUGHS, n);
+            PersistentDataAccess.putInt(player, PersonalLevelCapMirror.ROOT_BREAKTHROUGHS, n);
+        }
+        return n;
     }
 
     public static int breakthroughCost(int nextIndex) {
@@ -941,8 +955,9 @@ public final class PrestigePointsSystem {
         }
         int n = Math.max(0, Math.min(MAX_BREAKTHROUGHS, breakthroughs));
         ProgressionData.storedPut(player, KEY_BREAKTHROUGHS, n);
+        PersistentDataAccess.putInt(player, PersonalLevelCapMirror.ROOT_BREAKTHROUGHS, n);
         try {
-            com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.publish(player);
+            PersonalLevelCapMirror.publish(player);
         } catch (Throwable ignored) {
         }
         try {

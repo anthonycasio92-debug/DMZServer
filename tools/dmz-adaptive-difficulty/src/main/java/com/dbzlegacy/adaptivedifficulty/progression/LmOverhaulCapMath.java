@@ -34,15 +34,7 @@ public final class LmOverhaulCapMath {
         if (sp != null) {
             return personalLevelCap(sp);
         }
-        try {
-            net.minecraft.world.entity.player.Player owner = data.getPlayer();
-            int mirrored = PersonalLevelCapMirror.read(owner);
-            if (mirrored > 0) {
-                return mirrored;
-            }
-        } catch (Throwable ignored) {
-        }
-        return PrestigePointsSystem.BASE_LEVEL_CAP;
+        return PersonalLevelCapMirror.resolveCap(data);
     }
 
     public static int maxAssignableTotal(StatsData data, int levelCap) {

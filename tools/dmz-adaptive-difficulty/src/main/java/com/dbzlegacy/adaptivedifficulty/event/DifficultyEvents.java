@@ -168,6 +168,7 @@ public final class DifficultyEvents {
             com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
                     .syncFromLegacy(player);
             com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.publish(player);
+            com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery.pulse(player);
         } catch (Throwable ignored) {
         }
     }
@@ -196,6 +197,11 @@ public final class DifficultyEvents {
             RivalSystem.onLogin(player);
             SparringSystem.onLogin(player);
             ProgressionSystem.onLogin(player);
+            try {
+                com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.publish(player);
+                com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery.pulse(player);
+            } catch (Throwable ignored) {
+            }
             try {
                 com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
                         .syncFromLegacy(player);

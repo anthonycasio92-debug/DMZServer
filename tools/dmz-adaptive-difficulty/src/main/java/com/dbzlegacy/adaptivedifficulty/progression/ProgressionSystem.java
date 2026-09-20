@@ -160,6 +160,18 @@ public final class ProgressionSystem {
                     StaminaRegenGuard.pulse(player);
                 } catch (Throwable ignored) {
                 }
+                if (tick % 200 == 0) {
+                    try {
+                        PersonalLevelCapMirror.publish(player);
+                    } catch (Throwable ignored) {
+                    }
+                }
+                if (tick % 600 == 0) {
+                    try {
+                        PrestigeResourceRecovery.pulse(player);
+                    } catch (Throwable ignored) {
+                    }
+                }
             }
         }
         if (DifficultyConfig.get().enableFabledBridge) {

@@ -112,6 +112,17 @@ public final class ProgressionData {
     }
 
     public static long storedGetLong(ServerPlayer player, String key, long fallback) {
+        CompoundTag tag = stored(player);
+        if (tag.m_128441_(key)) {
+            try {
+                return tag.m_128454_(key);
+            } catch (Throwable ignored) {
+            }
+            try {
+                return tag.m_128451_(key);
+            } catch (Throwable ignored) {
+            }
+        }
         try {
             String v = storedGet(player, key, null);
             if (v == null || v.isBlank()) {
