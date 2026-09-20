@@ -10,7 +10,8 @@
     "StatsDataResetPrestigeSyncMixin",
     "DmzRevampPrestigeCapMixin",
     "UpdateCharacterC2SMixin",
-    "CreateCharacterC2SMixin"
+    "CreateCharacterC2SMixin",
+    "ResourcesEnergyDrainGuardMixin"
   ],
   "injectors": {
     "defaultRequire": 1

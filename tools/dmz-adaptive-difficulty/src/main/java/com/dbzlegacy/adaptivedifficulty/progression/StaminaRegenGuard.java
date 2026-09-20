@@ -20,9 +20,7 @@ public final class StaminaRegenGuard {
     private static final int STALL_TICKS_BEFORE_NUDGE = 30;
     private static final int NUDGE_INTERVAL_TICKS = 10;
 
-    private static final Map<UUID, Float> LAST_ENERGY = new ConcurrentHashMap<>();
     private static final Map<UUID, Float> LAST_STAMINA = new ConcurrentHashMap<>();
-    private static final Map<UUID, Integer> STALL_ENERGY = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> STALL_STAMINA = new ConcurrentHashMap<>();
 
     private StaminaRegenGuard() {}
@@ -78,21 +76,18 @@ public final class StaminaRegenGuard {
                 if (curS <= 0.01f) {
                     res.setCurrentStamina(Math.min(maxS, maxS * 0.02f));
                 } else {
-                    nudgeIfStalled(id, curS, maxS, false, res, cds, dashing);
+                    nudgeIfStalled(id, curS, maxS, res, cds, dashing);
+                }
+                // Mohist often skips stamina regen while drain flags linger after prestige.
+                if (cds.hasCooldown(Cooldowns.DRAIN) || cds.hasCooldown(Cooldowns.DRAIN_ACTIVE)) {
+                    int d = Math.max(cds.getCooldown(Cooldowns.DRAIN), cds.getCooldown(Cooldowns.DRAIN_ACTIVE));
+                    if (d > 0 && d < STALE_DRAIN_TICKS * 4 && curS < maxS - 0.5f) {
+                        cds.removeCooldown(Cooldowns.DRAIN);
+                        cds.removeCooldown(Cooldowns.DRAIN_ACTIVE);
+                    }
                 }
             } else {
-                clearStall(id, false);
-            }
-        } catch (Throwable ignored) {
-        }
-        try {
-            float maxE = data.getMaxEnergy();
-            float curE = res.getCurrentEnergy();
-            if (maxE > 1f && curE >= 0f && curE < maxE - 0.5f && !dashing
-                    && !cds.hasCooldown(Cooldowns.STAMINA_PAUSE)) {
-                nudgeIfStalled(id, curE, maxE, true, res, cds, dashing);
-            } else {
-                clearStall(id, true);
+                clearStall(id);
             }
         } catch (Throwable ignored) {
         }
@@ -102,46 +97,34 @@ public final class StaminaRegenGuard {
             UUID id,
             float cur,
             float max,
-            boolean energy,
             Resources res,
             Cooldowns cds,
             boolean dashing
     ) {
         if (dashing || cds.hasCooldown(Cooldowns.STAMINA_PAUSE)) {
-            clearStall(id, energy);
+            clearStall(id);
             return;
         }
-        Map<UUID, Float> lastMap = energy ? LAST_ENERGY : LAST_STAMINA;
-        Map<UUID, Integer> stallMap = energy ? STALL_ENERGY : STALL_STAMINA;
-        float prev = lastMap.getOrDefault(id, -1f);
-        float now = energy ? res.getCurrentEnergy() : res.getCurrentStamina();
+        float prev = LAST_STAMINA.getOrDefault(id, -1f);
+        float now = res.getCurrentStamina();
         if (prev >= 0f && Math.abs(now - prev) < 0.08f) {
-            int stall = stallMap.merge(id, 1, (a, b) -> a + b);
+            int stall = STALL_STAMINA.merge(id, 1, (a, b) -> a + b);
             if (stall >= STALL_TICKS_BEFORE_NUDGE && stall % NUDGE_INTERVAL_TICKS == 0) {
-                float step = Math.max(0.5f, max * 0.008f);
+                float step = Math.max(0.5f, max * 0.015f);
                 float gap = max - now;
                 step = Math.min(step, gap);
                 if (step > 0.01f) {
-                    if (energy) {
-                        res.addEnergy(step);
-                    } else {
-                        res.addStamina(step);
-                    }
+                    res.addStamina(step);
                 }
             }
         } else {
-            stallMap.put(id, 0);
+            STALL_STAMINA.put(id, 0);
         }
-        lastMap.put(id, energy ? res.getCurrentEnergy() : res.getCurrentStamina());
+        LAST_STAMINA.put(id, res.getCurrentStamina());
     }
 
-    private static void clearStall(UUID id, boolean energy) {
-        if (energy) {
-            LAST_ENERGY.remove(id);
-            STALL_ENERGY.remove(id);
-        } else {
-            LAST_STAMINA.remove(id);
-            STALL_STAMINA.remove(id);
-        }
+    private static void clearStall(UUID id) {
+        LAST_STAMINA.remove(id);
+        STALL_STAMINA.remove(id);
     }
 }
