@@ -71,27 +71,8 @@ javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
     -C "$RES" legacymechanics.refmap.json
 )
 
-# Ki/stamina pools must stay byte-identical to live recycle 2.4.115 (Mohist regression guard).
-REF_DIR="$(cd "$(dirname "$0")" && pwd)/reference"
-REF_CLAMP="$REF_DIR/DmzResourcePoolClamp.class"
-BUILT_CLAMP="$OUT/com/dbzlegacy/adaptivedifficulty/progression/DmzResourcePoolClamp.class"
-REF_JAR="${LM_REFERENCE_JAR:-}"
-if [[ ! -f "$REF_CLAMP" && -n "$REF_JAR" && -f "$REF_JAR" ]]; then
-  mkdir -p "$REF_DIR"
-  unzip -p "$REF_JAR" com/dbzlegacy/adaptivedifficulty/progression/DmzResourcePoolClamp.class >"$REF_CLAMP"
-fi
-if [[ -f "$REF_CLAMP" && -f "$BUILT_CLAMP" ]]; then
-  if ! cmp -s "$REF_CLAMP" "$BUILT_CLAMP"; then
-    echo "Overlay live DmzResourcePoolClamp.class from reference/ (ki/stamina guard)" >&2
-    cp "$REF_CLAMP" "$BUILT_CLAMP"
-    (
-      cd "$OUT"
-      jar uf "$JAR" com/dbzlegacy/adaptivedifficulty/progression/DmzResourcePoolClamp.class
-    )
-  fi
-else
-  echo "WARN: missing reference or built DmzResourcePoolClamp — skip ki overlay" >&2
-fi
+# Do NOT overlay DmzResourcePoolClamp.class from an older jar — mixed bytecode breaks
+# Java 17 verification when mixins call actualMaxEnergy from woven StatsData (VerifyError → invalid playerdata).
 
 echo "Built $JAR"
 jar tf "$JAR"
