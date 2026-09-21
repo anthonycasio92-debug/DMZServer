@@ -58,12 +58,12 @@ https://github.com/anthonycasio92-debug/DMZServer/raw/cursor/saga-guard-purge-fi
 - **Guru potential unlock:** `NPCActionC2S("guru", 1)` cancelled.
 - **Dr. Gero android conversion:** `NPCActionC2S("gero", 1)` / `handleGero` cancelled.
 
-### Priceless skills/forms stay unbuyable (server) — hardened in 2.12.16
+### Priceless skills/forms stay unbuyable (server) — DMZ packet path
 - Cancels DMZ `UpdateSkillC2S.lambda$handle$0` for PURCHASE/UPGRADE when cost is `-1`
-- **SDU 3.0.5+:** also cancels `DmzSkills.buyStackSkill` (own `BuyStackSkillC2S` path that did `Math.max(0, -1)` and free-unlocked stack forms on spam/double-click)
 - Preserves negatives in DMZ `computeTpCost`
 - Guards `Skills.setSkillLevel` / `Skill.addLevel` during menu purchase packets only
-- Log lines: `blocked priceless …` / `blocked priceless sdu buyStackSkill …`
+- Log lines: `blocked priceless …`
+- **SDU stack-form buys** (`BuyStackSkillC2S` / edit patch): handled in the **SDU mod**, not this jar (removed from melee fix as of **2.12.22**)
 
 
 ### Old Kai UltimateChallenge (client)
