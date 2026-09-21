@@ -18,24 +18,10 @@ if [[ -z "$SHURUI" ]]; then
     fi
   done
 fi
-SDU="${SDU_JAR:-}"
-if [[ -z "$SDU" ]]; then
-  for candidate in \
-    "$ROOT/mods"/sdu-3.0.5.jar \
-    "$ROOT"/sdu-3.0.5.jar \
-    /tmp/sdu-3.0.5.jar \
-    "$ROOT/mods"/sdu-*.jar
-  do
-    if [[ -f "$candidate" ]]; then
-      SDU="$candidate"
-      break
-    fi
-  done
-fi
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
-JAR="$ROOT/mods/dmz_mohist_melee_fix-2.12.21.jar"
+JAR="$ROOT/mods/dmz_mohist_melee_fix-2.12.22.jar"
 
 rm -f "$ROOT"/mods/dmz_mohist_melee_fix-*.jar
 rm -f "$ROOT"/dmz_mohist_melee_fix-*.jar
@@ -61,13 +47,6 @@ if [[ -n "$SHURUI" ]]; then
 else
   echo "WARN: shuruis_raid_bosses jar not found; raid mixin may fail to compile" >&2
 fi
-if [[ -n "$SDU" ]]; then
-  CP="$CP:$SDU"
-  echo "Using SDU jar for compile: $SDU"
-else
-  echo "WARN: sdu jar not found; SDU stack-buy mixin may fail to compile" >&2
-fi
-
 rm -rf "$OUT"
 mkdir -p "$OUT"
 javac --release 17 -proc:none -cp "$CP" -d "$OUT" \
@@ -81,10 +60,9 @@ echo '{}' > /tmp/dmz_mohist_melee_fix.refmap.json
     -C "$RES" META-INF/mods.toml \
     -C "$RES" dmz_mohist_melee_fix.mixins.json \
     -C "$RES" dmz_mohist_melee_fix.raid.mixins.json \
-    -C "$RES" dmz_mohist_melee_fix.sdu.mixins.json \
     -C "$RES" pack.mcmeta
 )
 jar uf "$JAR" -C /tmp dmz_mohist_melee_fix.refmap.json
-cp -f "$JAR" "$ROOT/dmz_mohist_melee_fix-2.12.21.jar"
+cp -f "$JAR" "$ROOT/dmz_mohist_melee_fix-2.12.22.jar"
 echo "Built $JAR"
 jar tf "$JAR"

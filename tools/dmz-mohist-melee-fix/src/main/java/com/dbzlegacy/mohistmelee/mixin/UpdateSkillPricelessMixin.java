@@ -21,8 +21,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * Block menu/packet purchase of priceless ({@code -1}) skills and stack forms.
  * <p>
- * SDU double-click / spam-click sends {@code PURCHASE} with {@code Math.max(0, cost)},
- * so {@code -1} arrives as free {@code 0}. Vanilla DMZ {@code computeTpCost} also clamps
+ * Spam {@code PURCHASE}/{@code UPGRADE} packets can send {@code Math.max(0, cost)}, so
+ * {@code -1} arrives as free {@code 0}. Vanilla DMZ {@code computeTpCost} also clamps
  * with {@code Math.max(0, …)}, which would make the server accept that free buy.
  * <p>
  * Primary hook: cancel {@code lambda$handle$0} (same pattern as NPCAction disables) before
