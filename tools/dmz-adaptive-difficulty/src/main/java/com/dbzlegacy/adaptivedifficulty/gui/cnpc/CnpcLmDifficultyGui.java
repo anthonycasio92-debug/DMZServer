@@ -31,25 +31,27 @@ public final class CnpcLmDifficultyGui {
     }
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
-        DifficultyActions.prepareGui(player);
-        DifficultySnapshot snap = DifficultyCache.refresh(player);
+        ServerPlayer who = CnpcGuiSupport.target(player);
+        DifficultyActions.prepareGui(who);
+        DifficultySnapshot snap = DifficultyCache.refresh(who);
         CnpcGuiSupport.title(gui, 1, "§aDifficulty");
         CnpcGuiSupport.subtitle(gui, 2, "§7Adaptive scaling & unlock tiers");
+        CnpcGuiSupport.inspectBanner(player, gui);
 
         List<String> lines = new ArrayList<>();
         if (!DifficultyConfig.isEnabled()) {
             lines.add("§cSystem disabled.");
-        } else if (!SystemGate.allows(player)) {
+        } else if (!SystemGate.allows(who)) {
             lines.add("§eNot available on this account.");
         } else {
-            PlayerDifficultyData data = DifficultyCache.data(player);
+            PlayerDifficultyData data = DifficultyCache.data(who);
             if (!data.isPersonalEnabled()) {
                 lines.add("§cPersonal difficulty OFF");
             } else {
                 lines.add("§7Tier §f" + snap.activeTierName + "  §8·  §7T" + snap.highestUnlockedTier);
             }
-            lines.add("§6Coins §f" + AncientCoinEconomy.inventoryBreakdown(player));
-            String title = TitleSystem.activeDisplay(player);
+            lines.add("§6Coins §f" + AncientCoinEconomy.inventoryBreakdown(who));
+            String title = TitleSystem.activeDisplay(who);
             if (title != null && !"None".equals(title)) {
                 lines.add("§7Title §e" + title);
             }
@@ -64,19 +66,20 @@ public final class CnpcLmDifficultyGui {
         CnpcGuiSupport.button(gui, 22, "§bTeam scaling", CnpcGuiSupport.COL_L, row, () -> open(player, "team"));
         CnpcGuiSupport.button(gui, 23, "§7Toggle personal", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                 player,
-                () -> DifficultyActions.handleArg(player, "toggle_personal", "0", "main").message(),
+                () -> DifficultyActions.handleArg(who, "toggle_personal", "0", "main").message(),
                 () -> open(player, "main")));
         row += 24;
         navFooter(player, gui, row);
     }
 
     private static void paintTiers(ServerPlayer player, ICustomGui gui) {
-        DifficultyActions.prepareGui(player);
+        ServerPlayer who = CnpcGuiSupport.target(player);
+        DifficultyActions.prepareGui(who);
         CnpcGuiSupport.title(gui, 1, "§eDifficulty · Tiers");
         CnpcGuiSupport.subtitle(gui, 2, "§7Activate an unlocked tier (0 = none)");
 
-        DifficultySnapshot snap = DifficultyCache.refresh(player);
-        PlayerDifficultyData data = DifficultyCache.data(player);
+        DifficultySnapshot snap = DifficultyCache.refresh(who);
+        PlayerDifficultyData data = DifficultyCache.data(who);
         int max = Math.max(0, snap.highestUnlockedTier);
         List<String> lines = new ArrayList<>();
         lines.add("§7Active §fT" + data.getActiveTier() + "  §8·  §7Max unlocked §fT" + max);
@@ -91,7 +94,7 @@ public final class CnpcLmDifficultyGui {
             }
             CnpcGuiSupport.buttonSmall(gui, 30 + t, "§fTier " + tier, col, row, 95, () -> CnpcGuiSupport.act(
                     player,
-                    () -> DifficultyActions.handleArg(player, "activate", String.valueOf(tier), "tiers").message(),
+                    () -> DifficultyActions.handleArg(who, "activate", String.valueOf(tier), "tiers").message(),
                     () -> open(player, "tiers")));
         }
         row += 36;
@@ -99,28 +102,30 @@ public final class CnpcLmDifficultyGui {
     }
 
     private static void paintTitles(ServerPlayer player, ICustomGui gui) {
+        ServerPlayer who = CnpcGuiSupport.target(player);
         CnpcGuiSupport.title(gui, 1, "§dDifficulty · Titles");
         CnpcGuiSupport.subtitle(gui, 2, "§7Equip a title you have unlocked");
         CnpcGuiSupport.button(gui, 20, "§7Clear title", CnpcGuiSupport.COL_L, 100, () -> CnpcGuiSupport.act(
                 player,
-                () -> DifficultyActions.handleArg(player, "title", "none", "titles").message(),
+                () -> DifficultyActions.handleArg(who, "title", "none", "titles").message(),
                 () -> open(player, "titles")));
         CnpcGuiSupport.button(gui, 21, "§eRefresh list", CnpcGuiSupport.COL_R, 100, () -> open(player, "titles"));
         navFooter(player, gui, 200);
     }
 
     private static void paintTeam(ServerPlayer player, ICustomGui gui) {
+        ServerPlayer who = CnpcGuiSupport.target(player);
         CnpcGuiSupport.title(gui, 1, "§bDifficulty · Teams");
         CnpcGuiSupport.subtitle(gui, 2, "§7Mutual rival team bonuses");
-        CnpcGuiSupport.bodyLines(gui, 10, 48, DifficultyTeamGuiApi.linesForPage(player, "team"), 8);
+        CnpcGuiSupport.bodyLines(gui, 10, 48, DifficultyTeamGuiApi.linesForPage(who, "team"), 8);
         int row = 170;
         CnpcGuiSupport.button(gui, 40, "§7Personal only", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
-                () -> DifficultyTeamGuiApi.handleDo(player, "mode", "personal_only", "team"),
+                () -> DifficultyTeamGuiApi.handleDo(who, "mode", "personal_only", "team"),
                 () -> open(player, "team")));
         CnpcGuiSupport.button(gui, 41, "§aFull team scaling", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                 player,
-                () -> DifficultyTeamGuiApi.handleDo(player, "mode", "full_team_scaling", "team"),
+                () -> DifficultyTeamGuiApi.handleDo(who, "mode", "full_team_scaling", "team"),
                 () -> open(player, "team")));
         row += 24;
         navFooter(player, gui, row);

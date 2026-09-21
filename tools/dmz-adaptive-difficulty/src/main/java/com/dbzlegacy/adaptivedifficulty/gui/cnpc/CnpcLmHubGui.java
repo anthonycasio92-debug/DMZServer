@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.gui.AdminInspectSessions;
 import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillCheckService;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
@@ -30,12 +31,14 @@ public final class CnpcLmHubGui {
     }
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
-        Map<String, String> ph = MechanicsGuiApi.placeholders(player);
+        ServerPlayer who = CnpcGuiSupport.target(player);
+        Map<String, String> ph = MechanicsGuiApi.placeholders(who);
         CnpcGuiSupport.title(gui, 1, "§fLegacy Mechanics");
         CnpcGuiSupport.subtitle(gui, 2, "§7Your hub for difficulty, rivals, sparring & more");
-        CnpcGuiSupport.divider(gui, 3, 38);
+        CnpcGuiSupport.inspectBanner(player, gui);
+        CnpcGuiSupport.divider(gui, 3, AdminInspectSessions.isInspecting(player.m_20148_()) ? 52 : 38);
 
-        List<String> lines = new ArrayList<>(MechanicsGuiApi.linesForPage(player, "main"));
+        List<String> lines = new ArrayList<>(MechanicsGuiApi.linesForPage(who, "main"));
         CnpcGuiSupport.bodyLines(gui, 10, 44, lines, 4);
 
         int row = 88;

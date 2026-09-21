@@ -1,6 +1,5 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
-import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesConfig;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -13,23 +12,8 @@ public final class CharacterServicesMenu {
             return;
         }
         String target = page == null || page.isBlank() ? "main" : page;
-        GuiBackend backend = GuiBackend.fromConfig();
-        boolean opened = switch (backend) {
-            case CNPC -> {
-                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "character", target);
-                yield true;
-            }
-            case CMI -> CmiGuiBridge.openCharacterServices(player, target);
-            case CHEST -> BukkitGuiBridge.openCharacterServices(player, target);
-            case CHAT -> false;
-            case AUTO -> CmiGuiBridge.openCharacterServices(player, target)
-                    || BukkitGuiBridge.openCharacterServices(player, target);
-        };
-        if (!opened) {
-            AdaptiveDifficultyMod.LOGGER.warn(
-                    "[{}] character services GUI open failed for {}",
-                    AdaptiveDifficultyMod.MOD_ID,
-                    player.m_6302_());
+        if (GuiBackend.fromConfig() == GuiBackend.CNPC) {
+            com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "character", target);
         }
     }
 }

@@ -23,7 +23,7 @@ import org.apache.logging.log4j.Logger;
  * LegacyMechanics — Forge entrypoint (class AdaptiveDifficultyMod kept for GUI reflection).
  *
  * <p><b>ABI:</b> Java package {@code com.dbzlegacy.adaptivedifficulty} and class
- * {@code AdaptiveDifficultyMod} must stay stable — LegacyMechanicsGUI reflects on them.
+ * {@code AdaptiveDifficultyMod} must stay stable for Mohist/Bukkit bridges when used.
  * Player NBT root {@code dmz_adaptive_difficulty} and mob tags {@code dmz_ad_*} are unchanged.
  */
 @Mod(AdaptiveDifficultyMod.MOD_ID)
@@ -31,7 +31,7 @@ public final class AdaptiveDifficultyMod {
     /** Forge modId — lowercase; not used for NBT / GUI class lookup. */
     public static final String MOD_ID = "legacymechanics";
     /** Product line version (was DMZ Adaptive Difficulty 3.3.x). */
-    public static final String VERSION = "4.5.2";
+    public static final String VERSION = "4.5.3";
     public static final String DISPLAY_NAME = "LegacyMechanics";
     public static final Logger LOGGER = LogManager.getLogger(DISPLAY_NAME);
 
@@ -61,13 +61,13 @@ public final class AdaptiveDifficultyMod {
         CharacterCommands.register();
         ProgressionCommands.register();
         LOGGER.info(
-                "[{}] v{} server-only: Lightman's={}, FTB Teams={}, CMI={}, ChestGUI={}, Progression={}",
+                "[{}] v{} server-only: Lightman's={}, FTB Teams={}, guiBackend={}, CNPC={}, Progression={}",
                 MOD_ID,
                 VERSION,
                 AncientCoinEconomy.realCoinsAvailable(),
                 TeamScaling.ftbAvailable(),
-                com.dbzlegacy.adaptivedifficulty.gui.CmiGuiBridge.available(),
-                com.dbzlegacy.adaptivedifficulty.gui.BukkitGuiBridge.available(),
+                DifficultyConfig.get().guiBackend,
+                noppes.npcs.api.NpcAPI.IsAvailable(),
                 DifficultyConfig.get().enableProgression
         );
         LOGGER.info(

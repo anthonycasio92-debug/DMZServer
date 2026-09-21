@@ -183,14 +183,7 @@ public final class MechanicsCommands {
                 yield true;
             }
             case "android_remove", "androidremove", "removeandroid" -> {
-                // Open the confirm GUI (matches Bukkit hub /lmdo lm open android_remove).
-                if (!com.dbzlegacy.adaptivedifficulty.gui.BukkitGuiBridge.openProgression(player, "android_remove")
-                        && !com.dbzlegacy.adaptivedifficulty.gui.CmiGuiBridge.openProgression(player, "android_remove")) {
-                    String msg = com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi.androidRemove(player, "");
-                    if (msg != null && !msg.isBlank()) {
-                        player.m_213846_(Component.m_237113_(msg));
-                    }
-                }
+                com.dbzlegacy.adaptivedifficulty.gui.ProgressionMenu.open(player, "android_remove");
                 yield true;
             }
             case "skills", "skill" -> {
@@ -257,12 +250,7 @@ public final class MechanicsCommands {
                 || "clear".equalsIgnoreCase(playerName)
                 || "self".equalsIgnoreCase(playerName)
                 || "me".equalsIgnoreCase(playerName)) {
-            if (com.dbzlegacy.adaptivedifficulty.gui.CmiGuiBridge.clearLmInspect(admin.m_20148_())) {
-                return 1;
-            }
-            com.dbzlegacy.adaptivedifficulty.gui.MechanicsMenu.open(admin, "main");
-            admin.m_213846_(Component.m_237113_("§7Inspect clear requested — reopen §f/lm §7if needed."));
-            return 1;
+            return com.dbzlegacy.adaptivedifficulty.gui.ForgeInspectGui.clear(admin) ? 1 : 0;
         }
         ServerPlayer subject = admin.m_20194_() == null
                 ? null
@@ -281,12 +269,7 @@ public final class MechanicsCommands {
             return 0;
         }
         String sys = system == null || system.isBlank() ? "hub" : system;
-        if (com.dbzlegacy.adaptivedifficulty.gui.CmiGuiBridge.openLmInspect(admin, subject, sys, "main")) {
-            return 1;
-        }
-        admin.m_213846_(Component.m_237113_(
-                "§cCould not open inspect GUI. Is LegacyMechanicsGUI loaded?"));
-        return 0;
+        return com.dbzlegacy.adaptivedifficulty.gui.ForgeInspectGui.open(admin, subject, sys) ? 1 : 0;
     }
 
     private static int adminMigrateCnpc(CommandSourceStack source, boolean force) {

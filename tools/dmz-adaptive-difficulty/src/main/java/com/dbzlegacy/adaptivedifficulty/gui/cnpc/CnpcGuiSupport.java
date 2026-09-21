@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
+import com.dbzlegacy.adaptivedifficulty.gui.AdminInspectSessions;
 import java.util.List;
 import java.util.function.Supplier;
 import net.minecraft.network.chat.Component;
@@ -76,6 +77,18 @@ public final class CnpcGuiSupport {
 
     public static void subtitle(ICustomGui gui, int id, String text) {
         gui.addLabel(id, text, M, 28, W - M * 2, 14);
+    }
+
+    /** Data/actions target (inspect subject when staff is inspecting). */
+    public static net.minecraft.server.level.ServerPlayer target(net.minecraft.server.level.ServerPlayer viewer) {
+        return AdminInspectSessions.resolveSubject(viewer);
+    }
+
+    public static void inspectBanner(net.minecraft.server.level.ServerPlayer viewer, ICustomGui gui) {
+        String line = AdminInspectSessions.inspectBannerLine(viewer);
+        if (line != null) {
+            gui.addLabel(4, line, M, 40, W - M * 2, 12);
+        }
     }
 
     public static void divider(ICustomGui gui, int id, int y) {

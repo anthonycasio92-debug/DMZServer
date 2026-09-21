@@ -804,14 +804,10 @@ public final class DifficultyCommands {
         if ("details".equalsIgnoreCase(targetPage)) {
             targetPage = "stats";
         }
-        if (com.dbzlegacy.adaptivedifficulty.gui.CmiGuiBridge.openInspect(admin, subject, targetPage)) {
+        if (com.dbzlegacy.adaptivedifficulty.gui.ForgeInspectGui.open(admin, subject, "difficulty")) {
             return 1;
         }
-        source.m_81352_(Component.m_237113_(
-                "§cCould not open inspect GUI. Is LegacyMechanicsGUI loaded? "
-                        + "Try §f/difficulty admin gui " + subject.m_6302_()
-                        + " §cfrom Bukkit."
-        ));
+        source.m_81352_(Component.m_237113_("§cCould not open inspect GUI."));
         return 0;
     }
 
