@@ -38,13 +38,13 @@ function readCapFromPacket(data) {
     }
   } catch (e0) {}
   try {
-    if (typeof data.getDouble === "function") {
-      n = Number(data.getDouble("cap"));
+    if (typeof data.getString === "function") {
+      n = Number(data.getString("s") || data.getString("cap"));
       if (isFinite(n) && n >= OVERHAUL_BASE_CAP) {
         return n;
       }
     }
-  } catch (e1) {}
+  } catch (eStr) {}
   try {
     var v = typeof data.get === "function" ? data.get("cap") : data.cap;
     if (v && typeof v.getAsInt === "function") {

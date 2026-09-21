@@ -55,17 +55,21 @@ function readCap(player) {
 
 function capTag(cap) {
   cap = clampCap(cap) | 0;
+  var text = String(cap);
   try {
     var nbt = NBT.toTagCompound({});
     nbt.putInt("cap", cap);
+    nbt.putString("s", text);
     return nbt;
   } catch (e0) {}
   try {
     var tag = NBT.of({});
     tag.putInt("cap", cap);
+    tag.putString("s", text);
     return tag;
   } catch (e1) {}
-  return { cap: cap };
+  // String so older client scripts `Number(data.cap)` still parse.
+  return { cap: text };
 }
 
 function syncPlayer(player) {
