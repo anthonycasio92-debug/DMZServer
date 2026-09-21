@@ -37,3 +37,4 @@ test-sftp.env
 live-sftp.env
 hits-*.jsonl
 libraries/dmzrevamp-*.jar
+libraries/live-pull/
