@@ -11,10 +11,10 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * LM owns personal playable max stat total (breakthrough 100k–150k).
- * Overhaul {@code levelCap} is pinned to 150k so prestige 0 is not stock 50k
- * ({@code initialLevelCap} default). {@code hexStatReference} follows that
- * 150k curve. Playable caps stay
+ * LM owns personal playable max stat total (100k + 10k×breakthroughs, max 150k).
+ * Overhaul {@code levelCap} follows that personal cap so prestige 0 is 100k
+ * (not stock 50k) and held 1 + 0 breakthroughs stays 100k (not 150k).
+ * {@code hexStatReference} follows the same cap. Playable totals stay
  * {@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataMixin} + this
  * {@code maxAssignableTotal} + TP/stat soft-locks.
  */
@@ -22,8 +22,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class DmzRevampPrestigeCapMixin {
 
     @Inject(method = "levelCap", at = @At("HEAD"), cancellable = true, remap = false)
-    private static void lm$flatOverhaulLevelCap(StatsData data, CallbackInfoReturnable<Integer> cir) {
-        cir.setReturnValue(LmOverhaulCapMath.overhaulLevelCap());
+    private static void lm$personalOverhaulLevelCap(StatsData data, CallbackInfoReturnable<Integer> cir) {
+        cir.setReturnValue(LmOverhaulCapMath.overhaulLevelCap(data));
     }
 
     @Inject(method = "maxAssignableTotal", at = @At("HEAD"), cancellable = true, remap = false)
@@ -48,6 +48,17 @@ public abstract class DmzRevampPrestigeCapMixin {
         }
         if (lmOwnsPrestige() && !LmOverhaulPrestigeIntegration.integrationActive()) {
             cir.setReturnValue(false);
+            return;
+        }
+        // Native Overhaul gates on stock 50k / pinned 150k. 0-breakthrough players
+        // max at 100k and could never prestige. Use the personal cap instead.
+        if (data == null) {
+            return;
+        }
+        try {
+            int cap = LmOverhaulCapMath.overhaulLevelCap(data);
+            cir.setReturnValue(data.getLevel() >= cap);
+        } catch (Throwable ignored) {
         }
     }
 

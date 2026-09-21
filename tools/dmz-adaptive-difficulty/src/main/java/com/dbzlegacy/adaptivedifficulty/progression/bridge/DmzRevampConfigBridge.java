@@ -9,7 +9,7 @@ import net.minecraftforge.fml.ModList;
 /**
  * Reloads Overhaul leveling config on boot so live {@code LevelingRevamp.json} edits apply
  * without hunting down cached defaults. Also pins {@code initialLevelCap} / {@code maxLevel}
- * to 150k so prestige 0 is not stock 50k.
+ * so prestige 0 is 100k (not stock 50k) and breakthroughs can raise to 150k.
  */
 public final class DmzRevampConfigBridge {
     private DmzRevampConfigBridge() {}

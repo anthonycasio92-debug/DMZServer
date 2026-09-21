@@ -8,7 +8,7 @@
   },
   "Prestige": {
     "enabled": true,
-    "initialLevelCap": 150000,
+    "initialLevelCap": 100000,
     "maxPrestigeCount": 10,
     "prestigeHexStatChange": true,
     "usePrestigeMaxAttribute": false,

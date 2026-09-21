@@ -945,26 +945,22 @@ public final class PrestigePointsSystem {
         int fromBag = bagHas ? (int) ProgressionData.storedGetLong(player, KEY_BREAKTHROUGHS, 0L) : -1;
         int fromRoot = PersistentDataAccess.getInt(player, PersonalLevelCapMirror.ROOT_BREAKTHROUGHS, -1);
         int fromMirror = PersistentDataAccess.getInt(player, PersonalLevelCapMirror.KEY_BREAKTHROUGHS, -1);
-        // Explicit NBT wins. Inferring from lm_personal_level_cap (often 150k after Overhaul)
-        // made /padmin breakthroughs set N snap back to 5.
-        if (fromBag >= 0 || fromRoot >= 0 || fromMirror >= 0) {
-            int n = 0;
-            if (fromBag >= 0) {
-                n = Math.max(n, fromBag);
-            }
-            if (fromRoot >= 0) {
-                n = Math.max(n, fromRoot);
-            }
-            if (fromMirror >= 0) {
-                n = Math.max(n, fromMirror);
-            }
-            return Math.max(0, Math.min(MAX_BREAKTHROUGHS, n));
+        // Explicit NBT only. Inferring from lm_personal_level_cap (Overhaul 50k/150k)
+        // made 0 breakthroughs snap to 5 and padmin set 0 fail at held 1.
+        if (fromBag < 0 && fromRoot < 0 && fromMirror < 0) {
+            return 0;
         }
-        int capMirror = PersonalLevelCapMirror.read(player);
-        int fromCap = capMirror > BASE_LEVEL_CAP
-                ? (capMirror - BASE_LEVEL_CAP) / BREAKTHROUGH_STEP
-                : 0;
-        return Math.max(0, Math.min(MAX_BREAKTHROUGHS, fromCap));
+        int n = 0;
+        if (fromBag >= 0) {
+            n = Math.max(n, fromBag);
+        }
+        if (fromRoot >= 0) {
+            n = Math.max(n, fromRoot);
+        }
+        if (fromMirror >= 0) {
+            n = Math.max(n, fromMirror);
+        }
+        return Math.max(0, Math.min(MAX_BREAKTHROUGHS, n));
     }
 
     public static int breakthroughCost(int nextIndex) {

@@ -14,8 +14,8 @@ import net.minecraftforge.fml.ModList;
 
 /**
  * Use dmzrevamp Overhaul prestige (Statistics UI, scaling, saga rebirth) while Legacy Mechanics
- * owns playable stat totals via mixins. Overhaul {@code levelCap} is pinned to 150k
- * (stock prestige-0 cap is 50k and is not synced to clients).
+ * owns playable stat totals via mixins. Overhaul {@code levelCap} is the personal
+ * 100k + 10k×breakthroughs cap (stock prestige-0 cap is 50k and is not synced).
  */
 public final class LmOverhaulPrestigeIntegration {
     /** Overhaul Statistics prestige count hard cap. */

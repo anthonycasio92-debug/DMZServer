@@ -11,11 +11,13 @@ public final class LmOverhaulCapMath {
     /** Stock Overhaul {@code levelUpPerPoints} when {@code LevelingRevamp.json} is default. */
     public static final int LEVEL_UP_PER_POINTS = 6;
     /**
-     * Overhaul Statistics / {@code PrestigeSystem.levelCap} / hex reference.
+     * Overhaul Statistics / {@code PrestigeSystem.levelCap} / hex reference at 0 breakthroughs.
      * Stock Overhaul {@code initialLevelCap} is 50000 and is <b>not</b> synced to clients;
-     * prestige 0 would show 50k. Pin the Overhaul max to the 150k server ceiling.
+     * prestige 0 would show 50k and block Need 60k+. Pin the Overhaul floor to 100k.
+     * Breakthroughs raise the live cap toward {@link PrestigePointsSystem#ABSOLUTE_LEVEL_CAP}.
      */
-    public static final int OVERHAUL_LEVEL_CAP = PrestigePointsSystem.ABSOLUTE_LEVEL_CAP;
+    public static final int OVERHAUL_LEVEL_CAP = PrestigePointsSystem.BASE_LEVEL_CAP;
+    public static final int OVERHAUL_ABSOLUTE_LEVEL_CAP = PrestigePointsSystem.ABSOLUTE_LEVEL_CAP;
 
     private static volatile Method revampInitialStatTotal;
     private static volatile Method revampPointsPerLevel;
@@ -62,16 +64,28 @@ public final class LmOverhaulCapMath {
     }
 
     /**
-     * Flat Overhaul max (150k). Native {@code levelCap} at count 0 is
-     * {@code initialLevelCap} (stock 50k); we never return that.
+     * Prestige-0 / 0-breakthrough Overhaul max (100k). Native {@code levelCap}
+     * at count 0 is {@code initialLevelCap} (stock 50k); we never return that.
      */
     public static int overhaulLevelCap() {
         return OVERHAUL_LEVEL_CAP;
     }
 
     /**
-     * Force live Overhaul {@code maxLevel} + {@code initialLevelCap} to 150k so
-     * prestige 0 is not stock 50k after a JSON reload or client default load.
+     * Live Overhaul {@code levelCap}: personal 100k + 10k×breakthroughs (max 150k).
+     * Held prestige does not change this — 0 breakthroughs stays 100k at held 0 and 1.
+     */
+    public static int overhaulLevelCap(StatsData data) {
+        int personal = personalLevelCap(data);
+        if (personal < OVERHAUL_LEVEL_CAP) {
+            return OVERHAUL_LEVEL_CAP;
+        }
+        return Math.min(OVERHAUL_ABSOLUTE_LEVEL_CAP, personal);
+    }
+
+    /**
+     * Force live Overhaul {@code initialLevelCap} to 100k and {@code maxLevel} to 150k
+     * so prestige 0 is not stock 50k and 0-breakthrough players can reach Need 60k+.
      */
     public static void pinOverhaulLevelCaps() {
         if (!ModList.get().isLoaded("dmzrevamp")) {
@@ -85,14 +99,13 @@ public final class LmOverhaulCapMath {
             }
             Object levels = cfg.getClass().getField("levelsAndAttributes").get(cfg);
             Object prestige = cfg.getClass().getField("Prestige").get(cfg);
-            int target = OVERHAUL_LEVEL_CAP;
             java.lang.reflect.Field maxLevel = levels.getClass().getField("maxLevel");
             java.lang.reflect.Field initial = prestige.getClass().getField("initialLevelCap");
-            if (maxLevel.getInt(levels) != target) {
-                maxLevel.setInt(levels, target);
+            if (maxLevel.getInt(levels) != OVERHAUL_ABSOLUTE_LEVEL_CAP) {
+                maxLevel.setInt(levels, OVERHAUL_ABSOLUTE_LEVEL_CAP);
             }
-            if (initial.getInt(prestige) != target) {
-                initial.setInt(prestige, target);
+            if (initial.getInt(prestige) != OVERHAUL_LEVEL_CAP) {
+                initial.setInt(prestige, OVERHAUL_LEVEL_CAP);
             }
         } catch (Throwable ignored) {
         }

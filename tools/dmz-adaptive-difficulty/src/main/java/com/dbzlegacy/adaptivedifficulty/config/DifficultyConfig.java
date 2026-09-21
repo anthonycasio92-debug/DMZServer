@@ -261,7 +261,8 @@ public final class DifficultyConfig {
     /**
      * Use dmzrevamp Statistics prestige UI + native scaling/rebirth. LM still owns
      * playable max stat total via mixins ({@code enableOverhaulPrestigeIntegration}).
-     * Overhaul {@code levelCap} is pinned to 150k so prestige 0 is not stock 50k.
+     * Overhaul {@code levelCap} is the personal 100k + 10k×breakthroughs cap
+     * so prestige 0 is not stock 50k and 0 breakthroughs still work at held 1.
      * Requires {@code LevelingRevamp.json → Prestige.enabled: true} on the server.
      */
     public boolean enableOverhaulPrestigeIntegration = true;
