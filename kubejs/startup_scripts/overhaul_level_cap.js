@@ -1,7 +1,6 @@
-// Client-pack copy of the Overhaul Statistics cap pin.
+// Client-pack copy of the Overhaul Statistics / Information cap pin.
 // startup_scripts ship with the player pack (same folder as dmzweaponscale.js).
 // Dedicated-server kubejs/client_scripts are NOT synced to clients.
-// Do not pin Overhaul fields on the dedicated server — LM owns 100k/150k there.
 
 var CHANNEL = "lm_personal_level_cap";
 var OVERHAUL_BASE_CAP = 100000;
@@ -43,6 +42,7 @@ function readCapFromPacket(data) {
   try {
     var v = typeof data.get === "function" ? data.get("cap") : data.cap;
     if (v && typeof v.getAsInt === "function") n = Number(v.getAsInt());
+    else if (v && typeof v.asInt === "function") n = Number(v.asInt());
     else n = Number(v);
   } catch (e2) {}
   return n;
@@ -73,15 +73,26 @@ function pinOverhaulCaps(cap) {
 
 if (isClient) {
   pinOverhaulCaps(OVERHAUL_BASE_CAP);
-  try {
-    NetworkEvents.dataReceived(CHANNEL, function (event) {
-      try {
-        pinOverhaulCaps(readCapFromPacket(event.data));
-      } catch (e) {
-        console.error("[LM] personal cap packet failed: " + e);
-      }
-    });
-  } catch (eReg) {
-    console.error("[LM] personal cap receiver not registered: " + eReg);
-  }
+
+  NetworkEvents.dataReceived(CHANNEL, function (event) {
+    try {
+      pinOverhaulCaps(readCapFromPacket(event.data));
+    } catch (e) {
+      console.error("[LM] personal cap packet failed: " + e);
+    }
+  });
+
+  ClientEvents.loggedIn(function () {
+    pinOverhaulCaps(lastCap);
+  });
+
+  ClientEvents.tick(function () {
+    try {
+      var player = Client.player;
+      if (!player) return;
+      var ticks = player.tickCount || player.age || 0;
+      if (ticks % 40 !== 0) return;
+      pinOverhaulCaps(lastCap);
+    } catch (e) {}
+  });
 }

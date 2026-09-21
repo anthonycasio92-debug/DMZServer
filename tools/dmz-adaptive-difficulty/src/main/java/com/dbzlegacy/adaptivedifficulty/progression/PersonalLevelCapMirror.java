@@ -4,8 +4,10 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dragonminez.common.stats.StatsData;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
@@ -24,6 +26,13 @@ public final class PersonalLevelCapMirror {
     public static final String ROOT_BREAKTHROUGHS = "pp_level_breakthroughs";
 
     private static final Map<UUID, Integer> CAP_BY_UUID = new ConcurrentHashMap<>();
+    /**
+     * Mohist often leaves {@code StatsData.player} null and identity-compare of
+     * {@code DmzProgression.stats(sp) == data} fails across copies. Bind the live
+     * cap onto the StatsData instance used by Overhaul mixins.
+     */
+    private static final Map<StatsData, Integer> CAP_BY_DATA =
+            Collections.synchronizedMap(new WeakHashMap<>());
 
     private PersonalLevelCapMirror() {}
 
@@ -36,6 +45,7 @@ public final class PersonalLevelCapMirror {
         int c = Math.max(PrestigePointsSystem.BASE_LEVEL_CAP, cap);
         UUID id = player.m_20148_();
         CAP_BY_UUID.put(id, c);
+        bindStatsData(player, c);
         CompoundTag tag = PersistentDataAccess.get(player);
         if (!PersistentDataAccess.isWritable(tag)) {
             return;
@@ -43,6 +53,25 @@ public final class PersonalLevelCapMirror {
         tag.m_128405_(KEY, c);
         tag.m_128405_(KEY_BREAKTHROUGHS, n);
         PersistentDataAccess.putInt(player, ROOT_BREAKTHROUGHS, n);
+    }
+
+    /** Remember this StatsData's personal cap so mixins work when {@code getPlayer()} is null. */
+    public static void bind(StatsData data, int cap) {
+        if (data == null) {
+            return;
+        }
+        int c = Math.max(PrestigePointsSystem.BASE_LEVEL_CAP, cap);
+        CAP_BY_DATA.put(data, c);
+    }
+
+    public static void bindStatsData(ServerPlayer player, int cap) {
+        if (player == null) {
+            return;
+        }
+        try {
+            bind(DmzProgression.stats(player), cap);
+        } catch (Throwable ignored) {
+        }
     }
 
     public static void publish(ServerPlayer player) {
@@ -73,11 +102,16 @@ public final class PersonalLevelCapMirror {
         if (data == null) {
             return PrestigePointsSystem.BASE_LEVEL_CAP;
         }
+        Integer bound = CAP_BY_DATA.get(data);
+        if (bound != null && bound > 0) {
+            return bound;
+        }
         try {
             Player owner = data.getPlayer();
             if (owner instanceof ServerPlayer sp) {
                 int cap = read(sp);
                 if (cap > 0) {
+                    bind(data, cap);
                     return cap;
                 }
             }
@@ -87,9 +121,12 @@ public final class PersonalLevelCapMirror {
         if (resolved != null) {
             int cap = read(resolved);
             if (cap > 0) {
+                bind(data, cap);
                 return cap;
             }
-            return PrestigePointsSystem.effectiveMaxLevel(resolved);
+            int live = PrestigePointsSystem.effectiveMaxLevel(resolved);
+            bind(data, live);
+            return live;
         }
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
@@ -97,7 +134,9 @@ public final class PersonalLevelCapMirror {
                 try {
                     if (DmzProgression.stats(sp) == data) {
                         int cap = read(sp);
-                        return cap > 0 ? cap : PrestigePointsSystem.effectiveMaxLevel(sp);
+                        int live = cap > 0 ? cap : PrestigePointsSystem.effectiveMaxLevel(sp);
+                        bind(data, live);
+                        return live;
                     }
                 } catch (Throwable ignored) {
                 }
