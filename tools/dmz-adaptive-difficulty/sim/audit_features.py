@@ -1351,13 +1351,11 @@ def main() -> int:
     check("Overhaul boot pins 100k/150k caps",
           "pinOverhaulLevelCaps" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/DmzRevampConfigBridge.java"))
-    kjs_cap_path = ROOT / "kubejs" / "client_scripts" / "overhaul_level_cap.js"
-    if kjs_cap_path.exists():
-        kjs_cap = read(kjs_cap_path)
-        check("KubeJS client pins Overhaul 100k (stock 50k is not synced)",
-              "OVERHAUL_BASE_CAP = 100000" in kjs_cap
-              and "initialLevelCap" in kjs_cap
-              and "lm_personal_level_cap" in kjs_cap)
+    kjs_cap = read(ROOT / "kubejs" / "client_scripts" / "overhaul_level_cap.js")
+    check("KubeJS client pins Overhaul 100k (stock 50k is not synced)",
+          "OVERHAUL_BASE_CAP = 100000" in kjs_cap
+          and "initialLevelCap" in kjs_cap
+          and "lm_personal_level_cap" in kjs_cap)
     energy_mana = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/EnergyManaSync.java")
     pool_clamp = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzResourcePoolClamp.java")
     check("Fabled mana uses actual ki pool not ENE stat",
