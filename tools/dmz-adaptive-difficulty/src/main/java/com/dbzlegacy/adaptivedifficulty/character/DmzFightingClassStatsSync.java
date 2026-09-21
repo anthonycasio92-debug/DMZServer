@@ -105,8 +105,8 @@ public final class DmzFightingClassStatsSync {
             return;
         }
         try {
-            float maxEnergy = DmzResourcePoolClamp.displayMaxEnergy(data);
-            float maxStamina = DmzResourcePoolClamp.displayMaxStamina(data);
+            float maxEnergy = DmzResourcePoolClamp.actualMaxEnergy(data);
+            float maxStamina = DmzResourcePoolClamp.actualMaxStamina(data);
             if (DmzResourcePoolClamp.shouldClampCurrent(res.getCurrentEnergy(), maxEnergy)) {
                 res.setCurrentEnergy(maxEnergy);
             }

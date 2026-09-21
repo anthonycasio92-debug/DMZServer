@@ -40,11 +40,14 @@ public final class OverhaulPrestigeResourceScale {
             changed |= DmzResourcePoolClamp.clamp(data);
         }
         if (LmOverhaulPrestigeIntegration.overhaulPrestigeEnabled()) {
+            if (res != null) {
+                changed |= DmzResourcePoolClamp.clampToOverhaulPool(data);
+            }
             if (changed) {
                 afterPoolsChanged(player, data);
             }
-            LAST_MAX_ENERGY.put(id, safeMax(DmzResourcePoolClamp.displayMaxEnergy(data)));
-            LAST_MAX_STAMINA.put(id, safeMax(DmzResourcePoolClamp.displayMaxStamina(data)));
+            LAST_MAX_ENERGY.put(id, safeMax(DmzResourcePoolClamp.actualMaxEnergy(data)));
+            LAST_MAX_STAMINA.put(id, safeMax(DmzResourcePoolClamp.actualMaxStamina(data)));
             return;
         }
 
@@ -69,8 +72,8 @@ public final class OverhaulPrestigeResourceScale {
         if (changed) {
             afterPoolsChanged(player, data);
         }
-        LAST_MAX_ENERGY.put(id, safeMax(DmzResourcePoolClamp.displayMaxEnergy(data)));
-        LAST_MAX_STAMINA.put(id, safeMax(DmzResourcePoolClamp.displayMaxStamina(data)));
+        LAST_MAX_ENERGY.put(id, safeMax(DmzResourcePoolClamp.actualMaxEnergy(data)));
+        LAST_MAX_STAMINA.put(id, safeMax(DmzResourcePoolClamp.actualMaxStamina(data)));
     }
 
     public static void clear(UUID id) {
@@ -83,8 +86,8 @@ public final class OverhaulPrestigeResourceScale {
     }
 
     /**
-     * @param maxEnergyBefore {@link StatsData#getMaxEnergy()} immediately before {@code setCount}
-     * @param maxStaminaBefore {@link StatsData#getMaxStamina()} immediately before {@code setCount}
+     * @param maxEnergyBefore canonical energy max immediately before {@code setCount}
+     * @param maxStaminaBefore canonical stamina max immediately before {@code setCount}
      */
     public static void afterSetCount(
             ServerPlayer player,
@@ -96,6 +99,12 @@ public final class OverhaulPrestigeResourceScale {
             return;
         }
         if (LmOverhaulPrestigeIntegration.overhaulPrestigeEnabled()) {
+            boolean changed = refillIfWasFull(data, maxEnergyBefore, true);
+            changed |= refillIfWasFull(data, maxStaminaBefore, false);
+            changed |= DmzResourcePoolClamp.clampToOverhaulPool(data);
+            if (changed) {
+                afterPoolsChanged(player, data);
+            }
             pulse(player);
             return;
         }
@@ -116,8 +125,8 @@ public final class OverhaulPrestigeResourceScale {
             return false;
         }
         float maxAfter = energy
-                ? safeMax(DmzResourcePoolClamp.displayMaxEnergy(data))
-                : safeMax(DmzResourcePoolClamp.displayMaxStamina(data));
+                ? safeMax(DmzResourcePoolClamp.actualMaxEnergy(data))
+                : safeMax(DmzResourcePoolClamp.actualMaxStamina(data));
         if (maxAfter <= maxBefore + 0.5f) {
             return false;
         }
@@ -154,8 +163,8 @@ public final class OverhaulPrestigeResourceScale {
             return false;
         }
         float maxAfter = energy
-                ? safeMax(DmzResourcePoolClamp.displayMaxEnergy(data))
-                : safeMax(DmzResourcePoolClamp.displayMaxStamina(data));
+                ? safeMax(DmzResourcePoolClamp.actualMaxEnergy(data))
+                : safeMax(DmzResourcePoolClamp.actualMaxStamina(data));
         if (maxAfter >= maxBefore - 0.5f) {
             return false;
         }
@@ -177,8 +186,8 @@ public final class OverhaulPrestigeResourceScale {
      * bar (15465). {@link StatsData#restoreMultiplierGains} adds (newMax - oldMax).
      */
     private static boolean restoreIfStuckAtOldCap(ServerPlayer player, StatsData data, Resources res) {
-        float maxE = safeMax(DmzResourcePoolClamp.displayMaxEnergy(data));
-        float maxS = safeMax(DmzResourcePoolClamp.displayMaxStamina(data));
+        float maxE = safeMax(DmzResourcePoolClamp.actualMaxEnergy(data));
+        float maxS = safeMax(DmzResourcePoolClamp.actualMaxStamina(data));
         float curE = res.getCurrentEnergy();
         float curS = res.getCurrentStamina();
         boolean energyStuck = looksLikeOldFullCap(curE, maxE);
@@ -230,6 +239,44 @@ public final class OverhaulPrestigeResourceScale {
         double ratio = max / current;
         long nearest = Math.round(ratio);
         return nearest >= 2L && Math.abs(ratio - nearest) < 0.02;
+    }
+
+    /**
+     * Prestige count just changed. If the player was full at the old canonical max,
+     * fill to the new canonical max once. Never ratio-multiply an already-scaled pool.
+     */
+    private static boolean refillIfWasFull(StatsData data, float maxBefore, boolean energy) {
+        if (data == null || maxBefore <= 0.5f) {
+            return false;
+        }
+        Resources res = data.getResources();
+        if (res == null) {
+            return false;
+        }
+        float maxAfter = energy
+                ? safeMax(DmzResourcePoolClamp.actualMaxEnergy(data))
+                : safeMax(DmzResourcePoolClamp.actualMaxStamina(data));
+        if (maxAfter <= 1f) {
+            return false;
+        }
+        float cur = energy ? res.getCurrentEnergy() : res.getCurrentStamina();
+        if (cur > maxAfter + 0.08f) {
+            if (energy) {
+                res.setCurrentEnergy(maxAfter);
+            } else {
+                res.setCurrentStamina(maxAfter);
+            }
+            return true;
+        }
+        if (cur < maxBefore * 0.97f || cur >= maxAfter - 0.5f) {
+            return false;
+        }
+        if (energy) {
+            res.setCurrentEnergy(maxAfter);
+        } else {
+            res.setCurrentStamina(maxAfter);
+        }
+        return true;
     }
 
     private static void afterPoolsChanged(ServerPlayer player, StatsData data) {

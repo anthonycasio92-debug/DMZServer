@@ -14,66 +14,130 @@ import com.dragonminez.common.stats.character.Stats;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * HUD-formula helpers for display / Fabled sync. Current-pool clamp is off (2.4.93).
+ * One prestige-aware ki/stamina maximum used by HUD, Fabled, clamps, and Overhaul sync.
  *
- * <p>XenoverseHUD / AlternativeHUD call {@code getMaxEnergy()}/{@code getMaxStamina()} on the
- * <em>client</em>. {@code ResourceSyncS2C} only sends current energy/stamina. Server
- * {@code getMax*} adds Mohist / Apotheosis / Potentialist extras that never reach the client
- * bar, so a full server pool reads as over-max (HUD 159/145 vs overlay 159/190).
+ * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} = native {@code getMax*} (Iron
+ * {@code max_mana} rejected) × Overhaul {@code scaleMultiplier} once. ENE/STM stay out of
+ * {@code getTotalMultiplier} so this is the only place the pool is prestige-scaled.
  *
- * <p>2.4.87 used {@code data.getStatScaling(class)} and returned 0 on any throw.
- * Live {@code config/dragonminez/races/ancient_saiyan/stats.json} (and saiyan) only has
- * {@code classes.race}. JLDK is {@code warrior} — {@code getStatScaling} NPEs on the missing
- * class (or on null {@code Double} defaults from an auto-created empty ClassStats).
- * {@code displayMax} then returned 0, {@code shouldClampCurrent} refused to clamp (power-release
- * floor), and current stayed at Iron {@code max_mana} 67474 / 171345.5 after the 2.4.87 boot.
+ * <p>{@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataHudPoolMaxMixin} applies the
+ * same scale to live {@code getMaxEnergy}/{@code getMaxStamina} so XenoverseHUD sees the
+ * identical cap. Native reads used to compute that cap skip the mixin via
+ * {@link #isReadingNativeMax()}.
  *
- * <p>Cap = DMZ formula with the vanilla secondary default the HUD actually uses:
- * {@code 20 + (invested + bonusMult) × scaling × totalMult + bonusAdd × scaling}.
- * Scaling is the fighting-class row when that id exists in the race JSON, otherwise
- * {@code classes.race} (live 0.6 ancient / 0.8 saiyan). Never call {@code getMax*}.
- *
- * <p>Never clamp current energy to {@code ≤ 1} — {@code Resources#setCurrentEnergy} zeros
- * power release at that threshold.
+ * <p>Currents clamp to those maxima only — never to the unscaled HUD reconstruction
+ * (2.4.93) and never by raising the advertised max to the overflowing current.
  */
 public final class DmzResourcePoolClamp {
     /** Below this, {@code setCurrentEnergy} clears Limit Release. */
     private static final float POWER_RELEASE_FLOOR = 1.0f;
     /** {@code StatsData.getSecondaryAttributeValue} default when the client has no extras. */
     private static final double HUD_SECONDARY_DEFAULT = 20.0d;
+    private static final ThreadLocal<Boolean> READING_NATIVE =
+            ThreadLocal.withInitial(() -> Boolean.FALSE);
 
     private DmzResourcePoolClamp() {}
 
-    /** HUD-matching ki cap (Statistics Max Ki). */
-    public static float displayMaxEnergy(StatsData data) {
-        return displayMax(data, true);
+    /** True while computing the unscaled native {@code getMax*} (HUD mixin must not scale). */
+    public static boolean isReadingNativeMax() {
+        return Boolean.TRUE.equals(READING_NATIVE.get());
     }
 
-    /**
-     * Live DMZ ki cap ({@code StatsData.getMaxEnergy}), not the invested ENE stat
-     * and not the HUD reconstruction from that stat. Rejects Iron {@code max_mana}
-     * contamination (2.4.87).
-     */
-    public static float actualMaxEnergy(StatsData data) {
-        if (data == null) {
-            return 0f;
-        }
-        float live = 0f;
-        try {
-            live = data.getMaxEnergy();
-        } catch (Throwable ignored) {
-        }
-        if (Float.isFinite(live) && live > POWER_RELEASE_FLOOR && !looksLikeIronMana(data, live)) {
-            return live;
+    /** Multiply a native / HUD-formula pool by Overhaul {@code scaleMultiplier} once. */
+    public static float applyOverhaulScale(StatsData data, float base) {
+        if (!Float.isFinite(base) || base <= POWER_RELEASE_FLOOR) {
+            return base;
         }
         try {
-            float hud = displayMaxEnergy(data);
-            if (Float.isFinite(hud) && hud > POWER_RELEASE_FLOOR) {
-                return hud;
+            double scale = LmOverhaulPrestigeIntegration.combatScaleMultiplier(data);
+            if (Double.isFinite(scale) && scale > 1.000_001d) {
+                float scaled = (float) (base * scale);
+                if (Float.isFinite(scaled) && scaled > POWER_RELEASE_FLOOR) {
+                    return scaled;
+                }
             }
         } catch (Throwable ignored) {
         }
-        return Float.isFinite(live) && live > POWER_RELEASE_FLOOR ? live : 0f;
+        return base;
+    }
+
+    /** Authoritative prestige-aware ki cap. */
+    public static float actualMaxEnergy(StatsData data) {
+        return actualMax(data, true);
+    }
+
+    /** Authoritative prestige-aware stamina cap. */
+    public static float actualMaxStamina(StatsData data) {
+        return actualMax(data, false);
+    }
+
+    /** Alias of {@link #actualMaxEnergy(StatsData)} — one canonical ki max. */
+    public static float displayMaxEnergy(StatsData data) {
+        return actualMaxEnergy(data);
+    }
+
+    /** Alias of {@link #actualMaxStamina(StatsData)} — one canonical stamina max. */
+    public static float displayMaxStamina(StatsData data) {
+        return actualMaxStamina(data);
+    }
+
+    /**
+     * Live DMZ ki/stamina cap: native {@code getMax*} unless Iron-contaminated,
+     * otherwise the HUD formula. Prestige scale is applied exactly once.
+     */
+    private static float actualMax(StatsData data, boolean energy) {
+        if (data == null) {
+            return 0f;
+        }
+        float nativeMax = readNativeMax(data, energy);
+        if (energy && nativeMax > POWER_RELEASE_FLOOR && looksLikeIronMana(data, nativeMax)) {
+            nativeMax = 0f;
+        }
+        if (Float.isFinite(nativeMax) && nativeMax > POWER_RELEASE_FLOOR) {
+            return applyOverhaulScale(data, nativeMax);
+        }
+        try {
+            float hud = hudFormulaMax(data, energy);
+            if (Float.isFinite(hud) && hud > POWER_RELEASE_FLOOR) {
+                return applyOverhaulScale(data, hud);
+            }
+        } catch (Throwable ignored) {
+        }
+        float fallback = investedFallback(data, energy);
+        if (fallback > POWER_RELEASE_FLOOR) {
+            return applyOverhaulScale(data, fallback);
+        }
+        return 0f;
+    }
+
+    private static float readNativeMax(StatsData data, boolean energy) {
+        READING_NATIVE.set(Boolean.TRUE);
+        try {
+            float live = energy ? data.getMaxEnergy() : data.getMaxStamina();
+            return Float.isFinite(live) ? live : 0f;
+        } catch (Throwable ignored) {
+            return 0f;
+        } finally {
+            READING_NATIVE.set(Boolean.FALSE);
+        }
+    }
+
+    private static float investedFallback(StatsData data, boolean energy) {
+        try {
+            Stats stats = data.getStats();
+            if (stats == null) {
+                return 0f;
+            }
+            int invested = energy ? stats.getEnergy() : stats.getResistance();
+            if (invested <= 0) {
+                return 0f;
+            }
+            double scaling = resolveHudScaling(data, energy ? "ENE" : "STM");
+            float fallback = (float) (HUD_SECONDARY_DEFAULT + invested * scaling);
+            return Float.isFinite(fallback) && fallback > POWER_RELEASE_FLOOR ? fallback : 0f;
+        } catch (Throwable ignored) {
+            return 0f;
+        }
     }
 
     private static boolean looksLikeIronMana(StatsData data, float liveMax) {
@@ -103,22 +167,15 @@ public final class DmzResourcePoolClamp {
         }
     }
 
-    /** HUD-matching stamina cap (Statistics Stamina). */
-    public static float displayMaxStamina(StatsData data) {
-        return displayMax(data, false);
-    }
-
-    /**
-     * Disabled. Live HUD-formula clamp was shrinking ki/stamina currents to the
-     * client bar (20 + invested × race scaling) and fighting native {@code getMax*}.
-     * Call sites stay so a later opt-in can restore writes without a mixin hunt.
-     */
+    /** Clamp currents to {@link #actualMaxEnergy}/{@link #actualMaxStamina}. */
     public static boolean clamp(StatsData data) {
-        return false;
+        return clampToCanonical(data);
     }
 
     public static void clampAndSync(ServerPlayer player, StatsData data) {
-        // no-op — do not write current energy/stamina down to the HUD formula
+        if (clamp(data) && player != null) {
+            syncToClient(player);
+        }
     }
 
     public static void syncToClient(ServerPlayer player) {
@@ -135,68 +192,24 @@ public final class DmzResourcePoolClamp {
         }
     }
 
-    /**
-     * Prefer the HUD formula. {@code live} is ignored — server {@code getMax*} is not the bar.
-     */
+    /** HUD / Fabled / Statistics all use the canonical prestige-aware max. */
     public static float toHudMax(float live, StatsData data, boolean energy) {
-        return displayMax(data, energy);
+        return energy ? actualMaxEnergy(data) : actualMaxStamina(data);
     }
 
-    /** Disabled — never pull current ki/stamina down to the HUD formula. */
-    public static boolean shouldClampCurrent(float current, float hudMax) {
-        return false;
+    public static boolean shouldClampCurrent(float current, float max) {
+        return Float.isFinite(current)
+                && Float.isFinite(max)
+                && max > POWER_RELEASE_FLOOR
+                && current > max + 0.08f;
     }
 
-    private static float displayMax(StatsData data, boolean energy) {
-        if (data == null) {
-            return 0f;
-        }
-        float base = 0f;
-        try {
-            float hud = hudFormulaMax(data, energy);
-            if (Float.isFinite(hud) && hud > POWER_RELEASE_FLOOR) {
-                base = hud;
-            }
-        } catch (Throwable ignored) {
-        }
-        if (base <= POWER_RELEASE_FLOOR) {
-            try {
-                Stats stats = data.getStats();
-                if (stats != null) {
-                    int invested = energy ? stats.getEnergy() : stats.getResistance();
-                    if (invested > 0) {
-                        double scaling = resolveHudScaling(data, energy ? "ENE" : "STM");
-                        float fallback = (float) (HUD_SECONDARY_DEFAULT + invested * scaling);
-                        if (Float.isFinite(fallback) && fallback > POWER_RELEASE_FLOOR) {
-                            base = fallback;
-                        }
-                    }
-                }
-            } catch (Throwable ignored) {
-            }
-        }
-        if (base <= POWER_RELEASE_FLOOR) {
-            return 0f;
-        }
-        // Fabled / Statistics follow Overhaul scaleMultiplier (ENE/STM stay out of getTotalMultiplier).
-        try {
-            double scale = LmOverhaulPrestigeIntegration.combatScaleMultiplier(data);
-            if (Double.isFinite(scale) && scale > 1.000_001d) {
-                float scaled = (float) (base * scale);
-                if (Float.isFinite(scaled) && scaled > POWER_RELEASE_FLOOR) {
-                    return scaled;
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-        return base;
-    }
-
-    /**
-     * Pull current ki/stamina down only when they exceed the Overhaul-scaled pool
-     * (not the unscaled HUD bar). Used by the Fabled bridge.
-     */
+    /** Same as {@link #clamp(StatsData)} — currents never sit above the canonical max. */
     public static boolean clampToOverhaulPool(StatsData data) {
+        return clampToCanonical(data);
+    }
+
+    private static boolean clampToCanonical(StatsData data) {
         if (data == null) {
             return false;
         }
@@ -206,20 +219,18 @@ public final class DmzResourcePoolClamp {
         }
         boolean changed = false;
         try {
-            float maxE = displayMaxEnergy(data);
+            float maxE = actualMaxEnergy(data);
             float curE = res.getCurrentEnergy();
-            if (Float.isFinite(maxE) && maxE > POWER_RELEASE_FLOOR
-                    && Float.isFinite(curE) && curE > maxE + 0.08f) {
+            if (shouldClampCurrent(curE, maxE)) {
                 res.setCurrentEnergy(maxE);
                 changed = true;
             }
         } catch (Throwable ignored) {
         }
         try {
-            float maxS = displayMaxStamina(data);
+            float maxS = actualMaxStamina(data);
             float curS = res.getCurrentStamina();
-            if (Float.isFinite(maxS) && maxS > POWER_RELEASE_FLOOR
-                    && Float.isFinite(curS) && curS > maxS + 0.08f) {
+            if (shouldClampCurrent(curS, maxS)) {
                 res.setCurrentStamina(maxS);
                 changed = true;
             }

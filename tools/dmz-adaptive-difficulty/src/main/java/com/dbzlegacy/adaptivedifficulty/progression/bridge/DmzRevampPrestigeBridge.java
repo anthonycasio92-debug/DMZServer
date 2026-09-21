@@ -5,9 +5,7 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
-import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dragonminez.common.stats.StatsData;
-import com.dragonminez.common.stats.character.Resources;
 import java.lang.reflect.Method;
 import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
@@ -89,20 +87,20 @@ public final class DmzRevampPrestigeBridge {
             int current = overhaulCount(data);
             if (current == held) {
                 try {
+                    DmzResourcePoolClamp.clampToOverhaulPool(data);
                     OverhaulPrestigeResourceScale.pulse(player);
                 } catch (Throwable ignored) {
                 }
                 return;
             }
-            float maxEBefore = data.getMaxEnergy();
-            float maxSBefore = data.getMaxStamina();
+            // Capture the canonical (already prestige-aware) max so afterSetCount
+            // can refill-if-full once. Do not also refill here — that applied the
+            // multiplier a second time when current was already at the scaled pool.
+            float maxEBefore = DmzResourcePoolClamp.actualMaxEnergy(data);
+            float maxSBefore = DmzResourcePoolClamp.actualMaxStamina(data);
             setCount.invoke(null, data, held);
             try {
                 OverhaulPrestigeResourceScale.afterSetCount(player, data, maxEBefore, maxSBefore);
-            } catch (Throwable ignored) {
-            }
-            try {
-                refillPoolsLikeOverhaulPrestige(player, data, maxEBefore, maxSBefore, held);
             } catch (Throwable ignored) {
             }
             try {
@@ -128,48 +126,6 @@ public final class DmzRevampPrestigeBridge {
         } catch (Throwable ignored) {
         }
         return 0;
-    }
-
-    /**
-     * Native Overhaul {@code PrestigeService} refills ki/stamina after prestige; LM only syncs count.
-     */
-    private static void refillPoolsLikeOverhaulPrestige(
-            ServerPlayer player,
-            StatsData data,
-            float maxEnergyBefore,
-            float maxStaminaBefore,
-            int prestigeCount
-    ) {
-        if (player == null || data == null || prestigeCount <= 0) {
-            return;
-        }
-        Resources res = data.getResources();
-        if (res == null) {
-            return;
-        }
-        float maxE = DmzResourcePoolClamp.displayMaxEnergy(data);
-        float maxS = DmzResourcePoolClamp.displayMaxStamina(data);
-        float curE = res.getCurrentEnergy();
-        float curS = res.getCurrentStamina();
-        boolean changed = false;
-        if (maxE > 1f && (curE >= maxEnergyBefore * 0.97f || curE + 0.5f < maxE * 0.55f)) {
-            res.setCurrentEnergy(maxE);
-            changed = true;
-        }
-        if (maxS > 1f && (curS >= maxStaminaBefore * 0.97f || curS + 0.5f < maxS * 0.55f)) {
-            res.setCurrentStamina(maxS);
-            changed = true;
-        }
-        if (changed) {
-            try {
-                OverhaulPrestigeResourceScale.pulse(player);
-            } catch (Throwable ignored) {
-            }
-            try {
-                EnergyManaSync.sync(player, true);
-            } catch (Throwable ignored) {
-            }
-        }
     }
 
     private static boolean ensureMethods() {

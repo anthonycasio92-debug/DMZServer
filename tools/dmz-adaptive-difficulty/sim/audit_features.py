@@ -1362,8 +1362,30 @@ def main() -> int:
           "getMaxEnergy()" in pool_clamp
           and "looksLikeIronMana" in pool_clamp
           and "actualMaxEnergy" in pool_clamp)
+    check("canonical actualMaxEnergy/Stamina apply Overhaul scale once",
+          "actualMaxStamina" in pool_clamp
+          and "applyOverhaulScale" in pool_clamp
+          and "isReadingNativeMax" in pool_clamp
+          and "displayMaxEnergy" in pool_clamp
+          and "return actualMaxEnergy(data)" in pool_clamp)
+    check("HUD mixin registers prestige-aware getMax*",
+          '"StatsDataHudPoolMaxMixin"' in mixins_json
+          and "applyOverhaulScale" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java")
+          and "isReadingNativeMax" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java"))
+    check("EnergyManaSync does not raise max to overflowing current",
+          "maxEnergy = currentEnergy" not in energy_mana
+          and "clampCurrentToMax" in energy_mana)
+    check("Revamp prestige does not refill after afterSetCount",
+          "refillPoolsLikeOverhaulPrestige" not in bridge
+          and "actualMaxEnergy(data)" in bridge
+          and "afterSetCount" in bridge)
     check("Fabled MaxKi persistent uses actual ki",
           "actualMaxEnergy" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/StatScreenSync.java"))
+    check("Fabled Stamina persistent uses actual stamina",
+          "actualMaxStamina" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/StatScreenSync.java"))
     manifest = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "resources" / "META-INF" / "MANIFEST.MF")
     check("MANIFEST MixinConfigs for Mohist",

@@ -28,7 +28,7 @@ public final class StatScreenSync {
         try {
             put(data, "Damage", LmOverhaulScaledCombat.melee(dmz));
             put(data, "StrikeDamage", LmOverhaulScaledCombat.strike(dmz));
-            put(data, "Stamina", DmzResourcePoolClamp.displayMaxStamina(dmz));
+            put(data, "Stamina", DmzResourcePoolClamp.actualMaxStamina(dmz));
             put(data, "Defense", LmOverhaulScaledCombat.defense(dmz));
             put(data, "Health", LmOverhaulScaledCombat.health(dmz));
             put(data, "KiDamage", LmOverhaulScaledCombat.ki(dmz));

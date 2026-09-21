@@ -1,43 +1,45 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dragonminez.common.stats.StatsData;
-import net.minecraft.world.entity.ai.attributes.Attribute;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Client HUD {@code getMaxEnergy}/{@code getMaxStamina} uses Forge secondary default (20) because
- * Mohist Potentialist / Overhaul modifiers never sync. The server was adding those extras
- * (screenshot: HUD Ki 159/145 vs overlay 159/190, STM 188/101). Force the vanilla default so
- * the live cap matches the bar.
+ * XenoverseHUD / AlternativeHUD call {@code getMaxEnergy}/{@code getMaxStamina} locally.
+ * {@code ResourceSyncS2C} only sends current. Native getters omit Overhaul
+ * {@code scaleMultiplier} (ENE/STM stay out of {@code getTotalMultiplier}), so a
+ * prestige-scaled current (18k) paints as 300% of an unscaled 6k bar.
  *
- * <p>Does not write current pools — {@code setCurrentEnergy(≤1)} zeros Limit Release.
+ * <p>Apply the same prestige-aware cap {@link DmzResourcePoolClamp#actualMaxEnergy}
+ * uses. Skip while the clamp is reading the native getter so scale is applied once.
  */
 @Mixin(value = StatsData.class, remap = false, priority = 2100)
 public abstract class StatsDataHudPoolMaxMixin {
 
-    @Redirect(
-            method = "getMaxEnergy",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lcom/dragonminez/common/stats/StatsData;getSecondaryAttributeValue(Lnet/minecraft/world/entity/ai/attributes/Attribute;D)D"
-            ),
-            remap = false
-    )
-    private double lm$hudEnergyAttr(StatsData self, Attribute attr, double def) {
-        return def;
+    @Inject(method = "getMaxEnergy", at = @At("RETURN"), cancellable = true, remap = false)
+    private void lm$prestigeAwareMaxEnergy(CallbackInfoReturnable<Float> cir) {
+        applyPrestigeAwareMax(cir);
     }
 
-    @Redirect(
-            method = "getMaxStamina",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lcom/dragonminez/common/stats/StatsData;getSecondaryAttributeValue(Lnet/minecraft/world/entity/ai/attributes/Attribute;D)D"
-            ),
-            remap = false
-    )
-    private double lm$hudStaminaAttr(StatsData self, Attribute attr, double def) {
-        return def;
+    @Inject(method = "getMaxStamina", at = @At("RETURN"), cancellable = true, remap = false)
+    private void lm$prestigeAwareMaxStamina(CallbackInfoReturnable<Float> cir) {
+        applyPrestigeAwareMax(cir);
+    }
+
+    private void applyPrestigeAwareMax(CallbackInfoReturnable<Float> cir) {
+        if (DmzResourcePoolClamp.isReadingNativeMax()) {
+            return;
+        }
+        Float value = cir.getReturnValue();
+        if (value == null || !Float.isFinite(value) || value <= 1f) {
+            return;
+        }
+        float scaled = DmzResourcePoolClamp.applyOverhaulScale((StatsData) (Object) this, value);
+        if (scaled > value + 0.01f) {
+            cir.setReturnValue(scaled);
+        }
     }
 }

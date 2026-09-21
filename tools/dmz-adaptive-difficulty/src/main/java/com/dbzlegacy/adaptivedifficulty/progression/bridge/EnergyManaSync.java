@@ -14,8 +14,9 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * Port of {@code DMZ Energy.js} — DMZ <b>ki pool</b> ↔ Fabled mana.
  * <p>
- * Uses {@code Resources.getCurrentEnergy} / {@code StatsData.getMaxEnergy} (actual ki),
- * not the invested ENE stat or the HUD reconstruction from that stat.
+ * Uses {@code Resources.getCurrentEnergy} and the canonical
+ * {@code DmzResourcePoolClamp.actualMaxEnergy} (live ki × Overhaul scale once).
+ * Never raises Fabled max to an overflowing current.
  * Fabled {@code updatePlayerStat} recalculates {@code maxMana} from class mana (often 0)
  * and overwrites field writes — re-apply on the next Bukkit tick.
  */
@@ -117,7 +118,7 @@ public final class EnergyManaSync {
             return;
         }
         if (currentEnergy > maxEnergy) {
-            maxEnergy = currentEnergy;
+            currentEnergy = clampCurrentToMax(resources, maxEnergy);
         }
 
         Double last = LAST_MANA.get(player.m_20148_());
@@ -138,7 +139,7 @@ public final class EnergyManaSync {
         }
 
         if (currentEnergy > maxEnergy) {
-            maxEnergy = currentEnergy;
+            currentEnergy = clampCurrentToMax(resources, maxEnergy);
         }
 
         FabledBridge.setManaAndMax(data, currentEnergy, maxEnergy);
@@ -175,6 +176,25 @@ public final class EnergyManaSync {
             FabledBridge.setManaAndMax(again, cur, max);
             publishLastMana(player, cur);
         }));
+    }
+
+    private static double clampCurrentToMax(Resources resources, double maxEnergy) {
+        if (resources == null || !Double.isFinite(maxEnergy) || maxEnergy <= 1.0d) {
+            return maxEnergy;
+        }
+        try {
+            DmzResourcePoolClamp.clampToOverhaulPool(resources.getStatsData());
+            float cur = resources.getCurrentEnergy();
+            if (Float.isFinite(cur) && cur <= maxEnergy + 0.08d) {
+                return Math.max(0.0d, cur);
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            resources.setCurrentEnergy((float) maxEnergy);
+        } catch (Throwable ignored) {
+        }
+        return maxEnergy;
     }
 
     private static double readMaxEnergy(StatsData dmz, Resources resources, double currentEnergy) {

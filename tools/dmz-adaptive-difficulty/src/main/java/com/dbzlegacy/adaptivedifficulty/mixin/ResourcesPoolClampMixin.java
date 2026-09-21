@@ -45,10 +45,28 @@ public abstract class ResourcesPoolClampMixin {
     }
 
     private float clampEnergy(float value) {
+        Resources self = (Resources) (Object) this;
+        StatsData data = self.getStatsData();
+        if (data == null) {
+            return value;
+        }
+        float max = DmzResourcePoolClamp.actualMaxEnergy(data);
+        if (DmzResourcePoolClamp.shouldClampCurrent(value, max)) {
+            return max;
+        }
         return value;
     }
 
     private float clampStamina(float value) {
+        Resources self = (Resources) (Object) this;
+        StatsData data = self.getStatsData();
+        if (data == null) {
+            return value;
+        }
+        float max = DmzResourcePoolClamp.actualMaxStamina(data);
+        if (DmzResourcePoolClamp.shouldClampCurrent(value, max)) {
+            return max;
+        }
         return value;
     }
 }
