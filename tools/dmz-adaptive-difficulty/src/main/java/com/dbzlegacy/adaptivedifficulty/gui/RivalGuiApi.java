@@ -653,6 +653,66 @@ public final class RivalGuiApi {
                 + "§8GUI buttons call these directly (no Forge perm-level gate).";
     }
 
+    /** Detail lore for a tab-encoded {@link com.dbzlegacy.adaptivedifficulty.rival.RivalSystem#currentRivalCards} row. */
+    public static List<String> rivalCardDetailLines(String card) {
+        if (card == null || card.isBlank()) {
+            return List.of("§7Unknown rival.");
+        }
+        String[] p = card.split("\t", -1);
+        String name = p.length > 1 && p[1] != null && !p[1].isBlank() ? p[1] : "?";
+        String status = p.length > 2 ? p[2] : "?";
+        String tier = p.length > 3 ? p[3] : "?";
+        String rp = p.length > 4 ? p[4] : "0";
+        String wins = p.length > 5 ? p[5] : "0";
+        String losses = p.length > 6 ? p[6] : "0";
+        String draws = p.length > 7 ? p[7] : "0";
+        boolean online = p.length > 10 && "1".equals(p[10]);
+        List<String> lines = new ArrayList<>();
+        lines.add("§f" + name + (online ? " §a● online" : " §8○ offline"));
+        lines.add("§7Status §f" + status + "  §8·  §7Tier §6" + tier);
+        lines.add("§7RP §f" + rp + "  §8·  §7W/L/D §f" + wins + "/" + losses + "/" + draws);
+        if (p.length > 8) {
+            lines.add("§7Deaths lost/won §f" + p[8] + "/" + (p.length > 9 ? p[9] : "0"));
+        }
+        lines.add("§8Tap Remove to end this rivalry.");
+        return lines;
+    }
+
+    /** Detail for a tab-encoded {@link com.dbzlegacy.adaptivedifficulty.rival.RivalSystem#pendingInviteCards} row. */
+    public static List<String> pendingInviteDetailLines(String card) {
+        if (card == null || card.isBlank()) {
+            return List.of("§7Unknown invite.");
+        }
+        String[] p = card.split("\t", -1);
+        String name = p.length > 1 && p[1] != null && !p[1].isBlank() ? p[1] : "?";
+        String dir = p.length > 2 ? p[2] : "?";
+        boolean online = p.length > 4 && "1".equals(p[4]);
+        boolean mutual = p.length > 5 && "mutual".equalsIgnoreCase(p[5]);
+        List<String> lines = new ArrayList<>();
+        lines.add("§f" + name + (online ? " §a●" : " §8○"));
+        if ("IN".equalsIgnoreCase(dir)) {
+            if (mutual) {
+                lines.add("§eIncoming mutual confirm");
+                lines.add("§7Both players Silent'd — Accept to confirm.");
+            } else {
+                lines.add("§aIncoming declare");
+                lines.add("§7Accept to become Mutual · Decline to ignore.");
+            }
+        } else {
+            lines.add("§6Outgoing declare");
+            lines.add("§7Waiting for them to Accept or Decline.");
+        }
+        return lines;
+    }
+
+    public static boolean pendingInviteCardIncoming(String card) {
+        if (card == null) {
+            return false;
+        }
+        String[] p = card.split("\t", -1);
+        return p.length >= 3 && "IN".equalsIgnoreCase(p[2]);
+    }
+
     /**
      * GUI arg formats: {@code uuid:&lt;id&gt;@&lt;minutes&gt;} or plain target (defaults to
      * {@link RivalConstants#CH_MIN_MINUTES}).

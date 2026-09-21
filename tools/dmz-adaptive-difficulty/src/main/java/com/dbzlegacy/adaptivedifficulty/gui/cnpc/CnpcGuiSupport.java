@@ -18,6 +18,8 @@ import noppes.npcs.api.gui.IButton;
 import noppes.npcs.api.gui.ICustomGui;
 import noppes.npcs.api.gui.ILabel;
 import noppes.npcs.api.gui.IScroll;
+import noppes.npcs.api.gui.ITextArea;
+import noppes.npcs.api.gui.IComponentsWrapper;
 
 /** Shared CustomNPCs layout + show helpers for Legacy Mechanics UI. */
 public final class CnpcGuiSupport {
@@ -30,6 +32,12 @@ public final class CnpcGuiSupport {
     public static final int COL_R = 220;
     public static final int ROW_STEP = 24;
     public static final int LINE_H = 13;
+    /** Default height for rival/spar/character player lists. */
+    public static final int SCROLL_LIST_H = 120;
+    /** Space reserved at bottom for Back + Main nav. */
+    public static final int FOOTER_RESERVE = 40;
+    /** Content below this Y is placed in CNPC wheel-scroll panel when possible. */
+    public static final int WHEEL_SCROLL_TOP_Y = 52;
 
     /** Reserved widget ids — one role per screen; never reuse on the same gui instance. */
     public static final int ID_TITLE = 1;
@@ -105,7 +113,43 @@ public final class CnpcGuiSupport {
         boolean inspecting = AdminInspectSessions.isInspecting(viewer.m_20148_());
         int dividerY = inspecting ? 52 : 38;
         divider(gui, ID_DIVIDER, dividerY);
+        ensureWheelScrollPanel(gui, dividerY + 8);
         return dividerY + 10;
+    }
+
+    /** Enable mouse-wheel scrolling for long info/list areas (CNPC scrolling panel). */
+    public static void ensureWheelScrollPanel(ICustomGui gui, int contentTopY) {
+        if (gui == null) {
+            return;
+        }
+        int top = Math.max(WHEEL_SCROLL_TOP_Y, contentTopY);
+        int panelH = gui.getHeight() - top - FOOTER_RESERVE;
+        if (panelH < 32) {
+            return;
+        }
+        try {
+            gui.getScrollingPanel().init(M, top, W - M * 2, panelH);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /** Nav row Y after a scroll list. {@code extraActionRows} = full button rows above nav. */
+    public static int navRowAfterScroll(int listY, int scrollH, int extraActionRows) {
+        return listY + scrollH + 8 + Math.max(0, extraActionRows) * ROW_STEP;
+    }
+
+    public static int navRowAfterScroll(int listY, int scrollH) {
+        return navRowAfterScroll(listY, scrollH, 0);
+    }
+
+    private static IComponentsWrapper componentsForY(ICustomGui gui, int y) {
+        if (y >= WHEEL_SCROLL_TOP_Y) {
+            try {
+                return gui.getScrollingPanel();
+            } catch (Throwable ignored) {
+            }
+        }
+        return gui;
     }
 
     /**
@@ -130,6 +174,7 @@ public final class CnpcGuiSupport {
         }
         gui.addLabel(ID_STATUS_TAG, "§8Status", M, startY - 2, W - M * 2, 10);
         int scrollH = Math.min(112, Math.max(56, clean.size() * 14));
+        ensureWheelScrollPanel(gui, startY);
         scroll(gui, ID_INFO_SCROLL, M, startY + 8, W - M * 2, scrollH,
                 clean.stream().map(CnpcGuiSupport::safeScrollLine).toArray(String[]::new));
         return startY + 8 + scrollH + 10;
@@ -195,7 +240,32 @@ public final class CnpcGuiSupport {
         for (int i = 0; i < safe.length; i++) {
             copy[i] = safeScrollLine(safe[i]);
         }
-        return gui.addScroll(id, x, y, w, h, copy);
+        return componentsForY(gui, y).addScroll(id, x, y, w, h, copy);
+    }
+
+    /** Read-only multiline text (wheel-scrolls when inside the scrolling panel). */
+    public static void readOnlyTextArea(ICustomGui gui, int id, int x, int y, int w, int h, List<String> lines) {
+        if (lines == null || lines.isEmpty()) {
+            return;
+        }
+        ensureWheelScrollPanel(gui, y);
+        StringBuilder sb = new StringBuilder();
+        for (String line : lines) {
+            if (line == null || line.isBlank()) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append('\n');
+            }
+            sb.append(safeChat(line));
+        }
+        try {
+            ITextArea area = componentsForY(gui, y).addTextArea(id, x, y, w, h);
+            area.setText(sb.toString());
+            area.setFocused(false);
+        } catch (Throwable ignored) {
+            bodyLines(gui, id, y, lines, Math.min(12, lines.size()));
+        }
     }
 
     public static IScroll scrollSearchable(ICustomGui gui, int id, int x, int y, int w, int h, String[] items) {
@@ -462,6 +532,65 @@ public final class CnpcGuiSupport {
                 onPick.accept(arg);
             }
         });
+    }
+
+    /** Single-click opens a detail / confirm screen (does not close GUI). */
+    public static void wireScrollOpenDetail(
+            IScroll scroll,
+            List<String> cards,
+            int argField,
+            Consumer<String> onOpen
+    ) {
+        if (scroll == null || onOpen == null) {
+            return;
+        }
+        scroll.setOnClick((g, sc) -> {
+            String arg = cardField(cards, sc, argField);
+            if (arg != null) {
+                onOpen.accept(arg);
+            }
+        });
+    }
+
+    public static String rivalPickerArgFromCard(String card) {
+        if (card == null || card.isBlank()) {
+            return null;
+        }
+        String[] p = card.split("\t", -1);
+        if (p.length < 1) {
+            return null;
+        }
+        String uuid = p[0] == null ? "" : p[0].trim();
+        String name = p.length > 1 && p[1] != null ? p[1].trim() : "";
+        if (!uuid.isBlank()) {
+            return "uuid:" + uuid;
+        }
+        return name.isBlank() ? null : name;
+    }
+
+    public static String findCardByPickerArg(List<String> cards, String pickerArg) {
+        if (cards == null || pickerArg == null || pickerArg.isBlank()) {
+            return null;
+        }
+        String want = pickerArg.trim();
+        for (String card : cards) {
+            if (want.equalsIgnoreCase(rivalPickerArgFromCard(card))) {
+                return card;
+            }
+            String[] p = card == null ? new String[0] : card.split("\t", -1);
+            if (p.length > 0) {
+                String uuid = p[0] == null ? "" : p[0].trim();
+                if (!uuid.isBlank()) {
+                    if (want.equalsIgnoreCase(uuid) || want.equalsIgnoreCase("uuid:" + uuid)) {
+                        return card;
+                    }
+                }
+            }
+            if (p.length > 1 && want.equalsIgnoreCase(p[1].trim())) {
+                return card;
+            }
+        }
+        return null;
     }
 
     /** System top-level screen (e.g. Prestige main): Main → Legacy Mechanics hub. */
