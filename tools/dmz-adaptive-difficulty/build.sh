@@ -15,12 +15,13 @@ FTB_CHUNKS="$ROOT/libraries/ftb-chunks-forge-2001.3.8.jar"
 FTB_LIBRARY="$ROOT/libraries/ftb-library-forge-2001.2.13.jar"
 ARCHITECTURY="$ROOT/libraries/architectury-9.2.14-forge.jar"
 REVAMP="$ROOT/libraries/dmzrevamp-2.0.9.jar"
+CNPC="$ROOT/mods/CustomNPCs-1.20.1-GBPort-Unofficial-1.20.1.20260227.jar"
 if [[ ! -f "$FTB" ]]; then
   echo "Downloading FTB Teams for compile..."
   curl -fsSL -o "$FTB" \
     "https://maven.ftb.dev/releases/dev/ftb/mods/ftb-teams-forge/2001.3.1/ftb-teams-forge-2001.3.1.jar"
 fi
-for dep in "$FTB_CHUNKS" "$FTB_LIBRARY" "$ARCHITECTURY" "$REVAMP"; do
+for dep in "$FTB_CHUNKS" "$FTB_LIBRARY" "$ARCHITECTURY" "$REVAMP" "$CNPC"; do
   if [[ ! -f "$dep" ]]; then
     echo "Missing $dep — copy from live mods/ or libraries/" >&2
     exit 1
@@ -57,6 +58,7 @@ $ROOT/libraries/com/mojang/authlib/4.0.43/authlib-4.0.43.jar:\
 $ROOT/libraries/com/mojang/brigadier/1.1.8/brigadier-1.1.8.jar:\
 $ROOT/libraries/com/google/guava/guava/31.1-jre/guava-31.1-jre.jar:\
 $ROOT/libraries/org/slf4j/slf4j-api/2.0.1/slf4j-api-2.0.1.jar:\
+$CNPC:\
 $DMZ"
 
 rm -rf "$OUT"
