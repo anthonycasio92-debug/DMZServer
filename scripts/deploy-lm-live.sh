@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Upload LegacyMechanics Forge + GUI jars to LIVE production (explicit host only).
-# Never defaults host/user — avoids accidental test deploy.
+# Default: write active jar names over SFTP while the server is running (owner policy).
+# Optional: LM_STAGE_PENDING=1 uploads *.jar.pending instead (no overwrite until activate).
 #
 # Set via environment or repo-root live-sftp.env (gitignored):
 #   LIVE_SFTP_HOST, LIVE_SFTP_PORT (default 2022), LIVE_SFTP_USER, LIVE_SFTP_PASS
@@ -58,48 +59,46 @@ fi
 
 FORGE_NAME="$(basename "$FORGE_JAR")"
 GUI_NAME="$(basename "$GUI_JAR")"
+STAGE_PENDING="${LM_STAGE_PENDING:-0}"
 
 recycle_remote_lm_jars() {
   local list_file
   list_file="$(mktemp)"
   printf 'ls -1 %s/LegacyMechanics-*.jar\nls -1 %s/LegacyMechanicsGUI-*.jar\n' "$REMOTE_MODS" "$REMOTE_PLUGINS" \
-    | "${SFTP_CMD[@]}" "$USER@$HOST" 2>/dev/null | rg -o 'LegacyMechanics[^[:space:]]+\.jar' | sort -u >"$list_file" || true
+    | "${SFTP_CMD[@]}" "$USER@$HOST" 2>/dev/null | rg -o 'LegacyMechanics[^[:space:]]+\.jar(\.pending)?' | sort -u >"$list_file" || true
   local cmds=""
   while IFS= read -r name; do
     [[ -z "$name" ]] && continue
     if [[ "$name" == "$FORGE_NAME" || "$name" == "$GUI_NAME" ]]; then
       continue
     fi
+    if [[ "$name" == "${FORGE_NAME}.pending" || "$name" == "${GUI_NAME}.pending" ]]; then
+      continue
+    fi
     case "$name" in
-      LegacyMechanics-*.jar)
+      LegacyMechanics-*.jar|LegacyMechanics-*.jar.pending)
         cmds+="rename $REMOTE_MODS/$name $RECYCLE/$name"$'\n'
         ;;
-      LegacyMechanicsGUI-*.jar)
+      LegacyMechanicsGUI-*.jar|LegacyMechanicsGUI-*.jar.pending)
         cmds+="rename $REMOTE_PLUGINS/$name $RECYCLE/$name"$'\n'
         ;;
     esac
   done <"$list_file"
   rm -f "$list_file"
   if [[ -n "$cmds" ]]; then
-    printf 'mkdir %s\n%s' "$RECYCLE" "$cmds" | "${SFTP_CMD[@]}" "$USER@$HOST"
+    printf 'mkdir %s\n%s' "$RECYCLE" "$cmds" | "${SFTP_CMD[@]}" "$USER@$HOST" || true
   fi
 }
 
-FORGE_PENDING="${FORGE_NAME}.pending"
-GUI_PENDING="${GUI_NAME}.pending"
-STOPPED="${LIVE_SERVER_STOPPED:-}"
-
 echo "LIVE deploy to $USER@$HOST:$PORT"
-if [[ "$STOPPED" == "STOPPED" ]]; then
-  echo "  $FORGE_NAME -> $REMOTE_MODS/ (server STOPPED — direct install)"
-  echo "  $GUI_NAME -> $REMOTE_PLUGINS/"
+if [[ "$STAGE_PENDING" == "1" ]]; then
+  echo "  $FORGE_NAME -> $REMOTE_MODS/${FORGE_NAME}.pending (LM_STAGE_PENDING=1)"
+  echo "  $GUI_NAME -> $REMOTE_PLUGINS/${GUI_NAME}.pending"
+  echo "  Activate after stop: LIVE_SERVER_STOPPED=STOPPED bash scripts/activate-lm-staged-jar.sh"
 else
-  echo "  $FORGE_NAME -> $REMOTE_MODS/$FORGE_PENDING (hot stage — server may stay up)"
-  echo "  $GUI_NAME -> $REMOTE_PLUGINS/$GUI_PENDING (hot stage — activates on next stop)"
-  echo ""
-  echo "Forge/GUI .pending files are safe while Mohist runs; never rename .pending -> .jar until STOP." >&2
-  echo "After panel stop: LIVE_SERVER_STOPPED=STOPPED bash scripts/activate-lm-staged-jar.sh" >&2
-  echo "Or full swap: LIVE_SERVER_STOPPED=STOPPED DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-lm-live.sh" >&2
+  echo "  $FORGE_NAME -> $REMOTE_MODS/ (direct — server may stay up)"
+  echo "  $GUI_NAME -> $REMOTE_PLUGINS/"
+  echo "  Restart (or /lm admin reload for config) to pick up Forge/GUI changes."
 fi
 
 if [[ "${DEPLOY_LIVE_CONFIRM:-}" != "LIVE" ]]; then
@@ -111,7 +110,16 @@ if [[ "${DEPLOY_LIVE_CONFIRM:-}" != "LIVE" ]]; then
   fi
 fi
 
-if [[ "$STOPPED" == "STOPPED" ]]; then
+if [[ "$STAGE_PENDING" == "1" ]]; then
+  "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
+mkdir $REMOTE_MODS
+mkdir $REMOTE_PLUGINS
+put $FORGE_JAR $REMOTE_MODS/${FORGE_NAME}.pending
+put $GUI_JAR $REMOTE_PLUGINS/${GUI_NAME}.pending
+bye
+EOF
+  echo "Staged pending jars. Active files unchanged until activate-lm-staged-jar.sh"
+else
   "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
 mkdir $RECYCLE
 mkdir $REMOTE_MODS
@@ -121,15 +129,5 @@ put $GUI_JAR $REMOTE_PLUGINS/$GUI_NAME
 bye
 EOF
   recycle_remote_lm_jars
-  echo "Upload complete. Start the server from the panel, then /lm admin reload."
-else
-  "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
-mkdir $REMOTE_MODS
-mkdir $REMOTE_PLUGINS
-put $FORGE_JAR $REMOTE_MODS/$FORGE_PENDING
-put $GUI_JAR $REMOTE_PLUGINS/$GUI_PENDING
-bye
-EOF
-  echo "Hot-staged $FORGE_PENDING and $GUI_PENDING (active jars unchanged until stop + activate)."
-  echo "After panel STOP: LIVE_SERVER_STOPPED=STOPPED bash scripts/activate-lm-staged-jar.sh"
+  echo "Upload complete."
 fi
