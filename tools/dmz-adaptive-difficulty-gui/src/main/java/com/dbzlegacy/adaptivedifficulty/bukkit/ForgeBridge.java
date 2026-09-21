@@ -3083,6 +3083,34 @@ public final class ForgeBridge {
     }
 
     /** @return true when Forge reload succeeded (false if mod missing / load failed). */
+    /** Staff CNPC test hub — Forge {@code CnpcStaffTestGui.open} (Mohist routes {@code /lm} on Bukkit). */
+    public static boolean openStaffCnpcTestGui(Player player) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            resolveError = "Could not reach LegacyMechanics Forge player.";
+            return false;
+        }
+        try {
+            ClassLoader cl = nms.getClass().getClassLoader();
+            Class<?> gui = Class.forName(
+                    "com.dbzlegacy.adaptivedifficulty.gui.CnpcStaffTestGui", true, cl);
+            java.lang.reflect.Method open = gui.getMethod("open", nms.getClass());
+            Object ok = open.invoke(null, nms);
+            if (ok instanceof Boolean b) {
+                return b;
+            }
+            return true;
+        } catch (NoSuchMethodException missing) {
+            resolveError = "CnpcStaffTestGui missing — update LegacyMechanics Forge jar to 4.5.1+.";
+            return false;
+        } catch (Throwable t) {
+            Throwable root = t.getCause() != null ? t.getCause() : t;
+            resolveError = root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : ": " + root.getMessage());
+            return false;
+        }
+    }
+
     public static boolean reloadConfig() {
         try {
             Object ok = Class.forName("com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig")

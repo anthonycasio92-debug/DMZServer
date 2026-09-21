@@ -1353,6 +1353,18 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                 }
                 openLmInspectForUuid(admin.getUniqueId(), subject.getUniqueId(), system, "main");
             }
+            case "testgui", "test-gui", "cnpcgui", "cnpc-test" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage("§cRun /lm admin testgui in-game.");
+                    return true;
+                }
+                if (!ForgeBridge.openStaffCnpcTestGui(player)) {
+                    String err = ForgeBridge.lastError();
+                    sender.sendMessage(
+                            "§cCNPC test GUI failed"
+                                    + (err == null || err.isBlank() ? "." : ": " + err));
+                }
+            }
             default -> {
                 sender.sendMessage("§cUnknown: /lm admin " + sub);
                 sendLmAdminHelp(sender);
@@ -1421,6 +1433,7 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         sender.sendMessage("§e/lm admin open <difficulty|rival|spar|character|progression|prestige|skills|hub>");
         sender.sendMessage("§e/lm admin inspect <player> [hub|difficulty|rival|spar|skillcheck|character|prestige|progression|skills]");
         sender.sendMessage("§e/lm admin inspect clear §7— stop inspecting");
+        sender.sendMessage("§e/lm admin testgui §7— staff CNPC test hub (all LM systems)");
         sender.sendMessage("§e/padmin points <player> add|remove|set <n> §7— wallet for all prestige shops");
         sender.sendMessage("§8Also: /padmin points set <n>  ·  /padmin points <player> <n>");
         sender.sendMessage("§e/padmin addpoints|setpoints|removepoints <player> <n>");
