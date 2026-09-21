@@ -32,7 +32,7 @@ public final class StatScreenSync {
             put(data, "Defense", LmOverhaulScaledCombat.defense(dmz));
             put(data, "Health", LmOverhaulScaledCombat.health(dmz));
             put(data, "KiDamage", LmOverhaulScaledCombat.ki(dmz));
-            put(data, "MaxKi", DmzResourcePoolClamp.displayMaxEnergy(dmz));
+            put(data, "MaxKi", DmzResourcePoolClamp.actualMaxEnergy(dmz));
         } catch (Throwable ignored) {
         }
     }

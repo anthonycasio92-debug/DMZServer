@@ -49,6 +49,60 @@ public final class DmzResourcePoolClamp {
         return displayMax(data, true);
     }
 
+    /**
+     * Live DMZ ki cap ({@code StatsData.getMaxEnergy}), not the invested ENE stat
+     * and not the HUD reconstruction from that stat. Rejects Iron {@code max_mana}
+     * contamination (2.4.87).
+     */
+    public static float actualMaxEnergy(StatsData data) {
+        if (data == null) {
+            return 0f;
+        }
+        float live = 0f;
+        try {
+            live = data.getMaxEnergy();
+        } catch (Throwable ignored) {
+        }
+        if (Float.isFinite(live) && live > POWER_RELEASE_FLOOR && !looksLikeIronMana(data, live)) {
+            return live;
+        }
+        try {
+            float hud = displayMaxEnergy(data);
+            if (Float.isFinite(hud) && hud > POWER_RELEASE_FLOOR) {
+                return hud;
+            }
+        } catch (Throwable ignored) {
+        }
+        return Float.isFinite(live) && live > POWER_RELEASE_FLOOR ? live : 0f;
+    }
+
+    private static boolean looksLikeIronMana(StatsData data, float liveMax) {
+        try {
+            net.minecraft.world.entity.player.Player player = data.getPlayer();
+            if (player == null) {
+                return false;
+            }
+            net.minecraft.resources.ResourceLocation id =
+                    new net.minecraft.resources.ResourceLocation("irons_spellbooks", "max_mana");
+            net.minecraft.world.entity.ai.attributes.Attribute attr =
+                    net.minecraftforge.registries.ForgeRegistries.ATTRIBUTES.getValue(id);
+            if (attr == null) {
+                return false;
+            }
+            net.minecraft.world.entity.ai.attributes.AttributeInstance inst = player.getAttribute(attr);
+            if (inst == null) {
+                return false;
+            }
+            double iron = inst.getValue();
+            if (!Double.isFinite(iron) || iron < 100.0d) {
+                return false;
+            }
+            return Math.abs(liveMax - iron) <= Math.max(25.0d, iron * 0.08d);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     /** HUD-matching stamina cap (Statistics Stamina). */
     public static float displayMaxStamina(StatsData data) {
         return displayMax(data, false);

@@ -12,11 +12,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Port of {@code DMZ Energy.js} — DMZ energy ↔ Fabled mana.
+ * Port of {@code DMZ Energy.js} — DMZ <b>ki pool</b> ↔ Fabled mana.
  * <p>
- * Fabled {@code updatePlayerStat} recalculates {@code maxMana} from class mana (often 0 on this
- * pack) and overwrites our field writes. Re-apply immediately and again on the next Bukkit tick
- * so the side menu stays in sync with DMZ ki.
+ * Uses {@code Resources.getCurrentEnergy} / {@code StatsData.getMaxEnergy} (actual ki),
+ * not the invested ENE stat or the HUD reconstruction from that stat.
+ * Fabled {@code updatePlayerStat} recalculates {@code maxMana} from class mana (often 0)
+ * and overwrites field writes — re-apply on the next Bukkit tick.
  */
 public final class EnergyManaSync {
     private static final String LAST_MANA_KEY = "dmz_fabled_last_mana";
@@ -64,7 +65,7 @@ public final class EnergyManaSync {
         }
         float cur = resources.getCurrentEnergy();
         StatsData dmz = resources.getStatsData();
-        float max = dmz != null ? DmzResourcePoolClamp.displayMaxEnergy(dmz) : cur;
+        float max = dmz != null ? DmzResourcePoolClamp.actualMaxEnergy(dmz) : cur;
         // Fabled lag behind DMZ / last sync — do not pull DMZ ki back down.
         if (fMana + ENERGY_EPS < last && amount <= (float) (last - fMana) + ENERGY_EPS + 2f) {
             return true;
@@ -94,7 +95,6 @@ public final class EnergyManaSync {
             return;
         }
 
-        DmzResourcePoolClamp.clampToOverhaulPool(dmz);
         double currentEnergy = resources.getCurrentEnergy();
         double maxEnergy = readMaxEnergy(dmz, resources, currentEnergy);
         if (currentEnergy < 0) {
@@ -103,6 +103,7 @@ public final class EnergyManaSync {
         if (maxEnergy < 0) {
             maxEnergy = 0;
         }
+        // Do not shrink live ki down to the ENE-stat HUD formula for Fabled.
         // Avoid clobbering a healthy Fabled bar with 0/0 before DMZ stats are ready.
         if (maxEnergy <= 0) {
             try {
@@ -116,7 +117,7 @@ public final class EnergyManaSync {
             return;
         }
         if (currentEnergy > maxEnergy) {
-            currentEnergy = maxEnergy;
+            maxEnergy = currentEnergy;
         }
 
         Double last = LAST_MANA.get(player.m_20148_());
@@ -137,7 +138,7 @@ public final class EnergyManaSync {
         }
 
         if (currentEnergy > maxEnergy) {
-            currentEnergy = maxEnergy;
+            maxEnergy = currentEnergy;
         }
 
         FabledBridge.setManaAndMax(data, currentEnergy, maxEnergy);
@@ -177,15 +178,20 @@ public final class EnergyManaSync {
     }
 
     private static double readMaxEnergy(StatsData dmz, Resources resources, double currentEnergy) {
-        // HUD-formula cap only. Do not fall back to getMaxEnergy / Iron mana — that is
-        // how JLDK current jumped to irons_spellbooks:max_mana 67474 after 2.4.87.
         try {
-            float max = DmzResourcePoolClamp.displayMaxEnergy(dmz);
+            float max = DmzResourcePoolClamp.actualMaxEnergy(dmz);
             if (Float.isFinite(max) && max > 1f) {
                 return max;
             }
         } catch (Throwable ignored) {
         }
-        return currentEnergy;
+        try {
+            float live = dmz.getMaxEnergy();
+            if (Float.isFinite(live) && live > 1f) {
+                return live;
+            }
+        } catch (Throwable ignored) {
+        }
+        return currentEnergy > 1.0d ? currentEnergy : 0.0d;
     }
 }

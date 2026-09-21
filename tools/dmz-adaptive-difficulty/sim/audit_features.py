@@ -1342,6 +1342,19 @@ def main() -> int:
     check("KubeJS client pins Overhaul 150k (stock 50k is not synced)",
           "OVERHAUL_LEVEL_CAP = 150000" in kjs_cap
           and "initialLevelCap" in kjs_cap)
+    energy_mana = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/EnergyManaSync.java")
+    pool_clamp = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzResourcePoolClamp.java")
+    check("Fabled mana uses actual ki pool not ENE stat",
+          "actualMaxEnergy" in energy_mana
+          and "getCurrentEnergy" in energy_mana
+          and "displayMaxEnergy(dmz)" not in energy_mana)
+    check("actualMaxEnergy prefers getMaxEnergy",
+          "getMaxEnergy()" in pool_clamp
+          and "looksLikeIronMana" in pool_clamp
+          and "actualMaxEnergy" in pool_clamp)
+    check("Fabled MaxKi persistent uses actual ki",
+          "actualMaxEnergy" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/StatScreenSync.java"))
     manifest = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "resources" / "META-INF" / "MANIFEST.MF")
     check("MANIFEST MixinConfigs for Mohist",
           "MixinConfigs: legacymechanics.mixins.json" in manifest)
