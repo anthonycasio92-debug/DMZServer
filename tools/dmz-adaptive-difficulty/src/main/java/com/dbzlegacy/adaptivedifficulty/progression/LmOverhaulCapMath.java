@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.progression;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dragonminez.common.stats.StatsData;
 import java.lang.reflect.Method;
@@ -107,7 +108,16 @@ public final class LmOverhaulCapMath {
             if (initial.getInt(prestige) != OVERHAUL_LEVEL_CAP) {
                 initial.setInt(prestige, OVERHAUL_LEVEL_CAP);
             }
-        } catch (Throwable ignored) {
+            AdaptiveDifficultyMod.LOGGER.info(
+                    "[{}] Overhaul level caps pinned: initialLevelCap={} maxLevel={}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    initial.getInt(prestige),
+                    maxLevel.getInt(levels));
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Overhaul level cap pin failed: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    t.toString());
         }
     }
 

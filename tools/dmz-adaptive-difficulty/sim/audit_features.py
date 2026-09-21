@@ -1324,8 +1324,8 @@ def main() -> int:
     check("AD ceiling honors 150k breakthroughs",
           "ABSOLUTE_LEVEL_CAP" in dmz_prog and "configuredMaxDmzLevel" in dmz_prog)
     check("Overhaul rebirth blocked", "canPrestige" in revamp_cap)
-    check("StatsDataMixin gated on prestige flag", "enablePrestigeSystem" in mixin)
-    check("StatsDataMixin beats dmzrevamp cap mixin", "priority = 2000" in mixin)
+    check("StatsDataMixin gated on dmzrevamp", "isLoaded(\"dmzrevamp\")" in mixin)
+    check("StatsDataMixin beats dmzrevamp cap mixin", "priority = 5000" in mixin)
     check("StatsDataMixin max total + stat buy", "getConfiguredMaxTotalStats" in mixin
           and "getMaxAllowedIncreaseForStat" in mixin)
     bridge = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/DmzRevampPrestigeBridge.java")
@@ -1355,8 +1355,8 @@ def main() -> int:
     check("Personal level cap is server Forge (no KubeJS client shim)",
           not (ROOT / "kubejs/client_scripts/overhaul_level_cap.js").exists()
           and not (ROOT / "kubejs/server_scripts/overhaul_level_cap.js").exists())
-    check("StatsDataMixin wins Overhaul max (priority 2000)",
-          "priority = 2000" in mixin_sd
+    check("StatsDataMixin wins Overhaul max (priority 5000)",
+          "priority = 5000" in mixin_sd
           and "getConfiguredMaxValue" in mixin_sd)
     mirror = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/PersonalLevelCapMirror.java")
     check("Cap publish pushes StatsSyncS2C to client",

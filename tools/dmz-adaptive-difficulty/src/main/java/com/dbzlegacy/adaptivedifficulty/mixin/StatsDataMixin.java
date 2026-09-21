@@ -1,10 +1,11 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
-import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
 import com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror;
+import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.fml.ModList;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * {@code setReturnValue} wins: personal 100k + 10k×breakthroughs only — never
  * stock 50k at prestige 0 or +5k/held from Overhaul's native ladder.
  */
-@Mixin(value = StatsData.class, remap = false, priority = 2000)
+@Mixin(value = StatsData.class, remap = false, priority = 5000)
 public abstract class StatsDataMixin {
     @Shadow(remap = false)
     public abstract Player getPlayer();
@@ -57,11 +58,10 @@ public abstract class StatsDataMixin {
             return;
         }
         StatsData self = (StatsData) (Object) this;
-        int personal = LmOverhaulCapMath.personalLevelCap(self);
-        if (personal > 0) {
-            PersonalLevelCapMirror.bind(self, personal);
-            cir.setReturnValue(personal);
-        }
+        int personal = Math.max(
+                PrestigePointsSystem.BASE_LEVEL_CAP, LmOverhaulCapMath.personalLevelCap(self));
+        PersonalLevelCapMirror.bind(self, personal);
+        cir.setReturnValue(personal);
     }
 
     private void applyPersonalMaxTotal(CallbackInfoReturnable<Integer> cir) {
@@ -92,12 +92,10 @@ public abstract class StatsDataMixin {
         cir.setReturnValue(Math.min(previous, Math.min(requested, room)));
     }
 
-    /** Personal caps apply whenever LM prestige/overhaul integration is on (not shop UI toggles). */
+    /** Always enforce on production (dmzrevamp present); config toggles must not re-enable stock 50k ladder. */
     private static boolean lmCapsActive() {
         try {
-            return DifficultyConfig.get().enablePrestigeSystem
-                    || com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration
-                            .integrationActive();
+            return ModList.get().isLoaded("dmzrevamp");
         } catch (Throwable t) {
             return true;
         }

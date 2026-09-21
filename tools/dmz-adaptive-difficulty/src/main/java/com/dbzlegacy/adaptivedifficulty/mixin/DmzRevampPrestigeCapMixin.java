@@ -4,6 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration;
 import com.dragonminez.common.stats.StatsData;
+import net.minecraftforge.fml.ModList;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -18,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * {@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataMixin} + this
  * {@code maxAssignableTotal} + TP/stat soft-locks.
  */
-@Mixin(targets = "com.dmzrevamp.revamp.prestige.PrestigeSystem", remap = false, priority = 2000)
+@Mixin(targets = "com.dmzrevamp.revamp.prestige.PrestigeSystem", remap = false, priority = 5000)
 public abstract class DmzRevampPrestigeCapMixin {
 
     @Inject(method = "levelCap", at = @At("HEAD"), cancellable = true, remap = false)
@@ -86,8 +87,7 @@ public abstract class DmzRevampPrestigeCapMixin {
 
     private static boolean lmCapsEnforced() {
         try {
-            return DifficultyConfig.get().enablePrestigeSystem
-                    || LmOverhaulPrestigeIntegration.integrationActive();
+            return ModList.get().isLoaded("dmzrevamp");
         } catch (Throwable t) {
             return true;
         }
