@@ -5,6 +5,10 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
+import com.dmzrevamp.revamp.prestige.PrestigeSystem;
+import com.dragonminez.common.network.NetworkHandler;
+import com.dragonminez.common.network.S2C.ProgressionSyncS2C;
+import com.dragonminez.common.network.S2C.StatsSyncS2C;
 import com.dragonminez.common.stats.StatsData;
 import java.lang.reflect.Method;
 import java.util.UUID;
@@ -14,10 +18,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.fml.ModList;
 
 /**
- * Keeps dmzrevamp Overhaul {@link com.dmzrevamp.revamp.prestige.PrestigeSystem} prestige
- * count aligned 1:1 with Legacy Mechanics held (not lifetime completed,
- * not Fabled class level − 1).
- * Playable stat totals come from {@link com.dbzlegacy.adaptivedifficulty.mixin.DmzRevampPrestigeCapMixin}.
+ * Keeps dmzrevamp Overhaul prestige count aligned with Fabled Prestige − 1
+ * (same number as LM held). After {@code setCount}, DMZ stats/progression packets
+ * are resent so Statistics UI and combat scale pick up the new count.
  */
 public final class DmzRevampPrestigeBridge {
     private static final String REVAMP_MOD = "dmzrevamp";
@@ -38,7 +41,7 @@ public final class DmzRevampPrestigeBridge {
 
     /**
      * {@code dmzstats reset} / {@link StatsData#resetPlayerProgress} clears Overhaul's
-     * prestige counter on {@link StatsData}; re-apply LM held after rebuild.
+     * prestige counter on {@link StatsData}; re-apply after rebuild.
      */
     public static void scheduleSyncAfterStatsReset(ServerPlayer player) {
         if (player == null) {
@@ -78,40 +81,17 @@ public final class DmzRevampPrestigeBridge {
         if (data == null) {
             return;
         }
-        int held = com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration
-                .overhaulCountFromHeld(player);
-        if (!ensureMethods()) {
-            return;
+        int fabled = PrestigeSkillSync.fabledPrestigeLevel(player);
+        int want = Math.max(0, fabled - 1);
+        int current = PrestigeSystem.count(data);
+        if (current != want) {
+            PrestigeSystem.setCount(data, want);
         }
-        try {
-            int current = overhaulCount(data);
-            if (current == held) {
-                try {
-                    DmzResourcePoolClamp.clampToOverhaulPool(data);
-                    OverhaulPrestigeResourceScale.pulse(player);
-                } catch (Throwable ignored) {
-                }
-                return;
-            }
-            // Capture the canonical (already prestige-aware) max so afterSetCount
-            // can refill-if-full once. Do not also refill here — that applied the
-            // multiplier a second time when current was already at the scaled pool.
-            float maxEBefore = DmzResourcePoolClamp.actualMaxEnergy(data);
-            float maxSBefore = DmzResourcePoolClamp.actualMaxStamina(data);
-            setCount.invoke(null, data, held);
-            try {
-                OverhaulPrestigeResourceScale.afterSetCount(player, data, maxEBefore, maxSBefore);
-            } catch (Throwable ignored) {
-            }
-            try {
-                DmzSkillUtil.sync(player);
-            } catch (Throwable ignored) {
-            }
-            FabledBridge.logSync(player, "overhaul_prestige_sync", "count", held, "was", current);
-        } catch (Throwable t) {
-            AdaptiveDifficultyMod.LOGGER.debug(
-                    "[{}] overhaul prestige sync soft-fail: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
-        }
+        DmzResourcePoolClamp.clampToOverhaulPool(data);
+        OverhaulPrestigeResourceScale.pulse(player);
+        DmzSkillUtil.sync(player);
+        NetworkHandler.sendToTrackingEntityAndSelf(new StatsSyncS2C(player), player);
+        NetworkHandler.sendToPlayer(new ProgressionSyncS2C(player), player);
     }
 
     public static int overhaulCount(StatsData data) {

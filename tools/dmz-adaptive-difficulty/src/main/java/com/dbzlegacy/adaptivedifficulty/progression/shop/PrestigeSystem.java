@@ -545,29 +545,26 @@ public final class PrestigeSystem {
         setHeldPublic(player, value);
     }
 
-    /** Public for prestige-points turn-in (must also lower Fabled Prestige class). */
+    /** Public for prestige-points turn-in and padmin. Wallet NBT is source of truth. */
     public static void setHeldPublic(ServerPlayer player, int value) {
         int clamped = Math.max(0, Math.min(MAX_HELD, value));
         CompoundTag tag = PersistentDataAccess.get(player);
         if (PersistentDataAccess.isWritable(tag)) {
             tag.m_128405_(KEY_HELD, clamped);
         }
-        // Dual-write to faction 4 so race-unlock shops that spend faction tokens stay in sync.
-        Integer current = readFactionPoints(player, FACTION_HELD_ID);
-        if (current != null) {
-            int delta = clamped - current;
-            if (delta != 0) {
-                addFactionPoints(player, FACTION_HELD_ID, delta);
-            }
-        }
-        try {
-            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
-                    .syncFromLegacy(player);
-        } catch (Throwable ignored) {
-        }
         try {
             com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
                     .alignFabledToHeld(player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeFactionSync
+                    .forceSync(player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .scheduleSyncAfterStatsReset(player);
         } catch (Throwable ignored) {
         }
     }

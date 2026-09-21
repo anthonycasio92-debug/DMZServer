@@ -1,21 +1,15 @@
 package com.dbzlegacy.adaptivedifficulty.progression;
 
-import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
-import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.OverhaulPrestigeResourceScale;
-import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
-import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem;
 import com.dragonminez.common.stats.StatsData;
 import java.lang.reflect.Method;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.fml.ModList;
 
 /**
  * Use dmzrevamp Overhaul prestige (Statistics UI, scaling, saga rebirth) while Legacy Mechanics
- * owns playable stat totals via mixins. Overhaul {@code levelCap} is the personal
- * 100k + 10k×breakthroughs cap (stock prestige-0 cap is 50k and is not synced).
+ * owns playable stat totals via mixins. Combat scale reads Overhaul
+ * {@code PrestigeSystem.scaleMultiplier} directly so prestige count changes apply even when
+ * the Overhaul JSON cache is stale.
  */
 public final class LmOverhaulPrestigeIntegration {
     /** Overhaul Statistics prestige count hard cap. */
@@ -35,26 +29,21 @@ public final class LmOverhaulPrestigeIntegration {
     }
 
     /**
-     * Overhaul prestige is on only when {@code LevelingRevamp.json} has both
-     * {@code levelsAndAttributes.enabled} and {@code Prestige.enabled} (and no {@code dmzprestige} mod).
+     * Overhaul {@code LevelingRevampConfig.prestigeEnabled()}. True results are cached;
+     * false is retried so a late JSON load can still turn prestige on.
      */
     public static boolean overhaulPrestigeEnabled() {
-        if (!ModList.get().isLoaded("dmzrevamp")) {
-            return false;
-        }
-        Boolean cached = overhaulPrestigeEnabled;
-        if (cached != null) {
-            return cached;
-        }
-        boolean ok = false;
         try {
             Class<?> cfg = Class.forName("com.dmzrevamp.config.LevelingRevampConfig");
             Object v = cfg.getMethod("prestigeEnabled").invoke(null);
-            ok = v instanceof Boolean b && b;
+            boolean ok = v instanceof Boolean b && b;
+            if (ok) {
+                overhaulPrestigeEnabled = Boolean.TRUE;
+            }
+            return ok;
         } catch (Throwable ignored) {
+            return false;
         }
-        overhaulPrestigeEnabled = ok;
-        return ok;
     }
 
     public static void clearConfigCache() {
@@ -64,13 +53,10 @@ public final class LmOverhaulPrestigeIntegration {
 
     /**
      * Overhaul {@code PrestigeSystem.scaleMultiplier} = {@code 1 + count × scaleBonusPerPrestige}.
-     * Live {@code scaleBonusPerPrestige} is 1.0, so prestige 10 is 11×. Combat
-     * {@code getTotalMultiplier} uses this; ki/stamina use the same scale once via
-     * {@link DmzResourcePoolClamp#actualMaxEnergy} / HUD mixin (ENE/STM stay out of
-     * getTotalMultiplier).
+     * Not gated on {@link #overhaulPrestigeEnabled()} so HUD/combat keep the live count scale.
      */
     public static double combatScaleMultiplier(StatsData data) {
-        if (data == null || !overhaulPrestigeEnabled()) {
+        if (data == null) {
             return 1.0d;
         }
         try {
@@ -103,40 +89,8 @@ public final class LmOverhaulPrestigeIntegration {
                 || "STAMINA".equalsIgnoreCase(stat);
     }
 
-    /** Log both Overhaul JSON toggles + whether native prestige is active (after {@code reload}). */
     public static void logOverhaulPrestigeState() {
-        if (!ModList.get().isLoaded("dmzrevamp")) {
-            return;
-        }
         clearConfigCache();
-        boolean levels = false;
-        boolean prestigeFlag = false;
-        int initialCap = -1;
-        int maxLevel = -1;
-        try {
-            Class<?> cfgCls = Class.forName("com.dmzrevamp.config.LevelingRevampConfig");
-            Object revampCfg = cfgCls.getMethod("get").invoke(null);
-            Object levelsObj = revampCfg.getClass().getField("levelsAndAttributes").get(revampCfg);
-            levels = levelsObj.getClass().getField("enabled").getBoolean(levelsObj);
-            maxLevel = levelsObj.getClass().getField("maxLevel").getInt(levelsObj);
-            Object prestigeObj = revampCfg.getClass().getField("Prestige").get(revampCfg);
-            prestigeFlag = prestigeObj.getClass().getField("enabled").getBoolean(prestigeObj);
-            initialCap = prestigeObj.getClass().getField("initialLevelCap").getInt(prestigeObj);
-        } catch (Throwable ignored) {
-        }
-        boolean enabled = overhaulPrestigeEnabled();
-        DifficultyConfig lmCfg = DifficultyConfig.get();
-        AdaptiveDifficultyMod.LOGGER.info(
-                "[{}] Overhaul prestige: levelsAndAttributes.enabled={} Prestige.enabled={} "
-                        + "prestigeEnabled()={} LM integration={} initialLevelCap={} maxLevel={} pinnedCap={}",
-                AdaptiveDifficultyMod.MOD_ID,
-                levels,
-                prestigeFlag,
-                enabled,
-                lmCfg != null && lmCfg.enableOverhaulPrestigeIntegration,
-                initialCap,
-                maxLevel,
-                LmOverhaulCapMath.OVERHAUL_LEVEL_CAP);
     }
 
     /** Held and Overhaul prestige are the same number (0…10). */
@@ -146,48 +100,34 @@ public final class LmOverhaulPrestigeIntegration {
 
     /** Invert {@link #toOverhaulCount} for Overhaul UI → LM held. */
     public static int heldFromOverhaulCount(int overhaulCount) {
-        return Math.max(0, Math.min(PrestigeSystem.maxHeld(), Math.max(0, overhaulCount)));
+        try {
+            Class<?> cls = Class.forName(
+                    "com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem");
+            int max = ((Number) cls.getMethod("maxHeld").invoke(null)).intValue();
+            return Math.max(0, Math.min(max, Math.max(0, overhaulCount)));
+        } catch (Throwable ignored) {
+            return Math.max(0, overhaulCount);
+        }
     }
 
-    /** Overhaul Statistics count = LM held (1:1). Fabled class level is not offset. */
+    /** Overhaul Statistics count = LM held (1:1). */
     public static int overhaulCountFromHeld(ServerPlayer player) {
-        int held = player == null ? 0 : PrestigeSystem.getHeld(player);
-        return toOverhaulCount(held);
+        if (player == null) {
+            return 0;
+        }
+        try {
+            Class<?> cls = Class.forName(
+                    "com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem");
+            for (Method method : cls.getMethods()) {
+                if ("getHeld".equals(method.getName()) && method.getParameterCount() == 1) {
+                    return toOverhaulCount(((Number) method.invoke(null, player)).intValue());
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return 0;
     }
 
-    /** After native {@link com.dmzrevamp.revamp.prestige.PrestigeService#tryPrestige}. */
-    public static void syncLmWalletFromOverhaulCount(ServerPlayer player) {
-        if (player == null || !integrationActive()) {
-            return;
-        }
-        StatsData data = DmzProgression.stats(player);
-        if (data == null) {
-            return;
-        }
-        int overhaul = Math.max(0, Math.min(
-                OVERHAUL_MAX_PRESTIGE, DmzRevampPrestigeBridge.overhaulCount(data)));
-        int mapped = overhaulCountFromHeld(player);
-        if (overhaul <= mapped) {
-            return;
-        }
-        int newHeld = heldFromOverhaulCount(overhaul);
-        int held = PrestigeSystem.getHeld(player);
-        int delta = Math.max(0, newHeld - held);
-        PrestigeSystem.setHeldPublic(player, newHeld);
-        if (delta > 0) {
-            PrestigeSystem.setCompletedPublic(player, PrestigeSystem.getCompleted(player) + delta);
-        }
-        try {
-            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync.sync(player);
-        } catch (Throwable ignored) {
-        }
-        try {
-            PrestigePointsSystem.scheduleReapplyAfterPrestige(player);
-        } catch (Throwable ignored) {
-        }
-        try {
-            OverhaulPrestigeResourceScale.pulse(player);
-        } catch (Throwable ignored) {
-        }
-    }
+    /** Overhaul native prestige no longer writes back into the LM wallet. */
+    public static void syncLmWalletFromOverhaulCount(ServerPlayer player) {}
 }
