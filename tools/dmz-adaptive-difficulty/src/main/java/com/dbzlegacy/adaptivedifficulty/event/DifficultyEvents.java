@@ -141,18 +141,22 @@ public final class DifficultyEvents {
 
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
-        BalanceTelemetry.flushAndClose();
-        com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.flushAndClose();
+        // Never throw from stop handlers — a hot-swapped LM jar can split classloaders and
+        // abort shutdown while players are still flushed to disk (invalid playerdata).
+        try {
+            BalanceTelemetry.flushAndClose();
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn("[{}] BalanceTelemetry stop: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.flushAndClose();
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn("[{}] SystemTelemetry stop: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
         try {
             RivalStore.get().save();
             SparStore.get().save();
             RivalProgression.get().save();
-            com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost.save();
-        } catch (Throwable ignored) {
-        }
-        RivalStore.get().save();
-        SparStore.get().save();
-        try {
             com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost.save();
         } catch (Throwable ignored) {
         }

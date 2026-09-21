@@ -68,9 +68,23 @@ recycle_remote_lm_jars() {
   fi
 }
 
+FORGE_PENDING="${FORGE_NAME}.pending"
+GUI_PENDING="${GUI_NAME}.pending"
+STOPPED="${LIVE_SERVER_STOPPED:-}"
+
 echo "LIVE deploy to $USER@$HOST:$PORT"
-echo "  $FORGE_NAME -> $REMOTE_MODS/"
-echo "  $GUI_NAME -> $REMOTE_PLUGINS/"
+if [[ "$STOPPED" == "STOPPED" ]]; then
+  echo "  $FORGE_NAME -> $REMOTE_MODS/ (server STOPPED — direct install)"
+  echo "  $GUI_NAME -> $REMOTE_PLUGINS/"
+else
+  echo "  $FORGE_NAME -> $REMOTE_MODS/$FORGE_PENDING (STAGED — server still running)"
+  echo "  $GUI_NAME -> $REMOTE_PLUGINS/ (GUI only if STOPPED; else skip Forge swap)"
+  echo ""
+  echo "Never overwrite LegacyMechanics-*.jar while Mohist is running (invalid playerdata)." >&2
+  echo "Stop the panel, then: LIVE_SERVER_STOPPED=STOPPED DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-lm-live.sh" >&2
+  echo "Or: LIVE_SERVER_STOPPED=STOPPED bash scripts/activate-lm-staged-jar.sh $FORGE_PENDING" >&2
+fi
+
 if [[ "${DEPLOY_LIVE_CONFIRM:-}" != "LIVE" ]]; then
   echo "Set DEPLOY_LIVE_CONFIRM=LIVE to skip interactive confirm (cloud agents)." >&2
   read -r -p "Type LIVE to confirm: " confirm
@@ -80,7 +94,8 @@ if [[ "${DEPLOY_LIVE_CONFIRM:-}" != "LIVE" ]]; then
   fi
 fi
 
-"${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
+if [[ "$STOPPED" == "STOPPED" ]]; then
+  "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
 mkdir $RECYCLE
 mkdir $REMOTE_MODS
 mkdir $REMOTE_PLUGINS
@@ -88,8 +103,14 @@ put $FORGE_JAR $REMOTE_MODS/$FORGE_NAME
 put $GUI_JAR $REMOTE_PLUGINS/$GUI_NAME
 bye
 EOF
-
-recycle_remote_lm_jars
-
-echo "Upload complete. Older LM jars (if any) moved to $RECYCLE/ on the server."
-echo "Restart the live server from the panel, then /lm admin reload."
+  recycle_remote_lm_jars
+  echo "Upload complete. Start the server from the panel, then /lm admin reload."
+else
+  "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
+mkdir $REMOTE_MODS
+put $FORGE_JAR $REMOTE_MODS/$FORGE_PENDING
+bye
+EOF
+  echo "Staged $FORGE_PENDING only. GUI jar not replaced while server is up."
+  echo "After panel STOP: LIVE_SERVER_STOPPED=STOPPED bash scripts/activate-lm-staged-jar.sh $FORGE_PENDING"
+fi
