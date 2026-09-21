@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.AdminInspectSessions;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -462,6 +463,23 @@ public final class CnpcGuiSupport {
         if (openMain != null) {
             buttonSmall(gui, ID_NAV_BACK, "§7Main", COL_R, row, 95, openMain);
         }
+    }
+
+    public static boolean staff(ServerPlayer player) {
+        return StaffAccess.isStaff(player);
+    }
+
+    /** Footer: Back to section hub + Hub link. */
+    public static void navBackHub(ServerPlayer player, ICustomGui gui, int row, Runnable back, String backLabel) {
+        buttonSmall(gui, ID_NAV_HUB, "§7« Hub", COL_L, row, 95, () -> CnpcLmHubGui.open(player, "main"));
+        if (back != null) {
+            buttonSmall(gui, ID_NAV_BACK, backLabel == null ? "§7Back" : backLabel, COL_R, row, 95, back);
+        }
+    }
+
+    public static String flagOnOff(java.util.Map<String, String> ph, String key) {
+        boolean on = "true".equalsIgnoreCase(ph.getOrDefault("flag_" + key, "false"));
+        return on ? "§aON" : "§cOFF";
     }
 
     @FunctionalInterface

@@ -2,6 +2,8 @@ package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
+import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
@@ -13,8 +15,10 @@ import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dbzlegacy.adaptivedifficulty.util.SystemGate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 import noppes.npcs.api.gui.ICustomGui;
 import noppes.npcs.api.gui.IScroll;
@@ -26,11 +30,22 @@ public final class CnpcLmDifficultyGui {
 
     public static void open(ServerPlayer player, String page) {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_DIFFICULTY, CnpcGuiSupport.W, H, (pl, gui) -> {
-            switch (p) {
-                case "tiers", "buy", "tier" -> paintTiers(pl, gui);
+        if (("stats".equals(p) || "statistics".equals(p) || "details".equals(p)) && !StaffAccess.isStaff(player)) {
+            p = "main";
+        }
+        String pageFinal = p;
+        int height = switch (pageFinal) {
+            case "stats", "statistics", "details" -> 340;
+            case "titles", "title" -> 360;
+            default -> H;
+        };
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_DIFFICULTY, CnpcGuiSupport.W, height, (pl, gui) -> {
+            switch (pageFinal) {
+                case "tiers", "buy", "tier", "purchase", "unlock", "adjust", "change", "set", "lower" ->
+                        paintTiers(pl, gui);
                 case "titles", "title" -> paintTitles(pl, gui);
                 case "team", "teams" -> paintTeam(pl, gui);
+                case "stats", "statistics", "details" -> paintStats(pl, gui);
                 default -> paintMain(pl, gui);
             }
         });
@@ -89,8 +104,51 @@ public final class CnpcLmDifficultyGui {
                         player,
                         () -> DifficultyActions.handleArg(subject, "toggle_coin_chat", "0", "main").message(),
                         () -> open(player, "main")));
+        if (StaffAccess.isStaff(player)) {
+            CnpcGuiSupport.button(gui, 27, "§8Staff details", CnpcGuiSupport.COL_R, row,
+                    () -> open(player, "stats"));
+        }
         row += 24;
         navFooter(player, gui, row);
+    }
+
+    private static void paintStats(ServerPlayer player, ICustomGui gui) {
+        ServerPlayer subject = who(player);
+        DifficultyActions.prepareGui(subject);
+        DifficultySnapshot snap = DifficultyCache.refresh(subject);
+        PlayerCombatProfile profile = PlayerCombatProfile.of(subject);
+        Map<String, String> ph = new HashMap<>();
+        LmOverhaulScaledCombat.putPlaceholders(ph, subject);
+
+        long cr = snap.combatRating > 0 ? snap.combatRating : snap.calculated;
+        List<String> lines = new ArrayList<>();
+        lines.add("§7Tier §f" + snap.activeTierName + "  §8·  §7State §" + snap.stateColorCode() + snap.state());
+        lines.add("§7Combat CR §f" + cr + "  §8·  §7Unlocked §fT" + snap.highestUnlockedTier);
+        lines.add("§7DMZ §f" + snap.dmzLevel + "  §7Prestige §f" + snap.prestige);
+        lines.add("§7Title §e" + blankNone(TitleSystem.activeDisplay(subject)));
+        lines.add("§7Overhaul §f" + ph.getOrDefault("overhaul_scale", "x1")
+                + "  §8·  §7Melee §f" + ph.getOrDefault("melee_scaled", "?")
+                + "  §7Strike §f" + ph.getOrDefault("strike_scaled", "?"));
+        lines.add("§7Ki §f" + ph.getOrDefault("ki_scaled", "?")
+                + "  §7Defense §f" + ph.getOrDefault("defense_scaled", "?"));
+        String fightingClass = profile.fightingClass == null ? "" : profile.fightingClass;
+        lines.add("§7Class §f" + blankNone(fightingClass)
+                + "  §7Style §f" + (profile.style == null ? "HYBRID" : profile.style.name()));
+        lines.add("§7Top stats §f" + blankNone(profile.topStatsLabel()));
+        lines.add("§6Coins §f" + AncientCoinEconomy.inventoryBreakdown(subject));
+
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§8Staff · Details",
+                "§7CR · counters · scaled kit (read-only)");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 8);
+        row += 8;
+        navFooter(player, gui, row);
+    }
+
+    private static String blankNone(String s) {
+        if (s == null || s.isBlank() || "None".equalsIgnoreCase(s.trim())) {
+            return "—";
+        }
+        return s;
     }
 
     private static void paintTiers(ServerPlayer player, ICustomGui gui) {
