@@ -16,7 +16,7 @@ import net.minecraft.server.level.ServerPlayer;
 import noppes.npcs.api.gui.ICustomGui;
 
 public final class CnpcLmHubGui {
-    private static final int HUB_H = 368;
+    private static final int HUB_H = 332;
 
     private CnpcLmHubGui() {}
 
@@ -28,6 +28,14 @@ public final class CnpcLmHubGui {
         if ("logs".equalsIgnoreCase(page) || "syslog".equalsIgnoreCase(page)) {
             if (StaffAccess.isStaff(player)) {
                 CnpcLmLogsGui.open(player, "main");
+            } else {
+                paintMain(player);
+            }
+            return;
+        }
+        if ("progression".equalsIgnoreCase(page) || "prog".equalsIgnoreCase(page)) {
+            if (StaffAccess.isStaff(player)) {
+                CnpcLmAdminGui.open(player, "main");
             } else {
                 paintMain(player);
             }
@@ -95,15 +103,9 @@ public final class CnpcLmHubGui {
 
         CnpcGuiSupport.button(gui, 26, "§cRemove Android §8· two-step confirm", CnpcGuiSupport.COL_L, row,
                 () -> CnpcLmGui.open(player, "android_remove", "main"));
-
         if (staff) {
-            CnpcGuiSupport.button(gui, 27, "§5Progression §8· staff tools", CnpcGuiSupport.COL_R, row,
-                    () -> CnpcLmGui.open(player, "progression", "main"));
-            row += gap;
-            CnpcGuiSupport.button(gui, 28, "§cAdmin §8· reload & migrate", CnpcGuiSupport.COL_L, row,
+            CnpcGuiSupport.button(gui, 27, "§cStaff admin §8· progression & logs", CnpcGuiSupport.COL_R, row,
                     () -> CnpcLmAdminGui.open(player, "main"));
-            CnpcGuiSupport.button(gui, 29, "§8Event log §8· telemetry", CnpcGuiSupport.COL_R, row,
-                    () -> CnpcLmLogsGui.open(player, "main"));
         }
         row += gap;
         CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));
@@ -183,7 +185,7 @@ public final class CnpcLmHubGui {
         if (skillCheck && "true".equals(ph.get("skillcheck_session"))) {
             lines.add("§7You have a §eSkill Check §7session open.");
         } else if (staff) {
-            lines.add("§7Staff: progression, admin, and logs are on the last rows.");
+            lines.add("§7Staff: use §fStaff admin §7for progression flags and event log.");
         }
 
         return lines;

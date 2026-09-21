@@ -1177,14 +1177,14 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
                     player.sendMessage("§cStaff only.");
                     return;
                 }
-                sendLmAdminHelp(player);
+                openHubRespectingConfig(player, "admin");
             }
             case "logs", "syslog" -> {
                 if (!ForgeBridge.isStaff(player)) {
                     player.sendMessage("§cStaff only.");
                     return;
                 }
-                openHubInventory(player, "logs");
+                openHubRespectingConfig(player, "logs");
             }
             case "help", "hub", "lm" -> openHubInventory(player, "main");
             default -> {

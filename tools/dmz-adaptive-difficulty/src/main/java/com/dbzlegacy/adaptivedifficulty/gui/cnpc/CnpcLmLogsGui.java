@@ -38,7 +38,6 @@ public final class CnpcLmLogsGui {
                 () -> MechanicsGuiApi.handleDo(player, "syslog", "flush", "logs"),
                 () -> open(player, "main")));
         row += 24;
-        CnpcGuiSupport.buttonSmall(gui, 96, "§7« Hub", CnpcGuiSupport.COL_L, row, 95,
-                () -> CnpcLmHubGui.open(player, "main"));
+        CnpcGuiSupport.navBackHub(player, gui, row, () -> CnpcLmAdminGui.open(player, "main"), "§7Admin");
     }
 }

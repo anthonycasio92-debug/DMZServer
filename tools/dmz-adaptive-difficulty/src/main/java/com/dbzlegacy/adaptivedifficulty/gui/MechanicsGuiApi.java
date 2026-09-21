@@ -123,6 +123,14 @@ public final class MechanicsGuiApi {
                         + "\n§8/lm do syslog on|off|status|flush";
             };
         }
+        if ("reload".equals(act) || "reloadconfig".equals(act)) {
+            if (!StaffAccess.isStaff(player)) {
+                return "§cStaff only.";
+            }
+            return DifficultyConfig.reload()
+                    ? "§aLegacy Mechanics config reloaded."
+                    : "§cConfig reload failed.";
+        }
         if ("migrate-cnpc".equals(act) || "migratecnpc".equals(act) || "cnpcmigrate".equals(act)) {
             if (!StaffAccess.isStaff(player)) {
                 return "§cStaff only.";

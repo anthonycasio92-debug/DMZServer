@@ -30,9 +30,11 @@ public final class HubChestGui implements Listener {
     public void open(Player player, String page) {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         Inventory inv = switch (p) {
+            case "admin" -> ForgeBridge.isStaff(player) ? admin(player) : main(player);
             case "logs", "syslog" -> ForgeBridge.isStaff(player)
                     ? logs(player)
                     : main(player);
+            case "progression", "prog" -> ForgeBridge.isStaff(player) ? admin(player) : main(player);
             // Help removed — any leftover /lm do page help opens the hub.
             default -> main(player);
         };
@@ -116,15 +118,9 @@ public final class HubChestGui implements Listener {
                         "&eOpen")),
                 SlotAction.open("android_remove"));
         if (staff) {
-            put(holder, inv, 38, tipBtn(player, "hub.main.progression", Material.BREWING_STAND, "&dProgression",
-                    List.of("&7Skills · TP · Race · Combat flags", "&eOpen")),
-                    SlotAction.open("progression"));
-            put(holder, inv, 40, tipBtn(player, "hub.main.admin", Material.COMMAND_BLOCK, "&cAdmin",
-                    List.of("&7Reload configs and open staff tools", "&8/lm admin")),
-                    SlotAction.open("admin"));
-            put(holder, inv, 42, tipBtn(player, "hub.main.logs", Material.CLOCK, "&8Logs",
-                    List.of("&7Server event logs", "&eOpen")),
-                    SlotAction.page("logs"));
+            put(holder, inv, 32, tipBtn(player, "hub.main.admin", Material.COMMAND_BLOCK, "&cStaff Admin",
+                    List.of("&7Progression flags · event log · reload", "&eOpen")),
+                    SlotAction.page("admin"));
         }
 
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
@@ -169,7 +165,36 @@ public final class HubChestGui implements Listener {
         put(holder, inv, 33, tipBtn(player, "hub.logs.flush", Material.HOPPER, "&eFlush Logs",
                 List.of("&7Write buffered logs to disk", "&8Staff only")),
                 SlotAction.act("syslog", "flush", "logs"));
-        put(holder, inv, 36, pageBtn(player, "hub.logs.back", Material.ARROW, "&7Back", "&7Return"),
+        put(holder, inv, 36, pageBtn(player, "hub.logs.back", Material.ARROW, "&7Back", "&7Staff admin"),
+                SlotAction.page("admin"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory admin(Player player) {
+        Holder holder = new Holder("admin");
+        Inventory inv = Bukkit.createInventory(holder, 45, color("&8Staff Admin"));
+        holder.bind(inv);
+        frameOnly(inv, 45);
+        put(holder, inv, 4, item(Material.COMMAND_BLOCK, "&c&lStaff Admin",
+                List.of("",
+                        "&7Progression module flags · TP boost · Android tools",
+                        "&7Event log · config reload · CNPC migrate",
+                        "",
+                        "&8/lm admin help")));
+        put(holder, inv, 20, tipBtn(player, "hub.admin.reload", Material.LIME_DYE, "&aReload LM config",
+                List.of("&7Reload Legacy Mechanics JSON", "", "&eReload")),
+                SlotAction.cmd("lm admin reload"));
+        put(holder, inv, 22, tipBtn(player, "hub.admin.progression", Material.BREWING_STAND, "&dProgression",
+                List.of("&7Skills · TP · Race · Combat flags", "", "&eOpen")),
+                SlotAction.open("progression"));
+        put(holder, inv, 24, tipBtn(player, "hub.admin.logs", Material.CLOCK, "&8Event log",
+                List.of("&7Telemetry toggle and flush", "", "&eOpen")),
+                SlotAction.page("logs"));
+        put(holder, inv, 31, tipBtn(player, "hub.admin.migrate", Material.ANVIL, "&eCNPC migrate",
+                List.of("&7One-shot CNPC data migration", "", "&eRun")),
+                SlotAction.act("migrate-cnpc", "", "admin"));
+        put(holder, inv, 36, pageBtn(player, "hub.admin.back", Material.ARROW, "&7Back", "&7Main hub"),
                 SlotAction.page("main"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
@@ -374,6 +399,10 @@ public final class HubChestGui implements Listener {
 
         static SlotAction dismiss() {
             return new SlotAction(null, null, null, null, null, null, true);
+        }
+
+        static SlotAction cmd(String command) {
+            return new SlotAction(null, null, null, null, command, null, false);
         }
     }
 

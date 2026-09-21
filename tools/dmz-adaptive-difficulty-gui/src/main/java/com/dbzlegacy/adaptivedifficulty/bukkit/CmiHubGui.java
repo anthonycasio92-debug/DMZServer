@@ -30,9 +30,23 @@ public final class CmiHubGui {
         String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
         try {
             switch (p) {
+                case "admin" -> {
+                    if (ForgeBridge.isStaff(player)) {
+                        openAdmin(player);
+                    } else {
+                        openMain(player);
+                    }
+                }
                 case "logs", "syslog" -> {
                     if (ForgeBridge.isStaff(player)) {
                         openLogs(player);
+                    } else {
+                        openMain(player);
+                    }
+                }
+                case "progression", "prog" -> {
+                    if (ForgeBridge.isStaff(player)) {
+                        openAdmin(player);
                     } else {
                         openMain(player);
                     }
@@ -105,12 +119,8 @@ public final class CmiHubGui {
                 "&8Two-click confirm · forms restored",
                 "&eOpen"));
         if (staff) {
-            gui.addButton(openBtn(player, 38, "hub.main.progression", Material.BREWING_STAND, "&dProgression", "progression",
-                    "&7Skills · TP · Race · Combat flags", "&eOpen"));
-            gui.addButton(openBtn(player, 40, "hub.main.admin", Material.COMMAND_BLOCK, "&cAdmin", "admin",
-                    "&7Reload configs and open staff tools", "&8/lm admin"));
-            gui.addButton(pageBtn(player, 42, "hub.main.logs", Material.CLOCK, "&8Logs", "logs",
-                    "&7Server event logs", "&eOpen"));
+            gui.addButton(pageBtn(player, 32, "hub.main.admin", Material.COMMAND_BLOCK, "&cStaff Admin", "admin",
+                    "&7Progression · event log · reload", "&eOpen"));
         }
 
         gui.addButton(closeBtn(53));
@@ -163,7 +173,31 @@ public final class CmiHubGui {
         gui.addButton(actionBtn(player, 33, "hub.logs.flush", Material.HOPPER, "&eFlush Logs",
                 "syslog", "flush", "logs", List.of("&7Write buffered logs to disk", "&8Staff only")));
 
-        gui.addButton(pageBtn(player, 36, "hub.logs.back", Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(pageBtn(player, 36, "hub.logs.back", Material.ARROW, "&7Back", "admin", "&7Staff admin"));
+        gui.addButton(closeBtn(44));
+        fillFrameOnly(gui, 5);
+        GuiFeedback.openCmi(gui);
+    }
+
+    private static void openAdmin(Player player) {
+        CMIGui gui = base(player, "&8Staff Admin", 5);
+        CMIGuiButton header = new CMIGuiButton(4, Material.COMMAND_BLOCK, "&c&lStaff Admin");
+        header.lockField();
+        header.addLore(List.of("",
+                "&7Progression flags · event log · reload",
+                "&8/lm admin help"));
+        gui.addButton(header);
+
+        gui.addButton(actionBtn(player, 20, "hub.admin.reload", Material.LIME_DYE, "&aReload LM config",
+                "reload", "0", "admin", List.of("&7Reload Legacy Mechanics JSON", "", "&eReload")));
+        gui.addButton(openBtn(player, 22, "hub.admin.progression", Material.BREWING_STAND, "&dProgression", "progression",
+                "&7Skills · TP · Race · Combat flags", "&eOpen"));
+        gui.addButton(pageBtn(player, 24, "hub.admin.logs", Material.CLOCK, "&8Event log", "logs",
+                "&7Telemetry toggle and flush", "&eOpen"));
+        gui.addButton(actionBtn(player, 31, "hub.admin.migrate", Material.ANVIL, "&eCNPC migrate",
+                "migrate-cnpc", "", "admin", List.of("&7One-shot CNPC data migration", "", "&eRun")));
+
+        gui.addButton(pageBtn(player, 36, "hub.admin.back", Material.ARROW, "&7Back", "main", "&7Main hub"));
         gui.addButton(closeBtn(44));
         fillFrameOnly(gui, 5);
         GuiFeedback.openCmi(gui);

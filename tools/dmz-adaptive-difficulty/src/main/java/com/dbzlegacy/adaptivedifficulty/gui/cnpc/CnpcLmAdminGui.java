@@ -14,20 +14,17 @@ public final class CnpcLmAdminGui {
             player.m_213846_(net.minecraft.network.chat.Component.m_237113_("§cStaff only."));
             return;
         }
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_ADMIN, CnpcGuiSupport.W, 300, (pl, gui) -> paint(pl, gui));
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_ADMIN, CnpcGuiSupport.W, 280, (pl, gui) -> paint(pl, gui));
     }
 
     private static void paint(ServerPlayer player, ICustomGui gui) {
-        CnpcGuiSupport.title(gui, 1, "§cStaff tools");
-        CnpcGuiSupport.subtitle(gui, 2, "§7Reload configs · progression · telemetry");
-        CnpcGuiSupport.divider(gui, 3, 38);
-        CnpcGuiSupport.bodyLines(gui, 10, 46, java.util.List.of(
-                "§7Use chat for full admin commands:",
-                "§8/lm admin help §7· §8/lm admin inspect …",
-                "§8/difficulty admin … §7· §8/progression …"
-        ), 4);
-
-        int row = 110;
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cStaff admin",
+                "§7Progression flags · event log · reload");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, java.util.List.of(
+                "§7Full commands: §8/lm admin help",
+                "§8/lm admin inspect … §7· §8/difficulty admin …"
+        ), 2);
+        row += 4;
         CnpcGuiSupport.button(gui, 20, "§aReload LM config", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyConfig.reload()
@@ -44,8 +41,7 @@ public final class CnpcLmAdminGui {
                 () -> com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi.handleDo(
                         player, "migrate-cnpc", "", "admin"),
                 () -> open(player, "main")));
-        row += 24;
-        CnpcGuiSupport.buttonSmall(gui, 96, "§7« Hub", CnpcGuiSupport.COL_L, row, 95,
-                () -> CnpcLmHubGui.open(player, "main"));
+        row += CnpcGuiSupport.ROW_STEP + 4;
+        CnpcGuiSupport.navHubMain(player, gui, row, null);
     }
 }
