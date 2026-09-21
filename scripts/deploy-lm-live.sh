@@ -70,11 +70,14 @@ recycle_remote_lm_jars() {
     if [[ "$name" == "$FORGE_NAME" || "$name" == "$GUI_NAME" ]]; then
       continue
     fi
-    if [[ "$name" == LegacyMechanics-*.jar ]]; then
-      cmds+="rename $REMOTE_MODS/$name $RECYCLE/$name"$'\n'
-    elif [[ "$name" == LegacyMechanicsGUI-*.jar ]]; then
-      cmds+="rename $REMOTE_PLUGINS/$name $RECYCLE/$name"$'\n'
-    fi
+    case "$name" in
+      LegacyMechanics-*.jar)
+        cmds+="rename $REMOTE_MODS/$name $RECYCLE/$name"$'\n'
+        ;;
+      LegacyMechanicsGUI-*.jar)
+        cmds+="rename $REMOTE_PLUGINS/$name $RECYCLE/$name"$'\n'
+        ;;
+    esac
   done <"$list_file"
   rm -f "$list_file"
   if [[ -n "$cmds" ]]; then
@@ -91,12 +94,12 @@ if [[ "$STOPPED" == "STOPPED" ]]; then
   echo "  $FORGE_NAME -> $REMOTE_MODS/ (server STOPPED — direct install)"
   echo "  $GUI_NAME -> $REMOTE_PLUGINS/"
 else
-  echo "  $FORGE_NAME -> $REMOTE_MODS/$FORGE_PENDING (STAGED — server still running)"
-  echo "  $GUI_NAME -> $REMOTE_PLUGINS/ (GUI only if STOPPED; else skip Forge swap)"
+  echo "  $FORGE_NAME -> $REMOTE_MODS/$FORGE_PENDING (hot stage — server may stay up)"
+  echo "  $GUI_NAME -> $REMOTE_PLUGINS/$GUI_PENDING (hot stage — activates on next stop)"
   echo ""
-  echo "Never overwrite LegacyMechanics-*.jar while Mohist is running (invalid playerdata)." >&2
-  echo "Stop the panel, then: LIVE_SERVER_STOPPED=STOPPED DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-lm-live.sh" >&2
-  echo "Or: LIVE_SERVER_STOPPED=STOPPED bash scripts/activate-lm-staged-jar.sh $FORGE_PENDING" >&2
+  echo "Forge/GUI .pending files are safe while Mohist runs; never rename .pending -> .jar until STOP." >&2
+  echo "After panel stop: LIVE_SERVER_STOPPED=STOPPED bash scripts/activate-lm-staged-jar.sh" >&2
+  echo "Or full swap: LIVE_SERVER_STOPPED=STOPPED DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-lm-live.sh" >&2
 fi
 
 if [[ "${DEPLOY_LIVE_CONFIRM:-}" != "LIVE" ]]; then
@@ -122,9 +125,11 @@ EOF
 else
   "${SFTP_CMD[@]}" "$USER@$HOST" <<EOF
 mkdir $REMOTE_MODS
+mkdir $REMOTE_PLUGINS
 put $FORGE_JAR $REMOTE_MODS/$FORGE_PENDING
+put $GUI_JAR $REMOTE_PLUGINS/$GUI_PENDING
 bye
 EOF
-  echo "Staged $FORGE_PENDING only. GUI jar not replaced while server is up."
-  echo "After panel STOP: LIVE_SERVER_STOPPED=STOPPED bash scripts/activate-lm-staged-jar.sh $FORGE_PENDING"
+  echo "Hot-staged $FORGE_PENDING and $GUI_PENDING (active jars unchanged until stop + activate)."
+  echo "After panel STOP: LIVE_SERVER_STOPPED=STOPPED bash scripts/activate-lm-staged-jar.sh"
 fi
