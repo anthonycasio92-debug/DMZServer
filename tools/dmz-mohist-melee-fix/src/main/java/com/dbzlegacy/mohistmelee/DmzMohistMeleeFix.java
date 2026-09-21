@@ -19,12 +19,13 @@ public final class DmzMohistMeleeFix {
 
     public DmzMohistMeleeFix() {
         LOGGER.info(
-                "[{}] v2.12.20: ghost party heal + saga guard (no wipe on party/death)",
+                "[{}] v2.12.27: /sdu edit → SDU hub packet (no vanilla chest menu)",
                 MOD_ID
         );
         ReachRepairEvents.register();
         PersonalSagaEvents.register();
         StatsResetCommands.register();
+        SduEditCommandAccess.register();
         MeleeFixSelfTest.registerIfEnabled();
     }
 }

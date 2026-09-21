@@ -1,0 +1,17 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "com.dbzlegacy.mohistmelee.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "dmz_mohist_melee_fix.refmap.json",
+  "mixins": [
+    "SduCommandRequiresMixin",
+    "SduPermsCanEditMixin",
+    "OpenHubPacketEncodeMixin"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

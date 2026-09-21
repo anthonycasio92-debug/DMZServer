@@ -4,7 +4,7 @@ license = "MIT"
 
 [[mods]]
 modId = "dmz_mohist_melee_fix"
-version = "2.12.22"
+version = "2.12.27"
 displayName = "DMZ Mohist Melee Fix"
 authors = "DBZ Legacy Reborn"
 description = '''
@@ -30,6 +30,9 @@ config = "dmz_mohist_melee_fix.mixins.json"
 
 [[mixins]]
 config = "dmz_mohist_melee_fix.raid.mixins.json"
+
+[[mixins]]
+config = "dmz_mohist_melee_fix.sdu.mixins.json"
 
 [[dependencies.dmz_mohist_melee_fix]]
 modId = "forge"
