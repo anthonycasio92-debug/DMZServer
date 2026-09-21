@@ -33,7 +33,8 @@ import net.minecraft.server.level.ServerPlayer;
  * (Natural + Saga — not ultimates / ki attacks). Survives prestige reset.
  * {@code potentialunlock} is the exception: 1 point = +2 levels.
  * Caps come from {@code skills.json} cost ladders.
- * Majin/Mutant: 5 points each, mutually exclusive; unpurchase free (no refund).
+ * Majin/Mutant: 5 points each, mutually exclusive; unpurchase the current form
+ * before buying the other (no refund, no silent swap).
  * Breakthroughs: raise <b>your</b> DMZ level cap by +10k (max 5 → 150k) so you can
  * level normally into the new cap. Server {@code maxValue} is 150k (client UI/level
  * math); personal soft-locks keep everyone else at 100k. Costs 15, 20, 25, 30, 35.
@@ -855,6 +856,16 @@ public final class PrestigePointsSystem {
         return player != null && ProgressionData.storedGetBool(player, KEY_MUTANT);
     }
 
+    /** True when the player may spend points on Permanent Majin (nothing else owned). */
+    public static boolean canBuyMajin(ServerPlayer player) {
+        return player != null && !hasMajin(player) && !hasMutant(player);
+    }
+
+    /** True when the player may spend points on Permanent Mutant (nothing else owned). */
+    public static boolean canBuyMutant(ServerPlayer player) {
+        return player != null && !hasMutant(player) && !hasMajin(player);
+    }
+
     public static String buyMajin(ServerPlayer player) {
         return buyForm(player, true);
     }
@@ -883,11 +894,13 @@ public final class PrestigePointsSystem {
         if (points < FORM_COST) {
             return "§cNeed §e" + FORM_COST + " §cpoints (have §e" + points + "§c).";
         }
-        // XOR: drop the other form with no refund before purchasing.
         if (majin && hasMutant(player)) {
-            clearForm(player, false);
-        } else if (!majin && hasMajin(player)) {
-            clearForm(player, true);
+            return "§cYou have §fPermanent Mutant§c."
+                    + "\n§7Unpurchase Mutant first (§cno refund§7), then buy Majin.";
+        }
+        if (!majin && hasMajin(player)) {
+            return "§cYou have §fPermanent Majin§c."
+                    + "\n§7Unpurchase Majin first (§cno refund§7), then buy Mutant.";
         }
         setPoints(player, points - FORM_COST);
         ProgressionData.storedPutBool(player, majin ? KEY_MAJIN : KEY_MUTANT, true);
@@ -898,7 +911,7 @@ public final class PrestigePointsSystem {
         ));
         return "§aUnlocked §f" + label + " §7(§e-" + FORM_COST + " §7points)"
                 + "\n§7Points left: §e" + getPoints(player)
-                + "\n§8Switch later via unpurchase (no refund) then buy the other.";
+                + "\n§8To switch: unpurchase (no refund), then buy the other form.";
     }
 
     private static String unbuyForm(ServerPlayer player, boolean majin) {

@@ -917,6 +917,8 @@ public final class ProgressionGuiApi {
         out.put("next_breakthrough_cost", String.valueOf(nextBtCost));
         out.put("majin", PrestigePointsSystem.hasMajin(player) ? "true" : "false");
         out.put("mutant", PrestigePointsSystem.hasMutant(player) ? "true" : "false");
+        out.put("majin_can_buy", PrestigePointsSystem.canBuyMajin(player) ? "true" : "false");
+        out.put("mutant_can_buy", PrestigePointsSystem.canBuyMutant(player) ? "true" : "false");
         out.put("form_cost", String.valueOf(PrestigePointsSystem.FORM_COST));
         for (int t = 1; t <= 7; t++) {
             out.put("tier_" + t + "_cost", String.valueOf(PrestigePointsSystem.tierPointCost(t)));
@@ -986,9 +988,14 @@ public final class ProgressionGuiApi {
             case "forms", "form", "effects", "effect" -> {
                 lore.add("§aPermanent §7Majin / Mutant: §e"
                         + ph.getOrDefault("form_cost", "5") + " §7points each");
-                lore.add("§7Purchases are permanent · only one at a time · unpurchase = no refund");
+                lore.add("§7Only one at a time · unpurchase current before switching");
                 lore.add("§7Majin: " + ("true".equals(ph.get("majin")) ? "§aOwned" : "§cNot owned"));
                 lore.add("§7Mutant: " + ("true".equals(ph.get("mutant")) ? "§aOwned" : "§cNot owned"));
+                if ("true".equals(ph.get("mutant")) && !"true".equals(ph.get("majin"))) {
+                    lore.add("§8Unpurchase Mutant to unlock Majin purchase");
+                } else if ("true".equals(ph.get("majin")) && !"true".equals(ph.get("mutant"))) {
+                    lore.add("§8Unpurchase Majin to unlock Mutant purchase");
+                }
             }
             case "cap", "breakthrough", "breakthroughs" -> {
                 lore.add("§7Breakthroughs: §f" + ph.getOrDefault("breakthroughs", "0")

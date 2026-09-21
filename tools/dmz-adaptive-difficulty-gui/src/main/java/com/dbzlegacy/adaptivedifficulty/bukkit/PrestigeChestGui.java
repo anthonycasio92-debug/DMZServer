@@ -328,12 +328,13 @@ public final class PrestigeChestGui implements Listener {
             put(holder, inv, 20, tipBtn(viewer, "prestige.effects.majin_owned", Material.LIME_DYE,
                     "&aPermanent Majin",
                     List.of("&aOwned", "&aPermanent purchase &8· only one at a time"), costVars));
+        } else if (hasMutant) {
+            put(holder, inv, 20, tipBtn(viewer, "prestige.effects.majin_locked", Material.GRAY_DYE,
+                    "&8Buy Permanent Majin",
+                    List.of("&7Unpurchase Mutant first", "&cNo refund on unpurchase"), costVars));
         } else {
             List<String> majinDefaults = new ArrayList<>();
             majinDefaults.add("&7Cost: &e{cost} &7points");
-            if (hasMutant) {
-                majinDefaults.add("&8Buying removes Mutant (no refund)");
-            }
             majinDefaults.add("&aPermanent purchase &8· only one at a time");
             put(holder, inv, 20, tipBtn(viewer, "prestige.effects.majin", Material.PINK_DYE,
                     "&dBuy Permanent Majin", majinDefaults, costVars),
@@ -344,12 +345,13 @@ public final class PrestigeChestGui implements Listener {
             put(holder, inv, 22, tipBtn(viewer, "prestige.effects.mutant_owned", Material.LIME_DYE,
                     "&aPermanent Mutant",
                     List.of("&aOwned", "&aPermanent purchase &8· only one at a time"), costVars));
+        } else if (hasMajin) {
+            put(holder, inv, 22, tipBtn(viewer, "prestige.effects.mutant_locked", Material.GRAY_DYE,
+                    "&8Buy Permanent Mutant",
+                    List.of("&7Unpurchase Majin first", "&cNo refund on unpurchase"), costVars));
         } else {
             List<String> mutantDefaults = new ArrayList<>();
             mutantDefaults.add("&7Cost: &e{cost} &7points");
-            if (hasMajin) {
-                mutantDefaults.add("&8Buying removes Majin (no refund)");
-            }
             mutantDefaults.add("&aPermanent purchase &8· only one at a time");
             put(holder, inv, 22, tipBtn(viewer, "prestige.effects.mutant", Material.SLIME_BALL,
                     "&aBuy Permanent Mutant", mutantDefaults, costVars),

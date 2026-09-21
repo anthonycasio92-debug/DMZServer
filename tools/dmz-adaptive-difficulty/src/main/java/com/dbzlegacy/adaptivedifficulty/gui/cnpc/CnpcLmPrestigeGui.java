@@ -104,12 +104,19 @@ public final class CnpcLmPrestigeGui {
             if (placed > 0 && placed % 2 == 0) {
                 row += 24;
             }
-            String skillId = id;
-            CnpcGuiSupport.buttonSmall(gui, 30 + placed, label + " §7(" + bought + "/" + max + ")", col, row, 195,
-                    () -> CnpcGuiSupport.act(
-                            player,
-                            () -> ProgressionGuiApi.handlePrestigeDo(player, "skill", skillId, "shop"),
-                            () -> open(player, "shop:" + page)));
+            int boughtN = parseInt(bought, 0);
+            int maxN = parseInt(max, 0);
+            String caption = label + " §7(" + bought + "/" + max + ")";
+            if (maxN > 0 && boughtN >= maxN) {
+                gui.addLabel(30 + placed, "§a" + caption + " §8· maxed", col, row + 4, 195, 14);
+            } else {
+                String skillId = id;
+                CnpcGuiSupport.buttonSmall(gui, 30 + placed, caption, col, row, 195,
+                        () -> CnpcGuiSupport.act(
+                                player,
+                                () -> ProgressionGuiApi.handlePrestigeDo(player, "skill", skillId, "shop"),
+                                () -> open(player, "shop:" + page)));
+            }
         }
         row += 36;
         if (page > 0) {
@@ -151,41 +158,78 @@ public final class CnpcLmPrestigeGui {
     }
 
     private static void paintEffects(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§5Permanent effects", "§7Majin & Mutant");
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "effects"), 4);
-        CnpcGuiSupport.button(gui, 40, "§dBuy Majin", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
-                player,
-                () -> ProgressionGuiApi.handlePrestigeDo(player, "majin", "", "effects"),
-                () -> open(player, "effects")));
-        CnpcGuiSupport.button(gui, 41, "§dBuy Mutant", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
-                player,
-                () -> ProgressionGuiApi.handlePrestigeDo(player, "mutant", "", "effects"),
-                () -> open(player, "effects")));
-        row += 24;
-        CnpcGuiSupport.button(gui, 42, "§7Refund Majin", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
-                player,
-                () -> ProgressionGuiApi.handlePrestigeDo(player, "unmajin", "", "effects"),
-                () -> open(player, "effects")));
-        CnpcGuiSupport.button(gui, 43, "§7Refund Mutant", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
-                player,
-                () -> ProgressionGuiApi.handlePrestigeDo(player, "unmutant", "", "effects"),
-                () -> open(player, "effects")));
-        row += 24;
+        Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
+        boolean hasMajin = "true".equalsIgnoreCase(ph.get("majin"));
+        boolean hasMutant = "true".equalsIgnoreCase(ph.get("mutant"));
+        boolean canBuyMajin = "true".equalsIgnoreCase(ph.get("majin_can_buy"));
+        boolean canBuyMutant = "true".equalsIgnoreCase(ph.get("mutant_can_buy"));
+        String cost = ph.getOrDefault("form_cost", "5");
+
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§5Permanent effects",
+                "§7Majin & Mutant · §e" + cost + " §7points · one at a time");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "effects"), 5);
+
+        if (hasMajin) {
+            gui.addLabel(40, "§aPermanent Majin §8· owned", CnpcGuiSupport.COL_L, row + 4, 195, 14);
+        } else if (canBuyMajin) {
+            CnpcGuiSupport.button(gui, 40, "§dBuy Majin", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+                    player,
+                    () -> ProgressionGuiApi.handlePrestigeDo(player, "majin", "", "effects"),
+                    () -> open(player, "effects")));
+        } else {
+            gui.addLabel(40, "§8Buy Majin §7(unpurchase Mutant first)", CnpcGuiSupport.COL_L, row + 4, 195, 14);
+        }
+
+        if (hasMutant) {
+            gui.addLabel(41, "§aPermanent Mutant §8· owned", CnpcGuiSupport.COL_R, row + 4, 195, 14);
+        } else if (canBuyMutant) {
+            CnpcGuiSupport.button(gui, 41, "§dBuy Mutant", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
+                    player,
+                    () -> ProgressionGuiApi.handlePrestigeDo(player, "mutant", "", "effects"),
+                    () -> open(player, "effects")));
+        } else {
+            gui.addLabel(41, "§8Buy Mutant §7(unpurchase Majin first)", CnpcGuiSupport.COL_R, row + 4, 195, 14);
+        }
+        row += CnpcGuiSupport.ROW_STEP;
+
+        if (hasMajin) {
+            CnpcGuiSupport.button(gui, 42, "§cUnpurchase Majin", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+                    player,
+                    () -> ProgressionGuiApi.handlePrestigeDo(player, "unmajin", "", "effects"),
+                    () -> open(player, "effects")));
+        } else if (hasMutant) {
+            CnpcGuiSupport.button(gui, 42, "§cUnpurchase Mutant", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+                    player,
+                    () -> ProgressionGuiApi.handlePrestigeDo(player, "unmutant", "", "effects"),
+                    () -> open(player, "effects")));
+        } else {
+            gui.addLabel(42, "§7Nothing to unpurchase", CnpcGuiSupport.COL_L, row + 4, 195, 14);
+        }
+        row += CnpcGuiSupport.ROW_STEP;
         footer(player, gui, row);
     }
 
     private static void paintCap(ServerPlayer player, ICustomGui gui) {
+        Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
+        int bt = parseInt(ph.get("breakthroughs"), 0);
+        int btMax = parseInt(ph.get("breakthroughs_max"), PrestigePointsSystem.MAX_BREAKTHROUGHS);
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§3Level cap", "§7Breakthrough purchases");
         int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "cap"), 5);
-        CnpcGuiSupport.button(gui, 20, "§aBuy breakthrough", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
-                player,
-                () -> ProgressionGuiApi.handlePrestigeDo(player, "breakthrough", "", "cap"),
-                () -> open(player, "cap")));
+        if (bt >= btMax) {
+            gui.addLabel(20, "§aCap fully raised §8· no more breakthroughs", CnpcGuiSupport.COL_L, row + 4, 400, 14);
+        } else {
+            CnpcGuiSupport.button(gui, 20, "§aBuy breakthrough §7(§e" + ph.getOrDefault("next_breakthrough_cost", "?")
+                    + "§7 pts)", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+                    player,
+                    () -> ProgressionGuiApi.handlePrestigeDo(player, "breakthrough", "", "cap"),
+                    () -> open(player, "cap")));
+        }
         footer(player, gui, row + 28);
     }
 
     private static void paintTiers(ServerPlayer player, ICustomGui gui) {
-        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§6Prestige tiers", "§7Unlock difficulty tiers");
+        Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§6Prestige tiers", "§7Permanent unlocks · T1→T7 ladder");
         int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "tiers"), 4);
         for (int t = 1; t <= 7; t++) {
             int tier = t;
@@ -193,10 +237,21 @@ public final class CnpcLmPrestigeGui {
             if (t > 1 && t % 2 == 1) {
                 row += 24;
             }
-            CnpcGuiSupport.buttonSmall(gui, 50 + t, "§fTier " + tier, col, row, 95, () -> CnpcGuiSupport.act(
-                    player,
-                    () -> ProgressionGuiApi.handlePrestigeDo(player, "tier", String.valueOf(tier), "tiers"),
-                    () -> open(player, "tiers")));
+            boolean owned = "true".equalsIgnoreCase(ph.get("tier_" + t + "_owned"));
+            boolean canBuy = "true".equalsIgnoreCase(ph.get("tier_" + t + "_can_buy"));
+            String label = ph.getOrDefault("tier_" + t + "_label", "T" + t);
+            if (owned) {
+                gui.addLabel(50 + t, "§aT" + tier + " §8· owned", col, row + 4, 95, 14);
+            } else if (canBuy) {
+                CnpcGuiSupport.buttonSmall(gui, 50 + t, "§fBuy T" + tier, col, row, 95, () -> CnpcGuiSupport.act(
+                        player,
+                        () -> ProgressionGuiApi.handlePrestigeDo(player, "tier", String.valueOf(tier), "tiers"),
+                        () -> open(player, "tiers")));
+            } else {
+                int prev = tier - 1;
+                String hint = tier > 1 ? "§8Buy T" + prev + " first" : "§8Unavailable";
+                gui.addLabel(50 + t, "§7T" + tier + " " + label + " §8· " + hint, col, row + 2, 195, 12);
+            }
         }
         row += 36;
         footer(player, gui, row);

@@ -313,12 +313,16 @@ public final class CmiPrestigeGui {
             majin.addLore(GuiTooltips.buttonLore("prestige.effects.majin_owned",
                     List.of("&aOwned", "&aPermanent purchase &8· only one at a time"), costVars, null));
             gui.addButton(majin);
+        } else if (hasMutant) {
+            CMIGuiButton majin = new CMIGuiButton(20, Material.GRAY_DYE,
+                    GuiTooltips.name("prestige.effects.majin_locked", "&8Buy Permanent Majin"));
+            majin.lockField();
+            majin.addLore(GuiTooltips.buttonLore("prestige.effects.majin_locked",
+                    List.of("&7Unpurchase Mutant first", "&cNo refund on unpurchase"), costVars, null));
+            gui.addButton(majin);
         } else {
             List<String> majinDefaults = new ArrayList<>();
             majinDefaults.add("&7Cost: &e{cost} &7points");
-            if (hasMutant) {
-                majinDefaults.add("&8Buying removes Mutant (no refund)");
-            }
             majinDefaults.add("&aPermanent purchase &8· only one at a time");
             CMIGuiButton majin = new CMIGuiButton(20, Material.PINK_DYE,
                     GuiTooltips.name("prestige.effects.majin", "&dBuy Permanent Majin", costVars));
@@ -335,12 +339,16 @@ public final class CmiPrestigeGui {
             mutant.addLore(GuiTooltips.buttonLore("prestige.effects.mutant_owned",
                     List.of("&aOwned", "&aPermanent purchase &8· only one at a time"), costVars, null));
             gui.addButton(mutant);
+        } else if (hasMajin) {
+            CMIGuiButton mutant = new CMIGuiButton(22, Material.GRAY_DYE,
+                    GuiTooltips.name("prestige.effects.mutant_locked", "&8Buy Permanent Mutant"));
+            mutant.lockField();
+            mutant.addLore(GuiTooltips.buttonLore("prestige.effects.mutant_locked",
+                    List.of("&7Unpurchase Majin first", "&cNo refund on unpurchase"), costVars, null));
+            gui.addButton(mutant);
         } else {
             List<String> mutantDefaults = new ArrayList<>();
             mutantDefaults.add("&7Cost: &e{cost} &7points");
-            if (hasMajin) {
-                mutantDefaults.add("&8Buying removes Majin (no refund)");
-            }
             mutantDefaults.add("&aPermanent purchase &8· only one at a time");
             CMIGuiButton mutant = new CMIGuiButton(22, Material.SLIME_BALL,
                     GuiTooltips.name("prestige.effects.mutant", "&aBuy Permanent Mutant", costVars));
