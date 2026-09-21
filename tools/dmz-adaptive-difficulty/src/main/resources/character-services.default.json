@@ -53,6 +53,7 @@
     "lockClassDuringEditor": true
   },
   "headBoneShop": {
+    "persistThroughForms": true,
     "enabled": true,
     "defaultUnlockCostCopper": 100000,
     "levelCostMultiplier": true,

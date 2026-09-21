@@ -6,6 +6,9 @@ import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
+import com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi;
+import com.dbzlegacy.adaptivedifficulty.gui.ProgressionMenu;
+import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
 import com.dbzlegacy.adaptivedifficulty.team.TeamScaling;
@@ -46,6 +49,7 @@ public final class DifficultyActions {
     public static final String ACT_TOGGLE_PERSONAL = "toggle_personal";
     public static final String ACT_TOGGLE_COIN_CHAT = "toggle_coin_chat";
     public static final String ACT_TOGGLE_TITLE_SENSE = "toggle_title_sense";
+    public static final String ACT_TOGGLE_STAFF_FREE_COINS = "toggle_staff_free_coins";
     public static final String ACT_SUMMON_END_DRAGON = "summon_end_dragon";
     public static final String ACT_END_DRAGON = "end_dragon";
 
@@ -267,6 +271,10 @@ public final class DifficultyActions {
                 || "toggle_sense".equals(act) || "sense_chat".equals(act)) {
             return toggleTitleSense(player, page);
         }
+        if (ACT_TOGGLE_STAFF_FREE_COINS.equals(act) || "staff_free_coins".equals(act)
+                || "stafffree".equals(act) || "staff_free".equals(act)) {
+            return toggleStaffFreeCoins(player, arg, page);
+        }
         if (ACT_SUMMON_END_DRAGON.equals(act) || ACT_END_DRAGON.equals(act)
                 || "summon_dragon".equals(act) || "dragon_summon".equals(act)) {
             return summonEndDragon(player, page);
@@ -399,6 +407,19 @@ public final class DifficultyActions {
                 : "Title Sense OFF — recognition chat muted.");
     }
 
+    private static Result toggleStaffFreeCoins(ServerPlayer player, String arg, String page) {
+        String toggleArg = arg;
+        if (toggleArg == null || toggleArg.isBlank() || "0".equals(toggleArg.trim())) {
+            toggleArg = "";
+        }
+        String msg = ProgressionGuiApi.toggleStaffFreeAncientCoinCosts(player, toggleArg);
+        if (msg.startsWith("§c")) {
+            return Result.fail(msg.replace("§c", ""));
+        }
+        ProgressionMenu.open(player, "economy");
+        return Result.ok(msg.replaceAll("§.", ""));
+    }
+
     private static Result summonEndDragon(ServerPlayer player, String page) {
         String returnPage = page == null || page.isBlank() ? "main" : page;
         String msg = com.dbzlegacy.adaptivedifficulty.progression.end.EndDimensionStrength
@@ -495,18 +516,20 @@ public final class DifficultyActions {
         }
 
         long cost = AncientCoinEconomy.activationCost(tier, player);
-        String costText = AncientCoinEconomy.formatExactCost(cost);
+        boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
+        long charge = free ? 0L : cost;
+        String costText = free ? "free (staff)" : AncientCoinEconomy.formatExactCost(cost);
         if (!canPersist(player)) {
             openGui(player, returnPage);
             return Result.fail("Could not save difficulty data — purchase cancelled (try relogging).");
         }
-        if (!AncientCoinEconomy.canAfford(player, cost)) {
+        if (charge > 0L && !AncientCoinEconomy.canAfford(player, charge)) {
             openGui(player, returnPage);
-            return Result.fail(AncientCoinEconomy.missingText(player, cost));
+            return Result.fail(AncientCoinEconomy.missingText(player, charge));
         }
-        if (!AncientCoinEconomy.charge(player, cost)) {
+        if (charge > 0L && !AncientCoinEconomy.charge(player, charge)) {
             openGui(player, returnPage);
-            return Result.fail(AncientCoinEconomy.missingText(player, cost));
+            return Result.fail(AncientCoinEconomy.missingText(player, charge));
         }
         applyTier(data, player, tier);
         TitleSystem.syncTierTitles(player, true);

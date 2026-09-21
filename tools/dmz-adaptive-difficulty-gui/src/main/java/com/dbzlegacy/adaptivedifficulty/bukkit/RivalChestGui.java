@@ -35,10 +35,7 @@ public final class RivalChestGui implements Listener {
     }
 
     private static String invTitle(Player viewer, Player subject, String base) {
-        if (inspecting(viewer, subject)) {
-            return color(base + " · &c" + subject.getName());
-        }
-        return color(base);
+        return GuiNav.inventoryTitle(viewer, subject, base);
     }
 
     public void open(Player player, String page) {
@@ -142,7 +139,7 @@ public final class RivalChestGui implements Listener {
                 tpOn ? Material.BELL : Material.GRAY_DYE,
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 List.of(
-                        tpOn ? "&7Click to mute rival TP messages8Hides rival TP chat messages" : "&7Click to show rival TP messages8Shows rival TP chat messages again",
+                        tpOn ? "&8Hides rival TP chat messages" : "&8Shows rival TP chat messages again",
                         "&8Only affects rivalry TP chat"
                 )), SlotAction.act("tpmsg", "toggle", "main"));
 
@@ -154,7 +151,7 @@ public final class RivalChestGui implements Listener {
                     instinctOn ? Material.LIME_DYE : Material.GRAY_DYE,
                     instinctOn ? "&aInstinct ON" : "&8Instinct OFF",
                     List.of(
-                            instinctOn ? "&7Click to disable Rival Instinct8Turns rival proximity alerts off" : "&7Click to enable Rival Instinct8Turns rival proximity alerts on",
+                            instinctOn ? "&8Turns rival proximity alerts off" : "&8Turns rival proximity alerts on",
                             "&8Alerts for mutual / nemesis rivals"
                     )), SlotAction.act("instinct", "toggle", "main"));
         }
@@ -370,6 +367,7 @@ public final class RivalChestGui implements Listener {
                 "&7Previous rivals"), SlotAction.page("history"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -385,7 +383,7 @@ public final class RivalChestGui implements Listener {
         pendingHeader.add("");
         pendingHeader.add(invites.isEmpty() ? "&7No pending declares." : "&7" + invites.size() + " pending");
         pendingHeader.addAll(GuiBoardHelper.tips(viewer,
-                "&a◀ Incoming &7= click to Accept / Decline",
+                "&a◀ Incoming &7— tap to accept or decline",
                 "&6▶ Outgoing &7= waiting on them"));
         put(holder, inv, 4, item(Material.YELLOW_DYE, "&e&lPending Invites", pendingHeader));
         if (invites.isEmpty()) {
@@ -409,6 +407,7 @@ public final class RivalChestGui implements Listener {
                 "&7Full actions menu"), SlotAction.page("actions"));
         put(holder, inv, 36, pageBtn(viewer, "rival.pending.back", Material.ARROW, "&7Back", "&7Actions"),
                 SlotAction.page("actions"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -461,6 +460,7 @@ public final class RivalChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "rival.pending.decide_back", Material.ARROW, "&7Back",
                 "&7Pending invites"), SlotAction.page("pending"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -525,6 +525,7 @@ public final class RivalChestGui implements Listener {
                 "&7Back to current rivals"), SlotAction.page("list"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -556,6 +557,7 @@ public final class RivalChestGui implements Listener {
                 "&7Current rivals"), SlotAction.page("list"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -585,6 +587,7 @@ public final class RivalChestGui implements Listener {
                 SlotAction.act("spectate_stop", "0", "challenge"));
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -618,6 +621,7 @@ public final class RivalChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("challenge"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -682,6 +686,7 @@ public final class RivalChestGui implements Listener {
 
         put(holder, inv, 36, pageBtn(viewer, "rival.challenge.back_picker", Material.ARROW, "&7Back",
                 "&7Pick another player"), SlotAction.page("pick_challenge"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -714,6 +719,7 @@ public final class RivalChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page(backPage));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -759,6 +765,7 @@ public final class RivalChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page(backPage));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -814,6 +821,7 @@ public final class RivalChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Pending"),
                 SlotAction.page("pending"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -886,6 +894,7 @@ public final class RivalChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page(backPage));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -906,6 +915,8 @@ public final class RivalChestGui implements Listener {
         if ("true".equalsIgnoreCase(ph.getOrDefault("challengeActive", "false"))) {
             lore.add("&eChallenge active");
         }
+        lore.add("");
+        GuiBoardHelper.addOverhaulCombat(lore, ph);
         if (ForgeBridge.isStaff(player)) {
             lore.add("");
             lore.add("&8List · Actions · Challenge · Top · Progress");
@@ -987,12 +998,17 @@ public final class RivalChestGui implements Listener {
                 ? "main" : slotAction.returnPage;
         final String action = slotAction.action;
         final String arg = slotAction.arg == null || slotAction.arg.isBlank() ? "0" : slotAction.arg;
-        final Player subject = AdminInspectSessions.resolveSubject(player);
+        final Player actor = AdminInspectSessions.resolveActor(player, action);
         Bukkit.getScheduler().runTask(plugin, () -> {
-            String msg = ForgeBridge.rivalHandleDo(subject, action, arg, ret);
+            String msg = ForgeBridge.rivalHandleDo(actor, action, arg, ret);
             if (msg != null && !msg.isBlank()) {
-                GuiChat.sendResult(player, msg);
+                if ("admin".equalsIgnoreCase(action)) {
+                    GuiChat.sendChatResult(player, msg);
+                } else {
+                    GuiChat.sendResult(player, msg);
+                }
             }
+            final Player subject = AdminInspectSessions.resolveSubject(player);
             String reopen = ret;
             if (("accept".equalsIgnoreCase(action) || "accept_replace".equalsIgnoreCase(action))
                     && ForgeBridge.rivalNeedsMutualReplace(subject)) {
@@ -1086,11 +1102,11 @@ public final class RivalChestGui implements Listener {
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.COMPASS, "&7« Hub", List.of());
+        return GuiNav.hubItem();
     }
 
     private static ItemStack closeBtn() {
-        return item(Material.BARRIER, "&cClose", List.of());
+        return GuiNav.closeItem();
     }
 
     private static ItemStack item(Material mat, String name, List<String> lore) {

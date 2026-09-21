@@ -59,6 +59,16 @@ public final class ProgressionSystem {
             LmTips.onLogin(player);
         } catch (Throwable ignored) {
         }
+        try {
+            PersonalLevelCapMirror.publish(player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            com.dragonminez.common.stats.StatsData data =
+                    com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.stats(player);
+            DmzResourcePoolClamp.clampAndSync(player, data);
+        } catch (Throwable ignored) {
+        }
     }
 
     public static void onLogout(ServerPlayer player) {
@@ -151,6 +161,29 @@ public final class ProgressionSystem {
                 try {
                     SpiritualistKiControl.pulse(player, now);
                 } catch (Throwable ignored) {
+                }
+                if (tick % 20 == 0) {
+                    try {
+                        com.dbzlegacy.adaptivedifficulty.progression.bridge.OverhaulPrestigeResourceScale
+                                .pulse(player);
+                    } catch (Throwable ignored) {
+                    }
+                    try {
+                        com.dragonminez.common.stats.StatsData data =
+                                com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.stats(player);
+                        DmzResourcePoolClamp.clampAndSync(player, data);
+                    } catch (Throwable ignored) {
+                    }
+                }
+                try {
+                    StaminaRegenGuard.pulse(player);
+                } catch (Throwable ignored) {
+                }
+                if (tick % 200 == 0) {
+                    try {
+                        PersonalLevelCapMirror.publish(player);
+                    } catch (Throwable ignored) {
+                    }
                 }
             }
         }
@@ -339,6 +372,8 @@ public final class ProgressionSystem {
             case "statchecker", "playerstatchecker", "enableplayerstatchecker" -> cfg.enablePlayerStatChecker = on;
             case "skills", "skillunlock", "enableskillunlockservice" -> cfg.enableSkillUnlockService = on;
             case "prestige", "enableprestigesystem" -> cfg.enablePrestigeSystem = on;
+            case "overhaulprestige", "overhaului", "enableoverhaulprestigeintegration" ->
+                    cfg.enableOverhaulPrestigeIntegration = on;
             case "fabled", "enablefabledbridge" -> cfg.enableFabledBridge = on;
             case "energy", "energymana", "enableenergymanasync" -> cfg.enableEnergyManaSync = on;
             case "statscreen", "stats", "enablestatscreensync" -> cfg.enableStatScreenSync = on;

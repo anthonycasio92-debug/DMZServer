@@ -1,8 +1,8 @@
 package com.dbzlegacy.adaptivedifficulty.character;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.ClassPermissionSync;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceClassSync;
+import com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceSkillSync;
 import com.dragonminez.common.network.NetworkHandler;
 import com.dragonminez.common.network.S2C.ProgressionSyncS2C;
@@ -52,6 +52,16 @@ public final class RaceChangeCreationFlow {
         return session(player) != null;
     }
 
+    public static String targetRaceId(ServerPlayer player) {
+        Session session = session(player);
+        return session == null ? "" : session.targetRaceId;
+    }
+
+    public static String priorFightingClass(ServerPlayer player) {
+        Session session = session(player);
+        return session == null ? "" : session.priorFightingClass;
+    }
+
     public static void clear(ServerPlayer player) {
         if (player != null) {
             ACTIVE.remove(player.m_20148_());
@@ -68,7 +78,9 @@ public final class RaceChangeCreationFlow {
             ch.setRace(targetRaceId);
             Session session = session(player);
             String priorClass = session == null ? "" : session.priorFightingClass;
-            String mapped = RaceChangeClassMapper.resolveClassForRace(priorClass, targetRaceId);
+            String mapped =
+                    RaceChangeClassMapper.resolveClassForRaceAfterChange(
+                            ch.getCharacterClass(), priorClass, targetRaceId);
             try {
                 ch.setCharacterClass(mapped);
             } catch (Throwable ignored) {
@@ -88,6 +100,7 @@ public final class RaceChangeCreationFlow {
             data.updateTransformationSkillLimits(targetRaceId);
         } catch (Throwable ignored) {
         }
+        AndroidConversion.stripIfRaceIneligible(player, targetRaceId);
         clearSagaDifficultyGate(player, data);
     }
 
@@ -123,19 +136,23 @@ public final class RaceChangeCreationFlow {
         }
         ACTIVE.remove(player.m_20148_());
         String race = session.targetRaceId;
-        try {
-            Character ch = DmzProgression.character(player);
-            if (ch != null && race != null && !race.isBlank()) {
-                String current = ch.getRace();
-                if (current == null || current.isBlank()) {
+        StatsData data = DmzProgression.stats(player);
+        if (data != null && race != null && !race.isBlank()) {
+            String picked = DmzProgression.fightingClass(player);
+            float[] snap = DmzClassChangeCapture.take(player);
+            DmzCharacterClassChangeHooks.onServicesRaceChangeApplied(
+                    player, data, race, picked, snap, true, session.priorFightingClass);
+        } else {
+            try {
+                Character ch = DmzProgression.character(player);
+                if (ch != null && race != null && !race.isBlank()) {
                     ch.setRace(race);
                 }
+            } catch (Throwable ignored) {
             }
-        } catch (Throwable ignored) {
         }
         RaceSkillSync.sync(player, race);
         RaceClassSync.sync(player);
-        ClassPermissionSync.sync(player);
         if (session.keepHeadBone != null && !session.keepHeadBone.isBlank()) {
             CosmeticHeadBoneService.reapplyHeadBoneAfterRaceChange(player, session.keepHeadBone);
         }

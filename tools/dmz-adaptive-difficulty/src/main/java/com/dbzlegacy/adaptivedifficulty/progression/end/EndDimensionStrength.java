@@ -2,10 +2,13 @@ package com.dbzlegacy.adaptivedifficulty.progression.end;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
+import com.dbzlegacy.adaptivedifficulty.calc.CombatRating;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
+import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.scaling.MobScaling;
@@ -767,12 +770,14 @@ public final class EndDimensionStrength {
                     + " §8· AD T" + Math.max(0, PersistentDataAccess.getLong(owned, NBT_AD_TIER, tier));
         }
         long cost = summonCopperCost();
-        String costText = AncientCoinEconomy.formatExactCost(cost);
-        if (!AncientCoinEconomy.canAfford(player, cost)) {
-            return AncientCoinEconomy.missingText(player, cost);
+        boolean free = PaidFeatureAccess.bypassAncientCoinCost(player);
+        long charge = free ? 0L : cost;
+        String costText = free ? "free (staff)" : AncientCoinEconomy.formatExactCost(cost);
+        if (charge > 0L && !AncientCoinEconomy.canAfford(player, charge)) {
+            return AncientCoinEconomy.missingText(player, charge);
         }
-        if (!AncientCoinEconomy.charge(player, cost)) {
-            return AncientCoinEconomy.missingText(player, cost);
+        if (charge > 0L && !AncientCoinEconomy.charge(player, charge)) {
+            return AncientCoinEconomy.missingText(player, charge);
         }
         msg(player, "§7[The End] Spawning Ender Dragon near you (T" + tier + " AD)…");
         PlayerPower power = adScaledPower(player);
@@ -808,7 +813,8 @@ public final class EndDimensionStrength {
     /** Short GUI tip for the summon button. */
     public static String summonRequirementTip(ServerPlayer player) {
         long cost = summonCopperCost();
-        String costText = AncientCoinEconomy.formatExactCost(cost);
+        boolean free = player != null && PaidFeatureAccess.bypassAncientCoinCost(player);
+        String costText = free ? "free (staff)" : AncientCoinEconomy.formatExactCost(cost);
         if (player == null) {
             return "T4–T7 ON · " + costText;
         }
@@ -2634,22 +2640,19 @@ public final class EndDimensionStrength {
         } catch (Throwable ignored) {
         }
         try {
-            out.bp = Math.max(0.0, data.getBattlePowerExact());
-            if (!(out.bp > 0)) {
-                out.bp = Math.max(0.0, data.getBattlePower());
-            }
+            out.bp = Math.max(0.0, CombatRating.safeBattlePower(player));
         } catch (Throwable ignored) {
         }
         try {
-            out.melee = Math.max(0.0, data.getMeleeDamage());
+            out.melee = LmOverhaulScaledCombat.melee(data);
         } catch (Throwable ignored) {
         }
         try {
-            out.maxHp = Math.max(20.0, data.getMaxHealth());
+            out.maxHp = LmOverhaulScaledCombat.health(data);
         } catch (Throwable ignored) {
         }
         try {
-            out.defense = Math.max(0.0, data.getDefense());
+            out.defense = LmOverhaulScaledCombat.defense(data);
         } catch (Throwable ignored) {
         }
         return out;

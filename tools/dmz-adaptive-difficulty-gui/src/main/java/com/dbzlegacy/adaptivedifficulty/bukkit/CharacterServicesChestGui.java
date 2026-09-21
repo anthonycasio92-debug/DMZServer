@@ -62,10 +62,7 @@ public final class CharacterServicesChestGui implements Listener {
     }
 
     private static String invTitle(Player viewer, Player subject, String base) {
-        if (inspecting(viewer, subject)) {
-            return color(base + " · &c" + subject.getName());
-        }
-        return color(base);
+        return GuiNav.inventoryTitle(viewer, subject, base);
     }
 
     private Inventory main(Player viewer, Player subject) {
@@ -85,7 +82,7 @@ public final class CharacterServicesChestGui implements Listener {
         boolean enabled = bridgeOk && "true".equalsIgnoreCase(ph.getOrDefault("enabled", "false"));
         if (!bridgeOk || !enabled) {
             putProfile(holder, inv, "&c&lUNAVAILABLE",
-                    List.of("", bridgeOk ? "&cCharacter Services are turned off" : "&cLegacyMechanics mod unreachable"));
+                    List.of("", bridgeOk ? "&cCharacter Services are off right now" : "&cCan't reach Legacy Mechanics on the server"));
             footer45(holder, inv, "character.main.back_hub", SlotAction.cmd("lmdo lm open hub"));
             return inv;
         }
@@ -94,18 +91,18 @@ public final class CharacterServicesChestGui implements Listener {
                 profileLore(subject, vars));
 
         putServiceEntry(holder, inv, 20, "character.main.race", Material.NETHER_STAR, "&eChange Race",
-                List.of("&7Pick a new race and how much progress to keep",
-                        "&8{race_cooldown}", "&eClick to continue"),
+                List.of("&7Choose a race and how much progress to keep",
+                        "&8{race_cooldown}", "&eContinue"),
                 vars, ph, "race_enabled", "can_race_change", "race");
         putServiceEntry(holder, inv, 22, "character.main.class", Material.ENCHANTED_BOOK, "&bChange Class",
-                List.of("&7Swap fighting class — base stats stay",
+                List.of("&7Change fighting class — your core stats stay",
                         "&7Cost &f{class_cost}",
-                        "&8{class_cooldown}", "&eClick to continue"),
+                        "&8{class_cooldown}", "&eContinue"),
                 vars, ph, "class_enabled", "can_class_change", "class");
         putServiceEntry(holder, inv, 24, "character.main.reskin", Material.AMETHYST_CLUSTER, "&dReskin",
-                List.of("&7Cosmetic look & head parts",
+                List.of("&7Change how you look and your head parts",
                         "&7Cost &f{reskin_cost}",
-                        "&8{reskin_cooldown}", "&eClick to continue"),
+                        "&8{reskin_cooldown}", "&eContinue"),
                 vars, ph, "reskin_enabled", "can_reskin", "reskin");
 
         footer45(holder, inv, "character.main.back_hub", SlotAction.cmd("lmdo lm open hub"));
@@ -119,7 +116,7 @@ public final class CharacterServicesChestGui implements Listener {
         lore.addAll(coinLore(ph));
         lore.add("&7Race &f" + vars.getOrDefault("race", "?")
                 + " &8· &7Class &f" + vars.getOrDefault("class", "?"));
-        lore.add("&8Pay-up OK · change returned");
+        lore.add("&8Cancel from the editor and you get a refund");
         lore.addAll(toAmp(ForgeBridge.charLines(subject, "main")));
         return lore;
     }
@@ -148,7 +145,7 @@ public final class CharacterServicesChestGui implements Listener {
         Map<String, String> ph = ForgeBridge.charPlaceholders(subject);
         if (!serviceAllowed(ph, "race_enabled", "can_race_change")) {
             put(holder, inv, 22, item(Material.BARRIER, "&cRace change unavailable",
-                    List.of("", "&7Turned off or no permission", "&7Return with Back")));
+                    List.of("", "&7Not available right now", "&7Use Back to return")));
             footer54(holder, inv, "character.race.back", SlotAction.page("main"));
             return inv;
         }
@@ -200,8 +197,8 @@ public final class CharacterServicesChestGui implements Listener {
             Material mat = selected ? Material.LIME_CONCRETE : Material.GRAY_CONCRETE;
             String title = pct == 0 ? (selected ? "&a&l0% — Free" : "&e&l0% — Free") : (selected ? "&a" : "&f") + pct + "%";
             List<String> btnLore = pct == 0
-                    ? List.of("&7Full wipe, then pick class & look", "&aFree for everyone", "&eClick to review")
-                    : List.of("&7Keep " + pct + "% of core stats", "&eClick to review");
+                    ? List.of("&7Full wipe, then pick class and look", "&aFree for everyone", "&eReview next")
+                    : List.of("&7Keep " + pct + "% of your core stats", "&eReview next");
             put(holder, inv, slots[i], item(mat, title,
                     GuiTooltips.buttonLore("character.race_pct.pct", btnLore, pctVars, null)),
                     SlotAction.page("race_confirm:" + race + ":" + pct));
@@ -223,8 +220,8 @@ public final class CharacterServicesChestGui implements Listener {
                 GuiTooltips.name("character.race_confirm.header", "&c&lLast Chance"), summary));
         boolean freeWipe = "0".equals(pct.trim());
         List<String> confirmLore = freeWipe
-                ? List.of("&7Free full wipe + class & look setup", "&eClick to continue")
-                : List.of("&7Pay and switch races", "&eClick to confirm");
+                ? List.of("&7Free full wipe, then pick class and look", "&eContinue")
+                : List.of("&7Pay the listed cost to change race", "&eConfirm when you're ready");
         SlotAction confirmAction = freeWipe
                 ? SlotAction.actNoReopen("race_confirm", race + ":" + pct)
                 : SlotAction.act("race_confirm", race + ":" + pct, "main");
@@ -278,7 +275,7 @@ public final class CharacterServicesChestGui implements Listener {
                 GuiTooltips.name("character.class_confirm.header", "&c&lConfirm Class Change"),
                 prependBlank(toAmp(ForgeBridge.charLines(subject, "class_confirm:" + classId)))));
         put(holder, inv, 20, tipBtn("character.class_confirm.confirm", Material.LIME_CONCRETE, "&a&lConfirm",
-                List.of("&7Pay and switch class", "&eClick to confirm"), null),
+                List.of("&7Pay the listed cost to change class", "&eConfirm when you're ready"), null),
                 SlotAction.act("class_confirm", classId, "main"));
         put(holder, inv, 24, tipBtn("character.class_confirm.cancel", Material.RED_CONCRETE, "&cCancel",
                 List.of("&7Go back without paying"), null),
@@ -327,14 +324,14 @@ public final class CharacterServicesChestGui implements Listener {
                     mat = Material.LIGHT_BLUE_CONCRETE;
                     title = "&f" + name;
                     lore.add(state.equals("N") ? "&7Included with your race" : "&7Unlocked");
-                    lore.add("&eClick to equip");
+                    lore.add("&eEquip");
                     action = SlotAction.act("bone_equip", id, pageKey);
                 }
                 default -> {
                     mat = Material.GOLD_INGOT;
                     title = "&e" + name;
                     lore.add("&7Unlock for &f" + (cost.isBlank() ? "?" : cost));
-                    lore.add("&eClick to unlock & equip");
+                    lore.add("&eUnlock and equip");
                     action = SlotAction.act("bone_unlock", id, pageKey);
                 }
             }
@@ -398,7 +395,7 @@ public final class CharacterServicesChestGui implements Listener {
         if (serviceAllowed(ph, "reskin_enabled", "can_reskin")) {
             put(holder, inv, 20, tipBtn("character.reskin.open", Material.LIME_CONCRETE, "&a&lPay & Open Appearance",
                     List.of("&7Cost &f{reskin_cost}", "&7Opens the in-game look editor",
-                            "&8Pay-up OK · change returned", "&eClick to pay and open"), vars),
+                            "&8Cancel from the editor and you get a refund", "&ePay, then open the editor"), vars),
                     SlotAction.actNoReopen("reskin_confirm", "0"));
         } else {
             put(holder, inv, 20, item(Material.GRAY_CONCRETE, "&7Reskin unavailable",
@@ -408,7 +405,7 @@ public final class CharacterServicesChestGui implements Listener {
             put(holder, inv, 24, tipBtn("character.reskin.bones", Material.PLAYER_HEAD, "&6&lHead Parts Shop",
                     List.of("&7Unlock & equip cross-race ears, horns, etc.",
                             "&7Equipped &f{active_head_bone}",
-                            "&eClick to browse"), vars),
+                            "&eBrowse head parts"), vars),
                     SlotAction.page("bones"));
         }
         footer45(holder, inv, "character.reskin.back", SlotAction.page("main"));
@@ -464,13 +461,13 @@ public final class CharacterServicesChestGui implements Listener {
     }
 
     private void footer45(Holder holder, Inventory inv, String backKey, SlotAction backAction) {
-        put(holder, inv, 36, pageBtn(backKey, Material.ARROW, "&7« Back", null), backAction);
+        put(holder, inv, 36, pageBtn("common.back", Material.ARROW, "&7Back", null), backAction);
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn("character.main.close"), SlotAction.dismiss());
     }
 
     private void footer54(Holder holder, Inventory inv, String backKey, SlotAction backAction) {
-        put(holder, inv, 45, pageBtn(backKey, Material.ARROW, "&7« Back", null), backAction);
+        put(holder, inv, 45, pageBtn("common.back", Material.ARROW, "&7Back", null), backAction);
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 53, closeBtn("character.main.close"), SlotAction.dismiss());
     }
@@ -656,7 +653,7 @@ public final class CharacterServicesChestGui implements Listener {
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.COMPASS, "&7« Hub", List.of());
+        return GuiNav.hubItem();
     }
 
     private static ItemStack closeBtn(String key) {

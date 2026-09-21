@@ -21,6 +21,19 @@ public final class AttrMultiBonus {
 
     private AttrMultiBonus() {}
 
+    /** Strip live “Prestige Bonus” rows when the bridge is disabled. */
+    public static void clearIfPresent(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        StatsData dmz = DmzProgression.stats(player);
+        if (dmz == null || dmz.getBonusStats() == null) {
+            return;
+        }
+        clearAllNamedBonuses(dmz.getBonusStats());
+        pushSync(player);
+    }
+
     public static void sync(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableAttrMultiBonus) {
             return;

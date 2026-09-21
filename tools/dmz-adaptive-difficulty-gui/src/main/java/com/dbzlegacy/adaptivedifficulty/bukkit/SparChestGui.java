@@ -35,10 +35,7 @@ public final class SparChestGui implements Listener {
     }
 
     private static String invTitle(Player viewer, Player subject, String base) {
-        if (inspecting(viewer, subject)) {
-            return color(base + " · &c" + subject.getName());
-        }
-        return color(base);
+        return GuiNav.inventoryTitle(viewer, subject, base);
     }
 
     public void open(Player player, String page) {
@@ -141,11 +138,11 @@ public final class SparChestGui implements Listener {
                 mentorTpOn ? Material.EMERALD : Material.GRAY_DYE,
                 mentorTpOn ? "&aMentor TP ON" : "&8Mentor TP OFF",
                 List.of(
-                        mentorTpOn ? "&7Click to mute mentor share TP chat"
-                                : "&7Click to show apprentice share TP in chat",
+                        mentorTpOn ? "&8Hides mentor share TP in chat"
+                                : "&8Shows apprentice share TP in chat again",
                         "&8When your dojo earns TP from spars",
                         "",
-                        "&eClick to toggle8Click to switch"
+                        "&eSelect to switch"
                 )), SlotAction.act("mentor_tpmsg", "toggle", "main"));
 
         boolean tpOn = "true".equalsIgnoreCase(ph.getOrDefault("tpMsg", "true"));
@@ -154,11 +151,11 @@ public final class SparChestGui implements Listener {
                 tpOn ? Material.BELL : Material.GRAY_DYE,
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 List.of(
-                        tpOn ? "&7Click to mute spar TP chat" : "&7Click to show spar TP chat while fighting",
+                        tpOn ? "&8Hides spar TP in chat" : "&8Shows spar TP in chat while fighting",
                         "&8Players: +TP (style)",
                         "&8Staff: full bonus / stack detail",
                         "",
-                        "&eClick to toggle8Click to switch"
+                        "&eSelect to switch"
                 )), SlotAction.act("tpmsg", "toggle", "main"));
 
         boolean session = "true".equalsIgnoreCase(ph.getOrDefault("sessionActive", "false"));
@@ -256,7 +253,7 @@ public final class SparChestGui implements Listener {
         boolean isMaster = "true".equalsIgnoreCase(ph.getOrDefault("dojo_master", "false"));
         int rowCount = !dojoCards.isEmpty() ? dojoCards.size() : entries.size();
         if (rowCount == 0) {
-            put(holder, inv, 13, tipBtn(viewer, "spar.empty.no_dojo_rank", Material.BARRIER,
+            put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_dojo_rank", Material.BARRIER,
                     "&7No dojo data yet",
                     List.of("&7Join a dojo and spar rivals", "&8from other dojos")));
         } else {
@@ -278,12 +275,12 @@ public final class SparChestGui implements Listener {
             put(holder, inv, 19, pageBtn(viewer, "spar.dojo.war", Material.DIAMOND_SWORD,
                     warPending > 0 ? "&cDojo War &f(" + warPending + ")" : "&cDojo War",
                     "&7Declare · pending · banner",
-                    warPending > 0 ? "&ePending wars — click to respond" : "&8Same layout as Mentor Actions"),
+                    warPending > 0 ? "&ePending wars &8— tap to respond" : "&8Same layout as Mentor Actions"),
                     SlotAction.page("dojo_war"));
         }
-        put(holder, inv, 30, pageBtn(viewer, "spar.dojo.members", Material.PLAYER_HEAD, "&bMembers",
+        put(holder, inv, 28, pageBtn(viewer, "spar.dojo.members", Material.PLAYER_HEAD, "&bMembers",
                 "&7Season contributions"), SlotAction.page("dojo_members"));
-        put(holder, inv, 32, pageBtn(viewer, "spar.dojo.hof", Material.GOLD_BLOCK, "&6Hall of Fame",
+        put(holder, inv, 34, pageBtn(viewer, "spar.dojo.hof", Material.GOLD_BLOCK, "&6Hall of Fame",
                 "&7Past season champions"), SlotAction.page("dojo_hof"));
         Material rpMat = "rp".equals(cat) ? Material.GOLD_BLOCK : Material.GOLD_INGOT;
         Material winsMat = "wins".equals(cat) || "win".equals(cat) ? Material.DIAMOND_SWORD : Material.IRON_SWORD;
@@ -426,6 +423,7 @@ public final class SparChestGui implements Listener {
                 SlotAction.act("dojo_decline", "0", "dojo_war_pending"));
         put(holder, inv, 36, pageBtn(viewer, "spar.dojo.war_decide_back", Material.ARROW, "&7Back",
                 "&7Pending wars"), SlotAction.page("dojo_war_pending"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -496,6 +494,7 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo War"),
                 SlotAction.page("dojo_war"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -572,12 +571,13 @@ public final class SparChestGui implements Listener {
             put(holder, inv, slots[i], item(mat,
                     GuiTooltips.name("spar.dojo.banner_pick", "&f" + label, bannerVars),
                     GuiTooltips.buttonLore("spar.dojo.banner_pick",
-                            List.of("&7Use this banner for your dojo", "", "&eClick to apply8Set as your dojo banner"),
+                            List.of("&7Use this banner for your dojo", "", "&eUse this banner"),
                             bannerVars, null)),
                     SlotAction.act("dojo_banner", banners[i], "dojo_war"));
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Dojo War"),
                 SlotAction.page("dojo_war"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -668,7 +668,7 @@ public final class SparChestGui implements Listener {
         put(holder, inv, 21, pageBtn(viewer, "spar.mentor.pending", Material.CLOCK,
                 pendingCount > 0 ? "&ePending &f(" + pendingCount + ")" : "&ePending",
                 "&7Incoming + outgoing invites",
-                pendingCount > 0 ? "&aClick to Accept / Decline" : "&8No pending invites"),
+                pendingCount > 0 ? "&8Tap to accept or decline" : "&8No pending invites"),
                 SlotAction.page("pending"));
         boolean hasMentor = "true".equalsIgnoreCase(ph.getOrDefault("has_mentor", "false"));
         boolean hasApprentice = "true".equalsIgnoreCase(ph.getOrDefault("has_apprentice", "false"));
@@ -729,6 +729,7 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -744,8 +745,8 @@ public final class SparChestGui implements Listener {
         pendingHeader.add("");
         pendingHeader.add(invites.isEmpty() ? "&7No pending invites." : "&7" + invites.size() + " pending");
         pendingHeader.addAll(GuiBoardHelper.tips(viewer,
-                "&a◀ Incoming &7= click to Accept / Decline",
-                "&6▶ Outgoing &7= click to cancel"));
+                "&a◀ Incoming &7— tap to accept or decline",
+                "&6▶ Outgoing &7— tap to cancel"));
         put(holder, inv, 4, item(Material.YELLOW_DYE, "&e&lPending Invites", pendingHeader));
         if (invites.isEmpty()) {
             put(holder, inv, 22, tipBtn(viewer, "spar.empty.no_pending", Material.BARRIER, "&7No pending invites",
@@ -769,6 +770,7 @@ public final class SparChestGui implements Listener {
                 "&7Mentor Actions"), SlotAction.page("mentor"));
         put(holder, inv, 36, pageBtn(viewer, "spar.pending.back", Material.ARROW, "&7Back", "&7Mentor"),
                 SlotAction.page("mentor"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -807,6 +809,7 @@ public final class SparChestGui implements Listener {
                 SlotAction.act("mentor_decline", pickerArg, "pending"));
         put(holder, inv, 36, pageBtn(viewer, "spar.pending.decide_back", Material.ARROW, "&7Back",
                 "&7Pending invites"), SlotAction.page("pending"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -876,6 +879,7 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Mentor"),
                 SlotAction.page("mentor"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -1057,6 +1061,7 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page(backPage));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -1098,6 +1103,7 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Mentor"),
                 SlotAction.page("mentor"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -1130,6 +1136,7 @@ public final class SparChestGui implements Listener {
         }
         put(holder, inv, 36, pageBtn(viewer, "common.back", Material.ARROW, "&7Back", "&7Return"),
                 SlotAction.page(backPage));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
         return inv;
     }
@@ -1166,6 +1173,8 @@ public final class SparChestGui implements Listener {
             lore.add("&7No mentor bond");
             lore.addAll(GuiBoardHelper.tips(player, "&8Use Mentor page to invite"));
         }
+        lore.add("");
+        GuiBoardHelper.addOverhaulCombat(lore, ph);
         if (ForgeBridge.isStaff(player)) {
             lore.add("");
             lore.add("&8Stats · Top · Mentor");
@@ -1251,11 +1260,15 @@ public final class SparChestGui implements Listener {
                 ? "main" : slotAction.returnPage;
         final String action = slotAction.action;
         final String arg = slotAction.arg == null || slotAction.arg.isBlank() ? "0" : slotAction.arg;
-        final Player subject = AdminInspectSessions.resolveSubject(player);
+        final Player actor = AdminInspectSessions.resolveActor(player, action);
         Bukkit.getScheduler().runTask(plugin, () -> {
-            String msg = ForgeBridge.sparHandleDo(subject, action, arg, ret);
+            String msg = ForgeBridge.sparHandleDo(actor, action, arg, ret);
             if (msg != null && !msg.isBlank()) {
-                GuiChat.sendResult(player, msg);
+                if ("admin".equalsIgnoreCase(action)) {
+                    GuiChat.sendChatResult(player, msg);
+                } else {
+                    GuiChat.sendResult(player, msg);
+                }
             }
             open(player, ret);
         });
@@ -1327,11 +1340,11 @@ public final class SparChestGui implements Listener {
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.COMPASS, "&7« Hub", List.of());
+        return GuiNav.hubItem();
     }
 
     private static ItemStack closeBtn() {
-        return item(Material.BARRIER, "&cClose", List.of());
+        return GuiNav.closeItem();
     }
 
     private static ItemStack item(Material mat, String name, List<String> lore) {

@@ -20,15 +20,14 @@ public final class RaceChangeClassMapper {
      */
     public static String resolveClassForRace(String priorClassId, String newRaceId) {
         String prior = normalize(priorClassId);
-        List<String> allowed = DmzContentDiscovery.classIdsForRace(newRaceId);
+        List<String> allowed = DmzRuntimeClassIds.classIdsForRace(newRaceId);
         if (allowed.isEmpty()) {
             return prior.isEmpty() ? "warrior" : prior;
         }
         if (!prior.isEmpty()) {
-            for (String id : allowed) {
-                if (prior.equalsIgnoreCase(id)) {
-                    return id;
-                }
+            String canonical = canonicalId(prior, allowed);
+            if (canonical != null) {
+                return canonical;
             }
         }
         for (String pref : PREFERRED_FALLBACK) {
@@ -39,6 +38,118 @@ public final class RaceChangeClassMapper {
             }
         }
         return allowed.get(0);
+    }
+
+    /**
+     * After a race change: keep the class already on the character when it exists on the new race;
+     * otherwise map from the prior class id (same role on the old race).
+     */
+    public static String resolveClassForRaceAfterChange(
+            String currentClassOnCharacter, String priorClassId, String newRaceId) {
+        List<String> allowed = DmzRuntimeClassIds.classIdsForRace(newRaceId);
+        if (allowed.isEmpty()) {
+            return resolveClassForRace(priorClassId, newRaceId);
+        }
+        String canonical = canonicalId(currentClassOnCharacter, allowed);
+        if (canonical != null) {
+            return canonical;
+        }
+        return resolveClassForRace(priorClassId, newRaceId);
+    }
+
+    /**
+     * Target race does not offer the player's current class — they must pick one (free with race
+     * change) instead of auto-remapping to a fallback.
+     */
+    public static boolean requiresClassPicker(String currentClassId, String newRaceId) {
+        List<String> allowed = DmzRuntimeClassIds.classIdsForRace(newRaceId);
+        if (allowed.isEmpty()) {
+            return true;
+        }
+        if (currentClassId == null || currentClassId.isBlank()) {
+            return true;
+        }
+        return canonicalId(currentClassId, allowed) == null;
+    }
+
+    /** True when {@code classId} is defined on that race's {@code stats.json}. */
+    public static boolean isClassValidForRace(String raceId, String classId) {
+        if (raceId == null || raceId.isBlank() || classId == null || classId.isBlank()) {
+            return false;
+        }
+        return canonicalId(classId, DmzRuntimeClassIds.classIdsForRace(raceId)) != null;
+    }
+
+    private static String canonicalId(String classId, List<String> allowed) {
+        if (classId == null || classId.isBlank() || allowed == null || allowed.isEmpty()) {
+            return null;
+        }
+        String want = normalize(classId);
+        for (String id : allowed) {
+            if (want.equalsIgnoreCase(id)) {
+                return id;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Canonical fighting class id for {@code raceId}, preferring {@code preferredClassId} when it
+     * exists on that race, otherwise mapping from {@code fallbackPriorClassId}.
+     */
+    public static String fightingClassForRace(
+            String preferredClassId, String fallbackPriorClassId, String raceId) {
+        return resolveClassForRaceAfterChange(preferredClassId, fallbackPriorClassId, raceId);
+    }
+
+    /**
+     * Class name for C2S packets — canonical id when valid on the race so DMZ accepts
+     * {@code getAllClasses().contains(className)}.
+     */
+    public static String canonicalPacketClass(String raceId, String preferredClassId, String fallbackPriorClassId) {
+        if (raceId == null || raceId.isBlank()) {
+            return preferredClassId == null ? "" : preferredClassId;
+        }
+        if (preferredClassId != null && !preferredClassId.isBlank()) {
+            String direct = DmzRuntimeClassIds.canonicalId(raceId, preferredClassId);
+            if (direct != null) {
+                return direct;
+            }
+        }
+        String mapped = fightingClassForRace(preferredClassId, fallbackPriorClassId, raceId);
+        String canonical = DmzRuntimeClassIds.canonicalId(raceId, mapped);
+        return canonical != null ? canonical : mapped;
+    }
+
+    /**
+     * Sets race + fighting class on DMZ character data so class passives/base stats use the
+     * <em>new</em> race's {@code stats.json} entry for that class id.
+     *
+     * @param preferredClassId class to keep when valid on {@code newRaceId} (often current pick)
+     * @param fallbackPriorClassId used only when {@code preferredClassId} is invalid on the race
+     * @return the class id now on the character
+     */
+    public static String commitFightingClassForRace(
+            StatsData data, String newRaceId, String preferredClassId, String fallbackPriorClassId) {
+        if (data == null || newRaceId == null || newRaceId.isBlank()) {
+            return preferredClassId == null ? "" : preferredClassId;
+        }
+        Character ch = data.getCharacter();
+        if (ch == null) {
+            return preferredClassId == null ? "" : preferredClassId;
+        }
+        String race = newRaceId.trim().toLowerCase(Locale.ROOT);
+        String mapped = fightingClassForRace(preferredClassId, fallbackPriorClassId, race);
+        String onCharacter = DmzRuntimeClassIds.canonicalId(race, mapped);
+        if (onCharacter == null) {
+            onCharacter = mapped;
+        }
+        try {
+            ch.setRace(race);
+            ch.setCharacterClass(onCharacter);
+        } catch (Throwable ignored) {
+        }
+        return onCharacter;
     }
 
     /**
@@ -56,7 +167,6 @@ public final class RaceChangeClassMapper {
         if (ch == null) {
             return priorClassId == null ? "" : priorClassId;
         }
-        String race = newRaceId.trim().toLowerCase(Locale.ROOT);
         String prior = priorClassId;
         if (prior == null || prior.isBlank()) {
             try {
@@ -67,13 +177,13 @@ public final class RaceChangeClassMapper {
         if (prior == null || prior.isBlank()) {
             prior = DmzProgression.fightingClass(player);
         }
-        String mapped = resolveClassForRace(prior, race);
+        String currentOnCharacter;
         try {
-            ch.setRace(race);
-            ch.setCharacterClass(mapped);
-        } catch (Throwable ignored) {
+            currentOnCharacter = ch.getCharacterClass();
+        } catch (Throwable t) {
+            currentOnCharacter = prior;
         }
-        return mapped;
+        return commitFightingClassForRace(data, newRaceId, currentOnCharacter, prior);
     }
 
     private static String normalize(String raw) {

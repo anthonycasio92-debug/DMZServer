@@ -23,6 +23,7 @@
     "SkillsSetSkillLevelMixin",
     "FixVanillaEventsNaNMixin",
     "CombatEventHurtSanitizeMixin",
+    "HandwearApotheosisReentrancyMixin",
     "PartyManagerSyncQuestMixin",
     "LeavePartyC2SGhostHealMixin",
     "QuestProgressMergeMixin",

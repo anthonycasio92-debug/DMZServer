@@ -37,6 +37,11 @@ public final class PrestigeSystem {
     private static final int FACTION_HELD_ID = 4;
 
     private static final String KEY_TOTAL = "prestige_total_completed";
+    /**
+     * When set, {@link #getCompleted} returns stored {@link #KEY_TOTAL} only — staff
+     * {@code /padmin completed set 0} is not bumped by DMZ skill or shop inference.
+     */
+    private static final String KEY_TOTAL_STAFF_OVERRIDE = "prestige_total_staff_override";
     /** Highest Need already earned — never let Need fall below this (capped at personal cap). */
     private static final String KEY_NEED_FLOOR = "prestige_need_floor";
     private static final String KEY_HELD = "lm_prestige_held";
@@ -128,8 +133,12 @@ public final class PrestigeSystem {
         MinecraftServer server = player.m_20194_();
         boolean apiAdded = false;
         try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .alignFabledToHeld(player);
+            int want = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .fabledLevelForHeld(newHeld);
             apiAdded = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
-                    .addPrestigeLevels(player, 1) > 0;
+                    .fabledPrestigeLevel(player) == want;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
                     "[{}] prestige class level API soft-fail: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
@@ -163,6 +172,15 @@ public final class PrestigeSystem {
         }
         // Prestige-point skill floors + Permanent Majin/Mutant must survive dmzstats reset.
         PrestigePointsSystem.scheduleReapplyAfterPrestige(player);
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery.afterDmzStatsReset(player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .scheduleSyncAfterStatsReset(player);
+        } catch (Throwable ignored) {
+        }
 
         int nextRequired = requiredLevel(player);
         String summary = "§aPrestige Level §f" + newCompleted + " §aComplete!\n"
@@ -321,6 +339,21 @@ public final class PrestigeSystem {
         return MAX_HELD;
     }
 
+    /**
+     * NBT held wallet only (not CNPC faction inflate). Fabled Prestige class
+     * is always {@code wallet + 1}.
+     */
+    public static int getHeldWallet(ServerPlayer player) {
+        if (player == null) {
+            return 0;
+        }
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (PersistentDataAccess.isWritable(tag) && tag.m_128441_(KEY_HELD)) {
+            return Math.max(0, Math.min(MAX_HELD, tag.m_128451_(KEY_HELD)));
+        }
+        return getHeld(player);
+    }
+
     public static int levelsPerPrestige() {
         return LEVELS_PER_PRESTIGE;
     }
@@ -334,6 +367,9 @@ public final class PrestigeSystem {
             return 0;
         }
         CompoundTag tag = PersistentDataAccess.get(player);
+        if (staffOverrideActive(tag)) {
+            return Math.max(0, readStoredInt(tag, KEY_TOTAL));
+        }
         boolean hasKey = PersistentDataAccess.isWritable(tag) && tag.m_128441_(KEY_TOTAL);
         int stored = readStoredInt(tag, KEY_TOTAL);
 
@@ -421,6 +457,34 @@ public final class PrestigeSystem {
         }
     }
 
+    private static boolean staffOverrideActive(CompoundTag tag) {
+        return PersistentDataAccess.isWritable(tag) && tag.m_128441_(KEY_TOTAL_STAFF_OVERRIDE)
+                && tag.m_128471_(KEY_TOTAL_STAFF_OVERRIDE);
+    }
+
+    private static void clearStaffOverride(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128473_(KEY_TOTAL_STAFF_OVERRIDE);
+        }
+    }
+
+    private static void alignNeedFloorForStaff(ServerPlayer player, int completed) {
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (!PersistentDataAccess.isWritable(tag)) {
+            return;
+        }
+        if (completed <= 0) {
+            tag.m_128473_(KEY_NEED_FLOOR);
+            return;
+        }
+        int cap = PrestigePointsSystem.effectiveMaxLevel(player);
+        tag.m_128405_(KEY_NEED_FLOOR, requiredLevel(completed, cap));
+    }
+
     public static int getHeld(ServerPlayer player) {
         int nbt = 0;
         CompoundTag tag = PersistentDataAccess.get(player);
@@ -436,7 +500,27 @@ public final class PrestigeSystem {
     }
 
     private static void setCompleted(ServerPlayer player, int value) {
+        clearStaffOverride(player);
         setCompletedPublic(player, value);
+    }
+
+    /** Staff {@code /padmin completed …} — value sticks even when DMZ skill / shop would infer higher. */
+    public static void setCompletedStaff(ServerPlayer player, int value) {
+        if (player == null) {
+            return;
+        }
+        int clamped = Math.max(0, value);
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (PersistentDataAccess.isWritable(tag)) {
+            tag.m_128359_(KEY_TOTAL, Integer.toString(clamped));
+            tag.m_128379_(KEY_TOTAL_STAFF_OVERRIDE, true);
+            alignNeedFloorForStaff(player, clamped);
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(player);
+        } catch (Throwable ignored) {
+        }
     }
 
     /** Public for staff admin tools. */
@@ -450,26 +534,38 @@ public final class PrestigeSystem {
             int cap = PrestigePointsSystem.effectiveMaxLevel(player);
             raiseNeedFloor(player, requiredLevel(value, cap));
         }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(player);
+        } catch (Throwable ignored) {
+        }
     }
 
     private static void setHeld(ServerPlayer player, int value) {
         setHeldPublic(player, value);
     }
 
-    /** Public for prestige-points turn-in (must also lower Fabled Prestige class). */
+    /** Public for prestige-points turn-in and padmin. Wallet NBT is source of truth. */
     public static void setHeldPublic(ServerPlayer player, int value) {
         int clamped = Math.max(0, Math.min(MAX_HELD, value));
         CompoundTag tag = PersistentDataAccess.get(player);
         if (PersistentDataAccess.isWritable(tag)) {
             tag.m_128405_(KEY_HELD, clamped);
         }
-        // Dual-write to faction 4 so race-unlock shops that spend faction tokens stay in sync.
-        Integer current = readFactionPoints(player, FACTION_HELD_ID);
-        if (current != null) {
-            int delta = clamped - current;
-            if (delta != 0) {
-                addFactionPoints(player, FACTION_HELD_ID, delta);
-            }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .alignFabledToHeld(player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeFactionSync
+                    .forceSync(player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .scheduleSyncAfterStatsReset(player);
+        } catch (Throwable ignored) {
         }
     }
 

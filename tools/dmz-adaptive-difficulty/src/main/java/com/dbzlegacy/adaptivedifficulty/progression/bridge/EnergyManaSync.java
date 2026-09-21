@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.progression.bridge;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
@@ -11,14 +12,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Port of {@code DMZ Energy.js} — DMZ energy ↔ Fabled mana.
+ * Port of {@code DMZ Energy.js} — DMZ <b>ki pool</b> ↔ Fabled mana.
  * <p>
- * Fabled {@code updatePlayerStat} recalculates {@code maxMana} from class mana (often 0 on this
- * pack) and overwrites our field writes. Re-apply immediately and again on the next Bukkit tick
- * so the side menu stays in sync with DMZ ki.
+ * Uses {@code Resources.getCurrentEnergy} and the canonical
+ * {@code DmzResourcePoolClamp.actualMaxEnergy} (live ki × Overhaul scale once).
+ * Never raises Fabled max to an overflowing current.
+ * Fabled {@code updatePlayerStat} recalculates {@code maxMana} from class mana (often 0)
+ * and overwrites field writes — re-apply on the next Bukkit tick.
  */
 public final class EnergyManaSync {
     private static final String LAST_MANA_KEY = "dmz_fabled_last_mana";
+    private static final double ENERGY_EPS = 0.5;
+    /** CNPC script mirror drains above this are treated as real Fabled skill costs. */
+    private static final float MAX_MIRROR_DRAIN = 48f;
     private static final Map<UUID, Double> LAST_MANA = new ConcurrentHashMap<>();
 
     private EnergyManaSync() {}
@@ -31,6 +37,45 @@ public final class EnergyManaSync {
 
     public static void sync(ServerPlayer player) {
         sync(player, true);
+    }
+
+    /**
+     * CNPC {@code DMZ Fabled Bridge.js} drains DMZ when Fabled mana drops below temp last-mana.
+     * Cancel those mirror drains while DMZ regen / scaling is raising the real pool.
+     */
+    public static boolean shouldBlockFabledMirrorDrain(
+            ServerPlayer player, Resources resources, float amount
+    ) {
+        if (player == null || resources == null || !DifficultyConfig.get().enableEnergyManaSync) {
+            return false;
+        }
+        if (amount <= 0f || amount > MAX_MIRROR_DRAIN) {
+            return false;
+        }
+        Double last = LAST_MANA.get(player.m_20148_());
+        if (last == null) {
+            return false;
+        }
+        Object fabled = FabledBridge.fabledData(player);
+        if (fabled == null) {
+            return false;
+        }
+        double fMana = FabledBridge.invokeDouble(fabled, "getMana");
+        if (!Double.isFinite(fMana)) {
+            return false;
+        }
+        float cur = resources.getCurrentEnergy();
+        StatsData dmz = resources.getStatsData();
+        float max = dmz != null ? DmzResourcePoolClamp.actualMaxEnergy(dmz) : cur;
+        // Fabled lag behind DMZ / last sync — do not pull DMZ ki back down.
+        if (fMana + ENERGY_EPS < last && amount <= (float) (last - fMana) + ENERGY_EPS + 2f) {
+            return true;
+        }
+        // Regen climbing above stale Fabled bar while still below scaled max.
+        if (cur + ENERGY_EPS < max && fMana + ENERGY_EPS < cur && amount <= cur - fMana + ENERGY_EPS) {
+            return true;
+        }
+        return false;
     }
 
     /** @param scheduleBukkitFollowup when true, re-apply after Fabled's Bukkit tick overwrites mana */
@@ -59,6 +104,7 @@ public final class EnergyManaSync {
         if (maxEnergy < 0) {
             maxEnergy = 0;
         }
+        // Do not shrink live ki down to the ENE-stat HUD formula for Fabled.
         // Avoid clobbering a healthy Fabled bar with 0/0 before DMZ stats are ready.
         if (maxEnergy <= 0) {
             try {
@@ -68,13 +114,13 @@ public final class EnergyManaSync {
                 }
             } catch (Throwable ignored) {
             }
+            // Character exists but caps not ready — never clamp live ki to 0 (blocks regen).
+            return;
         }
         if (currentEnergy > maxEnergy) {
-            currentEnergy = maxEnergy;
+            currentEnergy = clampCurrentToMax(resources, maxEnergy);
         }
 
-        double fabledMana = FabledBridge.invokeDouble(data, "getMana");
-        double fabledMax = FabledBridge.invokeDouble(data, "getMaxMana");
         Double last = LAST_MANA.get(player.m_20148_());
         if (last == null) {
             String stored = ProgressionData.tempGet(player, LAST_MANA_KEY, null);
@@ -87,113 +133,85 @@ public final class EnergyManaSync {
             }
         }
 
-        if (last != null && fabledMana < last) {
-            double spent = last - fabledMana;
-            // Fabled level-up / updatePlayerStat can zero mana without a real ki spend.
-            boolean fabledStatWipe = isFabledManaWipe(last, fabledMana, fabledMax, maxEnergy, currentEnergy, spent);
-            if (spent > 0 && !fabledStatWipe) {
-                try {
-                    resources.removeEnergy((float) spent);
-                } catch (Throwable t) {
-                    resources.setCurrentEnergy((float) Math.max(0, currentEnergy - spent));
-                }
-                currentEnergy = resources.getCurrentEnergy();
-                if (currentEnergy < 0) {
-                    currentEnergy = 0;
-                    resources.setCurrentEnergy(0);
-                }
-                FabledBridge.logSync(player, "energy_spend", "spent", spent, "energy", currentEnergy);
-            } else if (fabledStatWipe) {
-                FabledBridge.logSync(
-                        player,
-                        "energy_wipe_skip",
-                        "fabledMana",
-                        fabledMana,
-                        "last",
-                        last,
-                        "max",
-                        maxEnergy);
-            }
+        // DMZ owns ki pool + regen on this pack — mirror to Fabled for the side menu only.
+        if (last != null && last > currentEnergy + ENERGY_EPS) {
+            last = currentEnergy;
         }
 
         if (currentEnergy > maxEnergy) {
-            currentEnergy = maxEnergy;
+            currentEnergy = clampCurrentToMax(resources, maxEnergy);
         }
 
         FabledBridge.setManaAndMax(data, currentEnergy, maxEnergy);
+        publishLastMana(player, currentEnergy);
+
+        boolean gap = currentEnergy + ENERGY_EPS < maxEnergy;
+        if (scheduleBukkitFollowup || gap) {
+            scheduleFollowup(player, currentEnergy, maxEnergy);
+        }
+    }
+
+    private static void publishLastMana(ServerPlayer player, double currentEnergy) {
         LAST_MANA.put(player.m_20148_(), currentEnergy);
         ProgressionData.tempPut(player, LAST_MANA_KEY, currentEnergy);
-
-        if (scheduleBukkitFollowup) {
-            final double cur = currentEnergy;
-            final double max = maxEnergy;
-            FabledBridge.runOnBukkit(player, () -> {
-                Object again = FabledBridge.fabledData(player);
-                if (again == null) {
-                    return;
-                }
-                FabledBridge.setManaAndMax(again, cur, max);
-                LAST_MANA.put(player.m_20148_(), cur);
-            });
-            // Level-up stat recalc can land one tick late — second pass catches stubborn wipes.
-            FabledBridge.runOnBukkit(player, () -> FabledBridge.runOnBukkit(player, () -> {
-                Object again = FabledBridge.fabledData(player);
-                if (again == null) {
-                    return;
-                }
-                FabledBridge.setManaAndMax(again, cur, max);
-                LAST_MANA.put(player.m_20148_(), cur);
-            }));
-        }
+        CnpcBridge.putTempString(player, LAST_MANA_KEY, String.valueOf(currentEnergy));
     }
 
-    /**
-     * True when Fabled dropped mana due to stat recalc (level up, class change, updatePlayerStat),
-     * not because the player actually spent ki in combat.
-     */
-    static boolean isFabledManaWipe(
-            double lastMana,
-            double fabledMana,
-            double fabledMax,
-            double dmzMaxEnergy,
-            double dmzCurrentEnergy,
-            double spent
-    ) {
-        if (spent <= 0) {
-            return false;
-        }
-        if (fabledMana <= 0.01 && lastMana > 1.0) {
-            return true;
-        }
-        if (dmzMaxEnergy > 0 && fabledMax + 0.01 < dmzMaxEnergy * 0.5) {
-            return true;
-        }
-        if (dmzCurrentEnergy > 0 && spent > dmzCurrentEnergy * 0.85) {
-            return true;
-        }
-        return false;
+    private static void scheduleFollowup(ServerPlayer player, double currentEnergy, double maxEnergy) {
+        final double cur = currentEnergy;
+        final double max = maxEnergy;
+        FabledBridge.runOnBukkit(player, () -> {
+            Object again = FabledBridge.fabledData(player);
+            if (again == null) {
+                return;
+            }
+            FabledBridge.setManaAndMax(again, cur, max);
+            publishLastMana(player, cur);
+        });
+        FabledBridge.runOnBukkit(player, () -> FabledBridge.runOnBukkit(player, () -> {
+            Object again = FabledBridge.fabledData(player);
+            if (again == null) {
+                return;
+            }
+            FabledBridge.setManaAndMax(again, cur, max);
+            publishLastMana(player, cur);
+        }));
     }
 
-    private static double readMaxEnergy(StatsData dmz, Resources resources, double currentEnergy) {
-        // Live script tried resources.getMaxEnergy() first (not on current DMZ API), then StatsData.
+    private static double clampCurrentToMax(Resources resources, double maxEnergy) {
+        if (resources == null || !Double.isFinite(maxEnergy) || maxEnergy <= 1.0d) {
+            return maxEnergy;
+        }
         try {
-            Object v = resources.getClass().getMethod("getMaxEnergy").invoke(resources);
-            if (v instanceof Number n) {
-                double d = n.doubleValue();
-                if (Double.isFinite(d) && d > 0) {
-                    return d;
-                }
+            DmzResourcePoolClamp.clampToOverhaulPool(resources.getStatsData());
+            float cur = resources.getCurrentEnergy();
+            if (Float.isFinite(cur) && cur <= maxEnergy + 0.08d) {
+                return Math.max(0.0d, cur);
             }
         } catch (Throwable ignored) {
         }
         try {
-            float max = dmz.getMaxEnergy();
-            if (Float.isFinite(max) && max > 0) {
+            resources.setCurrentEnergy((float) maxEnergy);
+        } catch (Throwable ignored) {
+        }
+        return maxEnergy;
+    }
+
+    private static double readMaxEnergy(StatsData dmz, Resources resources, double currentEnergy) {
+        try {
+            float max = DmzResourcePoolClamp.actualMaxEnergy(dmz);
+            if (Float.isFinite(max) && max > 1f) {
                 return max;
             }
-            return max;
-        } catch (Throwable t) {
-            return currentEnergy;
+        } catch (Throwable ignored) {
         }
+        try {
+            float live = dmz.getMaxEnergy();
+            if (Float.isFinite(live) && live > 1f) {
+                return live;
+            }
+        } catch (Throwable ignored) {
+        }
+        return currentEnergy > 1.0d ? currentEnergy : 0.0d;
     }
 }

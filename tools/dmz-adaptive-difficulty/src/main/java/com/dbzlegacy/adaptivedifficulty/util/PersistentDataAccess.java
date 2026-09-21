@@ -65,7 +65,48 @@ public final class PersistentDataAccess {
         if (tag == EMPTY || !tag.m_128441_(key)) {
             return fallback;
         }
-        return tag.m_128454_(key);
+        try {
+            if (tag.m_128425_(key, 99)) { // TAG_ANY_NUMERIC
+                return tag.m_128454_(key);
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            String v = tag.m_128461_(key);
+            if (v != null && !v.isBlank()) {
+                return Long.parseLong(v.trim());
+            }
+        } catch (Throwable ignored) {
+        }
+        return fallback;
+    }
+
+    public static int getInt(Entity entity, String key, int fallback) {
+        CompoundTag tag = get(entity);
+        if (tag == EMPTY || !tag.m_128441_(key)) {
+            return fallback;
+        }
+        try {
+            return tag.m_128451_(key);
+        } catch (Throwable ignored) {
+            return fallback;
+        }
+    }
+
+    public static void putLong(Entity entity, String key, long value) {
+        CompoundTag tag = get(entity);
+        if (!isWritable(tag)) {
+            return;
+        }
+        tag.m_128356_(key, value);
+    }
+
+    public static void putInt(Entity entity, String key, int value) {
+        CompoundTag tag = get(entity);
+        if (!isWritable(tag)) {
+            return;
+        }
+        tag.m_128405_(key, value);
     }
 
     public static String getString(Entity entity, String key) {

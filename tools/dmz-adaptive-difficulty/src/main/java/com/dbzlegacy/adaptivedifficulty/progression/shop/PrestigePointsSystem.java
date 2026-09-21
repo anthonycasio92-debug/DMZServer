@@ -2,7 +2,9 @@ package com.dbzlegacy.adaptivedifficulty.progression.shop;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
+import com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
+import com.dbzlegacy.adaptivedifficulty.util.PersistentDataAccess;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.FabledBridge;
 import com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
@@ -51,6 +53,8 @@ public final class PrestigePointsSystem {
     public static final int SKILL_SHOP_PAGE_SIZE = 21;
 
     private static final String KEY_POINTS = "prestige_points";
+    /** Root LongTag backup — same Mohist pattern as breakthroughs ({@code lm_personal_*}). */
+    public static final String ROOT_POINTS = "lm_prestige_points";
     private static final String KEY_BREAKTHROUGHS = "pp_level_breakthroughs";
     private static final String KEY_MAJIN = "pp_perm_majin";
     private static final String KEY_MUTANT = "pp_perm_mutant";
@@ -152,14 +156,28 @@ public final class PrestigePointsSystem {
         if (player == null) {
             return 0;
         }
-        return Math.max(0, (int) ProgressionData.storedGetLong(player, KEY_POINTS, 0L));
+        int fromBag = Math.max(0, (int) ProgressionData.storedGetLong(player, KEY_POINTS, 0L));
+        long fromRoot = PersistentDataAccess.getLong(player, ROOT_POINTS, -1L);
+        int n = fromBag;
+        if (fromRoot > n) {
+            n = (int) Math.min(Integer.MAX_VALUE, fromRoot);
+        }
+        if (n != fromBag && ProgressionData.storedWritable(player)) {
+            ProgressionData.storedPut(player, KEY_POINTS, n);
+            PersistentDataAccess.putLong(player, ROOT_POINTS, n);
+        } else if (fromRoot < 0 && n > 0) {
+            PersistentDataAccess.putLong(player, ROOT_POINTS, n);
+        }
+        return n;
     }
 
     public static void setPoints(ServerPlayer player, int points) {
         if (player == null) {
             return;
         }
-        ProgressionData.storedPut(player, KEY_POINTS, Math.max(0, points));
+        int n = Math.max(0, points);
+        ProgressionData.storedPut(player, KEY_POINTS, n);
+        PersistentDataAccess.putLong(player, ROOT_POINTS, n);
     }
 
     /** True when the player can afford {@code amount} prestige points. */
@@ -923,8 +941,26 @@ public final class PrestigePointsSystem {
         if (player == null) {
             return 0;
         }
-        return Math.max(0, Math.min(MAX_BREAKTHROUGHS,
-                (int) ProgressionData.storedGetLong(player, KEY_BREAKTHROUGHS, 0L)));
+        boolean bagHas = ProgressionData.storedHas(player, KEY_BREAKTHROUGHS);
+        int fromBag = bagHas ? (int) ProgressionData.storedGetLong(player, KEY_BREAKTHROUGHS, 0L) : -1;
+        int fromRoot = PersistentDataAccess.getInt(player, PersonalLevelCapMirror.ROOT_BREAKTHROUGHS, -1);
+        int fromMirror = PersistentDataAccess.getInt(player, PersonalLevelCapMirror.KEY_BREAKTHROUGHS, -1);
+        // Explicit NBT only. Inferring from lm_personal_level_cap (Overhaul 50k/150k)
+        // made 0 breakthroughs snap to 5 and padmin set 0 fail at held 1.
+        if (fromBag < 0 && fromRoot < 0 && fromMirror < 0) {
+            return 0;
+        }
+        int n = 0;
+        if (fromBag >= 0) {
+            n = Math.max(n, fromBag);
+        }
+        if (fromRoot >= 0) {
+            n = Math.max(n, fromRoot);
+        }
+        if (fromMirror >= 0) {
+            n = Math.max(n, fromMirror);
+        }
+        return Math.max(0, Math.min(MAX_BREAKTHROUGHS, n));
     }
 
     public static int breakthroughCost(int nextIndex) {
@@ -941,6 +977,12 @@ public final class PrestigePointsSystem {
         }
         int n = Math.max(0, Math.min(MAX_BREAKTHROUGHS, breakthroughs));
         ProgressionData.storedPut(player, KEY_BREAKTHROUGHS, n);
+        PersistentDataAccess.putInt(player, PersonalLevelCapMirror.ROOT_BREAKTHROUGHS, n);
+        PersistentDataAccess.putInt(player, PersonalLevelCapMirror.KEY_BREAKTHROUGHS, n);
+        try {
+            PersonalLevelCapMirror.overwrite(player, n, effectiveMaxLevel(n));
+        } catch (Throwable ignored) {
+        }
         try {
             DmzSkillUtil.sync(player);
         } catch (Throwable ignored) {
@@ -975,22 +1017,30 @@ public final class PrestigePointsSystem {
                     + " §c(have §e" + points + "§c).";
         }
         setPoints(player, points - cost);
-        ProgressionData.storedPut(player, KEY_BREAKTHROUGHS, next);
+        setBreakthroughs(player, next);
         int newCap = effectiveMaxLevel(player);
         // Force a live DMZ read so the client/stat screen picks up the raised max.
         int liveCap = newCap;
+        int liveMaxStats = 0;
         try {
             var data = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.stats(player);
             if (data != null) {
                 liveCap = Math.max(newCap, data.getConfiguredMaxValue());
+                liveMaxStats = Math.max(0, data.getConfiguredMaxTotalStats());
                 com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil.sync(player);
             }
+        } catch (Throwable ignored) {
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(player);
         } catch (Throwable ignored) {
         }
         SystemTelemetry.log("prestige_points", "breakthrough", player, null, Map.of(
                 "breakthrough", next,
                 "cap", newCap,
                 "live_cap", liveCap,
+                "live_max_stats", liveMaxStats,
                 "cost", cost,
                 "points", getPoints(player)
         ));
@@ -1029,6 +1079,16 @@ public final class PrestigePointsSystem {
     public static void onLogin(ServerPlayer player) {
         if (player == null) {
             return;
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration
+                    .syncLmWalletFromOverhaulCount(player);
+        } catch (Throwable ignored) {
         }
         // Stagger reapply so DMZ / Fabled finish loading (Character attach can lag).
         ProgressionData.tempPut(player, KEY_REAPPLY_AT, System.currentTimeMillis() + 12_000L);
@@ -1094,6 +1154,16 @@ public final class PrestigePointsSystem {
             DmzSkillUtil.sync(player);
         } catch (Throwable ignored) {
         }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.OverhaulPrestigeResourceScale
+                    .pulse(player);
+        } catch (Throwable ignored) {
+        }
     }
 
     /** Called from shop pulse — drains delayed reapply markers + keeps forms/skills live. */
@@ -1139,19 +1209,24 @@ public final class PrestigePointsSystem {
         }
         // Prefer Fabled API — console "class level … take" often no-ops on Mohist,
         // leaving Prestige class high so faction sync restores held tokens.
-        int lost = 0;
+        boolean aligned = false;
         try {
-            lost = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
-                    .takePrestigeLevels(player, amount);
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .alignFabledToHeld(player);
+            int held = PrestigeSystem.getHeldWallet(player);
+            int want = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .fabledLevelForHeld(held);
+            aligned = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .fabledPrestigeLevel(player) == want;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
                     "[{}] prestige points API take soft-fail: {}",
                     AdaptiveDifficultyMod.MOD_ID, t.toString());
         }
-        if (lost >= amount) {
+        if (aligned) {
             return;
         }
-        int remain = amount - lost;
+        int remain = amount;
         MinecraftServer server = player.m_20194_();
         if (server == null) {
             return;

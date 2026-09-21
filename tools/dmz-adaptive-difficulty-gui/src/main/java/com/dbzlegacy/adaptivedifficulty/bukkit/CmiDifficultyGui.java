@@ -73,7 +73,7 @@ public final class CmiDifficultyGui {
         boolean allowed = bridgeOk && !"false".equalsIgnoreCase(ph.getOrDefault("player_allowed", "false"));
         boolean personalOn = "true".equalsIgnoreCase(ph.getOrDefault("personal_enabled", "false"));
         String stateColor = personalOn ? ph.getOrDefault("state_color", "f") : "c";
-        CMIGuiButton status = new CMIGuiButton(13, Material.BEACON,
+        CMIGuiButton status = new CMIGuiButton(4, Material.BEACON,
                 !bridgeOk ? "&c&lUNAVAILABLE"
                         : !systemOn ? "&c&lSYSTEM DISABLED"
                         : !allowed ? "&e&lWHITELIST ONLY"
@@ -115,7 +115,7 @@ public final class CmiDifficultyGui {
         } else if (activeTier < 4 || activeTier > 7) {
             dragonStatus = "&cNeed active T4–T7 (you: T" + activeTier + ")";
         } else {
-            dragonStatus = "&aReady · click to summon";
+            dragonStatus = "&aReady — tap to summon";
         }
         List<String> dragonDefaults = List.of(
                 "&7Summon the End Dragon scaled to",
@@ -139,8 +139,8 @@ public final class CmiDifficultyGui {
                 "toggle_personal", "0", "main",
                 List.of(
                         personalOn
-                                ? "&7Click to turn OFF for you only8Turns scaling off for you only"
-                                : "&7Click to turn ON for you only8Turns scaling on for you only",
+                                ? "&7Turn off just for you"
+                                : "&7Turn back on for you",
                         personalOn
                                 ? "&8OFF disables scaling, kill coins,"
                                 : "&8ON restores scaling, kill coins,",
@@ -156,8 +156,8 @@ public final class CmiDifficultyGui {
                 "toggle_coin_chat", "0", "main",
                 List.of(
                         coinChatOn
-                                ? "&7Click to mute drop messages8Hides Ancient Coin drop chat"
-                                : "&7Click to show drop messages8Shows Ancient Coin drop chat again",
+                                ? "&7Hide coin drop messages"
+                                : "&7Show coin drop messages again",
                         "&8Only affects Ancient Coin kill chat"
                 )));
         if (ForgeBridge.isStaff(player)) {
@@ -184,6 +184,7 @@ public final class CmiDifficultyGui {
             locked.addLore(unavailableLore(player, systemOn, bridgeOk));
             gui.addButton(locked);
             gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
             GuiFeedback.openCmi(gui);
@@ -201,6 +202,7 @@ public final class CmiDifficultyGui {
             ));
             gui.addButton(locked);
             gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
             gui.addButton(closeBtn(44));
             fillEmpty(gui, 5);
             GuiFeedback.openCmi(gui);
@@ -219,6 +221,7 @@ public final class CmiDifficultyGui {
         infoLore.addAll(GuiTooltips.lore("difficulty.tiers.info",
                 List.of("&7Click a higher unlocked tier to buy",
                         "&7Click a lower unlocked tier to step down (free)",
+                        "&8Each tier shows DMZ level or Prestige to unlock",
                         "&8Unlock with DMZ level or Prestige"), null));
         infoLore.addAll(GuiBoardHelper.tips(player,
                 "&eUnlock with DMZ level &7OR &ePrestige",
@@ -241,6 +244,7 @@ public final class CmiDifficultyGui {
 
         placeTierButtons(gui, player, ph);
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "main", "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -340,11 +344,11 @@ public final class CmiDifficultyGui {
             }
             if (isEquipped) {
                 lore.addAll(GuiTooltips.lore("difficulty.titles.state_equipped",
-                        List.of(staff ? "&aCurrently equipped &8· click to unequip" : "&aCurrently equipped"),
+                        List.of(staff ? "&aCurrently equipped &8· tap to unequip" : "&aCurrently equipped"),
                         vars));
             } else if (earned) {
                 lore.addAll(GuiTooltips.lore("difficulty.titles.state_unlocked",
-                        List.of(staff ? "&aUnlocked &8· click to equip" : "&aUnlocked"), vars));
+                        List.of(staff ? "&aUnlocked &8· tap to equip" : "&aUnlocked"), vars));
             } else {
                 lore.addAll(GuiTooltips.lore("difficulty.titles.state_locked", List.of("&cLocked"), vars));
             }
@@ -460,7 +464,13 @@ public final class CmiDifficultyGui {
                 "&7DMZ &f" + ph.getOrDefault("level", "?")
                         + "  &7Prestige &f" + ph.getOrDefault("prestige", "?"),
                 "&7Unlocked &fT" + ph.getOrDefault("highest_unlocked", "0"),
-                "&7Title &e" + blankAsNone(ph.getOrDefault("active_title", ""))
+                "&7Title &e" + blankAsNone(ph.getOrDefault("active_title", "")),
+                "",
+                "&7Overhaul scale &f" + ph.getOrDefault("overhaul_scale", "x1"),
+                "&7Melee &f" + ph.getOrDefault("melee_scaled", "?")
+                        + "  &7Strike &f" + ph.getOrDefault("strike_scaled", "?"),
+                "&7Ki &f" + ph.getOrDefault("ki_scaled", "?")
+                        + "  &7Defense &f" + ph.getOrDefault("defense_scaled", "?")
         ));
         gui.addButton(core);
 
@@ -522,30 +532,7 @@ public final class CmiDifficultyGui {
                     "prestige", ph.getOrDefault("prestige", "?"),
                     "req", reqTip);
 
-            List<String> lore = new ArrayList<>();
-            lore.add("&7{name}");
-            if (active) {
-                lore.add("&aCurrently active");
-            } else if (canLower) {
-                lore.add("&aOwned &8· free to lower here");
-            } else if (unlocked) {
-                lore.add("&7Cost &e{cost}");
-                if (staff) {
-                    lore.add("&8Scaled for your DMZ level");
-                }
-                lore.add(staff ? "&aUnlocked &8· click to purchase" : "&aUnlocked");
-                if (staff) {
-                    lore.add("&8Pay-up OK · change returned");
-                }
-            } else {
-                lore.add("&cLocked");
-                lore.add("&7Need &fDMZ {req_level} &7or &fPrestige {req_prestige}");
-                lore.add("&7You: &fDMZ {level} &7· &fPrestige {prestige}");
-                if (staff) {
-                    lore.add("&8{req}");
-                    lore.add("&8CR/BP ignored — use DMZ level or Prestige");
-                }
-            }
+            List<String> lore = GuiBoardHelper.difficultyTierButtonLore(active, canLower, unlocked, staff);
 
             String title;
             if (active) {
@@ -614,6 +601,7 @@ public final class CmiDifficultyGui {
         }
         lore.add("");
         lore.add("&cWarning: &7Scaled mobs can attack other players as well");
+        GuiBoardHelper.addOverhaulCombat(lore, ph);
         lore.addAll(coinLore(ph));
         if (staff) {
             lore.add("");
@@ -753,17 +741,10 @@ public final class CmiDifficultyGui {
     }
 
     private static CMIGuiButton hubBtn(int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.COMPASS, "&7« Hub");
-        btn.lockField();
-        btn.addCommand("lmdo lm open hub");
-        btn.setCloseInv(true);
-        return btn;
+        return GuiNav.cmiHubButton(slot);
     }
 
     private static CMIGuiButton closeBtn(int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.BARRIER, "&cClose");
-        btn.lockField();
-        btn.setCloseInv(true);
-        return btn;
+        return GuiNav.cmiCloseButton(slot);
     }
 }

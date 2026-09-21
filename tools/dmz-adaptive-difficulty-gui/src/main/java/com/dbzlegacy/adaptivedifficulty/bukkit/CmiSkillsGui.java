@@ -219,11 +219,7 @@ public final class CmiSkillsGui {
     }
 
     private static CMIGuiButton hubBtn(int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.COMPASS, "&7« Hub");
-        btn.lockField();
-        btn.addCommand("lmdo lm open hub");
-        btn.setCloseInv(true);
-        return btn;
+        return GuiNav.cmiHubButton(slot);
     }
 
     private static CMIGuiButton progBtn(Player player, int slot) {
@@ -231,16 +227,13 @@ public final class CmiSkillsGui {
                 GuiTooltips.name("skills.main.progression", "&dProgression"));
         btn.lockField();
         btn.addLore(GuiTooltips.buttonLore("skills.main.progression",
-                GuiBoardHelper.tipsList(player, List.of("&7Skills · TP · Race · Combat flags", "&eClick to open8Opens this menu"))));
+                GuiBoardHelper.tipsList(player, List.of("&7Skills · TP · Race · Combat flags", "&eOpen"))));
         btn.addCommand("lmdo lm open progression");
         btn.setCloseInv(true);
         return btn;
     }
 
     private static CMIGuiButton closeBtn(int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.BARRIER, "&cClose");
-        btn.lockField();
-        btn.setCloseInv(true);
-        return btn;
+        return GuiNav.cmiCloseButton(slot);
     }
 }

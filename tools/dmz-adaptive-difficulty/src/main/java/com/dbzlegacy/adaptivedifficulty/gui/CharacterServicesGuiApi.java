@@ -6,7 +6,10 @@ import com.dbzlegacy.adaptivedifficulty.character.CharacterServicesSystem;
 import com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService;
 import com.dbzlegacy.adaptivedifficulty.character.FightingClassLabels;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
+import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
+import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +51,7 @@ public final class CharacterServicesGuiApi {
         out.put("can_class_change", CharacterServicesAccess.canClassChange(player) ? "true" : "false");
         out.put("can_reskin", CharacterServicesAccess.canReskin(player) ? "true" : "false");
         out.put("can_head_bones", CharacterServicesAccess.canHeadBoneShop(player) ? "true" : "false");
+        LmOverhaulScaledCombat.putPlaceholders(out, player);
         return out;
     }
 
@@ -143,7 +147,8 @@ public final class CharacterServicesGuiApi {
             int pct = parsePct(bits.length > 2 ? bits[2] : "0");
             String race = bits.length > 1 ? bits[1] : "?";
             lines.add("§7You are becoming §f" + title(race) + "§7.");
-            lines.add("§7Head-part unlocks carry over; class id kept when the new race has it.");
+            lines.add("§7Head-part unlocks carry over; same class kept when the new race has it.");
+            lines.add("§7If not, the editor opens so you can pick a class at no extra cost.");
             lines.add("§7Keeping §f" + pct + "% §7of eligible stats:");
             lines.addAll(CharacterServicesSystem.statPreviewLines(player, pct));
             lines.add(costLine(player, CharacterServicesSystem.raceCost(player, pct)));
@@ -232,7 +237,10 @@ public final class CharacterServicesGuiApi {
             return "§7Cost §afree";
         }
         if (CharacterServicesAccess.bypassCost(player)) {
-            return "§7Cost §afree §8(staff bypass)";
+            if (DifficultyConfig.get().staffFreeAncientCoinCosts && StaffAccess.isStaff(player)) {
+                return "§7Cost §afree §8(staff free coins ON)";
+            }
+            return "§7Cost §afree §8(bypass permission)";
         }
         return "§7Cost §f" + CharacterServicesSystem.formatCost(copperCost) + " §7Ancient Coins";
     }

@@ -79,10 +79,7 @@ public final class ProgressionChestGui implements Listener {
     }
 
     private static String invTitle(Player viewer, Player subject, String base) {
-        if (inspecting(viewer, subject)) {
-            return color(base + " · &c" + subject.getName());
-        }
-        return color(base);
+        return GuiNav.inventoryTitle(viewer, subject, base);
     }
 
     public void open(Player player, String page) {
@@ -114,6 +111,8 @@ public final class ProgressionChestGui implements Listener {
                     new String[]{"shadow", "statchecker"});
             case "status" -> sectionFlags(viewer, subject, "status", "&eStatus", Material.WRITABLE_BOOK,
                     new String[]{"flight", "sprint", "meditation", "potential", "farming", "building"});
+            case "economy", "ancient_coins", "coins" ->
+                    ForgeBridge.isStaff(viewer) ? economy(viewer, subject) : main(viewer, subject);
             case "admin", "flags", "disable" -> ForgeBridge.isStaff(viewer) ? flags(viewer, subject) : main(viewer, subject);
             case "flags_fabled", "fabled_flags" -> ForgeBridge.isStaff(viewer) ? fabledFlags(viewer, subject) : main(viewer, subject);
             default -> main(viewer, subject);
@@ -163,12 +162,17 @@ public final class ProgressionChestGui implements Listener {
         };
         for (int i = 0; i < pages.length && i < slots.length; i++) {
             put(holder, inv, slots[i], tipBtn("progression.main." + pages[i], mats[i], titles[i],
-                    List.of(tips[i], "", "&eClick to open8Opens this menu")),
+                    List.of(tips[i], "", "&eOpen")),
                     SlotAction.page(pages[i]));
         }
 
         if (ForgeBridge.isStaff(viewer)) {
-            put(holder, inv, 40, tipBtn("progression.main.admin", Material.REPEATER, "&cAll Flags",
+            put(holder, inv, 40, tipBtn("progression.main.economy", Material.GOLD_INGOT, "&6Ancient Coins",
+                    List.of("&7Staff pricing for all LM paid features",
+                            "&8Tiers · Character Services · End dragon · …",
+                            "&eOpen")),
+                    SlotAction.page("economy"));
+            put(holder, inv, 41, tipBtn("progression.main.admin", Material.REPEATER, "&cAll Flags",
                     List.of("&7Full flag board")), SlotAction.page("admin"));
         }
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
@@ -244,7 +248,7 @@ public final class ProgressionChestGui implements Listener {
             }
             if (staff) {
                 lore.add("");
-                lore.add("&eClick to toggle8Click to switch");
+                lore.add("&eSelect to switch");
             }
             String flagTitle = (on ? "&a" : "&8") + info[0] + (on ? " ON" : " OFF");
             Map<String, String> flagVars = Map.of(
@@ -260,6 +264,41 @@ public final class ProgressionChestGui implements Listener {
                 put(holder, inv, slots[i], stack);
             }
         }
+        put(holder, inv, 36, pageBtn("common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
+        put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
+        put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
+        return inv;
+    }
+
+    private Inventory economy(Player viewer, Player subject) {
+        Map<String, String> ph = ForgeBridge.progressionPlaceholders(subject);
+        boolean staffFree = "true".equalsIgnoreCase(ph.getOrDefault("staff_free_ancient_coin_costs", "false"));
+        Holder holder = new Holder("economy");
+        Inventory inv = Bukkit.createInventory(holder, 45, invTitle(viewer, subject, "&8Ancient Coins"));
+        holder.bind(inv);
+        frame(inv, 45);
+        put(holder, inv, 4, item(Material.GOLD_INGOT, "&6&lAncient Coin Economy",
+                List.of("",
+                        "&7Server-wide staff pricing for anything",
+                        "&7that charges Ancient Coins in LM.",
+                        "",
+                        "&8Includes: AD tiers, Character Services,",
+                        "&8End dragon summon, cosmetic head bones,",
+                        "&8and future paid LM features.",
+                        "",
+                        staffFree ? "&aStaff free costs: ON" : "&7Staff free costs: OFF")));
+        Map<String, String> staffFreeVars = Map.of(
+                "action", staffFree ? "&8Tap to turn OFF" : "&8Tap to turn ON");
+        put(holder, inv, 22, tipBtn("progression.economy.staff_free",
+                staffFree ? Material.LIME_DYE : Material.GRAY_DYE,
+                staffFree ? "&aStaff free coins ON" : "&7Staff free coins OFF",
+                List.of(
+                        "&7When ON, staff and OP pay no Ancient Coins",
+                        "&7on any LM paid feature.",
+                        "",
+                        staffFreeVars.get("action")),
+                staffFreeVars),
+                SlotAction.act("toggle_staff_free_coins", staffFree ? "off" : "on", "economy"));
         put(holder, inv, 36, pageBtn("common.back", Material.ARROW, "&7Back", "&7Return"), SlotAction.page("main"));
         put(holder, inv, 40, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         put(holder, inv, 44, closeBtn(), SlotAction.dismiss());
@@ -358,22 +397,22 @@ public final class ProgressionChestGui implements Listener {
                         "&8/progression boost end")));
         // Presets: mult:minutes
         put(holder, inv, 19, tipBtn("progression.boost.n125_30", Material.GOLD_NUGGET, "&e1.25x · 30m",
-                List.of("&7Start 1.25x for 30 minutes", "", "&eClick to start8Start this boost")),
+                List.of("&7Start 1.25x for 30 minutes", "", "&eStart")),
                 SlotAction.act("boost", "1.25:30", "boost_panel"));
         put(holder, inv, 20, tipBtn("progression.boost.n15_30", Material.GOLD_INGOT, "&e1.5x · 30m",
-                List.of("&7Start 1.5x for 30 minutes", "", "&eClick to start8Start this boost")),
+                List.of("&7Start 1.5x for 30 minutes", "", "&eStart")),
                 SlotAction.act("boost", "1.5:30", "boost_panel"));
         put(holder, inv, 21, tipBtn("progression.boost.n2_30", Material.GOLD_BLOCK, "&62x · 30m",
-                List.of("&7Start 2x for 30 minutes", "", "&eClick to start8Start this boost")),
+                List.of("&7Start 2x for 30 minutes", "", "&eStart")),
                 SlotAction.act("boost", "2:30", "boost_panel"));
         put(holder, inv, 22, tipBtn("progression.boost.n2_60", Material.GOLD_BLOCK, "&62x · 60m",
-                List.of("&7Start 2x for 60 minutes", "", "&eClick to start8Start this boost")),
+                List.of("&7Start 2x for 60 minutes", "", "&eStart")),
                 SlotAction.act("boost", "2:60", "boost_panel"));
         put(holder, inv, 23, tipBtn("progression.boost.n3_30", Material.CLOCK, "&e3x · 30m",
-                List.of("&7Start 3x for 30 minutes", "", "&eClick to start8Start this boost")),
+                List.of("&7Start 3x for 30 minutes", "", "&eStart")),
                 SlotAction.act("boost", "3:30", "boost_panel"));
         put(holder, inv, 25, tipBtn("progression.boost.end", Material.BARRIER, "&cEnd Boost",
-                List.of("&7Stop the active global TP boost", "", "&eClick to end8Stop the active boost")),
+                List.of("&7Stop the active global TP boost", "", "&eEnd boost")),
                 SlotAction.act("boost", "end", "boost_panel"));
         put(holder, inv, 31, tipBtn("progression.boost.refresh", Material.CLOCK, "&7Refresh Status",
                 List.of("&7Reload this panel", "", "&eClick")),
@@ -480,7 +519,7 @@ public final class ProgressionChestGui implements Listener {
                         "&8/progression android [player]"))));
         put(holder, inv, 8, tipBtn("progression.android.convert_self", Material.NETHERITE_INGOT,
                 "&aConvert Yourself",
-                List.of("&7Apply conversion to you", "", "&eClick to convert8Convert now")),
+                List.of("&7Apply conversion to you", "", "&eConvert")),
                 SlotAction.act("android", subject.getName(), "android_convert"));
         List<Player> online = GuiPlayerPicker.onlineExcept(subject);
         int placed = 0;
@@ -491,7 +530,7 @@ public final class ProgressionChestGui implements Listener {
             int slot = GuiPlayerPicker.CONTENT_SLOTS[placed++];
             put(holder, inv, slot,
                     GuiPlayerPicker.head(other, "&f" + other.getName(),
-                            List.of("&7Convert to Android", "", "&eClick to convert8Convert now")),
+                            List.of("&7Convert to Android", "", "&eConvert")),
                     SlotAction.act("android", other.getName(), "android_convert"));
         }
         if (online.isEmpty()) {
@@ -662,11 +701,11 @@ public final class ProgressionChestGui implements Listener {
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.COMPASS, "&7« Hub", List.of("", "&7Return to the main menu"));
+        return GuiNav.hubItem();
     }
 
     private static ItemStack closeBtn() {
-        return item(Material.BARRIER, "&cClose", List.of("&7Close menu"));
+        return GuiNav.closeItem();
     }
 
     private static ItemStack item(Material mat, String name, List<String> lore) {

@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.ProgressionData;
@@ -12,6 +13,7 @@ import com.dbzlegacy.adaptivedifficulty.progression.shop.SkillUnlockService;
 import com.dbzlegacy.adaptivedifficulty.progression.skills.MeditationProgression;
 import com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost;
 import com.dbzlegacy.adaptivedifficulty.util.DmzRewards;
+import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
 import com.dbzlegacy.adaptivedifficulty.util.StaffAccess;
 import com.dragonminez.common.stats.StatsData;
 import java.util.ArrayList;
@@ -79,7 +81,8 @@ public final class ProgressionGuiApi {
                 "§e/progression boost start <encoded> [name]",
                 "§e/progression boost end",
                 "§e/progression do <action> [arg] [page] §8— GUI actions",
-                "§8Pages: main · skills · tp · race · combat · end · fabled · utility · admin · help",
+                "§8Pages: main · skills · tp · race · combat · end · fabled · utility · economy · admin · help",
+                "§8Economy: staff free Ancient Coin costs — §f/lm §7→ Progression → Ancient Coins",
                 "§8Flags: flight sprint meditation potential farming building boost bio",
                 "§8       racelock yardrat spiritualist android kiweapons piercing dot apothic",
                 "§8       end endportal shadow statchecker fabled …");
@@ -365,31 +368,32 @@ public final class ProgressionGuiApi {
     }
 
     private static ServerPlayer resolveOnline(ServerPlayer actor, String name) {
-        if (actor == null) {
-            return resolveOnlineByName(name);
+        String needle = normalizePlayerName(name);
+        if (needle.isEmpty()
+                || "me".equalsIgnoreCase(needle)
+                || "self".equalsIgnoreCase(needle)
+                || "@s".equalsIgnoreCase(needle)) {
+            return actor;
         }
-        try {
-            var server = actor.m_20194_(); // getServer
-            if (server == null) {
-                return resolveOnlineByName(name);
-            }
-            ServerPlayer exact = server.m_6846_().m_11255_(name);
-            if (exact != null) {
-                return exact;
-            }
-            for (ServerPlayer online : server.m_6846_().m_11314_()) {
-                if (online.m_7755_().getString().equalsIgnoreCase(name)) {
-                    return online;
+        if (actor != null) {
+            try {
+                var server = actor.m_20194_(); // getServer
+                if (server != null) {
+                    ServerPlayer found = matchOnline(server, needle);
+                    if (found != null) {
+                        return found;
+                    }
                 }
+            } catch (Throwable ignored) {
             }
-        } catch (Throwable ignored) {
         }
-        return resolveOnlineByName(name);
+        return resolveOnlineByName(needle);
     }
 
     /** Resolve an online player without an actor (console / Saga). */
     private static ServerPlayer resolveOnlineByName(String name) {
-        if (name == null || name.isBlank()) {
+        String needle = normalizePlayerName(name);
+        if (needle.isEmpty()) {
             return null;
         }
         try {
@@ -397,18 +401,77 @@ public final class ProgressionGuiApi {
             if (server == null) {
                 return null;
             }
-            ServerPlayer exact = server.m_6846_().m_11255_(name.trim());
-            if (exact != null) {
-                return exact;
+            return matchOnline(server, needle);
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    private static String normalizePlayerName(String name) {
+        if (name == null) {
+            return "";
+        }
+        String n = name.trim();
+        if (n.length() >= 2
+                && ((n.startsWith("\"") && n.endsWith("\""))
+                || (n.startsWith("'") && n.endsWith("'")))) {
+            n = n.substring(1, n.length() - 1).trim();
+        }
+        if (n.indexOf('§') >= 0) {
+            n = n.replaceAll("§.", "");
+        }
+        return n;
+    }
+
+    private static ServerPlayer matchOnline(net.minecraft.server.MinecraftServer server, String needle) {
+        if (server == null || needle == null || needle.isBlank()) {
+            return null;
+        }
+        ServerPlayer exact = server.m_6846_().m_11255_(needle);
+        if (exact != null) {
+            return exact;
+        }
+        ServerPlayer prefix = null;
+        int prefixHits = 0;
+        String lower = needle.toLowerCase(Locale.ROOT);
+        for (ServerPlayer online : server.m_6846_().m_11314_()) {
+            if (online == null) {
+                continue;
             }
-            for (ServerPlayer online : server.m_6846_().m_11314_()) {
-                if (online.m_7755_().getString().equalsIgnoreCase(name.trim())) {
-                    return online;
+            if (playerNameMatches(online, needle)) {
+                return online;
+            }
+            try {
+                String login = online.m_6302_();
+                if (login != null && login.toLowerCase(Locale.ROOT).startsWith(lower)) {
+                    prefix = online;
+                    prefixHits++;
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        return prefixHits == 1 ? prefix : null;
+    }
+
+    private static boolean playerNameMatches(ServerPlayer online, String needle) {
+        try {
+            String login = online.m_6302_();
+            if (login != null && login.equalsIgnoreCase(needle)) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            String display = online.m_7755_().getString();
+            if (display != null) {
+                String plain = display.indexOf('§') >= 0 ? display.replaceAll("§.", "") : display;
+                if (plain.trim().equalsIgnoreCase(needle)) {
+                    return true;
                 }
             }
         } catch (Throwable ignored) {
         }
-        return null;
+        return false;
     }
 
     // ── Progression ────────────────────────────────────────────────────
@@ -431,6 +494,8 @@ public final class ProgressionGuiApi {
         out.put("prestige_enabled", c.enablePrestigeSystem ? "true" : "false");
         out.put("skills_enabled", c.enableSkillUnlockService ? "true" : "false");
         out.put("fabled_enabled", c.enableFabledBridge ? "true" : "false");
+        out.put("staff_free_ancient_coin_costs", c.staffFreeAncientCoinCosts ? "true" : "false");
+        out.put("bypass_ancient_cost", PaidFeatureAccess.bypassAncientCoinCost(player) ? "true" : "false");
         if (!enabled) {
             return out;
         }
@@ -477,6 +542,7 @@ public final class ProgressionGuiApi {
         out.put("flag_cleaner", c.enableValueCleaner ? "true" : "false");
         out.put("flag_raceclass", c.enableRaceClassSync ? "true" : "false");
         out.put("flag_classperm", c.enableClassPermissionSync ? "true" : "false");
+        LmOverhaulScaledCombat.putPlaceholders(out, DmzProgression.stats(player));
         return out;
     }
 
@@ -560,6 +626,25 @@ public final class ProgressionGuiApi {
                     ph,
                     flagLine("Shadow Dummy Limiter", "flag_shadow"),
                     flagLine("Player Stat Checker", "flag_statchecker"));
+            case "economy", "ancient_coins", "coins" -> {
+                if (player == null || !StaffAccess.isStaff(player)) {
+                    yield List.of("§cStaff only.");
+                }
+                boolean staffFree = "true".equalsIgnoreCase(ph.getOrDefault("staff_free_ancient_coin_costs", "false"));
+                List<String> lore = new ArrayList<>();
+                lore.add("§6§lAncient Coin economy");
+                lore.add("§7Server-wide staff pricing for any LM");
+                lore.add("§7feature that charges Ancient Coins.");
+                lore.add("");
+                lore.add("§7Staff free costs §f" + (staffFree ? "ON" : "OFF"));
+                lore.add("");
+                lore.add("§8Today: AD tiers · Character Services ·");
+                lore.add("§8End dragon summon · head bone shop");
+                lore.add("§8Future paid LM features use the same gate.");
+                lore.add("");
+                lore.add("§8/lm §7→ Progression → Ancient Coins");
+                yield lore;
+            }
             case "admin", "flags", "disable" -> {
                 if (player == null || !StaffAccess.isStaff(player)) {
                     yield List.of("§cStaff only.");
@@ -751,7 +836,37 @@ public final class ProgressionGuiApi {
         if ("boost".equals(act) || "tpboost".equals(act) || "globaltpboost".equals(act)) {
             return boost(player, a);
         }
+        if ("toggle_staff_free_coins".equals(act) || "staff_free_coins".equals(act)
+                || "stafffree".equals(act) || "staff_free".equals(act)) {
+            return toggleStaffFreeAncientCoinCosts(player, a);
+        }
         return "§cUnknown progression action: " + act;
+    }
+
+    /**
+     * Server-wide: staff/OP skip Ancient Coin charges on LM paid features when enabled.
+     *
+     * @param arg blank toggles; {@code on}/{@code off} forces state
+     */
+    public static String toggleStaffFreeAncientCoinCosts(ServerPlayer player, String arg) {
+        if (!StaffAccess.isStaff(player)) {
+            return "§cStaff only.";
+        }
+        DifficultyConfig cfg = DifficultyConfig.get();
+        String a = arg == null ? "" : arg.trim().toLowerCase(Locale.ROOT);
+        boolean on;
+        if ("on".equals(a) || "true".equals(a) || "1".equals(a)) {
+            on = true;
+        } else if ("off".equals(a) || "false".equals(a) || "0".equals(a)) {
+            on = false;
+        } else {
+            on = !cfg.staffFreeAncientCoinCosts;
+        }
+        cfg.staffFreeAncientCoinCosts = on;
+        DifficultyConfig.save();
+        return on
+                ? "§aStaff free Ancient Coin costs ON — staff/OP skip coin charges (tiers, Character Services, End dragon, …)."
+                : "§eStaff free Ancient Coin costs OFF — staff/OP pay normal prices.";
     }
 
     // ── Prestige ───────────────────────────────────────────────────────
@@ -1078,40 +1193,31 @@ public final class ProgressionGuiApi {
             return PrestigeAdmin.help();
         }
         String[] parts = trimmed.split("\\s+");
+        // /padmin admin points … (staff following "/prestige admin" help on the dedicated command)
+        if (parts.length > 1 && "admin".equalsIgnoreCase(parts[0])) {
+            String[] shifted = new String[parts.length - 1];
+            System.arraycopy(parts, 1, shifted, 0, shifted.length);
+            parts = shifted;
+        }
         String sub = parts[0].toLowerCase(Locale.ROOT);
 
-        // Shorthand: /padmin addpoints <player> <n>  ·  /padmin removepoints <player> <n>
-        if ("addpoints".equals(sub) || "givepoints".equals(sub) || "grantpoints".equals(sub)) {
-            if (parts.length < 3) {
-                return "§cUsage: /padmin addpoints <player> <n>";
+        // Shorthand: /padmin addpoints|setpoints|removepoints <player> <n>
+        if ("addpoints".equals(sub) || "givepoints".equals(sub) || "grantpoints".equals(sub)
+                || "setpoints".equals(sub)
+                || "removepoints".equals(sub) || "takepoints".equals(sub)) {
+            String mode = ("removepoints".equals(sub) || "takepoints".equals(sub))
+                    ? "remove"
+                    : ("setpoints".equals(sub) ? "set" : "add");
+            String[] synth = new String[parts.length];
+            synth[0] = "points";
+            System.arraycopy(parts, 1, synth, 1, parts.length - 1);
+            FieldAdjust adj = parseFieldAdjust(actor, "points", synth);
+            if (adj.error != null) {
+                return adj.error.contains("Usage")
+                        ? "§cUsage: /padmin " + sub + " <player> <n>"
+                        : adj.error;
             }
-            ServerPlayer target = resolveOnline(actor, parts[1]);
-            if (target == null) {
-                return "§cPlayer not online: §f" + parts[1];
-            }
-            int amount;
-            try {
-                amount = Integer.parseInt(parts[2]);
-            } catch (NumberFormatException e) {
-                return "§cAmount must be a number.";
-            }
-            return PrestigeAdmin.adjustPoints(target, "add", amount);
-        }
-        if ("removepoints".equals(sub) || "takepoints".equals(sub)) {
-            if (parts.length < 3) {
-                return "§cUsage: /padmin removepoints <player> <n>";
-            }
-            ServerPlayer target = resolveOnline(actor, parts[1]);
-            if (target == null) {
-                return "§cPlayer not online: §f" + parts[1];
-            }
-            int amount;
-            try {
-                amount = Integer.parseInt(parts[2]);
-            } catch (NumberFormatException e) {
-                return "§cAmount must be a number.";
-            }
-            return PrestigeAdmin.adjustPoints(target, "remove", amount);
+            return PrestigeAdmin.adjustPoints(adj.target, mode, adj.amount);
         }
 
         if ("info".equals(sub)) {
@@ -1200,30 +1306,125 @@ public final class ProgressionGuiApi {
                 case "cap", "breakthrough" -> "breakthroughs";
                 default -> sub;
             };
-            if (parts.length < 4) {
-                return "§cUsage: /padmin " + field + " <player> <set|add|remove> <n>";
-            }
-            ServerPlayer target = resolveOnline(actor, parts[1]);
-            if (target == null) {
-                return "§cPlayer not online: §f" + parts[1];
-            }
-            String mode = parts[2];
-            int amount;
-            try {
-                amount = Integer.parseInt(parts[3]);
-            } catch (NumberFormatException e) {
-                return "§cAmount must be a number.";
+            FieldAdjust adj = parseFieldAdjust(actor, field, parts);
+            if (adj.error != null) {
+                return adj.error;
             }
             return switch (field) {
-                case "held" -> PrestigeAdmin.adjustHeld(target, mode, amount);
-                case "completed" -> PrestigeAdmin.adjustCompleted(target, mode, amount);
-                case "points" -> PrestigeAdmin.adjustPoints(target, mode, amount);
-                case "breakthroughs" -> PrestigeAdmin.adjustBreakthroughs(target, mode, amount);
-                case "fabled" -> PrestigeAdmin.adjustFabled(target, mode, amount);
+                case "held" -> PrestigeAdmin.adjustHeld(adj.target, adj.mode, adj.amount);
+                case "completed" -> PrestigeAdmin.adjustCompleted(adj.target, adj.mode, adj.amount);
+                case "points" -> PrestigeAdmin.adjustPoints(adj.target, adj.mode, adj.amount);
+                case "breakthroughs" -> PrestigeAdmin.adjustBreakthroughs(adj.target, adj.mode, adj.amount);
+                case "fabled" -> PrestigeAdmin.adjustFabled(adj.target, adj.mode, adj.amount);
                 default -> "§cUnknown admin field.";
             };
         }
         return "§cUnknown: /padmin " + sub + "\n" + PrestigeAdmin.help();
+    }
+
+    private static final class FieldAdjust {
+        final ServerPlayer target;
+        final String mode;
+        final int amount;
+        final String error;
+
+        private FieldAdjust(ServerPlayer target, String mode, int amount, String error) {
+            this.target = target;
+            this.mode = mode;
+            this.amount = amount;
+            this.error = error;
+        }
+
+        static FieldAdjust ok(ServerPlayer target, String mode, int amount) {
+            return new FieldAdjust(target, mode, amount, null);
+        }
+
+        static FieldAdjust err(String error) {
+            return new FieldAdjust(null, null, 0, error);
+        }
+    }
+
+    private static boolean isAdjustMode(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return false;
+        }
+        return switch (raw.toLowerCase(Locale.ROOT).trim()) {
+            case "set", "add", "remove", "take", "sub" -> true;
+            default -> false;
+        };
+    }
+
+    private static Integer tryParseInt(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Accepts {@code <player> set 10}, {@code set 10} (self), {@code set <player> 10},
+     * and {@code <player> 10} (implied set).
+     */
+    private static FieldAdjust parseFieldAdjust(ServerPlayer actor, String field, String[] parts) {
+        String usage = "§cUsage: /padmin " + field + " <player> <set|add|remove> <n>"
+                + "\n§8Also: /padmin " + field + " set <n>  ·  /padmin " + field + " <player> <n>";
+        if (parts == null || parts.length < 2) {
+            return FieldAdjust.err(usage);
+        }
+        String mode;
+        String playerTok;
+        String amountTok;
+        if (parts.length == 2) {
+            Integer n = tryParseInt(parts[1]);
+            if (n == null) {
+                return FieldAdjust.err(usage);
+            }
+            if (actor == null) {
+                return FieldAdjust.err("§cUsage: /padmin " + field + " <player> set <n>");
+            }
+            return FieldAdjust.ok(actor, "set", n);
+        }
+        if (isAdjustMode(parts[1])) {
+            mode = parts[1];
+            if (parts.length == 3) {
+                Integer n = tryParseInt(parts[2]);
+                if (n == null) {
+                    return FieldAdjust.err(usage);
+                }
+                if (actor == null) {
+                    return FieldAdjust.err("§cUsage: /padmin " + field + " <player> " + mode + " <n>");
+                }
+                return FieldAdjust.ok(actor, mode, n);
+            }
+            if (parts.length < 4) {
+                return FieldAdjust.err(usage);
+            }
+            playerTok = parts[2];
+            amountTok = parts[3];
+        } else if (parts.length >= 4 && isAdjustMode(parts[2])) {
+            playerTok = parts[1];
+            mode = parts[2];
+            amountTok = parts[3];
+        } else if (tryParseInt(parts[2]) != null) {
+            playerTok = parts[1];
+            mode = "set";
+            amountTok = parts[2];
+        } else {
+            return FieldAdjust.err(usage);
+        }
+        Integer amount = tryParseInt(amountTok);
+        if (amount == null) {
+            return FieldAdjust.err("§cAmount must be a number.");
+        }
+        ServerPlayer target = resolveOnline(actor, playerTok);
+        if (target == null) {
+            return FieldAdjust.err("§cPlayer not online: §f" + playerTok);
+        }
+        return FieldAdjust.ok(target, mode, amount);
     }
 
     // ── Skills ─────────────────────────────────────────────────────────
@@ -1267,6 +1468,7 @@ public final class ProgressionGuiApi {
         } catch (Throwable t) {
             out.put("strength", "0");
         }
+        LmOverhaulScaledCombat.putPlaceholders(out, data);
         return out;
     }
 

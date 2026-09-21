@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.sparring.DojoRankings;
 import com.dbzlegacy.adaptivedifficulty.sparring.SparCombat;
@@ -132,6 +133,7 @@ public final class SparGuiApi {
         int warPending = DojoRankings.pendingDojoWarCount(player);
         out.put("dojo_war_pending", String.valueOf(warPending));
         out.put("dojo_war_pending_count", out.get("dojo_war_pending"));
+        LmOverhaulScaledCombat.putPlaceholders(out, player);
         return out;
     }
 

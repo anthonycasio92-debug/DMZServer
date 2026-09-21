@@ -1,7 +1,9 @@
 package com.dbzlegacy.adaptivedifficulty.gui;
 
-import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
+import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
+import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.data.TeamMode;
@@ -60,6 +62,7 @@ public final class DifficultyTeamGuiApi {
                 player, TeamScaling.RarityBonus.MUTATION)));
         out.put("spawn_boss_bonus", formatBonus(TeamScaling.rarityBonusPercent(
                 player, TeamScaling.RarityBonus.BOSS_PROMOTION)));
+        LmOverhaulScaledCombat.putPlaceholders(out, player);
         return out;
     }
 
@@ -165,6 +168,7 @@ public final class DifficultyTeamGuiApi {
         DifficultySnapshot snap = DifficultyCache.get(player);
         TeamMode mode = data.getTeamMode();
         lines.add("§7Mode §f" + modeLabel(mode));
+        lines.addAll(LmOverhaulScaledCombat.compactLines(DmzProgression.stats(player)));
         int onlineMutual = TeamScaling.onlineMutualRivalCount(player);
         int teaming = TeamScaling.teammates(player).size();
         lines.add("§7Mutual rivals §f" + TeamScaling.mutualRivalCount(player)

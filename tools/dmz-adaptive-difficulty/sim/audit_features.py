@@ -163,7 +163,9 @@ def main() -> int:
     check("buy charges Ancient Coins", has(actions, "AncientCoinEconomy", "activationCost", "charge", "setTier"))
 
     print("\n=== Combat model (STR/SKP/PWR + ENE, class + top-2) ===")
-    check("blended offense includes PWR/ENE", has(profile, "blendedOffense", "ENERGY_OFFENSE_FACTOR", "getKiDamage", "getMaxEnergy"))
+    check("blended offense includes PWR/ENE", has(profile, "blendedOffense", "ENERGY_OFFENSE_FACTOR")
+          and ("getKiDamage" in profile or "LmOverhaulScaledCombat.ki" in profile)
+          and ("getMaxEnergy" in profile or "LmOverhaulScaledCombat.energy" in profile))
     check("ENERGY WeakStat", "ENERGY," in profile or "ENERGY\n" in profile)
     check("form peak includes PWR/ENE", has(profile, '"PWR"', '"ENE"'))
     check("top-2 counters", has(profile, "top 2", "Math.min(2") or "topCount = Math.min(2" in profile)
@@ -201,7 +203,9 @@ def main() -> int:
     check("LivingDamageEvent receiveCanceled", "receiveCanceled = true" in events and "targetLandingDamage" in events)
     check("isAdPainted helper", "isAdPainted" in mob)
     check("CombatSanity clamps", has(sanity, "saneFormMult", "saneLive", "usableBaseline"))
-    check("live offense poll includes PWR/ENE", has(events, "getKiDamage", "getMaxEnergy"))
+    check("live offense poll includes PWR/ENE",
+          has(events, "LmOverhaulScaledCombat.ki", "LmOverhaulScaledCombat.energy")
+          or has(events, "getKiDamage", "getMaxEnergy"))
 
     print("\n=== Form soft-curve / peel ===")
     check("form soft curve", has(profile, "blendForm", "transformScaleWeight", "megaForm"))
@@ -663,6 +667,13 @@ def main() -> int:
     check("Android gate via androidforms TP costs", "getFormSkillTpCosts" in android and "ANDROID_FORM_GROUP" in android)
     check("Android eligibleRaceHint", "eligibleRaceHint" in android and "configuredAndroidRaceIds" in android)
     check("Android isAndroidUpgraded helper", "public static boolean isAndroidUpgraded(" in android)
+    check("Android strip on ineligible race", "stripIfRaceIneligible(" in android)
+    headbone = read(SRC / "com/dbzlegacy/adaptivedifficulty/character/CosmeticHeadBoneService.java")
+    diff_ev = read(SRC / "com/dbzlegacy/adaptivedifficulty/event/DifficultyEvents.java")
+    check("Head bone persist through forms", "reapplyAfterFormChange" in headbone and "equippedHeadBone" in headbone)
+    check("Head bone reapply on FormChangeEvent", "scheduleReapplyAfterFormChange" in diff_ev)
+    race_hooks = read(SRC / "com/dbzlegacy/adaptivedifficulty/character/DmzCharacterClassChangeHooks.java")
+    check("Android strip on services race change", "stripIfRaceIneligible" in race_hooks)
     check("Android deny message not humans-only", "Only races with android forms (humans)" not in android)
     check("GUI lists all Android-capable races", "Frost Demon" in prog_chest and "Viltrumite" in prog_chest
           and "Frost Demon" in prog_cmi)
@@ -1205,7 +1216,17 @@ def main() -> int:
     prestige_faction_sync = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/PrestigeFactionSync.java")
     check("takePrestigeLevels API", "takePrestigeLevels" in prestige_skill_sync and "loseLevels" in prestige_skill_sync)
     check("addPrestigeLevels API", "addPrestigeLevels" in prestige_skill_sync and "giveLevels" in prestige_skill_sync)
-    check("turnIn uses Fabled API take", "takePrestigeLevels" in pp)
+    check("turnIn uses Fabled API take", "takePrestigeLevels" in pp
+          or "alignFabledToHeld" in pp)
+    check("Fabled prestige is held + 1",
+          "FABLED_HELD_OFFSET = 1" in prestige_skill_sync
+          and "alignFabledToHeld" in prestige_skill_sync
+          and "fabledLevelForHeld" in prestige_skill_sync)
+    check("held wallet drives Fabled align",
+          "getHeldWallet" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java")
+          and "alignFabledToHeld" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java"))
     check("PrestigeFactionSync forceSync", "forceSync" in prestige_faction_sync)
     prestige_admin = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeAdmin.java")
     prestige_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java")
@@ -1256,12 +1277,129 @@ def main() -> int:
     check("LM tips config flag", "enableLmTips" in read(CFG) and "lmTipFrequentGroups" in read(CFG))
     check("breakthrough costs 15..35", "breakthroughCost" in pp and "15" in pp and "35" in pp)
     check("MAX_BREAKTHROUGHS 5", "MAX_BREAKTHROUGHS = 5" in pp)
-    check("StatsDataMixin personal cap", "getConfiguredMaxValue" in mixin and "effectiveMaxLevel" in mixin)
+    check("StatsDataMixin personal cap",
+          "getConfiguredMaxValue" in mixin and "LmOverhaulCapMath.personalLevelCap" in mixin)
     check("StatsDataMixin remap false",
-          'remap = false' in mixin and '@Mixin(value = StatsData.class, remap = false)' in mixin)
-    check("StatsDataMixin clamps down to personal",
-          "personal != serverMax.intValue()" in mixin or "personal != serverMax" in mixin)
-    check("StatsDataMixin gated on prestige flag", "enablePrestigeSystem" in mixin)
+          'remap = false' in mixin and "StatsData.class, remap = false" in mixin)
+    check("StatsDataMixin applies personal cap", "lm$personalMaxValue" in mixin)
+    revamp_cap = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/DmzRevampPrestigeCapMixin.java")
+    check("Overhaul levelCap follows personal 100k+BT (not stock 50k at P0)",
+          '@Inject(method = "levelCap"' in revamp_cap
+          and "overhaulLevelCap(data)" in revamp_cap
+          and "lm$personalOverhaulLevelCap" in revamp_cap)
+    check("Overhaul maxAssignableTotal uses LM breakthrough",
+          "maxAssignableTotal" in revamp_cap
+          and "LmOverhaulCapMath.maxAssignableTotal" in revamp_cap)
+    combat_scale = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataOverhaulCombatScaleMixin.java")
+    check("Overhaul combat scale uses scaleMultiplier",
+          "getTotalMultiplier" in combat_scale
+          and "combatScaleMultiplier" in combat_scale
+          and "isResourcePoolStat" in combat_scale)
+    check("mixins.json registers combat scale mixin",
+          '"StatsDataOverhaulCombatScaleMixin"' in mixins_json)
+    scaled_helper = read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/LmOverhaulScaledCombat.java")
+    check("Overhaul scaled combat helper",
+          "combatScaleMultiplier" in scaled_helper
+          and "putPlaceholders" in scaled_helper
+          and "compactLines" in scaled_helper
+          and "defense" in scaled_helper)
+    check("AD combat profile uses Overhaul scaled helper",
+          "LmOverhaulScaledCombat.melee" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/PlayerCombatProfile.java")
+          and "LmOverhaulScaledCombat.defense" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/PlayerCombatProfile.java"))
+    check("spar/rival BP uses post-scale released power",
+          "LmOverhaulScaledCombat.scaled" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/CombatRating.java")
+          and "LmOverhaulScaledCombat.scaled" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/util/DmzRewards.java"))
+    check("spar/rival/AD GUIs expose post-scale stats",
+          "LmOverhaulScaledCombat.putPlaceholders" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/SparGuiApi.java")
+          and "LmOverhaulScaledCombat.putPlaceholders" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/RivalGuiApi.java")
+          and "LmOverhaulScaledCombat.putPlaceholders" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/gui/ProgressionGuiApi.java"))
+    dmz_prog = read(SRC / "com/dbzlegacy/adaptivedifficulty/calc/DmzProgression.java")
+    check("AD ceiling honors 150k breakthroughs",
+          "ABSOLUTE_LEVEL_CAP" in dmz_prog and "configuredMaxDmzLevel" in dmz_prog)
+    check("Overhaul rebirth blocked", "canPrestige" in revamp_cap)
+    check("StatsDataMixin gated on dmzrevamp", "isLoaded(\"dmzrevamp\")" in mixin)
+    check("StatsDataMixin beats dmzrevamp cap mixin", "priority = 5000" in mixin)
+    check("StatsDataMixin max total + stat buy", "getConfiguredMaxTotalStats" in mixin
+          and "getMaxAllowedIncreaseForStat" in mixin)
+    bridge = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/DmzRevampPrestigeBridge.java")
+    check("Overhaul prestige sync bridge", "syncFromLegacy" in bridge and "setCount" in bridge)
+    check("Overhaul prestige count syncs from Fabled-1 (held+1)",
+          "fabledPrestigeLevel" in bridge
+          and "getCompleted" not in bridge
+          and "Math.max(0, fabled - 1)" in bridge)
+    integration = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/LmOverhaulPrestigeIntegration.java")
+    check("Overhaul prestige is 1:1 with held",
+          "toOverhaulCount" in integration
+          and "Math.min(OVERHAUL_MAX_PRESTIGE, held)" in integration
+          and "overhaulCountFromHeld" in integration
+          and "oneBasedLevel - 1" not in integration)
+    check("attr multi bonus default off", "enableAttrMultiBonus = false" in read(CFG))
+    dmz_lvl = read(ROOT / "config" / "dmzrevamp" / "LevelingRevamp.json")
+    check("Overhaul initialLevelCap 100k", '"initialLevelCap": 100000' in dmz_lvl)
+    cap_math = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/LmOverhaulCapMath.java")
+    check("Overhaul level cap helper is 100k + breakthroughs",
+          "OVERHAUL_LEVEL_CAP = PrestigePointsSystem.BASE_LEVEL_CAP" in cap_math
+          and "overhaulLevelCap(StatsData data)" in cap_math
+          and "pinOverhaulLevelCaps" in cap_math)
+    check("Overhaul boot pins 100k/150k caps",
+          "pinOverhaulLevelCaps" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/DmzRevampConfigBridge.java"))
+    mixin_sd = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataMixin.java")
+    check("Personal level cap is server Forge (no KubeJS client shim)",
+          not (ROOT / "kubejs/client_scripts/overhaul_level_cap.js").exists()
+          and not (ROOT / "kubejs/server_scripts/overhaul_level_cap.js").exists())
+    check("StatsDataMixin wins Overhaul max (priority 5000)",
+          "priority = 5000" in mixin_sd
+          and "getConfiguredMaxValue" in mixin_sd)
+    mirror = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/PersonalLevelCapMirror.java")
+    check("Cap publish pushes StatsSyncS2C to client",
+          "DmzSkillUtil.sync(player)" in mirror)
+    energy_mana = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/EnergyManaSync.java")
+    pool_clamp = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzResourcePoolClamp.java")
+    check("Fabled mana uses actual ki pool not ENE stat",
+          "actualMaxEnergy" in energy_mana
+          and "getCurrentEnergy" in energy_mana
+          and "displayMaxEnergy(dmz)" not in energy_mana)
+    check("0 breakthroughs are explicit NBT not inferred from 150k cap",
+          "Inferring from lm_personal_level_cap" in pp
+          and "return 0;" in
+          "".join(pp.split("public static int getBreakthroughs")[1].split("public static int breakthroughCost")[0]))
+    check("actualMaxEnergy prefers getMaxEnergy",
+          "getMaxEnergy()" in pool_clamp
+          and "looksLikeIronMana" in pool_clamp
+          and "actualMaxEnergy" in pool_clamp)
+    check("canonical actualMaxEnergy/Stamina apply Overhaul scale once",
+          "actualMaxStamina" in pool_clamp
+          and "applyOverhaulScale" in pool_clamp
+          and "isReadingNativeMax" in pool_clamp
+          and "displayMaxEnergy" in pool_clamp
+          and "return actualMaxEnergy(data)" in pool_clamp)
+    check("HUD mixin registers prestige-aware getMax*",
+          '"StatsDataHudPoolMaxMixin"' in mixins_json
+          and "applyOverhaulScale" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java")
+          and "isReadingNativeMax" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java"))
+    check("EnergyManaSync does not raise max to overflowing current",
+          "maxEnergy = currentEnergy" not in energy_mana
+          and "clampCurrentToMax" in energy_mana)
+    check("Revamp prestige does not refill after afterSetCount",
+          "refillPoolsLikeOverhaulPrestige" not in bridge
+          and "clampToOverhaulPool" in bridge
+          and "StatsSyncS2C" in bridge)
+    check("Fabled MaxKi persistent uses actual ki",
+          "actualMaxEnergy" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/StatScreenSync.java"))
+    check("Fabled Stamina persistent uses actual stamina",
+          "actualMaxStamina" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/StatScreenSync.java"))
     manifest = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "resources" / "META-INF" / "MANIFEST.MF")
     check("MANIFEST MixinConfigs for Mohist",
           "MixinConfigs: legacymechanics.mixins.json" in manifest)
@@ -1275,7 +1413,8 @@ def main() -> int:
     check("TP soft-lock silent (no chat spam)",
           "event.setTpGain(0)" in events_pp
           and "pp_cap_msg_next" not in events_pp)
-    check("Stat soft-lock at personal*6", "onStatChange" in events_pp and "personal * 6" in events_pp)
+    check("Stat soft-lock at personal cap total",
+          "onStatChange" in events_pp and "maxAssignableTotal" in events_pp)
     check("Stat soft-lock uses ScreenNotify",
           "ScreenNotify.hint" in events_pp and "pp_stat_cap_title" in events_pp)
     check("Chest lore maxValue 150000 soft-lock",

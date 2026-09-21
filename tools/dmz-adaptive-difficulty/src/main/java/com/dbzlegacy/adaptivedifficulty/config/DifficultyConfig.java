@@ -45,6 +45,13 @@ public final class DifficultyConfig {
      * Toggle: {@code /difficulty admin telemetry on|off}.
      */
     public boolean balanceTelemetryEnabled = false;
+    /**
+     * When {@code true}, staff ({@link com.dbzlegacy.adaptivedifficulty.util.StaffAccess})
+     * pay no Ancient Coins for LM paid features (tier purchases, Character Services, End dragon summon, …).
+     * Default {@code false} — ops/admins pay like everyone unless this is on or they hold a bypass permission.
+     * Toggle: {@code /difficulty admin stafffree on|off}.
+     */
+    public boolean staffFreeAncientCoinCosts = false;
     /** Max telemetry hit lines per player per second (spam guard). */
     public int balanceTelemetryMaxPerSecond = 8;
     /**
@@ -126,8 +133,8 @@ public final class DifficultyConfig {
     /**
      * Reference caps used to document the top tier (Zenith).
      * Theoretical max ≈ referenceMaxLevel × referenceMaxPrestige × prestigeMultiplier
-     * = 150000 × 10 × 10 with defaults. Server DMZ maxValue stays 100k; prestige
-     * breakthroughs raise a player's personal cap toward referenceMaxLevel.
+     * = 150000 × 10 × 10 with defaults. Server DMZ maxValue is 150k; prestige
+     * breakthroughs raise a player's personal playable cap from 100k toward 150k.
      */
     public long referenceMaxLevel = 150_000L;
     public int referenceMaxPrestige = 10;
@@ -252,6 +259,14 @@ public final class DifficultyConfig {
     public boolean enableSkillUnlockService = true;
     public boolean enablePrestigeSystem = true;
     /**
+     * Use dmzrevamp Statistics prestige UI + native scaling/rebirth. LM still owns
+     * playable max stat total via mixins ({@code enableOverhaulPrestigeIntegration}).
+     * Overhaul {@code levelCap} is the personal 100k + 10k×breakthroughs cap
+     * so prestige 0 is not stock 50k and 0 breakthroughs still work at held 1.
+     * Requires {@code LevelingRevamp.json → Prestige.enabled: true} on the server.
+     */
+    public boolean enableOverhaulPrestigeIntegration = true;
+    /**
      * Donator Skill Check UI ({@code /skillcheck}, CNPC interact / trigger 21).
      * Staff always have access; others need {@link #skillCheckPermission}.
      */
@@ -302,7 +317,8 @@ public final class DifficultyConfig {
     public boolean enableEnergyManaSync = true;
     public boolean enableStatScreenSync = true;
     public boolean enableTpSpMirror = true;
-    public boolean enableAttrMultiBonus = true;
+    /** Fabled attribute → DMZ “Prestige Bonus” multipliers (off by default; stacks per prestige AP). */
+    public boolean enableAttrMultiBonus = false;
     public boolean enablePrestigeSkillSync = true;
     public boolean enablePrestigeFactionSync = true;
     public boolean enableValueCleaner = true;
@@ -342,6 +358,8 @@ public final class DifficultyConfig {
      * {@code cmi} (default), {@code auto} (CMI → chest → chat), {@code chest}, or {@code chat}.
      */
     public String guiBackend = "cmi";
+    /** Staff {@code /lm admin testgui} — CustomNPCs panel listing all LM systems (experimental). */
+    public boolean enableStaffCnpcTestGui = true;
     /**
      * If the Minecraft world is on Peaceful (no hostile spawns), restore it on server start.
      * Peaceful prevents adaptive mob scaling from doing anything.
@@ -508,6 +526,11 @@ public final class DifficultyConfig {
      * Without this flag, intentional 1024 caps were wiped every reload.
      */
     public Boolean legacyMaxHealthCapMigratedV1 = Boolean.FALSE;
+    /**
+     * One-time: raise stale live {@code referenceMaxLevel} 100000 → 150000 so
+     * breakthroughs to 150k are not clamped by the old AD ceiling.
+     */
+    public Boolean referenceMaxLevel150kMigratedV1 = Boolean.FALSE;
     /**
      * One-time: drop race / weak-stat / specialization stack and soften class + top-1
      * counter stock values so existing configs match the lighter 3.3.35 model.
@@ -1329,6 +1352,12 @@ public final class DifficultyConfig {
                 cfg.maxScaledHealth = 0.0;
             }
             cfg.legacyMaxHealthCapMigratedV1 = Boolean.TRUE;
+        }
+        if (!Boolean.TRUE.equals(cfg.referenceMaxLevel150kMigratedV1)) {
+            if (cfg.referenceMaxLevel == 100_000L) {
+                cfg.referenceMaxLevel = 150_000L;
+            }
+            cfg.referenceMaxLevel150kMigratedV1 = Boolean.TRUE;
         }
         if (cfg.maxDamageMultiplier < 0.0) {
             cfg.maxDamageMultiplier = 0.0;

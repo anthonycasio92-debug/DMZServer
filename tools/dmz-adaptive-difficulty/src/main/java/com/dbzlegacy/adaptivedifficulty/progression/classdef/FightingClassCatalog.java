@@ -4,6 +4,7 @@ import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.ConfigPaths;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.FabledBridge;
 import com.dbzlegacy.adaptivedifficulty.character.DmzContentDiscovery;
+import com.dbzlegacy.adaptivedifficulty.character.DmzRuntimeClassIds;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -49,22 +50,13 @@ public final class FightingClassCatalog {
         return Collections.unmodifiableSet(new LinkedHashSet<>(BLOB.classIds));
     }
 
-    /** Fighting classes for a race — live DMZ config + {@code stats.json} on disk. */
+    /** Fighting classes for a race — matches DMZ {@code ConfigManager} / recustomize UI. */
     public static List<String> classIdsForRace(String raceId) {
-        return DmzContentDiscovery.classIdsForRace(raceId);
+        return DmzRuntimeClassIds.classIdsForRace(raceId);
     }
 
     public static boolean isClassValidForRace(String raceId, String classId) {
-        if (classId == null || classId.isBlank()) {
-            return false;
-        }
-        String id = normalizeId(classId);
-        for (String allowed : classIdsForRace(raceId)) {
-            if (id.equals(allowed)) {
-                return true;
-            }
-        }
-        return false;
+        return DmzRuntimeClassIds.canonicalId(raceId, classId) != null;
     }
 
     public static List<ClassEntry> entries() {

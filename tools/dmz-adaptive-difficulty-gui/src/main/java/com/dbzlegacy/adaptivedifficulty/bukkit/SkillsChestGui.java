@@ -35,10 +35,7 @@ public final class SkillsChestGui implements Listener {
     }
 
     private static String invTitle(Player viewer, Player subject, String base) {
-        if (inspecting(viewer, subject)) {
-            return color(base + " · &c" + subject.getName());
-        }
-        return color(base);
+        return GuiNav.inventoryTitle(viewer, subject, base);
     }
 
     public void open(Player player, String page) {
@@ -143,7 +140,7 @@ public final class SkillsChestGui implements Listener {
         put(holder, inv, 49, hubBtn(), SlotAction.cmd("lmdo lm open hub"));
         if (staffAdmin) {
             put(holder, inv, 51, tipBtn(viewer, "skills.main.progression", Material.BREWING_STAND, "&dProgression",
-                    List.of("&7Skills · TP · Race · Combat flags", "&eClick to open8Opens this menu")),
+                    List.of("&7Skills · TP · Race · Combat flags", "&eOpen")),
                     SlotAction.cmd("lmdo lm open progression"));
         }
         put(holder, inv, 53, closeBtn(), SlotAction.dismiss());
@@ -276,11 +273,11 @@ public final class SkillsChestGui implements Listener {
     }
 
     private static ItemStack hubBtn() {
-        return item(Material.COMPASS, "&7« Hub", List.of());
+        return GuiNav.hubItem();
     }
 
     private static ItemStack closeBtn() {
-        return item(Material.BARRIER, "&cClose", List.of());
+        return GuiNav.closeItem();
     }
 
     private static ItemStack item(Material mat, String name, List<String> lore) {

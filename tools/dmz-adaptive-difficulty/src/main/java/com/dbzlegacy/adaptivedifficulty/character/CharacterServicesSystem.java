@@ -4,7 +4,6 @@ import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
-import com.dbzlegacy.adaptivedifficulty.progression.bridge.ClassPermissionSync;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceClassSync;
 import com.dbzlegacy.adaptivedifficulty.progression.bridge.RaceSkillSync;
 import com.dbzlegacy.adaptivedifficulty.progression.race.RaceLock;
@@ -328,6 +327,8 @@ public final class CharacterServicesSystem {
             }
             clearForms(ch, player);
             String priorHeadBone = CosmeticHeadBoneService.activeBone(player);
+            String priorClassBeforeRaceChange = "";
+            boolean openedFreeClassPicker = false;
             if (fullWipe) {
                 applyFullProgressWipe(player, data);
                 RaceChangeCreationFlow.begin(player, raceId, priorHeadBone);
@@ -341,26 +342,67 @@ public final class CharacterServicesSystem {
                     } catch (Throwable ignored) {
                     }
                 }
-                RaceChangeClassMapper.applyRaceAndFightingClass(player, data, raceId, priorClass);
-                CosmeticHeadBoneService.reapplyHeadBoneAfterRaceChange(player, priorHeadBone);
+                priorClassBeforeRaceChange = priorClass == null ? "" : priorClass;
                 boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
                 List<RaceChangeSkillPreserve.Entry> skillSnapshot =
                         keepSkills ? RaceChangeSkillPreserve.capture(data.getSkills()) : List.of();
-                if (target != null) {
-                    applyStats(data.getStats(), target);
-                }
-                DmzFightingClassStatsSync.afterFightingClassChange(player, data, target != null);
-                if (keepSkills) {
-                    RaceChangeSkillPreserve.restore(data, currentRace, raceId, skillSnapshot);
-                    RaceClassSync.syncRaceSkillOnly(player);
+                if (RaceChangeClassMapper.requiresClassPicker(priorClassBeforeRaceChange, raceId)) {
+                    float[] pickerResourceSnapshot = data.snapshotMultiplierResources();
+                    RaceChangeClassMapper.commitFightingClassForRace(
+                            data, raceId, "", priorClassBeforeRaceChange);
+                    com.dbzlegacy.adaptivedifficulty.progression.race.AndroidConversion.stripIfRaceIneligible(
+                            player, raceId);
+                    try {
+                        data.updateTransformationSkillLimits(raceId);
+                    } catch (Throwable ignored) {
+                    }
+                    DmzClassCommandApply.pushStatsSync(player);
+                    CosmeticHeadBoneService.reapplyHeadBoneAfterRaceChange(player, priorHeadBone);
+                    if (target != null) {
+                        applyStats(data.getStats(), target);
+                    }
+                    // Full class sync runs when the player finishes recustomize (packet mixin hook).
+                    if (keepSkills) {
+                        RaceChangeSkillPreserve.restore(data, currentRace, raceId, skillSnapshot);
+                        RaceClassSync.syncRaceSkillOnly(player);
+                    } else {
+                        RaceSkillSync.sync(player, raceId);
+                        RaceClassSync.sync(player);
+                    }
+                    RaceChangeClassPickFlow.begin(
+                            player, raceId, priorClassBeforeRaceChange, pickerResourceSnapshot);
+                    RaceChangeClassPickFlow.openRecustomizeEditor(player);
+                    openedFreeClassPicker = true;
                 } else {
-                    RaceSkillSync.sync(player, raceId);
-                    RaceClassSync.sync(player);
+                    float[] resourceSnapshot = data.snapshotMultiplierResources();
+                    String mappedClass =
+                            RaceChangeClassMapper.applyRaceAndFightingClass(
+                                    player, data, raceId, priorClass);
+                    if (mappedClass != null
+                            && !mappedClass.isBlank()
+                            && !priorClassBeforeRaceChange.isBlank()
+                            && !mappedClass.equalsIgnoreCase(priorClassBeforeRaceChange)) {
+                        AdaptiveDifficultyMod.LOGGER.info(
+                                "[{}] race change remapped fighting class {} → {} for race {}",
+                                AdaptiveDifficultyMod.MOD_ID,
+                                priorClassBeforeRaceChange,
+                                mappedClass,
+                                raceId);
+                    }
+                    CosmeticHeadBoneService.reapplyHeadBoneAfterRaceChange(player, priorHeadBone);
+                    if (target != null) {
+                        applyStats(data.getStats(), target);
+                    }
+                    DmzCharacterClassChangeHooks.onServicesRaceChangeApplied(
+                            player, data, raceId, mappedClass, resourceSnapshot, target != null);
+                    if (keepSkills) {
+                        RaceChangeSkillPreserve.restore(data, currentRace, raceId, skillSnapshot);
+                        RaceClassSync.syncRaceSkillOnly(player);
+                    } else {
+                        RaceSkillSync.sync(player, raceId);
+                        RaceClassSync.sync(player);
+                    }
                 }
-            }
-            if (!fullWipe) {
-                ClassPermissionSync.sync(player);
-                syncClient(player);
             }
             CharacterServicesStore.get().record(player.m_20148_().toString()).lastRaceChangeAt =
                     System.currentTimeMillis();
@@ -371,6 +413,17 @@ public final class CharacterServicesSystem {
                 return "§aOpening character setup for §f" + titleCase(raceId)
                         + "§a. §7Pick your class and appearance — free full wipe."
                         + " §7Purchased head parts stay unlocked."
+                        + paid;
+            }
+            if (openedFreeClassPicker) {
+                return "§aRace changed to §f" + titleCase(raceId)
+                        + "§a. Eligible stats preserved at §f" + preservationPercent + "%§a."
+                        + " §7Your old class is not available on this race — §fchoose a new class§7"
+                        + " in the editor (§fno extra cost§7)."
+                        + (cfg.raceChange.keepSkillsOnRaceChange
+                                ? " §7Ki skills and shared form progress kept."
+                                : "")
+                        + " §7Head part unlocks are kept."
                         + paid;
             }
             boolean keepSkills = cfg.raceChange.keepSkillsOnRaceChange;
@@ -420,7 +473,7 @@ public final class CharacterServicesSystem {
         }
         String classId = normalizeId(targetClass);
         String race = DmzProgression.race(player);
-        if (classId.isEmpty() || !FightingClassCatalog.isClassValidForRace(race, classId)) {
+        if (classId.isEmpty()) {
             return "§cThat class is not available for your race.";
         }
         String current = DmzProgression.fightingClass(player);
@@ -444,7 +497,11 @@ public final class CharacterServicesSystem {
         if (data == null) {
             return "§cCharacter data unavailable.";
         }
+        if (!DmzClassCommandApply.isValidClass(data, classId)) {
+            return "§cThat class is not available for your race.";
+        }
         TransferableStats before = cc.preserveBaseStats ? captureStats(player) : null;
+        float[] resourceSnapshot = data.snapshotMultiplierResources();
 
         if (cost > 0L && !chargeAc(player, cost)) {
             return insufficientFunds(player, cost);
@@ -456,15 +513,20 @@ public final class CharacterServicesSystem {
                 refund(player, cost);
                 return "§cCharacter data unavailable.";
             }
-            ch.setCharacterClass(classId);
+            String committed =
+                    RaceChangeClassMapper.commitFightingClassForRace(data, race, classId, current);
+            if (committed != null && !committed.isBlank()) {
+                classId = committed;
+            } else {
+                ch.setCharacterClass(classId);
+            }
             boolean preservePrimaries = before != null;
             if (preservePrimaries) {
                 applyStats(data.getStats(), before);
             }
-            DmzFightingClassStatsSync.afterFightingClassChange(player, data, preservePrimaries);
-            ClassPermissionSync.sync(player);
+            DmzCharacterClassChangeHooks.onPaidClassChange(
+                    player, data, classId, resourceSnapshot, preservePrimaries);
             RaceClassSync.sync(player);
-            syncClient(player);
             CharacterServicesStore.get().record(player.m_20148_().toString()).lastClassChangeAt =
                     System.currentTimeMillis();
             CharacterServicesStore.get().markDirty();

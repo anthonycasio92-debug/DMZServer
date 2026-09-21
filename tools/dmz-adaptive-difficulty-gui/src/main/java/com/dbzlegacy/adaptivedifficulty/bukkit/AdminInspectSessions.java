@@ -49,6 +49,20 @@ public final class AdminInspectSessions {
         return subject != null && !subject.equals(viewerId);
     }
 
+    /**
+     * Who performs a GUI action. Admin save/status/resetcd always runs as the clicking staff
+     * member — not the inspect target (Forge {@code StaffAccess} would reject the subject).
+     */
+    public static Player resolveActor(Player viewer, String action) {
+        if (viewer == null) {
+            return null;
+        }
+        if (action != null && "admin".equalsIgnoreCase(action.trim())) {
+            return viewer;
+        }
+        return resolveSubject(viewer);
+    }
+
     /** Online subject for this viewer, or the viewer themselves when not inspecting. */
     public static Player resolveSubject(Player viewer) {
         if (viewer == null) {

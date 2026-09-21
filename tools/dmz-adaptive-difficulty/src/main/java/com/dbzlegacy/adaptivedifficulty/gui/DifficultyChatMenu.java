@@ -3,9 +3,11 @@ package com.dbzlegacy.adaptivedifficulty.gui;
 import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.calc.PlayerCombatProfile;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.currency.AncientCoinEconomy;
+import com.dbzlegacy.adaptivedifficulty.util.PaidFeatureAccess;
 import com.dbzlegacy.adaptivedifficulty.data.PlayerDifficultyData;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockSystem;
 import com.dbzlegacy.adaptivedifficulty.tier.UnlockTier;
@@ -165,6 +167,7 @@ public final class DifficultyChatMenu {
         send(player, btn("§c[Reset to None]", "/difficulty do lower_tier 0 tiers", "Clear active tier"));
         for (UnlockTier tier : UnlockTier.values()) {
             long cost = AncientCoinEconomy.activationCost(tier, player);
+            boolean freeCost = PaidFeatureAccess.bypassAncientCoinCost(player);
             boolean unlocked = data.hasUnlockedTier(tier.id);
             boolean activeHere = active == tier.id;
             boolean canLower = unlocked && tier.id < active;
@@ -178,9 +181,12 @@ public final class DifficultyChatMenu {
                         .m_7220_(btn("§f[LOWER]", "/difficulty do activate " + tier.id + " tiers",
                                 "Lower to Tier " + tier.id + " (free)"));
             } else if (unlocked) {
-                line = line.m_7220_(Component.m_237113_(" §6" + AncientCoinEconomy.formatExactCost(cost) + " "))
+                String costLabel = freeCost ? "§afree (staff)" : ("§6" + AncientCoinEconomy.formatExactCost(cost));
+                line = line.m_7220_(Component.m_237113_(" " + costLabel + " "))
                         .m_7220_(btn("§a[BUY]", "/difficulty do activate " + tier.id + " tiers",
-                                "Pay Ancient Coins for Tier " + tier.id + " (pay-up OK, change returned)"));
+                                freeCost
+                                        ? "Activate Tier " + tier.id + " (staff — no coin charge)"
+                                        : "Pay Ancient Coins for Tier " + tier.id + " (pay-up OK, change returned)"));
             } else {
                 line = line.m_7220_(Component.m_237113_(
                         " §cLOCKED §8(" + tier.requirementTip() + ")"));
@@ -252,6 +258,9 @@ public final class DifficultyChatMenu {
                 + (profile.fightingClass.isBlank() ? "?" : profile.fightingClass)
                 + "  §8·  §7Style §f" + profile.style.name()));
         send(player, Component.m_237113_("§7Top stats §f" + profile.topStatsLabel()));
+        for (String line : LmOverhaulScaledCombat.compactLines(DmzProgression.stats(player))) {
+            send(player, Component.m_237113_(line));
+        }
         send(player, Component.m_237113_("§7Unlocked §fT" + snap.highestUnlockedTier
                 + "  §8·  §7Title §e" + TitleSystem.activeDisplay(player)));
         send(player, Component.m_237113_("§6Ancient Coins §f" + AncientCoinEconomy.inventoryBreakdown(player)));
@@ -274,6 +283,8 @@ public final class DifficultyChatMenu {
                         ? "§eWhitelist ON §7(" + DifficultyConfig.whitelistEntries().size() + ")"
                         : "§7Whitelist OFF")));
         send(player, Component.m_237113_("§8/difficulty admin off|on · whitelist on|off|add|remove|list"));
+        send(player, Component.m_237113_(
+                "§7Staff Ancient Coin pricing §8→ §f/lm §7→ Progression → Ancient Coins"));
         send(player, Component.m_237113_("§7Tier cost anchor §f" + (long) cfg.tierCostLevelAnchor
                 + " §8· T7 target §f" + cfg.tierCostT7TargetCopper
                 + " copper §8(stock 150000 → 100× Netherite)"));

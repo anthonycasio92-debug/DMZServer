@@ -75,6 +75,9 @@ public final class FabledBridge {
             RaceClassSync.sync(player);
             PrestigeSkillSync.sync(player);
             PrestigeFactionSync.sync(player);
+            if (!DifficultyConfig.get().enableAttrMultiBonus) {
+                AttrMultiBonus.clearIfPresent(player);
+            }
             ClassPermissionSync.sync(player);
             SystemTelemetry.log(
                     "fabled",
@@ -94,6 +97,7 @@ public final class FabledBridge {
         }
         try {
             EnergyManaSync.clear(player.m_20148_());
+            OverhaulPrestigeResourceScale.clear(player.m_20148_());
             TpSpMirror.clear(player.m_20148_());
             ClassPermissionSync.clearTemp(player.m_20148_());
         } catch (Throwable ignored) {

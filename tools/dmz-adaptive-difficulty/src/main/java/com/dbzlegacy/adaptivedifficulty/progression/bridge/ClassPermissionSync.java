@@ -37,6 +37,24 @@ public final class ClassPermissionSync {
         // Temp keys cleared with ProgressionData.clearPlayer
     }
 
+    /**
+     * Paid Character Services / admin class changes — skip the 5s UI debounce so Fabled class
+     * permissions apply immediately (recustomize {@code UpdateCharacterC2S} has no debounce).
+     */
+    public static void syncAuthoritativeClassChange(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enableClassPermissionSync) {
+            return;
+        }
+        String dmzClass = DmzProgression.fightingClass(player);
+        if (dmzClass == null || dmzClass.isBlank()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        ProgressionData.tempPut(player, LAST_SEEN_KEY, dmzClass);
+        ProgressionData.tempPut(player, STABLE_SINCE_KEY, now - CLASS_CONFIRM_MS);
+        sync(player);
+    }
+
     public static void sync(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enableClassPermissionSync) {
             return;

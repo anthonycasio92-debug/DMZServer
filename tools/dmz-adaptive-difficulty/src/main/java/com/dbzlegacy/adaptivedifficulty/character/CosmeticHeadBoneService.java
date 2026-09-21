@@ -116,6 +116,92 @@ public final class CosmeticHeadBoneService {
         }
     }
 
+    /** Persisted cosmetic choice (survives race change unlock list; re-applied after forms). */
+    public static String equippedBone(ServerPlayer player) {
+        if (player == null) {
+            return "";
+        }
+        CharacterServicesStore.PlayerRecord rec =
+                CharacterServicesStore.get().record(player.m_20148_().toString());
+        String stored = rec.equippedHeadBone;
+        return stored == null ? "" : stored.trim();
+    }
+
+    public static void persistEquippedBone(ServerPlayer player, String boneId) {
+        if (player == null) {
+            return;
+        }
+        String bone = boneId == null ? "" : boneId.trim().toLowerCase(Locale.ROOT);
+        CharacterServicesStore.PlayerRecord rec =
+                CharacterServicesStore.get().record(player.m_20148_().toString());
+        rec.equippedHeadBone = bone;
+        CharacterServicesStore.get().markDirty();
+    }
+
+    /**
+     * DMZ often clears or resets {@code activeHeadBone} when transforming. Restore the player's
+     * chosen part on the next server tick so it runs after DMZ applies the new form mesh.
+     */
+    public static void scheduleReapplyAfterFormChange(ServerPlayer player) {
+        if (player == null || !persistThroughFormsEnabled()) {
+            return;
+        }
+        var server = player.m_20194_();
+        Runnable task = () -> reapplyAfterFormChange(player);
+        if (server != null) {
+            server.execute(task);
+        } else {
+            task.run();
+        }
+    }
+
+    /**
+     * @return true when character data was updated and clients were synced
+     */
+    public static boolean reapplyAfterFormChange(ServerPlayer player) {
+        if (player == null || !persistThroughFormsEnabled()) {
+            return false;
+        }
+        String want = resolveEquippedBone(player);
+        if (want.isEmpty() || !isBoneAllowed(player, want)) {
+            return false;
+        }
+        String current = activeBone(player);
+        if (want.equalsIgnoreCase(current)) {
+            return false;
+        }
+        Character ch = DmzProgression.character(player);
+        if (ch == null) {
+            return false;
+        }
+        try {
+            ch.setActiveHeadBone(want);
+            RaceHeadBoneSync.syncClient(player);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static boolean persistThroughFormsEnabled() {
+        return CharacterServicesConfig.get().headBoneShop.persistThroughForms;
+    }
+
+    private static String resolveEquippedBone(ServerPlayer player) {
+        String stored = equippedBone(player);
+        if (!stored.isEmpty()) {
+            return stored.toLowerCase(Locale.ROOT);
+        }
+        // Legacy players: remember current allowed part once.
+        String active = activeBone(player);
+        if (active.isEmpty() || !isBoneAllowed(player, active)) {
+            return "";
+        }
+        String bone = active.toLowerCase(Locale.ROOT);
+        persistEquippedBone(player, bone);
+        return bone;
+    }
+
     public static long unlockCost(ServerPlayer player, String boneId) {
         CharacterServicesConfig.HeadBoneShop shop = CharacterServicesConfig.get().headBoneShop;
         if (hasUnlock(player, boneId)) {
@@ -241,7 +327,9 @@ public final class CosmeticHeadBoneService {
             Character ch = DmzProgression.character(player);
             if (ch != null) {
                 try {
-                    ch.setActiveHeadBone(prior.toLowerCase(Locale.ROOT));
+                    String bone = prior.toLowerCase(Locale.ROOT);
+                    ch.setActiveHeadBone(bone);
+                    persistEquippedBone(player, bone);
                     RaceHeadBoneSync.syncClient(player);
                     return;
                 } catch (Throwable ignored) {
@@ -303,7 +391,9 @@ public final class CosmeticHeadBoneService {
             return "§cCharacter data unavailable.";
         }
         try {
-            ch.setActiveHeadBone(bone == null ? "" : bone.trim().toLowerCase(Locale.ROOT));
+            String normalized = bone == null ? "" : bone.trim().toLowerCase(Locale.ROOT);
+            ch.setActiveHeadBone(normalized);
+            persistEquippedBone(player, normalized);
             RaceHeadBoneSync.syncClient(player);
             if (prefix.contains("Unequipped extra")) {
                 return prefix;
@@ -338,6 +428,7 @@ public final class CosmeticHeadBoneService {
         }
         try {
             ch.setActiveHeadBone(bone);
+            persistEquippedBone(player, bone);
             RaceHeadBoneSync.syncClient(player);
             CosmeticHeadBoneCatalog.Entry entry = CosmeticHeadBoneCatalog.get(bone);
             String label = entry == null ? CosmeticHeadBoneCatalog.prettyId(bone) : entry.displayName();

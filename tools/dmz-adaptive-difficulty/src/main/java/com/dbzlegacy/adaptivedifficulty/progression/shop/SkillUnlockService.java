@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.progression.shop;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil;
 import com.dbzlegacy.adaptivedifficulty.progression.InvestedStrength;
@@ -103,15 +104,16 @@ public final class SkillUnlockService {
         // Repair aliases + align max levels with skills.json before we read them.
         DmzSkillUtil.prepareForRead(skills);
         int level = safeLevel(data);
-        double kiDamage = safeKi(data);
+        double kiDamage = LmOverhaulScaledCombat.ki(data);
         double maxEnergy = safeEnergy(data);
-        int totalStr = safeStrength(data);
         int investedStr = InvestedStrength.points(player);
         // Slim header — one live line for inventory GUIs (chat path still gets separator).
         out.add("§7DMZ §f" + level
                 + " §8· §7Ki §f" + format(kiDamage)
                 + " §8· §7Energy §f" + format(maxEnergy)
-                + " §8· §7STR §f" + totalStr + " §8(§f" + investedStr + "§8 invested)");
+                + " §8· §7STR §f" + format(LmOverhaulScaledCombat.effectiveInvested(data, "STR"))
+                + " §8(§f" + investedStr + "§8 invested) §8"
+                + LmOverhaulScaledCombat.formatScale(data));
         out.add("§8----------------------------");
         switch (page.toLowerCase(Locale.ROOT)) {
             case "saga", "advanced", "dmz" -> appendSaga(out, player, skills);

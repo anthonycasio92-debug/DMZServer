@@ -108,16 +108,51 @@ public final class ProgressionData {
         if (!tag.m_128441_(key)) {
             return fallback;
         }
-        return tag.m_128461_(key);
+        try {
+            // STRING
+            if (tag.m_128425_(key, 8)) {
+                String v = tag.m_128461_(key);
+                return v == null ? fallback : v;
+            }
+            // Numeric (byte/short/int/long/float/double) — getString returns "" on these.
+            if (tag.m_128425_(key, 99)) {
+                return Long.toString(tag.m_128454_(key));
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            String v = tag.m_128461_(key);
+            if (v != null && !v.isEmpty()) {
+                return v;
+            }
+        } catch (Throwable ignored) {
+        }
+        return fallback;
     }
 
+    /**
+     * Read a stored number that may be a numeric NBT tag <b>or</b> a decimal string.
+     * {@code CompoundTag.getLong} returns {@code 0} (no throw) for string tags, so
+     * 2.4.66's "try getLong first" path made prestige points / other string wallets
+     * always read as 0 after {@link #storedPut(ServerPlayer, String, long)}.
+     */
     public static long storedGetLong(ServerPlayer player, String key, long fallback) {
+        CompoundTag tag = stored(player);
+        if (!tag.m_128441_(key)) {
+            return fallback;
+        }
         try {
-            String v = storedGet(player, key, null);
+            if (tag.m_128425_(key, 99)) { // TAG_ANY_NUMERIC
+                return tag.m_128454_(key);
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            String v = tag.m_128461_(key);
             if (v == null || v.isBlank()) {
                 return fallback;
             }
-            return Long.parseLong(v);
+            return Long.parseLong(v.trim());
         } catch (Throwable ignored) {
             return fallback;
         }
@@ -148,7 +183,10 @@ public final class ProgressionData {
     }
 
     public static void storedPut(ServerPlayer player, String key, long value) {
-        storedPut(player, key, Long.toString(value));
+        if (!storedWritable(player)) {
+            return;
+        }
+        stored(player).m_128356_(key, value); // putLong — matches storedGetLong numeric path
     }
 
     public static void storedPut(ServerPlayer player, String key, double value) {

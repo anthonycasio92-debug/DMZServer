@@ -121,6 +121,10 @@ public final class DifficultyEvents {
             com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost.load();
         } catch (Throwable ignored) {
         }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampConfigBridge.onServerStarting();
+        } catch (Throwable ignored) {
+        }
         RivalProgression.get().load();
     }
 
@@ -137,8 +141,18 @@ public final class DifficultyEvents {
 
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
-        BalanceTelemetry.flushAndClose();
-        com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.flushAndClose();
+        // Never throw from stop handlers — a hot-swapped LM jar can split classloaders and
+        // abort shutdown while players are still flushed to disk (invalid playerdata).
+        try {
+            BalanceTelemetry.flushAndClose();
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn("[{}] BalanceTelemetry stop: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.telemetry.SystemTelemetry.flushAndClose();
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn("[{}] SystemTelemetry stop: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
+        }
         try {
             RivalStore.get().save();
             SparStore.get().save();
@@ -146,10 +160,19 @@ public final class DifficultyEvents {
             com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost.save();
         } catch (Throwable ignored) {
         }
-        RivalStore.get().save();
-        SparStore.get().save();
+    }
+
+    @SubscribeEvent
+    public void onDmzPlayerDataLoad(DMZEvent.PlayerDataLoadEvent event) {
+        if (event == null || !(event.getPlayer() instanceof ServerPlayer)) {
+            return;
+        }
+        ServerPlayer player = (ServerPlayer) event.getPlayer();
         try {
-            com.dbzlegacy.adaptivedifficulty.progression.tp.GlobalTpBoost.save();
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                    .syncFromLegacy(player);
+            com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.publish(player);
+            com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery.pulse(player);
         } catch (Throwable ignored) {
         }
     }
@@ -178,6 +201,17 @@ public final class DifficultyEvents {
             RivalSystem.onLogin(player);
             SparringSystem.onLogin(player);
             ProgressionSystem.onLogin(player);
+            try {
+                com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath.pinOverhaulLevelCaps();
+                com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.publish(player);
+                com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery.pulse(player);
+            } catch (Throwable ignored) {
+            }
+            try {
+                com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                        .syncFromLegacy(player);
+            } catch (Throwable ignored) {
+            }
             var server = player.m_20194_();
             if (server != null) {
                 server.execute(() -> {
@@ -273,7 +307,8 @@ public final class DifficultyEvents {
                 return;
             }
             int total = data.getStats().getTotalStats();
-            int maxTotal = personal * 6;
+            int maxTotal = com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath
+                    .maxAssignableTotal(data, personal);
             if (total <= maxTotal) {
                 return;
             }
@@ -429,8 +464,10 @@ public final class DifficultyEvents {
         }
         // Prestige lifetime / held tokens stored at the persistent-data root.
         copyTagIfPresent(from, to, "prestige_total_completed");
+        copyTagIfPresent(from, to, "prestige_total_staff_override");
         copyTagIfPresent(from, to, "prestige_need_floor");
         copyTagIfPresent(from, to, "lm_prestige_held");
+        copyTagIfPresent(from, to, "lm_prestige_points");
         copyTagIfPresent(from, to, "lm_prestige_confirm_until");
         copyTagIfPresent(from, to, "lm_cnpc_player_migrated");
         copyTagIfPresent(from, to, "lm_shadow_dummy_cd_until");
@@ -655,6 +692,10 @@ public final class DifficultyEvents {
                 || Math.abs(before.transformationPower - transform) > 0.5
                 || (prevRace != null && race != null && !prevRace.equals(race))) {
             com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.refreshCombatPaint(player);
+            if (formKeyChanged || formChanged) {
+                com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService
+                        .scheduleReapplyAfterFormChange(player);
+            }
         } else if (progressChanged) {
             DifficultyCache.refresh(player);
         }
@@ -667,10 +708,10 @@ public final class DifficultyEvents {
                 return 1.0;
             }
             // Peak live offense across STR/SKP/PWR (+ mild ENE pool).
-            double m = Math.max(1.0, data.getMeleeDamage());
-            double s = Math.max(1.0, data.getStrikeDamage());
-            double k = Math.max(1.0, data.getKiDamage());
-            double e = Math.max(1.0, data.getMaxEnergy() * 0.08);
+            double m = Math.max(1.0, com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat.melee(data));
+            double s = Math.max(1.0, com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat.strike(data));
+            double k = Math.max(1.0, com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat.ki(data));
+            double e = Math.max(1.0, com.dbzlegacy.adaptivedifficulty.calc.LmOverhaulScaledCombat.energy(data) * 0.08);
             return Math.max(m, Math.max(s, Math.max(k, e)));
         } catch (Throwable t) {
             return 1.0;
@@ -688,6 +729,8 @@ public final class DifficultyEvents {
         }
         // Immediate claimed-mob repaint — don't wait for the nearby pulse.
         com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.refreshCombatPaint(player);
+        com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService.scheduleReapplyAfterFormChange(
+                player);
     }
 
     @SubscribeEvent
@@ -700,6 +743,8 @@ public final class DifficultyEvents {
             return;
         }
         com.dbzlegacy.adaptivedifficulty.service.DifficultyActions.refreshCombatPaint(player);
+        com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService.scheduleReapplyAfterFormChange(
+                player);
     }
 
     /**
@@ -1121,6 +1166,30 @@ public final class DifficultyEvents {
         }
         if (EnemyEvolution.tryReplaceProjectile(shooter, target)) {
             event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent
+    public void onEnergyRegen(DMZEvent.EnergyRegenEvent event) {
+        if (event == null || !(event.getPlayer() instanceof ServerPlayer player)) {
+            return;
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzResourceRegenSync
+                    .afterEnergyRegen(player, event.getStatsData(), event.getAmount());
+        } catch (Throwable ignored) {
+        }
+    }
+
+    @SubscribeEvent
+    public void onStaminaRegen(DMZEvent.StaminaRegenEvent event) {
+        if (event == null || !(event.getPlayer() instanceof ServerPlayer player)) {
+            return;
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzResourceRegenSync
+                    .afterStaminaRegen(player, event.getStatsData(), event.getAmount());
+        } catch (Throwable ignored) {
         }
     }
 

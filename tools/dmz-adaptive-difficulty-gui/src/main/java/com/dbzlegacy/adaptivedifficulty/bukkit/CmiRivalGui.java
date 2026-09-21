@@ -142,7 +142,7 @@ public final class CmiRivalGui {
                 tpOn ? "&aTP Msg ON" : "&8TP Msg OFF",
                 "tpmsg", "toggle", "main",
                 List.of(
-                        tpOn ? "&7Click to mute rival TP messages8Hides rival TP chat messages" : "&7Click to show rival TP messages8Shows rival TP chat messages again",
+                        tpOn ? "&8Hides rival TP chat messages" : "&8Shows rival TP chat messages again",
                         "&8Only affects rivalry TP chat"
                 )));
 
@@ -155,7 +155,7 @@ public final class CmiRivalGui {
                     instinctOn ? "&aInstinct ON" : "&8Instinct OFF",
                     "instinct", "toggle", "main",
                     List.of(
-                            instinctOn ? "&7Click to disable Rival Instinct8Turns rival proximity alerts off" : "&7Click to enable Rival Instinct8Turns rival proximity alerts on",
+                            instinctOn ? "&8Turns rival proximity alerts off" : "&8Turns rival proximity alerts on",
                             "&8Alerts for mutual / nemesis rivals"
                     )));
         }
@@ -398,7 +398,7 @@ public final class CmiRivalGui {
         pendingHeader.add("");
         pendingHeader.add(invites.isEmpty() ? "&7No pending declares." : "&7" + invites.size() + " pending");
         pendingHeader.addAll(GuiBoardHelper.tips(player,
-                "&a◀ Incoming &7= click to Accept / Decline",
+                "&a◀ Incoming &7— tap to accept or decline",
                 "&6▶ Outgoing &7= waiting on them"));
         info.addLore(pendingHeader);
         gui.addButton(info);
@@ -428,6 +428,7 @@ public final class CmiRivalGui {
         gui.addButton(pageBtn(player, 39, "rival.pending.nav_actions", Material.EMERALD, "&aActions", "actions",
                 "&7Full actions menu"));
         gui.addButton(pageBtn(player, 36, "rival.pending.back", Material.ARROW, "&7Back", "actions", "&7Actions"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -490,6 +491,7 @@ public final class CmiRivalGui {
         }
         gui.addButton(pageBtn(player, 36, "rival.pending.decide_back", Material.ARROW, "&7Back", "pending",
                 "&7Pending invites"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -668,6 +670,7 @@ public final class CmiRivalGui {
         }
 
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "challenge", "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -733,6 +736,7 @@ public final class CmiRivalGui {
 
         gui.addButton(pageBtn(player, 36, "rival.challenge.back_picker", Material.ARROW, "&7Back",
                 "pick_challenge", "&7Pick another player"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -774,6 +778,7 @@ public final class CmiRivalGui {
         }
 
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", backPage, "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -827,6 +832,7 @@ public final class CmiRivalGui {
         }
 
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", backPage, "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -887,6 +893,7 @@ public final class CmiRivalGui {
             }
         }
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", "pending", "&7Pending"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -966,6 +973,7 @@ public final class CmiRivalGui {
         }
 
         gui.addButton(pageBtn(player, 36, "common.back", Material.ARROW, "&7Back", backPage, "&7Return"));
+        gui.addButton(hubBtn(40));
         gui.addButton(closeBtn(44));
         fillEmpty(gui, 5);
         GuiFeedback.openCmi(gui);
@@ -991,6 +999,8 @@ public final class CmiRivalGui {
         if ("true".equalsIgnoreCase(ph.getOrDefault("challengeActive", "false"))) {
             lore.add("&eChallenge active");
         }
+        lore.add("");
+        GuiBoardHelper.addOverhaulCombat(lore, ph);
         if (ForgeBridge.isStaff(player)) {
             lore.add("");
             lore.add("&8List · Actions · Challenge · Top · Progress");
@@ -1138,18 +1148,11 @@ public final class CmiRivalGui {
     }
 
     private static CMIGuiButton hubBtn(int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.COMPASS, "&7« Hub");
-        btn.lockField();
-        btn.addCommand("lmdo lm open hub");
-        btn.setCloseInv(true);
-        return btn;
+        return GuiNav.cmiHubButton(slot);
     }
 
     private static CMIGuiButton closeBtn(int slot) {
-        CMIGuiButton btn = new CMIGuiButton(slot, Material.BARRIER, "&cClose");
-        btn.lockField();
-        btn.setCloseInv(true);
-        return btn;
+        return GuiNav.cmiCloseButton(slot);
     }
 
     private static String color(String input) {

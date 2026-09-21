@@ -1,43 +1,44 @@
 {
-  "_comment": "FULL LegacyMechanics GUI tooltip catalog. Edit name and/or lore, then /lm admin reload. Omit lore on a key to keep the live Java tip (name-only override). Placeholders like {points},{cost},{tier},{name},{status} are filled when supported. After a mod update, /lm admin reload merges any NEW jar keys into this file without wiping edits.",
+  "_comment": "LegacyMechanics GUI button names and lore. Edit freely, then /lm admin reload. Placeholders like {cost} fill in at runtime. WARNING: if this file defines lore for a key, it REPLACES Java fallback lore — do not add short static lore on dynamic buttons (tier costs, unlock DMZ/Prestige, toggles); see sim/gui_tooltip_policy.py JAVA_LORE_ONLY_KEYS. Icons are Material.* in Java only. _catalogRevision bumps on humanize passes; /lm admin reload upgrades older on-disk files from the jar.",
   "hub": {
     "main": {
       "header": {
         "name": "&f&lLegacy Mechanics",
         "lore": [
-          "&7Choose a system",
-          "&8/lm"
+          "&7Pick what you want to do",
+          "&8Open with &f/lm"
         ]
       },
       "difficulty": {
         "name": "&aDifficulty",
         "lore": [
-          "&7Gain and spend ancient coins- tiers are lost on death",
-          "&7Challenge yourself to custom scaled mobs",
-          "&cWarning: &7Scaled mobs can attack other players as well",
-          "&eClick to open"
+          "&7Earn Ancient Coins from scaled mobs and spend them on tiers",
+          "&7Tiers reset when you die — higher tiers mean tougher fights",
+          "&cNote: &7Scaled mobs can hurt other players nearby",
+          "&8Opens this menu"
         ]
       },
       "rival": {
         "name": "&6Rival",
         "lore": [
-          "&7Use the rival system for more TP",
-          "&7Rivalry, challenges & RP",
-          "&eClick to open"
+          "&7Rivalries earn bonus training TP and ranking points",
+          "&7Declare rivals, run challenges, and track seasons",
+          "&8Opens this menu"
         ]
       },
       "spar": {
         "name": "&bSpar",
         "lore": [
-          "&7Sparring TP & mentor bonds",
-          "&eClick to open"
+          "&7Spar for training TP and mentor bonds",
+          "&7Dojo seasons, apprentices, and rankings",
+          "&8Opens this menu"
         ]
       },
       "skillcheck": {
         "name": "&eSkill Check",
         "lore": [
-          "&7Natural · Saga progress",
-          "&eClick to open"
+          "&7Story progress and natural training",
+          "&8Opens this menu"
         ]
       },
       "skills": {
@@ -50,46 +51,46 @@
       "prestige": {
         "name": "&6Prestige",
         "lore": [
-          "&7Prestiges · Prestige shop",
-          "&eClick to open"
+          "&7Prestige up and visit the shop",
+          "&8Opens this menu"
         ]
       },
       "character": {
         "name": "&dCharacter Services",
         "lore": [
-          "&7Race, class, reskin, head parts",
-          "&7without wiping your whole build",
-          "&8Paid with Ancient Coins",
-          "&eClick to open"
+          "&7Change race, class, look, or head parts",
+          "&7without wiping your whole character",
+          "&8Uses Ancient Coins",
+          "&8Opens this menu"
         ]
       },
       "android_remove": {
         "name": "&cRemove Android",
         "lore": [
           "&7Remove your Android upgrade",
-          "&8Double-click to confirm",
-          "&eClick to open"
+          "&8Two-step confirm inside the menu",
+          "&8Opens this menu"
         ]
       },
       "progression": {
         "name": "&dProgression",
         "lore": [
           "&7Skills · TP · Race · Combat flags",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       },
       "admin": {
         "name": "&cAdmin",
         "lore": [
-          "&7Reload configs and open staff tools",
-          "&8/lm admin"
+          "&7Reload configs and staff tools",
+          "&8Open with &f/lm admin"
         ]
       },
       "logs": {
         "name": "&8Logs",
         "lore": [
           "&7Server event logs",
-          "&eClick to open"
+          "&8Opens this menu"
         ]
       }
     },
@@ -97,8 +98,8 @@
       "header": {
         "name": "&8&lLogs",
         "lore": [
-          "&7Toggle or flush server logs",
-          "&8Staff only"
+          "&7Event log off or on · save buffered entries to disk",
+          "&8For staff"
         ]
       },
       "back": {
@@ -110,22 +111,22 @@
       "syslog_on": {
         "name": "&aEvent Log ON",
         "lore": [
-          "&7Server event logging is on",
-          "&8Staff only"
+          "&7Event logging is on",
+          "&8For staff"
         ]
       },
       "syslog_off": {
         "name": "&cEvent Log OFF",
         "lore": [
-          "&7Turn server event logging back on",
-          "&8Staff only"
+          "&7Turn event logging back on",
+          "&8For staff"
         ]
       },
       "flush": {
         "name": "&eFlush Logs",
         "lore": [
-          "&7Write buffered logs to disk",
-          "&8Staff only"
+          "&7Save buffered logs to disk",
+          "&8For staff"
         ]
       }
     }
@@ -143,41 +144,41 @@
       "race": {
         "name": "&eChange Race",
         "lore": [
-          "&7Pick a new race and choose how much",
-          "&7of your core stats carry over",
+          "&7Choose a race and how much progress",
+          "&7of your stats you want to keep",
           "&8{race_cooldown}",
-          "&eClick to continue"
+          "&eContinue"
         ]
       },
       "class": {
         "name": "&bChange Class",
         "lore": [
           "&7Swap your fighting class",
-          "&7Your base stats stay — class skills reset",
+          "&7Your core stats stay — class skills reset",
           "&7Cost &f{class_cost}",
           "&8{class_cooldown}",
-          "&eClick to continue"
+          "&eContinue"
         ]
       },
       "reskin": {
         "name": "&dReskin",
         "lore": [
-          "&7Cosmetics & head parts — no stat changes",
+          "&7Looks only — stats don't change",
           "&7Cost &f{reskin_cost}",
           "&8{reskin_cooldown}",
-          "&eClick to continue"
+          "&eContinue"
         ]
       },
       "back_hub": {
         "name": "&7« Back",
         "lore": [
-          "&7Return to &f/lm"
+          "&7Back to the main menu"
         ]
       },
       "close": {
         "name": "&cClose",
         "lore": [
-          "&7Close this menu"
+          "&7Close"
         ]
       }
     },
@@ -195,8 +196,8 @@
       "card_pick": {
         "name": "",
         "lore": [
-          "&7See preservation options and cost",
-          "&eClick to continue"
+          "&7See what you keep and what it costs",
+          "&eContinue"
         ]
       },
       "back": {
@@ -208,7 +209,7 @@
     },
     "race_pct": {
       "header": {
-        "name": "&e&lHow Much Progress to Keep?",
+        "name": "&e&lHow much do you want to keep?",
         "lore": []
       },
       "pct": {
@@ -217,7 +218,7 @@
           "&7Keep &f{pct}% &7of eligible combat stats",
           "&80% is free — full character wipe",
           "&8Higher % costs more Ancient Coins",
-          "&eClick to review and confirm"
+          "&eReview the summary, then confirm"
         ]
       },
       "back": {
@@ -229,21 +230,21 @@
     },
     "race_confirm": {
       "header": {
-        "name": "&c&lLast Chance",
+        "name": "&c&lSure about this?",
         "lore": []
       },
       "confirm": {
         "name": "&a&lConfirm Race Change",
         "lore": [
-          "&7Pay the shown cost and switch races",
+          "&7Pay the listed cost to change race",
           "&8This cannot be undone automatically",
-          "&eClick to confirm"
+          "&eConfirm when you're ready"
         ]
       },
       "cancel": {
         "name": "&cCancel",
         "lore": [
-          "&7Go back without paying"
+          "&7Back out — no charge"
         ]
       },
       "back": {
@@ -267,8 +268,8 @@
       "card_pick": {
         "name": "",
         "lore": [
-          "&7Review cost before you pay",
-          "&eClick to continue"
+          "&7Check the cost before you pay",
+          "&eContinue"
         ]
       },
       "back": {
@@ -280,20 +281,20 @@
     },
     "class_confirm": {
       "header": {
-        "name": "&c&lConfirm Class Change",
+        "name": "&c&lConfirm class change",
         "lore": []
       },
       "confirm": {
         "name": "&a&lConfirm",
         "lore": [
-          "&7Pay and switch fighting class",
-          "&eClick to confirm"
+          "&7Pay the listed cost to change class",
+          "&eConfirm when you're ready"
         ]
       },
       "cancel": {
         "name": "&cCancel",
         "lore": [
-          "&7Go back without paying"
+          "&7Back out — no charge"
         ]
       },
       "back": {
@@ -312,19 +313,19 @@
         "name": "&a&lPay & Open Appearance",
         "lore": [
           "&7Cost &f{reskin_cost}",
-          "&7Opens the DragonMineZ look editor",
-          "&7Cosmetics only — &cclass cannot change",
-          "&7Level, stats, and race stay the same",
+          "&7Opens the in-game appearance editor",
+          "&7Looks only — &cyou can't change class here",
+          "&7Level, stats, and race stay put",
           "&8Pay-up OK · change returned",
-          "&eClick to pay and open"
+          "&ePay, then open the appearance editor"
         ]
       },
       "bones": {
         "name": "&6&lHead Parts Shop",
         "lore": [
-          "&7Unlock & equip cross-race ears, horns, etc.",
+          "&7Unlock ears, horns, and other head parts",
           "&7Equipped &f{active_head_bone}",
-          "&eClick to browse"
+          "&eBrowse head parts"
         ]
       },
       "back": {
@@ -342,17 +343,17 @@
       "race_default": {
         "name": "&eRace default",
         "lore": [
-          "&7Equip this race's default head part",
-          "&8From DMZ character.json",
-          "&eClick"
+          "&7Use your race's default head part",
+          "&8Your race's default part",
+          "&eSelect"
         ]
       },
       "unequip": {
         "name": "&7Unequip / clear",
         "lore": [
-          "&7Remove cross-race parts",
+          "&7Clear extra head parts",
           "&7Uses &fhair &7when your race has it",
-          "&eClick"
+          "&eSelect"
         ]
       },
       "prev": {
@@ -376,8 +377,8 @@
       "confirm": {
         "name": "&aConfirm Prestige",
         "lore": [
-          "&7Click to prestige (confirm within 10s)",
-          "&8Resets DMZ stats · Awards 1 held prestige"
+          "&7Prestige when you're ready (confirm within 10s)",
+          "&8Resets your stats · You keep one held prestige"
         ]
       },
       "turnin": {
@@ -393,7 +394,7 @@
         "name": "&aSkill Shop",
         "lore": [
           "&7Spend your prestige points to increase your skills",
-          "&7All purchases are &4PERMANENT",
+          "&7&4Permanent &7— survives prestiges",
           "&8Skills stay the same throughout resets"
         ]
       },
@@ -430,7 +431,7 @@
         "name": "&dProgression",
         "lore": [
           "&7Skills · TP · Race · Combat flags",
-          "&eClick to open"
+          "&eOpen"
         ]
       }
     },
@@ -490,7 +491,7 @@
         ]
       },
       "majin_owned": {
-        "name": "&a You are a Permanent Majin",
+        "name": "&aYou are a Permanent Majin",
         "lore": [
           "&aOwned",
           "&aPermanent purchase &8· only one at a time"
@@ -566,7 +567,7 @@
         "name": "&dTitles",
         "lore": [
           "&7Equip difficulty titles",
-          "&7Unlock via DMZ level or Prestige",
+          "&7Unlock with character level or Prestige",
           "&8Keeps after lowering tier · free swap"
         ]
       },
@@ -585,48 +586,48 @@
       "personal_on": {
         "name": "&aDifficulty ON",
         "lore": [
-          "&7Click to turn OFF for you only",
+          "&7Turn off just for you",
           "&8OFF disables scaling, kill coins,",
           "&8AI pressure, and tier buys",
-          "&cWarning: &7Scaled mobs can attack other players as well"
+          "&cHeads up: &7scaled mobs can hit other players too"
         ]
       },
       "personal_off": {
         "name": "&cDifficulty OFF",
         "lore": [
-          "&7Click to turn ON for you only",
+          "&7Turn back on for you",
           "&8ON restores scaling, kill coins,",
           "&8AI pressure, and tier buys",
-          "&cWarning: &7Scaled mobs can attack other players as well"
+          "&cHeads up: &7scaled mobs can hit other players too"
         ]
       },
       "coin_chat_on": {
         "name": "&aCoin Chat ON",
         "lore": [
-          "&7Click to mute drop messages",
+          "&7Hide coin drop messages",
           "&8Only affects Ancient Coin kill chat"
         ]
       },
       "coin_chat_off": {
         "name": "&8Coin Chat OFF",
         "lore": [
-          "&7Click to show drop messages",
+          "&7Show coin drop messages again",
           "&8Only affects Ancient Coin kill chat"
         ]
       },
       "details": {
         "name": "&8Details",
         "lore": [
-          "&7Staff breakdown of your scaling",
+          "&7Staff-only breakdown of your scaling",
           "&8Combat rating, prestige, and kit gates"
         ]
       },
       "teams": {
         "name": "&bRival Teams",
         "lore": [
-          "&7Mutual rivals can raise your tier ceiling",
-          "&7Team modes also boost elite, mutant, and boss spawns",
-          "&eClick to open"
+          "&7Mutual rivals can raise how high a tier you can buy",
+          "&7Team modes bring more elites, mutants, and bosses",
+          "&eOpen"
         ]
       }
     },
@@ -641,8 +642,8 @@
       "mode_personal": {
         "name": "&7Personal",
         "lore": [
-          "&7Only your own tier ceiling counts",
-          "&eClick to select"
+          "&7Only your tier counts toward the team ceiling",
+          "&eSelect this option"
         ]
       },
       "mode_threshold": {
@@ -651,7 +652,7 @@
           "&7Extra max when rivals are online",
           "&7They must also use a team mode",
           "&7More elites, mutants, and bosses",
-          "&eClick to select"
+          "&eSelect this option"
         ]
       },
       "mode_full": {
@@ -660,14 +661,14 @@
           "&7Threshold bonus plus nearby spare room",
           "&7Best spawn boost when rivals are close",
           "&8Rivals must use Full mode and be nearby",
-          "&eClick to select"
+          "&eSelect this option"
         ]
       },
       "open_rival": {
         "name": "&6Open Rival",
         "lore": [
           "&7Declare, accept, or manage mutual slots",
-          "&eClick to open"
+          "&eOpen"
         ]
       }
     },
@@ -675,8 +676,9 @@
       "info": {
         "name": "&e&lDifficulty Tiers",
         "lore": [
-          "&7Click a higher unlocked tier to buy",
-          "&7Click a lower unlocked tier to step down (free)",
+          "&7Select a higher tier you've unlocked to buy it",
+          "&7Step down to a lower tier you've unlocked (free)",
+          "&8Each tier shows DMZ level or Prestige to unlock",
           "&8Unlock with DMZ level or Prestige"
         ]
       },
@@ -689,18 +691,14 @@
         ]
       },
       "tier": {
-        "name": "{name}",
-        "lore": [
-          "&7Difficulty tier &f{tier}",
-          "&7Unlock with DMZ level or Prestige"
-        ]
+        "name": "{name}"
       }
     },
     "titles": {
       "header": {
         "name": "&d&lTitles",
         "lore": [
-          "&7Unlock via DMZ or Prestige — keeps after lowering tier",
+          "&7Unlock with character level or Prestige — stays unlocked if you lower tier",
           "&7Swap freely · rarity adds landing/TP/AD presence"
         ]
       },
@@ -708,14 +706,14 @@
         "name": "&aTitle Sense ON",
         "lore": [
           "&7Elite / Boss recognition chat",
-          "&8Click to toggle"
+          "&8Toggle"
         ]
       },
       "sense_off": {
         "name": "&8Title Sense OFF",
         "lore": [
           "&7Elite / Boss recognition chat",
-          "&8Click to toggle"
+          "&8Toggle"
         ]
       },
       "clear": {
@@ -755,7 +753,7 @@
       "actions": {
         "name": "&aActions",
         "lore": [
-          "&7Declare · accept · decline · remove",
+          "&7Declare, accept, decline, or remove rivals",
           "{pending}"
         ]
       },
@@ -788,28 +786,28 @@
       "tpmsg_on": {
         "name": "&aTP Msg ON",
         "lore": [
-          "&7Click to mute rival TP messages",
+          "&7Hide rival TP messages",
           "&8Only affects rivalry TP chat"
         ]
       },
       "tpmsg_off": {
         "name": "&8TP Msg OFF",
         "lore": [
-          "&7Click to show rival TP messages",
+          "&7Show rival TP messages again",
           "&8Only affects rivalry TP chat"
         ]
       },
       "instinct_on": {
         "name": "&aInstinct ON",
         "lore": [
-          "&7Click to disable Rival Instinct",
+          "&7Turn off Rival Instinct alerts",
           "&8Alerts for mutual / nemesis rivals"
         ]
       },
       "instinct_off": {
         "name": "&8Instinct OFF",
         "lore": [
-          "&7Click to enable Rival Instinct",
+          "&7Turn on Rival Instinct alerts",
           "&8Alerts for mutual / nemesis rivals"
         ]
       },
@@ -824,7 +822,7 @@
       "declare": {
         "name": "&aDeclare…",
         "lore": [
-          "&7Visible declare → they Accept → Mutual"
+          "&7Send a public declare — they accept to become mutual"
         ]
       },
       "pending": {
@@ -836,8 +834,8 @@
       "accept": {
         "name": "&eAccept…",
         "lore": [
-          "&7Pending declares, or Declared → Mutual",
-          "&8Both Silent → Declared shows here"
+          "&7Accept a pending declare or upgrade to mutual",
+          "&8Silent declares from both sides appear here too"
         ]
       },
       "decline": {
@@ -856,7 +854,7 @@
         "name": "&8Silent…",
         "lore": [
           "&7One-sided Unknown (they are not told)",
-          "&8Both Silent → Declared (both notified)"
+          "&8If you both used Silent, this becomes Declared"
         ]
       },
       "nav_list": {
@@ -913,7 +911,7 @@
         "name": "&e{minutes} minute(s)",
         "lore": [
           "&7Choose fight length",
-          "&8Click to send"
+          "&8Send"
         ]
       }
     },
@@ -928,14 +926,14 @@
       "refresh": {
         "name": "&eRefresh",
         "lore": [
-          "&7Reload stores from disk",
+          "&7Reload rivalry data from disk",
           "&8/rival admin refresh"
         ]
       },
       "status": {
         "name": "&bStatus",
         "lore": [
-          "&7Enabled + path summary",
+          "&7Shows whether spar is on and where data is stored",
           "&8/rival admin status"
         ]
       },
@@ -1070,14 +1068,14 @@
     },
     "empty": {
       "no_rivals": [
-        "&7Use Actions → Declare to start"
+        "&7Use Actions → Declare to find a rival"
       ],
       "no_pending": [
         "&7Declare someone to send an invite",
         "&7Incoming shows when they Declare you"
       ],
       "no_online": [
-        "&7Other players must be online"
+        "&7Someone else needs to be online"
       ],
       "no_history": [
         "&7Removed rivals show here"
@@ -1111,14 +1109,14 @@
       "top": {
         "name": "&fTop",
         "lore": [
-          "&7Leaderboard"
+          "&7Who has the most sparring TP"
         ]
       },
       "dojo_rank": {
         "name": "&6Dojo Rankings",
         "lore": [
-          "&7See how dojos rank this season",
-          "&7Spar rival dojos to climb the ladder"
+          "&7Season ladder for every dojo",
+          "&7Spar outside your dojo to earn points"
         ]
       },
       "mentor": {
@@ -1133,7 +1131,7 @@
         "lore": [
           "&7You see spar TP gains in chat",
           "",
-          "&eClick to mute"
+          "&eHide these messages"
         ]
       },
       "tpmsg_off": {
@@ -1141,7 +1139,7 @@
         "lore": [
           "&7Spar TP chat is hidden",
           "",
-          "&eClick to show again"
+          "&eShow these messages again"
         ]
       },
       "mentor_tpmsg_on": {
@@ -1149,7 +1147,7 @@
         "lore": [
           "&7Apprentice share TP shows in chat",
           "",
-          "&8Click to mute mentor TP chat"
+          "&8Hide mentor TP in chat"
         ]
       },
       "mentor_tpmsg_off": {
@@ -1157,7 +1155,7 @@
         "lore": [
           "&7Mentor share TP chat is hidden",
           "",
-          "&8Click to show in chat again"
+          "&8Show mentor TP in chat again"
         ]
       },
       "end_session": {
@@ -1169,8 +1167,8 @@
       "admin": {
         "name": "&cAdmin",
         "lore": [
-          "&7Save data, check status, reset cooldowns",
-          "&8Staff only"
+          "&7Save data, view status, or clear mentor cooldown",
+          "&8For staff"
         ]
       }
     },
@@ -1178,19 +1176,19 @@
       "tp": {
         "name": "&eTP",
         "lore": [
-          "&7Total TP"
+          "&7Ranked by total training TP"
         ]
       },
       "sessions": {
         "name": "&aSessions",
         "lore": [
-          "&7Sessions"
+          "&7Ranked by spar session count"
         ]
       },
       "perfect": {
         "name": "&bPerfect",
         "lore": [
-          "&7Perfect spars"
+          "&7Ranked by perfect spar wins"
         ]
       }
     },
@@ -1261,7 +1259,7 @@
       "war_master_only": {
         "name": "&8Declare War…",
         "lore": [
-          "&7Only dojo masters manage wars"
+          "&7Only the dojo master can declare war"
         ]
       },
       "accept_none": {
@@ -1345,32 +1343,32 @@
       "ask": {
         "name": "&bAsk mentor…",
         "lore": [
-          "&7Pick a player to ask as your master"
+          "&7Pick someone to request as your mentor"
         ]
       },
       "pending": {
         "name": "&ePending",
         "lore": [
-          "&7Incoming + outgoing invites",
-          "&aClick a head to Accept / Decline"
+          "&7Incoming and outgoing mentor invites",
+          "&8Use Accept / Decline on each invite"
         ]
       },
       "accept": {
         "name": "&eAccept…",
         "lore": [
-          "&7Use the Pending menu instead"
+          "&7Open the Pending tab for this"
         ]
       },
       "decline": {
         "name": "&6Decline…",
         "lore": [
-          "&7Use the Pending menu instead"
+          "&7Open the Pending tab for this"
         ]
       },
       "leave": {
         "name": "&cLeave mentor",
         "lore": [
-          "&7End bond with &f{name}",
+          "&7Leave your mentor &f{name}",
           "&812-hour cooldown after leaving"
         ]
       },
@@ -1398,8 +1396,8 @@
         "name": "&bDojo",
         "lore": [
           "&7Your mentor and training partners",
-          "&8Switch views if you also mentor others",
-          "&8{name}"
+          "&7Switch view if you also mentor others",
+          "&7Roster: &f{name}"
         ]
       }
     },
@@ -1407,7 +1405,7 @@
       "header": {
         "name": "&c&lSpar Admin",
         "lore": [
-          "&7Staff-only tools",
+          "&7Staff tools",
           "&8Save · status · mentor cooldown reset",
           "&8Player menus stay on the main Spar GUI"
         ]
@@ -1422,7 +1420,7 @@
       "status": {
         "name": "&bStatus",
         "lore": [
-          "&7Enabled + path summary",
+          "&7Shows whether spar is on and where data is stored",
           "&8/spar admin status"
         ]
       },
@@ -1444,13 +1442,13 @@
       "accept_pick": {
         "name": "&eAccept…",
         "lore": [
-          "&7Use the Pending menu instead"
+          "&7Open the Pending tab for this"
         ]
       },
       "decline_pick": {
         "name": "&6Decline…",
         "lore": [
-          "&7Use the Pending menu instead"
+          "&7Open the Pending tab for this"
         ]
       },
       "decide_info": {
@@ -1496,14 +1494,14 @@
         "&8Categories: TP · Sessions · Perfect"
       ],
       "no_pending": [
-        "&7Invite apprentice or ask a mentor",
-        "&7Incoming shows when they invite you"
+        "&7Invite an apprentice or ask someone to mentor you",
+        "&7Invites show up when someone picks you"
       ],
       "no_apprentice": [
         "&7Invite apprentices from Mentor Actions"
       ],
       "no_online": [
-        "&7Other players must be online"
+        "&7Someone else needs to be online"
       ],
       "no_dojo_rank": [
         "&7Join a dojo and spar rival fighters",
@@ -1533,7 +1531,7 @@
         "lore": [
           "&7Flight · Sprint · Meditation · Potential",
           "",
-          "&eClick to open"
+          "&eOpen"
         ]
       },
       "tp": {
@@ -1541,23 +1539,23 @@
         "lore": [
           "&7Farming · Building · Boost · Bio",
           "",
-          "&eClick to open"
+          "&eOpen"
         ]
       },
       "race": {
         "name": "&bRace & Form",
         "lore": [
-          "&7Race lock · Yardrat · Spiritualist · Android",
+          "&7Race lock, Yardrat, Spiritualist, and Android",
           "",
-          "&eClick to open"
+          "&eOpen"
         ]
       },
       "combat": {
         "name": "&cCombat",
         "lore": [
-          "&7Ki weapons · Piercing · DoT · Apothic",
+          "&7Ki weapons, piercing, damage over time, and Apothic tweaks",
           "",
-          "&eClick to open"
+          "&eOpen"
         ]
       },
       "end": {
@@ -1565,15 +1563,15 @@
         "lore": [
           "&7End strength · Portal guard",
           "",
-          "&eClick to open"
+          "&eOpen"
         ]
       },
       "fabled": {
         "name": "&dFabled",
         "lore": [
-          "&7Fabled race and form options",
+          "&7Fabled race and transformation options",
           "",
-          "&eClick to open"
+          "&eOpen"
         ]
       },
       "utility": {
@@ -1581,13 +1579,34 @@
         "lore": [
           "&7Shadow dummy · Stat checker",
           "",
-          "&eClick to open"
+          "&eOpen"
         ]
       },
       "admin": {
         "name": "&cAll Flags",
         "lore": [
-          "&7Full flag board"
+          "&7Full flag board",
+          "",
+          "&8Opens this menu"
+        ]
+      },
+      "economy": {
+        "name": "&6Ancient Coins",
+        "lore": [
+          "&7Staff pricing for anything that charges Ancient Coins",
+          "&8Tiers · Character Services · End dragon · more",
+          "",
+          "&8Opens this menu"
+        ]
+      }
+    },
+    "economy": {
+      "staff_free": {
+        "lore": [
+          "&7When ON, staff and OP pay no Ancient Coins",
+          "&7on any LM paid feature.",
+          "",
+          "{action}"
         ]
       }
     },
@@ -1595,7 +1614,7 @@
       "subflags": {
         "name": "&dFabled Subflags",
         "lore": [
-          "&7Energy, TP/SP, race class, etc."
+          "&7Energy, TP/SP, race class, and related toggles"
         ]
       },
       "back": {
@@ -1618,7 +1637,7 @@
         "lore": [
           "&7Start 1.25x for 30 minutes",
           "",
-          "&eClick to start"
+          "&eStart"
         ]
       },
       "n15_30": {
@@ -1626,7 +1645,7 @@
         "lore": [
           "&7Start 1.5x for 30 minutes",
           "",
-          "&eClick to start"
+          "&eStart"
         ]
       },
       "n2_30": {
@@ -1634,7 +1653,7 @@
         "lore": [
           "&7Start 2x for 30 minutes",
           "",
-          "&eClick to start"
+          "&eStart"
         ]
       },
       "n2_60": {
@@ -1642,7 +1661,7 @@
         "lore": [
           "&7Start 2x for 60 minutes",
           "",
-          "&eClick to start"
+          "&eStart"
         ]
       },
       "n3_30": {
@@ -1650,7 +1669,7 @@
         "lore": [
           "&7Start 3x for 30 minutes",
           "",
-          "&eClick to start"
+          "&eStart"
         ]
       },
       "end": {
@@ -1658,7 +1677,7 @@
         "lore": [
           "&7Stop the active global TP boost",
           "",
-          "&eClick to end"
+          "&eEnd"
         ]
       },
       "refresh": {
@@ -1690,7 +1709,7 @@
           "&7Unlocks the Android form path",
           "&8Human · Saiyan · Frost Demon · Viltrumite",
           "",
-          "&eClick · choose player"
+          "&eChoose a player next"
         ]
       },
       "remove_entry": {
@@ -1699,7 +1718,7 @@
           "&7Restore normal form skills",
           "&8Confirm within 10s by clicking again",
           "",
-          "&eClick · choose player"
+          "&eChoose a player next"
         ]
       },
       "convert_header": {
@@ -1724,7 +1743,7 @@
           "&7Pick a player to convert",
           "&8Applies the Android transformation",
           "",
-          "&eClick to open"
+          "&eOpen"
         ]
       },
       "remove": {
@@ -1734,7 +1753,7 @@
           "&8Restores their previous form path",
           "&8Two-click confirm within 10s",
           "",
-          "&eClick to open"
+          "&eOpen"
         ]
       },
       "convert_self": {
@@ -1742,7 +1761,7 @@
         "lore": [
           "&7Apply conversion to you",
           "",
-          "&eClick to convert"
+          "&eConvert"
         ]
       },
       "remove_self": {
@@ -1751,7 +1770,7 @@
           "&7Remove the Android upgrade",
           "&7Race, stats, and progression stay",
           "",
-          "&eClick · confirm within 10s"
+          "&eSelect again within 10 seconds to confirm"
         ]
       },
       "back": {
@@ -1785,7 +1804,7 @@
         "lore": [
           "&7Convert or remove Android upgrade (Gero path).",
           "",
-          "&eClick · Convert / Remove"
+          "&eConvert or remove Android"
         ]
       }
     },
@@ -1795,7 +1814,7 @@
         "lore": [
           "&7Timed global TP multiplier",
           "",
-          "&eClick to open"
+          "&eOpen"
         ]
       }
     },
@@ -1821,7 +1840,7 @@
   "skills": {
     "main": {
       "header": [
-        "&7Natural · Saga"
+        "&7Train naturally or through the skill saga"
       ],
       "natural": {
         "name": "&aNatural",
@@ -1832,21 +1851,21 @@
       "saga": {
         "name": "&dSaga",
         "lore": [
-          "&7Unlocked in the skill saga — some level there, some level naturally after."
+          "&7Unlock these in the skill saga — some levels there, some from natural play."
         ]
       },
       "progression": {
         "name": "&dProgression",
         "lore": [
           "&7Skills · TP · Race · Combat flags",
-          "&eClick to open"
+          "&eOpen"
         ]
       }
     },
     "empty": {
       "name": "&7No skills listed",
       "lore": [
-        "&7Nothing to show right now"
+        "&7Nothing to show yet"
       ]
     },
     "list": {
@@ -1862,8 +1881,22 @@
     "back": {
       "name": "&7Back",
       "lore": [
-        "&7Return"
+        "&7Go back to the previous screen"
+      ]
+    },
+    "hub": {
+      "name": "&7« Hub",
+      "lore": [
+        "&7Return to the main &f/lm &7menu",
+        "&8Pick any LM system from there"
+      ]
+    },
+    "close": {
+      "name": "&cClose",
+      "lore": [
+        "&7Close this menu"
       ]
     }
-  }
+  },
+  "_catalogRevision": 195
 }

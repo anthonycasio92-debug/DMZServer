@@ -3,6 +3,7 @@ package com.dbzlegacy.adaptivedifficulty.bukkit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.bukkit.Material;
@@ -21,6 +22,18 @@ final class GuiBoardHelper {
             "^#\\s*(\\d+)\\s+(.+?)\\s{2,}(.+)$|^#\\s*(\\d+)\\s+(\\S+)\\s+(.+)$");
 
     private GuiBoardHelper() {}
+
+    /** Live combat after Overhaul {@code scaleMultiplier}. */
+    static void addOverhaulCombat(List<String> lore, Map<String, String> ph) {
+        if (lore == null || ph == null) {
+            return;
+        }
+        lore.add("&7Overhaul scale &f" + ph.getOrDefault("overhaul_scale", "x1"));
+        lore.add("&7Melee &f" + ph.getOrDefault("melee_scaled", "?")
+                + " &8· &7Strike &f" + ph.getOrDefault("strike_scaled", "?"));
+        lore.add("&7Ki &f" + ph.getOrDefault("ki_scaled", "?")
+                + " &8· &7Defense &f" + ph.getOrDefault("defense_scaled", "?"));
+    }
 
     /** Staff see full tip lines; players get no instructional lore. */
     static List<String> tips(Player player, String... staffLines) {
@@ -41,6 +54,39 @@ final class GuiBoardHelper {
             return new ArrayList<>(staffLines);
         }
         return List.of();
+    }
+
+    /**
+     * Dynamic lore for /difficulty → Tiers buttons. Placeholders are filled via
+     * {@link GuiTooltips} ({@code tierVars}); catalog must not override this key.
+     */
+    static List<String> difficultyTierButtonLore(
+            boolean active, boolean canLower, boolean unlocked, boolean staff) {
+        List<String> tip = new ArrayList<>();
+        tip.add("&7{name}");
+        tip.add("&7Unlock: &fDMZ {req_level} &7or &fPrestige {req_prestige}");
+        if (active) {
+            tip.add("&aCurrently active");
+        } else if (canLower) {
+            tip.add("&aOwned &8· free to lower here");
+        } else if (unlocked) {
+            tip.add("&7Cost &e{cost}");
+            if (staff) {
+                tip.add("&8Scaled for your DMZ level");
+            }
+            tip.add(staff ? "&aUnlocked &8· tap to buy" : "&aUnlocked");
+            if (staff) {
+                tip.add("&8Pay-up OK · change returned");
+            }
+        } else {
+            tip.add("&cLocked for you");
+            tip.add("&7You have &fDMZ {level} &7· &fPrestige {prestige}");
+            if (staff) {
+                tip.add("&8{req}");
+                tip.add("&8CR/BP ignored — use DMZ level or Prestige");
+            }
+        }
+        return tip;
     }
 
     /**
@@ -135,24 +181,34 @@ final class GuiBoardHelper {
     }
 
     static int[] dojoRankLadderSlots(int count, boolean reserveWarRow) {
-        List<Integer> pool = new ArrayList<>();
-        for (int s = 10; s <= 16; s++) {
-            pool.add(s);
-        }
-        for (int s = 19; s <= 25; s++) {
-            if (reserveWarRow && s == 19) {
-                continue;
-            }
-            pool.add(s);
-        }
-        int n = Math.min(Math.max(0, count), pool.size());
+        int upperStart = 10;
+        int upperWidth = ROW_WIDTH;
+        int lowerStart = reserveWarRow ? 20 : 19;
+        int lowerEnd = 25;
+        int lowerWidth = lowerEnd - lowerStart + 1;
+        int max = upperWidth + lowerWidth;
+        int n = Math.min(Math.max(0, count), max);
         if (n == 0) {
             return new int[0];
         }
-        int start = (pool.size() - n) / 2;
-        int[] out = new int[n];
-        for (int i = 0; i < n; i++) {
-            out[i] = pool.get(start + i);
+        int row1 = Math.min(n, upperWidth);
+        int row2 = n - row1;
+        List<Integer> slots = new ArrayList<>();
+        if (row1 > 0) {
+            int start = upperStart + (upperWidth - row1) / 2;
+            for (int i = 0; i < row1; i++) {
+                slots.add(start + i);
+            }
+        }
+        if (row2 > 0) {
+            int start = lowerStart + (lowerWidth - row2) / 2;
+            for (int i = 0; i < row2; i++) {
+                slots.add(start + i);
+            }
+        }
+        int[] out = new int[slots.size()];
+        for (int i = 0; i < slots.size(); i++) {
+            out[i] = slots.get(i);
         }
         return out;
     }
