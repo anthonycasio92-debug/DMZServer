@@ -1,6 +1,8 @@
 # Live ki/stamina reference
 
-`build.sh` overlays `DmzResourcePoolClamp.class` from here when a fresh compile differs from production recycle **2.4.115** bytes.
+`build.sh` no longer overlays pool-clamp bytes from recycle jars (mixed bytecode caused VerifyError). Reference class kept for manual diff only.
+
+Ship line starts at **4.5.0** (`LegacyMechanics-4.5.0.jar` / matching GUI). Bump `AdaptiveDifficultyMod.VERSION`, `mods.toml`, and `plugin.yml` together before each release.
 
 Generate locally:
 

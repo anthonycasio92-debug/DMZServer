@@ -10,7 +10,7 @@ Production is the **Kinetic live** panel server. The old **test server** (`node.
 | Host | Set in `live-sftp.env` (gitignored) |
 | Port | Usually `2022` |
 
-- Build: `bash tools/dmz-adaptive-difficulty/build.sh` (+ GUI build if needed). Ki/stamina pool class is pinned from `tools/dmz-adaptive-difficulty/reference/DmzResourcePoolClamp.class`.
+- Build: `bash tools/dmz-adaptive-difficulty/build.sh` then `bash tools/dmz-adaptive-difficulty-gui/build.sh`. Version is **`AdaptiveDifficultyMod.VERSION`** (ship line **4.5.x** → `LegacyMechanics-4.5.0.jar`, etc.). Builds replace only that version’s filenames; older jars can stay in `mods/` / `plugins/` locally. Deploy scripts pick the highest `sort -V` match, or set **`LM_DEPLOY_VERSION=4.5.0`** to pin.
 - **LegacyMechanics Forge jar — never hot-swap.** Stop the panel first, then either:
   - `LIVE_SERVER_STOPPED=STOPPED DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-lm-live.sh` (direct install), or
   - While running: `DEPLOY_LIVE_CONFIRM=LIVE bash scripts/deploy-lm-live.sh` stages `mods/LegacyMechanics-*.jar.pending`; after stop: `LIVE_SERVER_STOPPED=STOPPED bash scripts/activate-lm-staged-jar.sh`.

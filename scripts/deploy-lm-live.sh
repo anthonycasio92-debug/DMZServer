@@ -27,8 +27,22 @@ if [[ -z "$HOST" || -z "$USER" || -z "$PASS" ]]; then
   exit 1
 fi
 
-FORGE_JAR="$(ls -1 "$ROOT"/mods/LegacyMechanics-*.jar 2>/dev/null | sort -V | tail -1)"
-GUI_JAR="$(ls -1 "$ROOT"/plugins/LegacyMechanicsGUI-*.jar 2>/dev/null | sort -V | tail -1)"
+pick_lm_jar() {
+  local dir="$1" prefix="$2"
+  if [[ -n "${LM_DEPLOY_VERSION:-}" ]]; then
+    local pinned="$dir/${prefix}-${LM_DEPLOY_VERSION}.jar"
+    if [[ -f "$pinned" ]]; then
+      echo "$pinned"
+      return
+    fi
+    echo "LM_DEPLOY_VERSION=$LM_DEPLOY_VERSION but missing $pinned" >&2
+    exit 1
+  fi
+  ls -1 "$dir"/${prefix}-*.jar 2>/dev/null | sort -V | tail -1
+}
+
+FORGE_JAR="$(pick_lm_jar "$ROOT/mods" LegacyMechanics)"
+GUI_JAR="$(pick_lm_jar "$ROOT/plugins" LegacyMechanicsGUI)"
 if [[ ! -f "$FORGE_JAR" ]] || [[ ! -f "$GUI_JAR" ]]; then
   echo "Build jars first:" >&2
   echo "  bash tools/dmz-adaptive-difficulty/build.sh" >&2

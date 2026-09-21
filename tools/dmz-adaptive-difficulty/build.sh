@@ -26,19 +26,22 @@ for dep in "$FTB_CHUNKS" "$FTB_LIBRARY" "$ARCHITECTURY" "$REVAMP"; do
     exit 1
   fi
 done
-VERSION="2.4.115"
 NAME="LegacyMechanics"
 SRC="$(cd "$(dirname "$0")" && pwd)/src/main/java"
+MOD_JAVA="$SRC/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java"
+VERSION="$(grep -oP 'public static final String VERSION = "\K[0-9.]+(?=")' "$MOD_JAVA")"
+if [[ -z "$VERSION" ]]; then
+  echo "Could not read VERSION from $MOD_JAVA" >&2
+  exit 1
+fi
 RES="$(cd "$(dirname "$0")" && pwd)/src/main/resources"
 OUT="$(cd "$(dirname "$0")" && pwd)/build/classes"
 JAR="$ROOT/mods/${NAME}-${VERSION}.jar"
 
-# Remove new + legacy jar names so only one AD Forge jar ships.
-rm -f "$ROOT"/mods/LegacyMechanics-*.jar \
-      "$ROOT"/mods/AdaptiveDifficulty-*.jar \
-      "$ROOT"/mods/dmz_adaptive_difficulty-*.jar \
-      "$ROOT"/AdaptiveDifficulty-*.jar \
-      "$ROOT"/dmz_adaptive_difficulty-*.jar
+# Replace only this version's jar (keep older LegacyMechanics-x.y.z in mods/ for history).
+rm -f "$JAR" \
+      "$ROOT"/mods/AdaptiveDifficulty-"${VERSION}".jar \
+      "$ROOT"/mods/dmz_adaptive_difficulty-"${VERSION}".jar
 
 CP="$SRG:$FORGE_S:$FORGE_U:$GSON:$LIGHTMANS:$FTB:$FTB_CHUNKS:$FTB_LIBRARY:$ARCHITECTURY:$REVAMP:\
 $ROOT/libraries/net/minecraftforge/fmlcore/1.20.1-47.4.10/fmlcore-1.20.1-47.4.10.jar:\

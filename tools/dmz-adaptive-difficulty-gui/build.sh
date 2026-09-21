@@ -12,8 +12,13 @@ EXAM_STR="$ROOT/libraries/examination-string-1.3.0.jar"
 BUNGEE="$ROOT/libraries/bungeecord-chat-1.20-R0.2.jar"
 GSON="$ROOT/libraries/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar"
 GP="$ROOT/libraries/GriefPrevention.jar"
-VERSION="2.4.115"
 NAME="LegacyMechanicsGUI"
+FORGE_MOD_JAVA="$ROOT/tools/dmz-adaptive-difficulty/src/main/java/com/dbzlegacy/adaptivedifficulty/AdaptiveDifficultyMod.java"
+VERSION="$(grep -oP 'public static final String VERSION = "\K[0-9.]+(?=")' "$FORGE_MOD_JAVA")"
+if [[ -z "$VERSION" ]]; then
+  echo "Could not read VERSION from $FORGE_MOD_JAVA" >&2
+  exit 1
+fi
 SRC="$HERE/src/main/java"
 RES="$HERE/src/main/resources"
 OUT="$HERE/build/classes"
@@ -26,11 +31,11 @@ for f in "$PAPER" "$PAPI" "$CMILIB" "$ADV_API" "$ADV_KEY" "$EXAM_API" "$EXAM_STR
   fi
 done
 
-# Only one GUI companion jar — drop old AdaptiveDifficultyGUI / LegacyMechanicsGUI builds.
-rm -f "$ROOT"/plugins/LegacyMechanicsGUI-*.jar \
-      "$ROOT"/plugins/AdaptiveDifficultyGUI-*.jar \
-      "$ROOT"/plugins/dmz_adaptive_difficulty_gui-*.jar \
-      "$ROOT"/plugins/DMZAdaptiveDifficultyGUI-*.jar
+# Replace only this version's GUI jar (keep older LegacyMechanicsGUI-x.y.z in plugins/).
+rm -f "$JAR" \
+      "$ROOT"/plugins/AdaptiveDifficultyGUI-"${VERSION}".jar \
+      "$ROOT"/plugins/dmz_adaptive_difficulty_gui-"${VERSION}".jar \
+      "$ROOT"/plugins/DMZAdaptiveDifficultyGUI-"${VERSION}".jar
 rm -rf "$OUT"
 mkdir -p "$OUT"
 
