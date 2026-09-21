@@ -16,9 +16,14 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * One prestige-aware ki/stamina maximum used by HUD, Fabled, clamps, and Overhaul sync.
  *
- * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} are the live DMZ
- * {@code getMaxEnergy}/{@code getMaxStamina} values. The HUD mixin applies Overhaul
- * {@code scaleMultiplier} on those getters, so HUD, Fabled, and clamps share one cap.
+ * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} = native {@code getMax*} (Iron
+ * {@code max_mana} rejected) × Overhaul {@code scaleMultiplier} once, with HUD-formula
+ * fallback when native is stubbed (Mohist null {@code player} field). ENE/STM stay out of
+ * {@code getTotalMultiplier} so prestige scale is applied only here (+ HUD mixin below).
+ *
+ * <p>{@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataHudPoolMaxMixin} replaces
+ * {@code getMaxEnergy}/{@code getMaxStamina} returns with these canonical caps so the bar
+ * matches clamp/Fabled. Native reads use {@link #isReadingNativeMax()} to avoid double scale.
  *
  * <p>Currents clamp to those maxima only — never to the unscaled HUD reconstruction
  * (2.4.93) and never by raising the advertised max to the overflowing current.
@@ -56,14 +61,14 @@ public final class DmzResourcePoolClamp {
         return base;
     }
 
-    /** Authoritative prestige-aware ki cap — live {@code getMaxEnergy} (HUD mixin scaled). */
+    /** Authoritative prestige-aware ki cap (single scale; see {@link #actualMax}). */
     public static float actualMaxEnergy(StatsData data) {
-        return data == null ? 0f : data.getMaxEnergy();
+        return actualMax(data, true);
     }
 
-    /** Authoritative prestige-aware stamina cap — live {@code getMaxStamina} (HUD mixin scaled). */
+    /** Authoritative prestige-aware stamina cap (single scale; see {@link #actualMax}). */
     public static float actualMaxStamina(StatsData data) {
-        return data == null ? 0f : data.getMaxStamina();
+        return actualMax(data, false);
     }
 
     /** Alias of {@link #actualMaxEnergy(StatsData)} — one canonical ki max. */

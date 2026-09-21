@@ -67,7 +67,39 @@ public final class ProgressionSystem {
             com.dragonminez.common.stats.StatsData data =
                     com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.stats(player);
             DmzResourcePoolClamp.clampAndSync(player, data);
+            schedulePostLoginPoolClamp(player);
         } catch (Throwable ignored) {
+        }
+    }
+
+    /** Mohist/DMZ attach order — reclamp after stats finish hydrating (fixes bar overflow). */
+    private static void schedulePostLoginPoolClamp(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        net.minecraft.server.MinecraftServer server = player.m_20194_();
+        if (server == null) {
+            return;
+        }
+        java.util.UUID id = player.m_20148_();
+        Runnable pulse = () -> {
+            ServerPlayer p = server.m_6846_().m_11259_(id);
+            if (p == null || !p.m_6084_()) {
+                return;
+            }
+            try {
+                com.dragonminez.common.stats.StatsData data =
+                        com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.stats(p);
+                DmzResourcePoolClamp.clampAndSync(p, data);
+            } catch (Throwable ignored) {
+            }
+        };
+        server.execute(pulse);
+        for (int delay : new int[] {1, 5, 20, 60}) {
+            try {
+                server.m_6937_(new net.minecraft.server.TickTask(server.m_129921_() + delay, pulse));
+            } catch (Throwable ignored) {
+            }
         }
     }
 

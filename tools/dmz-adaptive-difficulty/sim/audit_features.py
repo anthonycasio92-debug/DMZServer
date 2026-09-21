@@ -1389,12 +1389,11 @@ def main() -> int:
           and "isReadingNativeMax" in pool_clamp
           and "displayMaxEnergy" in pool_clamp
           and "data.getMaxEnergy()" in pool_clamp)
+    hud_pool = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java")
     check("HUD mixin registers prestige-aware getMax*",
           '"StatsDataHudPoolMaxMixin"' in mixins_json
-          and "applyOverhaulScale" in
-          read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java")
-          and "isReadingNativeMax" in
-          read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.java"))
+          and "actualMaxEnergy" in hud_pool
+          and "isReadingNativeMax" in hud_pool)
     check("EnergyManaSync does not raise max to overflowing current",
           "maxEnergy = currentEnergy" not in energy_mana
           and "clampCurrentToMax" in energy_mana)

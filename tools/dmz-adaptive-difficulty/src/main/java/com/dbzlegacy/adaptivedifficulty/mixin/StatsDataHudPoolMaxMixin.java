@@ -14,33 +14,35 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * {@code scaleMultiplier} (ENE/STM stay out of {@code getTotalMultiplier}), so a
  * prestige-scaled current (18k) paints as 300% of an unscaled 6k bar.
  *
- * <p>Apply the same prestige-aware cap {@link DmzResourcePoolClamp#actualMaxEnergy}
- * uses. Skip while the clamp is reading the native getter so scale is applied once.
+ * <p>Replace DMZ return with {@link DmzResourcePoolClamp#actualMaxEnergy} /
+ * {@link DmzResourcePoolClamp#actualMaxStamina} so HUD, clamps, and Fabled share one cap.
  */
 @Mixin(value = StatsData.class, remap = false, priority = 2100)
 public abstract class StatsDataHudPoolMaxMixin {
 
     @Inject(method = "getMaxEnergy", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$prestigeAwareMaxEnergy(CallbackInfoReturnable<Float> cir) {
-        applyPrestigeAwareMax(cir);
+        applyCanonicalMax(cir, true);
     }
 
     @Inject(method = "getMaxStamina", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$prestigeAwareMaxStamina(CallbackInfoReturnable<Float> cir) {
-        applyPrestigeAwareMax(cir);
+        applyCanonicalMax(cir, false);
     }
 
-    private void applyPrestigeAwareMax(CallbackInfoReturnable<Float> cir) {
+    private void applyCanonicalMax(CallbackInfoReturnable<Float> cir, boolean energy) {
         if (StatsDataLoadContext.inLoad() || DmzResourcePoolClamp.isReadingNativeMax()) {
             return;
         }
-        Float value = cir.getReturnValue();
-        if (value == null || !Float.isFinite(value) || value <= 1f) {
+        StatsData data = (StatsData) (Object) this;
+        float canon = energy ? DmzResourcePoolClamp.actualMaxEnergy(data)
+                : DmzResourcePoolClamp.actualMaxStamina(data);
+        if (!Float.isFinite(canon) || canon <= 1f) {
             return;
         }
-        float scaled = DmzResourcePoolClamp.applyOverhaulScale((StatsData) (Object) this, value);
-        if (scaled > value + 0.01f) {
-            cir.setReturnValue(scaled);
+        Float value = cir.getReturnValue();
+        if (value == null || !Float.isFinite(value) || canon > value + 0.01f) {
+            cir.setReturnValue(canon);
         }
     }
 }
