@@ -76,20 +76,9 @@ javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
     -C "$RES" legacymechanics.refmap.json
 )
 
-# Ship live 2.4.115 ki/stamina pool bytecode as-is (pristine jar slice). Source above is
-# compile-compatible; these .class files win at runtime so we do not re-derive the fix.
-KI_REF="$(cd "$(dirname "$0")" && pwd)/reference/ki-pool-2.4.115"
-if [[ -d "$KI_REF/com" ]]; then
-  KI_COUNT="$(find "$KI_REF/com" -name '*.class' | wc -l | tr -d ' ')"
-  (
-    cd "$KI_REF"
-    mapfile -t KI_CLASSES < <(find com -name '*.class' | sort)
-    jar uf "$JAR" "${KI_CLASSES[@]}"
-  )
-  echo "Overlayed ${KI_COUNT} ki-pool-2.4.115 class(es) into $JAR"
-else
-  echo "WARN: missing $KI_REF — building ki pool from source only" >&2
-fi
+# Ki pool ships from this compile only. Do NOT overlay reference/ki-pool-2.4.115 .class
+# files — mixing 2.4.115 bytecode with a fresh compile causes Java 17 VerifyError during
+# StatsData#load (mixins → DmzResourcePoolClamp) and clients see "Invalid player data".
 
 echo "Built $JAR"
 jar tf "$JAR"

@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.nbt.CompoundTag;
@@ -14,6 +15,13 @@ public abstract class StatsDataLoadClampMixin {
 
     @Inject(method = "load", at = @At("RETURN"), remap = false)
     private void lm$clampAfterStatsLoad(CompoundTag tag, CallbackInfo ci) {
-        DmzResourcePoolClamp.clamp((StatsData) (Object) this);
+        try {
+            DmzResourcePoolClamp.clamp((StatsData) (Object) this);
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Ki/stamina clamp skipped during StatsData load: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    t.toString());
+        }
     }
 }

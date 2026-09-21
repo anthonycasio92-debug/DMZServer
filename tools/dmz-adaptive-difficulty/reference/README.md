@@ -1,6 +1,6 @@
 # Live ki/stamina reference
 
-`build.sh` overlays the **`ki-pool-2.4.115/`** class slice from `LegacyMechanics-2.4.115.jar` (live-known-good pool/HUD/clamp/sync) into every release jar. Java sources are compile stubs only for that stack — **runtime behavior is the 2.4.115 bytecode**, not reimplemented logic.
+The **`ki-pool-2.4.115/`** directory is a **reference extract** from `LegacyMechanics-2.4.115.jar` for diffing and audits only. **`build.sh` does not overlay these `.class` files** — doing so caused Java 17 `VerifyError` on `StatsData#load` and **Invalid player data** disconnects. Runtime ki/stamina behavior comes from the matching Java sources in this repo (kept aligned with 2.4.115 semantics).
 
 Ship line bumps `AdaptiveDifficultyMod.VERSION`, `mods.toml`, and `plugin.yml` together.
 

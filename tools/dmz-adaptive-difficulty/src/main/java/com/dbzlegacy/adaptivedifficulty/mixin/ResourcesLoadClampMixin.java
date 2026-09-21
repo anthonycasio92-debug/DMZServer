@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.character.Resources;
@@ -27,7 +28,14 @@ public abstract class ResourcesLoadClampMixin {
         Resources self = (Resources) (Object) this;
         StatsData data = self.getStatsData();
         if (data != null) {
-            DmzResourcePoolClamp.clamp(data);
+            try {
+                DmzResourcePoolClamp.clamp(data);
+            } catch (Throwable t) {
+                AdaptiveDifficultyMod.LOGGER.warn(
+                        "[{}] Ki/stamina clamp skipped during Resources load: {}",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        t.toString());
+            }
         }
     }
 }
