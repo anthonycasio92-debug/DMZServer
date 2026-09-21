@@ -1,7 +1,8 @@
 // Server: push personal level cap (100k + 10k×breakthroughs) to clients.
 // Overhaul LevelingRevamp.json is server-only; clients default to 50k and
-// native levelCap grows with prestige (100k/115k/130k/145k). Client pin
-// must use THIS packet — Forge persistentData is not synced.
+// native levelCap grows with prestige. Client pin must use THIS packet —
+// Forge persistentData is not synced. Send cap as an INT tag (JS numbers
+// become doubles and Number(nbt) is NaN on the client).
 
 var CHANNEL = "lm_personal_level_cap";
 var SYNC_INTERVAL_TICKS = 40;
@@ -52,10 +53,25 @@ function readCap(player) {
   return BASE_CAP;
 }
 
+function capTag(cap) {
+  cap = clampCap(cap) | 0;
+  try {
+    var nbt = NBT.toTagCompound({});
+    nbt.putInt("cap", cap);
+    return nbt;
+  } catch (e0) {}
+  try {
+    var tag = NBT.of({});
+    tag.putInt("cap", cap);
+    return tag;
+  } catch (e1) {}
+  return { cap: cap };
+}
+
 function syncPlayer(player) {
   if (!player) return;
   try {
-    player.sendData(CHANNEL, { cap: readCap(player) });
+    player.sendData(CHANNEL, capTag(readCap(player)));
   } catch (err) {
     console.error("[LM] personal cap sync failed: " + err);
   }

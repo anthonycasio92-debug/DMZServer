@@ -643,6 +643,13 @@ public final class DifficultyEvents {
         if (player.f_19797_ % 20 != 0) {
             return;
         }
+        try {
+            var data = DmzProgression.stats(player);
+            int cap = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem
+                    .effectiveMaxLevel(player);
+            com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.bind(data, cap);
+        } catch (Throwable ignored) {
+        }
         // Survivor challenge: accumulate playtime while a tier is active.
         if (DifficultyCache.data(player).getActiveTier() > 0) {
             DifficultyCache.data(player).titleProgress().addPlaySeconds(1L);

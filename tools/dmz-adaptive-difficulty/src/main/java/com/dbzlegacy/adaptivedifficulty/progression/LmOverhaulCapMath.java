@@ -41,7 +41,9 @@ public final class LmOverhaulCapMath {
         }
         net.minecraft.server.level.ServerPlayer sp = LmStatsDataAccess.serverPlayer(data);
         if (sp != null) {
-            return personalLevelCap(sp);
+            int cap = personalLevelCap(sp);
+            PersonalLevelCapMirror.bind(data, cap);
+            return cap;
         }
         return PersonalLevelCapMirror.resolveCap(data);
     }
@@ -85,11 +87,12 @@ public final class LmOverhaulCapMath {
     }
 
     /**
-     * Flatten native Overhaul {@code levelCap} to the 100k floor for every prestige.
-     * Pinning {@code maxLevel} to 150k made a prestige ladder
-     * (P0=100k, P1=115k, P2=130k, P3=145k) that ignored breakthroughs and let
-     * 0-BT players past 100k. Per-player 110k–150k comes from
-     * {@link #overhaulLevelCap(StatsData)} mixins + the client KubeJS pin.
+     * Native Overhaul {@code levelCap = min(maxLevel, initial + prestige × step)}.
+     * Flattening both fields to 100k made Statistics a hard 100k for everyone —
+     * breakthrough NBT (100k+10k×BT) could never raise it. Keep
+     * {@code initialLevelCap=100k} and {@code maxLevel=150k} so the engine can
+     * express 110k–150k; mixins + the client pin still replace the prestige
+     * ladder with the personal BT cap.
      */
     public static void pinOverhaulLevelCaps() {
         if (!ModList.get().isLoaded("dmzrevamp")) {
@@ -106,8 +109,8 @@ public final class LmOverhaulCapMath {
             java.lang.reflect.Field maxLevel = levels.getClass().getField("maxLevel");
             java.lang.reflect.Field initial = prestige.getClass().getField("initialLevelCap");
             boolean changed = false;
-            if (maxLevel.getInt(levels) != OVERHAUL_LEVEL_CAP) {
-                maxLevel.setInt(levels, OVERHAUL_LEVEL_CAP);
+            if (maxLevel.getInt(levels) != OVERHAUL_ABSOLUTE_LEVEL_CAP) {
+                maxLevel.setInt(levels, OVERHAUL_ABSOLUTE_LEVEL_CAP);
                 changed = true;
             }
             if (initial.getInt(prestige) != OVERHAUL_LEVEL_CAP) {
@@ -116,10 +119,10 @@ public final class LmOverhaulCapMath {
             }
             if (changed) {
                 AdaptiveDifficultyMod.LOGGER.info(
-                        "[{}] Overhaul native levelCap flattened to {} / {} (personal BT cap is per-player)",
+                        "[{}] Overhaul native caps {} / {} (personal BT cap is per-player)",
                         AdaptiveDifficultyMod.MOD_ID,
                         OVERHAUL_LEVEL_CAP,
-                        OVERHAUL_LEVEL_CAP);
+                        OVERHAUL_ABSOLUTE_LEVEL_CAP);
             }
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(

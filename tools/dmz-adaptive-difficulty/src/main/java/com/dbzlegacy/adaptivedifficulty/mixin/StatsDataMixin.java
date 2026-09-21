@@ -2,6 +2,7 @@ package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
+import com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror;
 import com.dragonminez.common.stats.StatsData;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
@@ -58,6 +59,7 @@ public abstract class StatsDataMixin {
         StatsData self = (StatsData) (Object) this;
         int personal = LmOverhaulCapMath.personalLevelCap(self);
         if (personal > 0) {
+            PersonalLevelCapMirror.bind(self, personal);
             cir.setReturnValue(personal);
         }
     }

@@ -1,9 +1,7 @@
 // Overhaul stock Prestige.initialLevelCap is 50000 and LevelingRevamp.json
-// is server-only. Native levelCap = initial + prestige × step, which with a
-// 150k maxLevel becomes 100k / 115k / 130k / 145k and ignores breakthroughs.
-//
-// Pin BOTH initialLevelCap and maxLevel to the player's personal cap
-// (100k + 10k×breakthroughs, max 150k) so the native formula stays flat.
+// is server-only. Native levelCap = min(maxLevel, initial + prestige × step).
+// Pin BOTH fields to the player's personal cap (100k + 10k×breakthroughs)
+// so Statistics can go past 100k when they have breakthroughs.
 // Cap arrives on channel lm_personal_level_cap from the server script.
 
 var CHANNEL = "lm_personal_level_cap";
@@ -23,6 +21,40 @@ function clampCap(n) {
   if (n > OVERHAUL_ABSOLUTE_CAP) {
     return OVERHAUL_ABSOLUTE_CAP;
   }
+  return n;
+}
+
+function readCapFromPacket(data) {
+  if (!data) {
+    return 0;
+  }
+  var n = 0;
+  try {
+    if (typeof data.getInt === "function") {
+      n = Number(data.getInt("cap"));
+      if (isFinite(n) && n >= OVERHAUL_BASE_CAP) {
+        return n;
+      }
+    }
+  } catch (e0) {}
+  try {
+    if (typeof data.getDouble === "function") {
+      n = Number(data.getDouble("cap"));
+      if (isFinite(n) && n >= OVERHAUL_BASE_CAP) {
+        return n;
+      }
+    }
+  } catch (e1) {}
+  try {
+    var v = typeof data.get === "function" ? data.get("cap") : data.cap;
+    if (v && typeof v.getAsInt === "function") {
+      n = Number(v.getAsInt());
+    } else if (v && typeof v.asInt === "function") {
+      n = Number(v.asInt());
+    } else {
+      n = Number(v);
+    }
+  } catch (e2) {}
   return n;
 }
 
@@ -52,9 +84,7 @@ pinOverhaulCaps(OVERHAUL_BASE_CAP);
 
 NetworkEvents.dataReceived(CHANNEL, function (event) {
   try {
-    var data = event.data;
-    var raw = data.cap !== undefined ? data.cap : data.get && data.get("cap");
-    pinOverhaulCaps(Number(raw));
+    pinOverhaulCaps(readCapFromPacket(event.data));
   } catch (e) {
     console.error("[LM] personal cap packet failed: " + e);
   }

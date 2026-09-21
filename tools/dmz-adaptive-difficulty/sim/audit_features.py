@@ -1352,10 +1352,11 @@ def main() -> int:
           "OVERHAUL_LEVEL_CAP = PrestigePointsSystem.BASE_LEVEL_CAP" in cap_math
           and "overhaulLevelCap(StatsData data)" in cap_math
           and "pinOverhaulLevelCaps" in cap_math)
-    check("Overhaul native cap flattened to 100k floor",
-          "maxLevel.setInt(levels, OVERHAUL_LEVEL_CAP)" in cap_math
+    check("Overhaul native cap is 100k floor / 150k ceiling",
+          "maxLevel.setInt(levels, OVERHAUL_ABSOLUTE_LEVEL_CAP)" in cap_math
           and "initial.setInt(prestige, OVERHAUL_LEVEL_CAP)" in cap_math
-          and "ABSOLUTE_LEVEL_CAP)" not in cap_math.split("public static void pinOverhaulLevelCaps")[1].split("private static int initialStatTotal")[0])
+          and "OVERHAUL_ABSOLUTE_LEVEL_CAP" in cap_math.split("public static void pinOverhaulLevelCaps")[1].split("private static int initialStatTotal")[0])
+    check("Overhaul JSON maxLevel 150k", '"maxLevel": 150000' in dmz_lvl)
     check("Overhaul boot pins 100k/150k caps",
           "pinOverhaulLevelCaps" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/DmzRevampConfigBridge.java"))
@@ -1365,11 +1366,19 @@ def main() -> int:
           "OVERHAUL_BASE_CAP = 100000" in kjs_cap
           and "initialLevelCap" in kjs_cap
           and "lm_personal_level_cap" in kjs_cap
-          and "NetworkEvents.dataReceived" in kjs_cap)
+          and "NetworkEvents.dataReceived" in kjs_cap
+          and "getInt" in kjs_cap)
+    check("KubeJS startup pins Overhaul on the client pack",
+          "OVERHAUL_BASE_CAP = 100000" in read(ROOT / "kubejs" / "startup_scripts" / "overhaul_level_cap.js")
+          and "isClientEnvironment" in read(ROOT / "kubejs" / "startup_scripts" / "overhaul_level_cap.js"))
     check("KubeJS server syncs personal cap to clients",
           'CHANNEL = "lm_personal_level_cap"' in kjs_cap_srv
           and "sendData" in kjs_cap_srv
-          and "effectiveMaxLevel" in kjs_cap_srv)
+          and "effectiveMaxLevel" in kjs_cap_srv
+          and "putInt" in kjs_cap_srv)
+    check("Personal cap binds StatsData for Mohist mixins",
+          "CAP_BY_DATA" in read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/PersonalLevelCapMirror.java")
+          and "bindStatsData" in read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/PersonalLevelCapMirror.java"))
     energy_mana = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/EnergyManaSync.java")
     pool_clamp = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzResourcePoolClamp.java")
     check("Fabled mana uses actual ki pool not ENE stat",

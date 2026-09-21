@@ -1,7 +1,7 @@
 {
   "levelsAndAttributes": {
     "enabled": true,
-    "maxLevel": 100000,
+    "maxLevel": 150000,
     "maxAttribute": -1,
     "levelUpPerPoints": 6,
     "customHexStatCurve": true
