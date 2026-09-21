@@ -270,6 +270,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             return;
         }
+        if ("cnpc".equals(backend)) {
+            openCnpcMenu(player, "difficulty", page);
+            return;
+        }
         if ("chest".equals(backend)) {
             chestGui.open(player, page);
             return;
@@ -376,6 +380,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             return;
         }
+        if ("cnpc".equals(backend)) {
+            openCnpcMenu(player, "rival", page);
+            return;
+        }
         if ("chest".equals(backend)) {
             rivalChestGui.open(player, page);
             return;
@@ -455,6 +463,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             return;
         }
+        if ("cnpc".equals(backend)) {
+            openCnpcMenu(player, "spar", page);
+            return;
+        }
         if ("chest".equals(backend)) {
             sparChestGui.open(player, page);
             return;
@@ -512,11 +524,23 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             }
             return;
         }
+        if ("cnpc".equals(backend)) {
+            openCnpcMenu(player, "hub", page);
+            return;
+        }
         if ("chest".equals(backend)) {
             hubChestGui.open(player, page);
             return;
         }
         openHubInventory(player, page);
+    }
+
+    /** Forge CustomNPCs UI — no chest/CMI inventory bridge. */
+    private void openCnpcMenu(Player player, String system, String page) {
+        if (!ForgeBridge.openCnpcLm(player, system, page)) {
+            String err = ForgeBridge.lastError();
+            player.sendMessage("§cLM menu failed" + (err == null || err.isBlank() ? "." : ": " + err));
+        }
     }
 
     // ── Progression ────────────────────────────────────────────────────
@@ -557,7 +581,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         String p = page == null || page.isBlank() ? "main" : page;
         // Player-facing Android remove: inventory only (chat progression menu is staff-gated).
         if (isAndroidRemovePage(p)) {
-            if ("chest".equals(ForgeBridge.guiBackend())) {
+            String androidBackend = ForgeBridge.guiBackend();
+            if ("cnpc".equals(androidBackend)) {
+                openCnpcMenu(player, "android_remove", "main");
+            } else if ("chest".equals(androidBackend)) {
                 progressionChestGui.open(player, "android_remove");
             } else {
                 openProgressionInventory(player, "android_remove");
@@ -569,6 +596,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             if (!ForgeBridge.openProgressionChatMenu(player, p)) {
                 player.sendMessage("§cProgression chat menu unavailable (is the Forge mod loaded?).");
             }
+            return;
+        }
+        if ("cnpc".equals(backend)) {
+            openCnpcMenu(player, "progression", p);
             return;
         }
         if ("chest".equals(backend)) {
@@ -629,6 +660,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             openPrestigeInventory(player, page);
             return;
         }
+        if ("cnpc".equals(backend)) {
+            openCnpcMenu(player, "prestige", page);
+            return;
+        }
         if ("chest".equals(backend)) {
             prestigeChestGui.open(player, page);
             return;
@@ -669,6 +704,10 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
             return;
         }
         String backend = ForgeBridge.guiBackend();
+        if ("cnpc".equals(backend)) {
+            openCnpcMenu(player, "character", page);
+            return;
+        }
         if ("chest".equals(backend)) {
             characterServicesChestGui.open(player, page);
             return;
@@ -715,6 +754,11 @@ public final class AdaptiveDifficultyGuiPlugin extends JavaPlugin {
         if ("chat".equals(backend)) {
             // No dedicated skills chat menu — inventory GUI (avoid Forge /skills do forward).
             openSkillsInventory(player, page);
+            return;
+        }
+        if ("cnpc".equals(backend)) {
+            String sys = ForgeBridge.hasSkillCheck(player) ? "skillcheck" : "skills";
+            openCnpcMenu(player, sys, page);
             return;
         }
         if ("chest".equals(backend)) {

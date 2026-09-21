@@ -7,14 +7,16 @@ public enum GuiBackend {
     AUTO,
     CMI,
     CHEST,
-    CHAT;
+    CHAT,
+    CNPC;
 
     public static GuiBackend fromConfig() {
         String raw = DifficultyConfig.get().guiBackend;
         if (raw == null || raw.isBlank()) {
-            return CMI;
+            return CNPC;
         }
         return switch (raw.trim().toLowerCase()) {
+            case "cnpc", "customnpcs", "customnpc", "noppes" -> CNPC;
             case "cmi", "cmilib", "cmigui" -> CMI;
             case "chest", "bukkit", "inventory", "gui" -> CHEST;
             case "chat" -> CHAT;

@@ -27,6 +27,10 @@ public final class DifficultyMenu {
 
         GuiBackend backend = GuiBackend.fromConfig();
         boolean opened = switch (backend) {
+            case CNPC -> {
+                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "difficulty", target);
+                yield true;
+            }
             case CMI -> openInventory(player, target);
             case CHEST -> BukkitGuiBridge.open(player, target);
             case CHAT -> false;

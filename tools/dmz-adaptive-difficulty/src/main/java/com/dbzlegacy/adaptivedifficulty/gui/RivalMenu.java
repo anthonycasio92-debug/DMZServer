@@ -18,6 +18,10 @@ public final class RivalMenu {
 
         GuiBackend backend = GuiBackend.fromConfig();
         boolean opened = switch (backend) {
+            case CNPC -> {
+                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "rival", target);
+                yield true;
+            }
             case CMI -> openInventory(player, target);
             case CHEST -> BukkitGuiBridge.openRival(player, target);
             case CHAT -> false;

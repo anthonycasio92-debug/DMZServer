@@ -5,7 +5,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Player UI entrypoint for {@code /lm} / {@code /legacymechanics}.
- * Prefers CMI/CMILib inventory GUI, then Bukkit chest companion, then chat.
+ * Prefers CustomNPCs UI ({@code cnpc}), then CMI/chest companion, then chat.
  */
 public final class MechanicsMenu {
     private MechanicsMenu() {}
@@ -18,6 +18,10 @@ public final class MechanicsMenu {
 
         GuiBackend backend = GuiBackend.fromConfig();
         boolean opened = switch (backend) {
+            case CNPC -> {
+                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.openHub(player, target);
+                yield true;
+            }
             case CMI -> openInventory(player, target);
             case CHEST -> BukkitGuiBridge.openHub(player, target);
             case CHAT -> false;

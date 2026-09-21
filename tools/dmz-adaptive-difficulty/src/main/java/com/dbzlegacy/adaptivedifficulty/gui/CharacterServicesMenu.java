@@ -15,6 +15,10 @@ public final class CharacterServicesMenu {
         String target = page == null || page.isBlank() ? "main" : page;
         GuiBackend backend = GuiBackend.fromConfig();
         boolean opened = switch (backend) {
+            case CNPC -> {
+                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "character", target);
+                yield true;
+            }
             case CMI -> CmiGuiBridge.openCharacterServices(player, target);
             case CHEST -> BukkitGuiBridge.openCharacterServices(player, target);
             case CHAT -> false;

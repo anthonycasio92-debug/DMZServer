@@ -22,6 +22,10 @@ public final class PrestigeMenu {
 
         GuiBackend backend = GuiBackend.fromConfig();
         boolean opened = switch (backend) {
+            case CNPC -> {
+                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "prestige", target);
+                yield true;
+            }
             case CMI -> openInventory(player, target);
             case CHEST -> BukkitGuiBridge.openPrestige(player, target);
             case CHAT -> false;

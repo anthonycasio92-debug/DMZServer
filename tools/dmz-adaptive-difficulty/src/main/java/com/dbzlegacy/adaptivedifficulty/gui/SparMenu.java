@@ -18,6 +18,10 @@ public final class SparMenu {
 
         GuiBackend backend = GuiBackend.fromConfig();
         boolean opened = switch (backend) {
+            case CNPC -> {
+                com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "spar", target);
+                yield true;
+            }
             case CMI -> openInventory(player, target);
             case CHEST -> BukkitGuiBridge.openSpar(player, target);
             case CHAT -> false;

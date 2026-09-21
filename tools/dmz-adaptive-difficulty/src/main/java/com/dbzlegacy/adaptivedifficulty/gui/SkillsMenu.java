@@ -45,6 +45,14 @@ public final class SkillsMenu {
 
         GuiBackend backend = GuiBackend.fromConfig();
         boolean opened = switch (backend) {
+            case CNPC -> {
+                if (skillCheck) {
+                    com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "skillcheck", target);
+                } else {
+                    com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "skills", target);
+                }
+                yield true;
+            }
             case CMI -> openInventory(player, target);
             case CHEST -> BukkitGuiBridge.openSkills(player, target);
             case CHAT -> false;

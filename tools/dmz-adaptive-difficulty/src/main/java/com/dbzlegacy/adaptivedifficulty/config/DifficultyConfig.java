@@ -357,7 +357,8 @@ public final class DifficultyConfig {
      * Player UI backend for {@code /difficulty}:
      * {@code cmi} (default), {@code auto} (CMI → chest → chat), {@code chest}, or {@code chat}.
      */
-    public String guiBackend = "cmi";
+    /** {@code cnpc} = CustomNPCs-only LM UI (no chest/CMI). Also: cmi, chest, chat, auto. */
+    public String guiBackend = "cnpc";
     /** Staff {@code /lm admin testgui} — CustomNPCs panel listing all LM systems (experimental). */
     public boolean enableStaffCnpcTestGui = true;
     /**
@@ -1315,10 +1316,11 @@ public final class DifficultyConfig {
             cfg.starterCopperCostMigratedV1 = Boolean.TRUE;
         }
         if (cfg.guiBackend == null || cfg.guiBackend.isBlank()) {
-            cfg.guiBackend = "cmi";
+            cfg.guiBackend = "cnpc";
         } else {
             // Canonicalize aliases so Forge + Bukkit agree.
             cfg.guiBackend = switch (cfg.guiBackend.trim().toLowerCase()) {
+                case "cnpc", "customnpcs", "customnpc", "noppes" -> "cnpc";
                 case "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm" -> "cmi";
                 case "chest", "bukkit", "inventory", "gui" -> "chest";
                 case "chat" -> "chat";

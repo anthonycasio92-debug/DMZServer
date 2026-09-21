@@ -42,6 +42,14 @@ public final class ProgressionMenu {
             return;
         }
         boolean opened = switch (backend) {
+            case CNPC -> {
+                if (androidRemove) {
+                    com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "android_remove", "main");
+                } else {
+                    com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui.open(player, "progression", target);
+                }
+                yield true;
+            }
             case CMI -> openInventory(player, target);
             case CHEST -> BukkitGuiBridge.openProgression(player, target);
             case CHAT -> false;

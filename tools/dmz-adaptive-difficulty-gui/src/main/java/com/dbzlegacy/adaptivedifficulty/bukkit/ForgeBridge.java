@@ -776,7 +776,7 @@ public final class ForgeBridge {
     }
 
     /**
-     * Canonical Forge {@code guiBackend}: {@code cmi|chest|chat|auto}.
+     * Canonical Forge {@code guiBackend}: {@code cnpc|cmi|chest|chat|auto}.
      * Aliases ({@code bukkit}, {@code cmilib}, legacy deluxe, …) are normalized here
      * so Bukkit open paths match Forge {@code GuiBackend.fromConfig()}.
      */
@@ -787,13 +787,14 @@ public final class ForgeBridge {
                     .getMethod("get").invoke(null);
             Object raw = cfg.getClass().getField("guiBackend").get(cfg);
             if (raw == null) {
-                return "cmi";
+                return "cnpc";
             }
             String v = String.valueOf(raw).trim().toLowerCase(Locale.ROOT);
             if (v.isEmpty()) {
-                return "cmi";
+                return "cnpc";
             }
             return switch (v) {
+                case "cnpc", "customnpcs", "customnpc", "noppes" -> "cnpc";
                 case "cmi", "cmilib", "cmigui", "deluxemenus", "deluxe", "dm" -> "cmi";
                 case "chest", "bukkit", "inventory", "gui" -> "chest";
                 case "chat" -> "chat";
@@ -801,7 +802,28 @@ public final class ForgeBridge {
                 default -> "auto";
             };
         } catch (Throwable t) {
-            return "cmi";
+            return "cnpc";
+        }
+    }
+
+    /** Open Legacy Mechanics CustomNPCs UI (Forge-only, no chest/CMI). */
+    public static boolean openCnpcLm(Player player, String system, String page) {
+        Object nms = nmsPlayer(player);
+        if (nms == null) {
+            resolveError = "Could not reach LegacyMechanics Forge player.";
+            return false;
+        }
+        try {
+            Class<?> gui = loadClass("com.dbzlegacy.adaptivedifficulty.gui.cnpc.CnpcLmGui", nms.getClass().getClassLoader());
+            String sys = system == null || system.isBlank() ? "hub" : system;
+            String pg = page == null || page.isBlank() ? "main" : page;
+            gui.getMethod("open", nms.getClass(), String.class, String.class).invoke(null, nms, sys, pg);
+            return true;
+        } catch (Throwable t) {
+            Throwable root = t.getCause() != null ? t.getCause() : t;
+            resolveError = root.getClass().getSimpleName()
+                    + (root.getMessage() == null ? "" : ": " + root.getMessage());
+            return false;
         }
     }
 
