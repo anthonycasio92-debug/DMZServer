@@ -16,9 +16,14 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * One prestige-aware ki/stamina maximum used by HUD, Fabled, clamps, and Overhaul sync.
  *
- * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} are the live DMZ
- * {@code getMaxEnergy}/{@code getMaxStamina} values. The HUD mixin applies Overhaul
- * {@code scaleMultiplier} on those getters, so HUD, Fabled, and clamps share one cap.
+ * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} = native {@code getMax*} (Iron
+ * {@code max_mana} rejected) × Overhaul {@code scaleMultiplier} once. ENE/STM stay out of
+ * {@code getTotalMultiplier} so this is the only place the pool is prestige-scaled.
+ *
+ * <p>{@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataHudPoolMaxMixin} applies the
+ * same scale to live {@code getMaxEnergy}/{@code getMaxStamina} so XenoverseHUD sees the
+ * identical cap. Native reads used to compute that cap skip the mixin via
+ * {@link #isReadingNativeMax()}.
  *
  * <p>Currents clamp to those maxima only — never to the unscaled HUD reconstruction
  * (2.4.93) and never by raising the advertised max to the overflowing current.
@@ -56,14 +61,14 @@ public final class DmzResourcePoolClamp {
         return base;
     }
 
-    /** Authoritative prestige-aware ki cap — live {@code getMaxEnergy} (HUD mixin scaled). */
+    /** Authoritative prestige-aware ki cap. */
     public static float actualMaxEnergy(StatsData data) {
-        return data == null ? 0f : data.getMaxEnergy();
+        return actualMax(data, true);
     }
 
-    /** Authoritative prestige-aware stamina cap — live {@code getMaxStamina} (HUD mixin scaled). */
+    /** Authoritative prestige-aware stamina cap. */
     public static float actualMaxStamina(StatsData data) {
-        return data == null ? 0f : data.getMaxStamina();
+        return actualMax(data, false);
     }
 
     /** Alias of {@link #actualMaxEnergy(StatsData)} — one canonical ki max. */
