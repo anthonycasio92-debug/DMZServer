@@ -9,26 +9,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * XenoverseHUD / AlternativeHUD call {@code getMaxEnergy}/{@code getMaxStamina} locally.
- * Replace the vanilla return with {@link DmzResourcePoolClamp#canonicalPoolMax} using that
- * same return — clamps and Fabled use {@link DmzResourcePoolClamp#actualMaxEnergy} which
- * reads native via {@link DmzResourcePoolClamp#isReadingNativeMax()} and runs the same math.
+ * {@code ResourceSyncS2C} only sends current. Native getters omit Overhaul
+ * {@code scaleMultiplier} (ENE/STM stay out of {@code getTotalMultiplier}), so a
+ * prestige-scaled current (18k) paints as 300% of an unscaled 6k bar.
  *
- * <p>Do not call {@code actualMaxEnergy} here (re-enters {@code getMaxEnergy} and diverges).
+ * <p>Apply the same prestige-aware cap {@link DmzResourcePoolClamp#actualMaxEnergy}
+ * uses. Skip while the clamp is reading the native getter so scale is applied once.
  */
 @Mixin(value = StatsData.class, remap = false, priority = 2100)
 public abstract class StatsDataHudPoolMaxMixin {
 
     @Inject(method = "getMaxEnergy", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$prestigeAwareMaxEnergy(CallbackInfoReturnable<Float> cir) {
-        applyCanonicalPoolMax(cir, true);
+        applyPrestigeAwareMax(cir);
     }
 
     @Inject(method = "getMaxStamina", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$prestigeAwareMaxStamina(CallbackInfoReturnable<Float> cir) {
-        applyCanonicalPoolMax(cir, false);
+        applyPrestigeAwareMax(cir);
     }
 
-    private void applyCanonicalPoolMax(CallbackInfoReturnable<Float> cir, boolean energy) {
+    private void applyPrestigeAwareMax(CallbackInfoReturnable<Float> cir) {
         if (DmzResourcePoolClamp.isReadingNativeMax()) {
             return;
         }
@@ -36,10 +37,9 @@ public abstract class StatsDataHudPoolMaxMixin {
         if (value == null || !Float.isFinite(value) || value <= 1f) {
             return;
         }
-        StatsData self = (StatsData) (Object) this;
-        float canonical = DmzResourcePoolClamp.canonicalPoolMax(self, value, energy);
-        if (Float.isFinite(canonical) && canonical > 1f) {
-            cir.setReturnValue(canonical);
+        float scaled = DmzResourcePoolClamp.applyOverhaulScale((StatsData) (Object) this, value);
+        if (scaled > value + 0.01f) {
+            cir.setReturnValue(scaled);
         }
     }
 }

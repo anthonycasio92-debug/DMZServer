@@ -16,14 +16,9 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * One prestige-aware ki/stamina maximum used by HUD, Fabled, clamps, and Overhaul sync.
  *
- * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} = native {@code getMax*} (Iron
- * {@code max_mana} rejected) × Overhaul {@code scaleMultiplier} once. ENE/STM stay out of
- * {@code getTotalMultiplier} so this is the only place the pool is prestige-scaled.
- *
- * <p>{@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataHudPoolMaxMixin} applies the
- * same scale to live {@code getMaxEnergy}/{@code getMaxStamina} so XenoverseHUD sees the
- * identical cap. Native reads used to compute that cap skip the mixin via
- * {@link #isReadingNativeMax()}.
+ * <p>{@code actualMaxEnergy}/{@code actualMaxStamina} are the live DMZ
+ * {@code getMaxEnergy}/{@code getMaxStamina} values. The HUD mixin applies Overhaul
+ * {@code scaleMultiplier} on those getters, so HUD, Fabled, and clamps share one cap.
  *
  * <p>Currents clamp to those maxima only — never to the unscaled HUD reconstruction
  * (2.4.93) and never by raising the advertised max to the overflowing current.
@@ -61,29 +56,14 @@ public final class DmzResourcePoolClamp {
         return base;
     }
 
-    /**
-     * Single ki/stamina cap from an already-computed vanilla {@code getMax*} return.
-     * Used by {@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataHudPoolMaxMixin}
-     * so HUD/Statistics never re-enter {@code getMaxEnergy} (no recursion / split brains).
-     */
-    public static float canonicalPoolMax(StatsData data, float vanillaReturn, boolean energy) {
-        return canonicalMax(data, vanillaReturn, energy);
-    }
-
-    /** Authoritative prestige-aware ki cap. */
+    /** Authoritative prestige-aware ki cap — live {@code getMaxEnergy} (HUD mixin scaled). */
     public static float actualMaxEnergy(StatsData data) {
-        if (data == null) {
-            return 0f;
-        }
-        return canonicalMax(data, readNativeMax(data, true), true);
+        return data == null ? 0f : data.getMaxEnergy();
     }
 
-    /** Authoritative prestige-aware stamina cap. */
+    /** Authoritative prestige-aware stamina cap — live {@code getMaxStamina} (HUD mixin scaled). */
     public static float actualMaxStamina(StatsData data) {
-        if (data == null) {
-            return 0f;
-        }
-        return canonicalMax(data, readNativeMax(data, false), false);
+        return data == null ? 0f : data.getMaxStamina();
     }
 
     /** Alias of {@link #actualMaxEnergy(StatsData)} — one canonical ki max. */
@@ -97,52 +77,32 @@ public final class DmzResourcePoolClamp {
     }
 
     /**
-     * Live DMZ ki/stamina cap: vanilla {@code getMax*} (or native read), merged with the
-     * HUD formula when vanilla is stub-low (Mohist null {@code player} / missing secondary).
-     * Iron {@code max_mana} rejected on ki. Prestige scale applied exactly once.
+     * Live DMZ ki/stamina cap: native {@code getMax*} unless Iron-contaminated,
+     * otherwise the HUD formula. Prestige scale is applied exactly once.
      */
-    private static float canonicalMax(StatsData data, float vanillaReturn, boolean energy) {
+    private static float actualMax(StatsData data, boolean energy) {
         if (data == null) {
             return 0f;
         }
-        float nativeMax = Float.isFinite(vanillaReturn) ? vanillaReturn : 0f;
+        float nativeMax = readNativeMax(data, energy);
         if (energy && nativeMax > POWER_RELEASE_FLOOR && looksLikeIronMana(data, nativeMax)) {
             nativeMax = 0f;
         }
-        float hud = 0f;
-        try {
-            hud = hudFormulaMax(data, energy);
-        } catch (Throwable ignored) {
-        }
-        nativeMax = mergeNativeWithHudFormula(nativeMax, hud);
         if (Float.isFinite(nativeMax) && nativeMax > POWER_RELEASE_FLOOR) {
             return applyOverhaulScale(data, nativeMax);
         }
-        if (Float.isFinite(hud) && hud > POWER_RELEASE_FLOOR) {
-            return applyOverhaulScale(data, hud);
+        try {
+            float hud = hudFormulaMax(data, energy);
+            if (Float.isFinite(hud) && hud > POWER_RELEASE_FLOOR) {
+                return applyOverhaulScale(data, hud);
+            }
+        } catch (Throwable ignored) {
         }
         float fallback = investedFallback(data, energy);
         if (fallback > POWER_RELEASE_FLOOR) {
             return applyOverhaulScale(data, fallback);
         }
         return 0f;
-    }
-
-    /**
-     * When server {@code getMax*} is ~1× (secondary default) but the HUD formula is much
-     * higher, trust the formula — same failure mode as {@code StatsDataSecondaryPlayerMixin}.
-     */
-    private static float mergeNativeWithHudFormula(float nativeMax, float hud) {
-        if (!Float.isFinite(hud) || hud <= POWER_RELEASE_FLOOR) {
-            return nativeMax;
-        }
-        if (!Float.isFinite(nativeMax) || nativeMax <= POWER_RELEASE_FLOOR) {
-            return hud;
-        }
-        if (hud > nativeMax * 1.08f) {
-            return Math.max(nativeMax, hud);
-        }
-        return nativeMax;
     }
 
     private static float readNativeMax(StatsData data, boolean energy) {

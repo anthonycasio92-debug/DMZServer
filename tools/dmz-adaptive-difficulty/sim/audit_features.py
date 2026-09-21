@@ -1378,12 +1378,17 @@ def main() -> int:
           "getMaxEnergy()" in pool_clamp
           and "looksLikeIronMana" in pool_clamp
           and "actualMaxEnergy" in pool_clamp)
-    check("canonical actualMaxEnergy/Stamina apply Overhaul scale once",
+    lm_root = Path(__file__).resolve().parents[1]
+    ki_ref = lm_root / "reference" / "ki-pool-2.4.115"
+    check("ki-pool-2.4.115 reference slice present",
+          (ki_ref / "com/dbzlegacy/adaptivedifficulty/progression/DmzResourcePoolClamp.class").is_file()
+          and (ki_ref / "com/dbzlegacy/adaptivedifficulty/mixin/StatsDataHudPoolMaxMixin.class").is_file())
+    check("canonical actualMaxEnergy/Stamina (2.4.115 compile stub)",
           "actualMaxStamina" in pool_clamp
           and "applyOverhaulScale" in pool_clamp
           and "isReadingNativeMax" in pool_clamp
           and "displayMaxEnergy" in pool_clamp
-          and "return actualMaxEnergy(data)" in pool_clamp)
+          and "data.getMaxEnergy()" in pool_clamp)
     check("HUD mixin registers prestige-aware getMax*",
           '"StatsDataHudPoolMaxMixin"' in mixins_json
           and "applyOverhaulScale" in

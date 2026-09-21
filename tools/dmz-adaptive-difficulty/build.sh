@@ -76,8 +76,20 @@ javac --release 17 -proc:none -cp "$CP" -d "$OUT" "${SOURCES[@]}"
     -C "$RES" legacymechanics.refmap.json
 )
 
-# Do NOT overlay DmzResourcePoolClamp.class from an older jar — mixed bytecode breaks
-# Java 17 verification when mixins call actualMaxEnergy from woven StatsData (VerifyError → invalid playerdata).
+# Ship live 2.4.115 ki/stamina pool bytecode as-is (pristine jar slice). Source above is
+# compile-compatible; these .class files win at runtime so we do not re-derive the fix.
+KI_REF="$(cd "$(dirname "$0")" && pwd)/reference/ki-pool-2.4.115"
+if [[ -d "$KI_REF/com" ]]; then
+  KI_COUNT="$(find "$KI_REF/com" -name '*.class' | wc -l | tr -d ' ')"
+  (
+    cd "$KI_REF"
+    mapfile -t KI_CLASSES < <(find com -name '*.class' | sort)
+    jar uf "$JAR" "${KI_CLASSES[@]}"
+  )
+  echo "Overlayed ${KI_COUNT} ki-pool-2.4.115 class(es) into $JAR"
+else
+  echo "WARN: missing $KI_REF — building ki pool from source only" >&2
+fi
 
 echo "Built $JAR"
 jar tf "$JAR"

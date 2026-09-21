@@ -102,7 +102,7 @@ public final class PlayerStatChecker {
             } catch (Throwable ignored) {
             }
             try {
-                msg(viewer, "§eMax Energy / Ki: §f" + format(DmzResourcePoolClamp.displayMaxEnergy(data)));
+                msg(viewer, "§eMax Energy / Ki: §f" + format(data.getMaxEnergy()));
             } catch (Throwable ignored) {
             }
 
@@ -159,7 +159,7 @@ public final class PlayerStatChecker {
             } catch (Throwable ignored) {
             }
             try {
-                msg(viewer, "§dMax Stamina: §f" + format(DmzResourcePoolClamp.displayMaxStamina(data)));
+                msg(viewer, "§dMax Stamina: §f" + format(data.getMaxStamina()));
             } catch (Throwable ignored) {
             }
 

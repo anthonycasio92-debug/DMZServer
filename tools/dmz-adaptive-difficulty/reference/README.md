@@ -1,19 +1,15 @@
 # Live ki/stamina reference
 
-`build.sh` no longer overlays pool-clamp bytes from recycle jars (mixed bytecode caused VerifyError). Reference class kept for manual diff only.
+`build.sh` overlays the **`ki-pool-2.4.115/`** class slice from `LegacyMechanics-2.4.115.jar` (live-known-good pool/HUD/clamp/sync) into every release jar. Java sources are compile stubs only for that stack — **runtime behavior is the 2.4.115 bytecode**, not reimplemented logic.
 
-Ship line starts at **4.5.0** (`LegacyMechanics-4.5.0.jar` / matching GUI). Bump `AdaptiveDifficultyMod.VERSION`, `mods.toml`, and `plugin.yml` together before each release.
+Ship line bumps `AdaptiveDifficultyMod.VERSION`, `mods.toml`, and `plugin.yml` together.
 
-**Ki/stamina:** `DmzResourcePoolClamp.actualMaxEnergy/Stamina` must call private `actualMax(...)` (native read via `isReadingNativeMax`, Iron reject, HUD formula fallback, then × Overhaul scale once). Do **not** return raw `data.getMaxEnergy()` — that regressed in the 2.4.115 overlay (4.5.x before 4.5.4) and breaks clamps/regen/HUD alignment. Good reference commit: `51afb1aa`.
-
-**HUD max getters:** `StatsDataHudPoolMaxMixin` must call `canonicalPoolMax(data, vanillaReturn, energy)` on the vanilla RETURN value — never `actualMaxEnergy()` (re-enters `getMaxEnergy`). Clamps use `actualMax*` → `readNativeMax` + same `canonicalMax` math. When vanilla max is stub-low vs HUD formula, `mergeNativeWithHudFormula` lifts to the formula (Mohist secondary attr bug).
-
-Generate locally:
+## Refresh the slice from recycle/live jar
 
 ```bash
-unzip -p /path/to/recycle/LegacyMechanics-2.4.115.jar \
-  com/dbzlegacy/adaptivedifficulty/progression/DmzResourcePoolClamp.class \
-  > tools/dmz-adaptive-difficulty/reference/DmzResourcePoolClamp.class
+JAR="${LM_REFERENCE_JAR:-/path/to/recycle/LegacyMechanics-2.4.115.jar}"
+REF="tools/dmz-adaptive-difficulty/reference/ki-pool-2.4.115"
+# same class list as build.sh overlay — extract with unzip -p "$JAR" <path> > "$REF/<path>"
 ```
 
-Or set `LM_REFERENCE_JAR` to that recycle jar before `build.sh` (auto-extract if this file is missing).
+Do not hand-edit `.class` files; re-extract from the reference jar when live ki behavior changes.
