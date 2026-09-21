@@ -1154,7 +1154,10 @@ def main() -> int:
     check("rival/spar chat hub lmdo", 'lmdo lm open hub' in rival_chat and 'lmdo lm open hub' in spar_chat)
     check("difficulty chat hub button", 'lmdo lm open hub' in diff_chat)
     check("ProgressionMenu allows android_remove", "isAndroidRemovePage" in prog_menu)
-    check("MechanicsCommands android_remove opens GUI", "openProgression(player, \"android_remove\")" in mech_cmds)
+    check(
+        "MechanicsCommands android_remove opens GUI",
+        "ProgressionMenu.open(player, \"android_remove\")" in mech_cmds,
+    )
 
     print("\n=== Script parity deep check (2.3.54) ===")
     yardrat = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/race/YardratProgression.java")
