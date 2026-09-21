@@ -6,7 +6,7 @@ Ship line starts at **4.5.0** (`LegacyMechanics-4.5.0.jar` / matching GUI). Bump
 
 **Ki/stamina:** `DmzResourcePoolClamp.actualMaxEnergy/Stamina` must call private `actualMax(...)` (native read via `isReadingNativeMax`, Iron reject, HUD formula fallback, then × Overhaul scale once). Do **not** return raw `data.getMaxEnergy()` — that regressed in the 2.4.115 overlay (4.5.x before 4.5.4) and breaks clamps/regen/HUD alignment. Good reference commit: `51afb1aa`.
 
-**HUD max getters:** `StatsDataHudPoolMaxMixin` must set `getMaxEnergy`/`getMaxStamina` return to `actualMaxEnergy`/`actualMaxStamina`, not only `applyOverhaulScale` on the vanilla return (2.4.115 live jar used raw getters for both clamp and HUD scale — overflow when native max ≠ canonical cap).
+**HUD max getters:** `StatsDataHudPoolMaxMixin` must call `canonicalPoolMax(data, vanillaReturn, energy)` on the vanilla RETURN value — never `actualMaxEnergy()` (re-enters `getMaxEnergy`). Clamps use `actualMax*` → `readNativeMax` + same `canonicalMax` math. When vanilla max is stub-low vs HUD formula, `mergeNativeWithHudFormula` lifts to the formula (Mohist secondary attr bug).
 
 Generate locally:
 

@@ -61,14 +61,29 @@ public final class DmzResourcePoolClamp {
         return base;
     }
 
+    /**
+     * Single ki/stamina cap from an already-computed vanilla {@code getMax*} return.
+     * Used by {@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataHudPoolMaxMixin}
+     * so HUD/Statistics never re-enter {@code getMaxEnergy} (no recursion / split brains).
+     */
+    public static float canonicalPoolMax(StatsData data, float vanillaReturn, boolean energy) {
+        return canonicalMax(data, vanillaReturn, energy);
+    }
+
     /** Authoritative prestige-aware ki cap. */
     public static float actualMaxEnergy(StatsData data) {
-        return actualMax(data, true);
+        if (data == null) {
+            return 0f;
+        }
+        return canonicalMax(data, readNativeMax(data, true), true);
     }
 
     /** Authoritative prestige-aware stamina cap. */
     public static float actualMaxStamina(StatsData data) {
-        return actualMax(data, false);
+        if (data == null) {
+            return 0f;
+        }
+        return canonicalMax(data, readNativeMax(data, false), false);
     }
 
     /** Alias of {@link #actualMaxEnergy(StatsData)} — one canonical ki max. */
@@ -82,32 +97,52 @@ public final class DmzResourcePoolClamp {
     }
 
     /**
-     * Live DMZ ki/stamina cap: native {@code getMax*} unless Iron-contaminated,
-     * otherwise the HUD formula. Prestige scale is applied exactly once.
+     * Live DMZ ki/stamina cap: vanilla {@code getMax*} (or native read), merged with the
+     * HUD formula when vanilla is stub-low (Mohist null {@code player} / missing secondary).
+     * Iron {@code max_mana} rejected on ki. Prestige scale applied exactly once.
      */
-    private static float actualMax(StatsData data, boolean energy) {
+    private static float canonicalMax(StatsData data, float vanillaReturn, boolean energy) {
         if (data == null) {
             return 0f;
         }
-        float nativeMax = readNativeMax(data, energy);
+        float nativeMax = Float.isFinite(vanillaReturn) ? vanillaReturn : 0f;
         if (energy && nativeMax > POWER_RELEASE_FLOOR && looksLikeIronMana(data, nativeMax)) {
             nativeMax = 0f;
         }
+        float hud = 0f;
+        try {
+            hud = hudFormulaMax(data, energy);
+        } catch (Throwable ignored) {
+        }
+        nativeMax = mergeNativeWithHudFormula(nativeMax, hud);
         if (Float.isFinite(nativeMax) && nativeMax > POWER_RELEASE_FLOOR) {
             return applyOverhaulScale(data, nativeMax);
         }
-        try {
-            float hud = hudFormulaMax(data, energy);
-            if (Float.isFinite(hud) && hud > POWER_RELEASE_FLOOR) {
-                return applyOverhaulScale(data, hud);
-            }
-        } catch (Throwable ignored) {
+        if (Float.isFinite(hud) && hud > POWER_RELEASE_FLOOR) {
+            return applyOverhaulScale(data, hud);
         }
         float fallback = investedFallback(data, energy);
         if (fallback > POWER_RELEASE_FLOOR) {
             return applyOverhaulScale(data, fallback);
         }
         return 0f;
+    }
+
+    /**
+     * When server {@code getMax*} is ~1× (secondary default) but the HUD formula is much
+     * higher, trust the formula — same failure mode as {@code StatsDataSecondaryPlayerMixin}.
+     */
+    private static float mergeNativeWithHudFormula(float nativeMax, float hud) {
+        if (!Float.isFinite(hud) || hud <= POWER_RELEASE_FLOOR) {
+            return nativeMax;
+        }
+        if (!Float.isFinite(nativeMax) || nativeMax <= POWER_RELEASE_FLOOR) {
+            return hud;
+        }
+        if (hud > nativeMax * 1.08f) {
+            return Math.max(nativeMax, hud);
+        }
+        return nativeMax;
     }
 
     private static float readNativeMax(StatsData data, boolean energy) {

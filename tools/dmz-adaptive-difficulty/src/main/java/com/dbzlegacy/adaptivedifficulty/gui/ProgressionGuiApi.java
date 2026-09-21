@@ -1459,7 +1459,9 @@ public final class ProgressionGuiApi {
             out.put("ki_damage", "0");
         }
         try {
-            out.put("max_energy", String.format(Locale.ROOT, "%.1f", Math.max(0.0, data.getMaxEnergy())));
+            out.put("max_energy", String.format(Locale.ROOT, "%.1f", Math.max(0.0,
+                    com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp
+                            .displayMaxEnergy(data))));
         } catch (Throwable t) {
             out.put("max_energy", "0");
         }
