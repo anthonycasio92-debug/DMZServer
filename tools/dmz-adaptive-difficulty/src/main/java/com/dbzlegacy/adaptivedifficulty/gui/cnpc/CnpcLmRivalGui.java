@@ -78,19 +78,16 @@ public final class CnpcLmRivalGui {
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
         Map<String, String> ph = RivalGuiApi.placeholders(who);
-        CnpcGuiSupport.title(gui, 1, "§6Rival System");
-        CnpcGuiSupport.subtitle(gui, 2, "§7RP §f" + ph.getOrDefault("rp", "?") + "  §8·  §7Tier §f" + ph.getOrDefault("tier", "?"));
-        CnpcGuiSupport.inspectBanner(player, gui);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§6Rival System",
+                "§7RP §f" + ph.getOrDefault("rp", "?") + "  §8·  §7Tier §f" + ph.getOrDefault("tier", "?"));
 
         if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
-            CnpcGuiSupport.bodyLines(gui, 10, 52, List.of("§cRival system is disabled."), 3);
-            footer(player, gui, 200, "main");
+            int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of("§cRival system is disabled."), 3);
+            footer(player, gui, row + 8, "main");
             return;
         }
 
-        CnpcGuiSupport.bodyLines(gui, 10, 52, RivalGuiApi.linesForPage(who, "main"), 6);
-
-        int row = 118;
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(who, "main"), 4);
         CnpcGuiSupport.button(gui, 20, "§eRival list", CnpcGuiSupport.COL_L, row, () -> open(player, "list"));
         CnpcGuiSupport.button(gui, 21, "§aActions", CnpcGuiSupport.COL_R, row, () -> open(player, "actions"));
         row += 24;
@@ -117,9 +114,8 @@ public final class CnpcLmRivalGui {
     }
 
     private static void paintActions(ServerPlayer player, ICustomGui gui) {
-        CnpcGuiSupport.title(gui, 1, "§aRival actions");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, RivalGuiApi.linesForPage(subject(player), "actions"), 6);
-        int row = 110;
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§aRival actions", "§7Declare, accept, remove rivals");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(subject(player), "actions"), 4);
         CnpcGuiSupport.button(gui, 20, "§eDeclare…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_declare"));
         CnpcGuiSupport.button(gui, 21, "§aAccept…", CnpcGuiSupport.COL_R, row, () -> open(player, "pick_accept"));
         row += 24;
@@ -139,18 +135,19 @@ public final class CnpcLmRivalGui {
 
     private static void paintPending(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        CnpcGuiSupport.title(gui, 1, "§6Pending invites");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, RivalGuiApi.linesForPage(who, "pending"), 5);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§6Pending invites", "§7Double-click to respond");
+        int listY = CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.linesForPage(who, "pending"), 3);
         List<String> cards = RivalGuiApi.pendingInviteCards(who);
         if (cards.isEmpty()) {
-            gui.addLabel(50, "§7No pending invites.", CnpcGuiSupport.M, 90, 400, 14);
+            gui.addLabel(50, "§7No pending invites.", CnpcGuiSupport.M, listY + 4, 400, 14);
+            footer(player, gui, listY + 28, "actions");
         } else {
-            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 88, 400, 110,
-                    CnpcGuiSupport.cardLabels(cards, 1));
+            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M,
+                    listY, 400, 120, CnpcGuiSupport.cardLabels(cards, 1));
             CnpcGuiSupport.wireScrollDoublePick(scroll, cards, 0,
                     arg -> open(player, "pending_decide:" + arg));
+            footer(player, gui, listY + 128, "actions");
         }
-        footer(player, gui, 210, "actions");
     }
 
     private static void openPendingDecide(ServerPlayer player, String pickerArg) {
@@ -167,9 +164,8 @@ public final class CnpcLmRivalGui {
 
     private static void paintChallenge(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        CnpcGuiSupport.title(gui, 1, "§cRival challenge");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, RivalGuiApi.challengeLines(who), 6);
-        int row = 118;
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cRival challenge", "§7Send or answer a duel");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, RivalGuiApi.challengeLines(who), 4);
         CnpcGuiSupport.button(gui, 20, "§eSend challenge…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_challenge"));
         CnpcGuiSupport.button(gui, 21, "§aAccept", CnpcGuiSupport.COL_R, row, () -> act(player, "challenge", "accept", "challenge"));
         row += 24;
@@ -185,7 +181,7 @@ public final class CnpcLmRivalGui {
     private static void openChallengeTime(ServerPlayer player, String targetArg) {
         CnpcGuiSupport.showSized(player, CnpcLmGui.ID_RIVAL, CnpcGuiSupport.W, 280, (pl, gui) -> {
             CnpcGuiSupport.title(gui, 1, "§cChallenge length");
-            CnpcGuiSupport.subtitle(gui, 2, "§7Target §f" + targetArg);
+            CnpcGuiSupport.subtitle(gui, 2, "§7Target §f" + CnpcGuiSupport.humanizePickerArg(targetArg));
             int row = 90;
             for (int min = 1; min <= 10; min++) {
                 int m = min;
@@ -235,8 +231,8 @@ public final class CnpcLmRivalGui {
         if (cards.isEmpty()) {
             CnpcGuiSupport.bodyLines(gui, 10, 48, RivalGuiApi.listLines(who), 8);
         } else {
-            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 44, 400, 150,
-                    CnpcGuiSupport.cardLabels(cards, 1));
+            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, 44,
+                    400, 150, CnpcGuiSupport.cardLabels(cards, 1));
             CnpcGuiSupport.wireScrollDoublePick(scroll, cards, 0,
                     arg -> act(player, "remove", arg, "list"));
         }
@@ -258,7 +254,8 @@ public final class CnpcLmRivalGui {
             gui.addLabel(50, "§cNo players available.", CnpcGuiSupport.M, 80, 400, 14);
         } else {
             String[] items = names.toArray(String[]::new);
-            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 48, 400, 150, items);
+            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, 48,
+                    400, 150, items);
             scroll.setOnDoubleClick((g, sc) -> {
                 g.close();
                 int[] sel = sc.getSelection();
@@ -283,12 +280,9 @@ public final class CnpcLmRivalGui {
         if (cards == null || cards.isEmpty()) {
             gui.addLabel(50, "§7Nothing to pick.", CnpcGuiSupport.M, 80, 400, 14);
         } else {
-            String[] labels = new String[cards.size()];
-            for (int i = 0; i < cards.size(); i++) {
-                String a = cards.get(i);
-                labels[i] = a != null && a.startsWith("uuid:") ? a.substring(5) : a;
-            }
-            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 48, 400, 150, labels);
+            String[] labels = CnpcGuiSupport.cardLabels(cards, 0);
+            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, 48,
+                    400, 150, labels);
             scroll.setOnDoubleClick((g, sc) -> {
                 g.close();
                 int[] sel = sc.getSelection();
@@ -301,9 +295,9 @@ public final class CnpcLmRivalGui {
     }
 
     private static void paintScroll(ServerPlayer player, ICustomGui gui, String title, List<String> body, String backPage) {
-        CnpcGuiSupport.title(gui, 1, title);
-        CnpcGuiSupport.bodyLines(gui, 10, 44, body, 14);
-        footer(player, gui, 250, backPage);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, title, "§7Scroll for details");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, body, 4);
+        footer(player, gui, row + 8, backPage);
     }
 
     private static void paintAdmin(ServerPlayer player, ICustomGui gui) {

@@ -4,7 +4,6 @@ import com.dbzlegacy.adaptivedifficulty.cache.DifficultyCache;
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
 import com.dbzlegacy.adaptivedifficulty.calc.DifficultySnapshot;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
-import com.dbzlegacy.adaptivedifficulty.gui.AdminInspectSessions;
 import com.dbzlegacy.adaptivedifficulty.gui.MechanicsGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.RivalGuiApi;
 import com.dbzlegacy.adaptivedifficulty.gui.SparGuiApi;
@@ -47,20 +46,16 @@ public final class CnpcLmHubGui {
         boolean staff = StaffAccess.isStaff(player);
         boolean skillCheck = SkillCheckService.canUse(player);
 
-        CnpcGuiSupport.title(gui, 1, "§f§lLegacy Mechanics");
-        CnpcGuiSupport.subtitle(gui, 2, "§7Pick what you want to do — same menu as §f/lm");
-        CnpcGuiSupport.inspectBanner(player, gui);
-        int dividerY = AdminInspectSessions.isInspecting(player.m_20148_()) ? 52 : 38;
-        CnpcGuiSupport.divider(gui, 3, dividerY);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§f§lLegacy Mechanics",
+                "§7Same menu as §f/lm §8— pick a system below");
 
         List<String> lines = hubSnapshot(who, ph, staff, skillCheck);
-        CnpcGuiSupport.bodyLines(gui, 10, dividerY + 8, lines, 6);
-
-        int row = dividerY + 8 + Math.min(lines.size(), 6) * 13 + 8;
-        int gap = 22;
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 5);
+        int gap = CnpcGuiSupport.ROW_STEP;
 
         if (!"true".equals(ph.get("bridge_ok"))) {
-            gui.addLabel(5, "§cLegacy Mechanics is not loaded on this server.", CnpcGuiSupport.M, row, 400, 14);
+            gui.addLabel(CnpcGuiSupport.ID_STATUS_TAG, "§cLegacy Mechanics is not loaded on this server.",
+                    CnpcGuiSupport.M, row, 400, 14);
             row += gap;
             CnpcGuiSupport.footerCloseRefresh(player, gui, row, () -> paintMain(player));
             return;

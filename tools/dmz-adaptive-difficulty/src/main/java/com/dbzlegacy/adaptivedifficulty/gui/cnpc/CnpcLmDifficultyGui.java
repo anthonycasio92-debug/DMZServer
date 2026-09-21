@@ -44,9 +44,7 @@ public final class CnpcLmDifficultyGui {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
         DifficultySnapshot snap = DifficultyCache.refresh(subject);
-        CnpcGuiSupport.title(gui, 1, "§aDifficulty");
-        CnpcGuiSupport.subtitle(gui, 2, "§7Adaptive scaling & unlock tiers");
-        CnpcGuiSupport.inspectBanner(player, gui);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§aDifficulty", "§7Adaptive scaling & unlock tiers");
 
         List<String> lines = new ArrayList<>();
         if (!DifficultyConfig.isEnabled()) {
@@ -67,9 +65,7 @@ public final class CnpcLmDifficultyGui {
             }
             lines.add("§8Scaled mobs may hit other players.");
         }
-        CnpcGuiSupport.bodyLines(gui, 10, 48, lines, 6);
-
-        int row = 118;
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 4);
         CnpcGuiSupport.button(gui, 20, "§eUnlock tiers", CnpcGuiSupport.COL_L, row, () -> open(player, "tiers"));
         CnpcGuiSupport.button(gui, 21, "§dTitles", CnpcGuiSupport.COL_R, row, () -> open(player, "titles"));
         row += 24;
@@ -100,8 +96,8 @@ public final class CnpcLmDifficultyGui {
     private static void paintTiers(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
-        CnpcGuiSupport.title(gui, 1, "§eDifficulty · Tiers");
-        CnpcGuiSupport.subtitle(gui, 2, "§7Activate unlocked tiers · step down free");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§eDifficulty · Tiers",
+                "§7Activate unlocked tiers · step down free");
 
         DifficultySnapshot snap = DifficultyCache.refresh(subject);
         PlayerDifficultyData data = DifficultyCache.data(subject);
@@ -109,9 +105,7 @@ public final class CnpcLmDifficultyGui {
         List<String> lines = new ArrayList<>();
         lines.add("§7Active §fT" + data.getActiveTier() + "  §8·  §7Max unlocked §fT" + max);
         lines.add("§6Coins §f" + AncientCoinEconomy.inventoryBreakdown(subject));
-        CnpcGuiSupport.bodyLines(gui, 10, 48, lines, 4);
-
-        int row = 100;
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 3);
         for (int t = 0; t <= Math.min(7, max); t++) {
             int tier = t;
             int col = (t % 2 == 0) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
@@ -147,12 +141,12 @@ public final class CnpcLmDifficultyGui {
     private static void paintTitles(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = who(player);
         DifficultyActions.prepareGui(subject);
-        CnpcGuiSupport.title(gui, 1, "§dDifficulty · Titles");
-        CnpcGuiSupport.subtitle(gui, 2, "§7Double-click unlocked title to equip");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dDifficulty · Titles",
+                "§7Double-click unlocked title to equip");
         List<String> header = new ArrayList<>();
         header.add("§7Equipped §e" + TitleSystem.activeDisplay(subject));
         header.add("§7Score §6" + TitleSystem.computeTitleScore(subject));
-        CnpcGuiSupport.bodyLines(gui, 10, 44, header, 3);
+        int listY = CnpcGuiSupport.paintInfoBlock(gui, infoY, header, 2);
 
         List<String> cards = new ArrayList<>();
         List<String> labels = new ArrayList<>();
@@ -164,14 +158,14 @@ public final class CnpcLmDifficultyGui {
             labels.add(label);
             cards.add(t.id + "\t" + label);
         }
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 72, 400, 130,
-                labels.toArray(String[]::new));
+        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, listY,
+                400, 120, labels.toArray(String[]::new));
         CnpcGuiSupport.wireScrollDoublePick(scroll, cards, 0, id -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyActions.handleArg(subject, "equip_title", id, "titles").message(),
                 () -> open(player, "titles")));
 
-        int row = 210;
+        int row = listY + 128;
         PlayerDifficultyData data = DifficultyCache.data(subject);
         boolean sense = data.titleProgress().titleSenseChat();
         CnpcGuiSupport.buttonSmall(gui, 20, sense ? "§aSense ON" : "§8Sense OFF", CnpcGuiSupport.COL_L, row, 95,
@@ -189,10 +183,8 @@ public final class CnpcLmDifficultyGui {
 
     private static void paintTeam(ServerPlayer player, ICustomGui gui) {
         ServerPlayer subject = who(player);
-        CnpcGuiSupport.title(gui, 1, "§bDifficulty · Teams");
-        CnpcGuiSupport.subtitle(gui, 2, "§7Mutual rival team bonuses");
-        CnpcGuiSupport.bodyLines(gui, 10, 48, DifficultyTeamGuiApi.linesForPage(subject, "team"), 8);
-        int row = 160;
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§bDifficulty · Teams", "§7Mutual rival team bonuses");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, DifficultyTeamGuiApi.linesForPage(subject, "team"), 4);
         CnpcGuiSupport.button(gui, 40, "§7Personal only", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> DifficultyTeamGuiApi.handleDo(subject, "mode", "personal_only", "team"),

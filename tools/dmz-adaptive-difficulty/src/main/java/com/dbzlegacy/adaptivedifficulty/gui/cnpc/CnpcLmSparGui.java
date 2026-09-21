@@ -71,22 +71,18 @@ public final class CnpcLmSparGui {
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
         Map<String, String> ph = SparGuiApi.placeholders(who);
-        CnpcGuiSupport.title(gui, 1, "§bSparring");
-        CnpcGuiSupport.inspectBanner(player, gui);
         String partner = ph.getOrDefault("partner", "");
-        CnpcGuiSupport.subtitle(gui, 2, "§7Session §f"
-                + ("true".equals(ph.get("session_active")) ? "§aactive" : "§8idle")
-                + (partner == null || partner.isBlank() ? "" : " §8· §7vs §f" + partner));
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§bSparring",
+                "§7Session §f" + ("true".equals(ph.get("session_active")) ? "§aactive" : "§8idle")
+                        + (partner == null || partner.isBlank() ? "" : " §8· §7vs §f" + partner));
 
         if (!"true".equalsIgnoreCase(ph.get("system_enabled"))) {
-            CnpcGuiSupport.bodyLines(gui, 10, 52, List.of("§cSparring system is disabled."), 3);
-            footer(player, gui, 200, "main");
+            int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, List.of("§cSparring system is disabled."), 3);
+            footer(player, gui, row + 8, "main");
             return;
         }
 
-        CnpcGuiSupport.bodyLines(gui, 10, 52, SparGuiApi.linesForPage(who, "main"), 7);
-
-        int row = 130;
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.linesForPage(who, "main"), 4);
         CnpcGuiSupport.button(gui, 20, "§eStats", CnpcGuiSupport.COL_L, row, () -> open(player, "stats"));
         CnpcGuiSupport.button(gui, 21, "§6Dojo rank", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo_rank"));
         row += 24;
@@ -110,9 +106,8 @@ public final class CnpcLmSparGui {
 
     private static void paintMentor(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        CnpcGuiSupport.title(gui, 1, "§bMentor actions");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, SparGuiApi.mentorLines(who), 8);
-        int row = 130;
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§bMentor actions", "§7Invites, release, dojo");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.mentorLines(who), 4);
         CnpcGuiSupport.button(gui, 20, "§aInvite apprentice…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_apprentice"));
         CnpcGuiSupport.button(gui, 21, "§bAsk mentor…", CnpcGuiSupport.COL_R, row, () -> open(player, "pick_mentor"));
         row += 24;
@@ -127,16 +122,18 @@ public final class CnpcLmSparGui {
 
     private static void paintPending(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        CnpcGuiSupport.title(gui, 1, "§6Mentor pending");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, SparGuiApi.pendingMentorLines(who), 6);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§6Mentor pending", "§7Double-click to respond");
+        int listY = CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.pendingMentorLines(who), 3);
         List<String> cards = SparGuiApi.pendingMentorInviteCards(who);
         if (!cards.isEmpty()) {
-            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 100, 400, 120,
-                    CnpcGuiSupport.cardLabels(cards, 1));
+            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M,
+                    listY, 400, 120, CnpcGuiSupport.cardLabels(cards, 1));
             CnpcGuiSupport.wireScrollDoublePick(scroll, cards, 0,
                     arg -> open(player, "pending_decide:" + arg));
+            footer(player, gui, listY + 128, "mentor");
+        } else {
+            footer(player, gui, listY + 8, "mentor");
         }
-        footer(player, gui, 230, "mentor");
     }
 
     private static void openPendingDecide(ServerPlayer player, String pickerArg) {
@@ -154,9 +151,8 @@ public final class CnpcLmSparGui {
 
     private static void paintDojo(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        CnpcGuiSupport.title(gui, 1, "§5Your dojo");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, SparGuiApi.linesForPage(who, "dojo"), 8);
-        int row = 140;
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§5Your dojo", "§7Rankings, war, members");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.linesForPage(who, "dojo"), 4);
         CnpcGuiSupport.button(gui, 20, "§6Rankings", CnpcGuiSupport.COL_L, row, () -> open(player, "dojo_rank"));
         CnpcGuiSupport.button(gui, 21, "§cDojo war", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo_war"));
         row += 24;
@@ -168,9 +164,8 @@ public final class CnpcLmSparGui {
 
     private static void paintDojoWar(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        CnpcGuiSupport.title(gui, 1, "§cDojo war");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, SparGuiApi.dojoWarLines(who), 8);
-        int row = 130;
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§cDojo war", "§7Challenge rival dojos");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.dojoWarLines(who), 4);
         CnpcGuiSupport.button(gui, 20, "§eChallenge rival dojo…", CnpcGuiSupport.COL_L, row, () -> open(player, "pick_dojo_challenge"));
         CnpcGuiSupport.button(gui, 21, "§6War pending", CnpcGuiSupport.COL_R, row, () -> open(player, "dojo_war_pending"));
         row += 24;
@@ -187,7 +182,8 @@ public final class CnpcLmSparGui {
         if (cards.isEmpty()) {
             gui.addLabel(50, "§7No pending dojo wars.", CnpcGuiSupport.M, 60, 400, 14);
         } else {
-            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 48, 400, 160,
+            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, 48,
+                    400, 160,
                     CnpcGuiSupport.cardLabels(cards, 1));
             CnpcGuiSupport.wireScrollDoublePick(scroll, cards, 0,
                     arg -> open(player, "dojo_war_pending_decide:" + arg));
@@ -210,16 +206,16 @@ public final class CnpcLmSparGui {
 
     private static void paintDojoMembers(ServerPlayer player, ICustomGui gui) {
         ServerPlayer who = subject(player);
-        CnpcGuiSupport.title(gui, 1, "§eDojo members");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, SparGuiApi.dojoMemberLines(who), 12);
-        footer(player, gui, 250, "dojo");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§eDojo members", "§7Roster snapshot");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.dojoMemberLines(who), 5);
+        footer(player, gui, row + 8, "dojo");
     }
 
     private static void paintTop(ServerPlayer player, ICustomGui gui, String category) {
         String cat = category == null || category.isBlank() ? "tp" : category;
-        CnpcGuiSupport.title(gui, 1, "§fSpar top · " + cat);
-        CnpcGuiSupport.bodyLines(gui, 10, 44, SparGuiApi.topLines(subject(player), cat), 14);
-        int row = 230;
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§fSpar top · " + cat, "§7Leaderboard");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.topLines(subject(player), cat), 5);
+        row += 8;
         CnpcGuiSupport.buttonSmall(gui, 40, "§7TP", CnpcGuiSupport.COL_L, row, 60, () -> open(player, "top_tp"));
         CnpcGuiSupport.buttonSmall(gui, 41, "§7Wins", 130, row, 60, () -> open(player, "top_wins"));
         CnpcGuiSupport.buttonSmall(gui, 42, "§7Streak", 200, row, 60, () -> open(player, "top_streak"));
@@ -229,18 +225,18 @@ public final class CnpcLmSparGui {
 
     private static void paintDojoTop(ServerPlayer player, ICustomGui gui, String category) {
         String cat = category == null || category.isBlank() ? "rp" : category;
-        CnpcGuiSupport.title(gui, 1, "§6Dojo rankings · " + cat);
-        CnpcGuiSupport.bodyLines(gui, 10, 44, SparGuiApi.dojoTopLines(subject(player), cat), 14);
-        int row = 230;
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§6Dojo rankings · " + cat, "§7Leaderboard");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, SparGuiApi.dojoTopLines(subject(player), cat), 5);
+        row += 8;
         CnpcGuiSupport.buttonSmall(gui, 40, "§7RP", CnpcGuiSupport.COL_L, row, 60, () -> open(player, "dojo_top_rp"));
         CnpcGuiSupport.buttonSmall(gui, 41, "§7Wars", 130, row, 60, () -> open(player, "dojo_top_wars"));
         footer(player, gui, row + 28, "dojo");
     }
 
     private static void paintScroll(ServerPlayer player, ICustomGui gui, String title, List<String> body, String back) {
-        CnpcGuiSupport.title(gui, 1, title);
-        CnpcGuiSupport.bodyLines(gui, 10, 44, body, 14);
-        footer(player, gui, 260, back);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, title, "§7Details");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, body, 4);
+        footer(player, gui, row + 8, back);
     }
 
     private static void paintOnlinePick(ServerPlayer player, ICustomGui gui, String title, String action, String back) {
@@ -249,7 +245,8 @@ public final class CnpcLmSparGui {
         if (names.isEmpty()) {
             gui.addLabel(50, "§cNo other players online.", CnpcGuiSupport.M, 70, 400, 14);
         } else {
-            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 48, 400, 160,
+            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, 48,
+                    400, 160,
                     names.toArray(String[]::new));
             scroll.setOnDoubleClick((g, sc) -> {
                 g.close();
@@ -275,7 +272,8 @@ public final class CnpcLmSparGui {
         if (cards.isEmpty()) {
             gui.addLabel(50, "§7No apprentices to release.", CnpcGuiSupport.M, 70, 400, 14);
         } else {
-            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 48, 400, 160,
+            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, 48,
+                    400, 160,
                     CnpcGuiSupport.cardLabels(cards, 1));
             CnpcGuiSupport.wireScrollDoublePick(scroll, cards, 0,
                     arg -> act(player, "mentor_release", arg, "mentor"));
@@ -289,7 +287,8 @@ public final class CnpcLmSparGui {
         if (cards.isEmpty()) {
             gui.addLabel(50, "§7No rival dojo masters online.", CnpcGuiSupport.M, 70, 400, 14);
         } else {
-            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 48, 400, 160,
+            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, 48,
+                    400, 160,
                     CnpcGuiSupport.cardLabels(cards, 1));
             CnpcGuiSupport.wireScrollDoublePick(scroll, cards, 0,
                     arg -> act(player, "dojo_challenge", arg, "dojo_war"));
@@ -306,12 +305,9 @@ public final class CnpcLmSparGui {
         if (args == null || args.isEmpty()) {
             return;
         }
-        String[] labels = new String[args.size()];
-        for (int i = 0; i < args.size(); i++) {
-            String a = args.get(i);
-            labels[i] = a != null && a.startsWith("uuid:") ? a.substring(5) : a;
-        }
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 48, 400, 160, labels);
+        String[] labels = CnpcGuiSupport.cardLabels(args, 0);
+        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, 48, 400,
+                160, labels);
         scroll.setOnDoubleClick((g, sc) -> {
             g.close();
             int[] sel = sc.getSelection();

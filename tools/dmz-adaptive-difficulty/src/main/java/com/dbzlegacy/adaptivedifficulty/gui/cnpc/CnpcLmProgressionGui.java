@@ -67,17 +67,15 @@ public final class CnpcLmProgressionGui {
             return;
         }
 
-        CnpcGuiSupport.title(gui, 1, "§5Progression §8(staff)");
-        List<String> lines = ProgressionGuiApi.linesForPage(player, page);
-        CnpcGuiSupport.bodyLines(gui, 10, 48, lines, 14);
-        footer(player, gui, 260, "main");
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§5Progression §8(staff)", "§7" + page);
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.linesForPage(player, page), 5);
+        footer(player, gui, row + 8, "main");
     }
 
     private static void paintMainHub(ServerPlayer player, ICustomGui gui) {
-        CnpcGuiSupport.title(gui, 1, "§5Progression §8(staff)");
-        CnpcGuiSupport.subtitle(gui, 2, "§7Server flags · economy · android tools");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, ProgressionGuiApi.linesForPage(player, "main"), 5);
-        int row = 100;
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§5Progression §8(staff)",
+                "§7Server flags · economy · android tools");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.linesForPage(player, "main"), 4);
         CnpcGuiSupport.button(gui, 20, "§eSkills flags", CnpcGuiSupport.COL_L, row, () -> open(player, "skills"));
         CnpcGuiSupport.button(gui, 21, "§6TP flags", CnpcGuiSupport.COL_R, row, () -> open(player, "tp"));
         row += 24;
@@ -99,19 +97,18 @@ public final class CnpcLmProgressionGui {
     }
 
     private static void paintEconomy(ServerPlayer player, ICustomGui gui) {
-        CnpcGuiSupport.title(gui, 1, "§6Ancient coin economy");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, ProgressionGuiApi.linesForPage(player, "economy"), 10);
-        CnpcGuiSupport.button(gui, 20, "§eToggle staff free costs", CnpcGuiSupport.COL_L, 180, () -> CnpcGuiSupport.act(
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§6Ancient coin economy", "§7Staff economy tools");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.linesForPage(player, "economy"), 5);
+        CnpcGuiSupport.button(gui, 20, "§eToggle staff free costs", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handleDo(player, "toggle_staff_free_coins", "", "economy"),
                 () -> open(player, "economy")));
-        footer(player, gui, 220, "main");
+        footer(player, gui, row + 28, "main");
     }
 
     private static void paintFlagSection(ServerPlayer player, ICustomGui gui, String page, String title, String[] keys) {
-        CnpcGuiSupport.title(gui, 1, title);
-        CnpcGuiSupport.bodyLines(gui, 10, 40, ProgressionGuiApi.linesForPage(player, page), 6);
-        int row = 100;
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, title, "§7Tap to toggle");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.linesForPage(player, page), 3);
         int id = 40;
         for (int i = 0; i < keys.length; i++) {
             String key = keys[i];

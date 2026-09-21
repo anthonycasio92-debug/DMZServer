@@ -46,14 +46,9 @@ public final class CnpcLmPrestigeGui {
     }
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
-        CnpcGuiSupport.title(gui, 1, "§dPrestige");
-        CnpcGuiSupport.subtitle(gui, 2, "§7Turn-ins · shop · permanent unlocks");
-        CnpcGuiSupport.divider(gui, 3, 38);
-
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§dPrestige", "§7Turn-ins · shop · permanent unlocks");
         List<String> lines = ProgressionGuiApi.prestigeLines(player, "main");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, lines, 6);
-
-        int row = 118;
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 4);
         CnpcGuiSupport.button(gui, 20, "§aPrestige now", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handlePrestigeDo(player, "confirm", "", "main"),
@@ -93,16 +88,16 @@ public final class CnpcLmPrestigeGui {
         int pages = Math.max(1, parseInt(ph.get("shop_pages"), 1));
         int page = Math.min(pages - 1, Math.max(0, pageIndex));
         int pageSize = Math.max(1, parseInt(ph.get("shop_page_size"), 6));
-        CnpcGuiSupport.title(gui, 1, "§bPrestige skill shop");
-        CnpcGuiSupport.subtitle(gui, 2, "§7Page §f" + (page + 1) + "/" + pages + "  §8·  §ePoints §f" + ph.getOrDefault("points", "0"));
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§bPrestige skill shop",
+                "§7Page §f" + (page + 1) + "/" + pages + "  §8·  §ePoints §f" + ph.getOrDefault("points", "0"));
 
         List<String> ids = shopSkillIds(ph);
         int from = page * pageSize;
-        int row = 70;
+        int row = infoY + 4;
         int placed = 0;
         for (int i = from; i < ids.size() && placed < pageSize; i++, placed++) {
             String id = ids.get(i);
-            String label = ph.getOrDefault("skill_" + id + "_label", id);
+            String label = CnpcGuiSupport.humanizeSkillLabel(id, ph.getOrDefault("skill_" + id + "_label", id));
             String bought = ph.getOrDefault("skill_" + id, "0");
             String max = ph.getOrDefault("skill_" + id + "_max", "?");
             int col = (placed % 2 == 0) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
@@ -110,7 +105,7 @@ public final class CnpcLmPrestigeGui {
                 row += 24;
             }
             String skillId = id;
-            CnpcGuiSupport.buttonSmall(gui, 30 + placed, "§f" + label + " §7(" + bought + "/" + max + ")", col, row, 195,
+            CnpcGuiSupport.buttonSmall(gui, 30 + placed, label + " §7(" + bought + "/" + max + ")", col, row, 195,
                     () -> CnpcGuiSupport.act(
                             player,
                             () -> ProgressionGuiApi.handlePrestigeDo(player, "skill", skillId, "shop"),
@@ -156,9 +151,8 @@ public final class CnpcLmPrestigeGui {
     }
 
     private static void paintEffects(ServerPlayer player, ICustomGui gui) {
-        CnpcGuiSupport.title(gui, 1, "§5Permanent effects");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, ProgressionGuiApi.prestigeLines(player, "effects"), 6);
-        int row = 130;
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§5Permanent effects", "§7Majin & Mutant");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "effects"), 4);
         CnpcGuiSupport.button(gui, 40, "§dBuy Majin", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handlePrestigeDo(player, "majin", "", "effects"),
@@ -181,19 +175,18 @@ public final class CnpcLmPrestigeGui {
     }
 
     private static void paintCap(ServerPlayer player, ICustomGui gui) {
-        CnpcGuiSupport.title(gui, 1, "§3Level cap");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, ProgressionGuiApi.prestigeLines(player, "cap"), 8);
-        CnpcGuiSupport.button(gui, 20, "§aBuy breakthrough", CnpcGuiSupport.COL_L, 160, () -> CnpcGuiSupport.act(
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§3Level cap", "§7Breakthrough purchases");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "cap"), 5);
+        CnpcGuiSupport.button(gui, 20, "§aBuy breakthrough", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handlePrestigeDo(player, "breakthrough", "", "cap"),
                 () -> open(player, "cap")));
-        footer(player, gui, 200);
+        footer(player, gui, row + 28);
     }
 
     private static void paintTiers(ServerPlayer player, ICustomGui gui) {
-        CnpcGuiSupport.title(gui, 1, "§6Prestige tiers");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, ProgressionGuiApi.prestigeLines(player, "tiers"), 6);
-        int row = 110;
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§6Prestige tiers", "§7Unlock difficulty tiers");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, ProgressionGuiApi.prestigeLines(player, "tiers"), 4);
         for (int t = 1; t <= 7; t++) {
             int tier = t;
             int col = (t % 2 == 1) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;

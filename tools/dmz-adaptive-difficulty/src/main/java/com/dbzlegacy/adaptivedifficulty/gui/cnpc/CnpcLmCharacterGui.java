@@ -43,17 +43,15 @@ public final class CnpcLmCharacterGui {
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
         var ph = CharacterServicesGuiApi.placeholders(player);
-        CnpcGuiSupport.title(gui, 1, "§fCharacter Services");
-        CnpcGuiSupport.subtitle(gui, 2, "§7Race §f" + ph.getOrDefault("current_race", "?")
-                + "  §8·  §7Class §f" + ph.getOrDefault("current_class", "?"));
-        CnpcGuiSupport.divider(gui, 3, 38);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, "§fCharacter Services",
+                "§7Race §f" + ph.getOrDefault("current_race", "?")
+                        + "  §8·  §7Class §f" + ph.getOrDefault("current_class", "?"));
 
-        List<String> lines = CharacterServicesGuiApi.linesForPage(player, "main");
-        lines.add(0, "§6Coins §f" + ph.getOrDefault("ancient_coins", "0") + " §7AC copper-value");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, lines, 5);
+        List<String> lines = new ArrayList<>(CharacterServicesGuiApi.linesForPage(player, "main"));
+        lines.add(0, "§6Coins §f" + ph.getOrDefault("ancient_coins", "0") + " §7Ancient Coins");
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 4);
 
         boolean ok = "true".equals(ph.get("bridge_ok")) && "true".equals(ph.get("enabled"));
-        int row = 108;
         if (ok) {
             if ("true".equals(ph.get("can_race_change"))) {
                 CnpcGuiSupport.button(gui, 20, "§eChange race", CnpcGuiSupport.COL_L, row,
@@ -95,7 +93,8 @@ public final class CnpcLmCharacterGui {
                 })
                 .toArray(String[]::new);
 
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 92, 400, 100, labels);
+        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, 92, 400,
+                100, labels);
         scroll.setOnDoubleClick((g, sc) -> {
             g.close();
             String id = selectedCardId(cards, sc);
@@ -165,7 +164,8 @@ public final class CnpcLmCharacterGui {
                 })
                 .toArray(String[]::new);
 
-        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 92, 400, 100, labels);
+        IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, 92, 400,
+                100, labels);
         scroll.setOnDoubleClick((g, sc) -> {
             g.close();
             String id = selectedCardId(cards, sc);
@@ -203,7 +203,8 @@ public final class CnpcLmCharacterGui {
         if (cards.isEmpty()) {
             gui.addLabel(50, "§7No head parts on this page.", CnpcGuiSupport.M, 90, 400, 14);
         } else {
-            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 88, 400, 120,
+            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, CnpcGuiSupport.ID_LIST_SCROLL, CnpcGuiSupport.M, 88,
+                    400, 120,
                     CnpcGuiSupport.cardLabels(cards, 1));
             scroll.setOnDoubleClick((g, sc) -> {
                 g.close();

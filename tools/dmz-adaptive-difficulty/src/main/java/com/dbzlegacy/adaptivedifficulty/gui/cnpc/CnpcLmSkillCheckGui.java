@@ -31,14 +31,11 @@ public final class CnpcLmSkillCheckGui {
 
     private static void paint(ServerPlayer player, ICustomGui gui, String page) {
         boolean staffAdmin = StaffAccess.isStaff(player) && !SkillCheckService.canUse(player);
-        CnpcGuiSupport.title(gui, 1, staffAdmin ? "§eSkills §8(staff)" : "§eSkill Check");
-        CnpcGuiSupport.subtitle(gui, 2, "§7Natural · Saga · Skill Check session");
-        CnpcGuiSupport.inspectBanner(player, gui);
+        int infoY = CnpcGuiSupport.paintHeader(player, gui, staffAdmin ? "§eSkills §8(staff)" : "§eSkill Check",
+                "§7Natural · Saga · Skill Check session");
 
         List<String> lines = ProgressionGuiApi.skillsLines(CnpcGuiSupport.target(player), page);
-        CnpcGuiSupport.bodyLines(gui, 10, 48, lines, 12);
-
-        int row = 200;
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 4);
         CnpcGuiSupport.button(gui, 20, "§aNatural skills", CnpcGuiSupport.COL_L, row, () -> {
             SkillCheckService.open(player, "core");
             open(player, "core");
