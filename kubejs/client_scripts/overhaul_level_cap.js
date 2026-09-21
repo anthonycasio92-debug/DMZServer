@@ -56,6 +56,7 @@ function pinOverhaulCaps(cap) {
     }
     return true;
   } catch (e) {
+    console.error("[LM] Overhaul client level cap pin failed: " + e);
     return false;
   }
 }
