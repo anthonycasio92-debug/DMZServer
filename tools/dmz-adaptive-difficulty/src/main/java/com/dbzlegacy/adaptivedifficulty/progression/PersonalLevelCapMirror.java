@@ -80,6 +80,10 @@ public final class PersonalLevelCapMirror {
         }
         int breakthroughs = PrestigePointsSystem.getBreakthroughs(player);
         overwrite(player, breakthroughs, PrestigePointsSystem.effectiveMaxLevel(breakthroughs));
+        try {
+            DmzSkillUtil.sync(player);
+        } catch (Throwable ignored) {
+        }
     }
 
     public static int read(Player player) {
