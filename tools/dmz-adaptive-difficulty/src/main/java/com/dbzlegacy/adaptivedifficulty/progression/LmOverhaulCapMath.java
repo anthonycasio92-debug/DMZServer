@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.progression;
 
+import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
 import com.dragonminez.common.stats.StatsData;
 import java.lang.reflect.Method;
@@ -84,8 +85,11 @@ public final class LmOverhaulCapMath {
     }
 
     /**
-     * Force live Overhaul {@code initialLevelCap} to 100k and {@code maxLevel} to 150k
-     * so prestige 0 is not stock 50k and 0-breakthrough players can reach Need 60k+.
+     * Flatten native Overhaul {@code levelCap} to the 100k floor for every prestige.
+     * Pinning {@code maxLevel} to 150k made a prestige ladder
+     * (P0=100k, P1=115k, P2=130k, P3=145k) that ignored breakthroughs and let
+     * 0-BT players past 100k. Per-player 110k–150k comes from
+     * {@link #overhaulLevelCap(StatsData)} mixins + the client KubeJS pin.
      */
     public static void pinOverhaulLevelCaps() {
         if (!ModList.get().isLoaded("dmzrevamp")) {
@@ -101,13 +105,27 @@ public final class LmOverhaulCapMath {
             Object prestige = cfg.getClass().getField("Prestige").get(cfg);
             java.lang.reflect.Field maxLevel = levels.getClass().getField("maxLevel");
             java.lang.reflect.Field initial = prestige.getClass().getField("initialLevelCap");
-            if (maxLevel.getInt(levels) != OVERHAUL_ABSOLUTE_LEVEL_CAP) {
-                maxLevel.setInt(levels, OVERHAUL_ABSOLUTE_LEVEL_CAP);
+            boolean changed = false;
+            if (maxLevel.getInt(levels) != OVERHAUL_LEVEL_CAP) {
+                maxLevel.setInt(levels, OVERHAUL_LEVEL_CAP);
+                changed = true;
             }
             if (initial.getInt(prestige) != OVERHAUL_LEVEL_CAP) {
                 initial.setInt(prestige, OVERHAUL_LEVEL_CAP);
+                changed = true;
             }
-        } catch (Throwable ignored) {
+            if (changed) {
+                AdaptiveDifficultyMod.LOGGER.info(
+                        "[{}] Overhaul native levelCap flattened to {} / {} (personal BT cap is per-player)",
+                        AdaptiveDifficultyMod.MOD_ID,
+                        OVERHAUL_LEVEL_CAP,
+                        OVERHAUL_LEVEL_CAP);
+            }
+        } catch (Throwable t) {
+            AdaptiveDifficultyMod.LOGGER.warn(
+                    "[{}] Overhaul level-cap pin failed: {}",
+                    AdaptiveDifficultyMod.MOD_ID,
+                    t.toString());
         }
     }
 

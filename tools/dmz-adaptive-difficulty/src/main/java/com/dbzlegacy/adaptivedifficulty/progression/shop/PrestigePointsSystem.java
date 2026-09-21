@@ -1029,7 +1029,7 @@ public final class PrestigePointsSystem {
         try {
             var data = com.dbzlegacy.adaptivedifficulty.calc.DmzProgression.stats(player);
             if (data != null) {
-                liveCap = Math.max(newCap, data.getConfiguredMaxValue());
+                liveCap = newCap;
                 liveMaxStats = Math.max(0, data.getConfiguredMaxTotalStats());
                 com.dbzlegacy.adaptivedifficulty.progression.DmzSkillUtil.sync(player);
             }

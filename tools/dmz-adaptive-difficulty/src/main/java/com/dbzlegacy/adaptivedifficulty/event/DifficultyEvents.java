@@ -198,6 +198,7 @@ public final class DifficultyEvents {
             SparringSystem.onLogin(player);
             ProgressionSystem.onLogin(player);
             try {
+                com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath.pinOverhaulLevelCaps();
                 com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.publish(player);
                 com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery.pulse(player);
             } catch (Throwable ignored) {

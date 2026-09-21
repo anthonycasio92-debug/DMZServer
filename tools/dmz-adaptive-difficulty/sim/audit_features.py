@@ -1278,7 +1278,8 @@ def main() -> int:
     check("breakthrough costs 15..35", "breakthroughCost" in pp and "15" in pp and "35" in pp)
     check("MAX_BREAKTHROUGHS 5", "MAX_BREAKTHROUGHS = 5" in pp)
     check("StatsDataMixin personal cap",
-          "getConfiguredMaxValue" in mixin and "LmOverhaulCapMath.personalLevelCap" in mixin)
+          "getConfiguredMaxValue" in mixin and "LmOverhaulCapMath.personalLevelCap" in mixin
+          and "priority = 400" in mixin)
     check("StatsDataMixin remap false",
           'remap = false' in mixin and "StatsData.class, remap = false" in mixin)
     check("StatsDataMixin applies personal cap", "lm$personalMaxValue" in mixin)
@@ -1325,7 +1326,10 @@ def main() -> int:
           "ABSOLUTE_LEVEL_CAP" in dmz_prog and "configuredMaxDmzLevel" in dmz_prog)
     check("Overhaul rebirth blocked", "canPrestige" in revamp_cap)
     check("StatsDataMixin gated on prestige flag", "enablePrestigeSystem" in mixin)
-    check("StatsDataMixin beats dmzrevamp cap mixin", "priority = 2000" in mixin)
+    check("StatsDataMixin beats dmzrevamp cap mixin",
+          "priority = 400" in mixin
+          and '@At("HEAD")' in mixin
+          and '@At("RETURN")' in mixin)
     check("StatsDataMixin max total + stat buy", "getConfiguredMaxTotalStats" in mixin
           and "getMaxAllowedIncreaseForStat" in mixin)
     bridge = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/DmzRevampPrestigeBridge.java")
@@ -1348,14 +1352,24 @@ def main() -> int:
           "OVERHAUL_LEVEL_CAP = PrestigePointsSystem.BASE_LEVEL_CAP" in cap_math
           and "overhaulLevelCap(StatsData data)" in cap_math
           and "pinOverhaulLevelCaps" in cap_math)
+    check("Overhaul native cap flattened to 100k floor",
+          "maxLevel.setInt(levels, OVERHAUL_LEVEL_CAP)" in cap_math
+          and "initial.setInt(prestige, OVERHAUL_LEVEL_CAP)" in cap_math
+          and "ABSOLUTE_LEVEL_CAP)" not in cap_math.split("public static void pinOverhaulLevelCaps")[1].split("private static int initialStatTotal")[0])
     check("Overhaul boot pins 100k/150k caps",
           "pinOverhaulLevelCaps" in
           read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/DmzRevampConfigBridge.java"))
     kjs_cap = read(ROOT / "kubejs" / "client_scripts" / "overhaul_level_cap.js")
+    kjs_cap_srv = read(ROOT / "kubejs" / "server_scripts" / "overhaul_level_cap.js")
     check("KubeJS client pins Overhaul 100k (stock 50k is not synced)",
           "OVERHAUL_BASE_CAP = 100000" in kjs_cap
           and "initialLevelCap" in kjs_cap
-          and "lm_personal_level_cap" in kjs_cap)
+          and "lm_personal_level_cap" in kjs_cap
+          and "NetworkEvents.dataReceived" in kjs_cap)
+    check("KubeJS server syncs personal cap to clients",
+          'CHANNEL = "lm_personal_level_cap"' in kjs_cap_srv
+          and "sendData" in kjs_cap_srv
+          and "effectiveMaxLevel" in kjs_cap_srv)
     energy_mana = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/EnergyManaSync.java")
     pool_clamp = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/DmzResourcePoolClamp.java")
     check("Fabled mana uses actual ki pool not ENE stat",

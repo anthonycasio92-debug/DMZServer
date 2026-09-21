@@ -8,8 +8,9 @@ import net.minecraftforge.fml.ModList;
 
 /**
  * Reloads Overhaul leveling config on boot so live {@code LevelingRevamp.json} edits apply
- * without hunting down cached defaults. Also pins {@code initialLevelCap} / {@code maxLevel}
- * so prestige 0 is 100k (not stock 50k) and breakthroughs can raise to 150k.
+ * without hunting down cached defaults. Also flattens native {@code initialLevelCap}
+ * and {@code maxLevel} to 100k so prestige count cannot raise the cap; breakthroughs
+ * raise the personal cap per-player via mixins + client KubeJS.
  */
 public final class DmzRevampConfigBridge {
     private DmzRevampConfigBridge() {}
