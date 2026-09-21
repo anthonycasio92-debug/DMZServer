@@ -10,6 +10,12 @@ import net.minecraftforge.fml.ModList;
 public final class LmOverhaulCapMath {
     /** Stock Overhaul {@code levelUpPerPoints} when {@code LevelingRevamp.json} is default. */
     public static final int LEVEL_UP_PER_POINTS = 6;
+    /**
+     * Overhaul Statistics / {@code PrestigeSystem.levelCap} / hex reference.
+     * Stock Overhaul {@code initialLevelCap} is 50000 and is <b>not</b> synced to clients;
+     * prestige 0 would show 50k. Pin the Overhaul max to the 150k server ceiling.
+     */
+    public static final int OVERHAUL_LEVEL_CAP = PrestigePointsSystem.ABSOLUTE_LEVEL_CAP;
 
     private static volatile Method revampInitialStatTotal;
     private static volatile Method revampPointsPerLevel;
@@ -53,6 +59,43 @@ public final class LmOverhaulCapMath {
 
     public static int maxAssignableTotal(StatsData data) {
         return maxAssignableTotal(data, personalLevelCap(data));
+    }
+
+    /**
+     * Flat Overhaul max (150k). Native {@code levelCap} at count 0 is
+     * {@code initialLevelCap} (stock 50k); we never return that.
+     */
+    public static int overhaulLevelCap() {
+        return OVERHAUL_LEVEL_CAP;
+    }
+
+    /**
+     * Force live Overhaul {@code maxLevel} + {@code initialLevelCap} to 150k so
+     * prestige 0 is not stock 50k after a JSON reload or client default load.
+     */
+    public static void pinOverhaulLevelCaps() {
+        if (!ModList.get().isLoaded("dmzrevamp")) {
+            return;
+        }
+        try {
+            Class<?> cfgCls = Class.forName("com.dmzrevamp.config.LevelingRevampConfig");
+            Object cfg = cfgCls.getMethod("get").invoke(null);
+            if (cfg == null) {
+                return;
+            }
+            Object levels = cfg.getClass().getField("levelsAndAttributes").get(cfg);
+            Object prestige = cfg.getClass().getField("Prestige").get(cfg);
+            int target = OVERHAUL_LEVEL_CAP;
+            java.lang.reflect.Field maxLevel = levels.getClass().getField("maxLevel");
+            java.lang.reflect.Field initial = prestige.getClass().getField("initialLevelCap");
+            if (maxLevel.getInt(levels) != target) {
+                maxLevel.setInt(levels, target);
+            }
+            if (initial.getInt(prestige) != target) {
+                initial.setInt(prestige, target);
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     private static int initialStatTotal(StatsData data) {

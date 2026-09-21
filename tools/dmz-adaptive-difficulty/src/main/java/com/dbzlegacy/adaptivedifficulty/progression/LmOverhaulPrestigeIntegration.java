@@ -14,7 +14,8 @@ import net.minecraftforge.fml.ModList;
 
 /**
  * Use dmzrevamp Overhaul prestige (Statistics UI, scaling, saga rebirth) while Legacy Mechanics
- * owns playable stat totals via mixins. Overhaul keeps native {@code levelCap} for hex/scale math.
+ * owns playable stat totals via mixins. Overhaul {@code levelCap} is pinned to 150k
+ * (stock prestige-0 cap is 50k and is not synced to clients).
  */
 public final class LmOverhaulPrestigeIntegration {
     /** Overhaul Statistics prestige count hard cap. */
@@ -109,25 +110,32 @@ public final class LmOverhaulPrestigeIntegration {
         clearConfigCache();
         boolean levels = false;
         boolean prestigeFlag = false;
+        int initialCap = -1;
+        int maxLevel = -1;
         try {
             Class<?> cfgCls = Class.forName("com.dmzrevamp.config.LevelingRevampConfig");
             Object revampCfg = cfgCls.getMethod("get").invoke(null);
             Object levelsObj = revampCfg.getClass().getField("levelsAndAttributes").get(revampCfg);
             levels = levelsObj.getClass().getField("enabled").getBoolean(levelsObj);
+            maxLevel = levelsObj.getClass().getField("maxLevel").getInt(levelsObj);
             Object prestigeObj = revampCfg.getClass().getField("Prestige").get(revampCfg);
             prestigeFlag = prestigeObj.getClass().getField("enabled").getBoolean(prestigeObj);
+            initialCap = prestigeObj.getClass().getField("initialLevelCap").getInt(prestigeObj);
         } catch (Throwable ignored) {
         }
         boolean enabled = overhaulPrestigeEnabled();
         DifficultyConfig lmCfg = DifficultyConfig.get();
         AdaptiveDifficultyMod.LOGGER.info(
                 "[{}] Overhaul prestige: levelsAndAttributes.enabled={} Prestige.enabled={} "
-                        + "prestigeEnabled()={} LM integration={}",
+                        + "prestigeEnabled()={} LM integration={} initialLevelCap={} maxLevel={} pinnedCap={}",
                 AdaptiveDifficultyMod.MOD_ID,
                 levels,
                 prestigeFlag,
                 enabled,
-                lmCfg != null && lmCfg.enableOverhaulPrestigeIntegration);
+                lmCfg != null && lmCfg.enableOverhaulPrestigeIntegration,
+                initialCap,
+                maxLevel,
+                LmOverhaulCapMath.OVERHAUL_LEVEL_CAP);
     }
 
     /** Held and Overhaul prestige are the same number (0…10). */

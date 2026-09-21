@@ -12,13 +12,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * LM owns personal playable max stat total (breakthrough 100k–150k).
- * Overhaul keeps native {@code levelCap} so {@code hexStatReference} / prestige
- * scale math stay on Overhaul's 150k curve. Playable caps are
+ * Overhaul {@code levelCap} is pinned to 150k so prestige 0 is not stock 50k
+ * ({@code initialLevelCap} default). {@code hexStatReference} follows that
+ * 150k curve. Playable caps stay
  * {@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataMixin} + this
  * {@code maxAssignableTotal} + TP/stat soft-locks.
  */
 @Mixin(targets = "com.dmzrevamp.revamp.prestige.PrestigeSystem", remap = false)
 public abstract class DmzRevampPrestigeCapMixin {
+
+    @Inject(method = "levelCap", at = @At("HEAD"), cancellable = true, remap = false)
+    private static void lm$flatOverhaulLevelCap(StatsData data, CallbackInfoReturnable<Integer> cir) {
+        cir.setReturnValue(LmOverhaulCapMath.overhaulLevelCap());
+    }
 
     @Inject(method = "maxAssignableTotal", at = @At("HEAD"), cancellable = true, remap = false)
     private static void lm$maxAssignableTotal(StatsData data, CallbackInfoReturnable<Integer> cir) {

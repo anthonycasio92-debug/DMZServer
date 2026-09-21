@@ -2,12 +2,14 @@ package com.dbzlegacy.adaptivedifficulty.progression.bridge;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.config.DifficultyConfig;
+import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulCapMath;
 import com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration;
 import net.minecraftforge.fml.ModList;
 
 /**
  * Reloads Overhaul leveling config on boot so live {@code LevelingRevamp.json} edits apply
- * without hunting down cached defaults.
+ * without hunting down cached defaults. Also pins {@code initialLevelCap} / {@code maxLevel}
+ * to 150k so prestige 0 is not stock 50k.
  */
 public final class DmzRevampConfigBridge {
     private DmzRevampConfigBridge() {}
@@ -26,6 +28,7 @@ public final class DmzRevampConfigBridge {
                         .setInt(prestige, LmOverhaulPrestigeIntegration.OVERHAUL_MAX_PRESTIGE);
             } catch (Throwable ignored) {
             }
+            LmOverhaulCapMath.pinOverhaulLevelCaps();
             LmOverhaulPrestigeIntegration.logOverhaulPrestigeState();
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.warn(

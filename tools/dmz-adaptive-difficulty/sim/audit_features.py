@@ -1273,9 +1273,10 @@ def main() -> int:
           'remap = false' in mixin and "StatsData.class, remap = false" in mixin)
     check("StatsDataMixin applies personal cap", "lm$personalMaxValue" in mixin)
     revamp_cap = read(SRC / "com/dbzlegacy/adaptivedifficulty/mixin/DmzRevampPrestigeCapMixin.java")
-    check("Overhaul levelCap left native for hex scale",
-          '@Inject(method = "levelCap"' not in revamp_cap
-          and "hexStatReference" in revamp_cap)
+    check("Overhaul levelCap pinned to 150k (not stock 50k at P0)",
+          '@Inject(method = "levelCap"' in revamp_cap
+          and "overhaulLevelCap" in revamp_cap
+          and "lm$flatOverhaulLevelCap" in revamp_cap)
     check("Overhaul maxAssignableTotal uses LM breakthrough",
           "maxAssignableTotal" in revamp_cap
           and "LmOverhaulCapMath.maxAssignableTotal" in revamp_cap)
@@ -1330,6 +1331,17 @@ def main() -> int:
     check("attr multi bonus default off", "enableAttrMultiBonus = false" in read(CFG))
     dmz_lvl = read(ROOT / "config" / "dmzrevamp" / "LevelingRevamp.json")
     check("Overhaul initialLevelCap 150k", '"initialLevelCap": 150000' in dmz_lvl)
+    cap_math = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/LmOverhaulCapMath.java")
+    check("Overhaul level cap helper is 150k",
+          "OVERHAUL_LEVEL_CAP = PrestigePointsSystem.ABSOLUTE_LEVEL_CAP" in cap_math
+          and "pinOverhaulLevelCaps" in cap_math)
+    check("Overhaul boot pins 150k caps",
+          "pinOverhaulLevelCaps" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/DmzRevampConfigBridge.java"))
+    kjs_cap = read(ROOT / "kubejs" / "client_scripts" / "overhaul_level_cap.js")
+    check("KubeJS client pins Overhaul 150k (stock 50k is not synced)",
+          "OVERHAUL_LEVEL_CAP = 150000" in kjs_cap
+          and "initialLevelCap" in kjs_cap)
     manifest = read(ROOT / "tools" / "dmz-adaptive-difficulty" / "src" / "main" / "resources" / "META-INF" / "MANIFEST.MF")
     check("MANIFEST MixinConfigs for Mohist",
           "MixinConfigs: legacymechanics.mixins.json" in manifest)
