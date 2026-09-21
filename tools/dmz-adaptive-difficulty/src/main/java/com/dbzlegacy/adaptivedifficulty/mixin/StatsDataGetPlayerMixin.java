@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.calc.DmzProgression;
+import com.dbzlegacy.adaptivedifficulty.progression.StatsDataLoadContext;
 import com.dragonminez.common.stats.StatsData;
 import java.util.Collections;
 import java.util.Map;
@@ -27,6 +28,9 @@ public abstract class StatsDataGetPlayerMixin {
 
     @Inject(method = "getPlayer", at = @At("RETURN"), cancellable = true, remap = false)
     private void lm$resolveOwner(CallbackInfoReturnable<Player> cir) {
+        if (StatsDataLoadContext.inLoad()) {
+            return;
+        }
         Player existing = cir.getReturnValue();
         if (existing instanceof ServerPlayer sp && sp.m_6084_()) {
             OWNER_UUID.put((StatsData) (Object) this, sp.m_20148_());

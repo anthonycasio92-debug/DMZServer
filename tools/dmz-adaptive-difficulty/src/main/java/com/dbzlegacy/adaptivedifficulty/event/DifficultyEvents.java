@@ -168,12 +168,20 @@ public final class DifficultyEvents {
             return;
         }
         ServerPlayer player = (ServerPlayer) event.getPlayer();
-        try {
-            com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
-                    .syncFromLegacy(player);
-            com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.publish(player);
-            com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery.pulse(player);
-        } catch (Throwable ignored) {
+        var server = player.m_20194_();
+        Runnable work = () -> {
+            try {
+                com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
+                        .syncFromLegacy(player);
+                com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.publish(player);
+                com.dbzlegacy.adaptivedifficulty.progression.PrestigeResourceRecovery.pulse(player);
+            } catch (Throwable ignored) {
+            }
+        };
+        if (server != null) {
+            server.execute(work);
+        } else {
+            work.run();
         }
     }
 

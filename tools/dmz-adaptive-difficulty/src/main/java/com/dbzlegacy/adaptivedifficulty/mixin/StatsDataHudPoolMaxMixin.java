@@ -1,6 +1,7 @@
 package com.dbzlegacy.adaptivedifficulty.mixin;
 
 import com.dbzlegacy.adaptivedifficulty.progression.DmzResourcePoolClamp;
+import com.dbzlegacy.adaptivedifficulty.progression.StatsDataLoadContext;
 import com.dragonminez.common.stats.StatsData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,7 +31,7 @@ public abstract class StatsDataHudPoolMaxMixin {
     }
 
     private void applyPrestigeAwareMax(CallbackInfoReturnable<Float> cir) {
-        if (DmzResourcePoolClamp.isReadingNativeMax()) {
+        if (StatsDataLoadContext.inLoad() || DmzResourcePoolClamp.isReadingNativeMax()) {
             return;
         }
         Float value = cir.getReturnValue();
