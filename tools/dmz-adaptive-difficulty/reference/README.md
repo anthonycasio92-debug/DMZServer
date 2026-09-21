@@ -4,6 +4,8 @@
 
 Ship line starts at **4.5.0** (`LegacyMechanics-4.5.0.jar` / matching GUI). Bump `AdaptiveDifficultyMod.VERSION`, `mods.toml`, and `plugin.yml` together before each release.
 
+**Ki/stamina:** `DmzResourcePoolClamp.actualMaxEnergy/Stamina` must call private `actualMax(...)` (native read via `isReadingNativeMax`, Iron reject, HUD formula fallback, then × Overhaul scale once). Do **not** return raw `data.getMaxEnergy()` — that regressed in the 2.4.115 overlay (4.5.x before 4.5.4) and breaks clamps/regen/HUD alignment. Good reference commit: `51afb1aa`.
+
 Generate locally:
 
 ```bash
