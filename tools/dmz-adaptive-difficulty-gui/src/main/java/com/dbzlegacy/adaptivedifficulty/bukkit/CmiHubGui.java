@@ -79,7 +79,8 @@ public final class CmiHubGui {
         }
         List<String> hubHeaderLore = new ArrayList<>();
         hubHeaderLore.add("");
-        hubHeaderLore.addAll(GuiTooltips.lore("hub.main.header", List.of("&7Pick what you want to do", "&8/lm")));
+        hubHeaderLore.addAll(GuiTooltips.lore("hub.main.header",
+                List.of("&7Choose a system below", "&7Main Legacy Mechanics menu")));
         status.addLore(hubHeaderLore);
         gui.addButton(status);
 

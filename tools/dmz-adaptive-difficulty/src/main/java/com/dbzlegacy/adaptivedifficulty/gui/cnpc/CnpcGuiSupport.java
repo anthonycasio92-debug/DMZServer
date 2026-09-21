@@ -112,6 +112,12 @@ public final class CnpcGuiSupport {
      * Chest-style status block: a few inline lines, or a scroll when there is more text.
      * Returns the Y coordinate where action buttons should start (with padding).
      */
+    /** Small section caption above a button group. Returns Y for the first button row. */
+    public static int paintSectionTag(ICustomGui gui, int labelId, int y, String caption) {
+        gui.addLabel(labelId, safeChat(caption), M, y, W - M * 2, 10);
+        return y + 16;
+    }
+
     public static int paintInfoBlock(ICustomGui gui, int startY, List<String> lines, int inlineMax) {
         List<String> clean = normalizeInfoLines(lines);
         if (clean.isEmpty()) {

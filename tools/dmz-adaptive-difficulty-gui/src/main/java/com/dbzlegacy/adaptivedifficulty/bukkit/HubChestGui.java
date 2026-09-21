@@ -70,7 +70,7 @@ public final class HubChestGui implements Listener {
             hubHeaderLore.add("");
         }
         hubHeaderLore.addAll(GuiTooltips.lore("hub.main.header",
-                List.of("&7Pick what you want to do", "&8Open with &f/lm")));
+                List.of("&7Choose a system below", "&7Main Legacy Mechanics menu")));
         put(holder, inv, 4, item(Material.NETHER_STAR,
                 GuiTooltips.name("hub.main.header", "&f&lLegacy Mechanics"), hubHeaderLore));
 

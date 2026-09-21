@@ -15,8 +15,10 @@ import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 import noppes.npcs.api.gui.ICustomGui;
 
+/** Legacy Mechanics main menu (CustomNPCs primary UI). */
 public final class CnpcLmHubGui {
-    private static final int HUB_H = 332;
+    private static final int ID_SECTION_COMBAT = 8;
+    private static final int ID_SECTION_CHARACTER = 9;
 
     private CnpcLmHubGui() {}
 
@@ -45,7 +47,9 @@ public final class CnpcLmHubGui {
     }
 
     private static void paintMain(ServerPlayer player) {
-        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_HUB, CnpcGuiSupport.W, HUB_H, (p, gui) -> paintMain(p, gui));
+        int height = CnpcGuiSupport.suggestHeight(300);
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_HUB, CnpcGuiSupport.W, height,
+                (p, gui) -> paintMain(p, gui));
     }
 
     private static void paintMain(ServerPlayer player, ICustomGui gui) {
@@ -55,10 +59,10 @@ public final class CnpcLmHubGui {
         boolean skillCheck = SkillCheckService.canUse(player);
 
         int infoY = CnpcGuiSupport.paintHeader(player, gui, "§f§lLegacy Mechanics",
-                "§7Same menu as §f/lm §8— pick a system below");
+                "§7Your hub for scaling, rivals, training, and character services");
 
         List<String> lines = hubSnapshot(who, ph, staff, skillCheck);
-        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 5);
+        int row = CnpcGuiSupport.paintInfoBlock(gui, infoY, lines, 4);
         int gap = CnpcGuiSupport.ROW_STEP;
 
         if (!"true".equals(ph.get("bridge_ok"))) {
@@ -69,42 +73,39 @@ public final class CnpcLmHubGui {
             return;
         }
 
-        systemBtn(gui, player, ph, "difficulty", row, CnpcGuiSupport.COL_L,
-                "§aDifficulty §8· tiers & world scaling",
+        row = CnpcGuiSupport.paintSectionTag(gui, ID_SECTION_COMBAT, row + 4, "§8Combat & world scaling");
+        systemBtn(gui, player, ph, "difficulty", row, CnpcGuiSupport.COL_L, "§aDifficulty",
                 () -> CnpcLmGui.open(player, "difficulty", "main"));
-        systemBtn(gui, player, ph, "rival", row, CnpcGuiSupport.COL_R,
-                "§6Rival §8· rivalry & challenges",
+        systemBtn(gui, player, ph, "rival", row, CnpcGuiSupport.COL_R, "§6Rival",
                 () -> CnpcLmGui.open(player, "rival", "main"));
         row += gap;
 
-        systemBtn(gui, player, ph, "spar", row, CnpcGuiSupport.COL_L,
-                "§bSparring §8· training teleports",
+        systemBtn(gui, player, ph, "spar", row, CnpcGuiSupport.COL_L, "§bSparring",
                 () -> CnpcLmGui.open(player, "spar", "main"));
-        systemBtn(gui, player, ph, "prestige", row, CnpcGuiSupport.COL_R,
-                "§dPrestige §8· turn-ins & shop",
+        systemBtn(gui, player, ph, "prestige", row, CnpcGuiSupport.COL_R, "§dPrestige",
                 () -> CnpcLmGui.open(player, "prestige", "main"));
-        row += gap;
+        row += gap + 4;
 
+        row = CnpcGuiSupport.paintSectionTag(gui, ID_SECTION_CHARACTER, row, "§8Character & account");
         if (skillCheck) {
-            CnpcGuiSupport.button(gui, 24, "§eSkill Check §8· Natural & Saga", CnpcGuiSupport.COL_L, row,
+            CnpcGuiSupport.button(gui, 24, "§eSkill Check", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmGui.open(player, "skillcheck", "main"));
         } else if (staff) {
-            CnpcGuiSupport.button(gui, 24, "§eSkills §8· staff unlock browser", CnpcGuiSupport.COL_L, row,
+            CnpcGuiSupport.button(gui, 24, "§eSkills", CnpcGuiSupport.COL_L, row,
                     () -> CnpcLmGui.open(player, "skills", "core"));
         } else {
-            CnpcGuiSupport.buttonSmall(gui, 24, "§8Skill Check §7(permission)", CnpcGuiSupport.COL_L, row,
-                    CnpcGuiSupport.BTN_W,
+            CnpcGuiSupport.buttonSmall(gui, 24, "§8Skill Check", CnpcGuiSupport.COL_L, row, CnpcGuiSupport.BTN_W,
                     () -> CnpcGuiSupport.feedback(player,
-                            "§7Ask staff about §fSkill Check §7access (donator perk)."));
+                            "§7Skill Check is a donator perk — ask staff if you want access."));
         }
-        CnpcGuiSupport.button(gui, 25, "§fCharacter §8· race, class, reskin", CnpcGuiSupport.COL_R, row,
+        CnpcGuiSupport.button(gui, 25, "§fCharacter Services", CnpcGuiSupport.COL_R, row,
                 () -> CnpcLmGui.open(player, "character", "main"));
         row += gap;
 
-        CnpcGuiSupport.button(gui, 26, "§cRemove Android §8· two-step confirm", CnpcGuiSupport.COL_L, row,
+        CnpcGuiSupport.button(gui, 26, "§cRemove Android", CnpcGuiSupport.COL_L, row,
                 () -> CnpcLmGui.open(player, "android_remove", "main"));
         if (staff) {
-            CnpcGuiSupport.button(gui, 27, "§cStaff admin §8· progression & logs", CnpcGuiSupport.COL_R, row,
+            CnpcGuiSupport.button(gui, 27, "§cStaff admin", CnpcGuiSupport.COL_R, row,
                     () -> CnpcLmAdminGui.open(player, "main"));
         }
         row += gap;
@@ -118,7 +119,7 @@ public final class CnpcLmHubGui {
             String systemKey,
             int row,
             int col,
-            String enabledLabel,
+            String label,
             Runnable open) {
         int id = switch (systemKey) {
             case "difficulty" -> 20;
@@ -128,7 +129,7 @@ public final class CnpcLmHubGui {
             default -> 30;
         };
         if ("difficulty".equals(systemKey) || "true".equals(ph.get(systemKey))) {
-            CnpcGuiSupport.button(gui, id, enabledLabel, col, row, open);
+            CnpcGuiSupport.button(gui, id, label, col, row, open);
             return;
         }
         String pretty = switch (systemKey) {
@@ -137,7 +138,7 @@ public final class CnpcLmHubGui {
             case "prestige" -> "Prestige";
             default -> systemKey;
         };
-        CnpcGuiSupport.buttonSmall(gui, id, "§8" + pretty + " §7(unavailable)", col, row, CnpcGuiSupport.BTN_W,
+        CnpcGuiSupport.buttonSmall(gui, id, "§8" + pretty, col, row, CnpcGuiSupport.BTN_W,
                 () -> CnpcGuiSupport.feedback(viewer,
                         "§7" + pretty + " is off on this server. Ask staff if you think that's wrong."));
     }
@@ -145,7 +146,7 @@ public final class CnpcLmHubGui {
     private static List<String> hubSnapshot(
             ServerPlayer who, Map<String, String> ph, boolean staff, boolean skillCheck) {
         List<String> lines = new ArrayList<>();
-        lines.add("§7Hey §f" + who.m_7755_().getString() + "§7 — pick a button below.");
+        lines.add("§7Welcome, §f" + who.m_7755_().getString() + "§7.");
 
         try {
             int level = DmzProgression.guiDisplayDmzLevel(who);
@@ -156,7 +157,7 @@ public final class CnpcLmHubGui {
         try {
             if (DifficultyConfig.isEnabled()) {
                 DifficultySnapshot snap = DifficultyCache.refresh(who);
-                lines.add("§7Difficulty tier §f" + snap.activeTierName);
+                lines.add("§7Difficulty §f" + snap.activeTierName);
             }
         } catch (Throwable ignored) {
         }
@@ -176,16 +177,16 @@ public final class CnpcLmHubGui {
             var sph = SparGuiApi.placeholders(who);
             if ("true".equals(sph.get("session_active"))) {
                 String partner = sph.getOrDefault("partner", "");
-                lines.add("§7Spar session §aactive"
+                lines.add("§7Spar §aactive"
                         + (partner.isBlank() ? "" : " §8· §7with §f" + partner));
             }
         } catch (Throwable ignored) {
         }
 
         if (skillCheck && "true".equals(ph.get("skillcheck_session"))) {
-            lines.add("§7You have a §eSkill Check §7session open.");
+            lines.add("§7Skill Check session is open.");
         } else if (staff) {
-            lines.add("§7Staff: use §fStaff admin §7for progression flags and event log.");
+            lines.add("§7Staff tools live under §fStaff admin§7.");
         }
 
         return lines;

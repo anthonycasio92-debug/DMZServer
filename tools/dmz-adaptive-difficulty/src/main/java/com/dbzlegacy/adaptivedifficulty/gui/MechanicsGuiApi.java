@@ -47,7 +47,7 @@ public final class MechanicsGuiApi {
         boolean skillCheck = player != null && SkillCheckService.canUse(player);
         return switch (p) {
             case "help" -> List.of(
-                    "§e/lm §7— open Legacy Mechanics menu"
+                    "§7Legacy Mechanics — use the menu or §f/lm §7if chat is enabled"
             );
             case "logs", "syslog" -> {
                 if (player == null || !StaffAccess.isStaff(player)) {
