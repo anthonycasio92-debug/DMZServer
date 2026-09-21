@@ -14,28 +14,31 @@ public final class CnpcLmLogsGui {
             player.m_213846_(net.minecraft.network.chat.Component.m_237113_("§cStaff only."));
             return;
         }
-        CnpcGuiSupport.show(player, CnpcLmGui.ID_LOGS, (pl, gui) -> paint(pl, gui));
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_LOGS, CnpcGuiSupport.W, 280, (pl, gui) -> paint(pl, gui));
     }
 
     private static void paint(ServerPlayer player, ICustomGui gui) {
-        CnpcGuiSupport.title(gui, 1, "§8Event log");
+        CnpcGuiSupport.title(gui, 1, "§8Server event log");
+        CnpcGuiSupport.subtitle(gui, 2, "§7Telemetry for staff debugging");
+        CnpcGuiSupport.divider(gui, 3, 38);
         List<String> lines = MechanicsGuiApi.linesForPage(player, "logs");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, lines, 8);
+        CnpcGuiSupport.bodyLines(gui, 10, 46, lines, 8);
         int row = 150;
-        CnpcGuiSupport.button(gui, 20, "§aLog ON", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 20, "§aTurn logging on", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> MechanicsGuiApi.handleDo(player, "syslog", "on", "logs"),
                 () -> open(player, "main")));
-        CnpcGuiSupport.button(gui, 21, "§eLog OFF", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 21, "§eTurn logging off", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> MechanicsGuiApi.handleDo(player, "syslog", "off", "logs"),
                 () -> open(player, "main")));
         row += 24;
-        CnpcGuiSupport.button(gui, 22, "§7Flush logs", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+        CnpcGuiSupport.button(gui, 22, "§7Flush to disk", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> MechanicsGuiApi.handleDo(player, "syslog", "flush", "logs"),
                 () -> open(player, "main")));
         row += 24;
-        CnpcGuiSupport.buttonSmall(gui, 96, "§7« Hub", CnpcGuiSupport.COL_L, row, 95, () -> CnpcLmHubGui.open(player, "main"));
+        CnpcGuiSupport.buttonSmall(gui, 96, "§7« Hub", CnpcGuiSupport.COL_L, row, 95,
+                () -> CnpcLmHubGui.open(player, "main"));
     }
 }

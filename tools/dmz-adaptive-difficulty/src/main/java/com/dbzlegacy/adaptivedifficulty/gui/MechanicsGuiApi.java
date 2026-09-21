@@ -65,15 +65,18 @@ public final class MechanicsGuiApi {
             default -> {
                 Map<String, String> ph = placeholders(player);
                 List<String> lore = new ArrayList<>();
-                lore.add("§7Pick a system below");
+                lore.add("§7Systems on this server:");
                 lore.add("§7Rival §f" + onOff(ph.get("rival"))
-                        + " §8| §7Spar §f" + onOff(ph.get("spar")));
+                        + " §8· §7Spar §f" + onOff(ph.get("spar"))
+                        + " §8· §7Prestige §f" + onOff(ph.get("prestige")));
                 if (staff) {
-                    lore.add("§7Prog §f" + onOff(ph.get("progression"))
-                            + " §8| §7Prestige §f" + onOff(ph.get("prestige"))
-                            + " §8| §7Skills §f" + onOff(ph.get("skills")));
+                    lore.add("§7Progression §f" + onOff(ph.get("progression"))
+                            + " §8· §7Skills §f" + onOff(ph.get("skills"))
+                            + " §8· §7Event log §f" + onOff(ph.get("syslog")));
                 } else if (skillCheck) {
-                    lore.add("§7Skill Check §aavailable");
+                    lore.add("§7Skill Check is available for you.");
+                } else {
+                    lore.add("§8Skill Check is a donator perk — ask staff if interested.");
                 }
                 yield lore;
             }

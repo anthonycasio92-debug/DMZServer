@@ -50,13 +50,17 @@ public final class CnpcGuiSupport {
     }
 
     public static void show(ServerPlayer player, int guiId, Painter painter) {
+        showSized(player, guiId, W, H, painter);
+    }
+
+    public static void showSized(ServerPlayer player, int guiId, int width, int height, Painter painter) {
         IPlayer<?> ip = wrap(player);
         if (ip == null) {
             player.m_213846_(Component.m_237113_("§cCould not open LM menu (CNPC player wrap failed)."));
             return;
         }
         try {
-            ICustomGui gui = NpcAPI.Instance().createCustomGui(guiId, W, H, false, ip);
+            ICustomGui gui = NpcAPI.Instance().createCustomGui(guiId, width, height, false, ip);
             gui.setClosesOnEsc(true);
             painter.paint(player, gui);
             ip.showCustomGui(gui);
@@ -64,6 +68,11 @@ public final class CnpcGuiSupport {
             AdaptiveDifficultyMod.LOGGER.warn("[{}] CNPC GUI {} failed: {}", AdaptiveDifficultyMod.MOD_ID, guiId, t);
             player.m_213846_(Component.m_237113_("§cMenu error: " + t.getMessage()));
         }
+    }
+
+    public static void footerCloseRefresh(ServerPlayer player, ICustomGui gui, int row, Runnable refresh) {
+        buttonSmall(gui, 98, "§cClose", COL_L, row, 95, () -> {});
+        buttonSmall(gui, 99, "§7Refresh", COL_R, row, 95, refresh);
     }
 
     public static ILabel title(ICustomGui gui, int id, String text) {
