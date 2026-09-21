@@ -1217,19 +1217,24 @@ public final class PrestigePointsSystem {
         }
         // Prefer Fabled API — console "class level … take" often no-ops on Mohist,
         // leaving Prestige class high so faction sync restores held tokens.
-        int lost = 0;
+        boolean aligned = false;
         try {
-            lost = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
-                    .takePrestigeLevels(player, amount);
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .alignFabledToHeld(player);
+            int held = PrestigeSystem.getHeldWallet(player);
+            int want = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .fabledLevelForHeld(held);
+            aligned = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .fabledPrestigeLevel(player) == want;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
                     "[{}] prestige points API take soft-fail: {}",
                     AdaptiveDifficultyMod.MOD_ID, t.toString());
         }
-        if (lost >= amount) {
+        if (aligned) {
             return;
         }
-        int remain = amount - lost;
+        int remain = amount;
         MinecraftServer server = player.m_20194_();
         if (server == null) {
             return;

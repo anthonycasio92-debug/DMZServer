@@ -133,8 +133,12 @@ public final class PrestigeSystem {
         MinecraftServer server = player.m_20194_();
         boolean apiAdded = false;
         try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .alignFabledToHeld(player);
+            int want = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .fabledLevelForHeld(newHeld);
             apiAdded = com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
-                    .addPrestigeLevels(player, 1) > 0;
+                    .fabledPrestigeLevel(player) == want;
         } catch (Throwable t) {
             AdaptiveDifficultyMod.LOGGER.debug(
                     "[{}] prestige class level API soft-fail: {}", AdaptiveDifficultyMod.MOD_ID, t.toString());
@@ -333,6 +337,21 @@ public final class PrestigeSystem {
 
     public static int maxHeld() {
         return MAX_HELD;
+    }
+
+    /**
+     * NBT held wallet only (not CNPC faction inflate). Fabled Prestige class
+     * is always {@code wallet + 1}.
+     */
+    public static int getHeldWallet(ServerPlayer player) {
+        if (player == null) {
+            return 0;
+        }
+        CompoundTag tag = PersistentDataAccess.get(player);
+        if (PersistentDataAccess.isWritable(tag) && tag.m_128441_(KEY_HELD)) {
+            return Math.max(0, Math.min(MAX_HELD, tag.m_128451_(KEY_HELD)));
+        }
+        return getHeld(player);
     }
 
     public static int levelsPerPrestige() {
@@ -544,6 +563,11 @@ public final class PrestigeSystem {
         try {
             com.dbzlegacy.adaptivedifficulty.progression.bridge.DmzRevampPrestigeBridge
                     .syncFromLegacy(player);
+        } catch (Throwable ignored) {
+        }
+        try {
+            com.dbzlegacy.adaptivedifficulty.progression.bridge.PrestigeSkillSync
+                    .alignFabledToHeld(player);
         } catch (Throwable ignored) {
         }
     }

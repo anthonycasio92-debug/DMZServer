@@ -11,19 +11,72 @@ import java.util.Iterator;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Port of {@code Prestige Sync Fabled.js} — Fabled Prestige class level → DMZ {@code prestige} skill.
- * Target DMZ level = Fabled Prestige class level − 1 (floored at 0).
+ * Port of {@code Prestige Sync Fabled.js} — held wallet ↔ Fabled Prestige class ↔ DMZ {@code prestige}.
+ * Fabled Prestige class level is always {@code held + 1} (Fabled floors at 1).
+ * DMZ skill = Fabled − 1 = held.
  */
 public final class PrestigeSkillSync {
     private static final String FABLED_CLASS_NAME = "Prestige";
     private static final String DMZ_SKILL_ID = "prestige";
+    /** Fabled Prestige starts at 1 when held is 0. */
+    public static final int FABLED_HELD_OFFSET = 1;
 
     private PrestigeSkillSync() {}
+
+    public static int fabledLevelForHeld(int held) {
+        return Math.max(1, Math.max(0, held) + FABLED_HELD_OFFSET);
+    }
+
+    /**
+     * Force Fabled Prestige class to {@code held + 1}. Held NBT wallet is the source of truth.
+     */
+    public static void alignFabledToHeld(ServerPlayer player) {
+        if (player == null || !DifficultyConfig.get().enablePrestigeSkillSync) {
+            return;
+        }
+        int held = com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigeSystem.getHeldWallet(player);
+        int want = fabledLevelForHeld(held);
+        Object data = FabledBridge.fabledData(player);
+        if (data == null) {
+            return;
+        }
+        Object prestigeClass = findPrestigeClass(data);
+        if (prestigeClass == null) {
+            prestigeClass = tryProfessPrestige(data);
+        }
+        if (prestigeClass == null) {
+            return;
+        }
+        int current = Math.max(0, FabledBridge.invokeInt(prestigeClass, "getLevel"));
+        if (current == want) {
+            return;
+        }
+        if (!setPrestigeLevel(prestigeClass, current, want)) {
+            return;
+        }
+        int after = Math.max(0, FabledBridge.invokeInt(prestigeClass, "getLevel"));
+        FabledBridge.logSync(
+                player,
+                "prestige_held_align",
+                "held",
+                held,
+                "fabled",
+                after,
+                "want",
+                want);
+        try {
+            PrestigeFactionSync.forceSync(player);
+        } catch (Throwable ignored) {
+        }
+        EnergyManaSync.sync(player, true);
+        FabledLevelGuard.sync(player);
+    }
 
     public static void sync(ServerPlayer player) {
         if (player == null || !DifficultyConfig.get().enablePrestigeSkillSync) {
             return;
         }
+        alignFabledToHeld(player);
         Object data = FabledBridge.fabledData(player);
         if (data == null) {
             return;
@@ -223,5 +276,70 @@ public final class PrestigeSkillSync {
         } catch (Throwable ignored) {
         }
         return null;
+    }
+
+    private static boolean setPrestigeLevel(Object prestigeClass, int current, int want) {
+        if (prestigeClass == null || want < 1) {
+            return false;
+        }
+        try {
+            prestigeClass.getClass().getMethod("setLevel", int.class).invoke(prestigeClass, want);
+            int after = Math.max(0, FabledBridge.invokeInt(prestigeClass, "getLevel"));
+            if (after == want) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        if (want > current) {
+            try {
+                prestigeClass.getClass().getMethod("giveLevels", int.class)
+                        .invoke(prestigeClass, want - current);
+                return Math.max(0, FabledBridge.invokeInt(prestigeClass, "getLevel")) == want;
+            } catch (Throwable ignored) {
+                return false;
+            }
+        }
+        if (want < current) {
+            try {
+                prestigeClass.getClass().getMethod("loseLevels", int.class)
+                        .invoke(prestigeClass, current - want);
+                return Math.max(0, FabledBridge.invokeInt(prestigeClass, "getLevel")) == want;
+            } catch (Throwable ignored) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private static Object tryProfessPrestige(Object fabledData) {
+        if (fabledData == null) {
+            return null;
+        }
+        try {
+            Class<?> fabled = FabledBridge.fabledClass();
+            if (fabled == null) {
+                return null;
+            }
+            Object registered = fabled.getMethod("getClass", String.class).invoke(null, FABLED_CLASS_NAME);
+            if (registered == null) {
+                registered = fabled.getMethod("getClass", String.class).invoke(null, "prestige");
+            }
+            if (registered == null) {
+                return findPrestigeClass(fabledData);
+            }
+            try {
+                fabledData.getClass().getMethod("profess", registered.getClass())
+                        .invoke(fabledData, registered);
+            } catch (Throwable ignored) {
+                try {
+                    fabledData.getClass()
+                            .getMethod("setClass", Object.class, Object.class, boolean.class)
+                            .invoke(fabledData, null, registered, true);
+                } catch (Throwable ignored2) {
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return findPrestigeClass(fabledData);
     }
 }

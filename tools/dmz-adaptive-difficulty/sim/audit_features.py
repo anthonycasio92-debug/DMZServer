@@ -1216,7 +1216,17 @@ def main() -> int:
     prestige_faction_sync = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/bridge/PrestigeFactionSync.java")
     check("takePrestigeLevels API", "takePrestigeLevels" in prestige_skill_sync and "loseLevels" in prestige_skill_sync)
     check("addPrestigeLevels API", "addPrestigeLevels" in prestige_skill_sync and "giveLevels" in prestige_skill_sync)
-    check("turnIn uses Fabled API take", "takePrestigeLevels" in pp)
+    check("turnIn uses Fabled API take", "takePrestigeLevels" in pp
+          or "alignFabledToHeld" in pp)
+    check("Fabled prestige is held + 1",
+          "FABLED_HELD_OFFSET = 1" in prestige_skill_sync
+          and "alignFabledToHeld" in prestige_skill_sync
+          and "fabledLevelForHeld" in prestige_skill_sync)
+    check("held wallet drives Fabled align",
+          "getHeldWallet" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java")
+          and "alignFabledToHeld" in
+          read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java"))
     check("PrestigeFactionSync forceSync", "forceSync" in prestige_faction_sync)
     prestige_admin = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeAdmin.java")
     prestige_sys = read(SRC / "com/dbzlegacy/adaptivedifficulty/progression/shop/PrestigeSystem.java")
