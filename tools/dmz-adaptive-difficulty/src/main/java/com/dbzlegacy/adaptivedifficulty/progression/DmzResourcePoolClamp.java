@@ -89,11 +89,11 @@ public final class DmzResourcePoolClamp {
             if (attr == null) {
                 return false;
             }
-            net.minecraft.world.entity.ai.attributes.AttributeInstance inst = player.getAttribute(attr);
+            net.minecraft.world.entity.ai.attributes.AttributeInstance inst = player.m_21051_(attr);
             if (inst == null) {
                 return false;
             }
-            double iron = inst.getValue();
+            double iron = inst.m_22115_();
             if (!Double.isFinite(iron) || iron < 100.0d) {
                 return false;
             }
