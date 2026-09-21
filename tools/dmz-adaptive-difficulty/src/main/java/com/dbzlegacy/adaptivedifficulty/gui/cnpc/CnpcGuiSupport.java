@@ -2,7 +2,9 @@ package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
 import com.dbzlegacy.adaptivedifficulty.AdaptiveDifficultyMod;
 import com.dbzlegacy.adaptivedifficulty.gui.AdminInspectSessions;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -165,6 +167,64 @@ public final class CnpcGuiSupport {
     public static void act(ServerPlayer player, Supplier<String> action, Runnable reopen) {
         feedback(player, action.get());
         reopen.run();
+    }
+
+    /** Tab-separated GUI cards: field 0 = id/arg, field 1 = display label. */
+    public static String[] cardLabels(List<String> cards, int labelField) {
+        if (cards == null || cards.isEmpty()) {
+            return new String[0];
+        }
+        List<String> labels = new ArrayList<>(cards.size());
+        for (String card : cards) {
+            String[] p = card.split("\t", -1);
+            if (labelField >= 0 && labelField < p.length && p[labelField] != null && !p[labelField].isBlank()) {
+                labels.add(p[labelField]);
+            } else if (p.length > 0) {
+                labels.add(p[0]);
+            }
+        }
+        return labels.toArray(String[]::new);
+    }
+
+    public static String cardField(List<String> cards, IScroll scroll, int field) {
+        if (cards == null || cards.isEmpty() || scroll == null) {
+            return null;
+        }
+        int[] sel = scroll.getSelection();
+        if (sel == null || sel.length == 0 || sel[0] < 0 || sel[0] >= cards.size()) {
+            return null;
+        }
+        String[] p = cards.get(sel[0]).split("\t", -1);
+        if (field < 0 || field >= p.length) {
+            return null;
+        }
+        String v = p[field];
+        return v == null || v.isBlank() ? null : v.trim();
+    }
+
+    public static void wireScrollDoublePick(
+            IScroll scroll,
+            List<String> cards,
+            int argField,
+            Consumer<String> onPick
+    ) {
+        if (scroll == null || onPick == null) {
+            return;
+        }
+        scroll.setOnDoubleClick((g, sc) -> {
+            g.close();
+            String arg = cardField(cards, sc, argField);
+            if (arg != null) {
+                onPick.accept(arg);
+            }
+        });
+    }
+
+    public static void navHubMain(ServerPlayer player, ICustomGui gui, int row, Runnable openMain) {
+        buttonSmall(gui, 96, "§7« Hub", COL_L, row, 95, () -> CnpcLmHubGui.open(player, "main"));
+        if (openMain != null) {
+            buttonSmall(gui, 97, "§7Main", COL_R, row, 95, openMain);
+        }
     }
 
     @FunctionalInterface

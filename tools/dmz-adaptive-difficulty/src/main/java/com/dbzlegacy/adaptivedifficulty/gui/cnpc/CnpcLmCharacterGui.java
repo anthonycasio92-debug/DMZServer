@@ -1,5 +1,6 @@
 package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
+import com.dbzlegacy.adaptivedifficulty.character.CosmeticHeadBoneService;
 import com.dbzlegacy.adaptivedifficulty.gui.CharacterServicesGuiApi;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,11 @@ public final class CnpcLmCharacterGui {
         }
         if (p.startsWith("class_confirm:")) {
             paintClassConfirm(player, p.substring("class_confirm:".length()));
+            return;
+        }
+        if (p.startsWith("bones:") || "bones".equals(p)) {
+            int bonePage = parseBonePage(p);
+            CnpcGuiSupport.showSized(player, CnpcLmGui.ID_CHARACTER, CnpcGuiSupport.W, 320, (pl, gui) -> paintBones(pl, gui, bonePage));
             return;
         }
         CnpcGuiSupport.show(player, CnpcLmGui.ID_CHARACTER, (pl, gui) -> {
@@ -61,6 +67,10 @@ public final class CnpcLmCharacterGui {
             if ("true".equals(ph.get("can_reskin"))) {
                 CnpcGuiSupport.button(gui, 22, "§dReskin", CnpcGuiSupport.COL_L, row,
                         () -> open(player, "reskin"));
+            }
+            if ("true".equals(ph.get("can_head_bones"))) {
+                CnpcGuiSupport.button(gui, 23, "§fHead bone shop", CnpcGuiSupport.COL_R, row,
+                        () -> open(player, "bones:0"));
             }
         } else {
             gui.addLabel(4, "§cCharacter Services unavailable.", CnpcGuiSupport.M, row, 400, 14);
@@ -178,6 +188,68 @@ public final class CnpcLmCharacterGui {
             CnpcGuiSupport.buttonSmall(gui, 96, "§7« Back", CnpcGuiSupport.COL_L, 210, 95,
                     () -> open(player, "class"));
         });
+    }
+
+    private static void paintBones(ServerPlayer player, ICustomGui gui, int page) {
+        var ph = CharacterServicesGuiApi.placeholders(player);
+        int pages = Math.max(1, CosmeticHeadBoneService.pageCount());
+        int pg = Math.min(pages - 1, Math.max(0, page));
+        CnpcGuiSupport.title(gui, 1, "§fHead bone shop");
+        CnpcGuiSupport.subtitle(gui, 2, "§7Page §f" + (pg + 1) + "/" + pages
+                + "  §8·  §7Active §f" + ph.getOrDefault("active_head_bone", "none"));
+        CnpcGuiSupport.bodyLines(gui, 10, 44, CharacterServicesGuiApi.linesForPage(player, "bones:" + pg), 4);
+
+        List<String> cards = CharacterServicesGuiApi.headBoneCards(player, pg);
+        if (cards.isEmpty()) {
+            gui.addLabel(50, "§7No head parts on this page.", CnpcGuiSupport.M, 90, 400, 14);
+        } else {
+            IScroll scroll = CnpcGuiSupport.scrollSearchable(gui, 100, CnpcGuiSupport.M, 88, 400, 120,
+                    CnpcGuiSupport.cardLabels(cards, 1));
+            scroll.setOnDoubleClick((g, sc) -> {
+                g.close();
+                String id = selectedCardId(cards, sc);
+                if (id != null) {
+                    CnpcGuiSupport.act(player,
+                            () -> CharacterServicesGuiApi.handleDo(player, "bone_unlock", id, "bones"),
+                            () -> open(player, "bones:" + pg));
+                }
+            });
+        }
+        int row = 220;
+        CnpcGuiSupport.buttonSmall(gui, 60, "§aEquip race default", CnpcGuiSupport.COL_L, row, 195, () -> CnpcGuiSupport.act(
+                player,
+                () -> CharacterServicesGuiApi.handleDo(player, "bone_race_default", "", "bones"),
+                () -> open(player, "bones:" + pg)));
+        row += 24;
+        CnpcGuiSupport.buttonSmall(gui, 61, "§7Unequip bone", CnpcGuiSupport.COL_L, row, 195, () -> CnpcGuiSupport.act(
+                player,
+                () -> CharacterServicesGuiApi.handleDo(player, "bone_unequip", "", "bones"),
+                () -> open(player, "bones:" + pg)));
+        if (pg > 0) {
+            CnpcGuiSupport.buttonSmall(gui, 62, "§7« Prev", CnpcGuiSupport.COL_R, row - 24, 95,
+                    () -> open(player, "bones:" + (pg - 1)));
+        }
+        if (pg + 1 < pages) {
+            CnpcGuiSupport.buttonSmall(gui, 63, "§7Next »", CnpcGuiSupport.COL_R, row, 95,
+                    () -> open(player, "bones:" + (pg + 1)));
+        }
+        row += 28;
+        CnpcGuiSupport.buttonSmall(gui, 96, "§7« Main", CnpcGuiSupport.COL_L, row, 95, () -> open(player, "main"));
+        CnpcGuiSupport.buttonSmall(gui, 97, "§7Hub", CnpcGuiSupport.COL_R, row, 95, () -> CnpcLmHubGui.open(player, "main"));
+    }
+
+    private static int parseBonePage(String page) {
+        if (page == null || page.isBlank() || "bones".equals(page)) {
+            return 0;
+        }
+        if (page.startsWith("bones:")) {
+            try {
+                return Integer.parseInt(page.substring("bones:".length()).trim());
+            } catch (NumberFormatException ignored) {
+                return 0;
+            }
+        }
+        return 0;
     }
 
     private static void paintReskin(ServerPlayer player, ICustomGui gui) {

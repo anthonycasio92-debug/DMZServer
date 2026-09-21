@@ -2,8 +2,10 @@ package com.dbzlegacy.adaptivedifficulty.gui.cnpc;
 
 import com.dbzlegacy.adaptivedifficulty.gui.ProgressionGuiApi;
 import com.dbzlegacy.adaptivedifficulty.progression.shop.PrestigePointsSystem;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import net.minecraft.server.level.ServerPlayer;
 import noppes.npcs.api.gui.ICustomGui;
 
@@ -11,11 +13,30 @@ public final class CnpcLmPrestigeGui {
     private CnpcLmPrestigeGui() {}
 
     public static void open(ServerPlayer player, String page) {
-        String p = page == null || page.isBlank() ? "main" : page.toLowerCase(Locale.ROOT);
-        CnpcGuiSupport.show(player, CnpcLmGui.ID_PRESTIGE, (pl, gui) -> {
-            switch (p) {
+        String raw = page == null || page.isBlank() ? "main" : page.trim();
+        String p = raw.toLowerCase(Locale.ROOT);
+        int shopPage = 0;
+        if (p.startsWith("shop:")) {
+            try {
+                shopPage = Integer.parseInt(p.substring("shop:".length()).trim());
+            } catch (NumberFormatException ignored) {
+                shopPage = 0;
+            }
+            p = "shop";
+        } else if (p.startsWith("shop") && p.length() > 4 && Character.isDigit(p.charAt(4))) {
+            try {
+                shopPage = Integer.parseInt(p.substring(4)) - 1;
+            } catch (NumberFormatException ignored) {
+                shopPage = 0;
+            }
+            p = "shop";
+        }
+        final int shopPageFinal = Math.max(0, shopPage);
+        final String pageKey = p;
+        CnpcGuiSupport.showSized(player, CnpcLmGui.ID_PRESTIGE, CnpcGuiSupport.W, 320, (pl, gui) -> {
+            switch (pageKey) {
                 case "turnin", "points" -> paintTurnIn(pl, gui);
-                case "shop", "skills" -> paintShopHint(pl, gui);
+                case "shop", "skills" -> paintShop(pl, gui, shopPageFinal);
                 case "forms", "effects", "effect" -> paintEffects(pl, gui);
                 case "cap", "breakthrough" -> paintCap(pl, gui);
                 case "tiers", "tier" -> paintTiers(pl, gui);
@@ -67,11 +88,71 @@ public final class CnpcLmPrestigeGui {
         footer(player, gui, row);
     }
 
-    private static void paintShopHint(ServerPlayer player, ICustomGui gui) {
+    private static void paintShop(ServerPlayer player, ICustomGui gui, int pageIndex) {
+        Map<String, String> ph = ProgressionGuiApi.prestigePlaceholders(player);
+        int pages = Math.max(1, parseInt(ph.get("shop_pages"), 1));
+        int page = Math.min(pages - 1, Math.max(0, pageIndex));
+        int pageSize = Math.max(1, parseInt(ph.get("shop_page_size"), 6));
         CnpcGuiSupport.title(gui, 1, "§bPrestige skill shop");
-        CnpcGuiSupport.bodyLines(gui, 10, 44, ProgressionGuiApi.prestigeLines(player, "shop"), 8);
-        gui.addLabel(50, "§7Use §f/prestige shop §7or §f/lmdo prestige shop §7for the full catalog.", CnpcGuiSupport.M, 150, 400, 24);
-        footer(player, gui, 200);
+        CnpcGuiSupport.subtitle(gui, 2, "§7Page §f" + (page + 1) + "/" + pages + "  §8·  §ePoints §f" + ph.getOrDefault("points", "0"));
+
+        List<String> ids = shopSkillIds(ph);
+        int from = page * pageSize;
+        int row = 70;
+        int placed = 0;
+        for (int i = from; i < ids.size() && placed < pageSize; i++, placed++) {
+            String id = ids.get(i);
+            String label = ph.getOrDefault("skill_" + id + "_label", id);
+            String bought = ph.getOrDefault("skill_" + id, "0");
+            String max = ph.getOrDefault("skill_" + id + "_max", "?");
+            int col = (placed % 2 == 0) ? CnpcGuiSupport.COL_L : CnpcGuiSupport.COL_R;
+            if (placed > 0 && placed % 2 == 0) {
+                row += 24;
+            }
+            String skillId = id;
+            CnpcGuiSupport.buttonSmall(gui, 30 + placed, "§f" + label + " §7(" + bought + "/" + max + ")", col, row, 195,
+                    () -> CnpcGuiSupport.act(
+                            player,
+                            () -> ProgressionGuiApi.handlePrestigeDo(player, "skill", skillId, "shop"),
+                            () -> open(player, "shop:" + page)));
+        }
+        row += 36;
+        if (page > 0) {
+            int prev = page - 1;
+            CnpcGuiSupport.buttonSmall(gui, 90, "§7« Prev", CnpcGuiSupport.COL_L, row, 95,
+                    () -> open(player, "shop:" + prev));
+        }
+        if (page + 1 < pages) {
+            CnpcGuiSupport.buttonSmall(gui, 91, "§7Next »", CnpcGuiSupport.COL_R, row, 95,
+                    () -> open(player, "shop:" + (page + 1)));
+        }
+        row += 28;
+        footer(player, gui, row);
+    }
+
+    private static List<String> shopSkillIds(Map<String, String> ph) {
+        List<String> out = new ArrayList<>();
+        String raw = ph.getOrDefault("shop_skill_ids", "");
+        if (raw == null || raw.isBlank()) {
+            return List.of("meditation", "fly", "sprint", "jump", "potentialunlock");
+        }
+        for (String part : raw.split(",")) {
+            if (part != null && !part.isBlank()) {
+                out.add(part.trim().toLowerCase(Locale.ROOT));
+            }
+        }
+        return out;
+    }
+
+    private static int parseInt(String s, int def) {
+        if (s == null || s.isBlank()) {
+            return def;
+        }
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (NumberFormatException e) {
+            return def;
+        }
     }
 
     private static void paintEffects(ServerPlayer player, ICustomGui gui) {
@@ -85,6 +166,15 @@ public final class CnpcLmPrestigeGui {
         CnpcGuiSupport.button(gui, 41, "§dBuy Mutant", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
                 player,
                 () -> ProgressionGuiApi.handlePrestigeDo(player, "mutant", "", "effects"),
+                () -> open(player, "effects")));
+        row += 24;
+        CnpcGuiSupport.button(gui, 42, "§7Refund Majin", CnpcGuiSupport.COL_L, row, () -> CnpcGuiSupport.act(
+                player,
+                () -> ProgressionGuiApi.handlePrestigeDo(player, "unmajin", "", "effects"),
+                () -> open(player, "effects")));
+        CnpcGuiSupport.button(gui, 43, "§7Refund Mutant", CnpcGuiSupport.COL_R, row, () -> CnpcGuiSupport.act(
+                player,
+                () -> ProgressionGuiApi.handlePrestigeDo(player, "unmutant", "", "effects"),
                 () -> open(player, "effects")));
         row += 24;
         footer(player, gui, row);
