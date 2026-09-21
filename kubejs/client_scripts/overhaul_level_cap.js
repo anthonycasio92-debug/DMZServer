@@ -67,8 +67,12 @@ function pinOverhaulCaps(cap) {
     if (!cfg) return false;
     var levels = cfg.levelsAndAttributes;
     var prestige = cfg.Prestige;
+    // Flatten native ladder: min(max, initial + held×step) → cap when both equal cap.
     levels.getClass().getField("maxLevel").setInt(levels, cap);
     prestige.getClass().getField("initialLevelCap").setInt(prestige, cap);
+    try {
+      prestige.getClass().getField("maxPrestigeCount").setInt(prestige, 10);
+    } catch (ePre) {}
     if (!pinnedOnce) {
       pinnedOnce = true;
       console.info("[LM] Overhaul client level cap pinned to " + cap);

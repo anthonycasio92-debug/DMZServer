@@ -60,6 +60,9 @@ function pinOverhaulCaps(cap) {
     var prestige = cfg.Prestige;
     levels.getClass().getField("maxLevel").setInt(levels, cap);
     prestige.getClass().getField("initialLevelCap").setInt(prestige, cap);
+    try {
+      prestige.getClass().getField("maxPrestigeCount").setInt(prestige, 10);
+    } catch (ePre) {}
     if (!pinnedOnce) {
       pinnedOnce = true;
       console.info("[LM] Overhaul client level cap pinned to " + cap);

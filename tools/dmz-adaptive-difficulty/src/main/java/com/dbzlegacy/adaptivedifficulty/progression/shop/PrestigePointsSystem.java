@@ -1017,11 +1017,7 @@ public final class PrestigePointsSystem {
                     + " §c(have §e" + points + "§c).";
         }
         setPoints(player, points - cost);
-        ProgressionData.storedPut(player, KEY_BREAKTHROUGHS, next);
-        try {
-            com.dbzlegacy.adaptivedifficulty.progression.PersonalLevelCapMirror.publish(player);
-        } catch (Throwable ignored) {
-        }
+        setBreakthroughs(player, next);
         int newCap = effectiveMaxLevel(player);
         // Force a live DMZ read so the client/stat screen picks up the raised max.
         int liveCap = newCap;

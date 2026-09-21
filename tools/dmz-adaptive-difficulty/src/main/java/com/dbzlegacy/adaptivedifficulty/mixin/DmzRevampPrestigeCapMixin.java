@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * {@link com.dbzlegacy.adaptivedifficulty.mixin.StatsDataMixin} + this
  * {@code maxAssignableTotal} + TP/stat soft-locks.
  */
-@Mixin(targets = "com.dmzrevamp.revamp.prestige.PrestigeSystem", remap = false)
+@Mixin(targets = "com.dmzrevamp.revamp.prestige.PrestigeSystem", remap = false, priority = 2000)
 public abstract class DmzRevampPrestigeCapMixin {
 
     @Inject(method = "levelCap", at = @At("HEAD"), cancellable = true, remap = false)
@@ -28,10 +28,19 @@ public abstract class DmzRevampPrestigeCapMixin {
 
     @Inject(method = "maxAssignableTotal", at = @At("HEAD"), cancellable = true, remap = false)
     private static void lm$maxAssignableTotal(StatsData data, CallbackInfoReturnable<Integer> cir) {
-        if (!lmOwnsPrestige() || data == null) {
+        if (data == null || !lmCapsEnforced()) {
             return;
         }
         cir.setReturnValue(LmOverhaulCapMath.maxAssignableTotal(data));
+    }
+
+    @Inject(method = "hexStatReference", at = @At("HEAD"), cancellable = true, remap = false)
+    private static void lm$hexReferenceUsesPersonalCap(StatsData data, CallbackInfoReturnable<Double> cir) {
+        if (data == null || !lmCapsEnforced()) {
+            return;
+        }
+        int cap = LmOverhaulCapMath.overhaulLevelCap(data);
+        cir.setReturnValue((double) Math.max(1, cap));
     }
 
     @Inject(method = "canPrestige", at = @At("HEAD"), cancellable = true, remap = false)
@@ -72,6 +81,15 @@ public abstract class DmzRevampPrestigeCapMixin {
             return DifficultyConfig.get().enablePrestigeSystem;
         } catch (Throwable t) {
             return false;
+        }
+    }
+
+    private static boolean lmCapsEnforced() {
+        try {
+            return DifficultyConfig.get().enablePrestigeSystem
+                    || LmOverhaulPrestigeIntegration.integrationActive();
+        } catch (Throwable t) {
+            return true;
         }
     }
 }

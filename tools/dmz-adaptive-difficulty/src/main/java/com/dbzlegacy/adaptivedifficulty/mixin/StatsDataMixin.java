@@ -12,12 +12,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Overrides dmzrevamp {@code StatsDataLevelingRevampMixin} (priority 1000 HEAD).
- * Lower priority so our HEAD inject runs <b>after</b> Overhaul and last
- * {@code setReturnValue} wins: personal 100k + 10k×breakthroughs, never the
- * native prestige ladder (100k / 115k / 130k / 145k / 150k).
+ * Overrides dmzrevamp {@code StatsDataLevelingRevampMixin} (default priority 1000).
+ * Priority 2000 merges after Overhaul so our HEAD/RETURN injects run last and
+ * {@code setReturnValue} wins: personal 100k + 10k×breakthroughs only — never
+ * stock 50k at prestige 0 or +5k/held from Overhaul's native ladder.
  */
-@Mixin(value = StatsData.class, remap = false, priority = 400)
+@Mixin(value = StatsData.class, remap = false, priority = 2000)
 public abstract class StatsDataMixin {
     @Shadow(remap = false)
     public abstract Player getPlayer();
@@ -53,7 +53,7 @@ public abstract class StatsDataMixin {
     }
 
     private void applyPersonalMaxValue(CallbackInfoReturnable<Integer> cir) {
-        if (!prestigeCapsActive()) {
+        if (!lmCapsActive()) {
             return;
         }
         StatsData self = (StatsData) (Object) this;
@@ -65,7 +65,7 @@ public abstract class StatsDataMixin {
     }
 
     private void applyPersonalMaxTotal(CallbackInfoReturnable<Integer> cir) {
-        if (!prestigeCapsActive()) {
+        if (!lmCapsActive()) {
             return;
         }
         StatsData self = (StatsData) (Object) this;
@@ -73,7 +73,7 @@ public abstract class StatsDataMixin {
     }
 
     private void applyStatBuyClamp(String stat, int amount, CallbackInfoReturnable<Integer> cir) {
-        if (!prestigeCapsActive()) {
+        if (!lmCapsActive()) {
             return;
         }
         StatsData self = (StatsData) (Object) this;
@@ -92,11 +92,14 @@ public abstract class StatsDataMixin {
         cir.setReturnValue(Math.min(previous, Math.min(requested, room)));
     }
 
-    private static boolean prestigeCapsActive() {
+    /** Personal caps apply whenever LM prestige/overhaul integration is on (not shop UI toggles). */
+    private static boolean lmCapsActive() {
         try {
-            return DifficultyConfig.get().enablePrestigeSystem;
+            return DifficultyConfig.get().enablePrestigeSystem
+                    || com.dbzlegacy.adaptivedifficulty.progression.LmOverhaulPrestigeIntegration
+                            .integrationActive();
         } catch (Throwable t) {
-            return false;
+            return true;
         }
     }
 }
